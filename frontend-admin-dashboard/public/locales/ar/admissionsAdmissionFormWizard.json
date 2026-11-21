@@ -1,0 +1,36 @@
+{
+    "pageTitle": "استمارة القبول",
+    "backToAdmissionList": "العودة إلى قائمة القبول",
+    "downloadPdf": "تنزيل PDF",
+    "downloadingPdf": "جارٍ الإنشاء...",
+    "print": "طباعة",
+    "previous": "السابق",
+    "saveNext": "حفظ ومتابعة",
+    "submitAdmission": "إرسال طلب القبول",
+    "submitting": "جارٍ الإرسال...",
+    "printDocumentTitle": "استمارة القبول - {{studentName}}",
+    "steps": {
+        "studentDetails": "بيانات {{learnerLabel}}",
+        "previousSchoolPersonalDetails": "المدرسة السابقة والبيانات الشخصية",
+        "parentDetails": "بيانات ولي أمر {{learnerLabel}}",
+        "addressDetails": "بيانات العنوان",
+        "finish": "إنهاء",
+        "feeAssignment": "تحديد الرسوم"
+    },
+    "trackingLabel": {
+        "application": "رقم تتبع الطلب",
+        "enquiry": "رقم تتبع الاستفسار",
+        "admission": "رقم تتبع القبول"
+    },
+    "toast": {
+        "pdfTemplateNotReady": "قالب PDF غير جاهز. يرجى المحاولة مرة أخرى.",
+        "generatingPdf": "جارٍ إنشاء ملف PDF...",
+        "pdfDownloaded": "تم تنزيل ملف PDF!",
+        "pdfGenerationFailed": "فشل إنشاء ملف PDF. يرجى المحاولة مرة أخرى.",
+        "popupBlocked": "تم حظر النافذة المنبثقة. يرجى السماح بالنوافذ المنبثقة للطباعة.",
+        "instituteDetailsUnavailable": "بيانات المؤسسة غير متوفرة. يرجى المحاولة مرة أخرى.",
+        "admissionSubmitted": "تم إرسال طلب القبول بنجاح! المعرّف: {{admissionId}}",
+        "admissionSubmitFailed": "فشل إرسال استمارة القبول. يرجى المحاولة مرة أخرى.",
+        "submissionError": "حدث خطأ. يرجى التحقق من اتصال الشبكة والمحاولة مرة أخرى."
+    }
+}

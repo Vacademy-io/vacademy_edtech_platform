@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Crown, CircleNotch } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -30,10 +31,11 @@ export function CounsellorListRail({
     onSelect,
     onMarkedInactive,
 }: Props) {
+    const { t } = useTranslation('counsellorsListRail');
     if (!counsellors || counsellors.length === 0) {
         return (
             <div className="p-4 text-subtitle text-neutral-500">
-                No counsellors in this team subtree.
+                {t('empty')}
             </div>
         );
     }
@@ -66,6 +68,7 @@ function CounsellorCard({
     onSelect: () => void;
     onMarkedInactive: (response: StatusChangeResponse) => void;
 }) {
+    const { t } = useTranslation('counsellorsListRail');
     const queryClient = useQueryClient();
     const statusMutation = useMutation({
         mutationFn: (next: 'ACTIVE' | 'INACTIVE') =>
@@ -87,14 +90,14 @@ function CounsellorCard({
             } else {
                 toast.success(
                     next === 'ACTIVE'
-                        ? 'Counsellor reactivated'
-                        : 'Counsellor marked inactive'
+                        ? t('toast.reactivated')
+                        : t('toast.markedInactive')
                 );
             }
         },
         onError: (e) => {
             const msg = (e as { response?: { data?: { ex?: string } } })?.response?.data?.ex;
-            toast.error(msg ?? 'Status update failed');
+            toast.error(msg ?? t('toast.updateFailed'));
         },
     });
 
@@ -124,7 +127,7 @@ function CounsellorCard({
                     <div className="flex items-center gap-2 text-caption text-neutral-500">
                         <span className="truncate">{counsellor.team_name ?? '—'}</span>
                         <span aria-hidden="true">·</span>
-                        <span>{counsellor.open_leads_count} assigned</span>
+                        <span>{t('assignedCount', { count: counsellor.open_leads_count })}</span>
                     </div>
                 </div>
                 <div className="flex flex-col items-end gap-1">
@@ -153,6 +156,7 @@ function ToggleStatus({
     loading: boolean;
     onToggle: (next: 'ACTIVE' | 'INACTIVE') => void;
 }) {
+    const { t } = useTranslation('counsellorsListRail');
     return (
         <button
             type="button"
@@ -168,7 +172,7 @@ function ToggleStatus({
                     : 'border-neutral-200 bg-neutral-100 text-neutral-600',
                 loading && 'opacity-60'
             )}
-            aria-label={active ? 'Mark inactive' : 'Mark active'}
+            aria-label={active ? t('markInactive') : t('markActive')}
         >
             {loading ? (
                 <CircleNotch size={10} className="animate-spin" />
@@ -180,7 +184,7 @@ function ToggleStatus({
                     )}
                 />
             )}
-            {active ? 'Active' : 'Inactive'}
+            {active ? t('active') : t('inactive')}
         </button>
     );
 }

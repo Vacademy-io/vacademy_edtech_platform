@@ -1,0 +1,10 @@
+{
+    "heading": "الأداء حسب الفصل",
+    "columns": {
+        "className": "اسم الفصل",
+        "projected": "المتوقع",
+        "expected": "المستحق",
+        "collected": "المُحصَّل",
+        "collectionRate": "معدل التحصيل"
+    }
+}

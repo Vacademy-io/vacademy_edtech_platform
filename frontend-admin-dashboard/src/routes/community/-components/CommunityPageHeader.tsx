@@ -11,8 +11,10 @@ import { SearchInput } from '@/routes/manage-students/students-list/-components/
 import { useState } from 'react';
 import { debounce } from 'lodash';
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const CommunityPageHeader = () => {
+    const { t } = useTranslation('communityPageHeader');
     const { options } = useFilterStore();
     const { setName } = useSelectedFilterStore();
     const [search, setSearch] = useState<string>('');
@@ -32,9 +34,8 @@ export const CommunityPageHeader = () => {
                 <div className="relative">
                     <HeadingSvg1 className="absolute -bottom-5 right-0" />
                 </div>
-                <div className="ml-[40px] mr-[120px] text-center text-h2">
-                    Your go-to hub for community-driven question <br /> papers and practice
-                    resources!
+                <div className="ms-[40px] me-[120px] text-center text-h2">
+                    {t('heroLine1')} <br /> {t('heroLine2')}
                 </div>
                 <div className="relative">
                     <HeadingSvg2 className="absolute -bottom-5 left-0" />
@@ -47,14 +48,14 @@ export const CommunityPageHeader = () => {
                 <div className="relative -translate-x-4">
                     <HeadingSvg4 />
                 </div>
-                <div className="ml-[40px] mr-[50px] flex flex-col gap-4 text-center text-h2">
+                <div className="ms-[40px] me-[50px] flex flex-col gap-4 text-center text-h2">
                     <SearchInput
                         searchInput={search}
                         onSearchChange={onSearchChange}
-                        placeholder="Search Question Papers"
+                        placeholder={t('searchPlaceholder')}
                     />
                     <FilterLevelDropdown
-                        placeholder={'Select Level/Grade'}
+                        placeholder={t('selectLevelPlaceholder')}
                         FilterList={options.levels}
                     />
                 </div>

@@ -1,0 +1,30 @@
+{
+    "title": "اختر تنسيق CSV",
+    "sections": {
+        "enrollmentPreferences": "تفضيلات التسجيل",
+        "optionalColumnSelection": "اختيار أعمدة CSV الاختيارية"
+    },
+    "preferences": {
+        "autoGenerateUsername": "إنشاء اسم المستخدم تلقائيًا",
+        "autoGeneratePassword": "إنشاء كلمة المرور تلقائيًا",
+        "autoGenerateEnrollmentId": "إنشاء رقم التسجيل تلقائيًا",
+        "setCommonExpiryDate": "تعيين تاريخ انتهاء صلاحية مشترك",
+        "daysFromToday": "أيام من اليوم",
+        "addStudentStatus": "إضافة حالة الطالب",
+        "selectStatusPlaceholder": "اختر الحالة",
+        "statusActive": "نشط",
+        "statusInactive": "غير نشط"
+    },
+    "columns": {
+        "fatherName": "اسم الأب/ولي الأمر",
+        "collegeName": "اسم الكلية/المدرسة",
+        "motherName": "اسم الأم/ولية الأمر",
+        "state": "الولاية",
+        "city": "المدينة",
+        "fatherEmail": "البريد الإلكتروني للأب/ولي الأمر",
+        "motherEmail": "البريد الإلكتروني للأم/ولية الأمر",
+        "pincode": "الرمز البريدي",
+        "fatherMobile": "رقم جوال الأب/ولي الأمر",
+        "motherMobile": "رقم جوال الأم/ولية الأمر"
+    }
+}

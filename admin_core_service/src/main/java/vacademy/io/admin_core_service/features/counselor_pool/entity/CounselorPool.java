@@ -55,6 +55,16 @@ public class CounselorPool {
     @Column(name = "shift_aware", nullable = false)
     private Boolean shiftAware = false;
 
+    /**
+     * Opt-in: rotate in one pool-wide order (the order most lists share) instead of each
+     * list's own display_order, so lists that drifted into different orders can't skip a
+     * counsellor. When false (default), routing reads the list's order and per-campaign
+     * orders apply.
+     */
+    @Builder.Default
+    @Column(name = "unified_rotation_order", nullable = false)
+    private Boolean unifiedRotationOrder = false;
+
     @Column(name = "created_by")
     private String createdBy;
 

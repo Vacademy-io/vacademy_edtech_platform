@@ -1,0 +1,29 @@
+{
+    "dialog": {
+        "title": "Select Referral Program",
+        "description": "Choose a referral program for this course"
+    },
+    "badge": {
+        "default": "Default"
+    },
+    "refereeBenefit": {
+        "label": "Referee Benefit:",
+        "freeDays_one": "{{count}} free day",
+        "freeDays_other": "{{count}} free days",
+        "bonusContent": "Bonus Content",
+        "genericOff": "{{value}} off"
+    },
+    "referrerTiers": {
+        "label": "Referrer Tiers:"
+    },
+    "programSettings": {
+        "label": "Program Settings:",
+        "vestingPeriod": "Vesting Period",
+        "combineOffers": "Combine Offers",
+        "yes": "Yes",
+        "no": "No"
+    },
+    "actions": {
+        "addNewReferral": "+ Add New Referral Program"
+    }
+}

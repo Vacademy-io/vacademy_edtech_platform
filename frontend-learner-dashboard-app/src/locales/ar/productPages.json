@@ -1,0 +1,262 @@
+{
+    "common": {
+        "back": "رجوع",
+        "previous": "السابق",
+        "next": "التالي",
+        "free": "مجاني",
+        "total": "الإجمالي",
+        "processing": "جارٍ المعالجة...",
+        "securedPayment": "دفع آمن",
+        "proceedToCheckout": "المتابعة إلى الدفع",
+        "freeEnrollment": "تسجيل مجاني",
+        "addToCart": "أضف إلى السلة",
+        "peopleAlsoBuy": "يشتري الأشخاص أيضًا",
+        "addSuggested": "+ إضافة",
+        "removeSuggested": "− إزالة",
+        "couponAppliedLabel": "كوبون ({{code}})",
+        "orderSummaryTitle": "ملخص الطلب",
+        "courseFallbackWithIndex": "{{course}} {{index}}",
+        "genericPaymentFailed": "فشلت عملية الدفع. يرجى المحاولة مرة أخرى.",
+        "couldNotInitiatePayment": "تعذّر بدء عملية الدفع.",
+        "pay": "ادفع {{currency}} {{amount}}",
+        "logoAlt": "الشعار",
+        "itemsSelected": "تم تحديد {{count}} {{course}}",
+        "basketSaved": "وفّرت {{amount}}",
+        "basketSavedWithPercent": "وفّرت {{amount}} · {{percent}}٪",
+        "basketNextTierAmount": "أضف {{count}} {{course}} أخرى للحصول على خصم {{amount}}.",
+        "basketNextTierAmountMore": "أضف {{count}} {{course}} أخرى للحصول على خصم إضافي قدره {{amount}}.",
+        "basketNextTierPercent": "أضف {{count}} {{course}} أخرى للحصول على خصم {{percent}}٪."
+    },
+    "errors": {
+        "pageNotAvailable": {
+            "title": "الصفحة غير متاحة",
+            "defaultMessage": "حدث خطأ أثناء تحميل هذه الصفحة."
+        },
+        "instituteNotFound": {
+            "title": "لم يتم العثور على المؤسسة",
+            "message": "تعذّر تحديد المؤسسة الخاصة بهذه الصفحة. يرجى استخدام رابط صالح."
+        }
+    },
+    "catalogStep": {
+        "selectPrompt": "اختر {{courses}} التي ترغب في التسجيل بها"
+    },
+    "courseFinder": {
+        "continueToRegister": "متابعة التسجيل",
+        "dialogHeading": "اختر صفك",
+        "showCourses": "عرض {{courses}} الخاصة بي",
+        "defaultSubheading": "اختر ما يناسبك لعرض {{courses}} المتاحة لك",
+        "courseCount": "{{count}} {{courses}}",
+        "view": "عرض",
+        "skip": "عرض كل {{courses}}",
+        "change": "تغيير الاختيار"
+    },
+    "cartStep": {
+        "basket": {
+            "spendForTier": "أنفق {{amount}} إضافية للحصول على {{offer}} على السلة كاملة.",
+            "cartItems": "{{courses}} في سلتك",
+            "emptyTitle": "لا يوجد شيء في سلتك بعد",
+            "emptyBody": "اختر {{course}} واحدًا على الأقل لمتابعة الدفع.",
+            "browse": "تصفّح {{courses}}",
+            "addAnother": "أضف {{course}} آخر",
+            "included": "مشمول",
+            "groupCount_one": "{{count}} {{course}}",
+            "groupCount_other": "{{count}} {{courses}}",
+            "oneMoreForGroup": "إضافة {{course}} آخر إلى {{group}} تكلّف {{amount}} فقط.",
+            "addForTier": "أضف {{count}} {{courses}} أخرى للحصول على {{offer}} على السلة كاملة.",
+            "addForTier_other": "أضف {{count}} {{courses}} أخرى للحصول على {{offer}} على السلة كاملة.",
+            "addForTier_one": "أضف {{count}} {{course}} آخر للحصول على {{offer}} على السلة كاملة.",
+            "offersHeading": "عروض لك",
+            "offersLabel": "العروض المتاحة",
+            "offerApplied": "مطبَّق على طلبك",
+            "offerReady": "جاهز للتطبيق",
+            "offerAddAmount": "أضف {{amount}} للفتح",
+            "offerAddCourses_one": "أضف {{count}} {{course}} آخر للفتح",
+            "offerAddCourses_other": "أضف {{count}} {{courses}} أخرى للفتح",
+            "emptyCart": "سلتك فارغة",
+            "emptyCartBody": "اختر {{course}} لعرض إجماليك هنا.",
+            "selectedLabel": "المختار",
+            "thisSelection": "هذه المجموعة",
+            "removeAll": "إزالة الكل",
+            "priceDetails": "تفاصيل السعر",
+            "itemTotal_one": "إجمالي العناصر ({{count}} {{course}})",
+            "itemTotal_other": "إجمالي العناصر ({{count}} {{courses}})",
+            "basketDiscount": "خصم السلة",
+            "percentOff": "(خصم {{percent}}٪)",
+            "planSavings": "توفير الخطة",
+            "offerLine": "عرض · {{label}}",
+            "pricedPerGroup": "يتم تسعير كل صف على حدة، لذا لا تُجمع {{courses}} الأطفال المختلفين معًا.",
+            "totalPayable": "الإجمالي المستحق",
+            "inclusiveTaxes": "شامل جميع الضرائب",
+            "youSave": "توفّر {{amount}}",
+            "youSaveWithPercent": "توفّر {{amount}} ({{percent}}٪)",
+            "securePayment": "دفع آمن 100٪",
+            "viewSummary": "عرض ملخص الطلب",
+            "addOneMore": "أضف {{course}} آخر مقابل {{amount}}.",
+            "addAnotherGroup": "أضف {{course}} آخر من {{group}} مقابل {{amount}}."
+        },
+        "heading": {
+            "title": "راجع سلتك",
+            "subtitlePlanChoice": "راجع اختيارك واختر الخطة التي تناسبك قبل المتابعة.",
+            "subtitleDefault": "راجع موادك واحذف أي شيء لم تقصد إضافته."
+        },
+        "backToCourses": "العودة إلى الدورات",
+        "couponChanged": "تغيّرت السلة — يرجى إعادة تطبيق الكوبون الخاص بك.",
+        "orderSummary": {
+            "subtitle": "راجع طلبك قبل المتابعة إلى الدفع"
+        },
+        "item": {
+            "removeTooltip": "إزالة"
+        },
+        "subtotalItems_zero": "المجموع الفرعي ({{count}} عنصر)",
+        "subtotalItems_one": "المجموع الفرعي ({{count}} عنصر)",
+        "subtotalItems_two": "المجموع الفرعي ({{count}} عنصرين)",
+        "subtotalItems_few": "المجموع الفرعي ({{count}} عناصر)",
+        "subtotalItems_many": "المجموع الفرعي ({{count}} عنصرًا)",
+        "subtotalItems_other": "المجموع الفرعي ({{count}} عنصر)",
+        "couponCard": {
+            "errors": {
+                "belowMinItems": "يحتاج هذا الكود إلى المزيد من الدورات في سلتك.",
+                "expired": "انتهت صلاحية هذا الكود.",
+                "notStarted": "هذا الكود غير نشط بعد.",
+                "limitReached": "تم استخدام هذا الكود بالكامل.",
+                "emailRestricted": "هذا الكود غير متاح لبريدك الإلكتروني.",
+                "notApplicable": "لا ينطبق هذا الكود على هذه الدورات."
+            },
+            "title": "كود الكوبون",
+            "placeholder": "أدخل كود الكوبون",
+            "apply": "تطبيق",
+            "invalidCoupon": "كوبون غير صالح",
+            "failedToValidate": "تعذّر التحقق من الكوبون. يرجى المحاولة مرة أخرى.",
+            "discountOff": "− خصم {{amount}}"
+        }
+    },
+    "combinedPaymentStep": {
+        "title": "الدفع",
+        "subtotal": "المجموع الفرعي",
+        "allPricesIn": "جميع الأسعار بعملة {{currency}}",
+        "completeEnrollmentFor": "أكمل تسجيلك في {{count}} {{course}}",
+        "amountPayable": "{{currency}} {{amount}} مستحقة الدفع",
+        "completingEnrollment": "جارٍ إكمال تسجيلك…",
+        "retryEnrollment": "إعادة محاولة التسجيل",
+        "openingPayment": "جارٍ فتح صفحة الدفع...",
+        "courseDescriptionForGateway": "التسجيل في {{count}} {{course}}"
+    },
+    "cpoInstallments": {
+        "noCpoOptionFoundInSelection": "لم يتم العثور على خيار دفع CPO ضمن التحديد.",
+        "noCpoOptionFound": "لم يتم العثور على خيار دفع CPO.",
+        "enrollmentDataMissingRetryLater": "بيانات التسجيل مفقودة — يرجى الرجوع والمحاولة مرة أخرى.",
+        "enrollmentDataMissingRetry": "بيانات التسجيل مفقودة. يرجى المحاولة مرة أخرى.",
+        "noPendingInstallmentsFound": "لم يتم العثور على أقساط معلّقة بعد التسجيل.",
+        "paymentConfirmationFailed": "فشل تأكيد الدفع.",
+        "loadingSchedule": "جارٍ تحميل جدول الأقساط...",
+        "failedToLoadSchedule": "تعذّر تحميل جدول الأقساط.",
+        "selectInstallments": {
+            "title": "اختيار الأقساط",
+            "subtitle": "اختر الأقساط التي ترغب في دفعها الآن"
+        },
+        "installmentPaymentDescription": "دفع قسط"
+    },
+    "multiEnrollForm": {
+        "title": "تفاصيل التسجيل",
+        "subtitle": "املأ التفاصيل أدناه لإكمال تسجيلك",
+        "enrollingFor": "التسجيل في:",
+        "fieldRequired": "{{fieldName}} مطلوب",
+        "tncRequired": "يرجى قبول الشروط والأحكام للمتابعة",
+        "enterPlaceholder": "أدخل {{fieldName}}",
+        "readOurTnc": "يرجى قراءة",
+        "termsAndConditionsLink": "الشروط والأحكام",
+        "tncAgreeCheckbox": "لقد قرأت الشروط والأحكام وأوافق عليها",
+        "submissionFailed": "فشل الإرسال. يرجى المحاولة مرة أخرى.",
+        "saving": "جارٍ الحفظ...",
+        "continueToPayment": "المتابعة إلى الدفع"
+    },
+    "pageRenderer": {
+        "filterBar": {
+            "filterLabel": "تصفية"
+        },
+        "courseDetailSheet": {
+            "viewLess": "عرض أقل",
+            "viewMore": "عرض المزيد",
+            "priceLabel": "السعر",
+            "ratingLabel": "التقييم",
+            "accessLabel": "مدة الوصول",
+            "oneYear": "سنة واحدة",
+            "whatYoullLearn": "ما ستتعلمه",
+            "aboutThisCourse": "حول {{course}}",
+            "whoShouldJoin": "لمن هذا مناسب",
+            "removeFromCart": "إزالة من السلة"
+        },
+        "courseCard": {
+            "noDescriptionAvailable": "لا يوجد وصف متاح",
+            "percentOff": "خصم {{percent}}%",
+            "viewCourse": "عرض الدورة",
+            "addedToCart": "أُضيف إلى السلة"
+        },
+        "courseGrid": {
+            "filtersTitle": "عوامل التصفية",
+            "clearAll": "مسح الكل",
+            "showMore": "عرض {{count}} أخرى",
+            "showLess": "عرض أقل",
+            "priceRangeTitle": "نطاق السعر",
+            "min": "الحد الأدنى",
+            "max": "الحد الأقصى",
+            "popularLabel": "الأكثر رواجًا",
+            "clear": "مسح",
+            "searchPlaceholder": "ابحث في {{courses}}…",
+            "noCoursesFound": "لا توجد {{courses}}",
+            "clearFilters": "مسح عوامل التصفية",
+            "coursePagesAriaLabel": "صفحات {{courses}}",
+            "previousPageAriaLabel": "الصفحة السابقة",
+            "nextPageAriaLabel": "الصفحة التالية",
+            "pageAriaLabel": "صفحة {{page}}",
+            "resultsAvailable": "متاح: {{count}} {{course}}",
+            "resultsFound": "تم العثور على {{count}} {{course}}",
+            "pageSuffix": " · صفحة {{page}} من {{total}}"
+        },
+        "videoEmbed": {
+            "addUrlPlaceholder": "أضف رابط فيديو في الخصائص",
+            "defaultTitle": "فيديو"
+        }
+    },
+    "stepRail": {
+        "secureTitle": "آمن ومحمي",
+        "secureNote": "بياناتك محمية"
+    },
+    "stepProgress": {
+        "ariaLabel": "تقدّم التسجيل",
+        "steps": {
+            "catalog": "اختر {{courses}}",
+            "cart": "السلة",
+            "details": "التفاصيل",
+            "payment": "الدفع",
+            "installments": "الأقساط"
+        }
+    },
+    "success": {
+        "title": "تم تسجيلك بنجاح!",
+        "defaultMessage": "تم تسجيلك بنجاح في {{count}} {{course}}. ابدأ التعلم الآن.",
+        "totalPaid": "إجمالي المدفوع",
+        "youSaved": "لقد وفّرت {{amount}}",
+        "access": {
+            "oneYear": "الوصول لمدة سنة واحدة",
+            "months_zero": "الوصول لمدة {{count}} شهر",
+            "months_one": "الوصول لمدة {{count}} شهر",
+            "months_two": "الوصول لمدة {{count}} شهرين",
+            "months_few": "الوصول لمدة {{count}} أشهر",
+            "months_many": "الوصول لمدة {{count}} شهرًا",
+            "months_other": "الوصول لمدة {{count}} شهر",
+            "days_zero": "الوصول لمدة {{count}} يوم",
+            "days_one": "الوصول لمدة {{count}} يوم",
+            "days_two": "الوصول لمدة {{count}} يومين",
+            "days_few": "الوصول لمدة {{count}} أيام",
+            "days_many": "الوصول لمدة {{count}} يومًا",
+            "days_other": "الوصول لمدة {{count}} يوم"
+        },
+        "goToMyCourses": "اذهب إلى {{courses}} الخاصة بي",
+        "redirecting": "جارٍ نقلك إلى الصفحة التالية…",
+        "redirectNow": "المتابعة الآن",
+        "loggingIn": "جارٍ تسجيل دخولك…",
+        "existingAccountHint": "لديك حساب بالفعل. سجّل الدخول لفتح {{courses}} الخاصة بك.",
+        "logInToContinue": "تسجيل الدخول"
+    }
+}

@@ -1,0 +1,17 @@
+{
+    "front": "Recto",
+    "back": "Verso",
+    "noContent": "Aucun contenu",
+    "clickToFlip": "Cliquer pour retourner",
+    "clickToFlipBack": "Cliquer pour revenir",
+    "flashcard": "Carte mémo",
+    "imageAspectRatioTitle": "Format de l'image",
+    "imageAspectRatioOriginal": "Image : Original",
+    "imageAspectRatioValue": "Image : {{label}}",
+    "preview": "Aperçu",
+    "edit": "Modifier",
+    "frontLabel": "Recto (Question / Terme)",
+    "backLabel": "Verso (Réponse / Définition)",
+    "frontPlaceholder": "Recto — ajoutez du texte et/ou une image…",
+    "backPlaceholder": "Verso — ajoutez du texte et/ou une image…"
+}

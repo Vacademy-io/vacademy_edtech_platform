@@ -1,0 +1,20 @@
+{
+    "emptyState": {
+        "title": "Resources",
+        "description": "Manage and view your uploaded files.",
+        "heading": "No files found.",
+        "body": "There are currently no resources available or associated files are missing details."
+    },
+    "title": "Resources",
+    "description": "A list of unique files, ordered by the most recently created.",
+    "table": {
+        "fileName": "File Name",
+        "type": "Type",
+        "createdOn": "Created On",
+        "actions": "Actions"
+    },
+    "actions": {
+        "download": "Download {{fileName}}",
+        "noFile": "-"
+    }
+}

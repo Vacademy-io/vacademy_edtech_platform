@@ -1,0 +1,245 @@
+{
+    "helmet": {
+        "title": "أنشئ باستخدام {{aiName}}",
+        "description": "أنشئ الدورات باستخدام {{aiName}} من خلال أوامر اللغة الطبيعية."
+    },
+    "header": {
+        "title": "أنشئ باستخدام {{aiName}}",
+        "subtitle": "صف فكرة دورتك ودع {{aiName}} ينشئ تجربة تعليمية كاملة"
+    },
+    "examplePrompts": {
+        "python": "أنشئ دورة برمجة بايثون للمبتدئين للمطورين الطموحين",
+        "ml": "صمّم منهجًا شاملاً للتعلم الآلي باستخدام بايثون و Scikit-Learn",
+        "cloud": "أنشئ دورة أساسيات الحوسبة السحابية تغطي أساسيات AWS و Azure و GCP",
+        "dataEngineering": "طوّر دورة هندسة البيانات تركز على خطوط ETL ومفاهيم SQL"
+    },
+    "draftBanner": {
+        "untitled": "دورة بلا عنوان",
+        "savedOn": "تم حفظ المسودة {{date}}",
+        "discard": "تجاهل",
+        "resume": "استئناف"
+    },
+    "form": {
+        "courseGoalPlaceholder": "صف هدف دورتك... مثال: 'أنشئ دورة شاملة في برمجة بايثون للمبتدئين تغطي الأساسيات وحتى المواضيع المتقدمة'",
+        "courseSettings": "إعدادات الدورة",
+        "skillLevelPlaceholder": "مستوى المهارة",
+        "skillLevels": {
+            "beginner": "مبتدئ",
+            "intermediate": "متوسط",
+            "advanced": "متقدم"
+        },
+        "aiModelPlaceholder": "نموذج الذكاء الاصطناعي",
+        "autoSmart": "تلقائي (ذكي)",
+        "loading": "جارٍ التحميل...",
+        "structureFollowsKb": "يتبع الهيكل قاعدة المعرفة",
+        "custom": "مخصص...",
+        "durationPlaceholder": "المدة",
+        "durationCustomMinutes": "{{minutes}} دقيقة",
+        "durationOptions": {
+            "min30": "30 دقيقة",
+            "min45": "45 دقيقة",
+            "min60": "60 دقيقة",
+            "min90": "90 دقيقة",
+            "hours2": "ساعتان"
+        },
+        "durationInputPlaceholder": "المدة (بالدقائق)",
+        "numberOfChapters": "عدد {{chapters}}",
+        "slidesPerChapterInputPlaceholder": "{{slides}} لكل {{chapter}}",
+        "additionalOptions": "خيارات إضافية",
+        "contentOptionsLabel": "خيارات المحتوى",
+        "selectedCount_zero": "لم يتم تحديد شيء",
+        "selectedCount_one": "تم تحديد عنصر واحد",
+        "selectedCount_two": "تم تحديد عنصرين",
+        "selectedCount_few": "تم تحديد {{count}} عناصر",
+        "selectedCount_many": "تم تحديد {{count}} عنصرًا",
+        "selectedCount_other": "تم تحديد {{count}} عنصر",
+        "structureLabel": "الهيكل",
+        "configured": "تم التكوين",
+        "referencesLabel": "المراجع",
+        "apiKeysLabel": "مفاتيح API",
+        "documentContent": {
+            "title": "محتوى المستند",
+            "caption": "مدمج في كل شريحة مستند يتم إنشاؤها.",
+            "customButton": "مخصص",
+            "standardFlowButton": "تدفق التعلم القياسي",
+            "standardFlowTooltip": "لماذا يهم ← ملاحظات مختصرة ← نقطة عالية القيمة ← مرئي/عملية ← تطبيق ← بطاقات تعليمية ← اختبار قصير ← ملخص",
+            "types": {
+                "whyItMatters": "لماذا يهم",
+                "notes": "ملاحظات مختصرة",
+                "highYield": "نقطة عالية القيمة",
+                "visualProcess": "مرئي / عملية",
+                "application": "تطبيق",
+                "flashcards": "بطاقات تعليمية",
+                "quiz": "اختبار قصير",
+                "summary": "ملخص",
+                "practicalExamples": "أمثلة عملية",
+                "interactiveGames": "ألعاب تفاعلية"
+            }
+        },
+        "courseStructure": {
+            "title": "هيكل الدورة",
+            "quizzesCaption": "الاختبارات القصيرة",
+            "quizPlacement": {
+                "perTopic": "اختبار قصير لكل موضوع",
+                "chapter": "اختبار واحد للفصل",
+                "both": "كلاهما",
+                "none": "بدون اختبارات"
+            },
+            "chapterDeliverablesCaption": "مخرجات الفصل",
+            "chapterAssignment": {
+                "auto": "الواجب: تلقائي",
+                "withSolution": "واجب + حل",
+                "none": "بدون واجب"
+            },
+            "chapterVideo": "فيديو الفصل",
+            "aiTeacher": "معلم الذكاء الاصطناعي",
+            "aiTeacherTooltip": "تجهيز كل شريحة للمعلم الفردي بالذكاء الاصطناعي بعد إنشاء الدورة: حوالي رصيدين لكل شريحة مستند أو فيديو، بالإضافة إلى حوالي رصيد واحد لكل صورة بالذكاء الاصطناعي عند تفعيل الصور في الإعدادات ← إعدادات الدورة ← وضع المعلم الخصوصي.",
+            "reduceRepetition": "تقليل التكرار (المرحلة الثانية)",
+            "reduceRepetitionTooltip": "بعد إنشاء جميع الشرائح، يُعاد كتابة الشرائح التي تكرر مادة تغطيها شريحة أخرى في الفصل مرة واحدة.",
+            "figuresCaption": "الرسوم التوضيحية والأشكال",
+            "figuresPolicy": {
+                "prefer": "تفضيل الأشكال من المصدر",
+                "require": "الأشكال من المصدر مطلوبة",
+                "generatedOnly": "المولّدة فقط"
+            }
+        },
+        "generateButton": "إنشاء مخطط الدورة"
+    },
+    "contentDialog": {
+        "title": "خيارات المحتوى",
+        "description": "اختر ما تريد تضمينه في دورتك",
+        "options": {
+            "diagrams": "رسوم توضيحية",
+            "codeSnippets": "مقتطفات كود",
+            "practiceProblems": "مسائل تدريبية",
+            "quizzes": "اختبارات قصيرة",
+            "assignments": "واجبات",
+            "solutions": "حلول",
+            "youtubeVideos": "فيديوهات يوتيوب",
+            "aiVideos": "فيديوهات الذكاء الاصطناعي",
+            "aiSlides": "شرائح الذكاء الاصطناعي",
+            "aiStorybook": "كتاب قصص الذكاء الاصطناعي"
+        },
+        "programmingLanguage": "لغة البرمجة",
+        "selectLanguagePlaceholder": "اختر اللغة",
+        "done": "تم"
+    },
+    "structureDialog": {
+        "title": "هيكل الدورة",
+        "description": "تكوين تسلسل هرمي متقدم للدورة",
+        "selectPlaceholder": "اختر {{term}}",
+        "numberOf": "عدد {{term}}",
+        "done": "تم"
+    },
+    "referencesDialog": {
+        "title": "المراجع",
+        "description": "أضف روابط أو ملفات ليستخدمها الذكاء الاصطناعي كمرجع",
+        "addUrlLabel": "إضافة رابط",
+        "urlPlaceholder": "https://example.com",
+        "clickToView": "انقر لعرض المحتوى",
+        "noContentFetched": "لم يتم جلب أي محتوى",
+        "uploadFilesLabel": "تحميل الملفات",
+        "dropzoneHint": "اسحب الملفات أو انقر (PDF، DOC، CSV، XLSX)",
+        "done": "تم"
+    },
+    "referenceContentDialog": {
+        "titleFallback": "محتوى المرجع",
+        "close": "إغلاق"
+    },
+    "keysDialog": {
+        "title": "مفاتيح API",
+        "description": "أضف مفاتيح API الخاصة بك لإنشاء المحتوى بالذكاء الاصطناعي",
+        "openRouterLabel": "مفتاح API لـ OpenRouter",
+        "geminiLabel": "مفتاح API لـ Gemini",
+        "added": "تمت الإضافة",
+        "openRouterPlaceholder": "sk-...",
+        "geminiPlaceholder": "AIza...",
+        "infoHow": "كيفية الحصول على المفاتيح:",
+        "infoVisit": "قم بزيارة",
+        "infoOr": "أو",
+        "googleAiStudio": "Google AI Studio",
+        "done": "تم"
+    },
+    "confirmDialog": {
+        "title": "مراجعة تفاصيل الدورة",
+        "description": "يرجى مراجعة إعدادات دورتك أدناه. بمجرد المتابعة، لن تتمكن من العودة وتعديل هذه المعلومات.",
+        "courseGoal": "هدف الدورة",
+        "notProvided": "غير محدد",
+        "sourceMaterial": "المادة المصدر",
+        "sourceKb": "مبنية من قاعدة المعرفة المختارة — يعكس المخطط أقسامها وتُكتب كل صفحة من محتواها.",
+        "sourceFiles_zero": "غير مبنية على أي مستند مرجعي مرفوع.",
+        "sourceFiles_one": "مبنية على مستند مرجعي واحد مرفوع.",
+        "sourceFiles_two": "مبنية على مستندين مرجعيين مرفوعين.",
+        "sourceFiles_few": "مبنية على {{count}} مستندات مرجعية مرفوعة.",
+        "sourceFiles_many": "مبنية على {{count}} مستندًا مرجعيًا مرفوعًا.",
+        "sourceFiles_other": "مبنية على {{count}} مستند مرجعي مرفوع.",
+        "sourceNone": "لم يتم تحديد أي مادة مصدر — سيكتب الذكاء الاصطناعي هذه الدورة من معرفته العامة. لبنائها من مادتك الخاصة، عد واختر قاعدة معرفة أو ارفع مستندًا مرجعيًا.",
+        "learningOutcome": "نتيجة التعلم",
+        "skillLevel": "مستوى المهارة",
+        "numberOf": "عدد {{term}}",
+        "structure": "الهيكل",
+        "structureFollowsKbDetail": "يتبع قاعدة المعرفة: {{chapter}} واحد لكل موضوع محدد، و{{slides}} واحدة أو أكثر لكل قسم.",
+        "courseLength": "مدة الدورة",
+        "minutes_zero": "٠ دقيقة",
+        "minutes_one": "دقيقة واحدة",
+        "minutes_two": "دقيقتان",
+        "minutes_few": "{{count}} دقائق",
+        "minutes_many": "{{count}} دقيقة",
+        "minutes_other": "{{count}} دقيقة",
+        "slidesPerChapter": "{{slides}} لكل {{chapter}}",
+        "whatToInclude": "ما الذي سيتم تضمينه",
+        "options": {
+            "diagrams": "رسوم توضيحية",
+            "codeSnippets": "مقتطفات كود",
+            "codeSnippetsWithLang": "مقتطفات كود ({{language}})",
+            "practiceProblems": "مسائل تدريبية",
+            "quizzes": "اختبارات قصيرة",
+            "assignments": "واجبات",
+            "solutions": "حلول",
+            "youtubeVideo": "فيديو يوتيوب",
+            "aiGeneratedVideo": "فيديو مولّد بالذكاء الاصطناعي",
+            "aiSlides": "شرائح الذكاء الاصطناعي",
+            "aiStorybook": "كتاب قصص الذكاء الاصطناعي"
+        },
+        "references": "المراجع",
+        "urlsAdded_zero": "لم تتم إضافة أي روابط",
+        "urlsAdded_one": "تمت إضافة رابط واحد",
+        "urlsAdded_two": "تمت إضافة رابطين",
+        "urlsAdded_few": "تمت إضافة {{count}} روابط",
+        "urlsAdded_many": "تمت إضافة {{count}} رابطًا",
+        "urlsAdded_other": "تمت إضافة {{count}} رابط",
+        "filesUploaded_zero": "لم يتم رفع أي ملفات",
+        "filesUploaded_one": "تم رفع ملف واحد",
+        "filesUploaded_two": "تم رفع ملفين",
+        "filesUploaded_few": "تم رفع {{count}} ملفات",
+        "filesUploaded_many": "تم رفع {{count}} ملفًا",
+        "filesUploaded_other": "تم رفع {{count}} ملف",
+        "goBack": "العودة والتعديل",
+        "uploadingReferences": "جارٍ رفع المراجع…",
+        "continue": "متابعة"
+    },
+    "toasts": {
+        "keySaved": "تم حفظ مفتاح {{keyType}}!",
+        "keySaveFailed": "فشل حفظ المفتاح",
+        "deleteKeyConfirm": "هل أنت متأكد من رغبتك في حذف مفتاح {{keyType}}؟",
+        "keyDeleted": "تم حذف مفتاح {{keyType}}",
+        "noKeysFound": "لم يتم العثور على مفاتيح للحذف",
+        "keyDeleteFailed": "فشل حذف المفتاح",
+        "enterCourseGoal": "يرجى إدخال هدف الدورة",
+        "selectProgrammingLanguage": "يرجى اختيار لغة برمجة عند تفعيل مقتطفات الكود",
+        "fileTooLarge": "الملف \"{{fileName}}\" يتجاوز الحد الأقصى للحجم البالغ 512 ميجابايت",
+        "fileInvalidType": "الملف \"{{fileName}}\" ليس نوعًا صالحًا. يُسمح فقط بملفات PDF وDOC وDOCX وCSV وXLSX.",
+        "fileError": "خطأ في الملف \"{{fileName}}\": {{message}}",
+        "fileLimitPartial": "يمكنك تحميل 5 ملفات كحد أقصى. تبقّت {{remaining}} أماكن. سيُضاف فقط أول {{remaining}} ملف.",
+        "fileLimitReached": "لقد وصلت بالفعل إلى الحد الأقصى وهو 5 ملفات. يرجى إزالة بعض الملفات قبل إضافة ملفات جديدة.",
+        "onlyPdfUsed": "تُستخدم ملفات PDF فقط لبناء الدورة؛ تم تجاهل الملفات الأخرى.",
+        "somePdfUploadFailed": "تعذّر رفع بعض ملفات PDF المرجعية وتم تخطيها.",
+        "pdfUploadMissingUser": "تعذّر رفع ملفات PDF المرجعية (معرّف المستخدم مفقود)؛ سيتم المتابعة بدونها.",
+        "urlAddedSuccess": "تمت إضافة الرابط وجلب المحتوى بنجاح",
+        "urlFetchFailed": "تعذّر جلب محتوى الرابط، لكن تمت إضافته كمرجع"
+    },
+    "keyTypes": {
+        "openai": "OpenRouter",
+        "gemini": "Gemini"
+    }
+}

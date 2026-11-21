@@ -5,6 +5,7 @@ import { Sortable, SortableItem } from '@/components/ui/sortable';
 import { closestCorners } from '@dnd-kit/core';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Module,
     ModulesWithChapters,
@@ -28,6 +29,7 @@ export const Modules = ({
     subjectId,
     isLoading = false,
 }: ModulesProps) => {
+    const { t } = useTranslation('studyLibraryModules');
     const [modules, setModules] = useState<ModulesWithChapters[] | null>(initialModules);
 
     const handleValueChange = (updatedModules: ModulesWithChapters[]) => {
@@ -54,7 +56,7 @@ export const Modules = ({
             {(!modules || !modules.length) && (
                 <div className="flex w-full flex-col items-center justify-center gap-8 rounded-lg py-10">
                     <EmptyModulesImage />
-                    <div>No Modules have been added yet.</div>
+                    <div>{t('emptyState')}</div>
                 </div>
             )}
             <Sortable

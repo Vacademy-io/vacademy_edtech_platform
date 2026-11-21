@@ -8,6 +8,13 @@ export interface CourseInformation {
     bannerImageEnabled: boolean;
     bannerImageRequired: boolean;
     courseMediaEnabled: boolean;
+    /**
+     * Show "Page template content" (and its headings / button text) in Add / Edit Course →
+     * Course page. Only institutes whose website has a custom HTML course page template
+     * need it. Optional and treated as `false` when missing, so it stays hidden for every
+     * institute that has not switched it on.
+     */
+    coursePageTemplateEnabled?: boolean;
 }
 
 export interface CourseStructure {
@@ -278,6 +285,7 @@ export const DEFAULT_COURSE_SETTINGS: CourseSettingsData = {
         bannerImageEnabled: true,
         bannerImageRequired: true,
         courseMediaEnabled: true,
+        coursePageTemplateEnabled: false,
     },
     courseStructure: {
         defaultDepth: 3,

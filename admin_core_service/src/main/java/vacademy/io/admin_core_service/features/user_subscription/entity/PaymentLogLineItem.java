@@ -25,8 +25,9 @@ public class PaymentLogLineItem {
     @Column(name = "type") // Discount etc
     private String type;
 
+    // numeric(12,2) since V558 — discounts keep their paise (12.90, not 13).
     @Column(name = "amount")
-    private Integer amount;
+    private Double amount;
 
     @Column(name = "source") // copoun code , refferal code
     private String source;

@@ -1,0 +1,21 @@
+{
+    "moveTo": "نقل إلى",
+    "move": "نقل",
+    "moving": "جارٍ النقل…",
+    "movedSuccessfully": "تم نقل الفصل بنجاح",
+    "movedWithCopies_zero": "تم نقل الفصل، دون نسخ في مواقع أخرى",
+    "movedWithCopies_one": "تم نقل الفصل، مع نسخة في موقع واحد آخر",
+    "movedWithCopies_two": "تم نقل الفصل، مع نسخ في موقعين آخرين",
+    "movedWithCopies_few": "تم نقل الفصل، مع نسخ في {{count}} مواقع أخرى",
+    "movedWithCopies_many": "تم نقل الفصل، مع نسخ في {{count}} موقعًا آخر",
+    "movedWithCopies_other": "تم نقل الفصل، مع نسخ في {{count}} موقع آخر",
+    "movedWithFailedCopies_zero": "تم نقل الفصل، ولم تفشل أي نسخة",
+    "movedWithFailedCopies_one": "تم نقل الفصل، لكن فشلت نسخة واحدة: {{locations}}",
+    "movedWithFailedCopies_two": "تم نقل الفصل، لكن فشلت نسختان: {{locations}}",
+    "movedWithFailedCopies_few": "تم نقل الفصل، لكن فشلت {{count}} نسخ: {{locations}}",
+    "movedWithFailedCopies_many": "تم نقل الفصل، لكن فشلت {{count}} نسخة: {{locations}}",
+    "movedWithFailedCopies_other": "تم نقل الفصل، لكن فشلت {{count}} نسخة: {{locations}}",
+    "moveFailed": "فشل نقل الفصل",
+    "partialMoveSummary": "تم الانتهاء من {{done}} من أصل {{total}} مواقع. أعد المحاولة للباقي أدناه.",
+    "multiHint": "يعيش الفصل في مكان واحد فقط: تحصل المواقع الإضافية على نسخة، ويُزال الفصل من موقعه الحالي."
+}

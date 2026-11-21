@@ -25,6 +25,8 @@ public class SuperAdminCallSummaryDTO {
     private long green;
     private long withRecording;
     private java.util.Map<String, Double> costBreakdown;
+    /** The same modelled cost (INR) by vendor: plivo, sarvam (STT + Sarvam TTS), smallest, the LLM's vendor. */
+    private java.util.Map<String, Double> costByVendorInr;
     private java.util.Map<String, Long> byTtsModel;
     private Boolean costIsModelled;
 

@@ -1,21 +1,26 @@
 'use client';
 import { MyButton } from '@/components/design-system/button';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { MyDialog } from '@/components/design-system/dialog';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
 import { FormControl, FormField, FormItem } from '@/components/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FormProvider, useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { adminProfileSchema } from '../-utils/admin-profile-schema';
-import { OnboardingFrame } from '@/svgs';
+import { buildAdminProfileSchema, type AdminProfileFormValues } from '../-utils/admin-profile-schema';
 import { FileUploadComponent } from '@/components/design-system/file-upload';
 import { useEffect, useRef, useState } from 'react';
 import { getInstituteId } from '@/constants/helper';
 import { UploadFileInS3Public } from '@/routes/signup/-services/signup-services';
-import { Upload, Trash2, Pencil } from 'lucide-react';
+import {
+    UploadSimple,
+    Trash,
+    PencilSimple,
+    Camera,
+    CircleNotch,
+    LockSimple,
+} from '@phosphor-icons/react';
 import { MyInput } from '@/components/design-system/input';
 import PhoneInputField from '@/components/design-system/phone-input-field';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
 import { UserProfile } from '@/services/student-list-section/getAdminDetails';
 import useAdminLogoStore from '@/components/common/layout-container/sidebar/admin-logo-zustand';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -23,9 +28,11 @@ import { toast } from 'sonner';
 import { AxiosError } from 'axios';
 import { handleUpdateAdminDetails } from '../-services/dashboard-services';
 import { Menu, Transition } from '@headlessui/react';
+import { useTranslation } from 'react-i18next';
 
 // Define form values type
 const AdminProfile = ({ adminDetails }: { adminDetails: UserProfile }) => {
+    const { t } = useTranslation(['dashboardAdminProfile', 'dashboardAdminProfileSchema']);
     const instituteId = getInstituteId();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [open, setOpen] = useState(false);
@@ -34,7 +41,9 @@ const AdminProfile = ({ adminDetails }: { adminDetails: UserProfile }) => {
     const oldRoles = useRef<string[]>([]);
     const [removeImage, setRemoveImage] = useState(false);
 
-    const form = useForm<z.infer<typeof adminProfileSchema>>({
+    const adminProfileSchema = buildAdminProfileSchema(t);
+
+    const form = useForm<AdminProfileFormValues>({
         resolver: zodResolver(adminProfileSchema),
         defaultValues: {
             profilePictureUrl: '',
@@ -59,7 +68,7 @@ const AdminProfile = ({ adminDetails }: { adminDetails: UserProfile }) => {
             return handleUpdateAdminDetails(data, adminDetails.roles, oldRoles.current, newRoles);
         },
         onSuccess: () => {
-            toast.success('Your details have been updated successfully!', {
+            toast.success(t('toast.updateSuccess'), {
                 className: 'success-toast',
                 duration: 2000,
             });
@@ -121,235 +130,250 @@ const AdminProfile = ({ adminDetails }: { adminDetails: UserProfile }) => {
         return () => subscription.unsubscribe();
     }, [form.watch]);
 
+    const profilePictureUrl = form.watch('profilePictureUrl');
+    const watchedName = form.watch('name');
+    const isSaving = handleSubmitEditDataMutation.isPending;
+
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger>
-                <MyButton
-                    type="submit"
-                    scale="large"
-                    buttonType="secondary"
-                    layoutVariant="default"
-                    className="text-sm"
-                >
-                    Edit Profile
+        <MyDialog
+            open={open}
+            onOpenChange={setOpen}
+            heading={t('dialog.title')}
+            dialogWidth="max-w-lg"
+            trigger={
+                <MyButton type="button" scale="medium" buttonType="secondary">
+                    <PencilSimple className="size-4" />
+                    {t('trigger.editProfile')}
                 </MyButton>
-            </DialogTrigger>
+            }
+            footer={
+                <>
+                    <MyButton
+                        type="button"
+                        scale="medium"
+                        buttonType="secondary"
+                        onClick={() => setOpen(false)}
+                        disable={isSaving}
+                    >
+                        {t('actions.cancel')}
+                    </MyButton>
+                    <MyButton
+                        type="submit"
+                        form={ADMIN_PROFILE_FORM_ID}
+                        scale="medium"
+                        buttonType="primary"
+                        disable={
+                            isSaving || isUploading || Object.keys(form.formState.errors).length > 0
+                        }
+                    >
+                        {isSaving && <CircleNotch className="size-4 animate-spin" />}
+                        {t('actions.saveChanges')}
+                    </MyButton>
+                </>
+            }
+        >
+            <FormProvider {...form}>
+                <form
+                    id={ADMIN_PROFILE_FORM_ID}
+                    onSubmit={handleSubmit(onSubmit)}
+                    className="flex flex-col gap-6"
+                >
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="relative">
+                            <Avatar className="size-28 border-4 border-primary-50">
+                                {profilePictureUrl ? (
+                                    <AvatarImage
+                                        src={profilePictureUrl}
+                                        alt={t('logoAlt')}
+                                        className="object-cover"
+                                    />
+                                ) : null}
+                                <AvatarFallback className="bg-primary-100 text-h2 font-semibold text-primary-500">
+                                    {isUploading ? (
+                                        <CircleNotch className="size-6 animate-spin" />
+                                    ) : (
+                                        getInitials(watchedName)
+                                    )}
+                                </AvatarFallback>
+                            </Avatar>
 
-            <DialogContent className="flex h-4/5 max-h-[85vh] w-[calc(100vw-2rem)] flex-col p-0 sm:w-1/3">{/* design-lint-ignore: viewport-relative dialog sizing for mobile */}
-                <h1 className="rounded-t-lg bg-primary-50 p-4 font-semibold text-primary-500">
-                    Edit Profile
-                </h1>
-
-                <div className="flex h-full flex-1 flex-col">
-                    <FormProvider {...form}>
-                        <form onSubmit={handleSubmit(onSubmit)} className="flex h-[86%] flex-col">
-                            <div className="flex-1 overflow-y-auto p-4">
-                                <div className="flex flex-col items-center justify-center gap-8">
-                                    <div className="relative">
-                                        {form.watch('profilePictureUrl') ? (
-                                            <img
-                                                src={form.watch('profilePictureUrl')}
-                                                alt="logo"
-                                                className="size-52 rounded-full object-cover"
-                                            />
-                                        ) : (
-                                            <div className="rounded-full object-cover">
-                                                <OnboardingFrame className="mt-4" />
-                                            </div>
-                                        )}
-
-                                        <div className="absolute bottom-3 right-3 z-10">
-                                            <Menu
-                                                as="div"
-                                                className="relative inline-block text-left"
-                                            >
-                                                <Menu.Button className="rounded-full bg-white p-1 shadow hover:bg-neutral-100">
-                                                    <Pencil className="size-5 text-neutral-700" />
-                                                </Menu.Button>
-                                                <Transition>
-                                                    <Menu.Items className="absolute bottom-10 right-0 z-20 w-40 origin-bottom-right rounded-md bg-white shadow-lg ring-1 ring-black/5">
-                                                        <div className="p-1">
-                                                            <Menu.Item>
-                                                                {({ active }) => (
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() =>
-                                                                            fileInputRef.current?.click()
-                                                                        }
-                                                                        className={`${
-                                                                            active
-                                                                                ? 'bg-neutral-100'
-                                                                                : ''
-                                                                        } group flex w-full items-center gap-2 rounded-md p-2 text-sm`}
-                                                                    >
-                                                                        <Upload className="size-4" />{' '}
-                                                                        Upload New
-                                                                    </button>
-                                                                )}
-                                                            </Menu.Item>
-                                                            <Menu.Item>
-                                                                {({ active }) => (
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => {
-                                                                            form.setValue(
-                                                                                'profilePictureUrl',
-                                                                                ''
-                                                                            );
-                                                                            form.setValue(
-                                                                                'profilePictureId',
-                                                                                undefined
-                                                                            );
-                                                                            setRemoveImage(true);
-                                                                        }}
-                                                                        className={`${
-                                                                            active
-                                                                                ? 'bg-neutral-100'
-                                                                                : ''
-                                                                        } group flex w-full items-center gap-2 rounded-md p-2 text-sm text-red-600`}
-                                                                    >
-                                                                        <Trash2 className="size-4" />{' '}
-                                                                        Remove Image
-                                                                    </button>
-                                                                )}
-                                                            </Menu.Item>
-                                                        </div>
-                                                    </Menu.Items>
-                                                </Transition>
-                                            </Menu>
-                                        </div>
-
-                                        <FileUploadComponent
-                                            fileInputRef={fileInputRef}
-                                            onFileSubmit={handleFileSubmit}
-                                            control={form.control}
-                                            name="profilePictureId"
-                                            acceptedFileTypes="image/*"
-                                        />
-                                    </div>
-
-                                    <div className="flex w-full flex-col gap-4">
-                                        <FormField
-                                            control={form.control}
-                                            name="name"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormControl>
-                                                        <MyInput
-                                                            {...field}
-                                                            inputType="text"
-                                                            inputPlaceholder="Full Name (First and Last)"
-                                                            input={field.value}
-                                                            onChangeFunction={field.onChange}
-                                                            required
-                                                            error={
-                                                                form.formState.errors.name?.message
-                                                            }
-                                                            size="large"
-                                                            label="Profile Name"
-                                                            className="w-full"
-                                                        />
-                                                    </FormControl>
-                                                </FormItem>
-                                            )}
-                                        />
-
-                                        {/* Roles are read-only here — a user must not be able to
-                                            change their own roles from self-service profile editing
-                                            (that would allow granting themselves ADMIN). Role
-                                            management is done by an administrator elsewhere. */}
-                                        <div className="flex w-full flex-col gap-2">
-                                            <label className="text-base font-normal">Role Type</label>
-                                            <div className="flex flex-wrap gap-2">
-                                                {adminDetails.roles?.length ? (
-                                                    adminDetails.roles.map((role, idx) => (
-                                                        <Badge
-                                                            key={idx}
-                                                            className="rounded-lg border border-neutral-300 bg-primary-50 px-2 py-1 font-normal text-neutral-600 shadow-none"
-                                                        >
-                                                            {role.role_name}
-                                                        </Badge>
-                                                    ))
-                                                ) : (
-                                                    <span className="text-sm text-neutral-400">
-                                                        No roles assigned
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <p className="text-caption text-neutral-400">
-                                                Roles are managed by your institute administrator and
-                                                can&apos;t be changed here.
-                                            </p>
-                                        </div>
-
-                                        <Separator />
-                                        <h1 className="text-lg font-semibold">
-                                            Contact Information
-                                        </h1>
-
-                                        <FormField
-                                            control={form.control}
-                                            name="email"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormControl>
-                                                        <MyInput
-                                                            {...field}
-                                                            inputType="text"
-                                                            inputPlaceholder="you@email.com"
-                                                            input={field.value}
-                                                            onChangeFunction={field.onChange}
-                                                            error={
-                                                                form.formState.errors.email?.message
-                                                            }
-                                                            size="large"
-                                                            label="Email"
-                                                            className="w-full"
-                                                        />
-                                                    </FormControl>
-                                                </FormItem>
-                                            )}
-                                        />
-
-                                        <FormField
-                                            control={form.control}
-                                            name="phone"
-                                            render={() => (
-                                                <FormItem>
-                                                    <FormControl>
-                                                        <PhoneInputField
-                                                            label="Mobile Number"
-                                                            placeholder="123 456 7890"
-                                                            name="phone"
-                                                            control={form.control}
-                                                            labelStyle="text-base font-normal"
-                                                            required={false}
-                                                        />
-                                                    </FormControl>
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex justify-center bg-white p-4 pb-0">
-                                <MyButton
-                                    type="submit"
-                                    scale="large"
-                                    buttonType="secondary"
-                                    layoutVariant="default"
-                                    disable={Object.keys(form.formState.errors).length > 0}
+                            <Menu as="div" className="absolute bottom-0 right-0 z-10">
+                                <Menu.Button
+                                    className="flex size-9 items-center justify-center rounded-full border-2 border-white bg-primary-500 text-white shadow-md transition-colors hover:bg-primary-400 disabled:opacity-60"
+                                    aria-label={t('menu.uploadNew')}
+                                    disabled={isUploading}
                                 >
-                                    Save Changes
-                                </MyButton>
+                                    <Camera className="size-4" weight="bold" />
+                                </Menu.Button>
+                                <Transition>
+                                    <Menu.Items className="absolute left-1/2 top-11 z-20 w-44 -translate-x-1/2 rounded-md bg-white p-1 shadow-lg ring-1 ring-black/5 focus:outline-none">
+                                        <Menu.Item>
+                                            {({ active }) => (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                    className={cn(
+                                                        'flex w-full items-center gap-2 rounded-md p-2 text-body text-neutral-700',
+                                                        active && 'bg-neutral-100'
+                                                    )}
+                                                >
+                                                    <UploadSimple className="size-4" />
+                                                    {t('menu.uploadNew')}
+                                                </button>
+                                            )}
+                                        </Menu.Item>
+                                        {profilePictureUrl ? (
+                                            <Menu.Item>
+                                                {({ active }) => (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            form.setValue('profilePictureUrl', '');
+                                                            form.setValue(
+                                                                'profilePictureId',
+                                                                undefined
+                                                            );
+                                                            setRemoveImage(true);
+                                                        }}
+                                                        className={cn(
+                                                            'flex w-full items-center gap-2 rounded-md p-2 text-body text-danger-600',
+                                                            active && 'bg-danger-50'
+                                                        )}
+                                                    >
+                                                        <Trash className="size-4" />
+                                                        {t('menu.removeImage')}
+                                                    </button>
+                                                )}
+                                            </Menu.Item>
+                                        ) : null}
+                                    </Menu.Items>
+                                </Transition>
+                            </Menu>
+
+                            <FileUploadComponent
+                                fileInputRef={fileInputRef}
+                                onFileSubmit={handleFileSubmit}
+                                control={form.control}
+                                name="profilePictureId"
+                                acceptedFileTypes="image/*"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-4">
+                        <FormField
+                            control={form.control}
+                            name="name"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormControl>
+                                        <MyInput
+                                            {...field}
+                                            inputType="text"
+                                            inputPlaceholder={t('fields.name.placeholder')}
+                                            input={field.value}
+                                            onChangeFunction={field.onChange}
+                                            required
+                                            error={form.formState.errors.name?.message}
+                                            size="large"
+                                            label={t('fields.name.label')}
+                                            className="sm:w-full"
+                                        />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                        />
+
+                        {/* Roles are read-only here — a user must not be able to
+                            change their own roles from self-service profile editing
+                            (that would allow granting themselves ADMIN). Role
+                            management is done by an administrator elsewhere. */}
+                        <div className="flex flex-col gap-2">
+                            <span className="text-subtitle font-regular">{t('roles.label')}</span>
+                            <div className="flex flex-wrap gap-2">
+                                {adminDetails.roles?.length ? (
+                                    adminDetails.roles.map((role, idx) => (
+                                        <span
+                                            key={idx}
+                                            className="rounded-md border border-primary-200 bg-primary-50 px-2 py-0.5 text-caption font-semibold uppercase text-primary-500"
+                                        >
+                                            {role.role_name}
+                                        </span>
+                                    ))
+                                ) : (
+                                    <span className="text-body text-neutral-400">
+                                        {t('roles.empty')}
+                                    </span>
+                                )}
                             </div>
-                        </form>
-                    </FormProvider>
-                </div>
-            </DialogContent>
-        </Dialog>
+                            <p className="flex items-start gap-1.5 text-caption text-neutral-500">
+                                <LockSimple className="mt-0.5 size-3.5 shrink-0" />
+                                {t('roles.managedNote')}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-4 border-t border-neutral-200 pt-6">
+                        <h3 className="text-subtitle font-semibold text-neutral-700">
+                            {t('sections.contactInformation')}
+                        </h3>
+
+                        <FormField
+                            control={form.control}
+                            name="email"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormControl>
+                                        <MyInput
+                                            {...field}
+                                            inputType="text"
+                                            inputPlaceholder={t('fields.email.placeholder')}
+                                            input={field.value}
+                                            onChangeFunction={field.onChange}
+                                            error={form.formState.errors.email?.message}
+                                            size="large"
+                                            label={t('fields.email.label')}
+                                            className="sm:w-full"
+                                        />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="phone"
+                            render={() => (
+                                <FormItem>
+                                    <FormControl>
+                                        <PhoneInputField
+                                            label={t('fields.phone.label')}
+                                            placeholder={t('fields.phone.placeholder')}
+                                            name="phone"
+                                            control={form.control}
+                                            labelStyle="text-subtitle font-regular"
+                                            required={false}
+                                        />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                </form>
+            </FormProvider>
+        </MyDialog>
     );
 };
+
+const ADMIN_PROFILE_FORM_ID = 'admin-profile-form';
+
+function getInitials(name?: string | null) {
+    const parts = (name ?? '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return '?';
+    return parts
+        .slice(0, 2)
+        .map((part) => part.charAt(0).toUpperCase())
+        .join('');
+}
 
 export default AdminProfile;

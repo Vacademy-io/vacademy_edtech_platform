@@ -15,6 +15,13 @@ import { CustomFieldMultiSelectFilter } from '@/components/shared/leads/custom-f
 import { useListCustomFieldControls } from '@/components/shared/leads/use-list-custom-field-controls';
 import { fetchContactCustomFieldValues } from '../-services/get-contact-custom-field-values';
 import { ManageListFiltersLink } from '@/components/shared/leads/manage-list-filters-link';
+import { UtmFilterControls } from '@/components/shared/leads/utm-filter-controls';
+import {
+    readUtmSelection,
+    utmFilterId,
+    utmValueLabel,
+} from '@/components/shared/leads/utm-filter-encoding';
+import { useTranslation } from 'react-i18next';
 import { CustomFieldRangeFilter } from '@/components/shared/leads/custom-field-range-filter';
 import {
     isRangeFieldType,
@@ -82,6 +89,12 @@ export const ContactFilters = ({ filters }: ContactFiltersProps) => {
     const selectedCustomFieldValues = (fieldId: string): string[] =>
         columnFilters.find((f) => f.id === `cf:${fieldId}`)?.value.map((v) => v.id) ?? [];
 
+    // Campaign (UTM) filters — rendered only while the institute's UTM setting
+    // is on and this surface isn't hidden in display settings. Selections ride
+    // columnFilters under `utm:<dimension>` like every other chip here.
+    const { t: tUtm } = useTranslation('utmListFilters');
+    const utmSelection = readUtmSelection(columnFilters);
+
     return (
         <div className="animate-fadeIn space-y-4">
             <div className="rounded-xl border border-neutral-200/50 bg-gradient-to-r from-white to-neutral-50/30 p-4 shadow-sm">
@@ -97,7 +110,7 @@ export const ContactFilters = ({ filters }: ContactFiltersProps) => {
                         />
                     </div>
 
-                    <div className="flex flex-wrap gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                         {filterConfig.map((filter, index) => (
                             <div
                                 key={filter.id}
@@ -151,10 +164,26 @@ export const ContactFilters = ({ filters }: ContactFiltersProps) => {
                                         )
                                     }
                                     fetchValues={fetchContactCustomFieldValues}
+                                    variant="pill"
                                     cacheScope="contacts"
                                 />
                             )
                         )}
+                        <UtmFilterControls
+                            surface="CONTACTS"
+                            instituteId={instituteId}
+                            variant="pill"
+                            selection={utmSelection}
+                            onChange={(dimension, values) =>
+                                handleFilterChange(
+                                    utmFilterId(dimension),
+                                    values.map((v) => ({
+                                        id: v,
+                                        label: utmValueLabel(v, tUtm('untagged')),
+                                    }))
+                                )
+                            }
+                        />
                         <ManageListFiltersLink surface="CONTACTS" />
                     </div>
 

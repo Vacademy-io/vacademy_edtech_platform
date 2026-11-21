@@ -49,10 +49,18 @@ RUN apt-get update && apt-get install -y \
 
 RUN playwright install chromium
 
+# Bake the local embedding model (fastembed / ONNX) into the image so a pod
+# never downloads from Hugging Face at request time. ~440 MB.
+ENV FASTEMBED_CACHE_PATH=/opt/fastembed
+RUN python -c "from fastembed import TextEmbedding; TextEmbedding('BAAI/bge-base-en-v1.5', cache_dir='/opt/fastembed')"
+
 COPY . /app/ai_service
 
 EXPOSE 8077
 
-CMD ["uvicorn", "ai_service.main:app", "--host", "0.0.0.0", "--port", "8077", "--timeout-keep-alive", "1200"]
+# --timeout-graceful-shutdown: on SIGTERM wait at most 60 s for open requests
+# (long SSE streams would otherwise hold the pod until SIGKILL), then run the
+# lifespan shutdown, which drains any AI-video leg the preStop hook missed.
+CMD ["uvicorn", "ai_service.main:app", "--host", "0.0.0.0", "--port", "8077", "--timeout-keep-alive", "1200", "--timeout-graceful-shutdown", "60"]
 
 

@@ -1,0 +1,16 @@
+{
+    "heading": {
+        "title": "मूल्यांकन केंद्र",
+        "description": "मूल्यांकन बनाएं, प्रबंधित करें और आकलन करें"
+    },
+    "badges": {
+        "tests": "परीक्षाएं",
+        "papers": "प्रश्न पत्र"
+    },
+    "features": {
+        "createAssessment": "मूल्यांकन बनाएं",
+        "viewAssessments": "मूल्यांकन देखें",
+        "questionPapers": "प्रश्न पत्र",
+        "evaluationCenter": "आकलन केंद्र"
+    }
+}

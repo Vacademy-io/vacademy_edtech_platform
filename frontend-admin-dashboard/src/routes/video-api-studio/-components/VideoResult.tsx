@@ -1,21 +1,22 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
-    CheckCircle2,
+    CheckCircle,
     Copy,
     Check,
-    Code2,
-    Link2,
-    Download,
-    Loader2,
-    ExternalLink,
+    Code,
+    LinkSimple,
+    DownloadSimple,
+    CircleNotch,
+    ArrowSquareOut,
     Pencil,
     X,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { AIContentPlayer } from '@/components/ai-video-player/AIContentPlayer';
 import {
     ContentType,
@@ -99,6 +100,7 @@ function GenerationDetails({
     tokenUsage?: TokenUsage | null;
     genProgress: GenerationProgress | null;
 }) {
+    const { t } = useTranslation('videoApiStudioCredits');
     const [shotsOpen, setShotsOpen] = useState(false);
     const [errorsOpen, setErrorsOpen] = useState(false);
     // Backend reports cumulative LLM cost in USD; we display credits only.
@@ -129,7 +131,7 @@ function GenerationDetails({
             </summary>
             <div className="space-y-3 px-4 pb-4 pt-2">
                 {/* Top-line summary */}
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-2xs">
                     {tokenUsage?.model && (
                         <>
                             <dt className="text-muted-foreground">Model</dt>
@@ -170,7 +172,7 @@ function GenerationDetails({
                         <>
                             <dt className="font-medium text-foreground">Est. cost</dt>
                             <dd className="font-medium text-emerald-600">
-                                {formatCredits(usdToCredits(estCost, ratio))}
+                                {formatCredits(usdToCredits(estCost, ratio), { t })}
                             </dd>
                         </>
                     )}
@@ -181,14 +183,14 @@ function GenerationDetails({
                     <div className="border-t pt-2">
                         <button
                             onClick={() => setShotsOpen((o) => !o)}
-                            className="flex w-full items-center justify-between text-[11px] font-medium text-muted-foreground hover:text-foreground"
+                            className="flex w-full items-center justify-between text-2xs font-medium text-muted-foreground hover:text-foreground"
                         >
                             <span>Per-shot breakdown ({shotsHistory.length})</span>
                             <span>{shotsOpen ? '▲' : '▼'}</span>
                         </button>
                         {shotsOpen && (
                             <div className="mt-2 max-h-64 overflow-y-auto rounded border bg-muted/20">
-                                <table className="w-full text-[10px]">
+                                <table className="w-full text-2xs">
                                     <thead className="sticky top-0 bg-muted/60 text-muted-foreground">
                                         <tr>
                                             <th className="px-2 py-1 text-left font-medium">#</th>
@@ -249,7 +251,7 @@ function GenerationDetails({
                     <div className="border-t pt-2">
                         <button
                             onClick={() => setErrorsOpen((o) => !o)}
-                            className="flex w-full items-center justify-between text-[11px] font-medium text-amber-700 hover:text-amber-900"
+                            className="flex w-full items-center justify-between text-2xs font-medium text-amber-700 hover:text-amber-900"
                         >
                             <span>Warnings & retries ({errors.length})</span>
                             <span>{errorsOpen ? '▲' : '▼'}</span>
@@ -259,7 +261,7 @@ function GenerationDetails({
                                 {errors.map((e, i) => (
                                     <li
                                         key={i}
-                                        className="rounded bg-amber-50 px-2 py-1 text-[10px] text-amber-800"
+                                        className="rounded bg-amber-50 px-2 py-1 text-2xs text-amber-800"
                                     >
                                         <span className="font-medium">Shot {e.shot_index + 1}</span>
                                         {e.shot_type && (
@@ -272,12 +274,12 @@ function GenerationDetails({
                                                 · retry {e.attempt ?? '?'}
                                             </span>
                                         )}
-                                        <div className="mt-0.5 font-mono text-[10px] text-amber-700">
+                                        <div className="mt-0.5 font-mono text-2xs text-amber-700">
                                             {e.error.slice(0, 240)}
                                             {e.error.length > 240 && '…'}
                                         </div>
                                         {e.timestamp && (
-                                            <div className="text-[9px] text-muted-foreground">
+                                            <div className="text-2xs text-muted-foreground">
                                                 {new Date(e.timestamp).toLocaleTimeString()}
                                             </div>
                                         )}
@@ -303,6 +305,7 @@ export function VideoResult({
     apiKey,
     tokenUsage,
 }: VideoResultProps) {
+    const { t } = useTranslation('videoApiStudioVideoGeneration');
     const isPortrait = orientation === 'portrait';
     const playerWidth = isPortrait ? 1080 : 1920;
     const playerHeight = isPortrait ? 1920 : 1080;
@@ -589,12 +592,12 @@ export function VideoResult({
         });
     }, [navigate, videoId, htmlUrl, audioUrl, wordsUrl, apiKey, orientation]);
 
-    const contentLabel = getContentTypeLabel(contentType);
+    const contentLabel = getContentTypeLabel(contentType, t);
 
     return (
         <div className="flex w-full flex-col items-start gap-4 xl:flex-row">
             {/* Left Column: Content Player */}
-            <div className="w-full min-w-0 grow xl:w-[70%]">
+            <div className="w-full min-w-0 grow xl:w-2/3">
                 <div
                     className="flex w-full overflow-hidden rounded-xl border-2 bg-black shadow-lg"
                     style={{
@@ -620,7 +623,7 @@ export function VideoResult({
             </div>
 
             {/* Right Column: Prompt, Status & Actions */}
-            <div className="w-full shrink-0 space-y-4 xl:w-[30%]">
+            <div className="w-full shrink-0 space-y-4 xl:w-1/3">
                 <div className="flex flex-col gap-4 rounded-xl border bg-card p-4 shadow-sm">
                     {/* Status & Content Label */}
                     <div className="flex flex-wrap items-center gap-2">
@@ -631,7 +634,7 @@ export function VideoResult({
                             variant="outline"
                             className="h-5 gap-1 border-green-200 bg-green-50 text-green-700"
                         >
-                            <CheckCircle2 className="size-3" />
+                            <CheckCircle className="size-3" />
                             Ready
                         </Badge>
                     </div>
@@ -656,7 +659,7 @@ export function VideoResult({
                         {/* Share URL */}
                         <div className="space-y-1.5">
                             <label className="flex items-center gap-1.5 text-xs font-medium text-foreground">
-                                <Link2 className="size-3.5" />
+                                <LinkSimple className="size-3.5" />
                                 Shareable URL
                             </label>
                             <div className="flex w-full items-center rounded-md border bg-background px-2 py-0.5 shadow-sm">
@@ -685,7 +688,7 @@ export function VideoResult({
                         {/* Embed Code Trigger */}
                         <div className="space-y-1.5">
                             <label className="flex items-center gap-1.5 text-xs font-medium text-foreground">
-                                <Code2 className="size-3.5" />
+                                <Code className="size-3.5" />
                                 Embed Content
                             </label>
                             <Popover>
@@ -695,7 +698,7 @@ export function VideoResult({
                                         size="sm"
                                         className="h-9 w-full justify-start gap-2 shadow-sm"
                                     >
-                                        <Code2 className="size-4" />
+                                        <Code className="size-4" />
                                         Get Embed Code
                                     </Button>
                                 </PopoverTrigger>
@@ -754,7 +757,7 @@ export function VideoResult({
                         {showDownload && (
                             <div className="space-y-1.5">
                                 <label className="flex items-center gap-1.5 text-xs font-medium text-foreground">
-                                    <Download className="size-3.5" />
+                                    <DownloadSimple className="size-3.5" />
                                     Download Video
                                 </label>
 
@@ -766,9 +769,9 @@ export function VideoResult({
                                             rel="noopener noreferrer"
                                             className="flex h-9 flex-1 items-center gap-2 rounded-md border bg-green-50 px-3 text-sm font-medium text-green-700 transition-colors hover:bg-green-100"
                                         >
-                                            <Download className="size-4" />
+                                            <DownloadSimple className="size-4" />
                                             Download MP4
-                                            <ExternalLink className="ml-auto size-3" />
+                                            <ArrowSquareOut className="ml-auto size-3" />
                                         </a>
                                         <Button
                                             variant="outline"
@@ -783,7 +786,7 @@ export function VideoResult({
                                 ) : renderState === 'rendering' || renderState === 'submitting' ? (
                                     <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
                                         <div className="flex items-center gap-2">
-                                            <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />
+                                            <CircleNotch className="size-4 shrink-0 animate-spin text-muted-foreground" />
                                             <span className="text-xs text-muted-foreground">
                                                 {renderState === 'submitting'
                                                     ? 'Starting render...'
@@ -808,7 +811,7 @@ export function VideoResult({
                                         className="h-9 w-full justify-start gap-2 shadow-sm"
                                         onClick={() => setSettingsOpen(true)}
                                     >
-                                        <Download className="size-4" />
+                                        <DownloadSimple className="size-4" />
                                         Render & Download MP4
                                     </Button>
                                 )}

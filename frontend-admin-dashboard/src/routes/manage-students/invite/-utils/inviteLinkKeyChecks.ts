@@ -25,11 +25,3 @@ export const duplicateKeyCheck = (customFields: CustomField[], currentFieldName:
     }
     return duplicateKey;
 };
-
-export const MandatoryKeys = (fieldName: string) => {
-    const key = getCustomFieldKey(fieldName);
-    if (key === 'full_name' || key === 'email' || key === 'phone_number') {
-        return true;
-    }
-    return false;
-};

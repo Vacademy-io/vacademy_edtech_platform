@@ -5,6 +5,7 @@ import { getInstituteId } from '@/constants/helper';
 import { hasFacultyAssignedPermission } from '@/lib/auth/facultyAccessUtils';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import {
     VideoPlayerTimeFormType,
@@ -42,6 +43,7 @@ import {
     TEACHER_DISPLAY_SETTINGS_KEY, CUSTOM_ROLE_DISPLAY_SETTINGS_KEY,
     type DisplaySettingsData,
 } from '@/types/display-settings';
+import { extractYouTubeVideoId } from '@/utils/youtube';
 
 export interface YTPlayer {
     destroy(): void;
@@ -98,6 +100,7 @@ interface YouTubePlayerProps {
 }
 
 export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({ videoUrl }) => {
+    const { t } = useTranslation('studyLibraryYoutubePlayer');
     const searchParams = Route.useSearch();
     // Convert formRefData from a ref to useState to trigger re-renders
     const isAddTimeFrameRef = useRef<HTMLButtonElement | null>(null);
@@ -257,22 +260,14 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({ videoUrl }) => {
                 newSlide: false,
             });
             await addUpdateVideoSlide(payload);
-            toast.success('Question deleted');
+            toast.success(t('toasts.questionDeleted'));
         } catch (err) {
             console.error('Failed to delete question:', err);
-            toast.error('Failed to delete question');
+            toast.error(t('errors.deleteQuestionFailed'));
         }
     };
 
-    const extractVideoId = (url: string): string => {
-        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-        const match = url.match(regExp);
-
-        if (match && match[2] && match[2].length === 11) {
-            return match[2];
-        }
-        return '';
-    };
+    const extractVideoId = (url: string): string => extractYouTubeVideoId(url) ?? '';
 
     // Function to load YouTube IFrame API
     const loadYouTubeAPI = () => {
@@ -478,15 +473,15 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({ videoUrl }) => {
                 setCurrentTime(videoSeekTime);
                 clearVideoSeekTime();
                 toast.success(
-                    `Video jumped to ${Math.floor(videoSeekTime / 60)}:${Math.floor(
-                        videoSeekTime % 60
-                    )
-                        .toString()
-                        .padStart(2, '0')}`
+                    t('toasts.videoJumpedTo', {
+                        time: `${Math.floor(videoSeekTime / 60)}:${Math.floor(videoSeekTime % 60)
+                            .toString()
+                            .padStart(2, '0')}`,
+                    })
                 );
             } catch (error) {
                 console.error('Error seeking video:', error);
-                toast.error('Failed to seek video');
+                toast.error(t('errors.seekFailed'));
                 clearVideoSeekTime();
             }
         }
@@ -560,10 +555,11 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({ videoUrl }) => {
                             {hoveredQuestion === question && (
                                 <div className="absolute bottom-5 left-1/2 z-10 w-48 -translate-x-1/2 rounded border border-gray-300 bg-white p-4 shadow-xl">
                                     <p className="text-sm text-gray-500">
-                                        Timestamp:{' '}
-                                        {formatTimeStudyLibraryInSeconds(
-                                            timestampToSeconds(question.timestamp)
-                                        )}
+                                        {t('timestampLabel', {
+                                            time: formatTimeStudyLibraryInSeconds(
+                                                timestampToSeconds(question.timestamp)
+                                            ),
+                                        })}
                                     </p>
                                     <span
                                         className="text-sm font-medium"
@@ -630,10 +626,12 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({ videoUrl }) => {
                             >
                                 <div className="flex items-center gap-2">
                                     <p className="font-semibold">
-                                        {idx + 1}. Time stamp -{' '}
-                                        {formatTimeStudyLibraryInSeconds(
-                                            timestampToSeconds(question.timestamp)
-                                        )}
+                                        {t('questionsList.timeStampLine', {
+                                            index: idx + 1,
+                                            time: formatTimeStudyLibraryInSeconds(
+                                                timestampToSeconds(question.timestamp)
+                                            ),
+                                        })}
                                     </p>
                                     <VideoQuestionsTimeFrameEditDialog
                                         playerRef={playerRef}
@@ -679,16 +677,14 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({ videoUrl }) => {
                                                     />
                                                 </DialogClose>
                                                 <h1 className="rounded-t-lg bg-primary-50 p-4 font-semibold text-primary-500">
-                                                    Delete Question
+                                                    {t('deleteDialog.title')}
                                                 </h1>
                                                 <div className="flex flex-col gap-1 p-5">
                                                     <p className="text-subtitle font-semibold text-neutral-700">
-                                                        Are you sure you want to delete this
-                                                        question?
+                                                        {t('deleteDialog.confirmMessage')}
                                                     </p>
                                                     <p className="text-body text-neutral-500">
-                                                        This permanently removes the question at this
-                                                        timestamp and can&apos;t be undone.
+                                                        {t('deleteDialog.description')}
                                                     </p>
                                                 </div>
                                                 <div className="flex flex-col-reverse justify-end gap-2 border-t border-neutral-200 p-4 sm:flex-row sm:gap-3">
@@ -701,7 +697,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({ videoUrl }) => {
                                                             closeDeleteDialogRef.current?.click()
                                                         }
                                                     >
-                                                        Cancel
+                                                        {t('deleteDialog.cancel')}
                                                     </MyButton>
                                                     <MyButton
                                                         type="button"
@@ -716,7 +712,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({ videoUrl }) => {
                                                             );
                                                         }}
                                                     >
-                                                        Delete
+                                                        {t('deleteDialog.delete')}
                                                     </MyButton>
                                                 </div>
                                             </DialogContent>
@@ -799,12 +795,12 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({ videoUrl }) => {
                                                                         />
                                                                     </span>
                                                                     {option?.isSelected && (
-                                                                        <span className="ml-2 flex shrink-0 items-center gap-1 text-success-600">
+                                                                        <span className="ms-2 flex shrink-0 items-center gap-1 text-success-600">
                                                                             <CheckCircle
                                                                                 size={16}
                                                                                 weight="fill"
                                                                             />
-                                                                            Correct
+                                                                            {t('correctBadge')}
                                                                         </span>
                                                                     )}
                                                                 </span>

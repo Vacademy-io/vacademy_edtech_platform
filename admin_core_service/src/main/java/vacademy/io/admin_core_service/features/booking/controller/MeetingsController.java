@@ -11,6 +11,7 @@ import vacademy.io.admin_core_service.features.booking.dto.MeetingBookingRequest
 import vacademy.io.admin_core_service.features.booking.service.BookingPageService;
 import vacademy.io.admin_core_service.features.booking.service.MeetingBookingService;
 import vacademy.io.admin_core_service.features.booking.service.TeamScopeService;
+import vacademy.io.admin_core_service.features.booking.service.UserGoogleAccountService;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
 
@@ -34,7 +35,37 @@ public class MeetingsController {
     private final BookingPageService bookingPageService;
     private final MeetingBookingService meetingBookingService;
     private final TeamScopeService teamScopeService;
+    private final UserGoogleAccountService userGoogleAccountService;
     private final InstituteAccessValidator instituteAccessValidator;
+
+    // ==================== MY GOOGLE ACCOUNT ====================
+
+    /** The caller's own Google connection (connected flag + email) for the My Schedule card. */
+    @GetMapping("/my-google")
+    public ResponseEntity<Map<String, Object>> myGoogle(
+            @RequestParam("instituteId") String instituteId,
+            @RequestAttribute("user") CustomUserDetails user) {
+        instituteAccessValidator.validateUserAccess(user, instituteId);
+        return ResponseEntity.ok(userGoogleAccountService.status(instituteId, user.getUserId()));
+    }
+
+    /** Start the caller's own Google connect — returns the consent URL; the callback lands back on My Schedule. */
+    @PostMapping("/my-google/initiate")
+    public ResponseEntity<Map<String, String>> initiateMyGoogle(
+            @RequestParam("instituteId") String instituteId,
+            @RequestAttribute("user") CustomUserDetails user) {
+        instituteAccessValidator.validateUserAccess(user, instituteId);
+        return ResponseEntity.ok(userGoogleAccountService.initiate(instituteId, user, "/meetings/my-schedule"));
+    }
+
+    @DeleteMapping("/my-google")
+    public ResponseEntity<Void> disconnectMyGoogle(
+            @RequestParam("instituteId") String instituteId,
+            @RequestAttribute("user") CustomUserDetails user) {
+        instituteAccessValidator.validateUserAccess(user, instituteId);
+        userGoogleAccountService.disconnect(instituteId, user.getUserId());
+        return ResponseEntity.noContent().build();
+    }
 
     // ==================== BOOKING PAGE CRUD ====================
 

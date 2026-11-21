@@ -1,0 +1,22 @@
+{
+  "trigger": {
+    "inviteUsers": "Inviter des utilisateurs"
+  },
+  "dialog": {
+    "title": "Inviter un utilisateur"
+  },
+  "form": {
+    "nameLabel": "Nom complet",
+    "namePlaceholder": "Nom complet (prénom et nom)",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "Saisir l'e-mail",
+    "roleTypeLabel": "Type de rôle",
+    "submit": "Inviter l'utilisateur"
+  },
+  "validation": {
+    "nameRequired": "Le nom complet est requis",
+    "emailRequired": "L'e-mail est requis",
+    "emailInvalid": "Format d'e-mail invalide",
+    "roleRequired": "Au moins un type de rôle est requis"
+  }
+}

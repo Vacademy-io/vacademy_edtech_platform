@@ -1,0 +1,17 @@
+{
+    "noAccessTokenFound": "कोई एक्सेस टोकन नहीं मिला",
+    "invalidTokenData": "अमान्य टोकन डेटा",
+    "instituteFallbackName": "संस्थान {{idPrefix}}...",
+    "noInstituteAccess": "आपको किसी भी संस्थान तक पहुँच नहीं है",
+    "pleaseSelectAnInstitute": "कृपया एक संस्थान चुनें",
+    "selectedInstituteNotFound": "चयनित संस्थान नहीं मिला",
+    "loadingInstitutes": "संस्थान लोड हो रहे हैं...",
+    "selectYourInstitute": "अपना संस्थान चुनें",
+    "chooseInstituteToAccess": "उस संस्थान का चयन करें जिसे आप एक्सेस करना चाहते हैं",
+    "loadingInstituteDetails": "संस्थान का विवरण लोड हो रहा है...",
+    "selectInstituteLabel": "संस्थान चुनें",
+    "selectAnInstitute": "एक संस्थान चुनें",
+    "pleaseSelectAnInstituteToContinue": "जारी रखने के लिए कृपया एक संस्थान चुनें",
+    "continueToDashboard": "डैशबोर्ड पर जारी रखें",
+    "backToLogin": "लॉगिन पर वापस जाएँ"
+}

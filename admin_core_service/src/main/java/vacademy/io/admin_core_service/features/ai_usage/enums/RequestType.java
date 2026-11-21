@@ -23,7 +23,8 @@ public enum RequestType {
     AGENT("agent"), // AI Agent interactions
     ANALYTICS("analytics"), // Student analytics
     COPILOT("copilot"), // Instructor copilot
-    CALL_INTELLIGENCE("call_intelligence"); // CRM call recording transcription + analysis
+    CALL_INTELLIGENCE("call_intelligence"), // CRM call recording transcription + analysis
+    CHATBOT("chatbot"); // Automations chatbot flow AI_RESPONSE turn (WhatsApp)
 
     private final String value;
 

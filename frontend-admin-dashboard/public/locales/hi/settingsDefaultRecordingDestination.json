@@ -1,0 +1,30 @@
+{
+    "summary": {
+        "prefix": "डिफ़ॉल्ट गंतव्य:",
+        "fallback": "गंतव्य चुना गया"
+    },
+    "button": {
+        "change": "बदलें"
+    },
+    "cascadeField": {
+        "labels": {
+            "course": "कोर्स",
+            "session": "सत्र",
+            "level": "स्तर",
+            "subject": "विषय",
+            "module": "मॉड्यूल",
+            "chapter": "अध्याय"
+        },
+        "placeholders": {
+            "course": "कोर्स चुनें",
+            "session": "सत्र चुनें",
+            "level": "स्तर चुनें",
+            "subject": "विषय चुनें",
+            "module": "मॉड्यूल चुनें",
+            "chapter": "अध्याय चुनें"
+        },
+        "searchPlaceholder": "{{label}} खोजें…",
+        "emptyText": "कोई मेल नहीं मिला"
+    },
+    "noDefaultSet": "कोई डिफ़ॉल्ट गंतव्य सेट नहीं है — केवल अपने स्वयं के गंतव्य वाले सत्र ही ऑटो-अपलोड होंगे।"
+}

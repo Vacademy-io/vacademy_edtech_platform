@@ -1,0 +1,16 @@
+{
+    "aggTypes": {
+        "COUNT": "العدد",
+        "SUM": "المجموع",
+        "AVG": "المتوسط",
+        "MIN": "الحد الأدنى",
+        "MAX": "الحد الأقصى"
+    },
+    "operationLabel": "العملية {{index}}",
+    "typeLabel": "النوع",
+    "saveAsLabel": "الحفظ باسم",
+    "saveAsPlaceholder": "مثال: totalCount",
+    "fieldToLabel": "الحقل لـ {{operation}}",
+    "fieldPlaceholder": "مثال: score, amount",
+    "addOperation": "إضافة عملية"
+}

@@ -1,0 +1,38 @@
+{
+    "title": "Niveaux de {{tier}}",
+    "description": "Comment les leads sont classés (Hot / Warm / Cold par défaut). Renommez, recolorez, réordonnez ou ajoutez vos propres niveaux — p. ex. Very Cold → Super Hot. Donnez un « score minimum » à un niveau et les leads y sont placés automatiquement selon leur score (la bande la plus haute l'emporte) ; laissez vide pour un niveau attribué à la main. Les niveaux par défaut sont modifiables mais non supprimables.",
+    "loading": "Chargement des niveaux…",
+    "empty": "Aucun niveau. Ajoutez votre premier niveau ci-dessous.",
+    "preview": {
+        "fromScore": "· dès {{score}}",
+        "manual": "· manuel"
+    },
+    "row": {
+        "changeColorTitle": "Changer la couleur",
+        "colorAriaLabel": "Couleur de {{name}}",
+        "tierFallback": "niveau",
+        "namePlaceholder": "Nom du niveau (p. ex. Super Hot)",
+        "fromScore": "score min.",
+        "fromScoreAriaLabel": "Score minimum pour {{name}}",
+        "manualPlaceholder": "manuel",
+        "moveUp": "Monter",
+        "moveDown": "Descendre",
+        "systemDefaultTitle": "Niveau par défaut — renommable, recolorable, bande modifiable",
+        "systemDefaultBadge": "Défaut",
+        "deleteAriaLabel": "Supprimer {{name}}",
+        "saveBeforeDelete": "Enregistrez vos modifications avant de supprimer un niveau"
+    },
+    "addTier": "Ajouter un niveau de {{tier}}",
+    "footer": {
+        "hintBanded": "De haut en bas = du plus au moins important. Le niveau suit le score sauf s'il est fixé à la main.",
+        "hintManual": "Aucune bande de score — les niveaux sont attribués à la main uniquement.",
+        "saving": "Enregistrement…",
+        "save": "Enregistrer les niveaux"
+    },
+    "toasts": {
+        "saveSuccess": "Niveaux enregistrés",
+        "saveError": "Échec de l'enregistrement des niveaux",
+        "deleteSuccess": "{{name}} supprimé",
+        "deleteError": "Échec de la suppression du niveau"
+    }
+}

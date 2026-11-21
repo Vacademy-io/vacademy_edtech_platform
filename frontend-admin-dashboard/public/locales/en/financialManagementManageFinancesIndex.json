@@ -1,0 +1,11 @@
+{
+    "pageTitle": "Manage Finances",
+    "metaDescription": "Manage transaction history and student fee payments",
+    "sessionLabel": "Session -",
+    "allSessions": "All",
+    "redesign": {
+        "subtitle": "Fee roster — one row per {{learner}} and fee plan, with what was billed, paid, due and overdue.",
+        "adjustments": "Adjustment approvals",
+        "collectPayment": "Collect payment"
+    }
+}

@@ -22,6 +22,13 @@ public interface CounselorPoolAudienceRepository extends JpaRepository<Counselor
     /** List campaigns linked to a pool. */
     List<CounselorPoolAudience> findByPoolId(String poolId);
 
+    /**
+     * Pool memberships for a whole page of audiences in one query — the lead-list
+     * header shows which pool a list feeds, and doing that per row would be an
+     * N+1 across every campaign on screen.
+     */
+    List<CounselorPoolAudience> findByAudienceIdIn(List<String> audienceIds);
+
     /** Used during pool create/update to block adding an audience that already belongs to another pool. */
     boolean existsByAudienceId(String audienceId);
 
@@ -36,6 +43,13 @@ public interface CounselorPoolAudienceRepository extends JpaRepository<Counselor
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT cpa FROM CounselorPoolAudience cpa WHERE cpa.audienceId = :audienceId")
     Optional<CounselorPoolAudience> findByAudienceIdForUpdate(@Param("audienceId") String audienceId);
+
+    /**
+     * The pool's most recent assignment across ALL its lists — the pool-wide
+     * round-robin pointer. Without it every low-volume list rotates on its own
+     * and each list's first lead lands on the same top-of-order counselor.
+     */
+    Optional<CounselorPoolAudience> findFirstByPoolIdAndLastAssignedAtIsNotNullOrderByLastAssignedAtDesc(String poolId);
 
     /** Cleanly update the rotation pointer after picking a counselor. */
     @Modifying

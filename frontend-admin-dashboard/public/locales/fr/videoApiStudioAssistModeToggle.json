@@ -1,0 +1,13 @@
+{
+    "radiogroup": {
+        "ariaLabel": "Mode de génération"
+    },
+    "options": {
+        "assist": "Assisté",
+        "auto": "Auto"
+    },
+    "description": {
+        "assist": "Assisté : validez le plan, le script et les visuels au fil de la production.",
+        "auto": "Auto : nous gérons tout de bout en bout."
+    }
+}

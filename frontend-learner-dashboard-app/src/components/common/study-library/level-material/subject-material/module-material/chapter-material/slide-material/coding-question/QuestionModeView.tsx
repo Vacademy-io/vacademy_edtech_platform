@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import Editor from "@monaco-editor/react";
 import { Play, PaperPlaneTilt, Check, X, SpinnerGap, Clock } from "@phosphor-icons/react";
 import { v4 as uuidv4 } from "uuid";
@@ -62,6 +63,7 @@ export function QuestionModeView({ question, slideId }: Props) {
   // alongside each submission so the learner_operation cascade can run. The
   // slide route URL uses `sessionId` for what the backend calls
   // `packageSessionId` — see routes/.../slides/index.tsx validateSearch.
+  const { t } = useTranslation("libraryCommonA");
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -222,7 +224,7 @@ export function QuestionModeView({ question, slideId }: Props) {
     setIsRunning(true);
     setBottomTab(sampleCases.length ? "tests" : "output");
     setTestResults(null);
-    setOutput("Running...");
+    setOutput(t("codeEditor.running"));
     try {
       const code = codeByLang[language] ?? "";
       if (sampleCases.length === 0) {
@@ -266,14 +268,14 @@ export function QuestionModeView({ question, slideId }: Props) {
           results
             .map(
               (r, i) =>
-                `--- ${r.label || `Sample ${i + 1}`}: ${r.passed ? "PASS" : "FAIL"} ---\n${r.stdout || "(no stdout)"}`,
+                `--- ${r.label || t("codingQuestion.questionMode.sampleLabel", { number: i + 1 })}: ${r.passed ? t("codingQuestion.questionMode.passLabel") : t("codingQuestion.questionMode.failLabel")} ---\n${r.stdout || t("codingQuestion.questionMode.noStdout")}`,
             )
             .join("\n\n"),
         );
       }
     } catch (e) {
       setOutput(
-        "Run error: " + (e instanceof Error ? e.message : String(e)),
+        t("codingQuestion.questionMode.runErrorPrefix", { message: e instanceof Error ? e.message : String(e) }),
       );
     } finally {
       setIsRunning(false);
@@ -456,7 +458,7 @@ export function QuestionModeView({ question, slideId }: Props) {
         }
       } catch (e) {
         setOutput(
-          "Submit failed: " + (e instanceof Error ? e.message : String(e)),
+          t("codingQuestion.questionMode.submitFailedPrefix", { message: e instanceof Error ? e.message : String(e) }),
         );
       } finally {
         submitInFlightRef.current = false;
@@ -546,8 +548,7 @@ export function QuestionModeView({ question, slideId }: Props) {
         <div className="flex items-center gap-2 border-b border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900">
           <Clock className="size-4 shrink-0" />
           <span>
-            Session ended — your final submission has been recorded. The editor
-            is now read-only.
+            {t("codingQuestion.questionMode.sessionEndedBanner")}
           </span>
         </div>
       )}
@@ -585,7 +586,7 @@ export function QuestionModeView({ question, slideId }: Props) {
           {pythonBlocked && (
             <span className="inline-flex items-center gap-1 text-xs text-gray-500">
               <SpinnerGap className="size-3 animate-spin" />
-              Loading Python runtime…
+              {t("codingQuestion.questionMode.loadingPythonRuntime")}
             </span>
           )}
 
@@ -596,8 +597,8 @@ export function QuestionModeView({ question, slideId }: Props) {
             disabled={isRunning || isSubmitting || pythonBlocked || sessionExpired}
             title={
               sessionExpired
-                ? "Session ended"
-                : "Run against sample tests (Ctrl/Cmd+Enter)"
+                ? t("codingQuestion.questionMode.sessionEndedTooltip")
+                : t("codingQuestion.questionMode.runTooltip")
             }
           >
             {isRunning ? (
@@ -605,7 +606,7 @@ export function QuestionModeView({ question, slideId }: Props) {
             ) : (
               <Play className="me-1 size-4" />
             )}
-            Run
+            {t("codeEditor.run")}
           </Button>
 
           <Button
@@ -615,8 +616,8 @@ export function QuestionModeView({ question, slideId }: Props) {
             className="bg-primary-500 text-white hover:bg-primary-600"
             title={
               sessionExpired
-                ? "Session ended"
-                : "Submit against all tests incl. hidden (Ctrl/Cmd+Shift+Enter)"
+                ? t("codingQuestion.questionMode.sessionEndedTooltip")
+                : t("codingQuestion.questionMode.submitTooltip")
             }
           >
             {isSubmitting ? (
@@ -624,7 +625,7 @@ export function QuestionModeView({ question, slideId }: Props) {
             ) : (
               <PaperPlaneTilt className="me-1 size-4" />
             )}
-            Submit
+            {t("codingQuestion.questionMode.submit")}
           </Button>
         </div>
       </div>
@@ -658,17 +659,19 @@ export function QuestionModeView({ question, slideId }: Props) {
             />
           ) : (
             <p className="text-sm text-gray-500">
-              No problem statement provided yet.
+              {t("codingQuestion.questionMode.noProblemStatement")}
             </p>
           )}
           <div className="mt-3 text-xs text-gray-500">
-            Max points:{" "}
-            <span className="font-medium">{question.maxPoints}</span> ·{" "}
-            {question.testCases.length} test
-            {question.testCases.length === 1 ? "" : "s"} ({sampleCases.length}{" "}
-            visible, {hiddenCount} hidden) · CPU{" "}
-            {question.perRunLimits.cpuSeconds}s · Mem{" "}
-            {Math.round(question.perRunLimits.memoryKb / 1000)}MB
+            {t("codingQuestion.questionMode.statsPrefix")}{" "}
+            <span className="font-medium">{question.maxPoints}</span>{" "}
+            {t("codingQuestion.questionMode.statsLine", {
+              count: question.testCases.length,
+              visible: sampleCases.length,
+              hidden: hiddenCount,
+              cpu: question.perRunLimits.cpuSeconds,
+              mem: Math.round(question.perRunLimits.memoryKb / 1000),
+            })}
           </div>
         </div>
 
@@ -720,17 +723,23 @@ export function QuestionModeView({ question, slideId }: Props) {
           <div className="flex items-center justify-between border-b px-3 py-1">
             <TabsList>
               <TabsTrigger value="tests">
-                Test Cases
+                {t("codingQuestion.questionMode.testCasesTab")}
                 {testResults
                   ? ` (${testResults.filter((r) => r.passed).length}/${testResults.length})`
                   : ""}
               </TabsTrigger>
-              <TabsTrigger value="output">Output</TabsTrigger>
-              <TabsTrigger value="history">My Submissions</TabsTrigger>
+              <TabsTrigger value="output">{t("codingQuestion.questionMode.outputTab")}</TabsTrigger>
+              <TabsTrigger value="history">{t("codingQuestion.questionMode.submissionsTab")}</TabsTrigger>
             </TabsList>
             {latestVerdict && (
               <div className="text-xs">
-                <span className="font-semibold">{latestVerdict}</span>
+                <span className="font-semibold">
+                  {latestVerdict === "ACCEPTED" && t("codingQuestion.submissionHistory.verdict.accepted")}
+                  {latestVerdict === "PARTIAL" && t("codingQuestion.submissionHistory.verdict.partial")}
+                  {latestVerdict === "REJECTED" && t("codingQuestion.submissionHistory.verdict.rejected")}
+                  {latestVerdict === "ERROR" && t("codingQuestion.submissionHistory.verdict.error")}
+                  {latestVerdict === "TIMED_OUT" && t("codingQuestion.submissionHistory.verdict.timedOut")}
+                </span>
                 {latestScore != null && (
                   <span className="ms-1 text-gray-500">
                     {latestScore.toFixed(1)} / {question.maxPoints}
@@ -762,21 +771,21 @@ export function QuestionModeView({ question, slideId }: Props) {
                         <X className="size-3 text-red-600" />
                       )}
                       <span className="font-medium">
-                        {r.label || (r.visible ? `Sample ${i + 1}` : `Hidden ${i + 1}`)}
+                        {r.label || (r.visible ? t("codingQuestion.questionMode.sampleLabel", { number: i + 1 }) : t("codingQuestion.questionMode.hiddenLabel", { number: i + 1 }))}
                       </span>
                       <span className="text-gray-500">
-                        {r.visible ? "(sample)" : "(hidden)"}
+                        {r.visible ? t("codingQuestion.questionMode.sampleTag") : t("codingQuestion.questionMode.hiddenTag")}
                       </span>
                       {r.errorType && (
                         <span className="rounded bg-red-100 px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-wide text-red-800">
                           {r.errorType === "TLE" && "TLE"}
                           {r.errorType === "MLE" && "MLE"}
-                          {r.errorType === "COMPILE" && "Compile Error"}
+                          {r.errorType === "COMPILE" && t("codeExecution.compilationError")}
                           {(r.errorType === "RUNTIME" ||
                             r.errorType === "RUNTIME_JS") &&
-                            (r.errorLabel || "Runtime Error")}
-                          {r.errorType === "JUDGE0" && "Service Error"}
-                          {r.errorType === "OTHER" && "Error"}
+                            (r.errorLabel || t("codeExecution.runtimeError"))}
+                          {r.errorType === "JUDGE0" && t("codingQuestion.questionMode.serviceError")}
+                          {r.errorType === "OTHER" && t("codingQuestion.questionMode.genericError")}
                         </span>
                       )}
                       {r.timeMs != null && (
@@ -789,14 +798,13 @@ export function QuestionModeView({ question, slideId }: Props) {
                       (r.passed ? (
                         <>
                           <pre className="overflow-auto rounded bg-white p-1 font-mono text-2xs">
-                            {r.stdout || "(empty)"}
+                            {r.stdout || t("codingQuestion.outputDiff.empty")}
                           </pre>
                           {(r.acceptedCount ?? 1) > 1 &&
                             r.matchedIndex != null &&
                             r.matchedIndex >= 0 && (
                               <div className="mt-0.5 text-3xs text-green-700">
-                                Matched accepted output {r.matchedIndex + 1} of{" "}
-                                {r.acceptedCount}
+                                {t("codingQuestion.questionMode.matchedAcceptedOutput", { index: r.matchedIndex + 1, count: r.acceptedCount })}
                               </div>
                             )}
                         </>
@@ -824,47 +832,40 @@ export function QuestionModeView({ question, slideId }: Props) {
               <div className="space-y-2">
                 {sampleCases.length === 0 ? (
                   <p className="text-xs text-gray-500">
-                    No sample test cases shown by the author. {hiddenCount}{" "}
-                    hidden test{hiddenCount === 1 ? "" : "s"} will run on
-                    Submit.
+                    {t("codingQuestion.questionMode.noSampleTests", { count: hiddenCount })}
                   </p>
                 ) : (
                   <>
                     <p className="text-xs text-gray-500">
-                      Hit Run to evaluate against the {sampleCases.length}{" "}
-                      sample test{sampleCases.length === 1 ? "" : "s"}.
+                      {t("codingQuestion.questionMode.hitRunHint", { count: sampleCases.length })}
                     </p>
                     {sampleCases.map((tc, i) => (
                       <div
                         key={tc.id}
-                        className="rounded border p-2 text-xs"
+                        className="rounded border p-2 text-xs space-y-1"
                       >
-                        <div className="mb-1 font-medium">
-                          {tc.label || `Sample ${i + 1}`}
+                        <div className="font-medium">
+                          {tc.label || t("codingQuestion.questionMode.sampleLabel", { number: i + 1 })}
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div>
                             <div className="text-3xs font-semibold uppercase text-gray-500">
-                              Input
+                              {t("codingQuestion.questionMode.inputLabel")}
                             </div>
                             <pre className="overflow-auto rounded bg-gray-50 p-1 font-mono text-2xs">
-                              {tc.stdin || "(empty)"}
+                              {tc.stdin || t("codingQuestion.outputDiff.empty")}
                             </pre>
                           </div>
                           <div>
                             <div className="text-3xs font-semibold uppercase text-gray-500">
-                              Expected output
+                              {t("codingQuestion.questionMode.expectedOutputLabel")}
                             </div>
                             <pre className="overflow-auto rounded bg-gray-50 p-1 font-mono text-2xs">
-                              {tc.expectedStdout || "(empty)"}
+                              {tc.expectedStdout || t("codingQuestion.outputDiff.empty")}
                             </pre>
                             {(tc.acceptedOutputs?.length ?? 0) > 1 && (
                               <div className="mt-0.5 text-3xs text-gray-500">
-                                +{(tc.acceptedOutputs?.length ?? 1) - 1} more
-                                accepted output
-                                {(tc.acceptedOutputs?.length ?? 1) - 1 === 1
-                                  ? ""
-                                  : "s"}
+                                {t("codingQuestion.questionMode.moreAcceptedOutputs", { count: (tc.acceptedOutputs?.length ?? 1) - 1 })}
                               </div>
                             )}
                           </div>
@@ -879,7 +880,7 @@ export function QuestionModeView({ question, slideId }: Props) {
 
           <TabsContent value="output" className="m-0 flex-1 overflow-auto">
             <pre className="h-full overflow-auto bg-gray-900 p-3 font-mono text-xs text-green-300">
-              {output || 'Hit "Run" to see output here.'}
+              {output || t("codingQuestion.questionMode.hitRunToSeeOutput")}
             </pre>
           </TabsContent>
 

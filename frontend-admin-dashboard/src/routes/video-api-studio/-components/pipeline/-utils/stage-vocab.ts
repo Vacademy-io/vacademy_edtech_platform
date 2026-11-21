@@ -14,6 +14,8 @@
  * NarrationWriter pair (one LLM hop each instead of three).
  */
 
+import type { TFunction } from 'i18next';
+
 export type PipelineNodeId =
     | 'pitch'
     | 'research'
@@ -30,43 +32,57 @@ export type PipelineNodeId =
     | 'finalCut';
 
 /**
+ * Namespace for this module's translated display strings — see
+ * src/locales/en/videoApiStudioStageVocab.json. Every consumer resolves keys
+ * against this namespace explicitly (fully-qualified `${NS}:key` lookups),
+ * since each is normally bound to its OWN component namespace via its own
+ * `useTranslation` call. Files with no existing `useTranslation` bind one
+ * directly to this namespace instead.
+ */
+const NS = 'videoApiStudioStageVocab';
+
+/**
  * Movie-language label for each node. Used in node header copy + the
  * right-panel stages list. Keep concise.
  */
-export const NODE_LABELS: Record<PipelineNodeId, string> = {
-    pitch: 'Pitch',
-    research: 'Research',
-    beats: 'Beats',
-    screenplay: 'Screenplay',
-    narration: 'Narration',
-    storyboard: 'Storyboard',
-    shotPlanner: 'Shot Planner',
-    narrationWriter: 'Narration Writer',
-    filming: 'Filming',
-    talent: 'Talent',
-    score: 'Score',
-    finalCut: 'Final Cut',
-};
+export function buildNodeLabels(t: TFunction): Record<PipelineNodeId, string> {
+    return {
+        pitch: t(`${NS}:nodeLabels.pitch`),
+        research: t(`${NS}:nodeLabels.research`),
+        beats: t(`${NS}:nodeLabels.beats`),
+        screenplay: t(`${NS}:nodeLabels.screenplay`),
+        narration: t(`${NS}:nodeLabels.narration`),
+        storyboard: t(`${NS}:nodeLabels.storyboard`),
+        shotPlanner: t(`${NS}:nodeLabels.shotPlanner`),
+        narrationWriter: t(`${NS}:nodeLabels.narrationWriter`),
+        filming: t(`${NS}:nodeLabels.filming`),
+        talent: t(`${NS}:nodeLabels.talent`),
+        score: t(`${NS}:nodeLabels.score`),
+        finalCut: t(`${NS}:nodeLabels.finalCut`),
+    };
+}
 
 /**
  * Live sub-status copy when a node is actively in production. Picked by
  * matching the BE sub_stage string OR the broad pipeline stage when no
  * sub_stage is present yet.
  */
-export const ACTIVE_SUB_STATUS: Record<PipelineNodeId, string> = {
-    pitch: 'Brief in hand',
-    research: 'Investigating sources…',
-    beats: 'Outlining story beats…',
-    screenplay: 'Writer at work…',
-    narration: 'Recording the voiceover…',
-    storyboard: 'Director planning shots…',
-    shotPlanner: 'Planning shots…',
-    narrationWriter: 'Writing per-shot narration…',
-    filming: 'On set, rolling cameras…',
-    talent: 'Recording lead performance…',
-    score: 'Composing the score…',
-    finalCut: 'Assembling the cut…',
-};
+export function buildActiveSubStatus(t: TFunction): Record<PipelineNodeId, string> {
+    return {
+        pitch: t(`${NS}:activeSubStatus.pitch`),
+        research: t(`${NS}:activeSubStatus.research`),
+        beats: t(`${NS}:activeSubStatus.beats`),
+        screenplay: t(`${NS}:activeSubStatus.screenplay`),
+        narration: t(`${NS}:activeSubStatus.narration`),
+        storyboard: t(`${NS}:activeSubStatus.storyboard`),
+        shotPlanner: t(`${NS}:activeSubStatus.shotPlanner`),
+        narrationWriter: t(`${NS}:activeSubStatus.narrationWriter`),
+        filming: t(`${NS}:activeSubStatus.filming`),
+        talent: t(`${NS}:activeSubStatus.talent`),
+        score: t(`${NS}:activeSubStatus.score`),
+        finalCut: t(`${NS}:activeSubStatus.finalCut`),
+    };
+}
 
 /**
  * BE sub_stage → node ownership. A sub_stage moves the matching node to

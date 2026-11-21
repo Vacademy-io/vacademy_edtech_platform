@@ -1,0 +1,45 @@
+{
+  "courseDetailsPage": {
+    "selectors": {
+      "sessionPlaceholder": "{{session}} चुनें",
+      "levelPlaceholder": "{{level}} चुनें"
+    },
+    "mobileCard": {
+      "overview": "{{course}} अवलोकन",
+      "author": "लेखक",
+      "courseTime": "{{course}} समय"
+    },
+    "sections": {
+      "whatYoullLearn": "आप क्या सीखेंगे?",
+      "aboutThisCourse": "इस {{course}} के बारे में",
+      "whoShouldJoin": "किसे शामिल होना चाहिए?"
+    },
+    "enroll": "नामांकन करें",
+    "courseBannerAlt": "{{course}} बैनर",
+    "unknownInstructor": "अज्ञात {{instructor}}"
+  },
+  "ratings": {
+    "heading": "रेटिंग और समीक्षाएं",
+    "notAvailable": "उपलब्ध नहीं",
+    "reviewsCount_one": "{{count}} समीक्षा",
+    "reviewsCount_other": "{{count}} समीक्षाएं",
+    "loading": "समीक्षाएं लोड हो रही हैं...",
+    "empty": "अभी तक कोई समीक्षा नहीं",
+    "toast": {
+      "submitFailed": "रेटिंग सबमिट करने में विफल",
+      "unexpectedError": "एक अनपेक्षित त्रुटि हुई"
+    }
+  },
+  "videoPlayer": {
+    "unsupported": "आपका ब्राउज़र वीडियो टैग समर्थित नहीं करता है।",
+    "vimeoTitle": "Vimeo वीडियो प्लेयर",
+    "youtubeTitle": "YouTube वीडियो प्लेयर"
+  },
+  "courseStructure": {
+    "heading": "{{course}} संरचना",
+    "collapseAll": "सभी संक्षिप्त करें",
+    "expandAll": "सभी विस्तृत करें",
+    "noSlides": "इस अध्याय में कोई स्लाइड नहीं है।",
+    "navHeading": "{{course}} विवरण"
+  }
+}

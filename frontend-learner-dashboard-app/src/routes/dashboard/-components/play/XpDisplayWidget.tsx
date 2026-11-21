@@ -30,7 +30,7 @@ export const XpDisplayWidget: React.FC = () => {
   }
 
   return (
-    <div className="flex h-full flex-col gap-3 rounded-play-card-sm border border-border bg-play-gold-soft p-4 shadow-play-soft-card">
+    <div className="flex h-full flex-col gap-stack rounded-play-card-sm border border-border bg-play-gold-soft p-4 shadow-play-soft-card">
       {hasXp ? (
         <>
           <div className="flex items-center gap-3">

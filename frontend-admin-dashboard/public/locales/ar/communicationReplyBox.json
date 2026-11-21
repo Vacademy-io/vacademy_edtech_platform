@@ -1,0 +1,81 @@
+{
+    "toast": {
+        "loadTemplatesFailed": "فشل تحميل القوالب",
+        "fileTooLarge": "{{fileName}} حجمه {{fileSize}}. يسمح WhatsApp بحد أقصى {{limit}} لـ {{kindLabel}}.",
+        "uploadFailed": "فشل الرفع. حاول مرة أخرى.",
+        "noPublicLink": "تعذر الحصول على رابط عام للملف الذي تم رفعه.",
+        "downgradedToDocument": "لا يمكن لـ WhatsApp عرض {{fileType}} كـ {{asLabel}}، لذا سيتم إرساله كمستند.",
+        "voiceNotesUnavailable": "تحتاج الملاحظات الصوتية إلى خدمة الإشعارات المحدّثة. الميزة جاهزة لكنها لم تُنشر بعد.",
+        "unsupportedRecordingFormat": "لا يمكن لهذا المتصفح تسجيل سوى صوت WebM الذي يرفضه WhatsApp. جرّب Chrome 126+ أو Safari أو Firefox.",
+        "micAccessDenied": "تعذر الوصول إلى الميكروفون. تحقق من إذن المتصفح.",
+        "attachmentsUnavailable": "تحتاج المرفقات إلى خدمة الإشعارات المحدّثة. الميزة جاهزة لكنها لم تُنشر بعد.",
+        "messageNotSent": "لم يتم إرسال الرسالة",
+        "notDeliveredNote": "تم وضع علامة عليها بأنها لم تُسلَّم في المحادثة.",
+        "templateSent": "تم إرسال القالب \"{{name}}\"",
+        "templateNotSent": "لم يتم إرسال القالب \"{{name}}\"",
+        "providerRejectedNoReason": "رفض المزوّد الإرسال دون إبداء سبب.",
+        "couldNotSendTemplate": "تعذر إرسال القالب \"{{name}}\"",
+        "templateHeaderFileMissing": "يحتاج القالب \"{{name}}\" إلى {{kind}} في ترويسته، لكن لا يوجد ملف محفوظ على القالب. افتح WhatsApp Templates وارفع {{kind}} له أولاً."
+    },
+    "mediaKindPlural": {
+        "document": "مستندات",
+        "image": "صور",
+        "video": "مقاطع فيديو",
+        "audio": "ملفات صوتية"
+    },
+    "mediaKindLabel": {
+        "document": "مستند",
+        "image": "صورة",
+        "video": "فيديو",
+        "audio": "صوت"
+    },
+    "downgradeAsLabel": {
+        "image": "صورة",
+        "video": "فيديو",
+        "audio": "صوت"
+    },
+    "thisFormat": "هذا التنسيق",
+    "sentAsDocument": "أُرسل كمستند",
+    "audioNoCaption": "يرسل WhatsApp الصوت بدون تعليق",
+    "windowClosed": {
+        "title": "انتهت مهلة الرد البالغة 24 ساعة.",
+        "body": "سيرفض WhatsApp الرسائل العادية والمرفقات حتى يراسلوك مرة أخرى — أرسل",
+        "linkText": "قالبًا",
+        "suffix": "معتمدًا بدلاً من ذلك."
+    },
+    "templateLabel": "[قالب: {{name}}]",
+    "templateShortLabel": "[قالب] {{name}}",
+    "removeAttachment": "إزالة المرفق",
+    "recordingInProgress": "جارٍ تسجيل ملاحظة صوتية · {{duration}}",
+    "cancel": "إلغاء",
+    "sendTemplateTooltip": "إرسال قالب (للرسائل خارج نافذة الـ 24 ساعة)",
+    "sendTemplateHeader": "إرسال قالب (خارج نافذة الـ 24 ساعة)",
+    "searchTemplatesPlaceholder": "ابحث عن القوالب...",
+    "noApprovedTemplates": "لم يتم العثور على قوالب معتمدة",
+    "captionPlaceholder": "أضف تعليقًا...",
+    "messagePlaceholder": "اكتب رسالة...",
+    "attachTooltip": "إرفاق صورة أو فيديو أو مستند",
+    "attachmentsUnavailableTooltip": "تحتاج المرفقات إلى خدمة الإشعارات المحدّثة — لم تُنشر بعد",
+    "stopRecordingTooltip": "إيقاف وإرفاق التسجيل",
+    "recordVoiceNoteTooltip": "تسجيل ملاحظة صوتية",
+    "templateDialog": {
+        "heading": "إرسال القالب",
+        "to": "إلى {{phone}}",
+        "valuesLabel": "أدخل القيم",
+        "valueFallback": "القيمة {{n}}",
+        "valuePlaceholder": "مثال: {{value}}",
+        "missingValues_one": "{{count}} قيمة لا تزال فارغة",
+        "missingValues_other": "{{count}} قيم لا تزال فارغة",
+        "headerMissing": "يحتاج هذا القالب إلى {{kind}} في ترويسته، لكن لا يوجد ملف محفوظ عليه. افتح WhatsApp Templates وارفع {{kind}} أولاً.",
+        "note": "هذه هي الرسالة التي سيتلقاها جهة الاتصال بالضبط. لا يمكن تعديل القوالب عند الإرسال.",
+        "emptyBody": "لا يحتوي هذا القالب على نص رسالة.",
+        "media": {
+            "image": "صورة",
+            "video": "فيديو",
+            "document": "مستند"
+        },
+        "cancel": "إلغاء",
+        "send": "إرسال القالب",
+        "sending": "جارٍ الإرسال…"
+    }
+}

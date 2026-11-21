@@ -1,0 +1,22 @@
+{
+    "joinLink": {
+        "label": "Lien de participation :"
+    },
+    "announcement": {
+        "dialogTitle": "Annonce de devoir en direct",
+        "empty": "Aucune annonce",
+        "postedTodayAt": "Aujourd'hui, 11h28"
+    },
+    "actions": {
+        "save": "Enregistrer",
+        "exit": "Quitter",
+        "addQuestion": "Ajouter une question"
+    },
+    "questionType": {
+        "MCQS": "QCM (réponse unique)",
+        "MCQM": "QCM (réponses multiples)"
+    },
+    "errors": {
+        "incompleteQuestions": "Certaines de vos questions sont incomplètes ou nécessitent votre attention !"
+    }
+}

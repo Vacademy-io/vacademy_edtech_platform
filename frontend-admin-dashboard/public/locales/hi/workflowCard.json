@@ -1,0 +1,49 @@
+{
+    "unknownDate": "अज्ञात",
+    "noDescription": "कोई विवरण उपलब्ध नहीं है",
+    "type": "प्रकार:",
+    "schedules": "शेड्यूल",
+    "cronBadge": "CRON",
+    "lastRun": "पिछला: {{time}}",
+    "nextRun": "अगला: {{time}}",
+    "andMore_one": "और {{count}} अधिक…",
+    "andMore_other": "और {{count}} अधिक…",
+    "noScheduleAdded": "कोई शेड्यूल नहीं जोड़ा गया",
+    "trigger": "ट्रिगर",
+    "appliesTo": "इस पर लागू: {{type}}",
+    "noTriggerDetails": "कोई ट्रिगर विवरण नहीं",
+    "created": "{{time}} बनाया गया",
+    "updated": "{{time}} अपडेट किया गया",
+    "cron": {
+        "am": "पूर्वाह्न",
+        "pm": "अपराह्न",
+        "everyDayAt": "हर दिन {{time}} बजे",
+        "everyDaysAt": "हर {{days}} को {{time}} बजे",
+        "onDayOfEveryMonthAt": "हर महीने के {{day}} तारीख को {{time}} बजे",
+        "onDayOfMonthsAt": "{{months}} के {{day}} तारीख को {{time}} बजे",
+        "everyDayOfMonthsAt": "{{months}} के हर दिन {{time}} बजे",
+        "days": {
+            "sunday": "रविवार",
+            "monday": "सोमवार",
+            "tuesday": "मंगलवार",
+            "wednesday": "बुधवार",
+            "thursday": "गुरुवार",
+            "friday": "शुक्रवार",
+            "saturday": "शनिवार"
+        },
+        "months": {
+            "january": "जनवरी",
+            "february": "फ़रवरी",
+            "march": "मार्च",
+            "april": "अप्रैल",
+            "may": "मई",
+            "june": "जून",
+            "july": "जुलाई",
+            "august": "अगस्त",
+            "september": "सितंबर",
+            "october": "अक्टूबर",
+            "november": "नवंबर",
+            "december": "दिसंबर"
+        }
+    }
+}

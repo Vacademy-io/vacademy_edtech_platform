@@ -1,0 +1,31 @@
+{
+    "dialogTitle": "Inscrire des {{term}}",
+    "stepper": {
+        "learners": "Sélectionner les {{term}}",
+        "courses": "Sélectionner les {{term}}",
+        "config": "Configuration de l'inscription",
+        "suborg": "Sous-organisation",
+        "preview": "Aperçu et confirmation"
+    },
+    "footer": {
+        "back": "← Retour",
+        "cancel": "Annuler",
+        "linkingGuardians": "Association des tuteurs…",
+        "loading": "Chargement…",
+        "previewButton": "Aperçu →",
+        "next": "Suivant →",
+        "enrolling": "Inscription en cours…",
+        "confirmEnrollment": "✓ Confirmer l'inscription"
+    },
+    "toasts": {
+        "previewFailed": "Échec de la génération de l'aperçu. Veuillez réessayer.",
+        "enrollmentComplete": "Inscription terminée ! ✅ {{successful}} inscrit(s), ⏭ {{skipped}} ignoré(s), ❌ {{failed}} échoué(s).",
+        "enrollmentFailed": "Échec de l'inscription. Veuillez réessayer.",
+        "guardianLinkFailed": "Échec de l'association du tuteur pour {{name}} : {{message}}"
+    },
+    "errors": {
+        "guardianLinkFallback": "Échec de l'association du tuteur.",
+        "invalidGuardianLinkSelection": "Sélection de lien tuteur invalide.",
+        "couldNotResolveCreatedUser": "Impossible de résoudre l'identifiant de l'utilisateur créé pour {{name}}."
+    }
+}

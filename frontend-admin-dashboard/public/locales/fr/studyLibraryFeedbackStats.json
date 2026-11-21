@@ -1,0 +1,13 @@
+{
+    "learnerFeedbackStats": "Statistiques des retours des apprenants",
+    "totalResponsesCollected_one": "{{count}} réponse collectée au total",
+    "totalResponsesCollected_many": "{{count}} réponses collectées au total",
+    "totalResponsesCollected_other": "{{count}} réponses collectées au total",
+    "ratingsCount_one": "{{count}} note",
+    "ratingsCount_many": "{{count}} notes",
+    "ratingsCount_other": "{{count}} notes",
+    "lowRatingsCount_one": "{{count}} note basse (< 3)",
+    "lowRatingsCount_many": "{{count}} notes basses (< 3)",
+    "lowRatingsCount_other": "{{count}} notes basses (< 3)",
+    "noWrittenResponsesYet": "Aucune réponse écrite pour l'instant."
+}

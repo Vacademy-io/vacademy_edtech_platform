@@ -1,6 +1,8 @@
 // ==================== REQUEST TYPES ====================
 
 import type { DiscountSpec } from './cpo-side-view-types';
+import type { AdminDiscountRequest } from '@/services/admin-discounts';
+import type { OfflinePaymentDetails } from '@/services/offline-payment-modes';
 
 /**
  * Per-installment override carried inside `cpo_config.installment_overrides`.
@@ -28,6 +30,65 @@ export interface CpoEnrollmentConfig {
     payment_mode?: 'OFFLINE' | 'SKIP' | null;
     payment_amount?: number | null;
     payment_reference?: string | null;
+    /**
+     * Learner-specific schedule (count, gap, first due date, edited rows). When set, the
+     * bills are generated from it instead of the fee plan's fixed installments; it also
+     * lets a one-time price be paid in installments. Never combined with
+     * `installment_overrides`. See docs/CPO_FLEXIBLE_INSTALLMENTS.md.
+     */
+    installment_schedule?: InstallmentSchedule | null;
+    /** How the offline payment was made (mode, option, reference); used when payment_mode is OFFLINE. */
+    payment_details?: OfflinePaymentDetails | null;
+}
+
+export type InstallmentIntervalUnit = 'DAYS' | 'MONTHS';
+
+export interface InstallmentScheduleRow {
+    /** YYYY-MM-DD */
+    due_date: string;
+    /** Gross amount (before discount). Omitted when the plan splits more than one fee. */
+    amount?: number | null;
+    /**
+     * Plan discount taken off this installment. When any row has one, the enrollment's
+     * discount is exactly these amounts (InstallmentScheduleService.rowDiscounts).
+     */
+    discount?: number | null;
+}
+
+/**
+ * How the enrollment discount is split over a custom schedule (wizard only, not sent):
+ * the same amount off each installment, all off the first or the last one (spilling to the
+ * next when one is too small), or typed per installment.
+ */
+export type ScheduleDiscountSplit = 'EVEN' | 'FIRST' | 'LAST' | 'CUSTOM';
+
+export interface InstallmentSchedule {
+    count?: number | null;
+    interval?: { unit: InstallmentIntervalUnit; value: number } | null;
+    /** YYYY-MM-DD */
+    first_due_date?: string | null;
+    /** Final rows; the backend uses these when present. */
+    rows?: InstallmentScheduleRow[] | null;
+    /** Wizard-only: how the discount is split over the rows. Stripped before sending. */
+    discount_split?: ScheduleDiscountSplit | null;
+}
+
+/** What the backend will write for one learner (dry run `cpo_schedule`). */
+export interface InstallmentSchedulePreview {
+    total_amount: number;
+    bill_count: number;
+    installments: Array<{
+        installment_number: number;
+        start_date: string | null;
+        due_date: string;
+        amount: number;
+    }>;
+    upfront_fees: Array<{
+        fee_type_id: string | null;
+        fee_type_name: string | null;
+        due_date: string;
+        amount: number;
+    }>;
 }
 
 export interface AssignmentItem {
@@ -74,6 +135,12 @@ export interface AssignmentItem {
      * with no sub-org and fires LEARNER_BATCH_ENROLLMENT instead of SUB_ORG_MEMBER_ENROLLMENT.
      */
     skip_sub_org?: boolean;
+
+    /**
+     * Admin-granted discount on the plan this assignment enrolls into (ONE_TIME /
+     * SUBSCRIPTION only — a CPO plan with a discount fails the item).
+     */
+    admin_discount?: AdminDiscountRequest | null;
 }
 
 export interface AssignOptions {
@@ -135,6 +202,52 @@ export interface BulkAssignRequest {
     user_filter?: UserFilterDTO | null;
     assignments: AssignmentItem[];
     options?: AssignOptions;
+    /** Enroll the courses together as one admission package. */
+    admission_package?: AdmissionPackageRequest | null;
+}
+
+/**
+ * Several courses enrolled together: one schedule, one discount, one payment at admission and
+ * one admission receipt. The backend splits it across the courses in proportion to their fees
+ * (AdmissionPackageSplitter); courses then carry no cpo_config / admin_discount of their own.
+ */
+export interface AdmissionPackageRequest {
+    /** For the record (type, value, reason); the rows' discounts are what count. */
+    discount?: DiscountSpec | null;
+    rows: { due_date: string; amount: number; discount: number }[];
+    payment_mode: 'SKIP' | 'OFFLINE';
+    payment_amount?: number | null;
+    payment_reference?: string | null;
+    payment_details?: OfflinePaymentDetails | null;
+}
+
+/** Wizard state of the admission package (Step 3). */
+export interface AdmissionPackageState {
+    enabled: boolean;
+    discount: DiscountSpec | null;
+    schedule: InstallmentSchedule;
+    payment_mode: 'SKIP' | 'OFFLINE';
+    payment_amount: number | null;
+    payment_details?: OfflinePaymentDetails | null;
+    /** What blocks Preview (translated); null when the package is ready. Wizard-only. */
+    error?: string | null;
+}
+
+/** How the backend split the package (dry run and real run). */
+export interface AdmissionPackagePreview {
+    fee_total: number;
+    discount_total: number;
+    net_total: number;
+    paid_at_admission: number;
+    courses: {
+        package_session_id: string;
+        fee: number;
+        discount: number;
+        net: number;
+        paid_at_admission: number;
+        rows: { due_date: string; amount: number; discount: number }[];
+    }[];
+    admission_package_ids?: string[];
 }
 
 export interface DeassignOptions {
@@ -147,6 +260,18 @@ export interface DeassignOptions {
      * Ignored for HARD.
      */
     access_till_date?: string | null;
+    /**
+     * HARD-mode only. Why the learner was terminated — kept in the admin
+     * activity log. Required when the institute's LEARNER_TERMINATION_REASON
+     * setting says so.
+     */
+    reason?: string | null;
+    /**
+     * HARD-mode only. Also permanently delete the course's payment history
+     * (payments, installments, invoices, ledger rows and the plan). Needs the
+     * `allowDeletePayments` Display Settings permission.
+     */
+    delete_payment_history?: boolean;
 }
 
 export interface BulkDeassignRequest {
@@ -173,6 +298,12 @@ export interface AssignResultItem {
     cpo_installment_count?: number | null;
     cpo_initial_payment_amount?: number | null;
     cpo_initial_payment_mode?: 'OFFLINE' | 'SKIP' | null;
+    /** Bills an installment schedule creates (or would, on a dry run). */
+    cpo_schedule?: InstallmentSchedulePreview | null;
+    /** Plan price before / discount / after the admin discount (also on dry_run). */
+    gross_amount?: number | null;
+    discount_amount?: number | null;
+    net_amount?: number | null;
 }
 
 export interface BulkAssignResponse {
@@ -185,6 +316,7 @@ export interface BulkAssignResponse {
         re_enrolled: number;
     };
     results: AssignResultItem[];
+    admission_package?: AdmissionPackagePreview | null;
 }
 
 export interface DeassignResultItem {
@@ -219,6 +351,7 @@ export interface PaymentPlan {
     validity_in_days: number | null;
     status: string;
     tag: string | null;
+    currency?: string | null;
 }
 
 export interface PaymentOption {
@@ -350,6 +483,38 @@ export interface SelectedPackageSession {
      * AssignmentItem. Applies to every learner selected in the bulk run.
      */
     cpoConfig?: CpoEnrollmentConfig;
+    /** Problem with the installment schedule in `cpoConfig`; blocks Preview while set. */
+    cpoScheduleError?: string | null;
+    /** Problem with the offline payment details in `cpoConfig`; blocks Preview while set. */
+    cpoPaymentError?: string | null;
+    /**
+     * This course records its payment in its own fee panel (a fee plan, or a one-time price
+     * paid in installments), so the shared "how was it paid" fields do not apply to it.
+     * Wizard-only; never sent.
+     */
+    ownsPayment?: boolean;
+    /**
+     * Auto mode: the invite the row resolved and shows (DEFAULT, or the only active one).
+     * Sent as enroll_invite_id so the enrollment uses exactly what the screen shows.
+     */
+    autoResolvedInviteId?: string | null;
+    /** Auto mode found several active invites and no DEFAULT one; blocks Preview. */
+    inviteNeedsChoice?: boolean;
+
+    /**
+     * Admin-granted discount for this course (Step 3). Applies to every learner in the
+     * bulk run; sent as `admin_discount` on the AssignmentItem. Absent / NONE = no discount.
+     */
+    adminDiscount?: AdminDiscountRequest;
+    /** Server rejection of the discount (e.g. invalid coupon); blocks Preview while set. */
+    adminDiscountError?: string | null;
+
+    /**
+     * Admission package (wizard-only): this course's fee as the package sees it, or why it
+     * cannot be part of a package. Both undefined until the invite resolves.
+     */
+    packageFee?: number | null;
+    packageBlocker?: string | null;
 
     /**
      * True when `package_session.is_org_associated` — enrolling into it requires choosing the
@@ -435,6 +600,10 @@ export interface BulkEnrollOptions {
     sendCredentials: boolean;
     transactionId: string;
     paymentDate: string;
+    /** How the payment was made; sent only with a payment date or transaction id. */
+    paymentDetails?: OfflinePaymentDetails;
+    /** What blocks Preview in those payment details (translated), if anything. */
+    paymentDetailsError?: string | null;
 }
 
 /** Full 4-step wizard state */

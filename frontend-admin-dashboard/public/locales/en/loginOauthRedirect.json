@@ -1,0 +1,5 @@
+{
+    "oauthFailed": "OAuth failed. Redirecting to login...",
+    "oauthProcessingFailed": "OAuth processing failed. Redirecting to login...",
+    "handlingOauthRedirect": "Handling OAuth redirect..."
+}

@@ -1,0 +1,63 @@
+{
+    "columns": {
+        "email": "ईमेल",
+        "fullName": "पूरा नाम",
+        "mobileNumber": "मोबाइल नंबर",
+        "username": "यूज़रनेम",
+        "password": "पासवर्ड",
+        "address": "पता",
+        "pinCode": "पिन कोड",
+        "paymentDate": "भुगतान तिथि (dd/MM/yyyy)",
+        "transactionId": "लेन-देन आईडी",
+        "gender": "लिंग",
+        "dateOfBirth": "जन्म तिथि",
+        "city": "शहर",
+        "region": "राज्य/क्षेत्र",
+        "linkedInstituteName": "कॉलेज/स्कूल",
+        "fathersName": "पिता का नाम",
+        "mothersName": "माता का नाम",
+        "fathersMobile": "पिता का मोबाइल",
+        "fathersEmail": "पिता का ईमेल",
+        "mothersMobile": "माता का मोबाइल",
+        "mothersEmail": "माता का ईमेल"
+    },
+    "template": {
+        "downloadTitle": "टेम्पलेट डाउनलोड करें",
+        "instructions": "टेम्पलेट भरें और फिर से अपलोड करें। आवश्यक कॉलम:",
+        "optionalCount": "+ {{count}} वैकल्पिक",
+        "customFieldsIncluded_one": "(इसमें {{count}} कस्टम फ़ील्ड शामिल है)",
+        "customFieldsIncluded_other": "(इसमें {{count}} कस्टम फ़ील्ड शामिल हैं)",
+        "templateButton": "टेम्पलेट"
+    },
+    "picker": {
+        "title": "टेम्पलेट कॉलम चुनें",
+        "description": "आवश्यक कॉलम हमेशा शामिल रहते हैं; अपलोड फिर भी किसी भी उप-समूह को स्वीकार करता है।",
+        "clearOptional": "वैकल्पिक हटाएं",
+        "selectAll": "सभी चुनें",
+        "required": "आवश्यक",
+        "columnsSelected_one": "{{count}} कॉलम चयनित",
+        "columnsSelected_other": "{{count}} कॉलम चयनित",
+        "cancel": "रद्द करें",
+        "download": "डाउनलोड करें"
+    },
+    "dropzone": {
+        "dragDrop": "यहाँ CSV फ़ाइल खींचें और छोड़ें",
+        "orBrowse": "या ब्राउज़ करने के लिए क्लिक करें"
+    },
+    "errors": {
+        "missingRequiredColumn": "आवश्यक कॉलम गायब है: \"{{column}}\"",
+        "rowFieldRequired": "पंक्ति {{rowNum}}: {{field}} आवश्यक है",
+        "rowUsernameSpaces": "पंक्ति {{rowNum}}: यूज़रनेम में स्पेस नहीं हो सकता",
+        "rowInvalidPaymentDate": "पंक्ति {{rowNum}}: अमान्य payment_date प्रारूप \"{{value}}\"",
+        "notCsvFile": "कृपया .csv फ़ाइल अपलोड करें"
+    },
+    "preview": {
+        "rowsDetected_one": "{{count}} मान्य पंक्ति मिली",
+        "rowsDetected_other": "{{count}} मान्य पंक्तियाँ मिलीं",
+        "addLearners_one": "{{count}} विद्यार्थी जोड़ें",
+        "addLearners_other": "{{count}} विद्यार्थी जोड़ें",
+        "customFieldsCount_one": "({{count}} कस्टम फ़ील्ड)",
+        "customFieldsCount_other": "({{count}} कस्टम फ़ील्ड)",
+        "andMore": "…और {{count}} और"
+    }
+}

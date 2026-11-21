@@ -1,0 +1,23 @@
+{
+    "settingsPopover": {
+        "title": "प्रश्न सेटिंग्स",
+        "questionTypeLabel": "प्रश्न प्रकार"
+    },
+    "questionHeader": {
+        "questionLabel": "प्रश्न"
+    },
+    "trueFalseOption": {
+        "markerFallback": "({{label}}.)",
+        "trueLabel": "सत्य",
+        "falseLabel": "असत्य"
+    },
+    "trueFalseOptions": {
+        "answerDefaultLabel": "उत्तर:"
+    },
+    "explanationSection": {
+        "defaultLabel": "व्याख्या:"
+    },
+    "emptyState": {
+        "message": "प्रश्न विवरण दिखाने के लिए कृपया एक प्रश्न जोड़ें"
+    }
+}

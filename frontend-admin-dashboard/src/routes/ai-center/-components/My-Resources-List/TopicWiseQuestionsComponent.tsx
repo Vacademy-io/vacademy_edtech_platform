@@ -3,18 +3,24 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { handleSortSplitPDF } from '../../-services/ai-center-service';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import AITasksList from '../AITasksList';
-import { PromptDummyData } from '../Prompt-dummy-data';
+import { buildPromptDummyData } from '../Prompt-dummy-data';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { getRandomTaskName } from '../../-utils/helper';
 
-type PromptType = keyof typeof PromptDummyData;
+type PromptType = keyof ReturnType<typeof buildPromptDummyData>;
 
 const TopicWiseQuestionsComponent = ({ fileId }: { fileId: string }) => {
+    const { t } = useTranslation([
+        'aiCenterTopicWiseQuestionsComponent',
+        'aiCenterPromptDummyData',
+    ]);
+    const promptDummyData = buildPromptDummyData(t);
     const [prompt, setPrompt] = useState('');
     const [enableDialog, setEnableDialog] = useState(false);
     const [extractQuestionsDialog, setExtractQuestionsDialog] = useState(false);
@@ -65,23 +71,23 @@ const TopicWiseQuestionsComponent = ({ fileId }: { fileId: string }) => {
         <>
             <Dialog open={extractQuestionsDialog} onOpenChange={handleCloseExtractQuestionDialog}>
                 <DialogTrigger>
-                    <Badge className="cursor-pointer whitespace-nowrap bg-[#F5F0FF]">
-                        Topic Wise Sort Questions
+                    <Badge className="cursor-pointer whitespace-nowrap bg-primary-50">
+                        {t('trigger.label')}
                     </Badge>
                 </DialogTrigger>
                 <DialogContent className="p-0">
                     <h1 className="rounded-t-lg bg-primary-50 p-4 font-semibold text-primary-500">
-                        Topic Wise Sort Questions
+                        {t('dialog.title')}
                     </h1>
                     <div className="flex flex-col gap-4 p-4">
                         <div className="flex flex-col gap-2">
                             <h1>
-                                {PromptDummyData[selectedValue].heading}
+                                {promptDummyData[selectedValue].heading}
                                 <span className="text-red-500">*</span>
                             </h1>
                             <Textarea
-                                placeholder={PromptDummyData[selectedValue].description}
-                                className="h-[100px] w-full"
+                                placeholder={promptDummyData[selectedValue].description}
+                                className="h-24 w-full"
                                 value={prompt}
                                 onChange={(e) => setPrompt?.(e.target.value)}
                             />
@@ -95,15 +101,15 @@ const TopicWiseQuestionsComponent = ({ fileId }: { fileId: string }) => {
                             >
                                 <div className="flex items-center space-x-2">
                                     <RadioGroupItem value="topic" id="r1" />
-                                    <Label htmlFor="r1">Select any topic questions covered</Label>
+                                    <Label htmlFor="r1">{t('dialog.options.topic')}</Label>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                     <RadioGroupItem value="pages" id="r2" />
-                                    <Label htmlFor="r2">Select questions from specific pages</Label>
+                                    <Label htmlFor="r2">{t('dialog.options.pages')}</Label>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                     <RadioGroupItem value="questionNo" id="r3" />
-                                    <Label htmlFor="r3">Select a set of questions</Label>
+                                    <Label htmlFor="r3">{t('dialog.options.questionNo')}</Label>
                                 </div>
                             </RadioGroup>
                         </div>
@@ -127,7 +133,7 @@ const TopicWiseQuestionsComponent = ({ fileId }: { fileId: string }) => {
                                 onClick={handleExtractQuestions}
                                 disable={!prompt}
                             >
-                                Extract
+                                {t('dialog.extractButton')}
                             </MyButton>
                         )}
                     </div>
@@ -135,7 +141,7 @@ const TopicWiseQuestionsComponent = ({ fileId }: { fileId: string }) => {
             </Dialog>
             {enableDialog && (
                 <AITasksList
-                    heading="Vsmart Organizer"
+                    heading={t('tasksList.heading')}
                     enableDialog={enableDialog}
                     setEnableDialog={setEnableDialog}
                 />

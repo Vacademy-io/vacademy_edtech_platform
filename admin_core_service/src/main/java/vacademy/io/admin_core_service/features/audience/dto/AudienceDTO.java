@@ -10,6 +10,7 @@ import vacademy.io.admin_core_service.features.common.dto.InstituteCustomFieldDT
 
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Map;
 
 /**
  * DTO for Audience Campaign creation and management
@@ -42,6 +43,23 @@ public class AudienceDTO {
 
     /** Sub-org this campaign belongs to (child-institute id). Nullable. */
     private String subOrgId;
+
+    /**
+     * The counsellor pool this lead list feeds, when it is attached to one.
+     * Read-only, hydrated per page from counselor_pool_audience — an audience
+     * belongs to at most ONE pool (the repository enforces it with
+     * existsByAudienceId at pool create/update time), so these are single
+     * values rather than a list. Null when the list has no pool, which is the
+     * normal state for lists that are not auto-assigned.
+     */
+    private String poolId;
+    private String poolName;
+
+    /**
+     * Key -> value tags on this list, e.g. {"state": "Maharashtra", "course": "MBA"}. One value
+     * per key. On update, null leaves the saved tags unchanged and an empty map clears them.
+     */
+    private Map<String, String> tags;
 
     // Custom fields for the form
     private List<InstituteCustomFieldDTO> instituteCustomFields;

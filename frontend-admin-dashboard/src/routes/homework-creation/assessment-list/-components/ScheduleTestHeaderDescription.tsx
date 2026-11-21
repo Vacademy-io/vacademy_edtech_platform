@@ -3,11 +3,13 @@ import { MyButton } from '@/components/design-system/button';
 import { CalendarBlank } from '@phosphor-icons/react';
 import { useNavigate } from '@tanstack/react-router';
 import { useAssessmentActionVisibility } from '@/lib/display-settings/assessment-actions';
+import { useTranslation } from 'react-i18next';
 
 export const ScheduleTestHeaderDescription = () => {
     const isMobile = useIsMobile();
     const navigate = useNavigate();
     const { canCreate } = useAssessmentActionVisibility();
+    const { t } = useTranslation('homeworkCreationScheduleTestHeaderDescription');
 
     const handleRedirectRoute = (type: string) => {
         navigate({
@@ -29,15 +31,10 @@ export const ScheduleTestHeaderDescription = () => {
             }`}
         >
             <div className="flex flex-col">
-                <h1 className="text-[1.25rem] font-semibold text-neutral-600">
-                    Comprehensive Test Management
+                <h1 className="text-h3 font-semibold text-neutral-600">
+                    {t('heading')}
                 </h1>
-                <p className="text-neutral-600">
-                    Effortlessly monitor and manage all homeworks with a comprehensive view of
-                    ongoing, upcoming, and past exams. Gain easy access to each test&rsquo;s
-                    details, schedule, and status, ensuring organized oversight of the entire
-                    testing process from start to finish.
-                </p>
+                <p className="text-neutral-600">{t('description')}</p>
             </div>
             {canCreate && (
                 <MyButton
@@ -48,7 +45,7 @@ export const ScheduleTestHeaderDescription = () => {
                     onClick={() => handleRedirectRoute('EXAM')}
                 >
                     <CalendarBlank size={32} />
-                    Create Homework
+                    {t('createHomeworkButton')}
                 </MyButton>
             )}
         </div>

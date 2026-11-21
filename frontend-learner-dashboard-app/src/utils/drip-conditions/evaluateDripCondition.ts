@@ -1,3 +1,8 @@
+/**
+ * A Python twin lives in ai_service/app/services/course_knowledge/drip.py
+ * (the student AI uses it to decide which lessons it may quote). Change both,
+ * and update the shared fixtures in __fixtures__/drip_parity_cases.json.
+ */
 import type {
   DripConditionJson,
   DripConditionRule,
@@ -47,16 +52,6 @@ export interface LearnerProgressData {
   enrollmentDate?: Date | string | null;
   /** Batch/session start date, used by `relative_date` rules anchored to it. */
   sessionStartDate?: Date | string | null;
-  /**
-   * Narrow the "first item is always accessible" escape hatch to progress
-   * rules only, so a time rule on item 0 is actually honoured.
-   *
-   * Defaults to false, which keeps the original broad exemption. Institutes
-   * that have never opted into the configured-rules path still have live
-   * date rules whose first item has been open for months; flipping that
-   * silently would close it under them.
-   */
-  strictFirstItem?: boolean;
 }
 
 /**
@@ -350,15 +345,16 @@ export function evaluateDripCondition(
   // PROGRESS rule. Those rules read "finish what came before", and nothing
   // comes before item 0 — without this they deadlock the whole course.
   //
-  // Under `strictFirstItem` time rules are excluded from the exemption. They
-  // cannot deadlock (the clock always advances), and a day-wise schedule that
-  // silently unlocked its first item early would be wrong: "Day 5" has to mean
-  // day 5 even for the first chapter of a module. Opt-in, because live courses
-  // already rely on the broader exemption.
+  // Time rules get no such exemption. They cannot deadlock (the clock always
+  // advances), and a schedule that silently opened its first item early would
+  // be wrong: "Day 5" has to mean day 5 even for the first chapter of a
+  // module, and "unlock on the 19th" has to hold for the first slide too.
+  // (This used to be opt-in behind strictFirstItem; dropped once no legacy
+  // time rule in production was still in the future, Sep 2026.)
   const itemIndex = progressData.itemIndex ?? 0;
-  const rulesDeadlockOnFirstItem =
-    !progressData.strictFirstItem ||
-    condition.rules.every((rule) => PROGRESS_RULE_TYPES.includes(rule.type));
+  const rulesDeadlockOnFirstItem = condition.rules.every((rule) =>
+    PROGRESS_RULE_TYPES.includes(rule.type)
+  );
   if (itemIndex === 0 && rulesDeadlockOnFirstItem) {
     return {
       isLocked: false,

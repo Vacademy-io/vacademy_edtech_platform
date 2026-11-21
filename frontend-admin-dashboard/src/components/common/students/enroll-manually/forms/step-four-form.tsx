@@ -15,6 +15,14 @@ import { getUserId } from '@/utils/userDetails';
 import { formatPlanPrice } from '@/utils/finance-utils';
 import { MyDropdown } from '../dropdownForPackageItems';
 import { DropdownValueType } from '../dropdownTypesForPackageItems';
+import { AdminDiscountField, EMPTY_ADMIN_DISCOUNT } from '@/components/common/payments/AdminDiscountField';
+import { useCanApplyDiscounts } from '@/hooks/useCanApplyDiscounts';
+import {
+    getAdminDiscountValidationError,
+    isDiscountablePlanType,
+    type AdminDiscountPreview,
+    type AdminDiscountRequest,
+} from '@/services/admin-discounts';
 
 interface PaymentPlan {
     id: string;
@@ -33,10 +41,15 @@ export const StepFourForm = ({
     initialValues?: StudentTable;
     submitFn: (fn: () => void) => void;
 }) => {
-    const { stepThreeData, stepFourData, setStepFourData, nextStep } = useFormStore();
+    const { stepTwoData, stepThreeData, stepFourData, setStepFourData, nextStep } = useFormStore();
 
     // Get payment plans from step 3 invite data
     const paymentPlans: PaymentPlan[] = stepThreeData?.invite?.payment_plans || [];
+    // Admin discounts only apply to ONE_TIME / SUBSCRIPTION plans (never FREE/DONATION/CPO).
+    const paymentOptionType = stepThreeData?.invite?.payment_option_type;
+    const canApplyDiscounts = useCanApplyDiscounts();
+    const canDiscount = isDiscountablePlanType(paymentOptionType) && canApplyDiscounts;
+    const isSubscription = (paymentOptionType || '').toUpperCase() === 'SUBSCRIPTION';
 
     // File upload using useFileUpload hook
     const fileUpload = useFileUpload();
@@ -52,9 +65,26 @@ export const StepFourForm = ({
             currency: '',
             file_id: '',
             transaction_id: '',
+            admin_discount: EMPTY_ADMIN_DISCOUNT,
         },
         mode: 'onChange',
     });
+
+    const watchedPlanId = form.watch('plan_id');
+    const adminDiscount = (form.watch('admin_discount') as AdminDiscountRequest | undefined) ??
+        EMPTY_ADMIN_DISCOUNT;
+    const selectedPlan = paymentPlans.find((p) => p.id === watchedPlanId);
+    const [discountError, setDiscountError] = useState<string | null>(null);
+
+    // With a discount, the recorded manual payment defaults to the net amount; without one
+    // it goes back to the plan's price.
+    const handleDiscountPreview = (preview: AdminDiscountPreview | null) => {
+        if (preview && adminDiscount.mode !== 'NONE') {
+            form.setValue('amount', String(preview.net_amount));
+        } else if (selectedPlan) {
+            form.setValue('amount', String(selectedPlan.actual_price || 0));
+        }
+    };
 
     // Update form when stepFourData changes
     useEffect(() => {
@@ -114,7 +144,25 @@ export const StepFourForm = ({
         form.setValue('file_id', '');
     };
 
+    const [discountServerError, setDiscountServerError] = useState<string | null>(null);
+
     const onSubmit = (values: StepFourData) => {
+        const discountErr = canDiscount
+            ? getAdminDiscountValidationError(
+                  values.admin_discount as AdminDiscountRequest | undefined,
+                  selectedPlan?.actual_price
+              )
+            : null;
+        if (discountErr) {
+            setDiscountError(discountErr);
+            return;
+        }
+        if (canDiscount && discountServerError && values.admin_discount?.mode !== 'NONE') {
+            setDiscountError(discountServerError);
+            return;
+        }
+        setDiscountError(null);
+        if (!canDiscount) values = { ...values, admin_discount: EMPTY_ADMIN_DISCOUNT };
         console.log('💰 Step 4 - Payment details:', {
             payment_option_id: stepThreeData?.invite?.payment_option_id,
             plan_id: values.plan_id,
@@ -205,6 +253,12 @@ export const StepFourForm = ({
 
                                                                 // Set plan_id
                                                                 form.setValue('plan_id', value.id);
+                                                                // A discount priced against the old
+                                                                // plan no longer applies.
+                                                                form.setValue(
+                                                                    'admin_discount',
+                                                                    EMPTY_ADMIN_DISCOUNT
+                                                                );
 
                                                                 // Auto-fill amount and currency from plan
                                                                 if (selectedPlan) {
@@ -251,6 +305,33 @@ export const StepFourForm = ({
                                     );
                                 }}
                             />
+
+                            {/* Admin-granted discount — ONE_TIME / SUBSCRIPTION plans only */}
+                            {canDiscount && watchedPlanId && (
+                                <div className="rounded-lg border border-neutral-200 p-4">
+                                    <AdminDiscountField
+                                        value={adminDiscount}
+                                        onChange={(v) => {
+                                            setDiscountError(null);
+                                            form.setValue('admin_discount', v);
+                                        }}
+                                        paymentPlanId={watchedPlanId}
+                                        isSubscription={isSubscription}
+                                        currency={selectedPlan?.currency || 'INR'}
+                                        packageSessionId={
+                                            stepThreeData?.invite?.package_session_ids?.[0]
+                                        }
+                                        enrollInviteId={stepThreeData?.invite?.id}
+                                        learnerEmail={stepTwoData?.email || undefined}
+                                        onPreview={handleDiscountPreview}
+                                        onServerErrorChange={setDiscountServerError}
+                                        label="Discount (optional)"
+                                    />
+                                    {discountError && (
+                                        <p className="mt-2 text-sm text-red-500">{discountError}</p>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Payment Receipt File Upload (Optional) */}
                             <FormField

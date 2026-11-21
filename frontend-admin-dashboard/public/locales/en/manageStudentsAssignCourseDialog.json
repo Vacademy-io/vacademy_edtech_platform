@@ -1,0 +1,83 @@
+{
+    "dialogTitle": "Assign to {{term}}",
+    "selectCourses": {
+        "description": "Assign <strong>{{name}}</strong> to one or more courses.",
+        "searchPlaceholder": "Search courses...",
+        "selectedCount": "{{selected}} of {{total}} selected",
+        "selectAll": "Select All",
+        "deselectAll": "Deselect All",
+        "noCoursesFound": "No courses found"
+    },
+    "configure": {
+        "description": "Configure enrollment settings for each course. You can leave everything as <strong>\"Auto (Default)\"</strong> for a quick free enrollment, or pick a specific invite per course.",
+        "optionsLabel": "Options",
+        "duplicateHandlingLabel": "If already enrolled:",
+        "duplicateOptions": {
+            "skip": "Skip",
+            "error": "Error",
+            "reEnroll": "Re-enroll"
+        },
+        "notifyLabel": "Notify learner via email"
+    },
+    "preview": {
+        "title": "Preview — Dry Run Results",
+        "willSucceed_one": "{{count}} will succeed",
+        "willSucceed_other": "{{count}} will succeed",
+        "skipped_one": "{{count}} skipped",
+        "skipped_other": "{{count}} skipped",
+        "failed_one": "{{count}} failed",
+        "failed_other": "{{count}} failed",
+        "inviteConfigTitle": "Invite Configuration",
+        "autoDefault": "Auto (Default)",
+        "cpoBadge": "CPO",
+        "installments_one": "{{count}} installment",
+        "installments_other": "{{count}} installments",
+        "totalAmount": "total ₹{{amount}}",
+        "recordingNow": "recording ₹{{amount}} now",
+        "noInitialPayment": "no initial payment",
+        "tableHeaders": {
+            "course": "Course",
+            "action": "Action",
+            "status": "Status"
+        }
+    },
+    "results": {
+        "title": "Assignment Complete",
+        "assigned_one": "{{count}} assigned",
+        "assigned_other": "{{count}} assigned",
+        "skipped_one": "{{count}} skipped",
+        "skipped_other": "{{count}} skipped",
+        "failed_one": "{{count}} failed",
+        "failed_other": "{{count}} failed",
+        "tableHeaders": {
+            "course": "Course",
+            "status": "Status",
+            "message": "Message"
+        }
+    },
+    "stepper": {
+        "select": "Select",
+        "configure": "Configure",
+        "preview": "Preview",
+        "done": "Done"
+    },
+    "footer": {
+        "cancel": "Cancel",
+        "nextConfigure_one": "Next → Configure ({{count}})",
+        "nextConfigure_other": "Next → Configure ({{count}})",
+        "back": "← Back",
+        "loading": "Loading...",
+        "previewButton": "Preview →",
+        "assigning": "Assigning...",
+        "confirmAssignment": "✓ Confirm Assignment",
+        "done": "Done"
+    },
+    "toasts": {
+        "loadCoursesFailed": "Failed to load courses",
+        "previewFailed": "Preview failed",
+        "assignFailed": "Assignment failed",
+        "assignSuccess_one": "{{count}} course assigned successfully!",
+        "assignSuccess_other": "{{count}} courses assigned successfully!",
+        "assignPartial": "{{successful}} assigned, {{failed}} failed."
+    }
+}

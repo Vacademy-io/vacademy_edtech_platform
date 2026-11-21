@@ -1,0 +1,39 @@
+{
+    "tooltips": {
+        "draftAssessmentTooltip": "Les évaluations en brouillon ne peuvent pas être passées avant d'être publiées"
+    },
+    "labels": {
+        "ends": "Se termine le {{date}}",
+        "durationMinutes_one": "{{count}} min",
+        "durationMinutes_many": "{{count}} min",
+        "durationMinutes_other": "{{count}} min"
+    },
+    "fallbackAssessmentName": "Évaluation {{number}}",
+    "assessmentSlideTitle": "Évaluation : {{name}}",
+    "assessmentFallbackBaseName": "Évaluation",
+    "errors": {
+        "linkFailed": "Échec de la liaison de l'évaluation"
+    },
+    "toasts": {
+        "linkedAsSlide": "Évaluation liée comme diapositive"
+    },
+    "search": {
+        "placeholder": "Rechercher des évaluations par nom..."
+    },
+    "states": {
+        "loading": "Chargement des évaluations...",
+        "loadFailed": "Échec du chargement des évaluations. Veuillez réessayer.",
+        "noSearchMatches": "Aucune évaluation ne correspond à votre recherche.",
+        "noAssessmentsAvailable": "Aucune évaluation disponible pour cet établissement."
+    },
+    "pagination": {
+        "pageOf": "Page {{page}} sur {{totalPages}}",
+        "prev": "Précédent",
+        "next": "Suivant"
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "linking": "Liaison en cours...",
+        "linkAsSlide": "Lier comme diapositive"
+    }
+}

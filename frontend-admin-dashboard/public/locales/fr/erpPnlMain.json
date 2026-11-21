@@ -1,0 +1,31 @@
+{
+    "toast": {
+        "downloaded": "Instantané du compte de résultat téléchargé"
+    },
+    "errors": {
+        "downloadFailed": "Impossible de télécharger l'instantané du compte de résultat.",
+        "loadFailed": "Impossible de charger l'instantané du compte de résultat."
+    },
+    "subtitle": "Revenu de frais réellement encaissé en {{month}}, comparé à ce que la paie a coûté à l'établissement pour le même mois.",
+    "periodLabel": "Période",
+    "preparing": "Préparation…",
+    "downloadCsv": "Télécharger le CSV",
+    "checkWarnings": "À vérifier avant de se fier à ces chiffres",
+    "journal": {
+        "postedWithCount_one": "Journal de paie comptabilisé pour cette période ({{count}} écriture).",
+        "postedWithCount_many": "Journal de paie comptabilisé pour cette période ({{count}} d'écritures).",
+        "postedWithCount_other": "Journal de paie comptabilisé pour cette période ({{count}} écritures).",
+        "posted": "Journal de paie comptabilisé pour cette période.",
+        "notPosted": "Aucun journal de paie pour cette période pour l'instant — l'approbation du cycle de paie le comptabilise."
+    },
+    "costByDepartment": "Coût par département",
+    "employerCostHint": "Le coût employeur correspond au salaire brut plus les cotisations patronales légales.",
+    "noCostRecorded": "Aucun coût de paie enregistré pour {{month}}.",
+    "columns": {
+        "department": "Département",
+        "headcount": "Effectif",
+        "employerCost": "Coût employeur",
+        "share": "Part"
+    },
+    "total": "Total"
+}

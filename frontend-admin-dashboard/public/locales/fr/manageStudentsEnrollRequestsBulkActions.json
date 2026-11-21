@@ -1,0 +1,7 @@
+{
+    "selectedCount_one": "[{{count}}] sélectionné",
+    "selectedCount_many": "[{{count}}] sélectionnés",
+    "selectedCount_other": "[{{count}}] sélectionnés",
+    "reset": "Réinitialiser",
+    "bulkActions": "Actions groupées"
+}

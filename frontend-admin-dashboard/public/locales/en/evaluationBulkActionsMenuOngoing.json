@@ -1,0 +1,6 @@
+{
+    "increaseAssessmentTime": "Increase Assessment Time",
+    "closeSubmission": "Close Submission",
+    "studentsCount_one": "{{count}} student",
+    "studentsCount_other": "{{count}} students"
+}

@@ -1,0 +1,26 @@
+{
+    "tabbedContent": "Tabbed Content",
+    "addTab": "+ Add Tab",
+    "preview": "Preview",
+    "edit": "Edit",
+    "switchOrRenameHint": "Click to switch · Double-click to rename",
+    "untitled": "Untitled",
+    "renameTab": "Rename tab",
+    "removeTab": "Remove tab",
+    "tabColorLabel": "Tab colour:",
+    "defaultTabLabel": "Tab {{number}}",
+    "genericTab": "Tab",
+    "contentPlaceholder": "Content for \"{{label}}\"…",
+    "emptyTabContent": "Empty tab content",
+    "tabColors": {
+        "default": "Default",
+        "blue": "Blue",
+        "green": "Green",
+        "red": "Red",
+        "orange": "Orange",
+        "purple": "Purple",
+        "teal": "Teal",
+        "pink": "Pink",
+        "gray": "Gray"
+    }
+}

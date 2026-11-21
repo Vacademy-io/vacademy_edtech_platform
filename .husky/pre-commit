@@ -19,6 +19,28 @@ if [ -e "$(git rev-parse --git-dir)/MERGE_HEAD" ] \
   exit 0
 fi
 
+# AI schema catalog freshness gate. The ai_service catalog and the admin copy
+# of the design patterns are generated from the editor templates, the learner
+# design-pattern registry and the Brahm Varchas fixture; a stale output means
+# the MCP / composer describe widgets that are not what the editor and the
+# renderer do. Runs only when an input or an output is staged (esbuild, ~2 s).
+catalog_inputs=$(git diff --cached --name-only --diff-filter=ACMD \
+  | grep -E '^(scripts/export-catalogue-schema-catalog\.mjs|ai_service/app/data/catalogue_schema_catalog\.json|frontend-admin-dashboard/src/routes/manage-pages/-utils/|frontend-admin-dashboard/src/routes/manage-pages/-components/__fixtures__/brahm-varchas-site\.json|frontend-learner-dashboard-app/src/routes/\$tagName/(-ai|-types)/|frontend-learner-dashboard-app/src/routes/\$tagName/-utils/catalogue-palette\.ts)' || true)
+if [ -n "$catalog_inputs" ]; then
+  if [ -d frontend-admin-dashboard/node_modules ]; then
+    node scripts/export-catalogue-schema-catalog.mjs --check
+    catalog_status=$?
+    if [ "$catalog_status" -ne 0 ]; then
+      echo ""
+      echo "Commit blocked: the AI schema catalog is stale."
+      echo "Run: node scripts/export-catalogue-schema-catalog.mjs  then stage its outputs."
+      exit $catalog_status
+    fi
+  else
+    echo "Skipping the AI schema catalog check: frontend-admin-dashboard/node_modules is missing."
+  fi
+fi
+
 files=$(git diff --cached --name-only --diff-filter=ACM \
   | grep -E '^frontend-(admin-dashboard|learner-dashboard-app)/src/.*\.(tsx|ts|css)$' || true)
 

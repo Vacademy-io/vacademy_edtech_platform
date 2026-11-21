@@ -1,0 +1,16 @@
+{
+    "menu": {
+        "edit": "Edit",
+        "delete": "Delete"
+    },
+    "toast": {
+        "deleteSuccess": "Invite deleted!",
+        "deleteError": "Failed to delete the invite link!"
+    },
+    "deleteDialog": {
+        "heading": "Delete Dialog",
+        "confirmText": "Are you sure you want to delete the {{name}} invite?",
+        "cancel": "Cancel",
+        "confirm": "Yes, I am sure"
+    }
+}

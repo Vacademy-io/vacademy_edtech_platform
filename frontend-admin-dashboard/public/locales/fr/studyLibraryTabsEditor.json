@@ -1,0 +1,26 @@
+{
+    "tabbedContent": "Contenu à onglets",
+    "addTab": "+ Ajouter un onglet",
+    "preview": "Aperçu",
+    "edit": "Modifier",
+    "switchOrRenameHint": "Cliquez pour changer d'onglet · Double-cliquez pour renommer",
+    "untitled": "Sans titre",
+    "renameTab": "Renommer l'onglet",
+    "removeTab": "Supprimer l'onglet",
+    "tabColorLabel": "Couleur de l'onglet :",
+    "defaultTabLabel": "Onglet {{number}}",
+    "genericTab": "Onglet",
+    "contentPlaceholder": "Contenu de « {{label}} »…",
+    "emptyTabContent": "Contenu de l'onglet vide",
+    "tabColors": {
+        "default": "Par défaut",
+        "blue": "Bleu",
+        "green": "Vert",
+        "red": "Rouge",
+        "orange": "Orange",
+        "purple": "Violet",
+        "teal": "Sarcelle",
+        "pink": "Rose",
+        "gray": "Gris"
+    }
+}

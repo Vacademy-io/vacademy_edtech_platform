@@ -1,0 +1,16 @@
+{
+    "emptyState": "Aucun·e {{nounPlural}} n'existe encore pour cet établissement. Créez-en un·e, puis revenez ici.",
+    "selectNoun": "Sélectionner {{noun}}",
+    "countSelected": "{{count}} {{noun}} sélectionné(s)",
+    "searchPlaceholder": "Rechercher {{nounPlural}}, niveaux ou sessions…",
+    "noMatch": "Aucun·e {{nounPlural}} ne correspond à « {{query}} ».",
+    "selectAll": "Tout sélectionner",
+    "clearGroup": "Effacer",
+    "orgSuffix": " · sous-organisation",
+    "footerSelectedCount_one": "{{count}} sélectionné",
+    "footerSelectedCount_many": "{{count}} sélectionnés",
+    "footerSelectedCount_other": "{{count}} sélectionnés",
+    "clearAll": "Tout effacer",
+    "done": "Terminé",
+    "removeAria": "Retirer {{label}}"
+}

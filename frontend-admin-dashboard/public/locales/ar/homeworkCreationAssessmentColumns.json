@@ -1,0 +1,17 @@
+{
+    "columns": {
+        "name": "الاسم",
+        "batch": "الدفعة",
+        "enrollmentNumber": "رقم التسجيل",
+        "collegeSchool": "الكلية/المدرسة",
+        "gender": "الجنس",
+        "mobileNumber": "رقم الجوال",
+        "emailId": "البريد الإلكتروني",
+        "city": "المدينة",
+        "state": "المنطقة"
+    },
+    "sort": {
+        "ascending": "تصاعدي",
+        "descending": "تنازلي"
+    }
+}

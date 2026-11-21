@@ -14,10 +14,14 @@ import jakarta.mail.Session;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
+import vacademy.io.notification_service.features.bounced_emails.service.BounceNoticeRecipients;
+import vacademy.io.notification_service.features.bounced_emails.service.BouncedEmailService;
+import vacademy.io.notification_service.features.email_inbox.service.InboundMimeParts;
 import vacademy.io.notification_service.features.notification_log.entity.EmailAddressMapping;
 import vacademy.io.notification_service.features.notification_log.entity.NotificationLog;
 import vacademy.io.notification_service.features.notification_log.repository.EmailAddressMappingRepository;
@@ -26,6 +30,7 @@ import vacademy.io.notification_service.features.notification_log.repository.Not
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,11 +47,16 @@ public class InboundEmailService {
 
     private static final int MAX_INBOUND_PER_MINUTE = 10;
     private static final int MAX_BODY_BYTES = 65536; // 64 KB
+    private static final Duration BOUNCE_NOTICE_WINDOW = Duration.ofDays(7);
 
     private final AmazonS3 inboundS3Client;
     private final NotificationLogRepository notificationLogRepository;
     private final EmailAddressMappingRepository emailAddressMappingRepository;
     private final ObjectMapper objectMapper;
+
+    /** The blocklist a bounce notice feeds; field-injected so the constructor stays as it was. */
+    @Autowired(required = false)
+    private BouncedEmailService bouncedEmailService;
 
     @Value("${aws.s3.inbound-email-bucket}")
     private String inboundBucket;
@@ -81,6 +91,7 @@ public class InboundEmailService {
             String messageId = extractHeader(mimeMessage, "Message-ID");
             String inReplyTo = extractHeader(mimeMessage, "In-Reply-To");
             String fromAddress = extractFrom(mimeMessage);
+            String fromName = extractFromName(mimeMessage);
             List<String> toAddresses = extractRecipients(mimeMessage);
             String subject = safeGetSubject(mimeMessage);
             String body = extractBody(mimeMessage);
@@ -91,6 +102,10 @@ public class InboundEmailService {
                 log.info("Duplicate inbound email messageId={}, skipping", messageId);
                 return;
             }
+
+            // 3b. A bounce notice blocks its recipient. Before the rate limit: a batch send can bounce
+            // more than the limit allows from this one sender, and each notice names a different address.
+            recordBounceNotice(fromAddress, body, messageId);
 
             // 4. Rate limit per sender
             if (fromAddress != null && isRateLimited(fromAddress)) {
@@ -104,14 +119,10 @@ public class InboundEmailService {
             // mirroring how WhatsApp uses sender_business_channel_id for the institute's WA number.
             String instituteId = null;
             String matchedInstituteAddress = null;
-            for (String toAddr : toAddresses) {
-                Optional<EmailAddressMapping> mapping =
-                        emailAddressMappingRepository.findByEmailAddressIgnoreCaseAndIsActiveTrue(toAddr);
-                if (mapping.isPresent()) {
-                    instituteId = mapping.get().getInstituteId();
-                    matchedInstituteAddress = mapping.get().getEmailAddress();
-                    break;
-                }
+            Optional<EmailAddressMapping> mapping = findMailboxOwner(toAddresses, inReplyTo, fromAddress);
+            if (mapping.isPresent()) {
+                instituteId = mapping.get().getInstituteId();
+                matchedInstituteAddress = mapping.get().getEmailAddress();
             }
             if (instituteId == null) {
                 log.warn("No active email_address_mapping found for To={}, saving log without instituteId", toAddresses);
@@ -120,23 +131,10 @@ public class InboundEmailService {
             // 6. Reply linking via In-Reply-To → original outbound EMAIL log
             String parentLogId = null;
             String userId = null;
-            if (inReplyTo != null) {
-                List<NotificationLog> parents =
-                        notificationLogRepository.findBySourceIdAndNotificationType(inReplyTo, "EMAIL");
-                if (!parents.isEmpty()) {
-                    NotificationLog parent = parents.get(0);
-                    parentLogId = parent.getId();
-                    userId = parent.getUserId();
-                } else {
-                    // Fallback: most recent outbound email to the from address within a time window
-                    Optional<NotificationLog> recent = notificationLogRepository
-                            .findTopByChannelIdAndNotificationTypeAndNotificationDateBeforeOrderByNotificationDateDesc(
-                                    fromAddress, "EMAIL", Instant.now().plus(Duration.ofMinutes(5)));
-                    if (recent.isPresent()) {
-                        parentLogId = recent.get().getId();
-                        userId = recent.get().getUserId();
-                    }
-                }
+            Optional<NotificationLog> parent = findRepliedToEmail(inReplyTo, fromAddress, toAddresses, instituteId);
+            if (parent.isPresent()) {
+                parentLogId = parent.get().getId();
+                userId = parent.get().getUserId();
             }
 
             // 7. userId fallback: resolve from most recent outbound email to this sender
@@ -158,6 +156,16 @@ public class InboundEmailService {
             payloadMap.put("to", toAddress);
             payloadMap.put("body", truncatedBody);
             payloadMap.put("instituteId", instituteId);
+            // Where the raw email lives, plus its attachment index: the inbox lists attachments
+            // from this and streams a file from S3 only when an admin opens it.
+            payloadMap.put(InboundMimeParts.S3_BUCKET_KEY, bucket);
+            payloadMap.put(InboundMimeParts.S3_KEY_KEY, key);
+            try {
+                payloadMap.putAll(InboundMimeParts.indexFields(mimeMessage));
+            } catch (Exception e) {
+                // Left unindexed: InboundEmailContentService.indexPending() retries it.
+                log.warn("Could not index attachments of inbound {}/{}: {}", bucket, key, e.getMessage());
+            }
             String messagePayload = objectMapper.writeValueAsString(payloadMap);
 
             // 9. Persist
@@ -170,6 +178,8 @@ public class InboundEmailService {
             inboundLog.setSourceId(messageId);
             inboundLog.setSource(parentLogId);
             inboundLog.setUserId(userId);
+            // "Neeraj Hariyale <x@y>" → the inbox shows the person, not just the bare address.
+            inboundLog.setSenderName(fromName);
             // email_address_mapping rows are already canonical lowercase emails, but route through
             // the shared normalizer for consistency with EmailService / AnnouncementDeliveryService.
             String normalizedInbox = EmailService.normalizeFromAddress(matchedInstituteAddress);
@@ -195,7 +205,144 @@ public class InboundEmailService {
         }
     }
 
+    /**
+     * SES mails a bounce notice even when its bounce event never reaches us (seen on prod: the mail
+     * came, the event did not, and the address kept getting email). Only an address we recently
+     * mailed is blocked, so a forged notice cannot block an arbitrary address. Never fails the ingest.
+     */
+    void recordBounceNotice(String fromAddress, String body, String messageId) {
+        if (bouncedEmailService == null) return;
+        try {
+            for (String recipient : BounceNoticeRecipients.parse(fromAddress, body)) {
+                if (bouncedEmailService.isEmailBlocked(recipient)) continue;
+                Optional<NotificationLog> sent = notificationLogRepository
+                        .findTopByChannelIdAndNotificationTypeOrderByNotificationDateDesc(recipient, "EMAIL");
+                if (sent.isEmpty() || sent.get().getNotificationDate() == null
+                        || sent.get().getNotificationDate().isBefore(Instant.now().minus(BOUNCE_NOTICE_WINDOW))) {
+                    log.warn("Bounce notice for an address not mailed recently, ignored: {}", recipient);
+                    continue;
+                }
+                bouncedEmailService.addBouncedEmail(recipient, BounceNoticeRecipients.BOUNCE_TYPE,
+                        BounceNoticeRecipients.BOUNCE_SUB_TYPE, "From the bounce notice email", messageId,
+                        sent.get().getId());
+            }
+        } catch (Exception e) {
+            log.warn("Could not record bounce notice {}: {}", messageId, e.getMessage());
+        }
+    }
+
+    /**
+     * The institute whose mailbox received this email: the first To/CC address with an active mapping.
+     * An address active in several institutes (each added it as a sender) goes to the institute that
+     * sent the email it answers, else to the one that last emailed this sender from that address. If
+     * neither tells, a later To/CC address owned by one institute decides; failing that, the oldest
+     * mapping keeps it, so adding another institute's address never takes its mail. Before this, a
+     * shared address threw on every email and nothing was saved.
+     */
+    Optional<EmailAddressMapping> findMailboxOwner(List<String> toAddresses, String inReplyTo, String fromAddress) {
+        EmailAddressMapping firstOwner = null;
+        for (String toAddr : toAddresses) {
+            List<EmailAddressMapping> owners =
+                    emailAddressMappingRepository.findAllByEmailAddressIgnoreCaseAndIsActiveTrue(toAddr);
+            if (owners.isEmpty()) {
+                continue;
+            }
+            if (owners.size() == 1) {
+                return Optional.of(owners.get(0));
+            }
+            Optional<EmailAddressMapping> contacted = ownerThatContacted(owners, toAddr, inReplyTo, fromAddress);
+            if (contacted.isPresent()) {
+                return contacted;
+            }
+            if (firstOwner == null) {
+                firstOwner = owners.stream()
+                        .min(Comparator.comparing(EmailAddressMapping::getCreatedAt,
+                                Comparator.nullsLast(Comparator.naturalOrder())))
+                        .orElseThrow();
+            }
+        }
+        if (firstOwner != null) {
+            log.info("Inbound To={} is shared by several institutes and none of them emailed {}, using the oldest mapping ({})",
+                    toAddresses, fromAddress, firstOwner.getInstituteId());
+        }
+        return Optional.ofNullable(firstOwner);
+    }
+
+    /** Of the institutes sharing {@code mailbox}, the one whose email this answers, else the last to email the sender from it. */
+    private Optional<EmailAddressMapping> ownerThatContacted(List<EmailAddressMapping> owners, String mailbox,
+                                                             String inReplyTo, String fromAddress) {
+        // Any owner's id works here: a non-null id only keeps the lookup off other mailboxes' email.
+        Optional<EmailAddressMapping> answered = findRepliedToEmail(inReplyTo, fromAddress, List.of(mailbox),
+                owners.get(0).getInstituteId())
+                .flatMap(sent -> ownerOf(owners, sent.getInstituteId()));
+        if (answered.isPresent() || fromAddress == null) {
+            return answered;
+        }
+        return notificationLogRepository
+                .findTopByChannelIdAndSenderBusinessChannelIdAndNotificationTypeOrderByNotificationDateDesc(
+                        fromAddress, mailbox, "EMAIL")
+                .flatMap(sent -> ownerOf(owners, sent.getInstituteId()));
+    }
+
+    private static Optional<EmailAddressMapping> ownerOf(List<EmailAddressMapping> owners, String instituteId) {
+        return owners.stream().filter(owner -> owner.getInstituteId().equals(instituteId)).findFirst();
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
+
+    /**
+     * The outbound email this one answers, surest first. A mail with no In-Reply-To answers nothing.
+     * <ol>
+     *   <li>In-Reply-To is the Message-ID we stored: a provider that keeps our Message-ID.</li>
+     *   <li>In-Reply-To is the id SES sent it under (SES overwrites ours): that id is on the
+     *       message's EMAIL_EVENT rows, and their source is the EMAIL row.</li>
+     *   <li>The latest email from the mailbox it was sent to, to this person: right unless they
+     *       answered an older one.</li>
+     *   <li>Only for a mailbox no institute owns: the latest email to this person from anyone.
+     *       Otherwise another institute's email could take the reply.</li>
+     * </ol>
+     */
+    Optional<NotificationLog> findRepliedToEmail(String inReplyTo, String fromAddress,
+                                                 List<String> toAddresses, String instituteId) {
+        if (inReplyTo == null) {
+            return Optional.empty();
+        }
+        List<NotificationLog> exact = notificationLogRepository.findBySourceIdAndNotificationType(inReplyTo, "EMAIL");
+        if (!exact.isEmpty()) {
+            return Optional.of(exact.get(0));
+        }
+        String sesId = sesMessageId(inReplyTo);
+        if (sesId != null) {
+            Optional<NotificationLog> sent = notificationLogRepository
+                    .findTopByNotificationTypeAndSourceIdOrderByNotificationDateDesc("EMAIL_EVENT", sesId)
+                    .map(NotificationLog::getSource)
+                    .flatMap(notificationLogRepository::findById);
+            if (sent.isPresent()) {
+                return sent;
+            }
+        }
+        for (String mailbox : toAddresses) {
+            Optional<NotificationLog> latest = notificationLogRepository
+                    .findTopByChannelIdAndSenderBusinessChannelIdAndNotificationTypeOrderByNotificationDateDesc(
+                            fromAddress, mailbox, "EMAIL");
+            if (latest.isPresent()) {
+                return latest;
+            }
+        }
+        if (instituteId != null) {
+            return Optional.empty();
+        }
+        return notificationLogRepository
+                .findTopByChannelIdAndNotificationTypeAndNotificationDateBeforeOrderByNotificationDateDesc(
+                        fromAddress, "EMAIL", Instant.now().plus(Duration.ofMinutes(5)));
+    }
+
+    /** {@code <id@ap-south-1.amazonses.com>} → {@code id}, as SES names the message on its events; else null. */
+    static String sesMessageId(String messageIdHeader) {
+        String value = messageIdHeader.trim().replaceAll("^<|>$", "");
+        int at = value.indexOf('@');
+        return at > 0 && value.toLowerCase().endsWith("amazonses.com") ? value.substring(0, at) : null;
+    }
 
     private boolean isRateLimited(String fromAddress) {
         try {
@@ -224,6 +371,23 @@ public class InboundEmailService {
             }
         } catch (Exception e) {
             log.debug("Could not extract From: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    /** From: display name ("Personal" part), trimmed and capped to the column; null when absent. */
+    static String extractFromName(MimeMessage msg) {
+        try {
+            Address[] froms = msg.getFrom();
+            if (froms != null && froms.length > 0 && froms[0] instanceof InternetAddress ia) {
+                String personal = ia.getPersonal();
+                if (personal == null) return null;
+                String trimmed = personal.trim();
+                if (trimmed.isEmpty()) return null;
+                return trimmed.length() > 255 ? trimmed.substring(0, 255) : trimmed;
+            }
+        } catch (Exception e) {
+            log.debug("Could not extract From display name: {}", e.getMessage());
         }
         return null;
     }

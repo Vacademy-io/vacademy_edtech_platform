@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     ImageTemplate,
     FieldMapping,
@@ -33,6 +34,7 @@ export const CertificatePreview = ({
     csvData,
     isLoading = false,
 }: CertificatePreviewProps) => {
+    const { t } = useTranslation('certificateGenerationCertificatePreview');
     const [currentStudentIndex, setCurrentStudentIndex] = useState(0);
     const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
     const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
@@ -84,7 +86,7 @@ export const CertificatePreview = ({
                     ) {
                         value = student.dynamicFields[mapping.fieldName]?.toString() || '';
                     } else {
-                        value = `Sample ${mapping.displayName}`;
+                        value = t('fieldValues.sampleValue', { field: mapping.displayName });
                     }
             }
 
@@ -122,9 +124,7 @@ export const CertificatePreview = ({
             setPreviewImageUrl(previewDataUrl);
         } catch (error) {
             console.error('Failed to generate preview:', error);
-            setPreviewError(
-                'Failed to generate certificate preview. Please check your field mappings.'
-            );
+            setPreviewError(t('previewImage.errorMessage'));
         } finally {
             setIsGeneratingPreview(false);
         }
@@ -171,7 +171,7 @@ export const CertificatePreview = ({
             const url = URL.createObjectURL(pdfBlob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `preview_certificate_${currentStudent.full_name?.replace(/[^a-zA-Z0-9]/g, '_') || 'unnamed'}.pdf`;
+            a.download = `preview_certificate_${currentStudent.full_name?.replace(/[^a-zA-Z0-9]/g, '_') || t('download.unnamedStudent')}.pdf`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -192,13 +192,13 @@ export const CertificatePreview = ({
                     <div className="mx-auto mb-4 w-fit rounded-full bg-amber-100 p-4">
                         <Eye className="size-8 text-amber-600" />
                     </div>
-                    <h3 className="mb-2 text-lg font-medium text-amber-800">No Fields Mapped</h3>
-                    <p className="mb-4 text-sm text-amber-700">
-                        Add fields to your certificate template to see a preview.
-                    </p>
+                    <h3 className="mb-2 text-lg font-medium text-amber-800">
+                        {t('emptyState.title')}
+                    </h3>
+                    <p className="mb-4 text-sm text-amber-700">{t('emptyState.description')}</p>
                     <div className="flex items-center justify-center gap-2 text-xs text-amber-600">
                         <Star className="size-4" />
-                        <span>Drag fields from the palette onto your template</span>
+                        <span>{t('emptyState.hint')}</span>
                     </div>
                 </div>
             </div>
@@ -215,11 +215,9 @@ export const CertificatePreview = ({
                     </div>
                     <div>
                         <h3 className="text-lg font-semibold text-neutral-700">
-                            Certificate Preview
+                            {t('header.title')}
                         </h3>
-                        <p className="text-sm text-neutral-500">
-                            Preview how certificates will look with real student data
-                        </p>
+                        <p className="text-sm text-neutral-500">{t('header.subtitle')}</p>
                     </div>
                 </div>
 
@@ -238,7 +236,10 @@ export const CertificatePreview = ({
 
                         <div className="px-2 text-center">
                             <div className="text-xs font-medium text-neutral-700">
-                                {currentStudentIndex + 1} of {selectedStudents.length}
+                                {t('studentNav.position', {
+                                    current: currentStudentIndex + 1,
+                                    total: selectedStudents.length,
+                                })}
                             </div>
                             <div className="max-w-32 truncate text-xs text-neutral-500">
                                 {currentStudent?.full_name}
@@ -276,8 +277,8 @@ export const CertificatePreview = ({
                         disabled={!previewImageUrl || isGeneratingPreview}
                         className="text-sm"
                     >
-                        <Download className="mr-2 size-4" />
-                        Download Preview
+                        <Download className="me-2 size-4" />
+                        {t('actions.downloadPreview')}
                     </MyButton>
                 </div>
             </div>
@@ -290,21 +291,24 @@ export const CertificatePreview = ({
                     </div>
                     <div className="flex-1">
                         <h4 className="text-sm font-medium text-blue-800">
-                            Previewing: {currentStudent?.full_name}
+                            {t('studentInfo.previewing', { name: currentStudent?.full_name })}
                         </h4>
                         <div className="mt-1 grid grid-cols-2 gap-2 text-xs text-blue-700 md:grid-cols-4">
                             <span>
-                                <strong>ID:</strong> {currentStudent?.user_id}
+                                <strong>{t('studentInfo.idLabel')}</strong>{' '}
+                                {currentStudent?.user_id}
                             </span>
                             <span>
-                                <strong>Email:</strong> {currentStudent?.email}
+                                <strong>{t('studentInfo.emailLabel')}</strong>{' '}
+                                {currentStudent?.email}
                             </span>
                             <span>
-                                <strong>Enrollment:</strong>{' '}
+                                <strong>{t('studentInfo.enrollmentLabel')}</strong>{' '}
                                 {currentStudent?.institute_enrollment_id}
                             </span>
                             <span>
-                                <strong>Institute:</strong> {currentStudent?.linked_institute_name}
+                                <strong>{t('studentInfo.instituteLabel')}</strong>{' '}
+                                {currentStudent?.linked_institute_name}
                             </span>
                         </div>
                     </div>
@@ -327,7 +331,7 @@ export const CertificatePreview = ({
                                         <Eye className="size-8 text-red-600" />
                                     </div>
                                     <h4 className="mb-2 text-lg font-medium text-red-800">
-                                        Preview Error
+                                        {t('previewImage.errorTitle')}
                                     </h4>
                                     <p className="mb-4 text-sm text-red-700">{previewError}</p>
                                     <MyButton
@@ -336,15 +340,15 @@ export const CertificatePreview = ({
                                         onClick={handleRefreshPreview}
                                         className="text-sm"
                                     >
-                                        <ArrowClockwise className="mr-2 size-4" />
-                                        Retry
+                                        <ArrowClockwise className="me-2 size-4" />
+                                        {t('actions.retry')}
                                     </MyButton>
                                 </>
                             ) : isGeneratingPreview ? (
                                 <>
                                     <div className="mx-auto mb-3 size-8 animate-spin rounded-full border-2 border-neutral-300 border-t-blue-600" />
                                     <p className="text-sm text-neutral-600">
-                                        Generating certificate preview...
+                                        {t('previewImage.generating')}
                                     </p>
                                 </>
                             ) : (
@@ -352,7 +356,9 @@ export const CertificatePreview = ({
                                     <div className="mx-auto mb-3 w-fit rounded-full bg-neutral-100 p-4">
                                         <Image className="size-8 text-neutral-600" />
                                     </div>
-                                    <p className="text-sm text-neutral-600">No preview available</p>
+                                    <p className="text-sm text-neutral-600">
+                                        {t('previewImage.empty')}
+                                    </p>
                                 </>
                             )}
                         </div>
@@ -364,7 +370,7 @@ export const CertificatePreview = ({
                     <div className="flex items-center justify-center bg-gray-50 p-4">
                         <img
                             src={previewImageUrl}
-                            alt="Certificate preview"
+                            alt={t('previewImage.alt')}
                             className="max-h-96 max-w-full rounded border border-neutral-300 bg-white object-contain shadow-lg"
                         />
                     </div>
@@ -374,7 +380,7 @@ export const CertificatePreview = ({
             {/* Field Values Summary */}
             <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
                 <h4 className="mb-3 text-sm font-medium text-neutral-700">
-                    Field Values for {currentStudent?.full_name}
+                    {t('fieldValues.title', { name: currentStudent?.full_name })}
                 </h4>
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
                     {fieldMappings.map((mapping) => {
@@ -397,7 +403,7 @@ export const CertificatePreview = ({
                                     {mapping.displayName}
                                 </div>
                                 <div className="mt-1 truncate text-xs text-neutral-600">
-                                    {value || 'No value'}
+                                    {value || t('fieldValues.noValue')}
                                 </div>
                             </div>
                         );

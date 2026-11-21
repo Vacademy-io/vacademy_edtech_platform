@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Export } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import { MyDialog } from '@/components/design-system/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -15,6 +16,7 @@ import {
     getStudentExportColumns,
     type ExportColumn,
 } from '../../../-utils/student-export';
+import { nudgeAssistant } from '@/components/vacademy-assistant/page-ask';
 
 interface ExportColumnsDialogProps {
     open: boolean;
@@ -30,10 +32,11 @@ export const ExportColumnsDialog = ({
     totalElements,
 }: ExportColumnsDialogProps) => {
     const { getDetailsFromPackageSessionId } = useInstituteDetailsStore();
+    const { t } = useTranslation(['manageStudentsExportUtil']);
 
     // Recompute on open so column labels always reflect the latest naming
     // settings (Course/Level/Session/Learner custom terms).
-    const columns = useMemo(() => getStudentExportColumns(), [open]);
+    const columns = useMemo(() => getStudentExportColumns(t), [open, t]);
     const groupedColumns = useMemo(() => {
         const groups = new Map<string, ExportColumn[]>();
         columns.forEach((col) => {
@@ -79,6 +82,7 @@ export const ExportColumnsDialog = ({
             return;
         }
         setIsExporting(true);
+        nudgeAssistant('learners');
         try {
             const students = await fetchAllStudentsForExport(appliedFilters, totalElements);
             if (students.length === 0) {

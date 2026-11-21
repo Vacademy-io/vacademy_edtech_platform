@@ -1,0 +1,23 @@
+{
+    "logoAlt": "Logo",
+    "poweredBy": "Propulsé par",
+    "recentTabs": {
+        "heading": "Récemment consultés",
+        "emptyTitle": "Aucun onglet récent",
+        "emptyDescription": "Accédez à des pages et elles apparaîtront ici"
+    },
+    "support": {
+        "button": "Assistance",
+        "planTooltip": "Plan d'assistance {{plan}}",
+        "plan": {
+            "dedicated": "Dédié",
+            "premium": "Premium",
+            "average": "Standard",
+            "low": "Basique",
+            "none": "Aucun plan"
+        }
+    },
+    "settings": {
+        "searchPlaceholder": "Rechercher dans les paramètres"
+    }
+}

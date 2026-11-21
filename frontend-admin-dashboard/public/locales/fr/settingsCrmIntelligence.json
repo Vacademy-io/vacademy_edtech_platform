@@ -1,0 +1,74 @@
+{
+    "header": {
+        "title": "Intelligence CRM",
+        "description": "Une fois activée, les enregistrements d'appels sont automatiquement transcrits (hindi et anglais) et analysés par l'IA — produisant un résumé, des actions à mener, un statut d'issue, et deux notes de 0 à 10 (dans quelle mesure l'appelant a fait avancer son objectif, et comment l'appel a été perçu par le prospect). Chaque appel analysé déduit des crédits IA."
+    },
+    "status": {
+        "enabled": "Activé",
+        "disabled": "Désactivé"
+    },
+    "callAnalysis": {
+        "title": "Analyse des appels",
+        "description": "Choisissez les sources d'appels analysées et les seuils qui la conditionnent.",
+        "analyzeRecordings": "Analyser les enregistrements d'appels",
+        "sourcesLabel": "Sources",
+        "sources": {
+            "manual": {
+                "label": "Téléversements manuels",
+                "help": "Enregistrements téléversés par un conseiller pour un appel effectué hors plateforme."
+            },
+            "telephony": {
+                "label": "Appels téléphoniques",
+                "help": "Appels passés via Exotel / Airtel, etc."
+            },
+            "ai": {
+                "label": "Appels de l'agent IA",
+                "help": "Appels passés par l'agent vocal IA (Aavtaar)."
+            }
+        },
+        "minDuration": {
+            "label": "Durée minimale de l'appel (secondes)",
+            "hint": "Ignorer les appels plus courts que ce seuil — généralement de brèves messageries vocales."
+        },
+        "analyzeNotConnected": "Analyser aussi les appels qui n'ont pas abouti"
+    },
+    "rubric": {
+        "title": "Grille de notation",
+        "description": "Voici les compétences d'appel commercial sur lesquelles l'IA évalue chaque commercial. L'objectif de l'appel est déduit de la conversation (un indice facultatif peut l'orienter) ; chaque qualité ci-dessous est notée de 0 à 10 dans la note globale de l'appelant, et alimente la « répartition des compétences » du Coaching. Les changements s'appliquent aux appels analysés après l'enregistrement — utilisez « Réanalyser » sur un appel passé pour le réévaluer selon une nouvelle grille.",
+        "objectiveHint": {
+            "label": "Indice d'objectif (facultatif)",
+            "placeholder": "p. ex. réserver une démo sur le campus"
+        },
+        "ratedMetrics": {
+            "label": "Critères notés",
+            "description": "Ajoutez tout critère important pour votre équipe commerciale. Le <1>sens</1> que vous rédigez est transmis à l'IA afin qu'elle évalue un critère personnalisé exactement comme vous l'avez défini."
+        },
+        "metric": {
+            "keyPlaceholder": "Critère (p. ex. objection_handling)",
+            "descriptionFallbackPlaceholder": "Que signifie ce critère ? (utilisé par l'IA pour le noter)"
+        },
+        "addMetric": "Ajouter un critère"
+    },
+    "save": {
+        "saving": "Enregistrement…",
+        "button": "Enregistrer les paramètres d'intelligence CRM"
+    },
+    "toasts": {
+        "saveSuccess": "Paramètres d'intelligence CRM enregistrés",
+        "saveFailed": "Échec de l'enregistrement des paramètres d'intelligence CRM"
+    },
+    "qualityDescriptions": {
+        "rapport": "Instaurer la confiance dès le départ — ouverture chaleureuse, utilisation du nom du prospect, adaptation à son ton.",
+        "needs_discovery": "Poser des questions pour découvrir les objectifs, la situation et les difficultés du prospect avant de présenter l'offre.",
+        "objection_handling": "Reconnaître et résoudre les objections (prix, délai, confiance) plutôt que de les ignorer.",
+        "next_step_secured": "Obtenir une prochaine étape concrète — démo réservée, rappel programmé, lien de paiement envoyé.",
+        "value_articulation": "Expliquer la valeur de l'offre en fonction des besoins spécifiques de ce prospect.",
+        "pitch_clarity": "Présenter la formation/l'offre de façon claire et concise, sans digression.",
+        "active_listening": "Laisser le prospect s'exprimer, ne pas l'interrompre, et reformuler ce qu'il a dit.",
+        "urgency_creation": "Donner une raison sincère d'agir maintenant (places limitées, échéance, offre en cours).",
+        "closing": "Demander l'engagement et orienter vers une décision claire.",
+        "talk_listen_balance": "Un équilibre sain entre parole et écoute — sans dominer l'appel.",
+        "follow_up_commitment": "Obtenir du prospect un engagement sur un suivi précis, plutôt qu'un vague « peut-être ».",
+        "tone_confidence": "S'exprimer avec confiance, énergie et professionnalisme tout au long de l'appel."
+    }
+}

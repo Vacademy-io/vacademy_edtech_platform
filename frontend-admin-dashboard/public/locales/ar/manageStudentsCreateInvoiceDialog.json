@@ -1,0 +1,83 @@
+{
+    "validation": {
+        "descriptionRequired": "الوصف مطلوب",
+        "minQuantity": "الحد الأدنى 1",
+        "priceMustBePositive": "يجب أن يكون أكبر من 0",
+        "lineItemsRequired": "مطلوب عنصر واحد على الأقل",
+        "dueDateRequired": "تاريخ الاستحقاق مطلوب",
+        "currencyRequired": "العملة مطلوبة"
+    },
+    "success": {
+        "copyFailed": "تعذر النسخ إلى الحافظة",
+        "invoiceUpdatedTitle": "تم تحديث الفاتورة!",
+        "invoiceCreatedTitle": "تم إنشاء الفاتورة!",
+        "totalLabel": "الإجمالي:",
+        "paymentLinkLabel": "رابط الدفع",
+        "copyPaymentLinkTitle": "نسخ رابط الدفع",
+        "whatsappShared": "تم فتح واتساب مع روابط الدفع وملف PDF",
+        "shareOnWhatsapp": "مشاركة عبر واتساب",
+        "preparingWhatsapp": "جارٍ التحضير…",
+        "downloadPdf": "تنزيل ملف PDF",
+        "downloadingPdf": "جارٍ التنزيل…",
+        "close": "إغلاق"
+    },
+    "review": {
+        "helperText": "تملأ هذه القيم قالب فاتورتك. عدّل أي شيء قبل الإنشاء — تتحدث المعاينة مباشرة.",
+        "previewLabel": "معاينة الفاتورة",
+        "previewTitle": "معاينة الفاتورة",
+        "retry": "إعادة المحاولة",
+        "groups": {
+            "invoice": "الفاتورة",
+            "billTo": "الفوترة إلى",
+            "institute": "المؤسسة",
+            "tax": "الضريبة",
+            "amounts": "المبالغ",
+            "notes": "ملاحظات"
+        }
+    },
+    "items": {
+        "loadingSettings": "جارٍ تحميل الإعدادات…",
+        "heading": "العناصر",
+        "table": {
+            "description": "الوصف",
+            "qty": "الكمية",
+            "price": "السعر",
+            "amount": "المبلغ"
+        },
+        "descriptionPlaceholder": "مثال: رسوم الدورة",
+        "removeItem": "إزالة",
+        "addItem": "إضافة عنصر"
+    },
+    "summary": {
+        "subtotal": "المجموع الفرعي",
+        "applyTax": "تطبيق {{taxLabel}}",
+        "taxRateAriaLabel": "نسبة {{taxLabel}} المئوية",
+        "taxIncludedNote": "شامل {{taxRate}}% {{taxLabel}} (الأسعار تشمل الضريبة بالفعل)",
+        "total": "الإجمالي",
+        "taxLabelFallback": "الضريبة"
+    },
+    "emailNotice": "سيتم إرسال بريد إلكتروني بالفاتورة إلى المتعلم تلقائيًا بعد الدفع.",
+    "form": {
+        "dueDateLabel": "تاريخ الاستحقاق",
+        "currencyLabel": "العملة"
+    },
+    "actions": {
+        "cancel": "إلغاء",
+        "next": "التالي: مراجعة ومعاينة",
+        "loadingPreview": "جارٍ تحميل المعاينة…",
+        "back": "رجوع",
+        "saveChanges": "حفظ التغييرات",
+        "createInvoice": "إنشاء فاتورة",
+        "saving": "جارٍ الحفظ…",
+        "creating": "جارٍ الإنشاء…"
+    },
+    "errors": {
+        "previewFailed": "تعذر عرض معاينة الفاتورة. يرجى المحاولة مرة أخرى."
+    },
+    "heading": {
+        "invoice": "فاتورة — {{userName}}",
+        "reviewInvoice": "مراجعة الفاتورة — {{userName}}",
+        "editInvoice": "تعديل الفاتورة {{invoiceNumber}} — {{userName}}",
+        "createInvoice": "إنشاء فاتورة — {{userName}}"
+    }
+}

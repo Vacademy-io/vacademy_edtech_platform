@@ -1,0 +1,52 @@
+{
+    "heading": {
+        "add": "Add Step",
+        "edit": "Edit Step"
+    },
+    "fields": {
+        "stepName": {
+            "label": "Step name",
+            "placeholder": "e.g. Fill Enrollment Form"
+        },
+        "coursePool": {
+            "label": "Course(s) this step can enroll into",
+            "loadingPlaceholder": "Loading courses…",
+            "emptyPlaceholder": "Leave empty to let the admin pick any course…",
+            "helperText": "Leave empty and the completing admin picks any course at onboarding time — the flow never needs rebuilding when a new course is added. Select specific course(s) to restrict the choice to only those."
+        }
+    },
+    "switches": {
+        "optional": "Optional (skippable) step",
+        "grantsStudentRole": "Grant STUDENT role on completion",
+        "sendsLoginCredentials": "Send login credentials on completion",
+        "createStudent": "Create a student from this form on completion",
+        "skipIfAlreadyEnrolled": "Auto-complete this step if the student is already enrolled in a course"
+    },
+    "sections": {
+        "stepAccess": "Step access (who can view/edit this step)",
+        "formFields": "Form fields",
+        "loadingFields": "Loading existing fields…",
+        "step": "Step",
+        "formFieldsHint": "Attach existing custom fields or create new ones."
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "saving": "Saving…",
+        "saveStep": "Save Step",
+        "addStep": "Add Step"
+    },
+    "toasts": {
+        "stepUpdated": "Step updated",
+        "stepAdded": "Step added",
+        "saveError": "Could not save the step. Please try again.",
+        "pendingFieldSelection": "You picked a field but haven’t clicked \"Attach\" yet — attach it (or clear the selection) before saving, or it will be lost."
+    },
+    "schema": {
+        "stepNameRequired": "Step name is required",
+        "stepNameMaxLength": "Keep it under 150 characters"
+    },
+    "switchHints": {
+        "optional": "Admins can skip it with a reason.",
+        "createStudent": "Shows the {{course}} choice and the auto-complete option."
+    }
+}

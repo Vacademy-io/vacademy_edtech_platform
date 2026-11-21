@@ -1,0 +1,27 @@
+{
+    "heading": "إنشاء تدفق إعداد",
+    "fields": {
+        "name": {
+            "label": "اسم التدفق",
+            "placeholder": "مثال: إعداد الطلاب الجدد"
+        },
+        "description": {
+            "label": "الوصف",
+            "placeholder": "الغرض من هذا التدفق (اختياري)"
+        }
+    },
+    "actions": {
+        "cancel": "إلغاء",
+        "createFlow": "إنشاء تدفق",
+        "creating": "جارٍ الإنشاء…"
+    },
+    "validation": {
+        "nameRequired": "اسم التدفق مطلوب",
+        "nameMaxLength": "يجب ألا يتجاوز 150 حرفًا",
+        "descriptionMaxLength": "يجب ألا يتجاوز 1000 حرف"
+    },
+    "toasts": {
+        "created": "تم إنشاء تدفق الإعداد",
+        "createError": "تعذّر إنشاء التدفق. يرجى المحاولة مرة أخرى."
+    }
+}

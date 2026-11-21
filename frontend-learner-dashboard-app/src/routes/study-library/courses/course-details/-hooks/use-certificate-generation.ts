@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Preferences } from "@capacitor/preferences";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import confetti from "canvas-confetti";
 import LocalStorageUtils from "@/utils/localstorage";
 import {
@@ -117,6 +118,7 @@ export function useCertificateGeneration({
   courseDetailsData: unknown;
   searchParams: SearchParamsLike;
 }) {
+  const { t } = useTranslation("courseDetailsB");
   const [certificateUrl, setCertificateUrl] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState<boolean>(false);
   const [certificateDialogOpen, setCertificateDialogOpen] =
@@ -265,8 +267,8 @@ export function useCertificateGeneration({
             setShowConfetti(true);
             setTimeout(() => setShowConfetti(false), 3000);
             setTimeout(() => setCertificateDialogOpen(true), 3200);
-            toast.success("Certificate generated successfully!", {
-              description: "You can now view your certificate.",
+            toast.success(t("certificateGeneration.toast.successTitle"), {
+              description: t("certificateGeneration.toast.successDescription"),
             });
             // Mark celebration as shown to avoid repeating confetti on future visits
             LocalStorageUtils.set(celebrationKey, true);
@@ -282,7 +284,7 @@ export function useCertificateGeneration({
           return;
         }
 
-        toast.error("Failed to generate certificate. Please try again later.");
+        toast.error(t("certificateGeneration.toast.error"));
       }
     };
 

@@ -1,0 +1,65 @@
+{
+    "actions": {
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "uploading": "Téléversement…",
+        "showPreview": "Afficher l'aperçu",
+        "hidePreview": "Masquer l'aperçu"
+    },
+    "fields": {
+        "titleOptional": "Titre (facultatif)"
+    },
+    "math": {
+        "title": "Mathématiques (LaTeX)",
+        "clickToAdd": "Cliquez pour ajouter du LaTeX",
+        "displayModeLabel": "Mode affichage (centré)"
+    },
+    "mermaid": {
+        "title": "Diagramme Mermaid",
+        "render": "Générer"
+    },
+    "audio": {
+        "title": "Audio",
+        "noAudioUploaded": "Aucun audio téléversé",
+        "upload": "Téléverser l'audio",
+        "replace": "Remplacer l'audio",
+        "uploadFailed": "Échec du téléversement de l'audio"
+    },
+    "pdf": {
+        "title": "PDF",
+        "openInNewTab": "Ouvrir le PDF dans un nouvel onglet",
+        "noPdfUploaded": "Aucun PDF téléversé",
+        "upload": "Téléverser le PDF",
+        "replace": "Remplacer le PDF",
+        "uploadFailed": "Échec du téléversement du PDF"
+    },
+    "fillBlanks": {
+        "title": "Texte à trous",
+        "clickToAddSentence": "Cliquez pour ajouter une phrase — marquez les réponses comme {blank:answer}",
+        "sentencePlaceholder": "L'eau bout à {blank:100} degrés Celsius."
+    },
+    "jupyter": {
+        "title": "Notebook Jupyter",
+        "titleWithProject": "Notebook Jupyter : {{projectName}}",
+        "previewTitle": "Aperçu du notebook Jupyter",
+        "notConfigured": "Aucun notebook configuré — nom du projet et URL GitHub requis.",
+        "fields": {
+            "projectName": "Nom du projet",
+            "repositoryUrl": "URL du dépôt GitHub",
+            "branch": "Branche (main)",
+            "notebookLocation": "Emplacement du notebook (racine)"
+        }
+    },
+    "scratch": {
+        "title": "Projet Scratch",
+        "previewTitle": "Projet Scratch",
+        "notConfigured": "Aucun projet Scratch configuré — identifiant du projet requis.",
+        "fields": {
+            "projectId": "Identifiant du projet Scratch"
+        }
+    },
+    "toc": {
+        "title": "Table des matières",
+        "description": "Le plan est généré automatiquement à partir des titres du document pour les apprenants."
+    }
+}

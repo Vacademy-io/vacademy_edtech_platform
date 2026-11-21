@@ -1,0 +1,15 @@
+/* Highlights on lesson text. Painted by the browser over the text, so the
+   lesson's own markup is never touched. Browsers without this feature still
+   list the highlight in the notes panel. */
+::highlight(vac-note-yellow) {
+  background-color: hsl(var(--warning-200));
+}
+::highlight(vac-note-green) {
+  background-color: hsl(var(--success-200));
+}
+::highlight(vac-note-blue) {
+  background-color: hsl(var(--info-200));
+}
+::highlight(vac-note-pink) {
+  background-color: hsl(var(--danger-200));
+}

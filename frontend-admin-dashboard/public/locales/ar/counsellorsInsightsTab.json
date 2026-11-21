@@ -1,0 +1,50 @@
+{
+    "workSummary": {
+        "title": "ملخص العمل",
+        "lastDaysSuffix_zero": "· آخر 0 يوم",
+        "lastDaysSuffix_one": "· آخر يوم واحد",
+        "lastDaysSuffix_two": "· آخر يومين",
+        "lastDaysSuffix_few": "· آخر {{count}} أيام",
+        "lastDaysSuffix_many": "· آخر {{count}} يومًا",
+        "lastDaysSuffix_other": "· آخر {{count}} يوم",
+        "statusesMovedTo": "الحالات التي تم النقل إليها"
+    },
+    "metric": {
+        "statusChanges": "تغييرات الحالة",
+        "callsMade": "المكالمات التي تم إجراؤها",
+        "connected": "المتصلة",
+        "reach": "معدل الوصول"
+    },
+    "coaching": {
+        "loading": "جارٍ تحميل رؤى التدريب…",
+        "loadError": "تعذّر تحميل الرؤى. إذا لم تكن ميزة Call Intelligence مفعّلة على هذا الخادم، فلن تكون متاحة بعد.",
+        "noAnalyzedCalls": "لا توجد مكالمات تم تحليلها بالذكاء الاصطناعي لهذا المستشار بعد.",
+        "enableHint": "فعّل CRM Intelligence وحلّل بعض المكالمات لرؤية تدريب جودة المكالمات.",
+        "metric": {
+            "callsAnalyzed": "المكالمات المُحلَّلة",
+            "avgCallerRating": "متوسط تقييم المتصل",
+            "avgOutcomeRating": "متوسط تقييم النتيجة",
+            "focusAreas": "مجالات التركيز"
+        },
+        "skillBreakdown": {
+            "title": "تحليل المهارات",
+            "weakestFirst": "· الأضعف أولاً"
+        },
+        "whatToImprove": "ما الذي يجب تحسينه",
+        "tipCallCount_zero": "0 مكالمة",
+        "tipCallCount_one": "مكالمة واحدة ({{count}})",
+        "tipCallCount_two": "مكالمتان ({{count}})",
+        "tipCallCount_few": "{{count}} مكالمات",
+        "tipCallCount_many": "{{count}} مكالمة",
+        "tipCallCount_other": "{{count}} مكالمة",
+        "objections": {
+            "title": "الاعتراضات الأكثر مواجهةً",
+            "handled": "تمت معالجة {{handled}}/{{total}}"
+        },
+        "recentCalls": {
+            "title": "المكالمات المُحلَّلة مؤخرًا",
+            "callerRating": "المتصل {{rating}}",
+            "outcomeRating": "النتيجة {{rating}}"
+        }
+    }
+}

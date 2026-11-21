@@ -1,0 +1,4 @@
+{
+    "description": "Code affiché aux apprenants lorsqu'ils ouvrent la question. Laissez vide pour un éditeur vide.",
+    "resetToDefault": "Réinitialiser par défaut"
+}

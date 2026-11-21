@@ -180,13 +180,8 @@ const generateSSOUrl = (targetDomain: string, redirectPath?: string): string | n
         ...(redirectPath && { redirect: redirectPath }),
     });
 
-    // Copy URL to clipboard for easy sharing
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-        const fullUrl = `${baseUrl}?${params.toString()}`;
-        navigator.clipboard.writeText(fullUrl).catch((err) => {
-            console.warn('Failed to copy URL to clipboard:', err);
-        });
-    }
+    // Never put this URL on the clipboard: it carries live access + refresh tokens, and a
+    // clipboard is readable by other apps and survives into whatever gets pasted next.
     return `${baseUrl}?${params.toString()}`;
 };
 
@@ -224,10 +219,11 @@ async function refreshTokens(refreshToken: string): Promise<UnauthorizedResponse
     console.log('[Token Refresh] Starting token refresh...');
 
     try {
+        // The endpoint is POST-only and reads the token from a JSON body.
         const response: AxiosResponse<Tokens> = await axios({
-            method: 'GET',
+            method: 'POST',
             url: REFRESH_TOKEN_URL,
-            params: { token: refreshToken },
+            data: { token: refreshToken },
             timeout: 10000, // 10 second timeout
         });
 
@@ -237,15 +233,18 @@ async function refreshTokens(refreshToken: string): Promise<UnauthorizedResponse
             hasRefreshToken: !!response.data?.refreshToken,
         });
 
-        if (!response.data?.accessToken || !response.data?.refreshToken) {
+        if (!response.data?.accessToken) {
             throw new Error('Invalid response from token refresh endpoint');
         }
 
+        // The admin endpoint returns only a new access token; the refresh token itself does not
+        // change, so keep the stored one when the response omits it.
+        const nextRefreshToken = response.data.refreshToken || refreshToken;
         await setTokenInStorage(TokenKey.accessToken, response.data.accessToken);
-        await setTokenInStorage(TokenKey.refreshToken, response.data.refreshToken);
+        await setTokenInStorage(TokenKey.refreshToken, nextRefreshToken);
 
         console.log('[Token Refresh] Tokens stored successfully');
-        return response.data;
+        return { ...response.data, refreshToken: nextRefreshToken };
     } catch (error) {
         console.error('[Token Refresh] Failed to refresh tokens:', error);
 
@@ -278,14 +277,20 @@ async function refreshTokens(refreshToken: string): Promise<UnauthorizedResponse
 // the institute name and T&C/Privacy links (the redirect is client-side, so
 // index.tsx's bootstrap never re-runs to refetch it).
 const LOGOUT_PRESERVE_KEYS = [
+    // Evalezy tutorials (routes/evalezy/-lib/tutorials.ts): offered once after sign-up.
+    'evalezy-welcome-tutorial',
     'theme-code',
     'theme-custom-color',
     'vite-ui-theme',
     'current_domain_branding',
+    // A website "Buy <plan>" click waiting for sign-up / log-in (lib/plan-buy-intent.ts):
+    // no user data, expires in a day; the logged-out sign-up page itself triggers a logout.
+    'plan-buy-intent',
 ];
 // Key PREFIXES whose entries also survive logout — per-surface layout choices
 // such as the leads "Manage Column" show/hide (crm-lead-columns:<surface>).
-const LOGOUT_PRESERVE_PREFIXES = ['crm-lead-columns:'];
+// `crm-saved-views:` = a person's saved Recent Leads filter views, keyed by institute + user.
+const LOGOUT_PRESERVE_PREFIXES = ['crm-lead-columns:', 'crm-saved-views:'];
 
 // Expire every cookie visible to this document on the current host AND every
 // parent domain (so legacy `.vacademy.io`-scoped cookies are removed too).

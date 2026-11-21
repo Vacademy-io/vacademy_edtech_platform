@@ -14,9 +14,11 @@ import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import {
     COUNSELOR_POOL_AUDIENCE,
+    COUNSELOR_POOL_AUDIENCE_ASSIGNMENT,
     COUNSELOR_POOL_AUDIENCES,
     COUNSELOR_POOL_AUDIENCE_ORDER,
     COUNSELOR_POOL_BASE,
+    COUNSELOR_POOL_BY_AUDIENCE,
     COUNSELOR_POOL_BY_ID,
     COUNSELOR_POOL_COUNSELOR,
     COUNSELOR_POOL_COUNSELORS,
@@ -47,6 +49,12 @@ export interface PoolAudienceDTO {
     last_assigned_counselor_id?: string | null;
     last_assigned_at?: string | null;
     added_at?: string;
+    /**
+     * When this list hands out a counsellor. `true` (default) = the moment a lead arrives.
+     * `false` = AI-first: the lead stays unowned so the AI call runs, and the pool assigns only
+     * once the call outcome (or the exhausted-retries hand-off) asks for a counsellor.
+     */
+    assign_on_intake?: boolean;
 }
 
 export interface PoolMemberDTO {
@@ -95,6 +103,8 @@ export interface CounselorPoolDTO {
     schedule_pattern?: SchedulePattern;
     /** ROUND_ROBIN opt-in: rotate only among counsellors on shift right now. */
     shift_aware?: boolean;
+    /** Rotation follows one pool-wide order; per-campaign orders are ignored. */
+    unified_rotation_order?: boolean;
     created_by?: string;
     created_at?: string;
     updated_at?: string;
@@ -127,6 +137,8 @@ export interface UpdatePoolRequest {
     schedule_pattern?: SchedulePattern;
     /** ROUND_ROBIN opt-in: gate rotation to on-shift counsellors. Omit to leave unchanged. */
     shift_aware?: boolean;
+    /** Rotate in one pool-wide order instead of each campaign's own. Omit to leave unchanged. */
+    unified_rotation_order?: boolean;
 }
 
 export interface UpdateMemberStatusRequest {
@@ -239,6 +251,16 @@ export const addAudiencesToPool = async (
 
 export const removeAudienceFromPool = async (poolId: string, audienceId: string): Promise<void> => {
     await authenticatedAxiosInstance.delete(COUNSELOR_POOL_AUDIENCE(poolId, audienceId));
+};
+
+export const updateAudienceAssignOnIntake = async (
+    poolId: string,
+    audienceId: string,
+    assignOnIntake: boolean
+): Promise<void> => {
+    await authenticatedAxiosInstance.patch(COUNSELOR_POOL_AUDIENCE_ASSIGNMENT(poolId, audienceId), {
+        assign_on_intake: assignOnIntake,
+    });
 };
 
 // Atomic bulk add — backend rolls back the whole batch if any id fails.
@@ -355,6 +377,27 @@ export const useCounselorPool = (poolId: string | undefined) =>
         enabled: !!poolId,
     });
 
+/**
+ * The pool a lead list feeds, or null when it feeds none.
+ *
+ * A list with no pool is the normal case (only auto-assigned lists have one), so a
+ * 204 is an answer, not an error — it resolves to null and the caller renders nothing.
+ */
+export const fetchPoolForAudience = async (
+    audienceId: string
+): Promise<CounselorPoolDTO | null> => {
+    const res = await authenticatedAxiosInstance.get(COUNSELOR_POOL_BY_AUDIENCE(audienceId));
+    return res.status === 204 || !res.data ? null : (res.data as CounselorPoolDTO);
+};
+
+export const usePoolForAudience = (audienceId: string | undefined) =>
+    useQuery({
+        queryKey: ['counselor-pool-for-audience', audienceId ?? ''],
+        queryFn: () => fetchPoolForAudience(audienceId!),
+        enabled: !!audienceId,
+        staleTime: 60 * 1000,
+    });
+
 export const useWeeklySchedule = (poolId: string | undefined) =>
     useQuery({
         queryKey: poolScheduleKey(poolId ?? ''),
@@ -410,6 +453,15 @@ export const useRemoveAudienceFromPool = (poolId: string) => {
     const invalidate = useInvalidatePool();
     return useMutation({
         mutationFn: (audienceId: string) => removeAudienceFromPool(poolId, audienceId),
+        onSuccess: () => invalidate(poolId),
+    });
+};
+
+export const useUpdateAudienceAssignOnIntake = (poolId: string) => {
+    const invalidate = useInvalidatePool();
+    return useMutation({
+        mutationFn: ({ audienceId, assignOnIntake }: { audienceId: string; assignOnIntake: boolean }) =>
+            updateAudienceAssignOnIntake(poolId, audienceId, assignOnIntake),
         onSuccess: () => invalidate(poolId),
     });
 };

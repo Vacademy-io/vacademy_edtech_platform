@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { getWorkflowForEditing } from '@/services/workflow-service';
 import { useWorkflowBuilderStore } from '@/routes/workflow/create/-stores/workflow-builder-store';
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function WorkflowEditor({ workflowId }: Props) {
+    const { t } = useTranslation('workflowEditor');
     const { data, isLoading, error } = useQuery({
         queryKey: ['WORKFLOW_EDIT', workflowId],
         queryFn: () => getWorkflowForEditing(workflowId) as Promise<WorkflowBuilderDTO>,
@@ -101,7 +103,7 @@ export function WorkflowEditor({ workflowId }: Props) {
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-screen text-muted-foreground">
-                Loading workflow...
+                {t('loadingWorkflow')}
             </div>
         );
     }
@@ -109,7 +111,7 @@ export function WorkflowEditor({ workflowId }: Props) {
     if (error) {
         return (
             <div className="flex items-center justify-center h-screen text-red-500">
-                Failed to load workflow: {error.message}
+                {t('failedToLoad', { message: error.message })}
             </div>
         );
     }

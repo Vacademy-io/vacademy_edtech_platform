@@ -16,10 +16,12 @@ import { SmartErrorPage as RootErrorComponent } from "./components/core/SmartErr
 import RootNotFoundComponent from "./components/core/default-not-found";
 import RootPendingComponent from "./components/core/default-pending";
 import "./index.css";
+import { installScrollReset } from "./lib/scroll-reset";
 import { ThemeProvider as ColorThemeProvider } from "./providers/theme/theme-provider";
 import { ThemeProvider as ModeThemeProvider } from "./providers/theme-provider";
 import { SidebarProvider } from "./components/ui/sidebar";
 import { routeTree } from "./routeTree.gen";
+import { registerAppRoutePaths } from "./services/reserved-app-routes";
 import "./i18n";
 import { Toaster } from "./components/ui/sonner";
 import "./lib/debug";
@@ -30,16 +32,34 @@ import {
 } from "./lib/chunk-reload";
 import {
   getTokenFromCookie,
+  getTokenFromStorage,
+  isTokenExpired,
   getTokenDecodedData,
 } from "@/lib/auth/sessionUtility";
+import { captureUtmOnce } from "@/lib/utm-attribution";
 import { TokenKey } from "@/constants/auth/tokens";
 import { getCachedInstituteBranding } from "@/services/domain-routing";
+import { repairSessionInstituteState } from "@/lib/auth/session-institute";
 import { useInstituteDetailsStore } from "@/stores/study-library/useInstituteDetails";
+import { Capacitor } from "@capacitor/core";
+import { BASE_URL } from "@/constants/urls";
+import { installLearnerRum, type RumRouter } from "@/lib/perf/learner-rum";
 
 // Recover stale tabs whose cached chunk URLs 404 after a new deploy.
 // Must run before React renders so failures during the first lazy import
 // are intercepted at the window level instead of bubbling to an error boundary.
 installChunkErrorHandler();
+
+// First-touch campaign capture, at boot rather than in a React effect.
+//
+// Every capture route validates its search params with a plain `z.object`,
+// which STRIPS unknown keys — so `?instituteId=…&audienceId=…&utm_source=meta`
+// is normalised by the router down to the two keys it declares, and the
+// campaign is gone from the URL before any component effect could read it.
+// Reading window.location.search here, synchronously at module evaluation,
+// happens before the router is even created, so the value is banked whatever
+// the route then does with the URL.
+captureUtmOnce();
 
 /**
  * Read the current access token synchronously from the fastest available
@@ -59,6 +79,21 @@ const readAccessTokenSync = (): string | null => {
   return getTokenFromCookie(TokenKey.accessToken);
 };
 
+/** The institute the API calls are already labelled with, read synchronously. */
+const readInstituteIdSync = (): string | null | undefined => {
+  try {
+    const stored =
+      localStorage.getItem("InstituteId") ?? localStorage.getItem("instituteId");
+    if (stored) return stored;
+  } catch {
+    // localStorage may be blocked in some WebViews, so fall through
+  }
+  return (
+    getCachedInstituteBranding()?.instituteId ??
+    useInstituteDetailsStore.getState().instituteDetails?.id
+  );
+};
+
 if (import.meta.env.VITE_ENABLE_SENTRY === "true") {
   Sentry.init({
     dsn: import.meta.env.VITE_SENTRY_DSN,
@@ -71,6 +106,15 @@ if (import.meta.env.VITE_ENABLE_SENTRY === "true") {
       "error loading dynamically imported module",
       "Unable to preload CSS",
       "ChunkLoadError",
+      // Junk from CEFSharp — a .NET library that embeds Chromium in Windows
+      // desktop apps. The host app's own script rejects with a bare string, so
+      // Sentry wraps it as a non-Error rejection; nothing here is ours and
+      // there is nothing to fix. The SDK already denies this by default, but
+      // its built-in regex hardcodes `MethodName:simulateEvent`, so the
+      // `MethodName:update` variant slips through. Match the whole family, and
+      // leave the end unanchored because beforeSend appends a
+      // " — user: …, institute: …" suffix to the value.
+      /Non-Error promise rejection captured with value: Object Not Found Matching Id:\d+, MethodName:\w+, ParamCount:\d+/,
     ],
     beforeSend(event) {
       try {
@@ -138,8 +182,14 @@ if (import.meta.env.VITE_ENABLE_SENTRY === "true") {
 
 // Lazy load analytics initialization (deferred to after first paint)
 const initAnalytics = async () => {
-  const { initializeAnalytics, identifyUser } = await import("./lib/analytics");
-  const { getDecodedAccessTokenFromStorage } = await import("@/lib/auth/sessionUtility");
+  // When a chunk fails to load, chunk-reload.ts cancels Vite's preloadError
+  // to reload the page — and Vite then resolves the import with undefined
+  // instead of throwing. Bail quietly; the reload is already on its way.
+  const analytics = await import("./lib/analytics");
+  const session = await import("@/lib/auth/sessionUtility");
+  if (!analytics || !session) return;
+  const { initializeAnalytics, identifyUser } = analytics;
+  const { getDecodedAccessTokenFromStorage } = session;
 
   initializeAnalytics();
 
@@ -219,6 +269,28 @@ const router = createRouter({
   defaultPreloadStaleTime: 0,
 });
 
+// Catalogue link builders need to know which first segments the app owns —
+// see reserved-app-routes.ts for why a root-mounted catalogue page named
+// "privacy-policy" would otherwise open the app's own page.
+registerAppRoutePaths(Object.keys(router.routesByPath));
+
+installScrollReset(router);
+
+// Real-user speed numbers, from a sampled fraction of sessions. First-party only and
+// no identifiers: see the header of learner-rum.ts.
+if (import.meta.env.PROD) {
+  installLearnerRum({
+    endpoint: `${BASE_URL}/admin-core-service/v1/perf/rum`,
+    router: router as unknown as RumRouter,
+    isFetching: () => queryClient.isFetching(),
+    getAccessToken: () => getTokenFromStorage(TokenKey.accessToken),
+    isTokenExpired,
+    getInstituteId: readInstituteIdSync,
+    getPlatform: () => Capacitor.getPlatform(),
+    build: typeof __APP_BUILD__ === "string" ? __APP_BUILD__ : "na",
+  });
+}
+
 // Register the router instance for type safety
 declare module "@tanstack/react-router" {
   interface Register {
@@ -227,8 +299,9 @@ declare module "@tanstack/react-router" {
 }
 
 // Render the app
-const rootElement = document.getElementById("root")!;
-if (!rootElement.innerHTML) {
+const renderApp = () => {
+  const rootElement = document.getElementById("root")!;
+  if (rootElement.innerHTML) return;
   const root = ReactDOM.createRoot(rootElement);
 
   // Initialize analytics after first paint
@@ -250,4 +323,12 @@ if (!rootElement.innerHTML) {
       </ModeThemeProvider>
     </>
   );
-}
+};
+
+// Saved institute state is read synchronously during the first render, so check
+// it first. Never let this hold the app back: past the limit, render regardless.
+const INSTITUTE_STATE_CHECK_LIMIT_MS = 1500;
+void Promise.race([
+  repairSessionInstituteState(),
+  new Promise((resolve) => setTimeout(resolve, INSTITUTE_STATE_CHECK_LIMIT_MS)),
+]).finally(renderApp);

@@ -1,0 +1,98 @@
+{
+    "navHeading": "جدولة إعلان",
+    "pageHeading": "الإعلانات المجدولة",
+    "nav": {
+        "prev": "السابق",
+        "today": "اليوم",
+        "next": "التالي"
+    },
+    "tabs": {
+        "day": "يوم",
+        "threeDay": "3 أيام",
+        "week": "أسبوع",
+        "month": "شهر"
+    },
+    "modeFilter": {
+        "placeholder": "تصفية حسب الوضع",
+        "all": "جميع الأوضاع"
+    },
+    "scheduleNew": "جدولة إعلان جديد",
+    "scheduleHere": "جدولة هنا",
+    "weekdays": {
+        "sun": "أحد",
+        "mon": "اثنين",
+        "tue": "ثلاثاء",
+        "wed": "أربعاء",
+        "thu": "خميس",
+        "fri": "جمعة",
+        "sat": "سبت"
+    },
+    "loading": "جارٍ التحميل…",
+    "emptyState": {
+        "title": "لا توجد إعلانات مجدولة في هذه الفترة",
+        "description": "اختر فترة مختلفة، أو جدول حملة جديدة."
+    },
+    "showingRange": "عرض {{range}}",
+    "moreCount_zero": "+{{count}} أخرى",
+    "moreCount_one": "+واحدة أخرى",
+    "moreCount_two": "+اثنتان أخريان",
+    "moreCount_few": "+{{count}} أخرى",
+    "moreCount_many": "+{{count}} أخرى",
+    "moreCount_other": "+{{count}} أخرى",
+    "actions": {
+        "edit": "تعديل",
+        "delete": "حذف",
+        "approve": "الموافقة",
+        "reject": "رفض"
+    },
+    "toast": {
+        "deleted": "تم حذف الإعلان المجدول",
+        "deleteFailedTitle": "فشل الحذف",
+        "deleteFailedFallback": "حاول مرة أخرى",
+        "approved": "تمت الموافقة",
+        "approveFailed": "فشلت الموافقة",
+        "rejected": "تم الرفض",
+        "rejectFailed": "فشل الرفض"
+    },
+    "rejectDialog": {
+        "title": "رفض الإعلان",
+        "reasonPlaceholder": "السبب",
+        "cancel": "إلغاء",
+        "reject": "رفض"
+    },
+    "deleteDialog": {
+        "title": "هل تريد حذف الإعلان المجدول؟",
+        "bodyPrefix": "سيؤدي هذا إلى إلغاء وحذف",
+        "bodySuffix": "بشكل نهائي. لن يتم إرساله ولا يمكن استعادته.",
+        "defaultTitle": "هذا الإعلان",
+        "cancel": "إلغاء",
+        "deleting": "جارٍ الحذف…",
+        "delete": "حذف"
+    },
+    "schedule": {
+        "immediate": "فوري",
+        "recurring": "متكرر",
+        "recurringWithCron": "متكرر · {{cron}}",
+        "cronWithLabel": "CRON {{cron}}"
+    },
+    "subheading": "A calendar of every planned announcement and email campaign. Pick a day to schedule something new.",
+    "viewLabel": "Calendar view",
+    "legend": {
+        "recurring": "Recurring"
+    },
+    "countInView_one": "{{count}} announcement",
+    "countInView_other": "{{count}} announcements",
+    "nothingScheduled": "Nothing scheduled",
+    "lists": {
+        "upNext": {
+            "title": "Coming up in this view",
+            "empty": "Nothing is planned in this range."
+        },
+        "pending": {
+            "title": "Waiting for approval",
+            "empty": "Nothing in this range is waiting for approval.",
+            "openQueue": "Open queue",
+            "notSentYet": "not sent until approved"
+        }
+    }
+}

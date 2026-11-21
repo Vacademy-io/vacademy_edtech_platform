@@ -1,0 +1,146 @@
+{
+  "common": {
+    "loading": "جارٍ التحميل...",
+    "login": "تسجيل الدخول",
+    "unknownInstructor": "مدرب غير معروف"
+  },
+  "courseCard": {
+    "noTagsAvailable": "لا توجد وسوم متاحة",
+    "moreTags": "+ {{count}} أخرى",
+    "viewButton": "عرض {{course}}"
+  },
+  "catalogPage": {
+    "bannerAlt": "لافتة {{course}}"
+  },
+  "header": {
+    "nav": {
+      "home": "الرئيسية",
+      "about": "من نحن",
+      "impact": "الأثر",
+      "getInvolved": "شارك معنا",
+      "contact": "اتصل بنا"
+    },
+    "loadingLogoAriaLabel": "جارٍ تحميل الشعار",
+    "toggleMobileMenuAriaLabel": "تبديل القائمة على الجوال",
+    "logoAlt": "الشعار",
+    "donate": "تبرع"
+  },
+  "donationDialog": {
+    "closeAriaLabel": "إغلاق",
+    "continueButton": "متابعة",
+    "errors": {
+      "amountRequired": "يرجى اختيار أو إدخال مبلغ للتبرع",
+      "invalidEmail": "يرجى إدخال بريد إلكتروني صحيح"
+    }
+  },
+  "coursesPage": {
+    "untitledPackage": "حزمة بدون عنوان",
+    "defaultLevelName": "مبتدئ",
+    "empty": {
+      "title": "لا توجد {{courses}} متاحة",
+      "description": "حاول تعديل معايير البحث أو تحقق لاحقًا من {{courses}} جديدة."
+    }
+  },
+  "filterPanel": {
+    "title": "التصفية",
+    "clearAll": "مسح الكل",
+    "apply": "تطبيق",
+    "showLess": "عرض أقل",
+    "showMore": "عرض المزيد",
+    "noItemsAvailable": "لا توجد {{title}} متاحة.",
+    "filtersUnavailable": "عوامل تصفية {{title}} غير متاحة حاليًا."
+  },
+  "footer": {
+    "tagline": "تمكين الأطفال من خلال التعليم",
+    "logoAlt": "الشعار",
+    "quickLinks": "روابط سريعة",
+    "contactUs": "اتصل بنا",
+    "websiteLabel": "Codecircle.org",
+    "emailLabel": "البريد الإلكتروني:",
+    "newsletterTitle": "اشترك في نشرتنا الإخبارية",
+    "namePlaceholder": "اسمك",
+    "emailPlaceholder": "بريدك الإلكتروني",
+    "subscribeButton": "اشتراك",
+    "copyright": "© 2025 Codecircle.org. جميع الحقوق محفوظة",
+    "privacyPolicy": "سياسة الخصوصية",
+    "termsOfService": "شروط الخدمة"
+  },
+  "hero": {
+    "bannerAlt": "لافتة دليل {{course}}"
+  },
+  "cta": {
+    "titlePrefix": "هل تريد إنشاء نسختك الخاصة من",
+    "titleSuffix": "؟",
+    "subtitle1": "شارك معرفتك مع العالم!",
+    "subtitle2": "سجّل الدخول وابدأ في إنشاء {{courses}} بنفسك ليستكشفها الآخرون ويتعلموا منها."
+  },
+  "pagination": {
+    "ariaLabel": "التنقل بين الصفحات",
+    "previous": "السابق",
+    "next": "التالي"
+  },
+  "searchAndSortBar": {
+    "searchPlaceholder": "ابحث عن {{courses}} حسب العنوان ...",
+    "sortNewest": "الترتيب حسب: الأحدث",
+    "sortOldest": "الترتيب حسب: الأقدم"
+  },
+  "supporters": {
+    "titlePrefix": "شركاؤنا",
+    "titleHighlight": "الداعمون"
+  },
+  "donation": {
+    "amountStep": {
+      "loadingOptions": "جارٍ تحميل خيارات الدفع...",
+      "other": "أخرى",
+      "minAmountPlaceholder": "{{currencySymbol}} (الحد الأدنى {{currencySymbol}}{{minAmount}})"
+    },
+    "summary": {
+      "title": "ملخص التبرع",
+      "amountLabel": "المبلغ:",
+      "emailLabel": "البريد الإلكتروني:",
+      "editButton": "تعديل"
+    },
+    "emailStep": {
+      "emailLabel": "بريدك الإلكتروني",
+      "emailPlaceholder": "you@example.com",
+      "receiptNote": "سنرسل إيصالك إلى عنوان البريد الإلكتروني هذا"
+    },
+    "header": {
+      "title": "ادعم التعليم المجاني",
+      "subtitle": "اختر مبلغًا للتبرع"
+    },
+    "paymentStep": {
+      "loadingGateway": "جارٍ تحميل بوابة الدفع...",
+      "gatewayUnavailable": "بوابة الدفع غير متاحة",
+      "cardDetailsLabel": "بيانات البطاقة",
+      "errors": {
+        "gatewayNotConfigured": "لم يتم تكوين بوابة الدفع",
+        "failedToLoad": "فشل تحميل بوابة الدفع"
+      }
+    },
+    "successStep": {
+      "thankYouTitle": "شكرًا لك!",
+      "donationProcessingPrefix": "تبرعك بقيمة",
+      "donationProcessingSuffix": "قيد المعالجة.",
+      "thankYouMessage": "شكرًا لدعمك التعليم المجاني ومساهمتك في إتاحة التعليم للجميع!",
+      "paymentFailedTitle": "فشلت عملية الدفع",
+      "paymentFailedPrefix": "تعذّرت معالجة تبرعك بقيمة",
+      "paymentFailedSuffix": ".",
+      "paymentIssueTitle": "مشكلة في الدفع",
+      "tryAgainButton": "حاول مرة أخرى"
+    },
+    "paymentForm": {
+      "processing": "جارٍ المعالجة...",
+      "donateNow": "تبرع الآن",
+      "securePaymentBy": "دفع آمن مقدَّم من",
+      "stripeBrand": "Stripe",
+      "errors": {
+        "stripeNotLoaded": "لم يتم تحميل Stripe. يرجى تحديث الصفحة.",
+        "cardElementNotFound": "لم يتم العثور على عنصر البطاقة.",
+        "paymentMethodCreationFailed": "فشل إنشاء وسيلة الدفع.",
+        "paymentProcessingFailed": "فشلت معالجة الدفع",
+        "paymentFailedRetry": "فشل الدفع. يرجى المحاولة مرة أخرى."
+      }
+    }
+  }
+}

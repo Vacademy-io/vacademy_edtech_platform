@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { MyPagination } from "@/components/design-system/pagination";
 import { AxiosError } from "axios";
@@ -83,6 +84,7 @@ export function CourseDetailsRatingsComponent({
     packageSessionId: string | null;
     onRatingsLoadingChange?: (loading: boolean) => void;
 }) {
+    const { t } = useTranslation("coursesRouteB");
     const router = useRouter();
     const searchParams = router.state.location.search;
     const queryClient = useQueryClient();
@@ -264,14 +266,14 @@ export function CourseDetailsRatingsComponent({
 
             if (error instanceof AxiosError) {
                 toast.error(
-                    error?.response?.data?.ex || "Failed to submit rating",
+                    error?.response?.data?.ex || t("ratings.toast.submitFailed"),
                     {
                         className: "error-toast",
                         duration: 2000,
                     }
                 );
             } else {
-                toast.error("An unexpected error occurred", {
+                toast.error(t("ratings.toast.unexpectedError"), {
                     className: "error-toast",
                     duration: 2000,
                 });
@@ -397,7 +399,7 @@ export function CourseDetailsRatingsComponent({
 
     return (
         <div className="flex flex-col gap-5">
-            <h1 className="text-2xl font-bold">Ratings & Reviews</h1>
+            <h1 className="text-2xl font-bold">{t("ratings.heading")}</h1>
             {reviews.length > 0 && (
                 <div className="flex w-full gap-12">
                     <div className="flex flex-col gap-2 text-center">
@@ -407,7 +409,7 @@ export function CourseDetailsRatingsComponent({
                                 ? Number(
                                       overallRatingData.average_rating
                                   ).toFixed(1)
-                                : "N/A"}
+                                : t("ratings.notAvailable")}
                         </h1>
                         <StarRatingComponent
                             score={
@@ -420,11 +422,13 @@ export function CourseDetailsRatingsComponent({
                             starColor={true}
                         />
                         <span>
-                            {overallRatingData?.total_reviews !== null &&
-                            overallRatingData?.total_reviews !== undefined
-                                ? overallRatingData.total_reviews
-                                : 0}{" "}
-                            reviews
+                            {t("ratings.reviewsCount", {
+                                count:
+                                    overallRatingData?.total_reviews !== null &&
+                                    overallRatingData?.total_reviews !== undefined
+                                        ? overallRatingData.total_reviews
+                                        : 0,
+                            })}
                         </span>
                     </div>
                     <div className="flex w-full flex-col gap-4">
@@ -511,10 +515,10 @@ export function CourseDetailsRatingsComponent({
             >
                 {isRatingLoading || isOverallRatingLoading ? (
                     // Add loading skeleton here if needed
-                    <div>Loading reviews...</div>
+                    <div>{t("ratings.loading")}</div>
                 ) : reviews.length === 0 ? (
                     <div className="text-center text-neutral-500">
-                        No reviews yet
+                        {t("ratings.empty")}
                     </div>
                 ) : (
                     reviews.map((review) => (

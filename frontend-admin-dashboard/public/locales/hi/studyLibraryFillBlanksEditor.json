@@ -1,0 +1,23 @@
+{
+    "block": {
+        "title": "रिक्त स्थान भरें",
+        "preview": "पूर्वावलोकन",
+        "edit": "संपादित करें"
+    },
+    "editor": {
+        "usageHintPrefix": "रिक्त स्थान बनाने के लिए",
+        "usageHintSuffix": "का उपयोग करें।",
+        "exampleLabel": "उदाहरण:",
+        "exampleSentence": "फ्रांस की राजधानी {blank:Paris} है",
+        "textareaPlaceholder": "{blank:Sun} हमारे {blank:solar system} का केंद्र है।",
+        "blanksDetected_one": "{{count}} रिक्त स्थान मिला:",
+        "blanksDetected_other": "{{count}} रिक्त स्थान मिले:"
+    },
+    "preview": {
+        "blankPlaceholder": "रिक्त स्थान {{index}}",
+        "checkAnswers": "उत्तर जाँचें",
+        "reset": "रीसेट करें",
+        "correct": "सही",
+        "emptyState": "रिक्त स्थान वाला वाक्य जोड़ने के लिए संपादित करें पर क्लिक करें"
+    }
+}

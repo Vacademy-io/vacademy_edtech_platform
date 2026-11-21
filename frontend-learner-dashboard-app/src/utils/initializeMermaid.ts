@@ -1,9 +1,14 @@
-import mermaid from 'mermaid';
+// mermaid is ~1.3 MB compressed. A static import made it a preloaded
+// dependency of the app entry, so every page (ad landing pages included)
+// downloaded it before first paint. Load it only when a diagram renders.
+type Mermaid = typeof import('mermaid').default;
 
-let mermaidInitialized = false;
+let mermaidReady: Promise<Mermaid> | null = null;
 
-export const initializeMermaid = () => {
-    if (!mermaidInitialized) {
+/** Loads mermaid once, initializes it once, and resolves with the instance. */
+export const initializeMermaid = (): Promise<Mermaid> => {
+    if (mermaidReady) return mermaidReady;
+    mermaidReady = import('mermaid').then(({ default: mermaid }) => {
         mermaid.initialize({
             startOnLoad: false,
             theme: 'default',
@@ -33,7 +38,12 @@ export const initializeMermaid = () => {
                 fontSize: 11,
             },
         });
-        mermaidInitialized = true;
-    }
+        return mermaid;
+    });
+    // A failed chunk fetch must not stick: let the next diagram retry.
+    mermaidReady.catch(() => {
+        mermaidReady = null;
+    });
+    return mermaidReady;
 };
 

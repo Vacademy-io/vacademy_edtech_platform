@@ -1,0 +1,41 @@
+{
+    "source": {
+        "pdf": "Depuis un PDF",
+        "audio": "Depuis un audio",
+        "image": "Depuis une photo",
+        "doc": "Depuis un document",
+        "none": "Depuis un sujet"
+    },
+    "status": {
+        "completed": "Prêt",
+        "failed": "Échoué",
+        "inProgress": "En cours"
+    },
+    "friendlyHeading": {
+        "vsmartUpload": "Vos sujets d'examen",
+        "vsmartExtract": "Vos extractions",
+        "vsmartImage": "Vos extractions",
+        "vsmartAudio": "Vos sujets à partir d'audio",
+        "vsmartTopics": "Vos sujets par thème",
+        "vsmartChat": "Vos sessions de discussion",
+        "vsmartOrganizer": "Vos ensembles triés",
+        "vsmartSorter": "Vos ensembles triés",
+        "vsmartLecturer": "Vos plans de cours",
+        "vsmartFeedback": "Vos évaluations de cours"
+    },
+    "relativeTime": {
+        "justNow": "à l'instant",
+        "minutesAgo_one": "il y a {{count}} min",
+        "minutesAgo_many": "il y a {{count}} min",
+        "minutesAgo_other": "il y a {{count}} min",
+        "hoursAgo_one": "il y a {{count}} h",
+        "hoursAgo_many": "il y a {{count}} h",
+        "hoursAgo_other": "il y a {{count}} h",
+        "daysAgo_one": "il y a {{count}} j",
+        "daysAgo_many": "il y a {{count}} j",
+        "daysAgo_other": "il y a {{count}} j"
+    },
+    "taskDisplayName": {
+        "untitledDraft": "Brouillon sans titre"
+    }
+}

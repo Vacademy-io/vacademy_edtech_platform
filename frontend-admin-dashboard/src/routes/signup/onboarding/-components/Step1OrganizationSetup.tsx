@@ -14,27 +14,32 @@ import { FileUploadComponent } from '@/components/design-system/file-upload';
 import { UploadFileInS3Public } from '../../-services/signup-services';
 import useOrganizationStore from '../-zustand-store/step1OrganizationZustand';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
-const organizationSetupSchema = z.object({
-    profilePictureUrl: z.string(),
-    instituteProfilePic: z.union([z.string(), z.undefined()]),
-    instituteName: z.string().min(1, 'Institute Name is required'),
-    instituteType: z.string().min(1, 'Select institute type'),
-    instituteThemeCode: z.union([z.string(), z.undefined()]),
-});
+const buildOrganizationSetupSchema = (t: TFunction) =>
+    z.object({
+        profilePictureUrl: z.string(),
+        instituteProfilePic: z.union([z.string(), z.undefined()]),
+        instituteName: z.string().min(1, t('schema.instituteNameRequired')),
+        instituteType: z.string().min(1, t('schema.instituteTypeRequired')),
+        instituteThemeCode: z.union([z.string(), z.undefined()]),
+    });
 
-type FormValues = z.infer<typeof organizationSetupSchema>;
+type FormValues = z.infer<ReturnType<typeof buildOrganizationSetupSchema>>;
 
 const Step1OrganizationSetup: React.FC<OrganizationOnboardingProps> = ({
     currentStep,
     handleCompleteCurrentStep,
     completedSteps,
 }) => {
+    const { t } = useTranslation('signupOnboardingStep1OrganizationSetup');
     const INSTITUTE_ID = getCurrentInstituteId();
     console.log(currentStep, completedSteps);
     const { formData, setFormData } = useOrganizationStore();
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const organizationSetupSchema = React.useMemo(() => buildOrganizationSetupSchema(t), [t]);
     const form = useForm<FormValues>({
         resolver: zodResolver(organizationSetupSchema),
         defaultValues: {
@@ -77,12 +82,12 @@ const Step1OrganizationSetup: React.FC<OrganizationOnboardingProps> = ({
         <FormProvider {...form}>
             <form>
                 <div className="flex flex-col items-center justify-center gap-4 lg:gap-8">
-                    <h1 className="text-xl lg:text-[1.6rem]">Share your organization details</h1>
+                    <h1 className="text-xl lg:text-[1.6rem]">{t('heading')}</h1>
                     <div className="relative">
                         {form.getValues('profilePictureUrl') ? (
                             <img
                                 src={form.getValues('profilePictureUrl')}
-                                alt="logo"
+                                alt={t('logoAlt')}
                                 className="size-32 rounded-full lg:size-52"
                             />
                         ) : (
@@ -117,13 +122,13 @@ const Step1OrganizationSetup: React.FC<OrganizationOnboardingProps> = ({
                                 <FormControl>
                                     <MyInput
                                         inputType="text"
-                                        inputPlaceholder="Institute Name"
+                                        inputPlaceholder={t('instituteNamePlaceholder')}
                                         input={value}
                                         onChangeFunction={onChange}
                                         required={true}
                                         error={form.formState.errors.instituteName?.message}
                                         size="large"
-                                        label="Institute Name"
+                                        label={t('instituteNameLabel')}
                                         {...field}
                                         className="w-full"
                                     />
@@ -133,7 +138,7 @@ const Step1OrganizationSetup: React.FC<OrganizationOnboardingProps> = ({
                     />
                     <div className="w-full max-w-sm">
                         <SelectField
-                            label="Institute Type"
+                            label={t('instituteTypeLabel')}
                             name="instituteType"
                             options={InstituteType.map((option, index) => ({
                                 value: option,
@@ -154,7 +159,7 @@ const Step1OrganizationSetup: React.FC<OrganizationOnboardingProps> = ({
                         className="mt-4"
                         disable={!isValid}
                     >
-                        Continue
+                        {t('continue')}
                     </MyButton>
                 </div>
             </form>

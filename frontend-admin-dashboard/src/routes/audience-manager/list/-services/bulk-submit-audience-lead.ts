@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import { BULK_SUBMIT_AUDIENCE_LEAD_ADMIN_URL } from '@/constants/urls';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { SubmitLeadRequest, throwWithServerMessage } from './submit-audience-lead';
@@ -35,9 +36,14 @@ export interface BulkSubmitLeadResponse {
  * column are stamped to the importer rather than landing unassigned and
  * invisible to them. Same payload and same pipeline as the open bulk endpoint
  * otherwise.
+ *
+ * `t` must be bound to the `audienceManagerBulkSubmitAudienceLead` namespace — it
+ * only supplies the fallback wording used when the server response carries no
+ * message of its own (see {@link throwWithServerMessage}).
  */
 export const submitBulkAudienceLead = async (
-    payload: BulkSubmitLeadRequest
+    payload: BulkSubmitLeadRequest,
+    t: TFunction
 ): Promise<BulkSubmitLeadResponse> => {
     try {
         const response = await authenticatedAxiosInstance({
@@ -47,6 +53,6 @@ export const submitBulkAudienceLead = async (
         });
         return response.data as BulkSubmitLeadResponse;
     } catch (error) {
-        return throwWithServerMessage(error, 'Failed to submit leads');
+        return throwWithServerMessage(error, t('errors.submitFailed'));
     }
 };

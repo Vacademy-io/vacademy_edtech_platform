@@ -111,7 +111,7 @@ public interface EntityTagsRepository extends JpaRepository<EntityTags, String>,
                 ) AS tag_data
                 WHERE (:entityName IS NULL OR tag_data.entity_name = :entityName)
                 AND (:tagIds IS NULL OR tag_data.tag_id IN (:tagIds))
-                AND (:search IS NULL OR LOWER(tag_data.tag_display_name) LIKE LOWER(CONCAT('%', :search, '%')))
+                AND (CAST(:search AS text) IS NULL OR LOWER(tag_data.tag_display_name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')))
             """, nativeQuery = true)
     Page<Object[]> findDistinctEntitiesbysearch(
             @Param("entityName") String entityName,

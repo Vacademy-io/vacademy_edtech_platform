@@ -1,0 +1,26 @@
+{
+    "editHeading": "تعديل القسم",
+    "addHeading": "إضافة قسم",
+    "cancel": "إلغاء",
+    "saveChanges": "حفظ التغييرات",
+    "saving": "جارٍ الحفظ…",
+    "noParent": "بلا قسم رئيسي (المستوى الأعلى)",
+    "fields": {
+        "nameLabel": "الاسم",
+        "namePlaceholder": "مثال: الشؤون الأكاديمية",
+        "codeLabel": "الرمز",
+        "codePlaceholder": "مثال: ACAD",
+        "codeHelp": "رمز مختصر يُستخدم في التقارير وملفات تصدير الرواتب.",
+        "parentLabel": "القسم الرئيسي",
+        "descriptionLabel": "الوصف",
+        "descriptionPlaceholder": "ما الذي يتولى هذا القسم مسؤوليته"
+    },
+    "toasts": {
+        "updated": "تم تحديث القسم",
+        "added": "تمت إضافة القسم"
+    },
+    "errors": {
+        "nameRequired": "أعطِ القسم اسمًا",
+        "saveFailed": "تعذّر حفظ هذا القسم"
+    }
+}

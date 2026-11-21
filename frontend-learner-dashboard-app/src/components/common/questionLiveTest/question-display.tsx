@@ -1,5 +1,9 @@
 import { Check, WarningCircle } from "@phosphor-icons/react";
-import { useAssessmentStore } from "@/stores/assessment-store";
+import { useTranslation } from "react-i18next";
+import {
+  displayedAnswerFor,
+  useAssessmentStore,
+} from "@/stores/assessment-store";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useEffect, useState } from "react";
 import {
@@ -13,9 +17,13 @@ import { ExpandableParagraph } from "./otherQuestionTypes/paragraph";
 import { OneWordInput } from "./otherQuestionTypes/OneWordInput";
 import { LongAnswerInput } from "./otherQuestionTypes/LongAnswerInput";
 import { CodingQuestionDisplay } from "./otherQuestionTypes/CodingQuestionDisplay";
+import { CbeQuestionDisplay } from "./otherQuestionTypes/CbeQuestionDisplay";
 import { QuestionHtmlContent } from "./question-html-content";
 import { QuestionPassage } from "./question-passage";
+import { PassageSplitView } from "./passage-split-view";
+import { shouldSplitPassage } from "./passage-beside";
 import { useLiveTestUi } from "./live-test-ui-context";
+import { questionTypeLabel } from "./question-type-label";
 
 const OPTION_LETTERS = "abcdefghijklmnopqrstuvwxyz";
 
@@ -45,19 +53,17 @@ function MetaChip({
 }
 
 export function QuestionDisplay() {
-  const { settings } = useLiveTestUi();
+  const { t } = useTranslation("questionTest");
+  const { settings, isCompact } = useLiveTestUi();
   const {
     currentQuestion,
     currentSection,
     answers,
+    draftAnswers,
     setAnswer,
     sectionTimers,
     questionTimers,
     assessment,
-    updateQuestionTimer,
-    moveToNextQuestion,
-    initializeQuestionTime,
-    incrementQuestionTime,
   } = useAssessmentStore();
 
   const [playMode, setPlayMode] = useState<string | null>(null);
@@ -81,46 +87,13 @@ export function QuestionDisplay() {
   const isTimeUp = sectionTimers[currentSection]?.timeLeft === 0;
   const isPracticeMode = playMode === "PRACTICE" || playMode === "SURVEY";
 
-  useEffect(() => {
-    if (!currentQuestion?.question_id) return;
-    initializeQuestionTime(currentQuestion.question_id);
-
-    const interval = setInterval(() => {
-      incrementQuestionTime(currentQuestion.question_id);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [currentQuestion, initializeQuestionTime, incrementQuestionTime]);
-
-  useEffect(() => {
-    if (
-      isPracticeMode ||
-      !currentQuestion ||
-      assessment?.distribution_duration !== distribution_duration_types.QUESTION
-    )
-      return;
-
-    const timer = setInterval(() => {
-      const timeLeft = questionTimers[currentQuestion.question_id] || 0;
-      if (timeLeft > 0) {
-        updateQuestionTimer(currentQuestion.question_id, timeLeft - 1000);
-      } else {
-        moveToNextQuestion();
-      }
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [
-    currentQuestion,
-    assessment?.distribution_duration,
-    questionTimers,
-    isPracticeMode,
-  ]);
+  // The per-question clock and the time-spent counter tick in the engine
+  // (engine/use-exam-clock.ts); this view only draws them.
 
   if (!currentQuestion) {
     return (
       <p className="py-12 text-center text-body text-neutral-500">
-        Select a question to begin
+        {t("questionDisplay.selectPrompt")}
       </p>
     );
   }
@@ -130,14 +103,17 @@ export function QuestionDisplay() {
       <Alert variant="destructive">
         <WarningCircle className="size-4" />
         <AlertDescription>
-          Time is up for this section. Please move to the next available
-          section.
+          {t("questionDisplay.sectionTimeUp")}
         </AlertDescription>
       </Alert>
     );
   }
 
-  const currentAnswer = answers[currentQuestion.question_id] || [];
+  // An unsaved pick (explicit-commit themes) shows until it is saved or the
+  // learner leaves; in auto mode there are no drafts.
+  const currentAnswer =
+    displayedAnswerFor({ answers, draftAnswers }, currentQuestion.question_id) ||
+    [];
 
   const sectionQuestions =
     assessment?.section_dtos?.[currentSection]?.question_preview_dto_list ?? [];
@@ -189,17 +165,24 @@ export function QuestionDisplay() {
   };
 
   const isMultiSelect = currentQuestion.question_type === QUESTION_TYPES.MCQM;
+  const typeLabel = questionTypeLabel(currentQuestion.question_type, t);
 
-  return (
-    <div className="mx-auto w-full max-w-4xl">
-      {/* Question header — number on the left, marking scheme on the right, so
-          both survive a narrow phone without the stem shifting around. */}
-      <div className="mb-4 flex flex-wrap items-center gap-2 md:mb-5">
+  const isCbe = currentQuestion.question_type === QUESTION_TYPES.CBE_RESPONSE;
+
+  // Question header — number on the left, marking scheme on the right, so
+  // both survive a narrow phone without the stem shifting around.
+  const header = (
+      <div className={cn("flex flex-wrap items-center gap-2", !isCbe && "mb-4 md:mb-5")}>
         <span className="text-title font-bold text-neutral-900">
-          Question {indexInSection >= 0 ? indexInSection + 1 : currentQuestion.serial_number}
+          {t("common.questionNumber", {
+            number:
+              indexInSection >= 0
+                ? indexInSection + 1
+                : currentQuestion.serial_number,
+          })}
         </span>
         <span className="text-caption text-neutral-400">
-          of {sectionQuestions.length}
+          {t("questionDisplay.ofTotal", { total: sectionQuestions.length })}
         </span>
         {!isPracticeMode &&
           assessment?.distribution_duration ===
@@ -211,7 +194,7 @@ export function QuestionDisplay() {
             </span>
           )}
         <span className="flex-1" />
-        <MetaChip>{currentQuestion.question_type}</MetaChip>
+        <MetaChip>{typeLabel}</MetaChip>
         {settings.showMarkingScheme && totalMark > 0 && (
           <MetaChip tone="positive">+{totalMark}</MetaChip>
         )}
@@ -219,13 +202,43 @@ export function QuestionDisplay() {
           <MetaChip tone="negative">−{negativeMark}</MetaChip>
         )}
       </div>
+  );
+
+  // Spreadsheet & Written Response takes the whole question area as a split
+  // screen (scenario | requirements + workspace); page.tsx drops its padding
+  // and scroller for it on desktop.
+  if (isCbe) {
+    return (
+      <CbeQuestionDisplay
+        key={currentQuestion.question_id}
+        question={currentQuestion}
+        header={header}
+        intro={<ExpandableParagraph />}
+      />
+    );
+  }
+
+  // "Show passage beside the question" (per test, default off): passage on the
+  // left, this column on the right (md and wider; phones keep it stacked).
+  const passageHtml = currentQuestion.parent_rich_text?.content;
+  const splitPassage = shouldSplitPassage({
+    examInterface: assessment?.exam_interface,
+    isCompact,
+    isCbe,
+    passageHtml,
+  });
+
+  // The question column; `withPassage` = today's collapsible passage above the stem.
+  const renderColumn = (withPassage: boolean) => (
+    <div className="mx-auto w-full max-w-4xl">
+      {header}
 
       <ExpandableParagraph />
 
       {/* Comprehension passage for this question (backend: parent_rich_text).
           ExpandableParagraph above is a different thing — the assessment-wide
           "about" text fetched once from about_id — so it never showed passages. */}
-      <QuestionPassage html={currentQuestion.parent_rich_text?.content} />
+      {withPassage && <QuestionPassage html={passageHtml} />}
 
       {/* Tailwind's reset strips <p> margins — a multi-paragraph stem would
           otherwise render as one block with no breaks. */}
@@ -255,7 +268,7 @@ export function QuestionDisplay() {
             if (!codingConfig) {
               return (
                 <p className="text-body text-neutral-500">
-                  Coding question is missing configuration.
+                  {t("questionDisplay.codingMissingConfig")}
                 </p>
               );
             }
@@ -273,9 +286,9 @@ export function QuestionDisplay() {
           case QUESTION_TYPES.TRUE_FALSE:
             return (
               <div
-                className="flex flex-col gap-3"
+                className="flex flex-col gap-stack"
                 role={isMultiSelect ? "group" : "radiogroup"}
-                aria-label="Answer options"
+                aria-label={t("questionDisplay.answerOptionsAriaLabel")}
               >
                 {currentQuestion?.options?.map((option, index) => {
                   const isSelected = currentAnswer.includes(option.id);
@@ -360,11 +373,24 @@ export function QuestionDisplay() {
           default:
             return (
               <p className="text-body text-neutral-500">
-                This question type cannot be displayed here.
+                {t("questionDisplay.unsupportedType")}
               </p>
             );
         }
       })()}
     </div>
   );
+
+  if (splitPassage && passageHtml) {
+    return (
+      <PassageSplitView
+        passageHtml={passageHtml}
+        questionId={currentQuestion.question_id}
+        stacked={renderColumn(true)}
+      >
+        {renderColumn(false)}
+      </PassageSplitView>
+    );
+  }
+  return renderColumn(true);
 }

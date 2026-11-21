@@ -20,7 +20,9 @@ import vacademy.io.admin_core_service.features.live_session.dto.LearnerDisplaySe
  *   "showPastSessions": false,
  *   "showRecordings": false,
  *   "showAttendance": false,
- *   "showActivityStats": false
+ *   "showActivityStats": false,
+ *   "showClassMaterials": false,
+ *   "showUnassignedPublicSessions": false
  * }
  * }</pre>
  *
@@ -60,9 +62,11 @@ public class LiveSessionLearnerDisplaySettingsService {
             boolean showAttendance = learnerDisplay.path("showAttendance").asBoolean(false);
             boolean showActivityStats = learnerDisplay.path("showActivityStats").asBoolean(false);
             boolean showClassMaterials = learnerDisplay.path("showClassMaterials").asBoolean(false);
+            boolean showUnassignedPublicSessions = learnerDisplay.path("showUnassignedPublicSessions")
+                    .asBoolean(false);
 
             return new LearnerDisplaySettingsFlags(showPastSessions, showRecordings, showAttendance,
-                    showActivityStats, showClassMaterials);
+                    showActivityStats, showClassMaterials, showUnassignedPublicSessions);
         } catch (Exception e) {
             log.warn("Failed to read learnerDisplay flags for institute {}: {}", instituteId, e.getMessage());
             return LearnerDisplaySettingsFlags.allOff();

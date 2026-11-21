@@ -1,0 +1,28 @@
+{
+    "dialog": {
+        "heading_one": "Select Questions ({{count}} total)",
+        "heading_other": "Select Questions ({{count}} total)"
+    },
+    "footer": {
+        "selectedCount_one": "{{count}} selected",
+        "selectedCount_other": "{{count}} selected"
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "addQuestions_one": "Add {{count}} Question",
+        "addQuestions_other": "Add {{count}} Questions"
+    },
+    "search": {
+        "placeholder": "Search questions..."
+    },
+    "tags": {
+        "filterLabel": "Filter by tag:"
+    },
+    "list": {
+        "selectAll_one": "Select All ({{count}})",
+        "selectAll_other": "Select All ({{count}})",
+        "matchingCount_one": "{{count}} matching",
+        "matchingCount_other": "{{count}} matching",
+        "emptyState": "No questions match your search."
+    }
+}

@@ -1,0 +1,76 @@
+{
+    "header": {
+        "applicationFormTitle": "Formulaire de candidature",
+        "institutePlaceholder": "Nom de l'établissement",
+        "instituteLogoAlt": "Logo de l'établissement",
+        "pastePhoto": "Coller la photo",
+        "dateLabel": "Date :",
+        "academicYearLabel": "Année académique :"
+    },
+    "sections": {
+        "studentDetails": "Informations sur l'élève",
+        "healthInformation": "Informations médicales",
+        "academicInformation": "Informations académiques",
+        "fathersDetails": "Informations sur le père",
+        "mothersDetails": "Informations sur la mère",
+        "guardianDetails": "Informations sur le tuteur",
+        "emergencyContact": "Contact d'urgence",
+        "addressDetails": "Informations sur l'adresse"
+    },
+    "fields": {
+        "fullNameBirthCertificate": "Nom complet (selon l'acte de naissance)",
+        "dateOfBirth": "Date de naissance",
+        "gender": "Sexe",
+        "nationality": "Nationalité",
+        "religion": "Religion",
+        "category": "Catégorie",
+        "bloodGroup": "Groupe sanguin",
+        "motherTongue": "Langue maternelle",
+        "languagesKnown": "Langues connues",
+        "idType": "Type de pièce d'identité",
+        "idNumber": "Numéro de pièce d'identité",
+        "medicalConditions": "Conditions médicales / allergies",
+        "dietaryRestrictions": "Restrictions alimentaires",
+        "specialEducationNeeds": "Besoins éducatifs particuliers",
+        "physicallyChallenged": "Personne en situation de handicap physique",
+        "applyingForClass": "Classe demandée",
+        "preferredBoard": "Programme préféré",
+        "academicYear": "Année académique",
+        "previousSchoolName": "Nom de l'ancien établissement",
+        "previousSchoolBoard": "Programme de l'ancien établissement",
+        "lastClassAttended": "Dernière classe suivie",
+        "lastExamResult": "Résultat du dernier examen",
+        "subjectsStudied": "Matières étudiées",
+        "tcNumber": "Numéro du certificat de transfert",
+        "tcIssueDate": "Date d'émission du certificat de transfert",
+        "tcPending": "Certificat de transfert en attente",
+        "name": "Nom",
+        "mobile": "Mobile",
+        "email": "E-mail",
+        "qualification": "Qualification",
+        "occupation": "Profession",
+        "annualIncome": "Revenu annuel",
+        "relation": "Lien de parenté",
+        "relationship": "Lien de parenté",
+        "currentAddress": "Adresse actuelle",
+        "permanentAddress": "Adresse permanente",
+        "sameAsCurrentAddress": "Identique à l'adresse actuelle"
+    },
+    "values": {
+        "yes": "Oui",
+        "no": "Non"
+    },
+    "signature": {
+        "roleParentGuardian": "Parent / Tuteur",
+        "roleStudent": "Élève",
+        "rolePrincipal": "Directeur",
+        "label": "Signature ({{role}})"
+    },
+    "declaration": {
+        "title": "Déclaration",
+        "text": "Je déclare par la présente que toutes les informations fournies ci-dessus sont vraies et exactes au mieux de ma connaissance. Je comprends que toute fausse information peut entraîner l'annulation de la candidature / admission."
+    },
+    "footer": {
+        "generatedOn": "Ceci est un document généré par ordinateur. Généré le {{date}}."
+    }
+}

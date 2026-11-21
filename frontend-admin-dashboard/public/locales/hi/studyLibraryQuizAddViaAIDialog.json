@@ -1,0 +1,36 @@
+{
+    "createQuestionsFromAi": "AI से प्रश्न बनाएं",
+    "generateQuestions": {
+        "title": "प्रश्न जनरेट करें",
+        "description": "नए प्रश्न बनाने के लिए AI से PDF, इमेज या किसी भी विषय का उपयोग करने को कहें"
+    },
+    "extractQuestions": {
+        "title": "प्रश्न निकालें",
+        "description": "किसी भी PDF, इमेज या ऑडियो लेक्चर से प्रश्न निकालने के लिए AI से कहें"
+    },
+    "vsmartUpload": {
+        "title": "VSmart अपलोड",
+        "subtitle": "(pdf, doc और ppt फ़ाइलें अपलोड करके प्रश्न बनाएं)",
+        "description": "PDF, Word या PowerPoint फ़ॉर्मेट में अध्ययन सामग्री अपलोड करके तुरंत प्रश्न-पत्र बनाएं।"
+    },
+    "vsmartAudio": {
+        "title": "Vsmart ऑडियो",
+        "subtitle": "(ऑडियो फ़ाइलें अपलोड करके प्रश्न बनाएं)",
+        "description": "किसी भी लेक्चर, मीटिंग या ऑडियो रिकॉर्डिंग को पूरे प्रश्न-पत्र में बदलें।"
+    },
+    "vsmartTopics": {
+        "title": "Vsmart विषय",
+        "subtitle": "(विषय देकर प्रश्न बनाएं)",
+        "description": "बस एक विषय, अवधारणा या निर्देश टाइप करके सेकंडों में कस्टम प्रश्न-पत्र बनाएं।"
+    },
+    "vsmartExtract": {
+        "title": "Vsmart एक्सट्रैक्ट",
+        "subtitle": "(pdf, doc और ppt फ़ाइलें अपलोड करके प्रश्न निकालें)",
+        "description": "किसी भी PDF दस्तावेज़ से मौजूदा सभी प्रश्नों को आसानी से निकालें।"
+    },
+    "vsmartImage": {
+        "title": "Vsmart इमेज",
+        "subtitle": "(इमेज अपलोड करके प्रश्न निकालें)",
+        "description": "OCR और AI का उपयोग करके आसानी से इमेज को प्रश्नों में बदलें।"
+    }
+}

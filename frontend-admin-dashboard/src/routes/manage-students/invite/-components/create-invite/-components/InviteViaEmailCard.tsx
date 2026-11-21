@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { MyButton } from '@/components/design-system/button';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { OtherTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
+import { useTranslation } from 'react-i18next';
 
 interface InviteViaEmailCardProps {
     form: UseFormReturn<InviteLinkFormValues>;
@@ -20,10 +21,15 @@ const InviteViaEmailCard = ({
     handleAddInviteeEmail,
     handleRemoveInviteeEmail,
 }: InviteViaEmailCardProps) => {
+    const { t } = useTranslation('manageStudentsInviteViaEmailCard');
     return (
         <Card className="mb-4">
             <CardHeader>
-                <CardTitle className="text-2xl font-bold">{`${getTerminology(OtherTerms.Invite, SystemTerms.Invite)} via email`}</CardTitle>
+                <CardTitle className="text-2xl font-bold">
+                    {t('title', {
+                        term: getTerminology(OtherTerms.Invite, SystemTerms.Invite),
+                    })}
+                </CardTitle>
             </CardHeader>
             <CardContent>
                 <div className="flex w-full items-end gap-2">
@@ -32,7 +38,7 @@ const InviteViaEmailCard = ({
                             htmlFor="invitee-email-input"
                             className="mb-1 block text-sm font-medium"
                         >
-                            Enter invitee email
+                            {t('emailInput.label')}
                         </label>
                         <Input
                             id="invitee-email-input"
@@ -41,7 +47,7 @@ const InviteViaEmailCard = ({
                             onChange={(e) => {
                                 form.setValue('inviteeEmail', e.target.value);
                             }}
-                            placeholder="you@email.com"
+                            placeholder={t('emailInput.placeholder')}
                             className="w-full"
                         />
                     </div>
@@ -56,7 +62,7 @@ const InviteViaEmailCard = ({
                         }
                         onClick={handleAddInviteeEmail}
                     >
-                        Add
+                        {t('addButton')}
                     </MyButton>
                 </div>
                 {form.watch('inviteeEmails').length > 0 && (

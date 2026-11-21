@@ -437,3 +437,42 @@ def test_no_close_when_no_farewell_happened():
     from app.callstate import ARM_STOP
     s = CallState(t=T0, bot_stopped_t=T0, transcript_t=T0)
     assert ARM_STOP not in kinds(run_ticks(s, cfg(), T0, T0 + 20.0))
+
+
+# ── call c130e39f (2026-09-09): Vertex 5.4s to first token, then ~8s to finish a
+#    3-sentence reply — 16s of dead air, "Hello?" x3 from the caller ─────────────
+from app.callstate import LLM_BRIDGE
+
+
+def test_llm_bridge_fires_once_per_slow_reply_and_only_when_late():
+    s = CallState(t=T0)
+    c = cfg(llm_bridge_after_secs=2.0)
+    s.reply_started_t = T0 + 1.0            # LLMFullResponseStart, no audio yet
+    out = run_ticks(s, c, T0 + 1.0, T0 + 8.0, step=0.5)
+    fired = [t for t, k in out if k == LLM_BRIDGE]
+    assert fired == [T0 + 3.0], fired       # exactly once, exactly at +2.0s
+    # The next reply gets its own bridge.
+    s.bot_stopped_t = T0 + 9.0
+    s.reply_started_t = T0 + 10.0
+    out = run_ticks(s, c, T0 + 10.0, T0 + 14.0, step=0.5)
+    assert [t for t, k in out if k == LLM_BRIDGE] == [T0 + 12.0]
+
+
+def test_llm_bridge_stays_quiet_when_audio_played_speaking_or_ducked():
+    c = cfg(llm_bridge_after_secs=2.0)
+    # Reply already reached the line: bot_stopped_t after reply_started_t.
+    s = CallState(t=T0); s.reply_started_t = T0 + 1.0; s.bot_stopped_t = T0 + 2.0
+    assert LLM_BRIDGE not in kinds(run_ticks(s, c, T0 + 1.0, T0 + 8.0))
+    # Bot audibly speaking (the reply is playing).
+    s = CallState(t=T0); s.reply_started_t = T0 + 1.0; s.bot_speaking = True
+    assert LLM_BRIDGE not in kinds(run_ticks(s, c, T0 + 1.0, T0 + 8.0))
+    # Caller speaking / ducked: the silence is theirs or deliberate.
+    s = CallState(t=T0); s.reply_started_t = T0 + 1.0; s.user_speaking = True
+    assert LLM_BRIDGE not in kinds(run_ticks(s, c, T0 + 1.0, T0 + 8.0))
+    s = CallState(t=T0); s.reply_started_t = T0 + 1.0; s.ducked_since = T0 + 1.5
+    assert LLM_BRIDGE not in kinds(run_ticks(s, c, T0 + 1.0, T0 + 3.4))
+
+
+def test_llm_bridge_is_off_unless_configured():
+    s = CallState(t=T0); s.reply_started_t = T0 + 1.0
+    assert LLM_BRIDGE not in kinds(run_ticks(s, cfg(), T0 + 1.0, T0 + 8.0))

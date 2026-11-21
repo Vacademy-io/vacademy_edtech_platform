@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { YooptaPlugin, useYooptaEditor, Elements, PluginElementRenderProps } from '@yoopta/editor';
 
 interface TocItem {
@@ -97,6 +98,7 @@ export function TableOfContentsBlock({
     children,
     blockId,
 }: PluginElementRenderProps) {
+    const { t } = useTranslation('studyLibraryTableOfContents');
     const editor = useYooptaEditor();
     const [headings, setHeadings] = useState<TocItem[]>([]);
     const isFirstRender = useRef(true);
@@ -204,7 +206,7 @@ export function TableOfContentsBlock({
                 borderTop: withDivider ? `1px solid ${C.borderSoft}` : 'none',
             }}
         >
-            <span style={{ fontSize: '12px', color: C.muted }}>Add a heading:</span>
+            <span style={{ fontSize: '12px', color: C.muted }}>{t('block.addHeading')}</span>
             {([1, 2, 3] as const).map((lvl) => (
                 <button
                     key={lvl}
@@ -260,11 +262,11 @@ export function TableOfContentsBlock({
                         <TocIcon />
                     </span>
                     <span style={{ fontSize: '14px', fontWeight: 600, color: C.title }}>
-                        Table of Contents
+                        {t('block.title')}
                     </span>
                 </div>
                 <div style={{ fontSize: '11px', color: C.muted, marginTop: '3px', marginLeft: '24px' }}>
-                    Auto-lists your document headings — click one to jump to it.
+                    {t('block.subtitle')}
                 </div>
             </div>
 
@@ -276,7 +278,7 @@ export function TableOfContentsBlock({
                             <li
                                 key={item.blockId}
                                 onClick={() => scrollToBlock(item.blockId)}
-                                title="Click to jump to this heading"
+                                title={t('block.jumpToHeadingTitle')}
                                 style={{
                                     padding: `5px 8px 5px ${(item.level - 1) * 18 + 8}px`,
                                     fontSize: item.level === 1 ? '14px' : '13px',
@@ -303,8 +305,7 @@ export function TableOfContentsBlock({
                     </ul>
                 ) : (
                     <div style={{ color: C.mutedSoft, fontSize: '13px', lineHeight: 1.5 }}>
-                        No headings yet. Add one below — it shows up here and you can click it to
-                        jump.
+                        {t('block.emptyState')}
                     </div>
                 )}
 

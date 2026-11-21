@@ -1,0 +1,5 @@
+{
+    "heading": "Supprimer les participants",
+    "confirmText": "Êtes-vous sûr de vouloir supprimer les participants pour <highlight>{{name}}</highlight> ?",
+    "doneButton": "Terminé"
+}

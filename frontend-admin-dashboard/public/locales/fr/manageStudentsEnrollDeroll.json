@@ -1,0 +1,59 @@
+{
+    "hero": {
+        "eyebrow": "ADHÉSION ACTIVE",
+        "noActiveMembership": "Aucune adhésion active",
+        "statusExpiry": "{{status}} · Expire le {{date}}",
+        "noExpiry": "Sans expiration",
+        "status": {
+            "active": "Active",
+            "pending": "En attente"
+        }
+    },
+    "newEnrollment": {
+        "heading": "S'inscrire à quelque chose de nouveau",
+        "purchaseMembership": "Acheter une adhésion",
+        "rentBook": "Louer un livre",
+        "buyBook": "Acheter un livre"
+    },
+    "cancelMembership": {
+        "heading": "Annuler l'adhésion",
+        "dateLabel": "Active depuis",
+        "actionLabel": "Annuler",
+        "dialogLabel": "Annuler l'adhésion",
+        "empty": {
+            "title": "Aucune adhésion active",
+            "hint": "Cet apprenant n'a aucun abonnement en cours."
+        }
+    },
+    "returnBook": {
+        "heading": "Retourner un livre loué",
+        "dateLabel": "Loué le",
+        "actionLabel": "Retourner",
+        "dialogLabel": "Retourner le livre loué",
+        "empty": {
+            "title": "Aucun livre loué",
+            "hint": "Cet apprenant n'a loué aucun livre."
+        }
+    },
+    "planRow": {
+        "activeBadge": "Active",
+        "defaultPlanName": "Forfait actif"
+    },
+    "compliance": {
+        "heading": "Conformité",
+        "note": "Cette action est protégée par un audit. Toutes les modifications d'inscription sont enregistrées avec des horodatages et les informations de l'administrateur à des fins de suivi de conformité."
+    },
+    "dialog": {
+        "aboutToProceed": "Vous êtes sur le point de procéder à",
+        "forStudent": "pour",
+        "terminationNote": "La résiliation est immédiate et l'accès sera révoqué.",
+        "cancel": "Annuler",
+        "confirmAction": "Confirmer l'action",
+        "processing": "Traitement en cours…"
+    },
+    "toasts": {
+        "actionSuccess": "Action effectuée avec succès",
+        "cancelFailed": "Échec de l'annulation du plan",
+        "noStudentSelected": "Aucun étudiant sélectionné"
+    }
+}

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
   CheckCircle,
@@ -50,6 +51,7 @@ function rememberViewedTour(key: string) {
  * starts the intro-style walkthrough.
  */
 export const TutorialsHelpButton = ({ className }: { className?: string }) => {
+  const { t } = useTranslation('miscComponents');
   const [tutorialSettings, setTutorialSettings] =
     useState<StudentTutorialSettings | null>(null);
   const [open, setOpen] = useState(false);
@@ -99,7 +101,7 @@ export const TutorialsHelpButton = ({ className }: { className?: string }) => {
       await downloadTutorialGuidePdf(enabledTourKeys);
     } catch (error) {
       console.error('Error downloading tutorial guide PDF:', error);
-      toast.error('Could not download the guide. Please try again.');
+      toast.error(t('tutorialsHelpButton.toast.downloadFailed'));
     } finally {
       setDownloadingGuide(false);
     }
@@ -124,7 +126,7 @@ export const TutorialsHelpButton = ({ className }: { className?: string }) => {
       <SheetTrigger asChild>
         <button
           type="button"
-          aria-label="Help and tutorials"
+          aria-label={t('tutorialsHelpButton.ariaLabel')}
           data-tour="help-button"
           className={cn(
             // Mirrors the NotificationsBell ghost icon button
@@ -144,9 +146,9 @@ export const TutorialsHelpButton = ({ className }: { className?: string }) => {
         className="max-h-screen-85 overflow-y-auto rounded-t-2xl pb-safe"
       >
         <SheetHeader className="text-start">
-          <SheetTitle>Tutorials</SheetTitle>
+          <SheetTitle>{t('tutorialsHelpButton.title')}</SheetTitle>
           <SheetDescription>
-            Quick guided walkthroughs of the app. Pick one to start.
+            {t('tutorialsHelpButton.description')}
           </SheetDescription>
         </SheetHeader>
         <ul className="mt-4 flex flex-col gap-2">
@@ -175,7 +177,7 @@ export const TutorialsHelpButton = ({ className }: { className?: string }) => {
                           size={16}
                           weight="fill"
                           className="shrink-0 text-success-500"
-                          aria-label="Viewed"
+                          aria-label={t('tutorialsHelpButton.viewedAriaLabel')}
                         />
                       )}
                     </span>
@@ -210,11 +212,11 @@ export const TutorialsHelpButton = ({ className }: { className?: string }) => {
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-body font-semibold text-neutral-700">
                     {downloadingGuide
-                      ? 'Preparing your guide...'
-                      : 'Complete how-to guide (PDF)'}
+                      ? t('tutorialsHelpButton.pdfGuide.preparing')
+                      : t('tutorialsHelpButton.pdfGuide.label')}
                   </span>
                   <span className="block truncate text-caption text-neutral-500">
-                    Download a step-by-step handbook for all of the above.
+                    {t('tutorialsHelpButton.pdfGuide.description')}
                   </span>
                 </span>
               </button>

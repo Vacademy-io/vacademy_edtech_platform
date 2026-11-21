@@ -1,0 +1,46 @@
+{
+    "title": "केंद्र प्रदर्शन रिपोर्ट",
+    "emptyState": "चयनित अवधि के लिए कोई केंद्र डेटा उपलब्ध नहीं है",
+    "kpi": {
+        "activeCenters": "सक्रिय केंद्र",
+        "totalEnrolled": "कुल नामांकित",
+        "totalInteractions": "कुल इंटरैक्शन",
+        "totalOptOuts": "कुल ऑप्ट-आउट"
+    },
+    "distribution": {
+        "title": "केंद्र वितरण",
+        "subtitle": "केंद्र के अनुसार उपयोगकर्ता — दृश्य अवलोकन",
+        "barChartHeading": "केंद्र के अनुसार उपयोगकर्ता",
+        "pieChartHeading": "उपयोगकर्ता वितरण",
+        "tooltipEnrolled": "नामांकित",
+        "tooltipInteractions": "इंटरैक्शन",
+        "tooltipOptOuts": "ऑप्ट-आउट",
+        "usersLabel": "उपयोगकर्ता"
+    },
+    "table": {
+        "title": "केंद्र प्रदर्शन विवरण",
+        "subtitlePrefix": "प्रति केंद्र नामांकन, इंटरैक्शन और ऑप्ट-आउट।",
+        "shareWord": "हिस्सा",
+        "subtitleSuffix": "= कुल नामांकितों में इस केंद्र का प्रतिशत।",
+        "exportCsv": "CSV निर्यात करें",
+        "center": "केंद्र",
+        "enrolled": "नामांकित",
+        "shareOfEnrolled": "नामांकन में हिस्सा",
+        "shareHint": "प्रत्येक केंद्र के सभी नामांकित लीड्स में हिस्सा = इस केंद्र के नामांकित ÷ कुल नामांकित।",
+        "interactions": "इंटरैक्शन",
+        "avgPerUser": "औसत/उपयोगकर्ता",
+        "optOuts": "ऑप्ट-आउट",
+        "optOutPercent": "ऑप्ट-आउट %",
+        "status": "स्थिति",
+        "total": "कुल"
+    },
+    "csv": {
+        "center": "केंद्र",
+        "enrolledUsers": "नामांकित उपयोगकर्ता",
+        "totalInteractions": "कुल इंटरैक्शन",
+        "avgPerUser": "औसत/उपयोगकर्ता",
+        "optOuts": "ऑप्ट-आउट",
+        "optOutPercent": "ऑप्ट-आउट %",
+        "status": "स्थिति"
+    }
+}

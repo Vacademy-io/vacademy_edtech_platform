@@ -1,0 +1,26 @@
+{
+    "header": {
+        "title": "Utilisation des services",
+        "subtitle": "Services et API les plus actifs"
+    },
+    "tooltip": {
+        "usage": "Utilisation : {{value}}",
+        "users": "Utilisateurs : {{value}}",
+        "avgResponse": "Temps de réponse moyen : {{value}} ms"
+    },
+    "empty": {
+        "message": "Aucune donnée de service disponible"
+    },
+    "error": {
+        "widgetName": "utilisation des services"
+    },
+    "list": {
+        "users_one": "{{count}} utilisateur",
+        "users_many": "{{count}} utilisateurs",
+        "users_other": "{{count}} utilisateurs"
+    },
+    "footer": {
+        "avgResponseTime": "Temps de réponse moyen :",
+        "ms": "{{value}} ms"
+    }
+}

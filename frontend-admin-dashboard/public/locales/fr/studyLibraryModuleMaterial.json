@@ -1,0 +1,8 @@
+{
+    "courseNotFound": "Cours introuvable",
+    "subjectNotFound": "Matière introuvable",
+    "levelNotFound": "Niveau introuvable",
+    "heading": "Gérer vos modules",
+    "subtitle": "Explorez et gérez les modules de {{level}} {{subject}}. Cliquez sur un module pour consulter et organiser les chapitres, les livres électroniques et les cours vidéo, ou ajoutez de nouvelles ressources pour enrichir votre matériel d'étude.",
+    "selectSession": "Sélectionner {{term}}"
+}

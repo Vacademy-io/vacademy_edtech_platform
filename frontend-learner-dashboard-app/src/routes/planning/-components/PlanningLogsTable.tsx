@@ -22,6 +22,10 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { useTranslation } from "react-i18next";
+import { formatDate } from "@/lib/formatters";
+import { getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils";
+import { RoleTerms, SystemTerms } from "@/types/naming-settings";
 
 interface PlanningLogsTableProps {
   data: PlanningLog[];
@@ -38,14 +42,17 @@ export default function PlanningLogsTable({
   onPageChange,
   onViewLog,
 }: PlanningLogsTableProps) {
+  const { t } = useTranslation("planning");
+  const teachers = getTerminologyPlural(RoleTerms.Teacher, SystemTerms.Teacher);
+
   if (data.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <p className="text-lg font-medium text-muted-foreground">
-          No planning or activities shared with you yet
+          {t("table.empty.title")}
         </p>
         <p className="mt-2 text-sm text-muted-foreground">
-          Your teachers will share planning and activities here
+          {t("table.empty.description", { teachers })}
         </p>
       </div>
     );
@@ -57,12 +64,12 @@ export default function PlanningLogsTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Interval</TableHead>
-              <TableHead>Period</TableHead>
-              <TableHead>Title</TableHead>
-              <TableHead>Created By</TableHead>
-              <TableHead>Created At</TableHead>
-              <TableHead className="text-end">Actions</TableHead>
+              <TableHead>{t("table.headers.interval")}</TableHead>
+              <TableHead>{t("table.headers.period")}</TableHead>
+              <TableHead>{t("table.headers.title")}</TableHead>
+              <TableHead>{t("table.headers.createdBy")}</TableHead>
+              <TableHead>{t("table.headers.createdAt")}</TableHead>
+              <TableHead className="text-end">{t("table.headers.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -70,16 +77,16 @@ export default function PlanningLogsTable({
               <TableRow key={log.id}>
                 <TableCell>
                   <Badge variant="outline">
-                    {formatIntervalType(log.interval_type)}
+                    {formatIntervalType(log.interval_type, t)}
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  {formatIntervalTypeId(log.interval_type_id)}
+                  {formatIntervalTypeId(log.interval_type_id, t)}
                 </TableCell>
                 <TableCell className="font-medium">{log.title}</TableCell>
                 <TableCell>{log.created_by}</TableCell>
                 <TableCell>
-                  {new Date(log.created_at).toLocaleDateString("en-US", {
+                  {formatDate(log.created_at, {
                     month: "short",
                     day: "numeric",
                     year: "numeric",
@@ -92,7 +99,7 @@ export default function PlanningLogsTable({
                     onClick={() => onViewLog(log)}
                   >
                     <Eye className="me-2 size-4" />
-                    View
+                    {t("common.view")}
                   </Button>
                 </TableCell>
               </TableRow>

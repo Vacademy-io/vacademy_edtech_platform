@@ -1,0 +1,21 @@
+{
+    "answerOptions": {
+        "addOption": "إضافة خيار",
+        "hint": {
+            "survey": "يختار المستجيبون خيارًا واحدًا — أسئلة الاستطلاع ليس لها إجابة صحيحة.",
+            "single": "حدد خيارًا واحدًا فقط كإجابة صحيحة.",
+            "multiple": "حدد كل خيار يُعتبر صحيحًا."
+        },
+        "ariaLabel": "خيارات الإجابة",
+        "markCorrect": {
+            "ariaLabel": "تحديد الخيار {{letter}} كإجابة صحيحة",
+            "titleCorrect": "إجابة صحيحة",
+            "titleMark": "تحديد كإجابة صحيحة"
+        },
+        "optionPlaceholder": "الخيار {{letter}}",
+        "removeOption": {
+            "ariaLabel": "إزالة الخيار {{letter}}",
+            "title": "إزالة الخيار"
+        }
+    }
+}

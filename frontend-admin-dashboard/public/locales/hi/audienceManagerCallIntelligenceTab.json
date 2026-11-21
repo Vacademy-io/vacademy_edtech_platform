@@ -1,0 +1,52 @@
+{
+    "kpi": {
+        "callsAnalyzed": {
+            "label": "विश्लेषित कॉलें"
+        },
+        "avgCallerRating": {
+            "label": "औसत कॉलर रेटिंग",
+            "sub": "टीम ने अपना लक्ष्य कितनी अच्छी तरह आगे बढ़ाया"
+        },
+        "avgOutcomeRating": {
+            "label": "औसत परिणाम रेटिंग",
+            "sub": "लीड के लिए कॉल कैसी रही"
+        },
+        "positiveSentiment": {
+            "label": "सकारात्मक भावना",
+            "sub_one": "{{count}} लीड में से {{positive}}",
+            "sub_other": "{{count}} लीड में से {{positive}}"
+        }
+    },
+    "breakdown": {
+        "callOutcomesTitle": "कॉल परिणाम",
+        "leadSentimentTitle": "लीड भावना"
+    },
+    "section": {
+        "teamCallQualityTitle": "टीम — कॉल गुणवत्ता"
+    },
+    "table": {
+        "counsellor": "काउंसलर",
+        "calls": "कॉलें",
+        "avgCaller": "औसत कॉलर",
+        "avgOutcome": "औसत परिणाम"
+    },
+    "emptyHint": {
+        "noAnalyzedCalls": "इस अवधि में कोई विश्लेषित कॉल नहीं है। यह रिपोर्ट भरने के लिए CRM इंटेलिजेंस सक्षम करें और कॉलों का विश्लेषण करें।",
+        "noPerCounsellorData": "इस अवधि में प्रति-काउंसलर कोई डेटा नहीं है।"
+    },
+    "status": {
+        "connectedPositive": "सकारात्मक",
+        "connectedNeutral": "तटस्थ",
+        "connectedNegative": "नकारात्मक",
+        "callbackRequested": "कॉलबैक का अनुरोध",
+        "notInterested": "रुचि नहीं",
+        "informationOnly": "केवल जानकारी",
+        "noClearOutcome": "कोई स्पष्ट परिणाम नहीं",
+        "wrongNumber": "गलत नंबर"
+    },
+    "sentiment": {
+        "positive": "सकारात्मक",
+        "neutral": "तटस्थ",
+        "negative": "नकारात्मक"
+    }
+}

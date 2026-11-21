@@ -1,0 +1,17 @@
+{
+    "validation": {
+        "startDateRequired": "Start Date is required",
+        "endDateRequired": "End Date is required",
+        "learnerRequired": "Learner is required",
+        "dateRangeWithinMonth": "The date range should be within one month.",
+        "batchRequired": "Select at least one batch"
+    },
+    "selectPlaceholder": "Select a {{term}}",
+    "searchPlaceholder": "Search {{term}}...",
+    "loading": "Loading…",
+    "generateReport": "Generate Report",
+    "fixFollowing": "Please fix the following:",
+    "learnerNotInBatches": "This learner is not enrolled in any of the selected batches.",
+    "learnerHint": "{{count}} available",
+    "pickBatchFirst": "Pick a {{batch}} first."
+}

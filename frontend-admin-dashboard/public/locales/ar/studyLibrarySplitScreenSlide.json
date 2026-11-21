@@ -1,0 +1,11 @@
+{
+    "videoFallbackTitle": "فيديو",
+    "unknownSplitScreenType": "نوع شاشة مقسّمة غير معروف",
+    "videoNotFoundTitle": "لم يتم العثور على الفيديو",
+    "videoNotFoundDescription": "تعذّر العثور على شريحة الفيديو لهذه الشاشة المقسّمة. يرجى التحقق مما إذا كانت شريحة الفيديو ما زالت موجودة.",
+    "videoIdLabel": "معرّف الفيديو: {{videoId}}",
+    "splitScreenModeTitle": "وضع الشاشة المقسّمة",
+    "untitledVideo": "فيديو بلا عنوان",
+    "videoBeingGenerated": "جارٍ إنشاء الفيديو...",
+    "videoBeingGeneratedHint": "قد يستغرق هذا بضع دقائق. يرجى المراجعة لاحقًا."
+}

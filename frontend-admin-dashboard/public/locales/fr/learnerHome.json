@@ -1,0 +1,686 @@
+{
+    "page": {
+        "title": "Accueil apprenant",
+        "description": "Choisissez ce que les apprenants voient en premier en ouvrant l’application, et dans quel ordre.",
+        "loadError": "Impossible de charger l’accueil apprenant.",
+        "retry": "Réessayer",
+        "notEnabledTitle": "L’accueil apprenant n’est pas activé",
+        "notEnabledBody": "Demandez à votre contact Vacademy d’activer le module Accueil apprenant pour cet institut.",
+        "noAccessTitle": "Seuls les administrateurs de l’institut peuvent modifier l’accueil apprenant",
+        "noAccessBody": "Demandez à un administrateur de cet institut si vous avez besoin d’un changement sur l’accueil apprenant.",
+        "holisticTitle": "Cet institut garde sa propre page d’accueil",
+        "holisticBody": "L’accueil apprenant de cet institut est conçu sur mesure et ne peut pas être modifié ici."
+    },
+    "tabs": {
+        "editor": "Éditeur",
+        "results": "Résultats",
+        "list": "Blocs",
+        "edit": "Modifier",
+        "preview": "Aperçu"
+    },
+    "status": {
+        "saved": "Enregistré",
+        "saving": "Enregistrement…",
+        "dirty": "Modifications non enregistrées",
+        "error": "Non enregistré",
+        "conflict": "Modifié ailleurs"
+    },
+    "topbar": {
+        "publish": "Publier",
+        "discard": "Abandonner le brouillon",
+        "discardTitle": "Abandonner ce brouillon ?",
+        "discardBody": "Vos modifications depuis la dernière publication sont supprimées. Les apprenants continuent de voir la version en ligne.",
+        "discardConfirm": "Abandonner",
+        "cancel": "Annuler",
+        "versions": "Versions",
+        "settings": "Réglages de la page",
+        "live": "En ligne : version {{version}}",
+        "notLive": "Pas encore publié",
+        "draftOf": "Brouillon basé sur la version {{version}}",
+        "reachNote": "Les changements atteignent les apprenants environ une minute après la publication.",
+        "retrySave": "Enregistrer à nouveau",
+        "unpublish": "Dépublier"
+    },
+    "conflict": {
+        "title": "Quelqu’un d’autre a enregistré ce brouillon",
+        "body": "Enregistré par {{name}} à {{time}}. Rechargez pour voir sa version, ou remplacez-la par la vôtre.",
+        "bodyUnknown": "Rechargez pour voir la version la plus récente, ou remplacez-la par la vôtre.",
+        "reload": "Recharger",
+        "overwrite": "Remplacer"
+    },
+    "start": {
+        "title": "Créez votre accueil apprenant",
+        "subtitle": "Choisissez un point de départ. Rien ne change pour les apprenants avant la publication.",
+        "recommended": "Recommandé",
+        "use": "Utiliser",
+        "adds": "Contient",
+        "creating": "Création…",
+        "editLive": "Modifier l’accueil en ligne",
+        "editLiveBody": "Créez une copie brouillon de la version {{version}} et modifiez-la. Les apprenants voient la version en ligne jusqu’à la publication.",
+        "orStartFrom": "Ou repartez de",
+        "unpublish": "Dépublier",
+        "CURRENT": {
+            "title": "Partir de mon accueil actuel",
+            "body": "Reprend l’accueil d’aujourd’hui tel que les apprenants le voient, avec vos cartes personnalisées."
+        },
+        "COURSES_ONLY": {
+            "title": "Cours uniquement",
+            "body": "Pour la vente de cours en ligne : une bannière, la reprise des cours, des raccourcis et une étagère de nouveaux cours."
+        },
+        "CLASSROOM": {
+            "title": "Classe",
+            "body": "Pour les groupes et les cours en direct : un avis à lire, les cours en direct et le travail du jour en haut."
+        },
+        "STOREFRONT": {
+            "title": "Boutique",
+            "body": "Pour vendre : une bannière, des raccourcis et des étagères de cours qui masquent ce que chaque apprenant possède déjà."
+        },
+        "createFailed": "Impossible de créer le brouillon.",
+        "sample": {
+            "noticeTitle": "Bienvenue pour ce nouveau trimestre",
+            "noticeBody": "Merci de lire le programme du trimestre et les règles de la classe avant votre premier cours.",
+            "ackLabel": "J’ai lu ce message",
+            "untitled": "Sans titre",
+            "open": "Ouvrir",
+            "imported": "Carte importée"
+        },
+        "currentFailed": "Impossible de lire les réglages de votre accueil actuel.",
+        "cardsLeftOut_one": "{{count}} carte personnalisée ne tient pas dans les limites de la page et est laissée de côté.",
+        "cardsLeftOut_other": "{{count}} cartes personnalisées ne tiennent pas dans les limites de la page et sont laissées de côté.",
+        "cardsClipped_one": "{{count}} carte personnalisée est raccourcie pour respecter les limites de longueur.",
+        "cardsClipped_other": "{{count}} cartes personnalisées sont raccourcies pour respecter les limites de longueur."
+    },
+    "blockTypes": {
+        "BANNER_CAROUSEL": "Bannière",
+        "SHORTCUTS": "Raccourcis",
+        "COURSE_SHELF": "Étagère de cours",
+        "NOTICE": "Avis",
+        "EVENT": "Événement",
+        "BUILTIN": "Intégré"
+    },
+    "blockTypeHints": {
+        "BANNER_CAROUSEL": "Jusqu’à 5 images défilantes avec liens",
+        "SHORTCUTS": "Une rangée d’icônes qui ouvrent des pages ou des fonctions",
+        "COURSE_SHELF": "Une rangée de cours : par étiquette, par liste ou les plus récents",
+        "NOTICE": "Une carte de message, avec « J’ai lu ce message » en option",
+        "EVENT": "Une date avec compte à rebours et bouton pour rejoindre"
+    },
+    "builtins": {
+        "HERO": {
+            "name": "Bandeau d’accueil",
+            "desc": "Le bandeau de bienvenue avec le bouton de reprise et la bannière du cours en direct."
+        },
+        "PINS": {
+            "name": "Annonces épinglées",
+            "desc": "Les annonces que vous épinglez au tableau de bord."
+        },
+        "NOTEBOOK_REVIEW": {
+            "name": "Révision du carnet",
+            "desc": "Un rappel pour relire les notes enregistrées."
+        },
+        "COMPANIONS": {
+            "name": "Compagnons d’étude",
+            "desc": "Les compagnons de la base de connaissances de l’apprenant, s’il en a."
+        },
+        "TODAY_TASKS": {
+            "name": "Tâches du jour",
+            "desc": "Les tâches d’un plan d’engagement quotidien, quand il y en a un."
+        },
+        "CONTINUE_LEARNING": {
+            "name": "Continuer l’apprentissage",
+            "desc": "Les dernières leçons de chaque apprenant, avec un bouton de reprise."
+        },
+        "ENROLLED_COURSES": {
+            "name": "Cours suivis",
+            "desc": "Une carte par cours suivi, avec la progression."
+        },
+        "STATS_ROW": {
+            "name": "Cartes de chiffres",
+            "desc": "Nombre de cours, de cours en direct et d’évaluations."
+        },
+        "LEARNING_ANALYTICS": {
+            "name": "Statistiques d’apprentissage",
+            "desc": "Le temps d’étude et les graphiques de progression de l’apprenant."
+        },
+        "MY_MEMBERSHIP": {
+            "name": "Mon abonnement",
+            "desc": "Les abonnements de l’apprenant et leur échéance."
+        },
+        "MY_BOOKS": {
+            "name": "Mes livres",
+            "desc": "Les livres achetés ou loués par l’apprenant."
+        },
+        "MY_ORDERS": {
+            "name": "Mes commandes",
+            "desc": "Les commandes récentes de l’apprenant."
+        },
+        "UPCOMING_LIVE_CLASSES": {
+            "name": "Prochains cours en direct",
+            "desc": "Les prochains cours en direct de l’apprenant, avec un bouton pour rejoindre."
+        },
+        "THIS_WEEK_ATTENDANCE": {
+            "name": "Présence de la semaine",
+            "desc": "La présence de l’apprenant cette semaine."
+        },
+        "MY_MENTORS": {
+            "name": "Mes mentors",
+            "desc": "Les mentors attribués à l’apprenant."
+        },
+        "GET_APP": {
+            "name": "Obtenir l’application",
+            "desc": "Les liens de téléchargement de votre application, si vous en avez une."
+        },
+        "GAMIFICATION": {
+            "name": "Ludification",
+            "desc": "XP, série et badges."
+        },
+        "RAISE_QUERY": {
+            "name": "Poser une question",
+            "desc": "Une carte pour poser une question à l’institut, quand les questions sont activées."
+        },
+        "EXPLORE_BUTTONS": {
+            "name": "Boutons Explorer",
+            "desc": "Des boutons pour parcourir les abonnements et les livres."
+        }
+    },
+    "list": {
+        "title": "Blocs",
+        "subtitle": "Les téléphones affichent les blocs dans cet ordre. Glissez pour réordonner.",
+        "empty": "Aucun bloc pour l’instant. Ajoutez-en un pour commencer.",
+        "drag": "Glisser pour déplacer {{name}}",
+        "moveUp": "Monter",
+        "moveDown": "Descendre",
+        "more": "Plus d’actions pour {{name}}",
+        "duplicate": "Dupliquer",
+        "delete": "Retirer",
+        "deleteTitle": "Retirer ce bloc ?",
+        "deleteBody": "« {{name}} » est retiré du brouillon. Ses résultats restent dans Résultats.",
+        "enabled": "Affiché",
+        "toggle": "Afficher {{name}}",
+        "funBadge": "Non affiché dans le style Fun",
+        "issues_one": "{{count}} à corriger",
+        "issues_other": "{{count}} à corriger",
+        "placement": "Place sur ordinateur",
+        "required": "Obligatoire"
+    },
+    "placement": {
+        "FULL": "Pleine largeur",
+        "MAIN": "Colonne principale",
+        "RAIL": "Colonne latérale"
+    },
+    "devices": {
+        "BOTH": "Téléphone et ordinateur",
+        "PHONE": "Téléphone uniquement",
+        "DESKTOP": "Ordinateur uniquement"
+    },
+    "chips": {
+        "everyone": "Tout le monde",
+        "batches_one": "{{count}} groupe",
+        "batches_other": "{{count}} groupes",
+        "courses_one": "{{count}} cours",
+        "courses_other": "{{count}} cours",
+        "notCourses_one": "sans {{count}} cours",
+        "notCourses_other": "sans {{count}} cours",
+        "tags_one": "{{count}} étiquette",
+        "tags_other": "{{count}} étiquettes",
+        "starts": "À partir du {{date}}",
+        "until": "Jusqu’au {{date}}",
+        "ended": "Terminé",
+        "off": "Masqué"
+    },
+    "add": {
+        "button": "Ajouter un bloc",
+        "content": "Nouveau bloc",
+        "builtins": "Widgets intégrés",
+        "limitReached": "Limite atteinte",
+        "allPlaced": "Tous les widgets intégrés sont déjà sur la page"
+    },
+    "editor": {
+        "noSelection": "Sélectionnez un bloc pour le modifier.",
+        "adminLabel": "Nom dans cet éditeur",
+        "adminLabelHint": "Vous seul voyez ce nom, ici et dans Résultats.",
+        "content": "Contenu",
+        "who": "Qui le voit",
+        "when": "Quand",
+        "where": "Où",
+        "optional": "Facultatif",
+        "toFix": "À corriger avant de publier",
+        "warnings": "À vérifier"
+    },
+    "banner": {
+        "title": "Titre (facultatif)",
+        "titleHint": "Lu par les lecteurs d’écran ; non affiché sur la bannière.",
+        "autoRotate": "Changer d’image toutes les 6 secondes",
+        "autoRotateHint": "Les apprenants peuvent mettre en pause. Rien ne défile avec une seule image ou si les animations sont réduites.",
+        "slides": "Images",
+        "slide": "Image {{n}}",
+        "addSlide": "Ajouter une image",
+        "removeSlide": "Retirer l’image {{n}}",
+        "phoneImage": "Image (2:1)",
+        "desktopImage": "Image large pour ordinateur (4:1)",
+        "desktopImageHint": "Facultatif. Utilisée sur les écrans de 1024 px et plus.",
+        "link": "Ouvre",
+        "schedule": "Afficher cette image seulement entre",
+        "maxSlides": "Jusqu’à 5 images. Au-delà de 3, elles sont peu cliquées.",
+        "moveUp": "Monter l’image {{n}}",
+        "moveDown": "Descendre l’image {{n}}"
+    },
+    "shortcuts": {
+        "title": "Titre (facultatif)",
+        "tiles": "Tuiles",
+        "tile": "Tuile {{n}}",
+        "label": "Libellé",
+        "iconKind": "Apparence",
+        "iconKinds": {
+            "ICON": "Icône",
+            "IMAGE": "Image"
+        },
+        "image": "Image carrée (1:1)",
+        "addTile": "Ajouter une tuile",
+        "removeTile": "Retirer la tuile {{n}}",
+        "maxTiles": "Jusqu’à 16 tuiles. Les téléphones en affichent 4 à la fois et défilent.",
+        "moveUp": "Monter la tuile {{n}}",
+        "moveDown": "Descendre la tuile {{n}}"
+    },
+    "shelf": {
+        "title": "Titre",
+        "source": "Cours à afficher",
+        "sources": {
+            "TAG": "Cours avec une étiquette",
+            "HAND_PICKED": "Cours que je choisis",
+            "NEWEST": "Cours les plus récents",
+            "FREE": "Cours gratuits"
+        },
+        "tags": "Étiquettes (jusqu’à 5)",
+        "tagsPlaceholder": "Choisir des étiquettes de cours",
+        "noTags": "Vos cours n’ont pas encore d’étiquettes.",
+        "courses": "Cours (jusqu’à 20, dans cet ordre)",
+        "coursesPlaceholder": "Choisir des cours",
+        "limit": "Nombre maximal de cours",
+        "limitHint": "Entre 4 et 20.",
+        "hideOwned": "Masquer les cours que l’apprenant possède déjà",
+        "hideOwnedHint": "Chaque apprenant ne voit que les cours qu’il peut encore acheter ou rejoindre.",
+        "showPrice": "Afficher les prix",
+        "seeAll": "« Tout voir » ouvre",
+        "seeAllHint": "Laissé vide, il ouvre la liste des cours (filtrée sur la première étiquette pour une étagère par étiquette).",
+        "visibilityNote": "Les étagères n’affichent que les cours qu’un apprenant peut voir dans le catalogue."
+    },
+    "notice": {
+        "title": "Titre",
+        "body": "Message",
+        "bodyHint": "Texte simple. Les retours à la ligne sont conservés.",
+        "counter": "{{count}} / {{max}}",
+        "image": "Image (16:9, facultative)",
+        "button": "Bouton",
+        "addButton": "Ajouter un bouton",
+        "removeButton": "Retirer le bouton",
+        "buttonLabel": "Texte du bouton",
+        "tone": "Couleur",
+        "tones": {
+            "NEUTRAL": "Simple",
+            "INFO": "Information",
+            "SUCCESS": "Bonne nouvelle",
+            "WARNING": "Important"
+        },
+        "dismissible": "Les apprenants peuvent le fermer",
+        "requireAck": "Demander aux apprenants de confirmer leur lecture",
+        "requireAckHint": "Affiche un bouton ; l’avis ne peut être fermé qu’après. Résultats indique qui l’a lu.",
+        "ackLabel": "Texte du bouton de confirmation"
+    },
+    "event": {
+        "title": "Titre",
+        "subtitle": "Courte ligne sous le titre",
+        "image": "Image (16:9, facultative)",
+        "source": "Les horaires viennent de",
+        "sources": {
+            "CUSTOM": "Dates que je saisis",
+            "LIVE_SESSION": "Un cours en direct public"
+        },
+        "session": "Cours en direct public",
+        "sessionPlaceholder": "Choisir un cours en direct",
+        "noSessions": "Aucun cours en direct public n’a de séance à venir.",
+        "starts": "Début",
+        "ends": "Fin",
+        "registerCta": "Bouton avant le début",
+        "joinCta": "Bouton Rejoindre",
+        "addCta": "Ajouter un bouton",
+        "removeCta": "Retirer le bouton",
+        "ctaLabel": "Texte du bouton",
+        "joinOpens": "Le bouton Rejoindre apparaît ce nombre de minutes avant le début",
+        "joinOpensHint": "De 0 à 120.",
+        "showCountdown": "Afficher un compte à rebours",
+        "liveDefaultsNote": "Laissés vides, les deux boutons ouvrent la page d’inscription du cours en direct.",
+        "hidesAfterEnd": "Le bloc se masque après l’heure de fin."
+    },
+    "builtin": {
+        "options": "Options",
+        "noOptions": "Ce widget n’a pas d’options.",
+        "gettingStarted": "Afficher la liste « Pour bien commencer »",
+        "cards": "Cartes à afficher",
+        "cardNames": {
+            "COURSES": "Cours",
+            "LIVE_CLASSES": "Cours en direct",
+            "EVALUATIONS": "Évaluations"
+        },
+        "showAll": "Afficher tous les cours suivis, pas seulement les premiers",
+        "memberships": "Bouton Explorer les abonnements",
+        "books": "Bouton Explorer les livres",
+        "gateNote": "Il suit aussi son propre réglage : certains apprenants peuvent ne pas le voir.",
+        "funNote": "Le style Fun n’affiche pas ce widget.",
+        "heroRequired": "Le bandeau d’accueil ne peut pas être retiré, mais vous pouvez le déplacer.",
+        "placeholderNote": "L’aperçu affiche un exemple : chaque apprenant voit ses propres données."
+    },
+    "audience": {
+        "label": "Afficher pour",
+        "everyone": "Tout le monde",
+        "rules": "Les apprenants qui remplissent toutes ces conditions",
+        "addRule": "Ajouter une condition",
+        "removeRule": "Retirer la condition",
+        "kinds": {
+            "PACKAGE_SESSION": "sont dans le groupe",
+            "ENROLLED_IN_COURSE": "ont le cours",
+            "NOT_ENROLLED_IN_COURSE": "n’ont pas le cours",
+            "USER_TAG": "ont l’étiquette"
+        },
+        "batch": "groupe",
+        "batches": "groupes",
+        "pickCourses": "Choisir des cours",
+        "pickTags": "Choisir des étiquettes d’apprenants",
+        "noTags": "Aucune étiquette d’apprenant pour l’instant. Ajoutez-en dans Étiquettes d’apprenants.",
+        "maxRules": "Jusqu’à 5 conditions.",
+        "anyOf": "l’un des éléments choisis"
+    },
+    "schedule": {
+        "start": "Afficher à partir du",
+        "end": "Masquer après le",
+        "zone": "Les heures sont dans le fuseau horaire de l’institut ({{zone}}).",
+        "clear": "Effacer",
+        "always": "Toujours affiché",
+        "states": {
+            "scheduled": "Programmé",
+            "running": "Affiché maintenant",
+            "ended": "Terminé"
+        }
+    },
+    "where": {
+        "devices": "Afficher sur",
+        "placement": "Sur ordinateur, le placer dans",
+        "placementHint": "Les téléphones affichent toujours une seule colonne dans l’ordre de la liste.",
+        "diagram": "Disposition sur ordinateur : blocs pleine largeur, puis une colonne principale et une colonne latérale"
+    },
+    "link": {
+        "kind": "Type de lien",
+        "none": "Aucun lien",
+        "kinds": {
+            "COURSE": "Un cours",
+            "COURSE_LIST": "Liste des cours",
+            "PRODUCT_PAGE": "Page produit",
+            "LIVE_CLASS": "Cours en direct public",
+            "ASSESSMENT": "Évaluation",
+            "FEATURE": "Page de l’application",
+            "URL": "Adresse web",
+            "APP_PATH": "Lien importé"
+        },
+        "pickCourse": "Choisir un cours",
+        "pickTag": "Filtrer par étiquette",
+        "allCourses": "Tous les cours",
+        "pickPage": "Choisir une page produit",
+        "pickSession": "Choisir un cours en direct",
+        "pickAssessment": "Choisir une évaluation",
+        "pickFeature": "Choisir une page",
+        "urlPlaceholder": "https://",
+        "sellsSomething": "Ce lien mène à une page de paiement (masqué dans l’application iPhone et iPad)",
+        "urlProblems": {
+            "scheme": "Utilisez une adresse qui commence par https://, mailto: ou tel:.",
+            "invalid": "Cela ne ressemble pas à une adresse web.",
+            "empty": "Saisissez une adresse web."
+        },
+        "reader": {
+            "hidden": "Masqué dans l’application iPhone et iPad",
+            "hiddenIfNotOwned": "Dans l’application iPhone et iPad, visible seulement pour les apprenants qui possèdent le cours",
+            "hiddenIfPaid": "Masqué dans l’application iPhone et iPad quand le cours est payant"
+        },
+        "conditions": {
+            "sidebarTab": "Visible seulement si cette page est activée dans le menu apprenant",
+            "notes": "Visible seulement si les notes sont activées",
+            "doubts": "Visible seulement si les questions sont activées",
+            "plan": "Visible seulement pour les apprenants avec un plan quotidien",
+            "chatbot": "Visible seulement si l’assistant IA est activé",
+            "appOnly": "Visible seulement dans l’application mobile",
+            "batch": "Visible seulement pour les apprenants inscrits dans un groupe",
+            "store": "Masqué dans le style Play et dans l’application iPhone et iPad"
+        },
+        "features": {
+            "COURSES": "Cours",
+            "LIVE_CLASSES": "Cours en direct",
+            "ASSESSMENTS": "Évaluations",
+            "REPORTS": "Rapports",
+            "HOMEWORK": "Devoirs",
+            "ATTENDANCE": "Présence",
+            "NOTEBOOK": "Carnet",
+            "DOUBTS": "Poser une question",
+            "REFERRAL": "Parrainer et gagner",
+            "MENTORS": "Mes mentors",
+            "DAILY_TASKS": "Tâches du jour",
+            "AI_CHAT": "Assistant IA",
+            "DOWNLOADS": "Téléchargements",
+            "MY_FILES": "Mes fichiers",
+            "LEADERBOARD": "Classement",
+            "PROFILE": "Profil",
+            "NOTIFICATIONS": "Notifications",
+            "STORE_MEMBERSHIPS": "Abonnements",
+            "STORE_BOOKS": "Boutique de livres"
+        },
+        "imported": "Lien importé : {{path}}. Il fonctionne toujours ; choisissez une cible pour le remplacer.",
+        "loading": "Chargement…",
+        "noOptions": "Rien à choisir pour l’instant.",
+        "unknownOption": "Introuvable ({{id}})"
+    },
+    "icons": {
+        "pick": "Choisir une icône",
+        "current": "Icône : {{name}}"
+    },
+    "image": {
+        "alt": "Décrivez l’image",
+        "altHint": "Lu aux apprenants qui utilisent un lecteur d’écran.",
+        "decorative": "Décorative uniquement (pas de description)",
+        "remove": "Retirer l’image",
+        "publicNote": "Les images sont publiques pour toute personne ayant le lien. N’y mettez pas d’informations privées."
+    },
+    "settings": {
+        "title": "Réglages de la page",
+        "phoneSpacing": "Espace entre les blocs sur téléphone",
+        "spacing": {
+            "COMPACT": "Compact",
+            "COMFORTABLE": "Confortable (comme aujourd’hui)"
+        },
+        "showHeader": "Afficher la ligne de bienvenue et la date",
+        "autoplayDefault": "Les nouvelles bannières défilent automatiquement"
+    },
+    "preview": {
+        "title": "Aperçu",
+        "phone": "Téléphone",
+        "desktop": "Ordinateur",
+        "previewAs": "Aperçu en tant que",
+        "anyLearner": "N’importe quel apprenant",
+        "batchesPicked_one": "{{count}} groupe",
+        "batchesPicked_other": "{{count}} groupes",
+        "tags": "Étiquettes d’apprenants",
+        "at": "À la date du",
+        "now": "Maintenant",
+        "reload": "Recharger l’aperçu",
+        "open": "Ouvrir le site apprenant",
+        "note": "Les widgets intégrés affichent des exemples. Les blocs de contenu s’affichent comme les apprenants choisis les verraient.",
+        "failed": "L’aperçu n’a pas pu être mis à jour.",
+        "updating": "Mise à jour…"
+    },
+    "publish": {
+        "title": "Publier l’accueil apprenant",
+        "checking": "Vérification…",
+        "errors": "À corriger d’abord",
+        "warnings": "À vérifier (vous pouvez quand même publier)",
+        "noIssues": "Tout semble correct.",
+        "diff": "{{changed}} modifiés, {{added}} ajoutés, {{removed}} retirés, {{moved}} déplacés",
+        "noChanges": "Aucun changement depuis la version en ligne.",
+        "publishNow": "Publier maintenant",
+        "success": "Version {{version}} publiée. Les apprenants la voient en environ une minute.",
+        "failed": "Impossible de publier.",
+        "saveFirst": "Enregistrement de vos dernières modifications…",
+        "goTo": "Aller au bloc",
+        "layout": "Toute la page"
+    },
+    "versions": {
+        "title": "Versions",
+        "subtitle": "Les 20 dernières versions publiées.",
+        "empty": "Rien n’a encore été publié.",
+        "version": "Version {{version}}",
+        "live": "En ligne",
+        "archived": "Antérieure",
+        "by": "Par {{name}}",
+        "blocks_one": "{{count}} bloc",
+        "blocks_other": "{{count}} blocs",
+        "restore": "Restaurer en brouillon",
+        "restoreTitle": "Remplacer votre brouillon non publié ?",
+        "restoreBody": "La version {{version}} remplace le brouillon en cours. L’accueil en ligne ne change pas avant la publication.",
+        "restoreConfirm": "Remplacer le brouillon",
+        "restored": "La version {{version}} est maintenant votre brouillon.",
+        "failed": "Impossible de charger les versions."
+    },
+    "unpublish": {
+        "action": "Dépublier",
+        "title": "Dépublier l’accueil apprenant ?",
+        "body": "Les apprenants retrouvent l’ancien accueil en environ une minute. Vos versions sont conservées.",
+        "confirm": "Dépublier",
+        "done": "Dépublié. Les apprenants voient de nouveau l’ancien accueil."
+    },
+    "results": {
+        "range": {
+            "7": "7 derniers jours",
+            "30": "30 derniers jours",
+            "90": "90 derniers jours"
+        },
+        "block": "Bloc",
+        "views": "Vues",
+        "clicks": "Clics",
+        "ctr": "Taux de clic",
+        "phone": "Téléphone",
+        "desktop": "Ordinateur",
+        "dismisses": "Fermés",
+        "acks": "Lus",
+        "seeWhoRead": "Voir qui l’a lu",
+        "empty": "Les chiffres commencent le jour de la publication.",
+        "noPublished": "Publiez l’accueil apprenant pour voir les résultats.",
+        "failed": "Impossible de charger les résultats.",
+        "expand": "Afficher le détail de {{name}}",
+        "item": "Élément",
+        "slide": "Image {{n}}",
+        "removedBlock": "Bloc retiré"
+    },
+    "acks": {
+        "title": "Qui a lu « {{name}} »",
+        "total_one": "{{count}} apprenant l’a lu",
+        "total_other": "{{count}} apprenants l’ont lu",
+        "name": "Nom",
+        "email": "E-mail",
+        "at": "Lu le",
+        "export": "Télécharger le CSV",
+        "empty": "Personne n’a encore confirmé.",
+        "prev": "Précédent",
+        "next": "Suivant",
+        "failed": "Impossible de charger la liste."
+    },
+    "studentDisplay": {
+        "managed": "Votre accueil apprenant est géré dans Accueil apprenant.",
+        "managedBody": "Tant qu’un accueil apprenant est publié, cette liste ne change plus ce que voient les apprenants.",
+        "open": "Ouvrir Accueil apprenant"
+    },
+    "issues": {
+        "REQUIRED": "Ce champ est obligatoire.",
+        "TOO_LONG": "Trop long : {{max}} caractères au maximum.",
+        "TOO_FEW": "Ajoutez-en au moins {{min}}.",
+        "TOO_MANY": "Trop d’éléments : {{max}} au maximum.",
+        "OUT_OF_RANGE": "Doit être entre {{min}} et {{max}}.",
+        "IMAGE_REQUIRED": "Ajoutez une image.",
+        "ALT_REQUIRED": "Décrivez l’image ou marquez-la comme décorative.",
+        "IMAGE_LOW_RES": "Cette image fait {{width}} px de large et peut sembler floue. Utilisez au moins {{min}} px.",
+        "LINK_REQUIRED": "Choisissez ce que cela ouvre.",
+        "LINK_TARGET_MISSING": "Ceci pointe vers quelque chose qui n’existe plus.",
+        "URL_INVALID": "Cette adresse web ne peut pas être utilisée.",
+        "INVALID_URL": "Cette adresse web ne peut pas être utilisée.",
+        "IMPORTED_LINK": "Un lien importé. Il fonctionne, mais choisissez une cible pour le remplacer.",
+        "FEATURE_CONDITIONAL": "Cette page n’est pas activée pour tous les apprenants ; certains ne verront pas ce lien.",
+        "ICON_UNKNOWN": "Choisissez une icône dans la liste.",
+        "WINDOW_INVERTED": "La fin doit être après le début.",
+        "ENDED": "C’est déjà terminé : les apprenants ne le verront pas.",
+        "ALL_SLIDES_ENDED": "Toutes les images sont terminées.",
+        "MANY_SLIDES": "{{count}} images : celles après la troisième sont peu cliquées.",
+        "EVENT_TIMES_REQUIRED": "Saisissez le début et la fin.",
+        "AUDIENCE_EMPTY": "Ajoutez une condition, ou affichez-le à tout le monde.",
+        "AUDIENCE_TOO_MANY": "{{max}} conditions au maximum.",
+        "AUDIENCE_CONDITION_EMPTY": "Choisissez-en au moins un.",
+        "AUDIENCE_TOO_MANY_IDS": "{{max}} au maximum dans une condition.",
+        "AUDIENCE_ID_MISSING": "{{count}} éléments choisis n’existent plus.",
+        "LIMIT_BLOCKS": "{{max}} blocs au maximum sur la page.",
+        "LIMIT_CONTENT_BLOCKS": "{{max}} blocs non intégrés au maximum.",
+        "LIMIT_TYPE": "Trop de blocs d’un même type : {{max}} au maximum.",
+        "DUPLICATE_BUILTIN": "Ce widget est deux fois sur la page.",
+        "DUPLICATE": "Ceci apparaît deux fois.",
+        "HERO_REQUIRED": "Le bandeau d’accueil est obligatoire.",
+        "ALL_DISABLED": "Tous les blocs sont masqués.",
+        "PAYLOAD_TOO_LARGE": "La page est trop lourde ({{kb}} Ko sur {{max}} Ko). Retirez des blocs.",
+        "STATS_NO_CARDS": "Aucune carte choisie : rien ne s’affiche.",
+        "FUN_HIDDEN": "Votre institut utilise le style Fun, qui n’affiche pas ce widget.",
+        "INVALID_VALUE": "Cette valeur n’est pas autorisée.",
+        "INVALID_TYPE": "Cette valeur n’est pas autorisée.",
+        "UNKNOWN_FIELD": "Ce champ n’est pas autorisé.",
+        "UNREADABLE": "Ceci n’a pas pu être lu.",
+        "LINK_INCOMPLETE": "Terminez le choix de ce que cela ouvre.",
+        "LINK_TARGET_INACTIVE": "Ceci pointe vers quelque chose d’inactif.",
+        "OTHER_INSTITUTE": "Ceci appartient à un autre institut.",
+        "BLOCK_ENDED": "C’est déjà terminé : les apprenants ne le verront pas.",
+        "SHELF_EMPTY_NOW": "Aucun cours ne correspond à cette étagère pour l’instant : elle est masquée.",
+        "NOT_IN_FUN_SKIN": "Votre institut utilise le style Fun, qui n’affiche pas ce widget.",
+        "ASSESSMENT_NOT_VERIFIED": "Cette évaluation n’a pas pu être vérifiée. Assurez-vous qu’elle existe encore.",
+        "SHELF_CHECK_FAILED": "Les cours de cette étagère n’ont pas pu être vérifiés pour l’instant.",
+        "IMAGE_TOO_SMALL": "Cette image est petite et peut sembler floue.",
+        "RENDITION_FAILED": "Les versions allégées de cette image n’ont pas pu être créées ; l’original est utilisé.",
+        "IMAGE_URL_MISSING": "Cette image n’a pas d’adresse. Importez-la de nouveau.",
+        "fallback": "Vérifiez ce champ."
+    },
+    "fields": {
+        "title": "Titre",
+        "subtitle": "Ligne courte",
+        "body": "Message",
+        "label": "Libellé",
+        "ackLabel": "Texte du bouton de confirmation",
+        "adminLabel": "Nom dans cet éditeur",
+        "alt": "Description de l’image",
+        "image": "Image",
+        "link": "Lien",
+        "button": "Bouton",
+        "tags": "Étiquettes",
+        "courses": "Cours",
+        "slides": "Images",
+        "tiles": "Tuiles",
+        "limit": "Nombre de cours",
+        "schedule": "Programmation",
+        "audience": "Qui le voit",
+        "icon": "Icône",
+        "session": "Cours en direct"
+    },
+    "issuesPlain": {
+        "TOO_LONG": "Trop long.",
+        "TOO_MANY": "Trop d’éléments.",
+        "TOO_FEW": "Ajoutez-en davantage.",
+        "OUT_OF_RANGE": "Ce nombre est hors des limites autorisées.",
+        "IMAGE_LOW_RES": "Cette image peut sembler floue.",
+        "MANY_SLIDES": "Les images après la troisième sont peu cliquées.",
+        "AUDIENCE_TOO_MANY": "Trop de conditions.",
+        "AUDIENCE_TOO_MANY_IDS": "Trop d’éléments dans une condition.",
+        "AUDIENCE_ID_MISSING": "Certains éléments choisis n’existent plus.",
+        "LIMIT_BLOCKS": "Trop de blocs sur la page.",
+        "LIMIT_CONTENT_BLOCKS": "Trop de blocs non intégrés.",
+        "LIMIT_TYPE": "Trop de blocs d’un même type.",
+        "PAYLOAD_TOO_LARGE": "La page est trop lourde. Retirez des blocs."
+    }
+}

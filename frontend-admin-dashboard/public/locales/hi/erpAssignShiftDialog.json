@@ -1,0 +1,24 @@
+{
+    "heading": "शिफ्ट असाइन करें",
+    "cancel": "रद्द करें",
+    "assignShift": "शिफ्ट असाइन करें",
+    "assigning": "असाइन किया जा रहा है…",
+    "assignedToast_one": "{{count}} कर्मचारी असाइन किया गया",
+    "assignedToast_other": "{{count}} कर्मचारी असाइन किए गए",
+    "assignErrorFallback": "शिफ्ट असाइन नहीं की जा सकी।",
+    "infoNote": "असाइन करने से इन कर्मचारियों की प्रभावी तारीख से आगे की कोई भी मौजूदा शिफ्ट बंद हो जाती है — एक कर्मचारी एक समय में केवल एक ही शिफ्ट पर हो सकता है। उस तारीख से पहले के दिन उनकी पुरानी शिफ्ट के आधार पर ही आँके जाते रहेंगे।",
+    "shiftLabel": "शिफ्ट",
+    "selectShiftPlaceholder": "एक शिफ्ट चुनें",
+    "employeesLabel": "कर्मचारी",
+    "loadingEmployees": "कर्मचारी लोड हो रहे हैं…",
+    "employeesUnavailable": "कर्मचारी उपलब्ध नहीं हैं",
+    "selectEmployeesPlaceholder": "कर्मचारी चुनें",
+    "employeesLoadError": "कर्मचारी लोड नहीं हो सके। इसे बंद करके फिर से प्रयास करें।",
+    "showingFirstOfTotal": "{{total}} सक्रिय कर्मचारियों में से पहले {{count}} दिखाए जा रहे हैं।",
+    "effectiveFromLabel": "प्रभावी तिथि",
+    "validation": {
+        "shiftRequired": "असाइन करने के लिए शिफ्ट चुनें।",
+        "employeeRequired": "कम से कम एक कर्मचारी चुनें।",
+        "dateRequired": "वह तारीख चुनें जिससे असाइनमेंट शुरू होगा।"
+    }
+}

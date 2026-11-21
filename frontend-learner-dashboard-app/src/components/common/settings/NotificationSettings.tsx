@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -6,8 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { Bell, BellSlash, SpeakerHigh, SpeakerSlash, Shield, DeviceMobile } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/types/naming-settings';
 
 export const NotificationSettings: React.FC = () => {
+  const { t } = useTranslation('layoutCommonB');
   const {
     settings,
     isPermissionGranted,
@@ -19,19 +23,20 @@ export const NotificationSettings: React.FC = () => {
   } = usePushNotifications();
 
   const status = getNotificationStatus();
+  const liveClasses = getTerminologyPlural(ContentTerms.LiveSession, SystemTerms.LiveSession);
 
   const handlePermissionToggle = async () => {
     if (!isPermissionGranted) {
       await requestPermissions();
     } else {
-      toast.info('Notifications are currently enabled. To disable, please use your device settings.');
+      toast.info(t('notificationSettings.toasts.disableViaDeviceSettings'));
     }
   };
 
   const handleTestNotification = async () => {
     await sendLocalNotification(
-      'Test Notification',
-      'This is a test notification from Vacademy Learner!',
+      t('notificationSettings.testNotification.title'),
+      t('notificationSettings.testNotification.body'),
       { type: 'test' }
     );
   };
@@ -48,35 +53,35 @@ export const NotificationSettings: React.FC = () => {
               ) : (
                 <BellSlash className="h-5 w-5 text-gray-400" />
               )}
-              <CardTitle>Notification Status</CardTitle>
+              <CardTitle>{t('notificationSettings.status.title')}</CardTitle>
             </div>
             {unreadCount > 0 && (
-              <Badge variant="destructive">{unreadCount} unread</Badge>
+              <Badge variant="destructive">{t('notificationSettings.status.unreadBadge', { count: unreadCount })}</Badge>
             )}
           </div>
           <CardDescription>
-            Manage your push notification preferences across all devices
+            {t('notificationSettings.status.description')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <div className="font-medium">Platform</div>
+              <div className="font-medium">{t('notificationSettings.status.platform')}</div>
               <div className="text-sm text-muted-foreground flex items-center space-x-2">
                 <DeviceMobile className="h-4 w-4" />
                 <span className="capitalize">{status.platform}</span>
               </div>
             </div>
             <Badge variant={status.isSupported ? 'default' : 'secondary'}>
-              {status.isSupported ? 'Supported' : 'Not Supported'}
+              {status.isSupported ? t('notificationSettings.status.supported') : t('notificationSettings.status.notSupported')}
             </Badge>
           </div>
 
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <div className="font-medium">Permission Status</div>
+              <div className="font-medium">{t('notificationSettings.status.permissionStatus')}</div>
               <div className="text-sm text-muted-foreground">
-                {isPermissionGranted ? 'Notifications are enabled' : 'Notifications are disabled'}
+                {isPermissionGranted ? t('notificationSettings.status.notificationsEnabled') : t('notificationSettings.status.notificationsDisabled')}
               </div>
             </div>
             <Button
@@ -85,20 +90,20 @@ export const NotificationSettings: React.FC = () => {
               onClick={handlePermissionToggle}
               disabled={!status.isSupported}
             >
-              {isPermissionGranted ? 'Enabled' : 'Enable Notifications'}
+              {isPermissionGranted ? t('notificationSettings.status.enabled') : t('notificationSettings.status.enableNotifications')}
             </Button>
           </div>
 
           {isPermissionGranted && (
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <div className="font-medium">Test Notifications</div>
+                <div className="font-medium">{t('notificationSettings.status.testNotifications')}</div>
                 <div className="text-sm text-muted-foreground">
-                  Send a test notification to verify everything is working
+                  {t('notificationSettings.status.testNotificationsDescription')}
                 </div>
               </div>
               <Button variant="outline" size="sm" onClick={handleTestNotification}>
-                Send Test
+                {t('notificationSettings.status.sendTest')}
               </Button>
             </div>
           )}
@@ -108,18 +113,18 @@ export const NotificationSettings: React.FC = () => {
       {/* Notification Preferences */}
       <Card>
         <CardHeader>
-          <CardTitle>Notification Preferences</CardTitle>
+          <CardTitle>{t('notificationSettings.preferences.title')}</CardTitle>
           <CardDescription>
-            Choose what types of notifications you want to receive
+            {t('notificationSettings.preferences.description')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Master Toggle */}
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <div className="font-medium">Enable Notifications</div>
+              <div className="font-medium">{t('notificationSettings.preferences.enableNotifications.label')}</div>
               <div className="text-sm text-muted-foreground">
-                Turn all notifications on or off
+                {t('notificationSettings.preferences.enableNotifications.description')}
               </div>
             </div>
             <Switch
@@ -138,10 +143,10 @@ export const NotificationSettings: React.FC = () => {
                 ) : (
                   <SpeakerSlash className="h-4 w-4" />
                 )}
-                <span>Sound</span>
+                <span>{t('notificationSettings.preferences.sound.label')}</span>
               </div>
               <div className="text-sm text-muted-foreground">
-                Play sound when notifications arrive
+                {t('notificationSettings.preferences.sound.description')}
               </div>
             </div>
             <Switch
@@ -156,10 +161,10 @@ export const NotificationSettings: React.FC = () => {
             <div className="space-y-1">
               <div className="font-medium flex items-center space-x-2">
                 <Shield className="h-4 w-4" />
-                <span>App Badge</span>
+                <span>{t('notificationSettings.preferences.appBadge.label')}</span>
               </div>
               <div className="text-sm text-muted-foreground">
-                Show notification count on app icon
+                {t('notificationSettings.preferences.appBadge.description')}
               </div>
             </div>
             <Switch
@@ -174,17 +179,17 @@ export const NotificationSettings: React.FC = () => {
       {/* Notification Categories */}
       <Card>
         <CardHeader>
-          <CardTitle>Notification Categories</CardTitle>
+          <CardTitle>{t('notificationSettings.categories.title')}</CardTitle>
           <CardDescription>
-            Choose which types of content you want to be notified about
+            {t('notificationSettings.categories.description')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <div className="font-medium">Assignments</div>
+              <div className="font-medium">{t('notificationSettings.categories.assignments.label')}</div>
               <div className="text-sm text-muted-foreground">
-                New assignments and submission reminders
+                {t('notificationSettings.categories.assignments.description')}
               </div>
             </div>
             <Switch
@@ -200,9 +205,9 @@ export const NotificationSettings: React.FC = () => {
 
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <div className="font-medium">Announcements</div>
+              <div className="font-medium">{t('notificationSettings.categories.announcements.label')}</div>
               <div className="text-sm text-muted-foreground">
-                Important announcements from your institute
+                {t('notificationSettings.categories.announcements.description')}
               </div>
             </div>
             <Switch
@@ -218,9 +223,9 @@ export const NotificationSettings: React.FC = () => {
 
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <div className="font-medium">Live Classes</div>
+              <div className="font-medium">{t('notificationSettings.categories.liveClasses.label', { liveClasses })}</div>
               <div className="text-sm text-muted-foreground">
-                Live class reminders and updates
+                {t('notificationSettings.categories.liveClasses.description', { liveClasses })}
               </div>
             </div>
             <Switch
@@ -236,9 +241,9 @@ export const NotificationSettings: React.FC = () => {
 
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <div className="font-medium">General</div>
+              <div className="font-medium">{t('notificationSettings.categories.general.label')}</div>
               <div className="text-sm text-muted-foreground">
-                General app updates and information
+                {t('notificationSettings.categories.general.description')}
               </div>
             </div>
             <Switch
@@ -261,11 +266,9 @@ export const NotificationSettings: React.FC = () => {
             <div className="flex items-start space-x-3">
               <Bell className="h-5 w-5 text-orange-600 mt-0.5" />
               <div>
-                <h3 className="font-medium text-orange-900">Enable Notifications</h3>
+                <h3 className="font-medium text-orange-900">{t('notificationSettings.helpText.title')}</h3>
                 <p className="text-sm text-orange-700 mt-1">
-                  To receive push notifications, you need to grant permission. 
-                  Click "Enable Notifications" above to get started. You can always 
-                  change these settings later in your device's notification settings.
+                  {t('notificationSettings.helpText.body')}
                 </p>
               </div>
             </div>
@@ -274,4 +277,4 @@ export const NotificationSettings: React.FC = () => {
       )}
     </div>
   );
-}; 
+};

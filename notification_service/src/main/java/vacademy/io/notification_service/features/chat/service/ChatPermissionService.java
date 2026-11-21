@@ -95,6 +95,29 @@ public class ChatPermissionService {
     }
 
     /**
+     * May this caller EDIT a message they sent themselves? Institute-configurable for students only;
+     * teachers and admins always may. Absent settings mean allowed, like every other chat flag.
+     */
+    public boolean canEditOwnMessage(String instituteId, String role) {
+        if (!"student".equals(normalizeRole(role))) return true;
+        ChatSettings chat = getChatSettings(instituteId);
+        if (chat == null || chat.getMessageActions() == null) return true;
+        return !Boolean.FALSE.equals(chat.getMessageActions().getStudentsCanEditOwn());
+    }
+
+    /**
+     * May this caller DELETE a message they sent themselves? Same shape as
+     * {@link #canEditOwnMessage}. Note this governs the SENDER path only — a moderator taking down
+     * someone else's message is a separate authority and is unaffected.
+     */
+    public boolean canDeleteOwnMessage(String instituteId, String role) {
+        if (!"student".equals(normalizeRole(role))) return true;
+        ChatSettings chat = getChatSettings(instituteId);
+        if (chat == null || chat.getMessageActions() == null) return true;
+        return !Boolean.FALSE.equals(chat.getMessageActions().getStudentsCanDeleteOwn());
+    }
+
+    /**
      * Validate an attachment against institute attachment rules. Returns null if allowed,
      * otherwise a short rejection code.
      */

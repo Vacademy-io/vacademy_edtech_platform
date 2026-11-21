@@ -2,6 +2,7 @@ package vacademy.io.admin_core_service.features.live_session.provider.scheduler;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import vacademy.io.admin_core_service.features.live_session.entity.SessionSchedule;
@@ -31,6 +32,7 @@ public class ZoomRecordingSyncProcessor {
     private final ZoomRecordingService zoomRecordingService;
 
     /** Runs every hour at minute 17 (offset to avoid colliding with other jobs). */
+    @SchedulerLock(name = "ZoomRecordingSync", lockAtMostFor = "PT50M", lockAtLeastFor = "PT30S")
     @Scheduled(cron = "${zoom.recording.sync.cron:0 17 * * * ?}")
     public void syncZoomRecordings() {
         Date before = new Date(System.currentTimeMillis() - STALE_MILLIS);
@@ -44,7 +46,9 @@ public class ZoomRecordingSyncProcessor {
         int totalAdded = 0;
         for (SessionSchedule schedule : due) {
             try {
-                totalAdded += zoomRecordingService.syncFromApi(schedule);
+                // true: sweep every past instance — this job exists to catch what the webhook missed,
+                // and a day skipped here is unrecoverable once Zoom's ~30-day retention lapses.
+                totalAdded += zoomRecordingService.syncFromApi(schedule, true);
             } catch (Exception e) {
                 log.error("ZoomRecordingSync: failed for scheduleId={}: {}",
                         schedule.getId(), e.getMessage());

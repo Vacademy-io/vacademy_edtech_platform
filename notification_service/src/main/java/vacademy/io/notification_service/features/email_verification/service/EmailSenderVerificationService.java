@@ -83,8 +83,12 @@ public class EmailSenderVerificationService {
         }
 
         // 2) Persist sender + PENDING verification state into EMAIL_SETTING.data.<type>.
+        // Upgrading an already-working address to domain (DKIM) verification must not
+        // interrupt sending: SES still accepts mail from an address whose own identity is
+        // verified, so the send path stays on the custom sender while DNS propagates.
+        boolean stillSendable = mode.equals(MODE_DOMAIN) && emailIdentityVerified(email);
         persistSenderVerificationState(instituteId, type, email, name, mode, identity,
-                STATUS_PENDING, false, authToken);
+                STATUS_PENDING, stillSendable, authToken);
 
         // 3) Keep inbound routing table in sync.
         upsertMapping(instituteId, email, type);
@@ -96,8 +100,9 @@ public class EmailSenderVerificationService {
                 .identity(identity)
                 .mode(mode)
                 .status(STATUS_PENDING)
-                .verified(false)
-                .message(messageFor(mode, STATUS_PENDING, email, domain))
+                .verified(stillSendable)
+                .message(messageFor(mode, STATUS_PENDING, email, domain)
+                        + (stillSendable ? " Sending continues from " + email + " in the meantime." : ""))
                 .dnsRecords(dnsRecords)
                 .build();
     }
@@ -133,6 +138,11 @@ public class EmailSenderVerificationService {
                 ? sesIdentityService.getStatus(identity)
                 : STATUS_NOT_STARTED;
         boolean verified = STATUS_VERIFIED.equals(liveStatus);
+        // Domain verification still pending: fall back to the address identity so a refresh
+        // never flips a sender that SES is perfectly willing to send from back to the default.
+        if (!verified && storedMode.equals(MODE_DOMAIN)) {
+            verified = emailIdentityVerified(email);
+        }
 
         // Persist only when the status actually changed, to avoid a settings write on every poll.
         if (!liveStatus.equals(storedStatus)) {
@@ -321,6 +331,17 @@ public class EmailSenderVerificationService {
             return s.substring(0, lt).trim();
         }
         return "";
+    }
+
+    /** Whether SES has the single address verified as its own identity (never throws). */
+    private boolean emailIdentityVerified(String email) {
+        if (!StringUtils.hasText(email)) return false;
+        try {
+            return STATUS_VERIFIED.equals(sesIdentityService.getStatus(email));
+        } catch (Exception e) {
+            log.warn("Could not read SES status for address {}: {}", email, e.getMessage());
+            return false;
+        }
     }
 
     private String messageFor(String mode, String status, String email, String domain) {

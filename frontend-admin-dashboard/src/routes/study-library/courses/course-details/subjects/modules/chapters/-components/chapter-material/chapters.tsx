@@ -3,6 +3,7 @@ import { EmptyChaptersImage } from '@/assets/svgs';
 import { ChapterCard } from './chapter-card';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { Sortable, SortableItem } from '@/components/ui/sortable';
+import { useTranslation } from 'react-i18next';
 import { useFieldArray, UseFormReturn } from 'react-hook-form';
 import { FormValues } from '../chapter-material';
 import { ChapterWithSlides } from '@/stores/study-library/use-modules-with-chapters-store';
@@ -28,6 +29,7 @@ export const Chapters = ({
     isLoading = false,
     form, // Add form prop
 }: ChaptersProps) => {
+    const { t } = useTranslation('studyLibraryChapters');
     const route = useRouter();
     const { courseId = '', levelId = '' } = route.state.location.search;
     const { selectedSession } = useSelectedSessionStore();
@@ -68,7 +70,7 @@ export const Chapters = ({
     };
 
     if (courseId == '' || levelId == '') {
-        return <div>Missing course or level details parameters</div>;
+        return <div>{t('missingParams')}</div>;
     }
 
     if (isLoading) {
@@ -81,8 +83,9 @@ export const Chapters = ({
                 <div className="flex w-full flex-col items-center justify-center gap-8 rounded-lg py-10">
                     <EmptyChaptersImage />
                     <div>
-                        No {getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)} have been
-                        added yet.
+                        {t('emptyState', {
+                            term: getTerminology(ContentTerms.Chapters, SystemTerms.Chapters),
+                        })}
                     </div>
                 </div>
             )}

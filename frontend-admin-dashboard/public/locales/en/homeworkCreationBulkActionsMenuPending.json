@@ -1,0 +1,10 @@
+{
+    "menu": {
+        "sendReminder": "Send Reminder",
+        "removeParticipants": "Remove Participants"
+    },
+    "actionInfo": {
+        "selectedStudents_one": "{{count}} student",
+        "selectedStudents_other": "{{count}} students"
+    }
+}

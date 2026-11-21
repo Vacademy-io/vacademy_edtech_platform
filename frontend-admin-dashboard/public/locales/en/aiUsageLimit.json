@@ -1,0 +1,48 @@
+{
+    "title": "AI limit reached",
+    "defaultMessage": "You've reached the usage limit for {{feature}}.",
+    "fallbackFeature": "this AI feature",
+    "fields": {
+        "feature": "Feature",
+        "resets": "Resets",
+        "setBy": "Set by"
+    },
+    "usedOfLimit": {
+        "credits": "{{used}} of {{limit}} credits",
+        "requests": "{{used}} of {{limit}} requests",
+        "usd": "{{used}} of {{limit}} USD"
+    },
+    "periodUsage": {
+        "DAY": "Used today",
+        "WEEK": "Used this week",
+        "MONTH": "Used this month",
+        "PLAN_PERIOD": "Used this plan period",
+        "OTHER": "Used"
+    },
+    "setBy": {
+        "INSTITUTE": "Your institute",
+        "PLATFORM": "{{brandTitle}}"
+    },
+    "scope": {
+        "USER": "Your personal limit",
+        "ROLE": "The limit for your role",
+        "ROLE_CLASS": "The limit for your role",
+        "INSTITUTE": "The institute-wide limit",
+        "PLATFORM": "A platform limit",
+        "OTHER": "A usage limit"
+    },
+    "hint": {
+        "admin": "You can raise or remove this limit in Settings → AI → Limits.",
+        "adminPlatform": "This limit is set by {{brand}}. Contact them to change it.",
+        "member": "Try again after it resets, or ask your institute admin to raise the limit."
+    },
+    "actions": {
+        "reviewLimits": "Review limits",
+        "ok": "OK"
+    },
+    "warning": {
+        "withPct": "You've used {{pct}}% of the AI limit for {{feature}}.",
+        "noPct": "You're close to the AI limit for {{feature}}.",
+        "description": "It will stop working for you when the limit is reached."
+    }
+}

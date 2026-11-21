@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
@@ -47,11 +49,13 @@ function isPhysicalCenter(item: CenterHeatmapItem) {
     return !EXCLUDED_TYPES.has((item.campaign_type || '').toUpperCase().trim());
 }
 
-const chartConfig = {
-    unique_users: { label: 'Enrolled Users', color: 'hsl(var(--primary))' },
-};
+const buildChartConfig = (t: TFunction) => ({
+    unique_users: { label: t('distribution.tooltipEnrolled'), color: 'hsl(var(--primary))' },
+});
 
 export function CenterHeatmap({ data, isLoading }: CenterHeatmapProps) {
+    const { t, i18n } = useTranslation('challengeAnalyticsCenterHeatmap');
+    const chartConfig = buildChartConfig(t);
     if (isLoading) {
         return (
             <Card className="shadow-sm">
@@ -70,11 +74,11 @@ export function CenterHeatmap({ data, isLoading }: CenterHeatmapProps) {
             <Card className="shadow-sm">
                 <CardHeader className="flex flex-row items-center gap-2">
                     <MapPin className="text-primary size-5" weight="fill" />
-                    <CardTitle className="text-base font-semibold">Center Performance Report</CardTitle>
+                    <CardTitle className="text-base font-semibold">{t('title')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="flex h-72 items-center justify-center text-gray-500">
-                        No center data available for the selected period
+                        {t('emptyState')}
                     </div>
                 </CardContent>
             </Card>
@@ -113,7 +117,15 @@ export function CenterHeatmap({ data, isLoading }: CenterHeatmapProps) {
         }));
 
     const exportToCSV = () => {
-        const headers = ['Center', 'Enrolled Users', 'Total Interactions', 'Avg/User', 'Opt-Outs', 'Opt-Out %', 'Status'];
+        const headers = [
+            t('csv.center'),
+            t('csv.enrolledUsers'),
+            t('csv.totalInteractions'),
+            t('csv.avgPerUser'),
+            t('csv.optOuts'),
+            t('csv.optOutPercent'),
+            t('csv.status'),
+        ];
         const rows = centers.map((c) => {
             const optOutRate = c.unique_users > 0
                 ? ((c.opted_out_users ?? 0) / c.unique_users * 100).toFixed(1) + '%'
@@ -132,10 +144,10 @@ export function CenterHeatmap({ data, isLoading }: CenterHeatmapProps) {
             {/* KPI summary */}
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                 {[
-                    { label: 'Active Centers', value: centers.length, icon: MapPin, color: 'blue' },
-                    { label: 'Total Enrolled', value: totalEnrolled.toLocaleString(), icon: Users, color: 'emerald' },
-                    { label: 'Total Interactions', value: totalInteractions.toLocaleString(), icon: ChatCircle, color: 'violet' },
-                    { label: 'Total Opt-Outs', value: totalOptOuts.toLocaleString(), icon: Warning, color: 'red' },
+                    { label: t('kpi.activeCenters'), value: centers.length, icon: MapPin, color: 'blue' },
+                    { label: t('kpi.totalEnrolled'), value: totalEnrolled.toLocaleString(i18n.language), icon: Users, color: 'emerald' },
+                    { label: t('kpi.totalInteractions'), value: totalInteractions.toLocaleString(i18n.language), icon: ChatCircle, color: 'violet' },
+                    { label: t('kpi.totalOptOuts'), value: totalOptOuts.toLocaleString(i18n.language), icon: Warning, color: 'red' },
                 ].map(({ label, value, icon: Icon, color }) => (
                     <Card key={label} className="shadow-sm">
                         <CardContent className="pt-4">
@@ -161,8 +173,8 @@ export function CenterHeatmap({ data, isLoading }: CenterHeatmapProps) {
                             <MapPin className="text-primary size-5" weight="fill" />
                         </div>
                         <div>
-                            <CardTitle className="text-base font-semibold">Center Distribution</CardTitle>
-                            <p className="text-xs text-gray-500">Users by center — visual overview</p>
+                            <CardTitle className="text-base font-semibold">{t('distribution.title')}</CardTitle>
+                            <p className="text-xs text-gray-500">{t('distribution.subtitle')}</p>
                         </div>
                     </div>
                 </CardHeader>
@@ -170,7 +182,7 @@ export function CenterHeatmap({ data, isLoading }: CenterHeatmapProps) {
                     <div className="grid gap-6 lg:grid-cols-2">
                         {/* Bar chart */}
                         <div>
-                            <h4 className="mb-3 text-sm font-medium text-gray-700">Users by Center</h4>
+                            <h4 className="mb-3 text-sm font-medium text-gray-700">{t('distribution.barChartHeading')}</h4>
                             <ChartContainer config={chartConfig} className="aspect-auto w-full" style={{ height: barChartHeight }}>
                                 <BarChart
                                     data={barData}
@@ -193,9 +205,9 @@ export function CenterHeatmap({ data, isLoading }: CenterHeatmapProps) {
                                                 return (
                                                     <div className="rounded-lg border bg-white px-3 py-2 shadow-lg">
                                                         <p className="font-medium">{d?.fullName}</p>
-                                                        <p className="mt-1 text-sm">Enrolled: <strong>{d?.unique_users}</strong></p>
-                                                        <p className="text-sm">Interactions: <strong>{d?.total_responses}</strong></p>
-                                                        <p className="text-sm">Opt-Outs: <strong>{d?.opted_out}</strong></p>
+                                                        <p className="mt-1 text-sm">{t('distribution.tooltipEnrolled')}: <strong>{d?.unique_users}</strong></p>
+                                                        <p className="text-sm">{t('distribution.tooltipInteractions')}: <strong>{d?.total_responses}</strong></p>
+                                                        <p className="text-sm">{t('distribution.tooltipOptOuts')}: <strong>{d?.opted_out}</strong></p>
                                                     </div>
                                                 );
                                             }
@@ -213,7 +225,7 @@ export function CenterHeatmap({ data, isLoading }: CenterHeatmapProps) {
 
                         {/* Pie chart */}
                         <div>
-                            <h4 className="mb-3 text-sm font-medium text-gray-700">User Distribution</h4>
+                            <h4 className="mb-3 text-sm font-medium text-gray-700">{t('distribution.pieChartHeading')}</h4>
                             <ResponsiveContainer width="100%" height={320}>
                                 <PieChart margin={{ top: 8, right: 12, bottom: 8, left: 12 }}>
                                     <Pie
@@ -233,7 +245,7 @@ export function CenterHeatmap({ data, isLoading }: CenterHeatmapProps) {
                                             <Cell key={i} fill={entry.fill} />
                                         ))}
                                     </Pie>
-                                    <Tooltip formatter={(v: number) => [v.toLocaleString(), 'Users']} />
+                                    <Tooltip formatter={(v: number) => [v.toLocaleString(i18n.language), t('distribution.usersLabel')]} />
                                     <Legend
                                         layout="horizontal"
                                         align="center"
@@ -252,16 +264,15 @@ export function CenterHeatmap({ data, isLoading }: CenterHeatmapProps) {
                 <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
                         <div>
-                            <CardTitle className="text-base font-semibold">Center Performance Details</CardTitle>
+                            <CardTitle className="text-base font-semibold">{t('table.title')}</CardTitle>
                             <p className="text-xs text-gray-500">
-                                Enrollment, interactions & opt-outs per center.{' '}
-                                <span className="font-medium text-gray-600">Share</span> = each
-                                center&apos;s % of total enrolled.
+                                {t('table.subtitlePrefix')}{' '}
+                                <span className="font-medium text-gray-600">{t('table.shareWord')}</span> {t('table.subtitleSuffix')}
                             </p>
                         </div>
                         <Button variant="outline" size="sm" onClick={exportToCSV} className="gap-2">
                             <Download className="size-4" />
-                            Export CSV
+                            {t('table.exportCsv')}
                         </Button>
                     </div>
                 </CardHeader>
@@ -270,25 +281,25 @@ export function CenterHeatmap({ data, isLoading }: CenterHeatmapProps) {
                         <table className="w-full text-sm">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-4 py-3 text-left font-medium text-gray-700">Center</th>
+                                    <th className="px-4 py-3 text-start font-medium text-gray-700">{t('table.center')}</th>
                                     <th className="px-4 py-3 text-right font-medium text-gray-700">
-                                        <span className="flex items-center justify-end gap-1"><Users className="size-3.5" />Enrolled</span>
+                                        <span className="flex items-center justify-end gap-1"><Users className="size-3.5" />{t('table.enrolled')}</span>
                                     </th>
                                     <th className="hidden px-4 py-3 text-left font-medium text-gray-700 md:table-cell">
                                         <span className="flex items-center gap-1">
-                                            Share of enrolled
-                                            <InfoHint text="Each center's share of all enrolled leads = this center's enrolled ÷ total enrolled." />
+                                            {t('table.shareOfEnrolled')}
+                                            <InfoHint text={t('table.shareHint')} />
                                         </span>
                                     </th>
                                     <th className="px-4 py-3 text-right font-medium text-gray-700">
-                                        <span className="flex items-center justify-end gap-1"><ChatCircle className="size-3.5" />Interactions</span>
+                                        <span className="flex items-center justify-end gap-1"><ChatCircle className="size-3.5" />{t('table.interactions')}</span>
                                     </th>
-                                    <th className="hidden px-4 py-3 text-right font-medium text-gray-700 sm:table-cell">Avg/User</th>
+                                    <th className="hidden px-4 py-3 text-end font-medium text-gray-700 sm:table-cell">{t('table.avgPerUser')}</th>
                                     <th className="px-4 py-3 text-right font-medium text-gray-700">
-                                        <span className="flex items-center justify-end gap-1"><Warning className="size-3.5" />Opt-Outs</span>
+                                        <span className="flex items-center justify-end gap-1"><Warning className="size-3.5" />{t('table.optOuts')}</span>
                                     </th>
-                                    <th className="hidden px-4 py-3 text-right font-medium text-gray-700 lg:table-cell">Opt-Out %</th>
-                                    <th className="hidden px-4 py-3 text-left font-medium text-gray-700 lg:table-cell">Status</th>
+                                    <th className="hidden px-4 py-3 text-end font-medium text-gray-700 lg:table-cell">{t('table.optOutPercent')}</th>
+                                    <th className="hidden px-4 py-3 text-start font-medium text-gray-700 lg:table-cell">{t('table.status')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -361,7 +372,7 @@ export function CenterHeatmap({ data, isLoading }: CenterHeatmapProps) {
                             </tbody>
                             <tfoot className="border-t bg-gray-50">
                                 <tr>
-                                    <td className="px-4 py-3 font-semibold text-gray-700">Total</td>
+                                    <td className="px-4 py-3 font-semibold text-gray-700">{t('table.total')}</td>
                                     <td className="px-4 py-3 text-right font-bold text-blue-700">{totalEnrolled.toLocaleString()}</td>
                                     <td className="hidden px-4 py-3 md:table-cell" />
                                     <td className="px-4 py-3 text-right font-bold text-violet-700">{totalInteractions.toLocaleString()}</td>

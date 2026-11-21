@@ -1,8 +1,9 @@
 import { isAxiosError } from "axios";
+import type { TFunction } from "i18next";
 
-export const getUnsubscribeErrorMessage = (error: unknown) => {
+export const getUnsubscribeErrorMessage = (error: unknown, t: TFunction) => {
   if (!error) {
-    return "We couldn't update your preferences just yet. Please try again.";
+    return t("unsubscribe.errors.generic");
   }
 
   if (
@@ -16,6 +17,6 @@ export const getUnsubscribeErrorMessage = (error: unknown) => {
     return error.message;
   }
 
-  return "We couldn't update your preferences just yet. Please try again.";
+  return t("unsubscribe.errors.generic");
 };
 

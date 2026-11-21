@@ -2,21 +2,31 @@
 
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Settings, Upload } from 'lucide-react';
+import {
+    Gear as Settings,
+    UploadSimple as Upload,
+    CaretLeft as ChevronLeft,
+    CaretRight as ChevronRight,
+    CircleNotch as Loader2,
+    Trash as Trash2,
+} from '@phosphor-icons/react';
 import { PaperSet } from './preview/paper-set';
 import { ExportHandler } from './preview/export-handler';
 import { ExportSettingsDialog } from './dialog/export-settings-dialog';
 import { ExportSettingsProvider, useExportSettings } from './contexts/export-settings-context';
 import { Toaster as Sonner } from 'sonner';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { getQuestionDataForSection } from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-services/assessment-services';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Loader2 } from 'lucide-react';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import {
+    getFullQuestionsOfSections,
+    getQuestionDataForSection,
+} from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-services/assessment-services';
 import { Question } from './types/question';
-import { Trash2 } from 'lucide-react';
 // eslint-disable-next-line
 import { Instructions, Section, Steps } from "@/types/assessments/assessment-data-type";
 import { parseHtmlToString } from './utils/utils';
+import { omrSetNumber, orderSectionsForOmrSet, type OmrPaperOrder } from './utils/omr-set-order';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 function shuffleArray<T>(array: T[]): T[] {
     const newArray = [...array];
@@ -35,12 +45,15 @@ function PreviewWithSettings({
 
     allSections,
     assessmentDetails,
+    omrPaper,
 }: {
     assessmentId: string;
     sectionIds: string[];
 
     allSections: Section[];
     assessmentDetails: Steps;
+    /** A saved OMR set: print exactly that set, in its saved question and option order. */
+    omrPaper?: OmrPaperOrder;
 }) {
     const [showSettings, setShowSettings] = useState(false);
     const [currentSetIndex, setCurrentSetIndex] = useState(0);
@@ -48,6 +61,23 @@ function PreviewWithSettings({
     const { data: questionData, isLoading } = useSuspenseQuery(
         getQuestionDataForSection({ assessmentId, sectionIds: sectionIds.join(',') })
     );
+    // The preview shape above has no explanation; the full DTOs do. Optional, so a
+    // failure here only drops explanations from the answer key.
+    const { data: fullQuestions } = useQuery({
+        queryKey: ['GET_FULL_QUESTIONS_OF_SECTIONS', assessmentId, sectionIds.join(',')],
+        queryFn: () =>
+            getFullQuestionsOfSections({ assessmentId, sectionIds: sectionIds.join(',') }),
+    });
+    const explanationById = useMemo(() => {
+        const map: Record<string, string> = {};
+        Object.values(fullQuestions ?? {})
+            .flat()
+            .forEach((q) => {
+                const content = q.explanation_text?.content || q.explanation_text_data?.content;
+                if (q.id && content) map[q.id] = content;
+            });
+        return map;
+    }, [fullQuestions]);
 
     // Determine padding based on settings
     const getPadding = () => {
@@ -71,14 +101,24 @@ function PreviewWithSettings({
             ),
             totalMarks: allSections.find((section) => section.id === sectionId)?.total_marks || 0,
             duration: allSections.find((section) => section.id === sectionId)?.duration || 0,
-            questions: settings.randomizeQuestions
+            questions: (settings.randomizeQuestions && !omrPaper
                 ? shuffleArray(questions as Question[])
-                : (questions as Question[]),
+                : (questions as Question[])
+            ).map((q) => ({ ...q, explanation_text: explanationById[q.question_id] })),
         }));
-    }, [settings.randomizeQuestions]);
+    }, [settings.randomizeQuestions, explanationById, omrPaper]);
 
-    // Generate paper sets
+    // Generate paper sets. An OMR set is exactly one set in its saved order (never
+    // the random shuffle below): its answer key and bubble sheet depend on it.
     const paperSets = useMemo(() => {
+        if (omrPaper) {
+            return [
+                {
+                    setNumber: omrSetNumber(omrPaper.set_code),
+                    sections: orderSectionsForOmrSet(sections, omrPaper),
+                },
+            ];
+        }
         return Array.from({ length: settings.questionPaperSets }, (_, i) => ({
             setNumber: i,
             sections: settings.randomizeQuestions
@@ -88,7 +128,7 @@ function PreviewWithSettings({
                   }))
                 : sections,
         }));
-    }, [sections, settings.questionPaperSets, settings.randomizeQuestions]);
+    }, [sections, settings.questionPaperSets, settings.randomizeQuestions, omrPaper]);
 
     const handleNextSet = () => {
         if (currentSetIndex < paperSets.length - 1) {
@@ -103,6 +143,11 @@ function PreviewWithSettings({
     };
 
     const currentPaperSet = paperSets[currentSetIndex];
+    const paperTitle = assessmentDetails[0]?.saved_data?.name;
+    const paperDuration = assessmentDetails[0]?.saved_data?.duration;
+    const paperInstructions =
+        assessmentDetails[0]?.saved_data?.instructions ??
+        assessmentDetails[1]?.saved_data?.instructions;
 
     const handleLetterheadUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -147,7 +192,7 @@ function PreviewWithSettings({
                     padding: ${getPadding()};
                     padding-bottom:  2mm;
                     margin: 0 auto;
-                    border: 1px #d3d3d3 solid;
+                    border: 1px #d3d3d3 solid; /* design-lint-ignore: print-page CSS for the PDF capture, no Tailwind here */
                     border-radius: 5px;
                     line-height: 1.5;
                     background: white;
@@ -166,6 +211,11 @@ function PreviewWithSettings({
                         Export Settings
                     </Button>
 
+                    {omrPaper && (
+                        <span className="text-sm font-medium">
+                            OMR Set {omrPaper.set_code} · saved order
+                        </span>
+                    )}
                     {paperSets.length > 1 && (
                         <div className="flex items-center gap-4">
                             <Button
@@ -190,6 +240,16 @@ function PreviewWithSettings({
                         </div>
                     )}
                     <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <Switch
+                                id="export-answer-key"
+                                checked={settings.exportSolutionKey}
+                                onCheckedChange={(checked) =>
+                                    updateSettings({ exportSolutionKey: checked })
+                                }
+                            />
+                            <Label htmlFor="export-answer-key">With answer key</Label>
+                        </div>
                         <input
                             type="file"
                             id="letterhead-upload"
@@ -224,7 +284,10 @@ function PreviewWithSettings({
                             // @ts-expect-error:Type 'undefined' is not assignable to type 'Section[]'.
                             sections={currentPaperSet?.sections}
                             settings={settings}
-                            {...(paperSets.length > 1
+                            title={paperTitle}
+                            durationMins={paperDuration}
+                            instructions={paperInstructions}
+                            {...(paperSets.length > 1 || omrPaper
                                 ? { setNumber: currentPaperSet?.setNumber }
                                 : {})}
                         />
@@ -237,6 +300,7 @@ function PreviewWithSettings({
                     open={showSettings}
                     onOpenChange={setShowSettings}
                     sections={sections}
+                    lockedSetCode={omrPaper?.set_code}
                 />
             )}
 
@@ -245,7 +309,9 @@ function PreviewWithSettings({
                     sections={currentPaperSet?.sections ?? []}
                     settings={settings}
                     setNumber={currentPaperSet?.setNumber ?? 0}
-                    instructions={assessmentDetails[1]?.saved_data?.instructions}
+                    title={paperTitle}
+                    durationMins={paperDuration}
+                    instructions={paperInstructions}
                 />
             </div>
             <Sonner />
@@ -258,20 +324,39 @@ export default function PreviewAndExport({
     sectionIds,
     sections,
     assessmentDetails,
+    omrPaper,
+    omrAnswerKey = false,
 }: {
     assessmentId: string;
     sectionIds: string[];
 
     sections: Section[];
     assessmentDetails: Steps;
+    /** Print one saved OMR set (question + option order from the backend) instead of random sets. */
+    omrPaper?: OmrPaperOrder;
+    /** With omrPaper: open on the answer key, lettered as the set's bubble sheet. */
+    omrAnswerKey?: boolean;
 }) {
     return (
-        <ExportSettingsProvider>
+        <ExportSettingsProvider
+            initialSettings={
+                omrPaper
+                    ? {
+                          questionPaperSets: 1,
+                          randomizeQuestions: false,
+                          randomizeOptions: false,
+                          includeQuestionSetCode: true,
+                          exportSolutionKey: omrAnswerKey,
+                      }
+                    : undefined
+            }
+        >
             <PreviewWithSettings
                 assessmentId={assessmentId}
                 sectionIds={sectionIds}
                 allSections={sections}
                 assessmentDetails={assessmentDetails}
+                omrPaper={omrPaper}
             />
         </ExportSettingsProvider>
     );

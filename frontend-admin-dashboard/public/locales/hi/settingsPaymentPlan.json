@@ -1,0 +1,58 @@
+{
+    "step1": {
+        "planNameLabel": "योजना का नाम *",
+        "planNamePlaceholder": "योजना का नाम दर्ज करें",
+        "planCurrencyLabel": "योजना मुद्रा",
+        "setAsDefault": "डिफ़ॉल्ट योजना के रूप में सेट करें"
+    },
+    "units": {
+        "days": "दिन",
+        "months": "महीने"
+    },
+    "subscription": {
+        "title": "सदस्यता योजना कॉन्फ़िगरेशन",
+        "durationUnitLabel": "अवधि इकाई",
+        "durationUnitHint": "यह इकाई सभी मूल्य निर्धारण अंतरालों पर लागू होगी",
+        "pricingIntervals": "मूल्य निर्धारण अंतराल",
+        "addInterval": "अंतराल जोड़ें",
+        "intervalTitleLabel": "शीर्षक",
+        "durationLabel": "अवधि ({{unit}})",
+        "priceLabel": "मूल्य",
+        "featuresLabel": "सुविधाएं",
+        "removeInterval": "अंतराल हटाएं",
+        "intervalPlanFallback": "{{value}} {{unit}} योजना",
+        "planChangeLabel": "Members can switch to this plan",
+        "planChangeHint": "(turn on plan switching for this option first)"
+    },
+    "donation": {
+        "title": "दान कॉन्फ़िगरेशन",
+        "suggestedAmountsLabel": "सुझाई गई राशियां ({{currency}})",
+        "suggestedAmountsPlaceholder": "10, 25, 50, 100",
+        "minimumAmountLabel": "न्यूनतम राशि ({{currency}})",
+        "allowCustomAmounts": "कस्टम राशियों की अनुमति दें"
+    },
+    "discounts": {
+        "title": "योजना पर छूट लागू करें",
+        "subtitle": "प्रत्येक योजना अंतराल या मूल्य स्तर के लिए छूट सेट करें",
+        "subscriptionIntervalColumn": "सदस्यता अंतराल",
+        "originalPriceColumn": "मूल मूल्य",
+        "discountTypeColumn": "छूट प्रकार",
+        "discountAmountColumn": "छूट राशि",
+        "finalPriceColumn": "अंतिम मूल्य",
+        "planTypeColumn": "योजना प्रकार",
+        "noDiscount": "कोई छूट नहीं",
+        "percentOff": "% छूट",
+        "flatOff": "फ्लैट छूट",
+        "oneTimePayment": "एकमुश्त भुगतान",
+        "save": "{{amount}} बचाएं",
+        "noPricingInfo": "इस प्रकार की योजना के लिए कोई मूल्य निर्धारण जानकारी उपलब्ध नहीं है।"
+    },
+    "actions": {
+        "back": "वापस",
+        "cancel": "रद्द करें",
+        "saving": "सहेजा जा रहा है...",
+        "updatePlan": "योजना अपडेट करें",
+        "next": "आगे",
+        "updatePaymentPlan": "भुगतान योजना अपडेट करें"
+    }
+}

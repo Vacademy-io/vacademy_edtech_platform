@@ -1,0 +1,16 @@
+{
+    "heading": {
+        "title": "مركز التقييم",
+        "description": "إنشاء التقييمات وإدارتها وتقييمها"
+    },
+    "badges": {
+        "tests": "اختبارات",
+        "papers": "أوراق أسئلة"
+    },
+    "features": {
+        "createAssessment": "إنشاء تقييم",
+        "viewAssessments": "عرض التقييمات",
+        "questionPapers": "أوراق الأسئلة",
+        "evaluationCenter": "مركز التقييم النهائي"
+    }
+}

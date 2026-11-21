@@ -1,0 +1,8 @@
+{
+    "steps": {
+        "searchStudent": "Rechercher un étudiant",
+        "selectInstallments": "Sélectionner les échéances",
+        "paymentDetails": "Détails du paiement",
+        "done": "Terminé"
+    }
+}

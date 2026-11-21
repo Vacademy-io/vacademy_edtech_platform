@@ -1,0 +1,25 @@
+{
+    "tabs": {
+        "attempted": "Attempted",
+        "ongoing": "Ongoing",
+        "pending": "Pending"
+    },
+    "participantsTabs": {
+        "internal": "Internal Participants",
+        "external": "External Participants"
+    },
+    "batchSelectionTabs": {
+        "batch": "Batch Selection",
+        "individual": "Individual Selection"
+    },
+    "actions": {
+        "revaluate": "Revaluate"
+    },
+    "dialogs": {
+        "revaluateResultTitle": "Revaluate Result"
+    },
+    "toasts": {
+        "exportPdfSuccess": "Student submissions list data for PDF exported successfully",
+        "exportCsvSuccess": "Student submissions list data for CSV exported successfully"
+    }
+}

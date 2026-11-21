@@ -1,0 +1,75 @@
+{
+    "defaultSectionName": "Section {{number}}",
+    "trigger": {
+        "title": "Créer à partir d'une base de connaissances",
+        "subtitle": "Questions issues de vos propres livres et notes"
+    },
+    "dialog": {
+        "headingChooseKb": "Choisir une base de connaissances",
+        "headingKbSection": "{{kbName}} — {{sectionName}}"
+    },
+    "kbStep": {
+        "intro": "Les questions seront rédigées uniquement à partir du contenu de la base de connaissances choisie, et chacune indiquera la page dont elle provient.",
+        "emptyTitle": "Aucune base de connaissances pour le moment",
+        "emptyDescription": "Ajoutez d'abord vos livres ou notes dans Base de connaissances, puis revenez ici.",
+        "sourcesCount_one": "{{count}} source",
+        "sourcesCount_many": "{{count}} sources",
+        "sourcesCount_other": "{{count}} sources"
+    },
+    "setup": {
+        "numberOfQuestions": "Nombre de questions",
+        "questionType": "Type de question",
+        "difficulty": "Difficulté",
+        "noTopicsWarning": "Cette base de connaissances n'a pas encore de sujets. Les questions seront tirées de l'ensemble de son contenu.",
+        "questionTypeOptions": {
+            "mcqs": "Choix multiple (une réponse)",
+            "mcqm": "Choix multiple (plusieurs réponses)",
+            "trueFalse": "Vrai / faux",
+            "oneWord": "Un mot",
+            "longAnswer": "Réponse longue",
+            "numeric": "Numérique",
+            "passage": "Passage / compréhension",
+            "assertionReason": "Assertion–raison"
+        },
+        "difficultyOptions": {
+            "easy": "Facile",
+            "medium": "Moyen",
+            "hard": "Difficile"
+        },
+        "validation": {
+            "minCount": "Au moins 1 question",
+            "maxCount": "Au maximum 60 à la fois"
+        }
+    },
+    "generating": {
+        "writingFrom": "Rédaction des questions à partir de {{kbName}}",
+        "hint": "Les questions sont rédigées quelques-unes à la fois, donc une section plus grande prend plus de temps. Cette exécution reste conservée dans l'historique de la base de connaissances même si vous fermez cette fenêtre."
+    },
+    "review": {
+        "partialDelivery": "{{delivered}} question(s) sur {{planned}} ont pu être rédigées à partir des sujets choisis. Ajoutez plus de contenu ou élargissez la sélection pour le reste."
+    },
+    "insert": {
+        "paperTitle": "{{kbName}} — {{sectionName}}",
+        "successToast_one": "{{count}} question ajoutée à {{sectionName}}",
+        "successToast_many": "{{count}} questions ajoutées à {{sectionName}}",
+        "successToast_other": "{{count}} questions ajoutées à {{sectionName}}"
+    },
+    "footer": {
+        "cancel": "Annuler",
+        "back": "Retour",
+        "generateQuestions": "Générer les questions",
+        "changeSelection": "Modifier la sélection",
+        "adding": "Ajout en cours…",
+        "addQuestions_one": "Ajouter {{count}} question à cette section",
+        "addQuestions_many": "Ajouter {{count}} questions à cette section",
+        "addQuestions_other": "Ajouter {{count}} questions à cette section"
+    },
+    "errors": {
+        "loadTopics": "Impossible de lire les sujets de cette base de connaissances",
+        "startGenerating": "Impossible de démarrer la génération",
+        "generationFailed": "Échec de la génération",
+        "regenerateQuestion": "Impossible de réécrire cette question",
+        "paperNotSaved": "Le sujet d'examen n'a pas été enregistré",
+        "insertQuestions": "Impossible d'ajouter ces questions à la section"
+    }
+}

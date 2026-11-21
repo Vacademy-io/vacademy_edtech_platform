@@ -1,0 +1,25 @@
+{
+    "rejectHeading": "رفض هذا الطلب",
+    "approveHeading": "الموافقة على هذا الطلب",
+    "cancel": "إلغاء",
+    "saving": "جارٍ الحفظ…",
+    "rejectRequest": "رفض الطلب",
+    "approveRequest": "الموافقة على الطلب",
+    "employee": "الموظف",
+    "unknownDate": "تاريخ غير معروف",
+    "noRecord": "لا يوجد سجل",
+    "times": "الأوقات {{originalIn}}–{{originalOut}} ← {{requestedIn}}–{{requestedOut}}",
+    "rejectNotice": "يبقى سجل الحضور كما هو تمامًا. ملاحظاتك هي ما يراه الموظف.",
+    "approveNotice": "الموافقة تعيد كتابة سجل الحضور لذلك اليوم — تحل الحالة والأوقات المطلوبة محل ما هو مخزَّن، ويُحتسب اليوم بهذا الشكل في كشف الرواتب.",
+    "remarksLabel": "ملاحظات",
+    "remarksPlaceholderReject": "لماذا لا يمكن قبول هذا",
+    "remarksPlaceholderApprove": "ملاحظة اختيارية للسجل",
+    "toasts": {
+        "rejected": "تم رفض الطلب",
+        "approved": "تمت الموافقة على الطلب"
+    },
+    "errors": {
+        "remarksRequired": "أخبرهم بسبب رفض هذا",
+        "saveFailed": "تعذّر تسجيل القرار."
+    }
+}

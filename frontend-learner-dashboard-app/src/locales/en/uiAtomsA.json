@@ -1,0 +1,34 @@
+{
+    "markBadge": {
+        "marks": "{{marks}} Marks"
+    },
+    "comboboxField": {
+        "selectLabel": "Select {{label}}",
+        "searchLabel": "Search {{label}}...",
+        "noResults": "No results found."
+    },
+    "selectField": {
+        "selectLabel": "Select {{label}}"
+    },
+    "dropdown": {
+        "placeholder": "Select an option"
+    },
+    "dropdownSchema": {
+        "required": "This field is required"
+    },
+    "modernButton": {
+        "loading": "Loading..."
+    },
+    "pagination": {
+        "goTo": "Go to"
+    },
+    "errorState": {
+        "defaultTitle": "Something went wrong",
+        "retry": "Retry",
+        "tryAgain": "Try again"
+    },
+    "table": {
+        "loading": "Loading...",
+        "errorLoadingData": "Error loading data"
+    }
+}

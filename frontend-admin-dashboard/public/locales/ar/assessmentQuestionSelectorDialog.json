@@ -1,0 +1,48 @@
+{
+    "dialog": {
+        "heading_zero": "اختر الأسئلة ({{count}} سؤال)",
+        "heading_one": "اختر الأسئلة ({{count}} سؤال واحد)",
+        "heading_two": "اختر الأسئلة ({{count}} سؤالان)",
+        "heading_few": "اختر الأسئلة ({{count}} أسئلة)",
+        "heading_many": "اختر الأسئلة ({{count}} سؤالاً)",
+        "heading_other": "اختر الأسئلة ({{count}} سؤال)"
+    },
+    "footer": {
+        "selectedCount_zero": "تم تحديد {{count}} سؤال",
+        "selectedCount_one": "تم تحديد سؤال واحد ({{count}})",
+        "selectedCount_two": "تم تحديد سؤالان ({{count}})",
+        "selectedCount_few": "تم تحديد {{count}} أسئلة",
+        "selectedCount_many": "تم تحديد {{count}} سؤالاً",
+        "selectedCount_other": "تم تحديد {{count}} سؤال"
+    },
+    "actions": {
+        "cancel": "إلغاء",
+        "addQuestions_zero": "إضافة {{count}} سؤال",
+        "addQuestions_one": "إضافة سؤال واحد ({{count}})",
+        "addQuestions_two": "إضافة سؤالين ({{count}})",
+        "addQuestions_few": "إضافة {{count}} أسئلة",
+        "addQuestions_many": "إضافة {{count}} سؤالاً",
+        "addQuestions_other": "إضافة {{count}} سؤال"
+    },
+    "search": {
+        "placeholder": "ابحث في الأسئلة..."
+    },
+    "tags": {
+        "filterLabel": "تصفية حسب الوسم:"
+    },
+    "list": {
+        "selectAll_zero": "تحديد الكل ({{count}})",
+        "selectAll_one": "تحديد الكل (سؤال واحد - {{count}})",
+        "selectAll_two": "تحديد الكل (سؤالان - {{count}})",
+        "selectAll_few": "تحديد الكل ({{count}} أسئلة)",
+        "selectAll_many": "تحديد الكل ({{count}} سؤالاً)",
+        "selectAll_other": "تحديد الكل ({{count}} سؤال)",
+        "matchingCount_zero": "{{count}} مطابق",
+        "matchingCount_one": "سؤال واحد مطابق ({{count}})",
+        "matchingCount_two": "سؤالان مطابقان ({{count}})",
+        "matchingCount_few": "{{count}} أسئلة مطابقة",
+        "matchingCount_many": "{{count}} سؤالاً مطابقاً",
+        "matchingCount_other": "{{count}} سؤال مطابق",
+        "emptyState": "لا توجد أسئلة تطابق بحثك."
+    }
+}

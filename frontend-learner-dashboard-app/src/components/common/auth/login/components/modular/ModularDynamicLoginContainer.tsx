@@ -44,6 +44,8 @@ interface ModularDynamicLoginContainerProps {
   onSwitchToForgotPassword?: () => void;
   onLoginSuccess?: () => void;
   className?: string;
+  /** "Don't have an account? Sign up here" under the form. Off unless the caller offers signup. */
+  showSignupLink?: boolean;
 }
 
 export function ModularDynamicLoginContainer({
@@ -55,7 +57,8 @@ export function ModularDynamicLoginContainer({
   onSwitchToSignup,
   onSwitchToForgotPassword,
   onLoginSuccess,
-  className = ""
+  className = "",
+  showSignupLink = false
 }: ModularDynamicLoginContainerProps) {
   const { t } = useTranslation("auth");
   const navigate = useNavigate();
@@ -892,6 +895,23 @@ export function ModularDynamicLoginContainer({
           </div>
         </div>
       </motion.div> */}
+
+      {/* Sign up link, the mirror of the signup screen's "Sign in here" */}
+      {showSignupLink && onSwitchToSignup && (
+        <div className="text-center text-xs text-gray-600 p-4">
+          <p>
+            {t("common.dontHaveAccount")}{" "}
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.02 }}
+              onClick={() => onSwitchToSignup()}
+              className="text-gray-800 hover:text-gray-900 font-medium underline cursor-pointer"
+            >
+              {t("common.signUpHere")}
+            </motion.button>
+          </p>
+        </div>
+      )}
 
       {/* Footer Links */}
       <motion.div

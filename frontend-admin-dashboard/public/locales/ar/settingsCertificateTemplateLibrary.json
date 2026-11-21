@@ -1,0 +1,24 @@
+{
+    "header": {
+        "title": "قوالبي",
+        "descriptionPart1": "احتفظ بأكبر عدد تريده من التصاميم. التصميم المُعلَّم بعلامة",
+        "descriptionDefault": "افتراضي",
+        "descriptionPart2": "هو الشهادة التي يحصل عليها المتعلمون."
+    },
+    "addTemplate": "إضافة قالب",
+    "emptyState": {
+        "title": "لا توجد قوالب محفوظة بعد.",
+        "description": "اختر تصميمًا جاهزًا أدناه، أو ارفع تصميمك الخاص — سيتم حفظه هنا وتعيينه كافتراضي."
+    },
+    "card": {
+        "openTitle": "افتح هذا التصميم في المحرر",
+        "defaultBadge": "افتراضي",
+        "editingBadge": "قيد التحرير",
+        "renameInputAriaLabel": "اسم القالب",
+        "renameTitle": "إعادة تسمية",
+        "issuedToLearners": "تُصدر للمتعلمين",
+        "makeDefault": "تعيين كافتراضي",
+        "deleteTitle": "حذف هذا القالب",
+        "deleteAriaLabel": "حذف {{name}}"
+    }
+}

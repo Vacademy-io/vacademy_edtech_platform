@@ -1,0 +1,19 @@
+{
+    "header": {
+        "title": "Aperçu du cours VSmart"
+    },
+    "labels": {
+        "lectureTitle": "📘 Titre du cours : {{title}}",
+        "level": "Niveau :",
+        "modeOfTeaching": "Mode d'enseignement :",
+        "lectureLanguage": "Langue du cours :",
+        "lectureDuration": "Durée du cours :",
+        "topicCovered": "Sujet abordé :",
+        "content": "Contenu :",
+        "inLectureQuestion": "Question pendant le cours :",
+        "activity": "Activité :",
+        "assignment": "Devoir",
+        "notApplicable": "N/A",
+        "task": "Tâche :"
+    }
+}

@@ -1,0 +1,23 @@
+{
+    "validation": {
+        "urlRequired": "L'URL est requise",
+        "enterValidUrl": "Veuillez saisir une URL valide",
+        "enterValidVimeoUrl": "Veuillez saisir une URL Vimeo valide"
+    },
+    "defaultVideoName": "Vidéo Vimeo",
+    "urlPlaceholder": "https://vimeo.com/...",
+    "videoThumbnailAlt": "Miniature de la vidéo",
+    "updatingLink": "Mise à jour du lien...",
+    "addingVideo": "Ajout de la vidéo...",
+    "updateVimeoLink": "Mettre à jour le lien Vimeo",
+    "addVimeoVideo": "Ajouter une vidéo Vimeo",
+    "toast": {
+        "invalidVimeoUrl": "URL Vimeo invalide",
+        "durationReadFailed": "Impossible de lire la durée de la vidéo depuis Vimeo. La vidéo est peut-être privée ou oEmbed a échoué. Veuillez réessayer.",
+        "linkUpdated": "Lien Vimeo mis à jour avec succès !",
+        "videoAdded": "Vidéo Vimeo ajoutée avec succès !",
+        "updateLinkFailed": "Échec de la mise à jour du lien",
+        "addVideoFailed": "Échec de l'ajout de la vidéo",
+        "reorderFailed": "Diapositive créée mais le réordonnancement a échoué"
+    }
+}

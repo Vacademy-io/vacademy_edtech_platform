@@ -25,7 +25,10 @@ class PipelineStage(str, Enum):
     SHOT_PLANNER = "shot_planner"
     NARRATION_WRITER = "narration_writer"
     PER_SHOT_HTML = "per_shot_html"
-    VISION_REVIEW = "vision_review"  # pinned to Pro; not user-overridable
+    VISION_REVIEW = "vision_review"  # admin-pinned reviewer; not user-overridable
+    # Hook/CTA/hero shots. No row = no model switch (hero shots keep the
+    # per-shot model and only think harder on tiers with `hero_effort`).
+    HERO_SHOT = "hero_shot"
     # v2 legacy — overridable until v2 is deleted
     DIRECTOR = "director"
     SCRIPT_GENERATION = "script_generation"
@@ -37,6 +40,11 @@ class PipelineStage(str, Enum):
     IMAGE_PROMPT_ENHANCEMENT = "image_prompt_enhancement"
     STOCK_VIDEO_RANKING = "stock_video_ranking"
     ENTITY_EXTRACTION = "entity_extraction"
+    # Per-run visual signature + LLM-authored transitions (concept tiers).
+    DESIGN_IDENTITY = "design_identity"
+    EDIT_CHOREOGRAPHER = "edit_choreographer"
+    # Director's-eye elevation gate on hero shots (reads a screenshot).
+    SHOT_CREATIVITY_CRITIC = "shot_creativity_critic"
 
     # ── UTILITY — small structured / glue prompts ────────────────────────
     REGEN_HTML = "regen_html"  # collapses html_repair, brand_asset, bbox, vision_corrective, animation_validator
@@ -44,7 +52,12 @@ class PipelineStage(str, Enum):
     SHOT_DECOMPOSER = "shot_decomposer"
     HOST_DESCRIPTION = "host_description"
     HEADLINE_THUMBNAIL = "headline_thumbnail"
+    STOCK_PHOTO_RANKING = "stock_photo_ranking"  # vision pick in "visual" mode
+    DIALOGUE_CLIP_QC = "dialogue_clip_qc"  # vision QC of AI dialogue clips
 
+
+# A stage with no row in `ai_model_stage_assignments` resolves to None, and the
+# call then uses the registry's video default (`ai_model_defaults`).
 
 # Stages whose model the user can override via `model_overrides` on the
 # video-generation request. Order in this set is preserved for the FE
@@ -75,6 +88,7 @@ STAGE_BUCKETS: dict[PipelineStage, StageBucket] = {
     PipelineStage.NARRATION_WRITER: StageBucket.CRITICAL,
     PipelineStage.PER_SHOT_HTML: StageBucket.CRITICAL,
     PipelineStage.VISION_REVIEW: StageBucket.CRITICAL,
+    PipelineStage.HERO_SHOT: StageBucket.CRITICAL,
     PipelineStage.DIRECTOR: StageBucket.CRITICAL,
     PipelineStage.SCRIPT_GENERATION: StageBucket.CRITICAL,
     PipelineStage.SCRIPT_REVIEW: StageBucket.CRITICAL,
@@ -83,11 +97,16 @@ STAGE_BUCKETS: dict[PipelineStage, StageBucket] = {
     PipelineStage.IMAGE_PROMPT_ENHANCEMENT: StageBucket.MEDIUM,
     PipelineStage.STOCK_VIDEO_RANKING: StageBucket.MEDIUM,
     PipelineStage.ENTITY_EXTRACTION: StageBucket.MEDIUM,
+    PipelineStage.DESIGN_IDENTITY: StageBucket.MEDIUM,
+    PipelineStage.EDIT_CHOREOGRAPHER: StageBucket.MEDIUM,
+    PipelineStage.SHOT_CREATIVITY_CRITIC: StageBucket.MEDIUM,
     PipelineStage.REGEN_HTML: StageBucket.UTILITY,
     PipelineStage.CULTURAL_CONTEXT: StageBucket.UTILITY,
     PipelineStage.SHOT_DECOMPOSER: StageBucket.UTILITY,
     PipelineStage.HOST_DESCRIPTION: StageBucket.UTILITY,
     PipelineStage.HEADLINE_THUMBNAIL: StageBucket.UTILITY,
+    PipelineStage.STOCK_PHOTO_RANKING: StageBucket.UTILITY,
+    PipelineStage.DIALOGUE_CLIP_QC: StageBucket.UTILITY,
 }
 
 

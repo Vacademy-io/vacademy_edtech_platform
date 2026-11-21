@@ -1,0 +1,282 @@
+{
+  "common": {
+    "error": "خطأ",
+    "unexpectedError": "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.",
+    "amountToPay": "المبلغ المستحق:"
+  },
+  "inviteUnavailable": {
+    "notStarted": "لم يفتح التسجيل بعد لهذا {{course}}. يرجى التحقق لاحقًا.",
+    "closed": "التسجيل في هذا {{course}} مغلق حاليًا."
+  },
+  "applyReferral": {
+    "title": "رمز الإحالة",
+    "placeholder": "أدخل رمز الإحالة",
+    "apply": "تطبيق",
+    "applying": "جارٍ التطبيق...",
+    "applied": "تم التطبيق",
+    "errors": {
+      "empty": "يرجى إدخال رمز إحالة",
+      "invalid": "رمز الإحالة غير صالح",
+      "applyFailed": "فشل تطبيق رمز الإحالة. يرجى المحاولة مرة أخرى."
+    }
+  },
+  "cashfreeCheckout": {
+    "title": "الدفع عبر Cashfree",
+    "description": "انقر أدناه لفتح صفحة الدفع الآمنة الخاصة بـ Cashfree. ستُدخل بيانات بطاقتك هناك.",
+    "notReady": "الدفع غير جاهز بعد. يرجى الانتظار.",
+    "gatewayUnavailable": "بوابة الدفع غير متاحة.",
+    "initFailed": "فشل بدء عملية الدفع.",
+    "processFailed": "تعذّرت معالجة الدفع.",
+    "redirecting": "جارٍ إعادة التوجيه...",
+    "proceed": "المتابعة إلى الدفع",
+    "preparing": "جارٍ تجهيز الدفع...",
+    "loading": "جارٍ تحميل نموذج الدفع...",
+    "securedBy": "دفعتك مؤمَّنة بواسطة Cashfree",
+    "methods": "بطاقات، UPI، تحويل بنكي، محافظ إلكترونية والمزيد"
+  },
+  "razorpayCheckout": {
+    "title": "الدفع عبر Razorpay",
+    "description": "انقر على \"إتمام التسجيل\" للمتابعة إلى الدفع",
+    "defaultCourseName": "تسجيل {{course}}",
+    "defaultCourseDescription": "دفع مقابل تسجيل {{course}}",
+    "scriptLoadFailed": "فشل تحميل بوابة الدفع Razorpay",
+    "gatewayLoadFailed": "فشل تحميل بوابة الدفع",
+    "gatewayNotReady": "بوابة الدفع غير جاهزة",
+    "gatewayNotInitialized": "لم يتم تهيئة بوابة الدفع",
+    "paymentCancelled": "تم إلغاء الدفع. تم إنشاء التسجيل، لكن الدفع لا يزال معلقًا.",
+    "gatewayOpenFailed": "فشل فتح بوابة الدفع",
+    "securedBy": "دفعتك مؤمَّنة بواسطة Razorpay",
+    "methods": "يدعم Razorpay بطاقات الائتمان/الخصم، التحويل البنكي، UPI والمحافظ الإلكترونية"
+  },
+  "stripeCheckout": {
+    "title": "دفع آمن",
+    "description": "أدخل بيانات بطاقتك أدناه.",
+    "notLoaded": "لم يتم تحميل Stripe بعد. يرجى المحاولة مرة أخرى.",
+    "cardElementNotFound": "لم يتم العثور على عنصر البطاقة. يرجى تحديث الصفحة.",
+    "processingError": "حدث خطأ أثناء معالجة الدفع.",
+    "createMethodFailed": "فشل إنشاء طريقة الدفع."
+  },
+  "ewayCardForm": {
+    "cardNumber": "رقم البطاقة",
+    "cardNumberPlaceholder": "1234 5678 9012 3456",
+    "cardholderName": "اسم حامل البطاقة",
+    "cardholderNamePlaceholder": "أحمد محمد",
+    "expiryDate": "تاريخ الانتهاء",
+    "expiryPlaceholder": "MM/YY",
+    "cvv": "رمز التحقق CVV",
+    "cvvPlaceholder": "123",
+    "cvvPlaceholderAmex": "1234",
+    "securityNotice": "يتم تشفير بيانات بطاقتك قبل إرسالها. نحن لا نخزّن بيانات بطاقتك أبدًا.",
+    "browserUnsupported": "متصفحك لا يدعم تشفير الدفع الآمن. يرجى استخدام متصفح حديث مثل Chrome أو Firefox أو Safari أو Edge.",
+    "errors": {
+      "expiryRequired": "تاريخ الانتهاء مطلوب",
+      "nameRequired": "الاسم مطلوب"
+    }
+  },
+  "courseInfoCard": {
+    "learnersWillGain": "ما سيكتسبه {{learners}}",
+    "aboutCourse": "عن {{course}}"
+  },
+  "cpoInstallment": {
+    "title": "اختر الأقساط",
+    "subtitle": "اختر الأقساط التي ترغب في دفعها الآن",
+    "selectAll": "تحديد الكل",
+    "selectOverdue": "تحديد المتأخر ({{count}})",
+    "clear": "مسح",
+    "installmentFallback": "قسط",
+    "paid": "مدفوع",
+    "due": "تاريخ الاستحقاق: {{date}}",
+    "daysOverdue": "متأخر {{days}} يوم",
+    "overdue": "متأخر",
+    "settled": "تمت التسوية",
+    "paidSoFar": "المدفوع حتى الآن: {{amount}}",
+    "customAmountLabel": "أدخل مبلغًا مخصصًا بدلاً من ذلك",
+    "amountPlaceholder": "0.00",
+    "allocationHint": "سيتم توزيع الدفعة على الأقساط المحددة حسب ترتيب تاريخ الاستحقاق.",
+    "customAmount": "مبلغ مخصص",
+    "installmentsSelected_zero": "{{count}} قسط محدد",
+    "installmentsSelected_one": "{{count}} قسط محدد",
+    "installmentsSelected_two": "{{count}} قسطان محددان",
+    "installmentsSelected_few": "{{count}} أقساط محددة",
+    "installmentsSelected_many": "{{count}} قسطًا محددًا",
+    "installmentsSelected_other": "{{count}} قسط محدد",
+    "totalOutstanding": "إجمالي المستحق: {{amount}}",
+    "noDuesFound": "لم يتم العثور على مستحقات",
+    "allSettled": "يبدو أن جميع الأقساط قد سُوّيت."
+  },
+  "enrollmentPolicy": {
+    "thisCourse": "هذا {{course}}",
+    "successTitle": "تم التسجيل بنجاح",
+    "completeStepsPrefix": "أكمل الخطوات التالية لتفعيل وصولك إلى",
+    "whatsappVerification": "التحقق عبر واتساب",
+    "alreadyEnrolledTitle": "مسجَّل بالفعل",
+    "alreadyEnrolledMessage": "أنت مسجَّل بالفعل في هذا {{course}}. يرجى إكمال تسجيلك الحالي أولًا.",
+    "wantToUpgrade": "هل تريد الترقية؟",
+    "upgradePremiumFallback": "قم بالترقية للحصول على الميزات المميزة.",
+    "upgradeNow": "الترقية الآن",
+    "close": "إغلاق",
+    "goToDashboard": "الذهاب إلى لوحة التحكم",
+    "loginNow": "تسجيل الدخول الآن",
+    "readyToContinue": "هل أنت جاهز للمتابعة؟",
+    "reenrollmentBlockedFallback": "إعادة التسجيل غير متاحة بعد. يرجى المحاولة مرة أخرى لاحقًا.",
+    "upgradeToContinueLearning": "قم بالترقية لمواصلة التعلم",
+    "clickBelowToJoin": "انقر أدناه للانضمام إلى العضوية.",
+    "activeMembershipTitle": "لديك عضوية نشطة",
+    "activeMembershipMessage": "أنت مشترك في خطة عضويتنا النشطة. يرجى مراجعة رسالة واتساب واستخدام الرابط المُرسل عبر رسالة نصية أو بريد إلكتروني للانضمام إلى {{session}} يوميًا. "
+  },
+  "navigationButtons": {
+    "previous": "السابق",
+    "processing": "جارٍ المعالجة...",
+    "completeEnrollment": "إتمام التسجيل",
+    "payNow": "ادفع الآن",
+    "confirmAndPay": "تأكيد والدفع",
+    "next": "التالي"
+  },
+  "onetimePlan": {
+    "percentOff": "خصم {{amount}}%",
+    "fixedOff": "خصم {{amount}} {{currency}}"
+  },
+  "paymentGatewayWrapper": {
+    "unsupportedTitle": "بوابة دفع غير مدعومة",
+    "unsupportedMessage": "بوابة الدفع \"{{vendor}}\" غير مدعومة."
+  },
+  "paymentInfoStep": {
+    "securePayment": "دفع آمن",
+    "enterCardDetails": "أدخل بيانات بطاقتك أدناه.",
+    "loadingStripeConfig": "جارٍ تحميل إعدادات Stripe...",
+    "stripeConfigErrorTitle": "خطأ في إعدادات Stripe",
+    "stripeLoadFailed": "فشل تحميل إعدادات Stripe. يرجى المحاولة مرة أخرى.",
+    "stripeUnavailable": "تعذّر تحميل بوابة الدفع Stripe. يرجى التواصل مع الدعم.",
+    "instituteId": "معرّف المؤسسة: {{instituteId}}",
+    "errorDetail": "خطأ: {{error}}",
+    "stripeKeyMissingTitle": "مفتاح Stripe مفقود",
+    "stripeKeyMissingMessage": "لم يتم العثور على مفتاح Stripe العلني في الإعدادات.",
+    "availableKeys": "المفاتيح المتاحة: {{keys}}",
+    "loadingPaymentForm": "جارٍ تحميل نموذج الدفع...",
+    "gatewayNotConfiguredTitle": "بوابة الدفع غير مُهيَّأة",
+    "gatewayNotConfiguredMessage": "بوابة الدفع \"{{vendor}}\" غير مدعومة بعد. يرجى التواصل مع الدعم.",
+    "phonepe": {
+      "title": "الدفع عبر PhonePe",
+      "description": "ستتم إعادة توجيهك بأمان إلى PhonePe لإتمام دفعتك. بعد الدفع، ستعود إلى هنا تلقائيًا.",
+      "descriptionWithAmount": "ستتم إعادة توجيهك بأمان إلى PhonePe لإتمام دفعة بقيمة {{currency}} {{amount}}. بعد الدفع، ستعود إلى هنا تلقائيًا.",
+      "clickPrefix": "انقر",
+      "clickSuffix": "أدناه للمتابعة."
+    }
+  },
+  "paymentPending": {
+    "title": "الدفع معلق",
+    "subtitle": "أكمل دفعتك للمتابعة",
+    "amount": "المبلغ:",
+    "status": "الحالة:",
+    "completePayment": "إتمام الدفع",
+    "viewInvoice": "عرض الفاتورة",
+    "redirectNotice": "ستتم إعادة توجيهك إلى صفحة دفع آمنة",
+    "securityNotice": "تتم معالجة المدفوعات بأمان"
+  },
+  "paymentSelection": {
+    "donation": {
+      "title": "تقديم تبرع",
+      "subtitle": "ادعم قضيتنا بمساهمتك الكريمة",
+      "suggestedAmounts": "مبالغ مقترحة",
+      "customAmount": "مبلغ مخصص",
+      "minimumPlaceholder": "الحد الأدنى {{amount}}",
+      "minimumAmount": "الحد الأدنى لمبلغ التبرع: {{amount}}",
+      "yourDonation": "تبرعك:"
+    },
+    "regular": {
+      "title": "اختر خطة الدفع",
+      "subtitle": "اختر خيار الدفع الأنسب لاحتياجاتك"
+    }
+  },
+  "registrationStep": {
+    "title": "تفاصيل التسجيل",
+    "subtitle": "املأ بياناتك للتسجيل في {{course}}",
+    "phonePlaceholder": "123 456 7890",
+    "reset": "إعادة تعيين",
+    "next": "التالي",
+    "sending": "جارٍ الإرسال...",
+    "billingContact": {
+      "fullNameLabel": "الاسم الكامل لجهة الفوترة",
+      "emailLabel": "البريد الإلكتروني لجهة الفوترة",
+      "roleLabel": "الدور",
+      "addSeparate": "إضافة جهة اتصال منفصلة للفوترة",
+      "addSeparateHint": "اختر هذا إذا كان الشخص الذي سيتلقى الفواتير وإشعارات التجديد لهذا التسجيل مختلفًا عنك (مثل أحد الوالدين / ولي الأمر، أو صاحب العمل، أو فريق الشؤون المالية).",
+      "namePlaceholder": "الاسم الأول والأخير",
+      "selectPlaceholder": "اختر…"
+    },
+    "errors": {
+      "fillRequiredFields": "يرجى ملء جميع الحقول المطلوبة",
+      "enterEmail": "يرجى إدخال عنوان بريدك الإلكتروني",
+      "enterValidEmail": "يرجى إدخال عنوان بريد إلكتروني صالح",
+      "pleaseEnterField": "يرجى إدخال {{field}}",
+      "pleaseEnterValidField": "يرجى إدخال {{field}} صالح"
+    },
+    "otp": {
+      "title": "تحقق من بريدك الإلكتروني",
+      "sentTo": "لقد أرسلنا رمز تحقق إلى",
+      "cantFindEmail": "لم تجد البريد الإلكتروني؟",
+      "checkSpamPrefix": "تحقق من مجلد",
+      "spam": "الرسائل غير المرغوب فيها",
+      "orWord": "أو",
+      "junk": "المهملات",
+      "folderSuffix": "",
+      "checkEmailCorrect": "تأكد من صحة عنوان البريد الإلكتروني",
+      "waitAndRefresh": "انتظر بضع ثوانٍ وأعد تحميل صندوق الوارد",
+      "enterCodeLabel": "أدخل رمز التحقق",
+      "enterCodePlaceholder": "أدخل الرمز المكون من 6 أرقام",
+      "verifying": "جارٍ التحقق...",
+      "verifiedProceeding": "تم التحقق! جارٍ المتابعة...",
+      "verifyAndContinue": "تحقق وتابع",
+      "editDetails": "تعديل البيانات",
+      "resendCode": "إعادة إرسال الرمز",
+      "codeSent": "تم إرسال رمز التحقق إلى بريدك الإلكتروني",
+      "sendFailed": "فشل إرسال رمز التحقق. يرجى المحاولة مرة أخرى",
+      "codeResent": "تمت إعادة إرسال رمز التحقق",
+      "resendFailed": "فشلت إعادة الإرسال. يرجى المحاولة مرة أخرى",
+      "enterValidCode": "يرجى إدخال رمز تحقق صالح",
+      "verifiedSuccess": "تم التحقق من بريدك الإلكتروني بنجاح!",
+      "invalidCode": "رمز غير صالح. يرجى التحقق والمحاولة مرة أخرى"
+    }
+  },
+  "reviewStep": {
+    "orderSummary": "ملخص الطلب",
+    "reviewOrder": "راجع طلبك قبل المتابعة إلى الدفع",
+    "courseBannerAlt": "شعار {{course}}",
+    "planDetails": "تفاصيل الخطة",
+    "plan": "الخطة:",
+    "validity": "الصلاحية:",
+    "referralBenefits": "مزايا الإحالة",
+    "pricing": {
+      "title": "التسعير",
+      "price": "السعر:",
+      "discount": "الخصم:",
+      "referralDiscount": "خصم الإحالة:",
+      "percentageSuffix": " ({{percentage}}%)",
+      "couponLabel": "كوبون ({{code}}):",
+      "totalPrice": "السعر الإجمالي:",
+      "allPricesIn": "جميع الأسعار بعملة {{currency}}",
+      "free": "مجاني",
+      "months_zero": "{{count}} شهر",
+      "months_one": "{{count}} شهر",
+      "months_two": "{{count}} شهران",
+      "months_few": "{{count}} أشهر",
+      "months_many": "{{count}} شهرًا",
+      "months_other": "{{count}} شهر",
+      "days_zero": "{{count}} يوم",
+      "days_one": "{{count}} يوم",
+      "days_two": "{{count}} يومان",
+      "days_few": "{{count}} أيام",
+      "days_many": "{{count}} يومًا",
+      "days_other": "{{count}} يوم"
+    },
+    "benefits": {
+      "freeMembershipDays": "{{days}} يومًا من العضوية المجانية 🎉",
+      "bonusContent": "ستحصل على محتوى إضافي {{deliveryText}} بعد التسجيل في {{course}}. 🎉",
+      "rewardPoints": "اكسب {{points}} نقطة مكافأة ⭐️ بعد التسجيل في {{course}}. 🎉",
+      "mediumEmail": "البريد الإلكتروني",
+      "mediumWhatsapp": "واتساب",
+      "onOneMedium": " عبر {{medium}}",
+      "onTwoMediums": " عبر {{medium1}} و{{medium2}}"
+    }
+  }
+}

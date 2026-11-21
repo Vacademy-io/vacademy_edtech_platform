@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     ArrowSquareOut,
     Browsers,
@@ -42,16 +44,17 @@ interface BookingPagesManagerDialogProps {
 
 type ViewState = { mode: 'list' } | { mode: 'create' } | { mode: 'edit'; page: BookingPageDTO };
 
-const copyLink = async (link: string) => {
+const copyLink = async (link: string, t: TFunction) => {
     try {
         await navigator.clipboard.writeText(link);
-        toast.success('Booking link copied');
+        toast.success(t('toast.linkCopied'));
     } catch {
-        toast.error('Could not copy the link');
+        toast.error(t('toast.copyFailed'));
     }
 };
 
 export const BookingPagesManagerDialog = ({ open, onOpenChange }: BookingPagesManagerDialogProps) => {
+    const { t } = useTranslation('meetingsBookingPagesManagerDialog');
     const instituteId = getInstituteId();
     const currentUserId = getUserId();
     const [view, setView] = useState<ViewState>({ mode: 'list' });
@@ -96,23 +99,23 @@ export const BookingPagesManagerDialog = ({ open, onOpenChange }: BookingPagesMa
         if (!deleteTarget?.id || !instituteId) return;
         deletePage.mutate({ id: deleteTarget.id, instituteId }, {
             onSuccess: () => {
-                toast.success('Booking page deleted');
+                toast.success(t('toast.deleted'));
                 setDeleteTarget(null);
             },
-            onError: () => toast.error('Failed to delete the booking page'),
+            onError: () => toast.error(t('toast.deleteFailed')),
         });
     };
 
     const heading =
         view.mode === 'create'
-            ? 'New Booking Page'
+            ? t('heading.create')
             : view.mode === 'edit'
-              ? 'Edit Booking Page'
-              : 'Booking Pages';
+              ? t('heading.edit')
+              : t('heading.list');
 
     let body: React.ReactNode;
     if (!instituteId) {
-        body = <p className="text-body text-neutral-500">Missing institute context.</p>;
+        body = <p className="text-body text-neutral-500">{t('missingInstitute')}</p>;
     } else if (view.mode === 'create') {
         body = (
             <BookingPageForm
@@ -124,7 +127,9 @@ export const BookingPagesManagerDialog = ({ open, onOpenChange }: BookingPagesMa
                     // a failed create.
                     if (page.host_user_id && page.host_user_id !== currentUserId) {
                         toast.info(
-                            `Created — hosted by ${page.host_name || 'another user'}; it appears in their list.`
+                            t('toast.createdForOtherHost', {
+                                hostName: page.host_name || t('toast.anotherUser'),
+                            })
                         );
                     }
                     setView({ mode: 'list' });
@@ -146,7 +151,7 @@ export const BookingPagesManagerDialog = ({ open, onOpenChange }: BookingPagesMa
         body = (
             <div className="flex min-h-32 flex-col items-center justify-center gap-2">
                 <DashboardLoader />
-                <p className="text-caption text-neutral-500">Loading your booking pages…</p>
+                <p className="text-caption text-neutral-500">{t('loading')}</p>
             </div>
         );
     } else if (error) {
@@ -154,11 +159,9 @@ export const BookingPagesManagerDialog = ({ open, onOpenChange }: BookingPagesMa
             <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-neutral-200 py-12 text-center">
                 <WarningCircle className="size-8 text-danger-600" />
                 <p className="text-body font-semibold text-neutral-700">
-                    Couldn&apos;t load your booking pages
+                    {t('error.title')}
                 </p>
-                <p className="text-caption text-neutral-500">
-                    Something went wrong. Please try again.
-                </p>
+                <p className="text-caption text-neutral-500">{t('error.description')}</p>
                 <MyButton
                     type="button"
                     buttonType="secondary"
@@ -166,7 +169,7 @@ export const BookingPagesManagerDialog = ({ open, onOpenChange }: BookingPagesMa
                     className="mt-1 sm:min-w-0"
                     onClick={() => refetch()}
                 >
-                    Retry
+                    {t('error.retry')}
                 </MyButton>
             </div>
         );
@@ -177,12 +180,9 @@ export const BookingPagesManagerDialog = ({ open, onOpenChange }: BookingPagesMa
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                         <p className="text-body font-semibold text-neutral-700">
-                            Your booking pages
+                            {t('list.title')}
                         </p>
-                        <p className="text-caption text-neutral-500">
-                            Each page has its own link people use to pick a slot on your calendar.
-                            Edit, copy, or open a page below.
-                        </p>
+                        <p className="text-caption text-neutral-500">{t('list.description')}</p>
                     </div>
                     <MyButton
                         type="button"
@@ -192,7 +192,7 @@ export const BookingPagesManagerDialog = ({ open, onOpenChange }: BookingPagesMa
                         onClick={() => setView({ mode: 'create' })}
                     >
                         <Plus className="mr-1 size-3.5" />
-                        New Booking Page
+                        {t('list.newBookingPage')}
                     </MyButton>
                 </div>
 
@@ -200,10 +200,10 @@ export const BookingPagesManagerDialog = ({ open, onOpenChange }: BookingPagesMa
                     <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-neutral-300 py-10 text-center">
                         <Browsers className="size-8 text-neutral-300" />
                         <p className="text-body font-semibold text-neutral-700">
-                            No booking pages yet
+                            {t('list.emptyTitle')}
                         </p>
                         <p className="text-caption text-neutral-500">
-                            Create one to get a shareable booking link.
+                            {t('list.emptyDescription')}
                         </p>
                         <MyButton
                             type="button"
@@ -213,7 +213,7 @@ export const BookingPagesManagerDialog = ({ open, onOpenChange }: BookingPagesMa
                             onClick={() => setView({ mode: 'create' })}
                         >
                             <Plus className="mr-1 size-3.5" />
-                            New Booking Page
+                            {t('list.newBookingPage')}
                         </MyButton>
                     </div>
                 ) : (
@@ -236,13 +236,18 @@ export const BookingPagesManagerDialog = ({ open, onOpenChange }: BookingPagesMa
                                             {page.duration_minutes != null && (
                                                 <span className="flex items-center gap-1">
                                                     <Clock className="size-3.5" />
-                                                    {page.duration_minutes} min
+                                                    {t('list.durationMin', {
+                                                        count: page.duration_minutes,
+                                                    })}
                                                 </span>
                                             )}
                                             {audienceLabel && (
                                                 <span className="flex items-center gap-1">
                                                     <UsersThree className="size-3.5" />
-                                                    {audienceTerm}: {audienceLabel}
+                                                    {t('list.audienceLabel', {
+                                                        term: audienceTerm,
+                                                        label: audienceLabel,
+                                                    })}
                                                 </span>
                                             )}
                                             {link && (
@@ -257,7 +262,7 @@ export const BookingPagesManagerDialog = ({ open, onOpenChange }: BookingPagesMa
                                                 buttonType="secondary"
                                                 scale="small"
                                                 layoutVariant="icon"
-                                                title="Open booking page"
+                                                title={t('actions.open')}
                                                 onClick={() =>
                                                     window.open(link, '_blank', 'noopener,noreferrer')
                                                 }
@@ -271,8 +276,8 @@ export const BookingPagesManagerDialog = ({ open, onOpenChange }: BookingPagesMa
                                                 buttonType="secondary"
                                                 scale="small"
                                                 layoutVariant="icon"
-                                                title="Copy booking link"
-                                                onClick={() => copyLink(link)}
+                                                title={t('actions.copy')}
+                                                onClick={() => copyLink(link, t)}
                                             >
                                                 <Copy className="size-3.5" />
                                             </MyButton>
@@ -282,7 +287,7 @@ export const BookingPagesManagerDialog = ({ open, onOpenChange }: BookingPagesMa
                                             buttonType="secondary"
                                             scale="small"
                                             layoutVariant="icon"
-                                            title="Edit booking page"
+                                            title={t('actions.edit')}
                                             onClick={() => setView({ mode: 'edit', page })}
                                         >
                                             <PencilSimple className="size-3.5" />
@@ -293,7 +298,7 @@ export const BookingPagesManagerDialog = ({ open, onOpenChange }: BookingPagesMa
                                                 buttonType="secondary"
                                                 scale="small"
                                                 layoutVariant="icon"
-                                                title="Delete booking page"
+                                                title={t('actions.delete')}
                                                 onClick={() => setDeleteTarget(page)}
                                             >
                                                 <Trash className="size-3.5 text-danger-600" />
@@ -326,14 +331,15 @@ export const BookingPagesManagerDialog = ({ open, onOpenChange }: BookingPagesMa
             <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Delete booking page</AlertDialogTitle>
+                        <AlertDialogTitle>{t('deleteDialog.title')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to delete &quot;{deleteTarget?.title}&quot;? Its
-                            booking link will stop working. This action cannot be undone.
+                            {t('deleteDialog.description', { title: deleteTarget?.title ?? '' })}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={deletePage.isPending}>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel disabled={deletePage.isPending}>
+                            {t('deleteDialog.cancel')}
+                        </AlertDialogCancel>
                         <AlertDialogAction
                             onClick={(e) => {
                                 e.preventDefault();
@@ -342,7 +348,7 @@ export const BookingPagesManagerDialog = ({ open, onOpenChange }: BookingPagesMa
                             disabled={deletePage.isPending}
                             className="bg-danger-600 hover:bg-danger-700"
                         >
-                            {deletePage.isPending ? 'Deleting...' : 'Delete'}
+                            {deletePage.isPending ? t('deleteDialog.deleting') : t('deleteDialog.delete')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

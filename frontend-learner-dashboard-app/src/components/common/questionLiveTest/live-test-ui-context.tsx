@@ -7,6 +7,14 @@ import {
   type ReactNode,
 } from "react";
 import { useExamExperienceSettings } from "@/hooks/use-exam-experience-settings";
+import { withThemeTools } from "./themes/tools";
+import { useAssessmentStore } from "@/stores/assessment-store";
+import type { AnswerCommit, ResolvedExamTheme } from "@/types/exam-theme";
+import {
+  DEFAULT_EXAM_THEME,
+  effectiveAnswerCommit,
+  resolveExamTheme,
+} from "./themes";
 import {
   DEFAULT_EXAM_EXPERIENCE,
   type ExamExperienceSettings,
@@ -17,6 +25,17 @@ export type ExamTool = "calculator" | "scratchpad";
 
 interface LiveTestUiContextValue {
   settings: ExamExperienceSettings;
+  /**
+   * Exam theme of the loaded paper, resolved from the preview's
+   * `exam_interface` (default screen until the paper loads, or when unset).
+   */
+  examTheme: ResolvedExamTheme;
+  /**
+   * How a pick is saved on this screen. The theme's policy, limited to
+   * `auto` while the drawn layout has no commit buttons (see themes/layouts.ts).
+   * The store applies the same rule.
+   */
+  answerCommit: AnswerCommit;
   /** True once the viewport is phone-sized (matches Tailwind's `md` breakpoint). */
   isCompact: boolean;
   activeTool: ExamTool | null;
@@ -26,6 +45,13 @@ interface LiveTestUiContextValue {
   setScratchpad: (value: string) => void;
   isPaletteOpen: boolean;
   setPaletteOpen: (open: boolean) => void;
+  /**
+   * Desktop right rail. Open by default; the learner can collapse it to give
+   * the question — a code editor especially — the full width. Independent of
+   * `isPaletteOpen`, which is the phone bottom sheet.
+   */
+  isRailOpen: boolean;
+  setRailOpen: (open: boolean) => void;
   paletteView: QuestionPaletteView;
   setPaletteView: (view: QuestionPaletteView) => void;
   /**
@@ -39,6 +65,8 @@ interface LiveTestUiContextValue {
 
 const FALLBACK: LiveTestUiContextValue = {
   settings: DEFAULT_EXAM_EXPERIENCE,
+  examTheme: DEFAULT_EXAM_THEME,
+  answerCommit: "auto",
   isCompact: false,
   activeTool: null,
   toggleTool: () => {},
@@ -47,6 +75,8 @@ const FALLBACK: LiveTestUiContextValue = {
   setScratchpad: () => {},
   isPaletteOpen: false,
   setPaletteOpen: () => {},
+  isRailOpen: true,
+  setRailOpen: () => {},
   paletteView: "grid",
   setPaletteView: () => {},
   submitRequestId: 0,
@@ -65,10 +95,21 @@ const COMPACT_QUERY = "(max-width: 767px)";
  * toggles they both drive live here instead of being drilled through `Page`.
  */
 export function LiveTestUiProvider({ children }: { children: ReactNode }) {
-  const settings = useExamExperienceSettings();
+  const instituteSettings = useExamExperienceSettings();
+  const examInterface = useAssessmentStore((s) => s.assessment?.exam_interface);
+  // resolveExamTheme caches per object, so this is stable across renders.
+  const examTheme = resolveExamTheme(examInterface);
+  // A theme's built-in tools (GATE's calculator) on top of the institute's
+  // settings; memoised so the context value stays stable.
+  const settings = useMemo(
+    () => withThemeTools(instituteSettings, examTheme),
+    [instituteSettings, examTheme],
+  );
+  const answerCommit = effectiveAnswerCommit(examTheme);
   const [activeTool, setActiveTool] = useState<ExamTool | null>(null);
   const [scratchpad, setScratchpad] = useState("");
   const [isPaletteOpen, setPaletteOpen] = useState(false);
+  const [isRailOpen, setRailOpen] = useState(true);
   const [submitRequestId, setSubmitRequestId] = useState(0);
   const [paletteView, setPaletteView] = useState<QuestionPaletteView>(
     DEFAULT_EXAM_EXPERIENCE.questionPalette.defaultView,
@@ -108,6 +149,8 @@ export function LiveTestUiProvider({ children }: { children: ReactNode }) {
   const value = useMemo<LiveTestUiContextValue>(
     () => ({
       settings,
+      examTheme,
+      answerCommit,
       isCompact,
       activeTool,
       toggleTool: (tool) =>
@@ -117,6 +160,8 @@ export function LiveTestUiProvider({ children }: { children: ReactNode }) {
       setScratchpad,
       isPaletteOpen,
       setPaletteOpen,
+      isRailOpen,
+      setRailOpen,
       paletteView,
       setPaletteView,
       submitRequestId,
@@ -127,10 +172,13 @@ export function LiveTestUiProvider({ children }: { children: ReactNode }) {
     }),
     [
       settings,
+      examTheme,
+      answerCommit,
       isCompact,
       activeTool,
       scratchpad,
       isPaletteOpen,
+      isRailOpen,
       paletteView,
       submitRequestId,
     ],

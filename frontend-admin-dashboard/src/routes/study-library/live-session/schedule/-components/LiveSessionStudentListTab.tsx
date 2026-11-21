@@ -1,9 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
 import { GetFilterData } from '@/routes/manage-students/students-list/-constants/all-filters';
 import { MyTable, TableData } from '@/components/design-system/table';
 import { MyPagination } from '@/components/design-system/pagination';
 import { useStudentFilters } from '@/routes/manage-students/students-list/-hooks/useStudentFilters';
+import {
+    useLearnerLocationFilters,
+    withLocationFiltersAfterGender,
+} from '@/routes/manage-students/students-list/-hooks/useLearnerLocationFilters';
+import { getActiveRoleDisplaySettingsKey } from '@/lib/auth/instituteUtils';
+import { getDisplaySettingsFromCache } from '@/services/display-settings';
+import { getInstituteId } from '@/constants/helper';
 import { useStudentTable } from '@/routes/manage-students/students-list/-hooks/useStudentTable';
 import { StudentTable } from '@/types/student-table-types';
 import { myColumns } from '@/components/design-system/utils/constants/table-column-data';
@@ -18,7 +26,7 @@ import { SmartErrorPage } from '@/components/core/SmartErrorPage';
 import { StudentListHeader } from '@/routes/manage-students/students-list/-components/students-list/student-list-section/student-list-header';
 import { StudentFilters } from '@/routes/manage-students/students-list/-components/students-list/student-list-section/student-filters';
 import { BulkActions } from '@/routes/manage-students/students-list/-components/students-list/bulk-actions';
-import { myAssessmentColumns } from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-components/assessment-columns';
+import { buildAssessmentColumns } from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-components/assessment-columns';
 import { UseFormReturn } from 'react-hook-form';
 import { z } from 'zod';
 import { addParticipantsSchema } from '../-schema/schema';
@@ -34,6 +42,9 @@ export const getCurrentSession = (): string => {
 };
 
 export const LiveSessionStudentListTab = ({ form }: { form: UseFormReturn<FormData> }) => {
+    const { t } = useTranslation('assessmentColumns');
+    const assessmentColumns = useMemo(() => buildAssessmentColumns(t), [t]);
+    const instituteId = getInstituteId();
     const { isError, isLoading } = useSuspenseQuery(useInstituteQuery());
     const { instituteDetails } = useInstituteDetailsStore();
     const sessions =
@@ -41,7 +52,7 @@ export const LiveSessionStudentListTab = ({ form }: { form: UseFormReturn<FormDa
             id: session.id,
             name: session.session_name,
         })) || [];
-    const filters: FilterConfig[] = GetFilterData(instituteDetails, getCurrentSession());
+    const { t: tAllFilters } = useTranslation('manageStudentsAllFilters');
     const [isAssessment] = useState(true);
     const { setValue } = form;
 
@@ -62,7 +73,25 @@ export const LiveSessionStudentListTab = ({ form }: { form: UseFormReturn<FormDa
         setAppliedFilters,
         handleSessionChange,
         sessionList,
+        setColumnFilters,
     } = useStudentFilters();
+
+    // City / Region chips, the same ones (and the same "Manage filters" switches) as the
+    // Learner List page. A role whose City / Region column is hidden there gets no chip here.
+    const roleHiddenColumns = useMemo(() => {
+        const cached = getDisplaySettingsFromCache(getActiveRoleDisplaySettingsKey());
+        return new Set(cached?.learnerListColumns?.hiddenColumns ?? []);
+    }, []);
+    const locationFilters = useLearnerLocationFilters({
+        instituteId,
+        appliedFilters,
+        setColumnFilters,
+        setAppliedFilters,
+    }).filter((f) => !roleHiddenColumns.has(f.id === 'cities' ? 'city' : 'region'));
+    const filters: FilterConfig[] = withLocationFiltersAfterGender(
+        GetFilterData(tAllFilters, instituteDetails, getCurrentSession()),
+        locationFilters
+    );
 
     const {
         studentTableData,
@@ -239,7 +268,7 @@ export const LiveSessionStudentListTab = ({ form }: { form: UseFormReturn<FormDa
                 <div className="max-w-full">
                     <MyTable<StudentTable>
                         data={studentTableFilteredData as TableData<StudentTable>}
-                        columns={isAssessment ? myAssessmentColumns : myColumns}
+                        columns={isAssessment ? assessmentColumns : myColumns}
                         isLoading={loadingData}
                         error={loadingError}
                         onSort={handleSort}

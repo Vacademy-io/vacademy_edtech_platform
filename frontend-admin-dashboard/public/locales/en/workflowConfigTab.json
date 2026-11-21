@@ -1,0 +1,108 @@
+{
+    "errors": {
+        "cannotBeEmpty": "Cannot be empty",
+        "mustBeJsonObject": "Must be a JSON object ({ ... })",
+        "invalidJson": "Invalid JSON",
+        "unknownError": "Unknown error",
+        "failedToSave": "Failed to save"
+    },
+    "queryParamsEditor": {
+        "label": "Step settings",
+        "hint": "how this step selects its data"
+    },
+    "objectListEditor": {
+        "hint": "add as many as you need — an empty link hides that entry",
+        "add": "Add",
+        "remove": "Remove"
+    },
+    "flatMapEditor": {
+        "add": "Add",
+        "removeKey": "Remove {{key}}"
+    },
+    "nestedMapGridEditor": {
+        "hint": "empty = use the default link",
+        "linksSet_one": "{{count}} link set",
+        "linksSet_other": "{{count}} links set",
+        "usingDefault": "using default",
+        "defaultLinkPlaceholder": "default link"
+    },
+    "outputDataPointsEditor": {
+        "defaultLabelItems": "items",
+        "defaultLabelValues": "values",
+        "defaultLabelSchedule": "schedule",
+        "structuredValueHint": "structured value — edit in config_json below",
+        "fieldNamePlaceholder": "fieldName",
+        "noEditableSettings": "No editable text settings on this node.",
+        "title": "Workflow settings",
+        "hint": "template text, links & audience values",
+        "addSetting": "Add setting",
+        "modeSpelTitle": "SpEL expression — click to treat as plain text",
+        "modeTextTitle": "Plain text — click to treat as SpEL expression",
+        "modeSpel": "SpEL",
+        "modeText": "Text",
+        "removeSetting": "Remove setting",
+        "advancedFormulas": "Advanced formulas ({{count}}) — edit only if you know SpEL"
+    },
+    "templateVarsEditor": {
+        "title": "Message content",
+        "hint": "what this node sends — edit the text freely",
+        "template": "Template",
+        "templatePlaceholder": "Choose a WhatsApp template",
+        "previewUnavailableTitle": "Message preview unavailable",
+        "previewUnavailableNoBody": "This WhatsApp template has no body text stored here yet.",
+        "previewUnavailableNotImported": "This WhatsApp template was created in Meta and has not been imported yet.",
+        "previewUnavailableSuffix": "The message still sends normally — only the preview is missing. Import your templates to see the full text with your values filled in.",
+        "importTemplates": "Import templates from WhatsApp",
+        "importing": "Importing…",
+        "missingValuesTitle_one": "This template needs {{count}} more value",
+        "missingValuesTitle_other": "This template needs {{count}} more values",
+        "missingValuesBody_one": "The WhatsApp template uses {{list}}, but this step doesn't provide it. Messages will fail to send until it is filled in.",
+        "missingValuesBody_other": "The WhatsApp template uses {{list}}, but this step doesn't provide them. Messages will fail to send until they are filled in.",
+        "addMissing_one": "Add it",
+        "addMissing_other": "Add them",
+        "unusedKeys": "Not used by this template any more: {{list}} — safe to leave or clear.",
+        "fixedWording": "This message's wording is fixed by the approved WhatsApp template. The highlighted parts above are filled in per learner when it sends.",
+        "filledAutomatically": "Filled in automatically: {{list}}",
+        "autoFilledVariables": "Auto-filled variables ({{count}}) — name, links, dates",
+        "varFallbackLabel": "var {{key}}"
+    },
+    "nodeCard": {
+        "unsaved": "unsaved",
+        "startBadge": "Start",
+        "endBadge": "End",
+        "nodeName": "Node name",
+        "nodeNamePlaceholder": "Node name",
+        "nodeType": "Node type",
+        "status": "Status",
+        "startNode": "Start node",
+        "endNode": "End node",
+        "configJsonLabel": "config_json",
+        "configJsonHint": "routing & node settings live here",
+        "format": "Format",
+        "formatTitle": "Format JSON",
+        "retryConfigLabel": "retry_config",
+        "retryConfigHint": "optional — e.g. {{example}}",
+        "retryConfigNonePlaceholder": "(none)",
+        "automaticStep": "Automatic step — nothing to configure here.",
+        "saved": "Saved",
+        "unsavedChanges": "Unsaved changes",
+        "revert": "Revert",
+        "saving": "Saving...",
+        "saveNode": "Save node"
+    },
+    "page": {
+        "loading": "Loading configuration...",
+        "failedToLoad": "Failed to load configuration",
+        "noNodes": "This workflow has no nodes to configure.",
+        "devTitle": "Developer view — full node configuration",
+        "devDescription": "Edit each node's raw <0>config_json</0> (including its <1>routing</1>) in place. Changes are validated and saved directly to the node template — the running workflow picks them up on its next execution.",
+        "simpleTitle": "Workflow settings",
+        "simpleDescription": "Edit your messages, links and settings below, then save each card. Changes apply automatically from the workflow's next run.",
+        "expandAll": "Expand all",
+        "collapseAll": "Collapse all",
+        "expandAllTitle": "Expand every step",
+        "collapseAllTitle": "Collapse every step",
+        "simpleView": "Simple view",
+        "developerView": "Developer view"
+    }
+}

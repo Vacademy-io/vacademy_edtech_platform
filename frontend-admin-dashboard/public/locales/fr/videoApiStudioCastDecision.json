@@ -1,0 +1,31 @@
+{
+    "header": {
+        "title": "Découvrez votre casting · {{count}}"
+    },
+    "voice": {
+        "autoOption": "Voix automatique",
+        "ariaLabel": "Voix pour {{name}}"
+    },
+    "redo": {
+        "button": "Refaire",
+        "placeholder": "Que faut-il changer ? ex. plus âgé, sourire plus chaleureux, sari plus formel…"
+    },
+    "upload": {
+        "uploading": "Importation…",
+        "replace": "Remplacer",
+        "useMyImage": "Utiliser mon image"
+    },
+    "footer": {
+        "changesSummary_one": "{{count}} changement sera appliqué avant le tournage.",
+        "changesSummary_many": "{{count}} changements seront appliqués avant le tournage.",
+        "changesSummary_other": "{{count}} changements seront appliqués avant le tournage.",
+        "noChanges": "Ces visages apparaîtront dans chaque scène.",
+        "submitDefault": "Approuver le casting et tourner",
+        "submitWithChanges_one": "Mettre à jour {{count}} et tourner",
+        "submitWithChanges_many": "Mettre à jour {{count}} et tourner",
+        "submitWithChanges_other": "Mettre à jour {{count}} et tourner"
+    },
+    "toast": {
+        "uploadFailed": "Échec de l'import. Essayez une image plus petite."
+    }
+}

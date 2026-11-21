@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertTriangle, CheckCircle, Loader2, RefreshCw, Settings, Search, ExternalLink } from 'lucide-react';
+import {
+    Warning,
+    CheckCircle,
+    CircleNotch,
+    ArrowsClockwise,
+    GearSix,
+    MagnifyingGlass,
+    ArrowSquareOut,
+} from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +23,7 @@ import { whatsappTemplateService } from '@/services/whatsapp-template-service';
 import { WhatsAppTemplateMappingModal } from './WhatsAppTemplateMappingModal';
 
 export const WhatsAppTemplatesTab: React.FC = () => {
+    const { t } = useTranslation('settingsWhatsAppTemplatesTab');
     const [templates, setTemplates] = useState<MetaWhatsAppTemplate[]>([]);
     const [filteredTemplates, setFilteredTemplates] = useState<MetaWhatsAppTemplate[]>([]);
     const [mappings, setMappings] = useState<WhatsAppTemplateMapping[]>([]);
@@ -56,7 +66,7 @@ export const WhatsAppTemplatesTab: React.FC = () => {
             console.error('Error loading WhatsApp templates:', err);
             // Quote the reason the service gives us — "the Meta access token is expired" tells the
             // admin what to fix; "please try again" sends them round the same loop.
-            setError(err instanceof Error ? err.message : 'Failed to load WhatsApp templates.');
+            setError(err instanceof Error ? err.message : t('errors.loadFailed'));
         } finally {
             setLoading(false);
         }
@@ -79,10 +89,10 @@ export const WhatsAppTemplatesTab: React.FC = () => {
             const metaTemplates = await whatsappTemplateService.syncMetaTemplates();
             setTemplates(metaTemplates);
             setLastSyncTime(whatsappTemplateService.getLastSyncTime());
-            setSuccess('WhatsApp templates synced successfully!');
+            setSuccess(t('success.synced'));
         } catch (err) {
             console.error('Error syncing templates:', err);
-            setError(err instanceof Error ? err.message : 'Failed to sync templates.');
+            setError(err instanceof Error ? err.message : t('errors.syncFailed'));
         } finally {
             setSyncing(false);
         }
@@ -104,7 +114,7 @@ export const WhatsAppTemplatesTab: React.FC = () => {
                 return [...prev, mapping];
             }
         });
-        setSuccess('Template mapping saved successfully!');
+        setSuccess(t('success.mappingSaved'));
     };
 
     const handleCloseMappingModal = () => {
@@ -138,13 +148,13 @@ export const WhatsAppTemplatesTab: React.FC = () => {
         if (mapping && mapping.mappings.length > 0) {
             return (
                 <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                    Configured
+                    {t('mappingStatus.configured')}
                 </Badge>
             );
         }
         return (
             <Badge className="bg-gray-100 text-gray-600 border-gray-200">
-                Not Configured
+                {t('mappingStatus.notConfigured')}
             </Badge>
         );
     };
@@ -191,14 +201,14 @@ export const WhatsAppTemplatesTab: React.FC = () => {
         return undefined;
     }, [error]);
 
-    const approvedTemplates = filteredTemplates.filter(t => t.status === 'APPROVED');
+    const approvedTemplates = filteredTemplates.filter(tpl => tpl.status === 'APPROVED');
 
     return (
         <div className="space-y-4 sm:space-y-6">
             {/* Error Alert */}
             {error && (
                 <Alert variant="destructive" className="p-3 sm:p-4">
-                    <AlertTriangle className="size-4" />
+                    <Warning className="size-4" />
                     <AlertDescription className="text-xs sm:text-sm break-words">{error}</AlertDescription>
                 </Alert>
             )}
@@ -213,27 +223,26 @@ export const WhatsAppTemplatesTab: React.FC = () => {
 
             {/* Header */}
             <div className="space-y-1">
-                <h2 className="text-lg sm:text-xl font-semibold">WhatsApp Templates</h2>
+                <h2 className="text-lg sm:text-xl font-semibold">{t('header.title')}</h2>
                 <p className="text-xs sm:text-sm text-muted-foreground">
-                    Map your Meta-approved WhatsApp templates to internal data fields.
+                    {t('header.subtitle')}
                 </p>
             </div>
 
             {/* WhatsApp Template Management Info */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
-                <h3 className="text-xs sm:text-sm font-medium text-blue-900 mb-2">WhatsApp Template Management</h3>
+                <h3 className="text-xs sm:text-sm font-medium text-blue-900 mb-2">{t('infoBox.title')}</h3>
                 <p className="text-xs sm:text-sm text-blue-700 break-words">
-                    Templates must be created and approved through Meta's WhatsApp Business API or Business Manager.
-                    Use this interface to sync approved templates and map dynamic values to your CRM data.
+                    {t('infoBox.description')}
                 </p>
             </div>
 
             {/* Search and Actions */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
                 <div className="relative w-full sm:w-80">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 size-3 sm:size-4" />
+                    <MagnifyingGlass className="absolute start-3 top-1/2 transform -translate-y-1/2 text-gray-400 size-3 sm:size-4" />
                     <Input
-                        placeholder="Search templates..."
+                        placeholder={t('search.placeholder')}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="pl-8 sm:pl-10 text-xs sm:text-sm"
@@ -244,34 +253,34 @@ export const WhatsAppTemplatesTab: React.FC = () => {
                     disabled={syncing || loading}
                     className="flex items-center gap-2 w-full sm:w-auto text-xs sm:text-sm"
                 >
-                    <RefreshCw className={`size-3 sm:size-4 ${syncing ? 'animate-spin' : ''}`} />
-                    {syncing ? 'Syncing...' : 'Sync Templates'}
+                    <ArrowsClockwise className={`size-3 sm:size-4 ${syncing ? 'animate-spin' : ''}`} />
+                    {syncing ? t('actions.syncing') : t('actions.syncTemplates')}
                 </MyButton>
             </div>
 
             {/* Template Count */}
             <div className="text-xs sm:text-sm text-gray-600">
-                WhatsApp Templates ({approvedTemplates.length})
+                {t('templateCount', { count: approvedTemplates.length })}
             </div>
 
             {/* Templates Table */}
             {loading ? (
                 <div className="flex flex-col items-center justify-center py-8 sm:py-12">
-                    <Loader2 className="size-8 sm:size-10 animate-spin text-primary-500" />
-                    <p className="mt-4 text-xs sm:text-sm text-gray-600">Loading WhatsApp templates...</p>
+                    <CircleNotch className="size-8 sm:size-10 animate-spin text-primary-500" />
+                    <p className="mt-4 text-xs sm:text-sm text-gray-600">{t('loading.templates')}</p>
                 </div>
             ) : approvedTemplates.length === 0 ? (
                 <div className="text-center py-8 sm:py-12">
                     <div className="mx-auto w-16 h-16 sm:w-24 sm:h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                        <ExternalLink className="size-6 sm:size-8 text-gray-400" />
+                        <ArrowSquareOut className="size-6 sm:size-8 text-gray-400" />
                     </div>
-                    <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No Approved Templates</h3>
+                    <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">{t('emptyState.title')}</h3>
                     <p className="text-xs sm:text-sm text-gray-600 mb-4 break-words">
-                        No approved WhatsApp templates found. Create templates through Meta's Business Manager first.
+                        {t('emptyState.description')}
                     </p>
                     <MyButton onClick={handleSyncTemplates} disabled={syncing} className="w-full sm:w-auto text-xs sm:text-sm">
-                        <RefreshCw className={`size-3 sm:size-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
-                        Sync Templates
+                        <ArrowsClockwise className={`size-3 sm:size-4 me-2 ${syncing ? 'animate-spin' : ''}`} />
+                        {t('actions.syncTemplates')}
                     </MyButton>
                 </div>
             ) : (
@@ -280,13 +289,13 @@ export const WhatsAppTemplatesTab: React.FC = () => {
                         <Table>
                             <TableHeader className="bg-gray-50/50">
                                 <TableRow className="border-b border-gray-200">
-                                    <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-3 sm:px-6 text-xs sm:text-sm">Template Name</TableHead>
-                                    <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-3 sm:px-6 text-xs sm:text-sm hidden sm:table-cell">Language</TableHead>
-                                    <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-3 sm:px-6 text-xs sm:text-sm hidden md:table-cell">Category</TableHead>
-                                    <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-3 sm:px-6 text-xs sm:text-sm hidden lg:table-cell">Status</TableHead>
-                                    <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-3 sm:px-6 text-xs sm:text-sm">Mappings</TableHead>
-                                    <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-3 sm:px-6 text-xs sm:text-sm hidden xl:table-cell">Last Synced</TableHead>
-                                    <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-3 sm:px-6 text-center text-xs sm:text-sm">Actions</TableHead>
+                                    <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-3 sm:px-6 text-xs sm:text-sm">{t('table.headers.templateName')}</TableHead>
+                                    <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-3 sm:px-6 text-xs sm:text-sm hidden sm:table-cell">{t('table.headers.language')}</TableHead>
+                                    <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-3 sm:px-6 text-xs sm:text-sm hidden md:table-cell">{t('table.headers.category')}</TableHead>
+                                    <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-3 sm:px-6 text-xs sm:text-sm hidden lg:table-cell">{t('table.headers.status')}</TableHead>
+                                    <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-3 sm:px-6 text-xs sm:text-sm">{t('table.headers.mappings')}</TableHead>
+                                    <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-3 sm:px-6 text-xs sm:text-sm hidden xl:table-cell">{t('table.headers.lastSynced')}</TableHead>
+                                    <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-3 sm:px-6 text-center text-xs sm:text-sm">{t('table.headers.actions')}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -318,7 +327,7 @@ export const WhatsAppTemplatesTab: React.FC = () => {
                                             </TableCell>
                                             <TableCell className="py-3 sm:py-4 px-3 sm:px-6 hidden xl:table-cell">
                                                 <div className="text-xs sm:text-sm text-gray-600">
-                                                    {lastSyncTime ? formatDate(lastSyncTime.toISOString()) : 'Never'}
+                                                    {lastSyncTime ? formatDate(lastSyncTime.toISOString()) : t('table.never')}
                                                 </div>
                                             </TableCell>
                                             <TableCell className="py-3 sm:py-4 px-3 sm:px-6">
@@ -329,12 +338,12 @@ export const WhatsAppTemplatesTab: React.FC = () => {
                                                         onClick={() => handleMapDynamicValues(template)}
                                                         className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1 sm:py-2 hover:bg-blue-50 hover:border-blue-200 text-xs sm:text-sm"
                                                     >
-                                                        <Settings className="size-3 sm:size-4" />
+                                                        <GearSix className="size-3 sm:size-4" />
                                                         <span className="hidden xs:inline text-xs sm:text-sm font-medium">
-                                                            {mapping ? 'Edit Mappings' : 'Map Values'}
+                                                            {mapping ? t('table.editMappings') : t('table.mapValues')}
                                                         </span>
                                                         <span className="xs:hidden text-xs">
-                                                            {mapping ? 'Edit' : 'Map'}
+                                                            {mapping ? t('table.editShort') : t('table.mapShort')}
                                                         </span>
                                                     </Button>
                                                 </div>

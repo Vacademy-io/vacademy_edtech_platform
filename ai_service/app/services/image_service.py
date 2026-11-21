@@ -23,11 +23,57 @@ from .image_prompts import (
 
 logger = logging.getLogger(__name__)
 
-# All image generation goes through OpenRouter (billed account) using this
-# model. The direct Google Generative Language API was dropped — its free-tier
-# key had a zero image quota and 429'd every call.
-IMAGE_MODEL = "google/gemini-3.1-flash-image"
+# All image generation goes through OpenRouter (billed account). The model is
+# the platform setting `image.model` (super-admin portal); this constant is the
+# last-resort fallback when the setting cannot be read. The direct Google
+# Generative Language API was dropped — its free-tier key had a zero image
+# quota and 429'd every call.
+IMAGE_MODEL = "qwen/qwen-image-3"
+# OpenRouter has TWO image APIs that do not share models: chat models that emit
+# images (Gemini / GPT image models) answer on chat/completions with
+# `modalities`, while dedicated image models (Qwen, Seedream, FLUX) answer only
+# on /api/v1/images with {model, prompt, size|aspect_ratio} → data[0].b64_json.
+# Calling the wrong one is a 404 that reads like "model missing".
 _OPENROUTER_IMAGE_URL = "https://openrouter.ai/api/v1/chat/completions"
+_OPENROUTER_IMAGES_API_URL = "https://openrouter.ai/api/v1/images"
+_OPENROUTER_CHAT_MODELS_URL = "https://openrouter.ai/api/v1/models"
+_CHAT_IMAGE_HINTS = ("gemini", "gpt-", "openai/")
+_chat_model_ids: set = set()
+_chat_model_ids_loaded_at: float = 0.0
+_CHAT_MODEL_IDS_TTL = 3600.0
+
+
+def resolve_image_model(override: Optional[str] = None) -> str:
+    """The image model to use: an explicit override, else the platform
+    setting `image.model`, else the built-in fallback."""
+    if override:
+        return override
+    try:
+        from .platform_settings_service import get_platform_setting
+        val = get_platform_setting("image.model", default=IMAGE_MODEL)
+        return str(val or IMAGE_MODEL)
+    except Exception:  # noqa: BLE001
+        return IMAGE_MODEL
+
+
+async def _uses_chat_completions(client, model_id: str) -> bool:
+    """Chat-completions image models are the ones OpenRouter lists in its
+    default /models catalogue; dedicated image models are not. The list is
+    fetched once an hour; when it cannot be fetched, the id's family decides."""
+    global _chat_model_ids, _chat_model_ids_loaded_at
+    now = time.time()
+    if not _chat_model_ids or now - _chat_model_ids_loaded_at > _CHAT_MODEL_IDS_TTL:
+        try:
+            r = await client.get(_OPENROUTER_CHAT_MODELS_URL, timeout=20.0)
+            if r.status_code == 200:
+                ids = {m.get("id") for m in (r.json().get("data") or []) if isinstance(m, dict)}
+                if ids:
+                    _chat_model_ids, _chat_model_ids_loaded_at = ids, now
+        except Exception:  # noqa: BLE001
+            logger.debug("OpenRouter model list unavailable; using id heuristics", exc_info=True)
+    if _chat_model_ids:
+        return model_id in _chat_model_ids
+    return any(h in model_id.lower() for h in _CHAT_IMAGE_HINTS)
 
 
 def _aspect_ratio_for(width: int, height: int) -> str:
@@ -66,13 +112,15 @@ class ImageGenerationService:
             s3_bucket: S3 bucket name for storing generated images
             gemini_api_key: Google Generative AI API key for image generation
             openrouter_api_key: OpenRouter API key for keyword generation
-            llm_model: LLM model name for keyword generation
+            llm_model: Optional explicit model for keyword generation — tried
+                first; otherwise (and for failover) the 'image_keyword' use
+                case chain (super-admin portal; GLM by default).
         """
         self._s3_client = s3_client
         self._s3_bucket = s3_bucket
         self._gemini_api_key = gemini_api_key
         self._openrouter_api_key = openrouter_api_key
-        self._llm_model = llm_model or "google/gemini-2.5-pro"
+        self._llm_model = (llm_model or "").strip() or None
         # Shared HTTP client for connection pooling (reuses DNS/TLS across image calls)
         self._http_client = httpx.AsyncClient(
             timeout=httpx.Timeout(60.0),
@@ -293,7 +341,8 @@ class ImageGenerationService:
         self,
         course_name: str,
         prompt: str,
-        gemini_key: Optional[str] = None
+        gemini_key: Optional[str] = None,
+        model: Optional[str] = None,
     ) -> Tuple[Optional[str], Dict[str, int]]:
         """
         Generate media image (16:9 aspect ratio) using Gemini and upload to S3.
@@ -309,22 +358,22 @@ class ImageGenerationService:
         try:
             logger.debug(f"Generating media image for: {course_name}")
 
-            # Generate image using Gemini
-            image_data, usage_info = await self._call_image_generation_llm(prompt, 800, 800, gemini_key=gemini_key)
-            
+            image_data, usage_info = await self._call_image_generation_llm(prompt, 800, 800, gemini_key=gemini_key, model=model)
+
             if not image_data:
                 return None, usage_info
 
-            # Upload to S3
+            # Upload to S3 with the format the model actually returned.
+            is_png = image_data[:8] == b"\x89PNG\r\n\x1a\n"
             slugified = self._slugify(course_name)
             timestamp = int(time.time())
-            filename = f"course-ai/course_media_{slugified}_{timestamp}.jpg"
+            filename = f"course-ai/course_media_{slugified}_{timestamp}.{'png' if is_png else 'jpg'}"
 
             self._s3_client.put_object(
                 Bucket=self._s3_bucket,
                 Key=filename,
                 Body=image_data,
-                ContentType='image/jpeg'
+                ContentType='image/png' if is_png else 'image/jpeg'
             )
 
             s3_url = f"https://{self._s3_bucket}.s3.amazonaws.com/{filename}"
@@ -341,19 +390,19 @@ class ImageGenerationService:
         prompt: str,
         width: int,
         height: int,
-        gemini_key: Optional[str] = None
+        gemini_key: Optional[str] = None,
+        model: Optional[str] = None,
     ) -> Tuple[Optional[bytes], Dict[str, int]]:
         """
-        Generate an image via OpenRouter using IMAGE_MODEL (google/gemini-3.1-flash-image).
-
-        Switched off the direct Google Generative Language API — its free-tier
-        key had a zero image quota (429 on every call). OpenRouter routes the
-        same Google image model through the billed account.
+        Generate an image via OpenRouter with `model` (default: the platform
+        setting `image.model`), on whichever of OpenRouter's two image APIs
+        serves that model.
 
         Args:
             prompt: Image generation prompt
             width/height: used to pick the aspect ratio
             gemini_key: kept for signature compatibility (unused)
+            model: OpenRouter model id override
 
         Returns:
             Tuple of (image_bytes, usage_dict).
@@ -365,15 +414,17 @@ class ImageGenerationService:
             if not key:
                 logger.warning("No OpenRouter API key configured for image generation")
                 return None, empty_usage
+            model_id = resolve_image_model(model)
+            headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
+
+            if not await _uses_chat_completions(self._http_client, model_id):
+                return await self._call_images_api(model_id, prompt, width, height, headers)
 
             response = await self._http_client.post(
                 _OPENROUTER_IMAGE_URL,
-                headers={
-                    "Authorization": f"Bearer {key}",
-                    "Content-Type": "application/json",
-                },
+                headers=headers,
                 json={
-                    "model": IMAGE_MODEL,
+                    "model": model_id,
                     "messages": [{"role": "user", "content": prompt}],
                     "modalities": ["image"],
                     "image_config": {"aspect_ratio": _aspect_ratio_for(width, height)},
@@ -412,6 +463,51 @@ class ImageGenerationService:
             logger.error(f"OpenRouter image generation failed: {str(e)}")
             return None, empty_usage
 
+    async def _call_images_api(
+        self, model_id: str, prompt: str, width: int, height: int, headers: Dict[str, str]
+    ) -> Tuple[Optional[bytes], Dict[str, int]]:
+        """Dedicated image models (Qwen, Seedream, FLUX): POST /api/v1/images.
+        Verified 2026-09-04 against qwen/qwen-image-3 from the ai-service pod:
+        ~70 s, PNG in data[0].b64_json, usage.completion_tokens = image tokens."""
+        empty_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+        body = {
+            "model": model_id,
+            "prompt": prompt,
+            "n": 1,
+            "aspect_ratio": _aspect_ratio_for(width, height),
+            "resolution": "1K",
+        }
+        response = await self._http_client.post(_OPENROUTER_IMAGES_API_URL, headers=headers, json=body, timeout=180.0)
+        if response.status_code != 200:
+            logger.error(f"OpenRouter images API error {response.status_code} for {model_id}: {response.text[:300]}")
+            return None, empty_usage
+        data = response.json()
+        usage_meta = data.get("usage", {}) or {}
+        usage_info = {
+            "prompt_tokens": int(usage_meta.get("prompt_tokens", 0) or 0),
+            "completion_tokens": int(usage_meta.get("completion_tokens", 0) or 0),
+            "total_tokens": int(usage_meta.get("total_tokens", 0) or 0),
+        }
+        import base64
+        for item in data.get("data") or []:
+            b64 = (item or {}).get("b64_json")
+            if b64:
+                try:
+                    return base64.b64decode(b64), usage_info
+                except Exception as decode_err:  # noqa: BLE001
+                    logger.error(f"Image base64 decode error: {decode_err}")
+                    return None, usage_info
+            url = (item or {}).get("url")
+            if url:
+                try:
+                    r = await self._http_client.get(url, timeout=60.0)
+                    if r.status_code == 200:
+                        return r.content, usage_info
+                except Exception:  # noqa: BLE001
+                    logger.warning("Could not fetch generated image url", exc_info=True)
+        logger.warning(f"OpenRouter images API response for {model_id} contained no image")
+        return None, usage_info
+
     async def _get_image_search_keyword(self, course_name: str, about_course: str) -> str:
         """
         Ask LLM to provide an optimal keyword for image search.
@@ -444,33 +540,45 @@ Examples:
 Return ONLY the keyword, nothing else:
 """
 
-            # Use the shared HTTP client for connection pooling
-            response = await self._http_client.post(
-                "https://openrouter.ai/api/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {self._openrouter_api_key}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": self._llm_model,  # Use same model as course outline
-                    "messages": [{"role": "user", "content": prompt}],
-                    "temperature": 0.3,  # Match course outline temperature
-                    "max_tokens": 10
-                },
-                timeout=30.0
-            )
+            # Through the model router + the 'image_keyword' chain: GLM runs on
+            # its gateway with reasoning effort low and a max_tokens allowance
+            # (a bare max_tokens=10 left a reasoning model with no room to
+            # answer), and a failed model falls over to the next one.
+            from .llm_router import chat_with_chain
+            from .use_case_chat import models_for
 
-            if response.status_code == 200:
-                data = response.json()
-                keyword = data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-                if keyword:
-                    return keyword
+            result = await chat_with_chain(
+                {
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 0.3,
+                    "max_tokens": 20,
+                },
+                _KEYWORD_USE_CASE,
+                models=models_for(_KEYWORD_USE_CASE, explicit=self._llm_model),
+                api_key=self._openrouter_api_key,
+                timeout=30.0,
+            )
+            keyword = _clean_keyword(result.content)
+            if keyword:
+                return keyword
 
         except Exception as e:
             logger.warning(f"Keyword generation failed: {str(e)}")
 
         # Fallback to course name
         return course_name
+
+
+_KEYWORD_USE_CASE = "image_keyword"
+
+
+def _clean_keyword(text: str) -> str:
+    """First line of the reply, without quotes/fences — a 1-3 word query."""
+    for line in (text or "").splitlines():
+        line = line.strip().strip("`\"'*").strip()
+        if line:
+            return line[:80]
+    return ""
 
 
 __all__ = ["ImageGenerationService"]

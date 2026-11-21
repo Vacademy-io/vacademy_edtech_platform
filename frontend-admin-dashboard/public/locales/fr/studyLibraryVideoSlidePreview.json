@@ -1,0 +1,75 @@
+{
+    "loadingVideo": "Chargement de la vidéo...",
+    "retry": "Réessayer",
+    "workInProgress": "Travail en cours",
+    "videoBeingGenerated": "La vidéo est en cours de génération...",
+    "generatingHint": "Cela peut prendre quelques minutes. Veuillez revenir plus tard.",
+    "vimeoPlayerTitle": "Lecteur vidéo Vimeo",
+    "toast": {
+        "jumpedTo": "Vidéo déplacée à {{time}}"
+    },
+    "errors": {
+        "refreshFailed": "Échec de l'actualisation de l'URL de la vidéo",
+        "loadFailed": "Échec du chargement de la vidéo",
+        "loadUrlsFailed": "Échec du chargement des URL de la vidéo",
+        "urlExpiredRefreshing": "L'URL de la vidéo a expiré. Actualisation en cours...",
+        "playbackError": "Erreur de lecture vidéo : {{message}}",
+        "unknownError": "Erreur inconnue"
+    },
+    "aiVideo": {
+        "checking": "Vérification de la vidéo…",
+        "progress": {
+            "title": "Génération de votre vidéo",
+            "percent": "{{value}} %",
+            "shots": "Scène {{done}} sur {{total}}",
+            "keepWorking": "Vous pouvez continuer à travailler — nous vous préviendrons dès qu'elle sera prête.",
+            "stages": {
+                "PENDING": "En attente de démarrage",
+                "EXTRACT": "Lecture de vos sources",
+                "SCRIPT": "Rédaction du script",
+                "TTS": "Enregistrement de la narration",
+                "WORDS": "Synchronisation du texte et de la voix",
+                "AVATAR": "Enregistrement de l'enseignant",
+                "HTML": "Conception des visuels",
+                "RENDER": "Assemblage de la vidéo",
+                "WRITE_BACK": "Finalisation",
+                "AWAITING_INPUT": "En attente d'une réponse",
+                "default": "Traitement en cours"
+            }
+        },
+        "cancel": {
+            "button": "Annuler la génération",
+            "title": "Arrêter la génération de cette vidéo ?",
+            "body": "Le travail déjà effectué est abandonné et les crédits non utilisés sont remboursés. Une vidéo annulée ne peut pas être reprise.",
+            "confirm": "Arrêter la génération",
+            "cancelling": "Arrêt…",
+            "keep": "Continuer la génération",
+            "success": "Génération de la vidéo annulée",
+            "failed": "Impossible d'annuler. Veuillez réessayer."
+        },
+        "ended": {
+            "failedTitle": "Cette vidéo n'a pas pu être générée",
+            "cancelledTitle": "La génération de la vidéo a été annulée",
+            "reason": "Motif : {{message}}",
+            "refunded": "Les crédits correspondants ont été remboursés.",
+            "hint": "Pour réessayer, supprimez cette diapositive et créez une nouvelle vidéo IA."
+        },
+        "render": {
+            "button": "Générer le MP4",
+            "idle": "Enregistrez cette vidéo en fichier MP4 pour la télécharger ou la partager.",
+            "starting": "Lancement du rendu MP4…",
+            "queued": "En attente de prise en charge par le moteur de rendu…",
+            "running": "Rendu MP4 en cours… {{value}} %",
+            "progressLabel": "Progression du rendu MP4",
+            "hint": "Cela peut prendre un moment. Vous pouvez quitter cette page et revenir plus tard.",
+            "ready": "MP4 prêt",
+            "download": "Télécharger le MP4",
+            "openInNewTab": "Ouvrir dans un nouvel onglet",
+            "failed": "Le rendu MP4 a échoué.",
+            "failedReason": "Le rendu MP4 a échoué : {{message}}",
+            "retry": "Réessayer",
+            "startFailed": "Impossible de lancer le rendu MP4. Veuillez réessayer.",
+            "notReady": "Cette vidéo n'est pas encore prête pour le rendu. Réessayez une fois sa génération terminée."
+        }
+    }
+}

@@ -1,0 +1,40 @@
+{
+    "title": "لوحة صدارة التفاعل",
+    "subtitle": "أفضل المستخدمين نشاطًا من حيث التفاعل",
+    "allCenters": "جميع المراكز",
+    "emptyStateFiltered": "لا توجد بيانات لوحة صدارة للمركز \"{{center}}\"",
+    "emptyStateDefault": "لا توجد بيانات لوحة صدارة متاحة",
+    "totalUsers_zero": "لا يوجد مستخدمون إجمالاً",
+    "totalUsers_one": "مستخدم واحد إجمالاً",
+    "totalUsers_two": "مستخدمان إجمالاً",
+    "totalUsers_few": "{{count}} مستخدمين إجمالاً",
+    "totalUsers_many": "{{count}} مستخدمًا إجمالاً",
+    "totalUsers_other": "{{count}} مستخدم إجمالاً",
+    "exportCsv": "تصدير CSV",
+    "table": {
+        "rank": "الترتيب",
+        "user": "المستخدم",
+        "contact": "التواصل",
+        "outgoing": "الصادرة",
+        "incoming": "الواردة",
+        "total": "الإجمالي",
+        "score": "النقاط",
+        "anonymous": "مجهول",
+        "childLabel": "الطفل: {{name}}"
+    },
+    "csv": {
+        "rank": "الترتيب",
+        "name": "الاسم",
+        "email": "البريد الإلكتروني",
+        "phone": "الهاتف",
+        "center": "المركز",
+        "totalMessages": "إجمالي الرسائل",
+        "engagementScore": "نقاط التفاعل",
+        "notAvailable": "غير متاح"
+    },
+    "pagination": {
+        "pageOf": "صفحة {{current}} من {{total}}",
+        "previous": "السابق",
+        "next": "التالي"
+    }
+}

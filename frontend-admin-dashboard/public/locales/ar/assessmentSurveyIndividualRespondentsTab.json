@@ -1,0 +1,38 @@
+{
+    "loading": {
+        "respondents": "جارٍ تحميل المستجيبين للاستبيان...",
+        "questions": "جارٍ تحميل بيانات الأسئلة..."
+    },
+    "error": {
+        "title": "خطأ في تحميل المستجيبين",
+        "tryAgain": "أعد المحاولة"
+    },
+    "empty": {
+        "title": "لم يتم العثور على مستجيبين",
+        "description": "لم يتم العثور على ردود على الاستبيان لهذا التقييم."
+    },
+    "navigation": {
+        "previous": "السابق",
+        "next": "التالي",
+        "respondentLabel": "المستجيب",
+        "ofTotal": "من {{count}}"
+    },
+    "respondent": {
+        "unknownName": "غير معروف",
+        "noEmail": "لا يوجد بريد إلكتروني",
+        "batch": "الدفعة: {{name}}"
+    },
+    "response": {
+        "noResponse": "لا يوجد رد",
+        "unknownType": "نوع رد غير معروف",
+        "unknownQuestionId": "غير معروف",
+        "unknownQuestionType": "غير معروف",
+        "defaultQuestionContent": "سؤال الاستبيان",
+        "parseError": "خطأ في تحليل بيانات الرد",
+        "questionPrefix": "س{{number}}.",
+        "label": "الرد:",
+        "visited": "تمت الزيارة",
+        "markedForReview": "معلّم للمراجعة",
+        "noneAvailable": "لا توجد ردود متاحة لهذا المستجيب."
+    }
+}

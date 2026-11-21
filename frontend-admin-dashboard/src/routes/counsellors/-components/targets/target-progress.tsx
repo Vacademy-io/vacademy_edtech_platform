@@ -1,8 +1,7 @@
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { cn } from '@/lib/utils';
-import {
-    TARGET_METRIC_LABEL,
-    type TargetProgressItem,
-} from '../../-services/counsellor-target-services';
+import { type TargetProgressItem } from '../../-services/counsellor-target-services';
 
 /** Attainment → token classes (bar fill + text). >=100 hit, tiers below. */
 function attainmentTone(pct: number | null): { bar: string; text: string } {
@@ -13,14 +12,15 @@ function attainmentTone(pct: number | null): { bar: string; text: string } {
     return { bar: 'bg-danger-500', text: 'text-danger-600' };
 }
 
-/** Short metric label for tight spots. */
-const SHORT: Record<string, string> = {
-    CONVERSIONS: 'Conv',
-    LEADS_ASSIGNED: 'Leads',
-    CALLS_MADE: 'Calls',
-};
+/** Metric label, in the display's own translation namespace (full or short form). */
+function metricLabel(metric: string, compact: boolean | undefined, t: TFunction): string {
+    const key = compact ? 'metricShort' : 'metricFull';
+    const translated = t(`${key}.${metric}`, { defaultValue: '' });
+    return translated || metric;
+}
 
 function TargetBar({ item, compact }: { item: TargetProgressItem; compact?: boolean }) {
+    const { t } = useTranslation('counsellorsTargetsProgress');
     const pct = item.attainment_pct;
     const tone = attainmentTone(pct);
     const width = pct == null ? 0 : Math.min(100, Math.max(0, pct));
@@ -28,8 +28,7 @@ function TargetBar({ item, compact }: { item: TargetProgressItem; compact?: bool
         <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between gap-2 text-caption">
                 <span className="text-neutral-600">
-                    {(compact ? SHORT[item.metric] : TARGET_METRIC_LABEL[item.metric]) ??
-                        item.metric}
+                    {metricLabel(item.metric, compact, t)}
                 </span>
                 <span className={cn('font-medium tabular-nums', tone.text)}>
                     {item.completed}
@@ -61,12 +60,13 @@ export function TargetProgress({
     compact?: boolean;
     loading?: boolean;
 }) {
+    const { t } = useTranslation('counsellorsTargetsProgress');
     if (loading) {
         return <div className="h-1.5 w-full animate-pulse rounded-full bg-neutral-100" />;
     }
     const withTarget = (items ?? []).filter((i) => i.target_value != null);
     if (withTarget.length === 0) {
-        return <span className="text-caption text-neutral-400">No target set</span>;
+        return <span className="text-caption text-neutral-400">{t('noTargetSet')}</span>;
     }
     return (
         <div className={cn('flex flex-col', compact ? 'gap-1.5' : 'gap-2')}>

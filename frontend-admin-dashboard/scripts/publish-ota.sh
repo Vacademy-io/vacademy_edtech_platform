@@ -36,11 +36,23 @@ APP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 export VITE_CAP_FLAVOR="${VITE_CAP_FLAVOR:-vacademy-admin}"
 
+# Evalezy shares package.json (and so its version) with Vacademy Admin, and OTA
+# versions are globally unique: an Evalezy bundle must name its own version line.
+if [ "$VITE_CAP_FLAVOR" = "evalezy" ] && [ -z "${OTA_VERSION:-}" ]; then
+  echo "ERROR: set OTA_VERSION for Evalezy bundles (its own line, e.g. 5.0.1; see EVALEZY_APP.md)." >&2
+  exit 1
+fi
 VERSION="${OTA_VERSION:-$(node -p "require('$APP_DIR/package.json').version")}"
 PLATFORM="${PLATFORM:-ALL}"
 MIN_NATIVE_VERSION="${MIN_NATIVE_VERSION:-1.0.0}"
 FORCE_UPDATE="${FORCE_UPDATE:-false}"
-TARGET_APP_IDS="${TARGET_APP_IDS:-io.vacademy.admin.app}"
+# The default target follows the flavor, so an Evalezy bundle can never be
+# published to the Vacademy Admin app (or the other way round) by omission.
+case "$VITE_CAP_FLAVOR" in
+  evalezy) DEFAULT_TARGET_APP_IDS="io.evalezy.app" ;;
+  *) DEFAULT_TARGET_APP_IDS="io.vacademy.admin.app" ;;
+esac
+TARGET_APP_IDS="${TARGET_APP_IDS:-$DEFAULT_TARGET_APP_IDS}"
 RELEASE_NOTES="${RELEASE_NOTES:-}"
 
 if [ -z "${BACKEND_URL:-}" ] || [ -z "${ADMIN_JWT_TOKEN:-}" ]; then
@@ -48,7 +60,7 @@ if [ -z "${BACKEND_URL:-}" ] || [ -z "${ADMIN_JWT_TOKEN:-}" ]; then
   exit 1
 fi
 
-echo "==> Publishing Vacademy Admin OTA bundle v${VERSION} (flavor=${VITE_CAP_FLAVOR}, platform=${PLATFORM}, targets=${TARGET_APP_IDS})"
+echo "==> Publishing admin-portal OTA bundle v${VERSION} (flavor=${VITE_CAP_FLAVOR}, platform=${PLATFORM}, targets=${TARGET_APP_IDS})"
 
 # 1. Build (flavored web bundle)
 echo "==> Building web assets..."
@@ -56,7 +68,7 @@ cd "$APP_DIR"
 pnpm run build
 
 # 2. Zip
-BUNDLE_NAME="vacademy-admin-bundle-${VERSION}.zip"
+BUNDLE_NAME="${VITE_CAP_FLAVOR}-bundle-${VERSION}.zip"
 echo "==> Creating bundle zip: ${BUNDLE_NAME}"
 cd dist
 zip -r "../${BUNDLE_NAME}" .

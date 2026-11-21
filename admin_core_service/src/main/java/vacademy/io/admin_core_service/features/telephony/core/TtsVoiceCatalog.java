@@ -97,6 +97,30 @@ public final class TtsVoiceCatalog {
     public static final String MODEL_DEEPGRAM = "deepgram";
 
     /**
+     * Navana (Bodhi) — Indian-language voices where ONE voice id speaks all ten
+     * languages (bn en gu hi kn ml mr or ta te). Streams through Navana's own
+     * Pipecat service. Genders are read from the names (Navana publishes none).
+     * Account default: two concurrent connections, held for a whole call.
+     */
+    public static final String MODEL_NAVANA = "navana";
+
+    /**
+     * Sarvam Bulbul v4 Flash ({@code bulbul:v4-flash}) — a SEPARATE engine from
+     * {@link #MODEL_SARVAM} (v3), not a variant: its voices are personas named
+     * {@code <speaker>_<language>_<style>} ("shubh_enhi_ads") and share no id with v3;
+     * the API rejects a v3 name on v4 ("Speaker 'priya' is not compatible with model
+     * bulbul:v4-flash") — a silent call. Rs 1 per 1,000 characters (a third of v3's
+     * Rs 3), so it carries no surcharge. Same websocket contract as v3; probed live on
+     * 2026-10-14 with the call's exact config: first audio 0.36 s against v3's 0.39 s.
+     *
+     * <p>Sarvam publishes no genders; every voice below was MEASURED (median pitch of a
+     * real synthesis, decided per speaker together with the speaker's known v3 gender).
+     * Speakers where the two disagree are left out until auditioned — see
+     * voice_bot_service/app/sarvam_v4_voices.py, which MUST list the same voices.
+     */
+    public static final String MODEL_SARVAM_V4 = "sarvam_v4";
+
+    /**
      * Engine stamped on a NEW agent. Existing agents are untouched — V421 pinned all
      * 17 of them to Sarvam, and they stay there until somebody changes them by hand.
      *
@@ -146,6 +170,222 @@ public final class TtsVoiceCatalog {
             v("gokul", "male", MODEL_SARVAM), v("vijay", "male", MODEL_SARVAM),
             v("mohit", "male", MODEL_SARVAM), v("rehan", "male", MODEL_SARVAM),
             v("soham", "male", MODEL_SARVAM));
+
+    /**
+     * Sarvam Bulbul v4 Flash voices (210 of the 224 the API lists). Each carries a
+     * label ("Shubh · Hinglish · ads") because the ids are not readable in a picker.
+     */
+    private static final List<Map<String, String>> SARVAM_V4_VOICES = List.of(
+            vl("ishita_enhi_companion", "female", "Ishita · Hinglish · companion"),
+            vl("ishita_enhi_customer", "female", "Ishita · Hinglish · customer"),
+            vl("ishita_enhi_customer_expressive", "female", "Ishita · Hinglish · customer expressive"),
+            vl("sanchita_enhi_companion", "female", "Sanchita · Hinglish · companion"),
+            vl("shalini_enhi_companion", "female", "Shalini · Hinglish · companion"),
+            vl("shalini_enhi_customer", "female", "Shalini · Hinglish · customer"),
+            vl("shubh_enhi_ads", "male", "Shubh · Hinglish · ads"),
+            vl("shubh_enhi_banking", "male", "Shubh · Hinglish · banking"),
+            vl("shubh_enhi_companion", "male", "Shubh · Hinglish · companion"),
+            vl("simran_enhi_banking_expressive", "female", "Simran · Hinglish · banking expressive"),
+            vl("simran_enhi_companion", "female", "Simran · Hinglish · companion"),
+            vl("simran_enhi_customer", "female", "Simran · Hinglish · customer"),
+            vl("sunny_enhi_customer", "male", "Sunny · Hinglish · customer"),
+            vl("aarti_hi_customer", "female", "Aarti · Hindi · customer"),
+            vl("aayan_hi_conversational", "male", "Aayan · Hindi · conversational"),
+            vl("aditya_hi_conversational", "male", "Aditya · Hindi · conversational"),
+            vl("aditya_hi_sales", "male", "Aditya · Hindi · sales"),
+            vl("amit_hi_conversational", "male", "Amit · Hindi · conversational"),
+            vl("anand_hi_documentary", "male", "Anand · Hindi · documentary"),
+            vl("anand_hi_news", "male", "Anand · Hindi · news"),
+            vl("aparna_hi_customer", "female", "Aparna · Hindi · customer"),
+            vl("aparna_hi_kyc", "female", "Aparna · Hindi · kyc"),
+            vl("aryaman_hi_ads", "male", "Aryaman · Hindi · ads"),
+            vl("ashutosh_hi_conversational", "male", "Ashutosh · Hindi · conversational"),
+            vl("chaitra_hi_customer", "female", "Chaitra · Hindi · customer"),
+            vl("chhavi_hi_kids", "female", "Chhavi · Hindi · kids"),
+            vl("girish_hi_devotional", "male", "Girish · Hindi · devotional"),
+            vl("ishita_hi_ads", "female", "Ishita · Hindi · ads"),
+            vl("ishita_hi_ads_informal", "female", "Ishita · Hindi · ads informal"),
+            vl("ishita_hi_banking", "female", "Ishita · Hindi · banking"),
+            vl("ishita_hi_devotional", "female", "Ishita · Hindi · devotional"),
+            vl("ishita_hi_edtech", "female", "Ishita · Hindi · edtech"),
+            vl("ishita_hi_numbers", "female", "Ishita · Hindi · numbers"),
+            vl("ishita_hi_social", "female", "Ishita · Hindi · social"),
+            vl("kabir_hi_conversational", "male", "Kabir · Hindi · conversational"),
+            vl("kavya_hi_conversational", "female", "Kavya · Hindi · conversational"),
+            vl("kunal_hi_kids", "male", "Kunal · Hindi · kids"),
+            vl("mahesh_hi_documentary", "male", "Mahesh · Hindi · documentary"),
+            vl("manan_hi_conversational", "male", "Manan · Hindi · conversational"),
+            vl("mani_hi_conversational", "male", "Mani · Hindi · conversational"),
+            vl("mani_hi_devotional", "male", "Mani · Hindi · devotional"),
+            vl("mohit_hi_conversational", "male", "Mohit · Hindi · conversational"),
+            vl("mukul_hi_ads", "male", "Mukul · Hindi · ads"),
+            vl("mukul_hi_suspense", "male", "Mukul · Hindi · suspense"),
+            vl("nachiket_hi_devotional", "male", "Nachiket · Hindi · devotional"),
+            vl("priya_hi_recovery", "female", "Priya · Hindi · recovery"),
+            vl("rahul_hi_conversational", "male", "Rahul · Hindi · conversational"),
+            vl("ratan_hi_customer_expressive", "male", "Ratan · Hindi · customer expressive"),
+            vl("ratan_hi_devotional", "male", "Ratan · Hindi · devotional"),
+            vl("ratan_hi_documentary", "male", "Ratan · Hindi · documentary"),
+            vl("ratan_hi_latenight", "male", "Ratan · Hindi · latenight"),
+            vl("ratan_hi_latenight_warm", "male", "Ratan · Hindi · latenight warm"),
+            vl("ratan_hi_recovery", "male", "Ratan · Hindi · recovery"),
+            vl("ratan_hi_social", "male", "Ratan · Hindi · social"),
+            vl("ratan_hi_sports", "male", "Ratan · Hindi · sports"),
+            vl("rehan_hi_social", "male", "Rehan · Hindi · social"),
+            vl("ritu_hi_ads_formal", "female", "Ritu · Hindi · ads formal"),
+            vl("ritu_hi_ads_informal", "female", "Ritu · Hindi · ads informal"),
+            vl("ritu_hi_banking", "female", "Ritu · Hindi · banking"),
+            vl("ritu_hi_conversation", "female", "Ritu · Hindi · conversation"),
+            vl("ritu_hi_customer", "female", "Ritu · Hindi · customer"),
+            vl("ritu_hi_customer_utility", "female", "Ritu · Hindi · customer utility"),
+            vl("ritu_hi_customer_warm", "female", "Ritu · Hindi · customer warm"),
+            vl("ritu_hi_edtech", "female", "Ritu · Hindi · edtech"),
+            vl("ritu_hi_edtech_bot", "female", "Ritu · Hindi · edtech bot"),
+            vl("ritu_hi_insurance", "female", "Ritu · Hindi · insurance"),
+            vl("ritu_hi_kids", "female", "Ritu · Hindi · kids"),
+            vl("ritu_hi_medical", "female", "Ritu · Hindi · medical"),
+            vl("ritu_hi_reels", "female", "Ritu · Hindi · reels"),
+            vl("ritu_hi_sales", "female", "Ritu · Hindi · sales"),
+            vl("ritu_hi_social", "female", "Ritu · Hindi · social"),
+            vl("ritu_hi_social_lively", "female", "Ritu · Hindi · social lively"),
+            vl("roopa_hi_companion", "female", "Roopa · Hindi · companion"),
+            vl("roopa_hi_conversational", "female", "Roopa · Hindi · conversational"),
+            vl("roopa_hi_market", "female", "Roopa · Hindi · market"),
+            vl("roopa_hi_narration", "female", "Roopa · Hindi · narration"),
+            vl("roopa_hi_recovery", "female", "Roopa · Hindi · recovery"),
+            vl("sanchita_hi_ads_formal", "female", "Sanchita · Hindi · ads formal"),
+            vl("sanchita_hi_ads_informal", "female", "Sanchita · Hindi · ads informal"),
+            vl("sanchita_hi_assistant", "female", "Sanchita · Hindi · assistant"),
+            vl("sanchita_hi_banking", "female", "Sanchita · Hindi · banking"),
+            vl("sanchita_hi_edtech", "female", "Sanchita · Hindi · edtech"),
+            vl("sanchita_hi_feedback", "female", "Sanchita · Hindi · feedback"),
+            vl("sanchita_hi_interview", "female", "Sanchita · Hindi · interview"),
+            vl("sanchita_hi_kyc", "female", "Sanchita · Hindi · kyc"),
+            vl("sanchita_hi_market", "female", "Sanchita · Hindi · market"),
+            vl("sanchita_hi_romantic", "female", "Sanchita · Hindi · romantic"),
+            vl("sanchita_hi_social", "female", "Sanchita · Hindi · social"),
+            vl("sarika_hi_conversation", "female", "Sarika · Hindi · conversation"),
+            vl("shalini_hi_companion", "female", "Shalini · Hindi · companion"),
+            vl("shalini_hi_social", "female", "Shalini · Hindi · social"),
+            vl("shilpa_hi_narration", "female", "Shilpa · Hindi · narration"),
+            vl("shreya_hi_conversational", "female", "Shreya · Hindi · conversational"),
+            vl("shreya_hi_news", "female", "Shreya · Hindi · news"),
+            vl("shruti_hi_edtech", "female", "Shruti · Hindi · edtech"),
+            vl("shubh_hi_ads", "male", "Shubh · Hindi · ads"),
+            vl("shubh_hi_customer", "male", "Shubh · Hindi · customer"),
+            vl("shubh_hi_devotional", "male", "Shubh · Hindi · devotional"),
+            vl("shubh_hi_ecomm", "male", "Shubh · Hindi · ecomm"),
+            vl("shubh_hi_recovery", "male", "Shubh · Hindi · recovery"),
+            vl("shubh_hi_stories_dramatic", "male", "Shubh · Hindi · stories dramatic"),
+            vl("shubh_hi_stories_mixed", "male", "Shubh · Hindi · stories mixed"),
+            vl("simran_hi_assistant", "female", "Simran · Hindi · assistant"),
+            vl("simran_hi_automobile", "female", "Simran · Hindi · automobile"),
+            vl("simran_hi_conversation", "female", "Simran · Hindi · conversation"),
+            vl("simran_hi_latenight", "female", "Simran · Hindi · latenight"),
+            vl("simran_hi_narration", "female", "Simran · Hindi · narration"),
+            vl("simran_hi_news", "female", "Simran · Hindi · news"),
+            vl("simran_hi_news_breaking", "female", "Simran · Hindi · news breaking"),
+            vl("simran_hi_recovery", "female", "Simran · Hindi · recovery"),
+            vl("simran_hi_sales", "female", "Simran · Hindi · sales"),
+            vl("simran_hi_social_energetic", "female", "Simran · Hindi · social energetic"),
+            vl("simran_hi_social_excited", "female", "Simran · Hindi · social excited"),
+            vl("suchitra_hi_ecomm", "female", "Suchitra · Hindi · ecomm"),
+            vl("suhani_hi_social", "female", "Suhani · Hindi · social"),
+            vl("suman_hi_companion", "female", "Suman · Hindi · companion"),
+            vl("sumit_hi_conversational", "male", "Sumit · Hindi · conversational"),
+            vl("sunny_hi_ads", "male", "Sunny · Hindi · ads"),
+            vl("sunny_hi_reels", "male", "Sunny · Hindi · reels"),
+            vl("tanya_hi_narration", "female", "Tanya · Hindi · narration"),
+            vl("tarun_hi_conversational", "male", "Tarun · Hindi · conversational"),
+            vl("tarun_hi_sales", "male", "Tarun · Hindi · sales"),
+            vl("vaibhav_hi_social", "male", "Vaibhav · Hindi · social"),
+            vl("vandana_hi_ecomm", "female", "Vandana · Hindi · ecomm"),
+            vl("vipul_hi_social", "male", "Vipul · Hindi · social"),
+            vl("aditi_en_stories", "female", "Aditi · English · stories"),
+            vl("amelia_en_conversational", "female", "Amelia · English · conversational"),
+            vl("aparna_en_companion", "female", "Aparna · English · companion"),
+            vl("aparna_en_edtech", "female", "Aparna · English · edtech"),
+            vl("chandrika_en_stories", "female", "Chandrika · English · stories"),
+            vl("girish_en_devotional", "male", "Girish · English · devotional"),
+            vl("girish_en_documentary", "male", "Girish · English · documentary"),
+            vl("ishita_en_customer", "female", "Ishita · English · customer"),
+            vl("ishita_en_medical", "female", "Ishita · English · medical"),
+            vl("ishita_en_numbers", "female", "Ishita · English · numbers"),
+            vl("ishita_en_social", "female", "Ishita · English · social"),
+            vl("ishita_en_stories", "female", "Ishita · English · stories"),
+            vl("nachiket_en_ads", "male", "Nachiket · English · ads"),
+            vl("neha_en_customer", "female", "Neha · English · customer"),
+            vl("neha_en_latenight", "female", "Neha · English · latenight"),
+            vl("nupur_en_kids", "female", "Nupur · English · kids"),
+            vl("ojas_en_social", "male", "Ojas · English · social"),
+            vl("payal_en_edtech", "female", "Payal · English · edtech"),
+            vl("ritu_en_edtech", "female", "Ritu · English · edtech"),
+            vl("ritu_en_latenight", "female", "Ritu · English · latenight"),
+            vl("ritu_en_medical", "female", "Ritu · English · medical"),
+            vl("ritu_en_reels", "female", "Ritu · English · reels"),
+            vl("roopa_en_conversational", "female", "Roopa · English · conversational"),
+            vl("rustom_en_suspense", "male", "Rustom · English · suspense"),
+            vl("sanchita_en_companion", "female", "Sanchita · English · companion"),
+            vl("sanchita_en_insurance", "female", "Sanchita · English · insurance"),
+            vl("sanchita_en_market", "female", "Sanchita · English · market"),
+            vl("sanchita_en_recovery", "female", "Sanchita · English · recovery"),
+            vl("sanchita_en_social", "female", "Sanchita · English · social"),
+            vl("shabana_en_edtech", "female", "Shabana · English · edtech"),
+            vl("shalini_en_companion", "female", "Shalini · English · companion"),
+            vl("shalini_en_customer", "female", "Shalini · English · customer"),
+            vl("shubh_en_ads", "male", "Shubh · English · ads"),
+            vl("shubh_en_audiobook", "male", "Shubh · English · audiobook"),
+            vl("shubh_en_narration", "male", "Shubh · English · narration"),
+            vl("shubh_en_narration_gentle", "male", "Shubh · English · narration gentle"),
+            vl("shubh_en_numbers", "male", "Shubh · English · numbers"),
+            vl("shubh_en_recovery", "male", "Shubh · English · recovery"),
+            vl("shubh_en_sports", "male", "Shubh · English · sports"),
+            vl("simran_en_ads", "female", "Simran · English · ads"),
+            vl("simran_en_automobile", "female", "Simran · English · automobile"),
+            vl("simran_en_conversation", "female", "Simran · English · conversation"),
+            vl("simran_en_customer", "female", "Simran · English · customer"),
+            vl("simran_en_edtech", "female", "Simran · English · edtech"),
+            vl("simran_en_edtech_bot", "female", "Simran · English · edtech bot"),
+            vl("simran_en_narration", "female", "Simran · English · narration"),
+            vl("simran_en_recovery", "female", "Simran · English · recovery"),
+            vl("simran_en_sales", "female", "Simran · English · sales"),
+            vl("simran_en_therapist", "female", "Simran · English · therapist"),
+            vl("sophia_en_conversational", "female", "Sophia · English · conversational"),
+            vl("sunny_en_social", "male", "Sunny · English · social"),
+            vl("varun_en_ads", "male", "Varun · English · ads"),
+            vl("varun_en_suspense", "male", "Varun · English · suspense"),
+            vl("zarina_en_conversation", "female", "Zarina · English · conversation"),
+            vl("ishita_mr_conversational", "female", "Ishita · Marathi · conversational"),
+            vl("mrunal_mr_narration", "female", "Mrunal · Marathi · narration"),
+            vl("mukul_mr_stories", "male", "Mukul · Marathi · stories"),
+            vl("neha_mr_narration", "female", "Neha · Marathi · narration"),
+            vl("nilesh_mr_conversation", "male", "Nilesh · Marathi · conversation"),
+            vl("ritu_mr_insurance", "female", "Ritu · Marathi · insurance"),
+            vl("ritu_mr_narration", "female", "Ritu · Marathi · narration"),
+            vl("rupali_mr_stories", "female", "Rupali · Marathi · stories"),
+            vl("soham_mr_narration", "male", "Soham · Marathi · narration"),
+            vl("bhavik_gu_conversation", "male", "Bhavik · Gujarati · conversation"),
+            vl("pooja_gu_conversational", "female", "Pooja · Gujarati · conversational"),
+            vl("pooja_gu_customer", "female", "Pooja · Gujarati · customer"),
+            vl("anand_pa_conversation", "male", "Anand · Punjabi · conversation"),
+            vl("anand_pa_customer", "male", "Anand · Punjabi · customer"),
+            vl("harpreet_pa_narration", "male", "Harpreet · Punjabi · narration"),
+            vl("jaspal_pa_banking", "male", "Jaspal · Punjabi · banking"),
+            vl("arnab_bn_conversation", "male", "Arnab · Bengali · conversation"),
+            vl("bimal_bn_suspense", "male", "Bimal · Bengali · suspense"),
+            vl("roopa_bn_conversational", "female", "Roopa · Bengali · conversational"),
+            vl("chaitra_kn_conversation", "female", "Chaitra · Kannada · conversation"),
+            vl("chaitra_kn_narration", "female", "Chaitra · Kannada · narration"),
+            vl("chetan_kn_conversation", "male", "Chetan · Kannada · conversation"),
+            vl("suchitra_kn_narration", "female", "Suchitra · Kannada · narration"),
+            vl("aravind_ta_ads", "male", "Aravind · Tamil · ads"),
+            vl("aravind_ta_suspense", "male", "Aravind · Tamil · suspense"),
+            vl("gokul_ta_narration", "male", "Gokul · Tamil · narration"),
+            vl("vijay_ta_narration", "male", "Vijay · Tamil · narration"),
+            vl("kavitha_te_conversation", "female", "Kavitha · Telugu · conversation"),
+            vl("kavitha_te_narration", "female", "Kavitha · Telugu · narration"),
+            vl("pooja_te_conversation", "female", "Pooja · Telugu · conversation"),
+            vl("tarun_te_narration", "male", "Tarun · Telugu · narration"));
 
     /**
      * Rumik Silk Mulberry 1.5 preset studio voices (docs.rumik.ai/mulberry).
@@ -249,6 +489,63 @@ public final class TtsVoiceCatalog {
             v("aura-2-harmonia-en", "female", MODEL_DEEPGRAM),
             v("aura-2-electra-en", "female", MODEL_DEEPGRAM));
 
+    private static final List<Map<String, String>> NAVANA_VOICES = List.of(
+            v("achu", "male", MODEL_NAVANA),
+            v("anirban", "male", MODEL_NAVANA),
+            v("basava", "male", MODEL_NAVANA),
+            v("basheer", "male", MODEL_NAVANA),
+            v("bijay", "male", MODEL_NAVANA),
+            v("chhotu", "male", MODEL_NAVANA),
+            v("elango", "male", MODEL_NAVANA),
+            v("faizal", "male", MODEL_NAVANA),
+            v("gurdeep", "male", MODEL_NAVANA),
+            v("imran", "male", MODEL_NAVANA),
+            v("kannan", "male", MODEL_NAVANA),
+            v("kishan", "male", MODEL_NAVANA),
+            v("murugan", "male", MODEL_NAVANA),
+            v("savio", "male", MODEL_NAVANA),
+            v("shivanna", "male", MODEL_NAVANA),
+            v("srinu", "male", MODEL_NAVANA),
+            v("sulaiman", "male", MODEL_NAVANA),
+            v("tanaji", "male", MODEL_NAVANA),
+            v("temjen", "male", MODEL_NAVANA),
+            v("vetri", "male", MODEL_NAVANA),
+            v("xavier", "male", MODEL_NAVANA),
+            v("ammu", "female", MODEL_NAVANA),
+            v("ann", "female", MODEL_NAVANA),
+            v("arasi", "female", MODEL_NAVANA),
+            v("ayesha", "female", MODEL_NAVANA),
+            v("bhavana", "female", MODEL_NAVANA),
+            v("bimla", "female", MODEL_NAVANA),
+            v("champa", "female", MODEL_NAVANA),
+            v("falguni", "female", MODEL_NAVANA),
+            v("flavia", "female", MODEL_NAVANA),
+            v("harleen", "female", MODEL_NAVANA),
+            v("ipsita", "female", MODEL_NAVANA),
+            v("jayita", "female", MODEL_NAVANA),
+            v("jessy", "female", MODEL_NAVANA),
+            v("kayal", "female", MODEL_NAVANA),
+            v("mahadevi", "female", MODEL_NAVANA),
+            v("malar", "female", MODEL_NAVANA),
+            v("maria", "female", MODEL_NAVANA),
+            v("merin", "female", MODEL_NAVANA),
+            v("mukta", "female", MODEL_NAVANA),
+            v("nasrin", "female", MODEL_NAVANA),
+            v("nayeema", "female", MODEL_NAVANA),
+            v("netra", "female", MODEL_NAVANA),
+            v("nila", "female", MODEL_NAVANA),
+            v("ponni", "female", MODEL_NAVANA),
+            v("porkavi", "female", MODEL_NAVANA),
+            v("rukhiya", "female", MODEL_NAVANA),
+            v("rukhsana", "female", MODEL_NAVANA),
+            v("selvi", "female", MODEL_NAVANA),
+            v("shabnam", "female", MODEL_NAVANA),
+            v("sharon", "female", MODEL_NAVANA),
+            v("shikha", "female", MODEL_NAVANA),
+            v("vanaja", "female", MODEL_NAVANA),
+            v("yasmin", "female", MODEL_NAVANA),
+            v("zoya", "female", MODEL_NAVANA));
+
     /**
      * Lightning v3.1 <b>Pro</b> voices. Disjoint from the standard palette above —
      * see {@link #MODEL_SMALLEST_PRO}. Must stay in lockstep with bot.py's
@@ -279,8 +576,10 @@ public final class TtsVoiceCatalog {
         BY_MODEL.put(MODEL_SMALLEST, SMALLEST_VOICES);
         BY_MODEL.put(MODEL_SMALLEST_PRO, SMALLEST_PRO_VOICES);
         BY_MODEL.put(MODEL_DEEPGRAM, DEEPGRAM_VOICES);
+        BY_MODEL.put(MODEL_NAVANA, NAVANA_VOICES);
         BY_MODEL.put(MODEL_RUMIK, RUMIK_VOICES);
         BY_MODEL.put(MODEL_SARVAM, SARVAM_VOICES);
+        BY_MODEL.put(MODEL_SARVAM_V4, SARVAM_V4_VOICES);
     }
 
     private static final Map<String, Set<String>> IDS_BY_MODEL = new LinkedHashMap<>();
@@ -319,6 +618,8 @@ public final class TtsVoiceCatalog {
         if (MODEL_SMALLEST_PRO.equals(m)) return "mandar";
         // English-only engine; Asteria is its clear/confident female voice.
         if (MODEL_DEEPGRAM.equals(m)) return "aura-2-asteria-en";
+        if (MODEL_NAVANA.equals(m)) return "bhavana";
+        if (MODEL_SARVAM_V4.equals(m)) return "shubh_enhi_ads";
         return "priya";
     }
 
@@ -369,15 +670,23 @@ public final class TtsVoiceCatalog {
         if (raw == null) return null;
         String m = raw.trim().toLowerCase(Locale.ROOT);
         if (m.isEmpty()) return null;
-        if (m.equals("muga") || m.startsWith("silk-muga") || m.startsWith("silk_muga")) return null;
+        // Any spelling of Muga ("silk muga" with a space used to fall through to Mulberry below).
+        if (m.contains("muga")) return null;
         if (m.equals(MODEL_RUMIK) || m.startsWith("rumik") || m.startsWith("silk")
                 || m.startsWith("mulberry")) return MODEL_RUMIK;
+        // v4 BEFORE v3: "sarvam_v4" also startsWith("sarvam"), and running a v4 voice
+        // on v3 is a 400 = a silent call.
+        if (m.startsWith("sarvam_v4") || m.startsWith("sarvam-v4") || m.startsWith("bulbul:v4")
+                || m.startsWith("bulbul_v4") || m.startsWith("bulbul-v4")) {
+            return MODEL_SARVAM_V4;
+        }
         if (m.equals(MODEL_SARVAM) || m.startsWith("sarvam") || m.startsWith("bulbul")) return MODEL_SARVAM;
         if (m.equals(MODEL_EDGE) || m.startsWith("edge") || m.startsWith("microsoft")) return MODEL_EDGE;
         if (m.equals(MODEL_GOOGLE) || m.startsWith("google") || m.startsWith("chirp")) return MODEL_GOOGLE;
         if (m.equals(MODEL_DEEPGRAM) || m.startsWith("deepgram") || m.startsWith("aura")) {
             return MODEL_DEEPGRAM;
         }
+        if (m.equals(MODEL_NAVANA) || m.startsWith("navana") || m.startsWith("bodhi")) return MODEL_NAVANA;
         // Pro FIRST: "smallest_pro" also startsWith("smallest"), so the generic test
         // below would swallow it and run pro voices on the standard model = silence.
         if (m.contains("pro") && (m.startsWith("smallest") || m.startsWith("lightning"))) {
@@ -402,8 +711,12 @@ public final class TtsVoiceCatalog {
                 "Higher-quality Indian voices. Different voice list from v3.1."));
         out.add(model(MODEL_DEEPGRAM, "Deepgram Aura-2 (English only)",
                 "English-only \u2014 no Hindi voice exists. Do not use for a Hinglish agent."));
+        out.add(model(MODEL_NAVANA, "Navana (Bodhi)",
+                "Indian voices; one voice speaks all ten languages. New — audition first."));
         out.add(model(MODEL_RUMIK, "Rumik Silk Mulberry 1.5",
                 "Cheapest, but mispronounces some Hindi words on the phone"));
+        out.add(model(MODEL_SARVAM_V4, "Sarvam Bulbul v4 Flash",
+                "New — 200+ persona voices in 10 Indian languages; no extra charge. Audition first."));
         out.add(model(MODEL_SARVAM, "Sarvam Bulbul v3", "+4 credits per minute"));
         return out;
     }
@@ -420,5 +733,10 @@ public final class TtsVoiceCatalog {
 
     private static Map<String, String> v(String id, String gender, String model) {
         return Map.of("id", id, "gender", gender, "model", model);
+    }
+
+    /** A Bulbul v4 voice: its id is not readable on its own, so it carries a label. */
+    private static Map<String, String> vl(String id, String gender, String label) {
+        return Map.of("id", id, "gender", gender, "model", MODEL_SARVAM_V4, "label", label);
     }
 }

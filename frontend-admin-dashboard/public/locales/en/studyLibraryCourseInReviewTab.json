@@ -1,0 +1,22 @@
+{
+    "withdrawSuccess": "Course withdrawn from review",
+    "withdrawFailed": "Failed to withdraw from review",
+    "errorLoadingCourses": "Error loading courses",
+    "retry": "Retry",
+    "coursesInReview": "Courses In Review",
+    "reviewedByAdminsNote": "These courses are currently being reviewed by administrators.",
+    "emptyState": {
+        "title": "No courses in review",
+        "description": "You don't have any courses currently under review."
+    },
+    "submitted": "Submitted {{time}}",
+    "inReview": "In Review",
+    "update": "Update",
+    "viewCourse": "View Course",
+    "withdrawing": "Withdrawing...",
+    "withdrawFromReview": "Withdraw from Review",
+    "reviewProcess": {
+        "title": "Review Process",
+        "description": "Once submitted, your courses will be reviewed by administrators. You can withdraw courses from review at any time if you need to make changes."
+    }
+}

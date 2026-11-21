@@ -5,11 +5,10 @@ import {
     FileText,
     BookOpen,
     GraduationCap,
-    ChevronDown,
-    CircleCheck,
-    Download,
-    ExternalLink,
-} from 'lucide-react';
+    CaretDown,
+    CheckCircle,
+    DownloadSimple,
+} from '@phosphor-icons/react';
 import {
     getSubOrgFinanceDetail,
     getScopedInvites,
@@ -52,11 +51,14 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
+import { cn } from '@/lib/utils';
 import { isCallerSubOrgAdmin } from '@/lib/auth/facultyAccessUtils';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Bell, Copy, CopySimple, Eye, PencilSimple, Plus, XCircle, ArrowCircleUp, ArrowCircleDown, ClockCounterClockwise } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useEffect, useState } from 'react';
 import { MyButton } from '@/components/design-system/button';
 import { MemberHistoryDrawer } from '@/routes/manage-custom-teams/sub-orgs/-components/member-history-drawer';
@@ -87,6 +89,14 @@ interface Props {
      * route `/manage-custom-teams/sub-orgs/$slug` stays unaffected.
      */
     restrictedView?: boolean;
+    /**
+     * Page chrome. `'panel'` (default) is the compact card the institute-admin deep
+     * route embeds. `'page'` matches the Manage <SubOrgs> list: the underlined strip of
+     * filled tab pills, and no tile row — on that layout the headline figures live in
+     * the page header (`SubOrgStatCards`) instead, so keeping the tiles here would
+     * print the same numbers twice.
+     */
+    variant?: 'panel' | 'page';
 }
 
 /**
@@ -119,7 +129,14 @@ function resolveInvoiceUrl(inv: InvoiceSummary): string | null {
  * Renders four tiles + a learner roster + an invoice list. Click "View ledger"
  * to expand the admin's CPO installment table.
  */
-export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = false }: Props) {
+export function SubOrgAnalyticsPanel({
+    subOrgId,
+    subOrgName,
+    restrictedView = false,
+    variant = 'panel',
+}: Props) {
+    const { t } = useTranslation('manageSuborgTeamsSubOrgAnalyticsPanel');
+    const pageChrome = variant === 'page';
     // Institutes rename this concept via Settings → Naming (Channel Partner,
     // Branch, Franchise, VLE …); user-facing labels must follow that.
     const subOrgTerm = getTerminology(OtherTerms.SubOrg, SystemTerms.SubOrg);
@@ -166,7 +183,7 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
     const configuredPlan = configuredOption?.payment_plans?.[0];
     const configuredPriceLabel =
         configuredOption?.type === 'FREE'
-            ? 'Free'
+            ? t('tiles.free')
             : configuredPlan
               ? `${getCurrencySymbol(configuredPlan.currency || '')}${formatPlanPrice(
                     configuredPlan.actual_price
@@ -306,12 +323,12 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
         try {
             await navigator.clipboard.writeText(link);
             setCopiedLinkId(invoiceId);
-            toast.success('Payment link copied');
+            toast.success(t('toasts.linkCopied'));
             window.setTimeout(() => {
                 setCopiedLinkId((prev) => (prev === invoiceId ? null : prev));
             }, 2000);
         } catch (_err) {
-            toast.error('Could not copy to clipboard');
+            toast.error(t('toasts.copyFailed'));
         }
     };
 
@@ -328,8 +345,8 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
         onSuccess: (data) => {
             toast.success(
                 data?.recipient_email
-                    ? `Reminder sent to ${data.recipient_email}`
-                    : 'Reminder fired'
+                    ? t('toasts.reminderSentTo', { email: data.recipient_email })
+                    : t('toasts.reminderFired')
             );
             if (adminUserId) {
                 queryClient.invalidateQueries({
@@ -338,7 +355,7 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
             }
         },
         onError: (err: any) => {
-            toast.error(err?.response?.data?.message || 'Failed to send reminder');
+            toast.error(err?.response?.data?.message || t('toasts.reminderFailed'));
         },
     });
 
@@ -353,13 +370,17 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
             // Report channels honestly — email may be off in INVOICE_SETTING, in
             // which case only the in-app alert fired; admin should know that.
             const channels: string[] = [];
-            if (data.alert_sent) channels.push('in-app');
-            if (data.email_sent) channels.push('email');
-            const where = data.recipient_email ? ` to ${data.recipient_email}` : '';
+            if (data.alert_sent) channels.push(t('toasts.channelInApp'));
+            if (data.email_sent) channels.push(t('toasts.channelEmail'));
+            const email = data.recipient_email;
             toast.success(
                 channels.length > 0
-                    ? `Reminder sent${where} via ${channels.join(' + ')}`
-                    : `Reminder${where} — no channels delivered (check institute Invoice Settings)`
+                    ? email
+                        ? t('toasts.reminderSentToEmail', { email, channels: channels.join(' + ') })
+                        : t('toasts.reminderSentPlain', { channels: channels.join(' + ') })
+                    : email
+                      ? t('toasts.reminderNoChannelsToEmail', { email })
+                      : t('toasts.reminderNoChannelsPlain')
             );
             if (adminUserId) {
                 queryClient.invalidateQueries({
@@ -368,7 +389,7 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
             }
         },
         onError: (err: any) => {
-            toast.error(err?.response?.data?.message || 'Failed to send invoice reminder');
+            toast.error(err?.response?.data?.message || t('toasts.invoiceReminderFailed'));
         },
     });
 
@@ -381,7 +402,7 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
             setDuplicateSource(full);
             setCreateInvoiceOpen(true);
         } catch {
-            toast.error('Could not load invoice to duplicate');
+            toast.error(t('toasts.duplicateLoadFailed'));
         } finally {
             setDuplicatingId(null);
         }
@@ -396,7 +417,7 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
             setEditSource(full);
             setCreateInvoiceOpen(true);
         } catch {
-            toast.error('Could not load invoice to edit');
+            toast.error(t('toasts.editLoadFailed'));
         } finally {
             setEditingId(null);
         }
@@ -408,13 +429,13 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
         onMutate: (invoiceId) => setRejectingId(invoiceId),
         onSettled: () => setRejectingId(null),
         onSuccess: () => {
-            toast.success('Invoice rejected');
+            toast.success(t('toasts.invoiceRejected'));
             if (adminUserId) {
                 queryClient.invalidateQueries({ queryKey: ['sub-org-admin-invoices', adminUserId] });
             }
         },
         onError: (err: any) => {
-            toast.error(err?.response?.data?.message || 'Could not reject invoice');
+            toast.error(err?.response?.data?.message || t('toasts.rejectFailed'));
         },
     });
 
@@ -450,10 +471,42 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
         ? nextDueRemaining
         : (admin?.outstanding_amount ?? undefined);
 
+    /**
+     * Tab trigger classes. Under page chrome these are the Manage <SubOrgs> pills — a
+     * filled primary tab sitting on the strip's bottom border.
+     *
+     * Both colours need `!`. The shared TabsTrigger ships `data-[state=active]:bg-background`
+     * and `data-[state=active]:text-foreground`, and a `data-*` variant compiles to an
+     * attribute selector — specificity (0,2,0) against a bare utility's (0,1,0) — so an
+     * unprefixed `text-white` loses and the label renders near-black on the primary fill.
+     * tailwind-merge won't save you either: different modifiers are different class groups,
+     * so it keeps both and lets the cascade decide.
+     */
+    const tabTriggerClass = (value: string) =>
+        pageChrome
+            ? cn(
+                  'flex gap-1.5 rounded-t-md px-10 py-2.5 !shadow-none',
+                  activeTab === value
+                      ? '!bg-primary-500 !text-white'
+                      : 'border-none bg-transparent text-neutral-600'
+              )
+            : 'gap-2';
+
+    /**
+     * Count badge on a tab. The outline badge draws border + foreground text, which
+     * disappears once the trigger is a filled primary pill — so the active tab's badge
+     * borrows white at reduced alpha instead.
+     */
+    const tabBadgeClass = (value: string) =>
+        cn(
+            'ms-1 h-4 px-1.5 text-caption',
+            pageChrome && activeTab === value && 'border-white/40 !text-white'
+        );
+
     if (financeLoading) {
         return (
             <div className="rounded-lg border bg-white p-6 text-sm text-muted-foreground">
-                Loading {subOrgTerm.toLowerCase()} analytics…
+                {t('loadingAnalytics', { term: subOrgTerm.toLowerCase() })}
             </div>
         );
     }
@@ -461,17 +514,20 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
     return (
         <div className="space-y-4">
             {/* Tile row — full view shows all 4 tiles, restricted view (sub-org admin)
-                shows only the Admin payment tile since the other tabs are hidden. */}
+                shows only the Admin payment tile since the other tabs are hidden. Page
+                chrome drops the row entirely: SubOrgStatCards already prints plan,
+                status, learners, seats and outstanding beside the page title. */}
             <div
-                className={
+                className={cn(
                     restrictedView
                         ? 'grid gap-3 sm:grid-cols-1'
-                        : 'grid gap-3 sm:grid-cols-2 lg:grid-cols-4'
-                }
+                        : 'grid gap-3 sm:grid-cols-2 lg:grid-cols-4',
+                    pageChrome && 'hidden'
+                )}
             >
                 <Tile
                     icon={<Wallet className="h-4 w-4 text-emerald-600" />}
-                    label="Admin payment"
+                    label={t('tiles.adminPayment')}
                     // When an admin has redeemed the invite, show their actual plan.
                     // Otherwise surface the *configured* payment option (what a future
                     // admin will pay via) instead of a confusing bare "No plan".
@@ -479,17 +535,17 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                         admin?.payment_type ||
                         configuredOption?.name ||
                         orgInvite?.payment_type ||
-                        'No plan'
+                        t('tiles.noPlan')
                     }
                     secondary={
                         admin?.payment_type
                             ? admin.payment_type === 'CPO'
-                                ? `Outstanding ${fmtMoney(admin?.outstanding_amount)}`
+                                ? t('tiles.outstanding', { amount: fmtMoney(admin?.outstanding_amount) })
                                 : admin?.user_plan_status || '—'
                             : configuredOption || orgInvite?.payment_type
-                              ? `${
-                                    configuredPriceLabel ? `${configuredPriceLabel} · ` : ''
-                                }Awaiting admin`
+                              ? configuredPriceLabel
+                                    ? t('tiles.priceAwaitingAdmin', { price: configuredPriceLabel })
+                                    : t('tiles.awaitingAdmin')
                               : '—'
                     }
                 />
@@ -499,36 +555,39 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                             icon={<Users className="h-4 w-4 text-blue-600" />}
                             label={(() => {
                                 const seat = finance?.seat_usage;
-                                if (!seat || seat.total == null) return 'Learners';
-                                return `Learners · ${seat.used ?? 0}/${seat.total} seats`;
+                                if (!seat || seat.total == null) return t('tiles.learners');
+                                return t('tiles.learnersWithSeats', {
+                                    used: seat.used ?? 0,
+                                    total: seat.total,
+                                });
                             })()}
                             primary={String(totals?.learner_count ?? 0)}
                             secondary={(() => {
                                 const seat = finance?.seat_usage;
-                                const outstanding = `Total outstanding ${fmtMoney(totals?.total_outstanding)}`;
+                                const outstanding = t('tiles.totalOutstanding', {
+                                    amount: fmtMoney(totals?.total_outstanding),
+                                });
                                 if (seat && seat.remaining != null) {
-                                    return `${outstanding} · ${seat.remaining} seat${
-                                        seat.remaining === 1 ? '' : 's'
-                                    } left`;
+                                    return `${outstanding} · ${t('tiles.seatsLeft', {
+                                        count: seat.remaining,
+                                    })}`;
                                 }
                                 return outstanding;
                             })()}
                         />
                         <Tile
                             icon={<FileText className="h-4 w-4 text-purple-600" />}
-                            label="Invoices"
+                            label={t('tiles.invoices')}
                             primary={String(invoices.length)}
                             secondary={
-                                adminUserId ? `Generated for admin` : 'No admin linked yet'
+                                adminUserId ? t('tiles.generatedForAdmin') : t('tiles.noAdminLinked')
                             }
                         />
                         <Tile
                             icon={<BookOpen className="h-4 w-4 text-amber-600" />}
                             label={getTerminologyPlural(ContentTerms.Course, SystemTerms.Course)}
                             primary={String(psList.length)}
-                            secondary={`${scopedInvites.length} scoped invite${
-                                scopedInvites.length === 1 ? '' : 's'
-                            }`}
+                            secondary={t('tiles.scopedInvite', { count: scopedInvites.length })}
                         />
                     </>
                 )}
@@ -540,7 +599,7 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                 <div className="rounded-lg border bg-white p-4">
                     <h4 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         <Wallet className="h-3.5 w-3.5" />
-                        Account Summary
+                        {t('accountSummary')}
                     </h4>
                     <AccountSummaryGrid summary={effectiveAdminSummary} />
                 </div>
@@ -551,21 +610,15 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                 <div className="rounded-lg border bg-white p-4">
                     <h4 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         <ClockCounterClockwise className="h-3.5 w-3.5" />
-                        Transaction History
+                        {t('transactionHistory')}
                     </h4>
                     {ledgerEntries.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">No transactions recorded yet.</p>
+                        <p className="text-xs text-muted-foreground">{t('noTransactions')}</p>
                     ) : (
                         <div className="space-y-2">
                             <ul className="divide-y divide-neutral-100 overflow-hidden rounded-lg border border-neutral-200">
                                 {ledgerEntries.map((entry) => {
-                                    const LEDGER_META: Record<string, { label: string; cls: string; isCredit: boolean }> = {
-                                        DEBIT_ACCRUAL:     { label: 'Invoice raised',   cls: 'bg-red-50 text-red-700 border-red-200',         isCredit: false },
-                                        CREDIT_PAYMENT:    { label: 'Payment received',  cls: 'bg-green-50 text-green-700 border-green-200',   isCredit: true  },
-                                        CREDIT_WAIVER:     { label: 'Waiver',            cls: 'bg-blue-50 text-blue-700 border-blue-200',      isCredit: true  },
-                                        CREDIT_ADJUSTMENT: { label: 'Adjustment',        cls: 'bg-amber-50 text-amber-700 border-amber-200',   isCredit: true  },
-                                        DEBIT_PENALTY:     { label: 'Penalty',           cls: 'bg-orange-50 text-orange-700 border-orange-200',isCredit: false },
-                                    };
+                                    const LEDGER_META = buildLedgerMeta(t);
                                     const meta = LEDGER_META[entry.event_type] ?? {
                                         label: entry.event_type,
                                         cls: 'bg-gray-50 text-gray-600 border-gray-200',
@@ -583,16 +636,16 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                                             </span>
                                             <div className="min-w-0 flex-1">
                                                 <div className="flex flex-wrap items-center gap-1.5">
-                                                    <span className={`inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-medium ${meta.cls}`}>
+                                                    <span className={`inline-flex items-center rounded border px-1.5 py-0.5 text-caption font-medium ${meta.cls}`}>
                                                         {meta.label}
                                                     </span>
                                                     {entry.remarks && (
-                                                        <span className="truncate text-[11px] text-muted-foreground" title={entry.remarks}>
+                                                        <span className="truncate text-caption text-muted-foreground" title={entry.remarks}>
                                                             {entry.remarks}
                                                         </span>
                                                     )}
                                                 </div>
-                                                <p className="mt-0.5 text-[10px] text-muted-foreground">
+                                                <p className="mt-0.5 text-caption text-muted-foreground">
                                                     {fmtDate(entry.created_at)}
                                                     {entry.source_type && <> · {entry.source_type.replace(/_/g, ' ')}</>}
                                                 </p>
@@ -606,8 +659,8 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                             </ul>
                             {ledgerTotalPages > 1 && (
                                 <div className="flex items-center justify-between px-1">
-                                    <span className="text-[10px] text-muted-foreground">
-                                        Page {ledgerPage + 1} of {ledgerTotalPages}
+                                    <span className="text-caption text-muted-foreground">
+                                        {t('pageOf', { page: ledgerPage + 1, total: ledgerTotalPages })}
                                     </span>
                                     <div className="flex gap-1">
                                         <button
@@ -616,7 +669,7 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                                             disabled={ledgerPage === 0}
                                             className="rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-40"
                                         >
-                                            <ChevronDown className="h-3.5 w-3.5 rotate-90" />
+                                            <CaretDown className="h-3.5 w-3.5 rotate-90" />
                                         </button>
                                         <button
                                             type="button"
@@ -624,7 +677,7 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                                             disabled={ledgerPage >= ledgerTotalPages - 1}
                                             className="rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-40"
                                         >
-                                            <ChevronDown className="h-3.5 w-3.5 -rotate-90" />
+                                            <CaretDown className="h-3.5 w-3.5 -rotate-90" />
                                         </button>
                                     </div>
                                 </div>
@@ -640,46 +693,52 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                 onValueChange={(v) => setActiveTab(v as typeof activeTab)}
                 className="w-full"
             >
-                <TabsList className="w-full justify-start gap-1 overflow-x-auto rounded-md border bg-white p-1">
+                <TabsList
+                    className={
+                        pageChrome
+                            ? 'mb-4 inline-flex h-auto w-full justify-start gap-2 overflow-x-auto rounded-none border-b !bg-transparent p-0'
+                            : 'w-full justify-start gap-1 overflow-x-auto rounded-md border bg-white p-1'
+                    }
+                >
                     {canViewFinance && (
-                        <TabsTrigger value="admin" className="gap-2">
+                        <TabsTrigger value="admin" className={tabTriggerClass('admin')}>
                             <Wallet className="h-3.5 w-3.5" />
-                            Admin payment
+                            {t('tabs.adminPayment')}
                         </TabsTrigger>
                     )}
                     {!restrictedView && (
                         <>
-                            <TabsTrigger value="courses" className="gap-2">
+                            <TabsTrigger value="courses" className={tabTriggerClass('courses')}>
                                 <BookOpen className="h-3.5 w-3.5" />
-                                Courses
-                                <Badge variant="outline" className="ml-1 h-4 px-1.5 text-[10px]">
+                                {t('tabs.courses')}
+                                <Badge variant="outline" className={tabBadgeClass('courses')}>
                                     {psList.length}
                                 </Badge>
                             </TabsTrigger>
-                            <TabsTrigger value="learners" className="gap-2">
+                            <TabsTrigger value="learners" className={tabTriggerClass('learners')}>
                                 <GraduationCap className="h-3.5 w-3.5" />
-                                Learners
-                                <Badge variant="outline" className="ml-1 h-4 px-1.5 text-[10px]">
+                                {t('tabs.learners')}
+                                <Badge variant="outline" className={tabBadgeClass('learners')}>
                                     {learners.length}
                                 </Badge>
                             </TabsTrigger>
                             {canViewFinance && (
-                                <TabsTrigger value="invoices" className="gap-2">
+                                <TabsTrigger
+                                    value="invoices"
+                                    className={tabTriggerClass('invoices')}
+                                >
                                     <FileText className="h-3.5 w-3.5" />
-                                    Invoices
-                                    <Badge
-                                        variant="outline"
-                                        className="ml-1 h-4 px-1.5 text-[10px]"
-                                    >
+                                    {t('tabs.invoices')}
+                                    <Badge variant="outline" className={tabBadgeClass('invoices')}>
                                         {invoices.length}
                                     </Badge>
                                 </TabsTrigger>
                             )}
                         </>
                     )}
-                    <TabsTrigger value="team" className="gap-2">
+                    <TabsTrigger value="team" className={tabTriggerClass('team')}>
                         <Users className="h-3.5 w-3.5" />
-                        Team
+                        {t('tabs.team')}
                     </TabsTrigger>
                 </TabsList>
 
@@ -689,12 +748,16 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                         <header className="mb-3 flex flex-wrap items-center justify-between gap-2">
                             <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                                 <Wallet className="h-4 w-4" />
-                                Admin payment{subOrgName ? ` — ${subOrgName}` : ''}
+                                {subOrgName
+                                    ? t('adminPaymentSection.headingWithName', { name: subOrgName })
+                                    : t('adminPaymentSection.heading')}
                             </h3>
                             <div className="flex flex-wrap items-center gap-2">
                                 {admin?.payment_type === 'CPO' && (
                                     <Badge variant="secondary">
-                                        {admin.pending_installments_count ?? 0} pending
+                                        {t('adminPaymentSection.pending', {
+                                            count: admin.pending_installments_count ?? 0,
+                                        })}
                                     </Badge>
                                 )}
                                 {/* Record an arbitrary amount and FIFO-fill it across the
@@ -711,7 +774,7 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                                         onClick={() => setRecordPaymentOpen(true)}
                                     >
                                         <Plus className="size-4" />
-                                        Record Offline Payment
+                                        {t('adminPaymentSection.recordOfflinePayment')}
                                     </MyButton>
                                 )}
                             </div>
@@ -724,7 +787,7 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                                             {admin.full_name || admin.user_id}
                                         </p>
                                         <p className="text-xs text-muted-foreground">
-                                            {admin.payment_type || 'unknown plan'}
+                                            {admin.payment_type || t('adminPaymentSection.unknownPlan')}
                                             {admin.user_plan_status
                                                 ? ` · ${admin.user_plan_status}`
                                                 : ''}
@@ -736,37 +799,49 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                                             setDrawer({
                                                 userId: admin.user_id!,
                                                 name: admin.full_name || admin.user_id,
-                                                subtitle: `${getTerminology(
-                                                    OtherTerms.SubOrg,
-                                                    SystemTerms.SubOrg
-                                                )} admin`,
+                                                subtitle: t('adminPaymentSection.termAdmin', {
+                                                    term: getTerminology(
+                                                        OtherTerms.SubOrg,
+                                                        SystemTerms.SubOrg
+                                                    ),
+                                                }),
                                             })
                                         }
-                                        className="shrink-0 rounded border px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground"
+                                        className="shrink-0 rounded border px-2 py-1 text-caption uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground"
                                     >
-                                        Open history
+                                        {t('adminPaymentSection.openHistory')}
                                     </button>
                                 </div>
                                 {admin.payment_type === 'CPO' && (
                                     <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
-                                        <Metric label="Total" value={fmtMoney(admin.total_amount)} />
-                                        <Metric label="Paid" value={fmtMoney(admin.paid_amount)} />
                                         <Metric
-                                            label="Outstanding"
+                                            label={t('adminPaymentSection.metricTotal')}
+                                            value={fmtMoney(admin.total_amount)}
+                                        />
+                                        <Metric
+                                            label={t('adminPaymentSection.metricPaid')}
+                                            value={fmtMoney(admin.paid_amount)}
+                                        />
+                                        <Metric
+                                            label={t('adminPaymentSection.metricOutstanding')}
                                             value={fmtMoney(admin.outstanding_amount)}
                                         />
                                     </div>
                                 )}
                                 {admin.next_due && (
                                     <div className="mt-2 rounded bg-muted/40 p-2 text-xs">
-                                        <span className="text-muted-foreground">Next due: </span>
+                                        <span className="text-muted-foreground">
+                                            {t('adminPaymentSection.nextDue')}{' '}
+                                        </span>
                                         <span className="font-medium">
                                             {fmtMoney(admin.next_due.amount_expected)}
                                         </span>
                                         {admin.next_due.due_date && (
                                             <span className="text-muted-foreground">
                                                 {' '}
-                                                on {fmtDate(admin.next_due.due_date)}
+                                                {t('adminPaymentSection.onDate', {
+                                                    date: fmtDate(admin.next_due.due_date),
+                                                })}
                                             </span>
                                         )}
                                         <span className="text-muted-foreground">
@@ -781,13 +856,18 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                                         className="mt-2 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
                                         onClick={() => setShowLedger((v) => !v)}
                                     >
-                                        <ChevronDown
+                                        <CaretDown
                                             className={`h-3 w-3 transition-transform ${
                                                 showLedger ? 'rotate-180' : ''
                                             }`}
                                         />
-                                        {showLedger ? 'Hide' : 'View'} full ledger (
-                                        {admin.installments.length})
+                                        {showLedger
+                                            ? t('adminPaymentSection.hideLedger', {
+                                                  count: admin.installments.length,
+                                              })
+                                            : t('adminPaymentSection.viewLedger', {
+                                                  count: admin.installments.length,
+                                              })}
                                     </button>
                                 )}
                                 {showLedger && admin.installments && (
@@ -811,7 +891,7 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                                                                 ? 'default'
                                                                 : 'secondary'
                                                         }
-                                                        className="h-4 px-1.5 text-[10px]"
+                                                        className="h-4 px-1.5 text-caption"
                                                     >
                                                         {inst.status}
                                                     </Badge>
@@ -823,7 +903,7 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                             </>
                         ) : (
                             <p className="text-sm text-muted-foreground">
-                                No admin has redeemed the invite yet.
+                                {t('adminPaymentSection.noAdminRedeemed')}
                             </p>
                         )}
                     </section>
@@ -852,12 +932,14 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                     <section className="rounded-lg border bg-white p-4">
                         <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-700">
                             <BookOpen className="h-4 w-4" />
-                            {getTerminologyPlural(ContentTerms.Course, SystemTerms.Course)} (
-                            {psList.length})
+                            {t('coursesTab.heading', {
+                                term: getTerminologyPlural(ContentTerms.Course, SystemTerms.Course),
+                                count: psList.length,
+                            })}
                         </h3>
                         {psList.length === 0 ? (
                             <p className="text-xs text-muted-foreground">
-                                No active scoped invites — no learner access.
+                                {t('coursesTab.noScopedInvites')}
                             </p>
                         ) : (
                             <ul className="grid gap-2 sm:grid-cols-2">
@@ -880,14 +962,14 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                     <section className="rounded-lg border bg-white p-4">
                         <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-700">
                             <GraduationCap className="h-4 w-4" />
-                            Learners ({learners.length})
+                            {t('learnersTab.heading', { count: learners.length })}
                         </h3>
                         {learners.length === 0 ? (
                             <p className="text-xs text-muted-foreground">
-                                No learners enrolled yet.
+                                {t('learnersTab.noLearners')}
                             </p>
                         ) : (
-                            <div className="max-h-[60vh] space-y-1 overflow-y-auto rounded-md border">
+                            <div className="max-h-list-scroll space-y-1 overflow-y-auto rounded-md border">
                                 {learners.map((l) => {
                                     const hasDues =
                                         (l.pending_installments_count ?? 0) > 0
@@ -907,7 +989,7 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                                                 setDrawer({
                                                     userId: l.user_id,
                                                     name: l.full_name || l.user_id,
-                                                    subtitle: 'Learner',
+                                                    subtitle: t('learnersTab.learnerSubtitle'),
                                                     courses: psIds.map((psId) => ({
                                                         id: psId,
                                                         label: courseLabelFor(psId),
@@ -921,8 +1003,10 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                                                     {l.full_name || l.user_id}
                                                 </p>
                                                 {l.enrolled_date && (
-                                                    <p className="text-[10px] text-muted-foreground">
-                                                        Enrolled {fmtDate(l.enrolled_date)}
+                                                    <p className="text-caption text-muted-foreground">
+                                                        {t('learnersTab.enrolled', {
+                                                            date: fmtDate(l.enrolled_date),
+                                                        })}
                                                     </p>
                                                 )}
                                                 {(() => {
@@ -940,7 +1024,7 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                                                                 <span
                                                                     key={psId}
                                                                     title={courseLabelFor(psId)}
-                                                                    className="inline-flex max-w-[220px] items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                                                                    className="inline-flex max-w-56 items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-caption text-muted-foreground"
                                                                 >
                                                                     <BookOpen className="h-2.5 w-2.5 shrink-0" />
                                                                     <span className="truncate">
@@ -957,8 +1041,10 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                                                     <span className="font-medium text-amber-700">
                                                         {fmtMoney(l.outstanding_amount)}
                                                     </span>
-                                                    <span className="ml-1 text-muted-foreground">
-                                                        ({l.pending_installments_count} due)
+                                                    <span className="ms-1 text-muted-foreground">
+                                                        {t('learnersTab.dueCount', {
+                                                            count: l.pending_installments_count,
+                                                        })}
                                                     </span>
                                                 </div>
                                             ) : (
@@ -978,7 +1064,7 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                             <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                                 <FileText className="h-4 w-4" />
-                                Invoices ({invoices.length})
+                                {t('invoicesTab.heading', { count: invoices.length })}
                             </h3>
                             <div className="flex flex-wrap items-center gap-2">
                                 {adminUserId && (
@@ -989,7 +1075,7 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                                         onClick={() => setCreateInvoiceOpen(true)}
                                     >
                                         <Plus className="size-4" />
-                                        Create Invoice
+                                        {t('invoicesTab.createInvoice')}
                                     </MyButton>
                                 )}
                                 {canEditLedger && adminUserPlanId && (
@@ -1000,14 +1086,14 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                                         onClick={() => setRecordPaymentOpen(true)}
                                     >
                                         <Plus className="size-4" />
-                                        Record Offline Payment
+                                        {t('adminPaymentSection.recordOfflinePayment')}
                                     </MyButton>
                                 )}
                             </div>
                         </div>
                         {invoices.length === 0 ? (
                             <p className="text-xs text-muted-foreground">
-                                No invoices generated yet.
+                                {t('invoicesTab.noInvoices')}
                             </p>
                         ) : (
                             <ul className="space-y-2">
@@ -1049,13 +1135,13 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
 
                                     // Source badge colours / labels
                                     const sourceMeta = isSfpRow
-                                        ? { label: 'CPO Installment', cls: 'bg-amber-50 text-amber-700 border-amber-200' }
+                                        ? { label: t('invoicesTab.sourceCpoInstallment'), cls: 'bg-amber-50 text-amber-700 border-amber-200' }
                                         : source === 'ADMIN_MANUAL'
-                                          ? { label: 'Admin Invoice', cls: 'bg-purple-50 text-purple-700 border-purple-200' }
+                                          ? { label: t('invoicesTab.sourceAdminInvoice'), cls: 'bg-purple-50 text-purple-700 border-purple-200' }
                                           : source === 'USER_PLAN'
-                                            ? { label: 'Subscription', cls: 'bg-blue-50 text-blue-700 border-blue-200' }
+                                            ? { label: t('invoicesTab.sourceSubscription'), cls: 'bg-blue-50 text-blue-700 border-blue-200' }
                                             : source === 'STUDENT_FEE_PAYMENT'
-                                              ? { label: 'Fee Payment', cls: 'bg-teal-50 text-teal-700 border-teal-200' }
+                                              ? { label: t('invoicesTab.sourceFeePayment'), cls: 'bg-teal-50 text-teal-700 border-teal-200' }
                                               : null;
 
                                     return (
@@ -1069,12 +1155,12 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                                                     <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                                                         <p className="truncate font-medium">{number}</p>
                                                         {sourceMeta && (
-                                                            <span className={`inline-flex shrink-0 items-center rounded border px-1.5 py-0.5 text-[10px] font-medium ${sourceMeta.cls}`}>
+                                                            <span className={`inline-flex shrink-0 items-center rounded border px-1.5 py-0.5 text-caption font-medium ${sourceMeta.cls}`}>
                                                                 {sourceMeta.label}
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <p className="mt-0.5 text-[10px] text-muted-foreground">
+                                                    <p className="mt-0.5 text-caption text-muted-foreground">
                                                         {date ? fmtDate(date) : '—'}
                                                         {inv.status ? ` · ${inv.status}` : ''}
                                                     </p>
@@ -1093,24 +1179,26 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                                                         type="button"
                                                         onClick={() => remindMutation.mutate(sfpId)}
                                                         disabled={remindingId === sfpId}
-                                                        className="inline-flex items-center gap-1 rounded border px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
-                                                        title="Send installment-due reminder"
+                                                        className="inline-flex items-center gap-1 rounded border px-2 py-1 text-caption uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+                                                        title={t('invoicesTab.remindTitleSfp')}
                                                     >
                                                         <Bell className="size-3" />
-                                                        {remindingId === sfpId ? 'Sending…' : 'Remind'}
+                                                        {remindingId === sfpId
+                                                            ? t('invoicesTab.remindSending')
+                                                            : t('invoicesTab.remind')}
                                                     </button>
                                                 )}
                                                 {isSfpRow && paymentLink && (
                                                     <button
                                                         type="button"
                                                         onClick={() => handleCopyInvoiceLink(inv.id, paymentLink)}
-                                                        className="inline-flex items-center gap-1 rounded border px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground"
-                                                        title="Copy payment link to share with learner"
+                                                        className="inline-flex items-center gap-1 rounded border px-2 py-1 text-caption uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                        title={t('invoicesTab.copyLinkTitle')}
                                                     >
                                                         {copiedLinkId === inv.id ? (
-                                                            <><CircleCheck className="size-3" /> Copied</>
+                                                            <><CheckCircle className="size-3" /> {t('invoicesTab.copied')}</>
                                                         ) : (
-                                                            <><Copy className="size-3" /> Copy Link</>
+                                                            <><Copy className="size-3" /> {t('invoicesTab.copyLink')}</>
                                                         )}
                                                     </button>
                                                 )}
@@ -1121,24 +1209,26 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                                                         type="button"
                                                         onClick={() => invoiceReminderMutation.mutate(inv.id)}
                                                         disabled={remindingId === inv.id}
-                                                        className="inline-flex items-center gap-1 rounded border px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
-                                                        title="Re-send payment-due reminder"
+                                                        className="inline-flex items-center gap-1 rounded border px-2 py-1 text-caption uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+                                                        title={t('invoicesTab.remindTitleAdmin')}
                                                     >
                                                         <Bell className="size-3" />
-                                                        {remindingId === inv.id ? 'Sending…' : 'Remind'}
+                                                        {remindingId === inv.id
+                                                            ? t('invoicesTab.remindSending')
+                                                            : t('invoicesTab.remind')}
                                                     </button>
                                                 )}
                                                 {isAdminInvoicePending && paymentLink && (
                                                     <button
                                                         type="button"
                                                         onClick={() => handleCopyInvoiceLink(inv.id, paymentLink)}
-                                                        className="inline-flex items-center gap-1 rounded border px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground"
-                                                        title="Copy payment link to share with learner"
+                                                        className="inline-flex items-center gap-1 rounded border px-2 py-1 text-caption uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                        title={t('invoicesTab.copyLinkTitle')}
                                                     >
                                                         {copiedLinkId === inv.id ? (
-                                                            <><CircleCheck className="size-3" /> Copied</>
+                                                            <><CheckCircle className="size-3" /> {t('invoicesTab.copied')}</>
                                                         ) : (
-                                                            <><Copy className="size-3" /> Copy Link</>
+                                                            <><Copy className="size-3" /> {t('invoicesTab.copyLink')}</>
                                                         )}
                                                     </button>
                                                 )}
@@ -1151,10 +1241,10 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                                                                 number: inv.invoice_number || inv.invoiceNumber || inv.id,
                                                             })
                                                         }
-                                                        className="inline-flex items-center gap-1 rounded border border-primary-300 bg-primary-50 px-2 py-1 text-[10px] uppercase tracking-wide text-primary-700 hover:bg-primary-100"
-                                                        title="Mark this invoice as paid"
+                                                        className="inline-flex items-center gap-1 rounded border border-primary-300 bg-primary-50 px-2 py-1 text-caption uppercase tracking-wide text-primary-700 hover:bg-primary-100"
+                                                        title={t('invoicesTab.markPaidTitle')}
                                                     >
-                                                        Mark Paid
+                                                        {t('invoicesTab.markPaid')}
                                                     </button>
                                                 )}
                                                 {isAdminInvoicePending && (
@@ -1168,10 +1258,12 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                                                         }
                                                         disabled={rejectingId === inv.id}
                                                         className="inline-flex items-center gap-1 rounded border border-danger-300 bg-danger-50 px-2 py-1 text-2xs uppercase tracking-wide text-danger-700 hover:bg-danger-100 disabled:opacity-50"
-                                                        title="Void this invoice"
+                                                        title={t('invoicesTab.rejectTitle')}
                                                     >
                                                         <XCircle className="size-3" />
-                                                        {rejectingId === inv.id ? 'Rejecting…' : 'Reject'}
+                                                        {rejectingId === inv.id
+                                                            ? t('invoicesTab.rejecting')
+                                                            : t('invoicesTab.reject')}
                                                     </button>
                                                 )}
                                                 {/* ADMIN_MANUAL pending — Edit in place (same invoice number) */}
@@ -1181,10 +1273,12 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                                                         onClick={() => void handleEditInvoice(inv.id)}
                                                         disabled={editingId === inv.id}
                                                         className="inline-flex items-center gap-1 rounded border px-2 py-1 text-2xs uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
-                                                        title="Edit this unpaid invoice — keeps the same invoice number"
+                                                        title={t('invoicesTab.editTitle')}
                                                     >
                                                         <PencilSimple className="size-3" />
-                                                        {editingId === inv.id ? 'Loading…' : 'Edit'}
+                                                        {editingId === inv.id
+                                                            ? t('invoicesTab.loading')
+                                                            : t('invoicesTab.edit')}
                                                     </button>
                                                 )}
                                                 {/* ADMIN_MANUAL — Duplicate (available on any status, not just pending) */}
@@ -1194,10 +1288,12 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                                                         onClick={() => void handleDuplicateInvoice(inv.id)}
                                                         disabled={duplicatingId === inv.id}
                                                         className="inline-flex items-center gap-1 rounded border px-2 py-1 text-2xs uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
-                                                        title="Create a new invoice pre-filled with this one's items"
+                                                        title={t('invoicesTab.duplicateTitle')}
                                                     >
                                                         <CopySimple className="size-3" />
-                                                        {duplicatingId === inv.id ? 'Loading…' : 'Duplicate'}
+                                                        {duplicatingId === inv.id
+                                                            ? t('invoicesTab.loading')
+                                                            : t('invoicesTab.duplicate')}
                                                     </button>
                                                 )}
 
@@ -1206,13 +1302,13 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                                                     <button
                                                         type="button"
                                                         onClick={() => handleCopyInvoiceLink(inv.id, paymentLink)}
-                                                        className="inline-flex items-center gap-1 rounded border px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground"
-                                                        title="Copy subscription payment link"
+                                                        className="inline-flex items-center gap-1 rounded border px-2 py-1 text-caption uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                        title={t('invoicesTab.copySubscriptionLinkTitle')}
                                                     >
                                                         {copiedLinkId === inv.id ? (
-                                                            <><CircleCheck className="size-3" /> Copied</>
+                                                            <><CheckCircle className="size-3" /> {t('invoicesTab.copied')}</>
                                                         ) : (
-                                                            <><Copy className="size-3" /> Copy Link</>
+                                                            <><Copy className="size-3" /> {t('invoicesTab.copyLink')}</>
                                                         )}
                                                     </button>
                                                 )}
@@ -1223,24 +1319,24 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                                                         <button
                                                             type="button"
                                                             onClick={() => setPreviewTarget(inv)}
-                                                            className="inline-flex items-center gap-1 rounded border px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground"
-                                                            title="Preview the invoice PDF without downloading it"
+                                                            className="inline-flex items-center gap-1 rounded border px-2 py-1 text-caption uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                            title={t('invoicesTab.previewTitle')}
                                                         >
                                                             <Eye className="h-3 w-3" />
-                                                            Preview
+                                                            {t('invoicesTab.preview')}
                                                         </button>
                                                         <button
                                                             type="button"
                                                             onClick={() => void downloadNamedInvoicePdf(inv)}
-                                                            className="inline-flex items-center gap-1 rounded border px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground"
-                                                            title="Download invoice PDF"
+                                                            className="inline-flex items-center gap-1 rounded border px-2 py-1 text-caption uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                            title={t('invoicesTab.downloadTitle')}
                                                         >
-                                                            <Download className="h-3 w-3" />
-                                                            Save
+                                                            <DownloadSimple className="h-3 w-3" />
+                                                            {t('invoicesTab.save')}
                                                         </button>
                                                     </>
                                                 ) : (
-                                                    <span className="text-[10px] text-muted-foreground">No PDF</span>
+                                                    <span className="text-caption text-muted-foreground">{t('invoicesTab.noPdf')}</span>
                                                 )}
                                             </div>
                                         </li>
@@ -1258,7 +1354,7 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                     <section className="rounded-lg border bg-white p-4">
                         <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-700">
                             <Users className="h-4 w-4" />
-                            Team members
+                            {t('teamTab.heading')}
                         </h3>
                         <CustomTeamsList mode="subOrg" subOrgId={subOrgId} />
                     </section>
@@ -1282,7 +1378,9 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
                     userPlanId={adminUserPlanId}
                     adminUserId={adminUserId || undefined}
                     contextLabel={
-                        subOrgName ? `${subOrgName} — admin CPO` : `${subOrgTerm} admin CPO`
+                        subOrgName
+                            ? t('adminCpoContextWithName', { name: subOrgName })
+                            : t('adminCpoContextTerm', { term: subOrgTerm })
                     }
                     suggestedAmount={suggestedAmount}
                 />
@@ -1295,7 +1393,9 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
             {adminUserId && instituteId && (
                 <CreateInvoiceDialog
                     userId={adminUserId}
-                    userName={admin?.full_name || subOrgName || `${subOrgTerm} admin`}
+                    userName={
+                        admin?.full_name || subOrgName || t('adminPaymentSection.termAdmin', { term: subOrgTerm })
+                    }
                     instituteId={instituteId}
                     open={createInvoiceOpen}
                     onOpenChange={(o) => {
@@ -1347,20 +1447,20 @@ export function SubOrgAnalyticsPanel({ subOrgId, subOrgName, restrictedView = fa
             <AlertDialog open={!!rejectTarget} onOpenChange={(o) => !o && setRejectTarget(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Reject invoice {rejectTarget?.number}?</AlertDialogTitle>
+                        <AlertDialogTitle>
+                            {t('rejectDialog.title', { number: rejectTarget?.number })}
+                        </AlertDialogTitle>
                         <AlertDialogDescription>
-                            This voids the invoice permanently — the payment link stops working and
-                            it can never be marked paid. This cannot be undone. To fix a mistake,
-                            use Duplicate afterward to create a corrected invoice.
+                            {t('rejectDialog.description')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>{t('rejectDialog.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleRejectInvoice}
                             className="bg-danger-600 hover:bg-danger-700"
                         >
-                            Reject Invoice
+                            {t('rejectDialog.confirm')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -1382,7 +1482,7 @@ function Tile({
 }) {
     return (
         <div className="rounded-lg border bg-white p-4">
-            <div className="mb-1 flex items-center gap-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+            <div className="mb-1 flex items-center gap-2 text-caption uppercase tracking-wide text-muted-foreground">
                 {icon}
                 {label}
             </div>
@@ -1395,7 +1495,7 @@ function Tile({
 function Metric({ label, value }: { label: string; value: string }) {
     return (
         <div className="rounded bg-muted/30 p-2">
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            <p className="text-caption uppercase tracking-wide text-muted-foreground">
                 {label}
             </p>
             <p className="text-sm font-medium">{value}</p>
@@ -1419,6 +1519,39 @@ function buildPsLabel(
         .filter(Boolean)
         .filter((s) => String(s).trim().toLowerCase() !== 'default');
     return parts.join(' · ') || fallback || '';
+}
+
+/** Ledger event-type → badge label/colour/credit-sign, translated via the caller's `t`. */
+function buildLedgerMeta(
+    t: TFunction
+): Record<string, { label: string; cls: string; isCredit: boolean }> {
+    return {
+        DEBIT_ACCRUAL: {
+            label: t('ledger.invoiceRaised'),
+            cls: 'bg-red-50 text-red-700 border-red-200',
+            isCredit: false,
+        },
+        CREDIT_PAYMENT: {
+            label: t('ledger.paymentReceived'),
+            cls: 'bg-green-50 text-green-700 border-green-200',
+            isCredit: true,
+        },
+        CREDIT_WAIVER: {
+            label: t('ledger.waiver'),
+            cls: 'bg-blue-50 text-blue-700 border-blue-200',
+            isCredit: true,
+        },
+        CREDIT_ADJUSTMENT: {
+            label: t('ledger.adjustment'),
+            cls: 'bg-amber-50 text-amber-700 border-amber-200',
+            isCredit: true,
+        },
+        DEBIT_PENALTY: {
+            label: t('ledger.penalty'),
+            cls: 'bg-orange-50 text-orange-700 border-orange-200',
+            isCredit: false,
+        },
+    };
 }
 
 function collectPackageSessions(invites: any[]): { id: string; label: string }[] {
@@ -1465,20 +1598,23 @@ function collectPackageSessions(invites: any[]): { id: string; label: string }[]
 
 /** 4-cell grid: total accrued / paid / balance / overdue from the ledger. */
 function AccountSummaryGrid({ summary }: { summary: UserAccountSummaryDTO }) {
+    // Same namespace as the parent panel — this is a small sub-component of it, not
+    // an independently-routed piece of UI, so it doesn't need its own catalog.
+    const { t } = useTranslation('manageSuborgTeamsSubOrgAnalyticsPanel');
     const sym = summary.currency === 'USD' ? '$' : summary.currency === 'EUR' ? '€' : '₹';
     const fmt = (v: number) =>
         `${sym}${Number(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
     const cells = [
-        { label: 'Total accrued', value: fmt(summary.total_accrued), danger: false },
-        { label: 'Total paid', value: fmt(summary.total_paid), danger: false, success: true },
-        { label: 'Due', value: fmt(summary.balance), danger: summary.balance > 0 },
-        { label: 'Past Due', value: fmt(summary.overdue), danger: summary.overdue > 0 },
+        { label: t('accountSummaryGrid.totalAccrued'), value: fmt(summary.total_accrued), danger: false },
+        { label: t('accountSummaryGrid.totalPaid'), value: fmt(summary.total_paid), danger: false, success: true },
+        { label: t('accountSummaryGrid.due'), value: fmt(summary.balance), danger: summary.balance > 0 },
+        { label: t('accountSummaryGrid.pastDue'), value: fmt(summary.overdue), danger: summary.overdue > 0 },
     ];
     return (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {cells.map(({ label, value, danger, success }) => (
                 <div key={label} className="rounded border bg-muted/30 p-2">
-                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+                    <p className="text-caption uppercase tracking-wide text-muted-foreground">{label}</p>
                     <p className={`mt-0.5 text-sm font-semibold ${danger ? 'text-danger-600' : success ? 'text-emerald-600' : 'text-gray-900'}`}>
                         {value}
                     </p>
@@ -1488,7 +1624,8 @@ function AccountSummaryGrid({ summary }: { summary: UserAccountSummaryDTO }) {
     );
 }
 
-function fmtMoney(v: number | null | undefined): string {
+/** Shared with the header stat cards so both render an amount the same way. */
+export function fmtMoney(v: number | null | undefined): string {
     if (v == null) return '—';
     return `₹${Number(v).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 }

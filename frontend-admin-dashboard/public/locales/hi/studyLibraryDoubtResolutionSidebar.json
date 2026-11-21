@@ -1,0 +1,9 @@
+{
+    "errorFetchingDoubts": "संदेह लाने में त्रुटि",
+    "doubtResolution": "संदेह समाधान",
+    "tabs": {
+        "all": "सभी",
+        "resolved": "समाधान हो गया",
+        "unresolved": "समाधान नहीं हुआ"
+    }
+}

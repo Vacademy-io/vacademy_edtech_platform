@@ -1,0 +1,62 @@
+{
+    "card": {
+        "title": "Aperçu du cours",
+        "bundleBadge_one": "Groupe ({{count}} lot)",
+        "bundleBadge_many": "Groupe ({{count}} lot)",
+        "bundleBadge_other": "Groupe ({{count}} lots)"
+    },
+    "courseName": {
+        "placeholder": "Saisissez le nom du cours"
+    },
+    "description": {
+        "label": "Description",
+        "placeholder": "Saisissez la description du cours (30 mots max)",
+        "maxWordsHint": "*30 mots maximum autorisés"
+    },
+    "tags": {
+        "sectionLabel": "Étiquettes {{term}}",
+        "helperText": "Ajoutez des étiquettes pour catégoriser et retrouver facilement votre cours",
+        "inputPlaceholder": "Saisissez une étiquette",
+        "addButton": "Ajouter"
+    },
+    "learningOutcome": {
+        "label": "Que vont acquérir les apprenants ?"
+    },
+    "aboutCourse": {
+        "label": "À propos du cours"
+    },
+    "targetAudience": {
+        "label": "Qui devrait s'inscrire ?"
+    },
+    "placeholders": {
+        "courseOverview": "Fournissez une présentation détaillée du cours. Indiquez les objectifs pédagogiques, les sujets abordés, le format (vidéo, quiz, projets) et le public visé."
+    },
+    "media": {
+        "coursePreview": {
+            "label": "Image d'aperçu du cours",
+            "helperText": "Il s'agit de la vignette affichée sur la fiche du cours. Ratio recommandé : 2:1",
+            "alt": "Aperçu du cours"
+        },
+        "courseBanner": {
+            "label": "Image de bannière du cours",
+            "helperText": "Une large image d'arrière-plan affichée en haut de la page de détail du cours. Ratio recommandé : 2,64:1",
+            "alt": "Bannière du cours"
+        },
+        "courseMedia": {
+            "label": "Média du cours (image ou vidéo)",
+            "helperText": "Un bloc multimédia mis en avant sur la page du cours ; il peut illustrer le contenu ou servir d'aperçu. Pour les vidéos, format recommandé : MP4",
+            "alt": "Média du cours",
+            "videoUnsupported": "Votre navigateur ne prend pas en charge la balise vidéo.",
+            "uploadOption": "Importer une image/vidéo",
+            "youtubeOption": "Lien YouTube"
+        }
+    },
+    "youtube": {
+        "pasteLinkLabel": "Collez le lien YouTube",
+        "playerTitle": "Lecteur vidéo YouTube",
+        "saveButton": "Enregistrer le lien YouTube"
+    },
+    "errors": {
+        "invalidYoutubeLink": "Lien YouTube invalide"
+    }
+}

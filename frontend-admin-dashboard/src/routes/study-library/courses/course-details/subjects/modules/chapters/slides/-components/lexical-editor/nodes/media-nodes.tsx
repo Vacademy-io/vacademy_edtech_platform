@@ -1,3 +1,4 @@
+import i18next from 'i18next';
 import { createBlockNode, setAttrs } from './block-node-factory';
 import {
     ImageBlockEditor,
@@ -13,6 +14,14 @@ import {
  * AWS-query-param stripping and the backend's structural-loss guard see them,
  * matching how the legacy editor persisted media.
  */
+
+// These builders run outside React (invoked by the Yoopta/Lexical export
+// pipeline, not rendered from a component), so useTranslation isn't
+// available — read the current locale off the shared i18next instance
+// instead, matching the module-scope-function pattern used elsewhere
+// (e.g. Payment/utils/utils.ts, simple-attr-nodes.tsx).
+const t = (key: string, options?: Record<string, unknown>): string =>
+    i18next.t(`studyLibraryMediaNodes:${key}`, options) as string;
 
 // ---------- Image ----------
 export interface ImagePayload {
@@ -87,7 +96,7 @@ export const FileBlock = createBlockNode<FilePayload>({
         if (!el.hasAttribute('download')) return null;
         const href = el.getAttribute('href') || '';
         if (!href) return null;
-        return { href, name: el.textContent?.trim() || 'Download file' };
+        return { href, name: el.textContent?.trim() || t('downloadFile') };
     },
     buildExportDom: (p) => {
         const el = document.createElement('a');
@@ -101,7 +110,7 @@ export const FileBlock = createBlockNode<FilePayload>({
                 'display: inline-block; padding: 8px 12px; margin: 8px 0; border: 1px solid #e0e0e0; border-radius: 6px; color: #3366cc; text-decoration: none; font-size: 14px;', // design-lint-ignore: serialized learner HTML needs literal colours
             ],
         ]);
-        el.textContent = p.name || 'Download file';
+        el.textContent = p.name || t('downloadFile');
         return el;
     },
     Component: ({ payload, setPayload, readOnly }) => (
@@ -145,7 +154,7 @@ export const EmbedBlock = createBlockNode<EmbedPayload>({
             ['height', String(p.height)],
             ['style', 'border: none; border-radius: 6px; margin: 8px 0;'],
             ['allowfullscreen', ''],
-            ['title', 'Embedded content'],
+            ['title', t('embeddedContent')],
         ]);
         return el;
     },

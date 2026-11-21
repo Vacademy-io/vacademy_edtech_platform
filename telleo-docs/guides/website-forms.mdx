@@ -1,0 +1,85 @@
+---
+title: "Call website enquiries"
+description: "Ring a visitor back seconds after they submit your form."
+---
+
+The fastest follow-up there is: the visitor fills your enquiry form and their phone rings while they still have your page open.
+
+<Warning>
+Make the API call from **your server**, never from JavaScript in the page. A key in the browser can be copied by anyone and used to place calls on your account.
+</Warning>
+
+## The flow
+
+1. The form posts to your own backend, as it does today.
+2. Your backend saves the enquiry, then calls `POST /v1/calls`.
+3. Your thank-you page can say: *"We're calling you now on +91 98XXX XXX10."*
+
+## Examples
+
+<CodeGroup>
+
+```javascript Next.js route handler
+// app/api/enquiry/route.js
+export async function POST(req) {
+  const form = await req.json();
+  const enquiry = await db.enquiries.create(form);
+
+  await fetch("https://api.telleo.ai/v1/calls", {
+    method: "POST",
+    headers: {
+      "X-API-Key": process.env.TELLEO_API_KEY,
+      "Content-Type": "application/json",
+      "Idempotency-Key": `enquiry-${enquiry.id}`,
+    },
+    body: JSON.stringify({
+      agent_id: process.env.TELLEO_AGENT_ID,
+      phone_number: normalisePhone(form.phone),
+      contact: { name: form.name, email: form.email, external_id: String(enquiry.id) },
+      variables: { course: form.course },
+    }),
+  });
+
+  return Response.json({ ok: true });
+}
+
+// "98765 43210" or "098765-43210" → "+919876543210"
+function normalisePhone(raw) {
+  const digits = raw.replace(/\D/g, "").replace(/^0+/, "");
+  return digits.length === 10 ? `+91${digits}` : `+${digits}`;
+}
+```
+
+```php PHP
+<?php
+// enquiry.php — after saving $enquiry
+$payload = [
+  'agent_id' => getenv('TELLEO_AGENT_ID'),
+  'phone_number' => '+91' . substr(preg_replace('/\D/', '', $_POST['phone']), -10),
+  'contact' => ['name' => $_POST['name'], 'external_id' => (string)$enquiryId],
+  'variables' => ['course' => $_POST['course']],
+];
+$ch = curl_init('https://api.telleo.ai/v1/calls');
+curl_setopt_array($ch, [
+  CURLOPT_POST => true,
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_TIMEOUT => 15,
+  CURLOPT_HTTPHEADER => [
+    'X-API-Key: ' . getenv('TELLEO_API_KEY'),
+    'Content-Type: application/json',
+    'Idempotency-Key: enquiry-' . $enquiryId,
+  ],
+  CURLOPT_POSTFIELDS => json_encode($payload),
+]);
+$response = curl_exec($ch);
+curl_close($ch);
+```
+
+</CodeGroup>
+
+## Good to know
+
+- **Phone numbers** must be in E.164 (`+919876543210`). Indian visitors usually type 10 digits; add `+91` on your side.
+- **Calling hours** still apply. An enquiry at 11 pm is called when your next window opens; `scheduled_for` on the response tells you when.
+- **Duplicates.** A visitor who submits twice gets one call: the second request returns `409 call_already_queued` while the first is waiting, and the [per-number limits](/concepts/queue-and-limits) apply after that.
+- **Consent.** Say on the form that you will call, for example *"Submit and we'll call you right away."*

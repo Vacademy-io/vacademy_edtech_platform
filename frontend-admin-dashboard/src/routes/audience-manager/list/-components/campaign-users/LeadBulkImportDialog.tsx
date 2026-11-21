@@ -1,6 +1,7 @@
 import { useRef, useState, useMemo, useCallback } from 'react';
 import Papa from 'papaparse';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import {
     Dialog,
     DialogContent,
@@ -127,6 +128,8 @@ export function LeadBulkImportDialog({
     customFields: customFieldsProp = [],
     onSuccess,
 }: LeadBulkImportDialogProps) {
+    const { t, i18n } = useTranslation(['audienceManagerLeadBulkImportDialog', 'audienceManagerLeadBulkImportUtils']);
+    const { t: tBulkSubmitLead } = useTranslation('audienceManagerBulkSubmitAudienceLead');
     const queryClient = useQueryClient();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -185,23 +188,32 @@ export function LeadBulkImportDialog({
         () => leadStatuses.find((s) => s.is_default)?.label,
         [leadStatuses]
     );
+    // Maps a resolved status_key back to its human label, so the preview table can show
+    // "Interested" instead of the raw backend key.
+    const statusLabelByKey = useMemo(() => {
+        const map = new Map<string, string>();
+        for (const s of leadStatuses) {
+            if (s.status_key) map.set(s.status_key, s.label);
+        }
+        return map;
+    }, [leadStatuses]);
 
     // Re-resolve owner/status whenever the parsed rows or the catalogs change, so resolution
     // is correct even if the file was uploaded before the catalogs finished loading.
     const resolvedRows = useMemo<ResolvedRow[]>(() => {
         return parsedRows.map((pr) => {
             const owner: OwnerResolution = ownerHeader
-                ? resolveOwner(pr.raw[ownerHeader] || '', counsellorResolver)
+                ? resolveOwner(pr.raw[ownerHeader] || '', counsellorResolver, t)
                 : {};
             const status: StatusResolution = statusHeader
-                ? resolveStatus(pr.raw[statusHeader] || '', statusResolver)
+                ? resolveStatus(pr.raw[statusHeader] || '', statusResolver, t)
                 : {};
             const errors = [...pr.baseErrors];
             if (owner.error) errors.push(owner.error);
             if (status.error) errors.push(status.error);
             return { ...pr, owner, status, errors };
         });
-    }, [parsedRows, ownerHeader, statusHeader, counsellorResolver, statusResolver]);
+    }, [parsedRows, ownerHeader, statusHeader, counsellorResolver, statusResolver, t]);
 
     const validRows = useMemo(
         () => resolvedRows.filter((r) => r.errors.length === 0 && !r.isDuplicate),
@@ -227,22 +239,26 @@ export function LeadBulkImportDialog({
     // occurrence wins and the rest are skipped.
     const blockReason = useMemo<string | null>(() => {
         if (missingMandatoryCols.length > 0) {
-            return `missing mandatory column${missingMandatoryCols.length > 1 ? 's' : ''}: ${missingMandatoryCols.join(', ')}`;
+            return t('preview.blocked.reason', {
+                count: missingMandatoryCols.length,
+                columns: missingMandatoryCols.join(', '),
+            });
         }
         return null;
-    }, [missingMandatoryCols]);
+    }, [missingMandatoryCols, t]);
 
     // Group failures by reason (text before the first ':') with counts, so the admin can see
     // *why* tens of thousands of rows failed at a glance instead of hovering each one.
     const errorSummary = useMemo(() => {
+        const duplicateReasonLabel = t('preview.invalidRows.duplicateReasonLabel');
         const counts = new Map<string, number>();
         for (const r of invalidRows) {
             const reasons = new Set(r.errors.map((e) => e.split(':')[0]!.trim()));
-            if (r.isDuplicate) reasons.add('Duplicate (same email earlier in file)');
+            if (r.isDuplicate) reasons.add(duplicateReasonLabel);
             for (const reason of reasons) counts.set(reason, (counts.get(reason) ?? 0) + 1);
         }
         return [...counts.entries()].sort((a, b) => b[1] - a[1]);
-    }, [invalidRows]);
+    }, [invalidRows, t]);
 
     const resetState = useCallback(() => {
         setStep('upload');
@@ -266,7 +282,7 @@ export function LeadBulkImportDialog({
 
     // --- Step 1: Download Template ---
     const handleDownloadTemplate = useCallback(() => {
-        const csv = generateCsvTemplate(customFields, { statusSample: defaultStatusLabel });
+        const csv = generateCsvTemplate(customFields, t, { statusSample: defaultStatusLabel });
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -274,7 +290,7 @@ export function LeadBulkImportDialog({
         link.download = `${campaignName.replace(/[^a-zA-Z0-9]/g, '_')}_template.csv`;
         link.click();
         URL.revokeObjectURL(url);
-    }, [customFields, campaignName, defaultStatusLabel]);
+    }, [customFields, campaignName, defaultStatusLabel, t]);
 
     // --- Download a report of every row that won't import, with its reason(s) ---
     const downloadErrorReport = useCallback(() => {
@@ -282,12 +298,11 @@ export function LeadBulkImportDialog({
         if (bad.length === 0) return;
         const escape = (v: string) =>
             /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
-        const headers = [...csvHeaders, 'Import Error'];
+        const headers = [...csvHeaders, t('preview.invalidRows.reportColumnHeader')];
         const lines = [headers.map(escape).join(',')];
+        const duplicateReasonLabel = t('preview.invalidRows.duplicateReasonLabel');
         for (const r of bad) {
-            const reasons = r.isDuplicate
-                ? [...r.errors, 'Duplicate (same email earlier in file)']
-                : r.errors;
+            const reasons = r.isDuplicate ? [...r.errors, duplicateReasonLabel] : r.errors;
             const cells = csvHeaders.map((h) => escape(String(r.raw[h] ?? '')));
             cells.push(escape(reasons.join('; ')));
             lines.push(cells.join(','));
@@ -299,7 +314,7 @@ export function LeadBulkImportDialog({
         link.download = `${campaignName.replace(/[^a-zA-Z0-9]/g, '_')}_import_errors.csv`;
         link.click();
         URL.revokeObjectURL(url);
-    }, [resolvedRows, csvHeaders, campaignName]);
+    }, [resolvedRows, csvHeaders, campaignName, t]);
 
     // --- Step 1: Parse CSV ---
     const handleFileChange = useCallback(
@@ -314,12 +329,12 @@ export function LeadBulkImportDialog({
                     const data = results.data;
 
                     if (data.length === 0) {
-                        toast.error('CSV file is empty');
+                        toast.error(t('toasts.csvEmpty'));
                         return;
                     }
 
                     if (data.length > MAX_ROWS) {
-                        toast.error(`CSV has ${data.length} rows. Maximum allowed is ${MAX_ROWS}.`);
+                        toast.error(t('toasts.tooManyRows', { count: data.length, max: MAX_ROWS }));
                         return;
                     }
 
@@ -340,14 +355,14 @@ export function LeadBulkImportDialog({
                     setMissingMandatoryCols(missingCols);
                     if (missingCols.length > 0) {
                         toast.error(
-                            `Missing mandatory columns: ${missingCols.join(', ')}. Add them to the file and re-upload.`
+                            t('toasts.missingMandatoryColumns', { columns: missingCols.join(', ') })
                         );
                     }
 
                     // Validate rows and detect duplicates (owner/status resolution happens in a memo)
                     const seenEmails = new Set<string>();
                     const parsed: ParsedRow[] = data.map((row) => {
-                        const baseErrors = validateRow(row, fieldMap, customFields);
+                        const baseErrors = validateRow(row, fieldMap, customFields, t);
 
                         // Deduplicate by email
                         const { email } = extractUserInfoFromRow(row, fieldMap, customFields);
@@ -366,11 +381,11 @@ export function LeadBulkImportDialog({
                     setStep('preview');
                 },
                 error: (error) => {
-                    toast.error(`Failed to parse CSV: ${error.message}`);
+                    toast.error(t('toasts.parseFailed', { message: error.message }));
                 },
             });
         },
-        [customFields]
+        [customFields, t]
     );
 
     // --- Step 2: Submit ---
@@ -378,11 +393,11 @@ export function LeadBulkImportDialog({
         // Mirrors the disabled state on the submit button. Kept as its own check so the import
         // cannot be triggered while the file still has unresolved problems.
         if (blockReason) {
-            toast.error(`Cannot import — ${blockReason}. Fix the file and re-upload.`);
+            toast.error(t('toasts.cannotImport', { reason: blockReason }));
             return;
         }
         if (validRows.length === 0) {
-            toast.error('No valid rows to submit');
+            toast.error(t('toasts.noValidRows'));
             return;
         }
 
@@ -442,10 +457,13 @@ export function LeadBulkImportDialog({
             const results: BulkSubmitLeadResultItem[] = [];
 
             for (let b = 0; b < batches.length; b++) {
-                const resp = await submitBulkAudienceLead({
-                    audience_id: campaignId,
-                    rows: batches[b]!,
-                });
+                const resp = await submitBulkAudienceLead(
+                    {
+                        audience_id: campaignId,
+                        rows: batches[b]!,
+                    },
+                    tBulkSubmitLead
+                );
                 summary.total_requested += resp.summary.total_requested;
                 summary.successful += resp.summary.successful;
                 summary.failed += resp.summary.failed;
@@ -461,23 +479,34 @@ export function LeadBulkImportDialog({
             setStep('results');
 
             if (summary.failed === 0 && summary.skipped === 0) {
-                toast.success(`All ${summary.successful} leads imported successfully!`);
+                toast.success(t('toasts.allImportedSuccess', { count: summary.successful }));
             } else {
                 toast.info(
-                    `Import complete: ${summary.successful} success, ${summary.failed} failed, ${summary.skipped} skipped`
+                    t('toasts.importComplete', {
+                        success: summary.successful,
+                        failed: summary.failed,
+                        skipped: summary.skipped,
+                    })
                 );
             }
 
             queryClient.invalidateQueries({ queryKey: ['campaignUsers'] });
             onSuccess?.();
         } catch (error) {
-            toast.error(
-                error instanceof Error ? error.message : 'Failed to submit leads'
-            );
+            toast.error(error instanceof Error ? error.message : t('toasts.submitFailed'));
         } finally {
             setIsSubmitting(false);
         }
-    }, [blockReason, validRows, headerToFieldId, customFields, campaignId, queryClient, onSuccess]);
+    }, [
+        blockReason,
+        validRows,
+        headerToFieldId,
+        customFields,
+        campaignId,
+        queryClient,
+        onSuccess,
+        t,
+    ]);
 
     return (
         <Dialog open={open} onOpenChange={(v) => (v ? onOpenChange(v) : handleClose())}>
@@ -522,32 +551,34 @@ export function LeadBulkImportDialog({
                                     s === step ? 'font-semibold text-foreground' : 'text-muted-foreground'
                                 )}
                             >
-                                {s}
+                                {t(`steps.${s}`)}
                             </span>
                         </div>
                     ))}
                 </div>
 
                 <DialogHeader>
-                    <DialogTitle>Bulk Import CSV — {campaignName}</DialogTitle>
-                    <DialogDescription>
-                        Upload a CSV file to import multiple leads at once.
-                    </DialogDescription>
+                    <DialogTitle>{t('dialog.title', { campaignName })}</DialogTitle>
+                    <DialogDescription>{t('dialog.description')}</DialogDescription>
                 </DialogHeader>
 
                 {/* ===== STEP 1: UPLOAD ===== */}
                 {step === 'upload' && isFetchingCampaign && (
                     <div className="flex items-center justify-center py-12">
                         <Loader2 className="mr-2 size-5 animate-spin text-muted-foreground" />
-                        <span className="text-body text-muted-foreground">Loading campaign fields...</span>
+                        <span className="text-body text-muted-foreground">
+                            {t('loading.campaignFields')}
+                        </span>
                     </div>
                 )}
                 {step === 'upload' && !isFetchingCampaign && customFields.length === 0 && (
                     <div className="py-12 text-center">
                         <FileSpreadsheet className="mx-auto mb-3 size-10 text-muted-foreground" />
-                        <p className="text-body font-semibold text-foreground">No custom fields configured</p>
+                        <p className="text-body font-semibold text-foreground">
+                            {t('noCustomFields.title')}
+                        </p>
                         <p className="mt-1 text-caption text-muted-foreground">
-                            Add custom fields to this campaign before importing leads.
+                            {t('noCustomFields.description')}
                         </p>
                     </div>
                 )}
@@ -561,11 +592,10 @@ export function LeadBulkImportDialog({
                                 onClick={handleDownloadTemplate}
                             >
                                 <Download className="mr-1.5 size-4" />
-                                Download Template
+                                {t('upload.downloadTemplateButton')}
                             </MyButton>
                             <span className="text-caption text-muted-foreground">
-                                CSV with {customFields.length} field
-                                {customFields.length !== 1 ? 's' : ''} + sample row
+                                {t('upload.fieldsCount', { count: customFields.length })}
                             </span>
                         </div>
 
@@ -579,10 +609,10 @@ export function LeadBulkImportDialog({
                             </div>
                             <div className="text-center">
                                 <p className="text-body font-semibold text-foreground">
-                                    Click to upload your CSV
+                                    {t('upload.dropzone.cta')}
                                 </p>
                                 <p className="mt-0.5 text-caption text-muted-foreground">
-                                    Max {MAX_ROWS.toLocaleString()} rows
+                                    {t('upload.dropzone.maxRows', { count: MAX_ROWS })}
                                 </p>
                             </div>
                             <input
@@ -597,7 +627,7 @@ export function LeadBulkImportDialog({
                         {/* Expected columns hint */}
                         <div className="rounded-md border border-border bg-muted/40 p-4">
                             <p className="mb-2 text-caption font-semibold uppercase tracking-wide text-muted-foreground">
-                                Expected columns
+                                {t('upload.expectedColumns.title')}
                             </p>
                             <div className="flex flex-wrap gap-1.5">
                                 {customFields.map((f) => (
@@ -612,25 +642,32 @@ export function LeadBulkImportDialog({
                                     </span>
                                 ))}
                                 <span className="inline-flex items-center rounded-sm border border-info-200 bg-info-50 px-2 py-0.5 text-caption text-info-700">
-                                    Lead Owner (Counsellor Email)
+                                    {t('upload.expectedColumns.leadOwnerChip')}
                                 </span>
                                 <span className="inline-flex items-center rounded-sm border border-info-200 bg-info-50 px-2 py-0.5 text-caption text-info-700">
-                                    Lead Status
+                                    {t('upload.expectedColumns.leadStatusChip')}
                                 </span>
                             </div>
                             <p className="mt-3 text-caption text-muted-foreground">
-                                <span className="font-semibold">Lead Owner</span> and{' '}
-                                <span className="font-semibold">Lead Status</span> are optional.
-                                Owner accepts a counsellor email (or unique name); status accepts a
-                                label like{' '}
-                                {leadStatuses.length > 0
-                                    ? leadStatuses
-                                          .slice(0, 4)
-                                          .map((s) => s.label)
-                                          .join(', ')
-                                    : 'New, Contacted, Interested'}
-                                . Blank status defaults to{' '}
-                                {defaultStatusLabel || 'your default status'}.
+                                <span className="font-semibold">
+                                    {t('upload.expectedColumns.leadOwnerLabel')}
+                                </span>{' '}
+                                {t('upload.expectedColumns.andConnector')}{' '}
+                                <span className="font-semibold">
+                                    {t('upload.expectedColumns.leadStatusLabel')}
+                                </span>{' '}
+                                {t('upload.expectedColumns.hintSuffix', {
+                                    statusExamples:
+                                        leadStatuses.length > 0
+                                            ? leadStatuses
+                                                  .slice(0, 4)
+                                                  .map((s) => s.label)
+                                                  .join(', ')
+                                            : t('upload.expectedColumns.defaultStatusExamples'),
+                                    defaultStatus:
+                                        defaultStatusLabel ||
+                                        t('upload.expectedColumns.defaultStatusFallback'),
+                                })}
                             </p>
                         </div>
                     </div>
@@ -642,24 +679,24 @@ export function LeadBulkImportDialog({
                         {/* Summary stat tiles */}
                         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                             <StatTile
-                                label="Total rows"
+                                label={t('preview.statTiles.totalRows')}
                                 value={parsedRows.length}
                                 icon={<FileSpreadsheet className="size-4" />}
                             />
                             <StatTile
-                                label="Valid"
+                                label={t('preview.statTiles.valid')}
                                 value={validRows.length}
                                 icon={<CheckCircle2 className="size-4" />}
                                 variant="success"
                             />
                             <StatTile
-                                label="Errors"
+                                label={t('preview.statTiles.errors')}
                                 value={errorRows.length}
                                 icon={<XCircle className="size-4" />}
                                 variant={errorRows.length > 0 ? 'danger' : 'neutral'}
                             />
                             <StatTile
-                                label="Duplicates"
+                                label={t('preview.statTiles.duplicates')}
                                 value={duplicateRows.length}
                                 icon={<AlertTriangle className="size-4" />}
                                 variant={duplicateRows.length > 0 ? 'warning' : 'neutral'}
@@ -671,18 +708,16 @@ export function LeadBulkImportDialog({
                         {blockReason && (
                             <div className="rounded-md border border-danger-300 bg-danger-50 p-4">
                                 <p className="text-body font-semibold text-danger-700">
-                                    Import blocked — {blockReason}
+                                    {t('preview.blocked.title', { reason: blockReason })}
                                 </p>
                                 <p className="mt-1.5 text-caption text-danger-600">
-                                    Your file has no column mapping to{' '}
+                                    {t('preview.blocked.descriptionPrefix')}{' '}
                                     <span className="font-semibold">
                                         {missingMandatoryCols.join(', ')}
                                     </span>
-                                    . This affects every row, so nothing can be imported — each lead
-                                    would be saved with{' '}
-                                    {missingMandatoryCols.length > 1 ? 'those fields' : 'that field'}{' '}
-                                    empty. Add the column to your CSV (the header must match the field
-                                    name) and upload again.
+                                    {t('preview.blocked.descriptionSuffix', {
+                                        count: missingMandatoryCols.length,
+                                    })}
                                 </p>
                             </div>
                         )}
@@ -691,7 +726,10 @@ export function LeadBulkImportDialog({
                             <div className="rounded-md border border-danger-200 bg-danger-50 p-4">
                                 <div className="mb-3 flex items-center justify-between gap-3">
                                     <p className="text-body font-semibold text-danger-700">
-                                        {invalidRows.length.toLocaleString()} rows won't import
+                                        {t('preview.invalidRows.count', {
+                                            count: invalidRows.length,
+                                            formatted: invalidRows.length.toLocaleString(i18n.language),
+                                        })}
                                     </p>
                                     <MyButton
                                         buttonType="secondary"
@@ -699,7 +737,7 @@ export function LeadBulkImportDialog({
                                         onClick={downloadErrorReport}
                                     >
                                         <Download className="mr-1.5 size-4" />
-                                        Download error report
+                                        {t('preview.invalidRows.downloadReportButton')}
                                     </MyButton>
                                 </div>
                                 <div className="flex flex-col gap-1">
@@ -718,9 +756,7 @@ export function LeadBulkImportDialog({
                                     ))}
                                 </div>
                                 <p className="mt-3 text-caption text-danger-600">
-                                    These rows are skipped — the remaining valid rows import
-                                    normally. The report lists every skipped row with its reason, so
-                                    you can fix just those and upload them separately.
+                                    {t('preview.invalidRows.note')}
                                 </p>
                             </div>
                         )}
@@ -728,9 +764,12 @@ export function LeadBulkImportDialog({
                         {/* Column mapping */}
                         <div className="rounded-md border border-border bg-muted/40 px-3 py-2.5">
                             <p className="mb-1.5 text-caption font-medium text-muted-foreground">
-                                Column mapping{' '}
+                                {t('preview.columnMapping.title')}{' '}
                                 <span className="text-foreground">
-                                    ({headerToFieldId.size}/{csvHeaders.length} mapped)
+                                    {t('preview.columnMapping.mappedCount', {
+                                        mapped: headerToFieldId.size,
+                                        total: csvHeaders.length,
+                                    })}
                                 </span>
                             </p>
                             <div className="flex flex-wrap gap-1">
@@ -763,10 +802,10 @@ export function LeadBulkImportDialog({
                                     <thead className="sticky top-0 z-10 bg-muted">
                                         <tr>
                                             <th className="border-b border-border px-3 py-2 text-left font-semibold text-muted-foreground">
-                                                #
+                                                {t('preview.table.rowNumberHeader')}
                                             </th>
                                             <th className="border-b border-border px-3 py-2 text-left font-semibold text-muted-foreground">
-                                                Status
+                                                {t('preview.table.statusHeader')}
                                             </th>
                                             {csvHeaders
                                                 .filter((h) => headerToFieldId.has(h))
@@ -780,12 +819,12 @@ export function LeadBulkImportDialog({
                                                 ))}
                                             {ownerHeader && (
                                                 <th className="border-b border-border px-3 py-2 text-left font-semibold text-info-700">
-                                                    Owner →
+                                                    {t('preview.table.ownerColumnHeader')}
                                                 </th>
                                             )}
                                             {statusHeader && (
                                                 <th className="border-b border-border px-3 py-2 text-left font-semibold text-info-700">
-                                                    Status →
+                                                    {t('preview.table.statusColumnHeader')}
                                                 </th>
                                             )}
                                         </tr>
@@ -819,7 +858,7 @@ export function LeadBulkImportDialog({
                                                         ) : pr.isDuplicate ? (
                                                             <span
                                                                 className="cursor-help text-warning-600"
-                                                                title="Duplicate email"
+                                                                title={t('preview.table.duplicateEmailTooltip')}
                                                             >
                                                                 <AlertTriangle className="size-3.5" />
                                                             </span>
@@ -868,7 +907,12 @@ export function LeadBulkImportDialog({
                                                                 </span>
                                                             ) : (
                                                                 <span className="text-neutral-700">
-                                                                    {pr.status.leadStatusKey || '—'}
+                                                                    {(pr.status.leadStatusKey &&
+                                                                        statusLabelByKey.get(
+                                                                            pr.status.leadStatusKey
+                                                                        )) ||
+                                                                        pr.status.leadStatusKey ||
+                                                                        '—'}
                                                                 </span>
                                                             )}
                                                         </td>
@@ -881,7 +925,11 @@ export function LeadBulkImportDialog({
                             </div>
                             {resolvedRows.length > 100 && (
                                 <div className="border-t border-border bg-muted/40 px-3 py-2 text-center text-caption text-muted-foreground">
-                                    Showing first 100 of {resolvedRows.length.toLocaleString()} rows
+                                    {t('preview.table.showingFirst100', {
+                                        count: resolvedRows.length,
+                                        shown: 100,
+                                        formatted: resolvedRows.length.toLocaleString(i18n.language),
+                                    })}
                                 </div>
                             )}
                         </div>
@@ -889,7 +937,7 @@ export function LeadBulkImportDialog({
                         {/* Footer actions */}
                         <div className="flex items-center justify-between border-t border-border pt-4">
                             <MyButton buttonType="secondary" scale="medium" onClick={resetState}>
-                                Back
+                                {t('preview.footer.backButton')}
                             </MyButton>
                             <MyButton
                                 buttonType="primary"
@@ -901,13 +949,18 @@ export function LeadBulkImportDialog({
                                     <>
                                         <Loader2 className="mr-2 size-4 animate-spin" />
                                         {submitProgress && submitProgress.total > 1
-                                            ? `Submitting… batch ${submitProgress.done}/${submitProgress.total}`
-                                            : `Submitting ${validRows.length} rows...`}
+                                            ? t('preview.footer.submittingBatch', {
+                                                  done: submitProgress.done,
+                                                  total: submitProgress.total,
+                                              })
+                                            : t('preview.footer.submittingRows', {
+                                                  count: validRows.length,
+                                              })}
                                     </>
                                 ) : (
                                     <>
                                         <Upload className="mr-2 size-4" />
-                                        Submit {validRows.length} valid rows
+                                        {t('preview.footer.submitButton', { count: validRows.length })}
                                     </>
                                 )}
                             </MyButton>
@@ -921,26 +974,26 @@ export function LeadBulkImportDialog({
                         {/* Summary stat tiles */}
                         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                             <SummaryCard
-                                label="Total"
+                                label={t('results.summary.total')}
                                 value={result.summary.total_requested}
                                 icon={<FileSpreadsheet className="size-4" />}
                             />
                             <SummaryCard
-                                label="Success"
+                                label={t('results.summary.success')}
                                 value={result.summary.successful}
                                 icon={<CheckCircle2 className="size-4 text-success-600" />}
                                 className="bg-success-50 border-success-200"
                                 valueClassName="text-success-700"
                             />
                             <SummaryCard
-                                label="Failed"
+                                label={t('results.summary.failed')}
                                 value={result.summary.failed}
                                 icon={<XCircle className="size-4 text-danger-600" />}
                                 className="bg-danger-50 border-danger-200"
                                 valueClassName="text-danger-700"
                             />
                             <SummaryCard
-                                label="Skipped"
+                                label={t('results.summary.skipped')}
                                 value={result.summary.skipped}
                                 icon={<AlertTriangle className="size-4 text-warning-600" />}
                                 className="bg-warning-50 border-warning-200"
@@ -956,7 +1009,9 @@ export function LeadBulkImportDialog({
                                     onClick={() => setShowErrors((v) => !v)}
                                 >
                                     <span>
-                                        {showErrors ? 'Hide' : 'Show'} details
+                                        {showErrors
+                                            ? t('results.hideDetailsButton')
+                                            : t('results.showDetailsButton')}
                                     </span>
                                     {showErrors ? (
                                         <ChevronUp className="size-4 text-muted-foreground" />
@@ -974,7 +1029,9 @@ export function LeadBulkImportDialog({
                                                     className="flex items-start gap-3 border-b border-border px-4 py-2 text-caption last:border-0"
                                                 >
                                                     <span className="shrink-0 font-mono text-muted-foreground">
-                                                        Row {r.index + 1}
+                                                        {t('results.rowLabel', {
+                                                            number: r.index + 1,
+                                                        })}
                                                     </span>
                                                     <span
                                                         className={cn(
@@ -984,7 +1041,7 @@ export function LeadBulkImportDialog({
                                                                 : 'text-warning-600'
                                                         )}
                                                     >
-                                                        [{r.status}]
+                                                        [{t(`results.statusLabel.${r.status}`)}]
                                                     </span>
                                                     <span className="text-foreground">{r.message}</span>
                                                 </div>
@@ -996,7 +1053,7 @@ export function LeadBulkImportDialog({
 
                         <div className="flex justify-end border-t border-border pt-4">
                             <MyButton buttonType="primary" scale="medium" onClick={handleClose}>
-                                Done
+                                {t('results.doneButton')}
                             </MyButton>
                         </div>
                     </div>

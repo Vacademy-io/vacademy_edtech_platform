@@ -1,0 +1,14 @@
+{
+    "columnsLayout": "Columns Layout",
+    "columnsCount_one": "{{count}} Column",
+    "columnsCount_other": "{{count}} Columns",
+    "gapTight": "Tight",
+    "gapNormal": "Normal",
+    "gapWide": "Wide",
+    "gapExtraWide": "Extra Wide",
+    "preview": "Preview",
+    "edit": "Edit",
+    "columnLabel": "Column {{number}}",
+    "columnPlaceholder": "Column {{number}} — text and/or image…",
+    "emptyColumn": "Empty column"
+}

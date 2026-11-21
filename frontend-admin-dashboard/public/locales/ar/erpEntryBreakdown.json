@@ -1,0 +1,14 @@
+{
+    "groups": {
+        "earnings": "الإيرادات",
+        "deductions": "الخصومات",
+        "employerContributions": "مساهمات صاحب العمل"
+    },
+    "component": "العنصر",
+    "tax": "ضريبة",
+    "onHold": "موقوف:",
+    "noBreakdown": "لم يُحفظ أي تفصيل للعناصر لهذا القيد.",
+    "none": "لا شيء",
+    "subtotal": "المجموع الفرعي",
+    "netPay": "صافي الراتب"
+}

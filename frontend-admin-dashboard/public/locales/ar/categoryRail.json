@@ -1,0 +1,15 @@
+{
+    "categories": {
+        "crm": "CRM",
+        "lms": "LMS",
+        "ai": "الذكاء الاصطناعي",
+        "erp": "ERP",
+        "commerce": "المتجر"
+    },
+    "search": "بحث",
+    "recent": "الأخيرة",
+    "status": "الحالة",
+    "serviceStatus": "حالة الخدمة",
+    "settings": "الإعدادات",
+    "categoryFeatureLabel": "فئة {{category}}"
+}

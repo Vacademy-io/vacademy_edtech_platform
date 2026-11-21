@@ -10,6 +10,7 @@ import { OneWordQuestionPaperTemplatePPTView } from './OneWordType/OneWordQuesti
 import { LongAnswerQuestionPaperTemplatePPTView } from './LongAnswerType/LongAnswerQuestionPaperTemplatePPTView';
 import { TrueFalseQuestionPaperTemplatePPTView } from './TrueFalse/TrueFalseQuestionPaperTemplatePPTView';
 import { CodingQuestionPaperTemplatePPTView } from './Coding/CodingQuestionPaperTemplatePPTView';
+import { CbeResponseQuestionPaperTemplatePPTView } from './CbeResponse/CbeResponseQuestionPaperTemplatePPTView';
 
 type PPTComponentType = QuestionType;
 
@@ -26,6 +27,7 @@ const PPTComponentsMap: Record<PPTComponentType, PPTComponent> = {
     LONG_ANSWER: LongAnswerQuestionPaperTemplatePPTView,
     TRUE_FALSE: TrueFalseQuestionPaperTemplatePPTView,
     CODING: CodingQuestionPaperTemplatePPTView,
+    CBE_RESPONSE: CbeResponseQuestionPaperTemplatePPTView,
 };
 
 export const PPTComponentFactory = (params: {

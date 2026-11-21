@@ -1,0 +1,17 @@
+{
+    "noAccessTokenFound": "Aucun jeton d'accès trouvé",
+    "invalidTokenData": "Données de jeton invalides",
+    "instituteFallbackName": "Établissement {{idPrefix}}...",
+    "noInstituteAccess": "Vous n'avez accès à aucun établissement",
+    "pleaseSelectAnInstitute": "Veuillez sélectionner un établissement",
+    "selectedInstituteNotFound": "Établissement sélectionné introuvable",
+    "loadingInstitutes": "Chargement des établissements...",
+    "selectYourInstitute": "Sélectionnez votre établissement",
+    "chooseInstituteToAccess": "Choisissez l'établissement auquel vous souhaitez accéder",
+    "loadingInstituteDetails": "Chargement des détails de l'établissement...",
+    "selectInstituteLabel": "Sélectionner un établissement",
+    "selectAnInstitute": "Sélectionnez un établissement",
+    "pleaseSelectAnInstituteToContinue": "Veuillez sélectionner un établissement pour continuer",
+    "continueToDashboard": "Continuer vers le tableau de bord",
+    "backToLogin": "Retour à la connexion"
+}

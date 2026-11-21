@@ -1,4 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import PhoneInput from 'react-phone-input-2';
@@ -8,15 +10,30 @@ import { MyButton } from '@/components/design-system/button';
 import { Plus, Trash, CaretDown, CaretUp } from '@phosphor-icons/react';
 import { NewUserRow, CustomFieldValue } from '../../../-types/bulk-assign-types';
 import {
+    getCustomFieldSettings,
     getCustomFieldSettingsFromCache,
+    getEnrollmentFormCustomFields,
     CustomField,
+    CustomFieldSettingsData,
 } from '@/services/custom-field-settings';
 import { useUserIdentifierSetting } from '@/services/user-identifier-setting';
+import { useLearnerUsernamePolicy } from '@/services/student-display-settings';
 import { getPreferredPhoneCountries } from '@/services/domain-routing';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { noAutofillProps } from '@/lib/no-autofill';
 import { AutofillDecoy } from '@/components/design-system/autofill-decoy';
+import { CustomFieldRenderer } from '@/components/common/custom-fields/CustomFieldRenderer';
+import { isOptionFieldType } from '@/routes/audience-manager/list/-utils/parseFieldOptions';
+import { cn } from '@/lib/utils';
+
+// field_type is stored as dropdown / DROPDOWN / select / radio / multi_select depending on
+// where the field was created, so an exact 'dropdown' check left most choice fields as text.
+const choiceKindOf = (cf: CustomField): 'single' | 'multi' | null => {
+    if (!cf.options?.length || !isOptionFieldType(cf.type)) return null;
+    const type = (cf.type ?? '').toLowerCase().trim();
+    return type === 'multi_select' || type === 'multiselect' ? 'multi' : 'single';
+};
 
 interface Props {
     onAdd: (rows: NewUserRow[]) => void;
@@ -133,45 +150,73 @@ const editableRowToNewUser = (r: EditableRow): NewUserRow => {
     };
 };
 
-// Map system field key → EditableRow field key + input type
-const SYSTEM_FIELD_MAP: Record<
-    string,
-    { rowKey: keyof EditableRow; inputType: string; placeholder: string }
-> = {
-    GENDER: { rowKey: 'gender', inputType: 'text', placeholder: 'MALE / FEMALE / OTHER' },
-    DATE_OF_BIRTH: { rowKey: 'date_of_birth', inputType: 'date', placeholder: 'YYYY-MM-DD' },
-    ADDRESS_LINE: { rowKey: 'address_line', inputType: 'text', placeholder: 'Address line' },
-    CITY: { rowKey: 'city', inputType: 'text', placeholder: 'City' },
-    REGION: { rowKey: 'region', inputType: 'text', placeholder: 'State / Region' },
-    PIN_CODE: { rowKey: 'pin_code', inputType: 'text', placeholder: 'PIN code' },
+// Map system field key → EditableRow field key + input type. Built from `t` so
+// placeholders re-localize when the active language changes.
+const buildSystemFieldMap = (
+    t: TFunction
+): Record<string, { rowKey: keyof EditableRow; inputType: string; placeholder: string }> => ({
+    GENDER: {
+        rowKey: 'gender',
+        inputType: 'text',
+        placeholder: t('fields.gender.placeholder'),
+    },
+    DATE_OF_BIRTH: {
+        rowKey: 'date_of_birth',
+        inputType: 'date',
+        placeholder: t('fields.dateOfBirth.placeholder'),
+    },
+    ADDRESS_LINE: {
+        rowKey: 'address_line',
+        inputType: 'text',
+        placeholder: t('fields.addressLine.placeholder'),
+    },
+    CITY: { rowKey: 'city', inputType: 'text', placeholder: t('fields.city.placeholder') },
+    REGION: {
+        rowKey: 'region',
+        inputType: 'text',
+        placeholder: t('fields.region.placeholder'),
+    },
+    PIN_CODE: {
+        rowKey: 'pin_code',
+        inputType: 'text',
+        placeholder: t('fields.pinCode.placeholder'),
+    },
     LINKED_INSTITUTE_NAME: {
         rowKey: 'linked_institute_name',
         inputType: 'text',
-        placeholder: 'College / School',
+        placeholder: t('fields.linkedInstituteName.placeholder'),
     },
-    FATHER_NAME: { rowKey: 'fathers_name', inputType: 'text', placeholder: "Father's name" },
-    MOTHER_NAME: { rowKey: 'mothers_name', inputType: 'text', placeholder: "Mother's name" },
+    FATHER_NAME: {
+        rowKey: 'fathers_name',
+        inputType: 'text',
+        placeholder: t('fields.fathersName.placeholder'),
+    },
+    MOTHER_NAME: {
+        rowKey: 'mothers_name',
+        inputType: 'text',
+        placeholder: t('fields.mothersName.placeholder'),
+    },
     PARENTS_MOBILE_NUMBER: {
         rowKey: 'parents_mobile_number',
         inputType: 'tel',
-        placeholder: "Father's mobile",
+        placeholder: t('fields.parentsMobileNumber.placeholder'),
     },
     PARENTS_EMAIL: {
         rowKey: 'parents_email',
         inputType: 'email',
-        placeholder: "Father's email",
+        placeholder: t('fields.parentsEmail.placeholder'),
     },
     PARENTS_TO_MOTHER_MOBILE_NUMBER: {
         rowKey: 'parents_to_mother_mobile_number',
         inputType: 'tel',
-        placeholder: "Mother's mobile",
+        placeholder: t('fields.parentsToMotherMobileNumber.placeholder'),
     },
     PARENTS_TO_MOTHER_EMAIL: {
         rowKey: 'parents_to_mother_email',
         inputType: 'email',
-        placeholder: "Mother's email",
+        placeholder: t('fields.parentsToMotherEmail.placeholder'),
     },
-};
+});
 
 // System fields that are excluded from the form (handled in other steps)
 const EXCLUDED_SYSTEM_KEYS = new Set([
@@ -199,15 +244,33 @@ interface VisibleSystemField {
 }
 
 export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }: Props) => {
+    const { t } = useTranslation('manageStudentsManualUserEntry');
     const learnerTerm = getTerminology(RoleTerms.Learner, SystemTerms.Learner);
     const isEditMode = !!editingRow;
     const { data: userIdentifier } = useUserIdentifierSetting();
     const phoneRequired = userIdentifier === 'PHONE';
+    // Settings → Login & Signup can make the username rule replace a typed one;
+    // then the box is locked (showing the email when the rule is Email).
+    const usernamePolicy = useLearnerUsernamePolicy();
+    const usernameLocked = usernamePolicy.overridesTyped;
 
     const [rows, setRows] = useState<EditableRow[]>(() =>
         editingRow ? [rowFromNewUser(editingRow)] : [emptyRow()],
     );
     const [submitted, setSubmitted] = useState(false);
+
+    // Institute field settings. The cache is empty when this dialog opens from a
+    // page that never loaded them (course, batch), so fetch instead of showing
+    // no custom fields at all.
+    const [fieldSettings, setFieldSettings] = useState<CustomFieldSettingsData | null>(() =>
+        getCustomFieldSettingsFromCache()
+    );
+    useEffect(() => {
+        if (fieldSettings) return;
+        getCustomFieldSettings()
+            .then(setFieldSettings)
+            .catch((err) => console.error('Failed to load custom field settings:', err));
+    }, [fieldSettings]);
 
     // Default selected country + picker order from the institute's preferred countries.
     const { defaultCountry, preferredCountries } = useMemo(
@@ -224,7 +287,8 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
 
     // ─── Compute dynamic fields from institute settings ────
     const { visibleSystemFields, enrollmentCustomFields } = useMemo(() => {
-        const settings = getCustomFieldSettingsFromCache();
+        const settings = fieldSettings;
+        const systemFieldMap = buildSystemFieldMap(t);
 
         // System fields
         const sysFields: VisibleSystemField[] = [];
@@ -232,7 +296,7 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
             for (const sf of settings.systemFields) {
                 if (!sf.visibility) continue;
                 if (EXCLUDED_SYSTEM_KEYS.has(sf.key)) continue;
-                const mapping = SYSTEM_FIELD_MAP[sf.key];
+                const mapping = systemFieldMap[sf.key];
                 if (!mapping) continue;
                 sysFields.push({
                     key: sf.key,
@@ -246,22 +310,23 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
             // Fallback: show gender only if no settings
             sysFields.push({
                 key: 'GENDER',
-                label: 'Gender',
+                label: t('fields.gender.label'),
                 rowKey: 'gender',
                 inputType: 'text',
-                placeholder: 'MALE / FEMALE / OTHER',
+                placeholder: t('fields.gender.placeholder'),
             });
         }
 
-        // Custom fields with learnerEnrollment visibility
-        const cfFields = (settings?.customFields ?? []).filter(
-            (cf: CustomField) => cf.visibility?.learnerEnrollment === true
-        );
+        // Required custom fields + the ones switched on for "Learner's Enrollment"
+        return {
+            visibleSystemFields: sysFields,
+            enrollmentCustomFields: getEnrollmentFormCustomFields(settings),
+        };
+    }, [t, fieldSettings]);
 
-        return { visibleSystemFields: sysFields, enrollmentCustomFields: cfFields };
-    }, []);
-
-    const hasExtraFields = visibleSystemFields.length > 0 || enrollmentCustomFields.length > 0;
+    // Custom fields sit with the core fields; only optional system fields stay
+    // behind "More fields".
+    const hasExtraFields = visibleSystemFields.length > 0;
 
     const update = (idx: number, field: keyof EditableRow, value: string) => {
         setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, [field]: value } : r)));
@@ -286,8 +351,12 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
     const removeRow = (idx: number) =>
         setRows((prev) => (prev.length === 1 ? prev : prev.filter((_, i) => i !== idx)));
 
+    const isMissingRequired = (row: EditableRow, cf: CustomField) =>
+        cf.required && !row.custom_fields[cf.id]?.trim();
+
     const validate = (row: EditableRow) => {
         if (!row.full_name.trim()) return false;
+        if (enrollmentCustomFields.some((cf) => isMissingRequired(row, cf))) return false;
         const phone = row.mobile_number?.trim();
         if (phoneRequired) {
             return isValidPhoneValue(phone);
@@ -303,8 +372,14 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
         if (valid.length === 0) return;
 
         onAdd(valid.map(editableRowToNewUser));
-        setRows([emptyRow()]);
-        setSubmitted(false);
+        // Keep typed-in rows that still fail (e.g. a required custom field left
+        // blank) so the admin can finish them instead of losing them silently.
+        // Blank extra rows are still dropped, as before.
+        const pending = rows.filter(
+            (row) => !validate(row) && !!(row.full_name.trim() || row.email.trim())
+        );
+        setRows(pending.length > 0 ? pending : [emptyRow()]);
+        setSubmitted(pending.length > 0);
     };
 
     const handleEditSave = () => {
@@ -314,8 +389,8 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
         onEditSave?.(editableRowToNewUser(row));
     };
 
-    const emailLabel = phoneRequired ? 'Email (optional)' : 'Email';
-    const mobileLabel = phoneRequired ? 'Mobile' : 'Mobile (optional)';
+    const emailLabel = phoneRequired ? t('core.emailLabelOptional') : t('core.emailLabel');
+    const mobileLabel = phoneRequired ? t('core.mobileLabel') : t('core.mobileLabelOptional');
 
     return (
         <div className="flex flex-col gap-4">
@@ -331,7 +406,9 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                     >
                         <div className="mb-2 flex items-center justify-between">
                             <span className="text-xs font-semibold text-neutral-500">
-                                {isEditMode ? `Edit ${learnerTerm}` : `${learnerTerm} #${idx + 1}`}
+                                {isEditMode
+                                    ? t('row.editTitle', { term: learnerTerm })
+                                    : t('row.title', { term: learnerTerm, number: idx + 1 })}
                             </span>
                             <div className="flex items-center gap-2">
                                 {hasExtraFields && (
@@ -341,11 +418,11 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                                     >
                                         {row.expanded ? (
                                             <>
-                                                <CaretUp size={12} /> Less fields
+                                                <CaretUp size={12} /> {t('row.lessFields')}
                                             </>
                                         ) : (
                                             <>
-                                                <CaretDown size={12} /> More fields
+                                                <CaretDown size={12} /> {t('row.moreFields')}
                                             </>
                                         )}
                                     </button>
@@ -370,7 +447,7 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                                 </Label>
                                 <Input
                                     type="email"
-                                    placeholder="student@example.com"
+                                    placeholder={t('core.emailPlaceholder')}
                                     value={row.email}
                                     onChange={(e) => update(idx, 'email', e.target.value)}
                                     className={
@@ -382,10 +459,10 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                             </div>
                             <div>
                                 <Label className="mb-1 text-xs text-neutral-500">
-                                    Full Name <span className="text-danger-500">*</span>
+                                    {t('core.fullNameLabel')} <span className="text-danger-500">*</span>
                                 </Label>
                                 <Input
-                                    placeholder="John Doe"
+                                    placeholder={t('core.fullNamePlaceholder')}
                                     value={row.full_name}
                                     onChange={(e) => update(idx, 'full_name', e.target.value)}
                                     className={
@@ -404,7 +481,7 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                                     country={defaultCountry}
                                     preferredCountries={preferredCountries}
                                     enableSearch={true}
-                                    placeholder="123 456 7890"
+                                    placeholder={t('core.mobilePlaceholder')}
                                     value={row.mobile_number}
                                     onChange={(value) =>
                                         update(idx, 'mobile_number', value)
@@ -422,12 +499,23 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                             </div>
                             <div>
                                 <Label className="mb-1 text-xs text-neutral-500">
-                                    Username (optional)
+                                    {t('core.usernameLabel')}
                                 </Label>
                                 <Input
                                     name={`learner_username_${idx}`}
-                                    placeholder="auto-generated if blank"
-                                    value={row.username}
+                                    placeholder={
+                                        usernameLocked
+                                            ? t('core.usernameFromSettingPlaceholder')
+                                            : t('core.autoGeneratedPlaceholder')
+                                    }
+                                    value={
+                                        !usernameLocked
+                                            ? row.username
+                                            : usernamePolicy.strategy === 'email'
+                                              ? row.email.trim().toLowerCase()
+                                              : ''
+                                    }
+                                    disabled={usernameLocked}
                                     // Usernames cannot contain spaces — strip whitespace as it's typed/pasted
                                     onChange={(e) =>
                                         update(idx, 'username', e.target.value.replace(/\s/g, ''))
@@ -437,24 +525,88 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                             </div>
                             <div>
                                 <Label className="mb-1 text-xs text-neutral-500">
-                                    Password (optional)
+                                    {t('core.passwordLabel')}
                                 </Label>
                                 <Input
                                     type="password"
                                     name={`learner_password_${idx}`}
-                                    placeholder="auto-generated if blank"
+                                    placeholder={t('core.autoGeneratedPlaceholder')}
                                     value={row.password}
                                     onChange={(e) => update(idx, 'password', e.target.value)}
                                     {...noAutofillProps('password')}
                                 />
                             </div>
+
+                            {/* Custom fields — required ones + those on for "Learner's Enrollment" */}
+                            {enrollmentCustomFields.map((cf: CustomField) => {
+                                const missing = submitted && isMissingRequired(row, cf);
+                                return (
+                                    <div key={cf.id}>
+                                        <Label className="mb-1 text-xs text-neutral-500">
+                                            {cf.name}
+                                            {cf.required && (
+                                                <span className="ml-1 text-danger-500">*</span>
+                                            )}
+                                        </Label>
+                                        {choiceKindOf(cf) === 'multi' ? (
+                                            <div
+                                                className={cn(
+                                                    missing && 'rounded-md ring-1 ring-danger-400'
+                                                )}
+                                            >
+                                                <CustomFieldRenderer
+                                                    type="multi_select"
+                                                    name={`${cf.id}-${idx}`}
+                                                    options={cf.options}
+                                                    value={row.custom_fields[cf.id] || ''}
+                                                    onChange={(value) =>
+                                                        updateCustomField(idx, cf.id, value)
+                                                    }
+                                                />
+                                            </div>
+                                        ) : choiceKindOf(cf) === 'single' && cf.options ? (
+                                            <select
+                                                className={cn(
+                                                    'flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 py-1 text-sm transition-colors focus:border-primary-500 focus:outline-none',
+                                                    missing && 'border-danger-400'
+                                                )}
+                                                value={row.custom_fields[cf.id] || ''}
+                                                onChange={(e) =>
+                                                    updateCustomField(idx, cf.id, e.target.value)
+                                                }
+                                            >
+                                                <option value="">
+                                                    {t('extra.selectOption', { name: cf.name })}
+                                                </option>
+                                                {cf.options.map((opt) => (
+                                                    <option key={opt} value={opt}>
+                                                        {opt}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <Input
+                                                type={cf.type === 'number' ? 'number' : 'text'}
+                                                placeholder={t('extra.enterPlaceholder', {
+                                                    name: cf.name,
+                                                })}
+                                                value={row.custom_fields[cf.id] || ''}
+                                                onChange={(e) =>
+                                                    updateCustomField(idx, cf.id, e.target.value)
+                                                }
+                                                className={missing ? 'border-danger-400' : ''}
+                                            />
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
 
                         {/* Expandable extra fields */}
                         {row.expanded && hasExtraFields && (
                             <div className="mt-3 border-t border-neutral-100 pt-3">
                                 <p className="mb-2 text-xs font-semibold text-neutral-400 uppercase tracking-wide">
-                                    Additional Details
+                                    {t('extra.sectionTitle')}
                                 </p>
                                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                     {/* Dynamic system fields */}
@@ -475,57 +627,6 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                                             />
                                         </div>
                                     ))}
-
-                                    {/* Custom fields */}
-                                    {enrollmentCustomFields.map((cf: CustomField) => (
-                                        <div key={cf.id}>
-                                            <Label className="mb-1 text-xs text-neutral-500">
-                                                {cf.name}
-                                                {cf.required && (
-                                                    <span className="ml-1 text-danger-500">*</span>
-                                                )}
-                                            </Label>
-                                            {cf.type === 'dropdown' && cf.options ? (
-                                                <select
-                                                    className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 py-1 text-sm transition-colors focus:border-primary-500 focus:outline-none"
-                                                    value={row.custom_fields[cf.id] || ''}
-                                                    onChange={(e) =>
-                                                        updateCustomField(
-                                                            idx,
-                                                            cf.id,
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                >
-                                                    <option value="">
-                                                        Select {cf.name}
-                                                    </option>
-                                                    {cf.options.map((opt) => (
-                                                        <option key={opt} value={opt}>
-                                                            {opt}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            ) : (
-                                                <Input
-                                                    type={
-                                                        cf.type === 'number'
-                                                            ? 'number'
-                                                            : 'text'
-                                                    }
-                                                    placeholder={`Enter ${cf.name}`}
-                                                    value={row.custom_fields[cf.id] || ''}
-                                                    onChange={(e) =>
-                                                        updateCustomField(
-                                                            idx,
-                                                            cf.id,
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                />
-                                            )}
-                                        </div>
-                                    ))}
                                 </div>
                             </div>
                         )}
@@ -541,7 +642,7 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                         layoutVariant="default"
                         onClick={onEditCancel}
                     >
-                        Cancel
+                        {t('actions.cancel')}
                     </MyButton>
                     <MyButton
                         buttonType="primary"
@@ -549,7 +650,7 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                         layoutVariant="default"
                         onClick={handleEditSave}
                     >
-                        Save changes
+                        {t('actions.saveChanges')}
                     </MyButton>
                 </div>
             ) : (
@@ -559,7 +660,7 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                         className="flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-800 transition-colors"
                     >
                         <Plus size={14} />
-                        Add another learner
+                        {t('actions.addAnotherLearner')}
                     </button>
                     <div className="flex-1" />
                     <MyButton
@@ -568,8 +669,7 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                         layoutVariant="default"
                         onClick={handleAdd}
                     >
-                        Add {rows.filter(validate).length} learner
-                        {rows.filter(validate).length !== 1 ? 's' : ''}
+                        {t('actions.addLearners', { count: rows.filter(validate).length })}
                     </MyButton>
                 </div>
             )}

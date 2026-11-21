@@ -1,0 +1,12 @@
+{
+    "detailsReportTitle": "{{term}} विवरण रिपोर्ट",
+    "learner": "शिक्षार्थी",
+    "termColonName": "{{term}}: {{name}}",
+    "studySlide": "अध्ययन स्लाइड",
+    "type": "प्रकार",
+    "concentration": "एकाग्रता",
+    "batchConcentrationAvg": "{{batchTerm}} एकाग्रता (औसत)",
+    "timeSpent": "बिताया गया समय",
+    "lastActive": "अंतिम सक्रियता",
+    "notAvailable": "उपलब्ध नहीं"
+}

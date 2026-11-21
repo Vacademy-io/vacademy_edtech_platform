@@ -1,0 +1,19 @@
+{
+    "header": {
+        "title": "Champs du formulaire ({{count}})",
+        "subtitle": "Faites glisser pour réorganiser les champs"
+    },
+    "quickAddButtons": {
+        "gender": "Ajouter Genre",
+        "state": "Ajouter État",
+        "city": "Ajouter Ville",
+        "schoolCollege": "Ajouter École/Collège",
+        "address": "Ajouter Adresse",
+        "pincode": "Code postal",
+        "fatherName": "Nom du père",
+        "motherName": "Nom de la mère",
+        "parentPhoneNumber": "Numéro de téléphone du parent",
+        "parentEmail": "E-mail du parent"
+    },
+    "addCustomFieldButton": "Ajouter un champ personnalisé"
+}

@@ -41,6 +41,22 @@ public interface QuestionAssessmentSectionMappingRepository extends CrudReposito
             """, nativeQuery = true)
     List<MarkingSchemeRow> findMarkingSchemeRowsBySectionIds(@Param("sectionIds") List<String> sectionIds);
 
+    /** Whether the live paper has at least one question of these types. */
+    @Query(value = """
+            SELECT EXISTS (
+                SELECT 1
+                FROM question_assessment_section_mapping qasm
+                JOIN section s ON s.id = qasm.section_id
+                JOIN question q ON q.id = qasm.question_id
+                WHERE s.assessment_id = :assessmentId
+                  AND s.status <> 'DELETED'
+                  AND (qasm.status IS NULL OR qasm.status <> 'DELETED')
+                  AND q.question_type IN (:questionTypes)
+            )
+            """, nativeQuery = true)
+    boolean existsQuestionOfTypesInAssessment(@Param("assessmentId") String assessmentId,
+                                              @Param("questionTypes") List<String> questionTypes);
+
 
     @Modifying
     @Transactional

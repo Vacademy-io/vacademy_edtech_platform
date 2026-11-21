@@ -1,0 +1,33 @@
+{
+    "heading": "Nouvelle base de connaissances",
+    "intro": "Une base de connaissances est un ensemble de votre propre contenu — livres, notes, anciens sujets — que l'IA lit. Organisez-la comme vous la pensez déjà, généralement une par classe et par matière.",
+    "fields": {
+        "name": {
+            "label": "Nom",
+            "placeholder": "ex. Sciences 4e"
+        },
+        "purpose": {
+            "label": "À quoi cela sert-il ?"
+        },
+        "language": {
+            "label": "Langue principale du contenu",
+            "hint": "Un simple indice pour la lecture des documents. Vous pouvez quand même poser des questions et générer du contenu dans n'importe quelle langue."
+        },
+        "description": {
+            "label": "Description",
+            "placeholder": "Facultatif — ce qu'elle contient et à qui elle s'adresse"
+        }
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "create": "Créer",
+        "creating": "Création en cours…"
+    },
+    "validation": {
+        "nameRequired": "Donnez un nom à cette base de connaissances"
+    },
+    "toast": {
+        "created": "« {{name}} » créée. Ajoutez votre premier document pour commencer.",
+        "createFailed": "Impossible de créer la base de connaissances"
+    }
+}

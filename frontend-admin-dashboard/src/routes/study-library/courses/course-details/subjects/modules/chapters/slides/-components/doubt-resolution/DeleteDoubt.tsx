@@ -7,6 +7,7 @@ import { MyDialog } from '@/components/design-system/dialog';
 import { useState } from 'react';
 import { MyButton } from '@/components/design-system/button';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const DeleteDoubt = ({
     doubt,
@@ -17,6 +18,7 @@ export const DeleteDoubt = ({
     refetch: () => void;
     showText?: boolean;
 }) => {
+    const { t } = useTranslation('studyLibraryHandleAddReply');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const addReply = useAddReply();
 
@@ -39,7 +41,7 @@ export const DeleteDoubt = ({
             all_doubt_assignee: doubt.all_doubt_assignee,
             delete_assignee_request: doubt.delete_assignee_request,
         };
-        await handleAddReply({ replyData, addReply, refetch, id: doubt.id });
+        await handleAddReply({ replyData, addReply, refetch, id: doubt.id, t });
         setIsDialogOpen(false);
     };
 

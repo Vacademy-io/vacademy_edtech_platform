@@ -1,0 +1,11 @@
+{
+    "options": {
+        "sendWhatsApp": "Envoyer un message WhatsApp",
+        "sendEmail": "Envoyer un e-mail"
+    },
+    "studentsSelected_one": "{{count}} étudiant sélectionné",
+    "studentsSelected_many": "{{count}} étudiants sélectionnés",
+    "studentsSelected_other": "{{count}} étudiants sélectionnés",
+    "clearSelection": "Effacer la sélection",
+    "bulkActions": "Actions groupées"
+}

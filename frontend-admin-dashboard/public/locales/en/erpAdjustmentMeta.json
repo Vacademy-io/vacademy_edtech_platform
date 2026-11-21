@@ -1,0 +1,12 @@
+{
+    "adjustmentType": {
+        "earning": "Earning",
+        "deduction": "Deduction"
+    },
+    "runScope": {
+        "regular": "Regular",
+        "offCycle": "Off-cycle",
+        "fnf": "Full & final",
+        "bonus": "Bonus"
+    }
+}

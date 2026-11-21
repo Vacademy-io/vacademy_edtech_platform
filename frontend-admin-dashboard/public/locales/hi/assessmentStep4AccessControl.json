@@ -1,0 +1,43 @@
+{
+    "header": {
+        "title": "एक्सेस नियंत्रण",
+        "description": "नियंत्रित करें कि इस असेसमेंट को कौन प्रबंधित कर सकता है, परिणाम देख सकता है और मूल्यांकन कर सकता है।",
+        "update": "अपडेट करें",
+        "save": "सेव करें",
+        "publish": "पब्लिश करें"
+    },
+    "sections": {
+        "creationAccess": "असेसमेंट निर्माण एक्सेस",
+        "creationAccessSurvey": "सर्वे निर्माण एक्सेस",
+        "liveNotification": "लाइव असेसमेंट सूचना",
+        "liveNotificationSurvey": "लाइव सर्वे सूचना",
+        "submissionReportAccess": "असेसमेंट सबमिशन और रिपोर्ट एक्सेस",
+        "submissionReportAccessSurvey": "सर्वे सबमिशन और रिपोर्ट एक्सेस",
+        "evaluationProcess": "मूल्यांकन प्रक्रिया"
+    },
+    "toasts": {
+        "updateSuccess": "आपका असेसमेंट सफलतापूर्वक अपडेट कर दिया गया है!",
+        "saveSuccess": "आपका असेसमेंट सफलतापूर्वक सेव कर दिया गया है!",
+        "updatePublishSuccess": "आपका असेसमेंट सफलतापूर्वक अपडेट और पब्लिश कर दिया गया है!",
+        "publishSuccess": "आपका असेसमेंट सफलतापूर्वक पब्लिश कर दिया गया है!",
+        "cancelInviteSuccess": "इस उपयोगकर्ता का आमंत्रण सफलतापूर्वक रद्द कर दिया गया है!"
+    },
+    "errors": {
+        "saveFailed": "एक्सेस नियंत्रण सेव करने में विफल।",
+        "publishFailed": "असेसमेंट पब्लिश करने में विफल।"
+    },
+    "card": {
+        "addButton": "जोड़ें",
+        "addUserTitle": "उपयोगकर्ता जोड़ें",
+        "roleTypeLabel": "भूमिका प्रकार",
+        "selectAll": "सभी चुनें",
+        "cancelInvitation": "आमंत्रण रद्द करें",
+        "attention": "ध्यान दें",
+        "confirmCancel": {
+            "prefix": "क्या आप वाकई इसके लिए आमंत्रण रद्द करना चाहते हैं",
+            "suffix": "?"
+        },
+        "yes": "हाँ",
+        "done": "हो गया"
+    }
+}

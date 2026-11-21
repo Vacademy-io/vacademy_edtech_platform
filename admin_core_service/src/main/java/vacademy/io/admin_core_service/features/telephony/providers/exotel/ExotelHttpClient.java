@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.telephony.providers.exotel;
 
+import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -47,7 +48,7 @@ public class ExotelHttpClient {
         SimpleClientHttpRequestFactory f = new SimpleClientHttpRequestFactory();
         f.setConnectTimeout(Duration.ofSeconds(3));
         f.setReadTimeout(Duration.ofMillis(requestTimeoutMs));
-        this.restTemplate = new RestTemplate(f);
+        this.restTemplate = ExternalCallLog.attach(new RestTemplate(f));
     }
 
     /**

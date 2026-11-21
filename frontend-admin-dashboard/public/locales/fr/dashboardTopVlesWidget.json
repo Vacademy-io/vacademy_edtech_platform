@@ -1,0 +1,12 @@
+{
+    "heading": "Meilleurs {{plural}}",
+    "subtitle": "Par places utilisées",
+    "viewAll": "Voir tout",
+    "unnamedName": "Sans nom",
+    "planStatus": {
+        "active": "Actif",
+        "pending": "En attente",
+        "expired": "Expiré",
+        "none": "Aucun forfait"
+    }
+}

@@ -1,0 +1,16 @@
+{
+    "noQuestionsAvailable": "لا توجد أسئلة اختبار متاحة.",
+    "questionNotFound": "لم يتم العثور على السؤال.",
+    "questionsCount_zero": "لا أسئلة",
+    "questionsCount_one": "سؤال واحد",
+    "questionsCount_two": "سؤالان",
+    "questionsCount_few": "{{count}} أسئلة",
+    "questionsCount_many": "{{count}} سؤالًا",
+    "questionsCount_other": "{{count}} سؤال",
+    "questionOf": "السؤال {{current}} من {{total}}",
+    "options": "الخيارات:",
+    "explanation": "الشرح",
+    "tags": "الوسوم:",
+    "previous": "السابق",
+    "next": "التالي"
+}

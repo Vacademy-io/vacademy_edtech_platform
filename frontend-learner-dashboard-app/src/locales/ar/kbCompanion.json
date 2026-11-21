@@ -1,0 +1,152 @@
+{
+  "shelf": {
+    "title": "رفاق الدراسة",
+    "stats": "{{done}} من {{total}} موضوعًا · إتقان {{mastery}}٪",
+    "statsEmpty": "الموضوعات قادمة قريبًا",
+    "continueTopic": "تابِع: {{title}}",
+    "nextTopic": "التالي: {{title}}",
+    "startTopic": "ابدأ: {{title}}",
+    "start": "ابدأ التعلّم",
+    "review": "راجِع موضوعاتك",
+    "openAria": "افتح {{name}}"
+  },
+  "modes": {
+    "learn": "تعلّم",
+    "practice": "تدرّب",
+    "ask": "اسأل"
+  },
+  "room": {
+    "navHeading": "رفيق الدراسة",
+    "modes": "أوضاع الدراسة",
+    "masteredShort": "إتقان",
+    "greeting": "مرحبًا {{name}}! 👋",
+    "greetingNoName": "مرحبًا! 👋",
+    "pickToLearn": "اختر موضوعًا من {{kb}} وتعلّمه بالصور والجداول والأمثلة.",
+    "pickToPractise": "اختر موضوعًا للتدرّب عليه. ستحصل على تصحيح فوري لكل سؤال.",
+    "pickFromMap": "اختر موضوعًا من الخريطة للبدء.",
+    "breadcrumb": "الموضوع الحالي",
+    "closeTopic": "أغلق هذا الموضوع",
+    "backHome": "العودة إلى الرئيسية"
+  },
+  "map": {
+    "title": "الموضوعات",
+    "open": "اعرض الموضوعات",
+    "empty": "لا توجد موضوعات بعد. عُد قريبًا.",
+    "topicDone": "{{done}}/{{total}} مكتمل",
+    "page": "ص. {{page}}",
+    "pages": "ص. {{start}}-{{end}}",
+    "readyHint": "الدرس جاهز — يفتح فورًا",
+    "status": {
+      "notStarted": "لم يبدأ",
+      "inProgress": "أُنجز {{percent}}٪",
+      "mastery": "مكتمل · إتقان {{mastery}}٪"
+    }
+  },
+  "continue": {
+    "title": "تابِع من حيث توقفت",
+    "upNext": "التالي",
+    "cta": "تابِع",
+    "startCta": "ابدأ",
+    "allDoneTitle": "لقد أنهيت كل الموضوعات!",
+    "allDoneBody": "راجِع أي موضوع من الخريطة، أو تدرّب لرفع مستوى إتقانك."
+  },
+  "kinds": {
+    "hook": "تمهيد",
+    "concept": "الفكرة الأساسية",
+    "figure": "انظر جيدًا",
+    "compare": "مقارنة",
+    "process": "خطوة بخطوة",
+    "example": "مثال محلول",
+    "flashcards": "بطاقات تعليمية",
+    "check": "اختبار سريع",
+    "recap": "خلاصة"
+  },
+  "lesson": {
+    "preparing": "جارٍ تحضير درسك",
+    "cardPreparing": "لا تزال هذه البطاقة قيد التحضير",
+    "buildingCard": "جارٍ إنشاء البطاقة {{current}} من {{total}}",
+    "firstTimeHint": "يستغرق تحضير الموضوع دقيقة أو دقيقتين عند فتحه لأول مرة. بعد ذلك يفتح فورًا.",
+    "cardOf": "البطاقة {{current}} من {{total}}",
+    "prev": "السابق",
+    "next": "التالي",
+    "finish": "إنهاء",
+    "goToCard": "انتقل إلى البطاقة {{number}}",
+    "askAboutCard": "اسأل عن هذه البطاقة",
+    "completeTitle": "اكتمل الموضوع!",
+    "mastery": "الإتقان",
+    "checksScore": "أجبت عن {{right}} من {{total}} اختبارات سريعة بشكل صحيح",
+    "practiceThis": "تدرّب على هذا الموضوع",
+    "nextTopic": "الموضوع التالي: {{title}}",
+    "allTopicsDone": "كان هذا آخر موضوع — أحسنت!",
+    "reviewAgain": "راجِع من البداية"
+  },
+  "check": {
+    "correct": "صحيح! 🎉",
+    "incorrect": "ليس تمامًا — الإجابة الصحيحة هي {{letter}}."
+  },
+  "practice": {
+    "preparing": "جارٍ تحضير أسئلة التدريب",
+    "questionOf": "السؤال {{current}} من {{total}}",
+    "runningScore": "{{correct}} صحيحة",
+    "nextQuestion": "السؤال التالي",
+    "seeScore": "اعرض نتيجتي",
+    "score": "أجبت عن {{correct}} من {{total}} بشكل صحيح",
+    "tryAgain": "حاول مرة أخرى",
+    "backToLesson": "العودة إلى الدرس",
+    "difficulty": {
+      "easy": "سهل",
+      "medium": "متوسط",
+      "hard": "صعب"
+    },
+    "tier": {
+      "great": "عمل رائع!",
+      "good": "أداء جيد!",
+      "keepGoing": "واصل التدرّب!"
+    }
+  },
+  "ask": {
+    "emptyTitle": "اسأل {{name}} أي شيء",
+    "emptyBody": "تأتي الإجابات مباشرة من {{kb}}، مع الصفحات والصور التي تستند إليها.",
+    "placeholder": "اكتب سؤالك…",
+    "capReached": "لقد استخدمت أسئلة اليوم. عُد غدًا!",
+    "send": "إرسال",
+    "thinking": "أبحث في كتابك…",
+    "quota": "{{used}} من {{cap}} أسئلة اليوم",
+    "aboutTopic": "حول: {{title}}",
+    "clearContext": "اسأل عن أي شيء آخر",
+    "aboutCardPrefill": "هل يمكنك شرح \"{{title}}\" بطريقة أبسط؟",
+    "figure": "شكل من كتابك",
+    "enlarge": "تكبير الصورة",
+    "page": "صفحة {{page}}",
+    "pageShort": "ص.",
+    "starters": {
+      "explain": "اشرح {{topic}} ببساطة",
+      "example": "أعطني مثالًا على {{topic}}",
+      "keyPoints": "ما النقاط الأساسية في {{topic}}؟"
+    },
+    "errors": {
+      "limit": "لقد طرحت أسئلة كثيرة الآن. حاول مرة أخرى بعد قليل.",
+      "failed": "لم أتمكن من الإجابة الآن. يُرجى المحاولة مرة أخرى.",
+      "thread": "تعذّر تحميل أسئلتك. يُرجى المحاولة مرة أخرى."
+    }
+  },
+  "voice": {
+    "readAloud": "اقرأ بصوت عالٍ",
+    "stop": "إيقاف"
+  },
+  "actions": {
+    "retry": "حاول مرة أخرى",
+    "dismiss": "إغلاق"
+  },
+  "errors": {
+    "generic": "حدث خطأ ما. يُرجى المحاولة مرة أخرى.",
+    "credits": "نفدت أرصدة الذكاء الاصطناعي لمؤسستك. يُرجى إبلاغ معلمك.",
+    "forbidden": "هذا غير متاح الآن.",
+    "notFound": "لم نعثر على هذا الموضوع.",
+    "lesson": "تعذّر تحضير هذا الدرس. يُرجى المحاولة بعد دقيقة.",
+    "emptyLesson": "لا يحتوي الكتاب بعد على مادة كافية لإعداد درس لهذا الموضوع.",
+    "practice": "تعذّر تحضير أسئلة التدريب. يُرجى المحاولة بعد دقيقة.",
+    "emptyPractice": "لا توجد أسئلة تدريب لهذا الموضوع بعد.",
+    "companionUnavailable": "رفيق الدراسة هذا غير متاح لك الآن."
+  }
+}

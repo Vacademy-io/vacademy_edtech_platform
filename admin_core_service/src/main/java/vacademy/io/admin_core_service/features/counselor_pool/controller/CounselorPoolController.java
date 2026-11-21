@@ -3,6 +3,8 @@ package vacademy.io.admin_core_service.features.counselor_pool.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
+import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.admin_core_service.features.counselor_pool.dto.*;
 import vacademy.io.admin_core_service.features.counselor_pool.service.CounselorPoolService;
 import vacademy.io.admin_core_service.features.counselor_pool.service.CounselorPoolShiftService;
@@ -29,6 +31,11 @@ public class CounselorPoolController {
     // ────────────────────────────────────────────────────────────────
 
     @PostMapping
+    @Auditable(
+            entityType = "COUNSELLOR_POOL",
+            action = "CREATE",
+            entityIdExpr = "#result?.body?.id",
+            descriptionExpr = "'created counsellor pool ' + (#result?.body?.name ?: '')")
     public ResponseEntity<CounselorPoolDTO> createPool(
             @RequestBody CreatePoolRequest request,
             @RequestAttribute("user") CustomUserDetails user) {
@@ -40,12 +47,34 @@ public class CounselorPoolController {
         return ResponseEntity.ok(poolService.listPools(instituteId));
     }
 
+    /**
+     * Which pool (if any) a single lead list feeds — powers the pool chip in the lead
+     * list's header, so an admin opening a list can see where its leads get routed
+     * without going to Pools and reading every pool's audience tab.
+     *
+     * <p>An audience belongs to at most ONE pool ({@code existsByAudienceId} blocks a
+     * second at pool create/update time), so this returns a single object. 204 when the
+     * list is not attached to a pool, which is the normal state for lists that are not
+     * auto-assigned.</p>
+     */
+    @GetMapping("/by-audience/{audienceId}")
+    public ResponseEntity<CounselorPoolDTO> getPoolForAudience(@PathVariable String audienceId) {
+        return poolService.findPoolForAudience(audienceId)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
     @GetMapping("/{poolId}")
     public ResponseEntity<CounselorPoolDTO> getPool(@PathVariable String poolId) {
         return ResponseEntity.ok(poolService.getPool(poolId));
     }
 
     @PatchMapping("/{poolId}")
+    @Auditable(
+            entityType = "COUNSELLOR_POOL",
+            action = "UPDATE",
+            entityIdExpr = "#poolId",
+            descriptionExpr = "'updated counsellor pool ' + (#result?.body?.name ?: #poolId)")
     public ResponseEntity<CounselorPoolDTO> updatePool(
             @PathVariable String poolId,
             @RequestBody UpdatePoolRequest request) {
@@ -53,6 +82,11 @@ public class CounselorPoolController {
     }
 
     @DeleteMapping("/{poolId}")
+    @Auditable(
+            entityType = "COUNSELLOR_POOL",
+            action = "DELETE",
+            entityIdExpr = "#poolId",
+            descriptionExpr = "'deleted a counsellor pool'")
     public ResponseEntity<String> deletePool(@PathVariable String poolId) {
         poolService.deletePool(poolId);
         return ResponseEntity.ok("Pool deleted");
@@ -97,6 +131,23 @@ public class CounselorPoolController {
         return ResponseEntity.ok("Order updated");
     }
 
+    /**
+     * When this list hands out a counsellor. Body: { assign_on_intake: true|false }.
+     * false = AI-first: leave new leads unowned so the AI call runs, assign only once the
+     * call outcome (or the exhausted-retries hand-off) asks for a counsellor.
+     */
+    @PatchMapping("/{poolId}/audiences/{audienceId}/assignment")
+    public ResponseEntity<String> updateAudienceAssignment(
+            @PathVariable String poolId,
+            @PathVariable String audienceId,
+            @RequestBody UpdateAudienceAssignmentRequest request) {
+        if (request == null || request.getAssignOnIntake() == null) {
+            throw new VacademyException("assign_on_intake is required");
+        }
+        poolService.updateAudienceAssignOnIntake(poolId, audienceId, request.getAssignOnIntake());
+        return ResponseEntity.ok("Assignment timing updated");
+    }
+
     // ────────────────────────────────────────────────────────────────
     // Counselor (member) management
     // ────────────────────────────────────────────────────────────────
@@ -106,6 +157,11 @@ public class CounselorPoolController {
      * Body: { counselor_user_ids: [...] }. If any id fails, nothing is added.
      */
     @PostMapping("/{poolId}/counselors")
+    @Auditable(
+            entityType = "COUNSELLOR_POOL",
+            action = "ADD_MEMBER",
+            entityIdExpr = "#poolId",
+            descriptionExpr = "'added ' + @crmAuditNarrator.peopleFor(#request?.counselorUserIds) + ' to a counsellor pool'")
     public ResponseEntity<String> addCounselorsToPool(
             @PathVariable String poolId,
             @RequestBody AddCounselorsRequest request,
@@ -115,6 +171,11 @@ public class CounselorPoolController {
     }
 
     @DeleteMapping("/{poolId}/counselors/{counselorUserId}")
+    @Auditable(
+            entityType = "COUNSELLOR_POOL",
+            action = "REMOVE_MEMBER",
+            entityIdExpr = "#poolId",
+            descriptionExpr = "'removed ' + @crmAuditNarrator.personFor(#counselorUserId) + ' from a counsellor pool'")
     public ResponseEntity<String> removeCounselorFromPool(
             @PathVariable String poolId,
             @PathVariable String counselorUserId) {
@@ -130,6 +191,12 @@ public class CounselorPoolController {
      * right actor.
      */
     @PatchMapping("/{poolId}/counselors/{counselorUserId}/status")
+    @Auditable(
+            entityType = "COUNSELLOR_POOL",
+            action = "MEMBER_STATUS_CHANGE",
+            entityIdExpr = "#poolId",
+            descriptionExpr = "'changed pool status of ' + @crmAuditNarrator.personFor(#counselorUserId) "
+                    + "+ (#request?.status != null ? ' to ' + #request.status : '')")
     public ResponseEntity<String> updateMemberStatus(
             @PathVariable String poolId,
             @PathVariable String counselorUserId,

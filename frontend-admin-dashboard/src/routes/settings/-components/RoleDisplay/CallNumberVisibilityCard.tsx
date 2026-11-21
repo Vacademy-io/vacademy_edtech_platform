@@ -19,6 +19,8 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { CircleNotch, Check } from '@phosphor-icons/react';
@@ -33,22 +35,22 @@ import {
 // still feel immediate. Same window the AudienceAccessCard uses.
 const AUTOSAVE_DEBOUNCE_MS = 500;
 
-const MODE_OPTIONS: Array<{
+const buildModeOptions = (
+    t: TFunction
+): Array<{
     value: CallNumberVisibilityMode;
     title: string;
     description: string;
-}> = [
+}> => [
     {
         value: 'FULL',
-        title: 'Show full numbers',
-        description:
-            'The Call Log table, the CSV/Excel export and the per-call details show the complete phone number, so it can be read off the row and copied.',
+        title: t('modes.full.title'),
+        description: t('modes.full.description'),
     },
     {
         value: 'MASKED',
-        title: 'Mask all but the last 4 digits',
-        description:
-            'Numbers render as *******1234 on the Call Log and in its export. Rows stay identifiable but the digits cannot be read or copied from this page. The default.',
+        title: t('modes.masked.title'),
+        description: t('modes.masked.description'),
     },
 ];
 
@@ -63,6 +65,7 @@ export const CallNumberVisibilityCard = ({
     roleName,
     roleLabel,
 }: CallNumberVisibilityCardProps) => {
+    const { t } = useTranslation('settingsCallNumberVisibilityCard');
     const normalizedRole = roleName.toUpperCase();
     const { config, isLoading, saving, save } = useCallNumberVisibility();
 
@@ -72,6 +75,8 @@ export const CallNumberVisibilityCard = ({
     const [configured, setConfigured] = useState(false);
     const [dirty, setDirty] = useState(false);
     const [showJustSaved, setShowJustSaved] = useState(false);
+
+    const modeOptions = buildModeOptions(t);
 
     useEffect(() => {
         const existing = config.roles?.[normalizedRole];
@@ -107,7 +112,7 @@ export const CallNumberVisibilityCard = ({
                 window.setTimeout(() => setShowJustSaved(false), 1500);
             } catch (err) {
                 console.error('Failed to save call number visibility', err);
-                toast.error('Failed to save phone-number visibility');
+                toast.error(t('toasts.saveFailed'));
             }
         }, AUTOSAVE_DEBOUNCE_MS);
         return () => window.clearTimeout(timer);
@@ -120,14 +125,12 @@ export const CallNumberVisibilityCard = ({
         <Card>
             <CardHeader>
                 <CardTitle className="text-base">
-                    Call Log phone numbers — {roleLabel ?? normalizedRole}
+                    {t('card.title', { role: roleLabel ?? normalizedRole })}
                 </CardTitle>
                 <CardDescription>
-                    Controls whether a user with the{' '}
-                    <span className="font-medium">{normalizedRole}</span> role sees full phone
-                    numbers on Leads → Call Log and in the call export. This is a display choice for
-                    that page — the lead panel, Recent Leads and the other lead views keep showing
-                    the lead&apos;s own details either way.
+                    {t('card.description.part1')}{' '}
+                    <span className="font-medium">{normalizedRole}</span>{' '}
+                    {t('card.description.part2')}
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
@@ -135,9 +138,9 @@ export const CallNumberVisibilityCard = ({
                     value={mode}
                     onValueChange={handleModeChange}
                     className="flex flex-col gap-3"
-                    aria-label="Call Log phone number visibility"
+                    aria-label={t('radioGroup.ariaLabel')}
                 >
-                    {MODE_OPTIONS.map((opt) => (
+                    {modeOptions.map((opt) => (
                         <label
                             key={opt.value}
                             htmlFor={`call-numbers-${normalizedRole}-${opt.value}`}
@@ -159,28 +162,24 @@ export const CallNumberVisibilityCard = ({
                 </RadioGroup>
 
                 {!configured && !isLoading && (
-                    <p className="text-xs text-neutral-500">
-                        Not configured — every role, admins included, is on masked numbers until
-                        someone chooses otherwise here. Pick &ldquo;Show full numbers&rdquo; to turn
-                        masking off for this role.
-                    </p>
+                    <p className="text-xs text-neutral-500">{t('unconfigured.message')}</p>
                 )}
 
                 <div className="flex h-5 items-center justify-end gap-1.5 text-xs text-neutral-500">
                     {isLoading ? (
-                        <span>Loading current setting…</span>
+                        <span>{t('status.loading')}</span>
                     ) : saving ? (
                         <>
                             <CircleNotch className="size-3.5 animate-spin" />
-                            <span>Saving…</span>
+                            <span>{t('status.saving')}</span>
                         </>
                     ) : showJustSaved ? (
                         <>
                             <Check className="size-3.5 text-success-600" />
-                            <span className="text-success-700">Saved</span>
+                            <span className="text-success-700">{t('status.saved')}</span>
                         </>
                     ) : dirty ? (
-                        <span>Unsaved changes…</span>
+                        <span>{t('status.unsavedChanges')}</span>
                     ) : null}
                 </div>
             </CardContent>

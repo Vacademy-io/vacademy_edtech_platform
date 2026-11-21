@@ -39,6 +39,12 @@ public class StudentFeePaymentGenerationService {
     @Autowired
     private vacademy.io.admin_core_service.features.user_account.service.UserAccountLedgerService userAccountLedgerService;
 
+    @Autowired
+    private vacademy.io.admin_core_service.features.fee_management.repository.ComplexPaymentOptionRepository complexPaymentOptionRepository;
+
+    @Autowired
+    private InstallmentScheduleService installmentScheduleService;
+
     /**
      * Generates StudentFeePayment rows from the CPO template chain:
      * CPO -> FeeType -> AssignedFeeValue -> AftInstallment
@@ -53,6 +59,19 @@ public class StudentFeePaymentGenerationService {
     @Transactional
     public List<String> generateFeeBills(String userPlanId, String cpoId, String userId, String instituteId) {
         log.info("Generating fee bills for UserPlan: {}, CPO: {}, User: {}, Institute: {}", userPlanId, cpoId, userId, instituteId);
+
+        // A FLEXIBLE plan has no fixed template: use its default schedule (count and gap
+        // from metadata_json.flexible_defaults, first installment due today). Admin
+        // enrollments that choose a schedule call InstallmentScheduleService directly.
+        vacademy.io.admin_core_service.features.fee_management.entity.ComplexPaymentOption cpo =
+                complexPaymentOptionRepository.findById(cpoId).orElse(null);
+        if (cpo != null && vacademy.io.admin_core_service.features.fee_management.enums.CpoScheduleMode
+                .isFlexible(cpo.getScheduleMode())) {
+            log.info("CPO {} is FLEXIBLE; generating bills from its default schedule", cpoId);
+            return installmentScheduleService.generateFromSchedule(
+                    userPlanId, cpoId, userId, instituteId, null,
+                    installmentScheduleService.defaultScheduleFor(cpo, LocalDate.now()));
+        }
 
         // Step 1: Fetch all FeeTypes for this CPO
         List<FeeType> feeTypes = feeTypeRepository.findByCpoId(cpoId);

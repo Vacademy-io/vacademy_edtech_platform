@@ -16,6 +16,32 @@ public interface BookingInstanceRepository extends JpaRepository<BookingInstance
 
     Optional<BookingInstance> findByManageToken(String manageToken);
 
+    /**
+     * Live bookings (CONFIRMED / PENDING) of one person that start in [dayStart, dayEnd).
+     * The person is matched by any identifier the new booking carries, because the same
+     * person often arrives as two lead rows or two user ids with one phone and one email.
+     * Null parameters match nothing.
+     */
+    @Query(value = """
+            SELECT * FROM booking_instance b
+             WHERE b.institute_id = :instituteId
+               AND b.status IN ('CONFIRMED', 'PENDING')
+               AND b.scheduled_start_utc >= :dayStart AND b.scheduled_start_utc < :dayEnd
+               AND ( (CAST(:responseId AS text) IS NOT NULL AND b.audience_response_id = CAST(:responseId AS text))
+                  OR (CAST(:userId AS text) IS NOT NULL AND b.invitee_user_id = CAST(:userId AS text))
+                  OR (CAST(:phone10 AS text) IS NOT NULL
+                      AND RIGHT(REGEXP_REPLACE(COALESCE(b.invitee_phone, ''), '[^0-9]', '', 'g'), 10) = CAST(:phone10 AS text))
+                  OR (CAST(:email AS text) IS NOT NULL AND LOWER(b.invitee_email) = CAST(:email AS text)) )
+             ORDER BY b.scheduled_start_utc
+            """, nativeQuery = true)
+    List<BookingInstance> findLiveBookingsOfPersonBetween(@Param("instituteId") String instituteId,
+                                                          @Param("responseId") String responseId,
+                                                          @Param("userId") String userId,
+                                                          @Param("phone10") String phone10,
+                                                          @Param("email") String email,
+                                                          @Param("dayStart") Timestamp dayStart,
+                                                          @Param("dayEnd") Timestamp dayEnd);
+
     /** Public-endpoint abuse caps (see PublicBookingService.book). */
     long countByBookingPageIdAndCreatedAtAfter(String bookingPageId, Timestamp after);
 

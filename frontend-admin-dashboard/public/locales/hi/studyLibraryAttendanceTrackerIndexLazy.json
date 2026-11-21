@@ -1,0 +1,132 @@
+{
+    "pageTitle": "लाइव क्लास उपस्थिति",
+    "pageDescription": "लाइव क्लासों के लिए छात्र उपस्थिति को ट्रैक और प्रबंधित करें",
+    "navHeading": "उपस्थिति ट्रैकर",
+    "duration": {
+        "minutes": "{{count}} मिनट",
+        "hoursOnly": "{{count}} घं",
+        "hoursMinutes": "{{hours}} घं {{minutes}} मि"
+    },
+    "time": {
+        "am": "पूर्वाह्न",
+        "pm": "अपराह्न"
+    },
+    "sessionColumns": {
+        "class": "क्लास",
+        "date": "तारीख़",
+        "time": "समय",
+        "status": "स्थिति"
+    },
+    "status": {
+        "present": "उपस्थित",
+        "absent": "अनुपस्थित"
+    },
+    "modal": {
+        "loadingAttendance": "उपस्थिति लोड हो रही है…",
+        "classAttendanceTitle": "{{name}} - क्लास उपस्थिति",
+        "attendanceLabel": "उपस्थिति",
+        "totalClasses": "कुल क्लासें",
+        "noSessions": "इस छात्र के लिए कोई सत्र नहीं मिला",
+        "classCount_one": "{{count}} क्लास",
+        "classCount_other": "{{count}} क्लासें"
+    },
+    "exportButton": {
+        "exporting": "निर्यात हो रहा है...",
+        "export": "CSV निर्यात करें"
+    },
+    "filters": {
+        "searchLabel": "खोजें",
+        "searchPlaceholder": "छात्र खोजें...",
+        "clearFilters": "फ़िल्टर साफ़ करें",
+        "allBatches": "सभी बैच",
+        "selectLabel": "{{term}} चुनें"
+    },
+    "studentsCount": {
+        "loading": "छात्र लोड हो रहे हैं...",
+        "showing": "दिखा रहे हैं",
+        "of": "में से",
+        "students_one": "छात्र",
+        "students_other": "छात्र"
+    },
+    "errors": {
+        "title": "उपस्थिति डेटा लोड करने में त्रुटि",
+        "description": "कृपया पेज रीफ़्रेश करें या अपने फ़िल्टर समायोजित करें"
+    },
+    "empty": {
+        "title": "कोई छात्र नहीं मिला",
+        "description": "अपनी खोज या फ़िल्टर मानदंड समायोजित करने का प्रयास करें",
+        "clearAll": "सभी फ़िल्टर साफ़ करें"
+    },
+    "bulk": {
+        "selected": "चयनित",
+        "reset": "रीसेट करें",
+        "exportAccountDetails": "खाता विवरण निर्यात करें",
+        "exportData": "डेटा निर्यात करें",
+        "bulkActions": "बल्क कार्रवाइयाँ"
+    },
+    "exportDialog": {
+        "heading": "उपस्थिति CSV निर्यात करें",
+        "cancel": "रद्द करें",
+        "downloadCsv": "CSV डाउनलोड करें",
+        "description": "निर्यात में शामिल करने के लिए उपस्थिति रिकॉर्ड चुनें।",
+        "scope": {
+            "both": {
+                "label": "उपस्थित और अनुपस्थित",
+                "desc": "उपस्थित और छूटी दोनों क्लासें शामिल करें (डिफ़ॉल्ट)"
+            },
+            "present": {
+                "label": "केवल उपस्थित",
+                "desc": "केवल वे क्लासें जिनमें छात्र उपस्थित रहा"
+            },
+            "absent": {
+                "label": "केवल अनुपस्थित",
+                "desc": "केवल वे क्लासें जो छात्र ने छोड़ीं"
+            }
+        }
+    },
+    "table": {
+        "detailsHeader": "विवरण",
+        "viewDetails": "छात्र का विवरण देखें",
+        "learnerName": "छात्र का नाम",
+        "sortLearnerName": "छात्र नाम क्रमबद्ध करें",
+        "username": "उपयोगकर्ता नाम",
+        "mobileNumber": "मोबाइल नंबर",
+        "email": "ईमेल",
+        "avgDuration": "औसत अवधि",
+        "liveClassesAttendance": "लाइव क्लासें और उपस्थिति",
+        "attended": "उपस्थित",
+        "viewMore": "और देखें"
+    },
+    "toasts": {
+        "accountDetailsSuccess": "खाता विवरण सफलतापूर्वक निर्यात किया गया",
+        "accountDetailsFailure": "खाता विवरण निर्यात करने में विफल",
+        "fullDataSuccess": "उपस्थिति डेटा सफलतापूर्वक निर्यात किया गया",
+        "fullDataFailure": "उपस्थिति डेटा निर्यात करने में विफल"
+    },
+    "csv": {
+        "name": "नाम",
+        "email": "ईमेल",
+        "mobileNumber": "मोबाइल नंबर",
+        "enrollmentNumber": "नामांकन संख्या",
+        "course": "कोर्स",
+        "gender": "लिंग",
+        "enrollmentStatus": "नामांकन स्थिति",
+        "attendancePercent": "उपस्थिति %",
+        "classesAttended": "उपस्थित क्लासें",
+        "avgDuration": "औसत अवधि"
+    },
+    "dateFilter": {
+        "label": "तारीख़ सीमा",
+        "custom": "कस्टम",
+        "pickCustomRange": "कस्टम सीमा चुनें",
+        "days_one": "{{count}} दिन",
+        "days_other": "{{count}} दिन"
+    },
+    "batchDropdown": {
+        "clearCount": "साफ़ करें ({{count}})",
+        "searchPlaceholder": "खोजें...",
+        "noBatchesFound": "कोई बैच नहीं मिला",
+        "batchesSelected_one": "{{count}} बैच चयनित",
+        "batchesSelected_other": "{{count}} बैच चयनित"
+    }
+}

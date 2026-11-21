@@ -4,9 +4,12 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
+import vacademy.io.admin_core_service.features.engagement.templates.WhatsAppTemplateRules;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
@@ -21,9 +24,13 @@ import java.time.Instant;
  * The template can only ever be sent once Meta approves it, and Meta may reject or silently
  * re-categorise it (utility→marketing) — both of which demand human review, so both are
  * first-class states here, not error paths.
+ *
+ * {@code @DynamicUpdate}: saving a managed row writes only the columns changed in memory, so a stale
+ * {@code status} nobody touched is not written back over a CAS transition (see the repository).
  */
 @Entity
 @Table(name = "engagement_template_proposal")
+@DynamicUpdate
 @Getter
 @Setter
 public class EngagementTemplateProposal {
@@ -84,6 +91,53 @@ public class EngagementTemplateProposal {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "sample_values", columnDefinition = "jsonb", nullable = false)
     private String sampleValues = "[]";
+
+    /** {variableName: source} — see templates.TemplateVariableSources (V617). */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "variable_sources", columnDefinition = "jsonb", nullable = false)
+    private String variableSources = "{}";
+
+    /** What the template is for ("first touch", "missed class"), shown to reviewers (V617). */
+    @Column(length = 120)
+    private String purpose;
+
+    /** NONE | TEXT | IMAGE | VIDEO | DOCUMENT (V618, W13). */
+    @Column(name = "header_type", nullable = false, length = 20)
+    private String headerType = "NONE";
+
+    /** TEXT header, at most 60 chars, no variables. */
+    @Column(name = "header_text", length = 60)
+    private String headerText;
+
+    /** IMAGE / VIDEO / DOCUMENT header: an https sample file; uploaded to Meta at submit. */
+    @Column(name = "header_media_url", columnDefinition = "TEXT")
+    private String headerMediaUrl;
+
+    /** [{type: QUICK_REPLY|URL|PHONE_NUMBER, text, url?, phoneNumber?}] (V618, W13/W14). */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb", nullable = false)
+    private String buttons = "[]";
+
+    /** The approved template this one is an edited version of (W15); that one is superseded on approval. */
+    @Column(name = "replaces_id")
+    private String replacesId;
+
+    /** Set when this engine took over an already-approved template of another engine (no new Meta review). */
+    @Column(name = "reused_from_id")
+    private String reusedFromId;
+
+    /** When it was sent to Meta (W10 rate limit). */
+    @Column(name = "submitted_at")
+    private Instant submittedAt;
+
+    /**
+     * W6 — a warning when a UTILITY template reads as promotion (Meta re-categorises or rejects
+     * those, and the number's quality rating suffers). Computed, not stored; shown to reviewers.
+     */
+    @Transient
+    public String getCategoryWarning() {
+        return WhatsAppTemplateRules.categoryWarning(proposedBody, proposedCategory);
+    }
 
     @Column(name = "footer_text", length = 60)
     private String footerText;

@@ -1,0 +1,67 @@
+{
+  "carousel": {
+    "roleCarousel": "عرض دوّار",
+    "roleSlide": "شريحة",
+    "label": "مميز",
+    "play": "تشغيل الشرائح",
+    "pause": "إيقاف الشرائح مؤقتًا",
+    "slideOf": "{{n}} من {{count}}",
+    "previous": "الشريحة السابقة",
+    "next": "الشريحة التالية",
+    "chooseSlide": "اختر شريحة",
+    "showSlide": "عرض الشريحة {{n}} من {{count}}",
+    "openSlide": "فتح اللافتة {{n}} من {{count}}"
+  },
+  "shortcuts": {
+    "label": "اختصارات"
+  },
+  "shelf": {
+    "seeAll": "عرض الكل",
+    "enrolled": "مسجَّل",
+    "free": "مجاني"
+  },
+  "notice": {
+    "dismiss": "إخفاء الإشعار",
+    "readOn": "قُرئ في {{date}}",
+    "read": "مقروء",
+    "ackDefault": "لقد قرأت هذا",
+    "dismissFailed": "تعذّر إخفاء الإشعار. حاول مرة أخرى.",
+    "ackFailed": "تعذّر حفظ تأكيد القراءة. حاول مرة أخرى."
+  },
+  "event": {
+    "liveNow": "مباشر الآن",
+    "startsOn": "يبدأ في {{when}}",
+    "startsInDays": "يبدأ بعد {{days}} ي {{hours}} س",
+    "startsInHours": "يبدأ بعد {{hours}} س {{minutes}} د",
+    "startsInMinutes": "يبدأ بعد {{minutes}} د",
+    "startsInSeconds": "يبدأ بعد {{seconds}} ث",
+    "register": "تسجيل",
+    "join": "انضمام"
+  },
+  "builtin": {
+    "HERO": "الترحيب والحصة المباشرة",
+    "PINS": "الإعلانات",
+    "NOTEBOOK_REVIEW": "مراجعة الدفتر",
+    "COMPANIONS": "رفاق الدراسة",
+    "TODAY_TASKS": "مهام اليوم",
+    "CONTINUE_LEARNING": "متابعة التعلّم",
+    "ENROLLED_COURSES": "دوراتي",
+    "STATS_ROW": "عدد الدورات والحصص والاختبارات",
+    "LEARNING_ANALYTICS": "تقدّم التعلّم",
+    "MY_MEMBERSHIP": "عضويتي",
+    "MY_BOOKS": "كتبي",
+    "MY_ORDERS": "طلباتي",
+    "UPCOMING_LIVE_CLASSES": "الحصص المباشرة القادمة",
+    "THIS_WEEK_ATTENDANCE": "حضور هذا الأسبوع",
+    "MY_MENTORS": "مرشدي",
+    "GET_APP": "تنزيل التطبيق",
+    "GAMIFICATION": "النقاط والشارات",
+    "RAISE_QUERY": "طرح سؤال",
+    "EXPLORE_BUTTONS": "أزرار الاستكشاف",
+    "placeholderNote": "يعرض معلومات كل متعلّم الخاصة به"
+  },
+  "preview": {
+    "header": "التحية والتاريخ",
+    "waiting": "بانتظار المسودة من المحرّر…"
+  }
+}

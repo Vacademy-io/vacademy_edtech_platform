@@ -1,0 +1,26 @@
+{
+    "form": {
+        "levelSelectionLabel": "{{term}} Selection",
+        "selectExisting": "Select existing {{term}}",
+        "createNew": "Create new {{term}}",
+        "selectALevelPlaceholder": "Select a {{term}}",
+        "durationDays_one": "{{count}} day",
+        "durationDays_other": "{{count}} days",
+        "duplicateFromPreExisting": "Duplicate study materials from a pre-existing {{term}}",
+        "duplicateFrom": "Duplicate from {{term}}",
+        "selectForDuplication": "Select {{term}} for duplication",
+        "searchLevel": "Search {{term}}…",
+        "noLevelsYet": "No {{term}} to reuse — add a new one below.",
+        "searchSession": "Search {{term}}…",
+        "noOtherSessions": "No other {{term}} to copy material from.",
+        "title": "Choose {{term}}",
+        "subtitle": "Pick the {{term}} learners in this batch will study.",
+        "selectExistingHint": "Reuse a {{term}} your institute already has",
+        "createNewHint": "Add a {{term}} with its own duration",
+        "optionalHint": "Optional. Skip it to use the default {{term}}."
+    },
+    "validation": {
+        "pleaseSelectLevel": "Please select a level",
+        "pleaseSelectSessionToDuplicate": "Please select a session to duplicate from"
+    }
+}

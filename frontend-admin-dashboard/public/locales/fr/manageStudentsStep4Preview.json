@@ -1,0 +1,49 @@
+{
+    "cards": {
+        "total": "Total"
+    },
+    "status": {
+        "willEnroll": "Sera inscrit",
+        "willSkip": "Sera ignoré",
+        "willFail": "Échouera"
+    },
+    "reenrolledBanner_one": "{{term}} sera réinscrit (accès précédemment expiré/résilié).",
+    "reenrolledBanner_many": "{{term}} seront réinscrits (accès précédemment expiré/résilié).",
+    "reenrolledBanner_other": "{{term}} seront réinscrits (accès précédemment expiré/résilié).",
+    "subOrg": {
+        "heading": "Affectation à une sous-organisation",
+        "noLink": "Aucune organisation liée",
+        "newSuffix": "{{name}} (nouvelle)",
+        "notSelected": "Non sélectionnée",
+        "role": {
+            "adminOnly": "Administrateur uniquement",
+            "admin": "Administrateur + {{term}}",
+            "staff": "Personnel — {{term}}"
+        }
+    },
+    "emptyState": "Aucun {{term}} ne sera nouvellement inscrit. Vérifiez vos sélections ou modifiez l'option de gestion des doublons.",
+    "table": {
+        "headers": {
+            "action": "Action",
+            "status": "Statut",
+            "note": "Remarque"
+        },
+        "emptyValue": "—",
+        "actionTaken": {
+            "created": "Inscrit",
+            "reEnrolled": "Réinscrit"
+        },
+        "cpo": {
+            "badge": "CPO",
+            "installments_one": " · {{count}} versement",
+            "installments_many": " · {{count}} versements",
+            "installments_other": " · {{count}} versements",
+            "totalAmount": " · total ₹{{amount}}",
+            "recordingNow": "Enregistrement de ₹{{amount}} maintenant",
+            "noInitialPayment": "Aucun paiement initial enregistré",
+            "schedule_one": "{{count}} échéance, le {{first}}",
+            "schedule_other": "{{count}} échéances, {{first}} → {{last}}"
+        }
+    },
+    "noPlanConfigured": "Aucun prix défini pour cette invitation — choisissez Auto (Défaut) pour une inscription gratuite, ou définissez son prix dans Payment Settings."
+}

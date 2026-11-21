@@ -72,5 +72,16 @@ public enum EventType {
     /**
      * A chat conversation has been read up to a point (read-cursor advanced)
      */
-    CHAT_READ
+    CHAT_READ,
+
+    /**
+     * An EXISTING chat message changed in place — edited body, or soft-deleted (tombstoned).
+     *
+     * Deliberately a separate event from {@link #CHAT_MESSAGE} rather than a re-send of it: the SSE
+     * event name is this enum's name, so clients that only listen for CHAT_MESSAGE simply never see
+     * this one. Re-using CHAT_MESSAGE would make every client treat an in-place change as a brand-new
+     * message — bumping unread badges, overwriting the conversation-list preview with the edited
+     * (possibly old) message and floating that conversation to the top of the list.
+     */
+    CHAT_MESSAGE_UPDATED
 }

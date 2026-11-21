@@ -1,0 +1,27 @@
+{
+    "header": {
+        "title": "Personnaliser « {{name}} »",
+        "subtitle": "Modifiez les couleurs et le texte du modèle. L'aperçu se met à jour en direct.",
+        "resetTooltip": "Restaurer les couleurs et le texte par défaut de ce modèle",
+        "resetButton": "Réinitialiser"
+    },
+    "groups": {
+        "colors": "Couleurs",
+        "text": "Texte",
+        "layout": "Mise en page"
+    },
+    "fields": {
+        "primaryColor": "Couleur principale",
+        "secondaryColor": "Couleur secondaire",
+        "backgroundColor": "Arrière-plan",
+        "titleText": "Titre principal",
+        "subtitleText": "Sous-titre",
+        "presentedText": "Ligne « remis à »",
+        "forCompletionText": "Ligne d'achèvement",
+        "borderWidth": {
+            "label": "Largeur de bordure / accent",
+            "hint": "Épaisseur de la bordure (ou largeur du bandeau d'accent pour Modern Minimal)."
+        },
+        "hexPlaceholder": "#000000"
+    }
+}

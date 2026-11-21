@@ -1,0 +1,10 @@
+{
+    "searchPlaceholder": "ابحث عن {{label}}...",
+    "noResultsFound": "لم يتم العثور على نتائج.",
+    "selectedCount_zero": "لا يوجد محدد ({{count}})",
+    "selectedCount_one": "محدد واحد ({{count}})",
+    "selectedCount_two": "محددان ({{count}})",
+    "selectedCount_few": "{{count}} محددة",
+    "selectedCount_many": "{{count}} محددًا",
+    "selectedCount_other": "{{count}} محدد"
+}

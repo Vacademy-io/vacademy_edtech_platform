@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react';
 import { DoubtType } from '../../-types/add-doubt-type';
 import { useAddReply } from '../../-services/AddReply';
 import { handleAddReply } from '../../-helper/handleAddReply';
+import { useTranslation } from 'react-i18next';
 
 export const MarkAsResolved = ({ doubt, refetch }: { doubt: Doubt; refetch: () => void }) => {
+    const { t } = useTranslation('studyLibraryHandleAddReply');
     const [resolved, setResolved] = useState(doubt.status === 'RESOLVED');
     const addReply = useAddReply();
 
@@ -34,7 +36,7 @@ export const MarkAsResolved = ({ doubt, refetch }: { doubt: Doubt; refetch: () =
             all_doubt_assignee: doubt.all_doubt_assignee,
             delete_assignee_request: doubt.delete_assignee_request,
         };
-        await handleAddReply({ replyData, addReply, refetch, id: doubt.id });
+        await handleAddReply({ replyData, addReply, refetch, id: doubt.id, t });
     };
 
     return (

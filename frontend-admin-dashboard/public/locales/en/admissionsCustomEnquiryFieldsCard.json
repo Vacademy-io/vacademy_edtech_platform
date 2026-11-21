@@ -1,0 +1,10 @@
+{
+    "header": {
+        "title": "Additional Information",
+        "description": "Required and optional details for this enquiry"
+    },
+    "placeholder": {
+        "select": "Select {{fieldName}}",
+        "enter": "Enter {{fieldName}}"
+    }
+}

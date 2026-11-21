@@ -45,13 +45,15 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { convertCapitalToTitleCase } from '@/lib/utils';
+import { compareByNameNatural, convertCapitalToTitleCase } from '@/lib/utils';
 import { CourseImageShimmer, InstructorAvatarShimmer } from '@/components/ui/shimmer';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Switch } from '@/components/ui/switch';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
+import { DuplicateCourseDialog } from './duplicate-course-dialog';
 
 const MAX_VISIBLE_TAGS = 5;
 
@@ -62,6 +64,7 @@ interface CourseListPageProps {
     handleApply: () => void;
     levels: Array<{ id: string; name: string }>;
     handleLevelChange: (levelId: string) => void;
+    handleSessionChange: (sessionId: string) => void;
     tags: string[];
     accessControlUsers: UserRolesDataEntry[];
     handleUserChange: (userId: string) => void;
@@ -94,6 +97,7 @@ const CourseListPage = ({
     handleApply,
     levels,
     handleLevelChange,
+    handleSessionChange,
     tags,
     accessControlUsers,
     handleUserChange,
@@ -116,6 +120,7 @@ const CourseListPage = ({
     hideFilters = false,
     showEnrolledStudentCount = false,
 }: CourseListPageProps) => {
+    const { t } = useTranslation('courseList');
     const navigate = useNavigate();
     const isMobile = useIsMobile();
     const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -123,7 +128,13 @@ const CourseListPage = ({
     const { instituteDetails } = useInstituteDetailsStore();
 
     const sessions = useMemo(
-        () => instituteDetails?.sessions?.filter((s) => s.status !== 'DELETED') ?? [],
+        () =>
+            (instituteDetails?.sessions ?? [])
+                .filter((s) => s.status !== 'DELETED')
+                .map((s) => ({ id: s.id, name: s.session_name }))
+                // Natural sort so "2024-25" precedes "2025-26" and numeric
+                // batch names read in order, like the Levels filter.
+                .sort(compareByNameNatural),
         [instituteDetails]
     );
 
@@ -156,7 +167,7 @@ const CourseListPage = ({
             <div className="mb-1 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Funnel size={16} className="text-neutral-500" />
-                    <div className="text-base font-semibold">Filters</div>
+                    <div className="text-base font-semibold">{t('filters')}</div>
                     {activeFilterCount > 0 && (
                         <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
                             {activeFilterCount}
@@ -170,7 +181,7 @@ const CourseListPage = ({
                             onClick={handleClearAll}
                             type="button"
                         >
-                            Clear
+                            {t('clear')}
                         </button>
                     )}
                     {onClose && (
@@ -178,43 +189,58 @@ const CourseListPage = ({
                             className="rounded p-1 text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
                             onClick={onClose}
                             type="button"
-                            aria-label="Close filters"
+                            aria-label={t('closeFilters')}
                         >
                             <X size={16} />
                         </button>
                     )}
                 </div>
             </div>
-            {/* Academic Session Filter — at top, only if >1 session */}
-            {sessions.length > 1 && (
-                <div className="mb-1">
-                    <div className="mb-1 text-sm font-semibold">Academic Session</div>
-                    <Select
-                        value={selectedFilters.session_ids[0] ?? 'all'}
-                        onValueChange={(val) =>
-                            setSelectedFilters((prev) => ({
-                                ...prev,
-                                session_ids: val === 'all' ? [] : [val],
-                            }))
-                        }
-                    >
-                        <SelectTrigger className="w-full">
-                            <SelectValue
-                                placeholder={`All ${getTerminologyPlural(ContentTerms.Session, SystemTerms.Session)}`}
-                            />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">{`All ${getTerminologyPlural(ContentTerms.Session, SystemTerms.Session)}`}</SelectItem>
-                            {sessions.map((s) => (
-                                <SelectItem key={s.id} value={s.id}>
-                                    {s.session_name}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-            )}
             <Accordion type="multiple" defaultValue={[]} className="w-full">
+                {/* Session filter. The heading comes from Naming Settings
+                    (ContentTerms.Session) so an institute that calls sessions
+                    "Batches" / "Academic Years" sees its own word here, exactly
+                    like the Levels / Teachers headings below. Multi-select —
+                    the catalog API takes `session_ids: string[]`. */}
+                {sessions.length > 0 && (
+                    <AccordionItem value="sessions" className="border-b-0">
+                        <AccordionTrigger className="py-2 hover:no-underline">
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold">
+                                    {getTerminologyPlural(ContentTerms.Session, SystemTerms.Session)}
+                                </span>
+                                {selectedFilters.session_ids.length > 0 && (
+                                    <Badge variant="secondary" className="h-5 px-1.5 text-2xs">
+                                        {selectedFilters.session_ids.length}
+                                    </Badge>
+                                )}
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="pb-2">
+                            <div className="flex flex-col gap-2">
+                                {sessions.map((session) => (
+                                    <label
+                                        key={session.id}
+                                        className="group flex cursor-pointer items-center gap-2"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedFilters.session_ids.includes(
+                                                session.id
+                                            )}
+                                            onChange={() => handleSessionChange(session.id)}
+                                            className="scale-110 accent-primary-500 transition-transform"
+                                        />
+                                        <span className="text-sm transition-colors group-hover:text-primary-500">
+                                            {session.name}
+                                        </span>
+                                    </label>
+                                ))}
+                            </div>
+                        </AccordionContent>
+                    </AccordionItem>
+                )}
+
                 <AccordionItem value="levels" className="border-b-0">
                     <AccordionTrigger className="py-2 hover:no-underline">
                         <div className="flex items-center gap-2">
@@ -248,7 +274,7 @@ const CourseListPage = ({
                             ))}
                             {levels.length === 0 && (
                                 <div className="py-1 text-xs italic text-neutral-400">
-                                    No options available
+                                    {t('noOptionsAvailable')}
                                 </div>
                             )}
                         </div>
@@ -346,7 +372,7 @@ const CourseListPage = ({
                         }}
                         type="button"
                     >
-                        Apply Filters
+                        {t('applyFilters')}
                     </button>
                 </div>
             )}
@@ -366,7 +392,7 @@ const CourseListPage = ({
                                     className="flex items-center gap-2"
                                 >
                                     <Funnel size={18} />
-                                    Filters
+                                    {t('filters')}
                                     {activeFilterCount > 0 && (
                                         <span className="ml-1 flex size-5 items-center justify-center rounded-full bg-primary-500 text-xs text-white">
                                             {activeFilterCount}
@@ -376,7 +402,7 @@ const CourseListPage = ({
                             </SheetTrigger>
                             <SheetContent side="left" className="w-[280px] overflow-y-auto p-4">
                                 <SheetHeader className="mb-4">
-                                    <SheetTitle>Filter Courses</SheetTitle>
+                                    <SheetTitle>{t('filterCourses', { courses: getTerminologyPlural(ContentTerms.Course, SystemTerms.Course) })}</SheetTitle>
                                 </SheetHeader>
                                 <FilterContent onClose={() => setIsFilterOpen(false)} />
                             </SheetContent>
@@ -403,7 +429,7 @@ const CourseListPage = ({
                                 className="hidden items-center gap-2 rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 shadow-sm transition-colors hover:border-primary-300 hover:bg-primary-50 lg:flex"
                             >
                                 <Funnel size={16} />
-                                Filters
+                                {t('filters')}
                                 {activeFilterCount > 0 && (
                                     <Badge
                                         variant="secondary"
@@ -438,14 +464,14 @@ const CourseListPage = ({
                                 value={searchValue}
                                 onChange={handleSearchChange}
                                 onKeyDown={handleSearchKeyDown}
-                                placeholder="Search courses..."
+                                placeholder={t('searchCourses', { courses: getTerminologyPlural(ContentTerms.Course, SystemTerms.Course) })}
                                 className="w-full rounded-md border border-neutral-200 px-9 py-2 text-sm shadow-sm transition-all focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
                             />
                             {/* Cross Button (visible only if searchValue) */}
                             {searchValue && (
                                 <button
                                     className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-neutral-400 transition-transform active:scale-95"
-                                    aria-label="Clear search"
+                                    aria-label={t('clearSearch')}
                                     onClick={() => {
                                         setSearchValue('');
                                         setSelectedFilters((prev) => ({
@@ -509,15 +535,15 @@ const CourseListPage = ({
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium text-neutral-600">
-                                    Sort by
+                                    {t('sortBy')}
                                 </span>
                                 <Select value={sortBy} onValueChange={setSortBy}>
                                     <SelectTrigger className="w-[110px]">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="oldest">Oldest</SelectItem>
-                                        <SelectItem value="newest">Newest</SelectItem>
+                                        <SelectItem value="oldest">{t('oldest')}</SelectItem>
+                                        <SelectItem value="newest">{t('newest')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -661,7 +687,7 @@ const CourseListPage = ({
                                                                 className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-700"
                                                                 title={overflowTitle}
                                                             >
-                                                                +{totalOverflow} more
+                                                                {t('moreCount', { count: totalOverflow })}
                                                             </span>
                                                         )}
                                                     </div>
@@ -725,7 +751,7 @@ const CourseListPage = ({
                                                                 .slice(MAX_VISIBLE_TAGS)
                                                                 .join(', ')}
                                                         >
-                                                            +{tags.length - MAX_VISIBLE_TAGS} more
+                                                            {t('moreCount', { count: tags.length - MAX_VISIBLE_TAGS })}
                                                         </span>
                                                     )}
                                                 </div>
@@ -742,27 +768,30 @@ const CourseListPage = ({
                                             <span className="-mb-3 mt-2 flex items-center gap-1 rounded py-1 text-xs font-medium text-gray-500">
                                                 {course.is_course_published_to_catalaouge ? (
                                                     <>
-                                                        <Eye className="size-4" /> In Catalog
+                                                        <Eye className="size-4" /> {t('inCatalog')}
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <EyeSlash className="size-4" /> Private
+                                                        <EyeSlash className="size-4" /> {t('private')}
                                                     </>
                                                 )}
                                             </span>
                                             {showEnrolledStudentCount && (
                                                 <span className="mt-2 flex items-center gap-1 rounded py-1 text-xs font-medium text-gray-500">
                                                     <UsersThree className="size-4" />
-                                                    {enrolledStudentCount} Enrolled{' '}
-                                                    {enrolledStudentCount === 1
-                                                        ? getTerminology(
-                                                              RoleTerms.Learner,
-                                                              SystemTerms.Learner
-                                                          )
-                                                        : getTerminologyPlural(
-                                                              RoleTerms.Learner,
-                                                              SystemTerms.Learner
-                                                          )}
+                                                    {t('enrolledCount', {
+                                                        count: enrolledStudentCount,
+                                                        term:
+                                                            enrolledStudentCount === 1
+                                                                ? getTerminology(
+                                                                      RoleTerms.Learner,
+                                                                      SystemTerms.Learner
+                                                                  )
+                                                                : getTerminologyPlural(
+                                                                      RoleTerms.Learner,
+                                                                      SystemTerms.Learner
+                                                                  ),
+                                                    })}
                                                 </span>
                                             )}
                                             <div className="mt-auto flex gap-2 pt-3">
@@ -781,12 +810,19 @@ const CourseListPage = ({
                                                         });
                                                     }}
                                                 >
-                                                    View{' '}
-                                                    {getTerminology(
-                                                        ContentTerms.Course,
-                                                        SystemTerms.Course
-                                                    )}
+                                                    {t('viewCourse', {
+                                                        course: getTerminology(
+                                                            ContentTerms.Course,
+                                                            SystemTerms.Course
+                                                        ),
+                                                    })}
                                                 </MyButton>
+                                                {showDeleteButton && (
+                                                    <DuplicateCourseDialog
+                                                        courseId={course.id}
+                                                        courseName={course.package_name}
+                                                    />
+                                                )}
                                                 {showDeleteButton && (
                                                     <div onClick={(e) => e.stopPropagation()}>
                                                         <AlertDialog
@@ -802,12 +838,15 @@ const CourseListPage = ({
                                                             <AlertDialogContent className="w-[calc(100%-2rem)] max-w-md">
                                                                 <AlertDialogHeader>
                                                                     <AlertDialogTitle>
-                                                                        Are you sure you want to
-                                                                        delete this course?
+                                                                        {t('deleteConfirmTitle', {
+                                                                            course: getTerminology(
+                                                                                ContentTerms.Course,
+                                                                                SystemTerms.Course
+                                                                            ),
+                                                                        })}
                                                                     </AlertDialogTitle>
                                                                     <AlertDialogDescription>
-                                                                        This action cannot be
-                                                                        undone.
+                                                                        {t('deleteConfirmBody')}
                                                                     </AlertDialogDescription>
                                                                 </AlertDialogHeader>
                                                                 <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
@@ -818,7 +857,7 @@ const CourseListPage = ({
                                                                         }
                                                                         className="w-full sm:w-auto"
                                                                     >
-                                                                        Cancel
+                                                                        {t('cancel')}
                                                                     </AlertDialogCancel>
                                                                     <AlertDialogAction
                                                                         onClick={() =>
@@ -834,8 +873,8 @@ const CourseListPage = ({
                                                                     >
                                                                         {deletingCourseId ===
                                                                         course.id
-                                                                            ? 'Deleting...'
-                                                                            : 'Confirm'}
+                                                                            ? t('deleting')
+                                                                            : t('confirm')}
                                                                     </AlertDialogAction>
                                                                 </AlertDialogFooter>
                                                             </AlertDialogContent>
@@ -976,7 +1015,7 @@ const CourseListPage = ({
                                                                 .slice(MAX_VISIBLE_TAGS)
                                                                 .join(', ')}
                                                         >
-                                                            +{tags.length - MAX_VISIBLE_TAGS} more
+                                                            {t('moreCount', { count: tags.length - MAX_VISIBLE_TAGS })}
                                                         </span>
                                                     )}
                                                 </div>
@@ -993,27 +1032,30 @@ const CourseListPage = ({
                                             <span className="-mb-3 mt-2 flex items-center gap-1 rounded py-1 text-xs font-medium text-gray-500">
                                                 {course.is_course_published_to_catalaouge ? (
                                                     <>
-                                                        <Eye className="size-4" /> In Catalog
+                                                        <Eye className="size-4" /> {t('inCatalog')}
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <EyeSlash className="size-4" /> Private
+                                                        <EyeSlash className="size-4" /> {t('private')}
                                                     </>
                                                 )}
                                             </span>
                                             {showEnrolledStudentCount && (
                                                 <span className="mt-2 flex items-center gap-1 rounded py-1 text-xs font-medium text-gray-500">
                                                     <UsersThree className="size-4" />
-                                                    {course.enrolled_student_count ?? 0} Enrolled{' '}
-                                                    {(course.enrolled_student_count ?? 0) === 1
-                                                        ? getTerminology(
-                                                              RoleTerms.Learner,
-                                                              SystemTerms.Learner
-                                                          )
-                                                        : getTerminologyPlural(
-                                                              RoleTerms.Learner,
-                                                              SystemTerms.Learner
-                                                          )}
+                                                    {t('enrolledCount', {
+                                                        count: course.enrolled_student_count ?? 0,
+                                                        term:
+                                                            (course.enrolled_student_count ?? 0) === 1
+                                                                ? getTerminology(
+                                                                      RoleTerms.Learner,
+                                                                      SystemTerms.Learner
+                                                                  )
+                                                                : getTerminologyPlural(
+                                                                      RoleTerms.Learner,
+                                                                      SystemTerms.Learner
+                                                                  ),
+                                                    })}
                                                 </span>
                                             )}
                                             <div className="mt-auto flex gap-2 pt-3">
@@ -1032,12 +1074,19 @@ const CourseListPage = ({
                                                         });
                                                     }}
                                                 >
-                                                    View{' '}
-                                                    {getTerminology(
-                                                        ContentTerms.Course,
-                                                        SystemTerms.Course
-                                                    )}
+                                                    {t('viewCourse', {
+                                                        course: getTerminology(
+                                                            ContentTerms.Course,
+                                                            SystemTerms.Course
+                                                        ),
+                                                    })}
                                                 </MyButton>
+                                                {showDeleteButton && (
+                                                    <DuplicateCourseDialog
+                                                        courseId={course.id}
+                                                        courseName={course.package_name}
+                                                    />
+                                                )}
                                                 {showDeleteButton && (
                                                     <div onClick={(e) => e.stopPropagation()}>
                                                         <AlertDialog
@@ -1053,12 +1102,15 @@ const CourseListPage = ({
                                                             <AlertDialogContent className="w-[calc(100%-2rem)] max-w-md">
                                                                 <AlertDialogHeader>
                                                                     <AlertDialogTitle>
-                                                                        Are you sure you want to
-                                                                        delete this course?
+                                                                        {t('deleteConfirmTitle', {
+                                                                            course: getTerminology(
+                                                                                ContentTerms.Course,
+                                                                                SystemTerms.Course
+                                                                            ),
+                                                                        })}
                                                                     </AlertDialogTitle>
                                                                     <AlertDialogDescription>
-                                                                        This action cannot be
-                                                                        undone.
+                                                                        {t('deleteConfirmBody')}
                                                                     </AlertDialogDescription>
                                                                 </AlertDialogHeader>
                                                                 <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
@@ -1069,7 +1121,7 @@ const CourseListPage = ({
                                                                         }
                                                                         className="w-full sm:w-auto"
                                                                     >
-                                                                        Cancel
+                                                                        {t('cancel')}
                                                                     </AlertDialogCancel>
                                                                     <AlertDialogAction
                                                                         onClick={() =>
@@ -1085,8 +1137,8 @@ const CourseListPage = ({
                                                                     >
                                                                         {deletingCourseId ===
                                                                         course.id
-                                                                            ? 'Deleting...'
-                                                                            : 'Confirm'}
+                                                                            ? t('deleting')
+                                                                            : t('confirm')}
                                                                     </AlertDialogAction>
                                                                 </AlertDialogFooter>
                                                             </AlertDialogContent>
@@ -1100,7 +1152,7 @@ const CourseListPage = ({
                             })
                         ) : (
                             <div className="col-span-full py-8 text-center text-neutral-400">
-                                No courses found.
+                                {t('noCoursesFound', { courses: getTerminologyPlural(ContentTerms.Course, SystemTerms.Course) })}
                             </div>
                         )}
                     </div>

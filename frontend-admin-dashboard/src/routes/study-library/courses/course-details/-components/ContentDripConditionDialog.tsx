@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +30,7 @@ import {
     generateDripConditionId,
     getLevelDisplayName,
     getRuleTypeDisplayName,
+    isProgressRule,
 } from '@/utils/drip-conditions';
 
 const RULE_TYPES = [
@@ -68,7 +70,10 @@ export interface ContentDripConditionDialogProps {
     siblings?: Array<{ id: string; name: string }>;
     /** Institute master switch — surfaced so an admin isn't editing a dead rule. */
     dripEnabled?: boolean;
-    /** Whether saved rules are actually applied to learners yet. */
+    /**
+     * Whether progress rules are applied to learners yet. Date and day-wise
+     * rules apply regardless, so this only changes the hint for the others.
+     */
     enforcing?: boolean;
 }
 
@@ -93,6 +98,7 @@ export function ContentDripConditionDialog({
     dripEnabled = true,
     enforcing = false,
 }: ContentDripConditionDialogProps) {
+    const { t } = useTranslation('studyLibraryContentDripConditionDialog');
     const conditions = useMemo(
         () => (Array.isArray(dripConditions) ? dripConditions : []),
         [dripConditions]
@@ -186,8 +192,11 @@ export function ContentDripConditionDialog({
             ? existing.drip_condition[0]?.is_enabled !== false
             : false;
         const warning = live
-            ? `Remove the unlock rule on "${itemName || levelLabel}"? It is active, so this ${levelLabel.toLowerCase()} opens for every learner immediately.`
-            : `Remove the unlock rule on "${itemName || levelLabel}"?`;
+            ? t('confirmRemoveActive', {
+                  item: itemName || levelLabel,
+                  level: levelLabel.toLowerCase(),
+              })
+            : t('confirmRemove', { item: itemName || levelLabel });
         if (!window.confirm(warning)) return;
         await persist(conditions.filter((c) => c.id !== existing.id));
     };
@@ -199,7 +208,7 @@ export function ContentDripConditionDialog({
                 return (
                     <div className="grid gap-3 sm:grid-cols-2">
                         <div className="space-y-1">
-                            <Label>Unlocks on day</Label>
+                            <Label>{t('relativeDate.unlocksOnDay')}</Label>
                             <Input
                                 type="number"
                                 min={1}
@@ -214,11 +223,11 @@ export function ContentDripConditionDialog({
                                 }
                             />
                             <p className="text-xs text-muted-foreground">
-                                Day 1 is the learner&apos;s first day of access.
+                                {t('relativeDate.dayOneNote')}
                             </p>
                         </div>
                         <div className="space-y-1">
-                            <Label>Counted from</Label>
+                            <Label>{t('relativeDate.countedFrom')}</Label>
                             <Select
                                 value={params.anchor ?? 'enrollment'}
                                 onValueChange={(v) => updateParams({ anchor: v })}
@@ -228,16 +237,16 @@ export function ContentDripConditionDialog({
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="enrollment">
-                                        Each learner&apos;s enrollment date
+                                        {t('relativeDate.enrollmentDate')}
                                     </SelectItem>
                                     <SelectItem value="session_start">
-                                        The batch start date
+                                        {t('relativeDate.sessionStartDate')}
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                         <div className="space-y-1">
-                            <Label>Opens at</Label>
+                            <Label>{t('relativeDate.opensAt')}</Label>
                             <Input
                                 type="time"
                                 value={params.unlock_time || '00:00'}
@@ -254,7 +263,7 @@ export function ContentDripConditionDialog({
                 const params = rule.params as { unlock_date: string };
                 return (
                     <div className="space-y-1">
-                        <Label>Release date</Label>
+                        <Label>{t('dateBased.releaseDate')}</Label>
                         <Input
                             type="datetime-local"
                             value={params.unlock_date ? toLocalDateTimeString(params.unlock_date) : ''}
@@ -263,7 +272,7 @@ export function ContentDripConditionDialog({
                             }
                         />
                         <p className="text-xs text-muted-foreground">
-                            The same calendar moment for every learner.
+                            {t('dateBased.sameMomentNote')}
                         </p>
                     </div>
                 );
@@ -273,7 +282,11 @@ export function ContentDripConditionDialog({
                 const params = rule.params as { threshold: number };
                 return (
                     <div className="space-y-1">
-                        <Label>Previous {levelLabel.toLowerCase()} completed at least (%)</Label>
+                        <Label>
+                            {t('sequential.completedAtLeastLabel', {
+                                level: levelLabel.toLowerCase(),
+                            })}
+                        </Label>
                         <Input
                             type="number"
                             min={0}
@@ -296,7 +309,7 @@ export function ContentDripConditionDialog({
                 return (
                     <div className="grid gap-3 sm:grid-cols-2">
                         <div className="space-y-1">
-                            <Label>Metric</Label>
+                            <Label>{t('completionBased.metric')}</Label>
                             <Select
                                 value={params.metric}
                                 onValueChange={(v) => updateParams({ metric: v })}
@@ -305,16 +318,18 @@ export function ContentDripConditionDialog({
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="average_of_all">Average of all</SelectItem>
+                                    <SelectItem value="average_of_all">
+                                        {t('completionBased.averageOfAll')}
+                                    </SelectItem>
                                     <SelectItem value="average_of_last_n">
-                                        Average of last N
+                                        {t('completionBased.averageOfLastN')}
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                         {params.metric === 'average_of_last_n' && (
                             <div className="space-y-1">
-                                <Label>How many</Label>
+                                <Label>{t('completionBased.howMany')}</Label>
                                 <Input
                                     type="number"
                                     min={1}
@@ -328,7 +343,7 @@ export function ContentDripConditionDialog({
                             </div>
                         )}
                         <div className="space-y-1">
-                            <Label>Threshold %</Label>
+                            <Label>{t('completionBased.threshold')}</Label>
                             <Input
                                 type="number"
                                 min={0}
@@ -351,16 +366,18 @@ export function ContentDripConditionDialog({
                 return (
                     <div className="space-y-3">
                         <div className="space-y-1">
-                            <Label>Must finish first</Label>
+                            <Label>{t('prerequisite.mustFinishFirst')}</Label>
                             <MultiSelect
                                 options={siblings.map((s) => ({ label: s.name, value: s.id }))}
                                 selected={params.required_chapters || []}
                                 onChange={(ids) => updateParams({ required_chapters: ids })}
-                                placeholder={`Select ${levelLabel.toLowerCase()}s`}
+                                placeholder={t('prerequisite.selectLevelsPlaceholder', {
+                                    level: levelLabel.toLowerCase(),
+                                })}
                             />
                         </div>
                         <div className="space-y-1">
-                            <Label>Completion threshold %</Label>
+                            <Label>{t('prerequisite.completionThreshold')}</Label>
                             <Input
                                 type="number"
                                 min={0}
@@ -384,27 +401,23 @@ export function ContentDripConditionDialog({
         <MyDialog
             open={open}
             onOpenChange={onClose}
-            heading={`Unlock rule — ${itemName || levelLabel}`}
+            heading={t('heading', { item: itemName || levelLabel })}
         >
             <div className="space-y-4">
                 {!dripEnabled && (
                     <Alert className="border-amber-200 bg-amber-50">
                         <Info className="size-4 text-amber-600" />
                         <AlertDescription className="text-sm text-amber-900">
-                            Drip conditions are switched off for this institute, so nothing saved
-                            here will lock content yet. Turn them on in Settings → Course →
-                            Drip Conditions.
+                            {t('alerts.dripDisabled')}
                         </AlertDescription>
                     </Alert>
                 )}
 
-                {dripEnabled && !enforcing && (
+                {dripEnabled && !enforcing && isProgressRule(rule) && (
                     <Alert className="border-neutral-200 bg-neutral-50">
                         <Info className="size-4 text-neutral-500" />
                         <AlertDescription className="text-sm">
-                            Rules are in preview: this saves, but learners are unaffected until
-                            &ldquo;Apply unlock rules to learners&rdquo; is switched on in
-                            Settings → Course → Drip Conditions.
+                            {t('alerts.previewOnly')}
                         </AlertDescription>
                     </Alert>
                 )}
@@ -414,7 +427,9 @@ export function ContentDripConditionDialog({
                         <Info className="size-4 text-blue-600" />
                         <AlertDescription className="space-y-1 text-sm text-blue-900">
                             <div className="font-semibold">
-                                A course-wide rule already covers every {levelLabel.toLowerCase()}
+                                {t('alerts.courseWideHeading', {
+                                    level: levelLabel.toLowerCase(),
+                                })}
                             </div>
                             {courseWideConfigs.flatMap((config, ci) =>
                                 config.rules.map((r, ri) => (
@@ -422,15 +437,16 @@ export function ContentDripConditionDialog({
                                 ))
                             )}
                             <div className="text-xs">
-                                A rule saved here takes precedence for this
-                                {` ${levelLabel.toLowerCase()}`}.
+                                {t('alerts.courseWideFootnote', {
+                                    level: levelLabel.toLowerCase(),
+                                })}
                             </div>
                         </AlertDescription>
                     </Alert>
                 )}
 
                 <div className="space-y-1">
-                    <Label>Unlock when</Label>
+                    <Label>{t('unlockWhen')}</Label>
                     <Select
                         value={rule.type}
                         onValueChange={(v) => setRule(createDefaultRule(v as DripConditionRule['type']))}
@@ -451,7 +467,7 @@ export function ContentDripConditionDialog({
                 <div className="rounded-md border bg-white p-3">{renderRuleEditor()}</div>
 
                 <div className="space-y-1">
-                    <Label>Until then</Label>
+                    <Label>{t('untilThen')}</Label>
                     <Select
                         value={behavior}
                         onValueChange={(v) => setBehavior(v as DripConditionBehavior)}
@@ -460,10 +476,8 @@ export function ContentDripConditionDialog({
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="lock">
-                                Show the card with a lock and the unlock date
-                            </SelectItem>
-                            <SelectItem value="hide">Hide it completely</SelectItem>
+                            <SelectItem value="lock">{t('lockBehavior')}</SelectItem>
+                            <SelectItem value="hide">{t('hideBehavior')}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -471,11 +485,9 @@ export function ContentDripConditionDialog({
                 <div className="flex items-center justify-between rounded-lg border p-3">
                     <div className="flex flex-col gap-1">
                         <Label htmlFor="drip-rule-enabled" className="font-medium">
-                            Rule active
+                            {t('ruleActive')}
                         </Label>
-                        <p className="text-xs text-muted-foreground">
-                            Switch off to keep the rule but stop applying it.
-                        </p>
+                        <p className="text-xs text-muted-foreground">{t('ruleActiveNote')}</p>
                     </div>
                     <Switch
                         id="drip-rule-enabled"
@@ -494,17 +506,17 @@ export function ContentDripConditionDialog({
                                 disabled={saving}
                             >
                                 <Trash size={16} />
-                                <span>Remove rule</span>
+                                <span>{t('removeRule')}</span>
                             </MyButton>
                         )}
                     </div>
                     <div className="flex items-center gap-2">
-                        {existing && <Badge variant="outline">Editing existing rule</Badge>}
+                        {existing && <Badge variant="outline">{t('editingExistingRule')}</Badge>}
                         <MyButton buttonType="secondary" onClick={onClose} disabled={saving}>
-                            Cancel
+                            {t('cancel')}
                         </MyButton>
                         <MyButton onClick={handleSave} disabled={saving || !itemId}>
-                            {saving ? 'Saving…' : 'Save'}
+                            {saving ? t('saving') : t('save')}
                         </MyButton>
                     </div>
                 </div>

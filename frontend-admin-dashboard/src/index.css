@@ -141,6 +141,11 @@ html {
  * notch inset PLUS a 1.5rem gap, so the sheet title/content clears the status
  * bar instead of rendering under the clock/icons. Native-only. */
 .platform-native .pt-safe-6 { padding-top: calc(var(--safe-area-inset-top) + 1.5rem); }
+/* Bottom bars that keep their own gap ABOVE the home-indicator / gesture inset.
+ * `pb-safe` next to `p-4`/`py-3` replaces that padding (the controls then touch the
+ * gesture bar); these add the gap on top of the inset. Web: inset is 0, so same as p-*. */
+.pb-safe-3 { padding-bottom: calc(var(--safe-area-inset-bottom) + 0.75rem); }
+.pb-safe-4 { padding-bottom: calc(var(--safe-area-inset-bottom) + 1rem); }
 .px-safe {
     padding-left: var(--safe-area-inset-left);
     padding-right: var(--safe-area-inset-right);
@@ -160,6 +165,24 @@ html {
 }
 .h-screen-safe {
     height: calc(100vh - var(--safe-area-inset-top) - var(--safe-area-inset-bottom));
+}
+/* Floating assistant button (components/assist-dock/AssistantFab.tsx). Its
+ * wrapper keeps a 1rem gap above the home indicator / gesture bar and clear of
+ * a side notch: the native insets in the app, the browser's env() on the web.
+ * It also steps aside for UI that owns the bottom-right corner. Mark such an
+ * element with data-assistant-fab="avoid" (all widths) or "avoid-phone" (below
+ * md, for bottom bars that only reach the corner once the right rail is gone). */
+.assistant-fab {
+    padding-bottom: calc(max(var(--safe-area-inset-bottom), env(safe-area-inset-bottom, 0px)) + 1rem);
+    padding-right: max(var(--safe-area-inset-right), env(safe-area-inset-right, 0px));
+}
+body:has([data-assistant-fab='avoid']) .assistant-fab {
+    display: none;
+}
+@media (max-width: 767.98px) {
+    body:has([data-assistant-fab='avoid-phone']) .assistant-fab {
+        display: none;
+    }
 }
 /* Sticky bottom bars (composer Send row, dashboard nav) — sits above the
  * IME when open, otherwise above the home-indicator. The 0.5rem floor
@@ -549,15 +572,22 @@ html {
         background: transparent;
     }
 
+    /* --primary-* are HSL channel triplets ("32 88% 83%"), so rgb() produced an
+       invalid color and the thumb silently fell back to the chunky UA default. */
     .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: rgb(
-            var(--primary-200)
-        ); /* assuming primary-200 is defined in your CSS variables */
+        background: hsl(var(--primary-200));
         border-radius: 4px;
     }
 
     .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: rgb(var(--primary-300));
+        background: hsl(var(--primary-300));
+    }
+
+    /* Firefox has no ::-webkit pseudo-elements — without this it keeps the full
+       -width scrollbar while every other browser gets the slim one. */
+    .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: hsl(var(--primary-200)) transparent;
     }
 }
 

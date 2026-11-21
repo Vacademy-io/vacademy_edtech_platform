@@ -1,0 +1,46 @@
+{
+    "sectionInfo": {
+        "descriptionTitle": "Section Description"
+    },
+    "stats": {
+        "sectionDuration": {
+            "label": "Section Duration",
+            "value": "{{duration}} min"
+        },
+        "avgMarksPerQuestion": "Avg. Marks / Question",
+        "totalMarks": "Total Marks",
+        "negativeMarking": "Negative Marking"
+    },
+    "badges": {
+        "partialMarking": "Partial Marking",
+        "cutoffMarks": "Cutoff Marks",
+        "problemRandomization": "Problem Randomization"
+    },
+    "table": {
+        "heading": {
+            "survey": "Survey Questions",
+            "adaptiveMarking": "Adaptive Marking Rules"
+        },
+        "columns": {
+            "index": "#",
+            "question": "Question",
+            "type": "Type",
+            "marks": "Marks",
+            "penalty": "Penalty",
+            "criteria": "Criteria",
+            "time": "Time"
+        },
+        "criteriaNotSet": "Not set"
+    },
+    "toasts": {
+        "invalidCriteriaFormat": "Unable to preview criteria. Invalid data format."
+    },
+    "accordion": {
+        "questionCount_one": "{{count}} question",
+        "questionCount_other": "{{count}} questions",
+        "mcqSingle": "MCQ · Single {{count}}",
+        "mcqMultiple": "MCQ · Multiple {{count}}",
+        "total": "Total {{count}}"
+    },
+    "sectionTotal": "Section Total"
+}

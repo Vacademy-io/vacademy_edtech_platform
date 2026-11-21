@@ -4,12 +4,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vacademy.io.assessment_service.features.assessment.entity.AiEvaluationProcess;
+import org.springframework.security.core.GrantedAuthority;
 import vacademy.io.assessment_service.features.assessment.entity.StudentAttempt;
 import vacademy.io.assessment_service.features.assessment.repository.AiEvaluationProcessRepository;
+import vacademy.io.assessment_service.features.assessment.repository.AssessmentInstituteMappingRepository;
 import vacademy.io.assessment_service.features.assessment.repository.StudentAttemptRepository;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.ForbiddenException;
 import vacademy.io.common.exceptions.ResourceNotFoundException;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Authorization guard for the AI-evaluation endpoints.
@@ -34,6 +39,10 @@ public class EvaluationAccessValidator {
 
     private final StudentAttemptRepository studentAttemptRepository;
     private final AiEvaluationProcessRepository aiEvaluationProcessRepository;
+    private final AssessmentInstituteMappingRepository assessmentInstituteMappingRepository;
+
+    /** Learner-side role names (same set as admin_core InstituteAccessValidator). */
+    private static final Set<String> LEARNER_ROLE_NAMES = Set.of("STUDENT", "PARENT", "GUARDIAN");
 
     /** Load an attempt and assert the caller may act on it, returning the attempt. */
     public StudentAttempt requireAttemptAccess(CustomUserDetails user, String instituteId, String attemptId) {
@@ -48,6 +57,44 @@ public class EvaluationAccessValidator {
         AiEvaluationProcess process = aiEvaluationProcessRepository.findById(processId)
                 .orElseThrow(() -> new ResourceNotFoundException("Evaluation process not found: " + processId));
         assertCallerOwnsAttempt(user, instituteId, process.getStudentAttempt());
+    }
+
+    /** As {@link #requireProcessAccess}, returning the run's attempt (may be null for a bulk copy). */
+    public StudentAttempt requireProcessAttempt(CustomUserDetails user, String instituteId, String processId) {
+        AiEvaluationProcess process = aiEvaluationProcessRepository.findById(processId)
+                .orElseThrow(() -> new ResourceNotFoundException("Evaluation process not found: " + processId));
+        assertCallerOwnsAttempt(user, instituteId, process.getStudentAttempt());
+        return process.getStudentAttempt();
+    }
+
+    /**
+     * Every id is an attempt of this assessment (re-mark by participants): an assessment the
+     * caller owns must not be a door to another institute's attempts.
+     */
+    public void requireAttemptsOnAssessment(String assessmentId, java.util.Collection<String> attemptIds) {
+        if (attemptIds == null || attemptIds.isEmpty()) return;
+        java.util.List<String> wanted = new java.util.ArrayList<>(new HashSet<>(attemptIds));
+        Set<String> found = new HashSet<>();
+        for (int from = 0; from < wanted.size(); from += 1000) {
+            found.addAll(studentAttemptRepository.findIdsOnAssessment(assessmentId,
+                    wanted.subList(from, Math.min(wanted.size(), from + 1000))));
+        }
+        if (!found.containsAll(wanted)) {
+            log.warn("Blocked re-mark of attempts outside assessment {}", assessmentId);
+            throw new ForbiddenException("Some of these submissions do not belong to this assessment");
+        }
+    }
+
+    /** The ids (of those given) whose attempt belongs to the institute; others are dropped. */
+    public java.util.List<String> attemptsInInstitute(String instituteId, java.util.Collection<String> attemptIds) {
+        if (instituteId == null || attemptIds == null || attemptIds.isEmpty()) return java.util.List.of();
+        java.util.List<String> wanted = new java.util.ArrayList<>(new HashSet<>(attemptIds));
+        java.util.List<String> out = new java.util.ArrayList<>();
+        for (int from = 0; from < wanted.size(); from += 1000) {
+            out.addAll(studentAttemptRepository.findIdsInInstitute(instituteId,
+                    wanted.subList(from, Math.min(wanted.size(), from + 1000))));
+        }
+        return out;
     }
 
     /**
@@ -65,6 +112,97 @@ public class EvaluationAccessValidator {
         if (instituteId == null || instituteId.isBlank()) {
             throw new ForbiddenException("Institute context is required");
         }
+    }
+
+    /**
+     * Assert an {@code instituteId} request parameter names the institute the
+     * caller authenticated against (the {@code clientId} header). Authorities are
+     * scoped to clientId, so without this an admin of institute A could send
+     * clientId=A with instituteId=B and pass every role check on B's data with A's
+     * roles. The admin dashboard always sends both with the same value.
+     */
+    public void requireActiveInstitute(String clientId, String instituteId) {
+        if (instituteId == null || instituteId.isBlank()) {
+            throw new ForbiddenException("Institute context is required");
+        }
+        if (!instituteId.equals(clientId)) {
+            log.warn("Blocked request for an institute other than the caller's: clientId={}, instituteId={}",
+                    clientId, instituteId);
+            throw new ForbiddenException("This institute is not your active institute");
+        }
+    }
+
+    /**
+     * Assert the assessment belongs to {@code instituteId} and the caller is a
+     * member there. Same check as CopyIntakeController's tenant binding.
+     */
+    public void requireAssessmentInInstitute(CustomUserDetails user, String instituteId, String assessmentId) {
+        requireInstituteMembership(user, instituteId);
+        if (assessmentId == null
+                || assessmentInstituteMappingRepository.findByAssessmentIdAndInstituteId(assessmentId, instituteId).isEmpty()) {
+            throw new ForbiddenException("This assessment does not belong to your institute");
+        }
+    }
+
+    /** Shop staff (Commerce) are not course staff: these names never count towards "is staff". */
+    private static final Set<String> COMMERCE_ROLE_NAMES = Set.of("COMMERCE_STORE_MANAGER",
+            "COMMERCE_WAREHOUSE_STAFF", "COMMERCE_POS_CASHIER", "COMMERCE_ACCOUNTANT");
+
+    /**
+     * Assert the caller is institute staff, for AI-evaluation mutations (trigger,
+     * stop, review override, rubric writes, copy intake). Membership alone lets a
+     * STUDENT of the institute through. Call after the membership/ownership check;
+     * authorities are already scoped to the request's institute.
+     *
+     * <p>Mirrors admin_core {@code InstituteAccessValidator.requireStaffAccess}; the root
+     * flag is not consulted. The authority set mixes role names with permission names, so:
+     * a learner role (STUDENT/PARENT/GUARDIAN) without ADMIN or EVALUATOR is refused
+     * even when it also carries TEACHER, which self-signup grants learners when
+     * {@code allowLearnersToCreateCourses} is on. Any other non-empty set is staff:
+     * ADMIN, TEACHER, EVALUATOR, MENTOR, COUNSELLOR, COURSE CREATOR, custom roles.
+     */
+    public void requireStaffRole(CustomUserDetails user) {
+        if (user == null || user.getUserId() == null) {
+            throw new ForbiddenException("Authentication is required for AI evaluation");
+        }
+        Set<String> authorities = new HashSet<>();
+        if (user.getAuthorities() != null) {
+            for (GrantedAuthority authority : user.getAuthorities()) {
+                if (authority != null && authority.getAuthority() != null) {
+                    authorities.add(authority.getAuthority().trim().toUpperCase());
+                }
+            }
+        }
+        if (!isStaff(authorities)) {
+            log.warn("Blocked non-staff AI-evaluation mutation: user={}", user.getUserId());
+            throw new ForbiddenException("Only institute staff can do this");
+        }
+    }
+
+    /**
+     * The {@link #requireStaffRole} rule on an already upper-cased authority set: true for
+     * institute staff (any non-empty set other than commerce-only, or a learner role
+     * without ADMIN / EVALUATOR).
+     */
+    public static boolean isStaff(Set<String> upperCaseAuthorities) {
+        Set<String> authorities = new HashSet<>(upperCaseAuthorities);
+        authorities.removeAll(COMMERCE_ROLE_NAMES);
+        boolean learner = authorities.stream().anyMatch(LEARNER_ROLE_NAMES::contains);
+        return !authorities.isEmpty()
+                && !(learner && !authorities.contains("ADMIN") && !authorities.contains("EVALUATOR"));
+    }
+
+    /**
+     * Whether EVALUATOR is the caller's only staff role: nothing else in the set once the
+     * learner and commerce names (which never make a person course staff) are taken out.
+     */
+    public static boolean evaluatorOnly(Set<String> upperCaseAuthorities) {
+        if (!upperCaseAuthorities.contains("EVALUATOR")) return false;
+        Set<String> rest = new HashSet<>(upperCaseAuthorities);
+        rest.remove("EVALUATOR");
+        rest.removeAll(COMMERCE_ROLE_NAMES);
+        rest.removeAll(LEARNER_ROLE_NAMES);
+        return rest.isEmpty();
     }
 
     private void assertCallerOwnsAttempt(CustomUserDetails user, String instituteId, StudentAttempt attempt) {

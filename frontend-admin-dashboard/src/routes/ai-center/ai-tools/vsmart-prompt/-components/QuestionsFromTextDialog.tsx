@@ -4,12 +4,21 @@ import { FormControl, FormField, FormItem, FormLabel } from '@/components/ui/for
 import { Textarea } from '@/components/ui/textarea';
 import { useEffect, useRef } from 'react';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { QuestionsFromTextData } from './GenerateQuestionsFromText';
 import SelectField from '@/components/design-system/select-field';
 import { languageSupport } from '@/constants/dummy-data';
 import { ModelSelector } from '../../-components/ModelSelector';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
+
+// languageSupport (shared constant) holds raw enum values like 'ENGLISH' /
+// 'HINDI'; map them to translation keys for display only. The underlying
+// option value (used for form state / API payload) stays untouched.
+const LANGUAGE_LABEL_KEYS: Record<string, string> = {
+    ENGLISH: 'languages.english',
+    HINDI: 'languages.hindi',
+};
 
 export const QuestionsFromTextDialog = ({
     open,
@@ -40,6 +49,7 @@ export const QuestionsFromTextDialog = ({
     }>;
     taskId: string;
 }) => {
+    const { t } = useTranslation('aiCenterQuestionsFromTextDialog');
     const formRef = useRef<HTMLFormElement>(null);
 
     const requestSubmitFn = () => {
@@ -56,12 +66,12 @@ export const QuestionsFromTextDialog = ({
 
     return (
         <MyDialog
-            heading="Generate Questions From Topics"
+            heading={t('heading')}
             open={open}
             onOpenChange={onOpenChange}
             footer={submitButton}
             trigger={trigger || undefined}
-            dialogWidth="min-w-[500px]"
+            dialogWidth="max-w-lg"
         >
             <FormProvider {...form}>
                 <form
@@ -78,10 +88,10 @@ export const QuestionsFromTextDialog = ({
                                     <MyInput
                                         input={field.value?.toString() || ''}
                                         onChangeFunction={(e) => field.onChange(e.target.value)}
-                                        label="Topics"
+                                        label={t('fields.topics.label')}
                                         required={true}
                                         inputType="text"
-                                        inputPlaceholder="Enter the topic you want to generate the question for"
+                                        inputPlaceholder={t('fields.topics.placeholder')}
                                         className="w-full"
                                     />
                                 </FormControl>
@@ -96,12 +106,12 @@ export const QuestionsFromTextDialog = ({
                                 <FormControl>
                                     <div className="flex flex-col gap-2">
                                         <FormLabel>
-                                            Details of topics{' '}
+                                            {t('fields.detailsOfTopics.label')}{' '}
                                             <span className="text-red-500">*</span>
                                         </FormLabel>
                                         <Textarea
-                                            placeholder="For example, Generate a set of questions covering the key principles of photosynthesis, including the process, factors affecting it, and its importance in the ecosystem. Focus on conceptual understanding and application"
-                                            className="h-[100px] w-full"
+                                            placeholder={t('fields.detailsOfTopics.placeholder')}
+                                            className="h-24 w-full"
                                             value={field.value}
                                             onChange={(e) => field.onChange(e.target.value)}
                                         />
@@ -129,10 +139,10 @@ export const QuestionsFromTextDialog = ({
                                             }
                                         }}
                                         onWheel={(e) => e.currentTarget.blur()}
-                                        label="Number of Questions"
+                                        label={t('fields.numQuestions.label')}
                                         required={true}
                                         inputType="number"
-                                        inputPlaceholder="For example, 10"
+                                        inputPlaceholder={t('fields.numQuestions.placeholder')}
                                         className="w-full"
                                     />
                                 </FormControl>
@@ -151,7 +161,7 @@ export const QuestionsFromTextDialog = ({
                                         label={getTerminology(ContentTerms.Level, SystemTerms.Level)}
                                         required={true}
                                         inputType="text"
-                                        inputPlaceholder="For example, 8th standard"
+                                        inputPlaceholder={t('fields.classLevel.placeholder')}
                                         className="w-full"
                                     />
                                 </FormControl>
@@ -168,10 +178,10 @@ export const QuestionsFromTextDialog = ({
                                     <MyInput
                                         input={field.value?.toString() || ''}
                                         onChangeFunction={(e) => field.onChange(e.target.value)}
-                                        label="Question Type"
+                                        label={t('fields.questionType.label')}
                                         required={true}
                                         inputType="text"
-                                        inputPlaceholder="Eg. Numerical, MCQS, True/False etc"
+                                        inputPlaceholder={t('fields.questionType.placeholder')}
                                         className="w-full"
                                     />
                                 </FormControl>
@@ -179,12 +189,14 @@ export const QuestionsFromTextDialog = ({
                         )}
                     />
                     <SelectField
-                        label="Question Language"
+                        label={t('fields.questionLanguage.label')}
                         labelStyle="font-semibold"
                         name="question_language"
                         options={languageSupport.map((option, index) => ({
                             value: option,
-                            label: option,
+                            label: LANGUAGE_LABEL_KEYS[option]
+                                ? t(LANGUAGE_LABEL_KEYS[option])
+                                : option,
                             _id: index,
                         }))}
                         control={form.control}

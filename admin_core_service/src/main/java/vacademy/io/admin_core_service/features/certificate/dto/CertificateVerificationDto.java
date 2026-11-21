@@ -43,8 +43,21 @@ public class CertificateVerificationDto {
     private Date issuedAt;
     private Integer completionPercentage;
 
-    /** Masked, e.g. "A··· S·····". Never the full name. */
+    /**
+     * Masked, e.g. "A··· S·····", unless the institute turned on
+     * verificationShowFullDetails, in which case it is the full name.
+     */
     private String learnerName;
+
+    /**
+     * The learner's record, filled only when the institute turned on
+     * verificationShowFullDetails. Null otherwise, so the default response
+     * discloses nothing more than it did before.
+     */
+    private String learnerUsername;
+    private String learnerFirstName;
+    private String learnerLastName;
+    private String learnerEmail;
 
     /**
      * Institute branding, so the verification page can present itself as the

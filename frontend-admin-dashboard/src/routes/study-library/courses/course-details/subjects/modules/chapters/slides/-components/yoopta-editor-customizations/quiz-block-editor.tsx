@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     YooptaPlugin,
     useYooptaEditor,
@@ -166,6 +167,7 @@ function RichField({
     placeholder?: string;
     minHeight?: number;
 }) {
+    const { t } = useTranslation('studyLibraryQuizBlockEditor');
     const ref = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -221,7 +223,7 @@ function RichField({
     const insertLink = () => {
         const el = ref.current;
         if (!el) return;
-        const raw = window.prompt('Link URL:');
+        const raw = window.prompt(t('prompts.linkUrl'));
         if (!raw) return;
         const href = safeLinkHref(raw);
         if (!href) return;
@@ -328,13 +330,15 @@ function RichField({
                     backgroundColor: C.surface,
                 }}
             >
-                {tbBtn('B', () => exec('bold'), 'Bold', { fontWeight: 700 })}
-                {tbBtn('I', () => exec('italic'), 'Italic', { fontStyle: 'italic' })}
-                {tbBtn('U', () => exec('underline'), 'Underline', { textDecoration: 'underline' })}
-                {tbBtn('•', () => exec('insertUnorderedList'), 'Bullet list')}
-                {tbBtn('1.', () => exec('insertOrderedList'), 'Numbered list')}
-                {tbBtn('🔗', insertLink, 'Insert link')}
-                {tbBtn('🖼', insertImage, 'Insert image')}
+                {tbBtn('B', () => exec('bold'), t('toolbar.bold'), { fontWeight: 700 })}
+                {tbBtn('I', () => exec('italic'), t('toolbar.italic'), { fontStyle: 'italic' })}
+                {tbBtn('U', () => exec('underline'), t('toolbar.underline'), {
+                    textDecoration: 'underline',
+                })}
+                {tbBtn('•', () => exec('insertUnorderedList'), t('toolbar.bulletList'))}
+                {tbBtn('1.', () => exec('insertOrderedList'), t('toolbar.numberedList'))}
+                {tbBtn('🔗', insertLink, t('toolbar.insertLink'))}
+                {tbBtn('🖼', insertImage, t('toolbar.insertImage'))}
             </div>
 
             {/* Editable area */}
@@ -381,6 +385,7 @@ function RichHtml({ html, style }: { html: string; style?: React.CSSProperties }
 }
 
 export function QuizBlock({ element, attributes, children, blockId }: PluginElementRenderProps) {
+    const { t } = useTranslation('studyLibraryQuizBlockEditor');
     const editor = useYooptaEditor();
     const isReadOnly = useYooptaReadOnly();
     const hasStoredQuiz =
@@ -521,7 +526,7 @@ export function QuizBlock({ element, attributes, children, blockId }: PluginElem
                 }}
             >
                 <span style={{ fontSize: '14px', fontWeight: 600, color: C.indigo }}>
-                    Quiz Block
+                    {t('header.quizBlock')}
                 </span>
                 <div style={{ display: 'flex', gap: '6px' }}>
                     {!isReadOnly && isEditing && (
@@ -538,7 +543,7 @@ export function QuizBlock({ element, attributes, children, blockId }: PluginElem
                                     cursor: 'pointer',
                                 }}
                             >
-                                MCQ
+                                {t('header.mcq')}
                             </button>
                             <button
                                 onClick={() => switchType('trueFalse')}
@@ -552,7 +557,7 @@ export function QuizBlock({ element, attributes, children, blockId }: PluginElem
                                     cursor: 'pointer',
                                 }}
                             >
-                                True/False
+                                {t('header.trueFalse')}
                             </button>
                         </>
                     )}
@@ -572,7 +577,7 @@ export function QuizBlock({ element, attributes, children, blockId }: PluginElem
                                 cursor: 'pointer',
                             }}
                         >
-                            {isEditing ? 'Preview' : 'Edit'}
+                            {isEditing ? t('header.preview') : t('header.edit')}
                         </button>
                     )}
                 </div>
@@ -585,12 +590,12 @@ export function QuizBlock({ element, attributes, children, blockId }: PluginElem
                         {/* Question */}
                         <div style={{ marginBottom: '16px' }}>
                             <label style={{ fontSize: '12px', fontWeight: 600, color: C.label, display: 'block', marginBottom: '4px' }}>
-                                Question
+                                {t('labels.question')}
                             </label>
                             <RichField
                                 value={quizData.question}
                                 onChange={updateQuestion}
-                                placeholder="Enter your question…"
+                                placeholder={t('placeholders.question')}
                                 minHeight={64}
                             />
                         </div>
@@ -598,7 +603,7 @@ export function QuizBlock({ element, attributes, children, blockId }: PluginElem
                         {/* Options */}
                         <div style={{ marginBottom: '16px' }}>
                             <label style={{ fontSize: '12px', fontWeight: 600, color: C.label, display: 'block', marginBottom: '4px' }}>
-                                Options (click the circle to mark the correct answer)
+                                {t('labels.options')}
                             </label>
                             {quizData.options.map((option, index) => (
                                 <div
@@ -612,7 +617,7 @@ export function QuizBlock({ element, attributes, children, blockId }: PluginElem
                                 >
                                     <button
                                         onClick={() => toggleCorrect(option.id!)}
-                                        title="Mark as correct answer"
+                                        title={t('actions.markCorrect')}
                                         style={{
                                             width: '24px',
                                             height: '24px',
@@ -636,7 +641,9 @@ export function QuizBlock({ element, attributes, children, blockId }: PluginElem
                                         <RichField
                                             value={option.text}
                                             onChange={(html) => updateOptionText(option.id!, html)}
-                                            placeholder={`Option ${optionLabels[index]}`}
+                                            placeholder={t('placeholders.option', {
+                                                label: optionLabels[index],
+                                            })}
                                             minHeight={44}
                                         />
                                     </div>
@@ -645,7 +652,7 @@ export function QuizBlock({ element, attributes, children, blockId }: PluginElem
                                         <button
                                             onClick={() => removeOption(option.id!)}
                                             disabled={quizData.options.length <= 2}
-                                            title="Remove option"
+                                            title={t('actions.removeOption')}
                                             style={{
                                                 padding: '4px 8px',
                                                 marginTop: '6px',
@@ -679,7 +686,7 @@ export function QuizBlock({ element, attributes, children, blockId }: PluginElem
                                         marginTop: '4px',
                                     }}
                                 >
-                                    + Add Option
+                                    {t('actions.addOption')}
                                 </button>
                             )}
                         </div>
@@ -687,12 +694,12 @@ export function QuizBlock({ element, attributes, children, blockId }: PluginElem
                         {/* Explanation */}
                         <div>
                             <label style={{ fontSize: '12px', fontWeight: 600, color: C.label, display: 'block', marginBottom: '4px' }}>
-                                Explanation (shown after answering)
+                                {t('labels.explanation')}
                             </label>
                             <RichField
                                 value={quizData.explanation}
                                 onChange={updateExplanation}
-                                placeholder="Explain the correct answer…"
+                                placeholder={t('placeholders.explanation')}
                                 minHeight={44}
                             />
                         </div>
@@ -708,7 +715,7 @@ export function QuizBlock({ element, attributes, children, blockId }: PluginElem
                             />
                         ) : (
                             <div style={{ fontSize: '16px', fontWeight: 600, color: C.text, marginBottom: '12px' }}>
-                                No question set
+                                {t('preview.noQuestion')}
                             </div>
                         )}
 
@@ -774,7 +781,13 @@ export function QuizBlock({ element, attributes, children, blockId }: PluginElem
                                             {showResult && option.isCorrect ? '✓' : optionLabels[index]}
                                         </span>
                                         <RichHtml
-                                            html={isHtmlEmpty(option.text) ? `Option ${optionLabels[index]}` : option.text}
+                                            html={
+                                                isHtmlEmpty(option.text)
+                                                    ? t('placeholders.option', {
+                                                          label: optionLabels[index],
+                                                      })
+                                                    : option.text
+                                            }
                                             style={{ fontSize: '14px', flex: 1, minWidth: 0 }}
                                         />
                                     </div>
@@ -798,7 +811,7 @@ export function QuizBlock({ element, attributes, children, blockId }: PluginElem
                                         cursor: selectedAnswer !== null ? 'pointer' : 'default',
                                     }}
                                 >
-                                    Check Answer
+                                    {t('preview.checkAnswer')}
                                 </button>
                             ) : (
                                 <button
@@ -813,7 +826,7 @@ export function QuizBlock({ element, attributes, children, blockId }: PluginElem
                                         cursor: 'pointer',
                                     }}
                                 >
-                                    Try Again
+                                    {t('preview.tryAgain')}
                                 </button>
                             )}
                         </div>
@@ -831,7 +844,7 @@ export function QuizBlock({ element, attributes, children, blockId }: PluginElem
                                     color: C.explText,
                                 }}
                             >
-                                <strong>Explanation:</strong>
+                                <strong>{t('preview.explanationLabel')}</strong>
                                 <RichHtml html={quizData.explanation} />
                             </div>
                         )}

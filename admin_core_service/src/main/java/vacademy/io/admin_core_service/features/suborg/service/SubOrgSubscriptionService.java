@@ -58,6 +58,7 @@ public class SubOrgSubscriptionService {
 
     private final SubOrgManagementService subOrgManagementService;
     private final EnrollInviteRepository enrollInviteRepository;
+    private final SubOrgSeatCapResolver seatCapResolver;
     private final PaymentOptionRepository paymentOptionRepository;
     private final PackageSessionService packageSessionService;
     private final PackageSessionEnrollInviteToPaymentOptionService packageSessionEnrollInviteToPaymentOptionService;
@@ -289,9 +290,9 @@ public class SubOrgSubscriptionService {
         String instituteId = orgInvite.getInstituteId();
         Terms terms = instituteTerminologyService.forInstitute(instituteId);
 
-        // For CPO sub-orgs the org PaymentPlan is the shared CPO synthetic plan and
-        // carries no per-sub-org memberCount — fall back to settingJson.MEMBER_COUNT.
-        Integer fallbackMemberCount = readSubOrgMemberCountFromSettings(orgInvite);
+        // The sub-org's own cap. A shared option's plan (CPO synthetic or a picked institute
+        // option) says nothing about this sub-org, so settingJson.MEMBER_COUNT beats it.
+        Integer settingMemberCount = readSubOrgMemberCountFromSettings(orgInvite);
 
         // Find all package sessions linked to the org-level invite
         List<PackageSessionLearnerInvitationToPaymentOption> orgMappings =
@@ -347,7 +348,7 @@ public class SubOrgSubscriptionService {
             freePlan.setElevatedPrice(0);
             freePlan.setTag("DEFAULT");
             Integer planMemberCount = orgPlan != null ? orgPlan.getMemberCount() : null;
-            freePlan.setMemberCount(planMemberCount != null ? planMemberCount : fallbackMemberCount);
+            freePlan.setMemberCount(settingMemberCount != null ? settingMemberCount : planMemberCount);
             freePlan.setValidityInDays(orgPlan != null ? orgPlan.getValidityInDays()
                     : orgInvite.getLearnerAccessDays());
             freePlan.setPaymentOption(freeOption);
@@ -376,7 +377,7 @@ public class SubOrgSubscriptionService {
                 subOrgId, packageSessionId, LearnerSessionStatusEnum.ACTIVE.name());
 
         // Find the scoped invite's plan to get totalSeats
-        Integer totalSeats = null;
+        PaymentPlan scopedPlan = null;
         Optional<EnrollInvite> scopedInvite = enrollInviteRepository
                 .findScopedInviteForSubOrgAndPackageSession(subOrgId, packageSessionId);
         if (scopedInvite.isPresent()) {
@@ -387,14 +388,16 @@ public class SubOrgSubscriptionService {
                         && mapping.getPaymentOption().getPaymentPlans() != null) {
                     for (PaymentPlan plan : mapping.getPaymentOption().getPaymentPlans()) {
                         if (plan.getMemberCount() != null) {
-                            totalSeats = plan.getMemberCount();
+                            scopedPlan = plan;
                             break;
                         }
                     }
                 }
-                if (totalSeats != null) break;
+                if (scopedPlan != null) break;
             }
         }
+        Integer totalSeats = seatCapResolver.resolve(subOrgId,
+                scopedInvite.map(EnrollInvite::getInstituteId).orElse(null), scopedPlan);
 
         return SeatUsageDTO.builder()
                 .packageSessionId(packageSessionId)

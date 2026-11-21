@@ -1,0 +1,28 @@
+{
+    "instituteLogoAlt": "شعار المؤسسة",
+    "heading": "قيّم بذكاء، وتعلّم بشكل أفضل",
+    "subheading": "إعادة تعريف التعليم بأدوات ذكية لتقييمات أفضل ونتائج تعلّم أفضل.",
+    "continueWithGoogle": "المتابعة باستخدام Google",
+    "continueWithGithub": "المتابعة باستخدام GitHub",
+    "orContinueWith": "أو المتابعة باستخدام",
+    "createFreeAccount": "إنشاء حساب مجاني",
+    "alreadyHaveAccount": "هل لديك حساب بالفعل؟",
+    "login": "تسجيل الدخول",
+    "items": {
+        "assess": {
+            "description": "منصة ذكية للتقييم والاختبار"
+        },
+        "lms": {
+            "description": "نظام متكامل لإدارة التعلّم"
+        },
+        "volt": {
+            "description": "تجربة فصل دراسي تفاعلي مباشر"
+        },
+        "vsmart": {
+            "description": "مساعد تعلّم مدعوم بالذكاء الاصطناعي"
+        }
+    },
+    "validation": {
+        "selectAtLeastOne": "يجب عليك اختيار عنصر واحد على الأقل."
+    }
+}

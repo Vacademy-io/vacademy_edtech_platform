@@ -1,0 +1,6 @@
+{
+    "placeholder": "Select status",
+    "optionActive": "Active",
+    "optionInactive": "Inactive",
+    "optionDraft": "Draft"
+}

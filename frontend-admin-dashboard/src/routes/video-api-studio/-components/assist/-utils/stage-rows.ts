@@ -1,5 +1,6 @@
+import type { TFunction } from 'i18next';
 import type { PipelineState, NodeState } from '../../pipeline/-utils/derive-pipeline-state';
-import { NODE_LABELS, type PipelineNodeId } from '../../pipeline/-utils/stage-vocab';
+import { buildNodeLabels, type PipelineNodeId } from '../../pipeline/-utils/stage-vocab';
 
 export interface StageRow {
     id: string;
@@ -14,8 +15,14 @@ export interface StageRow {
  * "Production schedule" shows (mirrors PipelinePanel.stagesList), so the chat's
  * live status stays consistent with the diagram. v2/v3-aware; hides optional
  * stages that aren't present on this run.
+ *
+ * `t` is the caller's own bound `TFunction` (any namespace) — labels are
+ * resolved against `stage-vocab`'s `videoApiStudioStageVocab` namespace
+ * explicitly via `buildNodeLabels`, so the caller doesn't need a second
+ * `useTranslation` call.
  */
-export function buildStageRows(state: PipelineState): StageRow[] {
+export function buildStageRows(state: PipelineState, t: TFunction): StageRow[] {
+    const nodeLabels = buildNodeLabels(t);
     const isV3 = state.pipelineVersion === 'v3';
     const order: PipelineNodeId[] = [
         ...(state.research ? (['research'] as PipelineNodeId[]) : []),
@@ -47,6 +54,6 @@ export function buildStageRows(state: PipelineState): StageRow[] {
                 detail = `${wrapped}/${total}`;
             }
         }
-        return { id, label: NODE_LABELS[id], state: slotState, detail };
+        return { id, label: nodeLabels[id], state: slotState, detail };
     });
 }

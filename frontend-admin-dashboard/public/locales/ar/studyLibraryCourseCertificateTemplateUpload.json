@@ -1,0 +1,17 @@
+{
+    "emptyHtmlFile": "ملف HTML هذا فارغ",
+    "templateUploaded": "تم رفع قالب شهادة الدورة",
+    "templateUploadedDescription": "سيتم عرض ملف HTML الخاص بك كما هو لهذه الدورة.",
+    "imageUploadFailed": "تعذر رفع صورة الشهادة",
+    "designUploaded": "تم رفع تصميم شهادة الدورة",
+    "designUploadedDescription": "تستخدم العناصر النائبة التخطيط الافتراضي — راجع المعاينة وارفع ملف HTML إذا احتجت إلى وضع دقيق.",
+    "processFailed": "تعذرت معالجة هذا الملف",
+    "usesOwnDesign": "تستخدم هذه الدورة تصميم شهادتها الخاص.",
+    "hidePreview": "إخفاء المعاينة",
+    "preview": "معاينة",
+    "previewIframeTitle": "معاينة شهادة الدورة",
+    "inheritingTemplate": "يتم استخدام قالب شهادة المؤسسة.",
+    "uploading": "جارٍ الرفع…",
+    "uploadCustomCertificate": "رفع شهادة مخصصة",
+    "helperText": "يصبح ملف PNG أو JPG خلفية الشهادة مع وضع العناصر النائبة القياسية فوقه. ارفع ملف .html بدلاً من ذلك إذا احتجت إلى تحكم دقيق — يُعرض كما هو. حذفه يعيد استخدام قالب المؤسسة."
+}

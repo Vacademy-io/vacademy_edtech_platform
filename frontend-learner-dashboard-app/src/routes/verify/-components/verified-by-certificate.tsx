@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { SealCheck } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { getPublicUrlWithoutLogin } from "@/services/upload_file";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 import {
   displayHost,
   ensureHttp,
@@ -36,10 +39,12 @@ export function VerifiedByCertificate({
   data: CertificateVerification;
   verifiedVia?: string;
 }) {
+  const { t } = useTranslation("miscRoutesA");
+  const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
   const logoUrl = useInstituteLogo(data.institute_logo_file_id);
   const accent = normalizeThemeColor(data.institute_theme_code);
   const issued = data.issued_at ? new Date(data.issued_at) : null;
-  const instituteName = data.institute_name || "the awarding institute";
+  const instituteName = data.institute_name || t("verify.certificate.theAwardingInstitute");
 
   return (
     <article className="mx-auto w-full max-w-xl overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
@@ -52,7 +57,7 @@ export function VerifiedByCertificate({
         // design-lint-ignore: dynamic institute branding
         style={accent ? { backgroundColor: accent } : undefined}
       />
-      <header className="flex flex-col items-center gap-3 px-6 pb-5 pt-6 text-center">
+      <header className="flex flex-col items-center gap-stack px-6 pb-5 pt-6 text-center">
         {logoUrl ? (
           <img
             src={logoUrl}
@@ -64,7 +69,7 @@ export function VerifiedByCertificate({
         )}
         <div className="flex flex-col gap-1">
           <p className="text-caption uppercase tracking-widest text-neutral-400">
-            Verified by
+            {t("verify.certificate.verifiedBy")}
           </p>
           <h1 className="text-h3 font-semibold text-neutral-700 dark:text-neutral-100">
             {instituteName}
@@ -75,11 +80,11 @@ export function VerifiedByCertificate({
       <div className="flex flex-col items-center gap-2 border-y border-neutral-100 bg-success-50 px-6 py-5 text-center dark:border-neutral-700">
         <SealCheck weight="fill" className="size-9 text-success-500" />
         <p className="text-body font-medium text-neutral-700">
-          {data.headline?.trim() || "This certificate is genuine"}
+          {data.headline?.trim() || t("verify.certificate.genuine")}
         </p>
         <p className="text-caption text-neutral-500">
-          {instituteName} confirms it issued the certificate below.
-          {verifiedVia ? ` Checked using the ${verifiedVia}.` : ""}
+          {t("verify.certificate.confirmsIssued", { instituteName })}
+          {verifiedVia ? ` ${t("verify.certificate.checkedUsing", { verifiedVia })}` : ""}
         </p>
       </div>
 
@@ -87,15 +92,13 @@ export function VerifiedByCertificate({
           page confirms that *a* certificate exists rather than the one in the
           reader's hand. What else is listed is the institute's to decide, and
           `undefined` means they never decided — so it shows. */}
-      <dl className="flex flex-col gap-3 px-6 py-6">
-        <Row label="Issued to" value={data.learner_name || "—"} />
-        {data.show_course !== false && (
-          <Row label="Course" value={data.course_name || "—"} />
-        )}
-        <Row label="Certificate number" value={data.certificate_id} mono />
+      <dl className="flex flex-col gap-stack px-6 py-6">
+        <Row label={t("verify.certificate.issuedTo")} value={data.learner_name || "—"} />
+        {data.show_course !== false && <Row label={course} value={data.course_name || "—"} />}
+        <Row label={t("verify.certificate.certificateNumber")} value={data.certificate_id} mono />
         {data.show_issue_date !== false && (
           <Row
-            label="Issued on"
+            label={t("verify.certificate.issuedOn")}
             value={
               issued
                 ? issued.toLocaleDateString(undefined, { dateStyle: "long" })
@@ -105,7 +108,10 @@ export function VerifiedByCertificate({
         )}
         {data.show_completion !== false &&
           typeof data.completion_percentage === "number" && (
-            <Row label="Completion" value={`${data.completion_percentage}%`} />
+            <Row
+              label={t("verify.certificate.completion")}
+              value={`${data.completion_percentage}%`}
+            />
           )}
       </dl>
 
@@ -119,10 +125,7 @@ export function VerifiedByCertificate({
 
       <footer className="flex flex-col gap-2 border-t border-neutral-100 px-6 py-4 dark:border-neutral-700">
         {/* Says plainly why the name is partial, so it doesn't read as a bug. */}
-        <p className="text-caption text-neutral-400">
-          The recipient&apos;s name is shown partially to protect their privacy.
-          It matches the name printed on the certificate.
-        </p>
+        <p className="text-caption text-neutral-400">{t("verify.certificate.namePartial")}</p>
         {data.institute_website && (
           <a
             href={ensureHttp(data.institute_website)}

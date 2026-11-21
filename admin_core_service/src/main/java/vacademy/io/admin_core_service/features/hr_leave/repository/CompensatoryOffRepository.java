@@ -12,4 +12,7 @@ public interface CompensatoryOffRepository extends JpaRepository<CompensatoryOff
     List<CompensatoryOff> findByEmployee_IdAndStatusOrderByWorkedOnDateDesc(String employeeId, String status);
 
     List<CompensatoryOff> findByEmployee_IdAndUsedFalseAndStatusOrderByExpiryDateAsc(String employeeId, String status);
+
+    /** Expiry sweep candidates (CompOffExpiryJob): rows in this status whose expiry date is before the cutoff. */
+    List<CompensatoryOff> findByStatusAndExpiryDateLessThan(String status, java.time.LocalDate cutoff);
 }

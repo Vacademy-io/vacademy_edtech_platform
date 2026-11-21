@@ -108,9 +108,12 @@ public class ManualReminderService {
         item.put("mobileNumber", recipient != null && recipient.getMobileNumber() != null
                 ? recipient.getMobileNumber()
                 : (student != null && student.getMobileNumber() != null ? student.getMobileNumber() : ""));
+        // Bills generated from a learner's installment schedule carry their own number
+        // (they have no template installment); template bills fall back to the template's.
         item.put("installmentNumber",
-                installment != null && installment.getInstallmentNumber() != null
-                        ? installment.getInstallmentNumber() : "");
+                sfp.getInstallmentNumber() != null ? sfp.getInstallmentNumber()
+                        : installment != null && installment.getInstallmentNumber() != null
+                                ? installment.getInstallmentNumber() : "");
         item.put("remainingAmount", remaining.toPlainString());
         item.put("amountExpected", expected.toPlainString());
         item.put("amountPaid", paid.toPlainString());

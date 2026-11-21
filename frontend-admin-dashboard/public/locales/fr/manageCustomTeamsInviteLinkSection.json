@@ -1,0 +1,11 @@
+{
+    "heading": "Lien d'invitation",
+    "loading": "Chargement du lien d'invitation…",
+    "copy": "Copier",
+    "open": "Ouvrir",
+    "code": "Code :",
+    "inviteLink": "Lien d'invitation",
+    "inviteCode": "Code d'invitation",
+    "copied": "{{label}} copié",
+    "noInviteLink": "Aucun lien d'invitation configuré. Créez un abonnement pour en générer un."
+}

@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { CounsellorRatingBadge } from '@/components/counsellor/CounsellorRatingBadge';
@@ -73,6 +75,7 @@ export function ReassignDialog({
     onComplete,
     onMarkInactiveWithoutReassign,
 }: Props) {
+    const { t } = useTranslation('counsellorsReassignDialog');
     const [mode, setMode] = useState<ReassignMode>('SINGLE');
     const [target, setTarget] = useState<string>('');
     const [preview, setPreview] = useState<ReassignResult | null>(null);
@@ -128,7 +131,7 @@ export function ReassignDialog({
             setPerRowOverrides(seed);
         } catch (e) {
             const msg = (e as { response?: { data?: { ex?: string } } })?.response?.data?.ex;
-            toast.error(msg ?? 'Preview failed');
+            toast.error(msg ?? t('toast.previewFailed'));
         }
     }
 
@@ -160,7 +163,7 @@ export function ReassignDialog({
                 });
             } else if (mode === 'SINGLE') {
                 if (!target) {
-                    toast.error('Pick a counsellor to receive the leads');
+                    toast.error(t('toast.pickTarget'));
                     setSubmitting(false);
                     return;
                 }
@@ -182,7 +185,7 @@ export function ReassignDialog({
                 });
             } else {
                 if (!preview) {
-                    toast.error('Generate a preview first');
+                    toast.error(t('toast.generatePreviewFirst'));
                     setSubmitting(false);
                     return;
                 }
@@ -210,17 +213,17 @@ export function ReassignDialog({
             if (markInactive && result.marked_inactive) {
                 toast.success(
                     n > 0
-                        ? `Reassigned ${n} lead${n === 1 ? '' : 's'} and marked inactive`
-                        : 'Marked inactive'
+                        ? t('toast.reassignedAndMarkedInactive', { count: n })
+                        : t('toast.markedInactive')
                 );
             } else {
-                toast.success(`Reassigned ${n} lead${n === 1 ? '' : 's'}`);
+                toast.success(t('toast.reassignedCount', { count: n }));
             }
             onComplete?.();
             onOpenChange(false);
         } catch (e) {
             const msg = (e as { response?: { data?: { ex?: string } } })?.response?.data?.ex;
-            toast.error(msg ?? 'Reassign failed');
+            toast.error(msg ?? t('toast.reassignFailed'));
         } finally {
             setSubmitting(false);
         }
@@ -245,20 +248,25 @@ export function ReassignDialog({
                 <DialogHeader className="border-b border-neutral-200 px-6 py-4">
                     <DialogTitle>
                         {markInactive
-                            ? `Mark ${fromUserName ?? 'counsellor'} inactive`
-                            : `Reassign ${totalCount} lead${totalCount === 1 ? '' : 's'}${fromUserName ? ` from ${fromUserName}` : ''}`}
+                            ? t('title.markInactive', {
+                                  name: fromUserName ?? t('fallback.counsellor'),
+                              })
+                            : fromUserName
+                              ? t('title.reassignFrom', { count: totalCount, name: fromUserName })
+                              : t('title.reassign', { count: totalCount })}
                     </DialogTitle>
                     {markInactive && (
                         <p className="mt-1 text-caption text-neutral-500">
                             {openLeads.length === 0
-                                ? `${fromUserName ?? 'They'} have no assigned leads — confirming will just take them offline.`
-                                : `Reassign their ${totalCount} assigned lead${totalCount === 1 ? '' : 's'} first. They'll be taken offline atomically when you confirm.`}
+                                ? t('markInactive.noLeads', {
+                                      name: fromUserName ?? t('fallback.they'),
+                                  })
+                                : t('markInactive.withLeads', { count: totalCount })}
                         </p>
                     )}
                     {reassignAll && totalCount > openLeads.length && (
                         <p className="mt-1 text-caption text-neutral-500">
-                            Showing the first {openLeads.length} of {totalCount} — confirming
-                            moves all {totalCount}.
+                            {t('showingFirstOf', { shown: openLeads.length, total: totalCount })}
                         </p>
                     )}
                 </DialogHeader>
@@ -268,28 +276,34 @@ export function ReassignDialog({
                         move — the dialog is then just a confirmation for the
                         atomic inactive flip. */}
                     {!(markInactive && openLeads.length === 0) && (
-                        <ModeChoice mode={mode} onChange={(m) => {
-                            setMode(m);
-                            if (m === 'MANUAL') loadPreview('ROUND_ROBIN');
-                        }} />
+                        <ModeChoice
+                            mode={mode}
+                            onChange={(m) => {
+                                setMode(m);
+                                if (m === 'MANUAL') loadPreview('ROUND_ROBIN');
+                            }}
+                            t={t}
+                        />
                     )}
 
                     {!(markInactive && openLeads.length === 0) && mode === 'SINGLE' && (
                         <div>
                             <label className="mb-1 block text-caption font-medium text-neutral-700">
-                                {openLeads.length === 1 ? 'Move to' : 'Move all to'}
+                                {openLeads.length === 1 ? t('moveTo') : t('moveAllTo')}
                             </label>
                             <select
                                 className="w-full rounded border border-neutral-300 px-3 py-2"
                                 value={target}
                                 onChange={(e) => setTarget(e.target.value)}
                             >
-                                <option value="">— Select a counsellor —</option>
-                                {targets.map((t) => (
-                                    <option key={t.user_id} value={t.user_id}>
-                                        {t.full_name ?? t.user_id}
-                                        {t.is_active ? '' : ' (offline)'}
-                                        {t.rating != null ? ` · rating ${Math.round(t.rating)}` : ''}
+                                <option value="">{t('selectCounsellorPlaceholder')}</option>
+                                {targets.map((c) => (
+                                    <option key={c.user_id} value={c.user_id}>
+                                        {c.full_name ?? c.user_id}
+                                        {c.is_active ? '' : ` ${t('offlineLabel')}`}
+                                        {c.rating != null
+                                            ? ` ${t('ratingSuffix', { rating: Math.round(c.rating) })}`
+                                            : ''}
                                     </option>
                                 ))}
                             </select>
@@ -300,11 +314,9 @@ export function ReassignDialog({
                         <p className="rounded border border-info-200 bg-primary-50 px-3 py-2 text-subtitle text-neutral-700">
                             {/* Mirrors the backend rule: prefer active counsellors,
                                 fall back to everyone when none are pool-active. */}
-                            Leads will be distributed evenly across{' '}
                             {activeTargetCount > 0
-                                ? `${activeTargetCount} active counsellor${activeTargetCount === 1 ? '' : 's'}`
-                                : `${targets.length} counsellor${targets.length === 1 ? '' : 's'}`}
-                            .
+                                ? t('roundRobinActive', { count: activeTargetCount })
+                                : t('roundRobinAll', { count: targets.length })}
                         </p>
                     )}
 
@@ -317,6 +329,7 @@ export function ReassignDialog({
                             candidates={targets}
                             openLeadsById={openLeadsById}
                             onReshufflePreview={() => loadPreview('ROUND_ROBIN')}
+                            t={t}
                         />
                     )}
                 </div>
@@ -327,7 +340,7 @@ export function ReassignDialog({
                         onClick={() => onOpenChange(false)}
                         disable={submitting || skipping}
                     >
-                        Cancel
+                        {t('cancel')}
                     </MyButton>
                     {/* Take the counsellor offline but leave their leads where
                         they are — only meaningful when there ARE leads (with
@@ -338,19 +351,19 @@ export function ReassignDialog({
                             onClick={skipReassignAndMarkInactive}
                             disable={submitting || skipping}
                         >
-                            {skipping ? 'Marking inactive…' : 'Mark inactive without reassigning'}
+                            {skipping ? t('markingInactive') : t('markInactiveWithoutReassign')}
                         </MyButton>
                     )}
                     <MyButton buttonType="primary" onClick={submit} disable={submitting || skipping}>
                         {submitting
                             ? markInactive
-                                ? 'Working…'
-                                : 'Reassigning…'
+                                ? t('working')
+                                : t('reassigning')
                             : markInactive
-                            ? openLeads.length === 0
-                                ? 'Confirm mark inactive'
-                                : 'Reassign and mark inactive'
-                            : 'Confirm reassign'}
+                              ? openLeads.length === 0
+                                  ? t('confirmMarkInactive')
+                                  : t('reassignAndMarkInactive')
+                              : t('confirmReassign')}
                     </MyButton>
                 </DialogFooter>
             </DialogContent>
@@ -358,7 +371,15 @@ export function ReassignDialog({
     );
 }
 
-function ModeChoice({ mode, onChange }: { mode: ReassignMode; onChange: (m: ReassignMode) => void }) {
+function ModeChoice({
+    mode,
+    onChange,
+    t,
+}: {
+    mode: ReassignMode;
+    onChange: (m: ReassignMode) => void;
+    t: TFunction;
+}) {
     return (
         <div className="grid grid-cols-3 gap-2">
             {(['SINGLE', 'ROUND_ROBIN', 'MANUAL'] as ReassignMode[]).map((m) => (
@@ -366,29 +387,33 @@ function ModeChoice({ mode, onChange }: { mode: ReassignMode; onChange: (m: Reas
                     key={m}
                     type="button"
                     onClick={() => onChange(m)}
-                    className={`rounded border p-2 text-left text-subtitle ${
+                    className={`rounded border p-2 text-start text-subtitle ${
                         mode === m
                             ? 'border-primary-400 bg-primary-50 text-primary-700'
                             : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50'
                     }`}
                 >
-                    <div className="font-medium">{labelFor(m)}</div>
-                    <div className="text-caption text-neutral-500">{descriptionFor(m)}</div>
+                    <div className="font-medium">{labelFor(m, t)}</div>
+                    <div className="text-caption text-neutral-500">{descriptionFor(m, t)}</div>
                 </button>
             ))}
         </div>
     );
 }
 
-function labelFor(m: ReassignMode) {
-    return m === 'SINGLE' ? 'Move to one' : m === 'ROUND_ROBIN' ? 'Round-robin' : 'Custom (preview)';
-}
-function descriptionFor(m: ReassignMode) {
+function labelFor(m: ReassignMode, t: TFunction) {
     return m === 'SINGLE'
-        ? 'All leads → one target'
+        ? t('modeLabel.single')
         : m === 'ROUND_ROBIN'
-        ? 'Spread across actives'
-        : 'Per-lead override';
+          ? t('modeLabel.roundRobin')
+          : t('modeLabel.manual');
+}
+function descriptionFor(m: ReassignMode, t: TFunction) {
+    return m === 'SINGLE'
+        ? t('modeDescription.single')
+        : m === 'ROUND_ROBIN'
+          ? t('modeDescription.roundRobin')
+          : t('modeDescription.manual');
 }
 
 function ManualPreviewTable({
@@ -399,6 +424,7 @@ function ManualPreviewTable({
     candidates,
     openLeadsById,
     onReshufflePreview,
+    t,
 }: {
     instituteId: string;
     preview: ReassignResult | null;
@@ -407,14 +433,15 @@ function ManualPreviewTable({
     candidates: WorkbenchCounsellor[];
     openLeadsById: Map<string, WorkbenchLead>;
     onReshufflePreview: () => void;
+    t: TFunction;
 }) {
     if (!preview) {
-        return <div className="p-4 text-subtitle text-neutral-500">Generating preview…</div>;
+        return <div className="p-4 text-subtitle text-neutral-500">{t('generatingPreview')}</div>;
     }
     if (preview.assignments.length === 0) {
         return (
             <div className="rounded border border-dashed border-neutral-300 p-6 text-center text-subtitle text-neutral-500">
-                No open leads to reassign.
+                {t('noOpenLeads')}
             </div>
         );
     }
@@ -427,17 +454,17 @@ function ManualPreviewTable({
         <div className="overflow-x-auto rounded border border-neutral-200">
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-neutral-200 bg-white px-3 py-2">
                 <span className="text-caption text-neutral-500">
-                    {preview.assignments.length} leads · adjust targets inline
+                    {t('leadsAdjustTargets', { count: preview.assignments.length })}
                 </span>
                 <MyButton buttonType="secondary" scale="small" onClick={onReshufflePreview}>
-                    Reshuffle
+                    {t('reshuffle')}
                 </MyButton>
             </div>
             <table className="w-full text-body">
                 <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500">
                     <tr>
-                        <th className="px-3 py-2 text-left">Lead</th>
-                        <th className="px-3 py-2 text-left">Target counsellor</th>
+                        <th className="px-3 py-2 text-start">{t('tableLead')}</th>
+                        <th className="px-3 py-2 text-start">{t('tableTargetCounsellor')}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -473,7 +500,7 @@ function ManualPreviewTable({
                                         {candidates.map((c) => (
                                             <option key={c.user_id} value={c.user_id}>
                                                 {c.full_name ?? c.user_id}
-                                                {c.is_active ? '' : ' (offline)'}
+                                                {c.is_active ? '' : ` ${t('offlineLabel')}`}
                                             </option>
                                         ))}
                                     </select>

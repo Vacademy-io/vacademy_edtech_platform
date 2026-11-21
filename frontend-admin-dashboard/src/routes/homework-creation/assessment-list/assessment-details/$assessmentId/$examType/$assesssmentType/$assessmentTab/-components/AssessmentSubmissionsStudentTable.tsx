@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import {
     Table,
     TableBody,
@@ -62,6 +63,7 @@ export function AssessmentSubmissionsStudentTable<T>({
     rowSelection,
     onRowSelectionChange,
 }: MyTableProps<T>) {
+    const { t } = useTranslation('homeworkCreationAssessmentSubmissionsStudentTable');
     const table = useReactTable({
         data: data?.content || [],
         columns,
@@ -108,8 +110,8 @@ export function AssessmentSubmissionsStudentTable<T>({
         closeAllDialogs: closeAllDialogsPending,
     } = useSubmissionsBulkActionsDialogStorePending();
 
-    if (isLoading) return <div>Loading...</div>;
-    if (error) return <div>Error loading data</div>;
+    if (isLoading) return <div>{t('loading')}</div>;
+    if (error) return <div>{t('errorLoadingData')}</div>;
     if (!data) return null;
     if (!table) return <DashboardLoader />;
 

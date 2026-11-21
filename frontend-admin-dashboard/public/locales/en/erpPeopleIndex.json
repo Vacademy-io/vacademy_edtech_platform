@@ -1,0 +1,37 @@
+{
+    "navHeading": "People",
+    "heading": "Employees",
+    "subheading": "HR profiles for everyone on your payroll — departments, designations and employment status.",
+    "addFromStaff": "Add from staff",
+    "addEmployee": "Add employee",
+    "employee": "Employee",
+    "table": {
+        "code": "Code",
+        "name": "Name",
+        "department": "Department",
+        "designation": "Designation",
+        "status": "Status",
+        "type": "Type",
+        "joined": "Joined"
+    },
+    "filters": {
+        "status": "Status",
+        "department": "Department",
+        "designation": "Designation",
+        "employmentType": "Employment type"
+    },
+    "matchCount_one": "{{count}} employee match",
+    "matchCount_other": "{{count}} employees match",
+    "clearFilters": "Clear filters",
+    "errors": {
+        "load": "Couldn't load employees."
+    },
+    "empty": {
+        "noMatchTitle": "No employees match these filters",
+        "noMatchDescription": "Try clearing one of them.",
+        "noneTitle": "No employee profiles yet",
+        "noneDescription": "There are two ways to add people: create an HR profile for someone already on your team from Staff Coverage (fastest — it reuses their account), or add an employee manually if you have their platform user id."
+    },
+    "openStaffCoverage": "Open Staff Coverage",
+    "addEmployeeManually": "Add employee manually"
+}

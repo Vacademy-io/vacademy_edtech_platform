@@ -1,0 +1,12 @@
+{
+    "heading": "शीर्ष {{plural}}",
+    "subtitle": "उपयोग की गई सीटों के अनुसार",
+    "viewAll": "सभी देखें",
+    "unnamedName": "अनाम",
+    "planStatus": {
+        "active": "सक्रिय",
+        "pending": "लंबित",
+        "expired": "समाप्त",
+        "none": "कोई योजना नहीं"
+    }
+}

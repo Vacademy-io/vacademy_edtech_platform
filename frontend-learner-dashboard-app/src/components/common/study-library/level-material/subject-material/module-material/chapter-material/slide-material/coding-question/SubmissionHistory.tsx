@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CaretDown, CaretRight, Check, X, WarningCircle } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { listSubmissions, getSubmission } from "./submission-store";
@@ -11,32 +12,32 @@ interface Props {
   refreshKey: number;
 }
 
-const verdictBadge: Record<
+const verdictBadgeMeta: Record<
   Verdict,
-  { label: string; className: string; Icon: typeof Check }
+  { labelKey: string; className: string; Icon: typeof Check }
 > = {
   ACCEPTED: {
-    label: "Accepted",
+    labelKey: "codingQuestion.submissionHistory.verdict.accepted",
     className: "bg-green-100 text-green-700 border-green-200",
     Icon: Check,
   },
   PARTIAL: {
-    label: "Partial",
+    labelKey: "codingQuestion.submissionHistory.verdict.partial",
     className: "bg-amber-100 text-amber-700 border-amber-200",
     Icon: WarningCircle,
   },
   REJECTED: {
-    label: "Rejected",
+    labelKey: "codingQuestion.submissionHistory.verdict.rejected",
     className: "bg-red-100 text-red-700 border-red-200",
     Icon: X,
   },
   ERROR: {
-    label: "Error",
+    labelKey: "codingQuestion.submissionHistory.verdict.error",
     className: "bg-red-100 text-red-700 border-red-200",
     Icon: X,
   },
   TIMED_OUT: {
-    label: "Timed Out",
+    labelKey: "codingQuestion.submissionHistory.verdict.timedOut",
     className: "bg-red-100 text-red-700 border-red-200",
     Icon: X,
   },
@@ -48,6 +49,7 @@ function fmtDate(ms: number): string {
 }
 
 export function SubmissionHistory({ slideId, refreshKey }: Props) {
+  const { t } = useTranslation("libraryCommonA");
   const [items, setItems] = useState<CodingSubmission[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
   // Full-detail rows fetched on expand. The list endpoint returns summaries
@@ -80,8 +82,7 @@ export function SubmissionHistory({ slideId, refreshKey }: Props) {
   if (!items.length) {
     return (
       <div className="rounded border border-dashed p-4 text-center text-sm text-gray-500">
-        No submissions yet. Hit <span className="font-medium">Submit</span> to
-        record one.
+        {t("codingQuestion.submissionHistory.emptyPrefix")} <span className="font-medium">{t("codingQuestion.questionMode.submit")}</span> {t("codingQuestion.submissionHistory.emptySuffix")}
       </div>
     );
   }
@@ -93,7 +94,7 @@ export function SubmissionHistory({ slideId, refreshKey }: Props) {
         // When expanded, prefer the hydrated detail (has source + per-test
         // results); fall back to the summary while it's loading.
         const s = (open && details[summary.id]) || summary;
-        const v = verdictBadge[s.verdict];
+        const v = verdictBadgeMeta[s.verdict];
         const Icon = v.Icon;
         const hydrated = !open || !!details[summary.id];
         return (
@@ -112,13 +113,13 @@ export function SubmissionHistory({ slideId, refreshKey }: Props) {
                 className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 text-xs font-medium ${v.className}`}
               >
                 <Icon className="size-3" />
-                {v.label}
+                {t(v.labelKey)}
               </span>
               <span className="text-sm font-medium">
-                {s.score.toFixed(1)} / {s.maxPoints} pts
+                {t("codingQuestion.submissionHistory.scoreLine", { score: s.score.toFixed(1), maxPoints: s.maxPoints })}
               </span>
               <span className="text-xs text-gray-500">
-                {s.passedCount}/{s.totalCount} tests
+                {t("codingQuestion.submissionHistory.testsFraction", { passed: s.passedCount, total: s.totalCount })}
               </span>
               <Badge variant="outline" className="text-3xs">
                 {LANGUAGE_REGISTRY[s.language]?.label ?? s.language}
@@ -132,21 +133,21 @@ export function SubmissionHistory({ slideId, refreshKey }: Props) {
               <div className="border-t p-3 text-sm">
                 <div className="mb-2 grid grid-cols-3 gap-3 text-xs text-gray-600">
                   <div>
-                    <span className="font-semibold">Total time:</span>{" "}
+                    <span className="font-semibold">{t("codingQuestion.submissionHistory.totalTimeLabel")}</span>{" "}
                     {s.totalTimeMs} ms
                   </div>
                   <div>
-                    <span className="font-semibold">Peak memory:</span>{" "}
+                    <span className="font-semibold">{t("codingQuestion.submissionHistory.peakMemoryLabel")}</span>{" "}
                     {s.peakMemoryKb} KB
                   </div>
                   <div>
-                    <span className="font-semibold">Submitted:</span>{" "}
+                    <span className="font-semibold">{t("codingQuestion.submissionHistory.submittedLabel")}</span>{" "}
                     {fmtDate(s.submittedAt)}
                   </div>
                 </div>
 
                 {!hydrated && (
-                  <div className="mb-2 text-xs text-gray-500">Loading details…</div>
+                  <div className="mb-2 text-xs text-gray-500">{t("codingQuestion.submissionHistory.loadingDetails")}</div>
                 )}
 
                 <div className="mb-2 space-y-1">
@@ -161,10 +162,10 @@ export function SubmissionHistory({ slideId, refreshKey }: Props) {
                         <X className="size-3 text-red-600" />
                       )}
                       <span className="font-medium">
-                        {r.label || `Test ${i + 1}`}
+                        {r.label || t("codingQuestion.submissionHistory.testLabel", { number: i + 1 })}
                       </span>
                       <span className="text-gray-500">
-                        {r.visible ? "(sample)" : "(hidden)"}
+                        {r.visible ? t("codingQuestion.questionMode.sampleTag") : t("codingQuestion.questionMode.hiddenTag")}
                       </span>
                       {r.timeMs != null && (
                         <span className="ms-auto text-gray-500">
@@ -177,7 +178,7 @@ export function SubmissionHistory({ slideId, refreshKey }: Props) {
 
                 <details>
                   <summary className="cursor-pointer text-xs text-gray-600">
-                    View submitted code
+                    {t("codingQuestion.submissionHistory.viewCode")}
                   </summary>
                   <pre className="mt-2 max-h-60 overflow-auto rounded bg-gray-900 p-3 text-xs text-green-300">
                     <code>{s.sourceCode}</code>

@@ -1,6 +1,7 @@
 'use client';
 
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
+import { useTranslation } from 'react-i18next';
 
 import { Card } from '@/components/ui/card';
 import {
@@ -24,6 +25,7 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export function LineChartComponent({ chartData }: { chartData: DailyLearnerTimeSpent[] }) {
+    const { t } = useTranslation('studyLibraryLineChart');
     return (
         <Card className="w-full">
             {/* <CardContent className="h-[520px] border-none"> */}
@@ -46,7 +48,7 @@ export function LineChartComponent({ chartData }: { chartData: DailyLearnerTimeS
                         tickMargin={8}
                         tickFormatter={(value) => dayjs(value).format('DD MMMM').slice(0, 6)}
                         label={{
-                            value: 'Date',
+                            value: t('dateAxisLabel'),
                             position: 'left',
                             dx: 55,
                             dy: 30,
@@ -60,7 +62,7 @@ export function LineChartComponent({ chartData }: { chartData: DailyLearnerTimeS
                         tickMargin={8}
                         width={40}
                         label={{
-                            value: 'Hours',
+                            value: t('hoursAxisLabel'),
                             position: 'insideLeft',
                             angle: -90, // Rotates the text to be vertical
                             dx: -10, // Adjusts the horizontal position

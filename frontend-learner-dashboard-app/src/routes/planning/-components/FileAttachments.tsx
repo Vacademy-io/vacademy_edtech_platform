@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { FileText, ArrowSquareOut, File, Image as ImageIcon, FileVideo, SpinnerGap } from "@phosphor-icons/react";
 import { getPublicUrl } from "@/services/upload_file";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface FileAttachmentsProps {
   fileIds: string;
@@ -24,6 +25,7 @@ export default function FileAttachments({
   className,
   showPreview = true,
 }: FileAttachmentsProps) {
+  const { t } = useTranslation("planning");
   const [files, setFiles] = useState<FileMetadata[]>([]);
   const [expanded, setExpanded] = useState(showPreview);
 
@@ -71,7 +73,7 @@ export default function FileAttachments({
       setFiles((prev) =>
         prev.map((f) =>
           f.id === fileId
-            ? { ...f, loading: false, error: "Failed to load" }
+            ? { ...f, loading: false, error: t("attachments.failedToLoad") }
             : f
         )
       );
@@ -85,7 +87,7 @@ export default function FileAttachments({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <FileText className="size-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Attachments</span>
+          <span className="text-sm font-medium">{t("attachments.label")}</span>
           <Badge variant="secondary" className="text-xs">
             {fileIdArray.length}
           </Badge>
@@ -96,7 +98,7 @@ export default function FileAttachments({
           onClick={() => setExpanded(!expanded)}
           className="h-auto p-1"
         >
-          {expanded ? "Close" : "View"}
+          {expanded ? t("common.close") : t("common.view")}
         </Button>
       </div>
 
@@ -116,7 +118,7 @@ export default function FileAttachments({
 
                 <div className="flex-1 overflow-hidden">
                   <p className="truncate text-sm font-medium">
-                    Attachment {index + 1}
+                    {t("attachments.item", { index: index + 1 })}
                   </p>
                   {file.error && (
                     <p className="text-xs text-destructive">{file.error}</p>
@@ -130,7 +132,7 @@ export default function FileAttachments({
                     onClick={() => handleViewFile(file.id)}
                     disabled={file.loading}
                     className="h-8 px-2"
-                    title="Open in new tab"
+                    title={t("attachments.openInNewTab")}
                   >
                     {file.loading ? (
                       <SpinnerGap className="size-4 animate-spin" />

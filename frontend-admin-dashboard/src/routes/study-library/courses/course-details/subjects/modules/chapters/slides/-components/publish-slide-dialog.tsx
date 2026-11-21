@@ -2,6 +2,7 @@
 import { MyButton } from '@/components/design-system/button';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 import { Dispatch, ReactNode, SetStateAction, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface PublishDialogProps {
     isOpen: boolean;
@@ -21,6 +22,7 @@ export const PublishDialog = ({
     handlePublishUnpublishSlide,
     trigger,
 }: PublishDialogProps) => {
+    const { t } = useTranslation('studyLibraryPublishSlideDialog');
     // Two-step compact confirm: publish? → notify? — same call flow as before,
     // just rendered inline in a single anchored popover instead of two modals.
     const [notify, setNotify] = useState(false);
@@ -48,10 +50,10 @@ export const PublishDialog = ({
                     <div className="flex flex-col gap-3">
                         <div className="flex flex-col gap-1">
                             <p className="text-subtitle font-semibold text-neutral-700">
-                                Publish this slide?
+                                {t('confirm.title')}
                             </p>
                             <p className="text-caption text-neutral-500">
-                                Learners will be able to see it.
+                                {t('confirm.description')}
                             </p>
                         </div>
                         <div className="flex justify-end gap-2">
@@ -61,7 +63,7 @@ export const PublishDialog = ({
                                 className="min-w-0 sm:min-w-0"
                                 onClick={() => setIsOpen(false)}
                             >
-                                Cancel
+                                {t('confirm.cancel')}
                             </MyButton>
                             <MyButton
                                 buttonType="primary"
@@ -69,7 +71,7 @@ export const PublishDialog = ({
                                 className="min-w-0 sm:min-w-0"
                                 onClick={() => setStep('notify')}
                             >
-                                Publish
+                                {t('confirm.publish')}
                             </MyButton>
                         </div>
                     </div>
@@ -77,10 +79,10 @@ export const PublishDialog = ({
                     <div className="flex flex-col gap-3">
                         <div className="flex flex-col gap-1">
                             <p className="text-subtitle font-semibold text-neutral-700">
-                                Notify students?
+                                {t('notify.title')}
                             </p>
                             <p className="text-caption text-neutral-500">
-                                Send an update about this slide.
+                                {t('notify.description')}
                             </p>
                         </div>
                         <div className="flex justify-end gap-2">
@@ -90,7 +92,7 @@ export const PublishDialog = ({
                                 className="min-w-0 sm:min-w-0"
                                 onClick={() => handleNotify(false)}
                             >
-                                Skip
+                                {t('notify.skip')}
                             </MyButton>
                             <MyButton
                                 buttonType="primary"
@@ -98,7 +100,7 @@ export const PublishDialog = ({
                                 className="min-w-0 sm:min-w-0"
                                 onClick={() => handleNotify(true)}
                             >
-                                Notify
+                                {t('notify.notify')}
                             </MyButton>
                         </div>
                     </div>

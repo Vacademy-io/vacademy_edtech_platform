@@ -1,0 +1,45 @@
+{
+    "description": "Leave applied for by your employees. Approving one spends the employee's balance for that leave type and writes an ON_LEAVE attendance record for each day, so payroll and attendance stay in step with the decision.",
+    "filterAriaLabel": "Filter leave requests by status",
+    "requestCount_one": "{{count}} request",
+    "requestCount_other": "{{count}} requests",
+    "table": {
+        "columns": {
+            "employee": "Employee",
+            "leaveType": "Leave type",
+            "dates": "From → to",
+            "days": "Days",
+            "halfDay": "Half day",
+            "reason": "Reason",
+            "status": "Status"
+        },
+        "halfDayFallback": "Half day"
+    },
+    "actions": {
+        "review": "Review",
+        "cancel": "Cancel"
+    },
+    "errors": {
+        "loadFailed": "Couldn't load leave requests."
+    },
+    "empty": {
+        "pendingTitle": "Nothing waiting on you",
+        "pendingDescription": "Every leave request has been decided. New ones land here as employees apply from their app.",
+        "otherTitle": "No {{status}} requests",
+        "otherDescription": "Try another status — requests are only listed once an employee has applied."
+    },
+    "cancelHint": "Cancelling an approved leave returns the days to the balance and removes the ON_LEAVE attendance it created.",
+    "toast": {
+        "cancelled": "Leave cancelled"
+    },
+    "errorsToast": {
+        "cancelFailed": "Could not cancel this leave."
+    },
+    "cancelDialog": {
+        "title": "Cancel this approved leave?",
+        "description": "{{employee}} keeps the days back in their {{leaveType}} balance, and the ON_LEAVE attendance for those dates is removed. If payroll has already locked the month, the backend will refuse and tell you so.",
+        "leaveTypeFallback": "leave",
+        "keepApproved": "Keep it approved",
+        "confirmCancel": "Cancel leave"
+    }
+}

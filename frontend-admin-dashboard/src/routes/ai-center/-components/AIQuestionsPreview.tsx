@@ -18,6 +18,28 @@ import {
     getPPTViewTitle,
     transformResponseDataToMyQuestionsSchema,
 } from '@/routes/assessment/question-papers/-utils/helper';
+import {
+    describeMerge,
+    mergeSectionQuestions,
+} from '@/routes/assessment/question-papers/-utils/merge-section-questions';
+import { calculateTotalMarks } from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-utils/helper';
+import {
+    DEFAULT_MARK,
+    durationFields,
+    isBlankDuration,
+    isEmptySection,
+    pairWithPreview,
+    sectionRowFor,
+    sectionsFromExtractedPaper,
+    wantsSections,
+} from '../-utils/extracted-paper-sections';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { QuestionType } from '@/constants/dummy-data';
 import { DotsSixVertical } from '@phosphor-icons/react';
 import {
@@ -41,6 +63,7 @@ import { addQuestionPaper } from '@/routes/assessment/question-papers/-utils/que
 import { getQuestionPaperById } from '@/routes/community/question-paper/-service/utils';
 import { useAIQuestionDialogStore } from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-utils/zustand-global-states/ai-add-questions-dialog-zustand';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useTranslation } from 'react-i18next';
 
 interface AIQuestionsPreviewProps {
     task: AITaskIndividualListInterface;
@@ -53,6 +76,13 @@ interface AIQuestionsPreviewProps {
     setOpenQuestionsPreview: Dispatch<SetStateAction<boolean>>;
     sectionsForm?: UseFormReturn<SectionFormType>;
     currentSectionIndex?: number;
+    /**
+     * The target form can hold several sections (the assessment / homework
+     * wizards): a digitised paper with sections may then become one section
+     * each. Off for a single-section target such as a quiz, which only reads
+     * `section.0` and would lose the rest.
+     */
+    allowSectionSplit?: boolean;
     /** Hide the internal "View questions" trigger button (when the dialog is opened externally). */
     hideTrigger?: boolean;
 }
@@ -63,8 +93,11 @@ const AIQuestionsPreview = ({
     setOpenQuestionsPreview,
     sectionsForm,
     currentSectionIndex,
+    allowSectionSplit = false,
     hideTrigger = false,
 }: AIQuestionsPreviewProps) => {
+    const { t } = useTranslation('aiCenterAIQuestionsPreview');
+    const { t: tHelper } = useTranslation('aiCenterHelper');
     const {
         setIsAIQuestionDialog1,
         setIsAIQuestionDialog2,
@@ -88,6 +121,10 @@ const AIQuestionsPreview = ({
         questions: [],
     });
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+    // How a digitised paper with sections goes into Step 2 — one section per
+    // paper section or all in the current one. Starts as what the teacher
+    // answered at upload; they can change it here before saving.
+    const [sectionChoice, setSectionChoice] = useState<'split' | 'single' | null>(null);
     const form = useForm<z.infer<typeof generateCompleteAssessmentFormSchema>>({
         resolver: zodResolver(generateCompleteAssessmentFormSchema),
         mode: 'onChange',
@@ -166,8 +203,11 @@ const AIQuestionsPreview = ({
             }
             setNoResponse(false);
             setAssessmentData(response);
+            setSectionChoice(response?.extraction?.section_mode ?? null);
+            setSavedPaperId(null);
             const transformQuestionsData = transformQuestionsToGenerateAssessmentAI(
-                response.questions
+                response.questions,
+                tHelper
             );
             form.reset({
                 ...form.getValues(),
@@ -213,12 +253,15 @@ const AIQuestionsPreview = ({
                 queryClient.invalidateQueries({ queryKey: ['GET_INDIVIDUAL_AI_LIST_DATA'] });
             }, 100);
             if (!response.questions || response.questions.length === 0) {
-                toast.success('No data exists!');
+                toast.success(t('toast.noDataExists'));
                 return;
             }
             setAssessmentData(response);
+            setSectionChoice(response?.extraction?.section_mode ?? null);
+            setSavedPaperId(null);
             const transformQuestionsData = transformQuestionsToGenerateAssessmentAI(
-                response.questions
+                response.questions,
+                tHelper
             );
             form.reset({
                 ...form.getValues(),
@@ -249,6 +292,18 @@ const AIQuestionsPreview = ({
         });
     };
 
+    const closeAllAIQuestionDialogs = () => {
+        setIsAIQuestionDialog1(false);
+        setIsAIQuestionDialog2(false);
+        setIsAIQuestionDialog3(false);
+        setIsAIQuestionDialog4(false);
+        setIsAIQuestionDialog5(false);
+        setIsAIQuestionDialog6(false);
+        setIsAIQuestionDialog7(false);
+        setIsAIQuestionDialog8(false);
+        setIsAIQuestionDialog9(false);
+    };
+
     const handleSubmitFormData = useMutation({
         mutationFn: ({ data }: { data: MyQuestionPaperFormInterface }) =>
             addQuestionPaper(data, true),
@@ -260,54 +315,124 @@ const AIQuestionsPreview = ({
             if (currentSectionIndex !== undefined) {
                 // Check if index is defined
 
+                // The preview's own rows carry what a digitised paper printed —
+                // the section each question sits under and its marks — which the
+                // question bank does not keep; paired with the stored copy by
+                // position (they come back in the order they were sent).
+                const previewQuestions = (form.getValues('questions') ?? []) as MyQuestion[];
+                const paired = pairWithPreview(transformQuestionsData, previewQuestions);
+                const summary = assessmentData.extraction ?? null;
+
+                // The time the paper allows becomes the test's duration when
+                // the teacher has not set one — the paper is usable as it lands.
+                const applyPaperDuration = () => {
+                    const minutes = summary?.duration_minutes;
+                    if (!sectionsForm || !minutes) return;
+                    const current = sectionsForm.getValues(
+                        'testDuration.entireTestDuration.testDuration'
+                    );
+                    if (!isBlankDuration(current)) return;
+                    const { hrs, min } = durationFields(minutes);
+                    sectionsForm.setValue('testDuration.entireTestDuration.testDuration.hrs', hrs);
+                    sectionsForm.setValue('testDuration.entireTestDuration.testDuration.min', min);
+                };
+
+                if (
+                    allowSectionSplit &&
+                    sectionsForm &&
+                    summary &&
+                    wantsSections(summary, sectionChoice)
+                ) {
+                    // One Step 2 section per paper section, marks as printed.
+                    // The empty section the wizard opens with is replaced; a
+                    // section the teacher already filled keeps its place and the
+                    // paper's sections follow it.
+                    const current = sectionsForm.getValues('section') ?? [];
+                    const target = current[currentSectionIndex];
+                    const replace = target ? isEmptySection(target) : false;
+                    const newSections = sectionsFromExtractedPaper(
+                        summary,
+                        previewQuestions,
+                        transformQuestionsData,
+                        current.length - (replace ? 1 : 0)
+                    );
+                    if (replace && target?.section_description && newSections[0]) {
+                        newSections[0].section_description ||= target.section_description;
+                    }
+                    if (newSections.length >= 2) {
+                        const next = [...current];
+                        next.splice(
+                            replace ? currentSectionIndex : currentSectionIndex + 1,
+                            replace ? 1 : 0,
+                            ...newSections
+                        );
+                        sectionsForm.setValue('section', next);
+                        sectionsForm.trigger('section');
+                        applyPaperDuration();
+                        toast.success(
+                            t('toast.sectionsAdded', {
+                                sections: newSections.length,
+                                questions: transformQuestionsData.length,
+                            })
+                        );
+                        closeAllAIQuestionDialogs();
+                        setOpenQuestionsPreview(false);
+                        queryClient.invalidateQueries({
+                            queryKey: ['GET_QUESTION_PAPER_FILTERED_DATA'],
+                        });
+                        return;
+                    }
+                }
+
+                const incoming = transformQuestionsData.map((question, i) =>
+                    // Spread full question data (options, validAnswers, etc.) so that
+                    // quiz context can read them via getValues. The Zod schema strips
+                    // unknown fields on validation, so the assessment flow is unaffected.
+                    // A digitised paper's questions are worth a mark each when the
+                    // paper prints none; generated questions keep the section default.
+                    sectionRowFor(question, paired[i], summary ? DEFAULT_MARK : '')
+                );
+
+                // Append rather than replace: running an AI tool on a section that
+                // already had questions used to wipe them without warning.
+                const mergeResult = mergeSectionQuestions(
+                    sectionsForm?.getValues(
+                        `section.${currentSectionIndex}.adaptive_marking_for_each_question`
+                    ) as typeof incoming | undefined,
+                    incoming
+                );
+
                 sectionsForm?.setValue(
                     `section.${currentSectionIndex}.adaptive_marking_for_each_question`,
-                    transformQuestionsData.map((question) => ({
-                        // Spread full question data (options, validAnswers, etc.) so that
-                        // quiz context can read them via getValues. The Zod schema strips
-                        // unknown fields on validation, so the assessment flow is unaffected.
-                        ...question,
-                        questionId: question.questionId,
-                        questionName: question.questionName,
-                        questionType: question.questionType,
-                        questionMark: question.questionMark,
-                        questionPenalty: question.questionPenalty,
-                        ...(question.questionType === 'MCQM' && {
-                            correctOptionIdsCnt: question?.multipleChoiceOptions?.filter(
-                                (item) => item.isSelected
-                            ).length,
-                        }),
-                        questionDuration: {
-                            hrs: question.questionDuration.hrs,
-                            min: question.questionDuration.min,
-                        },
-                        parentRichText: question.parentRichTextContent,
-                    }))
+                    mergeResult.merged
+                );
+                // Section total is derived from its questions; nothing else recomputes it
+                // when questions arrive.
+                sectionsForm?.setValue(
+                    `section.${currentSectionIndex}.total_marks`,
+                    String(calculateTotalMarks(mergeResult.merged))
                 );
                 sectionsForm?.trigger(
                     `section.${currentSectionIndex}.adaptive_marking_for_each_question`
                 );
-                setIsAIQuestionDialog1(false);
-                setIsAIQuestionDialog2(false);
-                setIsAIQuestionDialog3(false);
-                setIsAIQuestionDialog4(false);
-                setIsAIQuestionDialog5(false);
-                setIsAIQuestionDialog6(false);
-                setIsAIQuestionDialog7(false);
-                setIsAIQuestionDialog8(false);
-                setIsAIQuestionDialog9(false);
+                applyPaperDuration();
+                toast.success(describeMerge(mergeResult));
+                closeAllAIQuestionDialogs();
                 setOpenQuestionsPreview(false);
             }
             queryClient.invalidateQueries({ queryKey: ['GET_QUESTION_PAPER_FILTERED_DATA'] });
         },
         onError: (error: unknown) => {
-            toast.error(error as string);
+            // A string, never the Error itself: the Toaster sits outside the
+            // router's error boundary, so an object here crashed the whole app
+            // to a blank page.
+            toast.error(error instanceof Error ? error.message : String(error));
         },
     });
 
     const handleSaveQuestionsInSection = () => {
         if (Object.values(form.formState.errors).length > 0) {
-            toast.error('some of your questions are incomplete or needs attentions!', {
+            toast.error(t('toast.incompleteQuestions'), {
                 className: 'error-toast',
                 duration: 3000,
             });
@@ -320,16 +445,47 @@ const AIQuestionsPreview = ({
         });
     };
 
+    // "Add to question bank": the paper as shown, saved to the bank in one
+    // click and nothing else — no section, no navigation. Done once per
+    // preview; the button then says so instead of saving a second copy.
+    const [savedPaperId, setSavedPaperId] = useState<string | null>(null);
+    const saveToQuestionBank = useMutation({
+        mutationFn: ({ data }: { data: MyQuestionPaperFormInterface }) =>
+            addQuestionPaper(data, true),
+        onSuccess: (data) => {
+            setSavedPaperId(data?.saved_question_paper_id ?? '');
+            queryClient.invalidateQueries({ queryKey: ['GET_QUESTION_PAPER_FILTERED_DATA'] });
+            toast.success(t('toast.savedToQuestionBank'));
+        },
+        onError: (error: unknown) => {
+            toast.error(error instanceof Error ? error.message : String(error));
+        },
+    });
+    const handleAddToQuestionBank = () => {
+        if (Object.values(form.formState.errors).length > 0) {
+            toast.error(t('toast.incompleteQuestions'), {
+                className: 'error-toast',
+                duration: 3000,
+            });
+            return;
+        }
+        saveToQuestionBank.mutate({
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            data: form.getValues(),
+        });
+    };
+
     return (
         <>
             <Dialog open={noResponse} onOpenChange={setNoResponse}>
                 <DialogContent className="overflow-hidden rounded-lg p-0">
                     <div className="flex items-center gap-2 border-b border-destructive/20 bg-destructive/10 p-4 text-destructive">
-                        <span className="font-semibold">Failed to load questions</span>
+                        <span className="font-semibold">{t('noResponseDialog.title')}</span>
                     </div>
                     <div className="flex flex-col gap-4 p-6">
                         <p className="text-sm text-muted-foreground">
-                            We couldn't generate the questions for you. Please try again.
+                            {t('noResponseDialog.message')}
                         </p>
                         <MyButton
                             type="button"
@@ -338,7 +494,7 @@ const AIQuestionsPreview = ({
                             className="!text-primary w-fit text-sm font-semibold hover:underline"
                             onClick={() => handleRetryTask(task.id)}
                         >
-                            Retry Now
+                            {t('noResponseDialog.retryNow')}
                         </MyButton>
                     </div>
                 </DialogContent>
@@ -360,10 +516,10 @@ const AIQuestionsPreview = ({
                             {getRetryMutation.status === 'pending' ? (
                                 <>
                                     <div className="mr-2 size-3 animate-spin rounded-full border-2 border-destructive border-t-transparent"></div>
-                                    <span>Retrying...</span>
+                                    <span>{t('trigger.retrying')}</span>
                                 </>
                             ) : (
-                                'Retry'
+                                t('trigger.retry')
                             )}
                         </MyButton>
                     ) : (
@@ -377,12 +533,12 @@ const AIQuestionsPreview = ({
                             {getQuestionsListMutation.status === 'pending' ? (
                                 <>
                                     <div className="mr-1 size-3 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                                    <span>Loading…</span>
+                                    <span>{t('trigger.loading')}</span>
                                 </>
                             ) : (
                                 <>
                                     <Eye size={14} weight="bold" />
-                                    View questions
+                                    {t('trigger.viewQuestions')}
                                 </>
                             )}
                         </MyButton>
@@ -390,7 +546,7 @@ const AIQuestionsPreview = ({
                 </DialogTrigger>
                 )}
                 {form.getValues('questions') && form.getValues('questions').length > 0 && (
-                    <DialogContent className="no-scrollbar !m-0 flex h-[92vh] !w-[92vw] !max-w-none flex-col !gap-0 overflow-hidden !rounded-2xl bg-background !p-0 text-foreground [&>button]:hidden">
+                    <DialogContent className="no-scrollbar !m-0 flex h-[92vh] !w-[92vw] !max-w-none flex-col !gap-0 overflow-hidden !rounded-2xl bg-background !p-0 text-foreground [&>button]:hidden">{/* design-lint-ignore: near-fullscreen editor dialog, no token exists for viewport-relative sizing */}
                         <FormProvider {...form}>
                             <form className="flex h-full flex-col">
                                 {/* Header */}
@@ -399,13 +555,94 @@ const AIQuestionsPreview = ({
                                         <div className="flex items-center gap-3">
                                             <img
                                                 src={instituteLogo}
-                                                alt="logo"
+                                                alt={t('instituteLogoAlt')}
                                                 className="size-9 rounded-full border bg-muted object-contain"
                                             />
                                             <div className="flex flex-col">
                                                 <span className="text-sm font-bold leading-tight text-foreground/90">
                                                     {form.getValues('title')}
                                                 </span>
+                                                {/* A digitised paper says what it found, so the
+                                                    teacher knows whether the key needs a look. */}
+                                                {assessmentData.extraction && (
+                                                    <span className="text-caption text-muted-foreground">
+                                                        {t('header.extractionSummary', {
+                                                            questions:
+                                                                assessmentData.extraction.questions,
+                                                            keyed: assessmentData.extraction.keyed,
+                                                            explained:
+                                                                assessmentData.extraction.explained,
+                                                        })}
+                                                        {assessmentData.extraction.unkeyed > 0 &&
+                                                            ' · ' +
+                                                                t('header.extractionUnkeyed', {
+                                                                    count: assessmentData.extraction
+                                                                        .unkeyed,
+                                                                })}
+                                                        {(assessmentData.extraction.check?.length ??
+                                                            0) > 0 &&
+                                                            ' · ' +
+                                                                t('header.extractionCheck', {
+                                                                    numbers:
+                                                                        assessmentData.extraction.check!.join(
+                                                                            ', '
+                                                                        ),
+                                                                })}
+                                                        {(assessmentData.extraction.sections
+                                                            ?.length ?? 0) >= 2 &&
+                                                            ' · ' +
+                                                                t(
+                                                                    !allowSectionSplit ||
+                                                                        (sectionChoice ??
+                                                                            assessmentData
+                                                                                .extraction
+                                                                                .section_mode) ===
+                                                                            'single'
+                                                                        ? 'header.extractionSectionsSingle'
+                                                                        : 'header.extractionSectionsSplit',
+                                                                    {
+                                                                        count: assessmentData
+                                                                            .extraction.sections!
+                                                                            .length,
+                                                                        names: assessmentData.extraction
+                                                                            .sections!.map(
+                                                                                (s) => s.name
+                                                                            )
+                                                                            .join(', '),
+                                                                    }
+                                                                )}
+                                                        {assessmentData.extraction.marking?.marks !=
+                                                            null &&
+                                                            ' · ' +
+                                                                t('header.extractionMarking', {
+                                                                    marks: assessmentData.extraction
+                                                                        .marking.marks,
+                                                                    negative:
+                                                                        assessmentData.extraction
+                                                                            .marking
+                                                                            .negative_marks ?? 0,
+                                                                })}
+                                                        {(assessmentData.extraction
+                                                            .duration_minutes ?? 0) > 0 &&
+                                                            ' · ' +
+                                                                t('header.extractionDuration', {
+                                                                    hrs: Math.floor(
+                                                                        assessmentData.extraction
+                                                                            .duration_minutes! / 60
+                                                                    ),
+                                                                    min:
+                                                                        assessmentData.extraction
+                                                                            .duration_minutes! % 60,
+                                                                })}
+                                                        {assessmentData.extraction.credits !=
+                                                            null &&
+                                                            ' · ' +
+                                                                t('header.extractionCredits', {
+                                                                    count: assessmentData.extraction
+                                                                        .credits,
+                                                                })}
+                                                    </span>
+                                                )}
                                                 <div className="mt-0.5 flex flex-wrap items-center gap-2">
                                                     {form
                                                         .getValues('tags')
@@ -414,7 +651,7 @@ const AIQuestionsPreview = ({
                                                             <Badge
                                                                 variant="secondary"
                                                                 key={idx}
-                                                                className="border-transparent bg-muted/50 px-1.5 py-0 text-[10px] font-medium text-muted-foreground"
+                                                                className="border-transparent bg-muted/50 px-1.5 py-0 text-caption font-medium text-muted-foreground"
                                                             >
                                                                 {tag}
                                                             </Badge>
@@ -426,11 +663,13 @@ const AIQuestionsPreview = ({
                                                                     <TooltipTrigger asChild>
                                                                         <Badge
                                                                             variant="secondary"
-                                                                            className="cursor-help border-transparent bg-muted/50 px-1.5 py-0 text-[10px] font-medium text-muted-foreground"
+                                                                            className="cursor-help border-transparent bg-muted/50 px-1.5 py-0 text-caption font-medium text-muted-foreground"
                                                                         >
-                                                                            +
-                                                                            {form.getValues('tags')!
-                                                                                .length - 3}
+                                                                            {t('header.moreTagsBadge', {
+                                                                                count: form.getValues(
+                                                                                    'tags'
+                                                                                )!.length - 3,
+                                                                            })}
                                                                         </Badge>
                                                                     </TooltipTrigger>
                                                                     <TooltipContent>
@@ -457,10 +696,41 @@ const AIQuestionsPreview = ({
                                     </div>
                                     <div className="flex items-center gap-3">
                                         {currentSectionIndex !== undefined &&
+                                            allowSectionSplit &&
+                                            (assessmentData.extraction?.sections?.length ?? 0) >=
+                                                2 && (
+                                                <Select
+                                                    value={sectionChoice ?? 'split'}
+                                                    onValueChange={(value) =>
+                                                        setSectionChoice(
+                                                            value as 'split' | 'single'
+                                                        )
+                                                    }
+                                                >
+                                                    <SelectTrigger
+                                                        className="h-8 w-auto gap-2 text-xs"
+                                                        aria-label={t('header.sectionChoiceLabel')}
+                                                    >
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="split">
+                                                            {t('header.sectionChoiceSplit', {
+                                                                count: assessmentData.extraction!
+                                                                    .sections!.length,
+                                                            })}
+                                                        </SelectItem>
+                                                        <SelectItem value="single">
+                                                            {t('header.sectionChoiceSingle')}
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
+                                        {currentSectionIndex !== undefined &&
                                             (handleSubmitFormData.status === 'pending' ? (
                                                 <MyButton type="button" disable scale="small">
                                                     <div className="mr-2 size-3 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                                                    <span>Saving...</span>
+                                                    <span>{t('header.saving')}</span>
                                                 </MyButton>
                                             ) : (
                                                 <MyButton
@@ -468,9 +738,34 @@ const AIQuestionsPreview = ({
                                                     type="button"
                                                     scale="small"
                                                 >
-                                                    Save Changes
+                                                    {t('header.saveChanges')}
                                                 </MyButton>
                                             ))}
+                                        {(assessmentData.questions?.length ?? 0) > 0 && (
+                                            <MyButton
+                                                type="button"
+                                                scale="small"
+                                                buttonType="secondary"
+                                                disable={
+                                                    saveToQuestionBank.status === 'pending' ||
+                                                    savedPaperId !== null
+                                                }
+                                                onClick={handleAddToQuestionBank}
+                                            >
+                                                {saveToQuestionBank.status === 'pending' ? (
+                                                    <>
+                                                        <div className="mr-2 size-3 animate-spin rounded-full border-2 border-primary-500 border-t-transparent"></div>
+                                                        <span>
+                                                            {t('header.addingToQuestionBank')}
+                                                        </span>
+                                                    </>
+                                                ) : savedPaperId !== null ? (
+                                                    t('header.addedToQuestionBank')
+                                                ) : (
+                                                    t('header.addToQuestionBank')
+                                                )}
+                                            </MyButton>
+                                        )}
                                         <ExportQuestionPaperAI
                                             responseQuestionsData={assessmentData?.questions}
                                         />
@@ -479,12 +774,12 @@ const AIQuestionsPreview = ({
                                             type="button"
                                             scale="small"
                                             buttonType="secondary"
-                                            className="text-muted-foreground hover:text-foreground md:min-w-[80px]"
+                                            className="text-muted-foreground hover:text-foreground md:min-w-20"
                                             onClick={() => {
                                                 setOpenQuestionsPreview(false);
                                             }}
                                         >
-                                            Close
+                                            {t('header.close')}
                                         </MyButton>
                                     </div>
                                 </div>
@@ -508,7 +803,7 @@ const AIQuestionsPreview = ({
                                                 >
                                                     <div
                                                         ref={contentRef}
-                                                        className="flex w-[350%] origin-top-left scale-[0.28] flex-col gap-6 pb-20"
+                                                        className="flex w-[350%] origin-top-left scale-[0.28] flex-col gap-6 pb-20" // design-lint-ignore: inverse of the scale-[0.28] transform (100/0.28≈357%, rounded), a computed compensation value with no matching width token
                                                     >
                                                         {fields.map((field, index) => {
                                                             const hasError =
@@ -546,7 +841,7 @@ const AIQuestionsPreview = ({
                                                                                     >
                                                                                         {index + 1}
                                                                                     </span>
-                                                                                    <span className="max-w-[400px] truncate text-3xl font-medium text-gray-500">
+                                                                                    <span className="max-w-sm truncate text-3xl font-medium text-gray-500">
                                                                                         {getPPTViewTitle(
                                                                                             getValues(
                                                                                                 `questions.${index}.questionType`
@@ -593,7 +888,7 @@ const AIQuestionsPreview = ({
                                                                                                 }}
                                                                                             >
                                                                                                 <Copy className="mr-3 size-5" />
-                                                                                                Duplicate
+                                                                                                {t('questionCard.duplicate')}
                                                                                             </DropdownMenuItem>
                                                                                             <DropdownMenuItem
                                                                                                 className="py-3 text-lg text-destructive focus:text-destructive"
@@ -618,7 +913,7 @@ const AIQuestionsPreview = ({
                                                                                                 }}
                                                                                             >
                                                                                                 <Trash className="mr-3 size-5" />
-                                                                                                Delete
+                                                                                                {t('questionCard.delete')}
                                                                                             </DropdownMenuItem>
                                                                                         </DropdownMenuContent>
                                                                                     </DropdownMenu>
@@ -670,12 +965,12 @@ const AIQuestionsPreview = ({
                                         {questions && questions.length === 0 ? (
                                             <div className="flex size-full items-center justify-center">
                                                 <h1 className="font-medium text-muted-foreground">
-                                                    No Question Exists.
+                                                    {t('content.noQuestionsExist')}
                                                 </h1>
                                             </div>
                                         ) : (
                                             <div className="size-full overflow-y-auto p-8">
-                                                <div className="mx-auto min-h-[600px] w-full max-w-5xl rounded-xl border bg-background p-10 shadow-sm">
+                                                <div className="mx-auto min-h-[600px] w-full max-w-5xl rounded-xl border bg-background p-10 shadow-sm"> {/* design-lint-ignore: 600px canvas min-height has no matching standard scale step (min-h-96=384px too small), pixel-exact value needed for the question preview surface */}
                                                     <MainViewComponentFactory
                                                         key={currentQuestionIndex}
                                                         type={

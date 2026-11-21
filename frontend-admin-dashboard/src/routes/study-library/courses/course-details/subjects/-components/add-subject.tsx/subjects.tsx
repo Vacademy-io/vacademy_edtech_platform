@@ -4,6 +4,7 @@ import { SubjectCard } from './subject-card';
 import { Sortable, SortableItem } from '@/components/ui/sortable';
 import { closestCorners } from '@dnd-kit/core';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { SubjectType } from '@/stores/study-library/use-study-library-store';
 import { orderSubjectPayloadType } from '@/routes/study-library/courses/-types/order-payload';
@@ -29,6 +30,7 @@ export const Subjects = ({
     packageSessionIds,
     currentSession,
 }: SubjectsProps) => {
+    const { t } = useTranslation('studyLibrarySubjects');
     const { open } = useSidebar();
 
     const [subjects, setSubjects] = useState(initialSubjects);
@@ -59,7 +61,7 @@ export const Subjects = ({
             {!subjects.length ? (
                 <div className="flex w-full flex-col items-center justify-center gap-8 rounded-lg py-10">
                     <EmptySubjectMaterial />
-                    <div>No subjects have been added yet.</div>
+                    <div>{t('emptyState')}</div>
                 </div>
             ) : (
                 <Sortable

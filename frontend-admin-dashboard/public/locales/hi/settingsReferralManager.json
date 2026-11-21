@@ -1,0 +1,121 @@
+{
+    "header": {
+        "title": "रेफ़रल प्रोग्राम",
+        "subtitle": "अलग-अलग रिवॉर्ड संरचनाओं वाले कई रेफ़रल प्रोग्राम प्रबंधित करें",
+        "createNewProgram": "नया प्रोग्राम बनाएं"
+    },
+    "emptyState": {
+        "title": "कोई रेफ़रल प्रोग्राम नहीं बनाया गया",
+        "description": "रेफ़रल को प्रोत्साहित करने के लिए अपना पहला रेफ़रल प्रोग्राम बनाएं"
+    },
+    "rewardTypeLabels": {
+        "percentageDiscount": "प्रतिशत छूट",
+        "fixedDiscount": "निश्चित छूट",
+        "bonusContent": "बोनस कंटेंट",
+        "freeDays": "मुफ़्त दिन",
+        "pointsSystem": "पॉइंट्स सिस्टम"
+    },
+    "programCard": {
+        "defaultBadge": "डिफ़ॉल्ट",
+        "refereeBenefit": {
+            "title": "रेफ़री लाभ",
+            "empty": "कोई रेफ़री लाभ कॉन्फ़िगर नहीं किया गया",
+            "percentOff": "{{value}}% की छूट",
+            "amountOff": "₹{{value}} की छूट",
+            "freeDays": "{{value}} मुफ़्त दिन",
+            "points": "{{value}} पॉइंट्स",
+            "bonusContentFallback": "बोनस कंटेंट",
+            "templateLabel": "टेम्पलेट: {{template}}"
+        },
+        "referrerTiers": {
+            "title": "रेफ़रर टियर",
+            "empty": "कोई रेफ़रर टियर कॉन्फ़िगर नहीं किया गया",
+            "referralCount_one": "{{count}} रेफ़रल",
+            "referralCount_other": "{{count}} रेफ़रल",
+            "pointsValue": "+{{value}} पॉइंट्स",
+            "percentUnit": "%",
+            "daysUnit": "दि",
+            "currencyUnit": "₹",
+            "moreTiers_one": "+{{count}} और टियर",
+            "moreTiers_other": "+{{count}} और टियर"
+        },
+        "settings": {
+            "title": "प्रोग्राम सेटिंग्स",
+            "vestingPeriod": "वेस्टिंग अवधि",
+            "days_one": "{{count}} दिन",
+            "days_other": "{{count}} दिन",
+            "combineOffers": "ऑफ़र संयोजित करें",
+            "yes": "हां",
+            "no": "नहीं"
+        },
+        "actions": {
+            "view": "देखें"
+        }
+    },
+    "modal": {
+        "subtitle": "प्रोग्राम विवरण और कॉन्फ़िगरेशन",
+        "defaultBadge": "डिफ़ॉल्ट",
+        "editProgram": "प्रोग्राम संपादित करें",
+        "close": "बंद करें",
+        "refereeBenefits": {
+            "title": "रेफ़री लाभ (एक बार)",
+            "percentUnit": "%",
+            "daysUnit": " दिन",
+            "pointsUnit": " पॉइंट्स",
+            "empty": "इस प्रोग्राम के लिए कोई रेफ़री लाभ कॉन्फ़िगर नहीं किया गया है।",
+            "deliveryLabel": "डिलीवरी:",
+            "emailBadge": "📧 ईमेल",
+            "whatsappBadge": "💬 व्हाट्सएप",
+            "contentDetails": {
+                "title": "कंटेंट विवरण",
+                "contentType": "कंटेंट प्रकार:",
+                "titleLabel": "शीर्षक:",
+                "template": "टेम्पलेट:",
+                "templateValue": "टेम्पलेट {{number}}",
+                "file": "फ़ाइल:",
+                "uploadedBadge": "✓ अपलोड किया गया"
+            }
+        },
+        "referrerRewards": {
+            "title": "रेफ़रर रिवॉर्ड्स (टियर्ड)",
+            "referralCount_one": "{{count}} रेफ़रल",
+            "referralCount_other": "{{count}} रेफ़रल",
+            "deliveryLabel": "डिलीवरी:",
+            "emailBadge": "📧 ईमेल",
+            "whatsappBadge": "💬 व्हाट्सएप",
+            "pointsSystemDetails": {
+                "title": "पॉइंट्स सिस्टम विवरण",
+                "perReferral": "प्रति रेफ़रल:",
+                "pointsEarnedValue": "+{{value}} पॉइंट्स",
+                "rewardAt": "रिवॉर्ड पर:",
+                "pointsValue": "{{value}} पॉइंट्स",
+                "referralsNeeded": "आवश्यक रेफ़रल:",
+                "reward": "रिवॉर्ड:",
+                "percentOff": "{{value}}% की छूट",
+                "daysOff": "{{value}} दिन",
+                "amountOff": "{{value}}₹ की छूट"
+            },
+            "contentDetails": {
+                "title": "कंटेंट विवरण",
+                "contentType": "कंटेंट प्रकार:",
+                "titleLabel": "शीर्षक:",
+                "template": "टेम्पलेट:",
+                "templateValue": "टेम्पलेट {{number}}",
+                "file": "फ़ाइल:",
+                "uploadedBadge": "✓ अपलोड किया गया"
+            }
+        },
+        "settings": {
+            "title": "प्रोग्राम सेटिंग्स",
+            "vestingPeriod": "वेस्टिंग अवधि",
+            "days_one": "{{count}} दिन",
+            "days_other": "{{count}} दिन",
+            "combineWithOtherOffers": "अन्य ऑफ़र के साथ संयोजित करें",
+            "yes": "हां",
+            "no": "नहीं",
+            "programStatus": "प्रोग्राम स्थिति",
+            "default": "डिफ़ॉल्ट",
+            "available": "उपलब्ध"
+        }
+    }
+}

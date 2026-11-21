@@ -89,32 +89,33 @@ export function processHtmlString(html: string | undefined) {
         }
     }
 
+    function pushDelimited(tex: string, displayMode: boolean, original: string) {
+        try {
+            result.push({
+                type: 'formula',
+                content: katex.renderToString(tex, { throwOnError: false, displayMode }),
+            });
+        } catch {
+            result.push({ type: 'text', content: original });
+        }
+    }
+
     function processTextWithLatex(text: string) {
-        // First split by $$ and $ delimiters
-        const dollarParts = text.split(/(\$\$[^$]+\$\$|\$[^$]+\$)/g);
+        // Split on every delimiter the generators use. `\(…\)` / `\[…\]` were
+        // missing, so topic-generated papers exported the delimiters as literal
+        // text ("\(\{(2,1),(2,2)\}\)") instead of a formula.
+        const dollarParts = text.split(
+            /(\$\$[^$]+\$\$|\$[^$]+\$|\\\[[\s\S]+?\\\]|\\\([\s\S]+?\\\))/g
+        );
         dollarParts.forEach((part) => {
             if (part.startsWith('$$') && part.endsWith('$$')) {
-                const tex = part.slice(2, -2);
-                try {
-                    const rendered = katex.renderToString(tex, {
-                        throwOnError: false,
-                        displayMode: true,
-                    });
-                    result.push({ type: 'formula', content: rendered });
-                } catch {
-                    result.push({ type: 'text', content: part });
-                }
+                pushDelimited(part.slice(2, -2), true, part);
+            } else if (part.startsWith('\\[') && part.endsWith('\\]')) {
+                pushDelimited(part.slice(2, -2), true, part);
+            } else if (part.startsWith('\\(') && part.endsWith('\\)')) {
+                pushDelimited(part.slice(2, -2), false, part);
             } else if (part.startsWith('$') && part.endsWith('$') && part.length > 1) {
-                const tex = part.slice(1, -1);
-                try {
-                    const rendered = katex.renderToString(tex, {
-                        throwOnError: false,
-                        displayMode: false,
-                    });
-                    result.push({ type: 'formula', content: rendered });
-                } catch {
-                    result.push({ type: 'text', content: part });
-                }
+                pushDelimited(part.slice(1, -1), false, part);
             } else if (part) {
                 // Check for raw LaTeX commands (without $ delimiters)
                 LATEX_CMD_START.lastIndex = 0;
@@ -171,8 +172,11 @@ export function processHtmlString(html: string | undefined) {
             // (content inside is entity-encoded, so re-render from data-latex)
             else if (element.getAttribute('data-latex')) {
                 const latexStr = element.getAttribute('data-latex')!;
+                // The editor emits `math-block`; `math-display` is the older
+                // spelling still present in some stored content.
                 const isDisplay =
-                    element.classList.contains('math-display');
+                    element.classList.contains('math-display') ||
+                    element.classList.contains('math-block');
                 try {
                     const rendered = katex.renderToString(latexStr, {
                         throwOnError: false,

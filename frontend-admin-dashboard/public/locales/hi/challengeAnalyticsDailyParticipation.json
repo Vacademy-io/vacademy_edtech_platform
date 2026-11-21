@@ -1,0 +1,51 @@
+{
+    "title": "दैनिक भागीदारी मेट्रिक्स",
+    "subtitle": "दिन के अनुसार संदेश गतिविधि और प्रतिक्रिया दर",
+    "emptyState": "चयनित अवधि के लिए कोई भागीदारी डेटा उपलब्ध नहीं है",
+    "kpi": {
+        "days": "दिन",
+        "sent": "भेजे गए",
+        "received": "प्राप्त",
+        "response": "प्रतिक्रिया"
+    },
+    "tabs": {
+        "chart": "चार्ट",
+        "table": "दिन विवरण"
+    },
+    "charts": {
+        "responseRateTrend": "प्रतिक्रिया दर रुझान",
+        "messagesByDay": "दिन के अनुसार संदेश",
+        "completeOverview": "संपूर्ण अवलोकन",
+        "outgoingLabel": "आउटगोइंग",
+        "incomingLabel": "इनकमिंग",
+        "outgoingMessagesLabel": "आउटगोइंग संदेश",
+        "incomingMessagesLabel": "इनकमिंग संदेश",
+        "responseRateLabel": "प्रतिक्रिया दर",
+        "responseRateValue": "प्रतिक्रिया दर: {{value}}%",
+        "responseValue": "प्रतिक्रिया: {{value}}%",
+        "messagesCount_one": "{{count}} संदेश",
+        "messagesCount_other": "{{count}} संदेश",
+        "usersCount_one": "{{count}} उपयोगकर्ता",
+        "usersCount_other": "{{count}} उपयोगकर्ता"
+    },
+    "table": {
+        "day": "दिन",
+        "label": "लेबल",
+        "outgoing": "आउटगोइंग",
+        "incoming": "इनकमिंग",
+        "responseRate": "प्रतिक्रिया दर",
+        "trend": "रुझान",
+        "status": "स्थिति"
+    },
+    "status": {
+        "noMessages": "कोई संदेश नहीं",
+        "lowEngagement": "कम सहभागिता",
+        "good": "ठीक"
+    },
+    "templates": {
+        "breakdown": "टेम्पलेट विवरण",
+        "dayHeading": "दिन {{day}} - {{label}}",
+        "outgoing": "आउटगोइंग टेम्पलेट:",
+        "incoming": "इनकमिंग टेम्पलेट:"
+    }
+}

@@ -37,6 +37,10 @@ class ZoomAttendanceServiceTest {
     @Mock private ZoomMeetingManager zoomMeetingManager;
     @Mock private LiveSessionParticipantRepository participantRepository;
     @Mock private SessionScheduleRepository scheduleRepository;
+    // Added to ZoomAttendanceService after this test was written; without the mock
+    // @InjectMocks leaves the field null and every test here NPEs on the first sync.
+    @Mock private vacademy.io.admin_core_service.features.live_session.repository.LiveSessionRepository liveSessionRepository;
+    @Mock private vacademy.io.admin_core_service.features.live_session.service.AttendanceCriteriaEvaluator attendanceCriteriaEvaluator;
 
     @InjectMocks private ZoomAttendanceService service;
 

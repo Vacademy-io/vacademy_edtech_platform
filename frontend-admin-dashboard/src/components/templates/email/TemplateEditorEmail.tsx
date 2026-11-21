@@ -12,8 +12,11 @@ import {
     getMessageTemplate,
 } from '@/services/message-template-service';
 import { templateCacheService } from '@/services/template-cache-service';
+import { EmailBrandSettings, getEmailBrandSettings } from '@/services/email-brand-settings';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { HtmlTemplateEditor } from '@/components/templates/html/HtmlTemplateEditor';
+import { isRawHtmlTemplate } from '@/components/templates/html/html-template-utils';
 import './email-editor.css';
 
 const EmailBuilder = React.lazy(() => import('./EmailBuilder'));
@@ -30,6 +33,12 @@ export const TemplateEditorEmail: React.FC<TemplateEditorEmailProps> = ({ templa
     const [template, setTemplate] = useState<MessageTemplate | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    // Brand kit must be in hand before the builder mounts — its initial page data is built once.
+    const [brand, setBrand] = useState<EmailBrandSettings | null>(null);
+
+    useEffect(() => {
+        getEmailBrandSettings().then(setBrand);
+    }, []);
 
     // Load template if editing
     useEffect(() => {
@@ -116,12 +125,28 @@ export const TemplateEditorEmail: React.FC<TemplateEditorEmailProps> = ({ templa
         navigate({ to: '/settings', search: { selectedTab: 'templates' } });
     };
 
-    if (isLoading) {
+    if (isLoading || !brand) {
         return (
             <div className="flex h-screen w-screen items-center justify-center bg-background">
                 <Loader2 className="size-6 animate-spin" />
                 <span className="ml-2">Loading template...</span>
             </div>
+        );
+    }
+
+    // An invoice template written as HTML cannot be opened by the builder (it would show a blank
+    // page, and saving that would overwrite the template), so it gets the HTML editor instead.
+    if (
+        template &&
+        isRawHtmlTemplate(template, localStorage.getItem(`email_template_mjml_${template.id}`))
+    ) {
+        return (
+            <HtmlTemplateEditor
+                template={template}
+                isSaving={isSaving}
+                onSave={handleSave}
+                onBack={handleBack}
+            />
         );
     }
 
@@ -143,6 +168,7 @@ export const TemplateEditorEmail: React.FC<TemplateEditorEmailProps> = ({ templa
                     onBack={handleBack}
                     onSave={handleSave}
                     isSaving={isSaving}
+                    brand={brand}
                     initialTemplateType={
                         initialType === 'INVOICE' ||
                         initialType === 'INVOICE_EMAIL' ||

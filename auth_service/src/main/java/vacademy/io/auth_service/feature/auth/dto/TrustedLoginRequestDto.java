@@ -23,4 +23,11 @@ import lombok.NoArgsConstructor;
 public class TrustedLoginRequestDto {
     private String username;
     private String instituteId;
+    /** Login code from the link's ?lc= (optional). When present it alone decides. */
+    private String code;
+    /**
+     * Which passwordless landing route the learner app is on (a LoginLinkRoute name, optional).
+     * Lets an institute that requires codes exempt routes. Client-reported, so not a security check.
+     */
+    private String route;
 }

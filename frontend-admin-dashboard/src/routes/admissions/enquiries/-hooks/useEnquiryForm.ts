@@ -1,10 +1,16 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
-import { enquirySchema, EnquiryForm, defaultEnquiryFormValues } from '../-schema/EnquirySchema';
+import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { buildEnquirySchema, EnquiryForm, defaultEnquiryFormValues } from '../-schema/EnquirySchema';
 
 export const useEnquiryForm = (initialValues?: EnquiryForm) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const { t } = useTranslation('admissionsEnquirySchema');
+
+    // Rebuilt from this hook's own `t` so the validation messages stay in sync with the
+    // active locale (see buildEnquirySchema's doc comment in EnquirySchema.ts).
+    const enquirySchema = useMemo(() => buildEnquirySchema(t), [t]);
 
     const form = useForm<EnquiryForm>({
         resolver: zodResolver(enquirySchema),

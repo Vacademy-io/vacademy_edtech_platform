@@ -1,0 +1,42 @@
+{
+    "untitled": "{{term}} بدون عنوان",
+    "helmet": {
+        "title": "إدارة {{termPlural}}",
+        "titleWithName": "{{name}} — إدارة {{termPlural}}"
+    },
+    "backToList": "الرجوع إلى {{termPlural}}",
+    "subtitle": {
+        "manage": "إدارة دفعات المسؤول والمتعلمين والفواتير وأعضاء الفريق لهذا/هذه {{term}}.",
+        "view": "عرض دفعات المسؤول والمتعلمين والفواتير وأعضاء الفريق لهذا/هذه {{term}}."
+    },
+    "editTerm": "تعديل {{term}}",
+    "resync": {
+        "action": "إعادة مزامنة الدعوات",
+        "inProgress": "جارٍ إعادة المزامنة…",
+        "failed": "فشلت إعادة مزامنة الدعوات",
+        "alreadyInSync": "متزامن مسبقًا — لا حاجة لأي تغييرات",
+        "createdSummary": "تمت إعادة مزامنة {{invites}} عبر {{courses}}",
+        "inviteCount_zero": "لا دعوات",
+        "inviteCount_one": "دعوة واحدة",
+        "inviteCount_two": "دعوتان",
+        "inviteCount_few": "{{count}} دعوات",
+        "inviteCount_many": "{{count}} دعوة",
+        "inviteCount_other": "{{count}} دعوة",
+        "courseCount_zero": "لا دورات",
+        "courseCount_one": "دورة واحدة",
+        "courseCount_two": "دورتان",
+        "courseCount_few": "{{count}} دورات",
+        "courseCount_many": "{{count}} دورة",
+        "courseCount_other": "{{count}} دورة",
+        "renamedSummary_zero": "لم يُعد تسمية أي عنصر لمطابقة إعدادات التسمية",
+        "renamedSummary_one": "أُعيدت تسمية عنصر واحد لمطابقة إعدادات التسمية",
+        "renamedSummary_two": "أُعيدت تسمية عنصرين لمطابقة إعدادات التسمية",
+        "renamedSummary_few": "أُعيدت تسمية {{count}} عناصر لمطابقة إعدادات التسمية",
+        "renamedSummary_many": "أُعيدت تسمية {{count}} عنصرًا لمطابقة إعدادات التسمية",
+        "renamedSummary_other": "أُعيدت تسمية {{count}} عنصر لمطابقة إعدادات التسمية"
+    },
+    "notFound": {
+        "message": "تعذّر العثور على {{term}} مطابق لهذا الرابط.",
+        "goingBack": "الرجوع إلى القائمة…"
+    }
+}

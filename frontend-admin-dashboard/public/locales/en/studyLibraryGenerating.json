@@ -1,0 +1,222 @@
+{
+    "toast": {
+        "draftRestored": "Draft restored",
+        "courseConfigMissing": "Course configuration not found. Please start over.",
+        "instituteIdMissing": "Institute ID not found. Please login again.",
+        "courseDraftSaved": "Course draft saved",
+        "insufficientCredits": "Your institute's AI credits are insufficient to generate a course outline. Please top up credits to continue.",
+        "generateOutlineFailed": "Failed to generate course outline: {{message}}"
+    },
+    "progress": {
+        "buildingPrompt": "Building prompt from configuration...",
+        "connecting": "Connecting to AI service...",
+        "generatingOutline": "Generating course outline...",
+        "complete": "Complete!",
+        "completedOfTotal": "{{completed}} of {{total}}"
+    },
+    "defaultContent": {
+        "homeworkQuestion": "What is the main concept covered in this session?",
+        "learningObjectivesTitle": "Learning Objectives",
+        "learningObjectiveItem1": "Understand the key concepts and principles covered in this session",
+        "learningObjectiveItem2": "Apply the learned techniques to solve practical problems",
+        "learningObjectiveItem3": "Demonstrate proficiency in the core topics discussed",
+        "learningObjectivesFooter": "These objectives are designed to guide your learning journey and help you achieve mastery of the subject matter.",
+        "noPromptAvailable": "No prompt available",
+        "contentFor": "Content for {{title}}"
+    },
+    "common": {
+        "save": "Save",
+        "cancel": "Cancel",
+        "edit": "Edit",
+        "upload": "Upload",
+        "unknownError": "Unknown error"
+    },
+    "regeneratePrompt": {
+        "base": "Regenerate the {{chapter}} \"{{title}}\"",
+        "withSlides": " with the following {{slides}}: {{titles}}.",
+        "noSlides": "."
+    },
+    "page": {
+        "generatingOutlineTitle": "Generating {{course}} Outline...",
+        "generatingContentTitle": "Generating Content...",
+        "editCourseContentTitle": "Edit Course Content",
+        "editContentMeta": "Review and edit your AI-generated course content.",
+        "reviewOutlineTitle": "Review {{course}} Outline",
+        "reviewOutlineMeta": "Review and refine your AI-generated course outline.",
+        "backToCreate": "Back to Create {{course}}",
+        "back": "Back",
+        "generatingButton": "Generating...",
+        "createCourse": "Create {{course}}",
+        "createDraftCourse": "Create Draft {{course}}",
+        "generatePageContent": "Generate Page Content",
+        "stepReviewHeading": "Step 1: Review Your {{course}} Outline",
+        "stepReviewSubtitle": "Review the course outline, topics, and objectives generated for your course. Once everything looks right, click Generate to begin creating your course materials.",
+        "contentHeading": "{{course}} Content",
+        "outlineHeading": "{{course}} Outline",
+        "collapseAll": "Collapse All",
+        "expandAll": "Expand All",
+        "noSessions": "No sessions available. Please try refreshing the page.",
+        "addPage": "Add Page",
+        "addChapter": "Add {{chapter}}"
+    },
+    "metadata": {
+        "courseName": "Course name",
+        "description": "Description",
+        "level": "Level",
+        "selectLevel": "Select level",
+        "levelBeginner": "Beginner",
+        "levelBasic": "Basic",
+        "levelIntermediate": "Intermediate",
+        "levelAdvanced": "Advanced",
+        "courseTags": "Course tags",
+        "tagsPlaceholder": "Enter tags separated by commas",
+        "coursePreviewImage": "Course preview image",
+        "coursePreviewImageHint": "Thumbnail shown on course cards",
+        "coursePreviewAlt": "Course preview",
+        "removeImage": "Remove image",
+        "clickToUploadPreview": "Click to upload preview image",
+        "thumbnailForCard": "Thumbnail for course card",
+        "courseBannerImage": "Course banner image",
+        "courseBannerHint": "Wide header image on course detail page",
+        "courseBannerAlt": "Course banner",
+        "clickToUploadBanner": "Click to upload banner image",
+        "wideHeaderHint": "Wide header for course detail page",
+        "courseMedia": "Course Media",
+        "courseMediaHint": "Featured image or video for course page",
+        "usingFallbackImage": " - Using fallback image",
+        "courseMediaAlt": "Course media",
+        "removeMedia": "Remove media",
+        "youtubeLink": "YouTube Link",
+        "pasteYoutubeUrl": "Paste YouTube URL here",
+        "uploadImageOrVideo": "Upload Image or Video",
+        "addYoutubeLink": "Add YouTube Link",
+        "whatLearnersGain": "What learners will gain",
+        "whoShouldJoin": "Who Should Join",
+        "aboutCourse": "About the Course"
+    },
+    "slideDialog": {
+        "enterDocumentContent": "Enter document content...",
+        "codeEditor": "Code Editor",
+        "editMode": "Edit Mode",
+        "viewMode": "View Mode",
+        "run": "Run",
+        "settings": "Settings",
+        "viewEditMode": "View/Edit Mode",
+        "switchToLightTheme": "Switch to Light Theme",
+        "switchToDarkTheme": "Switch to Dark Theme",
+        "copyCode": "Copy Code",
+        "downloadCode": "Download Code",
+        "videoPlayer": "Video Player",
+        "videoWillDisplay": "Video will be displayed here",
+        "question": "Question:",
+        "noQuestionAvailable": "No question available",
+        "previousQuestion": "Previous question",
+        "nextQuestion": "Next question",
+        "noQuestionsYet": "No questions available for this quiz yet.",
+        "answer": "Answer:",
+        "enterAssignmentQuestion": "Enter assignment question...",
+        "text": "Text",
+        "solutionCode": "Solution Code"
+    },
+    "courseCreation": {
+        "errors": {
+            "accessTokenNotFound": "Access token not found. Please log in again.",
+            "tokenDecodeFailed": "Failed to decode token data. Please log in again.",
+            "instituteIdNotFound": "Institute ID not found. Please ensure you are logged in and have selected an institute.",
+            "backendError": "Backend Error: {{message}}",
+            "invalidInstituteId": "Invalid Institute ID: {{instituteId}}. Please ensure you are logged in and have selected an institute.",
+            "networkAuthRequired": "Network authentication required. Please check your connection or contact support. INSTITUTE_ID: {{instituteId}}",
+            "unknownError": "Unknown error",
+            "createCourseFailed": "Failed to create course: {{message}}",
+            "noCourseIdReturned": "Failed to create course: No course ID returned",
+            "instituteDetailsNotLoaded": "Institute details not loaded. Please refresh the page and try again.",
+            "packageSessionIdsNotFound": "Package session IDs not found for the created course. The course may need a moment to be fully created. Please try again in a few seconds.",
+            "noSubjectIdReturned": "Failed to create subject: No subject ID returned",
+            "noModuleIdReturned": "Failed to create module: No module ID returned"
+        },
+        "progress": {
+            "creatingCourse": "Creating course...",
+            "fetchingCourseDetails": "Fetching course details...",
+            "waitingForCourse": "Waiting for course to be fully created...",
+            "creatingSubject": "Creating subject...",
+            "creatingModule": "Creating module...",
+            "creatingChaptersAndSlides": "Creating chapters and slides...",
+            "creatingSlidesInChapter_one": "Creating {{count}} slide in \"{{chapter}}\"...",
+            "creatingSlidesInChapter_other": "Creating {{count}} slides in \"{{chapter}}\"..."
+        },
+        "slideKind": {
+            "quiz": "Quiz",
+            "video": "Video",
+            "aiVideo": "AI Video",
+            "aiSlides": "AI Slides",
+            "storybook": "Storybook",
+            "notes": "Notes"
+        }
+    },
+    "contentGeneration": {
+        "toast": {
+            "noTodosFound": "No todos found. Please regenerate the course outline.",
+            "noContentTodosFound": "No content todos found to generate. Please check your course outline.",
+            "largePayloadConfirm": "The content generation payload is quite large. This might cause server issues. Continue anyway?",
+            "reducingRepetition_one": "Reducing repetition — rewriting {{count}} slide...",
+            "reducingRepetition_other": "Reducing repetition — rewriting {{count}} slides..."
+        },
+        "startingContentGeneration": "Starting content generation...",
+        "defaultVideoTitle": "Video",
+        "youtubeUrlLabel": "YouTube URL:",
+        "noVideoUrlProvided": "No video URL provided",
+        "errors": {
+            "prefix": "Content generation failed: {{message}}",
+            "serverError500": "Content generation encountered a server error (500). Try generating with fewer slides or contact support.",
+            "interrupted": "Content generation was interrupted. Try again.",
+            "bufferIssue": "Content generation failed due to stream buffer issues. Try generating fewer slides at once.",
+            "timeout": "Content generation timed out. Try again later.",
+            "networkError": "Network error during content generation. Check your connection and try again.",
+            "unknownError": "Unknown error",
+            "failedToGenerate": "Failed to generate content: {{message}}"
+        },
+        "service": {
+            "connecting": "Connecting to content generation service...",
+            "generatingContent": "Generating content...",
+            "reducingRepetition_one": "Reducing repetition — rewriting {{count}} slide...",
+            "reducingRepetition_other": "Reducing repetition — rewriting {{count}} slides...",
+            "generatedSlide": "Generated {{slideType}} for {{path}}",
+            "processingUpdates": "Processing content updates... ({{count}} completed)",
+            "complete": "Content generation complete!",
+            "retrying": "Connection interrupted, retrying in {{seconds}} seconds...",
+            "errors": {
+                "abortedTimeout": "Request was aborted due to timeout",
+                "insufficientCredits": "Your institute's AI credits are insufficient for this generation. Please top up credits to continue.",
+                "noResponseBody": "No response body",
+                "inactivityTimeout": "Stream timed out after {{seconds}} seconds of inactivity",
+                "serverErrorWithCode": "Server error (code: {{code}})",
+                "unknownCode": "unknown",
+                "unknownStreamError": "Unknown stream error",
+                "streamAborted": "Connection was aborted - this may be due to network issues or server timeout",
+                "streamBufferOverflow": "Stream buffer overflow - content may be too large",
+                "streamTimeout": "Stream processing timed out - server may be overloaded",
+                "streamNetworkError": "Network error during content generation",
+                "streamCancelled": "Request was cancelled",
+                "streamProcessingFailedPrefix": "Stream processing failed: {{message}}",
+                "unknownError": "Unknown error occurred"
+            }
+        }
+    },
+    "sessionUtils": {
+        "untitledSession": "Untitled Session"
+    },
+    "courseOutline": {
+        "connecting": "Connecting to AI service...",
+        "generating": "Generating course outline...",
+        "errors": {
+            "insufficientCredits": "Your institute's AI credits are insufficient. Please top up credits to continue.",
+            "httpError": "HTTP {{status}}: {{statusText}}. {{errorText}}",
+            "noResponseBody": "No response body",
+            "serverErrorWithCode": "Server error (code: {{code}})",
+            "unknownCode": "unknown",
+            "invalidResponseStructure": "Invalid response structure: missing or invalid tree",
+            "unknownError": "Unknown error",
+            "noResponseData": "No response data received from API"
+        }
+    }
+}

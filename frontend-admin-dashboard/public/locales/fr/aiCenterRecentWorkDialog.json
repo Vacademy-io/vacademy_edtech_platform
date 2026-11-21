@@ -1,0 +1,38 @@
+{
+    "dialog": {
+        "title": "Vos travaux récents",
+        "close": "Fermer",
+        "searchPlaceholder": "Rechercher par nom ou nom de fichier…",
+        "clearSearch": "Effacer la recherche",
+        "itemCount_one": "{{count}} élément dans tous les outils",
+        "itemCount_many": "{{count}} éléments dans tous les outils",
+        "itemCount_other": "{{count}} éléments dans tous les outils"
+    },
+    "sourceFilters": {
+        "all": "Toutes les sources",
+        "pdf": "PDF",
+        "audio": "Audio",
+        "image": "Photos",
+        "doc": "Documents",
+        "none": "Par sujet"
+    },
+    "dateBuckets": {
+        "today": "Aujourd'hui",
+        "yesterday": "Hier",
+        "earlierThisWeek": "Plus tôt cette semaine",
+        "older": "Plus ancien"
+    },
+    "emptyState": {
+        "nothingHereYet": "Rien ici pour l'instant",
+        "nothingHereYetDescription": "Tout ce que vous générez apparaîtra ici.",
+        "noMatches": "Aucun résultat",
+        "noMatchesDescription": "Essayez un autre terme de recherche ou filtre.",
+        "clearFilters": "Effacer les filtres"
+    },
+    "pagination": {
+        "showingRange": "Affichage de {{start}} à {{end}} sur {{total}}",
+        "prev": "Précédent",
+        "next": "Suivant",
+        "pageOf": "Page {{current}} sur {{total}}"
+    }
+}

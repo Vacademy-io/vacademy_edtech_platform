@@ -1,0 +1,64 @@
+{
+    "dayLabels": {
+        "sun": "أحد",
+        "mon": "إثنين",
+        "tue": "ثلاثاء",
+        "wed": "أربعاء",
+        "thu": "خميس",
+        "fri": "جمعة",
+        "sat": "سبت"
+    },
+    "nav": {
+        "previousMonth": "الشهر السابق",
+        "nextMonth": "الشهر التالي",
+        "today": "اليوم"
+    },
+    "error": {
+        "title": "تعذر تحميل المتابعات",
+        "description": "حدث خطأ أثناء تحميل التقويم. حاول مرة أخرى."
+    },
+    "overflowMore_zero": "+{{count}} إضافية",
+    "overflowMore_one": "+مهمة واحدة إضافية ({{count}})",
+    "overflowMore_two": "+مهمتان إضافيتان ({{count}})",
+    "overflowMore_few": "+{{count}} إضافية",
+    "overflowMore_many": "+{{count}} إضافية",
+    "overflowMore_other": "+{{count}} إضافية",
+    "agenda": {
+        "emptyTitle": "لا متابعات هذا الشهر",
+        "emptyDescription": "غيّر الشهر باستخدام الأسهم أعلاه أو اختر مستشارًا.",
+        "tasks_zero": "لا مهام ({{count}})",
+        "tasks_one": "مهمة واحدة ({{count}})",
+        "tasks_two": "مهمتان ({{count}})",
+        "tasks_few": "{{count}} مهام",
+        "tasks_many": "{{count}} مهمة",
+        "tasks_other": "{{count}} مهمة"
+    },
+    "dayCounts": {
+        "overdue_zero": "لا مهام متأخرة ({{count}})",
+        "overdue_one": "مهمة واحدة متأخرة ({{count}})",
+        "overdue_two": "مهمتان متأخرتان ({{count}})",
+        "overdue_few": "{{count}} مهام متأخرة",
+        "overdue_many": "{{count}} مهمة متأخرة",
+        "overdue_other": "{{count}} مهمة متأخرة",
+        "today_zero": "لا مهام اليوم ({{count}})",
+        "today_one": "مهمة واحدة اليوم ({{count}})",
+        "today_two": "مهمتان اليوم ({{count}})",
+        "today_few": "{{count}} مهام اليوم",
+        "today_many": "{{count}} مهمة اليوم",
+        "today_other": "{{count}} مهمة اليوم",
+        "upcoming_zero": "لا مهام قادمة ({{count}})",
+        "upcoming_one": "مهمة واحدة قادمة ({{count}})",
+        "upcoming_two": "مهمتان قادمتان ({{count}})",
+        "upcoming_few": "{{count}} مهام قادمة",
+        "upcoming_many": "{{count}} مهمة قادمة",
+        "upcoming_other": "{{count}} مهمة قادمة",
+        "none": "لا متابعات"
+    },
+    "dayPanel": {
+        "emptyTitle": "لا شيء في هذا اليوم",
+        "emptyDescription": "اختر يومًا آخر من التقويم أعلاه."
+    },
+    "pill": {
+        "openTooltip": "فتح {{name}}"
+    }
+}

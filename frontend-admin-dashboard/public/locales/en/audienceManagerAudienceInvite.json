@@ -1,0 +1,57 @@
+{
+    "heading": {
+        "titleLoading": "{{term}}",
+        "titleWithCount": "{{formattedCount}} {{term}}",
+        "subtitle": "Manage and share your {{term}} across campaigns."
+    },
+    "settingsButton": "Audience settings",
+    "addButton": "Add {{term}}",
+    "status": {
+        "active": "Active",
+        "draft": "Draft",
+        "inactive": "Inactive"
+    },
+    "statusFilter": {
+        "allStatus": "All Status",
+        "placeholder": "Filter by Status"
+    },
+    "typeFilter": {
+        "allTypes": "All {{term}}",
+        "placeholder": "Filter by {{term}}"
+    },
+    "toolbar": {
+        "searchPlaceholder": "Search {{term}}",
+        "searchAriaLabel": "Search {{term}}",
+        "subOrgPlaceholder": "Filter by Sub-Org",
+        "allSubOrgs": "All Sub-Orgs",
+        "subOrgFallback": "Sub-Org"
+    },
+    "errorState": {
+        "title": "Couldn't load {{term}}",
+        "subtitle": "Something went wrong. Try again."
+    },
+    "emptyState": {
+        "noMatches": "No {{term}} match your filters.",
+        "noneYet": "You haven't created any {{term}} yet.",
+        "clearFilters": "Clear filters",
+        "createFirst": "Create your first {{term}}"
+    },
+    "toast": {
+        "missingCampaignId": "Unable to open campaign details. Missing campaign identifier."
+    },
+    "card": {
+        "openAriaLabel": "Open {{campaignName}}",
+        "activateHint": "Activate this {{term}} to generate a shareable link.",
+        "tagsAriaLabel": "Tags"
+    },
+    "actions": {
+        "addResponse": "Add Response",
+        "addResponseTooltip": "Add a response on behalf of a respondent",
+        "qr": "QR",
+        "qrTooltip": "Show a QR code people can scan to open this form",
+        "api": "API",
+        "apiTooltip": "Get API integration details for automation",
+        "embed": "Embed",
+        "embedTooltip": "Get embed code for your website"
+    }
+}

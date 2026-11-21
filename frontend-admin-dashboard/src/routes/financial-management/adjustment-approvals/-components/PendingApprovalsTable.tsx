@@ -1,7 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { AdjustmentsSummary } from './AdjustmentsSummary';
 import { toast } from 'sonner';
 import dayjs from 'dayjs';
 import { Check, X } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import {
     fetchPendingAdjustments,
@@ -15,6 +17,7 @@ const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
 
 export function PendingApprovalsTable() {
+    const { t } = useTranslation('financialManagementPendingApprovalsTable');
     const queryClient = useQueryClient();
 
     const { data: pending, isLoading, error } = useQuery({
@@ -31,12 +34,12 @@ export function PendingApprovalsTable() {
             }),
         onSuccess: (_data, variables) => {
             toast.success(
-                variables.action === 'APPROVED' ? 'Adjustment approved' : 'Adjustment rejected'
+                variables.action === 'APPROVED' ? t('toast.approved') : t('toast.rejected')
             );
             queryClient.invalidateQueries({ queryKey: getPendingAdjustmentsQueryKey() });
         },
         onError: (err: any) => {
-            toast.error(err?.response?.data?.ex || err?.message || 'Failed to review adjustment');
+            toast.error(err?.response?.data?.ex || err?.message || t('toast.reviewFailed'));
         },
     });
 
@@ -51,9 +54,9 @@ export function PendingApprovalsTable() {
     if (error) {
         return (
             <div className="rounded-xl border border-red-200 bg-red-50 p-8 text-center">
-                <p className="font-semibold text-red-800">Unable to load pending approvals</p>
+                <p className="font-semibold text-red-800">{t('errors.unableToLoad')}</p>
                 <p className="mt-2 text-sm text-red-600">
-                    {error instanceof Error ? error.message : 'Please try again.'}
+                    {error instanceof Error ? error.message : t('errors.tryAgain')}
                 </p>
             </div>
         );
@@ -62,46 +65,48 @@ export function PendingApprovalsTable() {
     if (!pending || pending.length === 0) {
         return (
             <div className="rounded-xl border border-gray-200 bg-white p-12 text-center">
-                <p className="text-lg font-semibold text-gray-600">No pending approvals</p>
+                <p className="text-lg font-semibold text-gray-600">{t('empty.noPendingApprovals')}</p>
                 <p className="mt-2 text-sm text-gray-400">
-                    All adjustment requests have been reviewed.
+                    {t('empty.allReviewed')}
                 </p>
             </div>
         );
     }
 
     return (
+        <>
+            <AdjustmentsSummary items={pending} />
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="overflow-auto">
                 <table className="w-full text-left border-collapse min-w-[800px]">
                     <thead>
                         <tr className="border-b-2 border-gray-200 bg-gray-50/95">
                             <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                                Student
+                                {t('table.student')}
                             </th>
                             <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                                Fee Type
+                                {t('table.feeType')}
                             </th>
                             <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                                CPO / Plan
+                                {t('table.cpoPlan')}
                             </th>
                             <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                                Type
+                                {t('table.type')}
                             </th>
                             <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                                Expected
+                                {t('table.expected')}
                             </th>
                             <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                                Amount
+                                {t('table.amount')}
                             </th>
                             <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                                Reason
+                                {t('table.reason')}
                             </th>
                             <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                                Due Date
+                                {t('table.dueDate')}
                             </th>
                             <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                                Actions
+                                {t('table.actions')}
                             </th>
                         </tr>
                     </thead>
@@ -136,7 +141,7 @@ export function PendingApprovalsTable() {
                                                     : 'bg-emerald-100 text-emerald-800'
                                             )}
                                         >
-                                            {isPenalty ? 'Penalty' : 'Concession'}
+                                            {isPenalty ? t('adjustmentType.penalty') : t('adjustmentType.concession')}
                                         </span>
                                     </td>
                                     <td className="py-3 px-4 text-gray-700">
@@ -166,7 +171,7 @@ export function PendingApprovalsTable() {
                                         <div className="flex items-center gap-2">
                                             <button
                                                 type="button"
-                                                title="Approve"
+                                                title={t('actions.approve')}
                                                 onClick={() =>
                                                     reviewMutation.mutate({
                                                         id: item.id,
@@ -177,11 +182,11 @@ export function PendingApprovalsTable() {
                                                 className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 disabled:opacity-50 transition-colors"
                                             >
                                                 <Check size={13} weight="bold" />
-                                                Approve
+                                                {t('actions.approve')}
                                             </button>
                                             <button
                                                 type="button"
-                                                title="Reject"
+                                                title={t('actions.reject')}
                                                 onClick={() =>
                                                     reviewMutation.mutate({
                                                         id: item.id,
@@ -192,7 +197,7 @@ export function PendingApprovalsTable() {
                                                 className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 disabled:opacity-50 transition-colors"
                                             >
                                                 <X size={13} weight="bold" />
-                                                Reject
+                                                {t('actions.reject')}
                                             </button>
                                         </div>
                                     </td>
@@ -203,5 +208,6 @@ export function PendingApprovalsTable() {
                 </table>
             </div>
         </div>
+        </>
     );
 }

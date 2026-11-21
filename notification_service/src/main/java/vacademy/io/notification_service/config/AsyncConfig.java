@@ -71,6 +71,26 @@ public class AsyncConfig {
      * DISCARDs (push is best-effort; the message is already persisted + delivered over SSE) rather than
      * running on the caller thread, so the committing/publishing path is never blocked behind FCM.
      */
+    /**
+     * Community-channel push fan-out (up to hundreds of recipients per message) on its own small pool, so a
+     * busy community can never queue up or — via DiscardPolicy — drop DM and batch pushes on chatPushExecutor.
+     */
+    @Bean(name = "chatCommunityPushExecutor")
+    public Executor chatCommunityPushExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(1);
+        executor.setMaxPoolSize(2);
+        executor.setQueueCapacity(100);
+        executor.setThreadNamePrefix("chat-community-push-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
+        executor.setAllowCoreThreadTimeOut(true);
+        executor.setKeepAliveSeconds(60);
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(30);
+        executor.initialize();
+        return executor;
+    }
+
     @Bean(name = "chatPushExecutor")
     public Executor chatPushExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();

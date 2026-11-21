@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { FileText, ArrowLeft, Users, CreditCard, WarningCircle, BookOpen } from "@phosphor-icons/react";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Preferences } from "@capacitor/preferences";
 
 export const Route = createFileRoute("/terms-and-conditions/")({
@@ -10,6 +11,7 @@ export const Route = createFileRoute("/terms-and-conditions/")({
 });
 
 function TermsAndConditions() {
+  const { t } = useTranslation("miscRoutesB");
   const navigate = useNavigate();
   
   // Redirect to institute-specific terms if configured
@@ -67,7 +69,7 @@ function TermsAndConditions() {
             className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors duration-200 mb-6 group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-200" />
-            <span className="text-sm font-medium">Back to Login</span>
+            <span className="text-sm font-medium">{t("termsAndConditions.backToLogin")}</span>
           </motion.button>
 
           {/* Page Header */}
@@ -76,13 +78,13 @@ function TermsAndConditions() {
               <FileText className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-              Terms and Conditions
+              {t("termsAndConditions.header.title")}
             </h1>
             <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              Please read these terms and conditions carefully before using the Vacademy educational platform.
+              {t("termsAndConditions.header.description")}
             </p>
             <p className="text-sm text-gray-500 mt-4">
-              Effective Date: January 2024
+              {t("termsAndConditions.header.effectiveDate")}
             </p>
           </div>
         </motion.div>
@@ -92,16 +94,14 @@ function TermsAndConditions() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-white/90 backdrop-blur-xl rounded-xl shadow-xl border border-gray-200/50 p-6 lg:p-8 mb-8"
+          className="bg-white/90 backdrop-blur-xl rounded-xl shadow-xl border border-gray-200/50 p-6 lg:p-8 mb-8 space-y-4"
         >
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Welcome to Vacademy</h2>
-          <p className="text-gray-700 leading-relaxed mb-4">
-            These Terms and Conditions ("Terms", "Terms and Conditions") govern your relationship with the Vacademy educational platform 
-            operated by Vacademy Educational Services ("us", "we", or "our").
+          <h2 className="text-xl font-bold text-gray-900">{t("termsAndConditions.welcome.title")}</h2>
+          <p className="text-gray-700 leading-relaxed">
+            {t("termsAndConditions.welcome.intro1")}
           </p>
           <p className="text-gray-700 leading-relaxed">
-            Your access to and use of the service is conditioned on your acceptance of and compliance with these Terms. 
-            These Terms apply to all visitors, users, and others who access or use the service.
+            {t("termsAndConditions.welcome.intro2")}
           </p>
         </motion.div>
 
@@ -112,26 +112,26 @@ function TermsAndConditions() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-white/90 backdrop-blur-xl rounded-xl shadow-xl border border-gray-200/50 p-6 lg:p-8"
+            className="bg-white/90 backdrop-blur-xl rounded-xl shadow-xl border border-gray-200/50 p-6 lg:p-8 space-y-section"
           >
-            <div className="flex items-center space-x-3 mb-6">
+            <div className="flex items-center gap-x-3">
               <div className="w-10 h-10 bg-gray-900 rounded-lg flex items-center justify-center">
                 <FileText className="w-5 h-5 text-white" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Acceptance of Terms</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t("termsAndConditions.sections.acceptance.title")}</h2>
             </div>
-            
+
             <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">Agreement to Terms</h3>
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold text-gray-800">{t("termsAndConditions.sections.acceptance.agreement.subtitle")}</h3>
                 <p className="text-gray-700 leading-relaxed">
-                  By accessing and using Vacademy's educational platform, you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service.
+                  {t("termsAndConditions.sections.acceptance.agreement.text")}
                 </p>
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">Modifications</h3>
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold text-gray-800">{t("termsAndConditions.sections.acceptance.modifications.subtitle")}</h3>
                 <p className="text-gray-700 leading-relaxed">
-                  Vacademy reserves the right to change these terms and conditions at any time. Users will be notified of significant changes, and continued use of the platform constitutes acceptance of modified terms.
+                  {t("termsAndConditions.sections.acceptance.modifications.text")}
                 </p>
               </div>
             </div>
@@ -142,26 +142,26 @@ function TermsAndConditions() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="bg-white/90 backdrop-blur-xl rounded-xl shadow-xl border border-gray-200/50 p-6 lg:p-8"
+            className="bg-white/90 backdrop-blur-xl rounded-xl shadow-xl border border-gray-200/50 p-6 lg:p-8 space-y-section"
           >
-            <div className="flex items-center space-x-3 mb-6">
+            <div className="flex items-center gap-x-3">
               <div className="w-10 h-10 bg-gray-900 rounded-lg flex items-center justify-center">
                 <Users className="w-5 h-5 text-white" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">User Accounts and Registration</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t("termsAndConditions.sections.userAccounts.title")}</h2>
             </div>
-            
+
             <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">Account Creation</h3>
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold text-gray-800">{t("termsAndConditions.sections.userAccounts.creation.subtitle")}</h3>
                 <p className="text-gray-700 leading-relaxed">
-                  To access certain features of our platform, you must register for an account. You agree to provide accurate, current, and complete information during the registration process and to update such information to keep it accurate, current, and complete.
+                  {t("termsAndConditions.sections.userAccounts.creation.text")}
                 </p>
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">Account Security</h3>
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold text-gray-800">{t("termsAndConditions.sections.userAccounts.security.subtitle")}</h3>
                 <p className="text-gray-700 leading-relaxed">
-                  You are responsible for safeguarding the password and for all activities that occur under your account. You agree to immediately notify Vacademy of any unauthorized use of your account or any other breach of security.
+                  {t("termsAndConditions.sections.userAccounts.security.text")}
                 </p>
               </div>
             </div>
@@ -172,26 +172,26 @@ function TermsAndConditions() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="bg-white/90 backdrop-blur-xl rounded-xl shadow-xl border border-gray-200/50 p-6 lg:p-8"
+            className="bg-white/90 backdrop-blur-xl rounded-xl shadow-xl border border-gray-200/50 p-6 lg:p-8 space-y-section"
           >
-            <div className="flex items-center space-x-3 mb-6">
+            <div className="flex items-center gap-x-3">
               <div className="w-10 h-10 bg-gray-900 rounded-lg flex items-center justify-center">
                 <BookOpen className="w-5 h-5 text-white" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Educational Services and Content</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t("termsAndConditions.sections.educationalServices.title")}</h2>
             </div>
-            
+
             <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">Course Access</h3>
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold text-gray-800">{t("termsAndConditions.sections.educationalServices.courseAccess.subtitle")}</h3>
                 <p className="text-gray-700 leading-relaxed">
-                  Upon enrollment and payment, you will receive access to course materials for the duration specified in your enrollment agreement. Access may be limited by time, device, or other restrictions as specified in the course description.
+                  {t("termsAndConditions.sections.educationalServices.courseAccess.text")}
                 </p>
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">Learning Materials</h3>
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold text-gray-800">{t("termsAndConditions.sections.educationalServices.learningMaterials.subtitle")}</h3>
                 <p className="text-gray-700 leading-relaxed">
-                  All course materials, including videos, documents, assessments, and other content, are provided for educational purposes only. You may not redistribute, reproduce, or share these materials without explicit permission.
+                  {t("termsAndConditions.sections.educationalServices.learningMaterials.text")}
                 </p>
               </div>
             </div>
@@ -202,26 +202,26 @@ function TermsAndConditions() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="bg-white/90 backdrop-blur-xl rounded-xl shadow-xl border border-gray-200/50 p-6 lg:p-8"
+            className="bg-white/90 backdrop-blur-xl rounded-xl shadow-xl border border-gray-200/50 p-6 lg:p-8 space-y-section"
           >
-            <div className="flex items-center space-x-3 mb-6">
+            <div className="flex items-center gap-x-3">
               <div className="w-10 h-10 bg-gray-900 rounded-lg flex items-center justify-center">
                 <CreditCard className="w-5 h-5 text-white" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Payment Terms and Refunds</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t("termsAndConditions.sections.paymentTerms.title")}</h2>
             </div>
-            
+
             <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">Payment Processing</h3>
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold text-gray-800">{t("termsAndConditions.sections.paymentTerms.processing.subtitle")}</h3>
                 <p className="text-gray-700 leading-relaxed">
-                  All payments are processed securely through our approved payment processors. You agree to provide accurate payment information and authorize us to charge the specified amounts for your selected courses or services.
+                  {t("termsAndConditions.sections.paymentTerms.processing.text")}
                 </p>
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">Refund Policy</h3>
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold text-gray-800">{t("termsAndConditions.sections.paymentTerms.refunds.subtitle")}</h3>
                 <p className="text-gray-700 leading-relaxed">
-                  Refunds are available within 30 days of course enrollment, provided that less than 25% of the course content has been accessed. Refund requests must be submitted through our official channels and may take 5-10 business days to process.
+                  {t("termsAndConditions.sections.paymentTerms.refunds.text")}
                 </p>
               </div>
             </div>
@@ -232,26 +232,26 @@ function TermsAndConditions() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
-            className="bg-white/90 backdrop-blur-xl rounded-xl shadow-xl border border-gray-200/50 p-6 lg:p-8"
+            className="bg-white/90 backdrop-blur-xl rounded-xl shadow-xl border border-gray-200/50 p-6 lg:p-8 space-y-section"
           >
-            <div className="flex items-center space-x-3 mb-6">
+            <div className="flex items-center gap-x-3">
               <div className="w-10 h-10 bg-gray-900 rounded-lg flex items-center justify-center">
                 <WarningCircle className="w-5 h-5 text-white" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">User Conduct and Prohibited Activities</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t("termsAndConditions.sections.userConduct.title")}</h2>
             </div>
-            
+
             <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">Acceptable Use</h3>
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold text-gray-800">{t("termsAndConditions.sections.userConduct.acceptableUse.subtitle")}</h3>
                 <p className="text-gray-700 leading-relaxed">
-                  You agree to use the platform only for lawful educational purposes and in a manner that does not infringe upon the rights of others or restrict or inhibit their use and enjoyment of the platform.
+                  {t("termsAndConditions.sections.userConduct.acceptableUse.text")}
                 </p>
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">Prohibited Activities</h3>
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold text-gray-800">{t("termsAndConditions.sections.userConduct.prohibited.subtitle")}</h3>
                 <p className="text-gray-700 leading-relaxed">
-                  You may not: share account credentials, attempt to gain unauthorized access to the platform, upload malicious software, engage in academic dishonesty, harass other users, or use the platform for any commercial purpose without authorization.
+                  {t("termsAndConditions.sections.userConduct.prohibited.text")}
                 </p>
               </div>
             </div>
@@ -263,21 +263,21 @@ function TermsAndConditions() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8 }}
-          className="bg-white/90 backdrop-blur-xl rounded-xl shadow-xl border border-gray-200/50 p-6 lg:p-8 mt-8"
+          className="bg-white/90 backdrop-blur-xl rounded-xl shadow-xl border border-gray-200/50 p-6 lg:p-8 mt-8 space-y-4"
         >
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Contact Information</h2>
-          <p className="text-gray-700 leading-relaxed mb-4">
-            If you have any questions about these Terms and Conditions, please contact us:
+          <h2 className="text-xl font-bold text-gray-900">{t("termsAndConditions.contact.title")}</h2>
+          <p className="text-gray-700 leading-relaxed">
+            {t("termsAndConditions.contact.intro")}
           </p>
-          
+
           <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <h3 className="font-semibold text-gray-800 mb-2">Legal Department</h3>
-              <p className="text-gray-600">legal@vacademy.com</p>
+            <div className="space-y-2">
+              <h3 className="font-semibold text-gray-800">{t("termsAndConditions.contact.legalLabel")}</h3>
+              <p className="text-gray-600">{t("termsAndConditions.contact.legalEmail")}</p>
             </div>
-            <div>
-              <h3 className="font-semibold text-gray-800 mb-2">General Support</h3>
-              <p className="text-gray-600">support@vacademy.com</p>
+            <div className="space-y-2">
+              <h3 className="font-semibold text-gray-800">{t("termsAndConditions.contact.supportLabel")}</h3>
+              <p className="text-gray-600">{t("termsAndConditions.contact.supportEmail")}</p>
             </div>
           </div>
         </motion.div>
@@ -287,13 +287,13 @@ function TermsAndConditions() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.0 }}
-          className="text-center mt-12 mb-8"
+          className="text-center mt-12 mb-8 space-y-2"
         >
-          <p className="text-sm text-gray-500 mb-2">
-            These terms and conditions are effective as of January 2024.
+          <p className="text-sm text-gray-500">
+            {t("termsAndConditions.footer.effective")}
           </p>
           <p className="text-xs text-gray-400">
-            By using Vacademy, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions.
+            {t("termsAndConditions.footer.acknowledgement")}
           </p>
         </motion.div>
       </div>

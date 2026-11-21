@@ -1,0 +1,129 @@
+{
+    "loading": "Chargement...",
+    "header": {
+        "title": "Badges & récompenses",
+        "description": "Définissez les badges de réussite que les apprenants peuvent débloquer sur le tableau de bord ludifié. Choisissez le nom de chaque badge, son apparence et la condition qui le débloque.",
+        "resetDefaults": "Réinitialiser aux valeurs par défaut",
+        "saveChanges": "Enregistrer les modifications",
+        "saving": "Enregistrement..."
+    },
+    "enableCard": {
+        "label": "Activer les badges et le classement",
+        "description": "Interrupteur principal. Lorsqu'il est désactivé, les badges et le classement du cours sont masqués partout — dans l'application apprenant comme dans l'onglet classement des rapports d'apprentissage de l'administration."
+    },
+    "unsavedBanner": {
+        "text": "Vous avez des modifications non enregistrées. N'oubliez pas de les enregistrer."
+    },
+    "disabledBanner": {
+        "before": "Les badges et le classement sont actuellement",
+        "disabled": "désactivés",
+        "after": "pour cet établissement. Activez l'interrupteur pour configurer les badges, les points et le classement."
+    },
+    "scoring": {
+        "title": "Points & pointage",
+        "description": "Le nombre de points que vaut chaque action. Ces valeurs déterminent les points et le niveau de l'apprenant ainsi que le classement du cours. Réglez un facteur sur 0 pour l'ignorer.",
+        "pointsUnit": "points"
+    },
+    "leaderboardNames": {
+        "title": "Afficher les noms complets sur les classements",
+        "description": "Par défaut, les classements affichent les apprenants sous forme d'initiales anonymisées (par ex. « A.G. »). Activez cette option pour afficher les noms complets à la fois sur le lien public partageable et sur le classement dans l'application. La ligne de chaque apprenant affiche toujours « Vous »."
+    },
+    "libraryArt": {
+        "title": "Afficher des illustrations prêtes à l'emploi au lieu d'icônes simples",
+        "description": "Donnez à chaque badge un look soigné et à paliers, adapté à ce qui le débloque. Vous pouvez toujours affiner un badge depuis la bibliothèque.",
+        "button": "Utiliser les illustrations de la bibliothèque"
+    },
+    "emptyState": {
+        "text": "Aucun badge configuré. Ajoutez-en un pour commencer."
+    },
+    "addBadge": "Ajouter un badge",
+    "addManualBadge": "Ajouter un badge décerné par l'équipe",
+    "badgeCard": {
+        "untitled": "Badge sans titre",
+        "disabledChip": "Désactivé",
+        "hiddenChip": "Masqué jusqu'à obtention",
+        "defaultDescription": "Ajoutez une courte description ci-dessous",
+        "on": "Activé",
+        "off": "Désactivé",
+        "deleteAriaLabel": "Supprimer le badge",
+        "nameLabel": "Nom du badge",
+        "namePlaceholder": "ex. Premiers pas",
+        "iconLabel": "Icône",
+        "iconPlaceholder": "Image personnalisée",
+        "uploadTitle": "Importer une image personnalisée",
+        "iconHint": {
+            "library": "Badge de la bibliothèque sélectionné.",
+            "custom": "Image personnalisée importée.",
+            "default": "Choisissez une icône, sélectionnez-en une dans la bibliothèque ou importez la vôtre."
+        },
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "Affichée au survol, ex. Maintenir une série de 7 jours",
+        "triggerLabel": "Se débloque selon",
+        "thresholdLabel": "Seuil ({{unit}})",
+        "manualHint": "Aucune condition automatique — l'équipe décerne ce badge depuis le profil d'un apprenant ou la liste des étudiants.",
+        "hiddenLabel": "Masqué jusqu'à obtention",
+        "hiddenHelp": "Les apprenants ne voient ce badge qu'une fois obtenu. S'applique sur les applications apprenant à jour."
+    },
+    "toasts": {
+        "badgesSaved": "Badges enregistrés",
+        "saveFailed": "Échec de l'enregistrement des badges",
+        "imageUploaded": "Image importée",
+        "uploadFailed": "Échec de l'importation de l'image",
+        "libraryArtApplied": "Badges basculés vers les illustrations de la bibliothèque",
+        "nameRequired": "Chaque badge doit avoir un nom",
+        "resetRemovesManual_one": "{{count}} badge décerné par l'équipe sera retiré du catalogue à l'enregistrement. Les badges déjà attribués restent dans les dossiers des apprenants.",
+        "resetRemovesManual_other": "{{count}} badges décernés par l'équipe seront retirés du catalogue à l'enregistrement. Les badges déjà attribués restent dans les dossiers des apprenants.",
+        "resetRemovesManual_many": "{{count}} badges décernés par l'équipe seront retirés du catalogue à l'enregistrement. Les badges déjà attribués restent dans les dossiers des apprenants.",
+        "mergedFromServer_one": "{{count}} badge créé ailleurs a été conservé",
+        "mergedFromServer_other": "{{count}} badges créés ailleurs ont été conservés",
+        "mergedFromServer_many": "{{count}} badges créés ailleurs ont été conservés",
+        "saveGuardFailed": "Impossible de vérifier les badges actuels sur le serveur — rien n'a été enregistré. Réessayez."
+    },
+    "triggers": {
+        "manual": {
+            "label": "Décerné manuellement par l'équipe",
+            "help": "Ne se débloque jamais tout seul — un enseignant ou un administrateur le décerne à un apprenant (ex. Coup de main, Meilleure progression). Chaque apprenant ne peut détenir un badge qu'une fois ; pour une reconnaissance récurrente, créez des variantes datées ou à paliers.",
+            "unit": ""
+        },
+        "course_count": {
+            "label": "Cours suivis",
+            "help": "Se débloque lorsque l'apprenant est inscrit à au moins ce nombre de cours.",
+            "unit": "cours"
+        },
+        "slide_count": {
+            "label": "Diapositives disponibles",
+            "help": "Se débloque lorsque ce nombre de diapositives est disponible pour l'apprenant.",
+            "unit": "diapositives"
+        },
+        "streak": {
+            "label": "Série quotidienne",
+            "help": "Se débloque après ce nombre de jours d'activité consécutifs.",
+            "unit": "jours"
+        },
+        "xp_total": {
+            "label": "XP total gagné",
+            "help": "Se débloque lorsque le total d'XP atteint cette valeur.",
+            "unit": "XP"
+        },
+        "course_completion": {
+            "label": "Achèvement du cours %",
+            "help": "Se débloque lorsqu'un cours atteint ce pourcentage d'achèvement.",
+            "unit": "%"
+        },
+        "assessment_score": {
+            "label": "Score d'évaluation %",
+            "help": "Se débloque lorsque le meilleur score d'évaluation publié atteint ce pourcentage.",
+            "unit": "%"
+        },
+        "live_session_count": {
+            "label": "Classes en direct suivies",
+            "help": "Se débloque lorsque l'apprenant a assisté à ce nombre de classes en direct (au total).",
+            "unit": "classes"
+        },
+        "live_session_streak": {
+            "label": "Série de classes en direct (d'affilée)",
+            "help": "Se débloque lorsque l'apprenant a assisté à ce nombre de classes en direct d'affilée, sans en manquer une.",
+            "unit": "classes"
+        }
+    }
+}

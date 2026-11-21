@@ -109,6 +109,19 @@ public class AttendanceCriteriaEvaluator {
      */
     public void evaluate(LiveSession session, SessionSchedule schedule,
                          Map<String, Boolean> roster, Set<String> adminMarked) {
+        evaluate(session, schedule, roster, adminMarked, null);
+    }
+
+    /**
+     * @param providerMeetingSeconds how long the meeting actually ran, when the
+     *        provider reports it (BBB does). The threshold is measured against
+     *        whichever is SHORTER, this or the scheduled slot — a teacher who
+     *        ends a 60-minute class after 30 must not make every learner who
+     *        stayed the whole time fall short of a 36-minute bar.
+     */
+    public void evaluate(LiveSession session, SessionSchedule schedule,
+                         Map<String, Boolean> roster, Set<String> adminMarked,
+                         Long providerMeetingSeconds) {
         String scheduleId = schedule != null ? schedule.getId() : null;
         try {
             AttendanceCriteriaConfigDTO config = attendanceCriteriaService.resolve(session);
@@ -134,7 +147,24 @@ public class AttendanceCriteriaEvaluator {
                 log.warn("attendance_criteria.no_scheduled_duration scheduleId={} - skipping", scheduleId);
                 return;
             }
-            double requiredMinutes = scheduledMinutes * (config.getMinDurationPercent() / 100.0);
+            // Compare in seconds. Minutes are a floor of the real figure, so a
+            // learner present for 4m50s of a 7-minute class (69%) was truncated to
+            // 4 and failed a 4.2-minute bar — an absence for a class they attended.
+            int scheduledSeconds = scheduledMinutes * 60;
+            // Measure against the class that actually happened. A 60-minute slot
+            // finished in 30 would otherwise demand 36 minutes of a 30-minute
+            // class, failing every learner who stayed to the end. Only ever
+            // shortens the bar, never lengthens it — a class that overruns is
+            // still judged against the slot the learners were promised.
+            int effectiveSeconds = scheduledSeconds;
+            boolean cappedToActual = false;
+            if (providerMeetingSeconds != null && providerMeetingSeconds > 0
+                    && providerMeetingSeconds < scheduledSeconds) {
+                effectiveSeconds = providerMeetingSeconds.intValue();
+                cappedToActual = true;
+            }
+            double requiredSeconds = effectiveSeconds * (config.getMinDurationPercent() / 100.0);
+            double requiredMinutes = requiredSeconds / 60.0;
 
             List<LiveSessionLogs> rows =
                     liveSessionLogsRepository.findAllAttendanceByScheduleId(scheduleId);
@@ -143,8 +173,9 @@ public class AttendanceCriteriaEvaluator {
             for (LiveSessionLogs row : rows) {
                 // Learners and guests both correlate: an authenticated learner
                 // joins with our userId as BBB's userID, and GuestController
-                // generates one guest-<uuid> used as both the BBB userID and the
-                // attendance row's userSourceId. PROVIDER_EMAIL rows are skipped —
+                // uses the registration id (EXTERNAL_USER) — or a one-off
+                // guest-<uuid> for an unregistered visitor — as both the BBB
+                // userID and the attendance row's userSourceId. PROVIDER_EMAIL rows are skipped —
                 // those are created by the Zoom sync itself for attendees who
                 // matched no learner, so there is nobody to mark absent.
                 if (!"USER".equalsIgnoreCase(row.getUserSourceType())
@@ -165,13 +196,19 @@ public class AttendanceCriteriaEvaluator {
                     // The provider says they were here but gave no minutes; we
                     // cannot judge how long, and they demonstrably attended.
                     writeAudit(row, config, STATUS_PRESENT, "NO_DURATION_DATA",
-                            null, scheduledMinutes, requiredMinutes);
+                            null, scheduledMinutes, requiredMinutes, null, requiredSeconds, false,
+                            effectiveSeconds, cappedToActual);
                     liveSessionLogsRepository.save(row);
                     continue;
                 }
 
                 int attendedMinutes = inRoster ? reported : 0;
-                boolean meets = attendedMinutes >= requiredMinutes;
+                // Exact seconds when the provider gave them (BBB); otherwise fall
+                // back to the floored minutes (Zoom reports whole minutes only).
+                Integer exactSeconds = row.getProviderTotalDurationSeconds();
+                int attendedSeconds = !inRoster ? 0
+                        : (exactSeconds != null ? exactSeconds : attendedMinutes * 60);
+                boolean meets = attendedSeconds >= requiredSeconds;
                 String verdict = meets ? STATUS_PRESENT : STATUS_ABSENT;
                 String reason = meets ? "MET_THRESHOLD" : (inRoster ? "BELOW_THRESHOLD" : "NO_SHOW");
 
@@ -185,10 +222,21 @@ public class AttendanceCriteriaEvaluator {
                 // when the underlying numbers do.
                 String previousVerdict = previousVerdict(row);
                 String previousStatus = row.getStatus();
-                boolean verdictMoved = !verdict.equalsIgnoreCase(
-                        previousVerdict != null ? previousVerdict : previousStatus);
+                // The first evaluation always notifies: while a rule is in force the
+                // join-time mail is suppressed, so this is the learner's only word on
+                // the class — including a PRESENT confirmation.
+                //
+                // After that, only a real change of verdict notifies. Keying off the
+                // stored verdict rather than the row's status matters because both
+                // provider paths reset status to PRESENT on every sync, and Zoom
+                // re-syncs an ended schedule every 15 minutes for two days — status
+                // would look "changed" every time and mail ~190 times.
+                boolean verdictMoved = previousVerdict == null
+                        || !verdict.equalsIgnoreCase(previousVerdict);
 
-                writeAudit(row, config, verdict, reason, attendedMinutes, scheduledMinutes, requiredMinutes);
+                writeAudit(row, config, verdict, reason, attendedMinutes, scheduledMinutes,
+                        requiredMinutes, attendedSeconds, requiredSeconds, exactSeconds != null,
+                        effectiveSeconds, cappedToActual);
 
                 if (!verdict.equalsIgnoreCase(previousStatus)) {
                     row.setStatus(verdict);
@@ -198,7 +246,9 @@ public class AttendanceCriteriaEvaluator {
                 liveSessionLogsRepository.save(row);
 
                 if (verdictMoved) {
-                    notify(session, row, verdict);
+                    notify(session, row, verdict,
+                            explain(verdict, reason, attendedSeconds, effectiveSeconds,
+                                    requiredSeconds, config.getMinDurationPercent()));
                 }
             }
 
@@ -230,7 +280,8 @@ public class AttendanceCriteriaEvaluator {
 
     private void writeAudit(LiveSessionLogs row, AttendanceCriteriaConfigDTO config, String verdict,
                             String reason, Integer attendedMinutes, Integer scheduledMinutes,
-                            double requiredMinutes) {
+                            double requiredMinutes, Integer attendedSeconds, Double requiredSeconds,
+                            boolean exact, int effectiveSeconds, boolean cappedToActual) {
         Map<String, Object> audit = new LinkedHashMap<>();
         audit.put("verdict", verdict);
         audit.put("reason", reason);
@@ -238,9 +289,17 @@ public class AttendanceCriteriaEvaluator {
         audit.put("scheduledMinutes", scheduledMinutes);
         audit.put("thresholdPercent", config.getMinDurationPercent());
         audit.put("requiredMinutes", Math.round(requiredMinutes));
-        if (attendedMinutes != null && scheduledMinutes != null && scheduledMinutes > 0) {
-            audit.put("attendedPercent", Math.round(attendedMinutes * 1000.0 / scheduledMinutes) / 10.0);
+        if (attendedSeconds != null && effectiveSeconds > 0) {
+            audit.put("attendedPercent",
+                    Math.round(attendedSeconds * 1000.0 / effectiveSeconds) / 10.0);
         }
+        audit.put("attendedSeconds", attendedSeconds);
+        audit.put("requiredSeconds", requiredSeconds == null ? null : Math.round(requiredSeconds));
+        audit.put("attendedDisplay", attendedSeconds == null ? null : hms(attendedSeconds));
+        // false = provider gave only whole minutes, so the figures are floored.
+        audit.put("exactSeconds", exact);
+        audit.put("effectiveSeconds", effectiveSeconds);
+        audit.put("cappedToActualMeeting", cappedToActual);
         audit.put("previousStatus", row.getStatus());
         audit.put("evaluatedAt", Instant.now().toString());
         try {
@@ -292,10 +351,41 @@ public class AttendanceCriteriaEvaluator {
         }
     }
 
-    private void notify(LiveSession session, LiveSessionLogs row, String newStatus) {
+    /**
+     * Plain-language arithmetic for the learner. Being told you are absent for a
+     * class you sat through most of is only defensible if the message says how
+     * many minutes were counted and how many were needed.
+     */
+    private String explain(String verdict, String reason, int attendedSeconds,
+                           int scheduledSeconds, double requiredSeconds, Integer pct) {
+        if (STATUS_PRESENT.equals(verdict)) {
+            // The confirmation carries the time too: a learner who is told they
+            // passed should be able to see by how much, not just that they did.
+            return "You were in the class for " + hms(attendedSeconds)
+                    + " of its " + hms(scheduledSeconds) + ".";
+        }
+        // The threshold itself is deliberately not disclosed to learners — telling
+        // them the exact bar invites gaming it. The audit JSON keeps the full
+        // numbers so an admin can always justify the verdict.
+        if ("NO_SHOW".equals(reason)) {
+            return "Our records show you did not join the class.";
+        }
+        return "You were in the class for " + hms(attendedSeconds) + " of its "
+                + hms(scheduledSeconds) + ", which is below the minimum attendance"
+                + " required for this class.";
+    }
+
+    /** "4m 50s", or "50s" under a minute — the learner-facing form of a duration. */
+    private static String hms(int totalSeconds) {
+        int m = totalSeconds / 60, sec = totalSeconds % 60;
+        if (m == 0) return sec + "s";
+        return sec == 0 ? m + "m" : m + "m " + sec + "s";
+    }
+
+    private void notify(LiveSession session, LiveSessionLogs row, String newStatus, String reasonDetail) {
         try {
             notificationProcessor.sendAttendanceNotification(
-                    session.getId(), row.getUserSourceId(), newStatus);
+                    session.getId(), row.getUserSourceId(), newStatus, reasonDetail);
         } catch (Exception e) {
             log.warn("attendance_criteria.notify_failed userId={}: {}",
                     row.getUserSourceId(), e.getMessage());

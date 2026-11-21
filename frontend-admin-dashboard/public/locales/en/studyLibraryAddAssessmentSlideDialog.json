@@ -1,0 +1,38 @@
+{
+    "tooltips": {
+        "draftAssessmentTooltip": "Draft assessments cannot be taken until published"
+    },
+    "labels": {
+        "ends": "Ends {{date}}",
+        "durationMinutes_one": "{{count}} min",
+        "durationMinutes_other": "{{count}} min"
+    },
+    "fallbackAssessmentName": "Assessment {{number}}",
+    "assessmentSlideTitle": "Assessment: {{name}}",
+    "assessmentFallbackBaseName": "Assessment",
+    "errors": {
+        "linkFailed": "Failed to link assessment"
+    },
+    "toasts": {
+        "linkedAsSlide": "Assessment linked as a slide"
+    },
+    "search": {
+        "placeholder": "Search assessments by name..."
+    },
+    "states": {
+        "loading": "Loading assessments...",
+        "loadFailed": "Failed to load assessments. Please retry.",
+        "noSearchMatches": "No assessments matched your search.",
+        "noAssessmentsAvailable": "No assessments available for this institute."
+    },
+    "pagination": {
+        "pageOf": "Page {{page}} of {{totalPages}}",
+        "prev": "Prev",
+        "next": "Next"
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "linking": "Linking...",
+        "linkAsSlide": "Link as slide"
+    }
+}

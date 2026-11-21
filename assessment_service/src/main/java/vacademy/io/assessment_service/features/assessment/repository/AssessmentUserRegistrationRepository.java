@@ -26,14 +26,52 @@ public interface AssessmentUserRegistrationRepository extends JpaRepository<Asse
     @Query(value = "DELETE FROM assessment_user_registration WHERE assessment_id = ?1 AND user_id IN ?2 AND (institute_id = ?3 OR ?3 IS NULL AND institute_id IS NULL)", nativeQuery = true)
     void hardDeleteByAssessmentIdAndUserIdsAndInstituteId(String assessmentId, List<String> userIds, String instituteId);
 
+    /**
+     * User ids that already have an attempt for this assessment — the set subtracted from
+     * batch enrollment to get "has not attempted".
+     *
+     * <p>Any attempt counts, whatever its status: a learner who opened the paper is not
+     * someone who "never tried". Restricted to batch-sourced registrations because that
+     * is the only tab this feeds; individual/open participants already get a real
+     * registration row and are handled by the existing Pending queries.
+     *
+     * <p>EXISTS rather than a JOIN: the join fanned out to one row per attempt only to
+     * have DISTINCT collapse them again (60 rows down to 40 on prod), and the semi-join
+     * lets Postgres stop at the first attempt per registration. It is also the form that
+     * benefits automatically once {@code idx_sa_registration} on
+     * {@code student_attempt(registration_id)} is usable again — that index is currently
+     * INVALID in prod (a failed CREATE INDEX CONCURRENTLY), which is why this still falls
+     * back to a sequential scan of student_attempt.
+     */
+    @Query(value = """
+            SELECT DISTINCT aur.user_id
+            FROM assessment_user_registration aur
+            WHERE aur.assessment_id = :assessmentId
+              AND aur.institute_id = :instituteId
+              AND aur.source = 'BATCH_PREVIEW_REGISTRATION'
+              AND EXISTS (SELECT 1 FROM student_attempt sa WHERE sa.registration_id = aur.id)
+            """, nativeQuery = true)
+    List<String> findAttemptedUserIdsForBatchAssessment(@Param("assessmentId") String assessmentId,
+                                                        @Param("instituteId") String instituteId);
+
     @Query("SELECT a FROM AssessmentUserRegistration a WHERE a.username = :username AND a.instituteId = :instituteId ORDER BY a.createdAt DESC LIMIT 1")
     Optional<AssessmentUserRegistration> findTopByUserNameAndInstituteId(@Param("username") String username, @Param("instituteId") String instituteId);
 
     @Query(value = "SELECT * FROM assessment_user_registration a WHERE a.user_id = :userId AND a.assessment_id = :assessmentId ORDER BY a.created_at DESC", nativeQuery = true)
     Optional<AssessmentUserRegistration> findTopByUserIdAndAssessmentId(@Param("userId") String userId, @Param("assessmentId") String assessmentId);
 
+    /**
+     * Marks the "You're registered" email as sent for this registration. Returns 1 only for the
+     * first caller, so the email goes out once however often the learner page asks for it.
+     */
+    @Transactional
+    @Modifying
+    @Query(value = "UPDATE assessment_user_registration SET confirmation_email_sent_at = now()"
+            + " WHERE id = :id AND confirmation_email_sent_at IS NULL", nativeQuery = true)
+    int claimConfirmationEmail(@Param("id") String id);
+
     @Query(value = """
-            select aur.id as registrationId,sa.id as attemptId, aur.participant_name as studentName, sa.start_time as attemptDate,sa.submit_time as endTime ,sa.total_time_in_seconds as duration, sa.result_marks as score, aur.user_id as userId, aur.source_id as batchId,
+            select aur.id as registrationId, sa.id as attemptId, aur.participant_name as studentName, sa.start_time as attemptDate, sa.submit_time as endTime, sa.total_time_in_seconds as duration, sa.result_marks as score, aur.user_id as userId, aur.user_email as userEmail, aur.phone_number as phoneNumber, aur.username as username, aur.source_id as batchId,
              sa.report_release_status as reportReleaseResultStatus,
             sa.report_last_release_date as lastReportReleaseDate,
             sa.result_status as evaluationStatus from assessment_user_registration aur
@@ -78,7 +116,7 @@ public interface AssessmentUserRegistrationRepository extends JpaRepository<Asse
                                                                         Pageable pageable);
 
     @Query(value = """
-            select aur.id as registrationId,sa.id as attemptId, aur.participant_name as studentName, sa.start_time as attemptDate,sa.submit_time as endTime ,sa.total_time_in_seconds as duration, sa.result_marks as score, aur.user_id as userId, aur.source_id as batchId from assessment_user_registration aur
+            select aur.id as registrationId, sa.id as attemptId, aur.participant_name as studentName, sa.start_time as attemptDate, sa.submit_time as endTime, sa.total_time_in_seconds as duration, sa.result_marks as score, aur.user_id as userId, aur.user_email as userEmail, aur.phone_number as phoneNumber, aur.username as username, aur.source_id as batchId from assessment_user_registration aur
             join student_attempt sa on sa.registration_id = aur.id
             where aur.assessment_id = :assessmentId
             and aur.institute_id = :instituteId
@@ -86,6 +124,7 @@ public interface AssessmentUserRegistrationRepository extends JpaRepository<Asse
             AND (:batchIds IS NULL OR aur.source_id IN (:batchIds))
             AND aur.source = 'BATCH_PREVIEW_REGISTRATION'
             AND (:status IS NULL OR sa.status IN (:attemptType))
+            ORDER BY aur.participant_name ASC, aur.id ASC, sa.id ASC
             """,
             countQuery = """
                     select count(*)
@@ -109,7 +148,7 @@ public interface AssessmentUserRegistrationRepository extends JpaRepository<Asse
             SELECT aur.id as registrationId, sa.id as attemptId, aur.participant_name as studentName,
                    sa.start_time as attemptDate, sa.submit_time as endTime,
                    sa.total_time_in_seconds as duration, sa.result_marks as score,
-                   aur.user_id as userId, aur.source_id as batchId,
+                   aur.user_id as userId, aur.user_email as userEmail, aur.phone_number as phoneNumber, aur.username as username, aur.source_id as batchId,
                    sa.report_release_status as reportReleaseResultStatus,
                 sa.report_last_release_date as lastReportReleaseDate,
                 sa.result_status as evaluationStatus
@@ -168,7 +207,7 @@ public interface AssessmentUserRegistrationRepository extends JpaRepository<Asse
 
 
     @Query(value = """
-            select aur.id as registrationId,sa.id as attemptId, aur.participant_name as studentName, sa.start_time as attemptDate,sa.submit_time as endTime ,sa.total_time_in_seconds as duration, sa.result_marks as score, aur.user_id as userId,
+            select aur.id as registrationId, sa.id as attemptId, aur.participant_name as studentName, sa.start_time as attemptDate, sa.submit_time as endTime, sa.total_time_in_seconds as duration, sa.result_marks as score, aur.user_id as userId, aur.user_email as userEmail, aur.phone_number as phoneNumber, aur.username as username,
               sa.report_release_status as reportReleaseResultStatus,
             sa.report_last_release_date as lastReportReleaseDate,
             aur.source_id as batchId,
@@ -204,13 +243,14 @@ public interface AssessmentUserRegistrationRepository extends JpaRepository<Asse
                                                                          Pageable pageable);
 
     @Query(value = """
-            select aur.id as registrationId,sa.id as attemptId, aur.participant_name as studentName, sa.start_time as attemptDate,sa.submit_time as endTime ,sa.total_time_in_seconds as duration, sa.result_marks as score, aur.user_id as userId  from assessment_user_registration aur
+            select aur.id as registrationId, sa.id as attemptId, aur.participant_name as studentName, sa.start_time as attemptDate, sa.submit_time as endTime, sa.total_time_in_seconds as duration, sa.result_marks as score, aur.user_id as userId, aur.user_email as userEmail, aur.phone_number as phoneNumber, aur.username as username  from assessment_user_registration aur
             join student_attempt sa on sa.registration_id = aur.id
             where aur.assessment_id = :assessmentId
             and aur.institute_id = :instituteId
             AND (:status IS NULL OR aur.status IN (:status))
             AND aur.source = :source
             AND (:status IS NULL OR sa.status IN (:attemptType))
+            ORDER BY aur.participant_name ASC, aur.id ASC, sa.id ASC
             """,
             countQuery = """
                     select count(distinct aur.user_id)
@@ -230,7 +270,7 @@ public interface AssessmentUserRegistrationRepository extends JpaRepository<Asse
 
 
     @Query(value = """
-              select aur.id as registrationId,sa.id as attemptId, aur.participant_name as studentName, sa.start_time as attemptDate,sa.submit_time as endTime ,sa.total_time_in_seconds as duration, sa.result_marks as score, aur.user_id as userId,
+              select aur.id as registrationId, sa.id as attemptId, aur.participant_name as studentName, sa.start_time as attemptDate, sa.submit_time as endTime, sa.total_time_in_seconds as duration, sa.result_marks as score, aur.user_id as userId, aur.user_email as userEmail, aur.phone_number as phoneNumber, aur.username as username,
                 sa.report_release_status as reportReleaseResultStatus,
               sa.report_last_release_date as lastReportReleaseDate,
               sa.result_status as evaluationStatus from assessment_user_registration aur
@@ -279,7 +319,7 @@ public interface AssessmentUserRegistrationRepository extends JpaRepository<Asse
 
 
     @Query(value = """
-            select aur.id as registrationId,sa.id as attemptId, aur.participant_name as studentName, sa.start_time as attemptDate,sa.submit_time as endTime ,sa.total_time_in_seconds as duration, sa.result_marks as score, aur.user_id as userId,
+            select aur.id as registrationId, sa.id as attemptId, aur.participant_name as studentName, sa.start_time as attemptDate, sa.submit_time as endTime, sa.total_time_in_seconds as duration, sa.result_marks as score, aur.user_id as userId, aur.user_email as userEmail, aur.phone_number as phoneNumber, aur.username as username,
             sa.report_release_status as reportReleaseResultStatus,
             sa.report_last_release_date as lastReportReleaseDate,
             sa.result_status as evaluationStatus FROM assessment_user_registration aur
@@ -307,7 +347,7 @@ public interface AssessmentUserRegistrationRepository extends JpaRepository<Asse
                                                                                               Pageable pageable);
 
     @Query(value = """
-            select aur.id as registrationId,sa.id as attemptId, aur.participant_name as studentName, sa.start_time as attemptDate,sa.submit_time as endTime ,sa.total_time_in_seconds as duration, sa.result_marks as score, aur.user_id as userId
+            select aur.id as registrationId, sa.id as attemptId, aur.participant_name as studentName, sa.start_time as attemptDate, sa.submit_time as endTime, sa.total_time_in_seconds as duration, sa.result_marks as score, aur.user_id as userId, aur.user_email as userEmail, aur.phone_number as phoneNumber, aur.username as username
             FROM assessment_user_registration aur
             LEFT JOIN student_attempt sa ON aur.id = sa.registration_id
             where aur.assessment_id = :assessmentId
@@ -315,6 +355,7 @@ public interface AssessmentUserRegistrationRepository extends JpaRepository<Asse
             and sa.id IS NULL
             AND aur.source = :source
             AND (:status IS NULL OR aur.status IN (:status))
+            ORDER BY aur.participant_name ASC, aur.id ASC
             """, nativeQuery = true)
     List<ParticipantsDetailsDto> findUserRegistrationWithFilterAdminPreRegistrationAndPendingExport(@Param("assessmentId") String assessmentId,
                                                                                                     @Param("instituteId") String instituteId,
@@ -323,7 +364,7 @@ public interface AssessmentUserRegistrationRepository extends JpaRepository<Asse
 
 
     @Query(value = """
-              select aur.id as registrationId,sa.id as attemptId, aur.participant_name as studentName, sa.start_time as attemptDate,sa.submit_time as endTime ,sa.total_time_in_seconds as duration, sa.result_marks as score, aur.user_id as userId,
+              select aur.id as registrationId, sa.id as attemptId, aur.participant_name as studentName, sa.start_time as attemptDate, sa.submit_time as endTime, sa.total_time_in_seconds as duration, sa.result_marks as score, aur.user_id as userId, aur.user_email as userEmail, aur.phone_number as phoneNumber, aur.username as username,
               sa.report_release_status as reportReleaseResultStatus,
               sa.report_last_release_date as lastReportReleaseDate,
               sa.result_status as evaluationStatus FROM assessment_user_registration aur
@@ -389,7 +430,8 @@ public interface AssessmentUserRegistrationRepository extends JpaRepository<Asse
             @Param("assessmentStatus") List<String> assessmentStatus
     );
 
-    @Query("SELECT aur FROM AssessmentUserRegistration aur WHERE aur.assessment.id = :assessmentId AND aur.status IN :statuses")
+    @Query("SELECT aur FROM AssessmentUserRegistration aur WHERE aur.assessment.id = :assessmentId AND aur.status IN :statuses"
+            + " AND (aur.source IS NULL OR aur.source <> 'COPY_CHECK_ONLY')")
     List<AssessmentUserRegistration> findByInstituteIdAndAssessmentIdAndStatusIn(
             @Param("assessmentId") String assessmentId,
             @Param("statuses") List<String> statuses
@@ -461,6 +503,7 @@ public interface AssessmentUserRegistrationRepository extends JpaRepository<Asse
             and a.assessment_visibility in (:assessmentVisibility)
             and aur."source" in (:source)
             and (:sourceId IS NULL OR aur.source_id in (:sourceId))
+            ORDER BY aur.participant_name ASC, aur.id ASC, sa.id ASC
             """, nativeQuery = true)
     List<RespondentListDto> findRespondentListForAssessmentWithFilterExport(@Param("assessmentId") String assessmentId,
                                                                             @Param("questionId") String questionId,
@@ -540,10 +583,13 @@ public interface AssessmentUserRegistrationRepository extends JpaRepository<Asse
                    sa.id             AS attemptId,
                    aur.participant_name AS studentName,
                    aur.user_email    AS userEmail,
+                   aur.phone_number  AS phoneNumber,
+                   aur.username      AS username,
                    sa.start_time     AS attemptDate,
                    sa.submit_time    AS endTime,
                    sa.total_time_in_seconds AS duration,
-                   sa.result_marks   AS score,
+                   COALESCE(sa.result_marks, sa.total_marks) AS score,
+                   sa.total_marks    AS rankMarks,
                    aur.user_id       AS userId,
                    aur.source_id     AS batchId,
                    sa.report_release_status     AS reportReleaseResultStatus,
@@ -555,11 +601,11 @@ public interface AssessmentUserRegistrationRepository extends JpaRepository<Asse
               AND aur.institute_id  = :instituteId
               AND aur.status NOT IN ('DELETED')
               AND sa.status         = 'ENDED'
-            ORDER BY sa.result_marks DESC NULLS LAST
+            ORDER BY sa.total_marks DESC NULLS LAST, sa.total_time_in_seconds ASC NULLS LAST
             """, nativeQuery = true)
-    List<ParticipantsDetailsDto> findAllEndedParticipantsForResultExport(
-            @Param("assessmentId") String assessmentId,
-            @Param("instituteId") String instituteId);
+    List<vacademy.io.assessment_service.features.assessment.dto.export.ResultExportRowDto>
+            findAllEndedParticipantsForResultExport(@Param("assessmentId") String assessmentId,
+                                                    @Param("instituteId") String instituteId);
 
     // Every registration-form answer given by the participants of an assessment,
     // flattened to (registration, field, answer). The export widens each result

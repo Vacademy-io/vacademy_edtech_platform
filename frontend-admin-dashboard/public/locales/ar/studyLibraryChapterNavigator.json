@@ -1,0 +1,23 @@
+{
+    "untitledSlide": "بلا عنوان",
+    "previousChapterTitle": "السابق: {{name}}",
+    "noPreviousChapter": "لا يوجد {{term}} سابق",
+    "nextChapterTitle": "التالي: {{name}}",
+    "noNextChapter": "لا يوجد {{term}} تالٍ",
+    "selectChapter": "اختر {{term}}",
+    "searchAllPlaceholder": "البحث في كل {{term}}...",
+    "loading": "جارٍ التحميل…",
+    "couldNotLoadSubject": "تعذّر تحميل هذا {{term}}",
+    "retry": "إعادة المحاولة",
+    "noChaptersFound": "لم يتم العثور على {{term}}",
+    "showSlidesTitle": "عرض {{term}}",
+    "unsavedCount_zero": "لا توجد تغييرات غير محفوظة",
+    "unsavedCount_one": "تغيير واحد غير محفوظ",
+    "unsavedCount_two": "تغييران غير محفوظين",
+    "unsavedCount_few": "{{count}} تغييرات غير محفوظة",
+    "unsavedCount_many": "{{count}} تغييرًا غير محفوظ",
+    "unsavedCount_other": "{{count}} تغيير غير محفوظ",
+    "unsavedChangesTitle": "تغييرات غير محفوظة",
+    "couldNotLoadRetry": "تعذّر التحميل — أعد المحاولة",
+    "noSlidesYet": "لا يوجد {{term}} بعد"
+}

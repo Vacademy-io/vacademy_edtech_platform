@@ -10,6 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
+import vacademy.io.common.core.internal_api_wrapper.HmacUtils;
 import vacademy.io.community_service.feature.support.dto.SupportRecipientDto;
 
 import java.util.ArrayList;
@@ -33,6 +34,13 @@ public class SupportAnnouncementClient {
     @Autowired
     @Qualifier(SupportClientConfig.SUPPORT_REST_TEMPLATE)
     private RestTemplate restTemplate;
+
+    // Service credentials: notification-service requires clientName + Signature on this route.
+    @Autowired
+    private HmacUtils hmacUtils;
+
+    @Value("${spring.application.name}")
+    private String clientName;
 
     /** See SupportAuthClient — prod declares no property, so fall back to the env var then blank. */
     @Value("${notification.server.baseurl:${NOTIFICATION_SERVER_BASE_URL:}}")
@@ -90,8 +98,15 @@ public class SupportAnnouncementClient {
             request.put("recipients", targets);
             request.put("modes", List.of(mode));
 
+            String secretKey = hmacUtils.retrieveSecretKeyFromDatabase(clientName);
+            if (!StringUtils.hasText(secretKey)) {
+                log.error("No service credentials for {}; support system alert not sent", clientName);
+                return;
+            }
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("clientName", clientName);
+            headers.set("Signature", secretKey);
             HttpEntity<List<Map<String, Object>>> entity = new HttpEntity<>(List.of(request), headers);
 
             restTemplate.postForEntity(notificationServerBaseUrl + CREATE_MULTIPLE, entity, String.class);

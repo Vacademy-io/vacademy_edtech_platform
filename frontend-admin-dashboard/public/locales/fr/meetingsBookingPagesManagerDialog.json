@@ -1,0 +1,46 @@
+{
+    "toast": {
+        "linkCopied": "Lien de réservation copié",
+        "copyFailed": "Impossible de copier le lien",
+        "deleted": "Page de réservation supprimée",
+        "deleteFailed": "Échec de la suppression de la page de réservation",
+        "createdForOtherHost": "Créée — animée par {{hostName}} ; elle apparaît dans sa liste.",
+        "anotherUser": "un autre utilisateur"
+    },
+    "heading": {
+        "create": "Nouvelle page de réservation",
+        "edit": "Modifier la page de réservation",
+        "list": "Pages de réservation"
+    },
+    "missingInstitute": "Contexte d'établissement manquant.",
+    "loading": "Chargement de vos pages de réservation…",
+    "error": {
+        "title": "Impossible de charger vos pages de réservation",
+        "description": "Une erreur s'est produite. Veuillez réessayer.",
+        "retry": "Réessayer"
+    },
+    "list": {
+        "title": "Vos pages de réservation",
+        "description": "Chaque page a son propre lien que les gens utilisent pour choisir un créneau sur votre calendrier. Modifiez, copiez ou ouvrez une page ci-dessous.",
+        "newBookingPage": "Nouvelle page de réservation",
+        "emptyTitle": "Aucune page de réservation pour le moment",
+        "emptyDescription": "Créez-en une pour obtenir un lien de réservation partageable.",
+        "audienceLabel": "{{term}} : {{label}}",
+        "durationMin_one": "{{count}} min",
+        "durationMin_many": "{{count}} min",
+        "durationMin_other": "{{count}} min"
+    },
+    "actions": {
+        "open": "Ouvrir la page de réservation",
+        "copy": "Copier le lien de réservation",
+        "edit": "Modifier la page de réservation",
+        "delete": "Supprimer la page de réservation"
+    },
+    "deleteDialog": {
+        "title": "Supprimer la page de réservation",
+        "description": "Voulez-vous vraiment supprimer « {{title}} » ? Son lien de réservation cessera de fonctionner. Cette action est irréversible.",
+        "cancel": "Annuler",
+        "deleting": "Suppression...",
+        "delete": "Supprimer"
+    }
+}

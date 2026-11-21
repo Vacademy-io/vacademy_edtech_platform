@@ -13,10 +13,14 @@ import {
     HandWaving,
     Smiley,
     ChartBar,
+    Eye,
     DownloadSimple,
+    UsersThree,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import Papa from 'papaparse';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { MyButton } from '@/components/design-system/button';
 import { Badge } from '@/components/ui/badge';
 import type { LiveSessionReport, SessionCustomFieldValue } from '../-services/utils';
@@ -29,7 +33,22 @@ interface EngagementData {
     raisehand?: number;
     emojis?: number;
     pollVotes?: number;
+    // Written during the class by the opt-in Vacademy Meet activeness plugin
+    // (on-device camera score); BBB's own counters above arrive after it ends.
+    activeness?: number;
+    activenessOnScreen?: number;
+    activenessAttention?: number;
+    activenessSeconds?: number;
+    activenessAwayCount?: number;
+    /** Why there is no (current) score: 2 turned off, 3 phone/tablet, 4 camera blocked, … (1 = measured). */
+    activenessState?: number;
 }
+
+const BBB_COUNTERS = ['chats', 'talks', 'talkTime', 'raisehand', 'emojis', 'pollVotes'] as const;
+
+/** BBB's engagement counters are present (not just the activeness score). */
+const hasBbbCounters = (e: EngagementData | null): e is EngagementData =>
+    !!e && BBB_COUNTERS.some((k) => typeof e[k] === 'number');
 
 interface AttendanceMarkingTableProps {
     data: LiveSessionReport[];
@@ -45,16 +64,68 @@ interface AttendanceMarkingTableProps {
     onSaved?: () => void;
 }
 
-type SortField = 'status' | 'duration' | 'activePoints';
+type SortField = 'status' | 'duration' | 'activePoints' | 'activeness';
 type SortDir = 'asc' | 'desc';
+
+/**
+ * Vacademy Meet reports exact seconds; Zoom only whole minutes. Show "4m 50s"
+ * when we have the real figure, and plain minutes when that is all the provider
+ * gave — the minutes column is a floor, so "4 min" can be anything up to 4m59s.
+ */
+const formatAttendedDuration = (
+    t: TFunction,
+    mins: number | null,
+    secs?: number | null
+): string => {
+    if (secs != null) {
+        const m = Math.floor(secs / 60);
+        const s = secs % 60;
+        if (m === 0) return t('durationSeconds', { count: s });
+        return s === 0 ? t('durationMinutesShort', { count: m }) : t('durationMinutesAndSeconds', { m, s });
+    }
+    return mins != null ? t('durationMinutes', { count: mins }) : '--';
+};
 
 function parseEngagement(json: string | null): EngagementData | null {
     if (!json) return null;
     try {
-        return JSON.parse(json);
+        const parsed = JSON.parse(json);
+        return parsed && typeof parsed === 'object' ? parsed : null;
     } catch {
         return null;
     }
+}
+
+const activenessOf = (student: LiveSessionReport): number | null => {
+    const v = parseEngagement(student.engagementData)?.activeness;
+    return typeof v === 'number' ? v : null;
+};
+
+/** The reason code when it explains something (not 1 = measured). */
+const activenessStateOf = (student: LiveSessionReport): number | null => {
+    const v = parseEngagement(student.engagementData)?.activenessState;
+    return typeof v === 'number' && v !== 1 ? v : null;
+};
+
+function getActivenessBadgeColor(value: number) {
+    if (value >= 70) return 'border-green-200 bg-green-50 text-green-700';
+    if (value >= 40) return 'border-yellow-200 bg-yellow-50 text-yellow-700';
+    return 'border-red-200 bg-red-50 text-red-600';
+}
+
+/** "On screen 79% · Attention 78% · camera on 5m 52s · stepped away 4×" — missing parts left out. */
+function activenessSummary(t: TFunction, e: EngagementData): string {
+    const parts: string[] = [];
+    if (typeof e.activenessOnScreen === 'number') parts.push(t('activeness.onScreen', { value: e.activenessOnScreen }));
+    if (typeof e.activenessAttention === 'number') parts.push(t('activeness.attention', { value: e.activenessAttention }));
+    if (typeof e.activenessSeconds === 'number') {
+        parts.push(t('activeness.tracked', { value: formatAttendedDuration(t, null, e.activenessSeconds) }));
+    }
+    if (typeof e.activenessAwayCount === 'number') parts.push(t('activeness.away', { count: e.activenessAwayCount }));
+    if (typeof e.activenessState === 'number' && e.activenessState !== 1) {
+        parts.push(t(`activenessState.${e.activenessState}`, { defaultValue: '' }));
+    }
+    return parts.filter(Boolean).join(' · ');
 }
 
 /**
@@ -71,7 +142,10 @@ function parseEngagement(json: string | null): EngagementData | null {
  */
 function computeActivePoints(student: LiveSessionReport): number | null {
     const duration = student.providerTotalDurationMinutes;
-    const engagement = parseEngagement(student.engagementData);
+    // The activeness score lands in the same JSON during the class; on its own it
+    // is not BBB engagement, so it must not read as "0 points, Low".
+    const parsed = parseEngagement(student.engagementData);
+    const engagement = hasBbbCounters(parsed) ? parsed : null;
 
     if (duration == null && !engagement) return null;
 
@@ -88,11 +162,11 @@ function computeActivePoints(student: LiveSessionReport): number | null {
     return Math.round(score);
 }
 
-function getActivePointsBadge(points: number | null) {
+function getActivePointsBadge(t: TFunction, points: number | null) {
     if (points == null) return null;
-    if (points >= 80) return { label: 'High', color: 'border-green-200 bg-green-50 text-green-700' };
-    if (points >= 30) return { label: 'Medium', color: 'border-yellow-200 bg-yellow-50 text-yellow-700' };
-    return { label: 'Low', color: 'border-red-200 bg-red-50 text-red-600' };
+    if (points >= 80) return { label: t('activePoints.high'), color: 'border-green-200 bg-green-50 text-green-700' };
+    if (points >= 30) return { label: t('activePoints.medium'), color: 'border-yellow-200 bg-yellow-50 text-yellow-700' };
+    return { label: t('activePoints.low'), color: 'border-red-200 bg-red-50 text-red-600' };
 }
 
 export function AttendanceMarkingTable({
@@ -103,6 +177,7 @@ export function AttendanceMarkingTable({
     packageSessionDetails,
     onSaved,
 }: AttendanceMarkingTableProps) {
+    const { t } = useTranslation('studyLibraryLiveSessionAttendanceMarkingTable');
     const [statusOverrides, setStatusOverrides] = useState<Record<string, string>>({});
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
     const [saving, setSaving] = useState(false);
@@ -292,6 +367,11 @@ export function AttendanceMarkingTable({
                     bVal = computeActivePoints(b) ?? -1;
                     break;
                 }
+                case 'activeness': {
+                    aVal = activenessOf(a) ?? -1;
+                    bVal = activenessOf(b) ?? -1;
+                    break;
+                }
                 default:
                     return 0;
             }
@@ -315,26 +395,38 @@ export function AttendanceMarkingTable({
         return { presentCount: present, absentCount: absent, unmarkedCount: unmarked };
     }, [data, getStatus]);
 
+    // The column only appears for classes that had the activeness score on.
+    const showActiveness = useMemo(
+        () => data.some((s) => activenessOf(s) !== null || activenessStateOf(s) !== null),
+        [data]
+    );
+
     const handleSave = async () => {
         if (dirtyCount === 0) return;
         setSaving(true);
         try {
             const entries = Object.entries(statusOverrides).map(([studentId, status]) => {
                 const student = data.find((s) => s.studentId === studentId);
+                // Only form guests are EXTERNAL_USER. enrollmentStatus is null for
+                // individually added learners too, so keying on it saved their marks
+                // as guests — and the report (which reads USER rows) showed Unmarked.
+                const isGuest = student?.sourceType
+                    ? student.sourceType === 'EXTERNAL_USER'
+                    : !student?.enrollmentStatus;
                 return {
                     userSourceId: studentId,
-                    userSourceType: student?.enrollmentStatus ? 'USER' : 'EXTERNAL_USER',
+                    userSourceType: isGuest ? 'EXTERNAL_USER' : 'USER',
                     status,
                 };
             });
 
             await adminMarkAttendance({ sessionId, scheduleId, entries });
-            toast.success(`Attendance saved for ${entries.length} student(s)`);
+            toast.success(t('toast.saved', { count: entries.length }));
             setStatusOverrides({});
             onSaved?.();
         } catch (err) {
             console.error('Failed to save attendance:', err);
-            toast.error('Failed to save attendance. Please try again.');
+            toast.error(t('toast.saveFailed'));
         } finally {
             setSaving(false);
         }
@@ -355,28 +447,43 @@ export function AttendanceMarkingTable({
             const activePoints = computeActivePoints(item) ?? '';
 
             const row: Record<string, any> = {
-                '#': idx + 1,
-                'Name': item.fullName,
-                'Email': item.email || '',
-                // 'Batch': batchValue,
-                'Course': courseValue,
-                'Status': getStatus(item) === 'PRESENT' ? 'Present' : getStatus(item) === 'ABSENT' ? 'Absent' : 'Unmarked',
-                'Mode': item.statusType || '',
-                'Duration (min)': duration,
-                'Active Points': activePoints,
-                'Talk Time (min)': talkTimeMin,
-                'Talk Segments': engagement?.talks ?? '',
-                'Raise Hands': engagement?.raisehand ?? '',
-                'Emojis': engagement?.emojis ?? '',
-                'Chats': engagement?.chats ?? '',
-                'Poll Votes': engagement?.pollVotes ?? '',
+                [t('csv.number')]: idx + 1,
+                [t('csv.name')]: item.fullName,
+                [t('csv.email')]: item.email || '',
+                // [t('csv.batch')]: batchValue,
+                [t('csv.course')]: courseValue,
+                [t('csv.status')]:
+                    getStatus(item) === 'PRESENT'
+                        ? t('status.present')
+                        : getStatus(item) === 'ABSENT'
+                          ? t('status.absent')
+                          : t('status.unmarked'),
+                [t('csv.mode')]: item.statusType || '',
+                [t('csv.durationMin')]: duration,
+                [t('csv.activePoints')]: activePoints,
+                [t('csv.talkTimeMin')]: talkTimeMin,
+                [t('csv.talkSegments')]: engagement?.talks ?? '',
+                [t('csv.raiseHands')]: engagement?.raisehand ?? '',
+                [t('csv.emojis')]: engagement?.emojis ?? '',
+                [t('csv.chats')]: engagement?.chats ?? '',
+                [t('csv.pollVotes')]: engagement?.pollVotes ?? '',
             };
+            if (showActiveness) {
+                row[t('csv.activeness')] = engagement?.activeness ?? '';
+                row[t('csv.activenessOnScreen')] = engagement?.activenessOnScreen ?? '';
+                row[t('csv.activenessAttention')] = engagement?.activenessAttention ?? '';
+                row[t('csv.activenessMinutes')] =
+                    typeof engagement?.activenessSeconds === 'number' ? Math.round(engagement.activenessSeconds / 60) : '';
+                row[t('csv.activenessAwayCount')] = engagement?.activenessAwayCount ?? '';
+                const state = activenessStateOf(item);
+                row[t('csv.activenessStatus')] = state !== null ? t(`activenessState.${state}`, { defaultValue: '' }) : '';
+            }
             customFieldColumns.forEach((cf) => {
                 row[cf.name] = getCfValue(item, cf.key);
             });
             feedbackColumns.forEach((fbCol) => {
                 const colName = fbCol.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
-                row[`Feedback: ${colName}`] = getFeedbackValue(item, fbCol);
+                row[t('csv.feedbackColumn', { column: colName })] = getFeedbackValue(item, fbCol);
             });
             return row;
         });
@@ -393,8 +500,8 @@ export function AttendanceMarkingTable({
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
-        toast.success('Attendance CSV downloaded');
-    }, [sortedData, getStatus, sessionId, sessionTitle, packageSessionDetails, customFieldColumns, feedbackColumns, getCfValue, getFeedbackValue]);
+        toast.success(t('toast.csvDownloaded'));
+    }, [sortedData, getStatus, sessionId, sessionTitle, packageSessionDetails, customFieldColumns, feedbackColumns, getCfValue, getFeedbackValue, showActiveness, t]);
 
     const hasEngagementOrDuration = (student: LiveSessionReport) => {
         return student.providerTotalDurationMinutes || student.engagementData;
@@ -411,25 +518,38 @@ export function AttendanceMarkingTable({
         );
     };
 
+    // An empty report means nobody resolves to this class (batch deleted or
+    // emptied, no individual learners, no guests). Say so — a header row with
+    // "Total: 0" over an empty table reads as a broken page.
+    if (data.length === 0) {
+        return (
+            <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed px-6 py-8 text-center">
+                <UsersThree size={28} className="text-gray-400" />
+                <div className="text-sm font-medium text-gray-700">{t('emptyTitle')}</div>
+                <p className="max-w-md text-xs text-gray-500">{t('emptyHint')}</p>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-3">
             {/* Summary */}
             <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
                 <div className="flex items-center gap-4">
-                    <span className="font-medium">Attendance</span>
+                    <span className="font-medium">{t('title')}</span>
                     <span className="flex items-center gap-1 text-green-600">
                         <span className="h-2 w-2 rounded-full bg-green-500" />
-                        Present: {presentCount}
+                        {t('summary.present', { count: presentCount })}
                     </span>
                     <span className="flex items-center gap-1 text-red-500">
                         <span className="h-2 w-2 rounded-full bg-red-500" />
-                        Absent: {absentCount}
+                        {t('summary.absent', { count: absentCount })}
                     </span>
                     <span className="flex items-center gap-1 text-gray-400">
                         <span className="h-2 w-2 rounded-full bg-gray-300" />
-                        Unmarked: {unmarkedCount}
+                        {t('summary.unmarked', { count: unmarkedCount })}
                     </span>
-                    <span className="text-gray-500">Total: {data.length}</span>
+                    <span className="text-gray-500">{t('summary.total', { count: data.length })}</span>
                 </div>
                 <button
                     type="button"
@@ -437,7 +557,7 @@ export function AttendanceMarkingTable({
                     className="flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50"
                 >
                     <DownloadSimple size={14} />
-                    Export CSV
+                    {t('exportCsv')}
                 </button>
             </div>
 
@@ -447,17 +567,17 @@ export function AttendanceMarkingTable({
                     <thead className="sticky top-0 bg-gray-50">
                         <tr className="border-b text-left text-xs font-medium text-gray-500">
                             <th className="px-3 py-2 w-[50px]">#</th>
-                            <th className="px-3 py-2">Name</th>
+                            <th className="px-3 py-2">{t('columns.name')}</th>
                             <th className="px-3 py-2 w-[120px]">
                                 <button
                                     type="button"
                                     onClick={() => handleSort('status')}
                                     className="flex items-center gap-1 hover:text-gray-700"
                                 >
-                                    Status <SortIcon field="status" />
+                                    {t('columns.status')} <SortIcon field="status" />
                                 </button>
                             </th>
-                            <th className="px-3 py-2">Email</th>
+                            <th className="px-3 py-2">{t('columns.email')}</th>
                             {customFieldColumns.map((cf) => (
                                 <th key={cf.key} className="px-3 py-2">{cf.name}</th>
                             ))}
@@ -472,7 +592,7 @@ export function AttendanceMarkingTable({
                                     onClick={() => handleSort('duration')}
                                     className="flex items-center gap-1 hover:text-gray-700"
                                 >
-                                    Duration <SortIcon field="duration" />
+                                    {t('columns.duration')} <SortIcon field="duration" />
                                 </button>
                             </th>
                             <th className="px-3 py-2 w-[120px]">
@@ -481,10 +601,21 @@ export function AttendanceMarkingTable({
                                     onClick={() => handleSort('activePoints')}
                                     className="flex items-center gap-1 hover:text-gray-700"
                                 >
-                                    Active Pts <SortIcon field="activePoints" />
+                                    {t('columns.activePoints')} <SortIcon field="activePoints" />
                                 </button>
                             </th>
-                            <th className="px-3 py-2 w-[80px]">Mode</th>
+                            {showActiveness && (
+                                <th className="px-3 py-2 w-28">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleSort('activeness')}
+                                        className="flex items-center gap-1 hover:text-gray-700"
+                                    >
+                                        {t('columns.activeness')} <SortIcon field="activeness" />
+                                    </button>
+                                </th>
+                            )}
+                            <th className="px-3 py-2 w-[80px]">{t('columns.mode')}</th>
                             <th className="px-3 py-2 w-[40px]"></th>
                         </tr>
                     </thead>
@@ -497,7 +628,9 @@ export function AttendanceMarkingTable({
                             const engagement = parseEngagement(student.engagementData);
                             const canExpand = hasEngagementOrDuration(student);
                             const activePoints = computeActivePoints(student);
-                            const pointsBadge = getActivePointsBadge(activePoints);
+                            const pointsBadge = getActivePointsBadge(t, activePoints);
+                            const activeness = activenessOf(student);
+                            const activenessState = activenessStateOf(student);
 
                             return (
                                 <Fragment key={student.studentId}>
@@ -533,7 +666,7 @@ export function AttendanceMarkingTable({
                                                     A
                                                 </button>
                                                 {status === 'UNMARKED' && (
-                                                    <span className="ml-1 text-[10px] text-gray-400">Unmarked</span>
+                                                    <span className="ms-1 text-[10px] text-gray-400">{t('status.unmarked')}</span>
                                                 )}
                                             </div>
                                         </td>
@@ -552,7 +685,11 @@ export function AttendanceMarkingTable({
                                             {student.providerTotalDurationMinutes != null ? (
                                                 <span className="flex items-center gap-1">
                                                     <Clock size={14} className="text-gray-400" />
-                                                    {student.providerTotalDurationMinutes} min
+                                                    {formatAttendedDuration(
+                                                        t,
+                                                        student.providerTotalDurationMinutes,
+                                                        student.providerTotalDurationSeconds
+                                                    )}
                                                 </span>
                                             ) : (
                                                 <span className="text-gray-300">--</span>
@@ -573,6 +710,29 @@ export function AttendanceMarkingTable({
                                                 <span className="text-gray-300">--</span>
                                             )}
                                         </td>
+                                        {showActiveness && (
+                                            <td className="px-3 py-2">
+                                                {activeness != null && engagement ? (
+                                                    <Badge
+                                                        variant="outline"
+                                                        className={`text-xs ${getActivenessBadgeColor(activeness)}`}
+                                                        title={activenessSummary(t, engagement)}
+                                                    >
+                                                        {activeness}%
+                                                    </Badge>
+                                                ) : activenessState !== null ? (
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="border-gray-200 bg-gray-50 text-xs text-gray-600"
+                                                        title={t(`activenessState.${activenessState}`, { defaultValue: '' })}
+                                                    >
+                                                        {t(`activenessStateShort.${activenessState}`, { defaultValue: '' })}
+                                                    </Badge>
+                                                ) : (
+                                                    <span className="text-gray-300">--</span>
+                                                )}
+                                            </td>
+                                        )}
                                         <td className="px-3 py-2">
                                             {student.statusType && (
                                                 <Badge
@@ -605,12 +765,35 @@ export function AttendanceMarkingTable({
                                     </tr>
                                     {isExpanded && canExpand && (
                                         <tr key={`${student.studentId}-detail`} className="border-b bg-gray-50">
-                                            <td colSpan={8} className="px-6 py-3">
+                                            <td
+                                                colSpan={
+                                                    8 +
+                                                    (showActiveness ? 1 : 0) +
+                                                    customFieldColumns.length +
+                                                    feedbackColumns.length
+                                                }
+                                                className="px-6 py-3"
+                                            >
                                                 <div className="flex flex-wrap items-center gap-4 text-xs text-gray-600">
                                                     {student.providerTotalDurationMinutes != null && (
                                                         <span className="flex items-center gap-1">
                                                             <Clock size={14} className="text-gray-400" />
-                                                            Duration: {student.providerTotalDurationMinutes} min
+                                                            {t('detail.duration', {
+                                                                value: formatAttendedDuration(
+                                                                    t,
+                                                                    student.providerTotalDurationMinutes,
+                                                                    student.providerTotalDurationSeconds
+                                                                ),
+                                                            })}
+                                                        </span>
+                                                    )}
+                                                    {activeness != null && engagement && (
+                                                        <span className="flex items-center gap-1">
+                                                            <Eye size={14} className="text-green-500" />
+                                                            {t('activeness.detail', {
+                                                                value: activeness,
+                                                                summary: activenessSummary(t, engagement),
+                                                            })}
                                                         </span>
                                                     )}
                                                     {engagement && (
@@ -618,44 +801,46 @@ export function AttendanceMarkingTable({
                                                             {engagement.talkTime != null && engagement.talkTime > 0 && (
                                                                 <span className="flex items-center gap-1">
                                                                     <Microphone size={14} className="text-blue-400" />
-                                                                    Talk time: {Math.round(engagement.talkTime / 60)} min
+                                                                    {t('detail.talkTime', {
+                                                                        count: Math.round(engagement.talkTime / 60),
+                                                                    })}
                                                                 </span>
                                                             )}
                                                             {engagement.talks != null && engagement.talks > 0 && (
                                                                 <span className="flex items-center gap-1">
                                                                     <Microphone size={14} className="text-gray-400" />
-                                                                    Talk segments: {engagement.talks}
+                                                                    {t('detail.talkSegments', { count: engagement.talks })}
                                                                 </span>
                                                             )}
                                                             {engagement.raisehand != null && engagement.raisehand > 0 && (
                                                                 <span className="flex items-center gap-1">
                                                                     <HandWaving size={14} className="text-yellow-500" />
-                                                                    Raise hands: {engagement.raisehand}
+                                                                    {t('detail.raiseHands', { count: engagement.raisehand })}
                                                                 </span>
                                                             )}
                                                             {engagement.emojis != null && engagement.emojis > 0 && (
                                                                 <span className="flex items-center gap-1">
                                                                     <Smiley size={14} className="text-orange-400" />
-                                                                    Emojis: {engagement.emojis}
+                                                                    {t('detail.emojis', { count: engagement.emojis })}
                                                                 </span>
                                                             )}
                                                             {engagement.chats != null && engagement.chats > 0 && (
                                                                 <span className="flex items-center gap-1">
                                                                     <ChatCircle size={14} className="text-purple-400" />
-                                                                    Chats: {engagement.chats}
+                                                                    {t('detail.chats', { count: engagement.chats })}
                                                                 </span>
                                                             )}
                                                             {engagement.pollVotes != null && engagement.pollVotes > 0 && (
                                                                 <span className="flex items-center gap-1">
                                                                     <ChartBar size={14} className="text-teal-400" />
-                                                                    Poll votes: {engagement.pollVotes}
+                                                                    {t('detail.pollVotes', { count: engagement.pollVotes })}
                                                                 </span>
                                                             )}
                                                         </>
                                                     )}
                                                     {!student.providerTotalDurationMinutes && !engagement && (
                                                         <span className="text-gray-400 italic">
-                                                            No engagement data available
+                                                            {t('detail.noEngagementData')}
                                                         </span>
                                                     )}
                                                 </div>
@@ -673,14 +858,14 @@ export function AttendanceMarkingTable({
             {dirtyCount > 0 && (
                 <div className="flex items-center gap-3">
                     <MyButton buttonType="primary" onClick={handleSave} disabled={saving}>
-                        {saving ? 'Saving...' : `Save Attendance (${dirtyCount} changed)`}
+                        {saving ? t('saving') : t('saveAttendance', { count: dirtyCount })}
                     </MyButton>
                     <button
                         type="button"
                         onClick={() => setStatusOverrides({})}
                         className="text-sm text-gray-500 hover:text-gray-700"
                     >
-                        Discard changes
+                        {t('discardChanges')}
                     </button>
                 </div>
             )}

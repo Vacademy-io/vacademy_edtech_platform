@@ -105,17 +105,20 @@ public class LiveSessionWorkflowAsyncHelper {
      *
      * <p>{@code extraAudienceIds} — the session's "save registrants to audience list(s)"
      * selection (empty/null when the toggle is off). The registrant is pushed into each,
-     * on top of the always-on default audience; each push is isolated so one bad list
-     * cannot block the others.
+     * on top of the session's own list; each push is isolated so one bad list cannot block
+     * the others.
+     *
+     * <p>{@code sessionTitle} names the session's own list ("&lt;title&gt; - Public Live
+     * Session"), created on its first registration.
      */
     @Async("workflowTaskExecutor")
     public void createLiveClassLeadAsync(String instituteId, String fullName, String email,
                                          String mobileNumber, Map<String, String> extraFieldsById,
-                                         String sessionId, List<String> extraAudienceIds) {
+                                         String sessionId, String sessionTitle, List<String> extraAudienceIds) {
         if (instituteId == null || email == null || email.isBlank()) return;
         try {
             audienceService.submitLiveClassLead(instituteId, fullName, email, mobileNumber,
-                    extraFieldsById, sessionId);
+                    extraFieldsById, sessionId, sessionTitle);
         } catch (Exception e) {
             log.warn("Async live-class lead capture failed for institute={} session={}: {}",
                     instituteId, sessionId, e.getMessage(), e);

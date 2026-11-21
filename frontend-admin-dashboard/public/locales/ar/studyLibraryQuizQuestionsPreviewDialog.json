@@ -1,0 +1,23 @@
+{
+    "previewQuestions_zero": "معاينة {{count}} سؤال",
+    "previewQuestions_one": "معاينة سؤال واحد",
+    "previewQuestions_two": "معاينة سؤالين",
+    "previewQuestions_few": "معاينة {{count}} أسئلة",
+    "previewQuestions_many": "معاينة {{count}} سؤالًا",
+    "previewQuestions_other": "معاينة {{count}} سؤال",
+    "allQuestionsRemoved": "تمت إزالة جميع الأسئلة. أغلق هذا الحوار للعودة.",
+    "questionsWillBeAdded_zero": "لن تتم إضافة أي أسئلة إلى الاختبار القصير",
+    "questionsWillBeAdded_one": "سيتم إضافة سؤال واحد إلى الاختبار القصير",
+    "questionsWillBeAdded_two": "سيتم إضافة سؤالين إلى الاختبار القصير",
+    "questionsWillBeAdded_few": "سيتم إضافة {{count}} أسئلة إلى الاختبار القصير",
+    "questionsWillBeAdded_many": "سيتم إضافة {{count}} سؤالًا إلى الاختبار القصير",
+    "questionsWillBeAdded_other": "سيتم إضافة {{count}} سؤال إلى الاختبار القصير",
+    "cancel": "إلغاء",
+    "adding": "جارٍ الإضافة…",
+    "addQuestionsToQuiz_zero": "إضافة الأسئلة إلى الاختبار القصير",
+    "addQuestionsToQuiz_one": "إضافة سؤال واحد إلى الاختبار القصير",
+    "addQuestionsToQuiz_two": "إضافة سؤالين إلى الاختبار القصير",
+    "addQuestionsToQuiz_few": "إضافة {{count}} أسئلة إلى الاختبار القصير",
+    "addQuestionsToQuiz_many": "إضافة {{count}} سؤالًا إلى الاختبار القصير",
+    "addQuestionsToQuiz_other": "إضافة {{count}} سؤال إلى الاختبار القصير"
+}

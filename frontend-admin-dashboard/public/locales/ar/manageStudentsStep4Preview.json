@@ -1,0 +1,59 @@
+{
+    "cards": {
+        "total": "الإجمالي"
+    },
+    "status": {
+        "willEnroll": "سيتم التسجيل",
+        "willSkip": "سيتم التخطي",
+        "willFail": "سيفشل"
+    },
+    "reenrolledBanner_zero": "لن يُعاد تسجيل أي {{term}} (كان الوصول منتهي الصلاحية/ملغى سابقًا).",
+    "reenrolledBanner_one": "سيُعاد تسجيل {{term}} واحد (كان الوصول منتهي الصلاحية/ملغى سابقًا).",
+    "reenrolledBanner_two": "سيُعاد تسجيل {{term}} (كان الوصول منتهي الصلاحية/ملغى سابقًا).",
+    "reenrolledBanner_few": "سيُعاد تسجيل {{term}} (كان الوصول منتهي الصلاحية/ملغى سابقًا).",
+    "reenrolledBanner_many": "سيُعاد تسجيل {{term}} (كان الوصول منتهي الصلاحية/ملغى سابقًا).",
+    "reenrolledBanner_other": "سيُعاد تسجيل {{term}} (كان الوصول منتهي الصلاحية/ملغى سابقًا).",
+    "subOrg": {
+        "heading": "تعيين المؤسسة الفرعية",
+        "noLink": "لا يوجد ربط بمؤسسة",
+        "newSuffix": "{{name}} (جديدة)",
+        "notSelected": "لم يتم التحديد",
+        "role": {
+            "adminOnly": "مسؤول فقط",
+            "admin": "مسؤول + {{term}}",
+            "staff": "موظف — {{term}}"
+        }
+    },
+    "emptyState": "لن يتم تسجيل أي {{term}} حديثًا. راجع اختياراتك أو غيّر خيار التعامل مع التكرار.",
+    "table": {
+        "headers": {
+            "action": "الإجراء",
+            "status": "الحالة",
+            "note": "ملاحظة"
+        },
+        "emptyValue": "—",
+        "actionTaken": {
+            "created": "تم التسجيل",
+            "reEnrolled": "أُعيد تسجيله"
+        },
+        "cpo": {
+            "badge": "CPO",
+            "installments_zero": " · بدون أقساط ({{count}})",
+            "installments_one": " · قسط واحد ({{count}})",
+            "installments_two": " · قسطان ({{count}})",
+            "installments_few": " · {{count}} أقساط",
+            "installments_many": " · {{count}} قسطًا",
+            "installments_other": " · {{count}} قسط",
+            "totalAmount": " · الإجمالي ₹{{amount}}",
+            "recordingNow": "يتم تسجيل ₹{{amount}} الآن",
+            "noInitialPayment": "لم يتم تسجيل أي دفعة أولى",
+            "schedule_one": "قسط واحد، مستحق {{first}}",
+            "schedule_other": "{{count}} أقساط، {{first}} ← {{last}}",
+            "schedule_zero": "{{count}} أقساط، {{first}} ← {{last}}",
+            "schedule_two": "قسطان، {{first}} ← {{last}}",
+            "schedule_few": "{{count}} أقساط، {{first}} ← {{last}}",
+            "schedule_many": "{{count}} قسطًا، {{first}} ← {{last}}"
+        }
+    },
+    "noPlanConfigured": "لم يتم تحديد سعر لهذه الدعوة بعد — اختر Auto (Default) للتسجيل المجاني، أو حدد السعر في إعدادات الدفع أولاً."
+}

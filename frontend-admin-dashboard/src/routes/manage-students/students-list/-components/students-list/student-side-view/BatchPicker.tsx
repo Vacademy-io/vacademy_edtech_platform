@@ -22,7 +22,15 @@ interface BatchPickerProps {
     // When true, renders a disabled static label even for a single enrollment.
     alwaysShow?: boolean;
     label?: string;
+    /**
+     * When set, prepends an "all batches" entry with this label and the value
+     * {@link ALL_BATCHES}. Still hidden for a single enrollment unless `alwaysShow`.
+     */
+    allLabel?: string;
 }
+
+/** Value of the optional "all batches" entry (Radix Select can't use an empty string). */
+export const ALL_BATCHES = '__all__';
 
 // Renders a dropdown when the learner has more than one enrollment so admin can
 // scope side-view actions (Portal Access redirect, Learning Progress view, Sub Org
@@ -33,6 +41,7 @@ export const BatchPicker = ({
     onChange,
     alwaysShow = false,
     label,
+    allLabel,
 }: BatchPickerProps) => {
     const { getDetailsFromPackageSessionId } = useInstituteDetailsStore();
     const batchTerm = getTerminology(ContentTerms.Batch, SystemTerms.Batch);
@@ -62,6 +71,7 @@ export const BatchPicker = ({
                     <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                    {allLabel && <SelectItem value={ALL_BATCHES}>{allLabel}</SelectItem>}
                     {options.map((o) => (
                         <SelectItem key={o.id} value={o.id}>
                             {o.label}

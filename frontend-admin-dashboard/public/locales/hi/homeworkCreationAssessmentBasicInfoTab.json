@@ -1,0 +1,27 @@
+{
+    "fields": {
+        "homeworkName": {
+            "label": "होमवर्क का नाम:"
+        },
+        "subject": {
+            "label": "विषय:"
+        },
+        "assessmentInstructions": {
+            "sectionTitle": "मूल्यांकन निर्देश:"
+        },
+        "liveDateRange": {
+            "sectionTitle": "लाइव तिथि सीमा",
+            "startDateLabel": "प्रारंभ तिथि और समय:",
+            "endDateLabel": "समाप्ति तिथि और समय:"
+        },
+        "attemptSettings": {
+            "sectionTitle": "प्रयास सेटिंग्स",
+            "reattemptCountLabel": "होमवर्क पुनः प्रयास संख्या:",
+            "durationSettingsLabel": "होमवर्क अवधि सेटिंग्स:",
+            "entireDurationLabel": "संपूर्ण होमवर्क अवधि",
+            "minuteValue": "{{count}} मिनट",
+            "previewLabel": "होमवर्क पूर्वावलोकन:",
+            "switchSectionsLabel": "प्रतिभागियों को सेक्शन के बीच स्विच करने की अनुमति दें"
+        }
+    }
+}

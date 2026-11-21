@@ -1,0 +1,49 @@
+{
+    "groups": {
+        "earnings": "Earnings",
+        "deductions": "Deductions",
+        "employerContributions": "Employer contributions"
+    },
+    "table": {
+        "columns": {
+            "component": "Component",
+            "calculation": "Calculation",
+            "monthly": "Monthly",
+            "annual": "Annual"
+        },
+        "overridden": "Overridden for this employee"
+    },
+    "errors": {
+        "loadFailed": "Couldn't load this employee's salary structure."
+    },
+    "empty": {
+        "noStructure": {
+            "title": "No salary structure assigned yet",
+            "description": "Assign one from ERP → Salary. Until then this employee is skipped by payroll runs."
+        },
+        "noComponents": {
+            "title": "This structure has no components",
+            "description": "Add components to the salary template so payroll can compute a payslip."
+        }
+    },
+    "card": {
+        "defaultStructureName": "Current salary structure",
+        "defaultRevisionName": "Salary structure",
+        "componentBreakdown": "Component breakdown",
+        "revisionHistory": "Revision history",
+        "noEarlierStructures": "No earlier structures — this is the first one assigned."
+    },
+    "fields": {
+        "ctcAnnual": "CTC (annual)",
+        "ctcMonthly": "CTC (monthly)",
+        "grossMonthly": "Gross (monthly)",
+        "netMonthly": "Net (monthly)",
+        "effectiveFrom": "Effective from",
+        "currency": "Currency",
+        "status": "Status",
+        "revisionReason": "Revision reason"
+    },
+    "history": {
+        "open": "open"
+    }
+}

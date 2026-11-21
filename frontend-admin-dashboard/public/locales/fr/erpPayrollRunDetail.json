@@ -1,0 +1,16 @@
+{
+    "backToRuns": "Toutes les périodes de paie",
+    "fallbackHeading": "Période de paie",
+    "fallbackRunType": "Régulière",
+    "errors": {
+        "loadFailed": "Impossible de charger cette période de paie."
+    },
+    "tabs": {
+        "entries_one": "Fiche ({{count}})",
+        "entries_many": "Fiches ({{count}})",
+        "entries_other": "Fiches ({{count}})",
+        "errors": "Erreurs",
+        "payslips": "Bulletins de paie",
+        "bankFile": "Fichier bancaire"
+    }
+}

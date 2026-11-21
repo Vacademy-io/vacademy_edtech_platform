@@ -1,0 +1,18 @@
+{
+    "header": {
+        "title": "Sélectionner un lot et des {{subjectPlural}}"
+    },
+    "search": {
+        "placeholder": "Rechercher des lots..."
+    },
+    "subjects": {
+        "selectLabel": "Sélectionner les matières",
+        "selectPlaceholder": "Sélectionner les matières",
+        "description": "Vous pouvez sélectionner plusieurs matières pour ce lot",
+        "requiredError": "Au moins une matière est requise"
+    },
+    "emptyState": {
+        "noMatchingBatches": "Aucun lot correspondant",
+        "noBatchesAvailable": "Aucun lot disponible"
+    }
+}

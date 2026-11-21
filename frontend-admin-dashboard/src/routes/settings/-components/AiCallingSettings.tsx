@@ -1,10 +1,22 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import {
     Select,
     SelectContent,
@@ -13,14 +25,15 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { MyButton } from '@/components/design-system/button';
-import { Plus, Trash } from '@phosphor-icons/react';
+import { Info, Plus, Robot, Trash } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { BASE_URL } from '@/constants/urls';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { fetchAiVoiceCarrier } from '@/routes/settings/telephony/-services/ai-voice-carrier';
 import { AiAgentsCard } from './AiAgentsCard';
+import { AiCallingApiCard } from './AiCallingApiCard';
 import { noAutofillProps } from '@/lib/no-autofill';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -100,6 +113,7 @@ export interface AiCallingSettingsData {
     // Counsellor assignment
     assignmentMode: AssignmentMode;
     assignExhaustedToHuman: boolean;
+    reassignQualifiedToPool: boolean;
 
     /**
      * Auto-capture unknown INBOUND callers as leads. When the AI helpline answers a
@@ -118,10 +132,10 @@ const DISPOSITIONS = [
     'Not_Interested',
 ] as const;
 
-const ASSIGNMENT_MODES: { value: AssignmentMode; label: string }[] = [
-    { value: 'ROUND_ROBIN', label: 'Round robin' },
-    { value: 'TIME_BASED', label: 'On-shift only' },
-    { value: 'MANUAL', label: 'Manual' },
+const ASSIGNMENT_MODES: { value: AssignmentMode; labelKey: string }[] = [
+    { value: 'ROUND_ROBIN', labelKey: 'assignmentModes.roundRobin' },
+    { value: 'TIME_BASED', labelKey: 'assignmentModes.timeBased' },
+    { value: 'MANUAL', labelKey: 'assignmentModes.manual' },
 ];
 
 const DEFAULT_AI_CALLING_SETTINGS: AiCallingSettingsData = {
@@ -142,8 +156,11 @@ const DEFAULT_AI_CALLING_SETTINGS: AiCallingSettingsData = {
     customDispositions: [],
     assignmentMode: 'ROUND_ROBIN',
     assignExhaustedToHuman: true,
+    reassignQualifiedToPool: false,
     inboundLeadCapture: { enabled: false },
 };
+
+type AiCallingTabKey = 'general' | 'agents' | 'retries' | 'outcomes' | 'assignment';
 
 const SETTING_KEY = 'AI_CALLING_SETTING';
 const GET_URL = `${BASE_URL}/admin-core-service/institute/setting/v1/get`;
@@ -163,39 +180,37 @@ interface ProviderMeta {
     campaignPlaceholder: string;
     campaignHelp: string;
 }
-const PROVIDER_META: Record<string, ProviderMeta> = {
-    AAVTAAR: {
-        label: 'Aavtaar',
-        companyCodeLabel: 'Company Code',
-        companyCodePlaceholder: 'Your provider company code',
-        tokenLabel: 'Bearer Token',
-        tokenPlaceholder: 'Paste the API token',
-        campaignPlaceholder: 'Campaign ID from your provider',
-        campaignHelp:
-            'The campaign that defines the AI script/persona for outbound calls. Provided by your AI-calling provider.',
-    },
-    VACADEMY_AI: {
-        label: 'Vacademy AI Agent',
-        companyCodeLabel: 'Account Code',
-        companyCodePlaceholder: 'Not needed — calls run on your Vacademy Voice number',
-        tokenLabel: 'API Token',
-        tokenPlaceholder: 'Not needed for Vacademy AI',
-        campaignPlaceholder: 'Pick an agent from the AI Agents section below',
-        campaignHelp:
-            'Vacademy AI agents are authored in the "AI Agents" section below — saving one registers it here automatically (its id is the campaign id).',
-    },
+const PROVIDER_META_BUILDERS: Record<string, (t: TFunction) => ProviderMeta> = {
+    AAVTAAR: (t) => ({
+        label: t('provider.aavtaar.label'),
+        companyCodeLabel: t('provider.aavtaar.companyCodeLabel'),
+        companyCodePlaceholder: t('provider.aavtaar.companyCodePlaceholder'),
+        tokenLabel: t('provider.aavtaar.tokenLabel'),
+        tokenPlaceholder: t('provider.aavtaar.tokenPlaceholder'),
+        campaignPlaceholder: t('provider.aavtaar.campaignPlaceholder'),
+        campaignHelp: t('provider.aavtaar.campaignHelp'),
+    }),
+    VACADEMY_AI: (t) => ({
+        label: t('provider.vacademyAi.label'),
+        companyCodeLabel: t('provider.vacademyAi.companyCodeLabel'),
+        companyCodePlaceholder: t('provider.vacademyAi.companyCodePlaceholder'),
+        tokenLabel: t('provider.vacademyAi.tokenLabel'),
+        tokenPlaceholder: t('provider.vacademyAi.tokenPlaceholder'),
+        campaignPlaceholder: t('provider.vacademyAi.campaignPlaceholder'),
+        campaignHelp: t('provider.vacademyAi.campaignHelp'),
+    }),
 };
-const titleCase = (code: string) =>
-    code ? code.charAt(0).toUpperCase() + code.slice(1).toLowerCase() : 'Provider';
-const metaFor = (code: string): ProviderMeta =>
-    PROVIDER_META[code] ?? {
-        label: titleCase(code),
-        companyCodeLabel: 'Account / Company Code',
-        companyCodePlaceholder: 'Your provider account code',
-        tokenLabel: 'API Token',
-        tokenPlaceholder: 'Paste the API token',
-        campaignPlaceholder: 'Campaign / agent ID',
-        campaignHelp: 'The campaign or agent that defines the AI script for outbound calls.',
+const titleCase = (code: string, t: TFunction) =>
+    code ? code.charAt(0).toUpperCase() + code.slice(1).toLowerCase() : t('provider.fallbackLabel');
+const metaFor = (code: string, t: TFunction): ProviderMeta =>
+    PROVIDER_META_BUILDERS[code]?.(t) ?? {
+        label: titleCase(code, t),
+        companyCodeLabel: t('provider.fallback.companyCodeLabel'),
+        companyCodePlaceholder: t('provider.fallback.companyCodePlaceholder'),
+        tokenLabel: t('provider.fallback.tokenLabel'),
+        tokenPlaceholder: t('provider.fallback.tokenPlaceholder'),
+        campaignPlaceholder: t('provider.fallback.campaignPlaceholder'),
+        campaignHelp: t('provider.fallback.campaignHelp'),
     };
 const webhookPathFor = (code: string) =>
     code === 'AAVTAAR'
@@ -280,10 +295,13 @@ const saveAiConfig = async (payload: AiConfigSave): Promise<void> => {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function AiCallingSettings() {
+    const { t } = useTranslation('settingsAiCalling');
     const queryClient = useQueryClient();
     const [settings, setSettings] = useState<AiCallingSettingsData>(DEFAULT_AI_CALLING_SETTINGS);
     const [hasChanges, setHasChanges] = useState(false);
     const [newDisposition, setNewDisposition] = useState('');
+    const [activeTab, setActiveTab] = useState<AiCallingTabKey>('general');
+    const navigate = useNavigate();
 
     const { data, isLoading } = useQuery({
         queryKey: ['ai-calling-settings'],
@@ -301,12 +319,12 @@ export default function AiCallingSettings() {
     const { mutate: save, isPending: saving } = useMutation({
         mutationFn: saveAiCallingSettings,
         onSuccess: () => {
-            toast.success('AI calling settings saved');
+            toast.success(t('toast.settingsSaved'));
             setHasChanges(false);
             queryClient.invalidateQueries({ queryKey: ['ai-calling-settings'] });
         },
         onError: () => {
-            toast.error('Failed to save AI calling settings');
+            toast.error(t('toast.settingsSaveFailed'));
         },
     });
 
@@ -333,25 +351,25 @@ export default function AiCallingSettings() {
     const { mutate: saveCreds, isPending: savingCreds } = useMutation({
         mutationFn: saveAiConfig,
         onSuccess: () => {
-            toast.success('Credentials saved');
+            toast.success(t('toast.credentialsSaved'));
             setApiToken('');
             setWebhookSecret('');
             queryClient.invalidateQueries({ queryKey: ['ai-calling-config'] });
         },
         onError: (err: unknown) => {
             const msg = (err as { response?: { data?: { ex?: string } } })?.response?.data?.ex;
-            toast.error(msg ?? 'Failed to save credentials');
+            toast.error(msg ?? t('toast.credentialsSaveFailed'));
         },
     });
 
     const handleSaveCreds = () => {
-        const m = metaFor(settings.provider);
+        const m = metaFor(settings.provider, t);
         if (!companyCode.trim()) {
-            toast.error(`${m.companyCodeLabel} is required.`);
+            toast.error(t('toast.fieldRequired', { field: m.companyCodeLabel }));
             return;
         }
         if (!cfg?.hasToken && !apiToken.trim()) {
-            toast.error(`${m.tokenLabel} is required.`);
+            toast.error(t('toast.fieldRequired', { field: m.tokenLabel }));
             return;
         }
         saveCreds({
@@ -483,559 +501,779 @@ export default function AiCallingSettings() {
 
     const handleSave = () => {
         if (settings.enabled && !settings.defaultCampaignId.trim()) {
-            toast.error('A default Campaign ID is required to enable AI calling.');
+            toast.error(t('toast.campaignIdRequired'));
             return;
         }
         save(settings);
     };
 
-    const meta = metaFor(settings.provider);
+    const meta = metaFor(settings.provider, t);
     const webhookPath = webhookPathFor(settings.provider);
+
+    // Tab labels are built every render (never memoised) so a language switch
+    // re-labels them. Retries / Outcome / Assignment exist only while AI calling
+    // is enabled — same rule as before the tabs — and the open tab falls back to
+    // the first one when it disappears.
+    const tabs: { key: AiCallingTabKey; label: string }[] = [
+        { key: 'general', label: t('tabs.general') },
+        { key: 'agents', label: t('tabs.agents') },
+        ...(settings.enabled
+            ? [
+                  { key: 'retries' as const, label: t('tabs.retries') },
+                  { key: 'outcomes' as const, label: t('tabs.outcomes') },
+                  { key: 'assignment' as const, label: t('tabs.assignment') },
+              ]
+            : []),
+    ];
+    const currentTab = tabs.some((tab) => tab.key === activeTab) ? activeTab : 'general';
+    const hasVacademyAi = providerCodes.includes('VACADEMY_AI');
 
     return (
         <div className="space-y-6 p-6">
-            {/* ── Enable + Campaign ── */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>AI Calling</CardTitle>
-                    <CardDescription>
-                        When enabled, leads are first called by the AI voice agent. The recording
-                        and AI summary appear on the lead profile, and a counsellor is assigned only
-                        when the outcome rules below say so.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex items-center gap-3">
-                        <Switch
-                            id="ai-calling-enabled"
-                            checked={settings.enabled}
-                            onCheckedChange={(v) => update({ enabled: v })}
-                        />
-                        <Label htmlFor="ai-calling-enabled" className="cursor-pointer">
-                            {settings.enabled ? 'Enabled' : 'Disabled'}
-                        </Label>
-                    </div>
-
-                    <Separator />
-
-                    <div className="flex items-center gap-3">
-                        <Switch
-                            id="ai-show-in-lead-list"
-                            checked={settings.showInLeadList}
-                            onCheckedChange={(v) => update({ showInLeadList: v })}
-                        />
-                        <Label htmlFor="ai-show-in-lead-list" className="cursor-pointer">
-                            Show the AI-call button on lead rows
-                        </Label>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                        Controls only the manual robot button in lead lists. Automated AI workflows
-                        run regardless of this toggle.
-                    </p>
-
-                    <Separator />
-
-                    <div className="flex items-center gap-3">
-                        <Switch
-                            id="ai-inbound-lead-capture"
-                            checked={settings.inboundLeadCapture?.enabled ?? false}
-                            onCheckedChange={(v) => update({ inboundLeadCapture: { enabled: v } })}
-                        />
-                        <Label htmlFor="ai-inbound-lead-capture" className="cursor-pointer">
-                            Capture inbound callers as leads
-                        </Label>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                        For an inbound AI helpline: when someone calls and isn&apos;t already a
-                        lead, a lead is created (matched by phone, so repeat callers aren&apos;t
-                        duplicated) and the call attaches to it — so it shows in Recent Leads and
-                        the Call Log, and you can follow up. Off means unknown callers&apos; calls
-                        are recorded but no lead is made.
-                    </p>
-
-                    <Separator />
-
-                    <div className="grid max-w-md gap-2">
-                        <Label htmlFor="ai-provider">AI voice provider</Label>
-                        <Select
-                            value={settings.provider}
-                            onValueChange={(v) => update({ provider: v })}
-                        >
-                            <SelectTrigger id="ai-provider">
-                                <SelectValue placeholder="Select a provider" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {providerCodes.map((code) => (
-                                    <SelectItem key={code} value={code}>
-                                        {metaFor(code).label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <p className="text-xs text-muted-foreground">
-                            The AI calling agent used for this institute. The credentials and
-                            campaign below are for the selected provider.
-                        </p>
-                    </div>
-
-                    {settings.provider === 'VACADEMY_AI' && <AiCarrierStatusStrip />}
-
-                    {settings.enabled && (
-                        <div className="grid max-w-md gap-2">
-                            <Label htmlFor="ai-campaign-id">Default Campaign ID</Label>
-                            <Input
-                                id="ai-campaign-id"
-                                value={settings.defaultCampaignId}
-                                placeholder={meta.campaignPlaceholder}
-                                onChange={(e) => update({ defaultCampaignId: e.target.value })}
-                            />
-                            <p className="text-xs text-muted-foreground">{meta.campaignHelp}</p>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-
-            {/* ── Campaigns (inbound / outbound) ── */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Campaigns / Agents</CardTitle>
-                    <CardDescription>
-                        Register each AI campaign id and give it an agent <b>name</b> (e.g.
-                        &ldquo;Class Feedback&rdquo;). Workflows reference the <b>name</b>, not the
-                        raw id — pick the same name once per provider and switching provider
-                        resolves to the right id automatically. Tag each Outbound (you dial) or
-                        Inbound (they dial your AI line); Inbound ids classify incoming webhooks
-                        (matched to the lead by phone).
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                    <div className="space-y-2">
-                        {(settings.campaigns ?? []).map((c, i) => (
-                            <div key={i} className="flex items-center gap-2">
-                                <Input
-                                    value={c.name}
-                                    placeholder="Agent name (e.g. Class Feedback)"
-                                    onChange={(e) => updateCampaign(i, { name: e.target.value })}
-                                    className="flex-1"
-                                />
-                                <Input
-                                    value={c.campaignId}
-                                    placeholder="Campaign ID"
-                                    onChange={(e) =>
-                                        updateCampaign(i, { campaignId: e.target.value })
-                                    }
-                                    className="flex-1"
-                                />
-                                <Select
-                                    value={c.provider || settings.provider}
-                                    onValueChange={(v) => updateCampaign(i, { provider: v })}
-                                >
-                                    <SelectTrigger className="w-32">
-                                        <SelectValue placeholder="Provider" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {providerCodes.map((code) => (
-                                            <SelectItem key={code} value={code}>
-                                                {metaFor(code).label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <Select
-                                    value={c.direction}
-                                    onValueChange={(v) =>
-                                        updateCampaign(i, { direction: v as CampaignDirection })
-                                    }
-                                >
-                                    <SelectTrigger className="w-32">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="OUTBOUND">Outbound</SelectItem>
-                                        <SelectItem value="INBOUND">Inbound</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <MyButton
-                                    buttonType="secondary"
-                                    scale="medium"
-                                    onClick={() => removeCampaign(i)}
-                                >
-                                    <Trash className="size-4" />
-                                </MyButton>
-                            </div>
-                        ))}
-                        {(settings.campaigns ?? []).length === 0 && (
-                            <p className="text-xs text-muted-foreground">
-                                No campaigns registered yet. Add one and tag it Inbound to enable
-                                inbound-call detection.
-                            </p>
+            {/* ── Header: policy save lives here so it is reachable from every tab ── */}
+            <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex min-w-0 flex-col gap-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <h1 className="text-xl font-semibold text-neutral-900">
+                            {t('header.title')}
+                        </h1>
+                        {hasChanges && (
+                            <span className="rounded-sm bg-warning-50 px-2 py-0.5 text-caption font-medium text-warning-700">
+                                {t('header.unsaved')}
+                            </span>
                         )}
                     </div>
-                    <div>
-                        <MyButton buttonType="secondary" scale="medium" onClick={addCampaign}>
-                            <Plus className="size-4" /> Add campaign
+                    <p className="text-sm text-neutral-500">{t('header.description')}</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                    {hasVacademyAi && (
+                        <MyButton
+                            buttonType="secondary"
+                            scale="medium"
+                            onClick={() => navigate({ to: '/calling/ai-agents' })}
+                        >
+                            <Robot className="size-4" /> {t('header.aiAgents')}
                         </MyButton>
-                    </div>
-                </CardContent>
-            </Card>
+                    )}
+                    <MyButton
+                        buttonType="primary"
+                        scale="medium"
+                        onClick={handleSave}
+                        disable={saving || !hasChanges || isLoading}
+                    >
+                        {saving ? t('save.saving') : t('save.save')}
+                    </MyButton>
+                </div>
+            </div>
 
-            {/* ── Vacademy AI agent registry (personas for our own caller) ── */}
-            {providerCodes.includes('VACADEMY_AI') && (
-                <AiAgentsCard onBridged={mirrorBridgedCampaign} onRemoved={mirrorRemovedCampaign} />
+            {!settings.enabled && (
+                <div className="flex items-start gap-2 rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-body text-neutral-600">
+                    <Info className="mt-0.5 size-4 shrink-0 text-primary-500" />
+                    <span>{t('header.disabledBanner')}</span>
+                </div>
             )}
 
-            {/* ── Credentials ── */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Credentials</CardTitle>
-                    <CardDescription>
-                        API credentials for this institute&apos;s AI calling provider. The token and
-                        webhook secret are stored encrypted and never shown again.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="grid max-w-md gap-2">
-                        <Label htmlFor="ai-company-code">{meta.companyCodeLabel}</Label>
-                        <Input
-                            id="ai-company-code"
-                            value={companyCode}
-                            placeholder={meta.companyCodePlaceholder}
-                            onChange={(e) => setCompanyCode(e.target.value)}
-                        />
-                    </div>
-                    <div className="grid max-w-md gap-2">
-                        <Label htmlFor="ai-token">{meta.tokenLabel}</Label>
-                        <Input
-                            id="ai-token"
-                            type="password"
-                            {...noAutofillProps('password')}
-                            value={apiToken}
-                            placeholder={
-                                cfg?.hasToken
-                                    ? '•••••••• (saved — leave blank to keep)'
-                                    : meta.tokenPlaceholder
-                            }
-                            onChange={(e) => setApiToken(e.target.value)}
-                        />
-                    </div>
-                    <div className="grid max-w-md gap-2">
-                        <Label htmlFor="ai-webhook-secret">Webhook Secret</Label>
-                        <Input
-                            id="ai-webhook-secret"
-                            type="password"
-                            {...noAutofillProps('password')}
-                            value={webhookSecret}
-                            placeholder={
-                                cfg?.hasWebhookSecret
-                                    ? '•••••••• (saved — leave blank to keep)'
-                                    : 'Secret for the webhook URL ?token='
-                            }
-                            onChange={(e) => setWebhookSecret(e.target.value)}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                            Authenticates the provider&apos;s end-of-call webhook. Hand your AI
-                            provider the URL {webhookPath}?instituteId=…&amp;token=&lt;this
-                            secret&gt;.
-                        </p>
-                    </div>
-                    <div className="flex justify-end">
-                        <MyButton
-                            buttonType="primary"
-                            scale="medium"
-                            onClick={handleSaveCreds}
-                            disable={savingCreds}
-                        >
-                            {savingCreds ? 'Saving…' : 'Save credentials'}
-                        </MyButton>
-                    </div>
-                </CardContent>
-            </Card>
+            {/* Every tab stays mounted (hidden while inactive) so switching tabs
+                never resets an edit or refetches a card's data. */}
+            <Tabs
+                value={currentTab}
+                onValueChange={(v) => setActiveTab(v as AiCallingTabKey)}
+                className="space-y-6"
+            >
+                <TabsList className="h-auto max-w-full flex-wrap justify-start gap-1">
+                    {tabs.map((tab) => (
+                        <TabsTrigger key={tab.key} value={tab.key}>
+                            {tab.label}
+                        </TabsTrigger>
+                    ))}
+                </TabsList>
 
-            {settings.enabled && (
-                <>
-                    {/* ── Retry & Calling Window ── */}
+                <TabsContent
+                    value="general"
+                    forceMount
+                    className="mt-0 space-y-6 data-[state=inactive]:hidden"
+                >
+                    {/* ── Enable + Campaign ── */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Retries &amp; Calling Shifts</CardTitle>
-                            <CardDescription>
-                                If a lead doesn&apos;t answer, the AI retries within these limits
-                                before giving up. Retries are only placed inside the shifts below.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            <div className="grid gap-2">
-                                <Label htmlFor="max-retries">Max retries</Label>
-                                <Input
-                                    id="max-retries"
-                                    type="number"
-                                    min={0}
-                                    max={10}
-                                    value={settings.maxRetries}
-                                    onChange={(e) =>
-                                        update({ maxRetries: parseInt(e.target.value, 10) || 0 })
-                                    }
-                                    className="w-28"
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="max-per-day">Max calls per day (per lead)</Label>
-                                <Input
-                                    id="max-per-day"
-                                    type="number"
-                                    min={1}
-                                    max={10}
-                                    value={settings.maxCallsPerDayPerLead}
-                                    onChange={(e) =>
-                                        update({
-                                            maxCallsPerDayPerLead:
-                                                parseInt(e.target.value, 10) || 1,
-                                        })
-                                    }
-                                    className="w-28"
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="retry-gap">Minutes between retries</Label>
-                                <Input
-                                    id="retry-gap"
-                                    type="number"
-                                    min={1}
-                                    max={1440}
-                                    value={settings.retryGapMinutes}
-                                    onChange={(e) =>
-                                        update({
-                                            retryGapMinutes: parseInt(e.target.value, 10) || 1,
-                                        })
-                                    }
-                                    className="w-28"
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                    How long the bot waits before re-dialing a no-answer lead.
-                                </p>
-                            </div>
-                            <div className="grid gap-2 sm:col-span-2">
-                                <Label>Calling shifts</Label>
-                                <p className="text-xs text-muted-foreground">
-                                    Time windows the bot may (re)dial in. Add multiple shifts (e.g.
-                                    morning + evening). Applies to the timed retry re-dialer;
-                                    immediate new-lead, manual and bulk calls fire right away.
-                                </p>
-                                <div className="space-y-2">
-                                    {settings.callingShifts.map((shift, i) => (
-                                        <div key={i} className="flex items-center gap-2">
-                                            <Input
-                                                type="time"
-                                                value={shift.start}
-                                                onChange={(e) =>
-                                                    updateShift(i, { start: e.target.value })
-                                                }
-                                                className="w-36"
-                                            />
-                                            <span className="text-sm text-muted-foreground">
-                                                to
-                                            </span>
-                                            <Input
-                                                type="time"
-                                                value={shift.end}
-                                                onChange={(e) =>
-                                                    updateShift(i, { end: e.target.value })
-                                                }
-                                                className="w-36"
-                                            />
-                                            <MyButton
-                                                buttonType="secondary"
-                                                scale="medium"
-                                                onClick={() => removeShift(i)}
-                                                disable={settings.callingShifts.length <= 1}
-                                            >
-                                                <Trash className="size-4" />
-                                            </MyButton>
-                                        </div>
-                                    ))}
-                                </div>
-                                <div>
-                                    <MyButton
-                                        buttonType="secondary"
-                                        scale="medium"
-                                        onClick={addShift}
-                                    >
-                                        <Plus className="size-4" /> Add shift
-                                    </MyButton>
-                                </div>
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="timezone">Timezone</Label>
-                                <Input
-                                    id="timezone"
-                                    value={settings.timezone}
-                                    onChange={(e) => update({ timezone: e.target.value })}
-                                    className="w-48"
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="connect-threshold">Min connect seconds</Label>
-                                <Input
-                                    id="connect-threshold"
-                                    type="number"
-                                    min={0}
-                                    max={120}
-                                    value={settings.connectThresholdSec}
-                                    onChange={(e) =>
-                                        update({
-                                            connectThresholdSec: parseInt(e.target.value, 10) || 0,
-                                        })
-                                    }
-                                    className="w-28"
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                    Shorter calls count as &ldquo;not connected&rdquo; and are
-                                    retried.
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* ── Outcome → Action ── */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Outcome &rarr; Action</CardTitle>
-                            <CardDescription>
-                                For each AI-call outcome, choose what happens. Outcomes left off
-                                both lists are retried until max retries, then assigned to a human.
-                                Add custom outcomes below for the dispositions your own AI agent
-                                returns.
-                            </CardDescription>
+                            <CardTitle>{t('enableCard.title')}</CardTitle>
+                            <CardDescription>{t('enableCard.description')}</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-6 gap-y-1 text-xs font-medium text-muted-foreground">
-                                <span>Disposition</span>
-                                <span className="w-28 text-center">Assign counsellor</span>
-                                <span className="w-28 text-center">Stop (no retry)</span>
-                            </div>
-                            {[...DISPOSITIONS, ...settings.customDispositions].map((d) => {
-                                const isCustom = !(DISPOSITIONS as readonly string[]).includes(d);
-                                return (
-                                    <div
-                                        key={d}
-                                        className="grid grid-cols-[1fr_auto_auto] items-center gap-x-6"
-                                    >
-                                        <span className="flex items-center gap-2 text-sm">
-                                            {d.replace(/_/g, ' ')}
-                                            {isCustom && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeCustomDisposition(d)}
-                                                    className="text-muted-foreground transition-colors hover:text-danger-600"
-                                                    aria-label={`Remove ${d.replace(/_/g, ' ')}`}
-                                                >
-                                                    <Trash size={14} />
-                                                </button>
-                                            )}
-                                        </span>
-                                        <div className="flex w-28 justify-center">
-                                            <Switch
-                                                checked={settings.assignOnDispositions.includes(d)}
-                                                onCheckedChange={(v) =>
-                                                    toggleDisposition('assignOnDispositions', d, v)
-                                                }
-                                            />
-                                        </div>
-                                        <div className="flex w-28 justify-center">
-                                            <Switch
-                                                checked={settings.stopOnDispositions.includes(d)}
-                                                onCheckedChange={(v) =>
-                                                    toggleDisposition('stopOnDispositions', d, v)
-                                                }
-                                            />
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                            <Separator />
-                            <div className="flex items-center gap-2">
-                                <Input
-                                    value={newDisposition}
-                                    onChange={(e) => setNewDisposition(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            e.preventDefault();
-                                            addCustomDisposition();
-                                        }
-                                    }}
-                                    placeholder="Add a custom outcome (e.g. Wrong Number)"
-                                    className="h-9 max-w-xs"
+                            <div className="flex items-center gap-3">
+                                <Switch
+                                    id="ai-calling-enabled"
+                                    checked={settings.enabled}
+                                    onCheckedChange={(v) => update({ enabled: v })}
                                 />
-                                <MyButton
-                                    type="button"
-                                    buttonType="secondary"
-                                    scale="medium"
-                                    onClick={addCustomDisposition}
-                                    disable={!newDisposition.trim()}
-                                >
-                                    <Plus size={14} /> Add outcome
-                                </MyButton>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* ── Counsellor Assignment ── */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Counsellor Assignment</CardTitle>
-                            <CardDescription>
-                                How a counsellor is picked when a lead qualifies (or when retries
-                                are exhausted).
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid gap-2">
-                                <Label>Assignment mode</Label>
-                                <div className="flex flex-wrap gap-2">
-                                    {ASSIGNMENT_MODES.map((m) => (
-                                        <MyButton
-                                            key={m.value}
-                                            buttonType={
-                                                settings.assignmentMode === m.value
-                                                    ? 'primary'
-                                                    : 'secondary'
-                                            }
-                                            scale="medium"
-                                            onClick={() => update({ assignmentMode: m.value })}
-                                        >
-                                            {m.label}
-                                        </MyButton>
-                                    ))}
-                                </div>
+                                <Label htmlFor="ai-calling-enabled" className="cursor-pointer">
+                                    {settings.enabled
+                                        ? t('enableCard.enabled')
+                                        : t('enableCard.disabled')}
+                                </Label>
                             </div>
 
                             <Separator />
 
                             <div className="flex items-center gap-3">
                                 <Switch
-                                    id="assign-exhausted"
-                                    checked={settings.assignExhaustedToHuman}
-                                    onCheckedChange={(v) => update({ assignExhaustedToHuman: v })}
+                                    id="ai-show-in-lead-list"
+                                    checked={settings.showInLeadList}
+                                    onCheckedChange={(v) => update({ showInLeadList: v })}
                                 />
-                                <Label htmlFor="assign-exhausted" className="cursor-pointer">
-                                    Assign no-answer leads to a human after retries are exhausted
+                                <Label htmlFor="ai-show-in-lead-list" className="cursor-pointer">
+                                    {t('enableCard.showInLeadList')}
                                 </Label>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                {t('enableCard.showInLeadListHint')}
+                            </p>
+
+                            <Separator />
+
+                            <div className="flex items-center gap-3">
+                                <Switch
+                                    id="ai-inbound-lead-capture"
+                                    checked={settings.inboundLeadCapture?.enabled ?? false}
+                                    onCheckedChange={(v) =>
+                                        update({ inboundLeadCapture: { enabled: v } })
+                                    }
+                                />
+                                <Label htmlFor="ai-inbound-lead-capture" className="cursor-pointer">
+                                    {t('enableCard.inboundLeadCapture')}
+                                </Label>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                {t('enableCard.inboundLeadCaptureHint')}
+                            </p>
+
+                            <Separator />
+
+                            <div className="grid max-w-md gap-2">
+                                <Label htmlFor="ai-provider">{t('enableCard.providerLabel')}</Label>
+                                <Select
+                                    value={settings.provider}
+                                    onValueChange={(v) => update({ provider: v })}
+                                >
+                                    <SelectTrigger id="ai-provider">
+                                        <SelectValue
+                                            placeholder={t('enableCard.providerPlaceholder')}
+                                        />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {providerCodes.map((code) => (
+                                            <SelectItem key={code} value={code}>
+                                                {metaFor(code, t).label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <p className="text-xs text-muted-foreground">
+                                    {t('enableCard.providerHint')}
+                                </p>
+                            </div>
+
+                            {settings.provider === 'VACADEMY_AI' && <AiCarrierStatusStrip />}
+
+                            {settings.enabled && (
+                                <div className="grid max-w-md gap-2">
+                                    <Label htmlFor="ai-campaign-id">
+                                        {t('enableCard.defaultCampaignIdLabel')}
+                                    </Label>
+                                    <Input
+                                        id="ai-campaign-id"
+                                        value={settings.defaultCampaignId}
+                                        placeholder={meta.campaignPlaceholder}
+                                        onChange={(e) =>
+                                            update({ defaultCampaignId: e.target.value })
+                                        }
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        {meta.campaignHelp}
+                                    </p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* ── Credentials ── */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>{t('credentials.title')}</CardTitle>
+                            <CardDescription>{t('credentials.description')}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid max-w-md gap-2">
+                                <Label htmlFor="ai-company-code">{meta.companyCodeLabel}</Label>
+                                <Input
+                                    id="ai-company-code"
+                                    value={companyCode}
+                                    placeholder={meta.companyCodePlaceholder}
+                                    onChange={(e) => setCompanyCode(e.target.value)}
+                                />
+                            </div>
+                            <div className="grid max-w-md gap-2">
+                                <Label htmlFor="ai-token">{meta.tokenLabel}</Label>
+                                <Input
+                                    id="ai-token"
+                                    type="password"
+                                    {...noAutofillProps('password')}
+                                    value={apiToken}
+                                    placeholder={
+                                        cfg?.hasToken
+                                            ? t('credentials.savedPlaceholder')
+                                            : meta.tokenPlaceholder
+                                    }
+                                    onChange={(e) => setApiToken(e.target.value)}
+                                />
+                            </div>
+                            <div className="grid max-w-md gap-2">
+                                <Label htmlFor="ai-webhook-secret">
+                                    {t('credentials.webhookSecretLabel')}
+                                </Label>
+                                <Input
+                                    id="ai-webhook-secret"
+                                    type="password"
+                                    {...noAutofillProps('password')}
+                                    value={webhookSecret}
+                                    placeholder={
+                                        cfg?.hasWebhookSecret
+                                            ? t('credentials.savedPlaceholder')
+                                            : t('credentials.webhookSecretPlaceholder')
+                                    }
+                                    onChange={(e) => setWebhookSecret(e.target.value)}
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    {t('credentials.webhookHelp', { webhookPath })}
+                                </p>
+                            </div>
+                            <div className="flex justify-end">
+                                <MyButton
+                                    buttonType="primary"
+                                    scale="medium"
+                                    onClick={handleSaveCreds}
+                                    disable={savingCreds}
+                                >
+                                    {savingCreds ? t('credentials.saving') : t('credentials.save')}
+                                </MyButton>
                             </div>
                         </CardContent>
                     </Card>
-                </>
-            )}
+                </TabsContent>
 
-            {/* ── Save ── */}
-            <div className="flex items-center justify-end">
-                <MyButton
-                    buttonType="primary"
-                    scale="medium"
-                    onClick={handleSave}
-                    disable={saving || !hasChanges || isLoading}
+                <TabsContent
+                    value="agents"
+                    forceMount
+                    className="mt-0 space-y-6 data-[state=inactive]:hidden"
                 >
-                    {saving ? 'Saving…' : 'Save AI calling settings'}
-                </MyButton>
-            </div>
+                    {/* ── Campaigns (inbound / outbound) ── */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>{t('campaigns.title')}</CardTitle>
+                            <CardDescription>
+                                {t('campaigns.description.part1')}{' '}
+                                <b>{t('campaigns.description.nameWord')}</b>{' '}
+                                {t('campaigns.description.part2')}{' '}
+                                <b>{t('campaigns.description.nameWord')}</b>
+                                {t('campaigns.description.part3')}
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            <div className="space-y-2">
+                                {(settings.campaigns ?? []).map((c, i) => (
+                                    <div key={i} className="flex items-center gap-2">
+                                        <Input
+                                            value={c.name}
+                                            placeholder={t('campaigns.agentNamePlaceholder')}
+                                            onChange={(e) =>
+                                                updateCampaign(i, { name: e.target.value })
+                                            }
+                                            className="flex-1"
+                                        />
+                                        <Input
+                                            value={c.campaignId}
+                                            placeholder={t('campaigns.campaignIdPlaceholder')}
+                                            onChange={(e) =>
+                                                updateCampaign(i, { campaignId: e.target.value })
+                                            }
+                                            className="flex-1"
+                                        />
+                                        <Select
+                                            value={c.provider || settings.provider}
+                                            onValueChange={(v) =>
+                                                updateCampaign(i, { provider: v })
+                                            }
+                                        >
+                                            <SelectTrigger className="w-32">
+                                                <SelectValue
+                                                    placeholder={t('campaigns.providerPlaceholder')}
+                                                />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {providerCodes.map((code) => (
+                                                    <SelectItem key={code} value={code}>
+                                                        {metaFor(code, t).label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <Select
+                                            value={c.direction}
+                                            onValueChange={(v) =>
+                                                updateCampaign(i, {
+                                                    direction: v as CampaignDirection,
+                                                })
+                                            }
+                                        >
+                                            <SelectTrigger className="w-32">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="OUTBOUND">
+                                                    {t('campaigns.outbound')}
+                                                </SelectItem>
+                                                <SelectItem value="INBOUND">
+                                                    {t('campaigns.inbound')}
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <MyButton
+                                            buttonType="secondary"
+                                            scale="medium"
+                                            onClick={() => removeCampaign(i)}
+                                        >
+                                            <Trash className="size-4" />
+                                        </MyButton>
+                                    </div>
+                                ))}
+                                {(settings.campaigns ?? []).length === 0 && (
+                                    <p className="text-xs text-muted-foreground">
+                                        {t('campaigns.empty')}
+                                    </p>
+                                )}
+                            </div>
+                            <div>
+                                <MyButton
+                                    buttonType="secondary"
+                                    scale="medium"
+                                    onClick={addCampaign}
+                                >
+                                    <Plus className="size-4" /> {t('campaigns.addCampaign')}
+                                </MyButton>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* ── Vacademy AI agent registry (personas for our own caller) ── */}
+                    {hasVacademyAi && (
+                        <AiAgentsCard
+                            onBridged={mirrorBridgedCampaign}
+                            onRemoved={mirrorRemovedCampaign}
+                        />
+                    )}
+
+                    {/* ── Public API: keys, agent ids, webhook (calls placed by the client's own systems) ── */}
+                    {hasVacademyAi && <AiCallingApiCard />}
+                </TabsContent>
+
+                {settings.enabled && (
+                    <>
+                        <TabsContent
+                            value="retries"
+                            forceMount
+                            className="mt-0 space-y-6 data-[state=inactive]:hidden"
+                        >
+                            {/* ── Retry & Calling Window ── */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>{t('retryCard.title')}</CardTitle>
+                                    <CardDescription>{t('retryCard.description')}</CardDescription>
+                                </CardHeader>
+                                <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="max-retries">
+                                            {t('retryCard.maxRetries')}
+                                        </Label>
+                                        <Input
+                                            id="max-retries"
+                                            type="number"
+                                            min={0}
+                                            max={10}
+                                            value={settings.maxRetries}
+                                            onChange={(e) =>
+                                                update({
+                                                    maxRetries: parseInt(e.target.value, 10) || 0,
+                                                })
+                                            }
+                                            className="w-28"
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="max-per-day">
+                                            {t('retryCard.maxPerDay')}
+                                        </Label>
+                                        <Input
+                                            id="max-per-day"
+                                            type="number"
+                                            min={1}
+                                            max={10}
+                                            value={settings.maxCallsPerDayPerLead}
+                                            onChange={(e) =>
+                                                update({
+                                                    maxCallsPerDayPerLead:
+                                                        parseInt(e.target.value, 10) || 1,
+                                                })
+                                            }
+                                            className="w-28"
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="retry-gap">{t('retryCard.retryGap')}</Label>
+                                        <Input
+                                            id="retry-gap"
+                                            type="number"
+                                            min={1}
+                                            max={1440}
+                                            value={settings.retryGapMinutes}
+                                            onChange={(e) =>
+                                                update({
+                                                    retryGapMinutes:
+                                                        parseInt(e.target.value, 10) || 1,
+                                                })
+                                            }
+                                            className="w-28"
+                                        />
+                                        <p className="text-xs text-muted-foreground">
+                                            {t('retryCard.retryGapHint')}
+                                        </p>
+                                    </div>
+                                    <div className="grid gap-2 sm:col-span-2">
+                                        <Label>{t('retryCard.callingShifts')}</Label>
+                                        <p className="text-xs text-muted-foreground">
+                                            {t('retryCard.callingShiftsHint')}
+                                        </p>
+                                        <div className="space-y-2">
+                                            {settings.callingShifts.map((shift, i) => (
+                                                <div key={i} className="flex items-center gap-2">
+                                                    <Input
+                                                        type="time"
+                                                        value={shift.start}
+                                                        onChange={(e) =>
+                                                            updateShift(i, {
+                                                                start: e.target.value,
+                                                            })
+                                                        }
+                                                        className="w-36"
+                                                    />
+                                                    <span className="text-sm text-muted-foreground">
+                                                        {t('retryCard.shiftTo')}
+                                                    </span>
+                                                    <Input
+                                                        type="time"
+                                                        value={shift.end}
+                                                        onChange={(e) =>
+                                                            updateShift(i, { end: e.target.value })
+                                                        }
+                                                        className="w-36"
+                                                    />
+                                                    <MyButton
+                                                        buttonType="secondary"
+                                                        scale="medium"
+                                                        onClick={() => removeShift(i)}
+                                                        disable={settings.callingShifts.length <= 1}
+                                                    >
+                                                        <Trash className="size-4" />
+                                                    </MyButton>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div>
+                                            <MyButton
+                                                buttonType="secondary"
+                                                scale="medium"
+                                                onClick={addShift}
+                                            >
+                                                <Plus className="size-4" />{' '}
+                                                {t('retryCard.addShift')}
+                                            </MyButton>
+                                        </div>
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="timezone">{t('retryCard.timezone')}</Label>
+                                        <Input
+                                            id="timezone"
+                                            value={settings.timezone}
+                                            onChange={(e) => update({ timezone: e.target.value })}
+                                            className="w-48"
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="connect-threshold">
+                                            {t('retryCard.connectThreshold')}
+                                        </Label>
+                                        <Input
+                                            id="connect-threshold"
+                                            type="number"
+                                            min={0}
+                                            max={120}
+                                            value={settings.connectThresholdSec}
+                                            onChange={(e) =>
+                                                update({
+                                                    connectThresholdSec:
+                                                        parseInt(e.target.value, 10) || 0,
+                                                })
+                                            }
+                                            className="w-28"
+                                        />
+                                        <p className="text-xs text-muted-foreground">
+                                            {t('retryCard.connectThresholdHint')}
+                                        </p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
+                        <TabsContent
+                            value="outcomes"
+                            forceMount
+                            className="mt-0 space-y-6 data-[state=inactive]:hidden"
+                        >
+                            {/* ── Outcome → Action ── */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>{t('outcomeAction.title')}</CardTitle>
+                                    <CardDescription>
+                                        {t('outcomeAction.description')}
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>
+                                                    {t('outcomeAction.dispositionHeader')}
+                                                </TableHead>
+                                                <TableHead className="text-center">
+                                                    {t('outcomeAction.assignHeader')}
+                                                </TableHead>
+                                                <TableHead className="text-center">
+                                                    {t('outcomeAction.stopHeader')}
+                                                </TableHead>
+                                                <TableHead>
+                                                    {t('outcomeAction.otherwiseHeader')}
+                                                </TableHead>
+                                                <TableHead className="w-12" />
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {[...DISPOSITIONS, ...settings.customDispositions].map(
+                                                (d) => {
+                                                    const isCustom = !(
+                                                        DISPOSITIONS as readonly string[]
+                                                    ).includes(d);
+                                                    const assigns =
+                                                        settings.assignOnDispositions.includes(d);
+                                                    const stops =
+                                                        settings.stopOnDispositions.includes(d);
+                                                    return (
+                                                        <TableRow key={d}>
+                                                            <TableCell>
+                                                                <span className="flex items-center gap-2 font-medium text-neutral-800">
+                                                                    {d.replace(/_/g, ' ')}
+                                                                    {isCustom && (
+                                                                        <Badge variant="secondary">
+                                                                            {t(
+                                                                                'outcomeAction.customBadge'
+                                                                            )}
+                                                                        </Badge>
+                                                                    )}
+                                                                </span>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <div className="flex justify-center">
+                                                                    <Switch
+                                                                        checked={assigns}
+                                                                        onCheckedChange={(v) =>
+                                                                            toggleDisposition(
+                                                                                'assignOnDispositions',
+                                                                                d,
+                                                                                v
+                                                                            )
+                                                                        }
+                                                                        aria-label={t(
+                                                                            'outcomeAction.assignHeader'
+                                                                        )}
+                                                                    />
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <div className="flex justify-center">
+                                                                    <Switch
+                                                                        checked={stops}
+                                                                        onCheckedChange={(v) =>
+                                                                            toggleDisposition(
+                                                                                'stopOnDispositions',
+                                                                                d,
+                                                                                v
+                                                                            )
+                                                                        }
+                                                                        aria-label={t(
+                                                                            'outcomeAction.stopHeader'
+                                                                        )}
+                                                                    />
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell className="text-caption text-neutral-500">
+                                                                {assigns || stops
+                                                                    ? '—'
+                                                                    : settings.assignExhaustedToHuman
+                                                                      ? t(
+                                                                            'outcomeAction.otherwiseRetry'
+                                                                        )
+                                                                      : t(
+                                                                            'outcomeAction.otherwiseRetryOnly'
+                                                                        )}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                {isCustom && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            removeCustomDisposition(
+                                                                                d
+                                                                            )
+                                                                        }
+                                                                        className="text-muted-foreground transition-colors hover:text-danger-600"
+                                                                        aria-label={t(
+                                                                            'outcomeAction.removeAria',
+                                                                            {
+                                                                                disposition:
+                                                                                    d.replace(
+                                                                                        /_/g,
+                                                                                        ' '
+                                                                                    ),
+                                                                            }
+                                                                        )}
+                                                                    >
+                                                                        <Trash size={14} />
+                                                                    </button>
+                                                                )}
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    );
+                                                }
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                    <Separator />
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            value={newDisposition}
+                                            onChange={(e) => setNewDisposition(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    addCustomDisposition();
+                                                }
+                                            }}
+                                            placeholder={t('outcomeAction.addOutcomePlaceholder')}
+                                            className="h-9 max-w-xs"
+                                        />
+                                        <MyButton
+                                            type="button"
+                                            buttonType="secondary"
+                                            scale="medium"
+                                            onClick={addCustomDisposition}
+                                            disable={!newDisposition.trim()}
+                                        >
+                                            <Plus size={14} /> {t('outcomeAction.addOutcome')}
+                                        </MyButton>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
+                        <TabsContent
+                            value="assignment"
+                            forceMount
+                            className="mt-0 space-y-6 data-[state=inactive]:hidden"
+                        >
+                            {/* ── Counsellor Assignment ── */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>{t('assignmentCard.title')}</CardTitle>
+                                    <CardDescription>
+                                        {t('assignmentCard.description')}
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid gap-2">
+                                        <Label>{t('assignmentCard.modeLabel')}</Label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {ASSIGNMENT_MODES.map((m) => (
+                                                <MyButton
+                                                    key={m.value}
+                                                    buttonType={
+                                                        settings.assignmentMode === m.value
+                                                            ? 'primary'
+                                                            : 'secondary'
+                                                    }
+                                                    scale="medium"
+                                                    onClick={() =>
+                                                        update({ assignmentMode: m.value })
+                                                    }
+                                                >
+                                                    {t(m.labelKey)}
+                                                </MyButton>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <Separator />
+
+                                    <div className="flex items-center gap-3">
+                                        <Switch
+                                            id="assign-exhausted"
+                                            checked={settings.assignExhaustedToHuman}
+                                            onCheckedChange={(v) =>
+                                                update({ assignExhaustedToHuman: v })
+                                            }
+                                        />
+                                        <Label
+                                            htmlFor="assign-exhausted"
+                                            className="cursor-pointer"
+                                        >
+                                            {t('assignmentCard.assignExhausted')}
+                                        </Label>
+                                    </div>
+
+                                    <div className="flex items-start gap-3">
+                                        <Switch
+                                            id="reassign-qualified"
+                                            className="mt-0.5"
+                                            checked={settings.reassignQualifiedToPool}
+                                            onCheckedChange={(v) =>
+                                                update({ reassignQualifiedToPool: v })
+                                            }
+                                        />
+                                        <div className="flex flex-col gap-0.5">
+                                            <Label
+                                                htmlFor="reassign-qualified"
+                                                className="cursor-pointer"
+                                            >
+                                                {t('assignmentCard.reassignQualified')}
+                                            </Label>
+                                            <span className="text-caption text-neutral-500">
+                                                {t('assignmentCard.reassignQualifiedHint')}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                    </>
+                )}
+            </Tabs>
         </div>
     );
 }
@@ -1049,6 +1287,7 @@ export default function AiCallingSettings() {
  * that fixes it.
  */
 function AiCarrierStatusStrip() {
+    const { t } = useTranslation('settingsAiCalling');
     const instituteId = getCurrentInstituteId() ?? '';
     const { data, isLoading } = useQuery({
         queryKey: ['ai-voice-carrier', instituteId],
@@ -1059,12 +1298,16 @@ function AiCarrierStatusStrip() {
     if (isLoading || !data) return null;
 
     const line = data.ready
-        ? `AI calls go out on ${
-              data.mode === 'DEDICATED'
-                  ? 'a dedicated Vacademy Voice line'
-                  : `your ${data.primaryProviderName ?? 'calling'} account`
-          }${data.callerId ? ` (${data.callerId})` : ''}.`
-        : (data.blockingReason ?? 'AI calls can’t be placed yet.');
+        ? t('carrierStrip.readyLine', {
+              line:
+                  data.mode === 'DEDICATED'
+                      ? t('carrierStrip.dedicatedLine')
+                      : t('carrierStrip.providerLine', {
+                            provider: data.primaryProviderName ?? t('carrierStrip.defaultProviderWord'),
+                        }),
+              callerIdSuffix: data.callerId ? ` (${data.callerId})` : '',
+          })
+        : (data.blockingReason ?? t('carrierStrip.notReadyFallback'));
 
     return (
         <div
@@ -1079,8 +1322,12 @@ function AiCarrierStatusStrip() {
             >
                 {line}
             </span>
-            <Link to="/settings/telephony" className="text-caption text-primary-500 underline">
-                Manage the AI calling line
+            <Link
+                to="/settings/telephony"
+                hash="ai-line"
+                className="text-caption text-primary-500 underline"
+            >
+                {t('carrierStrip.manageLink')}
             </Link>
         </div>
     );

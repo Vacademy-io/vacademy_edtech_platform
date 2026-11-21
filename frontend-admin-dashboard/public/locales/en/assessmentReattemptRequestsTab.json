@@ -1,0 +1,49 @@
+{
+    "filters": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "all": "All"
+    },
+    "status": {
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "pending": "Pending"
+    },
+    "requestType": {
+        "timeIncrease": "Time increase",
+        "reattempt": "Reattempt"
+    },
+    "summary": {
+        "currentlyAllowed": "Currently allowed: {{value}}",
+        "used": "Used: {{value}}",
+        "requested": "Requested {{date}}",
+        "reviewedOn": "on {{date}}",
+        "grantedCount_one": "Granted {{count}} attempt",
+        "grantedCount_other": "Granted {{count}} attempts"
+    },
+    "form": {
+        "attemptsToGrantLabel": "Attempts to grant",
+        "attemptsRangeError": "1 to 20"
+    },
+    "actions": {
+        "approve": "Approve",
+        "reject": "Reject"
+    },
+    "toasts": {
+        "granted_one": "Granted {{count}} attempt to {{name}}.",
+        "granted_other": "Granted {{count}} attempts to {{name}}.",
+        "theLearner": "the learner",
+        "rejected": "Request rejected.",
+        "updateFailed": "Could not update this request. Please try again."
+    },
+    "error": {
+        "title": "Could not load requests",
+        "tryAgain": "Try again"
+    },
+    "empty": {
+        "titleAll": "No requests",
+        "titleFiltered": "No {{status}} requests",
+        "description": "Learners can ask for another attempt or more time from inside the exam. Their requests land here."
+    }
+}

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { WORKFLOW_NODE_TYPES } from '@/types/workflow/workflow-types';
 import { useWorkflowBuilderStore } from '../-stores/workflow-builder-store';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ const categories = [
 ] as const;
 
 export function NodePalette() {
+    const { t } = useTranslation('workflowNodePalette');
     const addNode = useWorkflowBuilderStore((s) => s.addNode);
     const workflowType = useWorkflowBuilderStore((s) => s.workflowType);
     const [search, setSearch] = useState('');
@@ -33,11 +35,11 @@ export function NodePalette() {
 
     return (
         <div className="flex h-full flex-col gap-4 overflow-y-auto p-4">
-            <h3 className="text-sm font-semibold text-gray-700">Add Nodes</h3>
+            <h3 className="text-sm font-semibold text-gray-700">{t('addNodes')}</h3>
             <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search nodes..."
+                placeholder={t('searchPlaceholder')}
                 className="h-8 text-xs"
             />
             {categories.map((category) => {
@@ -49,7 +51,7 @@ export function NodePalette() {
                 return (
                     <div key={category}>
                         <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500">
-                            {category}
+                            {t(`categories.${category}`)}
                         </p>
                         <div className="flex flex-col gap-1">
                             {nodesInCategory.map((nodeType) => (

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ShieldCheck, CaretDown, CaretUp } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ChatRulesResponse } from "@/services/chat/chatApi";
@@ -21,6 +22,7 @@ export function CommunityRulesPanel({
   isAcknowledging = false,
   onAcknowledge,
 }: CommunityRulesPanelProps) {
+  const { t } = useTranslation("chatFeatureA");
   const needsAck =
     rules.rules?.acknowledgement_required === true && rules.acknowledged === false;
 
@@ -28,7 +30,7 @@ export function CommunityRulesPanel({
   const [expanded, setExpanded] = useState(needsAck);
 
   const guidelines = rules.rules?.guidelines;
-  const title = guidelines?.title?.trim() || "Community Guidelines";
+  const title = guidelines?.title?.trim() || t("communityRules.defaultTitle");
   const items = guidelines?.items ?? [];
 
   // Nothing meaningful to show and no gate → render nothing.
@@ -71,9 +73,9 @@ export function CommunityRulesPanel({
           )}
 
           {needsAck && (
-            <div className="mt-3">
-              <p className="mb-2 text-caption text-muted-foreground">
-                Please accept the guidelines to start posting in this channel.
+            <div className="mt-3 space-y-2">
+              <p className="text-caption text-muted-foreground">
+                {t("communityRules.acceptNotice")}
               </p>
               <Button
                 type="button"
@@ -81,7 +83,7 @@ export function CommunityRulesPanel({
                 onClick={onAcknowledge}
                 disabled={isAcknowledging}
               >
-                {isAcknowledging ? "Accepting…" : "Accept & continue"}
+                {isAcknowledging ? t("communityRules.accepting") : t("communityRules.accept")}
               </Button>
             </div>
           )}

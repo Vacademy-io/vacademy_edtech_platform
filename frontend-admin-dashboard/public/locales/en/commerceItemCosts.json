@@ -1,0 +1,71 @@
+{
+    "title": "Item costs",
+    "description": "Load the purchase cost of each item from a sheet. Opening stock takes these costs, and later reports value stock at them. Checking a file changes nothing.",
+    "templateXlsx": "Template (Excel)",
+    "templateCsv": "Template (CSV)",
+    "noFile": "No file chosen",
+    "fileHint": "CSV (UTF-8) or Excel, up to 5,000 rows",
+    "chooseFile": "Choose file",
+    "changeFile": "Change file",
+    "validate": "Check file",
+    "validating": "Checking…",
+    "load": "Load costs",
+    "loading": "Loading…",
+    "yes": "Yes",
+    "no": "No",
+    "rules": {
+        "includesTax": "Say for every row whether the purchase price includes GST (yes or no). In regular GST mode the tax is taken out of the cost (enter the rate); in any other mode the tax paid stays in the cost.",
+        "unit": "Enter the price of one selling unit: per metre, kg or litre for goods sold by measure, else per piece. The cost is stored per base unit.",
+        "match": "Items are found by variant_external_ref first, then by SKU. Names are never used.",
+        "repeat": "Loading the same file again changes nothing."
+    },
+    "totals": {
+        "toChange": "Costs that change",
+        "unchanged": "Already at this cost",
+        "sumOld": "Sum of current costs",
+        "sumNew": "Sum of new costs"
+    },
+    "summary": "{{rows}} rows: {{ok}} ready, {{errors}} with errors, {{warnings}} warnings.",
+    "missingAfter": "{{count}} tracked items would still have no cost: {{skus}}",
+    "taxRule": {
+        "REMOVE_INCLUDED_TAX": "Regular GST mode: where the price includes GST, the tax is taken out of the cost.",
+        "KEEP_TAX_IN_COST": "The shop is not in regular GST mode, so the tax paid stays in the cost, even where the price includes GST."
+    },
+    "errorsTitle": "Errors ({{count}})",
+    "warningsTitle": "Warnings ({{count}})",
+    "moreIssues": "Showing the first {{shown}}. Fix these and check the file again.",
+    "fixErrorsFirst": "Fix every error and check the file again before loading.",
+    "columns": {
+        "row": "Row",
+        "item": "Item",
+        "column": "Column",
+        "code": "Code",
+        "message": "Message"
+    },
+    "spotCheck": {
+        "title": "Spot check: {{count}} rows",
+        "hint": "Compare these rows with recent purchase bills before loading.",
+        "columns": {
+            "row": "Row",
+            "sku": "SKU",
+            "name": "Item",
+            "price": "Purchase price per unit",
+            "includesTax": "Includes GST",
+            "rate": "GST rate",
+            "costPerUnit": "Cost per unit",
+            "cost": "Stored cost",
+            "current": "Current cost"
+        },
+        "perBaseUnit": "per 1/{{scale}} {{unit}}"
+    },
+    "result": {
+        "toast": "{{count}} costs loaded",
+        "summary": "Done: {{changed}} costs set now, {{alreadyDone}} set by an earlier load of this file, {{unchanged}} already at this cost."
+    },
+    "errors": {
+        "tooLarge": "The file is larger than 5 MB; split it into smaller files.",
+        "template": "The template could not be downloaded.",
+        "validate": "The file could not be checked.",
+        "commit": "The costs could not be loaded."
+    }
+}

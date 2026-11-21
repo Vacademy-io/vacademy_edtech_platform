@@ -1,0 +1,15 @@
+{
+    "sections": {
+        "creationAccessTitle": "صلاحية إنشاء الواجب",
+        "liveNotificationsTitle": "إشعارات الواجب المباشر",
+        "submissionReportsTitle": "صلاحية تسليم الواجب والتقارير",
+        "evaluationTitle": "صلاحية التقييم"
+    },
+    "roles": {
+        "admin": "مسؤول",
+        "contentCreator": "منشئ المحتوى",
+        "assessmentCreator": "منشئ التقييم",
+        "evaluator": "مقيّم",
+        "teacher": "معلم"
+    }
+}

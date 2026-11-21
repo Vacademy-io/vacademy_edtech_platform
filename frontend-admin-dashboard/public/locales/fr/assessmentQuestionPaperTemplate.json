@@ -1,0 +1,45 @@
+{
+    "common": {
+        "questionCount_one": "{{count}} question",
+        "questionCount_many": "{{count}} questions",
+        "questionCount_other": "{{count}} questions",
+        "tagCount_one": "{{count}} étiquette",
+        "tagCount_many": "{{count}} étiquettes",
+        "tagCount_other": "{{count}} étiquettes"
+    },
+    "header": {
+        "logoAlt": "Logo",
+        "untitled": "Sans titre",
+        "exit": "Quitter",
+        "save": "Enregistrer"
+    },
+    "sidebar": {
+        "questionsLabel": "Questions",
+        "questionIncompleteAriaLabel": "La question n'est pas complète",
+        "questionIncompleteTooltip": "La question n'est pas complète"
+    },
+    "actions": {
+        "addQuestion": "Ajouter une question"
+    },
+    "dialogs": {
+        "addQuestion": {
+            "title": "Ajouter une question"
+        }
+    },
+    "emptyState": {
+        "title": "Aucune question pour l'instant",
+        "description": "Ajoutez votre première question pour commencer à construire cette copie."
+    },
+    "tags": {
+        "title": "Étiquettes de sujet / thème",
+        "description": "Utilisées pour regrouper les questions dans les rapports et la recherche de questions.",
+        "applyToAll": "Appliquer à toutes les questions"
+    },
+    "toasts": {
+        "addTagFirst": "Ajoutez d'abord au moins une étiquette à cette question",
+        "tagsApplied": "{{tags}} appliqué(es) à l'ensemble des {{questions}}",
+        "updateSuccess": "Copie de questions mise à jour avec succès",
+        "incompleteQuestions": "certaines de vos questions sont incomplètes ou nécessitent votre attention !",
+        "numericAnswerMissing": "La question {{number}} doit avoir une bonne réponse avant l'enregistrement"
+    }
+}

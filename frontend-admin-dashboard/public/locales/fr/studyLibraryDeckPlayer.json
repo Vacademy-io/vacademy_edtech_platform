@@ -1,0 +1,13 @@
+{
+    "error": {
+        "noSlides": "Cette présentation ne contient aucune diapositive.",
+        "loadFailed": "Impossible de charger la présentation."
+    },
+    "slideAlt": "Diapositive {{number}}",
+    "aria": {
+        "previous": "Précédent",
+        "next": "Suivant",
+        "exitFullScreen": "Quitter le plein écran",
+        "playFullScreen": "Lire en plein écran"
+    }
+}

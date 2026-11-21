@@ -50,6 +50,18 @@ public class Announcement {
     
     @Column(nullable = false)
     private String timezone = "UTC";
+
+    /**
+     * What this announcement is ABOUT, so it can be found again later — e.g. a
+     * lead-assignment alert that has to be cleared once the counsellor works the
+     * lead. The columns have existed since the table was created and were never
+     * written; nothing else reads them, so leaving them null stays valid.
+     */
+    @Column(name = "entity")
+    private String entity;
+
+    @Column(name = "entity_id")
+    private String entityId;
     
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();

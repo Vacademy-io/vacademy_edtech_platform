@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.learner_payment_option_operation.service;
 
+import vacademy.io.admin_core_service.features.payments.util.GatewayCustomerContact;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ import vacademy.io.common.payment.enums.PaymentType;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -104,6 +106,15 @@ public class ComplexPaymentOptionOperation implements PaymentOptionOperationStra
         }
         if ("DELETED".equalsIgnoreCase(cpo.getStatus())) {
             throw new VacademyException("This fee structure is no longer available.");
+        }
+        // A FLEXIBLE plan has no fixed dates: the institute picks each learner's schedule in the
+        // admin Enroll wizard (BulkAssignmentService, which does not come through here). Learner
+        // checkout still previews the plan's template, which a flexible plan does not have, so
+        // self-enrollment is refused until the learner side supports it (CPO_FLEXIBLE_INSTALLMENTS.md phase 4).
+        if (vacademy.io.admin_core_service.features.fee_management.enums.CpoScheduleMode
+                .isFlexible(cpo.getScheduleMode())) {
+            throw new VacademyException("Installments for this fee plan are set up by the institute when it "
+                    + "enrolls you. Please contact the institute to enroll.");
         }
 
         // Step 1: Update existing ABANDONED_CART entries with userPlanId (matches OneTime/Subscription behavior).
@@ -237,9 +248,10 @@ public class ComplexPaymentOptionOperation implements PaymentOptionOperationStra
             // (mirrors FREE strategy semantics for a "nothing to pay right now" CPO).
             log.info("CPO dues are zero for userPlan={}. Skipping gateway, activating UserPlan directly.",
                     userPlan.getId());
+            Map<String, Object> paidExtras = new HashMap<>(extraData);
+            paidExtras.put("FORCE_PAID_STATUS", Boolean.TRUE);
             paymentResponseDTO = paymentService.handlePaymentWithoutGateway(
-                    user, enrollDTO, instituteId, enrollInvite, userPlan,
-                    Map.of("FORCE_PAID_STATUS", true));
+                    user, enrollDTO, instituteId, enrollInvite, userPlan, paidExtras);
             userPlanService.applyOperationsOnFirstPayment(userPlan);
         } else if (isSkipPayment(extraData)) {
             log.info("Skipping CPO payment initiation for user={} (multi-package child or manual)", user.getId());
@@ -252,7 +264,7 @@ public class ComplexPaymentOptionOperation implements PaymentOptionOperationStra
             log.info("Initiating CPO gateway payment for user={}, amount={}, currency={}",
                     user.getId(), paymentRequest.getAmount(), paymentRequest.getCurrency());
             paymentResponseDTO = paymentService.handlePayment(
-                    user, enrollDTO, instituteId, enrollInvite, userPlan);
+                    GatewayCustomerContact.withCheckoutPhone(user, userDTO, extraData), enrollDTO, instituteId, enrollInvite, userPlan);
             if (isPaymentSuccessful(paymentResponseDTO)) {
                 userPlanService.applyOperationsOnFirstPayment(userPlan);
             }

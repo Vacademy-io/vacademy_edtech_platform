@@ -1,0 +1,41 @@
+{
+    "validation": {
+        "buttonTextRequired": "बटन का टेक्स्ट आवश्यक है",
+        "buttonTextMaxLength": "बटन का टेक्स्ट 50 अक्षरों से कम होना चाहिए",
+        "invalidUrl": "अमान्य URL",
+        "invalidHexColor": "अमान्य हेक्स रंग प्रारूप",
+        "hoursRange": "घंटे 0 और 24 के बीच होने चाहिए",
+        "minutesRange": "मिनट 0 और 59 के बीच होने चाहिए",
+        "classNameMaxLength": "क्लास का नाम 100 अक्षरों से कम होना चाहिए",
+        "titleMinLength": "शीर्षक कम से कम 1 अक्षर का होना चाहिए",
+        "startTimeRequired": "शुरुआत का समय आवश्यक है",
+        "invalidDate": "अमान्य तिथि",
+        "endDateRequired": "अंतिम तिथि आवश्यक है",
+        "timeZoneRequired": "समय क्षेत्र आवश्यक है",
+        "mustBeNumber": "यह एक संख्या होनी चाहिए",
+        "durationRequired": "अवधि आवश्यक है",
+        "liveClassLinkRequired": "लाइव क्लास का लिंक आवश्यक है",
+        "durationGreaterThanZero": "अवधि शून्य से अधिक होनी चाहिए।",
+        "endDateRequiredRecurring": "आवर्ती मीटिंग के लिए अंतिम तिथि आवश्यक है।",
+        "endDateAfterStartDate": "अंतिम तिथि शुरुआत की तिथि से बाद की होनी चाहिए।",
+        "enterValidUrl": "एक मान्य URL दर्ज करें",
+        "selectTime": "समय चुनें",
+        "fieldLabelRequired": "फ़ील्ड लेबल आवश्यक है",
+        "fieldLabelTooLong": "फ़ील्ड लेबल बहुत लंबा है",
+        "paidClassPriceRequired": "पेड लाइव क्लास के लिए 0 से अधिक मूल्य दर्ज करें।",
+        "paidClassCurrencyRequired": "पेड लाइव क्लास के लिए एक मुद्रा चुनें।",
+        "emailOrPhoneRequired": "ईमेल या फ़ोन नंबर में से किसी एक को आवश्यक रखें — पंजीकरण के लिए शिक्षार्थी की पहचान हेतु इनमें से एक ज़रूरी है।",
+        "fieldStaysRequired": "\"{{label}}\" को आवश्यक बनाए रखना होगा {{why}}।",
+        "fieldRequiredGeneric": "इस फ़ॉर्म को एक आवश्यक {{role}} फ़ील्ड चाहिए {{why}}।",
+        "roleName": {
+            "phone": "फ़ोन नंबर",
+            "email": "ईमेल"
+        },
+        "whyReason": {
+            "whatsappOtp": "जब तक WhatsApp OTP सत्यापन चालू है, या उस सत्यापन को बंद करें",
+            "emailOtp": "जब तक ईमेल OTP सत्यापन चालू है, या उस सत्यापन को बंद करें",
+            "paidClass": "पेड क्लास पर — चालान शिक्षार्थी के ईमेल पर बिल किया और भेजा जाता है"
+        },
+        "selectAudienceList": "कम से कम एक ऑडियंस सूची चुनें, या टॉगल बंद करें।"
+    }
+}

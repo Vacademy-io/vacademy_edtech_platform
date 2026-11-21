@@ -1,0 +1,38 @@
+{
+    "emptyState": "Aucun compte Zoom enregistré pour le moment. Ajoutez-en un pour activer les réunions Zoom pour cet établissement.",
+    "badges": {
+        "default": "Par défaut",
+        "webhookNotSet": "Webhook non configuré"
+    },
+    "row": {
+        "accountLabel": "Compte",
+        "s2sLabel": "S2S",
+        "sdkLabel": "SDK",
+        "sdkPlatform": "Plateforme",
+        "lastVerified": "dernière vérification"
+    },
+    "menu": {
+        "ariaLabel": "Actions du compte",
+        "testConnection": "Tester la connexion",
+        "setAsDefault": "Définir par défaut",
+        "edit": "Modifier",
+        "delete": "Supprimer"
+    },
+    "toasts": {
+        "defaultSet": "« {{label}} » est maintenant le compte Zoom par défaut",
+        "defaultSetFailed": "Impossible de définir le compte par défaut",
+        "connected": "Connecté en tant que {{email}}",
+        "connectedWithPlan": "Connecté en tant que {{email}} ({{planType}})",
+        "unknownEmail": "inconnu",
+        "connectionFailed": "Échec de la connexion",
+        "connectionTestFailed": "Échec du test de connexion",
+        "removed": "« {{label}} » supprimé",
+        "deleteFailed": "Échec de la suppression du compte"
+    },
+    "dialog": {
+        "title": "Supprimer ce compte Zoom ?",
+        "description": "« {{label}} » sera supprimé. Les sessions en direct existantes créées avec ce compte ne seront pas affectées, mais vous ne pourrez pas créer de nouvelles réunions avec ce compte tant que vous n'aurez pas ajouté à nouveau les identifiants.",
+        "cancel": "Annuler",
+        "confirmDelete": "Supprimer"
+    }
+}

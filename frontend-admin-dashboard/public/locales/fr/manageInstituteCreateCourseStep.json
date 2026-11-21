@@ -1,0 +1,16 @@
+{
+    "selectionLabel": "Sélection de {{course}}",
+    "selectExisting": "Sélectionner un(e) {{course}} existant(e)",
+    "createNew": "Créer un(e) nouveau/nouvelle {{course}}",
+    "selectPlaceholder": "Sélectionner un(e) {{course}}",
+    "addNewCourse": "Ajouter un nouveau cours",
+    "validation": {
+        "selectCourse": "Veuillez sélectionner un cours"
+    },
+    "toast": {
+        "batchCreated": "Lot créé avec succès",
+        "createFailed": "Échec de la création du lot"
+    },
+    "searchPlaceholder": "Rechercher {{course}}…",
+    "emptyCourses": "Aucun cours pour le moment. Choisissez « Créer » ci-dessus."
+}

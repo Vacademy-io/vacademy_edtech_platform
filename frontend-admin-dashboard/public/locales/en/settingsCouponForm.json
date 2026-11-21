@@ -1,0 +1,96 @@
+{
+    "schema": {
+        "codeMinLength": "Code must be at least 3 characters",
+        "codeMaxLength": "Code must be at most 32 characters",
+        "codeFormat": "Use uppercase letters, digits, _ or -",
+        "discountValueRequired": "Discount value is required",
+        "discountValuePositive": "Discount value must be greater than 0",
+        "usageLimitInvalid": "Enter a number or leave blank",
+        "percentageMax": "Percentage cannot exceed 100",
+        "endDateAfterStart": "End date must be after start date"
+    },
+    "priceLine": {
+        "percentOff": "{{value}}% off",
+        "percentOffWithMax": "{{value}}% off, max {{max}}",
+        "flatOff": "{{amount}} off",
+        "withExpiry": "{{discount}} · valid until {{date}}"
+    },
+    "dialog": {
+        "editHeading": "Edit coupon {{code}}",
+        "newHeading": "New coupon"
+    },
+    "footer": {
+        "cancel": "Cancel",
+        "saving": "Saving…",
+        "saveChanges": "Save changes",
+        "createCoupon": "Create coupon"
+    },
+    "toasts": {
+        "updated": "Coupon updated",
+        "created": "Coupon \"{{code}}\" created",
+        "saveFailed": "Could not save coupon"
+    },
+    "basics": {
+        "title": "Basics",
+        "code": {
+            "label": "Coupon code",
+            "placeholder": "SAVE20"
+        },
+        "discountType": {
+            "label": "Discount type",
+            "percentage": "Percentage (%)",
+            "flat": "Flat amount"
+        },
+        "value": {
+            "labelPercentage": "Value (%)",
+            "labelFlat": "Value (₹)",
+            "placeholderPercentage": "20",
+            "placeholderFlat": "500"
+        },
+        "maxCap": {
+            "label": "Max cap (₹)",
+            "placeholder": "No cap",
+            "noCapHint": "(blank = no cap)"
+        }
+    },
+    "validity": {
+        "title": "Validity",
+        "startDate": {
+            "label": "Start date",
+            "optional": "(optional)"
+        },
+        "endDate": {
+            "label": "End date",
+            "noExpiryHint": "(blank = never expires)"
+        },
+        "usageLimit": {
+            "label": "Usage limit",
+            "unlimitedHint": "(blank = unlimited)",
+            "placeholder": "Unlimited"
+        }
+    },
+    "emailRestriction": {
+        "restrictLabel": "Restrict to specific emails",
+        "restrictHint": "Only listed {{term}} emails can apply this coupon",
+        "allowedEmailsLabel": "Allowed emails",
+        "allowedEmailsPlaceholder": "alice@example.com, bob@example.com",
+        "emailsCaptured_one": "{{count}} email captured",
+        "emailsCaptured_other": "{{count}} emails captured"
+    },
+    "scope": {
+        "title": "Where it applies",
+        "locked": "(locked — coupon has been redeemed)"
+    },
+    "livePreview": {
+        "heading": "{{term}} preview",
+        "codePlaceholder": "YOURCODE",
+        "status": "Status",
+        "usage": "Usage",
+        "scope": "Scope",
+        "instituteWide": "Institute-wide",
+        "scopeCount": "{{count}} {{unit}}",
+        "emailRestricted": "Email-restricted",
+        "allowedCount": "{{count}} allowed"
+    },
+    "frozenNotice": "This coupon has been redeemed. Discount and scope are locked; you can still extend the end date, raise the usage limit, or change status."
+}

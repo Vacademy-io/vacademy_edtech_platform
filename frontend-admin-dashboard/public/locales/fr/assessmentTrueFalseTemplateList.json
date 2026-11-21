@@ -1,0 +1,20 @@
+{
+    "settingsPopover": {
+        "title": "Paramètres des questions",
+        "questionTypeLabel": "Type de question"
+    },
+    "questionHeader": {
+        "questionLabel": "Question"
+    },
+    "trueFalseOptions": {
+        "answerLabel": "Réponse :"
+    },
+    "trueFalseOption": {
+        "markerFallback": "({{label}}.)",
+        "trueLabel": "Vrai",
+        "falseLabel": "Faux"
+    },
+    "explanationSection": {
+        "label": "Explication :"
+    }
+}

@@ -1,0 +1,96 @@
+{
+    "basics": {
+        "title": {
+            "required": "Donnez un titre à l'annonce.",
+            "tooLong": "Limitez le titre à 500 caractères."
+        },
+        "content": {
+            "required": "Rédigez le contenu de l'annonce."
+        },
+        "previewText": {
+            "missingWarning": "Aucun texte d'aperçu — les boîtes de réception afficheront la première ligne de votre contenu."
+        }
+    },
+    "recipients": {
+        "noAudience": "Ajoutez au moins une audience — personne ne recevra encore ceci.",
+        "audienceLabel": "Audience {{index}}",
+        "role": {
+            "required": "{{label}} : choisissez un rôle."
+        },
+        "batches": {
+            "required": "{{label}} : sélectionnez au moins un lot."
+        },
+        "orgRole": {
+            "required": "{{label}} : choisissez Admin ou Apprenant pour les lots de la sous-organisation."
+        },
+        "users": {
+            "required": "{{label}} : ajoutez au moins un identifiant utilisateur ou un e-mail."
+        },
+        "tags": {
+            "required": "{{label}} : sélectionnez au moins une étiquette."
+        },
+        "campaign": {
+            "required": "{{label}} : choisissez une campagne."
+        },
+        "filters": {
+            "required": "{{label}} : configurez au moins un filtre de champ."
+        },
+        "incompleteFilterWarning": "{{label}} : un filtre de champ incomplet sera ignoré.",
+        "emptyExclusionWarning": "{{label}} : une exclusion vide sera ignorée."
+    },
+    "placements": {
+        "noneChosen": "Choisissez au moins un emplacement où cette annonce doit apparaître.",
+        "systemAlert": {
+            "priority": "Alerte système : choisissez une priorité."
+        },
+        "dashboardPin": {
+            "position": "Épingle du tableau de bord : choisissez une position.",
+            "startRequired": "Épingle du tableau de bord : définissez une heure de début.",
+            "endRequired": "Épingle du tableau de bord : définissez une heure de fin.",
+            "endAfterStart": "Épingle du tableau de bord : l'heure de fin doit être après le début."
+        },
+        "appOverlay": {
+            "invalidDate": "Superposition d'application : saisissez une date et une heure valides.",
+            "mustBeFuture": "Superposition d'application : « afficher jusqu'à » doit être dans le futur.",
+            "priorityRange": "Superposition d'application : la priorité doit être comprise entre 1 et 10."
+        },
+        "resources": {
+            "folderNameRequired": "Ressources : saisissez un nom de dossier."
+        },
+        "community": {
+            "typeRequired": "Communauté : choisissez un type de communauté."
+        },
+        "tasks": {
+            "titleRequired": "Tâches : saisissez un titre de tâche.",
+            "slidesRequired": "Tâches : ajoutez au moins une diapositive.",
+            "goLiveRequired": "Tâches : définissez une heure de mise en ligne.",
+            "deadlineRequired": "Tâches : définissez une échéance.",
+            "deadlineAfterGoLive": "Tâches : l'échéance doit être après la mise en ligne."
+        }
+    },
+    "delivery": {
+        "noChannelWarning": "Aucun canal de diffusion sélectionné — ceci n'apparaîtra qu'à l'intérieur du produit, sans push, e-mail ni WhatsApp.",
+        "push": {
+            "titleRequired": "Notification push : un titre est requis.",
+            "bodyRequired": "Notification push : un corps de texte est requis.",
+            "titleTruncated": "Les titres push de plus de 50 caractères sont tronqués sur la plupart des appareils.",
+            "bodyTruncated": "Les corps de notification push de plus de 150 caractères sont tronqués sur la plupart des appareils."
+        },
+        "email": {
+            "noVerifiedSender": "E-mail : aucune adresse d'expéditeur vérifiée n'est configurée pour cet établissement.",
+            "chooseSender": "E-mail : choisissez l'adresse depuis laquelle ceci est envoyé."
+        },
+        "whatsapp": {
+            "chooseTemplate": "WhatsApp : choisissez un modèle approuvé.",
+            "templateNoLongerApproved": "WhatsApp : le modèle sélectionné n'est plus approuvé — choisissez-en un autre.",
+            "mediaUrlRequired": "WhatsApp : ce modèle a un en-tête média, une URL média est donc requise.",
+            "variableRequired": "WhatsApp : renseignez la variable « {{name}} ».",
+            "variableCustomRequired": "WhatsApp : saisissez le texte personnalisé pour « {{name}} »."
+        },
+        "schedule": {
+            "pickDateTime": "Planification : choisissez la date et l'heure d'envoi.",
+            "pastTimeWarning": "L'heure planifiée est dans le passé selon votre horloge locale — vérifiez le fuseau horaire.",
+            "cronRequired": "Planification : une expression cron est requise pour les envois récurrents."
+        }
+    }
+}

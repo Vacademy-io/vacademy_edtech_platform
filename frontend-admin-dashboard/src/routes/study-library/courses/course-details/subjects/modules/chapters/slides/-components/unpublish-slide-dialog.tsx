@@ -2,6 +2,7 @@
 import { MyButton } from '@/components/design-system/button';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 import { Dispatch, ReactNode, SetStateAction } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface UnpublishDialogProps {
     isOpen: boolean;
@@ -21,6 +22,7 @@ export const UnpublishDialog = ({
     handlePublishUnpublishSlide,
     trigger,
 }: UnpublishDialogProps) => {
+    const { t } = useTranslation('studyLibraryUnpublishSlideDialog');
     return (
         <Popover open={isOpen} onOpenChange={setIsOpen}>
             {trigger && <PopoverAnchor asChild>{trigger}</PopoverAnchor>}
@@ -28,11 +30,9 @@ export const UnpublishDialog = ({
                 <div className="flex flex-col gap-3">
                     <div className="flex flex-col gap-1">
                         <p className="text-subtitle font-semibold text-neutral-700">
-                            Unpublish this slide?
+                            {t('confirmTitle')}
                         </p>
-                        <p className="text-caption text-neutral-500">
-                            Learners will no longer be able to see it.
-                        </p>
+                        <p className="text-caption text-neutral-500">{t('confirmBody')}</p>
                     </div>
                     <div className="flex justify-end gap-2">
                         <MyButton
@@ -41,7 +41,7 @@ export const UnpublishDialog = ({
                             className="min-w-0 sm:min-w-0"
                             onClick={() => setIsOpen(false)}
                         >
-                            Cancel
+                            {t('cancel')}
                         </MyButton>
                         <MyButton
                             buttonType="primary"
@@ -49,7 +49,7 @@ export const UnpublishDialog = ({
                             className="min-w-0 sm:min-w-0"
                             onClick={() => handlePublishUnpublishSlide(setIsOpen, false)}
                         >
-                            Unpublish
+                            {t('unpublish')}
                         </MyButton>
                     </div>
                 </div>

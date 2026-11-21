@@ -1,0 +1,40 @@
+{
+    "emptyState": {
+        "title": "No Fields Mapped",
+        "description": "Add fields to your certificate template to see a preview.",
+        "hint": "Drag fields from the palette onto your template"
+    },
+    "header": {
+        "title": "Certificate Preview",
+        "subtitle": "Preview how certificates will look with real student data"
+    },
+    "studentNav": {
+        "position": "{{current}} of {{total}}"
+    },
+    "actions": {
+        "downloadPreview": "Download Preview",
+        "retry": "Retry"
+    },
+    "studentInfo": {
+        "previewing": "Previewing: {{name}}",
+        "idLabel": "ID:",
+        "emailLabel": "Email:",
+        "enrollmentLabel": "Enrollment:",
+        "instituteLabel": "Institute:"
+    },
+    "previewImage": {
+        "alt": "Certificate preview",
+        "errorTitle": "Preview Error",
+        "errorMessage": "Failed to generate certificate preview. Please check your field mappings.",
+        "generating": "Generating certificate preview...",
+        "empty": "No preview available"
+    },
+    "fieldValues": {
+        "title": "Field Values for {{name}}",
+        "noValue": "No value",
+        "sampleValue": "Sample {{field}}"
+    },
+    "download": {
+        "unnamedStudent": "unnamed"
+    }
+}

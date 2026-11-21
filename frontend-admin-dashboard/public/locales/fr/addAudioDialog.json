@@ -1,0 +1,29 @@
+{
+    "dropzone": {
+        "title": "Importez votre fichier audio",
+        "hint": "Glissez ou cliquez pour importer",
+        "formats": "Formats pris en charge : MP3, WAV, OGG, AAC, M4A",
+        "selected": "Sélectionné : {{fileName}}",
+        "duration": "Durée : {{minutes}}:{{seconds}}"
+    },
+    "fields": {
+        "title": "Titre",
+        "titlePlaceholder": "Saisissez le titre de l'audio",
+        "description": "Description (facultatif)",
+        "descriptionPlaceholder": "Saisissez une description pour cet audio...",
+        "coverImage": "Image de couverture (facultatif)",
+        "changeImage": "Changer l'image",
+        "uploadImage": "Importer une image",
+        "transcript": "Transcription (facultatif)",
+        "transcriptPlaceholder": "Collez ou saisissez la transcription audio ici..."
+    },
+    "toasts": {
+        "reorderFailed": "Diapositive créée mais la réorganisation a échoué",
+        "createSuccess": "Diapositive audio créée avec succès !",
+        "createFailed": "Échec de la création de la diapositive audio"
+    },
+    "actions": {
+        "uploading": "Importation en cours...",
+        "submit": "Créer la diapositive audio"
+    }
+}

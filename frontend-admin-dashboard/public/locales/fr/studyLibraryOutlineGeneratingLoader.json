@@ -1,0 +1,22 @@
+{
+    "title": {
+        "generatingOutline": "{{aiName}} génère votre plan"
+    },
+    "steps": {
+        "analyzingTopic": "Analyse de votre sujet...",
+        "structuringOutline": "Structuration du plan...",
+        "organizing": "Organisation des {{terms}} et des sujets...",
+        "creatingObjectives": "Création des objectifs d'apprentissage...",
+        "finalizingOutline": "Finalisation de votre plan..."
+    },
+    "description": {
+        "estimatedTimeMinutes_one": "Temps estimé : {{minutes}} min {{seconds}} s",
+        "estimatedTimeMinutes_many": "Temps estimé : {{minutes}} min {{seconds}} s",
+        "estimatedTimeMinutes_other": "Temps estimé : {{minutes}} min {{seconds}} s",
+        "estimatedTimeSeconds_one": "Temps estimé : {{seconds}} s",
+        "estimatedTimeSeconds_many": "Temps estimé : {{seconds}} s",
+        "estimatedTimeSeconds_other": "Temps estimé : {{seconds}} s",
+        "stillWorking": "Toujours en cours — c'est presque terminé...",
+        "craftingStructure": "{{aiName}} élabore la structure de votre cours. Cela peut prendre un instant."
+    }
+}

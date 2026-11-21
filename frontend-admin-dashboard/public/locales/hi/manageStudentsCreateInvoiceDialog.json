@@ -1,0 +1,83 @@
+{
+    "validation": {
+        "descriptionRequired": "विवरण आवश्यक है",
+        "minQuantity": "न्यूनतम 1",
+        "priceMustBePositive": "0 से अधिक होना चाहिए",
+        "lineItemsRequired": "कम से कम एक आइटम आवश्यक है",
+        "dueDateRequired": "देय तिथि आवश्यक है",
+        "currencyRequired": "मुद्रा आवश्यक है"
+    },
+    "success": {
+        "copyFailed": "क्लिपबोर्ड पर कॉपी नहीं हो सका",
+        "invoiceUpdatedTitle": "इनवॉइस अपडेट हो गया!",
+        "invoiceCreatedTitle": "इनवॉइस बन गया!",
+        "totalLabel": "कुल:",
+        "paymentLinkLabel": "भुगतान लिंक",
+        "copyPaymentLinkTitle": "भुगतान लिंक कॉपी करें",
+        "whatsappShared": "भुगतान और PDF लिंक के साथ WhatsApp खुल गया",
+        "shareOnWhatsapp": "WhatsApp पर साझा करें",
+        "preparingWhatsapp": "तैयार हो रहा है…",
+        "downloadPdf": "PDF डाउनलोड करें",
+        "downloadingPdf": "डाउनलोड हो रहा है…",
+        "close": "बंद करें"
+    },
+    "review": {
+        "helperText": "ये मान आपके इनवॉइस टेम्पलेट को भरते हैं। बनाने से पहले कुछ भी संपादित करें — पूर्वावलोकन लाइव अपडेट होता है।",
+        "previewLabel": "इनवॉइस पूर्वावलोकन",
+        "previewTitle": "इनवॉइस पूर्वावलोकन",
+        "retry": "पुनः प्रयास करें",
+        "groups": {
+            "invoice": "इनवॉइस",
+            "billTo": "बिल प्राप्तकर्ता",
+            "institute": "संस्थान",
+            "tax": "कर",
+            "amounts": "राशियाँ",
+            "notes": "नोट्स"
+        }
+    },
+    "items": {
+        "loadingSettings": "सेटिंग्स लोड हो रही हैं…",
+        "heading": "आइटम",
+        "table": {
+            "description": "विवरण",
+            "qty": "मात्रा",
+            "price": "मूल्य",
+            "amount": "राशि"
+        },
+        "descriptionPlaceholder": "जैसे कोर्स फीस",
+        "removeItem": "हटाएं",
+        "addItem": "आइटम जोड़ें"
+    },
+    "summary": {
+        "subtotal": "उप-योग",
+        "applyTax": "{{taxLabel}} लागू करें",
+        "taxRateAriaLabel": "{{taxLabel}} दर प्रतिशत",
+        "taxIncludedNote": "इसमें {{taxRate}}% {{taxLabel}} शामिल है (कीमतों में कर पहले से शामिल है)",
+        "total": "कुल",
+        "taxLabelFallback": "कर"
+    },
+    "emailNotice": "भुगतान के बाद इनवॉइस ईमेल स्वचालित रूप से शिक्षार्थी को भेजा जाएगा।",
+    "form": {
+        "dueDateLabel": "देय तिथि",
+        "currencyLabel": "मुद्रा"
+    },
+    "actions": {
+        "cancel": "रद्द करें",
+        "next": "आगे: समीक्षा और पूर्वावलोकन",
+        "loadingPreview": "पूर्वावलोकन लोड हो रहा है…",
+        "back": "वापस",
+        "saveChanges": "परिवर्तन सहेजें",
+        "createInvoice": "इनवॉइस बनाएं",
+        "saving": "सहेजा जा रहा है…",
+        "creating": "बनाया जा रहा है…"
+    },
+    "errors": {
+        "previewFailed": "इनवॉइस पूर्वावलोकन प्रस्तुत नहीं हो सका। कृपया पुनः प्रयास करें।"
+    },
+    "heading": {
+        "invoice": "इनवॉइस — {{userName}}",
+        "reviewInvoice": "इनवॉइस की समीक्षा करें — {{userName}}",
+        "editInvoice": "इनवॉइस {{invoiceNumber}} संपादित करें — {{userName}}",
+        "createInvoice": "इनवॉइस बनाएं — {{userName}}"
+    }
+}

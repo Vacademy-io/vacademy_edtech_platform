@@ -4,6 +4,7 @@
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getBatchDetailsListOfStudents } from '../-services/assessment-details-services';
 import { getInstituteId } from '@/constants/helper';
 import { MyTable } from '@/components/design-system/table';
@@ -17,6 +18,7 @@ import { AssessmentDetailsSearchComponent } from './SearchComponent';
 import { MyFilterOption } from '@/types/assessments/my-filter';
 import { ScheduleTestFilters } from '@/routes/assessment/assessment-list/-components/ScheduleTestFilters';
 import { MyButton } from '@/components/design-system/button';
+import { UsersThree } from '@phosphor-icons/react';
 
 export interface AssessmentParticipantsInterface {
     name: string;
@@ -29,6 +31,7 @@ export interface AssessmentParticipantsInterface {
 }
 
 export const AssessmentParticipantsList = ({ batchId }: { batchId: string }) => {
+    const { t } = useTranslation('assessmentParticipantsList');
     const { data: initData } = useSuspenseQuery(useInstituteQuery());
     const instituteId = getInstituteId();
     const [pageNo, setPageNo] = useState(0);
@@ -160,20 +163,21 @@ export const AssessmentParticipantsList = ({ batchId }: { batchId: string }) => 
     };
 
     return (
-        <Dialog>
+        // Fetch on open, not on the label's own click: a click beside the text opened the
+        // dialog without loading anything, which read as "no learners".
+        <Dialog
+            onOpenChange={(open) => {
+                if (open) handleGetParticipantsDetails();
+            }}
+        >
             <DialogTrigger>
                 <div className="flex items-center">
-                    <span
-                        className="text-sm text-primary-500"
-                        onClick={handleGetParticipantsDetails}
-                    >
-                        View List
-                    </span>
+                    <span className="text-sm text-primary-500">{t('trigger.viewList')}</span>
                 </div>
             </DialogTrigger>
-            <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col gap-6 overflow-y-auto !p-0">
+            <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col gap-6 overflow-y-auto !p-0">{/* design-lint-ignore: vh/vw dialog sizing matches MyDialog primitive */}
                 <h1 className="rounded-t-lg bg-primary-100 p-4 font-semibold text-primary-500">
-                    Participants List
+                    {t('dialog.title')}
                 </h1>
                 {getParticipantsData.status === 'pending' ? (
                     <DashboardLoader />
@@ -187,7 +191,7 @@ export const AssessmentParticipantsList = ({ batchId }: { batchId: string }) => 
                                 clearSearch={clearSearch}
                             />
                             <ScheduleTestFilters
-                                label="Gender"
+                                label={t('filters.genderLabel')}
                                 data={initData?.genders.map((gender, idx) => ({
                                     id: String(idx),
                                     name: gender,
@@ -201,28 +205,48 @@ export const AssessmentParticipantsList = ({ batchId }: { batchId: string }) => 
                                 handleResetFilters={handleResetFilters}
                             />
                         </div>
-                        <MyTable
-                            data={{
-                                content: getAssessmentStep3ParticipantsListWithBatchName(
-                                    participantsData.content,
-                                    initData?.batches_for_sessions || []
-                                ),
-                                total_pages: participantsData.total_pages,
-                                page_no: pageNo,
-                                page_size: 10,
-                                total_elements: participantsData.total_elements,
-                                last: participantsData.last,
-                            }}
-                            columns={step3ParticipantsListColumn || []}
-                            rowSelection={currentPageSelection}
-                            onRowSelectionChange={handleRowSelectionChange}
-                            currentPage={pageNo}
-                        />
-                        <MyPagination
-                            currentPage={pageNo}
-                            totalPages={participantsData.total_pages}
-                            onPageChange={handlePageChange}
-                        />
+                        {participantsData.content.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-neutral-300 px-4 py-12 text-center">
+                                <UsersThree size={32} className="text-neutral-400" />
+                                <p className="text-sm font-medium text-neutral-700">
+                                    {searchText || selectedFilter.gender.length > 0
+                                        ? t('empty.noMatch')
+                                        : t('empty.title')}
+                                </p>
+                                {!searchText && selectedFilter.gender.length === 0 && (
+                                    <p className="max-w-md text-sm text-neutral-500">
+                                        {t('empty.openTestHint')}
+                                    </p>
+                                )}
+                            </div>
+                        ) : (
+                            <>
+                                <MyTable
+                                    data={{
+                                        content: getAssessmentStep3ParticipantsListWithBatchName(
+                                            participantsData.content,
+                                            initData?.batches_for_sessions || []
+                                        ),
+                                        total_pages: participantsData.total_pages,
+                                        page_no: pageNo,
+                                        page_size: 10,
+                                        total_elements: participantsData.total_elements,
+                                        last: participantsData.last,
+                                    }}
+                                    columns={step3ParticipantsListColumn || []}
+                                    rowSelection={currentPageSelection}
+                                    onRowSelectionChange={handleRowSelectionChange}
+                                    currentPage={pageNo}
+                                />
+                                {participantsData.total_pages > 1 && (
+                                    <MyPagination
+                                        currentPage={pageNo}
+                                        totalPages={participantsData.total_pages}
+                                        onPageChange={handlePageChange}
+                                    />
+                                )}
+                            </>
+                        )}
                     </div>
                 )}
             </DialogContent>
@@ -240,6 +264,7 @@ export const Step3ParticipantsFilterButtons = ({
     handleSubmitFilters,
     handleResetFilters,
 }: ScheduleTestFilterButtonsProps) => {
+    const { t } = useTranslation('assessmentParticipantsList');
     const isButtonEnabled = () => {
         const { name, gender } = selectedQuestionPaperFilters;
         return name || gender?.length > 0;
@@ -255,7 +280,7 @@ export const Step3ParticipantsFilterButtons = ({
                         className="h-8"
                         onClick={handleSubmitFilters}
                     >
-                        Filter
+                        {t('filterButtons.filter')}
                     </MyButton>
                     <MyButton
                         buttonType="secondary"
@@ -264,7 +289,7 @@ export const Step3ParticipantsFilterButtons = ({
                         className="h-8 border border-neutral-400 bg-neutral-200 hover:border-neutral-500 hover:bg-neutral-300 active:border-neutral-600 active:bg-neutral-400"
                         onClick={handleResetFilters}
                     >
-                        Reset
+                        {t('filterButtons.reset')}
                     </MyButton>
                 </div>
             )}

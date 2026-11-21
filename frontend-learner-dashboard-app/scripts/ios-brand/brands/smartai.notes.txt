@@ -1,0 +1,22 @@
+Smart AI Academy is the learner app of Smart AI Academy, a coaching institute in India. It is not an internal app for one organisation: anyone can create an account, browse the course catalogue and enrol.
+
+ACCOUNTS
+- Self-registration is open. Tap "Sign up here" under the sign-in form and register with an email address (a one-time code is sent to it), Google, or Sign in with Apple.
+- Learners who enrolled with the institute directly receive a username and password and sign in with the "Username" and "Password" fields.
+- Account deletion: https://student.smartaiacademy.co.in/delete-user
+
+DEMO ACCOUNT (an enrolled learner)
+Use the "Username" and "Password" fields at the bottom of the sign-in screen, not the Google or Apple buttons:
+  Username: shashank@vacademy.com
+  Password: jicCc3gg
+The username looks like an email address but must be entered in the Username field; requesting an email code for it will not work.
+
+WHAT YOU WILL SEE
+Home shows the dashboard and enrolled courses. Learn opens the catalogue and each course's chapters and lessons. Tests lists assessments. "Nothing live right now" on the Tests tab is a correct empty state: live classes and assessments appear only while one is scheduled.
+
+SIGN IN WITH APPLE is implemented and offered alongside Google (Guideline 4.8).
+
+PURCHASES
+There is no paid content in the app and no in-app purchase. Nothing needs to be bought to create an account or use any feature.
+
+Contact: Shreyash Jain - shreyash@vidyayatan.com - +91 9425677707

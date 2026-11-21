@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.credits.client.CreditClient;
+import vacademy.io.admin_core_service.features.credits.client.MeteringFields;
 import vacademy.io.admin_core_service.features.reporting.entity.ReportRun;
 
 import java.math.BigDecimal;
@@ -96,7 +97,8 @@ public class ReportBillingService {
                     instituteId, REQUEST_TYPE, clamp(description), credits,
                     // Stable per document: the run row is created once per
                     // (schedule, window, scope) by the idempotency index.
-                    "report:" + run.getId());
+                    "report:" + run.getId(),
+                    runMetering(run));
             if (!ok) {
                 log.error("[reporting] credit deduction REFUSED for institute {} run {} "
                                 + "({} credits) — report was already delivered, recording 0",
@@ -113,6 +115,16 @@ public class ReportBillingService {
                     instituteId, run.getId(), credits, e);
             return BigDecimal.ZERO;
         }
+    }
+
+    /** Usage-metering fields for one scheduled report's charge (system job, no user). */
+    static MeteringFields runMetering(ReportRun run) {
+        java.util.Map<String, Object> context = new java.util.HashMap<>();
+        if (run.getId() != null) context.put("report_run_id", run.getId());
+        if (run.getScheduleId() != null) context.put("schedule_id", run.getScheduleId());
+        if (run.getScopeType() != null) context.put("scope_type", run.getScopeType());
+        if (run.getScopeLabel() != null) context.put("scope_label", run.getScopeLabel());
+        return MeteringFields.system("report_narrative").usageContext(context).build();
     }
 
     private static String clamp(String description) {

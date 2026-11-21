@@ -1,0 +1,19 @@
+{
+    "untitledMeeting": "Réunion",
+    "today": "Aujourd'hui",
+    "previousMonth": "Mois précédent",
+    "nextMonth": "Mois suivant",
+    "dayAriaLabel_one": "Voir {{count}} réunion le {{date}}",
+    "dayAriaLabel_many": "Voir {{count}} de réunions le {{date}}",
+    "dayAriaLabel_other": "Voir {{count}} réunions le {{date}}",
+    "moreCount": "+{{count}} de plus",
+    "joinMeeting": "Rejoindre la réunion",
+    "status": {
+        "confirmed": "Confirmée",
+        "pending": "En attente",
+        "completed": "Terminée",
+        "noShow": "Absence",
+        "cancelled": "Annulée",
+        "rescheduled": "Reprogrammée"
+    }
+}

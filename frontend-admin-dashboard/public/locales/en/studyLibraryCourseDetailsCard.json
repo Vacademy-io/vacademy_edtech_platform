@@ -1,0 +1,4 @@
+{
+    "duration_one": "Duration: {{count}} day",
+    "duration_other": "Duration: {{count}} days"
+}

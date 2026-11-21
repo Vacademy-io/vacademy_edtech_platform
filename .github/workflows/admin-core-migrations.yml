@@ -1,0 +1,21 @@
+name: Admin core Flyway migrations
+
+# Two PRs can each add the same Flyway version and each look fine alone; once both are merged every
+# new admin-core pod crash-loops. Runs on the PR's merge with main, so it sees what main has now.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "admin_core_service/src/main/resources/db/migration/**"
+      - ".github/scripts/check-flyway-migrations.sh"
+      - ".github/workflows/admin-core-migrations.yml"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: Check Flyway migrations
+        run: bash .github/scripts/check-flyway-migrations.sh

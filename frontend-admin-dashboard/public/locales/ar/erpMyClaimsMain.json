@@ -1,0 +1,35 @@
+{
+    "intro": "النفقات التي طالبت باستردادها، وأي شيء تسدده عبر راتبك.",
+    "tabs": {
+        "reimbursements": "المبالغ المستردة",
+        "loans": "القروض والسلف"
+    },
+    "reimbursementsIntro": "المبالغ التي أنفقتها في العمل والتي يسددها المعهد. تُصرف المطالبات المعتمدة مع راتب أحد الأشهر القادمة.",
+    "newClaim": "مطالبة جديدة",
+    "reimbursementsLoadError": "تعذّر تحميل مطالباتك.",
+    "emptyClaimsTitle": "لم تطالب بأي شيء بعد",
+    "emptyClaimsDescription": "طالب باسترداد نفقة عمل وستظهر هنا مع حالتها، من قيد الانتظار إلى الدفع.",
+    "makeClaim": "تقديم مطالبة",
+    "defaultExpenseType": "نفقة",
+    "spentOn": "أُنفقت في {{date}}",
+    "noExpenseDate": "لا يوجد تاريخ إنفاق مسجَّل",
+    "turnedDown": "مرفوضة: {{reason}}",
+    "loansInfo": "يُعِدّ فريق الموارد البشرية لديك القروض والسلف على الراتب — لا يوجد شيء لتقديم طلب بشأنه هنا. تُخصم القسط الشهري تلقائيًا من راتبك كل شهر حتى يصل الرصيد إلى صفر.",
+    "loansLoadError": "تعذّر تحميل قروضك.",
+    "emptyLoansTitle": "ليس لديك أي قروض أو سلف",
+    "emptyLoansDescription": "لا يُخصم شيء من راتبك للسداد. إذا أعدّ فريق الموارد البشرية قرضًا، فسيظهر هنا.",
+    "defaultLoanType": "قرض",
+    "stats": {
+        "borrowed": "المبلغ المقترَض",
+        "monthlyEmi": "القسط الشهري",
+        "stillToRepay": "المتبقي للسداد",
+        "over": "المدة"
+    },
+    "tenureMonths_zero": "{{count}} شهر",
+    "tenureMonths_one": "شهر واحد",
+    "tenureMonths_two": "شهران",
+    "tenureMonths_few": "{{count}} أشهر",
+    "tenureMonths_many": "{{count}} شهرًا",
+    "tenureMonths_other": "{{count}} شهر",
+    "fromDate": "من {{month}}/{{year}}"
+}

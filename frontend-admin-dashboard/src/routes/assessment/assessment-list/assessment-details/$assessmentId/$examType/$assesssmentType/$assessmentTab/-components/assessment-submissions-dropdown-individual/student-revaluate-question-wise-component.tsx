@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { DialogContent } from '@/components/ui/dialog';
 import { AssessmentRevaluateStudentInterface } from '@/types/assessments/assessment-overview';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -29,6 +30,7 @@ import {
     SelectedFilterRevaluateInterface,
 } from '@/types/assessments/assessment-revaluate-question-wise';
 import { toast } from 'sonner';
+import { sanitizeRichHtml } from '@/lib/sanitize-html';
 
 export function StudentRevaluateQuestionWiseComponent({
     student,
@@ -37,6 +39,7 @@ export function StudentRevaluateQuestionWiseComponent({
     student: AssessmentRevaluateStudentInterface;
     onClose: () => void;
 }) {
+    const { t } = useTranslation('assessmentStudentRevaluateQuestionWise');
     const instituteId = getInstituteId();
     const [selectedFilter] = useState<SelectedFilterRevaluateInterface>({
         questions: [
@@ -113,13 +116,10 @@ export function StudentRevaluateQuestionWiseComponent({
             selectedFilter: SelectedFilterRevaluateInterface;
         }) => getRevaluateStudentResult(assessmentId, instituteId, methodType, selectedFilter),
         onSuccess: () => {
-            toast.success(
-                'Your attempt for this assessment has been revaluated. Please check your email!',
-                {
-                    className: 'success-toast',
-                    duration: 4000,
-                }
-            );
+            toast.success(t('toasts.revaluateSuccess'), {
+                className: 'success-toast',
+                duration: 4000,
+            });
             onClose();
         },
         onError: (error: unknown) => {
@@ -145,9 +145,9 @@ export function StudentRevaluateQuestionWiseComponent({
     }, [selectedSection]);
     return (
         <>
-            <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col !gap-0 overflow-y-auto !p-0">
+            <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col !gap-0 overflow-y-auto !p-0"> {/* design-lint-ignore: vw/vh dialog sizing matches MyDialog primitive */}
                 <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">
-                    Question Wise Revaluation
+                    {t('header.title')}
                 </h1>
                 <Tabs value={selectedSection} onValueChange={setSelectedSection} className="px-8">
                     <div className="sticky top-0 flex items-center justify-between">
@@ -175,13 +175,13 @@ export function StudentRevaluateQuestionWiseComponent({
                     </div>
                     <TabsContent
                         value={selectedSection || ''}
-                        className="max-h-[calc(100vh-120px)] overflow-y-auto"
+                        className="max-h-dialog-tall overflow-y-auto"
                     >
                         <Table>
                             <TableHeader className="bg-primary-200">
                                 <TableRow>
-                                    <TableHead>Q.No.</TableHead>
-                                    <TableHead>Question</TableHead>
+                                    <TableHead>{t('table.columnQNo')}</TableHead>
+                                    <TableHead>{t('table.columnQuestion')}</TableHead>
                                     <TableHead>
                                         <Checkbox
                                             checked={
@@ -207,9 +207,10 @@ export function StudentRevaluateQuestionWiseComponent({
                                         <TableCell>{index + 1}</TableCell>
                                         <TableCell
                                             dangerouslySetInnerHTML={{
-                                                __html:
+                                                __html: sanitizeRichHtml(
                                                     question.assessment_question_preview_dto
-                                                        .questionName || '',
+                                                        .questionName
+                                                ),
                                             }}
                                         />
                                         <TableCell>
@@ -242,7 +243,7 @@ export function StudentRevaluateQuestionWiseComponent({
                         buttonType="primary"
                         onClick={handleRevaluateStudent}
                     >
-                        Revaluate
+                        {t('actions.revaluate')}
                     </MyButton>
                 </div>
             </DialogContent>

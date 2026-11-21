@@ -1,0 +1,20 @@
+{
+    "eventLabels": {
+        "delivery": "Delivered emails",
+        "open": "Opened emails",
+        "click": "Clicked emails",
+        "bounce": "Bounced emails",
+        "complaint": "Complaints"
+    },
+    "window": {
+        "last24h": "last 24h",
+        "lastDays_one": "last {{count}} day",
+        "lastDays_other": "last {{count}} days"
+    },
+    "loadingEvents": "Loading events from the {{window}}…",
+    "eventsCount_one": "{{formattedCount}} event in the {{window}}.",
+    "eventsCount_other": "{{formattedCount}} events in the {{window}}.",
+    "errorLoad": "Could not load emails. Please try again.",
+    "emptyState": "No {{label}} in the {{window}}.",
+    "openedFrom": "Opened from {{ip}}"
+}

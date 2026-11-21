@@ -1,0 +1,35 @@
+{
+    "loading": "भुगतान के तरीके लोड हो रहे हैं…",
+    "modeLabel": "भुगतान कैसे हुआ?",
+    "subModeLabel": "माध्यम",
+    "referenceLabel": "संदर्भ",
+    "referencePlaceholder": "जैसे UPI रेफ़, UTR, चेक नंबर",
+    "dateLabel": "भुगतान की तारीख",
+    "notesLabel": "नोट्स",
+    "extra": {
+        "cheque_date": "चेक की तारीख",
+        "bank_name": "बैंक",
+        "payer_name": "भुगतानकर्ता"
+    },
+    "proof": {
+        "attach": "प्रमाण जोड़ें",
+        "replace": "प्रमाण बदलें",
+        "uploading": "अपलोड हो रहा है…",
+        "attached": "प्रमाण जुड़ गया",
+        "remove": "हटाएँ"
+    },
+    "errors": {
+        "modeRequired": "चुनें कि भुगतान कैसे हुआ।",
+        "referenceRequired": "इस भुगतान तरीके के लिए संदर्भ दर्ज करें।",
+        "proofRequired": "इस तरीके के लिए भुगतान का प्रमाण जोड़ें।",
+        "subModeRequired": "इस भुगतान तरीके के लिए एक विकल्प चुनें।",
+        "fieldRequired": "* वाले सभी फ़ील्ड भरें।",
+        "numberingRequired": "{{label}} चुनें।"
+    },
+    "modePlaceholder": "भुगतान का तरीका चुनें",
+    "subModePlaceholder": "चुनें",
+    "selectPlaceholder": "चुनें",
+    "notSpecified": "निर्दिष्ट नहीं",
+    "numberingLabel": "रसीद सीरीज़",
+    "numberingHint": "रसीद नंबर की सीरीज़ तय करता है। हर कोर्स में एक बार पूछा जाता है; आगे की किस्तें उसी में रहेंगी।"
+}

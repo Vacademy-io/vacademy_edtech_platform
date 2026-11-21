@@ -1,0 +1,1873 @@
+{
+ "pages": [
+  {
+   "id": "home",
+   "route": "home",
+   "title": "Home",
+   "seo": {
+    "metaTitle": "Courses | Brahm Varchas",
+    "metaDescription": "E-learning courses, E-books, live sessions, videos and short films across six knowledge streams, in English and Hindi."
+   },
+   "components": [
+    {
+     "id": "home-catalog",
+     "type": "courseCatalog",
+     "enabled": true,
+     "props": {
+      "title": "",
+      "showFilters": true,
+      "filtersConfig": [],
+      "render": {
+       "layout": "grid",
+       "cardFields": [
+        "package_name",
+        "course_preview_image_media_id",
+        "price",
+        "course_html_description_html"
+       ],
+       "styles": {
+        "hoverEffect": "shadow",
+        "roundedEdges": true,
+        "backgroundColor": "#FFFFFF"
+       },
+       "cardStyle": "editorial",
+       "card": {
+        "streamLabel": "subtitle",
+        "formatLabels": {
+         "elearning": "E-Learning",
+         "ebook": "E-book",
+         "live": "Live session",
+         "video": "Video",
+         "animation": "Animation",
+         "article": "Articles - essays",
+         "merch": "Merchandise",
+         "audiobook": "Audio Book"
+        },
+        "freeCtaByFormat": {
+         "animation": "watch",
+         "video": "watch",
+         "ebook": "read",
+         "article": "read",
+         "audiobook": "listen"
+        },
+        "descriptions": {
+         "f7c3b58e-b3bc-4d04-b897-e250ecf60b3a": "The Vedic science of conception, pregnancy and newborn care.",
+         "334297b0-4f14-463d-886a-c32380519649": "The Vedic science of conception, pregnancy and newborn care.",
+         "27445cf9-8906-402f-b13c-066910bb62a1": "The gurukul system of education and its methods, fully documented.",
+         "0885a565-d814-4b84-95d6-f821b274736b": "The gurukul system of education and its methods, fully documented.",
+         "cd3c4d85-634a-468c-a85d-db5513477134": "Swasthavritta: Ayurvedic principles of daily and seasonal living.",
+         "f47f4dac-7964-4538-a20b-2c224435379e": "Swasthavritta: Ayurvedic principles of daily and seasonal living.",
+         "84218ef2-1fb8-4d7d-9893-93a710d14871": "How the Rishis used Vedic knowledge responsibly, in harmony with nature.",
+         "85ac1843-6261-4bc3-8c42-cca1768ce77c": "A live learning intensive on the Raghuveer Gadyam, in praise of Shri Ram.",
+         "438fae32-2ae9-4f8f-b19e-c8364b480981": "A short film on Kashmir's great Sun temple and its story.",
+         "90ee7592-6d1c-434d-98a1-e98396c54d83": "A short film on Kashmir's great Sun temple and its story.",
+         "22d87df1-cb76-4101-a228-8aa20028dd07": "A travelogue of the Narmada parikrama."
+        },
+        "colors": {
+         "divider": "#EFE6CC",
+         "freePrice": "#3F4A26"
+        }
+       },
+       "pagination": {
+        "mode": "loadMore",
+        "pageSize": 9
+       },
+       "gridHeading": {
+        "showSort": true
+       }
+      },
+      "streams": {
+       "enabled": true,
+       "source": "folderLibrary",
+       "libraryId": "904e2152-f6b8-4c49-bfa0-e8849d13825f",
+       "libraryName": "Knowledge Streams",
+       "variant": "icons",
+       "showCounts": true,
+       "labelMode": "both",
+       "allLabel": "सभी",
+       "allSubtitle": "All courses",
+       "sticky": false
+      },
+      "syncUrl": true,
+      "showFilterCounts": true,
+      "showAppliedChips": true,
+      "mobileFilterSheet": true,
+      "priceFilter": {
+       "enabled": true,
+       "label": "Price",
+       "showFree": true,
+       "maxOptions": [],
+       "control": "checkbox"
+      },
+      "languageFilter": {
+       "enabled": true,
+       "label": "Language"
+      },
+      "categoryFilter": {
+       "enabled": true,
+       "label": "Category  ·  श्रेणी",
+       "scope": "all",
+       "labelMode": "both",
+       "sort": "count",
+       "hideComingSoon": true,
+       "visibleCount": 6,
+       "showAllLabel": "+ Show all {count} categories"
+      },
+      "customFilters": [
+       {
+        "id": "format",
+        "label": "Format",
+        "source": "courseFormats"
+       },
+       {
+        "id": "for",
+        "label": "For",
+        "showCounts": false,
+        "options": [
+         {
+          "id": "parents",
+          "label": "Parents",
+          "tags": [
+           "for-parents"
+          ]
+         },
+         {
+          "id": "womens-health",
+          "label": "Women's health",
+          "tags": [
+           "for-womens-health"
+          ]
+         },
+         {
+          "id": "students",
+          "label": "Students",
+          "tags": [
+           "for-students"
+          ]
+         },
+         {
+          "id": "teachers",
+          "label": "Teachers",
+          "tags": [
+           "for-teachers"
+          ]
+         }
+        ]
+       }
+      ],
+      "filterSidebar": {
+       "variant": "editorial",
+       "width": 280,
+       "sticky": false,
+       "collapsible": true,
+       "order": [
+        "price",
+        "language",
+        "format",
+        "category",
+        "for"
+       ],
+       "dividerColor": "#EFE6CC",
+       "checkboxColor": "#A08A5C",
+       "checkboxSoftColor": "#CFC0A0",
+       "promo": {
+        "enabled": true,
+        "screenImage": "https://d1om4dxj9e7kkd.cloudfront.net/CATALOGUE/2719d8d1-43fd-4f9f-97af-a5b067d770a6/217a8999-5807-47a1-8bf5-54b8a2c48d41-bv-fig_phone_screen.png",
+        "imageAlt": "",
+        "eyebrow": "Brahm Varchas app",
+        "title": "Your learning, in your pocket",
+        "text": "Pick up where you left off, and learn in English or Hindi wherever you are.",
+        "button": {
+         "text": "Get the app",
+         "target": "/login"
+        },
+        "eyebrowColor": "#E8A860",
+        "textColor": "#D9CEB4"
+       }
+      },
+      "groupLanguageVersions": true,
+      "badges": {
+       "enabled": true,
+       "types": [
+        "bestseller",
+        "popular",
+        "new",
+        "free"
+       ],
+       "newDays": 60,
+       "bestsellerTop": 3,
+       "max": 2
+      },
+      "quickFilters": [
+       {
+        "id": "qf-popular",
+        "label": "",
+        "kind": "popular"
+       },
+       {
+        "id": "qf-new",
+        "label": "",
+        "kind": "new"
+       },
+       {
+        "id": "qf-free",
+        "label": "",
+        "kind": "free"
+       },
+       {
+        "id": "qf-bestseller",
+        "label": "",
+        "kind": "bestseller"
+       },
+       {
+        "id": "qf-hindi",
+        "label": "",
+        "kind": "language",
+        "value": "hi"
+       },
+       {
+        "id": "qf-under-1000",
+        "label": "",
+        "kind": "priceMax",
+        "value": 1000
+       }
+      ],
+      "defaultSort": "Popular",
+      "hero": {
+       "enabled": true,
+       "breadcrumb": [
+        {
+         "label": "Home",
+         "route": "homepage"
+        },
+        {
+         "label": "Courses"
+        }
+       ],
+       "title": "All courses",
+       "lead": "E-learning courses, E-books, live sessions, videos and short films across six knowledge streams, in English and Hindi.",
+       "stats": [
+        {
+         "kind": "courses",
+         "label": "courses & resources"
+        },
+        {
+         "kind": "streams",
+         "label": "knowledge streams"
+        }
+       ],
+       "search": {
+        "enabled": true,
+        "placeholder": "Search courses, topics or teachers, e.g. “parenting”, “Gita”, “Ayurveda”"
+       },
+       "popular": [
+        {
+         "label": "Holistic Parenting",
+         "streamSlug": "dharma",
+         "categorySlug": "vedic-parenting"
+        },
+        {
+         "label": "Bhagwadgeeta",
+         "streamSlug": "shastra",
+         "categorySlug": "gita"
+        },
+        {
+         "label": "Garbha Vigyan",
+         "streamSlug": "swasthya",
+         "categorySlug": "garbha-vigyan"
+        },
+        {
+         "label": "Gurukul Education",
+         "streamSlug": "shiksha",
+         "categorySlug": "gurukul-shiksha"
+        },
+        {
+         "label": "Free",
+         "quickFilterId": "qf-free"
+        }
+       ],
+       "resultsHeader": {
+        "enabled": true,
+        "showStreamChip": true,
+        "streamChipMode": "subtitle",
+        "sortLabels": {
+         "popular": "Most popular"
+        }
+       },
+       "quickFilterBar": {
+        "label": "Quick filters:",
+        "variant": "filled"
+       }
+      },
+      "columnSections": [
+       {
+        "id": "ks-free",
+        "kind": "free-courses",
+        "placement": "before-grid",
+        "showWhen": "unfiltered",
+        "title": "New here? Start free",
+        "subtitle": "Try a free E-learning course, film or article before you enrol.",
+        "courseIds": [
+         "438fae32-2ae9-4f8f-b19e-c8364b480981",
+         "22d87df1-cb76-4101-a228-8aa20028dd07",
+         "2dbf6c16-c7ff-4172-8013-69d3ace62d4c"
+        ],
+        "limit": 3,
+        "ctaRules": [
+         {
+          "formats": [
+           "animation",
+           "video"
+          ],
+          "label": "Watch free"
+         },
+         {
+          "formats": [
+           "ebook",
+           "article"
+          ],
+          "label": "Read free"
+         }
+        ]
+       },
+       {
+        "id": "ks-flagship",
+        "kind": "spotlight",
+        "placement": "before-grid",
+        "showWhen": "unfiltered-or-own-stream",
+        "colors": {
+         "panelColor": "#F5EAC9",
+         "ringColor": "#A08A5C",
+         "dotColor": "#C9B78E",
+         "accentInkColor": "#3F4A26"
+        },
+        "slides": [
+         {
+          "id": "rajaswala",
+          "eyebrow": "Flagship program",
+          "streamSlug": "swasthya",
+          "title": "Rajaswala Paricharya",
+          "titleNative": "रजस्वला परिचर्या",
+          "description": "Menstrual care and wellbeing, the Ayurvedic way. E-Learning with a live session, in English and Hindi.",
+          "cta": {
+           "label": "Enrol for {price}",
+           "price": "₹1,001",
+           "action": "course",
+           "courseId": "8610911c-382c-41a9-9e33-2e4e0882282f",
+           "enrollInviteId": "b6d3bd0d-db65-43fe-9cdb-07e67e8aed01",
+           "packageSessionId": "18bba28f-5b33-4acc-927d-f1b28d9722d5",
+           "productPageCode": "forbvy"
+          },
+          "steps": [
+           {
+            "title": "Rajaswala survey",
+            "meta": "Free",
+            "tone": "accent"
+           },
+           {
+            "title": "E-Learning course",
+            "meta": "{price}"
+           },
+           {
+            "title": "Live session",
+            "meta": "Included"
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "id": "ks-coming-soon",
+        "kind": "coming-soon",
+        "placement": "after-grid",
+        "showWhen": "always",
+        "title": "Coming soon",
+        "subtitle": "Be the first to know when these open.",
+        "scope": "active-stream",
+        "categorySlugs": [
+         "chhanda",
+         "sanskrit",
+         "ganit",
+         "bal-shala",
+         "ayurveda-shiksha",
+         "vaidik-shikshan",
+         "katha-kathan",
+         "bhartiya-khel",
+         "khagol"
+        ],
+        "limit": 4,
+        "colors": {
+         "iconColor": "#C99621"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "id": "home-not-sure",
+     "type": "ctaBanner",
+     "enabled": true,
+     "props": {
+      "variant": "band",
+      "layout": "split",
+      "backgroundColor": "#1A1208",
+      "textColor": "#FFFFFF",
+      "subheadingColor": "#A89C80",
+      "heading": "Not sure which course is right for you?",
+      "subheading": "Answer one question about where you are in life and we'll suggest where to begin.",
+      "button": {
+       "enabled": true,
+       "text": "Find your path",
+       "style": "olive",
+       "action": "navigate",
+       "target": "/learning-paths",
+       "icon": "arrow"
+      },
+      "secondaryButton": {
+       "enabled": true,
+       "text": "Talk to us",
+       "style": "outline-light",
+       "action": "openForm",
+       "audienceId": "f8814f46-a9ec-4e1a-b98f-0ca50d9e8325",
+       "formTitle": "Talk to us"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "courses",
+   "route": "courses",
+   "title": "Courses",
+   "seo": {
+    "metaTitle": "Courses | Brahm Varchas",
+    "metaDescription": "E-learning courses, E-books, live sessions, videos and short films across six knowledge streams, in English and Hindi."
+   },
+   "components": [
+    {
+     "id": "courses-catalog",
+     "type": "courseCatalog",
+     "enabled": true,
+     "props": {
+      "title": "",
+      "showFilters": true,
+      "filtersConfig": [],
+      "render": {
+       "layout": "grid",
+       "cardFields": [
+        "package_name",
+        "course_preview_image_media_id",
+        "price",
+        "course_html_description_html"
+       ],
+       "styles": {
+        "hoverEffect": "shadow",
+        "roundedEdges": true,
+        "backgroundColor": "#FFFFFF"
+       },
+       "cardStyle": "editorial",
+       "card": {
+        "streamLabel": "subtitle",
+        "formatLabels": {
+         "elearning": "E-Learning",
+         "ebook": "E-book",
+         "live": "Live session",
+         "video": "Video",
+         "animation": "Animation",
+         "article": "Articles - essays",
+         "merch": "Merchandise",
+         "audiobook": "Audio Book"
+        },
+        "freeCtaByFormat": {
+         "animation": "watch",
+         "video": "watch",
+         "ebook": "read",
+         "article": "read",
+         "audiobook": "listen"
+        },
+        "descriptions": {
+         "f7c3b58e-b3bc-4d04-b897-e250ecf60b3a": "The Vedic science of conception, pregnancy and newborn care.",
+         "334297b0-4f14-463d-886a-c32380519649": "The Vedic science of conception, pregnancy and newborn care.",
+         "27445cf9-8906-402f-b13c-066910bb62a1": "The gurukul system of education and its methods, fully documented.",
+         "0885a565-d814-4b84-95d6-f821b274736b": "The gurukul system of education and its methods, fully documented.",
+         "cd3c4d85-634a-468c-a85d-db5513477134": "Swasthavritta: Ayurvedic principles of daily and seasonal living.",
+         "f47f4dac-7964-4538-a20b-2c224435379e": "Swasthavritta: Ayurvedic principles of daily and seasonal living.",
+         "84218ef2-1fb8-4d7d-9893-93a710d14871": "How the Rishis used Vedic knowledge responsibly, in harmony with nature.",
+         "85ac1843-6261-4bc3-8c42-cca1768ce77c": "A live learning intensive on the Raghuveer Gadyam, in praise of Shri Ram.",
+         "438fae32-2ae9-4f8f-b19e-c8364b480981": "A short film on Kashmir's great Sun temple and its story.",
+         "90ee7592-6d1c-434d-98a1-e98396c54d83": "A short film on Kashmir's great Sun temple and its story.",
+         "22d87df1-cb76-4101-a228-8aa20028dd07": "A travelogue of the Narmada parikrama."
+        },
+        "colors": {
+         "divider": "#EFE6CC",
+         "freePrice": "#3F4A26"
+        }
+       },
+       "pagination": {
+        "mode": "loadMore",
+        "pageSize": 9
+       },
+       "gridHeading": {
+        "showSort": true
+       }
+      },
+      "streams": {
+       "enabled": true,
+       "source": "folderLibrary",
+       "libraryId": "904e2152-f6b8-4c49-bfa0-e8849d13825f",
+       "libraryName": "Knowledge Streams",
+       "variant": "icons",
+       "showCounts": true,
+       "labelMode": "both",
+       "allLabel": "सभी",
+       "allSubtitle": "All courses",
+       "sticky": false
+      },
+      "syncUrl": true,
+      "showFilterCounts": true,
+      "showAppliedChips": true,
+      "mobileFilterSheet": true,
+      "priceFilter": {
+       "enabled": true,
+       "label": "Price",
+       "showFree": true,
+       "maxOptions": [],
+       "control": "checkbox"
+      },
+      "languageFilter": {
+       "enabled": true,
+       "label": "Language"
+      },
+      "categoryFilter": {
+       "enabled": true,
+       "label": "Category  ·  श्रेणी",
+       "scope": "all",
+       "labelMode": "both",
+       "sort": "count",
+       "hideComingSoon": true,
+       "visibleCount": 6,
+       "showAllLabel": "+ Show all {count} categories"
+      },
+      "customFilters": [
+       {
+        "id": "format",
+        "label": "Format",
+        "source": "courseFormats"
+       },
+       {
+        "id": "for",
+        "label": "For",
+        "showCounts": false,
+        "options": [
+         {
+          "id": "parents",
+          "label": "Parents",
+          "tags": [
+           "for-parents"
+          ]
+         },
+         {
+          "id": "womens-health",
+          "label": "Women's health",
+          "tags": [
+           "for-womens-health"
+          ]
+         },
+         {
+          "id": "students",
+          "label": "Students",
+          "tags": [
+           "for-students"
+          ]
+         },
+         {
+          "id": "teachers",
+          "label": "Teachers",
+          "tags": [
+           "for-teachers"
+          ]
+         }
+        ]
+       }
+      ],
+      "filterSidebar": {
+       "variant": "editorial",
+       "width": 280,
+       "sticky": false,
+       "collapsible": true,
+       "order": [
+        "price",
+        "language",
+        "format",
+        "category",
+        "for"
+       ],
+       "dividerColor": "#EFE6CC",
+       "checkboxColor": "#A08A5C",
+       "checkboxSoftColor": "#CFC0A0",
+       "promo": {
+        "enabled": true,
+        "screenImage": "https://d1om4dxj9e7kkd.cloudfront.net/CATALOGUE/2719d8d1-43fd-4f9f-97af-a5b067d770a6/217a8999-5807-47a1-8bf5-54b8a2c48d41-bv-fig_phone_screen.png",
+        "imageAlt": "",
+        "eyebrow": "Brahm Varchas app",
+        "title": "Your learning, in your pocket",
+        "text": "Pick up where you left off, and learn in English or Hindi wherever you are.",
+        "button": {
+         "text": "Get the app",
+         "target": "/login"
+        },
+        "eyebrowColor": "#E8A860",
+        "textColor": "#D9CEB4"
+       }
+      },
+      "groupLanguageVersions": true,
+      "badges": {
+       "enabled": true,
+       "types": [
+        "bestseller",
+        "popular",
+        "new",
+        "free"
+       ],
+       "newDays": 60,
+       "bestsellerTop": 3,
+       "max": 2
+      },
+      "quickFilters": [
+       {
+        "id": "qf-popular",
+        "label": "",
+        "kind": "popular"
+       },
+       {
+        "id": "qf-new",
+        "label": "",
+        "kind": "new"
+       },
+       {
+        "id": "qf-free",
+        "label": "",
+        "kind": "free"
+       },
+       {
+        "id": "qf-bestseller",
+        "label": "",
+        "kind": "bestseller"
+       },
+       {
+        "id": "qf-hindi",
+        "label": "",
+        "kind": "language",
+        "value": "hi"
+       },
+       {
+        "id": "qf-under-1000",
+        "label": "",
+        "kind": "priceMax",
+        "value": 1000
+       }
+      ],
+      "defaultSort": "Popular",
+      "hero": {
+       "enabled": true,
+       "breadcrumb": [
+        {
+         "label": "Home",
+         "route": "homepage"
+        },
+        {
+         "label": "Courses"
+        }
+       ],
+       "title": "All courses",
+       "lead": "E-learning courses, E-books, live sessions, videos and short films across six knowledge streams, in English and Hindi.",
+       "stats": [
+        {
+         "kind": "courses",
+         "label": "courses & resources"
+        },
+        {
+         "kind": "streams",
+         "label": "knowledge streams"
+        }
+       ],
+       "search": {
+        "enabled": true,
+        "placeholder": "Search courses, topics or teachers, e.g. “parenting”, “Gita”, “Ayurveda”"
+       },
+       "popular": [
+        {
+         "label": "Holistic Parenting",
+         "streamSlug": "dharma",
+         "categorySlug": "vedic-parenting"
+        },
+        {
+         "label": "Bhagwadgeeta",
+         "streamSlug": "shastra",
+         "categorySlug": "gita"
+        },
+        {
+         "label": "Garbha Vigyan",
+         "streamSlug": "swasthya",
+         "categorySlug": "garbha-vigyan"
+        },
+        {
+         "label": "Gurukul Education",
+         "streamSlug": "shiksha",
+         "categorySlug": "gurukul-shiksha"
+        },
+        {
+         "label": "Free",
+         "quickFilterId": "qf-free"
+        }
+       ],
+       "resultsHeader": {
+        "enabled": true,
+        "showStreamChip": true,
+        "streamChipMode": "subtitle",
+        "sortLabels": {
+         "popular": "Most popular"
+        }
+       },
+       "quickFilterBar": {
+        "label": "Quick filters:",
+        "variant": "filled"
+       }
+      },
+      "columnSections": [
+       {
+        "id": "ks-free",
+        "kind": "free-courses",
+        "placement": "before-grid",
+        "showWhen": "unfiltered",
+        "title": "New here? Start free",
+        "subtitle": "Try a free E-learning course, film or article before you enrol.",
+        "courseIds": [
+         "438fae32-2ae9-4f8f-b19e-c8364b480981",
+         "22d87df1-cb76-4101-a228-8aa20028dd07",
+         "2dbf6c16-c7ff-4172-8013-69d3ace62d4c"
+        ],
+        "limit": 3,
+        "ctaRules": [
+         {
+          "formats": [
+           "animation",
+           "video"
+          ],
+          "label": "Watch free"
+         },
+         {
+          "formats": [
+           "ebook",
+           "article"
+          ],
+          "label": "Read free"
+         }
+        ]
+       },
+       {
+        "id": "ks-flagship",
+        "kind": "spotlight",
+        "placement": "before-grid",
+        "showWhen": "unfiltered-or-own-stream",
+        "colors": {
+         "panelColor": "#F5EAC9",
+         "ringColor": "#A08A5C",
+         "dotColor": "#C9B78E",
+         "accentInkColor": "#3F4A26"
+        },
+        "slides": [
+         {
+          "id": "rajaswala",
+          "eyebrow": "Flagship program",
+          "streamSlug": "swasthya",
+          "title": "Rajaswala Paricharya",
+          "titleNative": "रजस्वला परिचर्या",
+          "description": "Menstrual care and wellbeing, the Ayurvedic way. E-Learning with a live session, in English and Hindi.",
+          "cta": {
+           "label": "Enrol for {price}",
+           "price": "₹1,001",
+           "action": "course",
+           "courseId": "8610911c-382c-41a9-9e33-2e4e0882282f",
+           "enrollInviteId": "b6d3bd0d-db65-43fe-9cdb-07e67e8aed01",
+           "packageSessionId": "18bba28f-5b33-4acc-927d-f1b28d9722d5",
+           "productPageCode": "forbvy"
+          },
+          "steps": [
+           {
+            "title": "Rajaswala survey",
+            "meta": "Free",
+            "tone": "accent"
+           },
+           {
+            "title": "E-Learning course",
+            "meta": "{price}"
+           },
+           {
+            "title": "Live session",
+            "meta": "Included"
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "id": "ks-coming-soon",
+        "kind": "coming-soon",
+        "placement": "after-grid",
+        "showWhen": "always",
+        "title": "Coming soon",
+        "subtitle": "Be the first to know when these open.",
+        "scope": "active-stream",
+        "categorySlugs": [
+         "chhanda",
+         "sanskrit",
+         "ganit",
+         "bal-shala",
+         "ayurveda-shiksha",
+         "vaidik-shikshan",
+         "katha-kathan",
+         "bhartiya-khel",
+         "khagol"
+        ],
+        "limit": 4,
+        "colors": {
+         "iconColor": "#C99621"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "id": "courses-not-sure",
+     "type": "ctaBanner",
+     "enabled": true,
+     "props": {
+      "variant": "band",
+      "layout": "split",
+      "backgroundColor": "#1A1208",
+      "textColor": "#FFFFFF",
+      "subheadingColor": "#A89C80",
+      "heading": "Not sure which course is right for you?",
+      "subheading": "Answer one question about where you are in life and we'll suggest where to begin.",
+      "button": {
+       "enabled": true,
+       "text": "Find your path",
+       "style": "olive",
+       "action": "navigate",
+       "target": "/learning-paths",
+       "icon": "arrow"
+      },
+      "secondaryButton": {
+       "enabled": true,
+       "text": "Talk to us",
+       "style": "outline-light",
+       "action": "openForm",
+       "audienceId": "f8814f46-a9ec-4e1a-b98f-0ca50d9e8325",
+       "formTitle": "Talk to us"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "learning-paths",
+   "route": "learning-paths",
+   "title": "Learning Paths",
+   "seo": {
+    "metaTitle": "Learning paths | Brahm Varchas",
+    "metaDescription": "A learning path is a set of courses in the right order, leading to one clear outcome. Begin at step one, often for free."
+   },
+   "components": [
+    {
+     "id": "lp-hero",
+     "type": "heroSection",
+     "enabled": true,
+     "props": {
+      "variant": "editorial",
+      "layout": "split",
+      "backgroundColor": "#FDF6E8",
+      "mediaWidth": 500,
+      "outlineColor": "#A08A5C",
+      "breadcrumb": [
+       {
+        "label": "Home",
+        "route": "homepage"
+       },
+       {
+        "label": "Learning Paths"
+       }
+      ],
+      "eyebrow": {
+       "text": "Learning paths",
+       "style": "rule"
+      },
+      "left": {
+       "title": "Not sure where to start?",
+       "titleAccent": "Follow a path.",
+       "description": "<p>A learning path is a set of courses in the right order, leading to one clear outcome. Begin at step one, often for free, and always know what comes next.</p>",
+       "checklist": [
+        "Courses in the right order",
+        "Step 1 free on most paths",
+        "English & हिन्दी"
+       ],
+       "buttons": [
+        {
+         "text": "Find my path",
+         "action": "navigate",
+         "target": "#paths",
+         "variant": "primary"
+        },
+        {
+         "text": "Browse all courses",
+         "action": "navigate",
+         "target": "/courses",
+         "variant": "secondary"
+        }
+       ]
+      },
+      "right": {
+       "image": "https://d1om4dxj9e7kkd.cloudfront.net/CATALOGUE/2719d8d1-43fd-4f9f-97af-a5b067d770a6/371640b9-abd1-4d38-a589-411be02e2863-bv-paths_hero.png",
+       "alt": "An example learning path: from the seed to the fruit"
+      },
+      "styles": {
+       "roundedEdges": false,
+       "textAlign": "left"
+      }
+     }
+    },
+    {
+     "id": "paths",
+     "type": "learningPath",
+     "enabled": true,
+     "props": {
+      "mode": "list",
+      "listLayout": "featured",
+      "productPageCode": "",
+      "productPageName": "",
+      "libraryId": "904e2152-f6b8-4c49-bfa0-e8849d13825f",
+      "libraryName": "Knowledge Streams",
+      "folderId": "",
+      "streamFromUrl": false,
+      "pathParam": "path",
+      "goalParam": "goal",
+      "title": "What do you want to achieve?",
+      "allGoalsLabel": "All paths",
+      "goals": [
+       {
+        "key": "child",
+        "label": "Raise my child",
+        "tags": [
+         "dharma"
+        ]
+       },
+       {
+        "key": "health",
+        "label": "Care for my health",
+        "tags": [
+         "swasthya"
+        ]
+       },
+       {
+        "key": "shastras",
+        "label": "Read the shastras",
+        "tags": [
+         "shastra"
+        ]
+       },
+       {
+        "key": "temples",
+        "label": "Discover India of temples",
+        "tags": [
+         "bharat"
+        ]
+       },
+       {
+        "key": "gurukul",
+        "label": "Teach the gurukul way",
+        "tags": [
+         "shiksha"
+        ]
+       }
+      ],
+      "featured": {
+       "code": "forbvy",
+       "badge": "Most popular path"
+      },
+      "pathExtras": [
+       {
+        "code": "ks61g1",
+        "mergeSteps": [
+         [
+          1,
+          2
+         ]
+        ],
+        "comingSoon": [
+         {
+          "title": "Sanskrit Language teaching",
+          "audienceId": "c103a5e0-b79f-43f0-8883-66cffdd134d7"
+         }
+        ]
+       }
+      ],
+      "formatLabels": {
+       "elearning": "E-Learning",
+       "ebook": "E-book",
+       "live": "Live session",
+       "video": "Video",
+       "animation": "Animation",
+       "article": "Articles - essays",
+       "merch": "Merchandise",
+       "audiobook": "Audio Book"
+      },
+      "moreTitle": "More learning paths",
+      "moreNote": "New paths are added as courses launch",
+      "viewPathLabel": "View path",
+      "addAllLabel": "Add whole path to cart",
+      "enrolLabel": "Enrol in this path",
+      "emptyText": "New learning paths will appear here.",
+      "showStepNumbers": true,
+      "showTotal": true,
+      "backgroundColor": "#FFFFFF",
+      "outlineColor": "#A08A5C",
+      "dividerColor": "#EFE6CC",
+      "trackColor": "#D9C7A0",
+      "freeColor": "#3F4A26",
+      "showGrid": false
+     },
+     "anchorId": "paths"
+    },
+    {
+     "id": "lp-institutions",
+     "type": "ctaBanner",
+     "enabled": true,
+     "props": {
+      "variant": "band",
+      "bandSize": "lg",
+      "layout": "split",
+      "backgroundColor": "#F5EAC9",
+      "textColor": "#1A1208",
+      "eyebrow": "For schools & institutions",
+      "heading": "Need a path for your teachers or students?",
+      "subheading": "We design custom learning paths in Indian Knowledge Systems for schools, universities and organisations.",
+      "button": {
+       "enabled": true,
+       "text": "Talk to us",
+       "style": "outline-dark",
+       "action": "openForm",
+       "audienceId": "f8814f46-a9ec-4e1a-b98f-0ca50d9e8325",
+       "formTitle": "Talk to us"
+      },
+      "secondaryButton": {
+       "enabled": true,
+       "text": "Partner with us",
+       "style": "primary",
+       "action": "openForm",
+       "audienceId": "f8814f46-a9ec-4e1a-b98f-0ca50d9e8325",
+       "formTitle": "Partner with us"
+      }
+     }
+    },
+    {
+     "id": "paths-more",
+     "type": "learningPath",
+     "enabled": true,
+     "props": {
+      "mode": "list",
+      "listLayout": "featured",
+      "productPageCode": "",
+      "productPageName": "",
+      "libraryId": "904e2152-f6b8-4c49-bfa0-e8849d13825f",
+      "libraryName": "Knowledge Streams",
+      "folderId": "",
+      "streamFromUrl": false,
+      "pathParam": "path",
+      "goalParam": "goal",
+      "title": "What do you want to achieve?",
+      "allGoalsLabel": "All paths",
+      "goals": [
+       {
+        "key": "child",
+        "label": "Raise my child",
+        "tags": [
+         "dharma"
+        ]
+       },
+       {
+        "key": "health",
+        "label": "Care for my health",
+        "tags": [
+         "swasthya"
+        ]
+       },
+       {
+        "key": "shastras",
+        "label": "Read the shastras",
+        "tags": [
+         "shastra"
+        ]
+       },
+       {
+        "key": "temples",
+        "label": "Discover India of temples",
+        "tags": [
+         "bharat"
+        ]
+       },
+       {
+        "key": "gurukul",
+        "label": "Teach the gurukul way",
+        "tags": [
+         "shiksha"
+        ]
+       }
+      ],
+      "featured": {
+       "code": "forbvy",
+       "badge": "Most popular path"
+      },
+      "pathExtras": [
+       {
+        "code": "ks61g1",
+        "mergeSteps": [
+         [
+          1,
+          2
+         ]
+        ],
+        "comingSoon": [
+         {
+          "title": "Sanskrit Language teaching",
+          "audienceId": "c103a5e0-b79f-43f0-8883-66cffdd134d7"
+         }
+        ]
+       }
+      ],
+      "formatLabels": {
+       "elearning": "E-Learning",
+       "ebook": "E-book",
+       "live": "Live session",
+       "video": "Video",
+       "animation": "Animation",
+       "article": "Articles - essays",
+       "merch": "Merchandise",
+       "audiobook": "Audio Book"
+      },
+      "moreTitle": "More learning paths",
+      "moreNote": "New paths are added as courses launch",
+      "viewPathLabel": "View path",
+      "addAllLabel": "Add whole path to cart",
+      "enrolLabel": "Enrol in this path",
+      "emptyText": "New learning paths will appear here.",
+      "showStepNumbers": true,
+      "showTotal": true,
+      "backgroundColor": "#FFFFFF",
+      "outlineColor": "#A08A5C",
+      "dividerColor": "#EFE6CC",
+      "trackColor": "#D9C7A0",
+      "freeColor": "#3F4A26",
+      "showGoals": false,
+      "showFeatured": false
+     }
+    },
+    {
+     "id": "lp-app",
+     "type": "ctaBanner",
+     "enabled": true,
+     "props": {
+      "variant": "band",
+      "layout": "split",
+      "backgroundColor": "#1A1208",
+      "textColor": "#FFFFFF",
+      "eyebrow": "Brahm Varchas app",
+      "heading": "Walk your path, one step at a time, from your phone.",
+      "subheading": "Open your next step wherever you are, and learn in English or Hindi.",
+      "mockup": {
+       "kind": "phone",
+       "image": "https://d1om4dxj9e7kkd.cloudfront.net/CATALOGUE/2719d8d1-43fd-4f9f-97af-a5b067d770a6/217a8999-5807-47a1-8bf5-54b8a2c48d41-bv-fig_phone_screen.png",
+       "alt": "The Brahm Varchas app on a phone"
+      },
+      "button": {
+       "enabled": true,
+       "text": "Get the app",
+       "style": "olive",
+       "action": "navigate",
+       "target": "/login",
+       "icon": "arrow"
+      }
+     }
+    },
+    {
+     "id": "lp-how",
+     "type": "stepsProcess",
+     "enabled": true,
+     "props": {
+      "variant": "cards",
+      "headerText": "How a learning path works",
+      "subheading": "",
+      "backgroundColor": "#F5EAC9",
+      "textColor": "#1A1208",
+      "accentColor": "#883000",
+      "steps": [
+       {
+        "number": "1",
+        "title": "Start with step one",
+        "description": "Most paths open with a free course, film or workshop. Try it before you commit."
+       },
+       {
+        "number": "2",
+        "title": "Learn in order, at your pace",
+        "description": "Each step builds on the last. Your progress is saved, so you can pause and return anytime."
+       },
+       {
+        "number": "3",
+        "title": "Finish and keep going",
+        "description": "Complete the path, then pick a related path to go deeper."
+       }
+      ]
+     }
+    },
+    {
+     "id": "lp-still-not-sure",
+     "type": "ctaBanner",
+     "enabled": true,
+     "props": {
+      "variant": "band",
+      "layout": "split",
+      "backgroundColor": "#1A1208",
+      "textColor": "#FFFFFF",
+      "subheadingColor": "#D9CEB4",
+      "heading": "Still not sure which path fits you?",
+      "subheading": "Tell us where you are in life and we'll suggest where to begin.",
+      "button": {
+       "enabled": true,
+       "text": "Find my path",
+       "style": "olive",
+       "action": "navigate",
+       "target": "#paths",
+       "icon": "arrow"
+      }
+     }
+    }
+   ]
+  }
+ ],
+ "globalSettings": {
+  "courseCatalogeType": {
+   "enabled": false,
+   "value": "Course"
+  },
+  "mode": "light",
+  "theme": {
+   "preset": "default",
+   "primaryColor": "#883000",
+   "atmosphere": {
+    "canvas": "soft",
+    "intensity": "subtle"
+   },
+   "headingScale": "default",
+   "borderRadius": "rounded",
+   "palette": {
+    "text": "#1A1208",
+    "body": "#463D2D",
+    "muted": "#5C6640",
+    "muted2": "#7A6A4A",
+    "primary": "#883000",
+    "gold": "#9A5A14",
+    "accent": "#CC7722",
+    "olive": "#6F7A4D",
+    "cream": "#FDF6E8",
+    "canvas": "#FFFDF8",
+    "sand": "#F5EAC9",
+    "border": "#E8DFC4",
+    "borderStrong": "#E0D2AE",
+    "accentOnDark": "#E8A860",
+    "bodyOnDark": "#D9CEB4",
+    "outline": "#A08A5C",
+    "applyToTokens": true
+   },
+   "contentMaxWidth": 1152
+  },
+  "fonts": {
+   "enabled": true,
+   "family": "Lato, sans-serif"
+  },
+  "compactness": "medium",
+  "audience": "all",
+  "leadCollection": {
+   "enabled": false,
+   "mandatory": false,
+   "inviteLink": null,
+   "fields": []
+  },
+  "enrquiry": {
+   "enabled": true,
+   "requirePayment": false
+  },
+  "payment": {
+   "enabled": true,
+   "provider": "razorpay",
+   "fields": [
+    "fullName",
+    "email",
+    "phone"
+   ]
+  },
+  "motion": {
+   "personality": "calm"
+  },
+  "stickyHeader": true,
+  "naming": {
+   "level": "Format"
+  },
+  "courseLanguages": {
+   "enabled": true,
+   "languages": [
+    {
+     "code": "en",
+     "label": "English",
+     "chip": "EN",
+     "match": [
+      "english",
+      "en"
+     ]
+    },
+    {
+     "code": "hi",
+     "label": "Hindi",
+     "chip": "हिं",
+     "match": [
+      "hindi",
+      "हिन्दी",
+      "हिंदी",
+      "hi"
+     ]
+    }
+   ],
+   "versionGroups": [
+    [
+     "7c12a9ec-22c3-4c55-ada1-2a93e107816f",
+     "c150dfcf-96e0-4712-b709-b0528e1f4a09"
+    ],
+    [
+     "f7c3b58e-b3bc-4d04-b897-e250ecf60b3a",
+     "334297b0-4f14-463d-886a-c32380519649"
+    ],
+    [
+     "27445cf9-8906-402f-b13c-066910bb62a1",
+     "0885a565-d814-4b84-95d6-f821b274736b"
+    ],
+    [
+     "cd3c4d85-634a-468c-a85d-db5513477134",
+     "f47f4dac-7964-4538-a20b-2c224435379e"
+    ],
+    [
+     "438fae32-2ae9-4f8f-b19e-c8364b480981",
+     "90ee7592-6d1c-434d-98a1-e98396c54d83"
+    ]
+   ]
+  },
+  "courseFormats": {
+   "elearning": {
+    "label": "Interactive, self-paced E-learning"
+   },
+   "ebook": {
+    "label": "E-books",
+    "levels": [
+     "eBook"
+    ]
+   },
+   "live": {
+    "label": "Live sessions"
+   },
+   "video": {
+    "label": "Video"
+   },
+   "animation": {
+    "label": "Short film / Animation",
+    "levels": [
+     "Short Film"
+    ]
+   },
+   "article": {
+    "label": "Articles-essays",
+    "levels": [
+     "Article/Essay"
+    ]
+   },
+   "merch": {
+    "label": "Merchandise (in collaboration)"
+   },
+   "audiobook": {
+    "label": "Audio Book"
+   }
+  },
+  "courseFormatOrder": [
+   "elearning",
+   "ebook",
+   "live",
+   "video",
+   "animation",
+   "article",
+   "merch",
+   "audiobook"
+  ],
+  "siteCart": {
+   "enabled": true,
+   "storeProductPageCode": "7pc4tl",
+   "storeProductPageName": "Knowledge Streams – Store"
+  },
+  "i18n": {
+   "enabled": true,
+   "defaultLocale": "en",
+   "locales": [
+    {
+     "code": "en",
+     "label": "EN"
+    },
+    {
+     "code": "hi",
+     "label": "हिन्दी"
+    }
+   ],
+   "strings": {
+    "hi": {
+     "Brahm Varchas": "ब्रह्म वर्चस",
+     "Knowledge Streams": "ज्ञान धाराएँ",
+     "Courses": "पाठ्यक्रम",
+     "Learning Paths": "अध्ययन पथ",
+     "FAQs": "सामान्य प्रश्न",
+     "FAQ": "सामान्य प्रश्न",
+     "Contact Us": "संपर्क करें",
+     "Login": "लॉग इन",
+     "Become a member": "सदस्य बनें",
+     "Six streams of knowledge": "ज्ञान की छह धाराएँ",
+     "Not sure where to begin? Find your path": "कहाँ से शुरू करें, तय नहीं? अपना पथ खोजें",
+     "श्रेणी · Categories in {stream}": "{stream} की श्रेणियाँ",
+     "Coming soon subjects: click to be notified when they launch.": "जल्द आने वाले विषय: शुरू होने पर सूचना पाने के लिए क्लिक करें।",
+     "All courses": "सभी पाठ्यक्रम",
+     "E-learning courses, E-books, live sessions, videos and short films across six knowledge streams, in English and Hindi.": "छह ज्ञान धाराओं में ई-लर्निंग पाठ्यक्रम, ई-पुस्तकें, लाइव सत्र, वीडियो और लघु फ़िल्में, अंग्रेज़ी और हिन्दी में।",
+     "Category": "श्रेणी",
+     "Language": "भाषा",
+     "Format": "प्रारूप",
+     "New here? Start free": "नए हैं? मुफ़्त से शुरू करें",
+     "Try a free E-learning course, film or article before you enrol.": "नामांकन से पहले एक मुफ़्त ई-लर्निंग पाठ्यक्रम, फ़िल्म या लेख आज़माएँ।",
+     "Free": "मुफ़्त",
+     "Learning paths": "अध्ययन पथ",
+     "Courses in the right order, leading to one clear outcome.": "सही क्रम में पाठ्यक्रम, जो एक स्पष्ट परिणाम तक ले जाते हैं।",
+     "Add whole path to cart": "पूरा पथ कार्ट में जोड़ें",
+     "Enrol in this path": "इस पथ में नामांकन करें",
+     "View path": "पथ देखें",
+     "New learning paths will appear here.": "नए अध्ययन पथ यहाँ दिखाई देंगे।",
+     "Not sure which course is right for you?": "तय नहीं कर पा रहे कि कौन-सा पाठ्यक्रम आपके लिए सही है?",
+     "Answer one question about where you are in life and we'll suggest where to begin.": "बताइए कि आप जीवन में अभी कहाँ हैं, हम सुझाएँगे कि कहाँ से शुरू करें।",
+     "Find your path": "अपना पथ खोजें",
+     "Stay connected": "जुड़े रहें",
+     "Join us for new courses, knowledge resources, live sessions and occasional updates.": "नए पाठ्यक्रमों, ज्ञान संसाधनों, लाइव सत्रों और समय-समय पर अपडेट के लिए हमसे जुड़ें।",
+     "Your email address": "आपका ईमेल पता",
+     "Subscribe": "सदस्यता लें",
+     "Thank you. We'll keep you posted, with no clutter.": "धन्यवाद। हम आपको केवल उपयोगी सूचनाएँ भेजेंगे।",
+     "Not sure where to start? Follow a path.": "कहाँ से शुरू करें, तय नहीं? एक पथ अपनाइए।",
+     "<p>A learning path is a set of courses in the right order, leading to one clear outcome. Begin at step one, often for free, and always know what comes next.</p>": "<p>अध्ययन पथ सही क्रम में रखे पाठ्यक्रमों का समूह है, जो एक स्पष्ट परिणाम तक ले जाता है। पहले चरण से शुरू करें, अक्सर मुफ़्त में, और हमेशा जानें कि आगे क्या है।</p>",
+     "Courses in the right order": "सही क्रम में पाठ्यक्रम",
+     "Step 1 free on most paths": "अधिकांश पथों में पहला चरण मुफ़्त",
+     "Find my path": "मेरा पथ खोजें",
+     "Browse all courses": "सभी पाठ्यक्रम देखें",
+     "An example learning path: from the seed to the fruit": "एक उदाहरण अध्ययन पथ: बीज से फल तक",
+     "What do you want to achieve?": "आप क्या पाना चाहते हैं?",
+     "Pick a path. Each one is a few courses in the order we recommend taking them.": "एक पथ चुनें। हर पथ में कुछ पाठ्यक्रम उसी क्रम में हैं जिसमें हम उन्हें करने की सलाह देते हैं।",
+     "Need a path for your teachers or students?": "अपने शिक्षकों या विद्यार्थियों के लिए पथ चाहिए?",
+     "We design custom learning paths in Indian Knowledge Systems for schools, universities and organisations.": "हम विद्यालयों, विश्वविद्यालयों और संस्थाओं के लिए भारतीय ज्ञान परंपरा में विशेष अध्ययन पथ बनाते हैं।",
+     "Talk to us": "हमसे बात करें",
+     "How a learning path works": "अध्ययन पथ कैसे काम करता है",
+     "Start with step one": "पहले चरण से शुरू करें",
+     "Most paths open with a free course, film or workshop. Try it before you commit.": "अधिकांश पथ एक मुफ़्त पाठ्यक्रम, फ़िल्म या कार्यशाला से शुरू होते हैं। आगे बढ़ने से पहले इसे आज़माएँ।",
+     "Learn in order, at your pace": "क्रम से, अपनी गति से सीखें",
+     "Each step builds on the last. Your progress is saved, so you can pause and return anytime.": "हर चरण पिछले चरण पर आधारित है। आपकी प्रगति सहेजी जाती है, इसलिए आप कभी भी रुककर लौट सकते हैं।",
+     "Finish and keep going": "पूरा करें और आगे बढ़ते रहें",
+     "Complete the path, then pick a related path to go deeper.": "पथ पूरा करें, फिर गहराई में जाने के लिए कोई संबंधित पथ चुनें।",
+     "Walk your path, one step at a time, from your phone.": "अपने फ़ोन से, एक-एक कदम, अपने पथ पर चलें।",
+     "Open your next step wherever you are, and learn in English or Hindi.": "जहाँ भी हों, अपना अगला चरण खोलें और अंग्रेज़ी या हिन्दी में सीखें।",
+     "Open the app": "ऐप खोलें",
+     "Still not sure which path fits you?": "अब भी तय नहीं कि कौन-सा पथ आपके लिए है?",
+     "Tell us where you are in life and we'll suggest where to begin.": "बताइए कि आप जीवन में अभी कहाँ हैं, हम सुझाएँगे कि कहाँ से शुरू करें।",
+     "Explore": "खोजें",
+     "Learn": "सीखें",
+     "Support": "सहायता",
+     "E-books": "ई-पुस्तकें",
+     "Short films": "लघु फ़िल्में",
+     "Articles-essays": "लेख-निबंध",
+     "Privacy Policy": "गोपनीयता नीति",
+     "Terms of Use": "उपयोग की शर्तें",
+     "Refund Policy": "धनवापसी नीति",
+     "<p>A modern learning platform rooted in Bharatiya Knowledge Systems. Structured learning journeys inspired by Bharatiya knowledge traditions.</p><p><strong>Translate Knowledge • Transform Society</strong></p><p>Ganga Puram, Viman Nagar, Pune, Maharashtra 411014, India<br><a href=\"mailto:support@brahmvarchas.org\">support@brahmvarchas.org</a></p>": "<p>भारतीय ज्ञान परंपरा में निहित एक आधुनिक शिक्षण मंच। भारतीय ज्ञान परंपराओं से प्रेरित सुव्यवस्थित अध्ययन यात्राएँ।</p><p><strong>ज्ञान का अनुवाद • समाज का रूपांतरण</strong></p><p>गंगा पुरम, विमान नगर, पुणे, महाराष्ट्र 411014, भारत<br><a href=\"mailto:support@brahmvarchas.org\">support@brahmvarchas.org</a></p>",
+     "© 2026 Brahm Varchas. All rights reserved. Translate Knowledge → Transform Society": "© 2026 ब्रह्म वर्चस। सर्वाधिकार सुरक्षित। ज्ञान का अनुवाद → समाज का रूपांतरण",
+     "Resources": "संसाधन",
+     "About Us": "हमारे बारे में",
+     "About": "परिचय",
+     "Team": "टीम",
+     "Testimonials": "प्रशंसापत्र",
+     "<p>A modern learning platform rooted in Bharatiya Knowledge Systems. Structured learning journeys inspired by Bharatiya knowledge traditions.</p>": "<p>भारतीय ज्ञान परंपरा में निहित एक आधुनिक शिक्षण मंच। भारतीय ज्ञान परंपराओं से प्रेरित सुव्यवस्थित अध्ययन यात्राएँ।</p>",
+     "Translate Knowledge • Transform Society": "ज्ञान का अनुवाद • समाज का रूपांतरण",
+     "Translate Knowledge → Transform Society": "ज्ञान का अनुवाद → समाज का रूपांतरण",
+     "© 2026 Brahm Varchas. All rights reserved.": "© 2026 ब्रह्म वर्चस। सर्वाधिकार सुरक्षित।",
+     "No clutter. Just thoughtful updates from Brahm Varchas.": "कोई अनावश्यक संदेश नहीं। ब्रह्म वर्चस से केवल सोच-समझकर भेजी गई सूचनाएँ।",
+     "For schools & institutions": "विद्यालयों और संस्थानों के लिए",
+     "Partner with us": "हमारे साथ साझेदारी करें",
+     "Brahm Varchas app": "ब्रह्म वर्चस ऐप",
+     "Get the app": "ऐप पाएँ",
+     "Courses | Brahm Varchas": "पाठ्यक्रम | ब्रह्म वर्चस",
+     "Learning paths | Brahm Varchas": "अध्ययन पथ | ब्रह्म वर्चस",
+     "A learning path is a set of courses in the right order, leading to one clear outcome. Begin at step one, often for free.": "अध्ययन पथ सही क्रम में रखे पाठ्यक्रमों का समूह है, जो एक स्पष्ट परिणाम तक ले जाता है। पहले चरण से शुरू करें, अक्सर मुफ़्त में।",
+     "Read the texts that shaped Bharat.": "उन ग्रंथों को पढ़ें जिन्होंने भारत को आकार दिया।",
+     "The Gita, stotras and the knowledge of the Rishis, read slowly and in order, with teachers who live by them.": "गीता, स्तोत्र और ऋषियों का ज्ञान, धीरे-धीरे और क्रम से, उन्हें जीने वाले शिक्षकों के साथ।",
+     "Explore Scriptures": "शास्त्र देखें",
+     "Travel Bharat through its temples and stories.": "मंदिरों और कथाओं के माध्यम से भारत की यात्रा करें।",
+     "Short films, essays and e-books on the temples, sacred rivers and forgotten heroes of Bharat.": "भारत के मंदिरों, पवित्र नदियों और भुला दिए गए नायकों पर लघु फ़िल्में, निबंध और ई-पुस्तकें।",
+     "Explore Orbiting Bharat": "भारत परिक्रमा देखें",
+     "Learn the Indian way of learning.": "सीखने का भारतीय तरीका सीखें।",
+     "Subjects arranged in their shastriya order of study, from language and applied sciences to arts and education, as taught in the gurukul parampara.": "भाषा और व्यावहारिक विज्ञान से लेकर कला और शिक्षा तक, विषय अपने शास्त्रीय अध्ययन क्रम में, जैसा गुरुकुल परंपरा में पढ़ाया जाता है।",
+     "Explore Education": "शिक्षा देखें",
+     "Live well, the Ayurvedic way.": "आयुर्वेदिक तरीके से स्वस्थ जीवन जिएँ।",
+     "Daily and seasonal routines, women's health, conception and pregnancy, taught from the classical texts of Ayurveda.": "दिनचर्या और ऋतुचर्या, महिलाओं का स्वास्थ्य, गर्भधारण और गर्भावस्था, आयुर्वेद के शास्त्रीय ग्रंथों से।",
+     "Explore Health | Ayurveda": "स्वास्थ्य व आयुर्वेद देखें",
+     "Raise children rooted in sanskar.": "संस्कारों में रचे-बसे बच्चों का पालन करें।",
+     "Parenting, values and the everyday practices of Bharatiya sanskriti, for families and teachers.": "परिवारों और शिक्षकों के लिए पालन-पोषण, मूल्य और भारतीय संस्कृति की दैनिक परंपराएँ।",
+     "Explore Virtue | Civilisation": "धर्म व संस्कृति देखें",
+     "Learn the crafts of Bharat with your hands.": "अपने हाथों से भारत के शिल्प सीखें।",
+     "Workshops in sacred writing, traditional arts and crafts, taught by practising artisans.": "पवित्र लेखन, पारंपरिक कलाओं और शिल्प की कार्यशालाएँ, अभ्यासरत कारीगरों द्वारा।",
+     "Explore Skills | Craft": "कला व शिल्प देखें",
+     "The Gita and its teachings, chapter by chapter": "गीता और उसकी शिक्षाएँ, अध्याय दर अध्याय",
+     "Hymns of praise, their meaning and recitation": "स्तुति के स्तोत्र, उनका अर्थ और पाठ",
+     "How the Rishis used Vedic knowledge in harmony with nature": "ऋषियों ने प्रकृति के साथ सामंजस्य में वैदिक ज्ञान का उपयोग कैसे किया",
+     "Temples and sacred places of Bharat, in film and essay": "फ़िल्म और निबंध में भारत के मंदिर और पवित्र स्थल",
+     "Stories of Bharat's struggles and her heroes": "भारत के संघर्षों और उसके नायकों की कहानियाँ",
+     "How the gurukul educated the whole person": "गुरुकुल ने पूरे व्यक्तित्व को कैसे शिक्षित किया",
+     "Ayurveda taught as a subject of study": "अध्ययन के विषय के रूप में आयुर्वेद",
+     "Classroom methods from Vedic pedagogy": "वैदिक शिक्षाशास्त्र से कक्षा की पद्धतियाँ",
+     "Teaching values through Bharat's stories": "भारत की कथाओं के माध्यम से मूल्यों की शिक्षा",
+     "Traditional games and physical culture of Bharat": "भारत के पारंपरिक खेल और शारीरिक संस्कृति",
+     "Bharat's sciences of the sky and time": "आकाश और काल के भारतीय विज्ञान",
+     "Metre, chanting and the training of the voice": "छन्द, पाठ और स्वर का प्रशिक्षण",
+     "Learning and teaching Sanskrit as a living language": "संस्कृत को जीवंत भाषा के रूप में सीखना और सिखाना",
+     "Bharat's mathematical traditions, from Vedic to classical": "वैदिक से शास्त्रीय काल तक भारत की गणित परंपराएँ",
+     "Early learning in the gurukul way": "गुरुकुल पद्धति से प्रारंभिक शिक्षा",
+     "Ayurvedic principles of daily and seasonal living": "दैनिक और ऋतु अनुसार जीवन के आयुर्वेदिक सिद्धांत",
+     "The Vedic science of conception, pregnancy and the newborn": "गर्भधारण, गर्भावस्था और नवजात का वैदिक विज्ञान",
+     "Menstrual care and wellbeing, the Ayurvedic way": "आयुर्वेदिक तरीके से मासिक धर्म की देखभाल और स्वास्थ्य",
+     "Nurturing the body, mind and sanskaras of your child": "अपने बच्चे के शरीर, मन और संस्कारों का पोषण",
+     "Ram Lekhan and other sacred writing practices": "राम लेखन और अन्य पवित्र लेखन परंपराएँ",
+     "A woman's life stages": "एक स्त्री के जीवन के चरण",
+     "Care for your body and your child through each stage: menstruation, pregnancy and early motherhood.": "हर चरण में अपने शरीर और अपने बच्चे की देखभाल: मासिक धर्म, गर्भावस्था और प्रारंभिक मातृत्व।",
+     "मंदिरों का भारत · India of temples": "मंदिरों का भारत",
+     "Journey through Bharat's temples and sacred rivers, in film and essay.": "फ़िल्म और निबंध में भारत के मंदिरों और पवित्र नदियों की यात्रा।",
+     "First steps in Scriptures | Texts": "शास्त्र व ग्रंथ में पहले कदम",
+     "Begin with the Gita, then go deeper through the Rishis and a live intensive.": "गीता से शुरू करें, फिर ऋषियों और एक लाइव गहन सत्र के साथ गहराई में जाएँ।",
+     "Gurukul Education / Indian Education": "गुरुकुल शिक्षा/ भारतीय शिक्षा",
+     "Understand how the gurukul educated, and bring its methods into your home or classroom.": "समझें कि गुरुकुल कैसे शिक्षित करता था, और उसकी पद्धतियों को अपने घर या कक्षा में लाएँ।",
+     "Knowledge Streams – Store": "ज्ञान धाराएँ – स्टोर",
+     "English": "अंग्रेज़ी",
+     "Hindi": "हिन्दी",
+     "EN": "EN",
+     "हिं": "हिं",
+     "Short Film": "लघु फ़िल्म",
+     "Ebook": "ई-पुस्तक",
+     "eBook": "ई-पुस्तक",
+     "Article/essay": "लेख/निबंध",
+     "Article/Essay": "लेख/निबंध",
+     "Not sure where to start?": "कहाँ से शुरू करें, तय नहीं?",
+     "Follow a path.": "एक पथ अपनाइए।",
+     "Home": "होम",
+     "English & हिन्दी": "अंग्रेज़ी और हिन्दी",
+     "All paths": "सभी पथ",
+     "Raise my child": "अपने बच्चे का पालन-पोषण",
+     "Care for my health": "अपने स्वास्थ्य की देखभाल",
+     "Read the shastras": "शास्त्र पढ़ें",
+     "Discover India of temples": "मंदिरों के भारत को जानें",
+     "Teach the gurukul way": "गुरुकुल पद्धति से पढ़ाएँ",
+     "Most popular path": "सबसे लोकप्रिय पथ",
+     "Sanskrit Language teaching": "संस्कृत भाषा शिक्षण",
+     "More learning paths": "और अध्ययन पथ",
+     "New paths are added as courses launch": "पाठ्यक्रम शुरू होने के साथ नए पथ जुड़ते रहते हैं",
+     "Health | Ayurveda": "स्वास्थ्य व आयुर्वेद",
+     "Virtue | Civilisation": "धर्म | संस्कृति",
+     "Scriptures | Texts": "शास्त्र व ग्रंथ",
+     "Orbiting Bharat": "भारत परिक्रमा",
+     "Education": "शिक्षा",
+     "Skills | Craft": "कला | शिल्प",
+     "E-Learning": "ई-लर्निंग",
+     "E-book": "ई-पुस्तक",
+     "Animation": "एनिमेशन",
+     "Articles - essays": "लेख - निबंध",
+     "Live session": "लाइव सत्र",
+     "Video": "वीडियो",
+     "Interactive, self-paced E-learning": "इंटरैक्टिव, स्व-गति ई-लर्निंग",
+     "Short film / Animation": "लघु फ़िल्म / एनिमेशन",
+     "Live sessions": "लाइव सत्र",
+     "courses & resources": "पाठ्यक्रम और संसाधन",
+     "knowledge streams": "ज्ञान धाराएँ",
+     "Search courses, topics or teachers, e.g. “parenting”, “Gita”, “Ayurveda”": "पाठ्यक्रम, विषय या शिक्षक खोजें, जैसे “पेरेंटिंग”, “गीता”, “आयुर्वेद”",
+     "Holistic Parenting": "वैदिक पेरेंटिंग",
+     "Bhagwadgeeta": "भगवद्गीता",
+     "Garbha Vigyan": "गर्भ विज्ञान",
+     "Gurukul Education": "गुरुकुल शिक्षा",
+     "Quick filters:": "त्वरित फ़िल्टर:",
+     "Most popular": "सबसे लोकप्रिय",
+     "Price": "कीमत",
+     "Category  ·  श्रेणी": "श्रेणी",
+     "+ Show all {count} categories": "+ सभी {count} श्रेणियाँ देखें",
+     "For": "किसके लिए",
+     "Parents": "माता-पिता",
+     "Women's health": "महिला स्वास्थ्य",
+     "Students": "विद्यार्थी",
+     "Teachers": "शिक्षक",
+     "Your learning, in your pocket": "आपकी पढ़ाई, आपकी जेब में",
+     "Pick up where you left off, and learn in English or Hindi wherever you are.": "जहाँ छोड़ा था वहीं से शुरू करें, और कहीं भी अंग्रेज़ी या हिन्दी में सीखें।",
+     "Merchandise (in collaboration)": "मर्चेंडाइज़ (सहयोग में)",
+     "Audio Book": "ऑडियो बुक",
+     "Merchandise": "मर्चेंडाइज़",
+     "The Vedic science of conception, pregnancy and newborn care.": "गर्भधारण, गर्भावस्था और नवजात की देखभाल का वैदिक विज्ञान।",
+     "The gurukul system of education and its methods, fully documented.": "गुरुकुल शिक्षा व्यवस्था और उसकी पद्धतियों का सम्पूर्ण आलेखन।",
+     "Swasthavritta: Ayurvedic principles of daily and seasonal living.": "स्वस्थवृत्त: दैनिक और ऋतु अनुसार जीवन के आयुर्वेदिक सिद्धांत।",
+     "How the Rishis used Vedic knowledge responsibly, in harmony with nature.": "ऋषियों ने प्रकृति के साथ सामंजस्य में वैदिक ज्ञान का ज़िम्मेदारी से उपयोग कैसे किया।",
+     "A live learning intensive on the Raghuveer Gadyam, in praise of Shri Ram.": "श्री राम की स्तुति, रघुवीर गद्यम् पर एक लाइव गहन अध्ययन सत्र।",
+     "A short film on Kashmir's great Sun temple and its story.": "कश्मीर के महान सूर्य मंदिर और उसकी कथा पर एक लघु फ़िल्म।",
+     "A travelogue of the Narmada parikrama.": "नर्मदा परिक्रमा का यात्रा वृत्तांत।",
+     "Watch free": "मुफ़्त देखें",
+     "Read free": "मुफ़्त पढ़ें",
+     "Flagship program": "प्रमुख कार्यक्रम",
+     "Rajaswala Paricharya": "रजस्वला परिचर्या",
+     "Menstrual care and wellbeing, the Ayurvedic way. E-Learning with a live session, in English and Hindi.": "आयुर्वेदिक तरीके से मासिक धर्म की देखभाल और स्वास्थ्य। लाइव सत्र के साथ ई-लर्निंग, अंग्रेज़ी और हिन्दी में।",
+     "Enrol for {price}": "{price} में नामांकन करें",
+     "Rajaswala survey": "रजस्वला सर्वेक्षण",
+     "E-Learning course": "ई-लर्निंग पाठ्यक्रम",
+     "Included": "शामिल",
+     "Coming soon": "जल्द आ रहा है",
+     "Be the first to know when these open.": "इनके शुरू होते ही सबसे पहले जानें।",
+     "The Brahm Varchas app on a phone": "फ़ोन पर ब्रह्म वर्चस ऐप"
+    }
+   }
+  },
+  "layout": {
+   "header": {
+    "id": "header-1",
+    "type": "header",
+    "enabled": true,
+    "props": {
+     "logo": "https://d1om4dxj9e7kkd.cloudfront.net/CATALOGUE/2719d8d1-43fd-4f9f-97af-a5b067d770a6/9cba81f7-b354-487e-a29a-15022df03af3-bv-fig_logo.png",
+     "title": "",
+     "backgroundColor": "#FFFFFF",
+     "navigation": [
+      {
+       "label": "Knowledge Streams",
+       "route": "/courses",
+       "openInSameTab": true,
+       "type": "megaMenu",
+       "megaMenu": {
+        "libraryId": "904e2152-f6b8-4c49-bfa0-e8849d13825f",
+        "libraryName": "Knowledge Streams",
+        "eyebrow": "Six streams of knowledge",
+        "helpLabel": "Not sure where to begin? Find your path",
+        "helpRoute": "/learning-paths",
+        "categoriesHeading": "श्रेणी · Categories in {stream}",
+        "showLegend": true,
+        "footnote": "Coming soon subjects: click to be notified when they launch."
+       }
+      },
+      {
+       "label": "Courses",
+       "route": "courses",
+       "openInSameTab": true
+      },
+      {
+       "label": "Learning Paths",
+       "route": "learning-paths",
+       "openInSameTab": true
+      },
+      {
+       "label": "Resources",
+       "route": "https://brahmvarchas.org/blogs/",
+       "openInSameTab": false
+      },
+      {
+       "label": "About Us",
+       "route": "https://brahmvarchas.org/about-us/",
+       "openInSameTab": false
+      }
+     ],
+     "authLinks": [
+      {
+       "label": "Login",
+       "route": "login",
+       "style": "text"
+      },
+      {
+       "label": "Become a member",
+       "route": "signup",
+       "style": "primary"
+      }
+     ],
+     "activeStyle": "underline",
+     "showSearch": true,
+     "showLanguageSwitcher": true,
+     "barSize": "compact",
+     "contentWidth": "contained",
+     "navStyle": "editorial",
+     "logoOnly": true,
+     "languageSwitcherStyle": "segmented",
+     "cartDisplay": "whenNotEmpty",
+     "megaMenuStyle": "editorial"
+    }
+   },
+   "footer": {
+    "id": "footer-1",
+    "type": "footer",
+    "enabled": true,
+    "props": {
+     "variant": "brand",
+     "layout": "four-column",
+     "backgroundColor": "#F5EAC9",
+     "leftSection": {
+      "title": "Brahm Varchas",
+      "logo": "https://d1om4dxj9e7kkd.cloudfront.net/CATALOGUE/2719d8d1-43fd-4f9f-97af-a5b067d770a6/9cba81f7-b354-487e-a29a-15022df03af3-bv-fig_logo.png",
+      "text": "<p>A modern learning platform rooted in Bharatiya Knowledge Systems. Structured learning journeys inspired by Bharatiya knowledge traditions.</p>",
+      "tagline": "Translate Knowledge • Transform Society",
+      "socials": [
+       {
+        "platform": "YouTube",
+        "icon": "youtube",
+        "url": "https://www.youtube.com/@brahmvarchasshiksha"
+       },
+       {
+        "platform": "Instagram",
+        "icon": "instagram",
+        "url": "https://www.instagram.com/brahmvarchasshiksha"
+       },
+       {
+        "platform": "Facebook",
+        "icon": "facebook",
+        "url": "https://www.facebook.com/profile.php?id=100040195303676"
+       },
+       {
+        "platform": "Twitter",
+        "icon": "twitter",
+        "url": "https://twitter.com/BVShiksha"
+       }
+      ]
+     },
+     "newsletter": {
+      "enabled": true,
+      "heading": "Stay connected",
+      "subheading": "Join us for new courses, knowledge resources, live sessions and occasional updates.",
+      "placeholder": "Your email address",
+      "buttonText": "Subscribe",
+      "note": "No clutter. Just thoughtful updates from Brahm Varchas.",
+      "successMessage": "Thank you. We'll keep you posted, with no clutter.",
+      "audienceId": "7bffbbd1-3e58-49e4-846a-30dee15f453a",
+      "audienceName": "Knowledge Streams – Newsletter"
+     },
+     "rightSection1": {
+      "title": "Explore",
+      "links": [
+       {
+        "label": "Knowledge Streams",
+        "route": "/courses",
+        "openInSameTab": true
+       },
+       {
+        "label": "Courses",
+        "route": "/courses",
+        "openInSameTab": true
+       },
+       {
+        "label": "Learning Paths",
+        "route": "/learning-paths",
+        "openInSameTab": true
+       },
+       {
+        "label": "Resources",
+        "route": "https://brahmvarchas.org/blogs/"
+       }
+      ]
+     },
+     "rightSection2": {
+      "title": "Learn",
+      "links": [
+       {
+        "label": "E-books",
+        "route": "/courses?format=ebook",
+        "openInSameTab": true
+       },
+       {
+        "label": "Live sessions",
+        "route": "/courses?format=live",
+        "openInSameTab": true
+       },
+       {
+        "label": "Articles-essays",
+        "route": "/courses?format=article",
+        "openInSameTab": true
+       },
+       {
+        "label": "Short film / Animation",
+        "route": "/courses?format=animation",
+        "openInSameTab": true
+       }
+      ]
+     },
+     "rightSection3": {
+      "title": "About",
+      "links": [
+       {
+        "label": "About Us",
+        "route": "https://brahmvarchas.org/about-us/"
+       },
+       {
+        "label": "Team",
+        "route": "https://brahmvarchas.org/about-us/"
+       },
+       {
+        "label": "Testimonials",
+        "route": "https://brahmvarchas.org/about-us/"
+       },
+       {
+        "label": "Contact Us",
+        "route": "https://learning.brahmvarchas.org/contactus",
+        "openInSameTab": true
+       }
+      ]
+     },
+     "rightSection4": {
+      "title": "Support",
+      "links": [
+       {
+        "label": "FAQ",
+        "route": "https://learning.brahmvarchas.org/faqs",
+        "openInSameTab": true
+       },
+       {
+        "label": "Privacy Policy",
+        "route": "https://learning.brahmvarchas.org/privacypolicy",
+        "openInSameTab": true
+       },
+       {
+        "label": "Terms of Use",
+        "route": "https://learning.brahmvarchas.org/termsofuse",
+        "openInSameTab": true
+       },
+       {
+        "label": "Refund Policy",
+        "route": "https://learning.brahmvarchas.org/refundpolicy",
+        "openInSameTab": true
+       }
+      ]
+     },
+     "bottomNote": "© 2026 Brahm Varchas. All rights reserved.",
+     "bottomTagline": "Translate Knowledge → Transform Society",
+     "showLanguageSwitcher": true
+    }
+   }
+  }
+ }
+}

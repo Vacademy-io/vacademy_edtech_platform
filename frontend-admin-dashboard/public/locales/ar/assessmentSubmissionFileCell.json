@@ -1,0 +1,10 @@
+{
+    "checking": "جارٍ التحقق...",
+    "submitted": "تم التسليم",
+    "notSubmitted": "لم يتم التسليم",
+    "viewSubmission": "عرض التسليم",
+    "upload": "رفع",
+    "submissionHeading": "التسليم",
+    "fileNamePrefix": "التسليم",
+    "loadFailedError": "تعذر تحميل التسليم. يرجى المحاولة مرة أخرى."
+}

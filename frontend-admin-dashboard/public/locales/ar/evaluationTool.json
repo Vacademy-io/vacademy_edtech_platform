@@ -1,0 +1,19 @@
+{
+    "totalAwarded": "إجمالي الدرجات الممنوحة",
+    "marksAwarded": "الدرجات الممنوحة",
+    "viewTask": "عرض المهمة",
+    "outOf": "من أصل {{max}}",
+    "enterOverallScoreHint": "أدخل الدرجة الإجمالية لهذا التسليم. 0 درجة صالحة — اكتبها لمنح صفر.",
+    "sectionNumber": "القسم {{number}}",
+    "questionNo": "رقم السؤال",
+    "scoredMarks": "الدرجات المحصّلة",
+    "maxMarks": "الدرجة القصوى",
+    "remarks": "ملاحظات",
+    "addRemarksPlaceholder": "أضف ملاحظة…",
+    "pagesReviewed": "الصفحات التي تمت مراجعتها",
+    "notVisited": "لم تتم زيارتها",
+    "timeOnEvaluation": "الوقت المستغرق في التقييم",
+    "timeFormat": "{{mins}} د {{secs}} ث",
+    "previewQuestionHeading": "معاينة السؤال",
+    "questionLabel": "السؤال :"
+}

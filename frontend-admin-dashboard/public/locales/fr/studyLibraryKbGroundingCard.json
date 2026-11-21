@@ -1,0 +1,42 @@
+{
+    "modes": {
+        "strict": {
+            "label": "Uniquement ce contenu",
+            "help": "Les diapositives non couvertes par le contenu sont signalées au lieu d'être rédigées à partir de connaissances générales."
+        },
+        "blended": {
+            "label": "Combler les lacunes",
+            "help": "Là où le contenu est insuffisant, l'IA ajoute sa propre explication pour garder le cours complet."
+        }
+    },
+    "fidelities": {
+        "replicate": {
+            "label": "Suivre le livre",
+            "help": "Conserve les titres de section, la numérotation et l'ordre du contenu, et préserve l'identité déclarée du chapitre (numéro, titre, auteurs, objectifs)."
+        },
+        "adapt": {
+            "label": "Adapter pour l'enseignement",
+            "help": "L'IA peut retitrer et réorganiser les sections pour améliorer la fluidité du cours."
+        }
+    },
+    "coverages": {
+        "full": {
+            "label": "Chaque section",
+            "help": "Chaque section sélectionnée devient au moins une diapositive, afin que rien du contenu ne soit omis. Produit des cours plus longs."
+        },
+        "highlights": {
+            "label": "Points clés",
+            "help": "Les sections étroitement liées peuvent être condensées en moins de diapositives."
+        }
+    },
+    "buildFrom": "Construire à partir de",
+    "myOwnMaterial": "Mon propre contenu",
+    "dontUseMyMaterial": "Ne pas utiliser mon contenu",
+    "topicsSelected_one": "{{selected}} sur {{count}} sujet",
+    "topicsSelected_many": "{{selected}} sur {{count}} de sujets",
+    "topicsSelected_other": "{{selected}} sur {{count}} sujets",
+    "structure": "Structure",
+    "coverage": "Couverture",
+    "noTopicsYet": "Cette base de connaissances n'a pas encore de sujets, elle sera donc utilisée dans son intégralité.",
+    "everySlideFromPages": "Chaque diapositive sera rédigée à partir des pages traitant de son propre sujet, et indiquera de quelle page elle provient."
+}

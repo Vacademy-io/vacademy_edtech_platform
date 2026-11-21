@@ -1,4 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     CertificateGenerationSession,
     CertificateStudentData,
@@ -22,43 +24,47 @@ interface StudentDataStepProps {
 }
 
 // Define columns for the student table
-const studentColumns: ColumnDef<CertificateStudentData>[] = [
+const buildStudentColumns = (t: TFunction): ColumnDef<CertificateStudentData>[] => [
     {
         accessorKey: 'user_id',
-        header: 'User ID',
+        header: t('columns.userId'),
         size: 120,
     },
     {
         accessorKey: 'institute_enrollment_id',
-        header: 'Enrollment ID',
+        header: t('columns.enrollmentId'),
         size: 150,
     },
     {
         accessorKey: 'full_name',
-        header: `${getTerminology(RoleTerms.Learner, SystemTerms.Learner)} Name`,
+        header: t('columns.nameHeader', {
+            term: getTerminology(RoleTerms.Learner, SystemTerms.Learner),
+        }),
         size: 200,
     },
     {
         accessorKey: 'email',
-        header: 'Email',
+        header: t('columns.email'),
         size: 200,
     },
     {
         accessorKey: 'linked_institute_name',
-        header: 'Institute',
+        header: t('columns.institute'),
         size: 150,
     },
     {
         accessorKey: 'mobile_number',
-        header: 'Phone Number',
+        header: t('columns.phoneNumber'),
         size: 150,
     },
 ];
 
 export const StudentDataStep = ({ session, onSessionUpdate, onNextStep }: StudentDataStepProps) => {
+    const { t } = useTranslation('certificateGenerationStudentDataStep');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<CertificateStudentData | null>(null);
     const tableRef = useRef<HTMLDivElement>(null);
+    const studentColumns = useMemo(() => buildStudentColumns(t), [t]);
 
     const handleDownloadTemplate = () => {
         // Create CSV template with the first 3 required columns
@@ -105,16 +111,21 @@ export const StudentDataStep = ({ session, onSessionUpdate, onNextStep }: Studen
                         </div>
                         <div>
                             <h2 className="text-lg font-semibold text-neutral-700">
-                                Selected {getTerminologyPlural(RoleTerms.Learner, SystemTerms.Learner)} (
-                                {session.selectedStudents.length})
+                                {t('headerSelected', {
+                                    term: getTerminologyPlural(
+                                        RoleTerms.Learner,
+                                        SystemTerms.Learner
+                                    ),
+                                    count: session.selectedStudents.length,
+                                })}
                             </h2>
                             <p className="text-sm text-neutral-500">
-                                Review{' '}
-                                {getTerminology(
-                                    RoleTerms.Learner,
-                                    SystemTerms.Learner
-                                ).toLocaleLowerCase()}{' '}
-                                data and upload dynamic information via CSV
+                                {t('reviewSubtitle', {
+                                    term: getTerminology(
+                                        RoleTerms.Learner,
+                                        SystemTerms.Learner
+                                    ).toLocaleLowerCase(),
+                                })}
                             </p>
                         </div>
                     </div>
@@ -126,7 +137,7 @@ export const StudentDataStep = ({ session, onSessionUpdate, onNextStep }: Studen
                         className="flex items-center gap-2"
                     >
                         <Download className="size-4" />
-                        Download Template
+                        {t('downloadTemplate')}
                     </MyButton>
                 </div>
 
@@ -184,7 +195,7 @@ export const StudentDataStep = ({ session, onSessionUpdate, onNextStep }: Studen
                         canProceedToNext ? 'hover:scale-105' : 'cursor-not-allowed opacity-50'
                     )}
                 >
-                    Next: PDF Annotation
+                    {t('nextPdfAnnotation')}
                     <ArrowRight className="size-4" />
                 </MyButton>
             </div>

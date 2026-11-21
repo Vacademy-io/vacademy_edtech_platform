@@ -1,0 +1,23 @@
+{
+    "header": {
+        "title": "خطة الدفع",
+        "showInInvite": "إظهار خطط الدفع في الدعوة",
+        "changePlans": "تغيير خطط الدفع"
+    },
+    "badge": {
+        "default": "افتراضي"
+    },
+    "donation": {
+        "suggestedAmounts": "المبالغ المقترحة: {{amount}}",
+        "minimumAmount": "الحد الأدنى للمبلغ: {{amount}}",
+        "currency": "العملة: {{currency}}"
+    },
+    "freePlan": {
+        "days_zero": "مجاني لمدة {{count}} يوم",
+        "days_one": "مجاني لمدة {{count}} يوم",
+        "days_two": "مجاني لمدة {{count}} يومين",
+        "days_few": "مجاني لمدة {{count}} أيام",
+        "days_many": "مجاني لمدة {{count}} يومًا",
+        "days_other": "مجاني لمدة {{count}} يوم"
+    }
+}

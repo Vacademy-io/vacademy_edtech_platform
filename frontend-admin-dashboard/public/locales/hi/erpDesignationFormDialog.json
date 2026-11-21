@@ -1,0 +1,29 @@
+{
+    "editHeading": "पदनाम संपादित करें",
+    "addHeading": "पदनाम जोड़ें",
+    "cancel": "रद्द करें",
+    "saveChanges": "बदलाव सेव करें",
+    "saving": "सेव हो रहा है…",
+    "fields": {
+        "nameLabel": "नाम",
+        "namePlaceholder": "जैसे Senior Teacher",
+        "codeLabel": "कोड",
+        "codePlaceholder": "जैसे SR-TCH",
+        "levelLabel": "स्तर",
+        "levelPlaceholder": "जैसे 3",
+        "levelHelp": "अधिक संख्या का मतलब अधिक वरिष्ठता है।",
+        "gradeLabel": "ग्रेड",
+        "gradePlaceholder": "जैसे L3",
+        "descriptionLabel": "विवरण",
+        "descriptionPlaceholder": "यह पदनाम किसे कवर करता है"
+    },
+    "toasts": {
+        "updated": "पदनाम अपडेट किया गया",
+        "added": "पदनाम जोड़ा गया"
+    },
+    "errors": {
+        "nameRequired": "पदनाम को एक नाम दें",
+        "levelWholeNumber": "पूर्ण संख्या का उपयोग करें",
+        "saveFailed": "यह पदनाम सेव नहीं किया जा सका"
+    }
+}

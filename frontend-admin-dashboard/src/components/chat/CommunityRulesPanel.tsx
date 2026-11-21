@@ -26,17 +26,17 @@ export function CommunityRulesPanel({
     const needsAccept = ackRequired && !rules.acknowledged;
 
     return (
-        <div className="border-b border-neutral-200 bg-primary-50/40 px-4 py-3">
+        <div className="mx-4 mt-3 shrink-0 rounded-xl border border-success-100 bg-success-50 px-4 py-3">
             <div className="mb-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <ShieldCheck size={18} weight="duotone" className="text-primary-600" />
-                    <span className="text-sm font-semibold text-neutral-700">
+                    <ShieldCheck size={18} weight="duotone" className="text-success-600" />
+                    <span className="text-sm font-semibold text-neutral-800">
                         {guidelines?.title || 'Community Guidelines'}
                     </span>
                 </div>
                 <div className="flex items-center gap-2">
                     {rules.acknowledged && (
-                        <span className="flex items-center gap-1 text-xs text-success-600">
+                        <span className="flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-xs font-medium text-success-600">
                             <CheckCircle size={14} weight="fill" /> Accepted
                         </span>
                     )}
@@ -45,7 +45,7 @@ export function CommunityRulesPanel({
                             size="sm"
                             variant="outline"
                             onClick={onEdit}
-                            className="h-7 gap-1 px-2 text-xs"
+                            className="h-7 gap-1 bg-white px-2 text-xs"
                         >
                             <PencilSimple size={13} /> Edit Rules
                         </Button>
@@ -58,7 +58,7 @@ export function CommunityRulesPanel({
                     {guidelines.items.map((item, i) => (
                         <li
                             key={i}
-                            className="flex items-start gap-2 text-xs leading-relaxed text-neutral-600"
+                            className="flex items-start gap-2 text-xs leading-relaxed text-neutral-700"
                         >
                             <span className="mt-1.5 size-1 shrink-0 rounded-full bg-neutral-400" />
                             <span>{item}</span>
@@ -88,7 +88,7 @@ export function CommunityRulesPanel({
             ) : null}
 
             {needsAccept && (
-                <div className="mt-3 flex items-center justify-between rounded-md border border-primary-200 bg-white px-3 py-2">
+                <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-success-200 bg-white px-3 py-2">
                     <span className="text-xs text-neutral-600">
                         Accept the guidelines to post in this community.
                     </span>
@@ -96,7 +96,7 @@ export function CommunityRulesPanel({
                         size="sm"
                         disabled={isAcknowledging}
                         onClick={onAcknowledge}
-                        className="bg-primary-500 hover:bg-primary-600"
+                        className="bg-primary-500 text-white hover:opacity-90"
                     >
                         {isAcknowledging ? (
                             <SpinnerGap size={14} className="animate-spin" />

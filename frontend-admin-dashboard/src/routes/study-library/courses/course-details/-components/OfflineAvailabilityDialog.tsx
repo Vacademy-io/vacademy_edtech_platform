@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -24,14 +26,16 @@ interface OfflineAvailabilityDialogProps {
     nodeName: string;
 }
 
-const NODE_LABEL: Record<OfflineSourceType, string> = {
-    PACKAGE: 'course (all batches)',
-    PACKAGE_SESSION: 'batch',
-    SUBJECT: 'subject',
-    MODULE: 'module',
-    CHAPTER: 'chapter',
-    SLIDE: 'slide',
-};
+function buildNodeLabel(t: TFunction): Record<OfflineSourceType, string> {
+    return {
+        PACKAGE: t('nodeLabel.package'),
+        PACKAGE_SESSION: t('nodeLabel.packageSession'),
+        SUBJECT: t('nodeLabel.subject'),
+        MODULE: t('nodeLabel.module'),
+        CHAPTER: t('nodeLabel.chapter'),
+        SLIDE: t('nodeLabel.slide'),
+    };
+}
 
 export function OfflineAvailabilityDialog({
     open,
@@ -41,10 +45,12 @@ export function OfflineAvailabilityDialog({
     packageSessionId,
     nodeName,
 }: OfflineAvailabilityDialogProps) {
+    const { t } = useTranslation('studyLibraryOfflineAvailabilityDialog');
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [value, setValue] = useState<OfflineTriState>('INHERIT');
     const [manifest, setManifest] = useState<OfflineManifestDTO | null>(null);
+    const nodeLabel = buildNodeLabel(t);
 
     useEffect(() => {
         if (!open || !packageSessionId) return;
@@ -60,7 +66,7 @@ export function OfflineAvailabilityDialog({
                 setManifest(effective);
             })
             .catch(() => {
-                if (active) toast.error('Failed to load offline availability');
+                if (active) toast.error(t('loadFailed'));
             })
             .finally(() => active && setLoading(false));
         return () => {
@@ -81,24 +87,30 @@ export function OfflineAvailabilityDialog({
                     allow: value === 'INHERIT' ? null : value === 'ALLOW',
                 },
             ]);
-            toast.success('Offline availability saved');
+            toast.success(t('saved'));
             onClose();
         } catch {
-            toast.error('Failed to save offline availability');
+            toast.error(t('saveFailed'));
         } finally {
             setSaving(false);
         }
     };
 
     return (
-        <MyDialog open={open} onOpenChange={onClose} heading={`Offline Availability - ${nodeName}`}>
+        <MyDialog
+            open={open}
+            onOpenChange={onClose}
+            heading={t('offlineAvailabilityFor', { name: nodeName })}
+        >
             <div className="space-y-4 p-1">
                 {loading ? (
-                    <div className="py-8 text-center text-sm text-neutral-500">Loading…</div>
+                    <div className="py-8 text-center text-sm text-neutral-500">
+                        {t('loadingEllipsis')}
+                    </div>
                 ) : (
                     <>
                         <p className="text-caption text-neutral-500">
-                            Can learners download this {NODE_LABEL[sourceType]} for offline use?
+                            {t('canLearnersDownload', { node: nodeLabel[sourceType] })}
                         </p>
 
                         <RadioGroup
@@ -113,9 +125,11 @@ export function OfflineAvailabilityDialog({
                                     className="mt-0.5"
                                 />
                                 <div>
-                                    <Label htmlFor="offline-inherit">Inherit (default)</Label>
+                                    <Label htmlFor="offline-inherit">
+                                        {t('inheritDefault')}
+                                    </Label>
                                     <p className="text-caption text-neutral-400">
-                                        Follows the parent / course default
+                                        {t('inheritDescription')}
                                     </p>
                                 </div>
                             </div>
@@ -126,9 +140,9 @@ export function OfflineAvailabilityDialog({
                                     className="mt-0.5"
                                 />
                                 <div>
-                                    <Label htmlFor="offline-allow">Allow</Label>
+                                    <Label htmlFor="offline-allow">{t('allow')}</Label>
                                     <p className="text-caption text-neutral-400">
-                                        Downloadable, unless a parent is blocked
+                                        {t('allowDescription')}
                                     </p>
                                 </div>
                             </div>
@@ -139,9 +153,9 @@ export function OfflineAvailabilityDialog({
                                     className="mt-0.5"
                                 />
                                 <div>
-                                    <Label htmlFor="offline-block">Block</Label>
+                                    <Label htmlFor="offline-block">{t('block')}</Label>
                                     <p className="text-caption text-neutral-400">
-                                        Never downloadable
+                                        {t('blockDescription')}
                                     </p>
                                 </div>
                             </div>
@@ -151,13 +165,17 @@ export function OfflineAvailabilityDialog({
                             <Alert className="border-warning-200 bg-warning-50">
                                 <WifiSlash className="size-4 text-warning-600" />
                                 <AlertDescription className="text-caption text-warning-700">
-                                    {warning.onlineOnlyCount} of {warning.totalSlides} item
-                                    {warning.totalSlides === 1 ? '' : 's'} in this section
-                                    {sourceType === 'SLIDE' ? '' : ' are'} streamed or interactive
-                                    (YouTube/Vimeo/Drive/embeds, assessments) and can never be
-                                    downloaded — learners will see &quot;Requires internet&quot; on
-                                    {sourceType === 'SLIDE' ? ' it' : ' them'} regardless of this
-                                    setting.
+                                    {sourceType === 'SLIDE'
+                                        ? t('onlineOnlyWarningSlide', {
+                                              online: warning.onlineOnlyCount,
+                                              total: warning.totalSlides,
+                                              count: warning.totalSlides,
+                                          })
+                                        : t('onlineOnlyWarningSection', {
+                                              online: warning.onlineOnlyCount,
+                                              total: warning.totalSlides,
+                                              count: warning.totalSlides,
+                                          })}
                                 </AlertDescription>
                             </Alert>
                         )}
@@ -166,8 +184,7 @@ export function OfflineAvailabilityDialog({
                             <Alert className="border-neutral-200 bg-neutral-50">
                                 <WarningCircle className="size-4 text-neutral-500" />
                                 <AlertDescription className="text-caption text-neutral-500">
-                                    Could not load a content preview for this batch — the setting
-                                    will still be saved.
+                                    {t('noPreviewWarning')}
                                 </AlertDescription>
                             </Alert>
                         )}
@@ -176,14 +193,14 @@ export function OfflineAvailabilityDialog({
 
                 <div className="flex justify-end gap-2 border-t pt-4">
                     <MyButton buttonType="secondary" onClick={onClose} disabled={saving}>
-                        Cancel
+                        {t('cancel')}
                     </MyButton>
                     <MyButton
                         onClick={handleSave}
                         disabled={loading || saving}
                         className="bg-primary-500"
                     >
-                        {saving ? 'Saving…' : 'Save'}
+                        {saving ? t('savingEllipsis') : t('save')}
                     </MyButton>
                 </div>
             </div>

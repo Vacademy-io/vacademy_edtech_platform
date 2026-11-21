@@ -12,13 +12,15 @@ so the browser must consume it with a fetch + ReadableStream client (the native
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
 
+from ..core.chat_auth import check_rate_limit
 from ..core.security import get_pinned_principal
 from ..schemas.auth import PinnedPrincipal
 from ..schemas.assistant import (
@@ -27,8 +29,18 @@ from ..schemas.assistant import (
     AssistantMessageRequest,
     AssistantMessageResponse,
     AssistantCloseResponse,
+    AssistantSpeechToTextResponse,
+    AssistantChatList,
+    AssistantChatView,
+    AssistantChatContinueResponse,
+    AssistantChatDeleteResponse,
 )
+from ..services.ai_billing import UC
 from ..services.assistant_service import AssistantAgentService
+from ..services.audio_utils import base_mime
+from ..services.sarvam_service import SarvamService, SarvamSTTError
+from ..services import speech_to_text as stt
+from ..services.tutor.roles import is_staff
 from ..dependencies import get_assistant_service
 
 logger = logging.getLogger(__name__)
@@ -94,7 +106,7 @@ async def stream_session(
     authorization: Optional[str] = Header(None),
 ):
     # The caller's own JWT is replayed on data tools that hit normal admin
-    # endpoints (find_learner), so the real user identity reaches Java.
+    # endpoints (e.g. the learner list), so the real user identity reaches Java.
     bearer_token = (
         authorization[len("Bearer "):] if authorization and authorization.startswith("Bearer ") else None
     )
@@ -209,6 +221,236 @@ async def close_session(
     except Exception as e:
         logger.error("Error closing Assistant session: %s", e)
         raise HTTPException(status_code=500, detail="Could not close the session.")
+
+
+# ── chat history ─────────────────────────────────────────────────────────────
+# The caller's own Assistant chats in the pinned institute. Staff only; any other
+# chat, and a deleted one, answers 404 so its existence is never confirmed.
+
+def _require_staff(principal: PinnedPrincipal) -> None:
+    if not is_staff(principal.roles):
+        raise HTTPException(status_code=403, detail="Chat history is available to institute staff only.")
+
+
+_CHAT_NOT_FOUND = "Chat not found."
+
+
+@router.get(
+    "/sessions",
+    response_model=AssistantChatList,
+    summary="List the caller's recent Assistant chats",
+    description=(
+        "Newest activity first. Each chat has its title (the first question, cut to about 60 characters), "
+        "last activity time, number of questions and answers, and whether it is still open. `q` filters by "
+        "title. Paginated with `page` (from 0) and `page_size` (at most 50)."
+    ),
+)
+async def list_chats(
+    page: int = Query(0, ge=0, le=10000),
+    page_size: int = Query(20, ge=1, le=50),
+    q: Optional[str] = Query(None, max_length=100),
+    principal: PinnedPrincipal = Depends(get_pinned_principal),
+    service: AssistantAgentService = Depends(get_assistant_service),
+) -> AssistantChatList:
+    _require_staff(principal)
+    try:
+        return AssistantChatList(**await service.list_sessions(principal, page=page, page_size=page_size, query=q))
+    except Exception as e:
+        logger.error("Error listing Assistant chats: %s", e)
+        raise HTTPException(status_code=500, detail="Could not load your chats.")
+
+
+@router.get(
+    "/sessions/{session_id}",
+    response_model=AssistantChatView,
+    summary="One of the caller's Assistant chats, as the panel shows it",
+    description=(
+        "Questions, answers (with their follow-up suggestions) and confirmation cards in their final "
+        "state. Tool calls and their results are not included."
+    ),
+)
+async def get_chat(
+    session_id: str,
+    principal: PinnedPrincipal = Depends(get_pinned_principal),
+    service: AssistantAgentService = Depends(get_assistant_service),
+) -> AssistantChatView:
+    _require_staff(principal)
+    try:
+        return AssistantChatView(**await service.get_session_view(session_id, principal))
+    except (ValueError, PermissionError):
+        raise HTTPException(status_code=404, detail=_CHAT_NOT_FOUND)
+    except Exception as e:
+        logger.error("Error loading Assistant chat: %s", e)
+        raise HTTPException(status_code=500, detail="Could not load this chat.")
+
+
+@router.post(
+    "/sessions/{session_id}/continue",
+    response_model=AssistantChatContinueResponse,
+    summary="Reopen one of the caller's chats to ask more in it",
+    description=(
+        "The chat becomes open again and new messages go into it with its earlier messages as context. "
+        "Confirmation cards still open in it are retired (shown as expired): ask again for a new card."
+    ),
+)
+async def continue_chat(
+    session_id: str,
+    principal: PinnedPrincipal = Depends(get_pinned_principal),
+    service: AssistantAgentService = Depends(get_assistant_service),
+) -> AssistantChatContinueResponse:
+    _require_staff(principal)
+    try:
+        return AssistantChatContinueResponse(**await service.continue_session(session_id, principal))
+    except (ValueError, PermissionError):
+        raise HTTPException(status_code=404, detail=_CHAT_NOT_FOUND)
+    except Exception as e:
+        logger.error("Error continuing Assistant chat: %s", e)
+        raise HTTPException(status_code=500, detail="Could not reopen this chat.")
+
+
+@router.delete(
+    "/sessions/{session_id}",
+    response_model=AssistantChatDeleteResponse,
+    summary="Remove one of the caller's chats from their history",
+)
+async def delete_chat(
+    session_id: str,
+    principal: PinnedPrincipal = Depends(get_pinned_principal),
+    service: AssistantAgentService = Depends(get_assistant_service),
+) -> AssistantChatDeleteResponse:
+    _require_staff(principal)
+    try:
+        return AssistantChatDeleteResponse(**await service.delete_session(session_id, principal))
+    except (ValueError, PermissionError):
+        raise HTTPException(status_code=404, detail=_CHAT_NOT_FOUND)
+    except Exception as e:
+        logger.error("Error deleting Assistant chat: %s", e)
+        raise HTTPException(status_code=500, detail="Could not delete this chat.")
+
+
+# ── speech to text ───────────────────────────────────────────────────────────
+# A spoken question for the Assistant (or any staff screen that wants one):
+# the recording becomes text the user reviews before sending.
+
+#: Longest recording accepted, in seconds. The admin app stops recording here.
+STT_MAX_SECONDS = 120
+#: Largest upload accepted. Two minutes of browser audio (opus or AAC) is well
+#: under this; the cap bounds clips whose length cannot be measured.
+STT_MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+
+
+async def _record_usage(principal: PinnedPrincipal, seconds: Optional[float], characters: int,
+                        language: Optional[str]) -> None:
+    await asyncio.to_thread(
+        stt.record_stt_usage,
+        institute_id=principal.institute_id,
+        user_id=principal.user_id,
+        seconds=seconds,
+        characters=characters,
+        language=language,
+        surface="assistant",
+        use_case=UC.VACADEMY_ASSISTANT,
+        actor_roles=principal.roles,
+        actor_display_name=principal.full_name,
+    )
+
+
+@router.post(
+    "/speech-to-text",
+    response_model=AssistantSpeechToTextResponse,
+    summary="Turn a short recording into text (not sent to the Assistant)",
+    description=(
+        "Multipart upload: `file` (webm/opus, ogg, mp4/aac, mp3 or wav; up to "
+        f"{STT_MAX_SECONDS} s and {STT_MAX_UPLOAD_BYTES // (1024 * 1024)} MB) and an optional "
+        "`language` hint (`auto`, or a code such as `en-IN` / `hi-IN`). Institute staff only. "
+        "Returns the transcript for the user to review; nothing is sent. 422 when no speech is "
+        "heard, 413 when the recording is too long, 415 for other content types or audio that "
+        "cannot be decoded, 502 when the "
+        "speech service fails, 429 when called too often."
+    ),
+)
+async def speech_to_text(
+    file: UploadFile = File(...),
+    language: str = Form("auto"),
+    principal: PinnedPrincipal = Depends(get_pinned_principal),
+) -> AssistantSpeechToTextResponse:
+    if not is_staff(principal.roles):
+        raise HTTPException(status_code=403, detail="Voice input is available to institute staff only.")
+    check_rate_limit(f"assistant-stt:{principal.institute_id}:{principal.user_id}")
+
+    try:
+        language_hint = stt.normalize_language(language)
+    except stt.UnsupportedLanguageError:
+        raise HTTPException(status_code=422, detail="This language is not supported for voice input.")
+
+    content_type = base_mime(file.content_type)
+    if not stt.is_accepted_audio_type(content_type):
+        raise HTTPException(
+            status_code=415,
+            detail="Unsupported recording format. Record with the microphone button or upload webm, ogg, mp4, mp3 or wav audio.",
+        )
+
+    audio = await file.read(STT_MAX_UPLOAD_BYTES + 1)
+    if not audio:
+        raise HTTPException(status_code=400, detail="The recording is empty.")
+    if len(audio) > STT_MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="The recording is too large. Keep it under 2 minutes.")
+
+    try:
+        result = await stt.transcribe_audio(
+            audio,
+            content_type,
+            language=language_hint,
+            max_seconds=STT_MAX_SECONDS,
+            min_speech_wav_bytes=stt.MIN_SPEECH_WAV_BYTES,
+            require_decoded=True,
+            stt=SarvamService(),
+        )
+    except stt.UndecodableAudioError as exc:
+        logger.info("assistant stt refused: not decodable (%s, %dB %s)", exc, len(audio), content_type)
+        raise HTTPException(
+            status_code=415,
+            detail="The recording could not be read. Please record again with the microphone button.",
+        )
+    except stt.SpeechTooLongError as exc:
+        logger.info("assistant stt refused: %.1fs over the %ss limit (%dB %s)",
+                    exc.duration_seconds, STT_MAX_SECONDS, len(audio), content_type)
+        raise HTTPException(status_code=413, detail="The recording is too long. Keep it under 2 minutes.")
+    except SarvamSTTError as exc:
+        logger.warning("assistant stt provider error: status=%s %dB %s, %.1fs done before it",
+                       exc.status, len(audio), content_type, exc.completed_seconds)
+        if exc.completed_seconds > 0:
+            # Earlier pieces of a long clip were transcribed (and paid for).
+            await _record_usage(principal, exc.completed_seconds, 0, language_hint)
+        raise HTTPException(
+            status_code=502, detail="Voice input isn't available right now. Please try again or type your question."
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.error("assistant stt failed: %s (%dB %s)", type(exc).__name__, len(audio), content_type)
+        raise HTTPException(status_code=500, detail="Could not process the recording.")
+
+    # Sizes and timings only: never the audio or the transcript text.
+    logger.info(
+        "assistant stt: %dB %s, %s s, %s, provider=%s, %d chars, lang=%s",
+        result.input_bytes, content_type,
+        f"{result.duration_seconds:.1f}" if result.duration_seconds is not None else "?",
+        result.transcode_note, result.provider_called, len(result.transcript), result.language or language_hint,
+    )
+
+    if result.provider_called:
+        # The clip was decoded (require_decoded), so its length is known.
+        await _record_usage(principal, result.duration_seconds, len(result.transcript),
+                            result.language or language_hint)
+
+    transcript = result.transcript.strip()
+    if not transcript:
+        raise HTTPException(status_code=422, detail="No speech was detected. Please try again.")
+
+    return AssistantSpeechToTextResponse(
+        transcript=transcript,
+        language=result.language or (None if language_hint == "auto" else language_hint),
+        duration_seconds=round(result.duration_seconds, 1) if result.duration_seconds is not None else None,
+    )
 
 
 __all__ = ["router"]

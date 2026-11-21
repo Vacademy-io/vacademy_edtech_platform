@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.user_subscription.dto.BenefitConfigDTO;
+import vacademy.io.admin_core_service.features.user_subscription.entity.CouponCode;
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentOption;
 import vacademy.io.admin_core_service.features.user_subscription.entity.ReferralMapping;
 import vacademy.io.admin_core_service.features.user_subscription.entity.ReferralOption;
@@ -22,6 +23,7 @@ import vacademy.io.common.exceptions.VacademyException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -49,14 +51,47 @@ public class ReferralBenefitOrchestrator {
 
         ReferralOption referralOption = referralOptionService.findById(enrollDTO.getReferRequest().getReferralOptionId()).orElseThrow(() -> new VacademyException("Referral Option not found"));
 
-        UserDTO referrer = authService.getUsersFromAuthServiceByUserIds(List.of(enrollDTO.getReferRequest().getReferrerUserId())).get(0);
+        // The referrer is whoever owns the code, never the client-sent referrer_user_id. A
+        // referral that does not qualify is dropped and the enrolment goes ahead without it:
+        // the learner was already told at /verify, and a bad code must not block a payment.
+        String code = enrollDTO.getReferRequest().getReferralCode();
+        Optional<CouponCode> coupon = referralOptionService.findUsableReferralCode(code, referralOption);
+        if (coupon.isEmpty()) {
+            log.warn("Referral: code {} not usable with option {} — enrolling user {} without a referral",
+                    code, referralOption.getId(), refereeUser.getId());
+            return;
+        }
+        String referrerUserId = coupon.get().getSourceId();
+        if (referrerUserId.equals(refereeUser.getId())) {
+            log.warn("Referral: user {} used their own code {} — ignored", refereeUser.getId(), code);
+            return;
+        }
+        if (referralMappingRepository.existsRefereeAtSource(refereeUser.getId(), referralOption.getSourceId(),
+                List.of(ReferralStatusEnum.PENDING.name(), ReferralStatusEnum.ACTIVE.name()))) {
+            log.warn("Referral: user {} was already referred at {} — code {} ignored",
+                    refereeUser.getId(), referralOption.getSourceId(), code);
+            return;
+        }
+        List<UserDTO> referrers = authService.getUsersFromAuthServiceByUserIds(List.of(referrerUserId));
+        if (referrers.isEmpty()) {
+            log.warn("Referral: owner {} of code {} not found — ignored", referrerUserId, code);
+            return;
+        }
+        UserDTO referrer = referrers.get(0);
+        // Where the phone number is the identity (SuchBliss), a second account on the same
+        // number is the same person referring themselves.
+        if (samePhone(referrer, refereeUser)) {
+            log.warn("Referral: user {} shares a phone number with referrer {} — ignored",
+                    refereeUser.getId(), referrerUserId);
+            return;
+        }
 
         String status = getReferralMappingStatus(paymentOption);
 
         ReferralMapping referralMapping = createReferralMapping(
                 referrer.getId(),
                 refereeUser.getId(),
-                enrollDTO.getReferRequest().getReferralCode(),
+                coupon.get().getCode(),
                 userPlan,
                 status,
                 referralOption
@@ -144,6 +179,20 @@ public class ReferralBenefitOrchestrator {
     }
 
 
+
+    private static boolean samePhone(UserDTO a, UserDTO b) {
+        String pa = digits(a.getMobileNumber());
+        String pb = digits(b.getMobileNumber());
+        if (pa.length() < 10 || pb.length() < 10) {
+            return false;
+        }
+        // Last 10 digits, so "+91 98..." and "98..." compare equal.
+        return pa.substring(pa.length() - 10).equals(pb.substring(pb.length() - 10));
+    }
+
+    private static String digits(String phone) {
+        return phone == null ? "" : phone.replaceAll("[^0-9]", "");
+    }
 
     private ReferralMapping createReferralMapping(String referrerId, String refereeId, String referralCode, UserPlan userPlan, String status, ReferralOption referralOption) {
         ReferralMapping mapping = ReferralMapping.builder()

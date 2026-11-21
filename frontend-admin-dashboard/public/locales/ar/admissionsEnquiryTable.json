@@ -1,0 +1,72 @@
+{
+    "toast": {
+        "bulkUpdateSuccess_zero": "لم يتم تحديث أي استفسارات ({{count}})",
+        "bulkUpdateSuccess_one": "تم تحديث استفسار واحد بنجاح ({{count}})",
+        "bulkUpdateSuccess_two": "تم تحديث استفسارين بنجاح ({{count}})",
+        "bulkUpdateSuccess_few": "تم تحديث {{count}} استفسارات بنجاح",
+        "bulkUpdateSuccess_many": "تم تحديث {{count}} استفسارًا بنجاح",
+        "bulkUpdateSuccess_other": "تم تحديث {{count}} استفسار بنجاح",
+        "bulkUpdateError": "فشل تحديث حالات الاستفسارات",
+        "selectAtLeastOneStatus": "يرجى تحديد حالة واحدة على الأقل للتحديث",
+        "downloadStarting": "جارٍ بدء التنزيل...",
+        "noDataToDownload": "لا توجد بيانات للتنزيل",
+        "downloadSuccess": "اكتمل التنزيل بنجاح",
+        "downloadError": "فشل تنزيل البيانات"
+    },
+    "loading": {
+        "enquiryResponses": "جارٍ تحميل ردود الاستفسارات..."
+    },
+    "error": {
+        "loadingEnquiryResponses": "حدث خطأ أثناء تحميل ردود الاستفسارات"
+    },
+    "empty": {
+        "noResponses": "لا توجد ردود لهذا الاستفسار بعد!",
+        "addNewEnquiryResponse": "إضافة رد استفسار جديد"
+    },
+    "header": {
+        "totalResponses": "إجمالي الردود:",
+        "rowsSelected_zero": "لا توجد صفوف محددة ({{count}})",
+        "rowsSelected_one": "صف واحد محدد ({{count}})",
+        "rowsSelected_two": "صفان محددان ({{count}})",
+        "rowsSelected_few": "{{count}} صفوف محددة",
+        "rowsSelected_many": "{{count}} صفًا محددًا",
+        "rowsSelected_other": "{{count}} صف محدد",
+        "bulkImport": "استيراد جماعي",
+        "downloadCsv": "تنزيل ملف CSV",
+        "downloading": "جارٍ التنزيل..."
+    },
+    "pagination": {
+        "previous": "السابق",
+        "next": "التالي",
+        "pageOf": "صفحة {{page}} من {{total}}"
+    },
+    "bulkActionBar": {
+        "selectedLabel": "محدد",
+        "enquiryStatusLabel": "حالة الاستفسار",
+        "conversionLabel": "التحويل",
+        "selectPlaceholder": "اختر…",
+        "apply": "تطبيق",
+        "applying": "جارٍ التطبيق…",
+        "clear": "مسح"
+    },
+    "csv": {
+        "headers": {
+            "enquiryId": "معرّف الاستفسار",
+            "class": "الصف",
+            "studentName": "اسم الطالب",
+            "gender": "الجنس",
+            "dateOfBirth": "تاريخ الميلاد",
+            "parentName": "اسم ولي الأمر",
+            "parentEmail": "البريد الإلكتروني لولي الأمر",
+            "parentMobile": "رقم جوال ولي الأمر",
+            "trackingId": "معرّف التتبع",
+            "status": "الحالة",
+            "source": "المصدر",
+            "counsellor": "المستشار",
+            "submittedAt": "تاريخ الإرسال"
+        },
+        "assigned": "مُسنَد",
+        "notAssigned": "غير مُسنَد",
+        "filenameFallback": "الاستفسارات"
+    }
+}

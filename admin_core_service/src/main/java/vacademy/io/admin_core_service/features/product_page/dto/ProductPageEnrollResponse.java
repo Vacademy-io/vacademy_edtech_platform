@@ -31,6 +31,12 @@ public class ProductPageEnrollResponse {
     private String accessToken;
     private String refreshToken;
 
+    /**
+     * One-time code the learner app swaps for the buyer's tokens via /login-code/exchange,
+     * when the page has autoLoginAfterPayment on. Null otherwise.
+     */
+    private String loginCode;
+
     /** For CPO enrollment without payment: the created UserPlan ID used to fetch/pay installments. */
     private String userPlanId;
 }

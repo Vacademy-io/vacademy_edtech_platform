@@ -1,0 +1,92 @@
+{
+    "empty": {
+        "pickInstitute": "Pick an institute to view calling reports.",
+        "noCallsInRange": "No calls in this range.",
+        "noCounsellorActivity": "No counsellor call activity in this range."
+    },
+    "deployPending": {
+        "title": "Calling reports aren't available on this server yet",
+        "description": "The reporting endpoints haven't been deployed to this environment. Check back after the next backend release."
+    },
+    "error": {
+        "loadFailed": "Couldn't load this report.",
+        "retry": "Retry"
+    },
+    "kpi": {
+        "totalDials": {
+            "label": "Total Dials",
+            "sub_one": "across {{count}} day",
+            "sub_other": "across {{count}} days"
+        },
+        "connected": {
+            "label": "Connected",
+            "sub_one": "of {{dials}} dial",
+            "sub_other": "of {{dials}} dials"
+        },
+        "connectRate": {
+            "label": "Connect Rate",
+            "sub": "connected ÷ dials"
+        },
+        "talkTime": {
+            "label": "Talk Time",
+            "sub": "hours : minutes"
+        }
+    },
+    "dailyChart": {
+        "heading": "Daily call activity",
+        "legendDials": "Dials",
+        "legendConnected": "Connected",
+        "ariaLabel": "Daily dials and connected calls",
+        "exportCsv": "Export CSV"
+    },
+    "counsellorTable": {
+        "heading": "Counsellor call performance",
+        "exportCsv": "Export CSV",
+        "headers": {
+            "counsellor": "Counsellor",
+            "dials": "Dials",
+            "connected": "Connected",
+            "connectRate": "Connect %",
+            "talkTime": "Talk time",
+            "avgCall": "Avg call",
+            "outcomes": "Outcomes"
+        }
+    },
+    "heatmap": {
+        "heading": "Calling hours heatmap",
+        "timezoneNote": "Day × hour, in your institute's report timezone",
+        "legendFewer": "Fewer",
+        "legendMore": "More",
+        "days": {
+            "mon": "Mon",
+            "tue": "Tue",
+            "wed": "Wed",
+            "thu": "Thu",
+            "fri": "Fri",
+            "sat": "Sat",
+            "sun": "Sun"
+        },
+        "tooltip": {
+            "noDials": "{{day}} {{hour}} — no dials",
+            "withDials_one": "{{day}} {{hour}} — {{count}} dial · {{pct}}% connected",
+            "withDials_other": "{{day}} {{hour}} — {{count}} dials · {{pct}}% connected"
+        }
+    },
+    "csv": {
+        "daily": {
+            "date": "Date",
+            "dials": "Dials",
+            "connected": "Connected",
+            "connectRate": "Connect rate (%)",
+            "talkTime": "Talk time (seconds)"
+        },
+        "counsellor": {
+            "counsellor": "Counsellor",
+            "dials": "Dials",
+            "connected": "Connected",
+            "connectRate": "Connect rate (%)",
+            "talkTime": "Talk time (seconds)",
+            "avgCall": "Avg call (seconds)"
+        }
+    }
+}

@@ -4,8 +4,11 @@ import { PushNotificationSchema } from '@capacitor/push-notifications';
 import { pushNotificationService } from '@/services/push-notifications/push-notification-service';
 import { usePushNotificationStore } from '@/stores/push-notification-store';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
+import { UNREAD_COUNT_KEY } from '@/services/chat/chatApi';
 
 export const usePushNotifications = () => {
+  const queryClient = useQueryClient();
   const {
     settings,
     isPermissionGranted,
@@ -96,6 +99,18 @@ export const usePushNotifications = () => {
     // Add to store
     addNotification(notification);
 
+    // A chat push means a new unread message — refresh the sidebar badge now instead of on its next poll.
+    if (notification.data?.type === 'chat') {
+      void queryClient.invalidateQueries({ queryKey: UNREAD_COUNT_KEY });
+    }
+
+    // iOS already shows the system banner for a foreground push (presentationOptions: alert), so a chat
+    // toast would show the same message twice. Other pushes keep the toast: its "View" is their only in-app
+    // deep link (data.path) on iOS.
+    if (Capacitor.getPlatform() === 'ios' && notification.data?.type === 'chat') {
+      return;
+    }
+
     // Show toast (regardless of focus so it's visible during testing/background)
     toast.info(notification.title || 'New notification', {
       description: notification.body,
@@ -104,14 +119,19 @@ export const usePushNotifications = () => {
         onClick: () => {
           markAsRead(notification.id);
           // Navigate to path from notification data if available
-          const path = notification.data?.path;
+          // Chat pushes carry a conversationId instead of a path.
+          const conversationId = notification.data?.conversationId;
+          const path =
+            notification.data?.type === 'chat' && conversationId
+              ? `/chat?conversationId=${encodeURIComponent(String(conversationId))}`
+              : notification.data?.path;
           if (path && typeof path === 'string') {
             window.location.href = path;
           }
         }
       }
     });
-  }, [addNotification, markAsRead]);
+  }, [addNotification, markAsRead, queryClient]);
 
   // Setup notification listeners for all platforms, including web
   useEffect(() => {

@@ -1,0 +1,37 @@
+{
+    "searchPlaceholder": "छात्र का नाम या फ़ोन नंबर खोजें…",
+    "clear": "साफ़ करें",
+    "filters": {
+        "allTypes": "सभी प्रकार",
+        "from": "से:",
+        "to": "तक:"
+    },
+    "adjustmentType": {
+        "concession": "रियायत",
+        "penalty": "जुर्माना"
+    },
+    "errors": {
+        "unableToLoad": "इतिहास लोड नहीं हो सका",
+        "tryAgain": "कृपया पुनः प्रयास करें।"
+    },
+    "empty": {
+        "noActivity": "कोई गतिविधि नहीं",
+        "tryClearingFilters": "फ़िल्टर साफ़ करके देखें।",
+        "noActivityYet": "इस दृश्य से मेल खाती कोई समायोजन गतिविधि अभी तक नहीं है।"
+    },
+    "table": {
+        "date": "तारीख़",
+        "student": "छात्र",
+        "feeType": "शुल्क प्रकार",
+        "type": "प्रकार",
+        "amount": "राशि",
+        "event": "घटना",
+        "by": "द्वारा",
+        "reason": "कारण"
+    },
+    "pagination": {
+        "pageOf": "पृष्ठ {{page}} / {{totalPages}}",
+        "total": "कुल",
+        "updating": "अपडेट हो रहा है…"
+    }
+}

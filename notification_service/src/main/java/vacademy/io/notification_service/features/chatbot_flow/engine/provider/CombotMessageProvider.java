@@ -10,6 +10,7 @@ import org.springframework.web.client.RestTemplate;
 import vacademy.io.notification_service.constants.NotificationConstants;
 import vacademy.io.notification_service.institute.InstituteInfoDTO;
 import vacademy.io.notification_service.institute.InstituteInternalService;
+import vacademy.io.notification_service.util.LogMask;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -145,8 +146,8 @@ public class CombotMessageProvider implements ChatbotMessageProvider {
     }
 
     @Override
-    public void sendInteractive(String phone, Map<String, Object> interactivePayload,
-                                 String instituteId, String businessChannelId) {
+    public String sendInteractive(String phone, Map<String, Object> interactivePayload,
+                                   String instituteId, String businessChannelId) {
         ProviderConfig config = resolveConfig(instituteId);
         if (config == null) throw new RuntimeException("COMBOT/META config not found for institute: " + instituteId);
 
@@ -199,7 +200,7 @@ public class CombotMessageProvider implements ChatbotMessageProvider {
         payload.put("type", "interactive");
         payload.put("interactive", interactive);
 
-        sendPayload(config, payload);
+        return sendPayload(config, payload);
     }
 
     @Override
@@ -218,7 +219,7 @@ public class CombotMessageProvider implements ChatbotMessageProvider {
     }
 
     @Override
-    public void sendMedia(String phone, String mediaType, String mediaUrl, String caption,
+    public String sendMedia(String phone, String mediaType, String mediaUrl, String caption,
                            String filename, String instituteId, String businessChannelId) {
         ProviderConfig config = resolveConfig(instituteId);
         if (config == null) throw new RuntimeException("COMBOT/META config not found for institute: " + instituteId);
@@ -240,7 +241,20 @@ public class CombotMessageProvider implements ChatbotMessageProvider {
         payload.put("type", mediaType);
         payload.put(mediaType, mediaObj); // "image": {...}, "video": {...}, etc.
 
-        sendPayload(config, payload);
+        return sendPayload(config, payload);
+    }
+
+    /**
+     * Base URL + token for reading this institute's inbound WhatsApp media (Meta Graph API, or the Com.bot proxy when the institute sends through Com.bot).
+     * Null when the institute has no usable configuration.
+     */
+    public ProviderMediaCredentials mediaCredentials(String instituteId) {
+        ProviderConfig config = resolveConfig(instituteId);
+        if (config == null || config.apiUrl == null || config.apiUrl.isBlank()
+                || config.apiKey == null || config.apiKey.isBlank()) {
+            return null;
+        }
+        return new ProviderMediaCredentials(config.apiUrl, config.apiKey);
     }
 
     private String sendPayload(ProviderConfig config, Map<String, Object> payload) {
@@ -251,7 +265,8 @@ public class CombotMessageProvider implements ChatbotMessageProvider {
         headers.set("Authorization", "Bearer " + config.apiKey);
 
         // Log payload summary at INFO, full payload at DEBUG
-        log.info("Sending to Meta API: to={}, type={}", payload.get("to"), payload.get("type"));
+        log.info("Sending to Meta API: to={}, type={}", LogMask.phone(String.valueOf(payload.get("to"))),
+                payload.get("type"));
         if (log.isDebugEnabled()) {
             try {
                 log.debug("Full Meta payload: {}", objectMapper.writeValueAsString(payload));
@@ -265,7 +280,7 @@ public class CombotMessageProvider implements ChatbotMessageProvider {
                 log.error("COMBOT/META API error: status={}, body={}", response.getStatusCode(), response.getBody());
                 throw new RuntimeException("WhatsApp API returned " + response.getStatusCode());
             }
-            log.debug("COMBOT/META message sent successfully to {}", payload.get("to"));
+            log.debug("COMBOT/META message sent successfully to {}", LogMask.phone(String.valueOf(payload.get("to"))));
             return extractMessageId(response.getBody());
         } catch (Exception e) {
             log.error("Failed to send message via COMBOT/META: {}", e.getMessage());

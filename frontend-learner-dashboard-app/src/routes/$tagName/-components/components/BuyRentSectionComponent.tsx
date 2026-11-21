@@ -1,27 +1,36 @@
 import React, { useState } from "react";
+import { RouteMatcher } from "../../-services/route-matcher";
 import { useNavigate, useLocation } from "@tanstack/react-router";
-import { ShoppingBag, BookOpen, ArrowRight, X } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
+import { ShoppingBag, BookOpen, ArrowRight } from "@phosphor-icons/react";
+import { RentLocationConfirmDialog } from "./RentLocationConfirmDialog";
+import { rentLocationCityOf, setCatalogueMode } from "../../-utils/catalogue-mode";
+import type { GlobalSettings } from "../../-types/course-catalogue-types";
+
+interface BuyRentOption {
+  buttonLabel: string;
+  /** The level name the catalogue filters on in this mode ("Buy" / "Rent"). */
+  levelFilterValue: string;
+  /** Page the card opens — the catalogue's ("library"). Absent = the site root, as before. */
+  targetRoute?: string;
+}
 
 interface BuyRentSectionProps {
   heading?: string;
-  buy: {
-    buttonLabel: string;
-    levelFilterValue: string;
-    targetRoute: string;
-  };
-  rent: {
-    buttonLabel: string;
-    levelFilterValue: string;
-    targetRoute: string;
-  };
+  buy: BuyRentOption;
+  rent: BuyRentOption;
   tagName?: string;
+  /** Its `rentLocationCity`, when set, makes the Rent card ask the location question first. */
+  globalSettings?: GlobalSettings;
 }
 
 export const BuyRentSectionComponent: React.FC<BuyRentSectionProps> = ({
   buy,
   rent,
   tagName,
+  globalSettings,
 }) => {
+  const { t } = useTranslation("coursePlayerB");
   const navigate = useNavigate();
   const location = useLocation();
   const [hoveredCard, setHoveredCard] = useState<"buy" | "rent" | null>(null);
@@ -29,25 +38,34 @@ export const BuyRentSectionComponent: React.FC<BuyRentSectionProps> = ({
 
   const currentTagName = tagName || location.pathname.split("/").filter(Boolean)[0] || "";
 
-  const handleCardClick = (levelFilterValue: string) => {
-    if (levelFilterValue) {
-      sessionStorage.setItem("levelFilter", levelFilterValue);
-      window.dispatchEvent(new CustomEvent('levelFilterChanged', { 
-        detail: { levelFilter: levelFilterValue } 
-      }));
+  // Switch the storefront's mode, then open the option's page (the catalogue).
+  const handleCardClick = (option: BuyRentOption) => {
+    if (option.levelFilterValue) setCatalogueMode(option.levelFilterValue);
+    const target = (option.targetRoute || "").trim();
+    if (RouteMatcher.isExternalLink(target)) {
+      window.location.href = target;
+      return;
     }
-    navigate({ to: `/${currentTagName}` as any });
+    navigate({ to: RouteMatcher.pagePath(currentTagName, target) as never });
   };
 
-  const handleRentClick = () => setShowRentConfirmation(true);
+  // The location question only when the catalogue names its rent city; else straight to rent.
+  const rentCity = rentLocationCityOf(globalSettings);
+  const handleRentClick = () => {
+    if (rentCity) {
+      setShowRentConfirmation(true);
+      return;
+    }
+    handleCardClick(rent);
+  };
   const handleRentConfirm = () => {
     setShowRentConfirmation(false);
-    handleCardClick(rent.levelFilterValue);
+    handleCardClick(rent);
   };
   const handleRentCancel = () => setShowRentConfirmation(false);
   const handleBuyRedirect = () => {
     setShowRentConfirmation(false);
-    handleCardClick(buy.levelFilterValue);
+    handleCardClick(buy);
   };
 
   return (
@@ -57,7 +75,7 @@ export const BuyRentSectionComponent: React.FC<BuyRentSectionProps> = ({
         {/* Heading */}
         <div className="text-center mb-3 sm:mb-4">
           <p className="text-sm sm:text-base text-gray-600">
-            Select the option that best fits your needs
+            {t("buyRentSection.chooseOption")}
           </p>
         </div>
 
@@ -65,7 +83,7 @@ export const BuyRentSectionComponent: React.FC<BuyRentSectionProps> = ({
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
           {/* RENT Card - NEUTRAL with PRIMARY accent on hover */}
           <div
-            className={`relative overflow-hidden rounded-lg border transition-all duration-200 cursor-pointer ${
+            className={`relative overflow-hidden rounded-catalogue-md border transition-all duration-200 cursor-pointer ${
               hoveredCard === "rent" 
                 ? "border-primary-400 bg-primary-50" 
                 : "border-gray-200 bg-white hover:border-gray-300"
@@ -76,7 +94,7 @@ export const BuyRentSectionComponent: React.FC<BuyRentSectionProps> = ({
           >
             <div className="p-3 sm:p-5 flex flex-col items-center text-center">
               {/* Icon - PRIMARY accent */}
-              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg mb-2 sm:mb-3 flex items-center justify-center transition-colors ${
+              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-catalogue-md mb-2 sm:mb-3 flex items-center justify-center transition-colors ${
                 hoveredCard === "rent" ? "bg-primary-500" : "bg-primary-100"
               }`}>
                 <BookOpen className={`h-5 w-5 sm:h-6 sm:w-6 ${hoveredCard === "rent" ? "text-white" : "text-primary-600"}`} />
@@ -84,15 +102,15 @@ export const BuyRentSectionComponent: React.FC<BuyRentSectionProps> = ({
 
               {/* Title - dark neutral */}
               <h3 className="text-base sm:text-xl font-bold text-gray-900 mb-0.5 sm:mb-1">
-                Rent a book
+                {t("buyRentSection.rentTitle")}
               </h3>
               {/* Description - NEUTRAL */}
               <p className="text-xs text-gray-600 mb-2 sm:mb-3">
-                Access books at affordable rates
+                {t("buyRentSection.rentDescription")}
               </p>
 
               {/* Button - PRIMARY */}
-              <button className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-md text-xs sm:text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 transition-colors flex items-center gap-1 sm:gap-2">
+              <button className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-catalogue-sm text-xs sm:text-sm font-medium text-primary-foreground bg-primary-500 hover:brightness-90 transition flex items-center gap-1 sm:gap-2">
                 <span>{rent.buttonLabel}</span>
                 <ArrowRight className={`h-3 w-3 sm:h-4 sm:w-4 transition-transform ${hoveredCard === "rent" ? "translate-x-1" : ""}`} />
               </button>
@@ -101,18 +119,18 @@ export const BuyRentSectionComponent: React.FC<BuyRentSectionProps> = ({
 
           {/* BUY Card - NEUTRAL with PRIMARY accent on hover */}
           <div
-            className={`relative overflow-hidden rounded-lg border transition-all duration-200 cursor-pointer ${
+            className={`relative overflow-hidden rounded-catalogue-md border transition-all duration-200 cursor-pointer ${
               hoveredCard === "buy" 
                 ? "border-primary-400 bg-primary-50" 
                 : "border-gray-200 bg-white hover:border-gray-300"
             }`}
             onMouseEnter={() => setHoveredCard("buy")}
             onMouseLeave={() => setHoveredCard(null)}
-            onClick={() => handleCardClick(buy.levelFilterValue)}
+            onClick={() => handleCardClick(buy)}
           >
             <div className="p-3 sm:p-5 flex flex-col items-center text-center">
               {/* Icon - PRIMARY accent */}
-              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg mb-2 sm:mb-3 flex items-center justify-center transition-colors ${
+              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-catalogue-md mb-2 sm:mb-3 flex items-center justify-center transition-colors ${
                 hoveredCard === "buy" ? "bg-primary-500" : "bg-primary-100"
               }`}>
                 <ShoppingBag className={`h-5 w-5 sm:h-6 sm:w-6 ${hoveredCard === "buy" ? "text-white" : "text-primary-600"}`} />
@@ -120,15 +138,15 @@ export const BuyRentSectionComponent: React.FC<BuyRentSectionProps> = ({
 
               {/* Title - dark neutral */}
               <h3 className="text-base sm:text-xl font-bold text-gray-900 mb-0.5 sm:mb-1">
-                Buy a book
+                {t("buyRentSection.buyTitle")}
               </h3>
               {/* Description - NEUTRAL */}
               <p className="text-xs text-gray-600 mb-2 sm:mb-3">
-                Own books forever
+                {t("buyRentSection.buyDescription")}
               </p>
 
               {/* Button - PRIMARY */}
-              <button className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-md text-xs sm:text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 transition-colors flex items-center gap-1 sm:gap-2">
+              <button className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-catalogue-sm text-xs sm:text-sm font-medium text-primary-foreground bg-primary-500 hover:brightness-90 transition flex items-center gap-1 sm:gap-2">
                 <span>{buy.buttonLabel}</span>
                 <ArrowRight className={`h-3 w-3 sm:h-4 sm:w-4 transition-transform ${hoveredCard === "buy" ? "translate-x-1" : ""}`} />
               </button>
@@ -138,18 +156,18 @@ export const BuyRentSectionComponent: React.FC<BuyRentSectionProps> = ({
 
         {/* How it Works Section - NEUTRAL */}
         <div className="mt-4 sm:mt-6">
-          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div className="bg-white border border-gray-200 rounded-catalogue-md overflow-hidden">
             <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-gray-200">
-              <h3 className="text-sm sm:text-base font-semibold text-gray-900">How it Works</h3>
+              <h3 className="text-sm sm:text-base font-semibold text-gray-900">{t("buyRentSection.howItWorks")}</h3>
             </div>
 
             <div className="p-3 sm:p-4">
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 {[
-                  { step: 1, title: "Browse & Select", desc: "Explore our collection and choose books." },
-                  { step: 2, title: "Choose Option", desc: "Buy for ownership or Rent for access." },
-                  { step: 3, title: "Complete Purchase", desc: "Add to cart and checkout securely." },
-                  { step: 4, title: "Start Reading", desc: "Access your books instantly." },
+                  { step: 1, title: t("buyRentSection.steps.step1Title"), desc: t("buyRentSection.steps.step1Desc") },
+                  { step: 2, title: t("buyRentSection.steps.step2Title"), desc: t("buyRentSection.steps.step2Desc") },
+                  { step: 3, title: t("buyRentSection.steps.step3Title"), desc: t("buyRentSection.steps.step3Desc") },
+                  { step: 4, title: t("buyRentSection.steps.step4Title"), desc: t("buyRentSection.steps.step4Desc") },
                 ].map(({ step, title, desc }) => (
                   <div key={step} className="flex gap-2 sm:gap-3">
                     {/* PRIMARY ACCENT: Step number */}
@@ -170,45 +188,15 @@ export const BuyRentSectionComponent: React.FC<BuyRentSectionProps> = ({
         </div>
       </div>
 
-      {/* Rent Confirmation Modal */}
-      {showRentConfirmation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          {/* NEUTRAL: Modal background */}
-          <div className="bg-white rounded-lg max-w-sm w-full p-4 relative">
-            <button
-              onClick={handleRentCancel}
-              className="absolute top-3 end-3 text-gray-400 hover:text-gray-600 transition-colors"
-              aria-label="Close"
-            >
-              <X className="h-4 w-4" />
-            </button>
-
-            <div className="mt-1">
-              <h3 className="text-base font-semibold text-gray-900 mb-2">
-                Location Restriction
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                We only allow renting books in <b>Jabalpur</b>. Do you want to continue?
-              </p>
-
-              <div className="flex gap-2">
-                {/* PRIMARY ACCENT: Buttons */}
-                <button
-                  onClick={handleBuyRedirect}
-                  className="flex-1 px-3 py-2 text-sm font-medium text-primary-600 border border-primary-400 rounded-md hover:bg-primary-50 transition-colors"
-                >
-                  Buy Instead
-                </button>
-                <button
-                  onClick={handleRentConfirm}
-                  className="flex-1 px-3 py-2 text-sm font-medium text-white bg-primary-500 rounded-md hover:bg-primary-600 transition-colors"
-                >
-                  Continue
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Rent Confirmation Modal (only when the catalogue names its rent city) */}
+      {rentCity && (
+        <RentLocationConfirmDialog
+          open={showRentConfirmation}
+          onCancel={handleRentCancel}
+          onContinue={handleRentConfirm}
+          onBuyInstead={handleBuyRedirect}
+          city={rentCity}
+        />
       )}
     </div>
   );

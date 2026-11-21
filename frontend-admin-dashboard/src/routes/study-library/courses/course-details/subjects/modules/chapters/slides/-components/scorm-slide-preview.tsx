@@ -3,6 +3,7 @@
 import { Slide } from '../-hooks/use-slides';
 import { getPublicUrl } from '@/services/upload_file';
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Trash, Package, ArrowSquareOut, Globe } from '@phosphor-icons/react';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { BASE_URL } from '@/constants/urls';
@@ -22,6 +23,7 @@ interface ScormTrackingData {
 }
 
 const ScormSlidePreview = ({ activeItem, isLearnerView = false }: ScormSlidePreviewProps) => {
+    const { t } = useTranslation('studyLibraryScormSlidePreview');
     const [launchUrl, setLaunchUrl] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -127,7 +129,7 @@ const ScormSlidePreview = ({ activeItem, isLearnerView = false }: ScormSlidePrev
     useEffect(() => {
         const fetchLaunchUrl = async () => {
             if (!scormSlide) {
-                setError('SCORM slide data not found');
+                setError(t('errors.dataNotFound'));
                 setIsLoading(false);
                 return;
             }
@@ -151,27 +153,27 @@ const ScormSlidePreview = ({ activeItem, isLearnerView = false }: ScormSlidePrev
                     const url = await getPublicUrl(fullFileId);
                     setLaunchUrl(url);
                 } else {
-                    setError('SCORM launch path is not configured');
+                    setError(t('errors.launchPathNotConfigured'));
                 }
             } catch (err) {
                 console.error('Error resolving SCORM launch URL:', err);
-                setError('Failed to load SCORM content');
+                setError(t('errors.loadFailed'));
             } finally {
                 setIsLoading(false);
             }
         };
 
         fetchLaunchUrl();
-    }, [scormSlide, initializeScormTracking]);
+    }, [scormSlide, initializeScormTracking, t]);
 
     // Check if the slide is deleted
     if (activeItem?.status === 'DELETED') {
         return (
             <div className="flex size-full flex-col overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm">
                 <div className="flex items-center justify-between border-b bg-red-50 px-6 py-4">
-                    <h2 className="text-lg font-semibold text-red-700">SCORM Module</h2>
+                    <h2 className="text-lg font-semibold text-red-700">{t('header.title')}</h2>
                     <span className="rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-600">
-                        DELETED
+                        {t('deleted.badge')}
                     </span>
                 </div>
                 <div className="flex flex-1 flex-col items-center justify-center bg-white px-6 py-12">
@@ -180,11 +182,9 @@ const ScormSlidePreview = ({ activeItem, isLearnerView = false }: ScormSlidePrev
                             <Trash size={24} className="text-red-500" />
                         </div>
                         <h3 className="mb-2 text-lg font-medium text-slate-600">
-                            This SCORM module has been deleted
+                            {t('deleted.heading')}
                         </h3>
-                        <p className="text-sm text-slate-400">
-                            The SCORM content is no longer available
-                        </p>
+                        <p className="text-sm text-slate-400">{t('deleted.description')}</p>
                     </div>
                 </div>
             </div>
@@ -197,7 +197,7 @@ const ScormSlidePreview = ({ activeItem, isLearnerView = false }: ScormSlidePrev
             <div className="flex h-64 items-center justify-center rounded-lg bg-gray-100">
                 <div className="flex flex-col items-center gap-3">
                     <div className="size-12 animate-spin rounded-full border-y-2 border-primary-500"></div>
-                    <p className="text-sm text-gray-600">Loading SCORM content...</p>
+                    <p className="text-sm text-gray-600">{t('loading')}</p>
                 </div>
             </div>
         );
@@ -225,11 +225,11 @@ const ScormSlidePreview = ({ activeItem, isLearnerView = false }: ScormSlidePrev
                     </div>
                     <div>
                         <h3 className="text-lg font-semibold text-neutral-800">
-                            {activeItem.title || 'Untitled SCORM Module'}
+                            {activeItem.title || t('header.untitled')}
                         </h3>
                         {scormSlide?.scorm_version && (
                             <p className="text-xs text-neutral-500">
-                                SCORM {scormSlide.scorm_version}
+                                {t('header.scormVersion', { version: scormSlide.scorm_version })}
                             </p>
                         )}
                     </div>
@@ -237,7 +237,7 @@ const ScormSlidePreview = ({ activeItem, isLearnerView = false }: ScormSlidePrev
                 {!isLearnerView && (
                     <div className="flex items-center gap-2">
                         <span className="rounded-full bg-teal-100 px-3 py-1 text-xs font-medium text-teal-700">
-                            Interactive
+                            {t('header.interactiveBadge')}
                         </span>
                     </div>
                 )}
@@ -258,22 +258,24 @@ const ScormSlidePreview = ({ activeItem, isLearnerView = false }: ScormSlidePrev
                             <div className="flex items-center gap-4 text-xs text-neutral-500">
                                 {scormSlide?.scorm_version && (
                                     <span>
-                                        Version:{' '}
+                                        {t('infoBar.versionLabel')}{' '}
                                         <strong className="text-neutral-700">
-                                            SCORM {scormSlide.scorm_version}
+                                            {t('header.scormVersion', {
+                                                version: scormSlide.scorm_version,
+                                            })}
                                         </strong>
                                     </span>
                                 )}
                                 {scormSlide?.launch_path && (
                                     <span>
-                                        Entry:{' '}
+                                        {t('infoBar.entryLabel')}{' '}
                                         <strong className="text-neutral-700">
                                             {scormSlide.launch_path.split('/').pop()}
                                         </strong>
                                     </span>
                                 )}
                                 <span>
-                                    Status:{' '}
+                                    {t('infoBar.statusLabel')}{' '}
                                     <strong className="capitalize text-neutral-700">
                                         {activeItem.status?.toLowerCase()}
                                     </strong>
@@ -286,7 +288,7 @@ const ScormSlidePreview = ({ activeItem, isLearnerView = false }: ScormSlidePrev
                                 className="inline-flex items-center gap-1.5 rounded-md bg-teal-500 px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-teal-600 active:scale-95"
                             >
                                 <ArrowSquareOut size={14} />
-                                Open in New Tab
+                                {t('infoBar.openInNewTab')}
                             </a>
                         </div>
                     )}
@@ -304,15 +306,18 @@ const ScormSlidePreview = ({ activeItem, isLearnerView = false }: ScormSlidePrev
                             // content height (same fix as the learner app's
                             // scorm-slide).
                             className="absolute inset-0 block size-full border-0"
-                            title={activeItem.title || 'SCORM Content'}
+                            title={activeItem.title || t('iframeTitle')}
                             allow="fullscreen"
                             onLoad={() => {
-                                // Send saved tracking data to the wrapper for resume (learner view)
-                                if (isLearnerView && iframeRef.current?.contentWindow) {
+                                // Send saved tracking data to the wrapper for resume (learner view).
+                                // Admin view still answers, with null data: the wrapper holds the
+                                // package back until it hears from us, and null leaves the older
+                                // wrapper's in-memory data untouched.
+                                if (iframeRef.current?.contentWindow) {
                                     iframeRef.current.contentWindow.postMessage(
                                         {
                                             type: 'vacademy_scorm_init',
-                                            cmiData: cmiDataRef.current,
+                                            cmiData: isLearnerView ? cmiDataRef.current : null,
                                         },
                                         '*'
                                     );
@@ -329,11 +334,10 @@ const ScormSlidePreview = ({ activeItem, isLearnerView = false }: ScormSlidePrev
                             <Globe size={40} className="text-teal-600" weight="duotone" />
                         </div>
                         <h3 className="mb-2 text-xl font-semibold text-neutral-800">
-                            SCORM Package Not Ready
+                            {t('notReady.heading')}
                         </h3>
                         <p className="max-w-md text-sm text-neutral-500">
-                            The SCORM launch URL is not available. Please re-upload the SCORM
-                            package.
+                            {t('notReady.description')}
                         </p>
                     </div>
                 </div>

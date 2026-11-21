@@ -1,0 +1,40 @@
+{
+    "empty": {
+        "noData": "لا توجد بيانات حالات اختبار مسجّلة لهذا التسليم."
+    },
+    "verdict": {
+        "accepted": "مقبول",
+        "partial": "جزئي",
+        "rejected": "مرفوض",
+        "error": "خطأ",
+        "timedOut": "انتهت المهلة"
+    },
+    "score": {
+        "points": "{{score}} نقطة"
+    },
+    "pasteAttempts_zero": "{{count}} محاولات لصق",
+    "pasteAttempts_one": "{{count}} محاولة لصق واحدة",
+    "pasteAttempts_two": "{{count}} محاولتا لصق",
+    "pasteAttempts_few": "{{count}} محاولات لصق",
+    "pasteAttempts_many": "{{count}} محاولة لصق",
+    "pasteAttempts_other": "{{count}} محاولة لصق",
+    "testCases": {
+        "passedLabel": "حالات الاختبار الناجحة:",
+        "gradedSuffixHidden": "مخفية",
+        "gradedSuffixSample": "عيّنة",
+        "sampleBreakdown": "عيّنة {{passed}}/{{total}}",
+        "hiddenTag": "(مخفية)",
+        "fallbackLabel": "اختبار {{number}}"
+    },
+    "runtime": {
+        "timeLabel": "الوقت:",
+        "memoryLabel": "الذاكرة:",
+        "timeValue": "{{value}} مللي ثانية",
+        "memoryValue": "{{value}} كيلوبايت",
+        "timeAllowed": "/ المسموح به {{value}} مللي ثانية",
+        "memoryAllowed": "/ المسموح به {{value}} كيلوبايت"
+    },
+    "sourceCode": {
+        "toggleLabel": "عرض الشيفرة المصدرية المُرسَلة"
+    }
+}

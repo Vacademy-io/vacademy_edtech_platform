@@ -1,0 +1,16 @@
+{
+    "untitledMeeting": "मीटिंग",
+    "hostedBy": "होस्ट",
+    "with": "साथ में",
+    "join": "शामिल हों",
+    "errorTitle": "मीटिंग लोड नहीं हो सकीं",
+    "errorDescription": "यह कैलेंडर लाते समय कुछ गड़बड़ हो गई। फिर से प्रयास करें।",
+    "status": {
+        "confirmed": "पुष्ट",
+        "pending": "लंबित",
+        "completed": "पूर्ण",
+        "noShow": "अनुपस्थित",
+        "cancelled": "रद्द",
+        "rescheduled": "पुनर्निर्धारित"
+    }
+}

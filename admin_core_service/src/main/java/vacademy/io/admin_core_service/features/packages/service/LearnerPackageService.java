@@ -9,6 +9,7 @@ import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.chapter.enums.ChapterStatus;
 import vacademy.io.admin_core_service.features.common.enums.StatusEnum;
 import vacademy.io.admin_core_service.features.faculty.enums.FacultyStatusEnum;
+import vacademy.io.admin_core_service.features.faculty.service.CourseRoleLabelService;
 import vacademy.io.admin_core_service.features.institute_learner.enums.LearnerSessionStatusEnum;
 import vacademy.io.admin_core_service.features.institute_learner.enums.LearnerStatusEnum;
 import vacademy.io.admin_core_service.features.learner_operation.enums.LearnerOperationEnum;
@@ -39,6 +40,9 @@ public class LearnerPackageService {
 
         @Autowired
         private AuthService authService;
+
+        @Autowired
+        private CourseRoleLabelService courseRoleLabelService;
 
         @Autowired
         private StudentSessionInstituteGroupMappingRepository studentSessionInstituteGroupMappingRepository;
@@ -78,6 +82,7 @@ public class LearnerPackageService {
                                         instituteId,
                                         learnerPackageFilterDTO.getLevelIds(),
                                         List.of(LearnerOperationEnum.PERCENTAGE_PACKAGE_SESSION_COMPLETED.name()),
+                                        learnerPackageFilterDTO.isExcludeChargePackages(),
                                         pageable);
                 } else {
                         learnerPackageDetail = getAllLearnerPackageDetail(learnerPackageFilterDTO, instituteId,
@@ -104,6 +109,8 @@ public class LearnerPackageService {
                 Map<String, UserDTO> userMap = userDTOS.stream()
                                 .filter(u -> u != null && u.getId() != null)
                                 .collect(Collectors.toMap(UserDTO::getId, Function.identity(), (a, b) -> a));
+                Map<String, Map<String, String>> roleLabels = courseRoleLabelService.labelsByPackage(
+                                learnerPackageDetail.getContent().stream().map(p -> p.getId()).toList());
 
                 // Map projections to DTOs (instructors = faculty list, or single creator as
                 // fallback)
@@ -113,10 +120,11 @@ public class LearnerPackageService {
                         if (instructorIdList.isEmpty() && projection.getCreatedByUserId() != null) {
                                 instructorIdList = List.of(projection.getCreatedByUserId());
                         }
-                        List<UserDTO> instructors = instructorIdList.stream()
+                        List<UserDTO> instructors = courseRoleLabelService.withRoleLabels(instructorIdList.stream()
                                         .map(userMap::get)
                                         .filter(Objects::nonNull)
-                                        .collect(Collectors.toList());
+                                        .collect(Collectors.toList()),
+                                roleLabels.get(projection.getId()));
                         PackageDetailDTO dto = new PackageDetailDTO(
                                         projection.getId(),
                                         projection.getPackageName(),
@@ -210,6 +218,9 @@ public class LearnerPackageService {
                 if (dto.getLevelIds() == null) {
                         dto.setLevelIds(List.of());
                 }
+                if (dto.getSessionIds() == null) {
+                        dto.setSessionIds(List.of());
+                }
                 if (dto.getFacultyIds() == null) {
                         dto.setFacultyIds(List.of());
                 }
@@ -244,6 +255,7 @@ public class LearnerPackageService {
                                         List.of(SlideStatus.PUBLISHED.name(), SlideStatus.UNSYNC.name()),
                                         List.of(ChapterStatus.ACTIVE.name()),
                                         List.of(LearnerStatusEnum.ACTIVE.name()),
+                                        learnerPackageFilterDTO.isExcludeChargePackages(),
                                         pageable);
                 } else {
                         learnerPackageDetail = packageRepository.getCompletedLearnerPackageDetail(
@@ -264,6 +276,7 @@ public class LearnerPackageService {
                                         List.of(SlideStatus.PUBLISHED.name(), SlideStatus.UNSYNC.name()),
                                         List.of(ChapterStatus.ACTIVE.name()),
                                         List.of(LearnerStatusEnum.ACTIVE.name()),
+                                        learnerPackageFilterDTO.isExcludeChargePackages(),
                                         pageable);
                 }
                 return learnerPackageDetail;
@@ -291,12 +304,14 @@ public class LearnerPackageService {
                                         List.of(QuestionStatusEnum.ACTIVE.name()),
                                         List.of(SlideStatus.PUBLISHED.name(), SlideStatus.UNSYNC.name()),
                                         List.of(ChapterStatus.ACTIVE.name()),
+                                        learnerPackageFilterDTO.isExcludeChargePackages(),
                                         pageable);
                 } else {
                         learnerPackageDetail = packageRepository.getAllLearnerPackagesIrrespectiveOfProgress(
                                         userId,
                                         instituteId,
                                         learnerPackageFilterDTO.getLevelIds(),
+                                        learnerPackageFilterDTO.getSessionIds(),
                                         List.of(PackageStatusEnum.ACTIVE.name()),
                                         learnerPackageFilterDTO.getPackageTypes(),
                                         List.of(PackageSessionStatusEnum.ACTIVE.name(),
@@ -310,6 +325,7 @@ public class LearnerPackageService {
                                         List.of(QuestionStatusEnum.ACTIVE.name()),
                                         List.of(SlideStatus.PUBLISHED.name(), SlideStatus.UNSYNC.name()),
                                         List.of(ChapterStatus.ACTIVE.name()),
+                                        learnerPackageFilterDTO.isExcludeChargePackages(),
                                         pageable);
                 }
                 return learnerPackageDetail;
@@ -341,6 +357,7 @@ public class LearnerPackageService {
                                         List.of(SlideStatus.DRAFT.name(), SlideStatus.PUBLISHED.name(),
                                                         SlideStatus.UNSYNC.name()),
                                         List.of(ChapterStatus.ACTIVE.name()),
+                                        learnerPackageFilterDTO.isExcludeChargePackages(),
                                         pageable);
                 } else {
                         learnerPackageDetail = packageRepository.getIncompleteMappedPackages(
@@ -364,6 +381,7 @@ public class LearnerPackageService {
                                         List.of(SlideStatus.DRAFT.name(), SlideStatus.PUBLISHED.name(),
                                                         SlideStatus.UNSYNC.name()),
                                         List.of(ChapterStatus.ACTIVE.name()),
+                                        learnerPackageFilterDTO.isExcludeChargePackages(),
                                         pageable);
                 }
                 return learnerPackageDetail;
@@ -392,11 +410,14 @@ public class LearnerPackageService {
                 Map<String, UserDTO> userMap = userDTOS.stream()
                                 .filter(u -> u != null && u.getId() != null)
                                 .collect(Collectors.toMap(UserDTO::getId, Function.identity(), (a, b) -> a));
+                Map<String, Map<String, String>> roleLabels = courseRoleLabelService.labelsByPackage(
+                                Collections.singletonList(projection.getId()));
 
-                List<UserDTO> instructors = instructorIds.stream()
+                List<UserDTO> instructors = courseRoleLabelService.withRoleLabels(instructorIds.stream()
                                 .map(userMap::get)
                                 .filter(Objects::nonNull)
-                                .collect(Collectors.toList());
+                                .collect(Collectors.toList()),
+                        roleLabels.get(projection.getId()));
 
                 PackageDetailDTO dto = new PackageDetailDTO(
                                 projection.getId(),

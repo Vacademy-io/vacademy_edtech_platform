@@ -1,0 +1,46 @@
+{
+    "couldNotLoad": "تعذّر تحميل إحصاءات الإشعارات.",
+    "emailStats": {
+        "sent": "الرسائل المرسلة",
+        "delivered": "المُسلَّمة",
+        "opened": "المفتوحة",
+        "clicked": "المنقور عليها",
+        "bounced": "المرتدة",
+        "inbound": "الردود الواردة",
+        "complaints": "الشكاوى"
+    },
+    "waStats": {
+        "out": "واتساب صادر",
+        "in": "واتساب وارد"
+    },
+    "sections": {
+        "email": "البريد الإلكتروني",
+        "whatsapp": "واتساب"
+    },
+    "emailSubtitle": {
+        "notConfigured": "لم يتم إعداد بريد إلكتروني مرسل لهذه المؤسسة.",
+        "fullyConfigured": "تم إعداد المرسل وصندوق الوارد.",
+        "senderOnly": "تم إعداد المرسل. الردود الواردة غير مفعّلة بعد."
+    },
+    "waSubtitle": {
+        "connected": "قناة واتساب للأعمال متصلة.",
+        "notConfigured": "لا توجد قناة واتساب مرتبطة بهذه المؤسسة."
+    },
+    "activeBatches": "الدفعات النشطة",
+    "batchesCompleted_zero": "الدفعات المكتملة ({{count}} يوم)",
+    "batchesCompleted_one": "الدفعات المكتملة (يوم واحد)",
+    "batchesCompleted_two": "الدفعات المكتملة (يومين)",
+    "batchesCompleted_few": "الدفعات المكتملة ({{count}} أيام)",
+    "batchesCompleted_many": "الدفعات المكتملة ({{count}} يومًا)",
+    "batchesCompleted_other": "الدفعات المكتملة ({{count}} يوم)",
+    "viewStat": "عرض {{label}}",
+    "rates": {
+        "ofSent": "{{rate}} من المُرسَل",
+        "open": "معدل الفتح {{rate}}",
+        "click": "معدل النقر {{rate}}",
+        "bounce": "معدل الارتداد {{rate}}",
+        "complaints": "تم وضع علامة كرسائل مزعجة"
+    },
+    "windowLabel_one": "آخر 24 ساعة",
+    "windowLabel_other": "آخر {{count}} يومًا"
+}

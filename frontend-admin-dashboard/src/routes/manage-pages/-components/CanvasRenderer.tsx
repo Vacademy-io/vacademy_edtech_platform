@@ -1,199 +1,104 @@
 /**
- * CanvasRenderer — the direct-DOM editing canvas.
- * Replaces the iframe+postMessage approach.
- * Components render directly in the admin window, enabling:
- *   • True DnD (drag from sidebar, drop here)
- *   • Instant live preview with no postMessage round-trip
- *   • Reliable click-to-select
+ * CanvasRenderer — the editor's centre column: a toolbar over one of two views.
+ *   • Website   — the real learner site with unsaved edits (LiveSiteFrame).
+ *   • Structure — an outline of the page's blocks for ordering and picking
+ *                 them (PageCanvas), with optional look-alike previews.
+ * Both accept blocks dragged from the library ('canvas-drop-zone').
+ *
+ * No institute is left without a visual canvas: when the Website view cannot
+ * load here (no learner site of its own, or the frame never answered), the
+ * Structure view's previews switch on by themselves.
  */
-import React, { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import { Monitor, DeviceTablet, DeviceMobile, ArrowSquareOut } from '@phosphor-icons/react';
+import { Monitor, DeviceTablet, DeviceMobile, ArrowSquareOut, Globe, ListBullets } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { componentLabel } from '../-utils/component-labels';
 import { useEditorStore } from '../-stores/editor-store';
-import { renderComponentPreview } from './ComponentPreviews';
+import { activeEditingLocale, useLocalizedView } from '../-hooks/use-localized-editing';
+import { LOCALE_PARAM } from '../-utils/catalogue-i18n';
+import { LiveSiteFrame } from './LiveSiteFrame';
+import { PageCanvas } from './PageCanvas';
 import { CATALOGUE_EDITOR_CONFIG } from '@/constants/catalogue-editor';
-import { buildComponentStyle, hasSectionShell, buildSectionShellStyles, buildPrimaryScaleVars } from '../-utils/style-utils';
-import { ensureFontsLoaded, collectConfigFontFamilies } from '../-utils/catalogue-fonts';
-import { SectionDecorations, hasDecorations } from '../-utils/catalogue-decorations';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { fetchBothInstituteAPIs } from '@/services/student-list-section/getInstituteDetails';
 
-/** Renders a single slot column as a droppable zone */
-const SlotDropZone = ({
-    layoutId,
-    slotIndex,
-    slotComponents,
-    selectedComponentId,
-    onSelectComponent,
-}: {
-    layoutId: string;
-    slotIndex: number;
-    slotComponents: any[];
-    selectedComponentId: string | null;
-    onSelectComponent: (id: string) => void;
-}) => {
-    // Use '::' as separator — component IDs only contain [a-z0-9-], so '::' is unambiguous
-    const { setNodeRef, isOver } = useDroppable({ id: `slot::${layoutId}::${slotIndex}` });
-    return (
-        <div
-            ref={setNodeRef}
-            className={`relative flex-1 min-h-20 border border-dashed rounded transition-colors ${
-                isOver ? 'border-teal-400 bg-teal-50' : 'border-teal-200 bg-catalogue-bg-elevated'
-            }`}
-        >
-            <div className="absolute left-1 top-0.5 z-10 text-caption font-semibold uppercase text-teal-400 select-none">
-                Slot {slotIndex + 1}
-            </div>
-            {slotComponents.length === 0 && !isOver && (
-                <div className="flex h-full min-h-20 items-center justify-center text-caption text-teal-300">
-                    Drop here
-                </div>
-            )}
-            {slotComponents.map((child: any) => {
-                const isSelected = child.id === selectedComponentId;
-                const isDisabled = child.enabled === false;
-                const childStyle = buildComponentStyle(child.style);
-                const childOverlay = child.style?.backgroundImage && child.style?.backgroundOverlay;
-                const childDecor = hasDecorations(child.style?.ornaments, child.style?.dividers);
-                return (
-                    <div
-                        key={child.id}
-                        onClick={(e) => { e.stopPropagation(); onSelectComponent(child.id); }}
-                        className={`relative cursor-pointer transition-all ${child.style?.customClass || ''} ${isDisabled ? 'opacity-40' : ''} ${
-                            isSelected
-                                ? 'outline outline-2 outline-blue-500 outline-offset-[-2px]'
-                                : 'hover:outline hover:outline-1 hover:outline-blue-300 hover:outline-offset-[-1px]'
-                        }`}
-                        style={{ ...childStyle, ...(child.style?.ornaments?.length ? { overflow: 'hidden' } : {}) }}
-                        title={isDisabled ? `${child.type} (hidden)` : child.type}
-                    >
-                        {childOverlay && (
-                            <div style={{ position: 'absolute', inset: 0, backgroundColor: child.style.backgroundOverlay, zIndex: 0, borderRadius: childStyle.borderRadius }} />
-                        )}
-                        {childDecor && (
-                            <SectionDecorations ornaments={child.style?.ornaments} dividers={child.style?.dividers} />
-                        )}
-                        {isSelected && (
-                            <div className="absolute left-0 top-0 z-50 select-none rounded-br-md bg-blue-500 px-2 py-0.5 text-xs font-medium text-white">
-                                {child.type}
-                            </div>
-                        )}
-                        {isDisabled && (
-                            <div className="absolute right-2 top-2 z-40 rounded bg-gray-400 px-1.5 py-0.5 text-caption text-white">
-                                hidden
-                            </div>
-                        )}
-                        <div style={{ pointerEvents: 'none', position: childOverlay || childDecor ? 'relative' : undefined, zIndex: childOverlay || childDecor ? 1 : undefined }}>
-                            {renderComponentPreview(child)}
-                        </div>
-                    </div>
-                );
-            })}
-        </div>
-    );
+// 'editor' is the Structure view: the stored value keeps its old name so a
+// browser that chose it before the rename still opens on it.
+type CanvasView = 'website' | 'editor';
+const CANVAS_VIEW_KEY = 'catalogue-editor-canvas-view';
+const readCanvasView = (): CanvasView => {
+    try {
+        return localStorage.getItem(CANVAS_VIEW_KEY) === 'editor' ? 'editor' : 'website';
+    } catch {
+        return 'website';
+    }
 };
 
-/** Renders a columnLayout container with its slot drop zones */
-const ColumnLayoutCanvas = ({
-    component,
-    selectedComponentId,
-    onSelectComponent,
-}: {
-    component: any;
-    selectedComponentId: string | null;
-    onSelectComponent: (id: string) => void;
-}) => {
-    const isSelected = component.id === selectedComponentId;
-    const { slots = [], columnWidths = [], columnFr = undefined, gap = 'md' } = component.props;
-    const gapPx: Record<string, number> = { none: 0, sm: 8, md: 16, lg: 32, xl: 48, '2xl': 64 };
-    const widthToFr = (w?: string): string => {
-        const map: Record<string, string> = { '1/2': '1fr', '1/3': '1fr', '2/3': '2fr', '1/4': '1fr', '3/4': '3fr' };
-        return map[w ?? ''] || '1fr';
+/** "Show previews" in the Structure view, remembered per browser. */
+export const SHOW_PREVIEWS_KEY = 'catalogue-editor-structure-previews';
+const readShowPreviews = (): boolean => {
+    try {
+        return localStorage.getItem(SHOW_PREVIEWS_KEY) === 'true';
+    } catch {
+        return false;
+    }
+};
+
+/** liveConfigJson: the published site, for the Website view's Draft | Live switch. */
+export const CanvasRenderer = ({ tagName, liveConfigJson }: { tagName: string; liveConfigJson?: string | null }) => {
+    const { t } = useTranslation('managePagesPageCanvas');
+    const { config: storeConfig, editingLocale, selectedPageId, previewViewport, setViewport } = useEditorStore();
+    // Editing another language: the toolbar names the page as it reads in that
+    // language (the store config itself is in the base language).
+    const config = useLocalizedView(storeConfig, editingLocale);
+
+    // "Website" = the real learner site with unsaved edits; "Structure" = the
+    // outline. Remembered per browser.
+    const [canvasView, setCanvasView] = useState<CanvasView>(readCanvasView);
+    const changeCanvasView = (view: CanvasView) => {
+        setCanvasView(view);
+        try {
+            localStorage.setItem(CANVAS_VIEW_KEY, view);
+        } catch {
+            /* storage blocked: the choice lasts for this visit only */
+        }
     };
-    // columnFr (true track sizes) beats the legacy lossy fractions — mirrors the learner renderer
-    const gridCols =
-        Array.isArray(columnFr) && columnFr.length === slots.length && columnFr.every(Boolean)
-            ? columnFr.join(' ')
-            : slots.map((_: any, i: number) => widthToFr(columnWidths[i])).join(' ');
-    const layoutStyle = buildComponentStyle(component.style);
-    const hasOverlay = component.style?.backgroundImage && component.style?.backgroundOverlay;
-    const decor = hasDecorations(component.style?.ornaments, component.style?.dividers);
-    return (
-        <div
-            onClick={(e) => { e.stopPropagation(); onSelectComponent(component.id); }}
-            className={`relative cursor-pointer transition-all p-3 ${component.style?.customClass || ''} ${
-                isSelected
-                    ? 'outline outline-2 outline-teal-500 outline-offset-[-2px] bg-teal-50/40'
-                    : 'hover:outline hover:outline-1 hover:outline-teal-300 hover:outline-offset-[-1px]'
-            }`}
-            style={{ ...layoutStyle, ...(component.style?.ornaments?.length ? { overflow: 'hidden' } : {}) }}
-        >
-            {hasOverlay && (
-                <div style={{ position: 'absolute', inset: 0, backgroundColor: component.style.backgroundOverlay, zIndex: 0, borderRadius: layoutStyle.borderRadius }} />
-            )}
-            {decor && <SectionDecorations ornaments={component.style?.ornaments} dividers={component.style?.dividers} />}
-            <div className="absolute left-0 top-0 z-50 select-none rounded-br bg-teal-500 px-2 py-0.5 text-caption font-medium text-white">
-                {slots.length} Columns
-            </div>
-            <div
-                style={{
-                    display: 'grid',
-                    gridTemplateColumns: gridCols,
-                    gap: gapPx[gap] ?? 16,
-                    marginTop: 16,
-                    position: hasOverlay || decor ? 'relative' : undefined,
-                    zIndex: hasOverlay || decor ? 1 : undefined,
-                }}
-            >
-                {slots.map((slotComps: any[], i: number) => (
-                    <SlotDropZone
-                        key={i}
-                        layoutId={component.id}
-                        slotIndex={i}
-                        slotComponents={slotComps}
-                        selectedComponentId={selectedComponentId}
-                        onSelectComponent={onSelectComponent}
-                    />
-                ))}
-            </div>
-        </div>
-    );
-};
-
-export const CanvasRenderer = ({ tagName }: { tagName: string }) => {
-    const {
-        config,
-        selectedPageId,
-        selectedComponentId,
-        selectComponent,
-        selectGlobalLayout,
-        selectedGlobalLayout,
-        previewViewport,
-        setViewport,
-    } = useEditorStore();
 
     const { instituteDetails, setInstituteDetails } = useInstituteDetailsStore();
     const { setNodeRef, isOver } = useDroppable({ id: 'canvas-drop-zone' });
+    const [detailsFailed, setDetailsFailed] = useState(false);
 
     // Fetch institute details once (needed for learner portal base URL)
     useEffect(() => {
         if (!instituteDetails) {
             fetchBothInstituteAPIs()
                 .then(setInstituteDetails)
-                .catch(() => {/* fallback to CATALOGUE_EDITOR_CONFIG.LEARNER_APP_URL */});
+                .catch(() => setDetailsFailed(true)); // falls back to CATALOGUE_EDITOR_CONFIG.LEARNER_APP_URL
         }
     }, [instituteDetails, setInstituteDetails]);
 
-    // Canvas parity: load every font face the config references so the canvas
-    // shows real typography while editing (same loader as the learner app).
-    useEffect(() => {
-        ensureFontsLoaded(collectConfigFontFamilies(config));
-    }, [config]);
+    // The Website view cannot load here: the institute has no learner site of
+    // its own (known once its details are in, or they failed), or the frame
+    // reported it never answered. Kept here so it outlives the frame.
+    const [frameFailed, setFrameFailed] = useState(false);
+    const noLearnerSite = (!!instituteDetails || detailsFailed) && !instituteDetails?.learner_portal_base_url;
+    const websiteUnavailable = noLearnerSite || frameFailed;
 
-    const viewportSizes = CATALOGUE_EDITOR_CONFIG.VIEWPORTS;
-    const currentSize = viewportSizes[previewViewport];
+    // Previews: the stored choice, switched on by themselves when the Website
+    // view cannot load (a choice made in this visit still wins).
+    const [storedPreviews, setStoredPreviews] = useState(readShowPreviews);
+    const [previewsChoice, setPreviewsChoice] = useState<boolean | null>(null);
+    const showPreviews = previewsChoice ?? (storedPreviews || websiteUnavailable);
+    const changeShowPreviews = (on: boolean) => {
+        setPreviewsChoice(on);
+        setStoredPreviews(on);
+        try {
+            localStorage.setItem(SHOW_PREVIEWS_KEY, String(on));
+        } catch {
+            /* storage blocked: the choice lasts for this visit only */
+        }
+    };
 
     // Build the published preview URL (for "Open in browser" button)
     const baseUrl = instituteDetails?.learner_portal_base_url || CATALOGUE_EDITOR_CONFIG.LEARNER_APP_URL;
@@ -203,51 +108,90 @@ export const CanvasRenderer = ({ tagName }: { tagName: string }) => {
     const fullRoute = isHomePage
         ? encodeURIComponent(tagName)
         : `${encodeURIComponent(tagName)}/${encodeURIComponent(pageRoute)}`;
-    const previewUrl = `${baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`}/${fullRoute}`;
+    // Editing another language: "View live" opens the page in that language.
+    const liveLocale = activeEditingLocale(storeConfig?.globalSettings?.i18n, editingLocale);
+    const siteOrigin = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
+    const localeQuery = liveLocale ? `?${LOCALE_PARAM}=${encodeURIComponent(liveLocale)}` : '';
+    const previewUrl = `${siteOrigin}/${fullRoute}${localeQuery}`;
+    // The Website view always loads the site root; the page shown is chosen by
+    // the config it is sent (see LiveSiteFrame).
+    const siteRootUrl = `${siteOrigin}/${encodeURIComponent(tagName)}${localeQuery}`;
     const isPageUnpublished = !!page && !page.published;
-
-    const canvasWidth = previewViewport === 'desktop' ? '100%' : currentSize.width;
 
     return (
         <div className="flex h-full flex-col bg-catalogue-bg-muted">
             {/* Canvas Toolbar */}
             <div className="flex shrink-0 items-center justify-between border-b bg-catalogue-bg-elevated px-3 py-2">
                 <div className="flex items-center gap-3">
-                    {/* Viewport switcher */}
+                    {/* Viewport switcher — sizes the Website view only */}
+                    {canvasView === 'website' && (
+                        <div className="flex rounded-lg border bg-catalogue-bg-muted p-1">
+                            <Button
+                                aria-pressed={previewViewport === 'desktop'}
+                                aria-label={t('toolbar.desktop')}
+                                variant={previewViewport === 'desktop' ? 'default' : 'ghost'}
+                                size="sm"
+                                className="size-8 p-0"
+                                onClick={() => setViewport('desktop')}
+                                title={t('toolbar.desktop')}
+                            >
+                                <Monitor className="size-4" />
+                            </Button>
+                            <Button
+                                aria-pressed={previewViewport === 'tablet'}
+                                aria-label={t('toolbar.tablet')}
+                                variant={previewViewport === 'tablet' ? 'default' : 'ghost'}
+                                size="sm"
+                                className="size-8 p-0"
+                                onClick={() => setViewport('tablet')}
+                                title={t('toolbar.tablet')}
+                            >
+                                <DeviceTablet className="size-4" />
+                            </Button>
+                            <Button
+                                aria-pressed={previewViewport === 'mobile'}
+                                aria-label={t('toolbar.mobile')}
+                                variant={previewViewport === 'mobile' ? 'default' : 'ghost'}
+                                size="sm"
+                                className="size-8 p-0"
+                                onClick={() => setViewport('mobile')}
+                                title={t('toolbar.mobile')}
+                            >
+                                <DeviceMobile className="size-4" />
+                            </Button>
+                        </div>
+                    )}
+
+                    {/* Website (real render) vs Structure (outline) */}
                     <div className="flex rounded-lg border bg-catalogue-bg-muted p-1">
                         <Button
-                            variant={previewViewport === 'desktop' ? 'default' : 'ghost'}
+                            aria-pressed={canvasView === 'website'}
+                            variant={canvasView === 'website' ? 'default' : 'ghost'}
                             size="sm"
-                            className="size-8 p-0"
-                            onClick={() => setViewport('desktop')}
-                            title="Desktop"
+                            className="h-8 gap-1 px-2"
+                            onClick={() => changeCanvasView('website')}
+                            title={t('view.websiteTitle')}
                         >
-                            <Monitor className="size-4" />
+                            <Globe className="size-4" />
+                            {t('view.website')}
                         </Button>
                         <Button
-                            variant={previewViewport === 'tablet' ? 'default' : 'ghost'}
+                            aria-pressed={canvasView === 'editor'}
+                            variant={canvasView === 'editor' ? 'default' : 'ghost'}
                             size="sm"
-                            className="size-8 p-0"
-                            onClick={() => setViewport('tablet')}
-                            title="Tablet (768px)"
+                            className="h-8 gap-1 px-2"
+                            onClick={() => changeCanvasView('editor')}
+                            title={t('view.structureTitle')}
                         >
-                            <DeviceTablet className="size-4" />
-                        </Button>
-                        <Button
-                            variant={previewViewport === 'mobile' ? 'default' : 'ghost'}
-                            size="sm"
-                            className="size-8 p-0"
-                            onClick={() => setViewport('mobile')}
-                            title="Mobile (375px)"
-                        >
-                            <DeviceMobile className="size-4" />
+                            <ListBullets className="size-4" />
+                            {t('view.structure')}
                         </Button>
                     </div>
 
                     {page && (
                         <span className="text-xs text-catalogue-text-muted">
-                            {page.title || page.route || 'Untitled'} ·{' '}
-                            {page.components.length} component{page.components.length !== 1 ? 's' : ''}
+                            {page.title || page.route || t('toolbar.untitled')} ·{' '}
+                            {t('structure.blockCount', { count: page.components.length })}
                         </span>
                     )}
                 </div>
@@ -257,219 +201,41 @@ export const CanvasRenderer = ({ tagName }: { tagName: string }) => {
                     variant="ghost"
                     size="sm"
                     asChild
-                    title={isPageUnpublished ? 'This page is unpublished — visitors won\'t see it yet' : 'View live page'}
+                    title={isPageUnpublished ? t('toolbar.unpublishedTitle') : t('toolbar.viewLiveTitle')}
                     className={isPageUnpublished ? 'text-yellow-600 hover:text-yellow-700' : ''}
                 >
                     <a href={previewUrl} target="_blank" rel="noopener noreferrer">
-                        <ArrowSquareOut className="mr-1 size-4" />
-                        {isPageUnpublished ? 'View live (draft)' : 'View live'}
+                        <ArrowSquareOut className="me-1 size-4" />
+                        {isPageUnpublished ? t('toolbar.viewLiveDraft') : t('toolbar.viewLive')}
                     </a>
                 </Button>
             </div>
 
-            {/* Drop zone + scrollable canvas */}
-            <div
-                ref={setNodeRef}
-                className={`flex flex-1 justify-center overflow-auto p-6 transition-colors ${
-                    isOver ? 'bg-blue-50' : ''
-                }`}
-                onClick={() => selectComponent(null)}
-            >
-                {/* Width-constrained canvas — carries the SAME theme attributes
-                    as the learner page wrapper so tokens (type scale, radius,
-                    theme colors, fonts) render truthfully while editing. */}
-                <div
-                    className={`relative bg-catalogue-bg-elevated shadow-lg transition-all duration-300${config?.globalSettings?.mode === 'dark' ? ' dark' : ''} ${
-                        isOver ? 'ring-2 ring-blue-400' : ''
-                    }`}
-                    data-catalogue-theme={config?.globalSettings?.theme?.preset || 'default'}
-                    data-catalogue-radius={config?.globalSettings?.theme?.borderRadius || 'rounded'}
-                    data-heading-scale={config?.globalSettings?.theme?.headingScale || 'default'}
-                    data-catalogue-atmosphere={config?.globalSettings?.theme?.atmosphere?.canvas || 'flat'}
-                    data-catalogue-motion={config?.globalSettings?.motion?.personality}
-                    data-catalogue-intensity={config?.globalSettings?.theme?.atmosphere?.intensity || 'subtle'}
-                    data-catalogue-density={config?.globalSettings?.compactness || 'medium'}
-                    style={{
-                        // Custom brand color override — inline vars beat the
-                        // preset stylesheet, mirroring the learner renderers.
-                        ...(buildPrimaryScaleVars(config?.globalSettings?.theme?.primaryColor) as React.CSSProperties),
-                        width: canvasWidth,
-                        maxWidth: '100%',
-                        minHeight: '100%',
-                        fontFamily:
-                            config?.globalSettings?.fonts?.enabled && config?.globalSettings?.fonts?.family
-                                ? config.globalSettings.fonts.family
-                                : undefined,
-                        // Optional heading font — consumed by the catalogue heading
-                        // rule; unset ⇒ headings inherit the body font.
-                        ...(config?.globalSettings?.fonts?.enabled && config?.globalSettings?.fonts?.headingFamily
-                            ? { ['--catalogue-heading-font' as any]: config.globalSettings.fonts.headingFamily }
-                            : {}),
+            {canvasView === 'website' ? (
+                <LiveSiteFrame
+                    siteUrl={siteRootUrl}
+                    liveConfigJson={liveConfigJson}
+                    nameInstitute={!instituteDetails?.learner_portal_base_url}
+                    dropRef={setNodeRef}
+                    isDropOver={isOver}
+                    onAvailabilityChange={(available) => setFrameFailed(!available)}
+                    onShowPreviews={() => {
+                        // For this visit only: the frame may load next time.
+                        setPreviewsChoice(true);
+                        changeCanvasView('editor');
                     }}
-                >
-                    {/* Global Header — appears on every page */}
-                    {config?.globalSettings?.layout?.header && config.globalSettings.layout.header.enabled !== false && (
-                        <div
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                selectGlobalLayout('header');
-                            }}
-                            className={`relative cursor-pointer border-b-2 border-dashed border-purple-200 transition-all ${
-                                selectedGlobalLayout === 'header'
-                                    ? 'outline outline-2 outline-purple-500 outline-offset-[-2px]'
-                                    : 'hover:outline hover:outline-1 hover:outline-purple-300 hover:outline-offset-[-1px]'
-                            }`}
-                            title="Global Header (appears on all pages)"
-                        >
-                            <div className="absolute left-0 top-0 z-50 select-none rounded-br bg-purple-500 px-2 py-0.5 text-caption font-medium text-white">
-                                Global Header
-                            </div>
-                            <div style={{ pointerEvents: 'none' }}>
-                                {renderComponentPreview(config.globalSettings.layout.header)}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Page components */}
-                    {!config || !selectedPageId ? (
-                        <div className="flex h-full min-h-72 items-center justify-center text-sm text-catalogue-text-muted">
-                            Select a page from the bottom bar to start editing
-                        </div>
-                    ) : !page ? null : page.components.length === 0 ? (
-                        <div className="flex h-full min-h-96 flex-col items-center justify-center">
-                            <div className="rounded-xl border-2 border-dashed border-catalogue-border px-12 py-16 text-center">
-                                <div className="mb-2 text-base font-medium text-catalogue-text-muted">
-                                    This page is empty
-                                </div>
-                                <p className="text-sm text-gray-300">
-                                    Drag components from the left sidebar, or click one to add it
-                                </p>
-                            </div>
-                        </div>
-                    ) : (
-                        page.components.map((component) => {
-                            // Layout containers get a special multi-slot canvas renderer
-                            if (component.type === 'columnLayout') {
-                                return (
-                                    <ColumnLayoutCanvas
-                                        key={component.id}
-                                        component={component}
-                                        selectedComponentId={selectedComponentId}
-                                        onSelectComponent={selectComponent}
-                                    />
-                                );
-                            }
-
-                            const isSelected = component.id === selectedComponentId;
-                            const isDisabled = component.enabled === false;
-                            const shell = hasSectionShell(component.style);
-                            const shellStyles = shell ? buildSectionShellStyles(component.style!) : null;
-                            // Mirror the learner renderer: a shell canvas with no
-                            // background of its own adopts props.backgroundColor
-                            // (hero and friends carry their surface color as a prop)
-                            // so the band paints full-bleed, not as an inset card.
-                            if (
-                                shellStyles &&
-                                !shellStyles.canvasStyle.backgroundColor &&
-                                !shellStyles.canvasStyle.background &&
-                                !shellStyles.canvasStyle.backgroundImage
-                            ) {
-                                const propBg = (component.props as Record<string, unknown> | undefined)?.backgroundColor;
-                                if (typeof propBg === 'string' && propBg) shellStyles.canvasStyle.backgroundColor = propBg;
-                            }
-                            const componentStyle = shellStyles
-                                ? shellStyles.canvasStyle
-                                : buildComponentStyle(component.style);
-                            const hasOverlay = component.style?.backgroundImage && component.style?.backgroundOverlay;
-                            const decor = hasDecorations(component.style?.ornaments, component.style?.dividers);
-                            return (
-                                <div
-                                    key={component.id}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        selectComponent(component.id);
-                                    }}
-                                    className={`relative cursor-pointer transition-all ${component.style?.customClass || ''} ${
-                                        isDisabled ? 'opacity-40' : ''
-                                    } ${
-                                        isSelected
-                                            ? 'outline outline-2 outline-blue-500 outline-offset-[-2px]'
-                                            : 'hover:outline hover:outline-1 hover:outline-blue-300 hover:outline-offset-[-1px]'
-                                    }`}
-                                    style={{ ...componentStyle, ...(component.style?.ornaments?.length ? { overflow: 'hidden' } : {}) }}
-                                    title={isDisabled ? `${componentLabel(component.type)} (hidden)` : componentLabel(component.type)}
-                                >
-                                    {/* Background overlay */}
-                                    {hasOverlay && (
-                                        <div
-                                            style={{
-                                                position: 'absolute',
-                                                inset: 0,
-                                                backgroundColor: component.style!.backgroundOverlay,
-                                                zIndex: 0,
-                                                borderRadius: componentStyle.borderRadius,
-                                            }}
-                                        />
-                                    )}
-                                    {/* Ornaments + edge dividers (canvas parity with the live wrappers) */}
-                                    {decor && (
-                                        <SectionDecorations
-                                            ornaments={component.style?.ornaments}
-                                            dividers={component.style?.dividers}
-                                        />
-                                    )}
-                                    {/* Selection label */}
-                                    {isSelected && (
-                                        <div className="absolute left-0 top-0 z-50 select-none rounded-br-md bg-blue-500 px-2 py-0.5 text-xs font-medium text-white">
-                                            {componentLabel(component.type)}
-                                        </div>
-                                    )}
-                                    {/* Disabled overlay badge */}
-                                    {isDisabled && (
-                                        <div className="absolute right-2 top-2 z-40 rounded bg-gray-400 px-1.5 py-0.5 text-caption text-white">
-                                            hidden
-                                        </div>
-                                    )}
-                                    {/* Disable pointer events so child links/buttons don't interfere.
-                                        Section shell: content renders in a centered, width-capped column. */}
-                                    <div
-                                        style={
-                                            shellStyles
-                                                ? { ...shellStyles.contentStyle, pointerEvents: 'none', position: 'relative', zIndex: 1 }
-                                                : { pointerEvents: 'none', position: hasOverlay || decor ? 'relative' : undefined, zIndex: hasOverlay || decor ? 1 : undefined }
-                                        }
-                                    >
-                                        {renderComponentPreview(component)}
-                                    </div>
-                                </div>
-                            );
-                        })
-                    )}
-
-                    {/* Global Footer — appears on every page */}
-                    {config?.globalSettings?.layout?.footer && config.globalSettings.layout.footer.enabled !== false && (
-                        <div
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                selectGlobalLayout('footer');
-                            }}
-                            className={`relative cursor-pointer border-t-2 border-dashed border-purple-200 transition-all ${
-                                selectedGlobalLayout === 'footer'
-                                    ? 'outline outline-2 outline-purple-500 outline-offset-[-2px]'
-                                    : 'hover:outline hover:outline-1 hover:outline-purple-300 hover:outline-offset-[-1px]'
-                            }`}
-                            title="Global Footer (appears on all pages)"
-                        >
-                            <div className="absolute left-0 top-0 z-50 select-none rounded-br bg-purple-500 px-2 py-0.5 text-caption font-medium text-white">
-                                Global Footer
-                            </div>
-                            <div style={{ pointerEvents: 'none' }}>
-                                {renderComponentPreview(config.globalSettings.layout.footer)}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
+                />
+            ) : (
+                <PageCanvas
+                    dropRef={setNodeRef}
+                    isDropOver={isOver}
+                    showPreviews={showPreviews}
+                    onShowPreviewsChange={changeShowPreviews}
+                    // Said only when the frame really failed: a site without a
+                    // domain of its own often previews fine on the shared host.
+                    websiteUnavailable={frameFailed}
+                />
+            )}
         </div>
     );
 };

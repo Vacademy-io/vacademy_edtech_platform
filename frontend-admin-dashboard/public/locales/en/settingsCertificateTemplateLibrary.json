@@ -1,0 +1,24 @@
+{
+    "header": {
+        "title": "My Templates",
+        "descriptionPart1": "Keep as many designs as you like. The one marked",
+        "descriptionDefault": "Default",
+        "descriptionPart2": "is the certificate learners receive."
+    },
+    "addTemplate": "Add template",
+    "emptyState": {
+        "title": "No saved templates yet.",
+        "description": "Pick a ready-made design below, or upload your own — it will be saved here and set as the default."
+    },
+    "card": {
+        "openTitle": "Open this design in the editor",
+        "defaultBadge": "Default",
+        "editingBadge": "Editing",
+        "renameInputAriaLabel": "Template name",
+        "renameTitle": "Rename",
+        "issuedToLearners": "Issued to learners",
+        "makeDefault": "Make default",
+        "deleteTitle": "Delete this template",
+        "deleteAriaLabel": "Delete {{name}}"
+    }
+}

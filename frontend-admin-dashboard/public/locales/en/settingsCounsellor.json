@@ -1,0 +1,36 @@
+{
+    "header": {
+        "title": "Counsellor Allocation Settings",
+        "subtitle": "Configure how counsellors are assigned to enquiries"
+    },
+    "autoAssign": {
+        "label": "Auto-Assign Counsellors",
+        "hint": "Automatically assign counsellors to new enquiries"
+    },
+    "strategy": {
+        "label": "Assignment Strategy",
+        "placeholder": "Select strategy",
+        "options": {
+            "roundRobin": "Round Robin",
+            "leastAssigned": "Least Assigned",
+            "random": "Random"
+        },
+        "hint": "How counsellors should be assigned from the pool"
+    },
+    "pool": {
+        "label": "Counsellor Pool",
+        "hint": "Add counsellors who will be assigned to enquiries"
+    },
+    "search": {
+        "label": "Search Counsellors",
+        "placeholder": "Type to search counsellors...",
+        "loading": "Searching...",
+        "alreadyAdded": "✓ Already added",
+        "noneFound": "No counsellors found"
+    },
+    "selected": {
+        "label": "Selected Counsellors ({{count}})",
+        "unknownName": "Unknown",
+        "empty": "No counsellors added yet. Search and add counsellors to the pool."
+    }
+}

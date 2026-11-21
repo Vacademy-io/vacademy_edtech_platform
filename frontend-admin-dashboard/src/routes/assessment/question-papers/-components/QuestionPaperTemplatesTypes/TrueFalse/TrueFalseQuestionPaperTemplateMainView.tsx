@@ -12,9 +12,13 @@ import { formatStructure } from '../../../-utils/helper';
 import { QUESTION_TYPES } from '@/constants/dummy-data';
 import { useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { useTranslation } from 'react-i18next';
 
 // Helper component for question settings popover
-const QuestionSettingsPopover = ({ form, currentQuestionIndex }: { form: any; currentQuestionIndex: number }) => (
+const QuestionSettingsPopover = ({ form, currentQuestionIndex }: { form: any; currentQuestionIndex: number }) => {
+    const { t } = useTranslation('assessmentTrueFalseTemplateQP');
+
+    return (
             <div className="-mb-8 flex justify-end">
                 <Popover>
                     <PopoverTrigger>
@@ -25,15 +29,18 @@ const QuestionSettingsPopover = ({ form, currentQuestionIndex }: { form: any; cu
                     <PopoverContent>
                         <div className="mb-2 flex flex-col gap-4">
                             <div className="flex w-full items-center justify-between">
-                                <h1 className="text-primary-500">Questions Settings</h1>
+                                <h1 className="text-primary-500">{t('settingsPopover.title')}</h1>
                                 <PopoverClose>
                                     <X size={16} />
                                 </PopoverClose>
                             </div>
                             <SelectField
-                                label="Question Type"
+                                label={t('settingsPopover.questionTypeLabel')}
                                 name={`questions.${currentQuestionIndex}.questionType`}
-                                options={QUESTION_TYPES.map((option, index) => ({
+                                options={QUESTION_TYPES.filter(
+                                    // No CBE editor here (homework / quiz slides).
+                                    (option) => option.code !== 'CBE_RESPONSE'
+                                ).map((option, index) => ({
                                     value: option.code,
                                     label: option.display,
                                     _id: index,
@@ -46,7 +53,8 @@ const QuestionSettingsPopover = ({ form, currentQuestionIndex }: { form: any; cu
                     </PopoverContent>
                 </Popover>
             </div>
-);
+    );
+};
 
 // Helper component for question header
 const QuestionHeader = ({
@@ -63,11 +71,14 @@ const QuestionHeader = ({
     questionsType: string;
     level: string;
     tags: string[];
-}) => (
+}) => {
+    const { t } = useTranslation('assessmentTrueFalseTemplateQP');
+
+    return (
             <div className="flex w-full flex-col !flex-nowrap items-start gap-1">
                 <div className="flex items-center gap-2">
                     <span>
-                        Question
+                        {t('questionHeader.questionLabel')}
                         {showQuestionNumber && (
                             <>
                                 &nbsp;
@@ -103,7 +114,8 @@ const QuestionHeader = ({
             ))}
                 </div>
             </div>
-);
+    );
+};
 
 // Helper component for true/false option
 const TrueFalseOption = ({
@@ -125,6 +137,7 @@ const TrueFalseOption = ({
     currentQuestionIndex: number;
     onOptionChange: (optionIndex: number) => void;
 }) => {
+    const { t } = useTranslation('assessmentTrueFalseTemplateQP');
     const optionLabel = optionIndex === 0 ? 'a' : 'b';
 
     return (
@@ -136,7 +149,9 @@ const TrueFalseOption = ({
                         <div className="flex w-full items-center gap-4">
                             <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
                                 <span className="!p-0 text-sm">
-                        {optionsType ? formatStructure(optionsType, optionLabel) : `(${optionLabel}.)`}
+                        {optionsType
+                            ? formatStructure(optionsType, optionLabel)
+                            : t('trueFalseOption.markerFallback', { label: optionLabel })}
                                 </span>
                             </div>
                 <div>{optionName}</div>
@@ -183,7 +198,8 @@ const TrueFalseOptions = ({
     optionsType: string;
     onOptionChange: (optionIndex: number) => void;
 }) => {
-    const answersType = form.getValues('answersType') || 'Answer:';
+    const { t } = useTranslation('assessmentTrueFalseTemplateQP');
+    const answersType = form.getValues('answersType') || t('trueFalseOptions.answerDefaultLabel');
     const option1 = form.getValues(`questions.${currentQuestionIndex}.trueFalseOptions.${0}`);
     const option2 = form.getValues(`questions.${currentQuestionIndex}.trueFalseOptions.${1}`);
 
@@ -193,7 +209,7 @@ const TrueFalseOptions = ({
             <div className="flex gap-4">
                 <TrueFalseOption
                     optionIndex={0}
-                    optionName="True"
+                    optionName={t('trueFalseOption.trueLabel')}
                     isSelected={option1?.isSelected}
                     examType={examType}
                     optionsType={optionsType}
@@ -203,7 +219,7 @@ const TrueFalseOptions = ({
                 />
                 <TrueFalseOption
                     optionIndex={1}
-                    optionName="False"
+                    optionName={t('trueFalseOption.falseLabel')}
                     isSelected={option2?.isSelected}
                     examType={examType}
                     optionsType={optionsType}
@@ -218,7 +234,8 @@ const TrueFalseOptions = ({
 
 // Helper component for explanation section
 const ExplanationSection = ({ form, currentQuestionIndex }: { form: any; currentQuestionIndex: number }) => {
-    const explanationsType = form.getValues('explanationsType') || 'Explanation:';
+    const { t } = useTranslation('assessmentTrueFalseTemplateQP');
+    const explanationsType = form.getValues('explanationsType') || t('explanationSection.defaultLabel');
 
     return (
             <div className="mb-6 flex w-full flex-col !flex-nowrap items-start gap-1">
@@ -250,6 +267,7 @@ export const TrueFalseQuestionPaperTemplateMainView = ({
     showQuestionNumber = true,
     examType = 'EXAM',
 }: QuestionPaperTemplateFormProps) => {
+    const { t } = useTranslation('assessmentTrueFalseTemplateQP');
     const { control, getValues, setValue } = form;
     const questionsType = getValues('questionsType') || '';
     const optionsType = getValues('optionsType') || '';
@@ -286,7 +304,7 @@ export const TrueFalseQuestionPaperTemplateMainView = ({
     if (allQuestions.length === 0) {
         return (
             <div className="flex h-screen w-full items-center justify-center">
-                <h1>Please add a question to show question details</h1>
+                <h1>{t('emptyState.message')}</h1>
             </div>
         );
     }

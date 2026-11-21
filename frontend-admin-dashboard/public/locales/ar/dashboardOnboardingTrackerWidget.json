@@ -1,0 +1,27 @@
+{
+    "header": {
+        "progress_zero": "حالة التنفيذ لديك · اكتمل {{count}}٪",
+        "progress_one": "حالة التنفيذ لديك · اكتمل {{count}}٪",
+        "progress_two": "حالة التنفيذ لديك · اكتمل {{count}}٪",
+        "progress_few": "حالة التنفيذ لديك · اكتمل {{count}}٪",
+        "progress_many": "حالة التنفيذ لديك · اكتمل {{count}}٪",
+        "progress_other": "حالة التنفيذ لديك · اكتمل {{count}}٪"
+    },
+    "empty": {
+        "message": "لا توجد مراحل بعد."
+    },
+    "status": {
+        "done": "مكتمل",
+        "inProgress": "قيد التنفيذ",
+        "blocked": "معلّق",
+        "notStarted": "لم يبدأ"
+    },
+    "milestone": {
+        "eta": "الموعد المتوقع {{date}}",
+        "confirmButton": "تأكيد"
+    },
+    "comment": {
+        "placeholder": "أضف تعليقًا للفريق…",
+        "sendButton": "إرسال"
+    }
+}

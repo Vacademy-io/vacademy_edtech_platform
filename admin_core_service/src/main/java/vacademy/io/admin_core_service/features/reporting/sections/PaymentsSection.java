@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.reporting.sections;
 
+import vacademy.io.admin_core_service.features.user_subscription.repository.PaymentGroupSql;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -263,12 +264,14 @@ public class PaymentsSection implements ReportSection {
     private static final String SCOPED_CTE = """
             WITH scoped AS (
                 SELECT pl.id, pl.user_id, pl.payment_status, pl.payment_amount,
-                       pl.created_at,
+                       pl.created_at,""" + PaymentGroupSql.GROUP_KEY_PL + """
+                       AS pay_key,
                        COALESCE(NULLIF(btrim(pl.currency), ''), 'UNSPECIFIED') AS currency
                 FROM payment_log pl
                 LEFT JOIN user_plan up ON up.id = pl.user_plan_id
                 LEFT JOIN enroll_invite ei ON ei.id = up.enroll_invite_id
                 WHERE pl.created_at >= ? AND pl.created_at < ?
+                  AND""" + PaymentGroupSql.NOT_ORDER_PARENT_PL + """
                   AND (
                     ei.institute_id = ?
                     OR (pl.user_plan_id IS NULL AND EXISTS (
@@ -284,9 +287,9 @@ public class PaymentsSection implements ReportSection {
     /** Params: SCOPED_CTE params, then windowStart four times. */
     private static final String SUMMARY_SQL = SCOPED_CTE + """
             SELECT currency, payment_status,
-                   count(*) FILTER (WHERE created_at >= ?)  AS n_window,
+                   count(DISTINCT pay_key) FILTER (WHERE created_at >= ?)  AS n_window,
                    sum(payment_amount) FILTER (WHERE created_at >= ?) AS amt_window,
-                   count(*) FILTER (WHERE created_at < ?)   AS n_prev,
+                   count(DISTINCT pay_key) FILTER (WHERE created_at < ?)   AS n_prev,
                    sum(payment_amount) FILTER (WHERE created_at < ?)  AS amt_prev
             FROM scoped
             GROUP BY currency, payment_status

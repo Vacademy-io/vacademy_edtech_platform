@@ -7,7 +7,7 @@ import { fetchStudentCustomFieldValues } from '@/routes/manage-students/students
 import { StudentSearchBox } from '../../../../../../components/common/student-search-box';
 import { StudentFiltersProps } from '@/routes/manage-students/students-list/-types/students-list-types';
 import { useMemo, useRef, useState } from 'react';
-import { exportAccountDetails } from '../../../-services/exportAccountDetails';
+import { buildExportAccountDetails } from '../../../-services/exportAccountDetails';
 import { ExportColumnsDialog } from './export-columns-dialog';
 import { MyDropdown } from '@/components/common/students/enroll-manually/dropdownForPackageItems';
 import { AddSessionDialog } from '@/routes/manage-institute/sessions/-components/session-operations/add-session/add-session-dialog';
@@ -19,9 +19,20 @@ import { getTerminology } from '@/components/common/layout-container/sidebar/uti
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { useCompactMode } from '@/hooks/use-compact-mode';
 import { cn } from '@/lib/utils';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ChipsWrapper } from '@/components/design-system/chips';
+import { PlusCircle } from '@phosphor-icons/react';
 import { ManageListFiltersLink } from '@/components/shared/leads/manage-list-filters-link';
+import { UtmFilterControls } from '@/components/shared/leads/utm-filter-controls';
+import {
+    readUtmSelection,
+    utmFilterId,
+    utmValueLabel,
+} from '@/components/shared/leads/utm-filter-encoding';
 import { CustomFieldRangeFilter } from '@/components/shared/leads/custom-field-range-filter';
+import { DateRangeFilter } from '@/components/design-system/date-range-filter';
 import { sentinelLabel } from '@/components/shared/leads/custom-field-filter-encoding';
+import { useTranslation } from 'react-i18next';
 
 export const StudentFilters = ({
     currentSession,
@@ -52,6 +63,13 @@ export const StudentFilters = ({
     const [disableAddButton, setDisableAddButton] = useState(true);
     const { instituteDetails } = useInstituteDetailsStore();
     const { isCompact } = useCompactMode();
+    const { t } = useTranslation('manageStudentsFilters');
+    const { t: tUtm } = useTranslation('utmListFilters');
+    // Campaign (UTM) filters — rendered only while the institute's UTM setting
+    // is on and the Students surface isn't hidden in display settings. Their
+    // selections ride columnFilters under `utm:<dimension>` like every other
+    // chip, so Apply / Reset / the course learners tab all just work.
+    const utmSelection = readUtmSelection(columnFilters);
 
     const handleAddSession = (sessionData: AddSessionDataType) => {
         const processedData = structuredClone(sessionData);
@@ -74,20 +92,21 @@ export const StudentFilters = ({
             {
                 onSuccess: () => {
                     toast.success(
-                        ` ${getTerminology(
-                            ContentTerms.Session,
-                            SystemTerms.Session
-                        )} added successfully`
+                        t('session.addedSuccess', {
+                            term: getTerminology(ContentTerms.Session, SystemTerms.Session),
+                        })
                     );
                     setIsAddSessionDiaogOpen(false);
                 },
                 onError: (error) => {
                     toast.error(
                         error.message ||
-                        `Failed to add ${getTerminology(
-                            ContentTerms.Session,
-                            SystemTerms.Session
-                        ).toLocaleLowerCase()}`
+                        t('session.addError', {
+                            term: getTerminology(
+                                ContentTerms.Session,
+                                SystemTerms.Session
+                            ).toLocaleLowerCase(),
+                        })
                     );
                 },
             }
@@ -103,11 +122,11 @@ export const StudentFilters = ({
                 buttonType="primary"
                 layoutVariant="default"
                 scale="large"
-                className="w-[140px]"
+                className="w-36"
                 disable={disableAddButton}
                 onClick={() => formSubmitRef.current()}
             >
-                Add
+                {t('session.addButton')}
             </MyButton>
         </div>
     );
@@ -125,7 +144,7 @@ export const StudentFilters = ({
     };
 
     const handleExportAccountDetails = async () => {
-        await exportAccountDetails({ pageNo: 0, pageSize: totalElements || 0, filters: appliedFilters });
+        await buildExportAccountDetails(t)({ pageNo: 0, pageSize: totalElements || 0, filters: appliedFilters });
     };
 
     return (
@@ -152,12 +171,12 @@ export const StudentFilters = ({
                                         disable={!instituteDetails?.batches_for_sessions.length}
                                     >
                                         <Plus className={cn("transition-transform duration-200 group-hover:scale-110", isCompact ? "size-3" : "size-4")} />
-                                        <span className="hidden sm:inline">Add New Session</span>
-                                        <span className="sm:hidden">Add Session</span>
+                                        <span className="hidden sm:inline">{t('session.addNewSession')}</span>
+                                        <span className="sm:hidden">{t('session.addSessionShort')}</span>
                                     </MyButton>
                                     {!instituteDetails?.batches_for_sessions.length && (
-                                        <p className="-mt-1 text-center text-[10px] text-neutral-400">
-                                            (Create a course first)
+                                        <p className="-mt-1 text-center text-2xs text-neutral-400">
+                                            {t('session.createCourseFirst')}
                                         </p>
                                     )}
                                 </div>
@@ -171,7 +190,7 @@ export const StudentFilters = ({
                             <MyDropdown
                                 currentValue={currentSession}
                                 dropdownList={sessionList}
-                                placeholder="Select Session"
+                                placeholder={t('session.selectPlaceholder')}
                                 handleChange={onSessionChange}
                             />
                         </div>
@@ -185,16 +204,16 @@ export const StudentFilters = ({
                         buttonType="secondary"
                         layoutVariant="default"
                         onAsyncClick={handleExportAccountDetails}
-                        loadingText="Exporting..."
+                        loadingText={t('export.exportingLoading')}
                         className={cn(
                             "hover:scale-102 group flex items-center justify-center gap-1.5 bg-gradient-to-r from-neutral-50 to-neutral-100 transition-all duration-200 hover:from-neutral-100 hover:to-neutral-200",
                             isCompact ? "px-2 py-1 text-xs" : "px-2.5 py-1.5 text-xs sm:gap-2 sm:px-4 sm:py-2 sm:text-sm"
                         )}
                     >
                         <Export className={cn("shrink-0 transition-transform duration-200 group-hover:scale-110", isCompact ? "size-3" : "size-3.5 sm:size-4")} />
-                        <span className="truncate sm:hidden">Account Details</span>
-                        <span className="hidden truncate sm:inline md:hidden">Account</span>
-                        <span className="hidden truncate md:inline">Export account details</span>
+                        <span className="truncate sm:hidden">{t('export.accountDetails.short')}</span>
+                        <span className="hidden truncate sm:inline md:hidden">{t('export.accountDetails.medium')}</span>
+                        <span className="hidden truncate md:inline">{t('export.accountDetails.full')}</span>
                     </MyButton>
                     <MyButton
                         scale="medium"
@@ -208,9 +227,9 @@ export const StudentFilters = ({
                         )}
                     >
                         <Export className={cn("shrink-0 transition-transform duration-200 group-hover:scale-110", isCompact ? "size-3" : "size-3.5 sm:size-4")} />
-                        <span className="truncate sm:hidden">Export</span>
-                        <span className="hidden truncate sm:inline md:hidden">Export</span>
-                        <span className="hidden truncate md:inline">Export Data</span>
+                        <span className="truncate sm:hidden">{t('export.data.short')}</span>
+                        <span className="hidden truncate sm:inline md:hidden">{t('export.data.medium')}</span>
+                        <span className="hidden truncate md:inline">{t('export.data.full')}</span>
                     </MyButton>
                 </div>
             </div>
@@ -240,7 +259,53 @@ export const StudentFilters = ({
                                 className="animate-slideInRight"
                                 style={{ animationDelay: `${index * 0.1}s` }}
                             >
-                                {filter.kind === 'CUSTOM_FIELD_RANGE' && filter.customFieldId ? (
+                                {filter.kind === 'DATE_RANGE' ? (
+                                    <div className="hover:scale-102 group transition-all duration-200">
+                                        <Popover>
+                                            <PopoverTrigger className="flex items-center">
+                                                <button type="button">
+                                                    <ChipsWrapper
+                                                        className={cn(
+                                                            dateRangeLabel(columnFilters, filter.id)
+                                                                ? 'border-primary-500 bg-primary-100'
+                                                                : 'hover:border-primary-500 hover:bg-primary-50'
+                                                        )}
+                                                    >
+                                                        <div className="flex items-center gap-2">
+                                                            <PlusCircle className="size-4 text-neutral-600" />
+                                                            <div className="flex items-center text-body text-neutral-600">
+                                                                {dateRangeLabel(columnFilters, filter.id)
+                                                                    ? `${filter.title}: ${dateRangeLabel(columnFilters, filter.id)}`
+                                                                    : filter.title}
+                                                            </div>
+                                                        </div>
+                                                    </ChipsWrapper>
+                                                </button>
+                                            </PopoverTrigger>
+                                            <PopoverContent align="start" className="w-auto">
+                                                <DateRangeFilter
+                                                    onChange={(result) =>
+                                                        onFilterChange(
+                                                            filter.id,
+                                                            result
+                                                                ? [
+                                                                      {
+                                                                          id: `from:${result.startDate}`,
+                                                                          label: result.startDate,
+                                                                      },
+                                                                      {
+                                                                          id: `to:${result.endDate}`,
+                                                                          label: result.endDate,
+                                                                      },
+                                                                  ]
+                                                                : []
+                                                        )
+                                                    }
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+                                ) : filter.kind === 'CUSTOM_FIELD_RANGE' && filter.customFieldId ? (
                                     <CustomFieldRangeFilter
                                         fieldId={filter.customFieldId}
                                         fieldName={filter.title}
@@ -300,6 +365,21 @@ export const StudentFilters = ({
                                 )}
                             </div>
                         ))}
+                        <UtmFilterControls
+                            surface="STUDENTS"
+                            instituteId={instituteDetails?.id || ''}
+                            variant="pill"
+                            selection={utmSelection}
+                            onChange={(dimension, values) =>
+                                onFilterChange(
+                                    utmFilterId(dimension),
+                                    values.map((v) => ({
+                                        id: v,
+                                        label: utmValueLabel(v, tUtm('untagged')),
+                                    }))
+                                )
+                            }
+                        />
                         <ManageListFiltersLink surface="STUDENTS" />
                     </div>
 
@@ -314,7 +394,7 @@ export const StudentFilters = ({
                                 onClick={onFilterClick}
                             >
                                 <Funnel className="size-3.5 transition-transform duration-200 group-hover:scale-110" />
-                                Apply Filters
+                                {t('actions.applyFilters')}
                             </MyButton>
                             <MyButton
                                 buttonType="secondary"
@@ -324,7 +404,7 @@ export const StudentFilters = ({
                                 onClick={onClearFilters}
                             >
                                 <X className="size-3.5 transition-transform duration-200 group-hover:scale-110" />
-                                Reset All
+                                {t('actions.resetAll')}
                             </MyButton>
                         </div>
                     )}
@@ -340,3 +420,14 @@ export const StudentFilters = ({
         </div>
     );
 };
+
+/** "03/10/2026 - 17/10/2026" for the chip label, or '' when nothing is picked. */
+function dateRangeLabel(
+    columnFilters: { id: string; value: { id: string; label: string }[] }[],
+    filterId: string
+): string {
+    const values = columnFilters.find((f) => f.id === filterId)?.value ?? [];
+    const from = values.find((v) => v.id.startsWith('from:'))?.label;
+    const to = values.find((v) => v.id.startsWith('to:'))?.label;
+    return from && to ? `${from} - ${to}` : '';
+}

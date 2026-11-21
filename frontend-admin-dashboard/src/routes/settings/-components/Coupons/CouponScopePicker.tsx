@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Globe, Stack, Tag } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { cn } from '@/lib/utils';
 import PackageSelector from '@/components/design-system/PackageSelector';
 import { Textarea } from '@/components/ui/textarea';
@@ -34,6 +36,7 @@ export interface CouponScopePickerProps {
 type TabSpec = { mode: CouponScopeMode; label: string; icon: typeof Globe; description: string };
 
 const buildTabs = (
+    t: TFunction,
     learnerSingular: string,
     learnerPlural: string,
     batchPlural: string,
@@ -41,21 +44,28 @@ const buildTabs = (
 ): TabSpec[] => [
     {
         mode: 'all',
-        label: 'Institute-wide',
+        label: t('tabs.instituteWide.label'),
         icon: Globe,
-        description: `Any ${learnerSingular.toLowerCase()} enrolling in this institute can apply this coupon.`,
+        description: t('tabs.instituteWide.description', {
+            learner: learnerSingular.toLowerCase(),
+        }),
     },
     {
         mode: 'sessions',
-        label: `Specific ${batchPlural}`,
+        label: t('tabs.specificBatches.label', { batch: batchPlural }),
         icon: Stack,
-        description: `Only ${learnerPlural.toLowerCase()} enrolling into the selected ${batchPlural.toLowerCase()} can apply this coupon.`,
+        description: t('tabs.specificBatches.description', {
+            learner: learnerPlural.toLowerCase(),
+            batch: batchPlural.toLowerCase(),
+        }),
     },
     {
         mode: 'invites',
-        label: `Specific ${inviteLabel}`,
+        label: t('tabs.specificInvites.label', { invite: inviteLabel }),
         icon: Tag,
-        description: `Only ${learnerPlural.toLowerCase()} enrolling through the listed invite links can apply this coupon.`,
+        description: t('tabs.specificInvites.description', {
+            learner: learnerPlural.toLowerCase(),
+        }),
     },
 ];
 
@@ -72,6 +82,7 @@ export const CouponScopePicker = ({
     disabled,
     className,
 }: CouponScopePickerProps) => {
+    const { t } = useTranslation('settingsCouponScopePicker');
     const [inviteRaw, setInviteRaw] = useState(value.enrollInviteIds.join(', '));
 
     const sessionsLabel = useMemo(
@@ -95,8 +106,8 @@ export const CouponScopePicker = ({
         []
     );
     const tabs = useMemo(
-        () => buildTabs(learnerSingular, learnerPlural, batchPlural, inviteLabel),
-        [learnerSingular, learnerPlural, batchPlural, inviteLabel]
+        () => buildTabs(t, learnerSingular, learnerPlural, batchPlural, inviteLabel),
+        [t, learnerSingular, learnerPlural, batchPlural, inviteLabel]
     );
 
     const setMode = (mode: CouponScopeMode) => {
@@ -141,14 +152,14 @@ export const CouponScopePicker = ({
 
             {/* Description for current mode */}
             <p className="text-caption text-neutral-500">
-                {tabs.find((t) => t.mode === value.mode)?.description}
+                {tabs.find((tb) => tb.mode === value.mode)?.description}
             </p>
 
             {/* Mode-specific control */}
             {value.mode === 'sessions' && (
                 <div className="rounded-md border border-neutral-200 bg-white p-3">
                     <p className="mb-2 text-caption font-medium text-neutral-700">
-                        Pick one or more {sessionsLabel.toLowerCase()}
+                        {t('sessions.pickLabel', { sessions: sessionsLabel.toLowerCase() })}
                     </p>
                     <PackageSelector
                         instituteId={instituteId}
@@ -171,13 +182,17 @@ export const CouponScopePicker = ({
                         htmlFor="coupon-invite-ids"
                         className="mb-2 block text-caption font-medium text-neutral-700"
                     >
-                        Paste {getTerminology(OtherTerms.Invite, SystemTerms.Invite).toLowerCase()}{' '}
-                        IDs
+                        {t('invites.pasteLabel', {
+                            invite: getTerminology(
+                                OtherTerms.Invite,
+                                SystemTerms.Invite
+                            ).toLowerCase(),
+                        })}
                     </label>
                     <Textarea
                         id="coupon-invite-ids"
                         rows={3}
-                        placeholder="Comma- or newline-separated invite IDs"
+                        placeholder={t('invites.placeholder')}
                         value={inviteRaw}
                         disabled={disabled}
                         onChange={(e) => {
@@ -190,8 +205,7 @@ export const CouponScopePicker = ({
                         className="font-mono text-caption"
                     />
                     <p className="mt-1 text-caption text-neutral-400">
-                        {value.enrollInviteIds.length} ID
-                        {value.enrollInviteIds.length === 1 ? '' : 's'} captured
+                        {t('invites.captured', { count: value.enrollInviteIds.length })}
                     </p>
                 </div>
             )}

@@ -1,0 +1,71 @@
+{
+    "feeType": {
+        "installmentCount_one": "{{count}} échéance",
+        "installmentCount_many": "{{count}} d'échéances",
+        "installmentCount_other": "{{count}} échéances",
+        "refundable": "Remboursable",
+        "penalty": "Pénalité {{percent}} %",
+        "loadingInstallments": "Chargement des échéances...",
+        "columns": {
+            "number": "#",
+            "amount": "Montant",
+            "startDate": "Date de début",
+            "endDate": "Date de fin",
+            "dueDate": "Date d'échéance",
+            "status": "Statut"
+        },
+        "total": "Total",
+        "noSchedule": "Aucun échéancier — paiement unique de {{amount}}"
+    },
+    "package": {
+        "totalLabel": "<b>{{amount}}</b> au total",
+        "feeTypeCount_one": "{{count}} type de frais",
+        "feeTypeCount_many": "{{count}} de types de frais",
+        "feeTypeCount_other": "{{count}} types de frais"
+    },
+    "header": {
+        "title": "Plan de frais",
+        "subtitle": "Gérez les plans de frais avec leurs types et échéanciers."
+    },
+    "filters": {
+        "allClasses": "Toutes les classes"
+    },
+    "actions": {
+        "createPlan": "Créer un plan"
+    },
+    "loading": "Chargement des plans de frais...",
+    "error": {
+        "prefix": "Échec du chargement du plan de frais.",
+        "genericMessage": "Veuillez réessayer."
+    },
+    "empty": {
+        "title": "Aucun plan de frais trouvé.",
+        "hint": "Cliquez sur <b>{{createPlan}}</b> pour ajouter le premier."
+    },
+    "summary": {
+        "packageCount_one": "Affichage de {{count}} forfait",
+        "packageCount_many": "Affichage de {{count}} de forfaits",
+        "packageCount_other": "Affichage de {{count}} forfaits"
+    },
+    "redesign": {
+        "feeTypesHeading": "Fee types & installment schedules",
+        "stats": {
+            "plans": "Fee plans",
+            "plansDetail": "{{count}} active",
+            "avg": "Average plan value",
+            "avgDetail": "Across {{count}} plans with a fee",
+            "feeTypes": "Fee types in use",
+            "feeTypesDetail": "Distinct fee types across these plans",
+            "classes": "{{batches}} linked",
+            "classesDetail": "Linked to at least one plan",
+            "unlinked_one": "{{count}} plan has no {{batch}} linked",
+            "unlinked_other": "{{count}} plans have no {{batch}} linked"
+        },
+        "views": {
+            "all": "All plans"
+        },
+        "searchPlaceholder": "Search plan or fee type",
+        "sessionAria": "Session",
+        "noMatch": "No fee plans match this search."
+    }
+}

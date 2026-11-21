@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { useSubmissionsBulkActionsDialogStorePending } from '../bulk-actions-zustand-store/useSubmissionsBulkActionsDialogStorePending';
@@ -10,6 +11,7 @@ interface ProvideDialogDialogProps {
 }
 
 const SendReminderDialogContent = () => {
+    const { t } = useTranslation('homeworkCreationSendReminderComponent');
     const { selectedStudent, bulkActionInfo, isBulkAction, closeAllDialogs } =
         useSubmissionsBulkActionsDialogStorePending();
 
@@ -27,8 +29,8 @@ const SendReminderDialogContent = () => {
     return (
         <div className="flex flex-col gap-6 px-4 pb-2 text-neutral-600">
             <h1>
-                Are you sure you want to send reminder for&nbsp;
-                <span className="text-primary-500">{displayText}</span>&nbsp;?
+                {t('confirmPrefix')}&nbsp;
+                <span className="text-primary-500">{displayText}</span>&nbsp;{t('confirmSuffix')}
             </h1>
             <MyButton
                 buttonType="primary"
@@ -36,18 +38,19 @@ const SendReminderDialogContent = () => {
                 layoutVariant="default"
                 onClick={handleSubmit}
             >
-                Done
+                {t('done')}
             </MyButton>
         </div>
     );
 };
 
 export const SendReminderDialog = ({ trigger, open, onOpenChange }: ProvideDialogDialogProps) => {
+    const { t } = useTranslation('homeworkCreationSendReminderComponent');
     return (
         <MyDialog
             trigger={trigger}
-            heading="Send Reminder"
-            dialogWidth="w-[400px] max-w-[400px]"
+            heading={t('heading')}
+            dialogWidth="w-96 max-w-sm"
             content={<SendReminderDialogContent />}
             open={open}
             onOpenChange={onOpenChange}

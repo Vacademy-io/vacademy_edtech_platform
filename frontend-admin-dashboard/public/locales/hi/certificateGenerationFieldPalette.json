@@ -1,0 +1,35 @@
+{
+    "header": {
+        "title": "उपलब्ध फ़ील्ड",
+        "count_one": "{{count}} फ़ील्ड उपलब्ध",
+        "count_other": "{{count}} फ़ील्ड उपलब्ध"
+    },
+    "instructions": {
+        "label": "निर्देश:",
+        "text": "डेटा को प्रमाणपत्र पर उस स्थान पर दिखाने के लिए इस पैनल से फ़ील्ड को PDF टेम्पलेट पर खींचें और छोड़ें।"
+    },
+    "sections": {
+        "systemFields": "सिस्टम फ़ील्ड",
+        "csvFields": "CSV डेटा फ़ील्ड",
+        "fieldCount": "({{count}})"
+    },
+    "noCsvFields": {
+        "title": "कोई CSV फ़ील्ड उपलब्ध नहीं",
+        "description": "मैपिंग के लिए अतिरिक्त फ़ील्ड देखने हेतु चरण 1 में एक CSV फ़ाइल अपलोड करें"
+    },
+    "legend": {
+        "title": "फ़ील्ड प्रकार",
+        "systemFields": "सिस्टम फ़ील्ड - अंतर्निहित छात्र डेटा",
+        "csvFields": "CSV फ़ील्ड - अपलोड की गई फ़ाइल से कस्टम डेटा"
+    },
+    "fields": {
+        "userId": { "label": "उपयोगकर्ता आईडी", "sample": "USR001" },
+        "enrollmentNumber": { "label": "नामांकन संख्या", "sample": "ENR2024001" },
+        "studentName": { "label": "छात्र का नाम", "sample": "राहुल शर्मा" },
+        "fullName": { "label": "पूरा नाम", "sample": "राहुल कुमार शर्मा" },
+        "email": { "label": "ईमेल पता", "sample": "john.doe@example.com" },
+        "mobileNumber": { "label": "मोबाइल नंबर", "sample": "+1 (555) 123-4567" },
+        "instituteName": { "label": "संस्थान का नाम", "sample": "यूनिवर्सिटी ऑफ़ टेक्नोलॉजी" },
+        "completionDate": { "label": "पूर्णता तिथि" }
+    }
+}

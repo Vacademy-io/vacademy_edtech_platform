@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { LayoutContainer } from "@/components/common/layout-container/layout-container";
 import { ChatScreen } from "@/components/chat/ChatScreen";
 import {
@@ -30,6 +31,7 @@ export const Route = createFileRoute("/chat/")({
 });
 
 function ChatRoute() {
+  const { t } = useTranslation("chatFeatureA");
   const { conversationId, dm } = Route.useSearch();
   const navigate = Route.useNavigate();
 
@@ -56,7 +58,7 @@ function ChatRoute() {
       })
       .catch(() => {
         if (!cancelled) {
-          toast.error("Couldn't open the chat. Please try again.");
+          toast.error(t("route.openChatError"));
         }
       });
     return () => {
@@ -66,10 +68,11 @@ function ChatRoute() {
   }, [dm, conversationId]);
 
   return (
-    // fullWidth: the chat screen is a full-bleed master-detail surface and
-    // manages its own internal padding, so opt out of the centered content
-    // contract. enableChatbotPanel is disabled to avoid two side panels.
-    <LayoutContainer fullWidth enableChatbotPanel={false}>
+    // fillViewport: the chat screen is a master-detail surface pinned to one
+    // screen so the thread scrolls and the composer stays visible (a fixed
+    // 100dvh calc ignored the navbar/margins and pushed it below the fold).
+    // enableChatbotPanel is disabled to avoid two side panels.
+    <LayoutContainer fillViewport enableChatbotPanel={false}>
       {/* ChatScreen reacts to conversationId changes in place (its deep-link
           effect re-runs on every change) — no remount key needed. */}
       <ChatScreen initialConversationId={conversationId} />

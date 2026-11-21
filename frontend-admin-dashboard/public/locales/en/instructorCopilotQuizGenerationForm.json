@@ -1,0 +1,16 @@
+{
+    "title": "Generate Quiz from Transcript",
+    "description": "Generate quiz questions based on the instructor's transcript",
+    "numberOfQuestions": "Number of Questions",
+    "classLevel": "Class Level",
+    "classLevelPlaceholder": "e.g., 9th class NCERT, Grade 10, High School",
+    "classLevelHint": "Specify the education level or standard",
+    "questionType": "Question Type",
+    "language": "Language",
+    "generateButton": "Generate Quiz from Transcript",
+    "generatingButton": "Generating Quiz...",
+    "errors": {
+        "noTranscript": "No transcript available. Please ensure you have transcribed audio first.",
+        "classLevelRequired": "Please enter a class level"
+    }
+}

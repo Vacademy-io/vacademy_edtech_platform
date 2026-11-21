@@ -1,0 +1,71 @@
+{
+    "pageTitle": "طلب التحاق جديد",
+    "sectionHasErrors": "توجد أخطاء",
+    "stepProgress": "الخطوة {{current}} من {{total}}",
+    "sections": {
+        "student": {
+            "label": "بيانات الطالب",
+            "shortLabel": "الطالب"
+        },
+        "academic": {
+            "label": "المعلومات الأكاديمية",
+            "shortLabel": "أكاديمي"
+        },
+        "parent": {
+            "label": "ولي الأمر والوصي",
+            "shortLabel": "ولي الأمر"
+        },
+        "address": {
+            "label": "العنوان",
+            "shortLabel": "العنوان"
+        },
+        "payment": {
+            "label": "الدفع",
+            "shortLabel": "الدفع"
+        }
+    },
+    "buttons": {
+        "downloadPdf": "تنزيل PDF",
+        "generatingPdf": "جارٍ الإنشاء...",
+        "print": "طباعة",
+        "previous": "السابق",
+        "next": "التالي",
+        "submitApplication": "إرسال الطلب",
+        "backToList": "العودة إلى القائمة"
+    },
+    "toasts": {
+        "pdfTemplateNotReady": "قالب PDF غير جاهز. يرجى المحاولة مرة أخرى.",
+        "generatingPdf": "جارٍ إنشاء ملف PDF...",
+        "pdfDownloaded": "تم تنزيل ملف PDF!",
+        "pdfGenerationFailed": "فشل إنشاء ملف PDF. يرجى المحاولة مرة أخرى.",
+        "popupBlocked": "تم حظر النافذة المنبثقة. يرجى السماح بالنوافذ المنبثقة للطباعة.",
+        "submitFailed": "فشل إرسال الطلب. يرجى المحاولة مرة أخرى."
+    },
+    "validation": {
+        "studentNameRequired": "اسم الطالب مطلوب",
+        "dobRequired": "تاريخ الميلاد مطلوب",
+        "genderRequired": "الجنس مطلوب",
+        "nationalityRequired": "الجنسية مطلوبة",
+        "categoryRequired": "الفئة مطلوبة",
+        "classRequired": "يرجى اختيار الصف/المرحلة من قسم المعلومات الأكاديمية",
+        "boardRequired": "تفضيل المجلس التعليمي مطلوب",
+        "parentRequired": "يلزم توفير بيانات أحد الوالدين (الأب أو الأم) مع الاسم ورقم الجوال",
+        "fatherEmailInvalid": "البريد الإلكتروني للأب غير صحيح",
+        "motherEmailInvalid": "البريد الإلكتروني للأم غير صحيح",
+        "addressFieldsRequired": "يرجى تعبئة جميع حقول العنوان المطلوبة (الشارع، المنطقة، المدينة، الولاية)",
+        "countryRequired": "الدولة مطلوبة",
+        "pincodeInvalid": "يرجى إدخال رمز بريدي صحيح مكون من 6 أرقام",
+        "sessionMissing": "معرّف الجلسة مفقود. يرجى اختيار جلسة من قائمة التسجيل"
+    },
+    "confirmSubmit": "هل أنت متأكد من رغبتك في إرسال هذا الطلب؟ يرجى مراجعة جميع التفاصيل قبل المتابعة.",
+    "print": {
+        "documentTitle": "استمارة الطلب - {{name}}"
+    },
+    "payment": {
+        "defaultFeeName": "رسوم الطلب / التسجيل"
+    },
+    "header": {
+        "backToList": "Back to applications",
+        "stepBadge": "Step {{current}} of {{total}}"
+    }
+}

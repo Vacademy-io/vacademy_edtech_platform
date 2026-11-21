@@ -1,0 +1,14 @@
+{
+    "actions": {
+        "addStudent": "Ajouter un élève",
+        "newBatch": "Nouvelle promotion",
+        "announcement": "Annonce",
+        "payments": "Paiements",
+        "reports": "Rapports",
+        "todaysClasses": "Cours du jour",
+        "myCourses": "Mes cours",
+        "newCourse": "Nouveau cours",
+        "assessments": "Évaluations",
+        "evaluations": "Corrections"
+    }
+}

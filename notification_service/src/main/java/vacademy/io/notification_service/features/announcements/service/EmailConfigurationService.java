@@ -157,6 +157,18 @@ public class EmailConfigurationService {
                             .type(emailType)
                             .description("Email configuration for " + formatEmailTypeName(emailType))
                             .displayText(displayName + " (" + fromEmail + ")")
+                            .maxPerDay(configNode.has(NotificationConstants.MAX_PER_DAY) ? configNode.path(NotificationConstants.MAX_PER_DAY).asInt(0) : null)
+                            .timezone(configNode.hasNonNull(NotificationConstants.TIMEZONE) ? configNode.path(NotificationConstants.TIMEZONE).asText() : null)
+                            .sendAfterHour(configNode.has(NotificationConstants.SEND_AFTER_HOUR) ? configNode.path(NotificationConstants.SEND_AFTER_HOUR).asInt(0) : null)
+                            .postalAddress(configNode.hasNonNull(NotificationConstants.POSTAL_ADDRESS) ? configNode.path(NotificationConstants.POSTAL_ADDRESS).asText() : null)
+                            .listUnsubscribe(configNode.has(NotificationConstants.LIST_UNSUBSCRIBE) ? configNode.path(NotificationConstants.LIST_UNSUBSCRIBE).asBoolean(false) : null)
+                            .skipWeekends(configNode.has(NotificationConstants.SKIP_WEEKENDS) ? configNode.path(NotificationConstants.SKIP_WEEKENDS).asBoolean(false) : null)
+                            .rampEnabled(configNode.has(NotificationConstants.RAMP_ENABLED) ? configNode.path(NotificationConstants.RAMP_ENABLED).asBoolean(false) : null)
+                            .rampStartPerDay(configNode.has(NotificationConstants.RAMP_START_PER_DAY) ? configNode.path(NotificationConstants.RAMP_START_PER_DAY).asInt(0) : null)
+                            .rampStep(configNode.has(NotificationConstants.RAMP_STEP) ? configNode.path(NotificationConstants.RAMP_STEP).asInt(0) : null)
+                            .rampEveryDays(configNode.has(NotificationConstants.RAMP_EVERY_DAYS) ? configNode.path(NotificationConstants.RAMP_EVERY_DAYS).asInt(0) : null)
+                            .rampCeiling(configNode.has(NotificationConstants.RAMP_CEILING) ? configNode.path(NotificationConstants.RAMP_CEILING).asInt(0) : null)
+                            .rampStartedOn(configNode.hasNonNull(NotificationConstants.RAMP_STARTED_ON) ? configNode.path(NotificationConstants.RAMP_STARTED_ON).asText() : null)
                             .build();
                     
                     configs.add(dto);
@@ -255,6 +267,7 @@ public class EmailConfigurationService {
                     ? addEmail
                     : (addName + " <" + addEmail + ">");
             newConfigNode.put(NotificationConstants.FROM, fromValue);
+            applySendingControls(newConfigNode, emailConfig);
             newConfigNode.put(NotificationConstants.HOST, "smtp.gmail.com");
             newConfigNode.put(NotificationConstants.PORT, 587);
             newConfigNode.put(NotificationConstants.USERNAME, "SMTP_USERNAME");
@@ -298,6 +311,43 @@ public class EmailConfigurationService {
         }
     }
     
+    /**
+     * Sending controls are optional and PATCH-like: a null field leaves the stored value alone,
+     * so an admin editing the display name never wipes a daily cap set earlier.
+     */
+    private void applySendingControls(ObjectNode node, EmailConfigDTO dto) {
+        if (dto.getMaxPerDay() != null) node.put(NotificationConstants.MAX_PER_DAY, Math.max(0, dto.getMaxPerDay()));
+        if (dto.getTimezone() != null) {
+            String tz = dto.getTimezone().trim();
+            if (tz.isEmpty()) node.remove(NotificationConstants.TIMEZONE);
+            else { java.time.ZoneId.of(tz); node.put(NotificationConstants.TIMEZONE, tz); } // throws on a bad zone → 400
+        }
+        if (dto.getSendAfterHour() != null) node.put(NotificationConstants.SEND_AFTER_HOUR, Math.max(0, Math.min(23, dto.getSendAfterHour())));
+        if (dto.getPostalAddress() != null) {
+            String a = dto.getPostalAddress().trim();
+            if (a.isEmpty()) node.remove(NotificationConstants.POSTAL_ADDRESS); else node.put(NotificationConstants.POSTAL_ADDRESS, a);
+        }
+        if (dto.getListUnsubscribe() != null) node.put(NotificationConstants.LIST_UNSUBSCRIBE, dto.getListUnsubscribe());
+        if (dto.getSkipWeekends() != null) node.put(NotificationConstants.SKIP_WEEKENDS, dto.getSkipWeekends());
+        if (dto.getRampStartPerDay() != null) node.put(NotificationConstants.RAMP_START_PER_DAY, Math.max(0, dto.getRampStartPerDay()));
+        if (dto.getRampStep() != null) node.put(NotificationConstants.RAMP_STEP, Math.max(0, dto.getRampStep()));
+        if (dto.getRampEveryDays() != null) node.put(NotificationConstants.RAMP_EVERY_DAYS, Math.max(1, dto.getRampEveryDays()));
+        if (dto.getRampCeiling() != null) node.put(NotificationConstants.RAMP_CEILING, Math.max(0, dto.getRampCeiling()));
+        if (dto.getRampStartedOn() != null) {
+            String d = dto.getRampStartedOn().trim();
+            if (d.isEmpty()) node.remove(NotificationConstants.RAMP_STARTED_ON);
+            else { java.time.LocalDate.parse(d); node.put(NotificationConstants.RAMP_STARTED_ON, d); } // throws on a bad date -> 400
+        }
+        if (dto.getRampEnabled() != null) {
+            node.put(NotificationConstants.RAMP_ENABLED, dto.getRampEnabled());
+            // Day 0 is stamped once, when the ramp is switched on. Without it every edit would
+            // restart the schedule at the opening volume and the warm-up would never progress.
+            if (dto.getRampEnabled() && !node.hasNonNull(NotificationConstants.RAMP_STARTED_ON)) {
+                node.put(NotificationConstants.RAMP_STARTED_ON, java.time.LocalDate.now().toString());
+            }
+        }
+    }
+
     /**
      * Ensure EMAIL_SETTING.data structure exists in settings
      */
@@ -440,6 +490,7 @@ public class EmailConfigurationService {
 
             String newFrom = treatAsNoName ? newEmail : (newName + " <" + newEmail + ">");
             existingConfigNode.put(NotificationConstants.FROM, newFrom);
+            applySendingControls(existingConfigNode, emailConfig);
 
             String updatedSettings = objectMapper.writeValueAsString(rootNode);
             boolean persisted = instituteInternalService.updateInstituteSettings(
@@ -475,6 +526,16 @@ public class EmailConfigurationService {
             // GET would parse: the fallback when no real name is stored, the
             // user's chosen name otherwise.
             String returnedName = treatAsNoName ? autoFallbackName : newName;
+            // Echo the stored node (controls included): the settings page replaces its row
+            // state with this response, so a bare DTO would visibly reset the ramp/cap fields.
+            EmailConfigDTO echoed = parseInstituteEmailSettings(updatedSettings).stream()
+                    .filter(c -> emailType.equals(c.getType()))
+                    .findFirst()
+                    .orElse(null);
+            if (echoed != null) {
+                echoed.setDescription(emailConfig.getDescription() != null ? emailConfig.getDescription() : echoed.getDescription());
+                return echoed;
+            }
             return EmailConfigDTO.builder()
                     .id(emailType)
                     .email(newEmail)

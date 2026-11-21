@@ -1,0 +1,42 @@
+{
+    "alerts": {
+        "fillRequired": "Veuillez renseigner le nom du projet et l'URL du contenu",
+        "deploySuccess": "Notebook déployé avec succès !"
+    },
+    "header": {
+        "configuration": "Configuration du notebook Jupyter"
+    },
+    "tabs": {
+        "preview": "Aperçu",
+        "settings": "Paramètres"
+    },
+    "form": {
+        "projectName": {
+            "label": "Nom du projet",
+            "placeholder": "pythoncourse"
+        },
+        "contentUrl": {
+            "label": "URL du contenu (lien vers un dépôt Github contenant le notebook)",
+            "placeholder": "https://github.com/amirtds/jupyter-notebooks"
+        },
+        "contentBranch": {
+            "label": "Branche du contenu"
+        },
+        "notebookLocation": {
+            "label": "Emplacement du notebook"
+        }
+    },
+    "deploy": {
+        "button": "Déployer le notebook",
+        "deploying": "Déploiement du notebook..."
+    },
+    "status": {
+        "readyToDeploy": "Prêt à déployer :",
+        "summary": "{{projectName}} depuis {{contentUrl}} (branche {{contentBranch}}, emplacement {{notebookLocation}})"
+    },
+    "preview": {
+        "iframeTitle": "Aperçu du notebook Jupyter",
+        "notConfigured": "Aucun notebook configuré",
+        "switchToSettingsHint": "Passez à l'onglet Paramètres pour configurer votre notebook Jupyter"
+    }
+}

@@ -1,0 +1,13 @@
+{
+    "heading": "Add New Lead",
+    "description": "Pick the campaign type and the {{audienceTerm}} this lead belongs to. Its form opens next.",
+    "selectPlaceholder": "Select {{term}}",
+    "pickTypeFirst": "Select a {{term}} first",
+    "searchPlaceholder": "Search…",
+    "noResults": "Nothing found.",
+    "loading": "Loading…",
+    "noCampaignType": "No campaign type",
+    "emptyState": "No active {{audienceTerm}} to add a lead to.",
+    "cancel": "Cancel",
+    "continue": "Continue"
+}

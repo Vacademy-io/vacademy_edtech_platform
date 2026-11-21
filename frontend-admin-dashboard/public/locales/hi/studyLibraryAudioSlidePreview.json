@@ -1,0 +1,17 @@
+{
+    "audioDataNotFound": "ऑडियो स्लाइड डेटा नहीं मिला",
+    "failedToLoadAudio": "ऑडियो लोड करने में विफल",
+    "failedToPlayAudio": "ऑडियो चलाने में विफल",
+    "playbackError": "ऑडियो प्लेबैक त्रुटि",
+    "audioLabel": "ऑडियो",
+    "deletedTag": "हटाया गया",
+    "audioDeletedTitle": "यह ऑडियो हटा दिया गया है",
+    "audioDeletedSubtitle": "ऑडियो सामग्री अब उपलब्ध नहीं है",
+    "loadingAudio": "ऑडियो लोड हो रहा है...",
+    "audioThumbnailAlt": "ऑडियो थंबनेल",
+    "untitledAudio": "शीर्षकहीन ऑडियो",
+    "durationLabel": "अवधि: {{time}}",
+    "pauseAriaLabel": "रोकें",
+    "playAriaLabel": "चलाएं",
+    "transcriptLabel": "ट्रांसक्रिप्ट"
+}

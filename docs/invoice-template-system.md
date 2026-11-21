@@ -120,7 +120,9 @@ Payment Confirmed (status = PAID)
 5. Load PDF template:
    ┌──────────────────────────────────────────────────────┐
    │ Query: templates WHERE institute_id = ? AND type = 'INVOICE'  │
-   │        ORDER BY created_at DESC LIMIT 1              │
+   │        ORDER BY created_at DESC                      │
+   │ Pick: INVOICE_SETTING.defaultInvoiceTemplateId if it │
+   │       is in the list, else the newest                │
    │                                                      │
    │ Found? → Use template content (HTML)                 │
    │ Not found? → Use default_invoice.html from resources │
@@ -190,13 +192,18 @@ UserPlan → EnrollInvite → PackageSession → PackageEntity.packageType. When
 components are configured, the legacy single-`taxRate` computation runs unchanged.
 
 This is configured in **Settings → Invoice Settings** (admin dashboard), which also lists
-the INVOICE / INVOICE_EMAIL templates with shortcuts to create one of each type.
+the INVOICE / INVOICE_EMAIL templates with shortcuts to create one of each type. Each list
+marks the template in use with a "Default" badge and lets the admin pick another one with
+"Set as default" (stored as `defaultInvoiceTemplateId` / `defaultInvoiceEmailTemplateId`
+in INVOICE_SETTING). With no default picked, or once the default is deleted, the newest
+template is used, as before.
 
 ### Template Lookup Priority
 
 ```
 1. First: Query templates WHERE type = 'INVOICE_EMAIL' AND institute_id = ?
-         ORDER BY created_at DESC → use most recent
+         ORDER BY created_at DESC → use INVOICE_SETTING.defaultInvoiceEmailTemplateId
+         if it is in the list, else the most recent
          
 2. Fallback: Query templates WHERE type = 'EMAIL' AND name = 'Invoice Email'
              AND institute_id = ? → legacy support

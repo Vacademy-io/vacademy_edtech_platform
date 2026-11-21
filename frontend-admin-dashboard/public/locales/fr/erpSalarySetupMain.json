@@ -1,0 +1,12 @@
+{
+    "restricted": {
+        "title": "La configuration des salaires est restreinte",
+        "description": "Les structures salariales et les éléments de paie ne sont visibles que pour les rôles RH. Demandez à un administrateur de vous accorder un accès Responsable RH ou Administrateur RH dans cet établissement."
+    },
+    "intro": "Définissez ce que votre établissement paie, comment chaque élément est calculé, et quel employé relève de quelle structure. La paie lit cette configuration à chaque exécution — une modification ici affecte la prochaine exécution, jamais une exécution déjà traitée.",
+    "tabs": {
+        "components": "Composants",
+        "templates": "Modèles",
+        "assign": "Attribuer"
+    }
+}

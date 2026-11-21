@@ -4,6 +4,10 @@ import { z } from 'zod';
 import { Form } from '@/components/ui/form';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Trash2, Plus, Calendar, ChevronDown } from 'lucide-react';
+import { UploadSimple } from '@phosphor-icons/react';
+import { toast } from 'sonner';
+import { getPublicUrl } from '@/services/upload_file';
+import { UploadFileInS3Public } from '@/routes/signup/-services/signup-services';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -15,6 +19,16 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import AddCourseStep2StructureTypes from './add-course-step2-structure-types';
 import { MyButton } from '@/components/design-system/button';
 import SessionLevelMappingDialog from './SessionLevelMappingDialog';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import MultiSelectDropdown from '@/components/common/multi-select-dropdown';
 import { fetchInstituteDashboardUsers } from '@/routes/dashboard/-services/dashboard-services';
 import { getInstituteId } from '@/constants/helper';
@@ -38,7 +52,8 @@ import {
     type RenameRowType,
 } from './rename-rules';
 import { InlineNameEditor } from './inline-name-editor';
-
+import { AuthorRoleField, authorRoleOptions } from './author-role-field';
+import { RichTextEditor } from '@/components/editor/RichTextEditor';
 
 interface Subgroup {
     id?: string;
@@ -70,6 +85,11 @@ interface Instructor {
     name: string;
     profilePicId: string;
     roles?: string[];
+    /** Optional author-profile metadata shown wherever this user is an instructor. */
+    authorSubtitle?: string;
+    authorDescription?: string;
+    /** Display role in this course (Author / Instructor / Acharya ...). '' = institute default. */
+    roleLabel?: string;
 }
 
 // Update the schema
@@ -110,6 +130,9 @@ export const step2Schema = z
                                         name: z.string(),
                                         profilePicId: z.string(),
                                         roles: z.array(z.string()).optional(),
+                                        authorSubtitle: z.string().optional(),
+                                        authorDescription: z.string().optional(),
+                                        roleLabel: z.string().optional(),
                                     })
                                 )
                                 .default([]),
@@ -139,6 +162,9 @@ export const step2Schema = z
                     email: z.string(),
                     profilePicId: z.string(),
                     roles: z.array(z.string()).optional(),
+                    authorSubtitle: z.string().optional(),
+                    authorDescription: z.string().optional(),
+                    roleLabel: z.string().optional(),
                 })
             )
             .default([]),
@@ -150,6 +176,9 @@ export const step2Schema = z
                     email: z.string(),
                     profilePicId: z.string(),
                     roles: z.array(z.string()).optional(),
+                    authorSubtitle: z.string().optional(),
+                    authorDescription: z.string().optional(),
+                    roleLabel: z.string().optional(),
                 })
             )
             .optional(),
@@ -321,6 +350,7 @@ export const AddCourseStep2 = ({
     settingsLoading = false,
     courseCreationDisplay,
     courseId,
+    isFinalStep = true,
 }: {
     onBack: () => void;
     onSubmit: (data: Step2Data) => void;
@@ -333,6 +363,11 @@ export const AddCourseStep2 = ({
     courseCreationDisplay?: CourseCreationSettings;
     /** Used to exclude this course when reporting which courses share a session/level row. */
     courseId?: string;
+    /**
+     * False when a later step follows (the Payment & Enrolment step), so the footer reads
+     * "Next" instead of "Create" and the course is not created from here.
+     */
+    isFinalStep?: boolean;
 }) => {
     const { instituteDetails } = useInstituteDetailsStore();
     const existingBatches = instituteDetails?.batches_for_sessions || [];
@@ -376,6 +411,11 @@ export const AddCourseStep2 = ({
     const [newLevelName, setNewLevelName] = useState('');
     const [showInviteDialog, setShowInviteDialog] = useState(false);
     const [showMappingDialog, setShowMappingDialog] = useState(false);
+    const [pendingRemoval, setPendingRemoval] = useState<{
+        term: string;
+        name: string;
+        confirm: () => void;
+    } | null>(null);
     const [selectedInstructorId, setSelectedInstructorId] = useState('');
     const [selectedInstructorEmail, setSelectedInstructorEmail] = useState('');
     const [selectedInstructors, setSelectedInstructors] = useState<Instructor[]>([]);
@@ -417,7 +457,10 @@ export const AddCourseStep2 = ({
 
     // Add state to track used existing batches
     const [usedExistingBatchIds, setUsedExistingBatchIds] = useState<Set<string>>(new Set());
-    const [showAdvanced, setShowAdvanced] = useState(false);
+    // Collapsed on create, where the basics matter first. Open when editing:
+    // Add Authors lives in here, and an admin who comes back to assign an
+    // author or fill a subtitle/description otherwise finds nothing on screen.
+    const [showAdvanced, setShowAdvanced] = useState(Boolean(isEdit));
 
     const allowAdvancedSettings = courseCreationDisplay?.showAdvancedSettings !== false;
     const limitLevelsToOne = courseCreationDisplay?.limitToSingleLevel === true;
@@ -439,8 +482,13 @@ export const AddCourseStep2 = ({
         }
     }, [allowAdvancedSettings]);
 
+    const addedSessionLevelKeys = new Set(
+        sessions.flatMap((s) => s.levels.map((l) => `${s.id}-${l.id}`))
+    );
+    const seenSessionLevelKeys = new Set<string>();
+
     // Filter available existing batches based on hasSessions and hasLevels values
-    const availableExistingBatches = existingBatches.filter((batch: ExistingBatch) => {
+    const eligibleExistingBatches = existingBatches.filter((batch: ExistingBatch) => {
         // Always exclude used batches
         if (usedExistingBatchIds.has(batch.id)) {
             return false;
@@ -466,6 +514,16 @@ export const AddCourseStep2 = ({
 
         // Case 4: hasSessions = 'no' and hasLevels = 'no'
         // Don't filter anything, return true for all batches
+        return true;
+    });
+    const availableExistingBatches = eligibleExistingBatches.filter((batch: ExistingBatch) => {
+        // Every course has its own batch for a shared session+level, so list each pair once,
+        // and hide pairs this course already has (adding them again is a no-op)
+        const key = `${batch.session.id}-${batch.level.id}`;
+        if (addedSessionLevelKeys.has(key) || seenSessionLevelKeys.has(key)) {
+            return false;
+        }
+        seenSessionLevelKeys.add(key);
         return true;
     });
 
@@ -673,6 +731,41 @@ export const AddCourseStep2 = ({
         });
     };
 
+    // In edit mode, removing an already-saved session/level deletes its batch on
+    // save, so ask first. Unsaved (new) rows are removed straight away.
+    const requestRemoveSession = (batchId: string) => {
+        const session = sessions.find((s) => (s.batchId || s.id) === batchId);
+        if (!isEdit || !session || session.newSession === true) {
+            removeSession(batchId);
+            return;
+        }
+        setPendingRemoval({
+            term: getTerminology(ContentTerms.Session, SystemTerms.Session),
+            name: session.name,
+            confirm: () => removeSession(batchId),
+        });
+    };
+
+    const requestRemoveLevel = (sessionId: string, batchId: string) => {
+        const level = sessions
+            .find((s) => s.id === sessionId)
+            ?.levels.find((l) => l.batchId === batchId);
+        if (!isEdit || !level || level.newLevel === true) {
+            removeLevel(sessionId, batchId);
+            return;
+        }
+        setPendingRemoval({
+            term: getTerminology(ContentTerms.Level, SystemTerms.Level),
+            name: level.name,
+            confirm: () => removeLevel(sessionId, batchId),
+        });
+    };
+
+    const confirmPendingRemoval = () => {
+        pendingRemoval?.confirm();
+        setPendingRemoval(null);
+    };
+
     const getRenameShareWarning = (rowType: RenameRowType, rowId?: string): string | null =>
         buildRenameShareWarning(
             existingBatches as ExistingBatch[],
@@ -738,6 +831,11 @@ export const AddCourseStep2 = ({
             hasSessions: data.hasSessions,
             sessions: data.sessions,
             instructors: data.instructors,
+            // The authors on screen. The auto-added creator is only in state, never
+            // written to the form, so the form value alone can miss them.
+            selectedInstructors: Array.isArray(selectedInstructors)
+                ? selectedInstructors
+                : data.selectedInstructors,
             publishToCatalogue: data.publishToCatalogue,
         };
         onSubmit(completeData);
@@ -753,7 +851,10 @@ export const AddCourseStep2 = ({
                     levels: session.levels.map((level) => {
                         if ((level as Level).batchId !== levelBatchId) return level;
                         const currentLevel = level as Level;
-                        const newSubgroups = [...(currentLevel.subgroups ?? []), { subgroupName: '' }];
+                        const newSubgroups = [
+                            ...(currentLevel.subgroups ?? []),
+                            { subgroupName: '' },
+                        ];
                         return {
                             ...currentLevel,
                             containsSubgroup: true,
@@ -1000,6 +1101,92 @@ export const AddCourseStep2 = ({
     const getInitials = (email: string) => {
         const name = email.split('@')[0];
         return name?.slice(0, 2).toUpperCase();
+    };
+
+    // Author-profile metadata (subtitle / description / photo) shown on course pages.
+    // Updates the selected instructor, the form value, and every level userIds
+    // entry so the metadata is carried through to the create/update payload.
+    const handleAuthorMetaChange = (
+        instructorId: string,
+        field: 'authorSubtitle' | 'authorDescription' | 'profilePicId' | 'roleLabel',
+        value: string
+    ) => {
+        setSelectedInstructors((prev) => {
+            const safePrev = Array.isArray(prev) ? prev : [];
+            const updated = safePrev.map((i) =>
+                i.id === instructorId ? { ...i, [field]: value } : i
+            );
+            form.setValue('selectedInstructors', updated);
+            return updated;
+        });
+
+        setSessions((prevSessions) => {
+            const updatedSessions = prevSessions.map((session) => ({
+                ...session,
+                levels: session.levels.map((level) => ({
+                    ...level,
+                    userIds: level.userIds.map((user) =>
+                        user.id === instructorId ? { ...user, [field]: value } : user
+                    ),
+                })),
+            }));
+            form.setValue('sessions', ensureNewSessionAndLevelFlags(updatedSessions));
+            return updatedSessions;
+        });
+    };
+
+    // Per-course role choices: presets plus any custom word already used here.
+    const authorRoleChoices = useMemo(
+        () =>
+            authorRoleOptions(
+                (Array.isArray(selectedInstructors) ? selectedInstructors : []).map(
+                    (i) => i.roleLabel
+                )
+            ),
+        [selectedInstructors]
+    );
+
+    // Author photo: uploaded like the Teams member photo, saved onto the user
+    // (profile_pic_file_id) when the course is saved.
+    const [authorPhotoUrls, setAuthorPhotoUrls] = useState<Record<string, string>>({});
+    const [uploadingAuthorPhotoFor, setUploadingAuthorPhotoFor] = useState<string | null>(null);
+    const requestedAuthorPhotoIds = useRef(new Set<string>());
+
+    useEffect(() => {
+        (Array.isArray(selectedInstructors) ? selectedInstructors : []).forEach(
+            ({ profilePicId }) => {
+                if (!profilePicId || requestedAuthorPhotoIds.current.has(profilePicId)) return;
+                requestedAuthorPhotoIds.current.add(profilePicId);
+                getPublicUrl(profilePicId)
+                    .then((url) => {
+                        if (url) setAuthorPhotoUrls((prev) => ({ ...prev, [profilePicId]: url }));
+                    })
+                    .catch(() => undefined);
+            }
+        );
+    }, [selectedInstructors]);
+
+    const handleAuthorPhotoUpload = async (instructorId: string, file?: File) => {
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            toast.error('Please choose an image file.');
+            return;
+        }
+        setUploadingAuthorPhotoFor(instructorId);
+        try {
+            const fileId = await UploadFileInS3Public(
+                file,
+                () => undefined,
+                instituteId,
+                'STUDENTS'
+            );
+            if (!fileId) throw new Error('no file id');
+            handleAuthorMetaChange(instructorId, 'profilePicId', fileId);
+        } catch {
+            toast.error('Photo upload failed. Please try again.');
+        } finally {
+            setUploadingAuthorPhotoFor(null);
+        }
     };
 
     const handlePublishChange = (checked: boolean | 'indeterminate') => {
@@ -1392,7 +1579,10 @@ export const AddCourseStep2 = ({
     // Effect to handle course settings changes (only for new courses, not edits)
     useEffect(() => {
         if (!isEdit) {
-            if (courseSettings?.courseStructure?.enableSessions === false && hasSessions === 'yes') {
+            if (
+                courseSettings?.courseStructure?.enableSessions === false &&
+                hasSessions === 'yes'
+            ) {
                 setHasSessions('no');
             }
             if (courseSettings?.courseStructure?.enableLevels === false && hasLevels === 'yes') {
@@ -1414,19 +1604,28 @@ export const AddCourseStep2 = ({
     }, [courseSettings, hasSessions, hasLevels, form, initialData]);
 
     useEffect(() => {
-        fetchInstituteDashboardUsers(instituteId, {
-            roles: RoleTypeExceptStudent,
-            status: [{ id: '1', name: 'ACTIVE' }],
-        })
+        // Every active staff member, not the endpoint's default first 10: the author
+        // picker searches this list client-side.
+        fetchInstituteDashboardUsers(
+            instituteId,
+            {
+                roles: RoleTypeExceptStudent,
+                status: [{ id: '1', name: 'ACTIVE' }],
+            },
+            0,
+            1000
+        )
             .then((res) => {
                 // API may return a plain array or paginated { content: [...] }
-                const usersList = Array.isArray(res) ? res : (res?.content || []);
+                const usersList = Array.isArray(res) ? res : res?.content || [];
                 const allInstructors = usersList.map((instructor: UserRolesDataEntry) => ({
                     id: instructor.id,
                     email: instructor.email,
                     name: instructor.full_name,
-                    profilePicId: instructor.profile_pic_file_id,
+                    profilePicId: instructor.profile_pic_file_id ?? '',
                     roles: instructor.roles?.map((role) => role.role_name) || [],
+                    authorSubtitle: instructor.author_subtitle,
+                    authorDescription: instructor.author_description,
                 }));
 
                 setInstructors(allInstructors);
@@ -1543,8 +1742,17 @@ export const AddCourseStep2 = ({
     return (
         <>
             <Form {...form}>
-                <form onSubmit={form.handleSubmit(handleSubmit)} className="flex h-full flex-col">
-                    <div className="flex-1 overflow-y-auto pb-24">
+                {/* The form is a flex child of the dialog column, so it must be
+                    flex-1/min-h-0 (not h-full, which ignored the dialog header and
+                    overflowed) and the footer a normal shrink-0 child. It used to be
+                    position:fixed, which inside the translated DialogContent is
+                    resolved against that box and floated over the scrolling body --
+                    a long author description rendered straight through it. */}
+                <form
+                    onSubmit={form.handleSubmit(handleSubmit)}
+                    className="flex min-h-0 flex-1 flex-col"
+                >
+                    <div className="min-h-0 flex-1 overflow-y-auto pb-6">
                         <Card className="w-full rounded-none border-none bg-white shadow-sm">
                             <div className="flex items-center justify-between border-b border-gray-100 p-5">
                                 <div>
@@ -1566,8 +1774,12 @@ export const AddCourseStep2 = ({
                                 {!isEdit && !courseSettings?.courseStructure?.fixCourseDepth && (
                                     <div>
                                         <h3 className="mb-3 text-base font-medium text-gray-900">
-                                            Select course structure that is suitable for your
-                                            institute
+                                            Select{' '}
+                                            {getTerminology(
+                                                ContentTerms.Course,
+                                                SystemTerms.Course
+                                            ).toLocaleLowerCase()}{' '}
+                                            structure that is suitable for your institute
                                         </h3>
                                         <AddCourseStep2StructureTypes
                                             form={form}
@@ -1738,8 +1950,8 @@ export const AddCourseStep2 = ({
                                             </Label>
                                             <p className="text-sm text-gray-600">
                                                 Subgroups let you split a single batch into smaller
-                                                groups (for example, Morning Batch A, Morning Batch B).
-                                                All subgroups will be created under the same{' '}
+                                                groups (for example, Morning Batch A, Morning Batch
+                                                B). All subgroups will be created under the same{' '}
                                                 {getTerminology(
                                                     ContentTerms.Session,
                                                     SystemTerms.Session
@@ -1766,10 +1978,7 @@ export const AddCourseStep2 = ({
                                                 className="flex gap-6"
                                             >
                                                 <div className="flex items-center space-x-2">
-                                                    <RadioGroupItem
-                                                        value="yes"
-                                                        id="subgroup-yes"
-                                                    />
+                                                    <RadioGroupItem value="yes" id="subgroup-yes" />
                                                     <Label
                                                         htmlFor="subgroup-yes"
                                                         className="text-sm font-normal"
@@ -1778,10 +1987,7 @@ export const AddCourseStep2 = ({
                                                     </Label>
                                                 </div>
                                                 <div className="flex items-center space-x-2">
-                                                    <RadioGroupItem
-                                                        value="no"
-                                                        id="subgroup-no"
-                                                    />
+                                                    <RadioGroupItem value="no" id="subgroup-no" />
                                                     <Label
                                                         htmlFor="subgroup-no"
                                                         className="text-sm font-normal"
@@ -1803,9 +2009,9 @@ export const AddCourseStep2 = ({
                                                 Subgroups
                                             </Label>
                                             <p className="text-sm text-gray-600">
-                                                Subgroups are now configured separately for each level
-                                                inside the session cards below. Enable this option to
-                                                reveal per-level subgroup inputs.
+                                                Subgroups are now configured separately for each
+                                                level inside the session cards below. Enable this
+                                                option to reveal per-level subgroup inputs.
                                             </p>
                                         </div>
                                     )}
@@ -2511,10 +2717,10 @@ export const AddCourseStep2 = ({
                                                                                                 batch.id, // <-- set batchId here
                                                                                             newLevel:
                                                                                                 false,
-                                                                                                containsSubgroup:
-                                                                                                    false,
-                                                                                                subgroups:
-                                                                                                    [],
+                                                                                            containsSubgroup:
+                                                                                                false,
+                                                                                            subgroups:
+                                                                                                [],
                                                                                         }
                                                                                     );
                                                                                 }
@@ -2689,7 +2895,8 @@ export const AddCourseStep2 = ({
                                                                                             false,
                                                                                         containsSubgroup:
                                                                                             false,
-                                                                                        subgroups: [],
+                                                                                        subgroups:
+                                                                                            [],
                                                                                     });
                                                                                 }
                                                                             }
@@ -2786,7 +2993,7 @@ export const AddCourseStep2 = ({
                                                     session={session}
                                                     hasLevels={hasLevels === 'yes'}
                                                     onRemoveSession={() =>
-                                                        removeSession(
+                                                        requestRemoveSession(
                                                             (
                                                                 session.batchId || session.id
                                                             ).toString()
@@ -2794,7 +3001,7 @@ export const AddCourseStep2 = ({
                                                     }
                                                     onAddLevel={addLevel}
                                                     onRemoveLevel={(sessionId, batchId) =>
-                                                        removeLevel(
+                                                        requestRemoveLevel(
                                                             sessionId,
                                                             (batchId || '').toString()
                                                         )
@@ -2806,7 +3013,9 @@ export const AddCourseStep2 = ({
                                                     onGetRenameShareWarning={getRenameShareWarning}
                                                     hasSessionsFlag={hasSessions === 'yes'}
                                                     containsSubgroupFlag={containsSubgroup}
-                                                    enableSubgroupControlsFlag={enableSubgroupControls}
+                                                    enableSubgroupControlsFlag={
+                                                        enableSubgroupControls
+                                                    }
                                                     onAddLevelSubgroup={handleAddLevelSubgroup}
                                                     onLevelSubgroupNameChange={
                                                         handleLevelSubgroupNameChange
@@ -3275,6 +3484,25 @@ export const AddCourseStep2 = ({
                                                         />
                                                     )}
 
+                                                    {/* No assignment yet: say so, because the public
+                                                        catalogue meanwhile shows the course creator as a
+                                                        fallback and the two can look contradictory. */}
+                                                    {isEdit &&
+                                                        (!selectedInstructors ||
+                                                            selectedInstructors.length === 0) && (
+                                                            <p className="text-sm text-gray-600">
+                                                                No authors assigned yet. Select one
+                                                                below to add a subtitle and
+                                                                description; until then the
+                                                                catalogue shows the{' '}
+                                                                {getTerminology(
+                                                                    ContentTerms.Course,
+                                                                    SystemTerms.Course
+                                                                ).toLocaleLowerCase()}{' '}
+                                                                creator.
+                                                            </p>
+                                                        )}
+
                                                     <div className="flex flex-col gap-4">
                                                         <MultiSelectDropdown
                                                             options={instructors?.map(
@@ -3282,8 +3510,12 @@ export const AddCourseStep2 = ({
                                                                     id: instructor.id,
                                                                     name: instructor.name,
                                                                     email: instructor.email,
+                                                                    // shown under the name and searchable
+                                                                    subtitle: instructor.email,
                                                                 })
                                                             )}
+                                                            searchPlaceholder="Search by name or email…"
+                                                            searchSubtitle
                                                             selected={selectedInstructors?.map(
                                                                 (instructor) => ({
                                                                     id: instructor.id,
@@ -3294,157 +3526,147 @@ export const AddCourseStep2 = ({
                                                             onChange={(selected) => {
                                                                 // Build the new list from selected IDs, looking up full data
                                                                 // from current selectedInstructors first, then instructors list
-                                                                const selectedIds = new Set(selected?.map((s) => String(s.id)) || []);
-                                                                const previousIds = new Set((selectedInstructors || []).map((i) => i.id));
+                                                                const selectedIds = new Set(
+                                                                    selected?.map((s) =>
+                                                                        String(s.id)
+                                                                    ) || []
+                                                                );
+                                                                const previousIds = new Set(
+                                                                    (selectedInstructors || []).map(
+                                                                        (i) => i.id
+                                                                    )
+                                                                );
 
                                                                 // Keep existing selected instructors that are still selected
-                                                                const kept = (selectedInstructors || []).filter(
-                                                                    (i) => selectedIds.has(i.id)
+                                                                const kept = (
+                                                                    selectedInstructors || []
+                                                                ).filter((i) =>
+                                                                    selectedIds.has(i.id)
                                                                 );
                                                                 // Find newly added ones (in selected but not in previous)
-                                                                const newIds = [...selectedIds].filter((id) => !previousIds.has(id));
-                                                                const newlyAdded: Instructor[] = newIds
-                                                                    .map((id) => {
-                                                                        const instructor = instructors?.find((i) => i.id === id);
-                                                                        return instructor
-                                                                            ? { ...instructor }
-                                                                            : null;
-                                                                    })
-                                                                    .filter((i): i is Instructor => i !== null);
+                                                                const newIds = [
+                                                                    ...selectedIds,
+                                                                ].filter(
+                                                                    (id) => !previousIds.has(id)
+                                                                );
+                                                                const newlyAdded: Instructor[] =
+                                                                    newIds
+                                                                        .map((id) => {
+                                                                            const instructor =
+                                                                                instructors?.find(
+                                                                                    (i) =>
+                                                                                        i.id === id
+                                                                                );
+                                                                            return instructor
+                                                                                ? { ...instructor }
+                                                                                : null;
+                                                                        })
+                                                                        .filter(
+                                                                            (i): i is Instructor =>
+                                                                                i !== null
+                                                                        );
 
-                                                                const selectedInstructorsList = [...kept, ...newlyAdded];
+                                                                const selectedInstructorsList = [
+                                                                    ...kept,
+                                                                    ...newlyAdded,
+                                                                ];
 
                                                                 // Find removed instructors
                                                                 const removedIds = new Set(
-                                                                    [...previousIds].filter((id) => !selectedIds.has(id))
+                                                                    [...previousIds].filter(
+                                                                        (id) => !selectedIds.has(id)
+                                                                    )
                                                                 );
 
-                                                                setSelectedInstructors(selectedInstructorsList);
-                                                                form.setValue('selectedInstructors', selectedInstructorsList);
+                                                                setSelectedInstructors(
+                                                                    selectedInstructorsList
+                                                                );
+                                                                form.setValue(
+                                                                    'selectedInstructors',
+                                                                    selectedInstructorsList
+                                                                );
 
                                                                 // Clean up removed instructors from mappings and sessions
                                                                 if (removedIds.size > 0) {
                                                                     setInstructorMappings((prev) =>
-                                                                        prev.filter((m) => !removedIds.has(m.id))
+                                                                        prev.filter(
+                                                                            (m) =>
+                                                                                !removedIds.has(
+                                                                                    m.id
+                                                                                )
+                                                                        )
                                                                     );
                                                                     const updatedSessions = form
                                                                         .getValues('sessions')
                                                                         .map((session) => ({
                                                                             ...session,
-                                                                            levels: session.levels.map((level) => ({
-                                                                                ...level,
-                                                                                userIds: level.userIds.filter(
-                                                                                    (user: Instructor) => !removedIds.has(user.id)
-                                                                                ),
-                                                                            })),
+                                                                            levels: session.levels.map(
+                                                                                (level) => ({
+                                                                                    ...level,
+                                                                                    userIds:
+                                                                                        level.userIds.filter(
+                                                                                            (
+                                                                                                user: Instructor
+                                                                                            ) =>
+                                                                                                !removedIds.has(
+                                                                                                    user.id
+                                                                                                )
+                                                                                        ),
+                                                                                })
+                                                                            ),
                                                                         }));
-                                                                    form.setValue('sessions', updatedSessions, {
-                                                                        shouldDirty: true,
-                                                                    });
+                                                                    form.setValue(
+                                                                        'sessions',
+                                                                        updatedSessions,
+                                                                        {
+                                                                            shouldDirty: true,
+                                                                        }
+                                                                    );
                                                                 }
 
-                                                                newlyAdded.forEach(
-                                                                    (instructor) => {
-                                                                        const allSessionLevels =
-                                                                            getAllSessionLevelsForInstructor(
-                                                                                sessions,
-                                                                                hasSessions,
-                                                                                hasLevels
-                                                                            );
-                                                                        setInstructorMappings(
-                                                                            (prev) => [
-                                                                                ...prev.filter(
-                                                                                    (m) =>
-                                                                                        m.id !==
-                                                                                        instructor.id
-                                                                                ),
-                                                                                {
-                                                                                    id: instructor.id,
-                                                                                    email: instructor.email,
-                                                                                    sessionLevels:
-                                                                                        allSessionLevels,
-                                                                                },
-                                                                            ]
+                                                                newlyAdded.forEach((instructor) => {
+                                                                    const allSessionLevels =
+                                                                        getAllSessionLevelsForInstructor(
+                                                                            sessions,
+                                                                            hasSessions,
+                                                                            hasLevels
                                                                         );
-                                                                        setSessions(
-                                                                            (prevSessions) => {
-                                                                                const updatedSessions =
-                                                                                    JSON.parse(
-                                                                                        JSON.stringify(
-                                                                                            prevSessions
-                                                                                        )
-                                                                                    );
-                                                                                if (
-                                                                                    hasSessions ===
-                                                                                        'yes' &&
-                                                                                    hasLevels ===
-                                                                                        'yes'
-                                                                                ) {
-                                                                                    updatedSessions.forEach(
+                                                                    setInstructorMappings(
+                                                                        (prev) => [
+                                                                            ...prev.filter(
+                                                                                (m) =>
+                                                                                    m.id !==
+                                                                                    instructor.id
+                                                                            ),
+                                                                            {
+                                                                                id: instructor.id,
+                                                                                email: instructor.email,
+                                                                                sessionLevels:
+                                                                                    allSessionLevels,
+                                                                            },
+                                                                        ]
+                                                                    );
+                                                                    setSessions((prevSessions) => {
+                                                                        const updatedSessions =
+                                                                            JSON.parse(
+                                                                                JSON.stringify(
+                                                                                    prevSessions
+                                                                                )
+                                                                            );
+                                                                        if (
+                                                                            hasSessions === 'yes' &&
+                                                                            hasLevels === 'yes'
+                                                                        ) {
+                                                                            updatedSessions.forEach(
+                                                                                (
+                                                                                    session: Session
+                                                                                ) => {
+                                                                                    session.levels.forEach(
                                                                                         (
-                                                                                            session: Session
-                                                                                        ) => {
-                                                                                            session.levels.forEach(
-                                                                                                (
-                                                                                                    level: Level
-                                                                                                ) => {
-                                                                                                    if (
-                                                                                                        !level.userIds.some(
-                                                                                                            (
-                                                                                                                i: Instructor
-                                                                                                            ) =>
-                                                                                                                i.id ===
-                                                                                                                instructor.id
-                                                                                                        )
-                                                                                                    ) {
-                                                                                                        level.userIds.push(
-                                                                                                            instructor
-                                                                                                        );
-                                                                                                    }
-                                                                                                }
-                                                                                            );
-                                                                                        }
-                                                                                    );
-                                                                                } else if (
-                                                                                    hasSessions ===
-                                                                                        'yes' &&
-                                                                                    hasLevels !==
-                                                                                        'yes'
-                                                                                ) {
-                                                                                    updatedSessions.forEach(
-                                                                                        (
-                                                                                            session: Session
+                                                                                            level: Level
                                                                                         ) => {
                                                                                             if (
-                                                                                                session
-                                                                                                    .levels
-                                                                                                    .length ===
-                                                                                                0
-                                                                                            ) {
-                                                                                                session.levels =
-                                                                                                    [
-                                                                                                        {
-                                                                                                            id: 'DEFAULT',
-                                                                                                            name: '',
-                                                                                                            userIds:
-                                                                                                                [
-                                                                                                                    instructor,
-                                                                                                                ],
-                                                                                                            batchId:
-                                                                                                                'DEFAULT',
-                                                                                                            newLevel:
-                                                                                                                true,
-                                                                                                            containsSubgroup:
-                                                                                                                 false,
-                                                                                                             subgroups:
-                                                                                                                 [],
-                                                                                                        },
-                                                                                                    ];
-                                                                                            } else if (
-                                                                                                session
-                                                                                                    .levels[0]
-                                                                                                    ?.userIds &&
-                                                                                                !session.levels[0].userIds.some(
+                                                                                                !level.userIds.some(
                                                                                                     (
                                                                                                         i: Instructor
                                                                                                     ) =>
@@ -3452,30 +3674,142 @@ export const AddCourseStep2 = ({
                                                                                                         instructor.id
                                                                                                 )
                                                                                             ) {
-                                                                                                session.levels[0].userIds.push(
+                                                                                                level.userIds.push(
                                                                                                     instructor
                                                                                                 );
                                                                                             }
                                                                                         }
                                                                                     );
-                                                                                } else if (
-                                                                                    hasSessions !==
-                                                                                        'yes' &&
-                                                                                    hasLevels ===
-                                                                                        'yes'
-                                                                                ) {
-                                                                                    const standaloneSession =
-                                                                                        updatedSessions.find(
-                                                                                            (
-                                                                                                s: Session
-                                                                                            ) =>
-                                                                                                s.id ===
-                                                                                                'DEFAULT'
-                                                                                        );
+                                                                                }
+                                                                            );
+                                                                        } else if (
+                                                                            hasSessions === 'yes' &&
+                                                                            hasLevels !== 'yes'
+                                                                        ) {
+                                                                            updatedSessions.forEach(
+                                                                                (
+                                                                                    session: Session
+                                                                                ) => {
                                                                                     if (
-                                                                                        standaloneSession
+                                                                                        session
+                                                                                            .levels
+                                                                                            .length ===
+                                                                                        0
                                                                                     ) {
-                                                                                        standaloneSession.levels?.forEach(
+                                                                                        session.levels =
+                                                                                            [
+                                                                                                {
+                                                                                                    id: 'DEFAULT',
+                                                                                                    name: '',
+                                                                                                    userIds:
+                                                                                                        [
+                                                                                                            instructor,
+                                                                                                        ],
+                                                                                                    batchId:
+                                                                                                        'DEFAULT',
+                                                                                                    newLevel:
+                                                                                                        true,
+                                                                                                    containsSubgroup:
+                                                                                                        false,
+                                                                                                    subgroups:
+                                                                                                        [],
+                                                                                                },
+                                                                                            ];
+                                                                                    } else if (
+                                                                                        session
+                                                                                            .levels[0]
+                                                                                            ?.userIds &&
+                                                                                        !session.levels[0].userIds.some(
+                                                                                            (
+                                                                                                i: Instructor
+                                                                                            ) =>
+                                                                                                i.id ===
+                                                                                                instructor.id
+                                                                                        )
+                                                                                    ) {
+                                                                                        session.levels[0].userIds.push(
+                                                                                            instructor
+                                                                                        );
+                                                                                    }
+                                                                                }
+                                                                            );
+                                                                        } else if (
+                                                                            hasSessions !== 'yes' &&
+                                                                            hasLevels === 'yes'
+                                                                        ) {
+                                                                            const standaloneSession =
+                                                                                updatedSessions.find(
+                                                                                    (s: Session) =>
+                                                                                        s.id ===
+                                                                                        'DEFAULT'
+                                                                                );
+                                                                            if (standaloneSession) {
+                                                                                standaloneSession.levels?.forEach(
+                                                                                    (
+                                                                                        level: Level
+                                                                                    ) => {
+                                                                                        if (
+                                                                                            !level.userIds.some(
+                                                                                                (
+                                                                                                    i: Instructor
+                                                                                                ) =>
+                                                                                                    i.id ===
+                                                                                                    instructor.id
+                                                                                            )
+                                                                                        ) {
+                                                                                            level.userIds.push(
+                                                                                                instructor
+                                                                                            );
+                                                                                        }
+                                                                                    }
+                                                                                );
+                                                                            }
+                                                                        } else {
+                                                                            // Neither sessions nor levels: the course has
+                                                                            // exactly one DEFAULT session/level and every
+                                                                            // author belongs to it. This branch was missing,
+                                                                            // so on a simple course a newly picked author
+                                                                            // never reached level.userIds and the update
+                                                                            // payload went out with add_faculty_to_course: [].
+                                                                            // (Create reads formData.instructors instead
+                                                                            // and was unaffected.)
+                                                                            const defaultLevel = {
+                                                                                id: 'DEFAULT',
+                                                                                name: '',
+                                                                                userIds: [instructor],
+                                                                                batchId: 'DEFAULT',
+                                                                                newLevel: true,
+                                                                                containsSubgroup: false,
+                                                                                subgroups: [],
+                                                                            };
+                                                                            if (
+                                                                                updatedSessions.length ===
+                                                                                0
+                                                                            ) {
+                                                                                updatedSessions.push({
+                                                                                    id: 'DEFAULT',
+                                                                                    name: '',
+                                                                                    startDate: '',
+                                                                                    levels: [defaultLevel],
+                                                                                });
+                                                                            } else {
+                                                                                updatedSessions.forEach(
+                                                                                    (
+                                                                                        session: Session
+                                                                                    ) => {
+                                                                                        if (
+                                                                                            session
+                                                                                                .levels
+                                                                                                .length ===
+                                                                                            0
+                                                                                        ) {
+                                                                                            session.levels =
+                                                                                                [
+                                                                                                    defaultLevel,
+                                                                                                ];
+                                                                                            return;
+                                                                                        }
+                                                                                        session.levels.forEach(
                                                                                             (
                                                                                                 level: Level
                                                                                             ) => {
@@ -3495,18 +3829,18 @@ export const AddCourseStep2 = ({
                                                                                             }
                                                                                         );
                                                                                     }
-                                                                                }
-                                                                                form.setValue(
-                                                                                    'sessions',
-                                                                                    ensureNewSessionAndLevelFlags(
-                                                                                        updatedSessions
-                                                                                    )
                                                                                 );
-                                                                                return updatedSessions;
                                                                             }
+                                                                        }
+                                                                        form.setValue(
+                                                                            'sessions',
+                                                                            ensureNewSessionAndLevelFlags(
+                                                                                updatedSessions
+                                                                            )
                                                                         );
-                                                                    }
-                                                                );
+                                                                        return updatedSessions;
+                                                                    });
+                                                                });
 
                                                                 const previousInstructorIds =
                                                                     selectedInstructors?.map(
@@ -3571,7 +3905,14 @@ export const AddCourseStep2 = ({
                                                                                             <div className="flex items-center gap-3">
                                                                                                 <Avatar className="size-8">
                                                                                                     <AvatarImage
-                                                                                                        src=""
+                                                                                                        src={
+                                                                                                            authorPhotoUrls[
+                                                                                                                instructor
+                                                                                                                    .profilePicId
+                                                                                                            ] ??
+                                                                                                            ''
+                                                                                                        }
+                                                                                                        className="object-cover"
                                                                                                         alt={
                                                                                                             instructor.email
                                                                                                         }
@@ -3754,6 +4095,156 @@ export const AddCourseStep2 = ({
                                                                                                         <Trash2 className="size-3" />
                                                                                                     </MyButton>
                                                                                                 )}
+                                                                                            </div>
+                                                                                        </div>
+
+                                                                                        {/* Per-author role, photo, subtitle & description */}
+                                                                                        <div className="mt-2 space-y-2">
+                                                                                            <AuthorRoleField
+                                                                                                value={
+                                                                                                    instructor.roleLabel
+                                                                                                }
+                                                                                                options={
+                                                                                                    authorRoleChoices
+                                                                                                }
+                                                                                                defaultTerm={getTerminology(
+                                                                                                    RoleTerms.Teacher,
+                                                                                                    SystemTerms.Teacher
+                                                                                                )}
+                                                                                                onChange={(
+                                                                                                    role
+                                                                                                ) =>
+                                                                                                    handleAuthorMetaChange(
+                                                                                                        instructor.id,
+                                                                                                        'roleLabel',
+                                                                                                        role
+                                                                                                    )
+                                                                                                }
+                                                                                            />
+                                                                                            <div>
+                                                                                                <Label className="mb-1 block text-xs font-medium text-gray-700">
+                                                                                                    Author
+                                                                                                    Photo
+                                                                                                </Label>
+                                                                                                <div className="flex items-center gap-3">
+                                                                                                    <Avatar className="size-12">
+                                                                                                        <AvatarImage
+                                                                                                            src={
+                                                                                                                authorPhotoUrls[
+                                                                                                                    instructor
+                                                                                                                        .profilePicId
+                                                                                                                ] ??
+                                                                                                                ''
+                                                                                                            }
+                                                                                                            className="object-cover"
+                                                                                                            alt={
+                                                                                                                instructor.name
+                                                                                                            }
+                                                                                                        />
+                                                                                                        <AvatarFallback className="bg-gray-100 text-xs font-medium text-gray-500">
+                                                                                                            {getInitials(
+                                                                                                                instructor.email
+                                                                                                            )}
+                                                                                                        </AvatarFallback>
+                                                                                                    </Avatar>
+                                                                                                    <label
+                                                                                                        className={`inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border border-gray-300 px-3 text-xs font-medium text-gray-700 hover:bg-gray-50 ${uploadingAuthorPhotoFor === instructor.id ? 'pointer-events-none opacity-60' : ''}`}
+                                                                                                    >
+                                                                                                        <UploadSimple
+                                                                                                            size={
+                                                                                                                14
+                                                                                                            }
+                                                                                                        />
+                                                                                                        {uploadingAuthorPhotoFor ===
+                                                                                                        instructor.id
+                                                                                                            ? 'Uploading...'
+                                                                                                            : instructor.profilePicId
+                                                                                                              ? 'Change photo'
+                                                                                                              : 'Upload photo'}
+                                                                                                        <input
+                                                                                                            type="file"
+                                                                                                            accept="image/*"
+                                                                                                            className="hidden"
+                                                                                                            disabled={
+                                                                                                                uploadingAuthorPhotoFor ===
+                                                                                                                instructor.id
+                                                                                                            }
+                                                                                                            onChange={(
+                                                                                                                e
+                                                                                                            ) => {
+                                                                                                                void handleAuthorPhotoUpload(
+                                                                                                                    instructor.id,
+                                                                                                                    e
+                                                                                                                        .target
+                                                                                                                        .files?.[0]
+                                                                                                                );
+                                                                                                                e.target.value =
+                                                                                                                    '';
+                                                                                                            }}
+                                                                                                        />
+                                                                                                    </label>
+                                                                                                </div>
+                                                                                                <p className="mt-1 text-xs text-gray-500">
+                                                                                                    Shown
+                                                                                                    with
+                                                                                                    this
+                                                                                                    author
+                                                                                                    on
+                                                                                                    every
+                                                                                                    course
+                                                                                                    they
+                                                                                                    teach.
+                                                                                                </p>
+                                                                                            </div>
+                                                                                            <div>
+                                                                                                <Label className="mb-1 block text-xs font-medium text-gray-700">
+                                                                                                    Author
+                                                                                                    Subtitle
+                                                                                                </Label>
+                                                                                                <Input
+                                                                                                    placeholder="e.g., Ph.D. in Physics, Educator & Author"
+                                                                                                    value={
+                                                                                                        instructor.authorSubtitle ??
+                                                                                                        ''
+                                                                                                    }
+                                                                                                    onChange={(
+                                                                                                        e
+                                                                                                    ) =>
+                                                                                                        handleAuthorMetaChange(
+                                                                                                            instructor.id,
+                                                                                                            'authorSubtitle',
+                                                                                                            e
+                                                                                                                .target
+                                                                                                                .value
+                                                                                                        )
+                                                                                                    }
+                                                                                                    className="h-8 border-gray-300 text-xs"
+                                                                                                />
+                                                                                            </div>
+                                                                                            <div>
+                                                                                                <Label className="mb-1 block text-xs font-medium text-gray-700">
+                                                                                                    Author
+                                                                                                    Description
+                                                                                                </Label>
+                                                                                                <RichTextEditor
+                                                                                                    placeholder="Short bio / description of the author"
+                                                                                                    value={
+                                                                                                        instructor.authorDescription ??
+                                                                                                        ''
+                                                                                                    }
+                                                                                                    onChange={(
+                                                                                                        html
+                                                                                                    ) =>
+                                                                                                        handleAuthorMetaChange(
+                                                                                                            instructor.id,
+                                                                                                            'authorDescription',
+                                                                                                            html
+                                                                                                        )
+                                                                                                    }
+                                                                                                    minHeight={
+                                                                                                        80
+                                                                                                    }
+                                                                                                />
                                                                                             </div>
                                                                                         </div>
 
@@ -4315,15 +4806,26 @@ export const AddCourseStep2 = ({
                                             <span className="font-semibold text-neutral-700">
                                                 Advanced Settings (JSON, optional)
                                             </span>
-                                            <span className="text-xs text-primary-500">Show / hide</span>
+                                            <span className="text-xs text-primary-500">
+                                                Show / hide
+                                            </span>
                                         </CollapsibleTrigger>
                                         <CollapsibleContent className="mt-3 space-y-2">
                                             <p className="text-xs text-muted-foreground">
-                                                Advanced per-course settings used by workflows (LMS config,
-                                                retention, etc.). Must be a JSON object wrapped in a{' '}
-                                                <code>{'{ "setting": { ... } }'}</code> envelope. You can also
-                                                edit this later from the course&apos;s Settings tab. Leave empty
-                                                to skip.
+                                                Advanced per-
+                                                {getTerminology(
+                                                    ContentTerms.Course,
+                                                    SystemTerms.Course
+                                                ).toLocaleLowerCase()}{' '}
+                                                settings used by workflows (LMS config, retention,
+                                                etc.). Must be a JSON object wrapped in a{' '}
+                                                <code>{'{ "setting": { ... } }'}</code> envelope.
+                                                You can also edit this later from the{' '}
+                                                {getTerminology(
+                                                    ContentTerms.Course,
+                                                    SystemTerms.Course
+                                                ).toLocaleLowerCase()}
+                                                &apos;s Settings tab. Leave empty to skip.
                                             </p>
                                             <Textarea
                                                 spellCheck={false}
@@ -4331,7 +4833,10 @@ export const AddCourseStep2 = ({
                                                 className="min-h-[180px] font-mono text-xs"
                                                 value={form.watch('courseSettingJson') ?? ''}
                                                 onChange={(e) =>
-                                                    form.setValue('courseSettingJson', e.target.value)
+                                                    form.setValue(
+                                                        'courseSettingJson',
+                                                        e.target.value
+                                                    )
                                                 }
                                             />
                                         </CollapsibleContent>
@@ -4341,8 +4846,8 @@ export const AddCourseStep2 = ({
                         )}
                     </div>
 
-                    {/* Fixed Footer */}
-                    <div className="fixed inset-x-0 bottom-0 border-t bg-white px-8 py-4">
+                    {/* Footer */}
+                    <div className="shrink-0 border-t bg-white px-8 py-4">
                         <div className="flex justify-between">
                             <MyButton
                                 type="button"
@@ -4381,6 +4886,8 @@ export const AddCourseStep2 = ({
                                         <span className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                                         {isEdit ? 'Updating...' : 'Creating...'}
                                     </span>
+                                ) : !isFinalStep ? (
+                                    'Next'
                                 ) : (
                                     <>
                                         {!isEdit && <Plus />}
@@ -4400,6 +4907,32 @@ export const AddCourseStep2 = ({
                 sessions={sessions}
                 onSave={handleSessionLevelMappingSave}
             />
+            <AlertDialog
+                open={pendingRemoval !== null}
+                onOpenChange={(next) => !next && setPendingRemoval(null)}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            Remove {pendingRemoval?.term} &quot;{pendingRemoval?.name}&quot;?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This {pendingRemoval?.term.toLowerCase()} is already saved. When you
+                            save the course, its batch is deleted and the course stops showing it to
+                            admins and learners. To keep it, choose Cancel.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            className="bg-danger-600 hover:bg-danger-500"
+                            onClick={confirmPendingRemoval}
+                        >
+                            Remove
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 };
@@ -4428,11 +4961,7 @@ const SessionCard: React.FC<{
         index: number,
         name: string
     ) => void;
-    onRemoveLevelSubgroupRow: (
-        sessionId: string,
-        levelBatchId: string,
-        index: number
-    ) => void;
+    onRemoveLevelSubgroupRow: (sessionId: string, levelBatchId: string, index: number) => void;
     existingBatches?: ExistingBatch[];
     onMarkBatchesAsUsed?: (batchIds: string[]) => void;
     limitLevelsToOne: boolean;
@@ -4813,7 +5342,7 @@ const SessionCard: React.FC<{
 
                         {session.levels.length > 0 && (
                             <div className="space-y-3">
-                                                    {session.levels.map((level) => {
+                                {session.levels.map((level) => {
                                     const levelSubgroups = (level as Level).subgroups ?? [];
                                     return (
                                         <div
@@ -4877,8 +5406,8 @@ const SessionCard: React.FC<{
                                                                     Subgroups
                                                                 </Label>
                                                                 <p className="text-xs text-gray-500">
-                                                                    Add subgroup names for this level
-                                                                    in this session.
+                                                                    Add subgroup names for this
+                                                                    level in this session.
                                                                 </p>
                                                             </div>
                                                             <MyButton
@@ -4903,46 +5432,42 @@ const SessionCard: React.FC<{
                                                             </p>
                                                         )}
                                                         <div className="space-y-1">
-                                                            {levelSubgroups.map(
-                                                                (sg, sgIndex) => (
-                                                                    <div
-                                                                        key={sgIndex}
-                                                                        className="flex items-center gap-2"
+                                                            {levelSubgroups.map((sg, sgIndex) => (
+                                                                <div
+                                                                    key={sgIndex}
+                                                                    className="flex items-center gap-2"
+                                                                >
+                                                                    <Input
+                                                                        placeholder="e.g., Morning Batch A"
+                                                                        value={sg.subgroupName}
+                                                                        onChange={(e) =>
+                                                                            onLevelSubgroupNameChange(
+                                                                                session.id,
+                                                                                level.batchId as string,
+                                                                                sgIndex,
+                                                                                e.target.value
+                                                                            )
+                                                                        }
+                                                                        className="h-8 flex-1 border-gray-300 text-xs"
+                                                                    />
+                                                                    <MyButton
+                                                                        type="button"
+                                                                        buttonType="text"
+                                                                        scale="small"
+                                                                        layoutVariant="default"
+                                                                        onClick={() =>
+                                                                            onRemoveLevelSubgroupRow(
+                                                                                session.id,
+                                                                                level.batchId as string,
+                                                                                sgIndex
+                                                                            )
+                                                                        }
+                                                                        className="px-1 text-red-600 hover:text-red-700"
                                                                     >
-                                                                        <Input
-                                                                            placeholder="e.g., Morning Batch A"
-                                                                            value={
-                                                                                sg.subgroupName
-                                                                            }
-                                                                                onChange={(e) =>
-                                                                                    onLevelSubgroupNameChange(
-                                                                                        session.id,
-                                                                                        level.batchId as string,
-                                                                                        sgIndex,
-                                                                                        e.target.value
-                                                                                    )
-                                                                                }
-                                                                            className="h-8 flex-1 border-gray-300 text-xs"
-                                                                        />
-                                                                        <MyButton
-                                                                            type="button"
-                                                                            buttonType="text"
-                                                                            scale="small"
-                                                                            layoutVariant="default"
-                                                                            onClick={() =>
-                                                                                onRemoveLevelSubgroupRow(
-                                                                                    session.id,
-                                                                                    level.batchId as string,
-                                                                                    sgIndex
-                                                                                )
-                                                                            }
-                                                                            className="px-1 text-red-600 hover:text-red-700"
-                                                                        >
-                                                                            <Trash2 className="h-3 w-3" />
-                                                                        </MyButton>
-                                                                    </div>
-                                                                )
-                                                            )}
+                                                                        <Trash2 className="h-3 w-3" />
+                                                                    </MyButton>
+                                                                </div>
+                                                            ))}
                                                         </div>
                                                     </div>
                                                 )}

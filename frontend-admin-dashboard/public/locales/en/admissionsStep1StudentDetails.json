@@ -1,0 +1,66 @@
+{
+    "heading": "Student Details",
+    "studentFirstName": {
+        "label": "Student First Name",
+        "placeholder": "Enter First Name"
+    },
+    "middleName": {
+        "label": "Middle Name",
+        "placeholder": "Enter Middle Name"
+    },
+    "lastName": {
+        "label": "Last Name",
+        "placeholder": "Enter Last Name"
+    },
+    "gender": {
+        "label": "Gender",
+        "select": "Select Gender",
+        "male": "Male",
+        "female": "Female",
+        "other": "Other"
+    },
+    "applicationNumber": {
+        "label": "Application Number",
+        "placeholder": "Auto Generated / Editable"
+    },
+    "class": {
+        "label": "Class",
+        "select": "Select Class"
+    },
+    "section": {
+        "label": "Section",
+        "select": "Select Section"
+    },
+    "dateOfAdmission": {
+        "label": "Date of Admission"
+    },
+    "dateOfBirth": {
+        "label": "Date of Birth"
+    },
+    "residentialPhone": {
+        "label": "Residential Phone No"
+    },
+    "studentType": {
+        "label": "Student Type",
+        "select": "Select Type",
+        "regular": "Regular",
+        "transfer": "Transfer"
+    },
+    "admissionType": {
+        "label": "Admission Type",
+        "select": "Select Type",
+        "dayScholar": "Day Scholar",
+        "hostel": "Hostel"
+    },
+    "transport": {
+        "label": "Transport Required",
+        "no": "No",
+        "yes": "Yes"
+    },
+    "aadhaarType": {
+        "label": "Student Aadhaar Type",
+        "select": "Select Type",
+        "standard": "Standard",
+        "temporary": "Temporary"
+    }
+}

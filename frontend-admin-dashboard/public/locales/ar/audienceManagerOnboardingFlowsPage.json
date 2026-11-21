@@ -1,0 +1,66 @@
+{
+    "navHeading": {
+        "onboarding": "الإعداد"
+    },
+    "loading": "جارٍ التحميل…",
+    "notEnabled": {
+        "title": "تدفقات الإعداد غير مفعّلة",
+        "prefix": "يمكن لأحد المسؤولين تفعيل ذلك ضمن",
+        "settingsPath": "الإعدادات ← إعدادات الإعداد"
+    },
+    "page": {
+        "title": "تدفقات الإعداد",
+        "subtitle": "قوائم مرتبة يمر بها العميل المحتمل/الطالب بين الموافقة على الانضمام واكتمال التسجيل."
+    },
+    "actions": {
+        "createFlow": "إنشاء تدفق",
+        "manage": "إدارة",
+        "retry": "إعادة المحاولة",
+        "cancel": "إلغاء",
+        "deleting": "جارٍ الحذف…",
+        "deleteFlow": "حذف التدفق",
+        "settings": "Onboarding settings"
+    },
+    "columns": {
+        "name": "الاسم",
+        "description": "الوصف",
+        "status": "الحالة",
+        "steps": "الخطوات",
+        "actions": "الإجراءات",
+        "noSteps": "No steps yet",
+        "updated": "Updated"
+    },
+    "statusLabels": {
+        "draft": "مسودة",
+        "active": "نشط",
+        "archived": "مؤرشف"
+    },
+    "states": {
+        "noInstitute": "اختر مؤسسة لعرض تدفقات الإعداد.",
+        "loadError": "تعذّر تحميل تدفقات الإعداد.",
+        "emptyTitle": "لا توجد تدفقات إعداد بعد",
+        "emptyDescription": "أنشئ أول تدفق لتحديد الخطوات التي يكملها العميل المحتمل أو الطالب في طريقه إلى اكتمال التسجيل."
+    },
+    "deleteDialog": {
+        "heading": "حذف تدفق الإعداد",
+        "confirmPrefix": "حذف",
+        "confirmSuffix": "؟ سيؤدي هذا إلى أرشفة التدفق — لا يمكن بدء مثيلات جديدة منه بعد الآن، ويُزال من هذه القائمة، لكن أي مثيلات إعداد قيد التقدم عليه بالفعل تبقى دون تغيير."
+    },
+    "toasts": {
+        "deleted": "تم حذف تدفق الإعداد",
+        "deleteError": "تعذّر حذف التدفق. يرجى المحاولة مرة أخرى."
+    },
+    "summary": {
+        "activeFlows": "Active flows",
+        "drafts_one": "{{count}} draft not live yet",
+        "drafts_other": "{{count}} drafts not live yet",
+        "inProgress": "In progress",
+        "inProgressDetail": "People part-way through a flow",
+        "completed": "Completed",
+        "abandoned": "Abandoned"
+    },
+    "table": {
+        "title": "Flows",
+        "subtitle": "Deleting a flow archives it — people already on it keep going."
+    }
+}

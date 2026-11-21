@@ -28,7 +28,10 @@ import {
 } from '@/types/display-settings';
 import type { QueryClient } from '@tanstack/react-query';
 import { getCachedInstituteBranding, resolveInstituteForCurrentHost } from '@/services/domain-routing';
+import { getLoginGateRoles, portalAdmitsRoles } from '@/lib/auth/portal-roles';
+import { isBrandedByFixedFlavor } from '@/lib/auth/flavor-branding';
 import { getCourseSettings } from '@/services/course-settings';
+import { commerceStaffLandingRoute } from '@/lib/commerce/commerce-access';
 import {
     hasFacultyAssignedPermission,
     fetchUserAccessDetails,
@@ -196,19 +199,18 @@ export const handleLoginFlow = async (options: LoginFlowOptions): Promise<LoginF
         // Get user roles from token
         const userRoles = getUserRoles(accessToken);
 
-        // Check domain-specific role restrictions
+        // Check domain-specific role restrictions: the roles ticked for this
+        // portal in Settings → White Label (ADMIN is always admitted).
         const cachedBranding = getCachedInstituteBranding();
-        if (cachedBranding?.role === 'ADMIN') {
-            // Domain requires ADMIN role - check if user has ADMIN role
-            const hasAdminRole = userRoles.includes('ADMIN');
-
-            if (!hasAdminRole) {
+        const portalAllowedRoles = getLoginGateRoles(cachedBranding?.role, isBrandedByFixedFlavor());
+        if (portalAllowedRoles) {
+            if (!portalAdmitsRoles(portalAllowedRoles, userRoles)) {
                 // Track blocked login attempt
                 trackEvent('Login Blocked', {
                     login_method: loginMethod,
                     reason: 'admin_role_required',
                     user_roles: userRoles,
-                    required_role: 'ADMIN',
+                    required_role: portalAllowedRoles.join(','),
                     timestamp: new Date().toISOString(),
                 });
 
@@ -217,7 +219,7 @@ export const handleLoginFlow = async (options: LoginFlowOptions): Promise<LoginF
 
                 toast.error('Access Denied', {
                     description:
-                        'This portal requires ADMIN privileges. Please contact your administrator.',
+                        "Your role can't sign in to this portal. Please contact your administrator.",
                     className: 'error-toast',
                     duration: 5000,
                 });
@@ -507,6 +509,12 @@ export const handleLoginFlow = async (options: LoginFlowOptions): Promise<LoginF
             // (e.g. /dashboard for a role with CRM hidden), reroute to the default visible
             // category's first visible tab so the sidebar and content stay in sync.
             redirectUrl = resolveEffectivePostLoginRoute(redirectUrl, ds);
+            // Shop-only staff (commerce roles and nothing else) start in the shop:
+            // a cashier at POS, everyone else at Commerce Home.
+            redirectUrl = commerceStaffLandingRoute(
+                instituteResult.selectedInstitute?.roles,
+                redirectUrl
+            );
             console.log('🔍 LOGIN DEBUG: Determined redirect URL:', {
                 postLoginRedirectRoute: ds?.postLoginRedirectRoute,
                 domainAfterLoginRoute: cachedBrandingOverride?.afterLoginRoute,
@@ -573,17 +581,18 @@ export const handleInstituteSelection = async (instituteId: string): Promise<Log
         const hasAdminRole = selectedInstitute.roles.includes('ADMIN');
         const userRoles = getUserRoles(getTokenFromCookie(TokenKey.accessToken));
 
-        // Check domain-specific role restrictions
+        // Check domain-specific role restrictions (same rule as handleLoginFlow,
+        // judged on this institute's roles).
         const cachedBranding = getCachedInstituteBranding(instituteId);
-        if (cachedBranding?.role === 'ADMIN') {
-            // Domain requires ADMIN role - check if user has ADMIN role
-            if (!hasAdminRole) {
+        const portalAllowedRoles = getLoginGateRoles(cachedBranding?.role, isBrandedByFixedFlavor());
+        if (portalAllowedRoles) {
+            if (!portalAdmitsRoles(portalAllowedRoles, selectedInstitute.roles)) {
                 // Track blocked login attempt
                 trackEvent('Login Blocked', {
                     login_method: 'institute_selection',
                     reason: 'admin_role_required',
                     user_roles: userRoles,
-                    required_role: 'ADMIN',
+                    required_role: portalAllowedRoles.join(','),
                     institute_id: instituteId,
                     timestamp: new Date().toISOString(),
                 });
@@ -795,6 +804,8 @@ export const handleInstituteSelection = async (instituteId: string): Promise<Log
             ds?.postLoginRedirectRoute || cached?.afterLoginRoute || '/dashboard';
         // Reroute away from hidden sidebar categories so the sidebar and page content match.
         redirectUrl = resolveEffectivePostLoginRoute(redirectUrl, ds);
+        // Shop-only staff start in the shop (see the same call in the login flow).
+        redirectUrl = commerceStaffLandingRoute(selectedInstitute.roles, redirectUrl);
 
         // Preserve learner tab hint if user also has STUDENT role and route points to dashboard
         if (

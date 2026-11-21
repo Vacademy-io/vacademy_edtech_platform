@@ -1,0 +1,17 @@
+{
+    "table": {
+        "headers": {
+            "number": "#",
+            "view": "عرض",
+            "options": "الخيارات",
+            "marks": "الدرجات"
+        },
+        "questionNumber": "س{{number}}.",
+        "viewButton": "عرض",
+        "optionFallback": "الخيار {{label}}",
+        "marksPlaceholder": "-"
+    },
+    "actions": {
+        "submit": "إرسال"
+    }
+}

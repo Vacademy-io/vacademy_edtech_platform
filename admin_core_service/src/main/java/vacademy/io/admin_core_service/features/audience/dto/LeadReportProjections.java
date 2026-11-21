@@ -23,6 +23,7 @@ public final class LeadReportProjections {
     public interface ResponseStatsProjection {
         Long getRespondedLeads();
         Double getAvgResponseMinutes();
+        Double getMedianResponseMinutes();
         Long getTatMetCount();      // null when tat_hours param is null (TAT disabled)
     }
 
@@ -35,6 +36,7 @@ public final class LeadReportProjections {
     /** GROUP BY source_type, with converted sub-count. */
     public interface SourceCountProjection {
         String getSourceType();
+        Boolean getFromCampaignType();
         Long getTotalCount();
         Long getConvertedCount();
     }
@@ -50,6 +52,23 @@ public final class LeadReportProjections {
         java.sql.Date getDay();
         Long getSubmittedCount();
         Long getConvertedCount();
+    }
+
+    /**
+     * One row of the one-pass summary query; what n1..n5 / d1, d2 hold depends on {@code kind}
+     * (see AudienceResponseRepository#findReportSummaryAggregates).
+     */
+    public interface SummaryAggregateProjection {
+        String getKind();
+        String getGroupKey();
+        Boolean getFlag();
+        Long getN1();
+        Long getN2();
+        Long getN3();
+        Long getN4();
+        Long getN5();
+        Double getD1();
+        Double getD2();
     }
 
     /** Per-counsellor aggregate row. */

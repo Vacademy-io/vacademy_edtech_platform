@@ -1,0 +1,79 @@
+{
+    "toast": {
+        "attendanceDownloaded": "Rapport de présence téléchargé avec succès.",
+        "selectAtLeastOneStudent": "Veuillez sélectionner au moins un étudiant"
+    },
+    "studentsCount_one": "{{count}} étudiant",
+    "studentsCount_many": "{{count}} d'étudiants",
+    "studentsCount_other": "{{count}} étudiants",
+    "labels": {
+        "startDateTime": "Date et heure de début :",
+        "endTime": "Heure de fin :",
+        "batches": "Lots :"
+    },
+    "actions": {
+        "viewDetails": "Voir les détails de {{term}}",
+        "viewAttendanceReport": "Voir le rapport de présence",
+        "viewRecordings": "Voir les enregistrements",
+        "exporting": "Exportation...",
+        "csv": "CSV"
+    },
+    "dialog": {
+        "heading": "Rapport de présence",
+        "basicClassDetails": "Détails de base du cours",
+        "session": "Séance :",
+        "paidMembers": "Membres payants",
+        "openSession": "Séance ouverte",
+        "occurrence": "Récurrence :",
+        "type": "Type :",
+        "duration": "Durée :",
+        "description": "Description",
+        "noDescriptionAvailable": "Aucune description disponible.",
+        "participantsInsights": "Aperçu des participants",
+        "totalParticipants_one": "Total des participants : {{count}}",
+        "totalParticipants_many": "Total des participants : {{count}}",
+        "totalParticipants_other": "Total des participants : {{count}}",
+        "attendees": "Présents :",
+        "notAttendees": "Absents :",
+        "attendancePercentage": "Pourcentage de présence",
+        "attendance": "Présence"
+    },
+    "csv": {
+        "number": "#",
+        "name": "Nom",
+        "email": "E-mail",
+        "batch": "Lot",
+        "course": "Cours",
+        "status": "Statut",
+        "mode": "Mode",
+        "durationMin": "Durée (min)",
+        "activePoints": "Points actifs",
+        "talkTimeMin": "Temps de parole (min)",
+        "talkSegments": "Segments de parole",
+        "raiseHands": "Mains levées",
+        "emojis": "Émojis",
+        "chats": "Messages",
+        "pollVotes": "Votes de sondage",
+        "activeness": "Activité %",
+        "activenessOnScreen": "À l'écran %",
+        "activenessAttention": "Attention %",
+        "activenessStatus": "Statut d'activité"
+    },
+    "status": {
+        "present": "Présent",
+        "absent": "Absent",
+        "unmarked": "Non marqué"
+    },
+    "activenessState": {
+        "1": "Mesuré",
+        "2": "Désactivé par l'apprenant",
+        "3": "Téléphone/tablette — non mesuré",
+        "4": "Caméra bloquée",
+        "5": "Pas de caméra",
+        "6": "Caméra utilisée par une autre application",
+        "7": "Appareil trop lent",
+        "8": "Chargement impossible",
+        "9": "Caméra arrêtée",
+        "10": "Caméra non autorisée"
+    }
+}

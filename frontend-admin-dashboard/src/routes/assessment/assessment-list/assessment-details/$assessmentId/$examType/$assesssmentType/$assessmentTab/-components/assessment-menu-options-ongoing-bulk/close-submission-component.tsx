@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { useSubmissionsBulkActionsDialogStoreOngoing } from '../bulk-actions-zustand-store/useSubmissionsBulkActionsDialogStoreOngoing';
@@ -10,6 +11,7 @@ interface ProvideDialogDialogProps {
 }
 
 const CloseSubmissionDialogContent = () => {
+    const { t } = useTranslation('assessmentCloseSubmissionComponent');
     const { selectedStudent, bulkActionInfo, isBulkAction, closeAllDialogs } =
         useSubmissionsBulkActionsDialogStoreOngoing();
 
@@ -27,7 +29,7 @@ const CloseSubmissionDialogContent = () => {
     return (
         <div className="flex flex-col gap-6 px-4 pb-2 text-neutral-600">
             <h1>
-                Are you sure you want to close submission for&nbsp;
+                {t('dialog.confirmMessagePrefix')}&nbsp;
                 <span className="text-primary-500">{displayText}</span>&nbsp;?
             </h1>
             <MyButton
@@ -36,7 +38,7 @@ const CloseSubmissionDialogContent = () => {
                 layoutVariant="default"
                 onClick={handleSubmit}
             >
-                Done
+                {t('dialog.doneButton')}
             </MyButton>
         </div>
     );
@@ -47,11 +49,12 @@ export const CloseSubmissionDialog = ({
     open,
     onOpenChange,
 }: ProvideDialogDialogProps) => {
+    const { t } = useTranslation('assessmentCloseSubmissionComponent');
     return (
         <MyDialog
             trigger={trigger}
-            heading="Close Submission"
-            dialogWidth="w-[400px] max-w-[400px]"
+            heading={t('dialog.heading')}
+            dialogWidth="w-96 max-w-sm"
             content={<CloseSubmissionDialogContent />}
             open={open}
             onOpenChange={onOpenChange}

@@ -32,7 +32,9 @@ public class TransformNodeHandler implements NodeHandler {
     @Override
     public Map<String, Object> handle(Map<String, Object> context, String nodeConfigJson,
             Map<String, NodeTemplate> nodeTemplates, int countProcessed) {
-        log.info("TransformNodeHandler.handle() invoked with context: {}, configJson: {}", context, nodeConfigJson);
+        // Keys only: the context can carry a person's contact details or a link meant for them.
+        log.info("TransformNodeHandler.handle() invoked with context keys: {}, configJson: {}", context.keySet(),
+                nodeConfigJson);
 
         String workflowExecutionId = (String) context.get("executionId");
         String nodeId = (String) context.get("currentNodeId");

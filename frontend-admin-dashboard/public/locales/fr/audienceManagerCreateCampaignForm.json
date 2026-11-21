@@ -1,0 +1,122 @@
+{
+    "shareLink": {
+        "ready": "Lien de la campagne prêt à être partagé"
+    },
+    "campaignName": {
+        "label": "Nom de la campagne",
+        "placeholder": "Saisissez le nom de la campagne"
+    },
+    "campaignType": {
+        "label": "{{term}}"
+    },
+    "campaignObjective": {
+        "label": "Objectif de la campagne",
+        "placeholder": "ex. : Engagement, Fidélisation"
+    },
+    "subOrg": {
+        "label": "Sous-organisation",
+        "placeholder": "Sélectionner une sous-organisation (facultatif)",
+        "noneOption": "Aucune"
+    },
+    "teamNotifications": {
+        "label": "Notifications de l'équipe",
+        "infoAriaLabel": "Informations sur le partage des analyses de la campagne",
+        "tooltip": "Saisissez les adresses e-mail des membres de l'équipe qui doivent recevoir les mises à jour de la campagne",
+        "placeholder": "Saisissez les adresses e-mail"
+    },
+    "shareAnalytics": {
+        "label": "Partager les analyses de la campagne avec les membres de l'équipe",
+        "infoAriaLabel": "Informations sur le partage des analyses de la campagne",
+        "tooltip": "Permettre aux membres de l'équipe de consulter les indicateurs de performance et les rapports de la campagne"
+    },
+    "description": {
+        "label": "Description de la campagne",
+        "placeholder": "Décrivez les objectifs de la campagne, le public cible et les messages clés"
+    },
+    "startDate": {
+        "label": "Date de début"
+    },
+    "endDate": {
+        "label": "Date de fin"
+    },
+    "status": {
+        "label": "Statut",
+        "infoAriaLabel": "Informations sur le partage des analyses de la campagne",
+        "tooltip": "Pour partager le lien de la campagne avec les apprenants, veuillez vous assurer que le statut de la campagne est réglé sur Actif."
+    },
+    "initialLeadScore": {
+        "label": "Score initial du prospect",
+        "infoAriaLabel": "Informations sur le score initial du prospect",
+        "tooltip": "Un score de base ajouté à chaque prospect capté via cette campagne. Score final = score initial + score calculé (plafonné à 100)."
+    },
+    "customField": {
+        "newOptionDefault": "option {{number}}"
+    },
+    "postSubmit": {
+        "previewCampaignNameFallback": "Votre campagne",
+        "description": "Ce que voit le répondant dès l'envoi de ce formulaire. Prérempli depuis Paramètres ← Paramètres des prospects ← Formulaires ; les modifications apportées ici s'appliquent uniquement à cette campagne."
+    },
+    "errors": {
+        "instituteContextUnavailable": "Contexte de l'établissement indisponible. Veuillez actualiser la page et réessayer.",
+        "uploadImageFailed": "Échec du téléchargement de l'image de la campagne",
+        "customFieldsMustBeArray": "Le JSON des champs personnalisés doit être un tableau.",
+        "customFieldsInvalidJson": "Les champs personnalisés doivent être un JSON valide.",
+        "startDateInPast": "La date de début ne peut pas être antérieure à aujourd'hui."
+    },
+    "actions": {
+        "reset": "Réinitialiser",
+        "save": "Enregistrer les modifications",
+        "saving": "Enregistrement...",
+        "create": "Créer {{term}}",
+        "creating": "Création en cours..."
+    },
+    "formAppearance": {
+        "title": "Apparence du formulaire",
+        "description": "L'aspect du formulaire public pendant sa saisie — mise en page, couleurs et libellés autour des champs. S'applique uniquement à cette campagne."
+    },
+    "formTemplate": {
+        "title": "Modèle du formulaire",
+        "description": "L’apparence de la page du formulaire public à l’ouverture du lien. Choisissez un style ; vos textes et champs restent les mêmes."
+    },
+    "formText": {
+        "title": "Titre et texte du formulaire",
+        "description": "Le titre en haut du formulaire public (par défaut le nom de cette liste) et le texte au-dessus des champs — aligné à gauche, au centre ou à droite."
+    },
+    "wizard": {
+        "ariaLabel": "Steps",
+        "steps": {
+            "basics": "Basics",
+            "fields": "Form fields",
+            "afterSubmit": "After submit",
+            "appearance": "Appearance",
+            "notify": "Notifications & scoring"
+        },
+        "stepOf": "Step {{current}} of {{total}}",
+        "back": "Back",
+        "next": "Next: {{step}}",
+        "hasErrors": "This step has errors"
+    },
+    "tags": {
+        "title": "Étiquettes",
+        "description": "Étiquetez cette liste pour que les rapports puissent regrouper ses prospects, par ex. par état, formation ou canal. Une valeur par étiquette.",
+        "keys": {
+            "state": "État",
+            "course": "Formation",
+            "channel": "Canal"
+        },
+        "keyPlaceholder": "Nom de l'étiquette",
+        "valuePlaceholder": "Valeur",
+        "valueAriaLabel": "Valeur pour {{label}}",
+        "newTag": "nouvelle étiquette",
+        "remove": "Supprimer {{label}}",
+        "add": "Ajouter une étiquette",
+        "loadError": "Impossible de charger les étiquettes de cette liste. L'enregistrement conservera ses étiquettes actuelles.",
+        "errors": {
+            "invalidKey": "Le nom d'étiquette « {{key}} » n'est pas valide. Utilisez jusqu'à 40 lettres, chiffres, espaces ou tirets bas.",
+            "duplicateKey": "L'étiquette « {{key}} » est utilisée deux fois. Une liste peut avoir une seule valeur par étiquette.",
+            "valueTooLong": "La valeur de « {{key}} » est trop longue. Utilisez au maximum 60 caractères.",
+            "invalidValue": "La valeur de « {{key}} » contient un saut de ligne ou un autre caractère de contrôle.",
+            "tooMany": "Une liste peut avoir au maximum 10 étiquettes."
+        }
+    }
+}

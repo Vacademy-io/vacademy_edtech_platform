@@ -1,0 +1,15 @@
+{
+    "classwork": {
+        "title": "العمل الصفي",
+        "subtitle": "أنشطة ومهام داخل الصف",
+        "taskNumber": "المهمة {{number}}",
+        "completed": "مكتمل"
+    },
+    "homework": {
+        "title": "الواجب المنزلي",
+        "subtitle": "مهام يتم إتمامها بعد الحصة",
+        "dueDate": "تاريخ التسليم: ___________________",
+        "assignmentNumber": "الواجب {{number}}",
+        "completed": "مكتمل"
+    }
+}

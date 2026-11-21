@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { AreaChart, Area, BarChart, Bar, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
@@ -74,23 +76,25 @@ function isV2AdminReport(
 
 // ── Chart configs ─────────────────────────────────────────────────────────────
 
-const activityChartConfig = {
-    minutes: {
-        label: 'Time (min)',
-        color: 'hsl(var(--chart-1))',
-    },
-} satisfies ChartConfig;
+const buildActivityChartConfig = (t: TFunction) =>
+    ({
+        minutes: {
+            label: t('activity.chart.timeMinutes'),
+            color: 'hsl(var(--chart-1))',
+        },
+    }) satisfies ChartConfig;
 
-const academicsChartConfig = {
-    marks: {
-        label: 'Marks',
-        color: 'hsl(var(--chart-2))',
-    },
-    total_marks: {
-        label: 'Total',
-        color: 'hsl(var(--chart-6))',
-    },
-} satisfies ChartConfig;
+const buildAcademicsChartConfig = (t: TFunction) =>
+    ({
+        marks: {
+            label: t('academics.chart.marks'),
+            color: 'hsl(var(--chart-2))',
+        },
+        total_marks: {
+            label: t('academics.chart.total'),
+            color: 'hsl(var(--chart-6))',
+        },
+    }) satisfies ChartConfig;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -127,13 +131,16 @@ const priorityTone = (priority: string) => {
     return 'text-info-700 bg-info-50 ring-info-200';
 };
 
-const UnavailableCard = () => (
-    <ProfileSectionCard>
-        <p className="py-6 text-center text-sm text-neutral-500">
-            No data available for this period.
-        </p>
-    </ProfileSectionCard>
-);
+const UnavailableCard = () => {
+    const { t } = useTranslation('manageStudentsComprehensiveReportDialog');
+    return (
+        <ProfileSectionCard>
+            <p className="py-6 text-center text-sm text-neutral-500">
+                {t('unavailable.noDataForPeriod')}
+            </p>
+        </ProfileSectionCard>
+    );
+};
 
 // ── Tab: Overview ─────────────────────────────────────────────────────────────
 
@@ -142,35 +149,44 @@ interface OverviewTabProps {
 }
 
 const OverviewTab = ({ report }: OverviewTabProps) => {
+    const { t } = useTranslation('manageStudentsComprehensiveReportDialog');
     const { student, period, login } = report;
 
     const stats: Array<{ label: string; value: React.ReactNode; tone?: string }> = [
-        { label: 'Batch', value: student.batch || '—' },
-        { label: 'Enrollment No.', value: student.enrollment_no || '—' },
-        { label: 'Status', value: student.status || '—' },
-        { label: 'Enrolled', value: student.enrolled_date ? fmtDate(student.enrolled_date) : '—' },
+        { label: t('overview.stats.batch'), value: student.batch || '—' },
+        { label: t('overview.stats.enrollmentNo'), value: student.enrollment_no || '—' },
+        { label: t('overview.stats.status'), value: student.status || '—' },
         {
-            label: 'Report Period',
+            label: t('overview.stats.enrolled'),
+            value: student.enrolled_date ? fmtDate(student.enrolled_date) : '—',
+        },
+        {
+            label: t('overview.stats.reportPeriod'),
             value: `${fmtDate(period.start_date_iso)} – ${fmtDate(period.end_date_iso)}`,
         },
-        { label: 'Generated', value: fmtDate(period.generated_at) },
+        { label: t('overview.stats.generated'), value: fmtDate(period.generated_at) },
     ];
 
     const loginStats = login?.available
         ? [
-              { label: 'Total Logins', value: login.total_logins },
-              { label: 'Last Login', value: fmtDate(login.last_login) },
-              { label: 'Avg Session', value: `${login.avg_session_minutes} min` },
+              { label: t('overview.loginStats.totalLogins'), value: login.total_logins },
+              { label: t('overview.loginStats.lastLogin'), value: fmtDate(login.last_login) },
               {
-                  label: 'Total Active Time',
-                  value: `${Math.round(login.total_active_time_minutes / 60)} h`,
+                  label: t('overview.loginStats.avgSession'),
+                  value: t('overview.avgSessionValue', { minutes: login.avg_session_minutes }),
+              },
+              {
+                  label: t('overview.loginStats.totalActiveTime'),
+                  value: t('overview.totalActiveTimeValue', {
+                      hours: Math.round(login.total_active_time_minutes / 60),
+                  }),
               },
           ]
         : [];
 
     return (
         <div className="flex flex-col gap-4">
-            <ProfileSectionCard heading="Student Details">
+            <ProfileSectionCard heading={t('overview.studentDetailsHeading')}>
                 <dl className="grid grid-cols-2 gap-x-6 gap-y-2 pt-1">
                     {stats.map((s) => (
                         <div key={s.label} className="flex flex-col gap-0.5">
@@ -182,7 +198,10 @@ const OverviewTab = ({ report }: OverviewTabProps) => {
             </ProfileSectionCard>
 
             {login?.available ? (
-                <ProfileSectionCard heading="Login Activity" icon={SignIn as PhosphorIcon}>
+                <ProfileSectionCard
+                    heading={t('overview.loginActivityHeading')}
+                    icon={SignIn as PhosphorIcon}
+                >
                     <div className="grid grid-cols-2 gap-3 pt-1 sm:grid-cols-4">
                         {loginStats.map((s) => (
                             <div
@@ -198,7 +217,10 @@ const OverviewTab = ({ report }: OverviewTabProps) => {
                     </div>
                 </ProfileSectionCard>
             ) : (
-                <ProfileSectionCard heading="Login Activity" icon={SignIn as PhosphorIcon}>
+                <ProfileSectionCard
+                    heading={t('overview.loginActivityHeading')}
+                    icon={SignIn as PhosphorIcon}
+                >
                     <UnavailableCard />
                 </ProfileSectionCard>
             )}
@@ -209,6 +231,7 @@ const OverviewTab = ({ report }: OverviewTabProps) => {
 // ── Tab: Attendance ───────────────────────────────────────────────────────────
 
 const AttendanceTab = ({ report }: { report: ComprehensiveStudentReport }) => {
+    const { t } = useTranslation('manageStudentsComprehensiveReportDialog');
     const att = report.attendance;
     if (!att?.available) {
         return <UnavailableCard />;
@@ -225,18 +248,23 @@ const AttendanceTab = ({ report }: { report: ComprehensiveStudentReport }) => {
 
     return (
         <div className="flex flex-col gap-4">
-            <ProfileSectionCard heading="Overall Attendance" icon={CalendarBlank as PhosphorIcon}>
+            <ProfileSectionCard
+                heading={t('attendance.overallHeading')}
+                icon={CalendarBlank as PhosphorIcon}
+            >
                 <div className="flex flex-col gap-3 pt-1">
                     <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium text-neutral-700">Attendance rate</span>
+                        <span className="font-medium text-neutral-700">
+                            {t('attendance.attendanceRate')}
+                        </span>
                         <span className="font-semibold text-neutral-800">{pct}%</span>
                     </div>
                     <Progress value={pct} className={cn('h-2.5 !bg-neutral-100', tone)} />
                     <div className="grid grid-cols-3 gap-3">
                         {[
-                            { label: 'Present', value: att.present, cls: 'text-success-600' },
-                            { label: 'Absent', value: att.absent, cls: 'text-danger-600' },
-                            { label: 'Unmarked', value: att.unmarked, cls: 'text-neutral-500' },
+                            { label: t('common.stats.present'), value: att.present, cls: 'text-success-600' },
+                            { label: t('common.stats.absent'), value: att.absent, cls: 'text-danger-600' },
+                            { label: t('common.stats.unmarked'), value: att.unmarked, cls: 'text-neutral-500' },
                         ].map((s) => (
                             <div
                                 key={s.label}
@@ -251,13 +279,13 @@ const AttendanceTab = ({ report }: { report: ComprehensiveStudentReport }) => {
             </ProfileSectionCard>
 
             {sessions.length > 0 && (
-                <ProfileSectionCard heading="Recent Sessions">
+                <ProfileSectionCard heading={t('attendance.recentSessionsHeading')}>
                     <div className="mt-1 flex flex-col divide-y divide-border">
                         {sessions.slice(0, 10).map((s, i) => (
                             <div key={i} className="flex items-center justify-between gap-3 py-2">
                                 <div className="min-w-0 flex-1">
                                     <p className="truncate text-sm font-medium text-neutral-800">
-                                        {s.title || 'Session'}
+                                        {s.title || t('attendance.sessionFallbackTitle')}
                                     </p>
                                     <p className="text-xs text-neutral-400">
                                         {s.subject} · {fmtDate(s.date)}
@@ -287,12 +315,15 @@ const AttendanceTab = ({ report }: { report: ComprehensiveStudentReport }) => {
 // ── Tab: Academics ────────────────────────────────────────────────────────────
 
 const AcademicsTab = ({ report }: { report: ComprehensiveStudentReport }) => {
+    const { t } = useTranslation('manageStudentsComprehensiveReportDialog');
     const acs = report.academics;
     if (!acs?.available) return <UnavailableCard />;
 
+    const assessmentFallbackName = t('academics.assessmentFallbackName');
+    const academicsChartConfig = buildAcademicsChartConfig(t);
     const assessments = acs.assessments ?? [];
     const chartData = assessments.slice(0, 12).map((a: AcademicsSectionItem) => ({
-        name: a.assessment_name?.slice(0, 12) ?? 'Assessment',
+        name: a.assessment_name?.slice(0, 12) ?? assessmentFallbackName,
         marks: a.marks,
         total_marks: a.total_marks,
     }));
@@ -302,11 +333,14 @@ const AcademicsTab = ({ report }: { report: ComprehensiveStudentReport }) => {
             {/* Summary tiles */}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {[
-                    { label: 'Assessments', value: acs.averages?.total_assessments ?? 0 },
-                    { label: 'Avg Score', value: `${Math.round(acs.averages?.avg_percentage ?? 0)}%` },
-                    { label: 'Best', value: acs.averages?.best_assessment?.slice(0, 16) ?? '—' },
+                    { label: t('academics.summary.assessments'), value: acs.averages?.total_assessments ?? 0 },
                     {
-                        label: 'Needs Work',
+                        label: t('academics.summary.avgScore'),
+                        value: `${Math.round(acs.averages?.avg_percentage ?? 0)}%`,
+                    },
+                    { label: t('academics.summary.best'), value: acs.averages?.best_assessment?.slice(0, 16) ?? '—' },
+                    {
+                        label: t('academics.summary.needsWork'),
                         value: acs.averages?.weakest_assessment?.slice(0, 16) ?? '—',
                     },
                 ].map((s) => (
@@ -324,7 +358,10 @@ const AcademicsTab = ({ report }: { report: ComprehensiveStudentReport }) => {
 
             {/* Marks bar chart */}
             {chartData.length > 0 && (
-                <ProfileSectionCard heading="Assessment Scores" icon={ChartBar as PhosphorIcon}>
+                <ProfileSectionCard
+                    heading={t('academics.assessmentScoresHeading')}
+                    icon={ChartBar as PhosphorIcon}
+                >
                     <ChartContainer
                         config={academicsChartConfig}
                         // Fixed chart height — no Tailwind equivalent; isolated inline style per design-system rules.
@@ -362,7 +399,7 @@ const AcademicsTab = ({ report }: { report: ComprehensiveStudentReport }) => {
             )}
 
             {/* Assessment list */}
-            <ProfileSectionCard heading="All Assessments">
+            <ProfileSectionCard heading={t('academics.allAssessmentsHeading')}>
                 <div className="mt-1 flex flex-col divide-y divide-border">
                     {assessments.map((a) => (
                         <div
@@ -396,9 +433,11 @@ const AcademicsTab = ({ report }: { report: ComprehensiveStudentReport }) => {
 // ── Tab: Activity ─────────────────────────────────────────────────────────────
 
 const ActivityTab = ({ report }: { report: ComprehensiveStudentReport }) => {
+    const { t } = useTranslation('manageStudentsComprehensiveReportDialog');
     const act = report.activity;
     if (!act?.available) return <UnavailableCard />;
 
+    const activityChartConfig = buildActivityChartConfig(t);
     const chartData = (act.daily_time ?? []).map((d: DailyTimeEntry) => ({
         date: d.date,
         minutes: d.minutes,
@@ -408,10 +447,16 @@ const ActivityTab = ({ report }: { report: ComprehensiveStudentReport }) => {
         <div className="flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-3">
                 {[
-                    { label: 'Total Time', value: `${Math.round(act.total_time_minutes / 60)} h` },
                     {
-                        label: 'Avg Concentration',
-                        value: act.avg_concentration != null ? `${Math.round(act.avg_concentration)}%` : 'N/A',
+                        label: t('activity.totalTime'),
+                        value: `${Math.round(act.total_time_minutes / 60)} h`,
+                    },
+                    {
+                        label: t('activity.avgConcentration'),
+                        value:
+                            act.avg_concentration != null
+                                ? `${Math.round(act.avg_concentration)}%`
+                                : t('common.notAvailable'),
                     },
                 ].map((s) => (
                     <div
@@ -425,7 +470,10 @@ const ActivityTab = ({ report }: { report: ComprehensiveStudentReport }) => {
             </div>
 
             {chartData.length > 0 && (
-                <ProfileSectionCard heading="Daily Activity" icon={ClockCountdown as PhosphorIcon}>
+                <ProfileSectionCard
+                    heading={t('activity.dailyActivityHeading')}
+                    icon={ClockCountdown as PhosphorIcon}
+                >
                     <ChartContainer
                         config={activityChartConfig}
                         // Fixed chart height — no Tailwind equivalent; isolated inline style per design-system rules.
@@ -483,7 +531,7 @@ const ActivityTab = ({ report }: { report: ComprehensiveStudentReport }) => {
             )}
 
             {Object.keys(act.content_engagement ?? {}).length > 0 && (
-                <ProfileSectionCard heading="Content Engagement">
+                <ProfileSectionCard heading={t('activity.contentEngagementHeading')}>
                     <div className="mt-1 flex flex-col gap-3">
                         {Object.entries(act.content_engagement).map(([key, val]) => (
                             <div key={key} className="flex flex-col gap-1">
@@ -491,7 +539,9 @@ const ActivityTab = ({ report }: { report: ComprehensiveStudentReport }) => {
                                     <span className="font-medium capitalize text-neutral-700">
                                         {key}
                                     </span>
-                                    <span className="text-neutral-500">{val} min</span>
+                                    <span className="text-neutral-500">
+                                        {t('activity.minutesValue', { minutes: val })}
+                                    </span>
                                 </div>
                                 <Progress
                                     value={Math.min(
@@ -513,16 +563,20 @@ const ActivityTab = ({ report }: { report: ComprehensiveStudentReport }) => {
 // ── Tab: Progress ─────────────────────────────────────────────────────────────
 
 const ProgressTab = ({ report }: { report: ComprehensiveStudentReport }) => {
+    const { t } = useTranslation('manageStudentsComprehensiveReportDialog');
     const prog = report.progress;
     if (!prog?.available) return <UnavailableCard />;
 
     const subjects = prog.subjects ?? [];
     return (
         <div className="flex flex-col gap-4">
-            <ProfileSectionCard heading="Course Completion" icon={BookOpen as PhosphorIcon}>
+            <ProfileSectionCard
+                heading={t('progress.courseCompletionHeading')}
+                icon={BookOpen as PhosphorIcon}
+            >
                 <div className="flex flex-col gap-2 pt-1">
                     <div className="flex justify-between text-sm">
-                        <span className="text-neutral-700">Overall progress</span>
+                        <span className="text-neutral-700">{t('progress.overallProgress')}</span>
                         <span className="font-semibold text-neutral-800">
                             {Math.round(prog.course_completion_percentage)}%
                         </span>
@@ -535,7 +589,7 @@ const ProgressTab = ({ report }: { report: ComprehensiveStudentReport }) => {
             </ProfileSectionCard>
 
             {subjects.length > 0 && (
-                <ProfileSectionCard heading="Subject Progress">
+                <ProfileSectionCard heading={t('progress.subjectProgressHeading')}>
                     <div className="mt-1 flex flex-col gap-3">
                         {subjects.map((s) => (
                             <div key={s.subject_id} className="flex flex-col gap-1">
@@ -561,25 +615,29 @@ const ProgressTab = ({ report }: { report: ComprehensiveStudentReport }) => {
 // ── Tab: Live Classes ─────────────────────────────────────────────────────────
 
 const LiveClassesTab = ({ report }: { report: ComprehensiveStudentReport }) => {
+    const { t } = useTranslation('manageStudentsComprehensiveReportDialog');
     const lc = report.live_classes;
     if (!lc?.available) return <UnavailableCard />;
 
     return (
         <div className="flex flex-col gap-4">
-            <ProfileSectionCard heading="Live Class Summary" icon={Video as PhosphorIcon}>
+            <ProfileSectionCard heading={t('liveClasses.summaryHeading')} icon={Video as PhosphorIcon}>
                 <div className="mb-3 flex items-baseline justify-between rounded-md bg-neutral-50 px-4 py-3">
                     <span className="text-xs text-neutral-500">
-                        Total classes: <span className="font-semibold text-neutral-800">{lc.total ?? 0}</span>
+                        {t('liveClasses.totalClasses')}{' '}
+                        <span className="font-semibold text-neutral-800">{lc.total ?? 0}</span>
                     </span>
                     <span className="text-sm font-semibold text-neutral-800">
-                        {lc.attendance_percentage != null ? `${lc.attendance_percentage}%` : '—'} attendance
+                        {t('liveClasses.attendanceSuffix', {
+                            value: lc.attendance_percentage != null ? `${lc.attendance_percentage}%` : '—',
+                        })}
                     </span>
                 </div>
                 <div className="grid grid-cols-3 gap-3 pt-1">
                     {[
-                        { label: 'Attended', value: lc.attended ?? 0, cls: 'text-success-600' },
-                        { label: 'Missed', value: lc.missed ?? 0, cls: 'text-danger-600' },
-                        { label: 'Not marked', value: lc.unmarked ?? 0, cls: 'text-neutral-500' },
+                        { label: t('common.stats.attended'), value: lc.attended ?? 0, cls: 'text-success-600' },
+                        { label: t('common.stats.missed'), value: lc.missed ?? 0, cls: 'text-danger-600' },
+                        { label: t('common.stats.notMarked'), value: lc.unmarked ?? 0, cls: 'text-neutral-500' },
                     ].map((s) => (
                         <div
                             key={s.label}
@@ -598,6 +656,7 @@ const LiveClassesTab = ({ report }: { report: ComprehensiveStudentReport }) => {
 // ── Tab: Certificates ─────────────────────────────────────────────────────────
 
 const CertificatesTab = ({ report }: { report: ComprehensiveStudentReport }) => {
+    const { t } = useTranslation('manageStudentsComprehensiveReportDialog');
     const certs = report.certificates ?? [];
     if (!certs.length) return <UnavailableCard />;
 
@@ -612,7 +671,7 @@ const CertificatesTab = ({ report }: { report: ComprehensiveStudentReport }) => 
                     <div className="flex items-center gap-4 pt-1">
                         <div className="flex-1">
                             <div className="mb-1 flex justify-between text-xs text-neutral-500">
-                                <span>Completion</span>
+                                <span>{t('certificates.completion')}</span>
                                 <span>{Math.round(c.completion_percentage)}%</span>
                             </div>
                             <Progress
@@ -633,6 +692,7 @@ const CertificatesTab = ({ report }: { report: ComprehensiveStudentReport }) => 
 // ── Tab: Assignments ──────────────────────────────────────────────────────────
 
 const AssignmentsTab = ({ report }: { report: ComprehensiveStudentReport }) => {
+    const { t } = useTranslation('manageStudentsComprehensiveReportDialog');
     const asgn = report.assignments;
     if (!asgn?.available) return <UnavailableCard />;
 
@@ -641,9 +701,9 @@ const AssignmentsTab = ({ report }: { report: ComprehensiveStudentReport }) => {
         <div className="flex flex-col gap-4">
             <div className="grid grid-cols-3 gap-3">
                 {[
-                    { label: 'Submitted', value: asgn.submitted, cls: 'text-primary-600' },
-                    { label: 'Graded', value: asgn.graded, cls: 'text-success-600' },
-                    { label: 'Late', value: asgn.late, cls: 'text-warning-600' },
+                    { label: t('assignments.summary.submitted'), value: asgn.submitted, cls: 'text-primary-600' },
+                    { label: t('assignments.summary.graded'), value: asgn.graded, cls: 'text-success-600' },
+                    { label: t('assignments.summary.late'), value: asgn.late, cls: 'text-warning-600' },
                 ].map((s) => (
                     <div
                         key={s.label}
@@ -656,7 +716,7 @@ const AssignmentsTab = ({ report }: { report: ComprehensiveStudentReport }) => {
             </div>
 
             {items.length > 0 && (
-                <ProfileSectionCard heading="Assignments" icon={ClipboardText as PhosphorIcon}>
+                <ProfileSectionCard heading={t('common.headings.assignments')} icon={ClipboardText as PhosphorIcon}>
                     <div className="mt-1 flex flex-col divide-y divide-border">
                         {items.map((item) => (
                             <div
@@ -679,11 +739,11 @@ const AssignmentsTab = ({ report }: { report: ComprehensiveStudentReport }) => {
                                             ? `${item.score_percentage}%`
                                             : item.marks != null
                                               ? item.marks
-                                              : 'Not graded'}
+                                              : t('assignments.notGraded')}
                                     </span>
                                     {item.late && (
                                         <span className="rounded-full bg-warning-50 px-1.5 py-0.5 text-xs font-medium text-warning-700 ring-1 ring-warning-200">
-                                            Late
+                                            {t('assignments.lateBadge')}
                                         </span>
                                     )}
                                 </div>
@@ -694,13 +754,13 @@ const AssignmentsTab = ({ report }: { report: ComprehensiveStudentReport }) => {
             )}
 
             {report.doubts?.available && (
-                <ProfileSectionCard heading="Doubts" icon={ChatTeardropDots as PhosphorIcon}>
+                <ProfileSectionCard heading={t('assignments.doubtsHeading')} icon={ChatTeardropDots as PhosphorIcon}>
                     <div className="grid grid-cols-3 gap-3 pt-1">
                         {[
-                            { label: 'Raised', value: report.doubts.raised },
-                            { label: 'Resolved', value: report.doubts.resolved },
+                            { label: t('assignments.doubtsStats.raised'), value: report.doubts.raised },
+                            { label: t('assignments.doubtsStats.resolved'), value: report.doubts.resolved },
                             {
-                                label: 'Avg Resolution',
+                                label: t('assignments.doubtsStats.avgResolution'),
                                 value: `${Math.round(report.doubts.avg_resolution_hours)} h`,
                             },
                         ].map((s) => (
@@ -724,19 +784,20 @@ const AssignmentsTab = ({ report }: { report: ComprehensiveStudentReport }) => {
 // ── Tab: AI Insights ──────────────────────────────────────────────────────────
 
 const InsightsTab = ({ report }: { report: ComprehensiveStudentReport }) => {
+    const { t } = useTranslation('manageStudentsComprehensiveReportDialog');
     const ins = report.ai_insights;
     if (!ins) return <UnavailableCard />;
 
     return (
         <div className="flex flex-col gap-4">
             {ins.summary && (
-                <ProfileSectionCard heading="Summary" icon={Lightbulb as PhosphorIcon}>
+                <ProfileSectionCard heading={t('insights.summaryHeading')} icon={Lightbulb as PhosphorIcon}>
                     <p className="pt-1 text-sm leading-relaxed text-neutral-700">{ins.summary}</p>
                 </ProfileSectionCard>
             )}
 
             {ins.cross_domain_insights?.length > 0 && (
-                <ProfileSectionCard heading="Key Insights">
+                <ProfileSectionCard heading={t('insights.keyInsightsHeading')}>
                     <ul className="mt-1 flex flex-col gap-2">
                         {ins.cross_domain_insights.map((insight, i) => (
                             <li key={i} className="flex items-start gap-2 text-sm text-neutral-700">
@@ -753,7 +814,7 @@ const InsightsTab = ({ report }: { report: ComprehensiveStudentReport }) => {
                     <Card>
                         <CardHeader className="pb-2">
                             <CardTitle className="text-sm font-semibold text-neutral-800">
-                                Strengths
+                                {t('common.headings.strengths')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="flex flex-col gap-3">
@@ -779,7 +840,7 @@ const InsightsTab = ({ report }: { report: ComprehensiveStudentReport }) => {
                     <Card>
                         <CardHeader className="pb-2">
                             <CardTitle className="text-sm font-semibold text-neutral-800">
-                                Areas to Improve
+                                {t('common.headings.areasToImprove')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="flex flex-col gap-3">
@@ -803,7 +864,7 @@ const InsightsTab = ({ report }: { report: ComprehensiveStudentReport }) => {
             </div>
 
             {ins.recommendations?.length > 0 && (
-                <ProfileSectionCard heading="Recommendations">
+                <ProfileSectionCard heading={t('insights.recommendationsHeading')}>
                     <div className="mt-1 flex flex-col gap-3">
                         {ins.recommendations.map((rec: RecommendationItem, i) => (
                             <div
@@ -872,6 +933,7 @@ function getAdminWeeklyBarClass(pct: number): string {
 // ── Admin StudentReportCardAdmin ──────────────────────────────────────────────
 
 function StudentReportCardAdmin({ data }: { data: V2AdminReportData }) {
+    const { t } = useTranslation('manageStudentsComprehensiveReportDialog');
     const { meta, student, institute, period, overview } = data;
     const accentColor = institute.theme_color ?? '#2563eb'; // design-lint-ignore: user-supplied institute theme color
     // Coalesce all arrays that the backend may return as null for sparse reports.
@@ -901,31 +963,39 @@ function StudentReportCardAdmin({ data }: { data: V2AdminReportData }) {
                     <div className="flex flex-wrap justify-between items-start gap-3">
                         <div>
                             <p className="text-xs opacity-80">{institute.name}</p>
-                            <p className="text-lg font-semibold mt-0.5">Student Progress Report</p>
-                            <p className="text-xs opacity-70 mt-0.5">{period.label} &middot; Generated {fmtDate(meta.generated_at)}</p>
+                            <p className="text-lg font-semibold mt-0.5">{t('adminReport.title')}</p>
+                            <p className="text-xs opacity-70 mt-0.5">
+                                {t('adminReport.periodGenerated', {
+                                    period: period.label,
+                                    date: fmtDate(meta.generated_at),
+                                })}
+                            </p>
                         </div>
                         <div
                             className="text-xs font-semibold px-3 py-1.5 rounded-full border border-white/30"
                             style={{ background: 'rgba(255,255,255,0.16)' }} /* design-lint-ignore: header badge overlay */
                         >
-                            {overview.overall_status} &middot; Grade {overview.overall_grade}
+                            {t('adminReport.statusGrade', {
+                                status: overview.overall_status,
+                                grade: overview.overall_grade,
+                            })}
                         </div>
                     </div>
                     <div className="flex flex-wrap gap-x-6 gap-y-2 mt-4 pt-3 border-t border-white/20 text-sm">
                         <div>
-                            <p className="text-xs opacity-75">Student</p>
+                            <p className="text-xs opacity-75">{t('adminReport.studentLabels.student')}</p>
                             <p className="font-semibold">{student.name}</p>
                         </div>
                         <div>
-                            <p className="text-xs opacity-75">Class</p>
+                            <p className="text-xs opacity-75">{t('adminReport.studentLabels.class')}</p>
                             <p className="font-semibold">{student.class}</p>
                         </div>
                         <div>
-                            <p className="text-xs opacity-75">Enrollment No.</p>
+                            <p className="text-xs opacity-75">{t('adminReport.studentLabels.enrollmentNo')}</p>
                             <p className="font-semibold">{student.enrollment_no}</p>
                         </div>
                         <div>
-                            <p className="text-xs opacity-75">Roll No.</p>
+                            <p className="text-xs opacity-75">{t('adminReport.studentLabels.rollNo')}</p>
                             <p className="font-semibold">{student.roll_no}</p>
                         </div>
                     </div>
@@ -934,7 +1004,7 @@ function StudentReportCardAdmin({ data }: { data: V2AdminReportData }) {
 
             {/* KPI tiles */}
             {headlineMetrics.length > 0 && (
-                <ProfileSectionCard heading="At a Glance">
+                <ProfileSectionCard heading={t('adminReport.atAGlanceHeading')}>
                     <div className="grid grid-cols-2 gap-3 pt-1 sm:grid-cols-3">
                         {headlineMetrics.map((m: V2HeadlineMetric) => {
                             const displayValue = m.unit
@@ -973,7 +1043,9 @@ function StudentReportCardAdmin({ data }: { data: V2AdminReportData }) {
                     <div className="flex items-start gap-2 p-3 rounded-lg border-l-4 border-primary-500 bg-primary-50">
                         <Info size={16} className="text-primary-500 mt-0.5 shrink-0" />
                         <div>
-                            <p className="text-sm font-semibold text-neutral-800 mb-1">Summary for Parents</p>
+                            <p className="text-sm font-semibold text-neutral-800 mb-1">
+                                {t('adminReport.summaryForParentsHeading')}
+                            </p>
                             <p className="text-sm text-neutral-700 leading-relaxed">{data.parent_summary}</p>
                         </div>
                     </div>
@@ -983,7 +1055,7 @@ function StudentReportCardAdmin({ data }: { data: V2AdminReportData }) {
             {/* Attendance */}
             {data.attendance?.available && (
                 <ProfileSectionCard>
-                    <AdminSectionHeading>Attendance</AdminSectionHeading>
+                    <AdminSectionHeading>{t('adminSections.attendance')}</AdminSectionHeading>
                     <div className="flex flex-wrap gap-6 items-center mb-4">
                         <div className="flex flex-col items-center gap-1">
                             <div className="relative size-16">
@@ -1013,9 +1085,9 @@ function StudentReportCardAdmin({ data }: { data: V2AdminReportData }) {
                         </div>
                         <div className="grid grid-cols-3 gap-3 flex-1 min-w-48">
                             {[
-                                { label: 'Present', value: data.attendance.present, cls: 'text-success-600' },
-                                { label: 'Absent', value: data.attendance.absent, cls: 'text-danger-600' },
-                                { label: 'Late', value: data.attendance.late, cls: 'text-warning-600' },
+                                { label: t('common.stats.present'), value: data.attendance.present, cls: 'text-success-600' },
+                                { label: t('common.stats.absent'), value: data.attendance.absent, cls: 'text-danger-600' },
+                                { label: t('common.stats.late'), value: data.attendance.late, cls: 'text-warning-600' },
                             ].map((s) => (
                                 <div key={s.label} className="flex flex-col items-center rounded-md bg-neutral-50 py-2">
                                     <span className={cn('text-xl font-semibold', s.cls)}>{s.value}</span>
@@ -1026,7 +1098,7 @@ function StudentReportCardAdmin({ data }: { data: V2AdminReportData }) {
                     </div>
                     {data.attendance.weekly && data.attendance.weekly.length > 0 && (
                         <div className="space-y-2">
-                            <p className="text-xs text-neutral-500 mb-2">Weekly trend</p>
+                            <p className="text-xs text-neutral-500 mb-2">{t('adminReport.weeklyTrend')}</p>
                             {data.attendance.weekly.map((w: V2AttendanceWeekly) => (
                                 <div key={w.week} className="flex items-center gap-3">
                                     <span className="text-xs text-neutral-700 w-24 shrink-0">{w.week}</span>
@@ -1048,12 +1120,25 @@ function StudentReportCardAdmin({ data }: { data: V2AdminReportData }) {
             {/* Academics */}
             {data.academics?.available && (
                 <ProfileSectionCard>
-                    <AdminSectionHeading>Academic Performance</AdminSectionHeading>
+                    <AdminSectionHeading>{t('adminSections.academicPerformance')}</AdminSectionHeading>
                     <p className="text-xs text-neutral-500 mb-3 -mt-2">
-                        Average <span className="font-semibold text-neutral-800">{data.academics.average_percentage}%</span>{' '}
-                        vs class avg {data.academics.class_average_percentage}%
-                        {data.academics.best_subject && <> · Best: <span className="text-success-600">{data.academics.best_subject}</span></>}
-                        {data.academics.weakest_subject && <> · Needs work: <span className="text-danger-600">{data.academics.weakest_subject}</span></>}
+                        {t('adminReport.averagePrefix')}{' '}
+                        <span className="font-semibold text-neutral-800">{data.academics.average_percentage}%</span>{' '}
+                        {t('adminReport.vsClassAverage', { percentage: data.academics.class_average_percentage })}
+                        {data.academics.best_subject && (
+                            <>
+                                {' '}
+                                · {t('adminReport.bestSubjectLabel')}{' '}
+                                <span className="text-success-600">{data.academics.best_subject}</span>
+                            </>
+                        )}
+                        {data.academics.weakest_subject && (
+                            <>
+                                {' '}
+                                · {t('adminReport.weakestSubjectLabel')}{' '}
+                                <span className="text-danger-600">{data.academics.weakest_subject}</span>
+                            </>
+                        )}
                     </p>
                     {academicAssessments.length > 0 && (
                         <div className="mt-1 flex flex-col divide-y divide-border mb-4">
@@ -1073,7 +1158,7 @@ function StudentReportCardAdmin({ data }: { data: V2AdminReportData }) {
                                                 ? 'bg-danger-50 text-danger-700'
                                                 : 'bg-success-50 text-success-700',
                                         )}>
-                                            {a.status === 'NEEDS_WORK' ? 'Needs work' : a.grade}
+                                            {a.status === 'NEEDS_WORK' ? t('adminReport.needsWorkBadge') : a.grade}
                                         </span>
                                     </div>
                                 </div>
@@ -1082,7 +1167,9 @@ function StudentReportCardAdmin({ data }: { data: V2AdminReportData }) {
                     )}
                     {academicSubjectPerf.length > 0 && (
                         <div className="space-y-2">
-                            <p className="text-xs text-neutral-500 mb-2">Subject performance vs class</p>
+                            <p className="text-xs text-neutral-500 mb-2">
+                                {t('adminReport.subjectPerformanceVsClass')}
+                            </p>
                             {academicSubjectPerf.map((sp: V2SubjectPerformance) => (
                                 <div key={sp.subject} className="flex items-center gap-3">
                                     <span className="text-xs font-medium text-neutral-700 w-20 shrink-0">{sp.subject}</span>
@@ -1103,9 +1190,9 @@ function StudentReportCardAdmin({ data }: { data: V2AdminReportData }) {
             {/* Marks by Subject */}
             {data.subject_marks?.available && subjectMarksList.length > 0 && (
                 <ProfileSectionCard>
-                    <AdminSectionHeading>Marks by Subject</AdminSectionHeading>
+                    <AdminSectionHeading>{t('adminSections.marksBySubject')}</AdminSectionHeading>
                     <p className="text-xs text-neutral-500 mb-3 -mt-2">
-                        Aggregated across assessments, assignments, quizzes and practice questions.
+                        {t('adminReport.marksAggregationNote')}
                     </p>
                     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
                         {subjectMarksList.map((sm: V2SubjectMarksItem) => {
@@ -1157,7 +1244,7 @@ function StudentReportCardAdmin({ data }: { data: V2AdminReportData }) {
                 (data.areas_to_improve && data.areas_to_improve.length > 0)) && (
                 <div className="grid gap-4 sm:grid-cols-2">
                     {data.strengths && data.strengths.length > 0 && (
-                        <ProfileSectionCard heading="Strengths">
+                        <ProfileSectionCard heading={t('common.headings.strengths')}>
                             <div className="mt-1 flex flex-col gap-3">
                                 {data.strengths.map((s: V2Strength) => (
                                     <div key={s.topic} className="flex flex-col gap-1">
@@ -1175,7 +1262,7 @@ function StudentReportCardAdmin({ data }: { data: V2AdminReportData }) {
                         </ProfileSectionCard>
                     )}
                     {data.areas_to_improve && data.areas_to_improve.length > 0 && (
-                        <ProfileSectionCard heading="Areas to Improve">
+                        <ProfileSectionCard heading={t('common.headings.areasToImprove')}>
                             <div className="mt-1 flex flex-col gap-3">
                                 {data.areas_to_improve.map((s: V2Strength) => (
                                     <div key={s.topic} className="flex flex-col gap-1">
@@ -1205,13 +1292,13 @@ function StudentReportCardAdmin({ data }: { data: V2AdminReportData }) {
             {/* Study Habits */}
             {data.study_habits?.available && (
                 <ProfileSectionCard>
-                    <AdminSectionHeading>Study Habits &amp; Daily Engagement</AdminSectionHeading>
+                    <AdminSectionHeading>{t('adminSections.studyHabits')}</AdminSectionHeading>
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-4">
                         {[
-                            { label: 'Active days', value: `${data.study_habits.active_days}/${data.study_habits.total_days}` },
-                            { label: 'Longest streak', value: `${data.study_habits.longest_streak_days}d` },
-                            { label: 'Focus score', value: data.study_habits.focus_score != null ? `${data.study_habits.focus_score}%` : '—' },
-                            { label: 'Most active', value: data.study_habits.most_active_time ?? '—' },
+                            { label: t('adminReport.studyHabitsStats.activeDays'), value: `${data.study_habits.active_days}/${data.study_habits.total_days}` },
+                            { label: t('adminReport.studyHabitsStats.longestStreak'), value: `${data.study_habits.longest_streak_days}d` },
+                            { label: t('adminReport.studyHabitsStats.focusScore'), value: data.study_habits.focus_score != null ? `${data.study_habits.focus_score}%` : '—' },
+                            { label: t('adminReport.studyHabitsStats.mostActive'), value: data.study_habits.most_active_time ?? '—' },
                         ].map((s) => (
                             <div key={s.label} className="flex flex-col gap-0.5 rounded-lg border border-neutral-200 bg-white px-3 py-2.5 shadow-sm">
                                 <span className="text-xs text-neutral-400">{s.label}</span>
@@ -1226,7 +1313,9 @@ function StudentReportCardAdmin({ data }: { data: V2AdminReportData }) {
                         return (
                             <>
                                 <p className="text-xs text-neutral-500 mb-2">
-                                    Daily study time (minutes) &middot; {data.study_habits!.daily_study_minutes.length} days
+                                    {t('adminReport.dailyStudyTimeDays', {
+                                        count: data.study_habits!.daily_study_minutes.length,
+                                    })}
                                 </p>
                                 <div
                                     className="flex items-end gap-px border-b border-neutral-200 mb-3"
@@ -1249,18 +1338,25 @@ function StudentReportCardAdmin({ data }: { data: V2AdminReportData }) {
                                     })}
                                 </div>
                                 <div className="flex justify-between text-xs text-neutral-400 mb-3">
-                                    <span>Day 1</span>
-                                    <span>Day {data.study_habits!.daily_study_minutes.length}</span>
+                                    <span>{t('adminReport.dayLabel', { count: 1 })}</span>
+                                    <span>
+                                        {t('adminReport.dayLabel', {
+                                            count: data.study_habits!.daily_study_minutes.length,
+                                        })}
+                                    </span>
                                 </div>
                             </>
                         );
                     })()}
 
                     <p className="text-xs text-neutral-500">
-                        Content explored:{' '}
-                        <span className="font-semibold text-neutral-800">{data.study_habits.content_engagement?.videos_watched}</span> videos &middot;{' '}
-                        <span className="font-semibold text-neutral-800">{data.study_habits.content_engagement?.documents_read}</span> documents &middot;{' '}
-                        <span className="font-semibold text-neutral-800">{data.study_habits.content_engagement?.quizzes_attempted}</span> quizzes
+                        {t('adminReport.contentExplored')}{' '}
+                        <span className="font-semibold text-neutral-800">{data.study_habits.content_engagement?.videos_watched}</span>{' '}
+                        {t('adminReport.videosWatched')} &middot;{' '}
+                        <span className="font-semibold text-neutral-800">{data.study_habits.content_engagement?.documents_read}</span>{' '}
+                        {t('adminReport.documentsRead')} &middot;{' '}
+                        <span className="font-semibold text-neutral-800">{data.study_habits.content_engagement?.quizzes_attempted}</span>{' '}
+                        {t('adminReport.quizzesAttempted')}
                     </p>
                 </ProfileSectionCard>
             )}
@@ -1269,7 +1365,9 @@ function StudentReportCardAdmin({ data }: { data: V2AdminReportData }) {
             {data.course_progress?.available && (
                 <ProfileSectionCard>
                     <AdminSectionHeading>
-                        Course Progress — {data.course_progress.overall_completion_percentage}% complete
+                        {t('adminSections.courseProgress', {
+                            percentage: data.course_progress.overall_completion_percentage,
+                        })}
                     </AdminSectionHeading>
                     <div className="space-y-2">
                         {courseProgressSubjects.map((s: V2CourseProgressSubject) => (
@@ -1292,14 +1390,14 @@ function StudentReportCardAdmin({ data }: { data: V2AdminReportData }) {
             {(data.live_classes?.available || data.assignments?.available) && (
                 <div className="grid gap-4 sm:grid-cols-2">
                     {data.live_classes?.available && (
-                        <ProfileSectionCard heading="Live Classes" icon={Video as PhosphorIcon}>
+                        <ProfileSectionCard heading={t('common.headings.liveClasses')} icon={Video as PhosphorIcon}>
                             <div className="mt-1 flex flex-col divide-y divide-border">
                                 {[
-                                    { label: 'Total classes', value: data.live_classes.total ?? 0, cls: undefined },
-                                    { label: 'Attended', value: data.live_classes.attended ?? 0, cls: 'text-success-600' },
-                                    { label: 'Missed', value: data.live_classes.missed ?? 0, cls: 'text-danger-600' },
-                                    { label: 'Not marked', value: data.live_classes.unmarked ?? 0, cls: 'text-neutral-500' },
-                                    { label: 'Attendance', value: data.live_classes.attendance_percentage != null ? `${data.live_classes.attendance_percentage}%` : '—', cls: undefined },
+                                    { label: t('adminReport.liveClassesStats.totalClasses'), value: data.live_classes.total ?? 0, cls: undefined },
+                                    { label: t('adminReport.liveClassesStats.attended'), value: data.live_classes.attended ?? 0, cls: 'text-success-600' },
+                                    { label: t('adminReport.liveClassesStats.missed'), value: data.live_classes.missed ?? 0, cls: 'text-danger-600' },
+                                    { label: t('adminReport.liveClassesStats.notMarked'), value: data.live_classes.unmarked ?? 0, cls: 'text-neutral-500' },
+                                    { label: t('adminReport.liveClassesStats.attendance'), value: data.live_classes.attendance_percentage != null ? `${data.live_classes.attendance_percentage}%` : '—', cls: undefined },
                                 ].map(({ label, value, cls }) => (
                                     <div key={label} className="flex justify-between items-center py-1.5">
                                         <span className="text-xs text-neutral-500">{label}</span>
@@ -1310,15 +1408,15 @@ function StudentReportCardAdmin({ data }: { data: V2AdminReportData }) {
                         </ProfileSectionCard>
                     )}
                     {data.assignments?.available && (
-                        <ProfileSectionCard heading="Assignments" icon={ClipboardText as PhosphorIcon}>
+                        <ProfileSectionCard heading={t('common.headings.assignments')} icon={ClipboardText as PhosphorIcon}>
                             <div className="mt-1 flex flex-col divide-y divide-border">
                                 {[
-                                    { label: 'Assigned', value: data.assignments.assigned ?? '—', cls: undefined },
-                                    { label: 'Submitted', value: data.assignments.submitted ?? 0, cls: 'text-success-600' },
-                                    { label: 'On time', value: data.assignments.on_time ?? '—', cls: undefined },
-                                    { label: 'Late', value: data.assignments.late ?? 0, cls: 'text-warning-600' },
-                                    { label: 'Pending', value: data.assignments.pending ?? '—', cls: 'text-danger-600' },
-                                    { label: 'Avg. score', value: data.assignments.avg_score_percentage != null ? `${data.assignments.avg_score_percentage}%` : '—', cls: undefined },
+                                    { label: t('adminReport.assignmentsStats.assigned'), value: data.assignments.assigned ?? '—', cls: undefined },
+                                    { label: t('adminReport.assignmentsStats.submitted'), value: data.assignments.submitted ?? 0, cls: 'text-success-600' },
+                                    { label: t('adminReport.assignmentsStats.onTime'), value: data.assignments.on_time ?? '—', cls: undefined },
+                                    { label: t('adminReport.assignmentsStats.late'), value: data.assignments.late ?? 0, cls: 'text-warning-600' },
+                                    { label: t('adminReport.assignmentsStats.pending'), value: data.assignments.pending ?? '—', cls: 'text-danger-600' },
+                                    { label: t('adminReport.assignmentsStats.avgScore'), value: data.assignments.avg_score_percentage != null ? `${data.assignments.avg_score_percentage}%` : '—', cls: undefined },
                                 ].map(({ label, value, cls }) => (
                                     <div key={label} className="flex justify-between items-center py-1.5">
                                         <span className="text-xs text-neutral-500">{label}</span>
@@ -1333,7 +1431,7 @@ function StudentReportCardAdmin({ data }: { data: V2AdminReportData }) {
 
             {/* Achievements */}
             {data.achievements && data.achievements.length > 0 && (
-                <ProfileSectionCard heading="Achievements" icon={Trophy as PhosphorIcon}>
+                <ProfileSectionCard heading={t('adminReport.achievementsHeading')} icon={Trophy as PhosphorIcon}>
                     <div className="mt-1 flex flex-wrap gap-2">
                         {data.achievements.map((a: V2Achievement, i) => (
                             <span
@@ -1353,7 +1451,7 @@ function StudentReportCardAdmin({ data }: { data: V2AdminReportData }) {
             {data.ai_insights && (
                 <>
                     {aiCrossDomainInsights.length > 0 && (
-                        <ProfileSectionCard heading="What we noticed" icon={Lightbulb as PhosphorIcon}>
+                        <ProfileSectionCard heading={t('adminReport.whatWeNoticedHeading')} icon={Lightbulb as PhosphorIcon}>
                             <ul className="mt-1 flex flex-col gap-2">
                                 {aiCrossDomainInsights.map((insight, i) => (
                                     <li key={i} className="flex items-start gap-2 text-sm text-neutral-700">
@@ -1366,7 +1464,7 @@ function StudentReportCardAdmin({ data }: { data: V2AdminReportData }) {
                     )}
 
                     {aiRecommendations.length > 0 && (
-                        <ProfileSectionCard heading="Recommended next steps">
+                        <ProfileSectionCard heading={t('adminReport.recommendedNextStepsHeading')}>
                             <div className="mt-1 flex flex-col gap-3">
                                 {aiRecommendations.map((rec: V2Recommendation, i) => (
                                     <div
@@ -1395,7 +1493,11 @@ function StudentReportCardAdmin({ data }: { data: V2AdminReportData }) {
 
             {/* Footer */}
             <div className="text-center text-xs text-neutral-400 py-2">
-                {institute.name} &middot; Generated by Vacademy on {fmtDate(meta.generated_at)} &middot; {period.label}
+                {t('adminReport.footer', {
+                    instituteName: institute.name,
+                    date: fmtDate(meta.generated_at),
+                    period: period.label,
+                })}
             </div>
         </div>
     );
@@ -1419,6 +1521,7 @@ export const ComprehensiveReportDialog = ({
     report,
     reportName,
 }: ComprehensiveReportDialogProps) => {
+    const { t } = useTranslation('manageStudentsComprehensiveReportDialog');
     const [pdfLoading, setPdfLoading] = useState(false);
     const instituteLogo = useInstituteLogoStore((s) => s.instituteLogo);
 
@@ -1428,7 +1531,7 @@ export const ComprehensiveReportDialog = ({
         try {
             await downloadReportPdf(processId);
         } catch {
-            toast.error('Failed to download PDF');
+            toast.error(t('dialog.toast.downloadFailed'));
         } finally {
             setPdfLoading(false);
         }
@@ -1437,7 +1540,7 @@ export const ComprehensiveReportDialog = ({
     // Derive display name depending on shape
     const studentName = isV2AdminReport(report)
         ? (report as V2AdminReportData).student.name
-        : (report as ComprehensiveStudentReport | null)?.student?.name ?? 'Student';
+        : (report as ComprehensiveStudentReport | null)?.student?.name ?? t('dialog.studentFallbackName');
 
     const periodLabel = isV2AdminReport(report)
         ? (report as V2AdminReportData).period.label
@@ -1446,8 +1549,10 @@ export const ComprehensiveReportDialog = ({
           : '';
 
     const dialogHeading = reportName
-        ? `${reportName} — ${studentName}`
-        : `Comprehensive Report — ${studentName}${periodLabel ? ` (${periodLabel})` : ''}`;
+        ? t('dialog.headingWithName', { reportName, studentName })
+        : periodLabel
+          ? t('dialog.headingWithPeriod', { studentName, periodLabel })
+          : t('dialog.headingDefault', { studentName });
 
     const headerActions = (
         <div className="flex items-center gap-2">
@@ -1458,7 +1563,7 @@ export const ComprehensiveReportDialog = ({
                 disabled={pdfLoading || !processId}
             >
                 <DownloadSimple className="size-3.5" />
-                {pdfLoading ? 'Downloading…' : 'Download PDF'}
+                {pdfLoading ? t('dialog.actions.downloading') : t('dialog.actions.downloadPdf')}
             </MyButton>
         </div>
     );
@@ -1477,7 +1582,7 @@ export const ComprehensiveReportDialog = ({
                     {!report ? (
                         <ProfileSectionCard>
                             <p className="py-10 text-center text-sm text-neutral-500">
-                                Report data is not available.
+                                {t('dialog.reportNotAvailable')}
                             </p>
                         </ProfileSectionCard>
                     ) : isV2AdminReport(report) ? (
@@ -1487,15 +1592,15 @@ export const ComprehensiveReportDialog = ({
                         /* V1: 9-tab layout */
                         <Tabs defaultValue="overview" className="w-full">
                             <TabsList className="mb-4 flex h-auto w-full flex-wrap gap-1">
-                                <TabsTrigger value="overview">Overview</TabsTrigger>
-                                <TabsTrigger value="attendance">Attendance</TabsTrigger>
-                                <TabsTrigger value="academics">Academics</TabsTrigger>
-                                <TabsTrigger value="activity">Activity</TabsTrigger>
-                                <TabsTrigger value="progress">Progress</TabsTrigger>
-                                <TabsTrigger value="live-classes">Live Classes</TabsTrigger>
-                                <TabsTrigger value="certificates">Certificates</TabsTrigger>
-                                <TabsTrigger value="assignments">Assignments</TabsTrigger>
-                                <TabsTrigger value="insights">AI Insights</TabsTrigger>
+                                <TabsTrigger value="overview">{t('dialog.tabs.overview')}</TabsTrigger>
+                                <TabsTrigger value="attendance">{t('dialog.tabs.attendance')}</TabsTrigger>
+                                <TabsTrigger value="academics">{t('dialog.tabs.academics')}</TabsTrigger>
+                                <TabsTrigger value="activity">{t('dialog.tabs.activity')}</TabsTrigger>
+                                <TabsTrigger value="progress">{t('dialog.tabs.progress')}</TabsTrigger>
+                                <TabsTrigger value="live-classes">{t('dialog.tabs.liveClasses')}</TabsTrigger>
+                                <TabsTrigger value="certificates">{t('dialog.tabs.certificates')}</TabsTrigger>
+                                <TabsTrigger value="assignments">{t('dialog.tabs.assignments')}</TabsTrigger>
+                                <TabsTrigger value="insights">{t('dialog.tabs.insights')}</TabsTrigger>
                             </TabsList>
 
                             <TabsContent value="overview">
@@ -1532,7 +1637,7 @@ export const ComprehensiveReportDialog = ({
             footer={
                 <MyButton buttonType="secondary" onClick={() => onOpenChange(false)}>
                     <X className="size-3.5" />
-                    Close
+                    {t('dialog.actions.close')}
                 </MyButton>
             }
         />

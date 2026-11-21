@@ -49,6 +49,11 @@ public class FacultySubjectPackageSessionMapping {
     @Column(name = "access_till_date")
     private Timestamp accessTillDate;
 
+    // Per-course display role (Author / Instructor / Acharya ...). NULL = the page
+    // uses the institute's naming term.
+    @Column(name = "role_label")
+    private String roleLabel;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private Timestamp createdAt;
     @Column(name = "updated_at", insertable = false, updatable = false)

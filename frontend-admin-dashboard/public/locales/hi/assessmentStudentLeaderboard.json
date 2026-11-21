@@ -1,0 +1,14 @@
+{
+    "header": {
+        "title": "लीडरबोर्ड"
+    },
+    "toasts": {
+        "pdfExportSuccess": "लीडरबोर्ड डेटा PDF के रूप में सफलतापूर्वक निर्यात किया गया",
+        "csvExportSuccess": "लीडरबोर्ड डेटा CSV के रूप में सफलतापूर्वक निर्यात किया गया"
+    },
+    "studentCard": {
+        "duration": "{{minutes}} मिनट {{seconds}} सेकंड",
+        "percentile": "पर्सेंटाइल",
+        "marks": "अंक"
+    }
+}

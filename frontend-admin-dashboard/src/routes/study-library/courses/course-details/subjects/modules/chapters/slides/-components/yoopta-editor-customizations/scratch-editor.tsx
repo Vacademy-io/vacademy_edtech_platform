@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { YooptaPlugin, useYooptaEditor, Elements, PluginElementRenderProps } from '@yoopta/editor';
+import { useTranslation } from 'react-i18next';
 
 export function ScratchEditor({ element, attributes, children, blockId }: PluginElementRenderProps) {
+    const { t } = useTranslation('studyLibraryScratchEditor');
     const editor = useYooptaEditor();
     const [scratchId, setScratchId] = useState(element?.props?.scratchId || '');
     const [activeTab, setActiveTab] = useState<'preview' | 'settings'>(
@@ -71,7 +73,7 @@ export function ScratchEditor({ element, attributes, children, blockId }: Plugin
                     }}
                 >
                     <h3 style={{ margin: '0', fontSize: '18px', fontWeight: '600', color: '#333' }}>
-                        🐱 Scratch Project
+                        🐱 {t('heading')}
                     </h3>
 
                     {/* Tab Navigation */}
@@ -94,7 +96,7 @@ export function ScratchEditor({ element, attributes, children, blockId }: Plugin
                                 cursor: 'pointer',
                             }}
                         >
-                            Preview
+                            {t('tabs.preview')}
                         </button>
                         <button
                             onClick={() => setActiveTab('settings')}
@@ -107,7 +109,7 @@ export function ScratchEditor({ element, attributes, children, blockId }: Plugin
                                 cursor: 'pointer',
                             }}
                         >
-                            Settings
+                            {t('tabs.settings')}
                         </button>
                     </div>
                 </div>
@@ -127,13 +129,13 @@ export function ScratchEditor({ element, attributes, children, blockId }: Plugin
                                     color: '#555',
                                 }}
                             >
-                                Scratch Project ID
+                                {t('form.label')}
                             </label>
                             <input
                                 type="text"
                                 value={scratchId}
                                 onChange={(e) => setScratchId(e.target.value)}
-                                placeholder="Enter Scratch project ID (e.g., 123456789)"
+                                placeholder={t('form.placeholder')}
                                 style={{
                                     width: '100%',
                                     padding: '8px 12px',
@@ -152,8 +154,7 @@ export function ScratchEditor({ element, attributes, children, blockId }: Plugin
                                     display: 'block',
                                 }}
                             >
-                                You can find the project ID in the Scratch project URL:
-                                scratch.mit.edu/projects/[PROJECT_ID]
+                                {t('form.hint')}
                             </small>
                         </div>
                     </div>
@@ -176,7 +177,7 @@ export function ScratchEditor({ element, attributes, children, blockId }: Plugin
                                 color: '#e65100',
                             }}
                         >
-                            How to get your Scratch Project ID:
+                            {t('infoPanel.title')}
                         </h4>
                         <ol
                             style={{
@@ -186,10 +187,10 @@ export function ScratchEditor({ element, attributes, children, blockId }: Plugin
                                 color: '#bf360c',
                             }}
                         >
-                            <li>Open your Scratch project on scratch.mit.edu</li>
-                            <li>Look at the URL in your browser address bar</li>
-                            <li>Copy the numbers after "/projects/" - that's your project ID</li>
-                            <li>Paste the ID in the field above</li>
+                            <li>{t('infoPanel.step1')}</li>
+                            <li>{t('infoPanel.step2')}</li>
+                            <li>{t('infoPanel.step3')}</li>
+                            <li>{t('infoPanel.step4')}</li>
                         </ol>
                     </div>
 
@@ -205,8 +206,8 @@ export function ScratchEditor({ element, attributes, children, blockId }: Plugin
                                 color: '#2d5a2d',
                             }}
                         >
-                            <strong>Project ready:</strong> Scratch project ID {scratchId} - Switch
-                            to Preview tab to view the project
+                            <strong>{t('status.ready')}</strong>{' '}
+                            {t('status.readyDetail', { id: scratchId })}
                         </div>
                     )}
                 </>
@@ -229,7 +230,7 @@ export function ScratchEditor({ element, attributes, children, blockId }: Plugin
                                 width="100%"
                                 height="100%"
                                 style={{ border: 'none' }}
-                                title={`Scratch Project ${scratchId}`}
+                                title={t('preview.iframeTitle', { id: scratchId })}
                                 allowFullScreen
                             />
                         </div>
@@ -249,10 +250,10 @@ export function ScratchEditor({ element, attributes, children, blockId }: Plugin
                         >
                             <div style={{ fontSize: '48px', marginBottom: '16px' }}>🐱</div>
                             <p style={{ fontSize: '16px', marginBottom: '8px' }}>
-                                No Scratch project configured
+                                {t('preview.empty.title')}
                             </p>
                             <p style={{ fontSize: '14px', color: '#999' }}>
-                                Switch to Settings tab to enter your Scratch project ID
+                                {t('preview.empty.subtitle')}
                             </p>
                         </div>
                     )}

@@ -1,0 +1,48 @@
+{
+    "dialogTitle": "Partager le code QR",
+    "dialogDescription": "Toute personne qui le scanne ouvre directement « {{campaignName}} » — sans application ni connexion.",
+    "qrTitle": "Code QR pour {{campaignName}}",
+    "scanPrompt": "Scannez avec l'appareil photo de n'importe quel téléphone pour ouvrir le formulaire",
+    "linkLabel": "Lien du formulaire",
+    "shortLink": {
+        "label": "Lien court",
+        "generating": "Création d'un lien court…",
+        "unavailable": "Aucun lien court n'est disponible pour le moment. Le lien du formulaire ci-dessus fonctionne exactement pareil.",
+        "useInQr": "Encoder le lien court dans le code QR",
+        "useInQrHint": "Moins de caractères donne un motif plus grossier, lisible de plus loin — mais le code passe alors par une redirection qui peut être désactivée plus tard."
+    },
+    "missingLink": "Cette liste d'audience n'a pas encore de lien partageable. Enregistrez la campagne et réessayez.",
+    "actions": {
+        "copyLink": "Copier le lien",
+        "copyShortLink": "Copier le lien court",
+        "copied": "Copié",
+        "downloadPng": "Télécharger en PNG",
+        "downloadSvg": "Télécharger en SVG",
+        "print": "Imprimer"
+    },
+    "noExpiry": {
+        "title": "Ce code QR n'expire jamais",
+        "body": "Il encode l'adresse du formulaire elle-même plutôt qu'un lien court : aucune redirection intermédiaire ne peut donc être désactivée. Imprimez-le une fois, il continue de fonctionner."
+    },
+    "shortLinkInQr": {
+        "title": "Ce code QR dépend du lien court",
+        "body": "Il pointe vers le lien court et non vers le formulaire : désactiver ce lien plus tard rendrait inutilisable chaque exemplaire imprimé. Pour les affiches et kakémonos, laissez cette option désactivée."
+    },
+    "print": {
+        "eyebrow": "Scannez pour vous inscrire",
+        "cta": "Pointez l'appareil photo de votre téléphone vers le code"
+    },
+    "toasts": {
+        "linkCopied": "Lien du formulaire copié",
+        "copyFailed": "Impossible de copier le lien",
+        "downloaded": "Code QR téléchargé",
+        "downloadFailed": "Impossible de générer l'image du code QR",
+        "printFailed": "Impossible d'ouvrir l'aperçu d'impression",
+        "popupBlocked": "Autorisez les fenêtres pop-up sur ce site pour imprimer le code QR",
+        "shortLinkCopied": "Lien court copié"
+    },
+    "defaults": {
+        "campaignName": "cette liste d'audience",
+        "fileSlug": "audience-form"
+    }
+}

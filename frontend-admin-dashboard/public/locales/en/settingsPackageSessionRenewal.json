@@ -1,0 +1,26 @@
+{
+    "title": "Membership & Payment Behaviour",
+    "description": "Institute-wide switches for how memberships renew and whether members can move between plans. Both are off by default.",
+    "loading": "Loading payment settings…",
+    "toggle": {
+        "enabled": "Renewal scheduler enabled",
+        "disabled": "Renewal scheduler disabled"
+    },
+    "button": {
+        "save": "Save",
+        "saving": "Saving…"
+    },
+    "toasts": {
+        "saveSuccess": "Payment settings saved",
+        "saveError": "Failed to save payment settings"
+    },
+    "renewal": {
+        "hint": "Runs a daily scan over this institute's member plans and applies each batch's enrollment policy: pre-expiry reminders, the post-expiry waiting period, and final expiry. Off by default — while disabled, no plan in this institute is ever processed by the scheduler."
+    },
+    "planChange": {
+        "enabled": "Plan switching is on",
+        "disabled": "Plan switching is off",
+        "hintOn": "Members can move between the plans you've marked switchable in the payment options below. Upgrades charge the prorated difference; downgrades take effect at the end of their paid cycle.",
+        "hintOff": "Members never see a “change plan” option. Turn this on to expose it, then choose which payment options and plans they may switch to."
+    }
+}

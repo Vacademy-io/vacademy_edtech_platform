@@ -67,8 +67,21 @@ function pseudoizeTree(value) {
   return value; // numbers, booleans, null pass through
 }
 
+/**
+ * Apps keep catalogs in either public/locales (served statically, kept out of
+ * the bundler's module graph) or src/locales (imported). Check public/ first;
+ * fall back to src/ so either layout works. Mirrors check-catalogs.mjs.
+ */
+function localeBase(app) {
+  for (const dir of ['public', 'src']) {
+    const candidate = path.join(REPO_ROOT, app, dir, 'locales');
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return path.join(REPO_ROOT, app, 'src', 'locales'); // preserves prior not-found behaviour
+}
+
 function generateApp(app) {
-  const base = path.join(REPO_ROOT, app, 'src', 'locales');
+  const base = localeBase(app);
   const enDir = path.join(base, 'en');
   const enFlat = path.join(base, 'en.json');
 

@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useId, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
@@ -62,6 +63,7 @@ interface SortableSlideItemProps {
 }
 
 export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, getSlideIcon, onRegenerate, onContentEdit }: SortableSlideItemProps) => {
+    const { t } = useTranslation('studyLibrarySortableViewerSlideItem');
     const [isEditing, setIsEditing] = useState(false);
     const [editValue, setEditValue] = useState(slide.slideTitle);
     const [codeContent, setCodeContent] = useState('');
@@ -75,6 +77,12 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
     const [uploadedVideoFile, setUploadedVideoFile] = useState<File | null>(null);
     const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string>('');
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    /* Radio groups are document-wide: every completed slide renders its quiz
+     * editor at once, so a bare `correct-${qIndex}` made question 1 of slide A
+     * and question 1 of slide B one group — picking an answer in one silently
+     * unchecked the other. Scope the group to this slide's component instance. */
+    const quizGroupId = useId();
 
     // Quiz-related hooks - must be defined unconditionally
     const questionRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -369,7 +377,24 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                     <div className="flex items-center justify-center gap-3 py-8">
                         <Loader2 className="h-5 w-5 animate-spin text-indigo-600" />
                         <span className="text-sm font-medium text-neutral-600">
-                            Generating {slide.slideType === 'doc' ? 'document' : (slide.slideType === 'quiz' || slide.slideType === 'assessment' || slide.slideType === 'ASSESSMENT') ? 'quiz' : slide.slideType === 'video' ? 'video' : slide.slideType === 'ai-video' ? 'AI video' : slide.slideType === 'ai-slides' ? 'AI slides' : slide.slideType === 'ai-storybook' ? 'storybook' : 'content'}...
+                            {t('generating', {
+                                type:
+                                    slide.slideType === 'doc'
+                                        ? t('contentType.document')
+                                        : slide.slideType === 'quiz' ||
+                                            slide.slideType === 'assessment' ||
+                                            slide.slideType === 'ASSESSMENT'
+                                          ? t('contentType.quiz')
+                                          : slide.slideType === 'video'
+                                            ? t('contentType.video')
+                                            : slide.slideType === 'ai-video'
+                                              ? t('contentType.aiVideo')
+                                              : slide.slideType === 'ai-slides'
+                                                ? t('contentType.aiSlides')
+                                                : slide.slideType === 'ai-storybook'
+                                                  ? t('contentType.storybook')
+                                                  : t('contentType.content'),
+                            })}
                         </span>
                     </div>
                 </div>
@@ -377,7 +402,7 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
         }
 
         if (!slide.content) {
-            return <div className="text-center text-neutral-500 py-8">No content available</div>;
+            return <div className="text-center text-neutral-500 py-8">{t('noContentAvailable')}</div>;
         }
 
         const { slideType, content } = slide;
@@ -597,7 +622,7 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                             onContentEdit(slide.id, updatedContent);
                         }
                     } else {
-                        alert('Please select a video file');
+                        alert(t('selectVideoFileAlert'));
                     }
                 }
                 // Reset input
@@ -622,16 +647,16 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                                 <div className="bg-neutral-100 px-4 py-2 border-b flex items-center justify-between flex-shrink-0">
                                     <div className="flex items-center gap-2">
                                         <Code className="h-4 w-4 text-green-600" />
-                                        <span className="text-sm font-semibold">Code Editor</span>
+                                        <span className="text-sm font-semibold">{t('codeEditor')}</span>
                                     </div>
                                     {onRegenerate && (
                                         <button
                                             onClick={() => onRegenerate(slide.id, 'code')}
                                             className="rounded p-1.5 text-xs text-indigo-600 hover:bg-indigo-50 transition-colors flex items-center gap-1"
-                                            title="Regenerate Code"
+                                            title={t('regenerateCode')}
                                         >
                                             <RefreshCw className="h-3.5 w-3.5" />
-                                            <span>Regenerate</span>
+                                            <span>{t('regenerate')}</span>
                                         </button>
                                     )}
                                 </div>
@@ -664,13 +689,13 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                                 <div className="bg-neutral-100 px-4 py-2 border-b flex items-center justify-between flex-shrink-0">
                                     <div className="flex items-center gap-2">
                                         <Video className="h-4 w-4 text-red-600" />
-                                        <span className="text-sm font-semibold">Video Player</span>
+                                        <span className="text-sm font-semibold">{t('videoPlayer')}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <button
                                             onClick={handleUploadClick}
                                             className="rounded p-1.5 text-xs text-indigo-600 hover:bg-indigo-50 transition-colors flex items-center gap-1"
-                                            title="Upload Video from Device"
+                                            title={t('uploadVideoFromDevice')}
                                         >
                                             <Upload className="h-3.5 w-3.5" />
                                         </button>
@@ -684,7 +709,7 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                                         <button
                                             onClick={handleOpenVideoUrlDialog}
                                             className="rounded p-1.5 text-xs text-indigo-600 hover:bg-indigo-50 transition-colors flex items-center gap-1"
-                                            title="Add Video URL"
+                                            title={t('addVideoUrl')}
                                         >
                                             <Link className="h-3.5 w-3.5" />
                                         </button>
@@ -692,10 +717,10 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                                             <button
                                                 onClick={() => onRegenerate(slide.id, 'video')}
                                                 className="rounded p-1.5 text-xs text-indigo-600 hover:bg-indigo-50 transition-colors flex items-center gap-1"
-                                                title="Regenerate Video"
+                                                title={t('regenerateVideo')}
                                             >
                                                 <RefreshCw className="h-3.5 w-3.5" />
-                                                <span>Regenerate</span>
+                                                <span>{t('regenerate')}</span>
                                             </button>
                                         )}
                                     </div>
@@ -727,8 +752,8 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                                         <div className="w-full aspect-video bg-black flex items-center justify-center min-h-[300px]">
                                             <div className="text-center text-white">
                                                 <Video className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                                                <p className="text-lg">Video Player</p>
-                                                <p className="text-sm opacity-75">Click the upload or URL icon to add a video</p>
+                                                <p className="text-lg">{t('videoPlayer')}</p>
+                                                <p className="text-sm opacity-75">{t('clickUploadOrUrl')}</p>
                                             </div>
                                         </div>
                                     )}
@@ -741,15 +766,15 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                     <Dialog open={videoUrlDialogOpen} onOpenChange={setVideoUrlDialogOpen}>
                         <DialogContent className="sm:max-w-[500px]">
                             <DialogHeader>
-                                <DialogTitle>Add Video URL</DialogTitle>
+                                <DialogTitle>{t('addVideoUrl')}</DialogTitle>
                             </DialogHeader>
                             <div className="py-4">
-                                <Label className="text-sm font-medium mb-2 block">Video URL</Label>
+                                <Label className="text-sm font-medium mb-2 block">{t('videoUrlLabel')}</Label>
                                 <Input
                                     type="url"
                                     value={tempVideoUrl}
                                     onChange={(e) => setTempVideoUrl(e.target.value)}
-                                    placeholder="https://www.youtube.com/watch?v=..."
+                                    placeholder={t('videoUrlPlaceholder')}
                                     className="w-full"
                                 />
                             </div>
@@ -758,7 +783,7 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                                     buttonType="primary"
                                     onClick={handleSaveVideoUrl}
                                 >
-                                    Save
+                                    {t('actions.save')}
                                 </MyButton>
                             </DialogFooter>
                         </DialogContent>
@@ -803,17 +828,17 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                             <div className="flex items-center gap-2">
                                 <FileText className="h-4 w-4 text-blue-600" />
                                 <span className="text-sm font-semibold text-neutral-900">
-                                    {slideType === 'objectives' ? 'Learning Objectives' : 'Document'}
+                                    {slideType === 'objectives' ? t('learningObjectives') : t('document')}
                                 </span>
                             </div>
                             {onRegenerate && (
                                 <button
                                     onClick={() => onRegenerate(slide.id)}
                                     className="rounded p-1.5 text-xs text-indigo-600 hover:bg-indigo-50 transition-colors flex items-center gap-1"
-                                    title="Regenerate"
+                                    title={t('regenerate')}
                                 >
                                     <RefreshCw className="h-3.5 w-3.5" />
-                                    <span>Regenerate</span>
+                                    <span>{t('regenerate')}</span>
                                 </button>
                             )}
                         </div>
@@ -841,7 +866,7 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                         <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
                                 <Video className="h-4 w-4 text-purple-600" />
-                                <Label className="text-sm font-semibold text-neutral-900">AI Generated Video</Label>
+                                <Label className="text-sm font-semibold text-neutral-900">{t('aiGeneratedVideo')}</Label>
                             </div>
                         </div>
                         <div className="bg-white rounded-lg border border-neutral-200 p-4">
@@ -855,14 +880,14 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                 );
             } else {
                 // Show generating or prompt
-                const prompt = slide.prompt || 'AI video is being generated...';
+                const prompt = slide.prompt || t('aiVideoGeneratingDefault');
                 return (
                     <div className="mt-3 ml-8 bg-neutral-50 rounded-md border border-neutral-200 p-4">
                         <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
                                 <Video className="h-4 w-4 text-purple-600" />
                                 <Label className="text-sm font-semibold text-neutral-900">
-                                    {(slideStatus as string) === 'generating' ? 'Generating AI Video...' : 'AI Video Prompt'}
+                                    {(slideStatus as string) === 'generating' ? t('generatingAiVideo') : t('aiVideoPrompt')}
                                 </Label>
                             </div>
                         </div>
@@ -871,7 +896,7 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                             {(slideStatus as string) === 'generating' && (
                                 <div className="mt-4 flex items-center gap-2">
                                     <Loader2 className="h-4 w-4 animate-spin text-indigo-600" />
-                                    <span className="text-sm text-neutral-600">Progress: {slide.progress || 0}%</span>
+                                    <span className="text-sm text-neutral-600">{t('progress', { percent: slide.progress || 0 })}</span>
                                 </div>
                             )}
                         </div>
@@ -974,7 +999,7 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                                             rel="noopener noreferrer"
                                             className="text-white text-sm font-semibold hover:text-yellow-300 transition-colors flex items-center gap-2"
                                         >
-                                            ▶ Watch on YouTube
+                                            {t('watchOnYoutube')}
                                         </a>
                                     </div>
                                 </div>
@@ -985,14 +1010,14 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                                 <div className="aspect-video w-full rounded-lg bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center">
                                     <div className="text-center text-white p-8">
                                         <Video className="h-16 w-16 mx-auto mb-4" />
-                                        <p className="text-lg font-semibold mb-4">YouTube Video Available</p>
+                                        <p className="text-lg font-semibold mb-4">{t('youtubeVideoAvailable')}</p>
                                         <a
                                             href={videoUrl}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="inline-flex items-center gap-2 bg-white text-red-600 px-6 py-3 rounded-lg font-semibold hover:bg-red-50 transition-colors"
                                         >
-                                            ▶ Watch on YouTube
+                                            {t('watchOnYoutube')}
                                         </a>
                                     </div>
                                 </div>
@@ -1001,8 +1026,8 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                             <div className="aspect-video w-full rounded-lg bg-black flex items-center justify-center">
                                 <div className="text-center text-white">
                                     <Video className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                                    <p className="text-lg">No Video URL Found</p>
-                                    <p className="text-sm opacity-75">Please check the content for YouTube links</p>
+                                    <p className="text-lg">{t('noVideoUrlFound')}</p>
+                                    <p className="text-sm opacity-75">{t('checkContentForLinks')}</p>
                                 </div>
                             </div>
                         )}
@@ -1011,15 +1036,15 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                         {script && (
                             <div className="mt-4 p-4 bg-white rounded-lg">
                                 <div className="flex items-center justify-between mb-2">
-                                    <h4 className="font-semibold">Video Script</h4>
+                                    <h4 className="font-semibold">{t('videoScript')}</h4>
                                     {onRegenerate && (
                                         <button
                                             onClick={() => onRegenerate(slide.id)}
                                             className="rounded p-1.5 text-xs text-indigo-600 hover:bg-indigo-50 transition-colors flex items-center gap-1"
-                                            title="Regenerate Video Script"
+                                            title={t('regenerateVideoScript')}
                                         >
                                             <RefreshCw className="h-3.5 w-3.5" />
-                                            <span>Regenerate</span>
+                                            <span>{t('regenerate')}</span>
                                         </button>
                                     )}
                                 </div>
@@ -1043,16 +1068,16 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <Code className="h-4 w-4 text-green-600" />
-                                <span className="text-sm font-semibold text-neutral-900">Code Editor</span>
+                                <span className="text-sm font-semibold text-neutral-900">{t('codeEditor')}</span>
                             </div>
                             {onRegenerate && (
                                 <button
                                     onClick={() => onRegenerate(slide.id)}
                                     className="rounded p-1.5 text-xs text-indigo-600 hover:bg-indigo-50 transition-colors flex items-center gap-1"
-                                    title="Regenerate Code"
+                                    title={t('regenerateCode')}
                                 >
                                     <RefreshCw className="h-3.5 w-3.5" />
-                                    <span>Regenerate</span>
+                                    <span>{t('regenerate')}</span>
                                 </button>
                             )}
                         </div>
@@ -1085,7 +1110,7 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                         >
                             <div className="bg-neutral-100 px-4 py-2 border-b flex items-center gap-2 flex-shrink-0">
                                 <Code className="h-4 w-4 text-green-600" />
-                                <span className="text-sm font-semibold">Code Editor</span>
+                                <span className="text-sm font-semibold">{t('codeEditor')}</span>
                             </div>
                             <div className="flex-1 overflow-hidden" style={{ minHeight: 0 }}>
                                 <Editor
@@ -1114,7 +1139,7 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                         >
                             <div className="bg-neutral-100 px-4 py-2 border-b flex items-center gap-2 flex-shrink-0">
                                 <Video className="h-4 w-4 text-red-600" />
-                                <span className="text-sm font-semibold">Video Player</span>
+                                <span className="text-sm font-semibold">{t('videoPlayer')}</span>
                             </div>
                             <div className="flex-1 overflow-auto">
                                 {videoUrl ? (
@@ -1130,8 +1155,8 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                                     <div className="w-full aspect-video bg-black flex items-center justify-center min-h-[300px]">
                                         <div className="text-center text-white">
                                             <Video className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                                            <p className="text-lg">Video Player</p>
-                                            <p className="text-sm opacity-75">Video will be displayed here</p>
+                                            <p className="text-lg">{t('videoPlayer')}</p>
+                                            <p className="text-sm opacity-75">{t('videoWillBeDisplayed')}</p>
                                         </div>
                                     </div>
                                 )}
@@ -1263,25 +1288,25 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
                             <FileQuestion className="h-4 w-4 text-purple-600" />
-                            <Label className="text-sm font-semibold text-neutral-900">Quiz Content</Label>
+                            <Label className="text-sm font-semibold text-neutral-900">{t('quiz.content')}</Label>
                         </div>
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={addQuestion}
                                 className="flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 transition-colors border border-indigo-200"
-                                title="Add Question"
+                                title={t('quiz.addQuestion')}
                             >
                                 <span>+</span>
-                                Add Question
+                                {t('quiz.addQuestion')}
                             </button>
                             {onRegenerate && (
                                 <button
                                     onClick={() => onRegenerate(slide.id)}
                                     className="rounded p-1.5 text-xs text-indigo-600 hover:bg-indigo-50 transition-colors flex items-center gap-1"
-                                    title="Regenerate Quiz"
+                                    title={t('regenerateQuiz')}
                                 >
                                     <RefreshCw className="h-3.5 w-3.5" />
-                                    <span>Regenerate</span>
+                                    <span>{t('regenerate')}</span>
                                 </button>
                             )}
                         </div>
@@ -1289,7 +1314,7 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                     <div className="space-y-6">
                         {quizQuestions.length === 0 ? (
                             <div className="text-center py-8 text-neutral-500">
-                                <p className="mb-4">No questions yet. Click "Add Question" to get started.</p>
+                                <p className="mb-4">{t('quiz.noQuestionsYet')}</p>
                             </div>
                         ) : (
                             <>
@@ -1302,37 +1327,37 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                                         className="bg-white rounded-lg border border-neutral-200 p-4 space-y-4"
                                     >
                                         <div className="flex items-center justify-between">
-                                            <h4 className="text-sm font-semibold text-neutral-900">Question {qIndex + 1}</h4>
+                                            <h4 className="text-sm font-semibold text-neutral-900">{t('quiz.question', { number: qIndex + 1 })}</h4>
                                             <button
                                                 onClick={() => deleteQuestion(qIndex)}
                                                 className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 rounded px-2 py-1 transition-colors"
-                                                title="Delete Question"
+                                                title={t('quiz.deleteQuestion')}
                                             >
-                                                Delete
+                                                {t('actions.delete')}
                                             </button>
                                         </div>
 
                                         <div>
-                                            <Label className="text-xs text-neutral-700 mb-1 block">Question Text</Label>
+                                            <Label className="text-xs text-neutral-700 mb-1 block">{t('quiz.questionText')}</Label>
                                             <Textarea
                                                 value={question.question || ''}
                                                 onChange={(e) => {
                                                     updateQuestion(qIndex, 'question', e.target.value);
                                                     setTimeout(saveQuizQuestions, 100);
                                                 }}
-                                                placeholder="Enter your question here..."
+                                                placeholder={t('quiz.questionPlaceholder')}
                                                 className="min-h-[80px] text-sm"
                                             />
                                         </div>
 
                                         <div>
-                                            <Label className="text-xs text-neutral-700 mb-2 block">Options</Label>
+                                            <Label className="text-xs text-neutral-700 mb-2 block">{t('quiz.options')}</Label>
                                             <div className="space-y-2">
                                                 {(question.options || []).map((option, optIndex) => (
                                                     <div key={optIndex} className="flex items-center gap-2">
                                                         <input
                                                             type="radio"
-                                                            name={`correct-${qIndex}`}
+                                                            name={`correct-${quizGroupId}-${qIndex}`}
                                                             checked={Number(question.correctAnswerIndex ?? 0) === optIndex}
                                                             onChange={() => {
                                                                 updateQuestion(qIndex, 'correctAnswerIndex', optIndex);
@@ -1348,7 +1373,7 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                                                                 updateQuestion(qIndex, 'options', newOptions);
                                                                 setTimeout(saveQuizQuestions, 100);
                                                             }}
-                                                            placeholder={`Option ${optIndex + 1}`}
+                                                            placeholder={t('quiz.optionPlaceholder', { number: optIndex + 1 })}
                                                             className="flex-1 text-sm"
                                                         />
                                                         {(question.options || []).length > 2 && (
@@ -1358,7 +1383,7 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                                                                     setTimeout(saveQuizQuestions, 100);
                                                                 }}
                                                                 className="text-xs text-red-600 hover:text-red-700 px-2 py-1"
-                                                                title="Remove Option"
+                                                                title={t('quiz.removeOption')}
                                                             >
                                                                 ×
                                                             </button>
@@ -1372,7 +1397,7 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                                                     }}
                                                     className="text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded px-2 py-1 transition-colors"
                                                 >
-                                                    + Add Option
+                                                    {t('quiz.addOption')}
                                                 </button>
                                             </div>
                                         </div>
@@ -1383,10 +1408,10 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                                     <button
                                         onClick={addQuestion}
                                         className="flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 transition-colors border border-indigo-200"
-                                        title="Add Question"
+                                        title={t('quiz.addQuestion')}
                                     >
                                         <span>+</span>
-                                        Add Question
+                                        {t('quiz.addQuestion')}
                                     </button>
                                 </div>
                             </>
@@ -1405,17 +1430,17 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                             <div className="flex items-center gap-2">
                                 <FileText className="h-4 w-4 text-purple-600" />
                                 <span className="text-sm font-semibold text-neutral-900">
-                                    {slideType === 'homework' ? 'Homework' : 'Assignment'}
+                                    {slideType === 'homework' ? t('homework') : t('assignment')}
                                 </span>
                             </div>
                             {onRegenerate && (
                                 <button
                                     onClick={() => onRegenerate(slide.id)}
                                     className="rounded p-1.5 text-xs text-indigo-600 hover:bg-indigo-50 transition-colors flex items-center gap-1"
-                                    title="Regenerate Assignment"
+                                    title={t('regenerateAssignment')}
                                 >
                                     <RefreshCw className="h-3.5 w-3.5" />
-                                    <span>Regenerate</span>
+                                    <span>{t('regenerate')}</span>
                                 </button>
                             )}
                         </div>
@@ -1434,15 +1459,15 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
             return (
                 <div className="mt-3 ml-8 bg-neutral-50 rounded-md border border-neutral-200 p-4">
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-xl font-semibold">Solution Code</h3>
+                        <h3 className="text-xl font-semibold">{t('solutionCode')}</h3>
                         {onRegenerate && (
                             <button
                                 onClick={() => onRegenerate(slide.id)}
                                 className="rounded p-1.5 text-xs text-indigo-600 hover:bg-indigo-50 transition-colors flex items-center gap-1"
-                                title="Regenerate Solution"
+                                title={t('regenerateSolution')}
                             >
                                 <RefreshCw className="h-3.5 w-3.5" />
-                                <span>Regenerate</span>
+                                <span>{t('regenerate')}</span>
                             </button>
                         )}
                     </div>
@@ -1502,14 +1527,14 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                             <button
                                 onClick={handleSaveEdit}
                                 className="rounded p-1 text-xs text-indigo-600 hover:bg-indigo-50"
-                                title="Save"
+                                title={t('actions.save')}
                             >
                                 <CheckCircle className="h-3.5 w-3.5" />
                             </button>
                             <button
                                 onClick={handleCancelEdit}
                                 className="rounded p-1 text-xs text-neutral-600 hover:bg-neutral-100"
-                                title="Cancel"
+                                title={t('actions.cancel')}
                             >
                                 <X className="h-3.5 w-3.5" />
                             </button>
@@ -1519,14 +1544,14 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                             <button
                                 onClick={() => setIsEditing(true)}
                                 className="rounded p-1 text-xs text-indigo-600 hover:bg-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity"
-                                title="Edit"
+                                title={t('actions.edit')}
                             >
                                 <Edit2 className="h-3.5 w-3.5" />
                             </button>
                             <button
                                 onClick={() => onDelete(slide.id)}
                                 className="rounded p-1 text-xs text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
-                                title="Delete"
+                                title={t('actions.delete')}
                             >
                                 <Trash2 className="h-3.5 w-3.5" />
                             </button>
@@ -1545,16 +1570,16 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                 <Dialog open={videoUrlDialogOpen} onOpenChange={setVideoUrlDialogOpen}>
                     <DialogContent className="sm:max-w-[500px]">
                         <DialogHeader>
-                            <DialogTitle>Add Video URL</DialogTitle>
+                            <DialogTitle>{t('addVideoUrl')}</DialogTitle>
                         </DialogHeader>
                         <div className="py-4">
-                            <Label htmlFor="video-url-input" className="text-sm font-medium mb-2 block">Video URL</Label>
+                            <Label htmlFor="video-url-input" className="text-sm font-medium mb-2 block">{t('videoUrlLabel')}</Label>
                             <Input
                                 id="video-url-input"
                                 type="url"
                                 value={videoUrlInput}
                                 onChange={(e) => setVideoUrlInput(e.target.value)}
-                                placeholder="https://www.youtube.com/watch?v=..."
+                                placeholder={t('videoUrlPlaceholder')}
                                 className="w-full"
                             />
                         </div>
@@ -1593,7 +1618,7 @@ export const SortableViewerSlideItem = React.memo(({ slide, onEdit, onDelete, ge
                                     setVideoUrlDialogOpen(false);
                                 }}
                             >
-                                Save
+                                {t('actions.save')}
                             </MyButton>
                         </DialogFooter>
                     </DialogContent>

@@ -1,0 +1,73 @@
+{
+    "trigger": {
+        "editInstitute": "संस्थान संपादित करें",
+        "addDetails": "विवरण जोड़ें"
+    },
+    "dialog": {
+        "title": "संस्थान संपादित करें"
+    },
+    "logoAlt": "लोगो",
+    "fields": {
+        "instituteName": {
+            "label": "संस्थान का नाम",
+            "placeholder": "संस्थान का नाम"
+        },
+        "instituteType": {
+            "label": "संस्थान का प्रकार"
+        },
+        "instituteEmail": {
+            "label": "संस्थान का ईमेल",
+            "placeholder": "संस्थान का ईमेल"
+        },
+        "institutePhoneNumber": {
+            "label": "संस्थान का फ़ोन नंबर",
+            "placeholder": "123 456 7890"
+        },
+        "instituteWebsite": {
+            "label": "संस्थान की वेबसाइट",
+            "placeholder": "संस्थान की वेबसाइट"
+        },
+        "instituteAddress": {
+            "label": "पता",
+            "placeholder": "पता पंक्ति 1"
+        },
+        "instituteCity": {
+            "label": "शहर/गाँव",
+            "placeholder": "शहर/गाँव चुनें"
+        },
+        "instituteState": {
+            "label": "राज्य",
+            "placeholder": "राज्य चुनें"
+        },
+        "instituteCountry": {
+            "label": "देश",
+            "placeholder": "देश चुनें"
+        },
+        "institutePinCode": {
+            "label": "पिनकोड",
+            "placeholder": "पिनकोड दर्ज करें"
+        }
+    },
+    "sections": {
+        "contactInformation": "संपर्क जानकारी",
+        "locationDetails": "स्थान का विवरण",
+        "instituteTheme": "संस्थान थीम"
+    },
+    "theme": {
+        "current": "मौजूदा",
+        "changeTheme": "थीम बदलें"
+    },
+    "actions": {
+        "saveChanges": "परिवर्तन सहेजें",
+        "cancel": "रद्द करें"
+    },
+    "toast": {
+        "updateSuccess": "आपका विवरण सफलतापूर्वक अपडेट कर दिया गया है!"
+    },
+    "validation": {
+        "instituteNameRequired": "संस्थान का नाम आवश्यक है",
+        "instituteTypeRequired": "संस्थान का प्रकार चुनें",
+        "invalidEmail": "अमान्य ईमेल पता",
+        "invalidWebsite": "अमान्य वेबसाइट URL"
+    }
+}

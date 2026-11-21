@@ -1,0 +1,40 @@
+{
+    "windows": {
+        "days_one": "{{count}} jour",
+        "days_many": "{{count}} jours",
+        "days_other": "{{count}} jours"
+    },
+    "loading": "Chargement de l'utilisation de l'IA…",
+    "loadFailed": "Impossible de charger l'utilisation de l'IA pour le moment.",
+    "retry": "Réessayer",
+    "heading": "Utilisation des crédits IA",
+    "refresh": "Actualiser",
+    "aiPaused": {
+        "title": "Les réponses IA sont en pause — plus de crédits IA disponibles.",
+        "body": "Les flux continuent de fonctionner, mais les étapes de réponse IA cessent d'appeler le modèle et transfèrent ces conversations à une personne dans la boîte de réception WhatsApp. Rechargez des crédits IA pour les réactiver."
+    },
+    "stats": {
+        "creditsUsed": "Crédits utilisés",
+        "aiReplies": "Réponses IA",
+        "peopleRepliedTo": "Personnes contactées",
+        "balance": "Solde"
+    },
+    "table": {
+        "flow": "Flux",
+        "credits": "Crédits",
+        "replies": "Réponses",
+        "people": "Personnes",
+        "lastUsed": "Dernière utilisation",
+        "unattributed": "Non attribué"
+    },
+    "recentReplies": {
+        "heading": "Réponses IA récentes",
+        "empty": "Aucune réponse IA facturée sur cette période.",
+        "when": "Date",
+        "repliedTo": "Répondu à",
+        "model": "Modèle",
+        "credits": "Crédits",
+        "unidentifiedContact": "Contact non identifié"
+    },
+    "notAvailable": "—"
+}

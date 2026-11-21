@@ -4,8 +4,6 @@ import { ViewDetails as ViewDetailsStudent } from '../-components/student/viewDe
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
-export type ColumnWidthConfig = Record<string, string>;
-
 export interface DailyLearnerTimeSpent {
     activity_date: string;
     avg_daily_time_minutes: number;
@@ -95,24 +93,6 @@ export const leaderBoardColumns: ColumnDef<LeaderBoardColumnType>[] = [
     },
 ];
 
-export const CONCENTRATION_SCORE: ColumnWidthConfig = {
-    date: 'w-[120px]',
-    timeSpent: 'w-[140px]',
-};
-export const LEARNERS_REPORTS_COLUMNS: ColumnWidthConfig = {
-    date: 'w-[70px]',
-    timeSpent: 'w-[50px]',
-    timeSpentBatch: 'w-[70px]',
-};
-
-export const LEADERBOARD_WIDTH: Record<keyof LeaderBoardColumnType, string> = {
-    rank: 'w-[70px]',
-    name: 'w-[180px]',
-    score: 'w-[140px]', // Concentration Score column width
-    average: 'w-[160px]',
-    totalTime: 'w-[120px]',
-};
-
 interface Module {
     module_id: string;
     module_name: string;
@@ -140,6 +120,15 @@ export interface SubjectOverviewColumnType {
     details?: string;
     module_id: string;
     user_id?: string;
+    /**
+     * Batch the row belongs to. Multi-batch reports render one table per batch,
+     * so the "View details" dialog reads these from the row rather than the
+     * last-generated batch in the shared store.
+     */
+    package_session_id?: string;
+    course_name?: string;
+    session_name?: string;
+    level_name?: string;
 }
 export const SubjectOverviewColumns: ColumnDef<SubjectOverviewColumnType>[] = [
     {
@@ -181,18 +170,6 @@ export const SubjectOverviewColumns: ColumnDef<SubjectOverviewColumnType>[] = [
     },
 ];
 
-export const SUBJECT_OVERVIEW_WIDTH: Record<keyof SubjectOverviewColumnType, string> = {
-    subject: 'w-[200px]',
-    module: 'w-[200px]',
-    module_completed: 'w-[200px]',
-    module_completed_by_batch: 'w-[200px]',
-    average_time_spent: 'w-[200px]',
-    average_time_spent_by_batch: 'w-[200px]',
-    details: 'w-[100px]',
-    module_id: 'w-[0px]',
-    user_id: 'w-[0px]',
-};
-
 export interface SubjectOverviewBatchColumnType {
     subject: string;
     module: string;
@@ -201,6 +178,11 @@ export interface SubjectOverviewBatchColumnType {
     details?: string;
     module_id: string;
     user_id?: string;
+    /** Batch the row belongs to — see {@link SubjectOverviewColumnType}. */
+    package_session_id?: string;
+    course_name?: string;
+    session_name?: string;
+    level_name?: string;
 }
 export const SubjectOverviewBatchColumns: ColumnDef<SubjectOverviewBatchColumnType>[] = [
     {
@@ -233,16 +215,6 @@ export const SubjectOverviewBatchColumns: ColumnDef<SubjectOverviewBatchColumnTy
         header: '',
     },
 ];
-
-export const SUBJECT_OVERVIEW_BATCH_WIDTH: Record<keyof SubjectOverviewBatchColumnType, string> = {
-    subject: 'w-[200px]',
-    module: 'w-[200px]',
-    module_completed_by_batch: 'w-[200px]',
-    average_time_spent_by_batch: 'w-[200px]',
-    details: 'w-[200px]',
-    module_id: 'w-[0px]',
-    user_id: 'w-[0px]',
-};
 
 export const df = () => {
     return <div>nothing</div>;
@@ -286,11 +258,6 @@ export const ChapterOverviewColumns: ColumnDef<ChapterOverviewColumnType>[] = [
         header: 'Time Spent (Avg)',
     },
 ];
-export const CHAPTER_OVERVIEW_WIDTH: Record<keyof ChapterOverviewColumnType, string> = {
-    study_slide: 'w-[300px]',
-    batch_concentration_score: 'w-[300px]',
-    average_time_spent: 'w-[300px]',
-};
 
 export interface ChapterOverviewStudentColumnType {
     study_slide: string;
@@ -327,17 +294,6 @@ export const ChapterOverviewStudentColumns: ColumnDef<ChapterOverviewStudentColu
         header: 'Last Active',
     },
 ];
-export const CHAPTER_OVERVIEW_STUDENT_WIDTH: Record<
-    keyof ChapterOverviewStudentColumnType,
-    string
-> = {
-    study_slide: 'w-[300px]',
-    slide_type: 'w-[100px]',
-    batch_concentration_score: 'w-[300px]',
-    concentration_score: 'w-[300px]',
-    average_time_spent: 'w-[300px]',
-    last_active: 'w-[300px]',
-};
 
 interface SlideDetail {
     slide_id: string;
@@ -391,14 +347,6 @@ export const SlidesColumns: ColumnDef<SlidesColumnType>[] = [
         header: 'Time Spent',
     },
 ];
-export const SLIDES_WIDTH: Record<keyof SlidesColumnType, string> = {
-    study_slide: 'min-w-[300px]',
-    subject: 'w-[200px]',
-    module: 'w-[200px]',
-    chapter: 'w-[200px]',
-    concentration_score: 'w-[150px]',
-    time_spent: 'w-[150px]',
-};
 
 interface ProgressReportSetting {
     daily: boolean;

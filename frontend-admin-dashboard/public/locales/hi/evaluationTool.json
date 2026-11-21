@@ -1,0 +1,19 @@
+{
+    "totalAwarded": "कुल प्राप्तांक",
+    "marksAwarded": "दिए गए अंक",
+    "viewTask": "कार्य देखें",
+    "outOf": "{{max}} में से",
+    "enterOverallScoreHint": "इस सबमिशन के लिए कुल स्कोर दर्ज करें। 0 भी एक मान्य स्कोर है — शून्य देने के लिए इसे टाइप करें।",
+    "sectionNumber": "खंड {{number}}",
+    "questionNo": "प्रश्न सं.",
+    "scoredMarks": "प्राप्त अंक",
+    "maxMarks": "अधिकतम अंक",
+    "remarks": "टिप्पणियाँ",
+    "addRemarksPlaceholder": "टिप्पणी जोड़ें…",
+    "pagesReviewed": "समीक्षित पृष्ठ",
+    "notVisited": "नहीं देखे गए",
+    "timeOnEvaluation": "मूल्यांकन में लगा समय",
+    "timeFormat": "{{mins}} मि {{secs}} से",
+    "previewQuestionHeading": "प्रश्न पूर्वावलोकन",
+    "questionLabel": "प्रश्न :"
+}

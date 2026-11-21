@@ -1,0 +1,336 @@
+{
+  "common": {
+    "back": "Back",
+    "cancel": "Cancel",
+    "continue": "Continue",
+    "submitting": "Submitting...",
+    "submitRegistration": "Submit Registration",
+    "sessionMissing": "Registration session missing. Please start again"
+  },
+  "subOrgRegistration": {
+    "linkError": {
+      "title": "Registration Link Closed",
+      "defaultMessage": "This registration link is invalid or no longer accepting registrations.",
+      "contactHint": "Please contact the institute for a new registration link."
+    },
+    "paymentResult": {
+      "notFoundTitle": "We couldn't find your registration session",
+      "notFoundDescription": "Don't worry — if your payment went through, your organization will be registered automatically and the login credentials will be emailed to the {{admin}} email you provided.",
+      "notFoundEmailHint": "If the email doesn't arrive within a few minutes, please contact the institute.",
+      "waitingTitle": "Confirming your payment...",
+      "waitingDescription": "This usually takes a few moments. Keep this page open — it updates automatically once the payment is confirmed.",
+      "reassurancePrefix": "Confirmation is taking longer than usual. You can safely close this page — once the payment is confirmed, your organization will be registered and the login credentials will be emailed",
+      "reassuranceTo": "to",
+      "reassuranceToAdminEmail": "to the {{admin}} email you provided"
+    },
+    "wizard": {
+      "defaultTemplateName": "Organization Registration",
+      "subtitle": "Register your organization with {{instituteName}}",
+      "defaultInstituteName": "the institute",
+      "steps": {
+        "details": "Details",
+        "verifyEmail": "Verify Email",
+        "additionalInfo": "Additional Info",
+        "terms": "Terms",
+        "identityVerification": "Identity Verification",
+        "payment": "Payment"
+      },
+      "toast": {
+        "completeError": "Failed to complete registration. Please try again",
+        "codeSentNewEmail": "Verification code sent to your new email",
+        "detailsUpdated": "Details updated",
+        "codeSent": "Verification code sent to your email",
+        "saveError": "Failed to save your details. Please try again",
+        "startError": "Failed to start registration. Please try again",
+        "resumeError": "Could not resume this registration. Please try again",
+        "emailVerified": "Email verified successfully!",
+        "invalidOtp": "Invalid or expired OTP",
+        "resendError": "Failed to resend. Please try again",
+        "codeResent": "Verification code resent"
+      }
+    },
+    "details": {
+      "validation": {
+        "orgNameRequired": "Organization name is required",
+        "adminNameRequired": "{{admin}} name is required",
+        "adminEmailRequired": "{{admin}} email is required",
+        "adminEmailInvalid": "Enter a valid email address",
+        "phoneInvalid": "Enter a valid phone number for the selected country",
+        "pincodeTooLong": "Pincode is too long",
+        "addressLine1Required": "Address line 1 is required",
+        "cityRequired": "City is required",
+        "stateRequired": "State is required",
+        "pincodeRequired": "Pincode is required"
+      },
+      "title": "Organization Details",
+      "subtitle": "Tell us about your organization and its {{admin}}",
+      "orgName": {
+        "label": "Organization Name",
+        "placeholder": "e.g. Acme Coaching Center"
+      },
+      "logo": {
+        "label": "Organization Logo",
+        "previewAlt": "Organization logo preview",
+        "uploading": "Uploading...",
+        "change": "Change Logo",
+        "upload": "Upload Logo",
+        "remove": "Remove",
+        "hint": "Optional — PNG or JPG works best"
+      },
+      "adminName": {
+        "label": "{{admin}} Full Name",
+        "placeholder": "Full name of the org {{admin}}"
+      },
+      "adminEmail": {
+        "label": "{{admin}} Email",
+        "placeholder": "admin@yourorg.com",
+        "hint": "We'll send a verification code to this email"
+      },
+      "adminPhone": {
+        "label": "{{admin}} Phone",
+        "placeholder": "123 456 7890"
+      },
+      "address": {
+        "line1": { "label": "Address Line 1", "placeholder": "Building, street" },
+        "line2": { "label": "Address Line 2", "placeholder": "Area, landmark (optional)" },
+        "city": { "label": "City", "placeholder": "City" },
+        "state": { "label": "State", "placeholder": "State" },
+        "pincode": { "label": "Pincode", "placeholder": "e.g. 110001" }
+      },
+      "submit": {
+        "saving": "Saving...",
+        "sendingCode": "Sending code..."
+      },
+      "toast": {
+        "logoInvalidType": "Please select an image file for the logo",
+        "logoUploadFailed": "Logo upload failed. Please try again"
+      },
+      "resume": {
+        "inProgress": "A registration with this email is already in progress.",
+        "descriptionPrefix": "Resume it to pick up where you left off — we'll send a verification code to",
+        "descriptionSuffix": ".",
+        "button": "Resume registration"
+      }
+    },
+    "otp": {
+      "toast": {
+        "invalidCode": "Please enter a valid verification code"
+      },
+      "title": "Verify Your Email",
+      "sentTo": "We've sent a verification code to",
+      "sentToResume": "We've sent a code to resume your registration to",
+      "cantFindEmail": "Can't find the email?",
+      "checkSpam": "Check your <b1>Spam</b1> or <b2>Junk</b2> folder",
+      "correctEmail": "Make sure the email address is correct",
+      "waitRefresh": "Wait a few seconds and refresh your inbox",
+      "enterCodeLabel": "Enter Verification Code",
+      "codePlaceholder": "Enter 6-digit code",
+      "verifying": "Verifying...",
+      "verifyContinue": "Verify & Continue",
+      "editDetails": "Edit Details",
+      "resending": "Sending...",
+      "resendCode": "Resend Code"
+    },
+    "customFields": {
+      "title": "Additional Information",
+      "subtitle": "A few more details requested by the institute",
+      "noFieldsMessage": "No additional information is required.",
+      "phonePlaceholder": "123 456 7890"
+    },
+    "tnc": {
+      "title": "Terms & Conditions",
+      "subtitle": "Please review and accept the terms to finish registration",
+      "loadingDocument": "Loading document...",
+      "loadError": "We couldn't load the Terms & Conditions document. You can still accept the terms below to continue.",
+      "openInNewTab": "Open in new tab",
+      "noDocNoConsent": "Please confirm that you accept the institute's Terms & Conditions to finish registration.",
+      "acceptCheckboxLabel": "I accept the Terms & Conditions"
+    },
+    "kyc": {
+      "defaultPanInstructions": "In DigiLocker, tick the checkboxes for BOTH Aadhaar and PAN when asked for consent — verification cannot complete if either is left unselected.",
+      "failure": {
+        "consentDenied": "DigiLocker consent was denied. To verify your identity, please try again and approve access to your documents.",
+        "expired": "The verification link expired before it was completed. Start a new verification to continue.",
+        "failed": "We couldn't verify your identity. Please try again."
+      },
+      "title": "Identity Verification",
+      "subtitle": "Verify the organization {{admin}}'s identity securely via DigiLocker",
+      "checkingStatus": "Checking verification status...",
+      "intro": "As the organization {{admin}}, your identity needs to be verified before registration can be completed. You'll be taken to DigiLocker (Government of India) to share the following documents securely — no copies are uploaded here.",
+      "requiredDocuments": "Required documents",
+      "preparingVerification": "Preparing verification...",
+      "verifyWithDigiLocker": "Verify with DigiLocker",
+      "completeInTab": "Complete the verification in the DigiLocker tab",
+      "autoUpdateHint": "This page updates automatically once you're done — keep it open.",
+      "tabBlocked": "The DigiLocker tab was blocked by your browser.",
+      "openVerification": "Open DigiLocker verification",
+      "preparingNewLink": "Preparing a new link...",
+      "restartVerification": "Trouble with the tab? Restart verification",
+      "verifiedSuccess": "Identity verified successfully",
+      "verifiedName": "Verified name",
+      "aadhaar": "Aadhaar",
+      "pan": "PAN",
+      "verificationNotCompleted": "Verification not completed",
+      "tryAgain": "Try Again",
+      "startVerificationFailed": "Failed to start identity verification. Please try again"
+    },
+    "payment": {
+      "stripeLoading": "The payment form is still loading. Please wait a moment and try again",
+      "stripeFailed": "Payment processing failed. Please check your card details",
+      "ewayIncomplete": "Please complete the card details first",
+      "sessionPrepFailed": "Could not prepare the payment session. Please contact support",
+      "initFailedContactSupport": "Failed to initialize payment. Please try again or contact support",
+      "initFailed": "Failed to initialize payment. Please try again",
+      "orderCreateFailed": "Failed to create the payment order. Please try again",
+      "gatewayNotReady": "The payment gateway is not ready yet. Please try again",
+      "phonepeFailed": "Could not start PhonePe checkout. Please try again or contact support",
+      "vendorUnsupported": "The payment gateway \"{{vendor}}\" is not supported yet. Please contact support",
+      "processFailed": "Payment could not be processed. Please try again",
+      "alreadyInProgressTitle": "Payment already in progress",
+      "alreadyInProgressPrefix": "A payment for this registration is already being processed. If you completed it, your login credentials will be emailed to",
+      "alreadyInProgressSuffix": "shortly.",
+      "retryHint": "If the payment didn't go through, you can retry it below.",
+      "completePaymentButton": "Complete payment",
+      "retryConfirmTitle": "Complete your payment",
+      "retryConfirmFor": "Your registration for",
+      "retryConfirmLockedIn": "is saved — only the payment is pending. Your plan is already locked in",
+      "retryConfirmAt": "at",
+      "proceedButton": "Proceed to Payment",
+      "selectedPlanLabel": "Selected plan",
+      "paymentLabel": "Payment",
+      "changePlanButton": "Change plan",
+      "registrationPaymentFor": "Registration payment for {{templateName}}",
+      "tryAgainButton": "Try again",
+      "confirmAndPayButton": "Confirm & Pay",
+      "processingButton": "Processing...",
+      "continueToPaymentButton": "Continue to Payment"
+    },
+    "completion": {
+      "redirectingPaid": "Payment confirmed — taking you onward...",
+      "redirectingFree": "Registration confirmed — taking you onward...",
+      "paidTitle": "Payment received — your organization is registered.",
+      "freeTitle": "Your organization has been registered!",
+      "orgReadySuffix": "is all set.",
+      "credentialsSentPrefix": "Login credentials have been sent to",
+      "defaultPrefix": "Your organization is registered. Login credentials have been sent to",
+      "goToAdminPortal": "Go to {{admin}} Portal"
+    }
+  },
+  "subOrgLearners": {
+    "page": {
+      "navHeading": "Practice Member Management",
+      "toast": {
+        "notAuthenticated": "User not authenticated",
+        "instituteNotFound": "Institute ID not found",
+        "accessCheckFailed": "Failed to check access permissions"
+      },
+      "checkingPermissions": "Checking permissions...",
+      "accessDeniedTitle": "Access Denied",
+      "accessDeniedDescription": "You don't have the required permissions to access this page. Please contact your {{admin}}.",
+      "defaultOrgName": "Sub Organization",
+      "subtitle": "Manage staff for your {{orgName}}",
+      "refreshButton": "Refresh",
+      "bulkUploadButton": "Bulk Upload",
+      "selectBatchTitle": "Select {{batch}}",
+      "selectBatchPlaceholder": "Select a {{batch}}",
+      "practiceGroupTitle": "Practice Group"
+    },
+    "toast": {
+      "selectBatch": "Please select a {{batch}}",
+      "invalidBatch": "Invalid {{batch}} selected",
+      "loadFormConfigFailed": "Failed to load registration form configuration"
+    },
+    "addStaff": {
+      "addButton": "Add Staff",
+      "addingLabel": "Adding...",
+      "dialogTitle": "Add New Staff",
+      "phonePlaceholder": "+1 234 567 8900",
+      "fallback": {
+        "emailLabel": "Email *",
+        "emailPlaceholder": "staff@example.com",
+        "fullNameLabel": "Full Name *",
+        "fullNamePlaceholder": "Enter full name",
+        "mobileLabel": "Mobile Number *"
+      },
+      "toast": {
+        "configProblem": "This institute's invite form is missing a recognizable Email or Full Name field. Ask an {{admin}} to verify the invite form configuration.",
+        "emailNameRequired": "Email and Name are required fields.",
+        "invalidEmail": "Please enter a valid email address",
+        "invalidPhone": "Please enter a valid phone number with country code (e.g., +1234567890)",
+        "addFailed": "Failed to add staff"
+      }
+    },
+    "table": {
+      "staffCountTitle": "Staff ({{count}})",
+      "selectedCount_one": "{{count}} staff member selected",
+      "selectedCount_other": "{{count}} staff members selected",
+      "loading": "Loading staff...",
+      "emptyTitle": "No staff found",
+      "emptyDescription": "Start by adding staff to this {{batch}}.",
+      "statusColumn": "Status"
+    },
+    "terminate": {
+      "selectedButton": "Terminate Selected ({{count}})",
+      "confirmTitle": "Confirm Termination",
+      "confirmDescription_one": "Remove <b1>{{count}}</b1> staff member from this membership.",
+      "confirmDescription_other": "Remove <b1>{{count}}</b1> staff members from this membership.",
+      "modeLabel": "Termination Mode",
+      "hardLabel": "Terminate now",
+      "hardDescription": "— Access is revoked immediately.",
+      "softLabel": "Keep until date",
+      "softDescription": "— Access continues until the last access date below, then ends automatically.",
+      "lastAccessDateLabel": "Last access date",
+      "pickDateHint": "Pick a date to keep access until.",
+      "schedulingLabel": "Scheduling...",
+      "terminatingLabel": "Terminating...",
+      "toast": {
+        "selectMembers": "Please select members to terminate",
+        "pickDate": "Please pick a last access date for a soft termination",
+        "softSuccess_one": "Access for {{count}} staff member will continue until {{date}}",
+        "softSuccess_other": "Access for {{count}} staff members will continue until {{date}}",
+        "hardSuccess_one": "Successfully terminated {{count}} staff member",
+        "hardSuccess_other": "Successfully terminated {{count}} staff members",
+        "failed": "Failed to terminate staff. Please try again."
+      }
+    },
+    "bulkUpload": {
+      "dialogTitle": "Bulk Upload Staff",
+      "instructionsTitle": "Instructions",
+      "steps": {
+        "step1": "Download the sample template to see the required format",
+        "step2": "Fill in staff details (fields marked with * are mandatory)",
+        "step3": "Save your file and upload it below",
+        "step4": "Each row will be processed individually"
+      },
+      "downloadButton": "Download Sample Template",
+      "downloadHint": "Excel template with all required fields",
+      "processingLabel": "Processing {{processed}} of {{total}} staff...",
+      "dropHere": "Drop your file here",
+      "dragDropPrompt": "Drag and drop your file here, or",
+      "browseButton": "Browse Files",
+      "supportsHint": "Supports .xlsx, .xls, and .csv files",
+      "resultsTitle": "Upload Results",
+      "resultsSuccessBadge": "{{count}} Success",
+      "resultsFailedBadge": "{{count}} Failed",
+      "resultRowLabel": "Row {{rowNumber}}: {{fullName}}",
+      "unknownValue": "Unknown",
+      "closeButton": "Close",
+      "result": {
+        "invalidData": "Invalid data: Email and Name are required. Please check the format.",
+        "success": "Successfully added"
+      },
+      "toast": {
+        "templateDownloaded": "Sample template downloaded successfully",
+        "parseFailed": "Failed to parse file. Please ensure it is a valid Excel or CSV file.",
+        "readFailed": "Failed to read file",
+        "invalidFileType": "Please upload a valid Excel (.xlsx, .xls) or CSV file",
+        "emptyFile": "The file appears to be empty",
+        "processFailed": "Failed to process file",
+        "addedSuccess_one": "Successfully added {{count}} staff member",
+        "addedSuccess_other": "Successfully added {{count}} staff members",
+        "addedFailedCount_one": "Failed to add {{count}} staff member. Check the results below.",
+        "addedFailedCount_other": "Failed to add {{count}} staff members. Check the results below."
+      }
+    }
+  }
+}

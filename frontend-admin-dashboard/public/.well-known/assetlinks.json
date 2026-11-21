@@ -1,0 +1,26 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.evalezy.app",
+      "sha256_cert_fingerprints": [
+        "94:23:B0:73:D3:0C:6E:2A:29:82:67:E3:40:C8:D3:3B:69:2A:0C:B6:BF:AF:9F:08:30:51:E3:9A:61:7F:6B:A8"
+      ]
+    }
+  },
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.vacademy.admin.app",
+      "sha256_cert_fingerprints": [
+        "94:23:B0:73:D3:0C:6E:2A:29:82:67:E3:40:C8:D3:3B:69:2A:0C:B6:BF:AF:9F:08:30:51:E3:9A:61:7F:6B:A8"
+      ]
+    }
+  }
+]

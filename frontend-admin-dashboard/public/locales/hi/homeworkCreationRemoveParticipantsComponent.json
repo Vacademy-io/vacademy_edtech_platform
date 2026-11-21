@@ -1,0 +1,5 @@
+{
+    "heading": "प्रतिभागियों को हटाएं",
+    "confirmText": "क्या आप वाकई <highlight>{{name}}</highlight> के लिए प्रतिभागियों को हटाना चाहते हैं?",
+    "doneButton": "हो गया"
+}

@@ -1,4 +1,5 @@
 import { Lock } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
@@ -7,6 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useFunTheme } from "@/hooks/use-fun-theme";
 
 interface LockedBadgeProps {
   className?: string;
@@ -24,7 +26,21 @@ export function LockedBadge({
   showText = true,
   unlockMessage,
 }: LockedBadgeProps) {
+  const { t } = useTranslation("courseComponentsExtra");
+  const isFun = useFunTheme();
   const iconSize = size === "sm" ? 12 : size === "md" ? 14 : 16;
+
+  // Fun skin: phones cannot hover, so the unlock message is written out next to
+  // the grey padlock instead of hiding in a tooltip.
+  if (isFun) {
+    return (
+      <span className={cn("fun-locked", className)}>
+        <Lock size={iconSize} weight="fill" aria-hidden="true" />
+        {showText && <span className="fun-locked__label">{t("dripConditions.common.locked")}</span>}
+        {unlockMessage ? <span className="fun-locked__msg">{unlockMessage}</span> : null}
+      </span>
+    );
+  }
 
   const badge = (
     <Badge
@@ -39,7 +55,7 @@ export function LockedBadge({
       )}
     >
       <Lock size={iconSize} weight="fill" />
-      {showText && <span>Locked</span>}
+      {showText && <span>{t("dripConditions.common.locked")}</span>}
     </Badge>
   );
 

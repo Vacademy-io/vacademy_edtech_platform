@@ -1,0 +1,7 @@
+{
+    "manageChapter": "Manage Chapter",
+    "manageChapterDescription": "Explore and manage chapters. Click on a chapter to view and access eBooks, video lectures, and study resources, or add new materials to enhance your learning experience.",
+    "session": "Session: {{sessionName}}",
+    "chapterDeletedSuccessfully": "Chapter deleted successfully",
+    "failedToDeleteChapter": "Failed to delete chapter"
+}

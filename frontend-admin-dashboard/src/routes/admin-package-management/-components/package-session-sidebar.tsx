@@ -890,14 +890,22 @@ const ContentTab = ({
     const contentItems = [
         { label: 'Why Learn', value: packageDto.why_learn_html },
         { label: 'Who Should Learn', value: packageDto.who_should_learn_html },
-        { label: 'About the Course', value: packageDto.about_the_course_html },
-        { label: 'Course Description', value: packageDto.course_html_description_html },
+        {
+            label: `About the ${getTerminology(ContentTerms.Course, SystemTerms.Course)}`,
+            value: packageDto.about_the_course_html,
+        },
+        {
+            label: `${getTerminology(ContentTerms.Course, SystemTerms.Course)} Description`,
+            value: packageDto.course_html_description_html,
+        },
     ].filter((item) => item.value);
 
     return (
         <div className="space-y-4 p-2">
             <div className="flex items-center justify-between">
-                <h4 className="text-xs font-medium text-neutral-700">Course Content</h4>
+                <h4 className="text-xs font-medium text-neutral-700">
+                    {getTerminology(ContentTerms.Course, SystemTerms.Course)} Content
+                </h4>
                 <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
                     <Pencil className="mr-2 size-3" />
                     Edit Content
@@ -987,13 +995,18 @@ const MediaTab = ({
         { label: 'Thumbnail', id: packageDto.thumbnail_file_id },
         { label: 'Preview Image', id: packageDto.course_preview_image_media_id },
         { label: 'Banner', id: packageDto.course_banner_media_id },
-        { label: 'Course Media', id: packageDto.course_media_id },
+        {
+            label: `${getTerminology(ContentTerms.Course, SystemTerms.Course)} Media`,
+            id: packageDto.course_media_id,
+        },
     ];
 
     return (
         <div className="space-y-4 p-2">
             <div className="flex items-center justify-between">
-                <h4 className="text-xs font-medium text-neutral-700">Course Media</h4>
+                <h4 className="text-xs font-medium text-neutral-700">
+                    {getTerminology(ContentTerms.Course, SystemTerms.Course)} Media
+                </h4>
                 <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
                     <Pencil className="mr-2 size-3" />
                     Edit Media

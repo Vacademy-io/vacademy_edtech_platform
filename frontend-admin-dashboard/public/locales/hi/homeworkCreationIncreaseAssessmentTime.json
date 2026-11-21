@@ -1,0 +1,23 @@
+{
+    "dialog": {
+        "heading": "मूल्यांकन का समय बढ़ाएं"
+    },
+    "assessment": {
+        "title": "पूरा मूल्यांकन",
+        "increaseByLabel": "इतना बढ़ाएं",
+        "selectSectionPlaceholder": "सेक्शन चुनें",
+        "doneButton": "हो गया"
+    },
+    "section": {
+        "title": "सेक्शन {{index}}",
+        "increaseByLabel": "इतना बढ़ाएं",
+        "selectSectionPlaceholder": "सेक्शन चुनें",
+        "doneButton": "हो गया"
+    },
+    "question": {
+        "title": "प्रश्न {{index}}",
+        "increaseByLabel": "इतना बढ़ाएं",
+        "selectSectionPlaceholder": "सेक्शन चुनें",
+        "doneButton": "हो गया"
+    }
+}

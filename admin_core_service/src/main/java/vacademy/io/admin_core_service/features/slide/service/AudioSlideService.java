@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.chapter.entity.Chapter;
 import vacademy.io.admin_core_service.features.chapter.repository.ChapterRepository;
+import vacademy.io.admin_core_service.features.course_knowledge.service.ContentIndexMarker;
 import vacademy.io.admin_core_service.features.slide.dto.AddAudioSlideDTO;
 import vacademy.io.admin_core_service.features.slide.dto.AudioSlideDTO;
 import vacademy.io.admin_core_service.features.slide.dto.SlideDTO;
@@ -38,6 +39,7 @@ public class AudioSlideService {
     private final ChapterToSlidesRepository chapterToSlidesRepository;
     private final ChapterRepository chapterRepository;
     private final SlideNotificationService slideNotificationService;
+    private final ContentIndexMarker contentIndexMarker;
 
     /**
      * Add or update an audio slide using the full SlideDTO.
@@ -125,6 +127,7 @@ public class AudioSlideService {
             slideNotificationService.sendNotificationForAddingSlide(instituteId, chapter, slide);
         }
 
+        contentIndexMarker.mark(slideId, chapterId, "AUDIO_SLIDE_ADDED");
         log.info("Created new audio slide: slideId={}, audioSlideId={}", slideId, audioSlideId);
         return slideId;
     }
@@ -184,6 +187,7 @@ public class AudioSlideService {
             }
         }
 
+        contentIndexMarker.mark(slideId, chapterId, "AUDIO_SLIDE_UPDATED");
         log.info("Updated audio slide: slideId={}", slideId);
         return slideId;
     }
@@ -239,6 +243,7 @@ public class AudioSlideService {
         mapping.setSlideOrder(slideOrder);
         mapping.setStatus(status);
         chapterToSlidesRepository.save(mapping);
+        contentIndexMarker.mark(slideId, chapterId, "AUDIO_SLIDE_ADDED");
 
         return slideId;
     }
@@ -292,6 +297,7 @@ public class AudioSlideService {
             mapping.setStatus(status);
             chapterToSlidesRepository.save(mapping);
         }
+        contentIndexMarker.mark(slideId, chapterId, "AUDIO_SLIDE_UPDATED");
 
         return slideId;
     }

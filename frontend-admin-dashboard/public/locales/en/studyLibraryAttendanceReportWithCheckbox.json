@@ -1,0 +1,9 @@
+{
+    "select": "Select",
+    "srNo": "Sr. No.",
+    "membersName": "Members Name",
+    "attendanceStatus": "Attendance Status",
+    "present": "Present",
+    "absent": "Absent",
+    "unmarked": "Unmarked"
+}

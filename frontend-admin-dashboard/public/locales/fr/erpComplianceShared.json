@@ -1,0 +1,16 @@
+{
+    "warnings": {
+        "title": "À vérifier avant le dépôt"
+    },
+    "skipped": {
+        "defaultNoun": "employés",
+        "excludedCount_one": "{{count}} {{noun}} exclu de ce fichier",
+        "excludedCount_many": "{{count}} {{noun}} exclus de ce fichier",
+        "excludedCount_other": "{{count}} {{noun}} exclus de ce fichier",
+        "fixHint": "Corrigez la raison ci-dessous puis régénérez — le fichier tel quel ne les inclut pas.",
+        "table": {
+            "employee": "Employé",
+            "reason": "Raison"
+        }
+    }
+}

@@ -1,0 +1,28 @@
+{
+    "header": {
+        "title": "A few things would make this more real"
+    },
+    "item": {
+        "shotLabel": "· shot {{number}}",
+        "skip": "Skip",
+        "undo": "Undo",
+        "willBeUsed": "Will be used"
+    },
+    "upload": {
+        "altText": "uploaded",
+        "uploading": "Uploading…",
+        "replace": "Replace",
+        "upload": "Upload",
+        "failed": "Upload failed. Try a smaller image."
+    },
+    "data": {
+        "placeholder": "Your real figure — e.g. “38% more enrollments in 2025”"
+    },
+    "footer": {
+        "providedCount": "{{count}} of {{total}} provided — the rest will be AI-generated.",
+        "allOptional": "Everything is optional — skip and the AI creates it all."
+    },
+    "actions": {
+        "continue": "Continue"
+    }
+}

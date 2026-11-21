@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
-import { getBatchStatus, type UnifiedSendResponse } from '@/services/unified-send-service';
+import {
+    getBatchStatus,
+    insufficientCreditsMessage,
+    type UnifiedSendResponse,
+} from '@/services/unified-send-service';
 import { CheckCircle, XCircle, Spinner, Clock } from '@phosphor-icons/react';
 
 interface Props {
@@ -66,6 +70,8 @@ export function BatchProgress({ batchId, onComplete }: Props) {
         PARTIAL: { icon: CheckCircle, color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200', label: 'Partial' },
         FAILED: { icon: XCircle, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', label: 'Failed' },
         PROCESSING: { icon: Clock, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200', label: 'Processing' },
+        // Refused whole for lack of free emails or credits: nothing went out.
+        INSUFFICIENT_CREDITS: { icon: XCircle, color: 'text-danger-600', bg: 'bg-danger-50', border: 'border-danger-200', label: 'Not sent — no credits' },
     };
 
     const statusConfig = statuses[status.status] || statuses.PROCESSING;
@@ -105,6 +111,9 @@ export function BatchProgress({ batchId, onComplete }: Props) {
                 <span className="text-green-600">{status.accepted} sent</span>
                 {status.failed > 0 && <span className="text-red-500">{status.failed} failed</span>}
             </div>
+            {status.status === 'INSUFFICIENT_CREDITS' && (
+                <p className="mt-2 text-caption text-danger-700">{insufficientCreditsMessage(status)}</p>
+            )}
         </div>
     );
 }

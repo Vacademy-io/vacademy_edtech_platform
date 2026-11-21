@@ -1,0 +1,51 @@
+{
+    "title": "Ajuster l'échéance",
+    "summary": {
+        "feeType": "Type de frais",
+        "expected": "Attendu",
+        "paid": "Payé",
+        "due": "Dû"
+    },
+    "type": {
+        "concession": "Réduction",
+        "penalty": "Pénalité"
+    },
+    "current": {
+        "heading": "Ajustement actuel"
+    },
+    "reasonPrefix": "Motif : {{reason}}",
+    "actions": {
+        "retract": "Annuler l'ajustement",
+        "submitPenalty": "Appliquer la pénalité",
+        "submitConcession": "Soumettre pour approbation",
+        "submitting": "Envoi en cours..."
+    },
+    "form": {
+        "concessionHint": "Diminue le montant dû",
+        "concessionApproval": "Approbation requise",
+        "penaltyHint": "Augmente le montant dû",
+        "penaltyInstant": "Appliquée instantanément",
+        "amountLabel": "Montant",
+        "amountPlaceholder": "Saisir le montant",
+        "reasonLabel": "Motif",
+        "reasonPlaceholderConcession": "ex. Bourse, Difficulté financière",
+        "reasonPlaceholderPenalty": "ex. Retard de paiement, Non-respect du règlement"
+    },
+    "toast": {
+        "penaltyApplied": "Pénalité appliquée",
+        "concessionSubmitted": "Réduction soumise pour approbation",
+        "submitFailed": "Échec de la soumission de l'ajustement",
+        "retracted": "Ajustement annulé",
+        "retractFailed": "Échec de l'annulation de l'ajustement",
+        "selectType": "Sélectionnez Réduction ou Pénalité",
+        "invalidAmount": "Saisissez un montant valide",
+        "exceedsExpected": "La réduction ne peut pas dépasser le montant attendu"
+    },
+    "history": {
+        "heading": "Historique",
+        "loading": "Chargement de l'historique…",
+        "empty": "Aucune activité d'ajustement pour le moment.",
+        "by": "par {{actor}}",
+        "page": "Page {{current}} sur {{total}}"
+    }
+}

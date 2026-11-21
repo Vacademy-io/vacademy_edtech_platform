@@ -1,0 +1,47 @@
+{
+    "header": {
+        "title": "Conception du modèle et génération des certificats",
+        "subtitle": "Importez un modèle et annotez-le avec les champs de données des élèves"
+    },
+    "viewToggle": {
+        "upload": "Importer",
+        "design": "Conception",
+        "preview": "Aperçu"
+    },
+    "progress": {
+        "generating": "Génération des certificats...",
+        "status": "{{completed}} sur {{total}} terminés"
+    },
+    "alerts": {
+        "missingFields": "Veuillez d'abord importer un modèle et mapper des champs.",
+        "generationSuccess": "Génération des certificats terminée !\nRéussis : {{successCount}}\nErreurs : {{errorCount}}",
+        "generationFailed": "Échec de la génération des certificats : {{message}}",
+        "unknownError": "Erreur inconnue"
+    },
+    "footer": {
+        "back": "Retour aux données des élèves",
+        "fieldsMapped_one": "{{count}} champ mappé",
+        "fieldsMapped_many": "{{count}} champ mappé",
+        "fieldsMapped_other": "{{count}} champs mappés",
+        "generating": "Génération...",
+        "generate": "Générer les certificats"
+    },
+    "help": {
+        "title": "Bien démarrer avec la génération de certificats",
+        "step1": "Importez un modèle de certificat (PDF ou image) à l'aide de la zone d'import ci-dessus",
+        "step2": "Passez à la vue « Conception » pour mapper les champs de données sur votre modèle",
+        "step3": "Faites glisser des champs de la palette vers le modèle à l'endroit où vous voulez voir apparaître les données",
+        "step4": "Utilisez « Aperçu » pour voir le rendu des certificats avec de vraies données d'élèves",
+        "step5": "Cliquez sur « Générer les certificats » pour créer et télécharger tous les certificats"
+    },
+    "fields": {
+        "userId": { "label": "ID utilisateur", "sample": "USR001" },
+        "enrollmentNumber": { "label": "Numéro d'inscription", "sample": "ENR2024001" },
+        "studentName": { "label": "Nom de l'élève", "sample": "Jean Dupont" },
+        "fullName": { "label": "Nom complet", "sample": "Jean Michel Dupont" },
+        "email": { "label": "Adresse e-mail", "sample": "john.doe@example.com" },
+        "mobileNumber": { "label": "Numéro de mobile", "sample": "+1 (555) 123-4567" },
+        "instituteName": { "label": "Nom de l'établissement", "sample": "Université de Technologie" },
+        "completionDate": { "label": "Date d'achèvement" }
+    }
+}

@@ -1,0 +1,32 @@
+{
+    "headingAdd": "Ajouter un jour férié",
+    "headingEdit": "Modifier le jour férié",
+    "actions": {
+        "cancel": "Annuler",
+        "saving": "Enregistrement…",
+        "saveChanges": "Enregistrer les modifications",
+        "addHoliday": "Ajouter un jour férié"
+    },
+    "fields": {
+        "name": "Nom",
+        "namePlaceholder": "Fête de l'Indépendance",
+        "date": "Date",
+        "type": "Type",
+        "optionalHoliday": "Jour férié facultatif",
+        "optionalHolidayDescription": "Les employés choisissent de le prendre ou non, dans la limite fixée par votre politique de congés — ce n'est pas un jour fermé pour tout le monde.",
+        "description": "Description",
+        "descriptionPlaceholder": "Tout ce que le personnel doit savoir sur ce jour"
+    },
+    "toast": {
+        "updated": "Jour férié mis à jour",
+        "added": "Jour férié ajouté"
+    },
+    "errors": {
+        "saveFailed": "Impossible d'enregistrer le jour férié."
+    },
+    "validation": {
+        "nameRequired": "Donnez un nom au jour férié",
+        "dateRequired": "Choisissez la date",
+        "descriptionTooLong": "Limitez la description à 500 caractères"
+    }
+}

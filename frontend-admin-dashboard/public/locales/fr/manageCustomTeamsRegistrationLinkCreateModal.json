@@ -1,0 +1,200 @@
+{
+    "title": {
+        "create": "Créer un lien d'inscription",
+        "edit": "Modifier le lien d'inscription"
+    },
+    "fields": {
+        "name": {
+            "label": "Nom *",
+            "placeholder": "ex. Intégration d'école partenaire"
+        },
+        "courses": {
+            "label": "{{label}} *",
+            "hint": "Chaque {{subOrg}} inscrit via ce lien obtient exactement ces lots.",
+            "loading": "Chargement des lots...",
+            "empty": "Aucun lot trouvé.",
+            "selectedCount_one": "{{count}} sélectionné",
+            "selectedCount_many": "{{count}} sélectionnés",
+            "selectedCount_other": "{{count}} sélectionnés"
+        },
+        "seatLimit": {
+            "label": "Limite de places",
+            "placeholder": "ex. 10",
+            "hint": "Nombre maximal de membres par {{subOrg}} créé."
+        },
+        "validity": {
+            "label": "Validité (jours)",
+            "placeholder": "ex. 365",
+            "hint": "Durée d'accès pour chaque {{subOrg}} créé."
+        }
+    },
+    "payment": {
+        "label": "Paiement",
+        "typeLabelPrefix": "Type : ",
+        "optionLabelPrefix": "Option de paiement : ",
+        "vendorLabelPrefix": "Fournisseur : ",
+        "currencyLabelPrefix": "Devise : ",
+        "immutableNote": "Les paramètres de paiement ne peuvent pas être modifiés après la création — créez plutôt un nouveau lien.",
+        "typeSelect": {
+            "label": "Type de paiement",
+            "hint": "Ce que chaque organisation paie lors de l'inscription via ce lien."
+        },
+        "option": {
+            "label": "Option de paiement *",
+            "hint": "L'administrateur qui s'inscrit paie via une option de paiement existante de l'établissement. Le prix et la devise proviennent du plan de cette option.",
+            "loading": "Chargement des options de paiement...",
+            "loadingShort": "Chargement...",
+            "noneFound": "Aucune option active trouvée",
+            "placeholder": "Sélectionner une option de paiement",
+            "noActiveOfType": "Aucune option {{type}} active — créez-en une dans les paramètres de paiement."
+        },
+        "vendor": {
+            "label": "Fournisseur de paiement",
+            "noneFound": "Aucun fournisseur de paiement trouvé — configurez d'abord une passerelle de paiement dans les paramètres.",
+            "placeholder": "Sélectionner un fournisseur de paiement"
+        }
+    },
+    "paymentTypeLabel": {
+        "free": "Gratuit",
+        "oneTime": "Paiement unique",
+        "subscription": "Abonnement"
+    },
+    "roles": {
+        "admin": {
+            "label": "Rôles administrateur (service d'authentification)",
+            "hint": "Rôles attribués à l'administrateur qui s'inscrit via ce lien."
+        },
+        "team": {
+            "label": "Rôles d'équipe autorisés",
+            "hint": "Rôles que l'administrateur {{subOrg}} peut attribuer à sa propre équipe. Laisser vide pour autoriser tout rôle personnalisé."
+        },
+        "permissions": {
+            "label": "Autorisations de l'administrateur",
+            "hint": "Ce que l'administrateur {{subOrg}} peut faire. Laisser vide pour accorder l'accès complet.",
+            "createCourse": "Créer {{course}}"
+        },
+        "noneFound": "Aucun rôle trouvé"
+    },
+    "customFields": {
+        "label": "Champs du formulaire d'inscription",
+        "hint": "Questions supplémentaires auxquelles le candidat répond. L'ordre suit cette liste.",
+        "addField": "Ajouter un champ",
+        "empty": "Aucun champ supplémentaire — le formulaire demande uniquement les informations de l'organisation et de l'administrateur.",
+        "namePlaceholder": "Nom du champ",
+        "removeAria": "Supprimer le champ",
+        "optionsPlaceholder": "Options séparées par des virgules (ex. Petit, Moyen, Grand)",
+        "mandatory": "Obligatoire"
+    },
+    "wizard": {
+        "label": "Contenu de l'assistant",
+        "hint": "Ajustez ce que voient les candidats en remplissant le formulaire.",
+        "orgNameHint": {
+            "label": "Indice pour le nom de l'organisation",
+            "placeholder": "ex. Si vous n'avez pas d'organisation enregistrée, écrivez votre nom complet",
+            "hint": "Affiché comme texte d'aide sous le champ Nom de l'organisation dans le formulaire d'inscription. Laisser vide pour n'afficher rien."
+        },
+        "collectAddress": {
+            "label": "Collecter l'adresse complète",
+            "hint": "Ajoute les lignes d'adresse 1/2, la ville, l'état et le code postal au formulaire d'inscription et les enregistre sur la nouvelle organisation."
+        }
+    },
+    "tnc": {
+        "label": "Conditions générales",
+        "hint": "Exige que les candidats acceptent un PDF de conditions générales et/ou des déclarations de consentement avant de terminer.",
+        "existingFileLabel": "PDF de conditions générales existant",
+        "defaultFileLabel": "PDF de conditions générales téléchargé",
+        "removeFile": "Supprimer",
+        "acceptFormat": "Format pris en charge : PDF (facultatif)",
+        "uploading": "Téléchargement du PDF...",
+        "consent": {
+            "label": "Déclarations de consentement",
+            "hint": "Chaque déclaration devient une case à cocher obligatoire. Ajoutez des liens en ligne avec [libellé](url) — ex. Nous avons lu le [Code de conduite](https://example.com/coc) et acceptons de le respecter.",
+            "itemPlaceholder": "ex. En soumettant, vous acceptez de recevoir des communications. Consultez notre [politique de confidentialité](https://example.com/privacy).",
+            "addStatement": "Ajouter une déclaration"
+        }
+    },
+    "kyc": {
+        "label": "Vérification d'identité (DigiLocker)",
+        "hint": "Exige une vérification d'identité via DigiLocker.",
+        "aadhaarOnly": "Aadhaar uniquement",
+        "aadhaarPan": "Aadhaar + PAN",
+        "scopeHint": "L'administrateur de l'organisation qui s'inscrit doit vérifier son identité via DigiLocker avant de terminer l'inscription.",
+        "instructions": {
+            "label": "Instructions DigiLocker",
+            "placeholder": "ex. Gardez votre mobile lié à Aadhaar à portée de main. Des problèmes ? Consultez notre [guide DigiLocker](https://example.com/digilocker-help).",
+            "hint": "Affiché à l'étape de vérification d'identité. Laisser vide pour la note par défaut (qui indique déjà aux utilisateurs de cocher à la fois Aadhaar et PAN lorsque PAN est requis). Les liens [libellé](url) sont pris en charge."
+        }
+    },
+    "maxRegistrations": {
+        "label": "Nombre maximal d'inscriptions",
+        "placeholder": "Illimité",
+        "hint": "Nombre maximal d'inscriptions terminées via ce lien. Laisser vide pour illimité."
+    },
+    "completion": {
+        "label": "Après l'inscription",
+        "hint": "Ce que voit le candidat une fois son inscription terminée.",
+        "mode": {
+            "default": {
+                "title": "Par défaut",
+                "desc": "Écran de succès standard avec un bouton \"Aller au portail administrateur\"."
+            },
+            "message": {
+                "title": "Message personnalisé",
+                "desc": "Affichez votre propre message de succès, avec éventuellement un bouton."
+            },
+            "redirect": {
+                "title": "Rediriger vers une URL",
+                "desc": "Envoyez le candidat directement vers votre propre page."
+            }
+        },
+        "message": {
+            "label": "Message de fin *",
+            "placeholder": "ex. Merci de votre inscription ! Notre équipe vous contactera dans les 24 heures. En attendant, lisez le [guide de démarrage](https://example.com/start).",
+            "linksHint": "Les liens [libellé](url) sont pris en charge.",
+            "buttonLabel": {
+                "label": "Libellé du bouton",
+                "placeholder": "ex. Ouvrir votre portail"
+            },
+            "buttonUrl": {
+                "label": "URL du bouton",
+                "placeholder": "https://..."
+            },
+            "buttonHint": "Bouton facultatif — le libellé et l'URL sont requis ensemble, et l'URL doit commencer par https://."
+        },
+        "redirect": {
+            "label": "URL de redirection *",
+            "placeholder": "https://yourdomain.com/welcome",
+            "hint": "Les candidats sont automatiquement redirigés ici après avoir terminé. Doit commencer par https://."
+        }
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "save": "Enregistrer les modifications"
+    },
+    "toast": {
+        "createSuccess": "Lien d'inscription créé",
+        "createCode": "Code d'inscription : {{code}}",
+        "createError": "Échec de la création du lien d'inscription",
+        "updateSuccess": "Lien d'inscription mis à jour",
+        "updateError": "Échec de la mise à jour du lien d'inscription",
+        "pdfOnly": "Seuls les fichiers PDF sont pris en charge",
+        "pdfUploaded": "PDF de conditions générales téléchargé",
+        "uploadNoFileId": "Le téléchargement n'a pas renvoyé d'identifiant de fichier",
+        "pdfUploadFailed": "Échec du téléchargement du PDF de conditions générales",
+        "selectBatch": "Sélectionnez au moins un lot",
+        "tncRequired": "Ajoutez un PDF de conditions générales ou au moins une déclaration de consentement, ou désactivez l'étape des conditions générales",
+        "dropdownOptionRequired": "Ajoutez au moins une option pour le champ déroulant \"{{field}}\"",
+        "completionMessageRequired": "Ajoutez un message de fin ou un bouton, ou remettez \"Après l'inscription\" sur Par défaut",
+        "completionButtonPairRequired": "Le libellé et l'URL du bouton de fin sont requis ensemble",
+        "completionButtonUrlHttps": "L'URL du bouton de fin doit commencer par https://",
+        "redirectUrlRequired": "Saisissez l'URL vers laquelle rediriger après l'inscription",
+        "redirectUrlHttps": "L'URL de redirection doit commencer par https://"
+    },
+    "validation": {
+        "nameRequired": "Le nom est requis",
+        "minOne": "Doit être au moins 1",
+        "minOneDay": "Doit être au moins 1 jour",
+        "selectPaymentOption": "Sélectionnez une option de paiement",
+        "vendorRequired": "Un fournisseur de paiement est requis pour les liens payants"
+    }
+}

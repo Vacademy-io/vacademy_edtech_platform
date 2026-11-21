@@ -1,0 +1,290 @@
+{
+    "page": {
+        "description": "How your tests went: participation, scores, evaluation backlog and learners to follow up."
+    },
+    "hero": {
+        "eyebrow": "Assessment analytics",
+        "title": "Assessment Dashboard",
+        "compared": "compared with {{range}}"
+    },
+    "share": {
+        "csv": "Export CSV",
+        "pdf": "Download PDF"
+    },
+    "filters": {
+        "rangeLabel": "Date range",
+        "allOf": "All {{term}}",
+        "types": "Test types",
+        "allTypes": "All test types",
+        "clear": "Clear",
+        "refresh": "Refresh",
+        "startDate": "Start date",
+        "endDate": "End date",
+        "apply": "Apply",
+        "invalidRange": "End date must be on or after the start date",
+        "rangeTooLong": "Pick a range of at most {{days}} days",
+        "updatedAt": "Updated {{time}} · refreshes every minute"
+    },
+    "presets": {
+        "today": "Today",
+        "last5": "Last 5 days",
+        "last7": "Last 7 days",
+        "last30": "Last 30 days",
+        "next7": "Next 7 days",
+        "custom": "Custom"
+    },
+    "error": {
+        "title": "Couldn't load the dashboard",
+        "body": "Check your connection and try again.",
+        "retry": "Retry"
+    },
+    "warnings": {
+        "enrollmentUnavailable": "Couldn't load {{term}} membership right now, so only registered learners are counted. \"Not attempted\" may be lower than it really is."
+    },
+    "delta": {
+        "points": "{{v}} pts",
+        "percent": "{{v}}%",
+        "plain": "{{v}}",
+        "vs": "vs {{range}}"
+    },
+    "kpis": {
+        "tests": "Tests",
+        "testsDetail": "{{closed}} closed · {{live}} live · {{upcoming}} upcoming · {{open}} anytime",
+        "participation": "Participation",
+        "participationDetail": "{{attempted}} of {{expected}} {{term}} sat the closed tests",
+        "noClosed": "No closed tests in this range yet",
+        "submissions": "Submissions",
+        "submissionsDetail": "by {{n}} {{term}}",
+        "avgScore": "Average score",
+        "avgScoreDetail": "Across {{n}} evaluated attempts · top {{top}}",
+        "noScores": "No evaluated attempts yet",
+        "notAttempted": "Not attempted",
+        "notAttemptedDetail_one": "Missed attempts in {{count}} closed test",
+        "notAttemptedDetail_other": "Missed attempts across {{count}} closed tests",
+        "backlog": "Evaluation backlog",
+        "backlogDetail": "{{evaluate}} to evaluate · {{release}} results to release",
+        "backlogClear": "Everything is evaluated and released",
+        "noSubmissions": "No submissions in this range"
+    },
+    "trend": {
+        "title": "Daily activity",
+        "metrics": {
+            "submissions": "Submissions",
+            "score": "Avg score",
+            "learners": "Learners",
+            "tests": "Tests"
+        },
+        "subtitles": {
+            "submissions": "Attempts submitted each day",
+            "score": "Average score of the attempts submitted each day",
+            "learners": "Different learners who submitted each day",
+            "tests": "Tests whose window opened each day"
+        }
+    },
+    "empty": {
+        "noActivity": "No tests or submissions in this range",
+        "noSubmissions": "No submissions in this range",
+        "noTests": "No tests in this range",
+        "noBatches": "No {{term}} in this range",
+        "noMatch": "No tests match these filters"
+    },
+    "donut": {
+        "title": "Who sat the tests",
+        "subtitle_one": "Across {{count}} closed test",
+        "subtitle_other": "Across {{count}} closed tests",
+        "attempted": "Attempted",
+        "notAttempted": "Not attempted",
+        "center": "participation"
+    },
+    "scores": {
+        "title": "Score distribution",
+        "subtitle": "{{n}} evaluated attempts · average {{avg}}",
+        "band": "{{band}}%",
+        "learners": "{{n}} attempts",
+        "legend": {
+            "low": "Below 50%",
+            "mid": "50–75%",
+            "high": "75% and above"
+        }
+    },
+    "heatmap": {
+        "title": "When learners submit",
+        "subtitle": "Submissions by weekday and hour, in your timezone",
+        "cell": "{{n}} submissions",
+        "fewer": "Fewer",
+        "more": "More"
+    },
+    "types": {
+        "title": "Test types",
+        "subtitle": "How many of each ran in this range",
+        "meta": "{{n}} submissions · avg {{avg}}"
+    },
+    "playModes": {
+        "exam": "Exam",
+        "mock": "Mock test",
+        "practice": "Practice",
+        "survey": "Survey",
+        "offline": "Offline exam",
+        "assignment": "Assignment",
+        "other": "Other"
+    },
+    "liveNow": {
+        "title": "Live now",
+        "none": "No test is running right now",
+        "autoRefresh": "Counts refresh every minute",
+        "endsAt": "Ends {{time}}",
+        "submitted": "{{n}} submitted",
+        "writing": "{{n}} writing",
+        "notStarted": "{{n}} not started",
+        "ofExpected": "of {{n}} learners",
+        "open": "Open"
+    },
+    "status": {
+        "ALL": "All",
+        "CLOSED": "Closed",
+        "LIVE": "Live",
+        "UPCOMING": "Upcoming",
+        "OPEN": "Anytime"
+    },
+    "table": {
+        "title": "All tests",
+        "subtitle": "{{n}} tests · click one to open it",
+        "truncated": "Showing the first {{limit}} tests — narrow the range to see the rest",
+        "search": "Search test, subject or batch",
+        "untitled": "Untitled test",
+        "when": "When",
+        "anytime": "Anytime",
+        "test": "Test",
+        "status": "Status",
+        "participation": "Participation",
+        "avgScore": "Avg score",
+        "range": "{{low}} – {{high}}",
+        "submissions": "Submitted",
+        "writing": "{{n}} writing",
+        "evaluation": "Evaluation",
+        "allDone": "All done"
+    },
+    "insights": {
+        "best": "Best scoring test",
+        "bestMeta": "Average {{avg}} · {{n}} attempts",
+        "lowest": "Lowest participation",
+        "lowestMeta": "{{rate}} took it · {{missed}} did not",
+        "topBatch": "Top batch",
+        "topBatchMeta": "Average {{avg}} · participation {{rate}}",
+        "backlog": "Evaluation",
+        "backlogTitle": "{{n}} attempts waiting",
+        "backlogMeta_one": "In {{count}} test",
+        "backlogMeta_other": "Across {{count}} tests",
+        "backlogNone": "All caught up",
+        "backlogNoneMeta": "Nothing waiting to be evaluated or released"
+    },
+    "batches": {
+        "title": "{{term}} performance",
+        "subtitle": "Participation in closed tests and average score",
+        "unknown": "Unknown batch",
+        "sort": {
+            "lowest": "Lowest first",
+            "highest": "Highest first",
+            "score": "By score"
+        },
+        "meta_one": "{{count}} test · {{attempted}}/{{expected}} attempted · avg {{avg}}",
+        "meta_other": "{{count}} tests · {{attempted}}/{{expected}} attempted · avg {{avg}}",
+        "checked": "{{done}}/{{total}} copies checked"
+    },
+    "top": {
+        "title": "Top {{term}}",
+        "subtitle": "Highest average score across evaluated tests",
+        "tests_one": "{{count}} test",
+        "tests_other": "{{count}} tests",
+        "best": "best {{best}}"
+    },
+    "queue": {
+        "title": "Evaluation queue",
+        "subtitle_one": "{{count}} test has work left",
+        "subtitle_other": "{{count}} tests have work left",
+        "empty": "Nothing waiting",
+        "allClear": "Every submission is evaluated and its result released",
+        "done": "{{done}}/{{total}} evaluated",
+        "toEvaluate": "{{n}} to evaluate",
+        "toRelease": "{{n}} to release",
+        "open": "Open test",
+        "by": "by {{names}}"
+    },
+    "followUp": {
+        "title": "{{term}} to follow up",
+        "viewLabel": "Which learners",
+        "views": {
+            "missed": "Skipped tests",
+            "low": "Low scores"
+        },
+        "threshold": "Skipped at least",
+        "missedPlus": "{{n}}+ skipped",
+        "missedSubtitle": "{{n}} learners skipped {{missed}} or more closed tests",
+        "missedNone": "Nobody skipped {{missed}} or more closed tests",
+        "lowSubtitle": "{{n}} learners are averaging below {{line}}",
+        "lowNone": "Nobody is averaging below {{line}}",
+        "messageAll": "WhatsApp {{n}}",
+        "email": "Email",
+        "csv": "CSV",
+        "showingTop": "Showing {{shown}} of {{total}}",
+        "learnersCount": "{{n}} learners",
+        "nobody": "There is nobody to message",
+        "missedOf": "{{missed}}/{{expected}} skipped",
+        "took": "took {{rate}}",
+        "scoredTests_one": "{{count}} evaluated test",
+        "scoredTests_other": "{{count}} evaluated tests",
+        "avg": "avg {{avg}}",
+        "lastSubmitted": "last submitted {{date}}",
+        "neverSubmitted": "no submission in range"
+    },
+    "csv": {
+        "name": "Name",
+        "email": "Email",
+        "mobile": "Mobile",
+        "batch": "Batch",
+        "testsSet": "Tests set",
+        "testsTaken": "Tests taken",
+        "testsMissed": "Tests skipped",
+        "testsScored": "Evaluated tests",
+        "avgScore": "Average score %",
+        "bestScore": "Best score %",
+        "lastSubmitted": "Last submitted",
+        "start": "Opens",
+        "end": "Closes",
+        "test": "Test",
+        "type": "Type",
+        "visibility": "Access",
+        "status": "Status",
+        "subject": "Subject",
+        "batches": "Batches",
+        "expected": "Set for",
+        "attempted": "Attempted",
+        "participation": "Participation %",
+        "notAttempted": "Not attempted",
+        "submissions": "Submissions",
+        "highestScore": "Highest score %",
+        "lowestScore": "Lowest score %",
+        "evaluated": "Evaluated",
+        "awaitingEvaluation": "Awaiting evaluation",
+        "awaitingRelease": "Awaiting release",
+        "checkedBy": "Checked by"
+    },
+    "copyCheck": {
+        "title": "Copy checking",
+        "subtitle": "{{checked}} of {{total}} submissions checked · {{waiting}} waiting",
+        "segments": {
+            "teacher": "By teachers",
+            "ai": "By AI",
+            "auto": "Auto-graded",
+            "other": "Marks entered directly",
+            "waiting": "Waiting to be checked"
+        },
+        "teachersTitle": "Who checked the copies",
+        "noTeachers": "No copies were checked by a teacher in this range",
+        "copies": "{{n}} copies",
+        "tests_one": "{{count}} test",
+        "tests_other": "{{count}} tests",
+        "perCopy": "~{{minutes}} min per copy",
+        "lastChecked": "last checked {{date}}"
+    }
+}

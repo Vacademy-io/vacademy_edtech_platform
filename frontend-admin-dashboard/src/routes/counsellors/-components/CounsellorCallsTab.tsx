@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { Phone, PhoneIncoming, PhoneOutgoing } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -29,6 +30,7 @@ interface Props {
 }
 
 export function CounsellorCallsTab({ instituteId, counsellorUserId }: Props) {
+    const { t } = useTranslation('counsellorsCallsTab');
     const [page, setPage] = useState(0);
 
     const callsQuery = useQuery({
@@ -58,12 +60,12 @@ export function CounsellorCallsTab({ instituteId, counsellorUserId }: Props) {
     }, [leadUsers]);
 
     if (callsQuery.isLoading) {
-        return <div className="p-4 text-subtitle text-neutral-500">Loading calls…</div>;
+        return <div className="p-4 text-subtitle text-neutral-500">{t('loading')}</div>;
     }
     if (callsQuery.isError) {
         return (
             <div className="p-4 text-subtitle text-danger-600">
-                Could not load calls. Try refreshing.
+                {t('error')}
             </div>
         );
     }
@@ -71,7 +73,7 @@ export function CounsellorCallsTab({ instituteId, counsellorUserId }: Props) {
         return (
             <div className="flex flex-col items-center gap-2 rounded-md border border-dashed border-neutral-300 p-6 text-center text-subtitle text-neutral-500">
                 <Phone size={20} className="text-neutral-400" />
-                No calls yet for this counsellor.
+                {t('empty')}
             </div>
         );
     }
@@ -96,8 +98,8 @@ export function CounsellorCallsTab({ instituteId, counsellorUserId }: Props) {
             {totalPages > 1 && (
                 <div className="mt-1 flex items-center justify-between">
                     <span className="text-caption text-neutral-500">
-                        Page {page + 1} of {totalPages}
-                        {callsQuery.isFetching ? ' · loading…' : ''}
+                        {t('pagination.pageOf', { page: page + 1, total: totalPages })}
+                        {callsQuery.isFetching ? t('pagination.loadingSuffix') : ''}
                     </span>
                     <MyPagination
                         currentPage={page + 1}
@@ -119,6 +121,7 @@ function CallRow({
     instituteId: string;
     leadName?: string;
 }) {
+    const { t } = useTranslation('counsellorsCallsTab');
     const isInbound = call.direction === 'INBOUND';
     // The lead's number is the From on inbound, the To on outbound — masked
     // versions are what the backend exposes.
@@ -137,7 +140,7 @@ function CallRow({
                         className="truncate text-body font-medium text-neutral-900"
                         title={leadName ?? leadPhone ?? undefined}
                     >
-                        {leadName ?? leadPhone ?? 'Unknown lead'}
+                        {leadName ?? leadPhone ?? t('unknownLead')}
                     </span>
                     <CallStatusPill status={call.status} />
                     <span className="text-caption text-neutral-500">
@@ -155,7 +158,7 @@ function CallRow({
                 )}
             >
                 <span>
-                    {isInbound ? 'Inbound' : 'Outbound'}
+                    {isInbound ? t('inbound') : t('outbound')}
                     {leadName && leadPhone ? ` · ${leadPhone}` : ''}
                 </span>
                 {call.hasRecording && (

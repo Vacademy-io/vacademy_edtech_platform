@@ -5,11 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
-import vacademy.io.admin_core_service.features.enroll_invite.dto.EnrollInviteSettingDTO;
-import vacademy.io.admin_core_service.features.enroll_invite.entity.EnrollInvite;
-import vacademy.io.admin_core_service.features.enroll_invite.repository.EnrollInviteRepository;
 import vacademy.io.admin_core_service.features.fee_management.entity.StudentFeePayment;
 import vacademy.io.admin_core_service.features.fee_management.repository.StudentFeePaymentRepository;
 import vacademy.io.admin_core_service.features.institute.repository.InstituteRepository;
@@ -55,7 +51,7 @@ public class SubOrgFinanceService {
     private final StudentSessionInstituteGroupMappingRepository mappingRepository;
     private final UserPlanRepository userPlanRepository;
     private final PaymentOptionRepository paymentOptionRepository;
-    private final EnrollInviteRepository enrollInviteRepository;
+    private final SubOrgSeatCapResolver seatCapResolver;
     private final StudentFeePaymentRepository studentFeePaymentRepository;
     private final InstituteRepository instituteRepository;
     private final AuthService authService;
@@ -179,70 +175,31 @@ public class SubOrgFinanceService {
 
     /**
      * Seat cap summary. {@code used} is the active learner mapping count (admins excluded
-     * by the partition above). {@code total} resolution order:
-     *   1. The chosen admin's PaymentPlan.memberCount  — non-CPO sub-orgs.
-     *   2. The org-level invite's settingJson.SUB_ORG_SETTING.MEMBER_COUNT — CPO sub-orgs,
-     *      because the shared synthetic CPO PaymentPlan can't carry per-sub-org caps.
-     * Returns null total when no cap is configured anywhere.
+     * by the partition above). {@code total} comes from {@link SubOrgSeatCapResolver}, and is
+     * null when no cap is configured anywhere.
      */
     private SubOrgFinanceDetailDTO.SeatUsage buildSeatUsage(Object[] adminRow,
                                                             List<Object[]> learnerRows,
                                                             String subOrgId,
                                                             String parentInstituteId) {
         int used = learnerRows != null ? learnerRows.size() : 0;
-        Integer total = null;
+        PaymentPlan adminPlan = null;
         if (adminRow != null) {
             String adminUserPlanId = (String) adminRow[3];
             if (StringUtils.hasText(adminUserPlanId)) {
                 Optional<UserPlan> upOpt = userPlanRepository.findById(adminUserPlanId);
                 if (upOpt.isPresent()) {
-                    PaymentPlan plan = upOpt.get().getPaymentPlan();
-                    if (plan != null && plan.getMemberCount() != null) {
-                        total = plan.getMemberCount();
-                    }
+                    adminPlan = upOpt.get().getPaymentPlan();
                 }
             }
         }
-        // CPO fallback — read MEMBER_COUNT from the sub-org's org-level invite settingJson.
-        if (total == null && StringUtils.hasText(subOrgId) && StringUtils.hasText(parentInstituteId)) {
-            total = readMemberCountFromSettingsForSubOrg(subOrgId, parentInstituteId);
-        }
+        Integer total = seatCapResolver.resolve(subOrgId, parentInstituteId, adminPlan);
         Integer remaining = (total != null) ? Math.max(0, total - used) : null;
         return SubOrgFinanceDetailDTO.SeatUsage.builder()
                 .used(used)
                 .total(total)
                 .remaining(remaining)
                 .build();
-    }
-
-    private Integer readMemberCountFromSettingsForSubOrg(String subOrgId, String parentInstituteId) {
-        try {
-            // The org-level SUB_ORG-tagged invite is where MEMBER_COUNT is persisted for
-            // CPO sub-orgs (see SubOrgSubscriptionService.createSubOrgWithSubscription).
-            List<EnrollInvite> candidates = enrollInviteRepository
-                    .findBySubOrgIdAndInstituteId(subOrgId, parentInstituteId,
-                            List.of("ACTIVE", "INACTIVE", "DELETED"));
-            ObjectMapper mapper = new ObjectMapper();
-            for (EnrollInvite invite : candidates) {
-                if (!StringUtils.hasText(invite.getSettingJson())) continue;
-                try {
-                    EnrollInviteSettingDTO dto = mapper.readValue(
-                            invite.getSettingJson(), EnrollInviteSettingDTO.class);
-                    Integer mc = Optional.ofNullable(dto)
-                            .map(EnrollInviteSettingDTO::getSetting)
-                            .map(EnrollInviteSettingDTO.Settings::getSubOrgSetting)
-                            .map(EnrollInviteSettingDTO.SubOrgSetting::getMemberCount)
-                            .orElse(null);
-                    if (mc != null) return mc;
-                } catch (Exception ignored) {
-                    /* try next invite */
-                }
-            }
-        } catch (Exception e) {
-            log.debug("Failed to read MEMBER_COUNT from settingJson for sub-org {}: {}",
-                    subOrgId, e.getMessage());
-        }
-        return null;
     }
 
     private Map<String, UserDTO> fetchUsers(List<Object[]> rows) {

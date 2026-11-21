@@ -1,0 +1,36 @@
+{
+    "heading": "المبلغ المحصَّل",
+    "rangeGroup": "الفترة الزمنية للتحصيل",
+    "ranges": {
+        "3d": "3 أيام",
+        "7d": "7 أيام",
+        "24d": "24 يومًا",
+        "all": "الكل"
+    },
+    "subtitle": "مدفوعات مسدَّدة · آخر {{range}}",
+    "totalCollected": "إجمالي المحصَّل",
+    "payments_zero": "{{formatted}} دفعة",
+    "payments_one": "دفعة واحدة ({{formatted}})",
+    "payments_two": "دفعتان ({{formatted}})",
+    "payments_few": "{{formatted}} دفعات",
+    "payments_many": "{{formatted}} دفعة",
+    "payments_other": "{{formatted}} دفعة",
+    "emptyState": "لا توجد تحصيلات في هذه الفترة",
+    "tooltip": {
+        "collected": "المحصَّل"
+    },
+    "months": {
+        "jan": "ينا",
+        "feb": "فبر",
+        "mar": "مار",
+        "apr": "أبر",
+        "may": "ماي",
+        "jun": "يون",
+        "jul": "يول",
+        "aug": "أغس",
+        "sep": "سبت",
+        "oct": "أكت",
+        "nov": "نوف",
+        "dec": "ديس"
+    }
+}

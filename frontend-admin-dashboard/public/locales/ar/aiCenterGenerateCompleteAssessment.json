@@ -1,0 +1,20 @@
+{
+    "header": {
+        "logoAlt": "الشعار"
+    },
+    "generateMore": {
+        "triggerButton": "إنشاء المزيد",
+        "dialogTitle": "إنشاء المزيد من الأسئلة",
+        "topicsPlaceholder": "أدخل المواضيع لإنشاء الأسئلة",
+        "numQuestionsPlaceholder": "عدد الأسئلة (مثال: 5)",
+        "difficultyPlaceholder": "مستوى الصعوبة (سهل، متوسط، صعب)",
+        "languagePlaceholder": "اللغة (الإنجليزية، الهندية، إلخ)",
+        "submitButton": "إنشاء الأسئلة"
+    },
+    "closeButton": "إغلاق",
+    "questionCard": {
+        "duplicate": "تكرار",
+        "delete": "حذف"
+    },
+    "noQuestions": "لا يوجد أي سؤال."
+}

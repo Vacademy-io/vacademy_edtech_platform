@@ -1,0 +1,49 @@
+{
+  "courseDetailsPage": {
+    "selectors": {
+      "sessionPlaceholder": "اختر {{session}}",
+      "levelPlaceholder": "اختر {{level}}"
+    },
+    "mobileCard": {
+      "overview": "نظرة عامة على {{course}}",
+      "author": "المؤلف",
+      "courseTime": "مدة {{course}}"
+    },
+    "sections": {
+      "whatYoullLearn": "ماذا ستتعلم؟",
+      "aboutThisCourse": "حول {{course}}",
+      "whoShouldJoin": "من يجب أن ينضم؟"
+    },
+    "enroll": "التسجيل",
+    "courseBannerAlt": "شعار {{course}}",
+    "unknownInstructor": "{{instructor}} غير معروف(ة)"
+  },
+  "ratings": {
+    "heading": "التقييمات والمراجعات",
+    "notAvailable": "غير متاح",
+    "reviewsCount_zero": "{{count}} مراجعة",
+    "reviewsCount_one": "{{count}} مراجعة",
+    "reviewsCount_two": "{{count}} مراجعتان",
+    "reviewsCount_few": "{{count}} مراجعات",
+    "reviewsCount_many": "{{count}} مراجعة",
+    "reviewsCount_other": "{{count}} مراجعة",
+    "loading": "جارٍ تحميل المراجعات...",
+    "empty": "لا توجد مراجعات بعد",
+    "toast": {
+      "submitFailed": "فشل إرسال التقييم",
+      "unexpectedError": "حدث خطأ غير متوقع"
+    }
+  },
+  "videoPlayer": {
+    "unsupported": "متصفحك لا يدعم عنصر الفيديو.",
+    "vimeoTitle": "مشغل فيديو Vimeo",
+    "youtubeTitle": "مشغل فيديو YouTube"
+  },
+  "courseStructure": {
+    "heading": "هيكل {{course}}",
+    "collapseAll": "طي الكل",
+    "expandAll": "توسيع الكل",
+    "noSlides": "لا توجد شرائح في هذا الفصل.",
+    "navHeading": "تفاصيل {{course}}"
+  }
+}

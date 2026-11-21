@@ -1,0 +1,57 @@
+{
+    "heading": {
+        "titleLoading": "{{term}}",
+        "titleWithCount": "{{formattedCount}} {{term}}",
+        "subtitle": "अभियानों में अपने {{term}} प्रबंधित करें और साझा करें।"
+    },
+    "settingsButton": "ऑडियंस सेटिंग्स",
+    "addButton": "{{term}} जोड़ें",
+    "status": {
+        "active": "सक्रिय",
+        "draft": "ड्राफ़्ट",
+        "inactive": "निष्क्रिय"
+    },
+    "statusFilter": {
+        "allStatus": "सभी स्थितियां",
+        "placeholder": "स्थिति के अनुसार फ़िल्टर करें"
+    },
+    "typeFilter": {
+        "allTypes": "सभी {{term}}",
+        "placeholder": "{{term}} से फ़िल्टर करें"
+    },
+    "toolbar": {
+        "searchPlaceholder": "{{term}} खोजें",
+        "searchAriaLabel": "{{term}} खोजें",
+        "subOrgPlaceholder": "सब-ऑर्ग के अनुसार फ़िल्टर करें",
+        "allSubOrgs": "सभी सब-ऑर्ग",
+        "subOrgFallback": "सब-ऑर्ग"
+    },
+    "errorState": {
+        "title": "{{term}} लोड नहीं हो सका",
+        "subtitle": "कुछ गड़बड़ हो गई। फिर से प्रयास करें।"
+    },
+    "emptyState": {
+        "noMatches": "आपके फ़िल्टर से मेल खाने वाला कोई {{term}} नहीं है।",
+        "noneYet": "आपने अभी तक कोई {{term}} नहीं बनाया है।",
+        "clearFilters": "फ़िल्टर हटाएं",
+        "createFirst": "अपना पहला {{term}} बनाएं"
+    },
+    "toast": {
+        "missingCampaignId": "अभियान का विवरण नहीं खोला जा सका। अभियान पहचानकर्ता गायब है।"
+    },
+    "card": {
+        "openAriaLabel": "{{campaignName}} खोलें",
+        "activateHint": "साझा करने योग्य लिंक बनाने के लिए इस {{term}} को सक्रिय करें।",
+        "tagsAriaLabel": "टैग"
+    },
+    "actions": {
+        "addResponse": "प्रतिक्रिया जोड़ें",
+        "addResponseTooltip": "किसी उत्तरदाता की ओर से प्रतिक्रिया जोड़ें",
+        "qr": "QR",
+        "qrTooltip": "एक QR कोड दिखाएँ जिसे स्कैन करके लोग यह फ़ॉर्म खोल सकें",
+        "api": "API",
+        "apiTooltip": "स्वचालन के लिए API एकीकरण विवरण प्राप्त करें",
+        "embed": "एम्बेड",
+        "embedTooltip": "अपनी वेबसाइट के लिए एम्बेड कोड प्राप्त करें"
+    }
+}

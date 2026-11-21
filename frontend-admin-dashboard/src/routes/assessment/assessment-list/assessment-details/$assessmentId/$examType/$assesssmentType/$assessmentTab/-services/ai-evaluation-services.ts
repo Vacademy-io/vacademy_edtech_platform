@@ -65,6 +65,10 @@ export interface QuestionProgress {
      *  FAILED questions, admin-facing. */
     error_detail?: string | null;
     is_edited?: boolean;
+    /** When a teacher last changed this question on the review page. */
+    edited_at?: string | null;
+    /** The teacher's edits to the AI's pen notes for this question. */
+    annotation_edits?: AnnotationEdit[] | null;
     started_at?: string;
     completed_at?: string;
 }
@@ -98,6 +102,12 @@ export interface EvaluationProgress {
     };
     completed_questions: QuestionProgress[];
     pending_questions: QuestionProgress[];
+    /** The checked copy THIS run rendered (marks drawn into the PDF), from the
+     *  run's own complete payload — null while in flight, or when the run produced
+     *  no copy. Not the attempt's latest evaluated_file_id. */
+    file_id?: string | null;
+    /** When a teacher last had the checked copy re-drawn (null = the AI's own copy). */
+    copy_redrawn_at?: string | null;
     layout_map_url?: string | null;
     rubric_version?: number | null;
     ai_service_job_id?: string | null;
@@ -106,20 +116,20 @@ export interface EvaluationProgress {
 /**
  * Trigger AI evaluation for one or more student attempts
  * @param attempt_ids - Array of student attempt IDs
- * @param preferred_model - Optional AI model to use (default: mistralai/devstral-2512:free)
+ * @param preferred_model - AI model the teacher explicitly picked. Omit it and no
+ *   `preferred_model` is sent: the platform's "evaluation" use-case default applies.
  * @returns Array of process IDs for tracking evaluation progress
  */
 export const triggerAIEvaluation = async (
     attempt_ids: string[],
-    preferred_model: string = 'mistralai/devstral-2512:free'
+    preferred_model?: string
 ): Promise<string[]> => {
+    const data: TriggerEvaluationRequest = { attempt_ids };
+    if (preferred_model) data.preferred_model = preferred_model;
     const response = await authenticatedAxiosInstance({
         method: 'POST',
         url: TRIGGER_EVALUATION_URL,
-        data: {
-            attempt_ids,
-            preferred_model,
-        },
+        data,
     });
 
     return response?.data || [];
@@ -269,14 +279,69 @@ export const getEvaluationProcesses = async (
  * Teacher review: override a single question's marks and/or feedback before the
  * result is released. Turns the AI verdict into a draft the teacher approves.
  */
+/** A teacher's change to one pen note the AI drew, named by the fields it was stored with. */
+export interface AnnotationEdit {
+    style?: string | null;
+    target?: string | null;
+    page_id?: string | null;
+    text?: string | null;
+    action: 'DELETE' | 'EDIT';
+    new_text?: string | null;
+}
+
 export const overrideQuestionEvaluation = async (
     processId: string,
     questionId: string,
-    payload: { marks_awarded: number; feedback?: string }
+    payload: { marks_awarded: number; feedback?: string; annotation_edits?: AnnotationEdit[] }
 ): Promise<void> => {
     const response = await authenticatedAxiosInstance({
         method: 'PUT',
         url: `${REVIEW_EVALUATION_URL}/${processId}/question/${questionId}`,
+        data: payload,
+    });
+    return response?.data;
+};
+
+export interface RegenerateCopyResponse {
+    evaluated_file_id: string;
+    total_marks_awarded: number | null;
+    total_max_marks: number | null;
+    questions_changed: number;
+}
+
+/**
+ * Re-draw the AI checked copy with every correction made on the review page
+ * (marks, remarks, pen notes), optionally in another pen / remarks layout.
+ * `pen_style` omitted = the pen the copy was checked with.
+ */
+/**
+ * A sample page marked with this pen, drawn by the same renderer as a real checked
+ * copy. No model runs and nothing is billed.
+ */
+export const getPenPreview = async (
+    penStyle: { ink: string; font: string; size: string; darkness: number },
+    signal?: AbortSignal
+): Promise<Blob> => {
+    const response = await authenticatedAxiosInstance({
+        method: 'POST',
+        url: `${BASE_URL}/assessment-service/assessment/evaluation-ai/pen-preview`,
+        data: { pen_style: penStyle },
+        responseType: 'blob',
+        signal,
+    });
+    return response.data;
+};
+
+export const regenerateCheckedCopy = async (
+    processId: string,
+    payload: {
+        pen_style?: { ink: string; font: string; size: string; darkness: number };
+        comment_placement?: 'INSIDE' | 'OUTSIDE';
+    }
+): Promise<RegenerateCopyResponse> => {
+    const response = await authenticatedAxiosInstance({
+        method: 'POST',
+        url: `${REVIEW_EVALUATION_URL}/${processId}/regenerate-copy`,
         data: payload,
     });
     return response?.data;

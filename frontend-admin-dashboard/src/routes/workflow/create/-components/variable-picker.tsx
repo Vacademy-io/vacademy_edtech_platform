@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export function VariablePicker({ value, onChange, placeholder, nodeId }: Props) {
+    const { t } = useTranslation('workflowVariablePicker');
     const [advanced, setAdvanced] = useState(false);
     const [variables, setVariables] = useState<ContextVariableDTO[]>([]);
     const [showDropdown, setShowDropdown] = useState(false);
@@ -82,14 +84,14 @@ export function VariablePicker({ value, onChange, placeholder, nodeId }: Props) 
                     <Input
                         value={value}
                         onChange={(e) => onChange(e.target.value)}
-                        placeholder={placeholder ?? "#ctx['variable']"}
+                        placeholder={placeholder ?? t('advancedPlaceholder')}
                         className="font-mono text-xs"
                     />
                     <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => setAdvanced(false)}
-                        title="Switch to visual picker"
+                        title={t('switchToVisualPicker')}
                         className="h-8 w-8 p-0"
                     >
                         <MagicWand size={14} />
@@ -107,13 +109,13 @@ export function VariablePicker({ value, onChange, placeholder, nodeId }: Props) 
                         value={value}
                         onChange={(e) => onChange(e.target.value)}
                         onFocus={() => setShowDropdown(true)}
-                        placeholder={placeholder ?? 'Click to pick a variable...'}
+                        placeholder={placeholder ?? t('visualPlaceholder')}
                         className="text-xs pr-8"
                         readOnly
                     />
                     {value && (
                         <Badge variant="outline" className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px]">
-                            SpEL
+                            {t('spelBadge')}
                         </Badge>
                     )}
                 </div>
@@ -121,7 +123,7 @@ export function VariablePicker({ value, onChange, placeholder, nodeId }: Props) 
                     variant="ghost"
                     size="sm"
                     onClick={() => setAdvanced(true)}
-                    title="Switch to raw SpEL input"
+                    title={t('switchToRawSpelInput')}
                     className="h-8 w-8 p-0"
                 >
                     <Code size={14} />
@@ -136,29 +138,29 @@ export function VariablePicker({ value, onChange, placeholder, nodeId }: Props) 
                             <Input
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search variables..."
+                                placeholder={t('searchPlaceholder')}
                                 className="h-7 text-xs"
                                 autoFocus
                             />
                         </div>
                         {filteredGroups.length === 0 ? (
                             <div className="p-4 text-center space-y-1.5">
-                                <p className="text-xs font-medium text-gray-500">No variables available</p>
+                                <p className="text-xs font-medium text-gray-500">{t('noVariablesAvailable')}</p>
                                 <p className="text-[10px] text-gray-400">
-                                    Connect this node to upstream nodes (like Trigger or Query) to see their output data here.
+                                    {t('noVariablesHint')}
                                 </p>
                                 <button
                                     className="mt-1 text-[10px] text-primary hover:underline"
                                     onClick={() => { setShowDropdown(false); setAdvanced(true); }}
                                 >
-                                    Or switch to Advanced mode to type a SpEL expression manually
+                                    {t('switchToAdvancedHint')}
                                 </button>
                             </div>
                         ) : (
                             filteredGroups.map(({ group, vars }) => (
                                 <div key={group}>
                                     <div className="px-3 py-1.5 text-[10px] font-semibold text-muted-foreground bg-muted/50 uppercase">
-                                        From: {group}
+                                        {t('fromGroup', { group })}
                                     </div>
                                     {vars.map((v) => (
                                         <button

@@ -3,6 +3,7 @@ import { MyButton } from '@/components/design-system/button';
 import { Separator } from '@/components/ui/separator';
 import { CheckCircle, Copy, DownloadSimple } from '@phosphor-icons/react';
 import QRCode from 'react-qr-code';
+import { useTranslation } from 'react-i18next';
 import { Route } from '..';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
@@ -18,7 +19,8 @@ import { AssessmentParticipantsList } from './AssessmentParticipantsList';
 import { AssessmentParticipantsIndividualList } from './AssessmentParticipantsIndividualList';
 
 const AssessmentParticipantsTab = () => {
-    const { assessmentId, examType } = Route.useParams();
+    const { t } = useTranslation('assessmentParticipantsTab');
+    const { assessmentId, examType, assesssmentType } = Route.useParams();
     const { data: instituteDetails } = useSuspenseQuery(useInstituteQuery());
     const { batches_for_sessions } = instituteDetails || {};
     const transformedBatches = transformBatchDataEdit(batches_for_sessions || []);
@@ -30,6 +32,17 @@ const AssessmentParticipantsTab = () => {
         })
     );
 
+    // pre_user_registrations is every registration, open-link ones included, so it labelled an
+    // external learner "Internal" and that list then came up empty. open_user_registrations
+    // (older backends do not send it: treated as 0, the old behaviour) splits it. Counts only:
+    // the lists load when a dialog opens, since the registrations call is heavy on big tests.
+    const totalRegistrations = assessmentDetails[2]?.saved_data?.pre_user_registrations ?? 0;
+    const externalCount = Math.min(
+        assessmentDetails[2]?.saved_data?.open_user_registrations ?? 0,
+        totalRegistrations
+    );
+    const internalCount = totalRegistrations - externalCount;
+
     const assignedBatchDetails = getBatchDetails(
         transformedBatches,
         assessmentDetails[2]?.saved_data.pre_batch_registrations
@@ -39,30 +52,35 @@ const AssessmentParticipantsTab = () => {
         instituteDetails?.learner_portal_base_url,
         assessmentDetails[0]?.saved_data.assessment_url
     );
+    // The link and QR render for every assessment, but the backend only honours
+    // them on a PUBLIC one — so a private assessment used to hand the admin a
+    // perfectly copyable link that sends learners to /login. Say so here rather
+    // than hiding it, since the link is still what it will be once made public.
+    const isPrivateAssessment = assesssmentType === 'PRIVATE';
 
     if (isLoading) return <DashboardLoader />;
     return (
         <>
             <div className="mt-4 flex flex-col gap-8">
                 <div className="flex flex-col gap-2">
-                    <h1 className="font-semibold">Assessment Participants</h1>
+                    <h1 className="font-semibold">{t('header.title')}</h1>
                     <div className="flex flex-col gap-4">
-                        {(assessmentDetails[2]?.saved_data?.pre_user_registrations ?? 0) > 0 && (
+                        {internalCount > 0 && (
                             <div className="flex items-center justify-between rounded-md border border-primary-200 bg-primary-50 px-4 py-2">
                                 <h1 className="text-sm">
-                                    {assessmentDetails[2]?.saved_data?.pre_user_registrations}{' '}
-                                    participants (Internal)
+                                    {t('internalParticipants.count', { count: internalCount })}
                                 </h1>
                                 <AssessmentParticipantsIndividualList type="internal" />
                             </div>
                         )}
-                        {/* <div className="flex items-center justify-between rounded-md border border-primary-200 bg-primary-50 px-4 py-2">
-                            <h1 className="text-sm">
-                                {assessmentDetails[2]?.saved_data?.open_user_registrations}{" "}
-                                participants (External)
-                            </h1>
-                            <AssessmentParticipantsIndividualList type="external" />
-                        </div> */}
+                        {externalCount > 0 && (
+                            <div className="flex items-center justify-between rounded-md border border-primary-200 bg-primary-50 px-4 py-2">
+                                <h1 className="text-sm">
+                                    {t('externalParticipants.count', { count: externalCount })}
+                                </h1>
+                                <AssessmentParticipantsIndividualList type="external" />
+                            </div>
+                        )}
                         {assignedBatchDetails?.map((batch, index) => (
                             <div
                                 key={index}
@@ -72,12 +90,17 @@ const AssessmentParticipantsTab = () => {
                                 <AssessmentParticipantsList batchId={batch.id} />
                             </div>
                         ))}
+                        {totalRegistrations === 0 && (assignedBatchDetails?.length ?? 0) === 0 && (
+                            <p className="rounded-md border border-dashed border-neutral-300 px-4 py-3 text-sm text-neutral-500">
+                                {t('empty')}
+                            </p>
+                        )}
                     </div>
                 </div>
                 <Separator />
                 <div className="flex items-start justify-start gap-10">
                     <div className="flex flex-col gap-2">
-                        <h1 className="text-sm font-semibold">Join Link</h1>
+                        <h1 className="text-sm font-semibold">{t('joinLink.title')}</h1>
                         <div className="flex items-center gap-8">
                             <div className="flex items-center gap-4">
                                 <span className="rounded-md border px-3 py-2 text-sm">
@@ -94,9 +117,14 @@ const AssessmentParticipantsTab = () => {
                                 </MyButton>
                             </div>
                         </div>
+                        {isPrivateAssessment && (
+                            <p className="max-w-sm text-xs text-warning-600">
+                                {t('joinLink.privateWarning')}
+                            </p>
+                        )}
                     </div>
                     <div className="flex flex-col justify-start gap-2">
-                        <h1 className="text-sm font-semibold">QR Code</h1>
+                        <h1 className="text-sm font-semibold">{t('qrCode.title')}</h1>
                         <div className="flex items-center gap-8">
                             <div className="flex items-start gap-4">
                                 <QRCode
@@ -128,11 +156,11 @@ const AssessmentParticipantsTab = () => {
                 <div className="flex w-full items-start gap-16">
                     {/* Participants Data */}
                     <div className="flex w-1/2 flex-col gap-6">
-                        <p className="font-semibold">Notify Participants via Email:</p>
+                        <p className="font-semibold">{t('notifications.title')}</p>
                         {assessmentDetails[2]?.saved_data?.notifications
                             ?.participant_when_assessment_created && (
                             <div className="flex items-center justify-between">
-                                <p className="text-sm">When Assessment is created:</p>
+                                <p className="text-sm">{t('notifications.whenCreated')}</p>
                                 <CheckCircle size={22} weight="fill" className="text-success-600" />
                             </div>
                         )}
@@ -140,13 +168,13 @@ const AssessmentParticipantsTab = () => {
                             ?.participant_before_assessment_goes_live ? (
                             <div className="flex items-center justify-between">
                                 <p className="flex items-center gap-6">
-                                    <p className="text-sm">Before Assessment goes live:</p>
+                                    <p className="text-sm">{t('notifications.beforeLive')}</p>
                                     <p className="text-sm">
-                                        {
-                                            assessmentDetails[2]?.saved_data?.notifications
-                                                ?.participant_before_assessment_goes_live
-                                        }{' '}
-                                        Min
+                                        {t('notifications.minutesBeforeLive', {
+                                            count:
+                                                assessmentDetails[2]?.saved_data?.notifications
+                                                    ?.participant_before_assessment_goes_live,
+                                        })}
                                     </p>
                                 </p>
                                 <CheckCircle size={22} weight="fill" className="text-success-600" />
@@ -155,14 +183,16 @@ const AssessmentParticipantsTab = () => {
                         {assessmentDetails[2]?.saved_data?.notifications
                             ?.participant_when_assessment_live && (
                             <div className="flex items-center justify-between">
-                                <p className="text-sm">When Assessment goes live:</p>
+                                <p className="text-sm">{t('notifications.whenLive')}</p>
                                 <CheckCircle size={22} weight="fill" className="text-success-600" />
                             </div>
                         )}
                         {assessmentDetails[2]?.saved_data?.notifications
                             ?.participant_when_assessment_report_generated && (
                             <div className="flex items-center justify-between">
-                                <p className="text-sm">When assessment reports are generated:</p>
+                                <p className="text-sm">
+                                    {t('notifications.whenReportsGenerated')}
+                                </p>
                                 <CheckCircle size={22} weight="fill" className="text-success-600" />
                             </div>
                         )}

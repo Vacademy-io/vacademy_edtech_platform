@@ -1,0 +1,347 @@
+import type { TFunction } from 'i18next';
+import { formatQuantity } from '@/routes/commerce/orders/-shared/order-format';
+import { typedBoxProblem } from '@/routes/commerce/-shared/units';
+import type {
+    ReceiveTransferBody,
+    ShortfallReason,
+    TransferLineBody,
+    TransferRow,
+    TransferView,
+} from './inventory-types';
+
+/**
+ * The transfer's lines on screen (contract §7.5), pure and unit-tested:
+ * the draft editor at the source and the receive sheet at the destination.
+ * Quantities are base units (a metre at `qty_scale` 10 is 10).
+ */
+
+/** Why a scan or a typed quantity was not taken; each has `inventory.transferLines.<code>`. */
+export const TRANSFER_REFUSALS = [
+    'scanPieceLabel',
+    'untracked',
+    'notHere',
+    'alreadyOn',
+    'notOnTransfer',
+    'allReceived',
+    'quantityStep',
+    'quantityRange',
+    'typeLength',
+] as const;
+export type TransferRefusal = (typeof TRANSFER_REFUSALS)[number];
+
+export const MAX_BASE_UNITS = 10_000_000;
+
+/** What the draft needs to know about an item (from the picker or a scan). */
+export interface DraftItem {
+    package_session_id: string;
+    sku: string | null;
+    product_name: string | null;
+    variant_name: string | null;
+    stock_mode: string | null;
+    stock_policy: string | null;
+    unit: string | null;
+    qty_scale: number;
+    qty_step?: number;
+}
+
+export interface DraftLine {
+    /** `v:<package session>` or `p:<piece id>`: one line per variant, one per piece. */
+    key: string;
+    package_session_id: string;
+    sku: string | null;
+    name: string | null;
+    variant_name: string | null;
+    unit: string | null;
+    qty_scale: number;
+    qty_step: number;
+    piece_id: string | null;
+    piece_code: string | null;
+    quantity: number;
+}
+
+export interface DraftState {
+    fromLocationId: string;
+    lines: DraftLine[];
+}
+
+export type DraftEvent =
+    | { type: 'ADD_VARIANT'; item: DraftItem }
+    | {
+          type: 'ADD_PIECE';
+          item: DraftItem;
+          piece: { id: string; code: string; status: string | null; location_id: string | null };
+      }
+    | { type: 'SET_QUANTITY'; key: string; quantity: number }
+    | { type: 'REMOVE'; key: string };
+
+export interface Outcome<S> {
+    state: S;
+    refusal: TransferRefusal | null;
+}
+
+const isPieceItem = (item: DraftItem) => (item.stock_mode ?? '').toUpperCase() === 'PIECE';
+/** Cloth by the metre and the like: a length is typed, never added a step at a time. */
+const isMeasuredItem = (item: DraftItem) => item.qty_scale > 1 && !isPieceItem(item);
+/**
+ * The sale step never applies to stock movements (WP-44 D3, W10): every line
+ * moves in any whole base unit (a 23.7 m roll at a 0.5 m sale step is 237; 7
+ * bottles of an item sold in packs of 6), the same before and after a save.
+ */
+const TRANSFER_STEP = 1;
+const isUntracked = (item: DraftItem) => (item.stock_policy ?? '').toUpperCase() === 'UNTRACKED';
+
+/** The draft's lines as the server sent them (variant lines and piece lines). */
+export function draftFromView(view: TransferView): DraftState {
+    return {
+        fromLocationId: view.from?.id ?? '',
+        lines: view.lines.map((line) => ({
+            key: line.piece_id ? `p:${line.piece_id}` : `v:${line.package_session_id}`,
+            package_session_id: line.package_session_id,
+            sku: line.sku,
+            name: line.item_name,
+            variant_name: line.variant_name,
+            unit: line.unit,
+            qty_scale: line.qty_scale,
+            qty_step: 1,
+            piece_id: line.piece_id,
+            piece_code: line.piece_code,
+            quantity: line.qty_sent,
+        })),
+    };
+}
+
+export function applyDraft(state: DraftState, event: DraftEvent): Outcome<DraftState> {
+    const refuse = (refusal: TransferRefusal): Outcome<DraftState> => ({ state, refusal });
+    switch (event.type) {
+        case 'ADD_VARIANT': {
+            const { item } = event;
+            if (isUntracked(item)) return refuse('untracked');
+            if (isPieceItem(item)) return refuse('scanPieceLabel');
+            const key = `v:${item.package_session_id}`;
+            const existing = state.lines.find((l) => l.key === key);
+            // A measured roll: a scan opens its length box (as on receive) instead of adding 0.1 m.
+            if (existing && isMeasuredItem(item)) return { state, refusal: 'typeLength' };
+            if (existing) {
+                const next = existing.quantity + existing.qty_step;
+                if (next > MAX_BASE_UNITS) return refuse('quantityRange');
+                return {
+                    state: { ...state, lines: state.lines.map((l) => (l.key === key ? { ...l, quantity: next } : l)) },
+                    refusal: null,
+                };
+            }
+            const line: DraftLine = {
+                key,
+                package_session_id: item.package_session_id,
+                sku: item.sku,
+                name: item.product_name,
+                variant_name: item.variant_name,
+                unit: item.unit,
+                qty_scale: item.qty_scale,
+                qty_step: TRANSFER_STEP,
+                piece_id: null,
+                piece_code: null,
+                quantity: isMeasuredItem(item) ? 0 : TRANSFER_STEP,
+            };
+            return {
+                state: { ...state, lines: [...state.lines, line] },
+                refusal: isMeasuredItem(item) ? 'typeLength' : null,
+            };
+        }
+        case 'ADD_PIECE': {
+            const { piece, item } = event;
+            if ((piece.status ?? '').toUpperCase() !== 'IN_STOCK' || piece.location_id !== state.fromLocationId) {
+                return refuse('notHere');
+            }
+            const key = `p:${piece.id}`;
+            if (state.lines.some((l) => l.key === key)) return refuse('alreadyOn');
+            const line: DraftLine = {
+                key,
+                package_session_id: item.package_session_id,
+                sku: item.sku,
+                name: item.product_name,
+                variant_name: item.variant_name,
+                unit: item.unit,
+                qty_scale: item.qty_scale,
+                qty_step: 1,
+                piece_id: piece.id,
+                piece_code: piece.code,
+                quantity: 1,
+            };
+            return { state: { ...state, lines: [...state.lines, line] }, refusal: null };
+        }
+        case 'SET_QUANTITY': {
+            const line = state.lines.find((l) => l.key === event.key);
+            if (!line || line.piece_id) return { state, refusal: null };
+            const quantity = Math.round(event.quantity);
+            if (!Number.isFinite(quantity) || quantity < 1 || quantity > MAX_BASE_UNITS) return refuse('quantityRange');
+            if (quantity % line.qty_step !== 0) return refuse('quantityStep');
+            return {
+                state: { ...state, lines: state.lines.map((l) => (l.key === event.key ? { ...l, quantity } : l)) },
+                refusal: null,
+            };
+        }
+        case 'REMOVE':
+            return { state: { ...state, lines: state.lines.filter((l) => l.key !== event.key) }, refusal: null };
+        default:
+            return { state, refusal: null };
+    }
+}
+
+/** Lines still waiting for a typed length (a scanned roll starts at 0); the draft cannot be saved with them. */
+export const linesWithoutLength = (state: DraftState): DraftLine[] =>
+    state.lines.filter((line) => !line.piece_id && line.quantity < 1);
+
+/**
+ * The first typed box that stops Save and Dispatch (WP-44 W5): blank, refused
+ * or out of range. The draft keeps the last good keystroke, so sending it
+ * while the box reads something else would move a length nobody confirmed.
+ */
+export function badDraftBox(state: DraftState, typed: Record<string, string>): string | null {
+    const bad = state.lines.find(
+        (line) => !line.piece_id && typedBoxProblem(typed[line.key], line.qty_scale, { min: 1, max: MAX_BASE_UNITS }) !== null
+    );
+    return bad?.key ?? null;
+}
+
+/** The draft's lines as the server takes them: every line once, base units. */
+export function toTransferLines(state: DraftState): TransferLineBody[] {
+    return state.lines.map((line) =>
+        line.piece_id ? { piece_id: line.piece_id } : { package_session_id: line.package_session_id, quantity: line.quantity }
+    );
+}
+
+// ─── Receive sheet ───────────────────────────────────────────────────────────
+
+export interface ReceiveLine {
+    line_id: string;
+    package_session_id: string;
+    piece_code: string | null;
+    /** 10 for cloth by the metre: its received length is typed, never counted a scan at a time. */
+    qty_scale: number;
+    sent: number;
+    received: number;
+    reason: ShortfallReason | null;
+}
+
+export interface ReceiveState {
+    lines: ReceiveLine[];
+}
+
+export type ReceiveEvent =
+    | { type: 'RECEIVE_SCAN_PIECE'; code: string }
+    | { type: 'RECEIVE_SCAN_VARIANT'; packageSessionId: string }
+    | { type: 'SET_RECEIVED'; lineId: string; quantity: number }
+    | { type: 'SET_REASON'; lineId: string; reason: ShortfallReason | null };
+
+/** Quantity lines start at what was sent, piece lines at 0 (each piece is scanned). */
+export function receiveFromView(view: TransferView): ReceiveState {
+    return {
+        lines: view.lines.map((line) => ({
+            line_id: line.id,
+            package_session_id: line.package_session_id,
+            piece_code: line.piece_code,
+            qty_scale: line.qty_scale ?? 1,
+            sent: line.qty_sent,
+            received: line.piece_id ? 0 : line.qty_sent,
+            reason: null,
+        })),
+    };
+}
+
+const withLine = (state: ReceiveState, lineId: string, change: (l: ReceiveLine) => ReceiveLine): ReceiveState => ({
+    lines: state.lines.map((l) => (l.line_id === lineId ? change(l) : l)),
+});
+
+/** A line received in full needs no reason; the reason is dropped. */
+const settleReason = (line: ReceiveLine): ReceiveLine => (line.received >= line.sent ? { ...line, reason: null } : line);
+
+export function applyReceive(state: ReceiveState, event: ReceiveEvent): Outcome<ReceiveState> {
+    const refuse = (refusal: TransferRefusal): Outcome<ReceiveState> => ({ state, refusal });
+    switch (event.type) {
+        case 'RECEIVE_SCAN_PIECE': {
+            const code = event.code.trim().toUpperCase();
+            const line = state.lines.find((l) => l.piece_code && l.piece_code.toUpperCase() === code);
+            if (!line) return refuse('notOnTransfer');
+            return { state: withLine(state, line.line_id, (l) => settleReason({ ...l, received: 1 })), refusal: null };
+        }
+        case 'RECEIVE_SCAN_VARIANT': {
+            const line = state.lines.find((l) => !l.piece_code && l.package_session_id === event.packageSessionId);
+            if (!line) return refuse('notOnTransfer');
+            // A roll: a scan opens its length box (K M5); adding 0.1 m per scan is never right.
+            if (line.qty_scale > 1) return refuse('typeLength');
+            if (line.received >= line.sent) return refuse('allReceived');
+            return {
+                state: withLine(state, line.line_id, (l) => settleReason({ ...l, received: l.received + 1 })),
+                refusal: null,
+            };
+        }
+        case 'SET_RECEIVED': {
+            const line = state.lines.find((l) => l.line_id === event.lineId);
+            if (!line) return { state, refusal: null };
+            const quantity = Math.round(event.quantity);
+            if (!Number.isFinite(quantity) || quantity < 0 || quantity > line.sent) return refuse('quantityRange');
+            return { state: withLine(state, event.lineId, (l) => settleReason({ ...l, received: quantity })), refusal: null };
+        }
+        case 'SET_REASON':
+            return { state: withLine(state, event.lineId, (l) => settleReason({ ...l, reason: event.reason })), refusal: null };
+        default:
+            return { state, refusal: null };
+    }
+}
+
+/** Short lines that still need "Why is it short?". */
+export const linesMissingReason = (state: ReceiveState): ReceiveLine[] =>
+    state.lines.filter((l) => l.received < l.sent && !l.reason);
+
+export const canReceive = (state: ReceiveState): boolean => state.lines.length > 0 && linesMissingReason(state).length === 0;
+
+/**
+ * The first received box that stops Receive (WP-44 W5): blank (never read as
+ * the full sent quantity), refused, or above what was sent.
+ */
+export function badReceiveBox(state: ReceiveState, typed: Record<string, string>): string | null {
+    const bad = state.lines.find(
+        (line) => !line.piece_code && typedBoxProblem(typed[line.line_id], line.qty_scale, { min: 0, max: line.sent }) !== null
+    );
+    return bad?.line_id ?? null;
+}
+
+export function toReceiveBody(state: ReceiveState): Omit<ReceiveTransferBody, 'client_request_id' | 'approval'> {
+    return {
+        lines: state.lines.map((l) => ({
+            line_id: l.line_id,
+            qty_received: l.received,
+            ...(l.received < l.sent && l.reason ? { shortfall_reason: l.reason } : {}),
+        })),
+    };
+}
+
+/**
+ * The quantity cell of the transfers list: the lines' sum in the unit they
+ * share ("23.7 m", or "12" for pieces); "Mixed units" when they do not share
+ * one, since 237 base units of cloth and 5 bottles add up to nothing.
+ */
+export function transferRowQuantity(
+    row: Pick<TransferRow, 'qty_sent' | 'unit' | 'qty_scale' | 'mixed_units'>,
+    t: TFunction
+): string {
+    if (row.mixed_units) return t('inventory.transfers.mixedUnits');
+    return formatQuantity(row.qty_sent, row.qty_scale ?? 1, row.unit, t);
+}
+
+/**
+ * The manager's question when a dispatch would take stock kept for online
+ * orders: "2.5 m are kept …" for a measured item (the server names its scale
+ * and unit), "3 units are kept …" otherwise. Null when the count is unreadable.
+ */
+export function promisedOnlineText(values: Record<string, string>, t: TFunction): string | null {
+    const units = Number(values.count);
+    if (!Number.isFinite(units) || units <= 0) return null;
+    const scale = Number(values.qty_scale);
+    if (Number.isInteger(scale) && scale > 1) {
+        return t('inventory.transfers.promisedOnlineMeasured', {
+            quantity: formatQuantity(units, scale, values.unit, t),
+        });
+    }
+    return t('inventory.transfers.promisedOnline', { count: units });
+}

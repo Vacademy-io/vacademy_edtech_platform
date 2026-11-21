@@ -1,4 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useNavigate } from '@tanstack/react-router';
+import { PackageStatusCounts } from './PackageStatusCounts';
+import { MyButton } from '@/components/design-system/button';
+import { CountChip, ScreenHeader } from '@/components/shared/crm-enhance/screen-header';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { MyTable } from '@/components/design-system/table';
 import { MyPagination } from '@/components/design-system/pagination';
@@ -6,7 +11,7 @@ import { DashboardLoader, ErrorBoundary } from '@/components/core/dashboard-load
 import { SmartErrorPage } from '@/components/core/SmartErrorPage';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Package } from '@phosphor-icons/react';
+import { Package, Rows, SealPercent } from '@phosphor-icons/react';
 import { getTerminology, getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { usePackageFilters } from '../-hooks/usePackageFilters';
@@ -17,6 +22,8 @@ import { PackageSessionSidebar } from './package-session-sidebar';
 import { PackageSessionDTO } from '../-types/package-types';
 
 export function PackageManagementSection() {
+    const { t } = useTranslation('adminPackageManagement');
+    const navigate = useNavigate();
     const { setNavHeading } = useNavHeadingStore();
     const isMobile = useIsMobile();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -26,8 +33,12 @@ export function PackageManagementSection() {
     const tableRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        setNavHeading(<h1 className="text-lg">{getTerminology(ContentTerms.Package, SystemTerms.Package)} Management</h1>);
-    }, [setNavHeading]);
+        setNavHeading(
+            <h1 className="text-lg">
+                {t('title', { package: getTerminology(ContentTerms.Package, SystemTerms.Package) })}
+            </h1>
+        );
+    }, [setNavHeading, t]);
 
     useEffect(() => {
         // On mobile the sidebar renders as a Sheet in a portal — outside `tableRef`.
@@ -77,6 +88,8 @@ export function PackageManagementSection() {
     };
 
     const columns = getPackageTableColumns({ onPackageClick: handlePackageClick });
+    const packageTerm = getTerminology(ContentTerms.Package, SystemTerms.Package);
+    const packagesTerm = getTerminologyPlural(ContentTerms.Package, SystemTerms.Package);
 
     if (error) return <SmartErrorPage />;
 
@@ -85,22 +98,67 @@ export function PackageManagementSection() {
             <div className="mb-3 rounded-full bg-gradient-to-br from-neutral-100 to-neutral-200 p-3 shadow-inner">
                 <Package className="size-12 opacity-50" />
             </div>
-            <h3 className="mb-2 text-base font-semibold text-neutral-700">No {getTerminologyPlural(ContentTerms.Package, SystemTerms.Package)} Found</h3>
+            <h3 className="mb-2 text-base font-semibold text-neutral-700">
+                {t('empty.title', { packages: packagesTerm })}
+            </h3>
             <p className="mb-4 max-w-md text-xs leading-relaxed text-neutral-500">
-                No {getTerminologyPlural(ContentTerms.Package, SystemTerms.Package).toLowerCase()} match your current filters. Try adjusting your search criteria.
+                {t('empty.text', { packages: packagesTerm.toLowerCase() })}
             </p>
-            <button
-                onClick={handleClearFilters}
-                className="group flex items-center gap-1.5 rounded-lg bg-neutral-100 px-3 py-1.5 text-sm text-neutral-700 transition-all duration-200 hover:scale-105 hover:bg-neutral-200"
-            >
-                Clear Filters
-            </button>
+            <MyButton buttonType="secondary" scale="medium" onClick={handleClearFilters}>
+                {t('empty.clear')}
+            </MyButton>
         </div>
     );
 
     return (
         <ErrorBoundary>
-            <section className="animate-fadeIn flex max-w-full flex-col gap-3 overflow-visible">
+            <section className="animate-fadeIn flex max-w-full flex-col gap-4 overflow-visible">
+                <ScreenHeader
+                    icon={Package}
+                    title={t('title', { package: packageTerm })}
+                    badge={
+                        summaryData?.packages ? (
+                            <CountChip>
+                                {t('badge', {
+                                    count: summaryData.packages.length,
+                                    packages: packagesTerm.toLocaleLowerCase(),
+                                })}
+                            </CountChip>
+                        ) : null
+                    }
+                    subtitle={t('subtitle', {
+                        packages: packagesTerm.toLocaleLowerCase(),
+                        batch: getTerminology(
+                            ContentTerms.Batch,
+                            SystemTerms.Batch
+                        ).toLocaleLowerCase(),
+                    })}
+                    actions={
+                        <>
+                            <MyButton
+                                buttonType="secondary"
+                                scale="medium"
+                                className="gap-2"
+                                onClick={() => navigate({ to: '/admin-package-management/offers' })}
+                            >
+                                <SealPercent size={18} />
+                                {t('actions.offers')}
+                            </MyButton>
+                            <MyButton
+                                buttonType="secondary"
+                                scale="medium"
+                                className="gap-2"
+                                onClick={() =>
+                                    navigate({ to: '/admin-package-management/bulk-create' })
+                                }
+                            >
+                                <Rows size={18} />
+                                {t('actions.bulkCreate')}
+                            </MyButton>
+                        </>
+                    }
+                />
+                <PackageStatusCounts activeStatuses={appliedFilters.statuses} />
                 <div className="flex flex-col gap-3">
                     <PackageFilters
                         summaryData={summaryData}
@@ -124,7 +182,7 @@ export function PackageManagementSection() {
                         <div className="flex w-full flex-col items-center gap-2 py-6">
                             <DashboardLoader />
                             <p className="animate-pulse text-xs text-neutral-500">
-                                Loading {getTerminologyPlural(ContentTerms.Package, SystemTerms.Package).toLowerCase()}...
+                                {t('loading', { packages: packagesTerm.toLowerCase() })}
                             </p>
                         </div>
                     ) : !packageData || packageData.content.length === 0 ? (
@@ -161,12 +219,15 @@ export function PackageManagementSection() {
 
                             <div className="flex flex-col justify-between gap-2 rounded-lg border border-neutral-200/50 bg-gradient-to-r from-neutral-50/50 to-white px-3 py-2 lg:flex-row lg:items-center">
                                 <div className="text-sm text-neutral-500">
-                                    Showing {packageData.page_size * packageData.page_number + 1} -{' '}
-                                    {Math.min(
-                                        packageData.page_size * (packageData.page_number + 1),
-                                        packageData.total_elements
-                                    )}{' '}
-                                    of {packageData.total_elements} {getTerminologyPlural(ContentTerms.Package, SystemTerms.Package).toLowerCase()}
+                                    {t('showing', {
+                                        from: packageData.page_size * packageData.page_number + 1,
+                                        to: Math.min(
+                                            packageData.page_size * (packageData.page_number + 1),
+                                            packageData.total_elements
+                                        ),
+                                        total: packageData.total_elements,
+                                        packages: packagesTerm.toLowerCase(),
+                                    })}
                                 </div>
                                 <div className="flex justify-center lg:justify-end">
                                     <MyPagination

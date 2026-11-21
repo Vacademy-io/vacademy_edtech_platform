@@ -1,0 +1,52 @@
+{
+    "intro": "Your leave balance, the applications you have sent, and any comp-off you have earned. Days only leave your balance once an application is approved.",
+    "leave": "Leave",
+    "applyForLeave": "Apply for leave",
+    "withdraw": "Withdraw",
+    "keepIt": "Keep it",
+    "toast": {
+        "withdrawn": "Leave withdrawn"
+    },
+    "errors": {
+        "withdraw": "Could not withdraw this leave.",
+        "loadBalance": "Couldn't load your leave balance.",
+        "loadApplications": "Couldn't load your leave applications.",
+        "loadCompOff": "Couldn't load your comp-off."
+    },
+    "balance": {
+        "heading": "Balance",
+        "emptyTitle": "No leave balance for {{year}}",
+        "emptyDescription": "Balances appear once your HR team has a leave policy running for your employment type. You can still apply — the balance is checked when it's approved.",
+        "daysLeftUsed": "days left · {{used}} used this year"
+    },
+    "applications": {
+        "heading": "My applications",
+        "emptyTitle": "You haven't applied for any leave",
+        "emptyDescription": "Everything you apply for shows up here with its status, and stays until it is approved, rejected or withdrawn.",
+        "dateRange": "{{from}} → {{to}}",
+        "daysCount_one": "{{formatted}} day",
+        "daysCount_other": "{{formatted}} days",
+        "halfDay": " · half day",
+        "halfDayWithType": " · half day ({{type}})",
+        "youWrote": "You wrote: {{reason}}",
+        "turnedDown": "Turned down: {{reason}}"
+    },
+    "compOff": {
+        "heading": "My comp-off",
+        "intro": "Days you worked when you did not have to. Once approved they are added to your comp-off balance and expire on the date shown, whether or not you use them.",
+        "emptyTitle": "No comp-off recorded",
+        "emptyDescription": "If you work a holiday or a weekly off, your HR team records it here and it becomes leave you can take later.",
+        "worked": "Worked {{date}}",
+        "daysEarned_one": "{{formatted}} day earned",
+        "daysEarned_other": "{{formatted}} days earned",
+        "expires": "Expires {{date}}",
+        "noExpiry": "No expiry recorded",
+        "alreadyUsed": " · already used"
+    },
+    "footerNote": "Withdrawing an approved leave puts the days back in your balance and clears the on-leave days from your attendance. If payroll has already closed that month, it cannot be withdrawn and you will be told so.",
+    "cancelDialog": {
+        "title": "Withdraw this leave?",
+        "description": "Your {{leaveType}} from {{date}} will be withdrawn. If it was already approved, the days go back into your balance.",
+        "thatDate": "that date"
+    }
+}

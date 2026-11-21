@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Trans, useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MyButton } from '@/components/design-system/button';
 import { StatusChips } from '@/components/design-system/chips';
@@ -16,6 +17,7 @@ import type { OfflineDeviceDTO } from '@/types/offline-access';
  * next online check-in — it does not change any course permissions.
  */
 export const OfflineDevicesCard = ({ userId }: { userId: string }) => {
+    const { t } = useTranslation('manageStudentsOfflineDevicesCard');
     const queryClient = useQueryClient();
     const [confirmDevice, setConfirmDevice] = useState<OfflineDeviceDTO | null>(null);
 
@@ -28,11 +30,11 @@ export const OfflineDevicesCard = ({ userId }: { userId: string }) => {
     const { mutate: revoke, isPending: revoking } = useMutation({
         mutationFn: (deviceId: string) => revokeOfflineDevice(deviceId, 'Revoked by admin'),
         onSuccess: () => {
-            toast.success('Device revoked — content purges at its next check-in');
+            toast.success(t('toast.revokeSuccess'));
             queryClient.invalidateQueries({ queryKey: ['offline-devices', userId] });
             setConfirmDevice(null);
         },
-        onError: () => toast.error('Failed to revoke device'),
+        onError: () => toast.error(t('toast.revokeFailed')),
     });
 
     if (!userId) return null;
@@ -45,16 +47,14 @@ export const OfflineDevicesCard = ({ userId }: { userId: string }) => {
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-body font-semibold">
                     <CloudArrowDown className="size-5 text-primary-500" />
-                    Offline devices
+                    {t('heading')}
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
                 {isLoading ? (
-                    <p className="text-caption text-neutral-500">Loading devices…</p>
+                    <p className="text-caption text-neutral-500">{t('loading')}</p>
                 ) : !devices?.length ? (
-                    <p className="text-caption text-neutral-500">
-                        No devices registered for offline downloads.
-                    </p>
+                    <p className="text-caption text-neutral-500">{t('emptyState')}</p>
                 ) : (
                     devices.map((device) => (
                         <div
@@ -69,11 +69,13 @@ export const OfflineDevicesCard = ({ userId }: { userId: string }) => {
                                 )}
                                 <div>
                                     <p className="text-body font-medium">
-                                        {device.device_name || device.platform || 'Device'}
+                                        {device.device_name || device.platform || t('device.fallbackName')}
                                     </p>
                                     <p className="text-caption text-neutral-500">
-                                        Last check-in {formatDate(device.last_checkin_at)} · offline
-                                        access until {formatDate(device.lease_expires_at)}
+                                        {t('device.checkinInfo', {
+                                            checkinDate: formatDate(device.last_checkin_at),
+                                            leaseDate: formatDate(device.lease_expires_at),
+                                        })}
                                     </p>
                                 </div>
                             </div>
@@ -82,7 +84,7 @@ export const OfflineDevicesCard = ({ userId }: { userId: string }) => {
                                     status={device.status === 'ACTIVE' ? 'ACTIVE' : 'TERMINATED'}
                                     showIcon={false}
                                 >
-                                    {device.status === 'ACTIVE' ? 'Active' : 'Revoked'}
+                                    {device.status === 'ACTIVE' ? t('status.active') : t('status.revoked')}
                                 </StatusChips>
                                 {device.status === 'ACTIVE' && (
                                     <MyButton
@@ -90,7 +92,7 @@ export const OfflineDevicesCard = ({ userId }: { userId: string }) => {
                                         scale="small"
                                         onClick={() => setConfirmDevice(device)}
                                     >
-                                        Revoke
+                                        {t('actions.revoke')}
                                     </MyButton>
                                 )}
                             </div>
@@ -100,7 +102,7 @@ export const OfflineDevicesCard = ({ userId }: { userId: string }) => {
             </CardContent>
 
             <MyDialog
-                heading="Revoke offline device?"
+                heading={t('confirmDialog.heading')}
                 open={!!confirmDevice}
                 onOpenChange={(open) => !open && setConfirmDevice(null)}
                 footer={
@@ -111,7 +113,7 @@ export const OfflineDevicesCard = ({ userId }: { userId: string }) => {
                             onClick={() => setConfirmDevice(null)}
                             disabled={revoking}
                         >
-                            Cancel
+                            {t('actions.cancel')}
                         </MyButton>
                         <MyButton
                             buttonType="primary"
@@ -120,18 +122,21 @@ export const OfflineDevicesCard = ({ userId }: { userId: string }) => {
                             onClick={() => confirmDevice && revoke(confirmDevice.id)}
                             disabled={revoking}
                         >
-                            {revoking ? 'Revoking…' : 'Revoke device'}
+                            {revoking ? t('actions.revoking') : t('actions.revokeDevice')}
                         </MyButton>
                     </div>
                 }
             >
                 <p className="p-1 text-body text-neutral-600">
-                    All downloaded content on{' '}
-                    <span className="font-medium">
-                        {confirmDevice?.device_name || 'this device'}
-                    </span>{' '}
-                    will be deleted the next time it comes online, and it will stop counting
-                    against the learner&apos;s device limit. Course permissions are unaffected.
+                    <Trans
+                        t={t}
+                        i18nKey="confirmDialog.body"
+                        values={{
+                            deviceName:
+                                confirmDevice?.device_name || t('confirmDialog.fallbackDeviceName'),
+                        }}
+                        components={{ strong: <span className="font-medium" /> }}
+                    />
                 </p>
             </MyDialog>
         </Card>

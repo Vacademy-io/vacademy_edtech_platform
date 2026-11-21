@@ -1,0 +1,25 @@
+{
+    "searchPlaceholder": "छात्र का नाम या फ़ोन नंबर खोजें...",
+    "table": {
+        "coursePackage": "कोर्स / पैकेज",
+        "due": "बकाया",
+        "overdue": "अतिदेय",
+        "status": "स्थिति"
+    },
+    "errors": {
+        "unableToLoad": "छात्रों को लोड नहीं किया जा सका",
+        "tryAgain": "कृपया पुनः प्रयास करें।"
+    },
+    "empty": {
+        "noStudentsFound": "कोई छात्र नहीं मिला।",
+        "trySearching": "नाम या फ़ोन नंबर से खोजने का प्रयास करें।"
+    },
+    "pagination": {
+        "showing": "दिखा रहे हैं",
+        "of": "में से"
+    },
+    "redesign": {
+        "findTitle": "{{learner}} खोजें",
+        "findHint": "किस्तें देखने के लिए किसी {{learner}} पर क्लिक करें"
+    }
+}

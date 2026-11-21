@@ -1,0 +1,12 @@
+{
+    "requiredDocuments": "Documents requis",
+    "supportedFormats": "Formats pris en charge : JPG, PNG, PDF (Max 2 Mo)",
+    "upload": "Téléverser",
+    "documents": {
+        "photo": "Photo format passeport",
+        "birthCert": "Certificat de naissance",
+        "aadhar": "Carte Aadhaar",
+        "tc": "Certificat de transfert",
+        "reportCard": "Bulletin scolaire précédent"
+    }
+}

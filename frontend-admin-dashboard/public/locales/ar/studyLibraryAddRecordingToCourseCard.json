@@ -1,0 +1,12 @@
+{
+    "addToCourse": "إضافة إلى الدورة",
+    "titleLabel": "العنوان",
+    "savingEllipsis": "جارٍ الحفظ…",
+    "saveToLibraryAndAdd": "حفظ في المكتبة وإضافة",
+    "add": "إضافة",
+    "sessionFallback": "الجلسة",
+    "defaultTitle": "{{label}} – تسجيل ({{formatted}})",
+    "defaultTitleNoDate": "{{label}} – تسجيل",
+    "saveRecordingFirst": "احفظ التسجيل في المكتبة أولاً، ثم حاول مرة أخرى.",
+    "couldNotAdd": "تعذّرت إضافة هذا التسجيل إلى الدورة."
+}

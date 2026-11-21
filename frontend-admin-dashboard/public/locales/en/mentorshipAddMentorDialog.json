@@ -1,0 +1,64 @@
+{
+    "optionalDetails": {
+        "hide": "Hide details",
+        "show": "Add photo, expertise and capacity"
+    },
+    "toast": {
+        "selectTeamMember": "Select a team member",
+        "enterNameEmail": "Enter a name and a valid email address",
+        "invitationSent": "Invitation sent to {{email}} — they're a mentor already",
+        "mentorAdded": "Mentor added",
+        "photoUploadFailed": "Photo upload failed",
+        "inviteFailed": "Failed to invite this mentor",
+        "addFailed": "Failed to add mentor"
+    },
+    "errors": {
+        "invitationMissingUser": "The invitation did not return a user to add as a mentor"
+    },
+    "dialog": {
+        "heading": "Add mentor"
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "chooseTeamMemberFirst": "Choose a team member above first",
+        "inviting": "Inviting…",
+        "adding": "Adding…",
+        "inviteAsMentor": "Invite as mentor",
+        "addMentor": "Add mentor"
+    },
+    "intro": "Mentors get the Mentor role and appear to the students you assign them.",
+    "modeTabs": {
+        "team": "From your team",
+        "invite": "Invite by email"
+    },
+    "inviteHint": "They'll get an invitation email and the Mentor role, and appear in this list right away — no need to go to Teams first.",
+    "fields": {
+        "fullNameLabel": "Full name",
+        "fullNamePlaceholder": "e.g. Asha Nair",
+        "emailLabel": "Email",
+        "emailPlaceholder": "asha@example.com",
+        "displayNameLabel": "Display name",
+        "titleLabel": "Title",
+        "titlePlaceholder": "e.g. Senior Career Mentor",
+        "bioLabel": "Bio",
+        "bioPlaceholder": "Short bio (optional)"
+    },
+    "teamSearch": {
+        "placeholder": "Search your team by name or email",
+        "loading": "Loading team…",
+        "loadError": "Couldn't load your team.",
+        "noMembers": "No team members found.",
+        "noMatches": "No matches."
+    },
+    "selectedMember": {
+        "change": "Change",
+        "changeTitle": "Pick a different team member"
+    },
+    "photo": {
+        "alt": "Mentor",
+        "uploading": "Uploading…",
+        "change": "Change photo",
+        "upload": "Upload photo",
+        "hint": "Optional. Defaults to their team profile photo."
+    }
+}

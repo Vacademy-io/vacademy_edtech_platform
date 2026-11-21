@@ -1,0 +1,13 @@
+{
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyLinkAriaLabel": "Copy link",
+    "copiedAriaLabel": "Copied",
+    "shortLink": {
+        "shorten": "Short",
+        "showFull": "Full",
+        "shortenHint": "Swap in a short link you can text or read out",
+        "showFullHint": "Show the full form address again",
+        "failed": "Could not create a short link — showing the full address"
+    }
+}

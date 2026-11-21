@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import type {
     GateType,
     DecisionAnswer,
@@ -10,115 +11,150 @@ import type {
  * Per-gate display copy for the assist conversation — parallels the pipeline's
  * `stage-vocab.ts`. Keeps titles/blurbs consistent across the chat header, the
  * decision cards, and the resolved-turn transcript.
+ *
+ * Namespace for this module's translated display strings — see
+ * src/locales/en/videoApiStudioDecisionCopy.json. The `buildXxx(t)` factories
+ * below re-derive their English-source constants with translated text. `gate`
+ * / `GateType` values are never translated — they're used for dispatch,
+ * keying, and the request payload sent to the backend.
  */
+const NS = 'videoApiStudioDecisionCopy';
+
 export interface GateMeta {
     title: string;
     blurb: string;
 }
 
-export const GATE_META: Record<GateType, GateMeta> = {
-    creative_concept: {
-        title: 'Creative direction',
-        blurb: 'The thesis, tone, and visual metaphor for the whole video.',
-    },
-    shot_plan: {
-        title: 'Shot plan',
-        blurb: 'The list of shots — types, order, pacing, and what each beat covers.',
-    },
-    styleframe: {
-        title: 'Design identity',
-        blurb: 'The visual signature for this video — fonts, motion, finishing.',
-    },
-    narration: {
-        title: 'Narration script',
-        blurb: 'The exact words spoken before audio is generated.',
-    },
-    visual_casting: {
-        title: 'Visual',
-        blurb: 'Which stock image or clip to use for this shot.',
-    },
-    shot_look: {
-        title: 'Shot look',
-        blurb: 'Which rendered look to use for this shot.',
-    },
-    contact_sheet: {
-        title: 'Contact sheet',
-        blurb: 'Every shot as a real frame — approve or send shots back with notes.',
-    },
-    asset_request: {
-        title: 'Make it real',
-        blurb: 'The AI asked for real assets — your screenshots, photos, and numbers.',
-    },
-    cast: {
-        title: 'Your cast',
-        blurb: 'The characters\' portraits — approved before any scene is filmed.',
-    },
-    dailies: {
-        title: 'Dailies',
-        blurb: 'Watch each filmed scene — approve it or send it back for a re-take.',
-    },
-    voice: { title: 'Voice', blurb: 'The narration voice.' },
-    music: { title: 'Background music', blurb: 'The background music track.' },
-    avatar: { title: 'Host', blurb: 'The on-screen host / avatar.' },
-};
+/** Translated `title`/`blurb` per gate — same keys/order as the old GATE_META constant. */
+export function buildGateMeta(t: TFunction): Record<GateType, GateMeta> {
+    return {
+        creative_concept: {
+            title: t(`${NS}:gateMeta.creativeConcept.title`),
+            blurb: t(`${NS}:gateMeta.creativeConcept.blurb`),
+        },
+        shot_plan: {
+            title: t(`${NS}:gateMeta.shotPlan.title`),
+            blurb: t(`${NS}:gateMeta.shotPlan.blurb`),
+        },
+        styleframe: {
+            title: t(`${NS}:gateMeta.styleframe.title`),
+            blurb: t(`${NS}:gateMeta.styleframe.blurb`),
+        },
+        narration: {
+            title: t(`${NS}:gateMeta.narration.title`),
+            blurb: t(`${NS}:gateMeta.narration.blurb`),
+        },
+        visual_casting: {
+            title: t(`${NS}:gateMeta.visualCasting.title`),
+            blurb: t(`${NS}:gateMeta.visualCasting.blurb`),
+        },
+        shot_look: {
+            title: t(`${NS}:gateMeta.shotLook.title`),
+            blurb: t(`${NS}:gateMeta.shotLook.blurb`),
+        },
+        contact_sheet: {
+            title: t(`${NS}:gateMeta.contactSheet.title`),
+            blurb: t(`${NS}:gateMeta.contactSheet.blurb`),
+        },
+        asset_request: {
+            title: t(`${NS}:gateMeta.assetRequest.title`),
+            blurb: t(`${NS}:gateMeta.assetRequest.blurb`),
+        },
+        cast: {
+            title: t(`${NS}:gateMeta.cast.title`),
+            blurb: t(`${NS}:gateMeta.cast.blurb`),
+        },
+        dailies: {
+            title: t(`${NS}:gateMeta.dailies.title`),
+            blurb: t(`${NS}:gateMeta.dailies.blurb`),
+        },
+        voice: {
+            title: t(`${NS}:gateMeta.voice.title`),
+            blurb: t(`${NS}:gateMeta.voice.blurb`),
+        },
+        music: {
+            title: t(`${NS}:gateMeta.music.title`),
+            blurb: t(`${NS}:gateMeta.music.blurb`),
+        },
+        avatar: {
+            title: t(`${NS}:gateMeta.avatar.title`),
+            blurb: t(`${NS}:gateMeta.avatar.blurb`),
+        },
+    };
+}
 
-export function gateTitle(gate: GateType): string {
-    return GATE_META[gate]?.title ?? gate;
+export function gateTitle(gate: GateType, t: TFunction): string {
+    return buildGateMeta(t)[gate]?.title ?? gate;
 }
 
 /** Canonical agent question per gate — used when reconstructing past turns. */
-const GATE_PROMPT: Record<GateType, string> = {
-    creative_concept: "Here's the creative direction — approve or refine it.",
-    shot_plan: "Here's the shot plan — approve it, edit any shot, or let me decide.",
-    styleframe: 'Approve the design identity or adjust the look.',
-    narration: "Here's the narration script — edit it, approve it, or let me decide.",
-    visual_casting: 'Which visual should we use for this shot?',
-    shot_look: 'Which look should we use for this shot?',
-    contact_sheet: 'All shots are built — approve the contact sheet or send shots back.',
-    asset_request: 'I could make a few shots more real with things only you have.',
-    cast: 'Meet your cast — approve the portraits before I film the scenes.',
-    dailies: 'The scenes are filmed — watch the dailies and approve or send back.',
-    voice: 'Which voice should we use?',
-    music: 'Which background music fits?',
-    avatar: 'Which host should present?',
-};
+function buildGatePrompt(t: TFunction): Record<GateType, string> {
+    return {
+        creative_concept: t(`${NS}:gatePrompt.creativeConcept`),
+        shot_plan: t(`${NS}:gatePrompt.shotPlan`),
+        styleframe: t(`${NS}:gatePrompt.styleframe`),
+        narration: t(`${NS}:gatePrompt.narration`),
+        visual_casting: t(`${NS}:gatePrompt.visualCasting`),
+        shot_look: t(`${NS}:gatePrompt.shotLook`),
+        contact_sheet: t(`${NS}:gatePrompt.contactSheet`),
+        asset_request: t(`${NS}:gatePrompt.assetRequest`),
+        cast: t(`${NS}:gatePrompt.cast`),
+        dailies: t(`${NS}:gatePrompt.dailies`),
+        voice: t(`${NS}:gatePrompt.voice`),
+        music: t(`${NS}:gatePrompt.music`),
+        avatar: t(`${NS}:gatePrompt.avatar`),
+    };
+}
 
 /** Summary of a recorded answer (from the backend ledger), for the transcript. */
-function summarizeLedger(gate: GateType, mode: string, answer: Record<string, unknown> | undefined): string {
-    const label = gateTitle(gate).toLowerCase();
+function summarizeLedger(
+    gate: GateType,
+    mode: string,
+    answer: Record<string, unknown> | undefined,
+    t: TFunction
+): string {
+    const label = gateTitle(gate, t).toLowerCase();
     switch (mode) {
         case 'auto':
-            return `Let AI decide the ${label}`;
+            return t(`${NS}:ledgerSummary.auto`, { label });
         case 'auto_all':
-            return `Let AI handle all remaining ${label} choices`;
+            return t(`${NS}:ledgerSummary.autoAll`, { label });
         case 'select':
-            return `Approved the ${label}`;
+            return t(`${NS}:ledgerSummary.select`, { label });
         case 'freeform':
-            return `Asked: “${String((answer as { text?: string })?.text ?? '').slice(0, 80)}”`;
+            return t(`${NS}:ledgerSummary.freeform`, {
+                text: String((answer as { text?: string })?.text ?? '').slice(0, 80),
+            });
         case 'edit':
-            if (gate === 'shot_plan') return 'Edited the shot plan';
-            if (gate === 'styleframe') return 'Adjusted the design identity';
-            if (gate === 'narration') return 'Edited the narration script';
+            if (gate === 'shot_plan') return t(`${NS}:ledgerSummary.editShotPlan`);
+            if (gate === 'styleframe') return t(`${NS}:ledgerSummary.editStyleframe`);
+            if (gate === 'narration') return t(`${NS}:ledgerSummary.editNarration`);
             if (gate === 'contact_sheet') {
                 const n = ((answer as { regens?: unknown[] })?.regens ?? []).length;
-                return `Sent ${n} shot(s) back with notes`;
+                return t(`${NS}:ledgerSummary.editContactSheet`, { count: n });
             }
             if (gate === 'asset_request') {
                 const rs = (answer as { responses?: Array<{ skipped?: boolean }> })?.responses ?? [];
                 const n = rs.filter((r) => !r?.skipped).length;
-                return n > 0 ? `Provided ${n} real asset(s)` : 'Skipped — AI creates everything';
+                return n > 0
+                    ? t(`${NS}:ledgerSummary.editAssetRequestProvided`, { count: n })
+                    : t(`${NS}:ledgerSummary.editAssetRequestSkipped`);
             }
             if (gate === 'cast') {
                 const n = ((answer as { characters?: unknown[] })?.characters ?? []).length;
-                return n > 0 ? `Updated ${n} portrait(s)` : 'Approved the cast';
+                return n > 0
+                    ? t(`${NS}:ledgerSummary.editCastUpdated`, { count: n })
+                    : t(`${NS}:ledgerSummary.editCastApproved`);
             }
             if (gate === 'dailies') {
                 const n = ((answer as { clips?: unknown[] })?.clips ?? []).length;
-                return n > 0 ? `Sent ${n} scene(s) back for a re-take` : 'Approved the dailies';
+                return n > 0
+                    ? t(`${NS}:ledgerSummary.editDailiesSent`, { count: n })
+                    : t(`${NS}:ledgerSummary.editDailiesApproved`);
             }
-            return 'Picked the visuals';
+            return t(`${NS}:ledgerSummary.editDefault`);
         default:
-            return `Resolved the ${label}`;
+            return t(`${NS}:ledgerSummary.resolved`, { label });
     }
 }
 
@@ -128,7 +164,8 @@ function summarizeLedger(gate: GateType, mode: string, answer: Record<string, un
  * and the in-memory transcript is gone.
  */
 export function reconstructAssistTranscript(
-    status: VideoStatusResponse | null | undefined
+    status: VideoStatusResponse | null | undefined,
+    t: TFunction
 ): AssistTurn[] {
     const assist = (status?.metadata as { assist?: { answered_decisions?: unknown[] } } | null)
         ?.assist;
@@ -140,48 +177,53 @@ export function reconstructAssistTranscript(
         answer?: Record<string, unknown>;
         answered_at?: string;
     }>;
+    const gatePrompt = buildGatePrompt(t);
     return answered
         .filter((r) => r && r.gate_type)
         .map((r) => ({
             decision_id: r.decision_id ?? `${r.gate_type}:${r._key ?? ''}`,
             gate_type: r.gate_type as GateType,
-            prompt: GATE_PROMPT[r.gate_type as GateType] ?? gateTitle(r.gate_type as GateType),
-            answer_summary: summarizeLedger(r.gate_type as GateType, r.mode ?? 'select', r.answer),
+            prompt: gatePrompt[r.gate_type as GateType] ?? gateTitle(r.gate_type as GateType, t),
+            answer_summary: summarizeLedger(r.gate_type as GateType, r.mode ?? 'select', r.answer, t),
             answered_at: r.answered_at ? Date.parse(r.answered_at) || 0 : 0,
         }));
 }
 
 /** Short human summary of what the user answered, for the transcript. */
-export function buildTurnSummary(decision: DecisionRequest, answer: DecisionAnswer): string {
-    const label = gateTitle(decision.gate_type);
+export function buildTurnSummary(decision: DecisionRequest, answer: DecisionAnswer, t: TFunction): string {
+    const label = gateTitle(decision.gate_type, t);
+    const labelLower = label.toLowerCase();
     switch (answer.kind) {
         case 'accept_recommended':
-            return `Approved the ${label.toLowerCase()} as drafted`;
+            return t(`${NS}:turnSummary.acceptRecommended`, { label: labelLower });
         case 'choose_option':
-            return `Chose an option for ${label.toLowerCase()}`;
+            return t(`${NS}:turnSummary.chooseOption`, { label: labelLower });
         case 'freeform':
-            return `Asked: “${answer.text.slice(0, 80)}”`;
+            return t(`${NS}:turnSummary.freeform`, { text: answer.text.slice(0, 80) });
         case 'auto':
-            return `Let AI decide the ${label.toLowerCase()}`;
+            return t(`${NS}:turnSummary.auto`, { label: labelLower });
         case 'auto_all':
-            return `Let AI handle all remaining ${label.toLowerCase()} choices`;
+            return t(`${NS}:turnSummary.autoAll`, { label: labelLower });
         case 'edit':
-            if (answer.gate_type === 'shot_plan') return `Edited the shot plan (${answer.shots.length} shots)`;
-            if (answer.gate_type === 'styleframe') return 'Adjusted design identity';
-            if (answer.gate_type === 'narration') return 'Edited the narration script';
-            if (answer.gate_type === 'creative_concept') return 'Edited the creative direction';
+            if (answer.gate_type === 'shot_plan')
+                return t(`${NS}:turnSummary.editShotPlan`, { count: answer.shots.length });
+            if (answer.gate_type === 'styleframe') return t(`${NS}:turnSummary.editStyleframe`);
+            if (answer.gate_type === 'narration') return t(`${NS}:turnSummary.editNarration`);
+            if (answer.gate_type === 'creative_concept') return t(`${NS}:turnSummary.editCreativeConcept`);
             if (answer.gate_type === 'contact_sheet')
-                return `Sent ${answer.regens.length} shot(s) back with notes`;
+                return t(`${NS}:turnSummary.editContactSheet`, { count: answer.regens.length });
             if (answer.gate_type === 'asset_request') {
                 const n = answer.responses.filter((r) => !r.skipped).length;
-                return n > 0 ? `Provided ${n} real asset(s)` : 'Skipped the asset requests';
+                return n > 0
+                    ? t(`${NS}:turnSummary.editAssetRequestProvided`, { count: n })
+                    : t(`${NS}:turnSummary.editAssetRequestSkipped`);
             }
             if (answer.gate_type === 'cast')
-                return `Updated ${answer.characters.length} portrait(s) before filming`;
+                return t(`${NS}:turnSummary.editCast`, { count: answer.characters.length });
             if (answer.gate_type === 'dailies')
-                return `Sent ${answer.clips.length} scene(s) back for a re-take`;
-            return `Picked visuals for ${answer.selections.length} shot(s)`;
+                return t(`${NS}:turnSummary.editDailies`, { count: answer.clips.length });
+            return t(`${NS}:turnSummary.editDefault`, { count: answer.selections.length });
         default:
-            return `Resolved ${label.toLowerCase()}`;
+            return t(`${NS}:turnSummary.resolved`, { label: labelLower });
     }
 }

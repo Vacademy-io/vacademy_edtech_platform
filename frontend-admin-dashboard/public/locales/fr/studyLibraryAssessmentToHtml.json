@@ -1,0 +1,13 @@
+{
+    "noQuestionsAvailable": "Aucune question disponible.",
+    "questionFallback": "Question {{number}}",
+    "correctAnswer_one": "Bonne réponse : {{answers}}",
+    "correctAnswer_many": "Bonnes réponses : {{answers}}",
+    "correctAnswer_other": "Bonnes réponses : {{answers}}",
+    "explanation": "Explication : {{text}}",
+    "defaultTitle": "Évaluation",
+    "invalidQuestion": "Question invalide",
+    "optionA": "Option A",
+    "questionParsingFailed": "Échec de l'analyse de la question",
+    "questionCouldNotBeParsed": "La question n'a pas pu être analysée"
+}

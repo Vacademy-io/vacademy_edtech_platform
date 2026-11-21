@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowCounterClockwise, Clock } from '@phosphor-icons/react';
 import { Crown } from '@/svgs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -30,6 +31,7 @@ export interface AssessmentStudentLeaderboardInterface {
 }
 
 const AssessmentStudentLeaderboard = () => {
+    const { t } = useTranslation('assessmentStudentLeaderboard');
     const { data: instituteDetails } = useSuspenseQuery(useInstituteQuery());
     const { batches_for_sessions } = instituteDetails || {};
     const instituteId = getInstituteId();
@@ -153,7 +155,7 @@ const AssessmentStudentLeaderboard = () => {
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
-            toast.success('Leaderboard data for PDF exported successfully');
+            toast.success(t('toasts.pdfExportSuccess'));
         },
         onError: (error: unknown) => {
             throw error;
@@ -193,7 +195,7 @@ const AssessmentStudentLeaderboard = () => {
 
             // Clean up the created URL object
             URL.revokeObjectURL(url);
-            toast.success('Leaderboard data for CSV exported successfully');
+            toast.success(t('toasts.csvExportSuccess'));
         },
         onError: (error: unknown) => {
             throw error;
@@ -218,7 +220,7 @@ const AssessmentStudentLeaderboard = () => {
     return (
         <div className="flex w-1/2 flex-col gap-4 rounded-xl border bg-neutral-50 p-4">
             <div className="flex items-center justify-between">
-                <h1>Leaderboard</h1>
+                <h1>{t('header.title')}</h1>
                 <div className="flex items-center gap-6">
                     <ExportDialogPDFCSV
                         handleExportPDF={handleExportPDF}
@@ -250,7 +252,7 @@ const AssessmentStudentLeaderboard = () => {
             {getStudentLeaderboardData.status === 'pending' ? (
                 <DashboardLoader />
             ) : (
-                <div className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto">
+                <div className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto">{/* design-lint-ignore: viewport-relative scroll cap has no spacing token */}
                     {studentLeaderboardData.content?.map(
                         (student: StudentLeaderboard, idx: number) => {
                             return (
@@ -281,7 +283,7 @@ const AssessmentStudentLeaderboard = () => {
                                         </div>
                                         <div className="flex flex-col">
                                             <span>{student.student_name}</span>
-                                            <span className="text-[12px]">
+                                            <span className="text-caption">
                                                 {getBatchNameById(
                                                     batches_for_sessions,
                                                     student.batch_id
@@ -293,19 +295,26 @@ const AssessmentStudentLeaderboard = () => {
                                         <div className="flex items-center gap-2">
                                             <Clock size={18} className="text-neutral-600" />
                                             <span className="text-sm text-neutral-500">
-                                                {Math.floor(
-                                                    student.completion_time_in_seconds / 60
-                                                )}{' '}
-                                                min {student.completion_time_in_seconds % 60} sec
+                                                {t('studentCard.duration', {
+                                                    minutes: Math.floor(
+                                                        student.completion_time_in_seconds / 60
+                                                    ),
+                                                    seconds:
+                                                        student.completion_time_in_seconds % 60,
+                                                })}
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-4">
                                             <div className="flex flex-col text-neutral-500">
-                                                <span className="text-[12px]">Percentile</span>
+                                                <span className="text-caption">
+                                                    {t('studentCard.percentile')}
+                                                </span>
                                                 <span>{student.percentile.toFixed(2)}</span>
                                             </div>
                                             <div className="flex flex-col text-center text-neutral-500">
-                                                <span className="text-[12px]">Marks</span>
+                                                <span className="text-caption">
+                                                    {t('studentCard.marks')}
+                                                </span>
                                                 <span>
                                                     {student.achieved_marks
                                                         ? student.achieved_marks.toFixed(2)

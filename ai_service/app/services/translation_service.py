@@ -363,7 +363,9 @@ def _charge_llm_item(
                 )
             charge = max(parametric, actual)
 
-            TokenUsageService(db).record_usage_and_deduct_credits(
+            from .ai_billing import metering_kwargs, metering_user, supported_kwargs
+            tus = TokenUsageService(db)
+            tus.record_usage_and_deduct_credits(
                 api_provider=provider_for_model(model),
                 prompt_tokens=prompt_tokens,
                 completion_tokens=completion_tokens,
@@ -379,6 +381,11 @@ def _charge_llm_item(
                 # Post-paid: the item was already translated — never silently
                 # drop the charge if a concurrent spend dipped the balance.
                 allow_negative=True,
+                # Usage-event attribution only (the ledger role above is unchanged).
+                **supported_kwargs(tus.record_usage_and_deduct_credits, metering_kwargs(
+                    "translation", metering_user(user_id, surface="ADMIN_APP"),
+                    {"job_id": job_id, "item_id": item_id, "target_locale": target_locale},
+                )),
             )
     except Exception as exc:  # noqa: BLE001
         logger.warning(
@@ -1122,3 +1129,404 @@ def estimate_translation(
             result["balance_after"] = float(current - total)
             result["sufficient"] = current >= total
     return result
+
+
+# ---------------------------------------------------------------------------
+# Website builder: site texts (POST /page-builder/v1/translate)
+# ---------------------------------------------------------------------------
+#
+# A catalogue site keeps its other languages as dictionaries keyed by the
+# EXACT base-language text (globalSettings.i18n.strings[locale]), so every
+# result here is keyed by the exact source string the caller sent.
+#
+# Website copy differs from UI strings and course content: short headings and
+# buttons sit next to whole HTML blocks with links, prices and dates. Besides
+# mask_protected's spans (placeholders, data-code, LaTeX — its patterns are
+# reused read-only, its code is untouched) every single-brace text-pattern
+# placeholder ({stream}, {title}), HTML tag (attributes byte-exact), raw-text
+# element (style/script/pre/code, whole), URL, email, entity and digit run is
+# masked as a __PH_n__ token. A translation is accepted only when every token
+# comes back exactly once, the markup is intact (inline spans may move — Hindi
+# word order — block structure may not), the numbers are unchanged (no
+# Devanagari digits) and the {placeholders} are the same. Anything else is
+# reported as failed, never "fixed".
+
+WEBSITE_TM_DOMAIN = "WEBSITE"
+WEBSITE_MAX_STRINGS = 200            # texts per request
+WEBSITE_MAX_STRING_CHARS = 30_000    # one text (an htmlBlock's html is capped at 30k)
+WEBSITE_MAX_TOTAL_CHARS = 120_000    # all texts of one request
+WEBSITE_LONG_CHARS = 1_500           # a longer (masked) text gets an LLM call of its own
+WEBSITE_BATCH_CHARS = 4_000          # masked characters per batched call
+WEBSITE_BATCH_ITEMS = 25             # texts per batched call
+WEBSITE_LLM_CONCURRENCY = 3          # LLM calls in flight per request
+
+_WEBSITE_TOKEN_RE = re.compile(r"__PH_\d+__")
+# A text pattern's placeholder ("Explore {stream}", "Categories in {stream}"):
+# the site fills it per item at render time, by its ASCII name, so the name
+# must come back exactly as typed — '{धारा}' would show literally.
+_WEBSITE_TEXT_PLACEHOLDER_RE = re.compile(r"\{[A-Za-z_][A-Za-z0-9_]*\}")
+
+
+def _scoped(pattern: "re.Pattern[str]") -> str:
+    """`pattern` as a group carrying its own flags, to join it into one regex."""
+    letters = "".join(
+        letter
+        for flag, letter in ((re.IGNORECASE, "i"), (re.MULTILINE, "m"), (re.DOTALL, "s"), (re.VERBOSE, "x"))
+        if pattern.flags & flag
+    )
+    return f"(?{letters}:{pattern.pattern})" if letters else f"(?:{pattern.pattern})"
+
+
+# ONE left-to-right pass where the leftmost span wins, so no masked span ever
+# holds a token: a placeholder inside a tag or link (`<img src="{{course.image}}">`,
+# `https://x.org/{{id}}`) stays inside that tag's/link's token byte-exact, and
+# digits inside a placeholder or LaTeX (`{{step2}}`, `{step2}`, `$$x^2$$`) stay
+# inside theirs. (Masking one kind after another nests tokens, and the reply can
+# then never carry every token exactly once.) Where two spans start at the same
+# place, the order below decides: a literal token already in the source,
+# mask_protected's spans (so `{{name}}` stays one placeholder), text-pattern
+# placeholders (`{stream}`), comments, raw-text elements whose content is never
+# prose (style, script, pre, code — masked whole, so CSS/JS is neither sent
+# nor translated), tags, links, emails, entities, digit runs.
+_WEBSITE_MASK_RE = re.compile(
+    "|".join(
+        [r"__PH_\d+__"]
+        + [_scoped(p) for p in _PROTECTED_PATTERNS]
+        + [_scoped(_WEBSITE_TEXT_PLACEHOLDER_RE)]
+        + [r"(?s:<!--.*?-->)"]
+        + [rf"(?is:<{tag}\b[^>]*>.*?</{tag}\s*>)" for tag in ("style", "script", "pre", "code")]
+        + [
+            r"<[^<>]+>",
+            r"https?://[^\s<>\"']+",
+            r"www\.[^\s<>\"']+",
+            r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+",
+            r"&(?:[A-Za-z]+|#[0-9]+|#x[0-9A-Fa-f]+);",
+            r"[0-9]+(?:[.,:/-][0-9]+)*",
+        ]
+    )
+)
+_ANY_DIGITS_RE = re.compile(r"\d+")  # Unicode-aware: catches १२३ as well as 123
+_VOID_TAGS = {
+    "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
+    "param", "source", "track", "wbr",
+}
+# Inline elements a translation may move within the sentence (word order).
+_INLINE_TAGS = {
+    "a", "abbr", "b", "bdi", "bdo", "cite", "code", "data", "dfn", "em", "font", "i",
+    "kbd", "mark", "q", "s", "samp", "small", "span", "strong", "sub", "sup", "time",
+    "u", "var",
+}
+
+
+def mask_website_text(value: str) -> Tuple[str, Dict[str, str]]:
+    """mask_protected's spans plus the website spans ({word} text-pattern
+    placeholders, comments, style/script/pre/code elements, tags, URLs, emails,
+    entities, digit runs), each as a __PH_n__ token, in one pass — every token
+    stands for source text, none for another token. Returns (masked, token →
+    original); undo with restore_website_tokens."""
+    mapping: Dict[str, str] = {}
+
+    def _sub(match: "re.Match[str]") -> str:
+        token = f"__PH_{len(mapping)}__"
+        mapping[token] = match.group(0)
+        return token
+
+    return _WEBSITE_MASK_RE.sub(_sub, value), mapping
+
+
+def restore_website_tokens(masked: str, mapping: Dict[str, str]) -> str:
+    """Puts every token back in one pass, so restored text is never scanned
+    again (a source that itself contains '__PH_3__' comes back as written)."""
+    return _WEBSITE_TOKEN_RE.sub(lambda m: mapping.get(m.group(0), m.group(0)), masked)
+
+
+def _tags_balanced(sequence: List[str]) -> bool:
+    stack: List[str] = []
+    for tag in sequence:
+        if tag.startswith("/"):
+            if not stack or stack[-1] != tag[1:]:
+                return False
+            stack.pop()
+        elif tag not in _VOID_TAGS:
+            stack.append(tag)
+    return not stack
+
+
+def _same_markup(source: str, translated: str) -> bool:
+    src = tag_sequence(source)
+    out = tag_sequence(translated)
+    if src == out:
+        return True
+    if sorted(src) != sorted(out) or not _tags_balanced(src) or not _tags_balanced(out):
+        return False
+    block = lambda seq: [t for t in seq if t.lstrip("/") not in _INLINE_TAGS]  # noqa: E731
+    return block(src) == block(out)
+
+
+def website_translation_problem(source: str, translated: str) -> Optional[str]:
+    """None when `translated` is safe to show in place of `source`; otherwise why not.
+    Checks the restored text: markup, numbers and {word} placeholders. (Token checks
+    happen before restore; these also screen remembered translations.)"""
+    if not isinstance(translated, str) or not translated.strip():
+        return "the translation is empty"
+    if not _same_markup(source, translated):
+        return "the HTML markup changed"
+    if sorted(_ANY_DIGITS_RE.findall(source)) != sorted(_ANY_DIGITS_RE.findall(translated)):
+        return "the numbers changed"
+    if sorted(_WEBSITE_TEXT_PLACEHOLDER_RE.findall(source)) != sorted(
+        _WEBSITE_TEXT_PLACEHOLDER_RE.findall(translated)
+    ):
+        return "the {placeholders} changed"
+    return None
+
+
+def _restore_website_translation(source: str, masked_out: Any, mapping: Dict[str, str]) -> Tuple[Optional[str], Optional[str]]:
+    """(restored text, None) or (None, reason)."""
+    if not isinstance(masked_out, str) or not masked_out.strip():
+        return None, "the AI returned no translation"
+    for token in mapping:
+        if masked_out.count(token) != 1:
+            return None, "a protected part (markup, link, number or placeholder) was dropped or repeated"
+    stray = _WEBSITE_TOKEN_RE.findall(masked_out)
+    if any(token not in mapping for token in stray):
+        return None, "the AI invented a placeholder"
+    restored = restore_website_tokens(masked_out, mapping)
+    problem = website_translation_problem(source, restored)
+    if problem:
+        return None, problem
+    # Keep the source's own surrounding whitespace (the dictionary key is exact).
+    lead = source[: len(source) - len(source.lstrip())]
+    trail = source[len(source.rstrip()):]
+    return f"{lead}{restored.strip()}{trail}", None
+
+
+def _build_website_batch_prompt(
+    payload: Dict[str, str],
+    source_locale: str,
+    target_locale: str,
+    glossary_lines: List[str],
+) -> str:
+    src = LOCALE_NAMES.get(source_locale, source_locale)
+    tgt = LOCALE_NAMES.get(target_locale, target_locale)
+    glossary_block = (
+        "GLOSSARY (hard constraints):\n" + "\n".join(glossary_lines) + "\n"
+        if glossary_lines
+        else ""
+    )
+    return f"""You translate the text of an education institute's WEBSITE from {src} to {tgt}.
+Translate every value in the JSON object below.
+
+RULES:
+1. Return the SAME keys; translate the values only. Every value stays one string.
+2. Tokens like __PH_0__ stand for markup, links, numbers or placeholders. Copy every token
+   EXACTLY once, unchanged, where it belongs in the {tgt} sentence. Never translate, drop,
+   merge or invent tokens.
+3. Write natural, fluent {tgt} website copy: headings stay short, buttons stay short, keep
+   the tone of the original.
+4. Keep brand names, people's names and exam or course codes (NEET, JEE, UPSC) as they are.
+5. Do not add quotes, notes or explanations.
+{glossary_block}
+Return ONLY a JSON object with the same keys.
+
+TEXTS:
+{json.dumps(payload, ensure_ascii=False, indent=2)}"""
+
+
+def _website_batches(
+    items: List[Tuple[str, str, Dict[str, str]]],
+) -> Tuple[List[Tuple[str, str, Dict[str, str]]], List[List[Tuple[str, str, Dict[str, str]]]]]:
+    """(texts that get a call of their own, batches of the rest)."""
+    singles = [it for it in items if len(it[1]) > WEBSITE_LONG_CHARS]
+    batches: List[List[Tuple[str, str, Dict[str, str]]]] = []
+    current: List[Tuple[str, str, Dict[str, str]]] = []
+    chars = 0
+    for it in items:
+        if len(it[1]) > WEBSITE_LONG_CHARS:
+            continue
+        if current and (len(current) >= WEBSITE_BATCH_ITEMS or chars + len(it[1]) > WEBSITE_BATCH_CHARS):
+            batches.append(current)
+            current, chars = [], 0
+        current.append(it)
+        chars += len(it[1])
+    if current:
+        batches.append(current)
+    return singles, batches
+
+
+async def lookup_website_memory(
+    *,
+    strings: List[str],
+    source_locale: str,
+    target_locale: str,
+    institute_id: Optional[str],
+) -> Dict[str, str]:
+    """Remembered translations (translation memory) of `strings` that still
+    pass the website checks, keyed by the exact source. Free to serve — the
+    route pre-flights credits on the texts NOT found here."""
+    def _lookup_all() -> Dict[str, str]:
+        hits: Dict[str, str] = {}
+        with db_session() as db:
+            for s in strings:
+                cached = tm_lookup(db, institute_id, source_locale, target_locale, sha256_text(s))
+                if cached is not None:
+                    hits[s] = cached
+        return hits
+
+    try:
+        memory = await asyncio.to_thread(_lookup_all)
+    except Exception as exc:  # noqa: BLE001 — memory is an optimisation, never a failure
+        logger.warning("Website TM lookup failed: %s", exc)
+        return {}
+    # A remembered translation still has to pass the website checks.
+    return {s: t for s, t in memory.items() if website_translation_problem(s, t) is None}
+
+
+async def translate_website_strings(
+    *,
+    strings: List[str],
+    source_locale: str,
+    target_locale: str,
+    institute_id: Optional[str],
+    use_memory: bool = True,
+    memory: Optional[Dict[str, str]] = None,
+    preferred_model: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Translate website texts, translation memory first (domain WEBSITE; skip
+    with use_memory=False, or pass the result of lookup_website_memory as
+    `memory`), the rest through the LLM in parallel chunks.
+
+    Does NOT bill: the caller charges once per request from `usage` and
+    `llm_chars`. Returns {translations: {source: text}, failed: [{source,
+    reason}], tm_hits, model_used, usage: {prompt_tokens, completion_tokens},
+    llm_chars, llm_calls, completed_calls}.
+    """
+    results: Dict[str, str] = {}
+    failed: List[Dict[str, str]] = []
+    pending: List[str] = []
+    tm_hits = 0
+
+    if memory is None:
+        memory = (
+            await lookup_website_memory(
+                strings=strings,
+                source_locale=source_locale,
+                target_locale=target_locale,
+                institute_id=institute_id,
+            )
+            if use_memory
+            else {}
+        )
+
+    for s in strings:
+        cached = memory.get(s)
+        # A remembered translation still has to pass the website checks.
+        if cached is not None and website_translation_problem(s, cached) is None:
+            results[s] = cached
+            tm_hits += 1
+        else:
+            pending.append(s)
+
+    usage_total = {"prompt_tokens": 0, "completion_tokens": 0}
+    model_used: Optional[str] = None
+    llm_chars = 0
+    llm_calls = 0
+    completed_calls = 0
+    fresh: List[Tuple[str, str]] = []
+
+    if pending:
+        def _prep() -> Tuple[List[str], List[str]]:
+            with db_session() as db:
+                primary, fallbacks = resolve_models(db, "translation", preferred_model)
+                glossary = build_glossary_lines(db, institute_id, target_locale)
+            return [primary, *fallbacks], glossary
+
+        models, glossary_lines = await asyncio.to_thread(_prep)
+        prepared = [(s, *mask_website_text(s)) for s in pending]
+        singles, batches = _website_batches(prepared)
+        semaphore = asyncio.Semaphore(WEBSITE_LLM_CONCURRENCY)
+
+        def _account(model: str, usage: Optional[Dict[str, int]], chars: int) -> None:
+            nonlocal model_used, llm_chars, completed_calls
+            completed_calls += 1
+            model_used = model_used or model
+            llm_chars += chars
+            for k in usage_total:
+                usage_total[k] += int((usage or {}).get(k) or 0)
+
+        def _accept(source: str, masked_out: Any, mapping: Dict[str, str]) -> None:
+            restored, reason = _restore_website_translation(source, masked_out, mapping)
+            if restored is None:
+                failed.append({"source": source, "reason": reason or "rejected"})
+            else:
+                results[source] = restored
+                fresh.append((source, restored))
+
+        async def _call(prompt: str, label: str) -> Tuple[Any, str, Dict[str, int]]:
+            async with semaphore:
+                raw_json, model, usage = await generate_json(prompt, models, label=label)
+            return json.loads(raw_json), model, usage
+
+        async def _one(item: Tuple[str, str, Dict[str, str]]) -> None:
+            source, masked, mapping = item
+            try:
+                data, model, usage = await _call(
+                    _build_item_prompt(masked, source_locale, target_locale, glossary_lines),
+                    "page-translate:item",
+                )
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Website translation call failed (single): %s", exc)
+                failed.append({"source": source, "reason": "the AI call failed"})
+                return
+            _account(model, usage, len(source))
+            _accept(source, data.get("translation") if isinstance(data, dict) else None, mapping)
+
+        async def _batch(batch: List[Tuple[str, str, Dict[str, str]]]) -> None:
+            payload = {f"s{i}": masked for i, (_, masked, _) in enumerate(batch)}
+            try:
+                data, model, usage = await _call(
+                    _build_website_batch_prompt(payload, source_locale, target_locale, glossary_lines),
+                    "page-translate:batch",
+                )
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Website translation call failed (batch of %d): %s", len(batch), exc)
+                failed.extend({"source": s, "reason": "the AI call failed"} for s, _, _ in batch)
+                return
+            _account(model, usage, sum(len(s) for s, _, _ in batch))
+            for i, (source, _, mapping) in enumerate(batch):
+                _accept(source, data.get(f"s{i}") if isinstance(data, dict) else None, mapping)
+
+        llm_calls = len(singles) + len(batches)
+        await asyncio.gather(*(_one(it) for it in singles), *(_batch(b) for b in batches))
+
+    if fresh:
+        def _persist() -> None:
+            with db_session() as db:
+                for source, translated in fresh:
+                    tm_write(
+                        db,
+                        institute_id=institute_id,
+                        source_locale=source_locale,
+                        target_locale=target_locale,
+                        source_hash=sha256_text(source),
+                        source_text_value=source,
+                        target_text_value=translated,
+                        domain=WEBSITE_TM_DOMAIN,
+                    )
+
+        try:
+            await asyncio.to_thread(_persist)
+        except Exception:  # noqa: BLE001
+            logger.warning("Website TM write failed", exc_info=True)
+
+    order = {s: i for i, s in enumerate(strings)}
+    failed.sort(key=lambda f: order.get(f["source"], len(order)))
+    return {
+        "translations": {s: results[s] for s in strings if s in results},
+        "failed": failed,
+        "tm_hits": tm_hits,
+        "model_used": model_used,
+        "usage": usage_total,
+        "llm_chars": llm_chars,
+        "llm_calls": llm_calls,
+        "completed_calls": completed_calls,
+    }

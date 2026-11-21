@@ -1,0 +1,13 @@
+{
+    "trigger": {
+        "title": "Choose from badge library"
+    },
+    "dialog": {
+        "title": "Badge library",
+        "description": "Pick a ready-made badge. Each achievement comes in five tiers — the ring goes bronze, silver, gold, platinum, then diamond."
+    },
+    "badgeOption": {
+        "title": "{{theme}} · {{tier}}",
+        "alt": "{{theme}} {{tier}} badge"
+    }
+}

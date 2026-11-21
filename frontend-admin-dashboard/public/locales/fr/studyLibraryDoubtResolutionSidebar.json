@@ -1,0 +1,9 @@
+{
+    "errorFetchingDoubts": "Erreur lors du chargement des questions",
+    "doubtResolution": "Résolution des questions",
+    "tabs": {
+        "all": "Toutes",
+        "resolved": "Résolues",
+        "unresolved": "Non résolues"
+    }
+}

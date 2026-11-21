@@ -1,8 +1,10 @@
+import { useTranslation } from "react-i18next";
 import { StatusCheck } from "@/components/design-system/chips";
 import { SectionDto } from "@/types/assessment";
 import { isRichTextEmpty, sanitizeHtml } from "@/lib/utils";
 
 export const SectionDetails = ({ section }: { section: SectionDto }) => {
+  const { t } = useTranslation("layoutCommonB");
   return (
     <div className="w-full mb-4">
       <div className="space-y-6">
@@ -17,7 +19,7 @@ export const SectionDetails = ({ section }: { section: SectionDto }) => {
           {!isRichTextEmpty(section?.description?.content) && (
             <div className="text-sm text-gray-600">
               <div className="font-semibold ">
-                <p className="font-bold">Section Description:</p>
+                <p className="font-bold">{t("instructionPage.sectionDetails.description")}</p>
               </div>
               <div
                 className="richtext-content"
@@ -30,7 +32,7 @@ export const SectionDetails = ({ section }: { section: SectionDto }) => {
 
           <div className="text-sm text-gray-600">
             <div className="mb-4">
-              <span className="font-bold">Section Duration: </span>
+              <span className="font-bold">{t("instructionPage.sectionDetails.duration")}</span>
               <span className="text-gray-900">{section?.duration}</span>
             </div>
           </div>
@@ -55,15 +57,15 @@ export const SectionDetails = ({ section }: { section: SectionDto }) => {
 
             <div className="flex items-center justify-between text-sm text-gray-600">
               <div>
-                <span className="font-bold">Cut off marks: </span>
-                {section.cutoff_marks ? section.cutoff_marks : "NA"}
+                <span className="font-bold">{t("instructionPage.sectionDetails.cutoffMarks")}</span>
+                {section.cutoff_marks ? section.cutoff_marks : t("instructionPage.sectionDetails.notApplicable")}
               </div>
               {section.cutoff_marks && <StatusCheck />}
             </div>
 
             <div className="flex items-center justify-between text-sm text-gray-600">
               <div>
-                <span className="font-bold">Total Marks: </span>
+                <span className="font-bold">{t("instructionPage.sectionDetails.totalMarks")}</span>
                 <span>{section.total_marks}</span>
               </div>
             </div>

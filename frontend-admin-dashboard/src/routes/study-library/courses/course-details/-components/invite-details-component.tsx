@@ -1,7 +1,6 @@
-import { getActiveRoleDisplaySettingsKey } from '@/lib/auth/instituteUtils';
-import { getInstituteId } from '@/constants/helper';
-import { hasFacultyAssignedPermission } from '@/lib/auth/facultyAccessUtils';
 import { MyButton } from '@/components/design-system/button';
+import { MyDialog } from '@/components/design-system/dialog';
+import { MyInput } from '@/components/design-system/input';
 import {
     Dialog,
     DialogContent,
@@ -9,31 +8,36 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
-import { InviteLink } from '@/routes/manage-students/-components/InviteLink';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
-import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useRouter } from '@tanstack/react-router';
-import { ArrowRight, Copy, Check, Link as LinkIcon, Plus, Users } from '@phosphor-icons/react';
+import {
+    ArrowRight,
+    CircleNotch,
+    EnvelopeSimple,
+    MagnifyingGlass,
+    Plus,
+    Users,
+    WarningCircle,
+    XCircle,
+} from '@phosphor-icons/react';
 import { handleFetchInviteLinks, handleMakeInviteLinkDefault } from '../-services/get-invite-links';
 import { MyPagination } from '@/components/design-system/pagination';
 import { usePaginationState } from '@/hooks/pagination';
 import type { InviteLinkDataInterface } from '@/schemas/study-library/invite-links-schema';
-import { Badge } from '@/components/ui/badge';
 import { AxiosError } from 'axios';
 import { toast } from 'sonner';
 import { UseFormReturn } from 'react-hook-form';
 import { CourseDetailsFormValues } from './course-details-schema';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import GenerateInviteLinkDialog from '@/routes/manage-students/invite/-components/create-invite/GenerateInviteLinkDialog';
-import { getTokenDecodedData, getTokenFromCookie } from '@/lib/auth/sessionUtility';
-import { TokenKey, Authority } from '@/constants/auth/tokens';
-import {
-    ADMIN_DISPLAY_SETTINGS_KEY,
-    TEACHER_DISPLAY_SETTINGS_KEY, CUSTOM_ROLE_DISPLAY_SETTINGS_KEY,
-    type DisplaySettingsData,
-} from '@/types/display-settings';
-import { getDisplaySettingsFromCache } from '@/services/display-settings';
+import { useDeleteEnrollInvites } from '@/routes/manage-students/invite/-services/delete-enroll-invites';
+import createInviteLink from '@/routes/manage-students/invite/-utils/createInviteLink';
+import { useDebouncedValue } from '@/routes/erp/people/-hooks/use-debounced-value';
+import { useTranslation } from 'react-i18next';
+import { InviteLinkCard } from './invite-links/invite-link-card';
+
+type FlattenedInviteLink = InviteLinkDataInterface & { packageSessionId: string };
 
 const InviteDetailsComponent = ({
     form,
@@ -42,41 +46,17 @@ const InviteDetailsComponent = ({
     form: UseFormReturn<CourseDetailsFormValues>;
     selectedBatchId?: string;
 }) => {
+    const { t } = useTranslation('studyLibraryCourseDetailsInviteDetailsComponent');
     const sessionsData = form.getValues('courseData.sessions');
     const queryClient = useQueryClient();
     const navigate = useNavigate();
-    const { getPackageSessionId, getDetailsFromPackageSessionId } = useInstituteDetailsStore();
+    const { instituteDetails, getPackageSessionId, getDetailsFromPackageSessionId } =
+        useInstituteDetailsStore();
     const router = useRouter();
     const { courseId } = router.state.location.search;
+    const courseName = form.getValues('courseData.packageName') || '';
 
-    const selectedCourse = {
-        id: courseId || '',
-        name: form.getValues('courseData.packageName') || '',
-    };
-
-    // Read display settings to check viewShortInviteLinks toggle
-    const accessToken = getTokenFromCookie(TokenKey.accessToken);
-    const tokenData = getTokenDecodedData(accessToken);
-    const isAdmin =
-        tokenData?.authorities &&
-        Object.values(tokenData.authorities).some(
-            (auth: Authority) => Array.isArray(auth?.roles) && auth.roles.includes('ADMIN')
-        );
-    const hasFaculty = hasFacultyAssignedPermission(getInstituteId());
-    const roleKey = getActiveRoleDisplaySettingsKey();
-    const roleDisplay: DisplaySettingsData | null = getDisplaySettingsFromCache(roleKey);
-    const showShortInviteLinks = roleDisplay?.coursePage?.viewShortInviteLinks !== false;
-
-    const [copiedShortUrl, setCopiedShortUrl] = useState<string | null>(null);
-    const handleCopyShortUrl = (url: string) => {
-        navigator.clipboard
-            .writeText(url)
-            .then(() => {
-                setCopiedShortUrl(url);
-                setTimeout(() => setCopiedShortUrl(null), 2000);
-            })
-            .catch(() => toast.error('Copy failed'));
-    };
+    const selectedCourse = { id: courseId || '', name: courseName };
 
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [addDialogData, setAddDialogData] = useState<{
@@ -84,6 +64,13 @@ const InviteDetailsComponent = ({
         defaultInviteLinkId: string;
         isEditInviteLink: boolean;
     } | null>(null);
+    const [pendingDelete, setPendingDelete] = useState<InviteLinkDataInterface | null>(null);
+
+    // Search is server-side (the list is paginated, so filtering one page
+    // client-side would hide matches on the others). Debounced so a fast typist
+    // does not fire a request per keystroke.
+    const [searchInput, setSearchInput] = useState('');
+    const searchTerm = useDebouncedValue(searchInput.trim(), 350);
 
     // Generate base list of packageSessionIds for each level in each session
     const allPackageSessionIds: string[] = sessionsData
@@ -111,40 +98,58 @@ const InviteDetailsComponent = ({
         initialPageSize: 10,
     });
 
-    // Only call the API if there are packageSessionIds
-    const shouldFetch = packageSessionIds.length > 0;
-    const { data: inviteLinks } = useSuspenseQuery(
-        shouldFetch
-            ? handleFetchInviteLinks(packageSessionIds, page, pageSize)
-            : {
-                  queryKey: ['empty-invite-links'],
-                  queryFn: () => ({ content: [], totalPages: 1 }),
-              }
-    );
+    // A new search term restarts from the first page; page N of the old
+    // results is meaningless (and often empty) for the new ones.
+    useEffect(() => {
+        handlePageChange(0);
+    }, [searchTerm, handlePageChange]);
 
-    const shouldScroll = inviteLinks.content.length > 3;
+    // Only call the API if there are packageSessionIds.
+    //
+    // useQuery rather than useSuspenseQuery: the nearest <Suspense> is the app
+    // root, so a suspending fetch blanks the whole page for the round-trip.
+    // With search re-keying the query on every debounced term that would flash
+    // constantly. keepPreviousData holds the last page on screen while the
+    // next one loads; the toolbar shows a spinner instead.
+    const shouldFetch = packageSessionIds.length > 0;
+    const {
+        data: inviteLinks,
+        isPending,
+        isFetching,
+        isError,
+        refetch,
+    } = useQuery({
+        ...handleFetchInviteLinks(packageSessionIds, page, pageSize, searchTerm),
+        enabled: shouldFetch,
+        placeholderData: keepPreviousData,
+    });
+    const isInitialLoading = shouldFetch && isPending;
 
     // --- Group invite links by package_session_id ---
-    // Step 1: Flatten inviteLinks.content so each entry is {inviteLink, packageSessionId}
-    const flattenedInviteLinks = (
-        inviteLinks && inviteLinks.content ? inviteLinks.content : []
-    ).flatMap((inviteLink: InviteLinkDataInterface) =>
-        (inviteLink.package_session_ids || []).map((packageSessionId: string) => ({
-            ...inviteLink,
-            packageSessionId,
-        }))
-    );
-    // Step 2: Group by packageSessionId
-    type FlattenedInviteLink = InviteLinkDataInterface & { packageSessionId: string };
-    const groupedByPackageSessionId: Record<string, FlattenedInviteLink[]> = {};
-    flattenedInviteLinks.forEach((item: FlattenedInviteLink) => {
-        if (!groupedByPackageSessionId[item.packageSessionId]) {
-            groupedByPackageSessionId[item.packageSessionId] = [];
-        }
-        groupedByPackageSessionId[item.packageSessionId]?.push(item);
-    });
-    const groupedEntries: [string, FlattenedInviteLink[]][] =
-        Object.entries(groupedByPackageSessionId);
+    // Flatten so each entry is {inviteLink, packageSessionId}, then group. The
+    // server returns newest first; flatMap/grouping preserve that order within
+    // each batch, so no client-side sort is needed.
+    const groupedEntries = useMemo(() => {
+        const content: InviteLinkDataInterface[] = inviteLinks?.content ?? [];
+        const grouped: Record<string, FlattenedInviteLink[]> = {};
+        content.forEach((inviteLink) => {
+            (inviteLink.package_session_ids || []).forEach((packageSessionId) => {
+                (grouped[packageSessionId] ??= []).push({ ...inviteLink, packageSessionId });
+            });
+        });
+        return Object.entries(grouped);
+    }, [inviteLinks]);
+
+    const totalInvites: number = inviteLinks?.totalElements ?? inviteLinks?.content?.length ?? 0;
+    const hasResults = shouldFetch && groupedEntries.length > 0;
+    const isSearching = searchTerm.length > 0;
+
+    const showMutationError = (error: unknown, fallback: string) => {
+        const message =
+            error instanceof AxiosError ? error?.response?.data?.ex || fallback : fallback;
+        toast.error(message, { className: 'error-toast', duration: 2000 });
+        if (!(error instanceof AxiosError)) console.error('Unexpected error:', error);
+    };
 
     const handleMakeDefaultMutation = useMutation({
         mutationFn: async ({
@@ -153,36 +158,28 @@ const InviteDetailsComponent = ({
         }: {
             packageSessionId: string;
             inviteLinkId: string;
-        }) => {
-            return handleMakeInviteLinkDefault(packageSessionId, inviteLinkId);
-        },
+        }) => handleMakeInviteLinkDefault(packageSessionId, inviteLinkId),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['GET_INVITE_LINKS'] });
+            toast.success(t('madeDefault'));
         },
-        onError: (error: unknown) => {
-            if (error instanceof AxiosError) {
-                toast.error(error?.response?.data?.ex || 'Failed to submit rating', {
-                    className: 'error-toast',
-                    duration: 2000,
-                });
-            } else {
-                toast.error('An unexpected error occurred', {
-                    className: 'error-toast',
-                    duration: 2000,
-                });
-                console.error('Unexpected error:', error);
-            }
-        },
+        onError: (error: unknown) => showMutationError(error, t('unexpectedError')),
     });
 
-    // Handler for making an invite link default
-    const handleMakeDefault = (packageSessionId: string, inviteLinkId: string) => {
-        handleMakeDefaultMutation.mutate({ packageSessionId, inviteLinkId });
+    const deleteMutation = useDeleteEnrollInvites();
+
+    const handleConfirmDelete = async () => {
+        if (!pendingDelete) return;
+        try {
+            await deleteMutation.mutateAsync([pendingDelete.id]);
+            toast.success(t('deleteDialog.success', { name: pendingDelete.name }));
+            setPendingDelete(null);
+        } catch (error) {
+            showMutationError(error, t('deleteDialog.error'));
+        }
     };
 
-    // Handler for viewing an invite link (to be implemented)
-    const handleViewInviteLink = (inviteLinkId: string, packageSessionId: string) => {
-        // TODO: Implement view functionality
+    const handleEditInviteLink = (inviteLinkId: string, packageSessionId: string) => {
         setAddDialogData({
             packageSessionId,
             defaultInviteLinkId: inviteLinkId,
@@ -191,16 +188,26 @@ const InviteDetailsComponent = ({
         setIsAddDialogOpen(true);
     };
 
-    // Handler for adding a new invite link to a package session
     const handleAddInviteLink = (packageSessionId: string, defaultInviteLinkId: string) => {
         setAddDialogData({ packageSessionId, defaultInviteLinkId, isEditInviteLink: false });
         setIsAddDialogOpen(true);
     };
 
+    const batchLabel = (packageSessionId: string) => {
+        const details = getDetailsFromPackageSessionId({ packageSessionId });
+        return [courseName, details?.session.session_name, details?.level.level_name]
+            .filter(Boolean)
+            .join(' · ');
+    };
+
+    const addDialogBatch = getDetailsFromPackageSessionId({
+        packageSessionId: addDialogData?.packageSessionId || '',
+    });
+
     return (
         <>
             <Dialog>
-                <DialogTrigger>
+                <DialogTrigger asChild>
                     <MyButton
                         type="button"
                         scale="small"
@@ -208,187 +215,167 @@ const InviteDetailsComponent = ({
                         className="flex items-center gap-1"
                     >
                         <Plus size={16} />
-                        Invite Links
+                        {t('inviteLinks')}
                     </MyButton>
                 </DialogTrigger>
-                <DialogContent className="!w-[80vw] max-w-[80vw] p-0">
-                    <DialogHeader className="rounded-t-lg bg-primary-50 p-4">
-                        <DialogTitle className="font-normal text-primary-500">
-                            📨
-                            <span className="ml-2">Invite Links</span>
+                <DialogContent className="flex max-h-dialog-tall w-dialog-xl flex-col gap-0 overflow-hidden p-0">
+                    <DialogHeader className="shrink-0 rounded-t-lg border-b border-primary-100 bg-primary-50 p-4">
+                        <DialogTitle className="flex items-center gap-2 font-normal text-primary-500">
+                            <EnvelopeSimple className="size-5" />
+                            {t('inviteLinks')}
                         </DialogTitle>
                     </DialogHeader>
-                    <div
-                        className={`space-y-4 p-4 ${shouldScroll ? 'overflow-y-auto' : ''}`}
-                        style={shouldScroll ? { maxHeight: '60vh' } : {}}
-                    >
-                        {shouldFetch && groupedEntries.length > 0 ? (
-                            groupedEntries.map(
-                                (
-                                    [packageSessionId, inviteLinksArr]: [
-                                        string,
-                                        FlattenedInviteLink[],
-                                    ],
-                                    groupIndex: number
-                                ) => (
-                                    <div
-                                        className="animate-fadeIn group flex flex-col gap-3 rounded-lg border border-neutral-200 bg-white p-4 transition-all duration-200 hover:border-primary-200 hover:shadow-md"
-                                        key={packageSessionId}
-                                        style={{ animationDelay: `${groupIndex * 0.1}s` }}
-                                    >
-                                        {/* Enhanced header with course info */}
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2 font-semibold">
-                                                <div className="rounded-md bg-primary-100 p-1">
-                                                    <Users size={18} />
-                                                </div>
-                                                <span>
-                                                    {form.getValues('courseData.packageName')}{' '}
-                                                    {getDetailsFromPackageSessionId({
-                                                        packageSessionId,
-                                                    })?.session.session_name || '-'}{' '}
-                                                    {getDetailsFromPackageSessionId({
-                                                        packageSessionId,
-                                                    })?.level.level_name || '-'}
-                                                </span>
-                                            </div>
-                                            <MyButton
-                                                type="button"
-                                                scale="small"
-                                                buttonType="secondary"
-                                                onClick={() => {
-                                                    const defaultInviteLink = inviteLinksArr.find(
-                                                        (invite) => invite.tag === 'DEFAULT'
-                                                    );
-                                                    handleAddInviteLink(
-                                                        packageSessionId,
-                                                        defaultInviteLink?.id || ''
-                                                    );
-                                                }}
-                                            >
-                                                Add
-                                            </MyButton>
-                                        </div>
 
-                                        {/* Invite links section for this package session */}
-                                        <div className="border-t border-neutral-100 pt-2">
-                                            <div className="mb-2 text-xs font-medium text-neutral-600">
-                                                Invite Links:
+                    {/* Toolbar: search + count. Sticky above the scrolling list. */}
+                    <div className="flex shrink-0 flex-col gap-3 border-b border-neutral-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="relative w-full sm:max-w-md">
+                            <MyInput
+                                inputType="text"
+                                input={searchInput}
+                                onChangeFunction={(e) => setSearchInput(e.target.value)}
+                                inputPlaceholder={t('searchPlaceholder')}
+                                className="w-full px-9 sm:w-full"
+                                aria-label={t('searchPlaceholder')}
+                            />
+                            <MagnifyingGlass className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-neutral-500" />
+                            {searchInput && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchInput('')}
+                                    aria-label={t('clearSearch')}
+                                    className="absolute end-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 focus:outline-none"
+                                >
+                                    <XCircle className="size-4" />
+                                </button>
+                            )}
+                        </div>
+                        <p className="flex shrink-0 items-center gap-1.5 text-caption text-neutral-500">
+                            {isFetching && (
+                                <CircleNotch
+                                    className="size-3.5 animate-spin text-primary-500"
+                                    aria-label={t('loading')}
+                                />
+                            )}
+                            {t('resultCount', { count: totalInvites })} · {t('sortedNewest')}
+                        </p>
+                    </div>
+
+                    <div className="flex-1 space-y-4 overflow-y-auto p-4">
+                        {isInitialLoading ? (
+                            <div className="flex flex-col gap-3" aria-busy="true">
+                                {[0, 1, 2].map((i) => (
+                                    <div
+                                        key={i}
+                                        className="h-28 animate-pulse rounded-lg border border-neutral-200 bg-neutral-100"
+                                    />
+                                ))}
+                            </div>
+                        ) : isError ? (
+                            <div className="flex flex-col items-center gap-2 py-10 text-center">
+                                <WarningCircle className="size-8 text-danger-600" />
+                                <p className="text-body text-neutral-600">{t('loadError')}</p>
+                                <MyButton
+                                    type="button"
+                                    scale="small"
+                                    buttonType="secondary"
+                                    onClick={() => refetch()}
+                                >
+                                    {t('retry')}
+                                </MyButton>
+                            </div>
+                        ) : hasResults ? (
+                            groupedEntries.map(([packageSessionId, inviteLinksArr]) => (
+                                <section
+                                    key={packageSessionId}
+                                    className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-neutral-50 p-4"
+                                >
+                                    {/* Batch header */}
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <div className="flex min-w-0 items-center gap-2">
+                                            <div className="rounded-md bg-primary-100 p-1 text-primary-500">
+                                                <Users size={18} />
                                             </div>
-                                            <div className="flex flex-col gap-2">
-                                                {inviteLinksArr.map(
-                                                    (
-                                                        inviteLink: FlattenedInviteLink,
-                                                        idx: number
-                                                    ) => {
-                                                        return (
-                                                            <div
-                                                                key={inviteLink.id + idx}
-                                                                className="mb-2 rounded-md border bg-neutral-50 p-3"
-                                                            >
-                                                                <div className="mb-2 flex items-center gap-2">
-                                                                    <div className="text-sm font-medium text-neutral-700">
-                                                                        {inviteLink.name}
-                                                                    </div>
-                                                                    <MyButton
-                                                                        type="button"
-                                                                        scale="small"
-                                                                        buttonType="secondary"
-                                                                        onClick={() =>
-                                                                            handleViewInviteLink(
-                                                                                inviteLink.id,
-                                                                                packageSessionId
-                                                                            )
-                                                                        }
-                                                                    >
-                                                                        View
-                                                                    </MyButton>
-                                                                </div>
-                                                                <div className="flex items-center gap-2">
-                                                                    <InviteLink
-                                                                        inviteCode={
-                                                                            inviteLink.invite_code
-                                                                        }
-                                                                    />
-                                                                    {inviteLink.tag ===
-                                                                    'DEFAULT' ? (
-                                                                        <Badge
-                                                                            variant="default"
-                                                                            className="ml-1 border border-gray-500 bg-green-200 text-gray-600 shadow-none"
-                                                                        >
-                                                                            DEFAULT
-                                                                        </Badge>
-                                                                    ) : (
-                                                                        <MyButton
-                                                                            type="button"
-                                                                            scale="small"
-                                                                            buttonType="secondary"
-                                                                            onClick={() =>
-                                                                                handleMakeDefault(
-                                                                                    packageSessionId,
-                                                                                    inviteLink.id
-                                                                                )
-                                                                            }
-                                                                            className="ml-1"
-                                                                        >
-                                                                            Make Default
-                                                                        </MyButton>
-                                                                    )}
-                                                                </div>
-                                                                {showShortInviteLinks &&
-                                                                    inviteLink.short_url && (
-                                                                        <div className="mt-2 flex items-center gap-3">
-                                                                            <a
-                                                                                href={
-                                                                                    inviteLink.short_url
-                                                                                }
-                                                                                target="_blank"
-                                                                                rel="noopener noreferrer"
-                                                                                className="text-body text-neutral-600 underline hover:text-primary-500"
-                                                                            >
-                                                                                {inviteLink.short_url.replace(
-                                                                                    /^https?:\/\//,
-                                                                                    ''
-                                                                                )}
-                                                                            </a>
-                                                                            <div className="flex items-center gap-2">
-                                                                                <MyButton
-                                                                                    buttonType="secondary"
-                                                                                    scale="medium"
-                                                                                    layoutVariant="icon"
-                                                                                    type="button"
-                                                                                    onClick={() =>
-                                                                                        handleCopyShortUrl(
-                                                                                            inviteLink.short_url!
-                                                                                        )
-                                                                                    }
-                                                                                >
-                                                                                    <Copy />
-                                                                                </MyButton>
-                                                                                {copiedShortUrl ===
-                                                                                    inviteLink.short_url && (
-                                                                                        <div className="text-primary-500">
-                                                                                            <Check />
-                                                                                        </div>
-                                                                                    )}
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                            </div>
-                                                        );
-                                                    }
-                                                )}
-                                            </div>
+                                            <span className="truncate text-subtitle font-semibold text-neutral-700">
+                                                {batchLabel(packageSessionId)}
+                                            </span>
+                                            <span className="shrink-0 text-caption text-neutral-500">
+                                                {t('linkCount', {
+                                                    count: inviteLinksArr.length,
+                                                })}
+                                            </span>
                                         </div>
+                                        <MyButton
+                                            type="button"
+                                            scale="small"
+                                            buttonType="secondary"
+                                            className="flex items-center gap-1"
+                                            onClick={() => {
+                                                const defaultInviteLink = inviteLinksArr.find(
+                                                    (invite) => invite.tag === 'DEFAULT'
+                                                );
+                                                handleAddInviteLink(
+                                                    packageSessionId,
+                                                    defaultInviteLink?.id || ''
+                                                );
+                                            }}
+                                        >
+                                            <Plus className="size-3.5" />
+                                            {t('add')}
+                                        </MyButton>
                                     </div>
-                                )
-                            )
+
+                                    <div className="flex flex-col gap-3">
+                                        {inviteLinksArr.map((inviteLink) => (
+                                            <InviteLinkCard
+                                                key={inviteLink.id + packageSessionId}
+                                                invite={inviteLink}
+                                                packageSessionId={packageSessionId}
+                                                inviteUrl={createInviteLink(
+                                                    inviteLink.invite_code,
+                                                    instituteDetails?.learner_portal_base_url
+                                                )}
+                                                onEdit={() =>
+                                                    handleEditInviteLink(
+                                                        inviteLink.id,
+                                                        packageSessionId
+                                                    )
+                                                }
+                                                onDelete={() => setPendingDelete(inviteLink)}
+                                                onMakeDefault={() =>
+                                                    handleMakeDefaultMutation.mutate({
+                                                        packageSessionId,
+                                                        inviteLinkId: inviteLink.id,
+                                                    })
+                                                }
+                                                isMakingDefault={
+                                                    handleMakeDefaultMutation.isPending
+                                                }
+                                            />
+                                        ))}
+                                    </div>
+                                </section>
+                            ))
                         ) : (
-                            <div className="py-8 text-center text-neutral-500">
-                                No invite links available.
+                            <div className="flex flex-col items-center gap-2 py-10 text-center">
+                                <MagnifyingGlass className="size-8 text-neutral-300" />
+                                <p className="text-body text-neutral-600">
+                                    {isSearching
+                                        ? t('noSearchResults', { term: searchTerm })
+                                        : t('noInviteLinksAvailable')}
+                                </p>
+                                {isSearching && (
+                                    <MyButton
+                                        type="button"
+                                        scale="small"
+                                        buttonType="text"
+                                        onClick={() => setSearchInput('')}
+                                    >
+                                        {t('clearSearch')}
+                                    </MyButton>
+                                )}
                             </div>
                         )}
-                        {shouldFetch && (inviteLinks?.content?.length ?? 0) > 0 && (
+                        {hasResults && (inviteLinks?.totalPages ?? 1) > 1 && (
                             <MyPagination
                                 currentPage={page}
                                 totalPages={inviteLinks?.totalPages ?? 1}
@@ -396,45 +383,70 @@ const InviteDetailsComponent = ({
                             />
                         )}
                     </div>
-                    <Separator />
-                    <div className="p-4 pt-0">
+
+                    <div className="shrink-0 border-t border-neutral-200 p-4">
                         <MyButton
                             type="button"
                             scale="small"
                             buttonType="secondary"
-                            className="mt-4 flex items-center gap-1"
+                            className="flex items-center gap-1"
                             onClick={() => {
                                 navigate({ to: '/manage-students/invite' });
                             }}
                         >
                             <ArrowRight size={18} />
-                            Invite Page
+                            {t('invitePage')}
                         </MyButton>
                     </div>
                 </DialogContent>
             </Dialog>
+
+            <MyDialog
+                open={pendingDelete !== null}
+                onOpenChange={(open) => {
+                    if (!open) setPendingDelete(null);
+                }}
+                heading={t('deleteDialog.heading')}
+                dialogWidth="w-dialog-md"
+                footer={
+                    <>
+                        <MyButton
+                            type="button"
+                            buttonType="secondary"
+                            onClick={() => setPendingDelete(null)}
+                            disabled={deleteMutation.isPending}
+                        >
+                            {t('deleteDialog.cancel')}
+                        </MyButton>
+                        <MyButton
+                            type="button"
+                            buttonType="primary"
+                            onClick={handleConfirmDelete}
+                            disabled={deleteMutation.isPending}
+                            className="bg-danger-600 hover:bg-danger-500 active:bg-danger-500"
+                        >
+                            {deleteMutation.isPending
+                                ? t('deleteDialog.deleting')
+                                : t('deleteDialog.confirm')}
+                        </MyButton>
+                    </>
+                }
+            >
+                <p className="text-body text-neutral-600">
+                    {t('deleteDialog.confirmText', { name: pendingDelete?.name ?? '' })}
+                </p>
+            </MyDialog>
+
             <GenerateInviteLinkDialog
                 selectedCourse={selectedCourse}
                 selectedBatches={[
                     {
-                        sessionId:
-                            getDetailsFromPackageSessionId({
-                                packageSessionId: addDialogData?.packageSessionId || '',
-                            })?.session.id || '',
-                        levelId:
-                            getDetailsFromPackageSessionId({
-                                packageSessionId: addDialogData?.packageSessionId || '',
-                            })?.level.id || '',
-                        sessionName:
-                            getDetailsFromPackageSessionId({
-                                packageSessionId: addDialogData?.packageSessionId || '',
-                            })?.session.session_name || '',
-                        levelName:
-                            getDetailsFromPackageSessionId({
-                                packageSessionId: addDialogData?.packageSessionId || '',
-                            })?.level.level_name || '',
+                        sessionId: addDialogBatch?.session.id || '',
+                        levelId: addDialogBatch?.level.id || '',
+                        sessionName: addDialogBatch?.session.session_name || '',
+                        levelName: addDialogBatch?.level.level_name || '',
                         courseId: courseId || '',
-                        courseName: form.getValues('courseData.packageName') || '',
+                        courseName,
                     },
                 ]}
                 showSummaryDialog={isAddDialogOpen}

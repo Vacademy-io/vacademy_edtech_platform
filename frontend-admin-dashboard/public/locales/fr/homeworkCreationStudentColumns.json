@@ -1,0 +1,27 @@
+{
+    "columns": {
+        "details": "Détails",
+        "name": "Nom",
+        "attemptDate": "Date de la tentative",
+        "startTime": "Heure de début",
+        "endTime": "Heure de fin",
+        "duration": "Durée",
+        "score": "Score",
+        "evaluationStatus": "Statut d'évaluation",
+        "enrollmentNumber": "Numéro d'inscription",
+        "gender": "Genre",
+        "responseTime": "Temps de réponse",
+        "phoneNumber": "Numéro de téléphone",
+        "emailId": "Adresse e-mail",
+        "city": "Ville",
+        "state": "État"
+    },
+    "status": {
+        "evaluated": "Évalué",
+        "pending": "En attente"
+    },
+    "sort": {
+        "ascending": "Croissant",
+        "descending": "Décroissant"
+    }
+}

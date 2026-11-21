@@ -1,0 +1,49 @@
+{
+    "meta": {
+        "helmetTitle": "परीक्षण शेड्यूल करें",
+        "helmetDescription": "यह पृष्ठ सभी शेड्यूल किए गए परीक्षणों की सूची दिखाता है और यहाँ से एक मूल्यांकन शेड्यूल किया जा सकता है।"
+    },
+    "header": {
+        "navHeading": "मूल्यांकन सूची"
+    },
+    "tabs": {
+        "liveTests": {
+            "emptyMessage": "फ़िलहाल कोई परीक्षण लाइव नहीं है।"
+        },
+        "upcomingTests": {
+            "emptyMessage": "कोई आगामी परीक्षण शेड्यूल नहीं है।"
+        },
+        "previousTests": {
+            "emptyMessage": "कोई पिछला परीक्षण उपलब्ध नहीं है।"
+        },
+        "draftTests": {
+            "emptyMessage": "कोई ड्राफ़्ट परीक्षण उपलब्ध नहीं है।"
+        }
+    },
+    "filters": {
+        "filterBy": "फ़िल्टर करें",
+        "mode": "मोड",
+        "type": "प्रकार",
+        "evaluation": "मूल्यांकन",
+        "unapplied": {
+            "countLabel_one": "{{count}} फ़िल्टर चयनित",
+            "countLabel_other": "{{count}} फ़िल्टर चयनित",
+            "instructionPrefix": "— सूची अपडेट करने के लिए",
+            "applyLabel": "लागू करें",
+            "instructionSuffix": "दबाएँ।"
+        },
+        "source": {
+            "label": "स्रोत",
+            "options": {
+                "DASHBOARD": "डैशबोर्ड",
+                "API": "API"
+            },
+            "emptyOnPage": "इस पेज पर इस स्रोत का कोई मूल्यांकन नहीं है। दूसरा पेज देखें या स्रोत फ़िल्टर हटाएँ।"
+        }
+    },
+    "dialogs": {
+        "noCourse": {
+            "type": "मूल्यांकन बनाने"
+        }
+    }
+}

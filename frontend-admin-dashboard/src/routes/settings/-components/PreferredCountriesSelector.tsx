@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Check, ChevronsUpDown, X, ArrowUp, ArrowDown, Star } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Check, CaretUpDown, X, ArrowUp, ArrowDown, Star } from '@phosphor-icons/react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
     Command,
@@ -37,6 +38,7 @@ export default function PreferredCountriesSelector({
     value,
     onChange,
 }: PreferredCountriesSelectorProps) {
+    const { t } = useTranslation('settingsPreferredCountriesSelector');
     const [open, setOpen] = useState(false);
 
     const selectedSet = useMemo(() => new Set(value), [value]);
@@ -80,7 +82,7 @@ export default function PreferredCountriesSelector({
                                 )}
                                 title={
                                     isDefault
-                                        ? 'Default selected country in phone inputs'
+                                        ? t('chips.defaultTooltip')
                                         : country?.name
                                 }
                             >
@@ -102,7 +104,7 @@ export default function PreferredCountriesSelector({
                                     onClick={() => move(idx, -1)}
                                     disabled={idx === 0}
                                     className="ml-0.5 rounded p-0.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-30"
-                                    title="Move up (earlier in order)"
+                                    title={t('chips.moveUp')}
                                 >
                                     <ArrowUp className="size-3" />
                                 </button>
@@ -111,7 +113,7 @@ export default function PreferredCountriesSelector({
                                     onClick={() => move(idx, 1)}
                                     disabled={idx === value.length - 1}
                                     className="rounded p-0.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-30"
-                                    title="Move down (later in order)"
+                                    title={t('chips.moveDown')}
                                 >
                                     <ArrowDown className="size-3" />
                                 </button>
@@ -119,7 +121,7 @@ export default function PreferredCountriesSelector({
                                     type="button"
                                     onClick={() => remove(code)}
                                     className="rounded p-0.5 text-slate-400 hover:bg-red-100 hover:text-red-600"
-                                    title="Remove"
+                                    title={t('chips.remove')}
                                 >
                                     <X className="size-3" />
                                 </button>
@@ -129,8 +131,7 @@ export default function PreferredCountriesSelector({
                 </div>
             ) : (
                 <p className="rounded-md border border-dashed border-slate-200 bg-slate-50/50 px-3 py-2 text-xs italic text-slate-400">
-                    No preferred countries selected — phone inputs will fall back to the
-                    platform default order.
+                    {t('emptyState')}
                 </p>
             )}
 
@@ -143,17 +144,17 @@ export default function PreferredCountriesSelector({
                     >
                         <span className="text-slate-500">
                             {value.length === 0
-                                ? 'Select countries…'
-                                : `Add or remove (${value.length} selected)`}
+                                ? t('trigger.selectPlaceholder')
+                                : t('trigger.addOrRemove', { count: value.length })}
                         </span>
-                        <ChevronsUpDown className="size-4 text-slate-400" />
+                        <CaretUpDown className="size-4 text-slate-400" />
                     </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[320px] p-0" align="start">
+                <PopoverContent className="w-80 p-0" align="start">
                     <Command>
-                        <CommandInput placeholder="Search countries…" className="h-9" />
+                        <CommandInput placeholder={t('search.placeholder')} className="h-9" />
                         <CommandList className="max-h-64">
-                            <CommandEmpty>No country found.</CommandEmpty>
+                            <CommandEmpty>{t('search.empty')}</CommandEmpty>
                             <CommandGroup>
                                 {COUNTRIES.map((country) => {
                                     const checked = selectedSet.has(country.code);

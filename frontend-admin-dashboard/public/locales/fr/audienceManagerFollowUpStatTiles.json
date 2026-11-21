@@ -1,0 +1,24 @@
+{
+    "tiles": {
+        "overdue": {
+            "label": "En attente",
+            "caption": "En retard"
+        },
+        "today": {
+            "label": "Aujourd'hui",
+            "caption": "À traiter aujourd'hui"
+        },
+        "upcoming": {
+            "label": "À venir",
+            "caption": "7 prochains jours"
+        },
+        "all": {
+            "label": "Toutes",
+            "caption": "Tous en attente"
+        },
+        "completed": {
+            "label": "Terminés",
+            "caption": "Déjà faits"
+        }
+    }
+}

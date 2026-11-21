@@ -1,0 +1,30 @@
+{
+    "title": "Choose CSV Format",
+    "sections": {
+        "enrollmentPreferences": "Enrollment Preferences",
+        "optionalColumnSelection": "Optional CSV column selection"
+    },
+    "preferences": {
+        "autoGenerateUsername": "Auto-generate username",
+        "autoGeneratePassword": "Auto-generate password",
+        "autoGenerateEnrollmentId": "Auto-generate enrollment ID",
+        "setCommonExpiryDate": "Set common expiry date",
+        "daysFromToday": "days from today",
+        "addStudentStatus": "Add student status",
+        "selectStatusPlaceholder": "Select status",
+        "statusActive": "Active",
+        "statusInactive": "Inactive"
+    },
+    "columns": {
+        "fatherName": "Father/Male Guardian's Name",
+        "collegeName": "College/School Name",
+        "motherName": "Mother/Female Guardian's Name",
+        "state": "State",
+        "city": "City",
+        "fatherEmail": "Father/Male Guardian's Email",
+        "motherEmail": "Mother/Female Guardian's Email",
+        "pincode": "Pincode",
+        "fatherMobile": "Father/Male Guardian's Mobile Number",
+        "motherMobile": "Mother/Female Guardian's Mobile Number"
+    }
+}

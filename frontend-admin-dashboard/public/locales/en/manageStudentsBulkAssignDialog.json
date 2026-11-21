@@ -1,0 +1,31 @@
+{
+    "dialogTitle": "Enroll {{term}}",
+    "stepper": {
+        "learners": "Select {{term}}",
+        "courses": "Select {{term}}",
+        "config": "Enrollment Config",
+        "suborg": "Sub-Organisation",
+        "preview": "Preview & Confirm"
+    },
+    "footer": {
+        "back": "← Back",
+        "cancel": "Cancel",
+        "linkingGuardians": "Linking guardians…",
+        "loading": "Loading…",
+        "previewButton": "Preview →",
+        "next": "Next →",
+        "enrolling": "Enrolling…",
+        "confirmEnrollment": "✓ Confirm Enrollment"
+    },
+    "toasts": {
+        "previewFailed": "Failed to generate preview. Please try again.",
+        "enrollmentComplete": "Enrollment complete! ✅ {{successful}} enrolled, ⏭ {{skipped}} skipped, ❌ {{failed}} failed.",
+        "enrollmentFailed": "Enrollment failed. Please try again.",
+        "guardianLinkFailed": "Guardian link failed for {{name}}: {{message}}"
+    },
+    "errors": {
+        "guardianLinkFallback": "Failed to link guardian.",
+        "invalidGuardianLinkSelection": "Invalid guardian-link selection.",
+        "couldNotResolveCreatedUser": "Could not resolve the created user id for {{name}}."
+    }
+}

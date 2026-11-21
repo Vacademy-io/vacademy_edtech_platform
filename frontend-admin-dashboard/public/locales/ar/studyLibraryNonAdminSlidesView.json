@@ -1,0 +1,6 @@
+{
+    "switchToInstructorView": "التبديل إلى عرض المدرّس",
+    "switchToLearnerView": "التبديل إلى عرض المتعلم",
+    "readOnlyCourseBanner": "هذه الدورة {{status}}. يمكنك فقط عرض المحتوى والرد على الاستفسارات.",
+    "unsavedChangesBanner": "لديك تغييرات غير محفوظة في \"{{slideTitle}}\". لا تنس الحفظ قبل تبديل الشرائح."
+}

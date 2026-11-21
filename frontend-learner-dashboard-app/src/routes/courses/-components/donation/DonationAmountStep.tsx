@@ -1,4 +1,5 @@
 import { SpinnerGap } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { PaymentOption } from "../../-services/payment-options-api";
 import { getCurrencySymbol, getCurrencyWithPriority } from "@/utils/currency";
 
@@ -21,6 +22,7 @@ export const DonationAmountStep = ({
   onAmountSelect,
   onCustomAmountChange
 }: DonationAmountStepProps) => {
+  const { t } = useTranslation("coursesRouteA");
   // Get suggested amounts from payment options
   const getSuggestedAmounts = (): number[] => {
     if (paymentOptions?.payment_option_metadata_json) {
@@ -78,9 +80,9 @@ export const DonationAmountStep = ({
 
   if (loading) {
     return (
-      <div className="text-center py-8">
-        <SpinnerGap className="w-8 h-8 text-blue-500 animate-spin mx-auto mb-4" />
-        <p className="text-sm text-gray-600">Loading payment options...</p>
+      <div className="text-center py-8 space-y-4">
+        <SpinnerGap className="w-8 h-8 text-blue-500 animate-spin mx-auto" />
+        <p className="text-sm text-gray-600">{t("donation.amountStep.loadingOptions")}</p>
       </div>
     );
   }
@@ -109,7 +111,7 @@ export const DonationAmountStep = ({
             tabIndex={0}
             style={{ gridColumn: 'span 2' }}
           >
-            Other
+            {t("donation.amountStep.other")}
           </div>
         )}
         {selectedAmount === 'other' && (
@@ -118,7 +120,7 @@ export const DonationAmountStep = ({
             min={minAmount}
             step="0.01"
             max="10000"
-            placeholder={`${currencySymbol} (min ${currencySymbol}${minAmount})`}
+            placeholder={t("donation.amountStep.minAmountPlaceholder", { currencySymbol, minAmount })}
             className="border rounded p-2 text-xs w-full mt-1 mb-1 col-span-2 h-12"
             value={customAmount}
             onChange={(e) => onCustomAmountChange(e.target.value)}

@@ -34,6 +34,30 @@ export const normalizeRoleKey = (role: string | null | undefined): string => {
     return ROLE_ALIASES[upper] ?? upper;
 };
 
+/**
+ * Known roles, most privileged first. Access resolves against the single
+ * highest-precedence role a user holds.
+ */
+export const ROLE_PRECEDENCE: string[] = [ADMIN_ROLE_KEY, TEACHER_ROLE_KEY, LEARNER_ROLE_KEY];
+
+/**
+ * Collapse the roles a user holds down to the ONE that decides their access.
+ *
+ * Users routinely hold more than one role — on this platform an admin or a
+ * teacher is very often also enrolled as a STUDENT (→ LEARNER). Combining the
+ * roles instead of ranking them made the LEARNER row veto everything, so an
+ * admin's own ADMIN column had no effect on their access. Highest role wins:
+ * ADMIN beats TEACHER beats LEARNER.
+ *
+ * Returns null when the user holds none of the three known roles (custom roles
+ * only), in which case callers keep the previous combine-all behavior so a
+ * custom role's configured value is still honored.
+ */
+export const effectiveRoleKey = (roleNames: string[] | null | undefined): string | null => {
+    const held = new Set((roleNames ?? []).map(normalizeRoleKey).filter(Boolean));
+    return ROLE_PRECEDENCE.find((role) => held.has(role)) ?? null;
+};
+
 export interface SlideTypeOption {
     /** Stored key (also the enforcement key the slide components pass in). */
     key: string;
@@ -55,6 +79,9 @@ export const SLIDE_TYPE_OPTIONS: SlideTypeOption[] = [
     { key: 'DOCUMENT_CODE', label: 'Code' },
     { key: 'ASSIGNMENT', label: 'Assignment' },
     { key: 'VIDEO', label: 'Video' },
+    { key: 'DOCUMENT_DOC', label: 'Document (Docs)' },
+    { key: 'AUDIO', label: 'Audio' },
+    { key: 'IMAGE', label: 'Images (in Docs)' },
 ];
 
 /**
@@ -71,13 +98,16 @@ export const SLIDE_TYPE_OPTIONS: SlideTypeOption[] = [
 export const ADMIN_DEFAULT_DOWNLOAD: Record<string, boolean> = {
     DOCUMENT_PDF: true,
     DOCUMENT_PDF_PRINT: true,
-    DOCUMENT_DOC: true,
+    // Docs, Audio and Image downloads are off for every role until Content Protection
+    // switches them on (no screen offered them before the learner Download button).
+    DOCUMENT_DOC: false,
     DOCUMENT_PRESENTATION: true,
     DOCUMENT_CODE: true,
     DOCUMENT_JUPYTER: true,
     DOCUMENT_SCRATCH: true,
     VIDEO: false,
     AUDIO: false,
+    IMAGE: false,
     ASSIGNMENT: true,
     QUESTION: true,
 };
@@ -92,6 +122,7 @@ export const LEARNER_DEFAULT_DOWNLOAD: Record<string, boolean> = {
     DOCUMENT_SCRATCH: false,
     VIDEO: false,
     AUDIO: false,
+    IMAGE: false,
     ASSIGNMENT: true,
     QUESTION: true,
 };
@@ -125,11 +156,13 @@ export const EMPTY_SLIDE_DOWNLOAD_DATA: SlideDownloadPermissionData = {
 /**
  * Decide whether the current user may download a given slide type (learner app).
  *
- * Deny-wins across the roles the user holds: download is allowed only if EVERY
- * held role allows it, so turning a role off reliably blocks users who also hold
- * other roles (e.g. a teacher who is also a student). A role's effective flag is
- * its stored value, or the role-aware default when unconfigured. With no roles,
- * falls back to the learner default (i.e. today's learner behavior).
+ * Highest role wins (ADMIN > TEACHER > LEARNER): the permission is read from
+ * the single most privileged role the user holds, so an admin or teacher who is
+ * also enrolled as a student is resolved by their staff row, not the LEARNER
+ * one. A role's effective flag is its stored value, or the role-aware default
+ * when unconfigured. Users holding only custom roles keep the deny-wins combine
+ * so their configured values are still honored. With no roles at all, falls
+ * back to the learner default (i.e. today's learner behavior).
  *
  * @param data       parsed setting data (or null when unset)
  * @param typeKey    one of SLIDE_TYPE_OPTIONS[].key
@@ -145,6 +178,10 @@ export const canDownloadSlideType = (
         return LEARNER_DEFAULT_DOWNLOAD[typeKey] ?? true;
     }
     const roleMap = data?.slideTypes?.[typeKey]?.roles;
+    const effectiveRole = effectiveRoleKey(canonicalRoles);
+    if (effectiveRole) {
+        return roleMap?.[effectiveRole] ?? defaultDownloadFor(effectiveRole, typeKey);
+    }
     return canonicalRoles.every(
         (role) => roleMap?.[role] ?? defaultDownloadFor(role, typeKey)
     );
@@ -154,8 +191,9 @@ export const canDownloadSlideType = (
  * Decide whether the current user may download/print in the ADMIN authoring app.
  *
  * Default-allow, deny-on-explicit-false: in the authoring app everyone can
- * download today, so we only block a user when one of their held roles is
- * EXPLICITLY turned off for that type. Deny-wins across roles. This preserves
+ * download today, so we only block a user when their role is EXPLICITLY turned
+ * off for that type. Highest role wins (ADMIN > TEACHER > LEARNER), so an admin
+ * who is also enrolled as a student is judged on the ADMIN cell. This preserves
  * admins' (and unconfigured roles') existing access while letting an admin
  * block, say, teachers.
  */
@@ -168,6 +206,8 @@ export const canRoleDownloadInAdmin = (
     if (canonicalRoles.length === 0) return true;
     const roleMap = data?.slideTypes?.[typeKey]?.roles;
     if (!roleMap) return true;
+    const effectiveRole = effectiveRoleKey(canonicalRoles);
+    if (effectiveRole) return roleMap[effectiveRole] !== false;
     return canonicalRoles.every((role) => roleMap[role] !== false);
 };
 
@@ -184,8 +224,12 @@ export const canRolePrintPdfInAdmin = (
 ): boolean => {
     const roles = (roleNames ?? []).map(normalizeRoleKey).filter(Boolean);
     const printMap = data?.slideTypes?.['DOCUMENT_PDF_PRINT']?.roles;
+    // Only the role that actually decides access counts as "explicitly
+    // configured" — otherwise a LEARNER print cell would hijack an admin.
+    const effectiveRole = effectiveRoleKey(roles);
+    const decidingRoles = effectiveRole ? [effectiveRole] : roles;
     const hasExplicitPrint =
-        !!printMap && roles.some((role) => typeof printMap[role] === 'boolean');
+        !!printMap && decidingRoles.some((role) => typeof printMap[role] === 'boolean');
     return canRoleDownloadInAdmin(
         data,
         hasExplicitPrint ? 'DOCUMENT_PDF_PRINT' : 'DOCUMENT_PDF',

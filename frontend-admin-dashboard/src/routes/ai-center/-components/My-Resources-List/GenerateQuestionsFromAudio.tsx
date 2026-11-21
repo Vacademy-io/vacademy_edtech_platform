@@ -18,8 +18,10 @@ import { MyInput } from '@/components/design-system/input';
 import { Textarea } from '@/components/ui/textarea';
 import SelectField from '@/components/design-system/select-field';
 import { getRandomTaskName } from '../../-utils/helper';
+import { useTranslation } from 'react-i18next';
 
 const GenerateQuestionsFromAudio = ({ fileId }: { fileId: string }) => {
+    const { t } = useTranslation('aiCenterMyResourcesGenerateQuestionsFromAudio');
     const form = useForm<AudioAIQuestionFormSchema>({
         resolver: zodResolver(audioQuestionsFormSchema),
         defaultValues: {
@@ -100,13 +102,13 @@ const GenerateQuestionsFromAudio = ({ fileId }: { fileId: string }) => {
         <>
             <Dialog open={extractQuestionsDialog} onOpenChange={handleCloseExtractQuestionDialog}>
                 <DialogTrigger>
-                    <Badge className="cursor-pointer whitespace-nowrap bg-[#FFF4F5]">
-                        Generate Questions
+                    <Badge className="cursor-pointer whitespace-nowrap bg-danger-50">
+                        {t('trigger.label')}
                     </Badge>
                 </DialogTrigger>
                 <DialogContent className="w-1/3 p-0">
                     <h1 className="rounded-t-lg bg-primary-50 p-4 font-semibold text-primary-500">
-                        Generate Questions From Audio
+                        {t('dialog.title')}
                     </h1>
                     <div className="flex flex-col gap-4">
                         <FormProvider {...form}>
@@ -119,12 +121,14 @@ const GenerateQuestionsFromAudio = ({ fileId }: { fileId: string }) => {
                                             <FormControl>
                                                 <div className="flex flex-col gap-2">
                                                     <FormLabel>
-                                                        Topics{' '}
+                                                        {t('dialog.fields.topics.label')}{' '}
                                                         <span className="text-red-500">*</span>
                                                     </FormLabel>
                                                     <Textarea
-                                                        placeholder="For example, Generate a set of questions covering the key principles of photosynthesis, including the process, factors affecting it, and its importance in the ecosystem. Focus on conceptual understanding and application"
-                                                        className="h-[100px] w-full"
+                                                        placeholder={t(
+                                                            'dialog.fields.topics.placeholder'
+                                                        )}
+                                                        className="h-24 w-full"
                                                         value={field.value}
                                                         onChange={(e) =>
                                                             field.onChange(e.target.value)
@@ -146,10 +150,12 @@ const GenerateQuestionsFromAudio = ({ fileId }: { fileId: string }) => {
                                                     onChangeFunction={(e) =>
                                                         field.onChange(e.target.value)
                                                     }
-                                                    label="Number of Questions"
+                                                    label={t('dialog.fields.numQuestions.label')}
                                                     required={true}
                                                     inputType="text"
-                                                    inputPlaceholder="For example, 10"
+                                                    inputPlaceholder={t(
+                                                        'dialog.fields.numQuestions.placeholder'
+                                                    )}
                                                     className="w-full"
                                                 />
                                             </FormControl>
@@ -168,17 +174,19 @@ const GenerateQuestionsFromAudio = ({ fileId }: { fileId: string }) => {
                                                         field.onChange(e.target.value)
                                                     }
                                                     inputType="text"
-                                                    inputPlaceholder="for example easy, medium and hard"
+                                                    inputPlaceholder={t(
+                                                        'dialog.fields.difficulty.placeholder'
+                                                    )}
                                                     className="w-full"
                                                     required={true}
-                                                    label="Enter difficulty level"
+                                                    label={t('dialog.fields.difficulty.label')}
                                                 />
                                             </FormControl>
                                         </FormItem>
                                     )}
                                 />
                                 <SelectField
-                                    label="Question Language"
+                                    label={t('dialog.fields.language.label')}
                                     labelStyle="font-semibold"
                                     name="language"
                                     options={languageSupport.map((option, index) => ({
@@ -210,7 +218,7 @@ const GenerateQuestionsFromAudio = ({ fileId }: { fileId: string }) => {
                                             type="button"
                                             onClick={form.handleSubmit(onSubmit)}
                                         >
-                                            Submit
+                                            {t('dialog.submitButton')}
                                         </MyButton>
                                     )}
                                 </div>
@@ -221,7 +229,7 @@ const GenerateQuestionsFromAudio = ({ fileId }: { fileId: string }) => {
             </Dialog>
             {enableDialog && (
                 <AITasksList
-                    heading="Vsmart Audio"
+                    heading={t('tasksList.heading')}
                     enableDialog={enableDialog}
                     setEnableDialog={setEnableDialog}
                 />

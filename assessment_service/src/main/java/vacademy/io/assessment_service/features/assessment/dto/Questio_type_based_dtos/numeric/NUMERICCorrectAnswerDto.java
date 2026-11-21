@@ -15,5 +15,10 @@ public class NUMERICCorrectAnswerDto {
     @Setter
     public static class DataFields {
         private List<Double> validAnswers;
+        /**
+         * Optional absolute tolerance: an answer within ± this of any valid answer is
+         * correct (accounting papers accept rounding, e.g. ±1). Absent or 0 = exact match.
+         */
+        private Double tolerance;
     }
 }

@@ -1,0 +1,40 @@
+{
+    "header": {
+        "title": "Activité et notes"
+    },
+    "loading": "Chargement de l'activité…",
+    "error": "Échec du chargement de la chronologie d'activité.",
+    "empty": {
+        "title": "Aucune activité pour le moment",
+        "description": "Les notes, changements de statut et autres événements apparaîtront ici"
+    },
+    "pagination": {
+        "pageInfo": "Page {{current}} sur {{total}}",
+        "previous": "Précédent",
+        "next": "Suivant"
+    },
+    "event": {
+        "actorPrefix": "par",
+        "viewMore": "Voir plus",
+        "viewLess": "Voir moins"
+    },
+    "addNote": {
+        "collapsedPlaceholder": "Ajouter une note ou consigner une activité…",
+        "notePlaceholder": "Écrivez votre note ici…",
+        "submitHint": "Ctrl+Entrée pour envoyer",
+        "cancel": "Annuler",
+        "submit": "Ajouter la note",
+        "submitting": "Enregistrement…",
+        "actionTypes": {
+            "note": "Note",
+            "callLog": "Journal d'appel",
+            "followUp": "Relance",
+            "meeting": "Rendez-vous"
+        },
+        "toast": {
+            "success": "Note ajoutée avec succès",
+            "error": "Échec de l'ajout de la note. Veuillez réessayer.",
+            "emptyWarning": "Veuillez saisir une note ou ajouter un enregistrement"
+        }
+    }
+}

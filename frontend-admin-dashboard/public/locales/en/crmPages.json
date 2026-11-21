@@ -1,0 +1,851 @@
+{
+    "common": {
+        "vsPrevious": "Compared with the previous period of the same length",
+        "scopeCaption": "Counts cover all the leads you can see. The table below follows your filters.",
+        "days_one": "{{count}} day",
+        "days_other": "{{count}}d"
+    },
+    "recentLeads": {
+        "stats": {
+            "newLeads": "New leads · 30 days",
+            "newLeadsDetail": "vs the 30 days before",
+            "converted": "Converted · 30 days",
+            "convertedDetail": "{{rate}} of new leads",
+            "firstResponse": "First response (median)",
+            "firstResponseDetail": "{{share}} of new leads contacted"
+        },
+        "views": {
+            "all": "All leads",
+            "active": "Active",
+            "newToday": "New today",
+            "unassigned": "Unassigned",
+            "overdue": "Follow-up overdue",
+            "converted": "Converted"
+        },
+        "viewsCaption": "Counts cover all the leads you can see. Click a card to open the list with that filter."
+    },
+    "leadListLeads": {
+        "caption": "Counts for this list, across the leads you can see in it."
+    },
+    "leadList": {
+        "dueToday": "{{total}} more due today",
+        "unassignedDetail": "leads with no counsellor yet",
+        "insights": {
+            "best": {
+                "title": "{{name}} converts best",
+                "text": "{{rate}} of its {{total}} leads joined in the last 30 days."
+            },
+            "busiest": {
+                "title": "{{name}} is the busiest list",
+                "text": "{{total}} new leads in 30 days, {{share}} contacted so far."
+            },
+            "cold": {
+                "title": "{{name}} has no conversions",
+                "text": "{{total}} leads in 30 days and none joined yet — worth a look at the follow-up script."
+            },
+            "unassigned": {
+                "title": "{{total}} leads have no counsellor",
+                "text": "Nobody will call them until they are assigned. Open them to assign."
+            }
+        },
+        "card": {
+            "leads": "Leads",
+            "newToday": "New today",
+            "unassigned": "Unassigned",
+            "overdue": "Overdue",
+            "converted": "Converted"
+        }
+    },
+    "followUps": {
+        "insights": {
+            "worst": {
+                "title": "{{name}} has {{total}} overdue",
+                "text": "The most overdue on the team. Filter by this counsellor below, or reassign."
+            },
+            "closed": {
+                "title": "{{total}} closed today",
+                "text": "{{total}} still due today."
+            },
+            "upcoming": {
+                "title": "{{total}} upcoming",
+                "text": "Scheduled after today — plan the week ahead."
+            }
+        },
+        "byCounsellor": {
+            "title": "Overdue by counsellor",
+            "subtitle": "Leads with a follow-up past due, by owner"
+        },
+        "agenda": {
+            "tab": "Agenda",
+            "overdue": "Overdue",
+            "today": "Today",
+            "tomorrow": "Tomorrow",
+            "noDate": "No due time"
+        },
+        "legend": {
+            "upcoming": "Upcoming"
+        }
+    },
+    "leadBoard": {
+        "total": "{{total}} leads on the board",
+        "biggest": "Most leads sit in {{name}} ({{share}})",
+        "caption": "Adds up the columns below, with your filters.",
+        "scrollMore": "Scroll for more · {{left}} left"
+    },
+    "counsellors": {
+        "stats": {
+            "team": "Counsellors",
+            "teamDetail": "{{total}} active",
+            "openLeads": "Open leads held",
+            "openLeadsDetail": "about {{avg}} per active counsellor",
+            "inactiveWithLeads": "Inactive, still holding leads",
+            "inactiveWithLeadsDetail": "reassign so nobody waits",
+            "rating": "Average rating",
+            "ratingDetail": "across {{total}} rated counsellors"
+        },
+        "insights": {
+            "inactive": {
+                "title": "{{total}} inactive counsellors hold leads",
+                "text": "{{names}} — {{total}} open leads nobody is working. Reassign them from the card menu."
+            },
+            "heavy": {
+                "title": "{{name}} carries the most leads",
+                "text": "{{total}} open leads vs a team average of {{avg}}."
+            },
+            "top": {
+                "title": "{{name}} is rated highest",
+                "text": "Rating {{rating}} — worth sharing what works."
+            }
+        },
+        "shifts": {
+            "title": "Availability today",
+            "subtitle": "Pool shifts for today; the red line is now",
+            "onNow": "{{total}} on shift now",
+            "foot": "From Lead Settings → Pools. Counsellors with no shift today are not listed."
+        }
+    },
+    "onboarding": {
+        "status": {
+            "ALL": "All",
+            "IN_PROGRESS": "In progress",
+            "COMPLETED": "Completed",
+            "ABANDONED": "Abandoned",
+            "CANCELLED": "Cancelled"
+        },
+        "caption": "Counts follow the selected flow. Click a card to filter the table."
+    },
+    "calling": {
+        "title": "Calling Dashboard",
+        "subtitle": "Dials, connects and talk time — the same calls you see in the Call Log.",
+        "empty": "No calls in this period.",
+        "stats": {
+            "dials": "Dials",
+            "connected": "Connect rate",
+            "connectedDetail": "{{total}} calls connected",
+            "talk": "Talk time",
+            "talkDetail": "about {{avg}} per connected call",
+            "leads": "Leads called",
+            "leadsDetail": "{{total}} inbound calls"
+        },
+        "insights": {
+            "missed": {
+                "title": "{{total}} missed calls to return",
+                "text": "Inbound calls nobody answered or called back yet."
+            },
+            "callbacks": {
+                "title": "{{total}} callbacks due",
+                "text": "Promised call-backs that are now due."
+            },
+            "top": {
+                "title": "{{name}} connects the most",
+                "text": "{{total}} connected calls, {{talk}} of talk time."
+            },
+            "ai": {
+                "title": "AI makes {{share}} of calls",
+                "text": "{{total}} calls placed by AI agents in this period."
+            }
+        },
+        "outcomes": {
+            "title": "Call outcomes",
+            "subtitle": "By the outcome counsellors set",
+            "none": "No outcome set"
+        },
+        "byCounsellor": {
+            "title": "Calls by counsellor",
+            "subtitle": "Dials and connect rate",
+            "row": "{{dials}} dials · {{rate}}"
+        }
+    },
+    "aiAgents": {
+        "stats": {
+            "agents": "AI agents",
+            "agentsDetail": "{{total}} active",
+            "calls": "AI calls · 30 days",
+            "connect": "AI connect rate",
+            "connectDetail": "{{total}} calls connected",
+            "talk": "AI talk time",
+            "talkDetail": "about {{avg}} per connected call"
+        }
+    },
+    "meetings": {
+        "title": "Meetings Dashboard",
+        "subtitle": "Booked, upcoming and cancelled meetings — the same ones you see in Team Meetings.",
+        "empty": "No meetings in the last 30 days.",
+        "noneUpcoming": "Nothing booked for the next 7 days.",
+        "stats": {
+            "booked": "Meetings held",
+            "bookedDetail": "last 30 days",
+            "upcoming": "Next 7 days",
+            "upcomingDetail": "confirmed and pending",
+            "cancelled": "Cancelled",
+            "rescheduled": "Rescheduled"
+        },
+        "byHost": "Meetings by host",
+        "byPage": "Meetings by booking page",
+        "next7": "Next 7 days",
+        "next7Subtitle": "{{total}} meetings",
+        "insights": {
+            "next": {
+                "title": "Next meeting: {{when}}",
+                "text": "{{name}} with {{host}}."
+            },
+            "host": {
+                "title": "{{name}} hosts the most",
+                "text": "{{total}} meetings in the last 30 days."
+            },
+            "page": {
+                "title": "{{name}} gets the most bookings",
+                "text": "{{total}} meetings booked through it in 30 days."
+            },
+            "cancel": {
+                "title": "{{share}} of meetings were cancelled",
+                "text": "A reminder the day before usually brings this down."
+            }
+        },
+        "weekCaption": "Counts for the dates shown below.",
+        "week": {
+            "all": "Meetings",
+            "confirmed": "Confirmed",
+            "pending": "Pending",
+            "rescheduled": "Rescheduled",
+            "cancelled": "Cancelled"
+        }
+    },
+    "messaging": {
+        "title": "Messaging Dashboard",
+        "subtitle": "Email delivery and engagement, and WhatsApp volume — the Notification Hub numbers at a glance.",
+        "adminOnly": "Messaging numbers cover the whole institute, so only admins can see this page.",
+        "emptyEmail": "No emails sent in this period.",
+        "stats": {
+            "sent": "Emails sent",
+            "sentDetail": "{{rate}} delivered",
+            "opened": "Open rate",
+            "openedDetail": "{{total}} opened",
+            "clicked": "Click rate",
+            "clickedDetail": "{{total}} clicks",
+            "whatsapp": "WhatsApp sent",
+            "whatsappDetail": "{{total}} replies received"
+        },
+        "funnel": {
+            "title": "Email funnel",
+            "subtitle": "last {{days}} days",
+            "sent": "Sent",
+            "delivered": "Delivered",
+            "opened": "Opened",
+            "clicked": "Clicked",
+            "problems": "{{bounced}} bounced · {{complained}} marked as spam"
+        },
+        "wa": {
+            "title": "WhatsApp",
+            "outgoing": "Messages sent",
+            "incoming": "Replies received",
+            "notConfigured": "WhatsApp is not connected for this institute.",
+            "hint": "Reply to people from the WhatsApp Inbox."
+        },
+        "insights": {
+            "open": {
+                "title": "{{rate}} of delivered emails were opened",
+                "good": "A healthy open rate — keep subject lines this clear.",
+                "low": "Low open rate — try shorter subject lines and a known sender name."
+            },
+            "bounce": {
+                "title": "{{rate}} of emails bounced",
+                "text": "Clean up wrong addresses — high bounces can get your sender blocked."
+            },
+            "replies": {
+                "title": "{{total}} WhatsApp replies",
+                "text": "People wrote back — answer them from the WhatsApp Inbox."
+            },
+            "batches": {
+                "title": "{{total}} announcements still sending",
+                "text": "Track their progress in Announcement History."
+            }
+        }
+    },
+    "templates": {
+        "caption": "Counts across every channel. Rejected templates cannot be sent until they are fixed and resubmitted.",
+        "all": "Templates",
+        "approved": "Approved",
+        "pending": "Pending",
+        "rejected": "Rejected",
+        "draft": "Draft",
+        "disabled": "Disabled"
+    },
+    "announcements": {
+        "caption": "Click a card to show only that status.",
+        "status": {
+            "ALL": "All",
+            "ACTIVE": "Sent / active",
+            "SCHEDULED": "Scheduled",
+            "PENDING_APPROVAL": "Waiting for approval",
+            "DRAFT": "Drafts",
+            "REJECTED": "Rejected"
+        }
+    },
+    "flows": {
+        "all": "Flows",
+        "active": "Active",
+        "draft": "Draft",
+        "inactive": "Paused",
+        "archived": "Archived"
+    },
+    "institute": {
+        "title": "Institute Overview",
+        "subtitle": "{{learners}}, {{courses}}, {{batches}}, seats and {{subOrgs}} on one page.",
+        "adminOnly": "These numbers cover the whole institute, so only admins can see this page.",
+        "stats": {
+            "learners": "{{learners}}",
+            "courses": "{{courses}}",
+            "coursesDetail": "{{total}} levels",
+            "batches": "{{batches}}",
+            "seats": "Seats filled",
+            "seatsDetail": "{{used}} of {{total}} limited seats"
+        },
+        "links": {
+            "batches": "{{batches}}",
+            "sessions": "{{sessions}}",
+            "teams": "Teams",
+            "inventory": "{{inventory}}",
+            "packages": "{{packages}}",
+            "subOrgs": "{{subOrgs}}"
+        },
+        "seats": {
+            "title": "Seats",
+            "subtitle": "Active {{batches}} with a seat limit",
+            "empty": "No active {{batches}} yet.",
+            "total": "Active {{batches}}",
+            "limited": "With a seat limit",
+            "unlimited": "Unlimited seats",
+            "critical": "Almost full (10% or less left)",
+            "low": "Filling up (10–20% left)"
+        },
+        "subOrgs": {
+            "title": "{{subOrgs}}",
+            "subtitle": "{{total}} {{subOrgs}} by plan status",
+            "empty": "No {{subOrgs}} yet.",
+            "status": {
+                "ACTIVE": "Active",
+                "NONE": "No plan",
+                "PENDING_PAYMENT": "Payment pending",
+                "EXPIRED": "Expired"
+            }
+        },
+        "insights": {
+            "critical": {
+                "title": "{{total}} {{batches}} are almost full",
+                "text": "10% or fewer seats left — open more seats or a new {{batch}}."
+            },
+            "low": {
+                "title": "{{total}} {{batches}} are filling up",
+                "text": "Between 10% and 20% of seats left."
+            },
+            "suborg": {
+                "title": "{{total}} {{subOrgs}} are not on an active plan",
+                "text": "Pending payment, awaiting approval or expired."
+            },
+            "unlimited": {
+                "title": "{{total}} {{batches}} have no seat limit",
+                "text": "Set a limit if you want to track how full they are."
+            }
+        }
+    },
+    "batches": {
+        "caption": "{{total}} learners in this session. Click a card to filter.",
+        "all": "All batches",
+        "active": "Running",
+        "upcoming": "Starting later",
+        "inactive": "Inactive",
+        "noLearners": "No learners yet"
+    },
+    "sessions": {
+        "all": "Sessions",
+        "active": "Active",
+        "inactive": "Inactive",
+        "courses": "Courses offered",
+        "batches": "Active batches"
+    },
+    "subOrgs": {
+        "caption": "{{subOrgs}} by plan status."
+    },
+    "packages": {
+        "caption": "Click a card to show only that status.",
+        "ACTIVE": "Active",
+        "HIDDEN": "Hidden from catalogue",
+        "INACTIVE": "Inactive",
+        "captionStatic": "Packages by status. Use the Status filter below to list them."
+    },
+    "tags": {
+        "all": "Tags",
+        "institute": "Your tags",
+        "system": "System tags",
+        "unused": "Not used yet",
+        "inactive": "Inactive",
+        "insights": {
+            "top": {
+                "title": "{{name}} is used the most",
+                "text": "On {{total}} users."
+            },
+            "unused": {
+                "title": "{{total}} tags are on nobody",
+                "text": "Assign them with Link Tag, or delete the ones you no longer need."
+            }
+        }
+    },
+    "adjustments": {
+        "pending": "Waiting for approval",
+        "pendingDetail": "concessions and penalties",
+        "concessions": "Concessions",
+        "penalties": "Penalties"
+    },
+    "mentorship": {
+        "sessions": {
+            "today": "Today",
+            "upcoming": "Upcoming",
+            "completed": "Completed",
+            "awaitingReview": "Awaiting review",
+            "noShow": "No-show",
+            "cancelled": "Cancelled"
+        }
+    },
+    "engines": {
+        "all": "All engines"
+    },
+    "range": {
+        "1": "24h",
+        "7": "7d",
+        "15": "15d",
+        "30": "30d",
+        "ALL": "All",
+        "CUSTOM": "Custom"
+    },
+    "callLog": {
+        "tabs": {
+            "calls": "Calls",
+            "intel": "Call Intelligence"
+        },
+        "place": {
+            "button": "Place a call",
+            "title": "Place a call",
+            "subtitle": "Find the lead, then call. Your phone rings first, then we connect the lead. The call is logged here.",
+            "search": "Search name, phone or email…",
+            "hint": "Type at least 3 letters to search your leads.",
+            "empty": "No lead matches that search.",
+            "error": "Couldn’t search leads. Try again.",
+            "noPhone": "No phone on file",
+            "call": "Call"
+        }
+    },
+    "reports": {
+        "groups": {
+            "pipeline": "Pipeline",
+            "campaigns": "Campaigns",
+            "calling": "Calling",
+            "team": "Team",
+            "revenue": "Revenue",
+            "custom": "Custom"
+        },
+        "scope": {
+            "label": "This report uses:",
+            "dates": "Dates",
+            "team": "Team",
+            "counsellor": "Counsellor",
+            "list": "Lead list",
+            "note": {
+                "calling": "Counsellor = who dialled",
+                "leadCalls": "Counsellor = lead owner",
+                "followups": "live snapshot, dates don’t apply",
+                "forecast": "uses its own trailing history, not these dates"
+            }
+        }
+    },
+    "sales": {
+        "heroNote": "Your leads, last 30 days · median first response {{response}}"
+    },
+    "ai": {
+        "radar": {
+            "title": "Team skill profile",
+            "subtitle": "Average score per skill — this period vs the previous one",
+            "empty": "Not enough analyzed calls yet to draw the skill profile.",
+            "current": "This period",
+            "previous": "Previous period"
+        }
+    },
+    "drawer": {
+        "prev": "Previous",
+        "next": "Next",
+        "position": "{{index}} of {{total}} on this page",
+        "owner": "Owner",
+        "unassigned": "Unassigned",
+        "nba": {
+            "label": "Next best action",
+            "closed": {
+                "title": "This lead is closed",
+                "text": "Converted or lost — it is off the follow-up clock."
+            },
+            "assign": {
+                "title": "Assign a counsellor",
+                "text": "Nobody will call this lead until it has an owner."
+            },
+            "followUpOverdue": {
+                "title": "Follow-up overdue — call now",
+                "text": "It was due {{when}}."
+            },
+            "firstCall": {
+                "title": "Make the first call",
+                "text": "First response due {{when}}.",
+                "textNoDue": "Nobody has reached out to this lead yet."
+            },
+            "firstCallLate": {
+                "title": "First call is overdue"
+            },
+            "followUp": {
+                "title": "Next follow-up {{when}}",
+                "text": "Call when it is due, then log what happened."
+            },
+            "schedule": {
+                "title": "Schedule the next follow-up",
+                "text": "No follow-up is open for this lead."
+            }
+        },
+        "quick": {
+            "call": "Call",
+            "ai": "AI call",
+            "note": "Log activity",
+            "assign": "Assign"
+        }
+    },
+    "groupDash": {
+        "adminOnly": "This dashboard covers the whole institute, so only admins can open it.",
+        "error": "Couldn’t load this dashboard. Try again in a minute."
+    },
+    "contactsDash": {
+        "title": "Contacts Dashboard",
+        "subtitle": "Everyone you know — learners and lead respondents, counted once per person.",
+        "allContacts": "All contacts",
+        "userTags": "User tags",
+        "hero": {
+            "eyebrow": "Contacts · last {{days}} days",
+            "unit": "contacts",
+            "deltaTitle": "New contacts compared with the previous period of the same length",
+            "sub": "{{fresh}} new in this period · {{learners}} learners · {{leads}} leads only",
+            "compare": "Change = new contacts vs the previous {{days}} days ({{total}}).",
+            "leads": "New lead respondents",
+            "learners": "New learners"
+        },
+        "stats": {
+            "new": "New contacts",
+            "newDetail": "{{total}} a day on average",
+            "active": "Active learners",
+            "activeDetail": "{{invited}} invited, not joined yet",
+            "converted": "Lead → learner",
+            "convertedDetail": "{{total}} leads are learners now",
+            "tags": "Tag coverage",
+            "tagsDetail": "{{total}} contacts carry a tag"
+        },
+        "insights": {
+            "untagged": {
+                "title": "{{share}} of contacts carry no tag",
+                "text": "Tag-based messaging and course assignment skip them. Tag them by batch or source."
+            },
+            "invited": {
+                "title": "{{total}} invited learners never joined",
+                "text": "They are on the list but have not accepted. Resend the invite or follow up."
+            },
+            "conversion": {
+                "title": "{{rate}} of leads became learners",
+                "text": "{{total}} people are both a lead and a learner."
+            },
+            "up": {
+                "title": "New contacts up {{pct}}%"
+            },
+            "down": {
+                "title": "New contacts down {{pct}}%"
+            },
+            "growthText": "Compared with the {{days}} days before."
+        },
+        "split": {
+            "title": "Leads vs learners",
+            "subtitle": "Who the {{total}} contacts are",
+            "learnersOnly": "Learners only",
+            "leadsOnly": "Leads only",
+            "both": "Both (lead became learner)",
+            "foot": "Deleted enrolments and deleted leads are not counted."
+        },
+        "tags": {
+            "title": "Tag coverage",
+            "subtitle": "Contacts per tag, biggest first",
+            "empty": "No tags in use yet.",
+            "none": "No tag"
+        }
+    },
+    "autoDash": {
+        "title": "Automation Dashboard",
+        "subtitle": "Are your workflows running, and which ones are failing?",
+        "allWorkflows": "All workflows",
+        "create": "Create workflow",
+        "hero": {
+            "eyebrow": "Automations · last {{days}} days",
+            "unit": "workflow runs",
+            "deltaTitle": "Compared with the previous period of the same length",
+            "sub": "{{success}} succeeded · {{failed}} failed · {{workflows}} workflows ran",
+            "compare": "Previous {{days}} days: {{total}} runs",
+            "runs": "Runs",
+            "failed": "Failed"
+        },
+        "stats": {
+            "runs": "Workflow runs",
+            "runsDetail": "{{total}} a day on average",
+            "success": "Success rate",
+            "successDetail": "Runs that did not fail",
+            "failed": "Failed runs",
+            "failedDetail": "{{total}} workflows with failures",
+            "active": "Active workflows",
+            "activeDetail": "of {{total}} workflows"
+        },
+        "insights": {
+            "worst": {
+                "title": "{{name}} failed {{total}} times",
+                "text": "Open the workflow to see which step stops."
+            },
+            "clean": {
+                "title": "No failed runs",
+                "text": "All {{total}} runs in this period finished."
+            },
+            "idle": {
+                "title": "{{total}} active workflows did not run",
+                "text": "Switched on but no run in the last {{days}} days — check the trigger."
+            },
+            "busiest": {
+                "title": "{{name}} is the busiest",
+                "text": "{{share}} of all runs in this period."
+            }
+        },
+        "failing": {
+            "title": "Failing workflows",
+            "subtitle": "Worst failure rate first, with the latest error",
+            "empty": "No workflow failed in this period.",
+            "noError": "No error message saved",
+            "ofRuns": "{{failed}} of {{runs}}",
+            "col": {
+                "workflow": "Workflow",
+                "failed": "Failed",
+                "rate": "Rate"
+            }
+        },
+        "top": {
+            "title": "Busiest workflows",
+            "subtitle": "By runs in this period",
+            "empty": "No workflow ran in this period.",
+            "success": "{{rate}} succeeded"
+        },
+        "foot": "Counts every run of the institute’s workflows. Chatbot and website numbers are on their own pages."
+    },
+    "engageDash": {
+        "title": "Engagement Dashboard",
+        "subtitle": "What your engagement engines drafted and sent, and what is waiting on your team.",
+        "inbox": "Task inbox",
+        "hero": {
+            "eyebrow": "Engagement engines · last {{days}} days",
+            "unit": "tasks completed",
+            "deltaTitle": "Compared with the previous period of the same length",
+            "sub": "{{drafted}} tasks drafted · {{rate}} completed · {{members}} people in engines",
+            "compare": "Completed = sent or marked done. Previous {{days}} days: {{total}}",
+            "drafted": "Drafted",
+            "completed": "Completed"
+        },
+        "stats": {
+            "engines": "Active engines",
+            "enginesDetail": "{{members}} members · {{holdout}} in holdout",
+            "drafted": "Tasks drafted",
+            "draftedDetail": "{{total}} a day on average",
+            "completed": "Tasks completed",
+            "completedDetail": "{{failed}} failed to send",
+            "waiting": "Waiting on your team",
+            "waitingDetail": "{{total}} older than a day"
+        },
+        "insights": {
+            "waiting": {
+                "title": "{{total}} tasks are older than a day",
+                "text": "Open the task inbox and send or dismiss them."
+            },
+            "templates": {
+                "title": "{{name}} is waiting on templates",
+                "text": "{{total}} members can’t be messaged until a template is approved."
+            },
+            "failed": {
+                "title": "{{total}} tasks failed to send",
+                "text": "Check the task inbox for the error on each one."
+            },
+            "completion": {
+                "title": "{{rate}} of drafted tasks completed",
+                "text": "{{expired}} expired before anyone acted on them."
+            }
+        },
+        "engines": {
+            "title": "Engines",
+            "subtitle": "Members now, tasks in the last {{days}} days",
+            "empty": "No engagement engines yet.",
+            "all": "All engines",
+            "holdout": "{{total}} holdout",
+            "col": {
+                "engine": "Engine",
+                "members": "Members",
+                "drafted": "Drafted",
+                "completed": "Completed",
+                "failed": "Failed"
+            }
+        },
+        "foot": "Dry-run engines draft tasks but never send them, so they are not counted as completed."
+    },
+    "admissionsDash": {
+        "funnel": {
+            "title": "Admission funnel",
+            "subtitle": "How many move from enquiry to application to admission",
+            "enquiries": "Enquiries",
+            "applications": "Applications",
+            "admissions": "Admissions",
+            "ofPrevious": "{{rate}} of previous"
+        },
+        "insights": {
+            "leak": {
+                "application": {
+                    "title": "Only {{rate}} of enquiries apply",
+                    "text": "This is the biggest drop. Follow up enquiries with the application link."
+                },
+                "admission": {
+                    "title": "Only {{rate}} of applications are admitted",
+                    "text": "This is the biggest drop. Review pending applications."
+                }
+            },
+            "direct": {
+                "title": "{{share}} of admissions were direct",
+                "text": "{{total}} admitted without an enquiry or application on record."
+            },
+            "overall": {
+                "title": "{{rate}} overall conversion",
+                "text": "{{total}} admissions came through an enquiry."
+            }
+        }
+    },
+    "feesDash": {
+        "insights": {
+            "rate": {
+                "title": "{{rate}} of fees due so far collected",
+                "text": "{{collected}} collected of {{expected}} expected till now."
+            },
+            "overdue": {
+                "title": "{{name}} holds {{share}} of the overdue",
+                "text": "{{amount}} overdue — start reminders there first."
+            },
+            "best": {
+                "title": "{{name}} collects best",
+                "text": "{{rate}} of what was due is in."
+            }
+        },
+        "attention": {
+            "overdue": {
+                "title": "{{name}} · {{amount}} overdue",
+                "text": "Collected {{rate}} of what is due so far"
+            },
+            "low": {
+                "title": "{{name}} at {{rate}} collection",
+                "text": "Less than half of what is due so far is in"
+            },
+            "open": "Open"
+        }
+    },
+    "listShare": {
+        "copy": "Copy",
+        "open": "Open",
+        "copied": "Form link copied",
+        "copyFailed": "Couldn’t copy the link",
+        "inactive": "This list is not active. Set it to Active before you share the form link.",
+        "qr": "QR code",
+        "embed": "Embed",
+        "api": "API"
+    },
+    "savedViews": {
+        "label": "Saved views",
+        "none": "none yet — set filters below, then save them",
+        "save": "Save current view",
+        "remove": "Remove {{name}}",
+        "dialogTitle": "Save as view",
+        "hint": "Saves the filters, date range and search you have now. Views are kept in this browser, for you only.",
+        "placeholder": "e.g. Hot leads not called",
+        "cancel": "Cancel",
+        "confirm": "Save view"
+    },
+    "approval": {
+        "subtitle": "Announcements from counsellors and teachers wait here until an admin approves them. Nothing is sent before that.",
+        "views": {
+            "pending": "Waiting for approval",
+            "rejected": "Rejected",
+            "scheduled": "Scheduled"
+        },
+        "error": "Couldn’t load announcements. Try again.",
+        "emptyPending": "Nothing is waiting for approval.",
+        "emptyRejected": "No rejected announcements.",
+        "oldestFirst": "Oldest first.",
+        "createdBy": "{{name}} · {{role}} · created {{when}}",
+        "appearsIn": "Appears in",
+        "deliveredVia": "Delivered via",
+        "inAppOnly": "In the app only",
+        "schedule": "Schedule",
+        "preview": "Message",
+        "noContent": "No message content.",
+        "footAdmin": "Approving activates the schedule. Rejecting keeps it from being sent and saves your reason.",
+        "footViewer": "Only an admin can approve or reject.",
+        "footRejected": "This announcement was rejected.",
+        "details": "Details",
+        "approve": "Approve",
+        "reject": "Reject",
+        "cancel": "Cancel",
+        "approved": "Approved — {{title}}",
+        "approveFailed": "Couldn’t approve. Try again.",
+        "rejected": "Rejected — {{title}}",
+        "rejectFailed": "Couldn’t reject. Try again.",
+        "rejectTitle": "Reject announcement",
+        "rejectHint": "Add a reason so “{{title}}” can be fixed and sent again.",
+        "reasonPlaceholder": "Reason (optional)"
+    },
+    "contactsList": {
+        "newDetail": "{{total}} new in the last 30 days"
+    },
+    "strips": {
+        "auto": {
+            "runs": "Runs · last 30 days"
+        },
+        "engage": {
+            "drafted": "Tasks drafted · last 30 days"
+        }
+    },
+    "leadCard": {
+        "call": "Call",
+        "callTitle": "Call lead",
+        "ai": "AI",
+        "aiTitle": "AI call lead",
+        "note": "Note",
+        "noteTitle": "Add note",
+        "nextFollowUp": "Next follow-up"
+    }
+}

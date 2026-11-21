@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { LayoutContainer } from '@/components/common/layout-container/layout-container';
 import { Helmet } from 'react-helmet';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { CaretLeft, CircleNotch } from '@phosphor-icons/react';
 import ScheduleBulkPage from '../-components/scheduleBulkPage';
@@ -14,6 +15,7 @@ export const Route = createFileRoute('/study-library/live-session/schedule/bulk/
 });
 
 function RouteComponent() {
+    const { t } = useTranslation('studyLibraryScheduleBulkIndex');
     const { setNavHeading } = useNavHeadingStore();
     const { clearSessionId, clearStep1Data, clearBulkSessionIds } = useLiveSessionStore();
     const navigate = useNavigate();
@@ -25,7 +27,7 @@ function RouteComponent() {
                 onClick={() => navigate({ to: '/study-library/live-session' })}
                 className="cursor-pointer"
             />
-            <div>Bulk Schedule Live Sessions</div>
+            <div>{t('heading')}</div>
         </div>
     );
 
@@ -64,11 +66,8 @@ function RouteComponent() {
     return (
         <LayoutContainer>
             <Helmet>
-                <title>Bulk Schedule</title>
-                <meta
-                    name="description"
-                    content="Schedule many live sessions at once in a single sheet."
-                />
+                <title>{t('pageTitle')}</title>
+                <meta name="description" content={t('pageDescription')} />
             </Helmet>
             <ScheduleErrorBoundary feature="live-session-bulk-schedule">
                 <ScheduleBulkPage />

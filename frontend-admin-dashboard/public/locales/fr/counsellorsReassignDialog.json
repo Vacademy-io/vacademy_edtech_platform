@@ -1,0 +1,72 @@
+{
+    "title": {
+        "markInactive": "Marquer {{name}} comme inactif",
+        "reassignFrom_one": "Réattribuer {{count}} lead depuis {{name}}",
+        "reassignFrom_many": "Réattribuer {{count}} leads depuis {{name}}",
+        "reassignFrom_other": "Réattribuer {{count}} leads depuis {{name}}",
+        "reassign_one": "Réattribuer {{count}} lead",
+        "reassign_many": "Réattribuer {{count}} leads",
+        "reassign_other": "Réattribuer {{count}} leads"
+    },
+    "fallback": {
+        "counsellor": "conseiller",
+        "they": "Il/elle n'a"
+    },
+    "markInactive": {
+        "noLeads": "{{name}} n'a aucun lead assigné — confirmer le mettra simplement hors ligne.",
+        "withLeads_one": "Réattribuez d'abord son lead assigné ({{count}}). Il/elle sera mis hors ligne au moment de la confirmation.",
+        "withLeads_many": "Réattribuez d'abord ses {{count}} leads assignés. Il/elle sera mis hors ligne au moment de la confirmation.",
+        "withLeads_other": "Réattribuez d'abord ses {{count}} leads assignés. Il/elle sera mis hors ligne au moment de la confirmation."
+    },
+    "showingFirstOf": "Affichage des {{shown}} premiers sur {{total}} — la confirmation déplacera les {{total}}.",
+    "moveTo": "Déplacer vers",
+    "moveAllTo": "Tout déplacer vers",
+    "selectCounsellorPlaceholder": "— Sélectionner un conseiller —",
+    "offlineLabel": "(hors ligne)",
+    "ratingSuffix": "· note {{rating}}",
+    "roundRobinActive_one": "Les leads seront répartis uniformément entre {{count}} conseiller actif.",
+    "roundRobinActive_many": "Les leads seront répartis uniformément entre {{count}} conseillers actifs.",
+    "roundRobinActive_other": "Les leads seront répartis uniformément entre {{count}} conseillers actifs.",
+    "roundRobinAll_one": "Les leads seront répartis uniformément entre {{count}} conseiller.",
+    "roundRobinAll_many": "Les leads seront répartis uniformément entre {{count}} conseillers.",
+    "roundRobinAll_other": "Les leads seront répartis uniformément entre {{count}} conseillers.",
+    "generatingPreview": "Génération de l'aperçu…",
+    "noOpenLeads": "Aucun lead ouvert à réattribuer.",
+    "leadsAdjustTargets_one": "{{count}} lead · ajustez les cibles en ligne",
+    "leadsAdjustTargets_many": "{{count}} leads · ajustez les cibles en ligne",
+    "leadsAdjustTargets_other": "{{count}} leads · ajustez les cibles en ligne",
+    "reshuffle": "Redistribuer",
+    "tableLead": "Lead",
+    "tableTargetCounsellor": "Conseiller cible",
+    "cancel": "Annuler",
+    "markInactiveWithoutReassign": "Marquer inactif sans réattribuer",
+    "markingInactive": "Marquage en cours…",
+    "working": "Traitement en cours…",
+    "reassigning": "Réattribution en cours…",
+    "confirmMarkInactive": "Confirmer le marquage comme inactif",
+    "reassignAndMarkInactive": "Réattribuer et marquer inactif",
+    "confirmReassign": "Confirmer la réattribution",
+    "modeLabel": {
+        "single": "Vers un seul",
+        "roundRobin": "Round-robin",
+        "manual": "Personnalisé (aperçu)"
+    },
+    "modeDescription": {
+        "single": "Tous les leads → une seule cible",
+        "roundRobin": "Répartir entre les actifs",
+        "manual": "Remplacement par lead"
+    },
+    "toast": {
+        "previewFailed": "Échec de l'aperçu",
+        "pickTarget": "Choisissez un conseiller pour recevoir les leads",
+        "generatePreviewFirst": "Générez d'abord un aperçu",
+        "reassignFailed": "Échec de la réattribution",
+        "markedInactive": "Marqué comme inactif",
+        "reassignedAndMarkedInactive_one": "{{count}} lead réattribué et marqué inactif",
+        "reassignedAndMarkedInactive_many": "{{count}} leads réattribués et marqué inactif",
+        "reassignedAndMarkedInactive_other": "{{count}} leads réattribués et marqué inactif",
+        "reassignedCount_one": "{{count}} lead réattribué",
+        "reassignedCount_many": "{{count}} leads réattribués",
+        "reassignedCount_other": "{{count}} leads réattribués"
+    }
+}

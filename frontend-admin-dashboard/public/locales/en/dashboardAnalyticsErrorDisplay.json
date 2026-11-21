@@ -1,0 +1,10 @@
+{
+    "errorMessage": "Unable to load {{widgetName}}",
+    "sessionExpiredNotice": "Your session may have expired or requires re-authentication.",
+    "debugInfoLabel": "Debug Info",
+    "actions": {
+        "refreshPage": "Refresh Page",
+        "login": "Login",
+        "tryAgain": "Try Again"
+    }
+}

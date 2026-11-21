@@ -1,0 +1,24 @@
+{
+    "tiles": {
+        "submissionsAttempts": {
+            "label": "सबमिशन / प्रयास"
+        },
+        "submitted": {
+            "label": "सबमिट किया गया"
+        },
+        "evaluated": {
+            "label": "मूल्यांकन किया गया"
+        },
+        "pendingEvaluation": {
+            "label": "मूल्यांकन लंबित"
+        },
+        "resultsReleased": {
+            "label": "परिणाम जारी"
+        },
+        "avgHighLow": {
+            "label": "औसत / उच्चतम / न्यूनतम  (/ {{totalMarks}})",
+            "value": "{{avg}} / {{high}} / {{low}}"
+        },
+        "ratio": "{{numerator}} / {{denominator}}"
+    }
+}

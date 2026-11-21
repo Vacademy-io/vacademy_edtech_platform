@@ -11,7 +11,9 @@ import { handleInviteTeachers } from '../-services/dashboard-services';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { INVITE_TEACHERS_URL, GET_INSTITUTE_USERS } from '@/constants/urls';
 import { useState, useEffect, lazy, Suspense, useMemo } from 'react';
-import { Loader2, Search, UserPlus, Users } from 'lucide-react';
+import { CircleNotch, MagnifyingGlass, UserPlus, Users } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 const LazyBatchSubjectForm = lazy(() =>
     import('./BatchAndSubjectSelection').catch(() => {
@@ -20,19 +22,35 @@ const LazyBatchSubjectForm = lazy(() =>
     })
 );
 
+const batchSubjectMappingsSchema = z
+    .array(
+        z.object({
+            batchId: z.string(),
+            subjectIds: z.array(z.string()),
+        })
+    )
+    .optional();
+
+// Static schema kept for type inference by external consumers (e.g. dashboard-services.ts
+// via `z.infer<typeof inviteTeacherSchema>`). Validation messages don't affect the inferred
+// shape, so this stays a plain module-level export.
 export const inviteTeacherSchema = z.object({
     name: z.string().min(1, 'Full name is required'),
     email: z.string().min(1, 'Email is required').email('Invalid email format'),
-    batch_subject_mappings: z
-        .array(
-            z.object({
-                batchId: z.string(),
-                subjectIds: z.array(z.string()),
-            })
-        )
-        .optional(),
+    batch_subject_mappings: batchSubjectMappingsSchema,
 });
 export type inviteUsersFormValues = z.infer<typeof inviteTeacherSchema>;
+
+// Translated validation schema used by the form resolver at render time.
+const buildInviteTeacherSchema = (t: TFunction) =>
+    z.object({
+        name: z.string().min(1, t('validation.nameRequired')),
+        email: z
+            .string()
+            .min(1, t('validation.emailRequired'))
+            .email(t('validation.emailInvalid')),
+        batch_subject_mappings: batchSubjectMappingsSchema,
+    });
 
 interface TeamMember {
     id: string;
@@ -49,6 +67,7 @@ const AddTeachers = ({
     packageSessionId: string;
     courseId?: string;
 }) => {
+    const { t } = useTranslation('dashboardAddTeachers');
     const [open, setOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'existing' | 'invite'>('existing');
     const instituteId = getInstituteId();
@@ -59,8 +78,10 @@ const AddTeachers = ({
     const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
     const [loadingMembers, setLoadingMembers] = useState(false);
 
+    const translatedInviteTeacherSchema = useMemo(() => buildInviteTeacherSchema(t), [t]);
+
     const form = useForm<inviteUsersFormValues>({
-        resolver: zodResolver(inviteTeacherSchema),
+        resolver: zodResolver(translatedInviteTeacherSchema),
         defaultValues: {
             name: '',
             email: '',
@@ -195,12 +216,12 @@ const AddTeachers = ({
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger>
                 <MyButton buttonType="primary" scale="large" layoutVariant="default">
-                    Invite Users
+                    {t('trigger.inviteUsers')}
                 </MyButton>
             </DialogTrigger>
-            <DialogContent className="flex max-h-[80vh] w-[480px] flex-col overflow-hidden p-0">
+            <DialogContent className="flex max-h-dialog-tall w-dialog-md flex-col overflow-hidden p-0">
                 <DialogTitle className="rounded-t-md bg-primary-50 p-4 font-semibold text-primary-500">
-                    Add Team Member
+                    {t('dialog.title')}
                 </DialogTitle>
 
                 {/* Tab Switcher */}
@@ -215,7 +236,7 @@ const AddTeachers = ({
                         onClick={() => setActiveTab('existing')}
                     >
                         <Users className="size-4" />
-                        Existing Members
+                        {t('tabs.existingMembers')}
                     </button>
                     <button
                         type="button"
@@ -227,7 +248,7 @@ const AddTeachers = ({
                         onClick={() => setActiveTab('invite')}
                     >
                         <UserPlus className="size-4" />
-                        Invite New
+                        {t('tabs.inviteNew')}
                     </button>
                 </div>
 
@@ -236,10 +257,10 @@ const AddTeachers = ({
                         <div className="flex flex-col gap-3 p-4">
                             {/* Search */}
                             <div className="relative">
-                                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
+                                <MagnifyingGlass className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
                                 <input
                                     type="text"
-                                    placeholder="Search team members..."
+                                    placeholder={t('existing.searchPlaceholder')}
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="w-full rounded-lg border border-neutral-200 py-2.5 pl-10 pr-3 text-sm outline-none transition-colors focus:border-primary-400 focus:ring-1 focus:ring-primary-200"
@@ -247,14 +268,16 @@ const AddTeachers = ({
                             </div>
 
                             {/* Member List */}
-                            <div className="max-h-[200px] overflow-y-auto rounded-lg border border-neutral-200">
+                            <div className="max-h-48 overflow-y-auto rounded-lg border border-neutral-200">
                                 {loadingMembers ? (
                                     <div className="flex items-center justify-center py-8">
-                                        <Loader2 className="size-5 animate-spin text-primary-500" />
+                                        <CircleNotch className="size-5 animate-spin text-primary-500" />
                                     </div>
                                 ) : filteredMembers.length === 0 ? (
                                     <div className="py-6 text-center text-sm text-neutral-400">
-                                        {searchQuery ? 'No matching members found' : 'No team members available'}
+                                        {searchQuery
+                                            ? t('existing.noMatchingMembers')
+                                            : t('existing.noMembersAvailable')}
                                     </div>
                                 ) : (
                                     filteredMembers.map((member) => (
@@ -302,7 +325,7 @@ const AddTeachers = ({
                                         <Suspense
                                             fallback={
                                                 <div className="flex w-full justify-center py-4">
-                                                    <Loader2 className="size-6 animate-spin text-primary-500" />
+                                                    <CircleNotch className="size-6 animate-spin text-primary-500" />
                                                 </div>
                                             }
                                         >
@@ -326,13 +349,13 @@ const AddTeachers = ({
                                             <FormControl>
                                                 <MyInput
                                                     inputType="text"
-                                                    inputPlaceholder="Full name (First and Last)"
+                                                    inputPlaceholder={t('invite.form.namePlaceholder')}
                                                     input={value}
                                                     onChangeFunction={onChange}
                                                     required={true}
                                                     error={form.formState.errors.name?.message}
                                                     size="large"
-                                                    label="Full Name"
+                                                    label={t('invite.form.nameLabel')}
                                                     {...field}
                                                     className="w-full"
                                                 />
@@ -348,13 +371,13 @@ const AddTeachers = ({
                                             <FormControl>
                                                 <MyInput
                                                     inputType="email"
-                                                    inputPlaceholder="Enter Email"
+                                                    inputPlaceholder={t('invite.form.emailPlaceholder')}
                                                     input={value}
                                                     onChangeFunction={onChange}
                                                     required={true}
                                                     error={form.formState.errors.email?.message}
                                                     size="large"
-                                                    label="Email"
+                                                    label={t('invite.form.emailLabel')}
                                                     {...field}
                                                     className="w-full"
                                                 />
@@ -365,7 +388,7 @@ const AddTeachers = ({
                                 <Suspense
                                     fallback={
                                         <div className="flex w-full justify-center py-4">
-                                            <Loader2 className="size-6 animate-spin text-primary-500" />
+                                            <CircleNotch className="size-6 animate-spin text-primary-500" />
                                         </div>
                                     }
                                 >
@@ -392,9 +415,9 @@ const AddTeachers = ({
                             onClick={onAssignExisting}
                         >
                             {assignExistingMutation.isPending ? (
-                                <Loader2 className="size-4 animate-spin" />
+                                <CircleNotch className="size-4 animate-spin" />
                             ) : (
-                                `Assign ${selectedMember.full_name}`
+                                t('existing.assignButton', { name: selectedMember.full_name })
                             )}
                         </MyButton>
                     </div>
@@ -410,7 +433,7 @@ const AddTeachers = ({
                                 disable={!isValid || !isTeacherValid}
                                 onClick={form.handleSubmit(onSubmit)}
                             >
-                                Invite User
+                                {t('invite.inviteButton')}
                             </MyButton>
                         </div>
                     </div>

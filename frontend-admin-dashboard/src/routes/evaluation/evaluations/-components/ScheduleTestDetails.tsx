@@ -11,19 +11,24 @@ import { ScheduleTestMainDropdownComponent } from './ScheduleTestDetailsDropdown
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
-import { getSubjectNameById } from '@/routes/assessment/question-papers/-utils/helper';
+import { resolveSubjectName } from '@/services/subject-names';
 import { getBatchNamesByIds } from '@/routes/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab/-utils/helper';
 import { ReverseProgressBar } from '@/components/ui/progress';
+import { useTranslation } from 'react-i18next';
 
 const ScheduleTestDetails = ({
     scheduleTestContent,
     selectedTab,
     handleRefetchData,
+    subjectNamesById = {},
 }: {
     scheduleTestContent: TestContent;
     selectedTab: string;
     handleRefetchData: () => void;
+    /** Names for the subject ids the institute list cannot resolve — see subject-names.ts. */
+    subjectNamesById?: Record<string, string>;
 }) => {
+    const { t } = useTranslation('evaluationScheduleTestDetails');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const navigate = useNavigate();
     const { data: instituteDetails, isLoading } = useSuspenseQuery(useInstituteQuery());
@@ -111,12 +116,12 @@ const ScheduleTestDetails = ({
                         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                             <DialogTrigger onClick={(e) => e.stopPropagation()}>
                                 <span className="text-sm text-primary-500">
-                                    +{batchIdsList.length - 1} more
+                                    {t('moreBatches', { count: batchIdsList.length - 1 })}
                                 </span>
                             </DialogTrigger>
                             <DialogContent className="p-0">
                                 <h1 className="rounded-t-lg bg-primary-50 p-4 font-semibold text-primary-500">
-                                    Assessment Batches
+                                    {t('assessmentBatches')}
                                 </h1>
                                 <ul className="flex list-disc flex-col gap-4 pb-4 pl-8 pr-4">
                                     {batchIdsList.map((batchId, idx) => {
@@ -136,42 +141,55 @@ const ScheduleTestDetails = ({
             </div>
             <div className="flex w-full items-start justify-start gap-8 text-sm text-neutral-500">
                 <div className="flex flex-col gap-4">
-                    <p>Created on: {convertToLocalDateTime(scheduleTestContent.created_at)}</p>
                     <p>
-                        Subject:{' '}
-                        {getSubjectNameById(
-                            instituteDetails?.subjects || [],
-                            scheduleTestContent.subject_id || ''
-                        )}
+                        {t('createdOn', {
+                            date: convertToLocalDateTime(scheduleTestContent.created_at),
+                        })}
+                    </p>
+                    <p>
+                        {t('subject', {
+                            name:
+                                resolveSubjectName(
+                                    instituteDetails?.subjects,
+                                    subjectNamesById,
+                                    scheduleTestContent.subject_id
+                                ) || t('notAvailable'),
+                        })}
                     </p>
                 </div>
                 <div className="flex flex-col gap-4">
                     {(scheduleTestContent.play_mode === 'EXAM' ||
                         scheduleTestContent.play_mode === 'SURVEY') && (
                         <p>
-                            Start Date and Time:{' '}
-                            {convertToLocalDateTime(scheduleTestContent.bound_start_time)}
+                            {t('startDateAndTime', {
+                                date: convertToLocalDateTime(scheduleTestContent.bound_start_time),
+                            })}
                         </p>
                     )}
                     {(scheduleTestContent.play_mode === 'EXAM' ||
                         scheduleTestContent.play_mode === 'MOCK') && (
-                        <p>Duration: {scheduleTestContent.duration} min</p>
+                        <p>{t('durationMinutes', { count: scheduleTestContent.duration })}</p>
                     )}
                 </div>
                 <div className="flex flex-col gap-4">
                     {(scheduleTestContent.play_mode === 'EXAM' ||
                         scheduleTestContent.play_mode === 'SURVEY') && (
                         <p>
-                            End Date and Time:{' '}
-                            {convertToLocalDateTime(scheduleTestContent.bound_end_time)}
+                            {t('endDateAndTime', {
+                                date: convertToLocalDateTime(scheduleTestContent.bound_end_time),
+                            })}
                         </p>
                     )}
-                    <p>Total Participants: {scheduleTestContent.user_registrations}</p>
+                    <p>
+                        {t('totalParticipants', {
+                            count: scheduleTestContent.user_registrations,
+                        })}
+                    </p>
                 </div>
             </div>
             <div className="flex items-center justify-between gap-8 text-sm text-neutral-500">
-                <p>Attempted by: </p>
-                <p>Pending: </p>
+                <p>{t('attemptedByLabel')}</p>
+                <p>{t('pendingLabel')}</p>
             </div>
             <ReverseProgressBar
                 value={

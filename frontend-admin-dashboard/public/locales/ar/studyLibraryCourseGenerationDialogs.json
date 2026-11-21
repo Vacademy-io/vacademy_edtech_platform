@@ -1,0 +1,89 @@
+{
+    "regenerateSlideDialog": {
+        "title": "إعادة إنشاء الصفحة",
+        "promptPlaceholder": "أدخل تعليمات تصف كيف تريد إعادة إنشاء هذه الصفحة...",
+        "regenerate": "إعادة الإنشاء"
+    },
+    "regenerateSessionDialog": {
+        "title": "إعادة إنشاء {{term}}",
+        "promptLabel": "التعليمات",
+        "promptPlaceholder": "أدخل تعليمات تصف كيف تريد إعادة إنشاء هذه الجلسة...",
+        "lengthLabel": "مدة {{term}}",
+        "lengthPlaceholder": "اختر مدة الجلسة",
+        "length45": "45 دقيقة",
+        "length60": "60 دقيقة",
+        "length90": "90 دقيقة",
+        "lengthCustom": "مخصص",
+        "customLengthPlaceholder": "أدخل المدة المخصصة بالدقائق",
+        "componentsLabel": "مكونات الجلسة",
+        "includeDiagrams": "تضمين المخططات",
+        "includeCodeSnippets": "تضمين مقتطفات الكود",
+        "includePracticeProblems": "تضمين تمارين تطبيقية",
+        "includeQuizzes": "تضمين الاختبارات القصيرة",
+        "includeAssignments": "تضمين الواجبات",
+        "includeSolutions": "تضمين الحلول",
+        "numberOfLabel": "عدد {{term}}",
+        "topicsCountPlaceholder": "مثال: 3، 4، 5، إلخ",
+        "topicsInLabel": "{{plural}} في {{term}} (اختياري)",
+        "topicsPlaceholder": "أدخل موضوعًا واضغط على Enter",
+        "regenerate": "إعادة الإنشاء"
+    },
+    "addSlideDialog": {
+        "generationTitle": "تعليمات إنشاء الذكاء الاصطناعي",
+        "selectTypeTitle": "اختر نوع الصفحة",
+        "selectTypeDescription": "اختر نوع الصفحة التي تريد إضافتها إلى هذه الجلسة.",
+        "types": {
+            "document": "مستند",
+            "pdf": "PDF",
+            "video": "فيديو",
+            "image": "صورة",
+            "jupyter": "جوبيتر",
+            "codeEditor": "محرر الكود",
+            "scratch": "سكراتش",
+            "videoJupyter": "فيديو + جوبيتر",
+            "videoCode": "فيديو + كود",
+            "videoScratch": "فيديو + سكراتش",
+            "quiz": "اختبار",
+            "assignment": "واجب"
+        },
+        "promptPlaceholder": "أدخل تعليمات تصف الصفحة التي تريد إنشاءها...",
+        "back": "رجوع",
+        "createPage": "إنشاء الصفحة"
+    },
+    "addSessionDialog": {
+        "title": "إضافة {{term}} جديد",
+        "nameLabel": "اسم {{term}}",
+        "namePlaceholder": "أدخل اسم {{term}}",
+        "cancel": "إلغاء",
+        "add": "إضافة {{term}}"
+    },
+    "generateCourseAssetsDialog": {
+        "title": "التأكيد النهائي",
+        "reviewNotice": "يرجى مراجعة المحتوى النصي لكل صفحة بعناية قبل المتابعة.",
+        "noComingBack": "بمجرد المتابعة، سيبدأ الذكاء الاصطناعي في إنشاء محتوى الدورة الفعلي ولن يكون بالإمكان التراجع.",
+        "estimatedCost": "التكلفة التقديرية: ≈ {{credits}} رصيد",
+        "usageBilled_zero": "لن يتم احتساب أي رسوم إضافية لشرائح الفيديو/الشرائح/كتاب القصص بالذكاء الاصطناعي",
+        "usageBilled_one": "+ شريحة فيديو/شرائح/كتاب قصص واحدة بالذكاء الاصطناعي تُحتسب حسب الاستخدام الفعلي",
+        "usageBilled_two": "+ شريحتا فيديو/شرائح/كتاب قصص بالذكاء الاصطناعي تُحتسبان حسب الاستخدام الفعلي",
+        "usageBilled_few": "+ {{count}} شرائح فيديو/شرائح/كتاب قصص بالذكاء الاصطناعي تُحتسب حسب الاستخدام الفعلي",
+        "usageBilled_many": "+ {{count}} شريحة فيديو/شرائح/كتاب قصص بالذكاء الاصطناعي تُحتسب حسب الاستخدام الفعلي",
+        "usageBilled_other": "+ {{count}} شريحة فيديو/شرائح/كتاب قصص بالذكاء الاصطناعي تُحتسب حسب الاستخدام الفعلي",
+        "insufficientBalance": "قد يكون رصيد مؤسستك غير كافٍ — يرجى إعادة الشحن قبل المتابعة.",
+        "cancel": "إلغاء",
+        "proceed": "متابعة"
+    },
+    "leaveDuringGenerationDialog": {
+        "title": "الإنشاء لا يزال قيد التقدم",
+        "progressPrefix": "تم إنشاء {{progressLabel}} صفحة فقط حتى الآن. ",
+        "warning": "إذا غادرت الآن، سيتوقف الإنشاء وسيُفقد كل ما تم إنشاؤه حتى الآن. لن يتم استرداد الرصيد الذي تم إنفاقه بالفعل.",
+        "leaveAndStop": "المغادرة والتوقف",
+        "stayOnPage": "البقاء في الصفحة"
+    },
+    "backToLibraryDialog": {
+        "title": "العودة إلى مكتبة الدورات؟",
+        "description": "هل أنت متأكد من رغبتك في العودة إلى مكتبة الدورات؟ يمكنك إما التخلص من دورتك الحالية أو حفظها كمسودة.",
+        "cancel": "إلغاء",
+        "discardCourse": "التخلص من الدورة",
+        "saveToDrafts": "الحفظ كمسودة"
+    }
+}

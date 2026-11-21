@@ -1,0 +1,127 @@
+{
+    "loading": "Loading...",
+    "header": {
+        "title": "Badges & Rewards",
+        "description": "Define the achievement badges learners can unlock on the gamified dashboard. Pick what each badge is named, how it looks, and the condition that unlocks it.",
+        "resetDefaults": "Reset to defaults",
+        "saveChanges": "Save Changes",
+        "saving": "Saving..."
+    },
+    "enableCard": {
+        "label": "Enable Badges & Leaderboard",
+        "description": "Master switch. When off, badges and the course leaderboard are hidden everywhere — across the learner app and the admin Learning Reports leaderboard tab."
+    },
+    "unsavedBanner": {
+        "text": "You have unsaved changes. Don't forget to save."
+    },
+    "disabledBanner": {
+        "before": "Badges & leaderboard are currently",
+        "disabled": "disabled",
+        "after": "for this institute. Turn the switch on to configure badges, points and the leaderboard."
+    },
+    "scoring": {
+        "title": "Points & Scoring",
+        "description": "How many points each action is worth. These drive the learner's points & level and the course leaderboard ranking. Set a factor to 0 to ignore it.",
+        "pointsUnit": "points"
+    },
+    "leaderboardNames": {
+        "title": "Show full names on leaderboards",
+        "description": "By default leaderboards show learners as anonymized initials (e.g. \"A.G.\"). Turn this on to show full names on both the shareable public link and the in-app leaderboard learners see. Each learner's own row always reads \"You\"."
+    },
+    "libraryArt": {
+        "title": "Show ready-made artwork instead of plain icons",
+        "description": "Give every badge a polished tiered look, matched to what unlocks it. You can still fine-tune any badge from the library.",
+        "button": "Use library artwork"
+    },
+    "emptyState": {
+        "text": "No badges configured. Add one to get started."
+    },
+    "addBadge": "Add Badge",
+    "addManualBadge": "Add staff-awarded badge",
+    "badgeCard": {
+        "untitled": "Untitled badge",
+        "disabledChip": "Disabled",
+        "hiddenChip": "Hidden until earned",
+        "defaultDescription": "Add a short description below",
+        "on": "On",
+        "off": "Off",
+        "deleteAriaLabel": "Delete badge",
+        "nameLabel": "Badge name",
+        "namePlaceholder": "e.g. First Steps",
+        "iconLabel": "Icon",
+        "iconPlaceholder": "Custom image",
+        "uploadTitle": "Upload a custom image",
+        "iconHint": {
+            "library": "Library badge selected.",
+            "custom": "Custom image uploaded.",
+            "default": "Pick an icon, choose from the library, or upload your own."
+        },
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "Shown on hover, e.g. Maintain a 7-day streak",
+        "triggerLabel": "Unlocks based on",
+        "thresholdLabel": "Threshold ({{unit}})",
+        "manualHint": "No automatic condition — staff award this badge from a learner's profile or the students list.",
+        "hiddenLabel": "Hidden until earned",
+        "hiddenHelp": "Learners don't see this badge until they earn it. Applies on updated learner apps."
+    },
+    "toasts": {
+        "badgesSaved": "Badges saved",
+        "saveFailed": "Failed to save badges",
+        "imageUploaded": "Image uploaded",
+        "uploadFailed": "Failed to upload image",
+        "libraryArtApplied": "Switched badges to library artwork",
+        "nameRequired": "Every badge needs a name",
+        "resetRemovesManual_one": "{{count}} staff-awarded badge will be removed from the catalogue when you save. Awards already given stay on learner records.",
+        "resetRemovesManual_other": "{{count}} staff-awarded badges will be removed from the catalogue when you save. Awards already given stay on learner records.",
+        "mergedFromServer_one": "{{count}} badge created elsewhere was kept",
+        "mergedFromServer_other": "{{count}} badges created elsewhere were kept",
+        "saveGuardFailed": "Couldn't check the current badges on the server — nothing was saved. Try again."
+    },
+    "triggers": {
+        "manual": {
+            "label": "Awarded manually by staff",
+            "help": "Never unlocks on its own — a teacher or admin awards it to a learner (e.g. Helping Hand, Most Improved). Each learner can hold a badge once; for recurring recognition create dated or tiered variants.",
+            "unit": ""
+        },
+        "course_count": {
+            "label": "Courses enrolled",
+            "help": "Unlocks when the learner is enrolled in at least this many courses.",
+            "unit": "courses"
+        },
+        "slide_count": {
+            "label": "Slides available",
+            "help": "Unlocks when this many slides are available to the learner.",
+            "unit": "slides"
+        },
+        "streak": {
+            "label": "Daily streak",
+            "help": "Unlocks at this many consecutive active days.",
+            "unit": "days"
+        },
+        "xp_total": {
+            "label": "Total XP earned",
+            "help": "Unlocks when total XP reaches this value.",
+            "unit": "XP"
+        },
+        "course_completion": {
+            "label": "Course completion %",
+            "help": "Unlocks when any course reaches this completion percentage.",
+            "unit": "%"
+        },
+        "assessment_score": {
+            "label": "Assessment score %",
+            "help": "Unlocks when the best released assessment score reaches this percentage.",
+            "unit": "%"
+        },
+        "live_session_count": {
+            "label": "Live classes attended",
+            "help": "Unlocks after the learner attends this many live classes (in total).",
+            "unit": "classes"
+        },
+        "live_session_streak": {
+            "label": "Live class streak (in a row)",
+            "help": "Unlocks after the learner attends this many live classes in a row, without missing one.",
+            "unit": "classes"
+        }
+    }
+}

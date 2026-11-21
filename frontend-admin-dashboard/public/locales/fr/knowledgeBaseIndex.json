@@ -1,0 +1,63 @@
+{
+    "navHeading": "Base de connaissances",
+    "meta": {
+        "title": "Base de connaissances",
+        "description": "Téléchargez les livres, notes et anciens sujets de votre établissement pour que l'IA puisse enseigner, évaluer et répondre à partir de votre propre contenu."
+    },
+    "purpose": {
+        "instituteInfo": "Informations sur l'établissement",
+        "generalReference": "Référence générale"
+    },
+    "kbCard": {
+        "sharedLibrary": "Bibliothèque partagée",
+        "sources_one": "{{formatted}} source",
+        "sources_many": "{{formatted}} sources",
+        "sources_other": "{{formatted}} sources",
+        "pages_one": "{{formatted}} page",
+        "pages_many": "{{formatted}} pages",
+        "pages_other": "{{formatted}} pages",
+        "figures_one": "{{formatted}} diagramme et tableau",
+        "figures_many": "{{formatted}} diagrammes et tableaux",
+        "figures_other": "{{formatted}} diagrammes et tableaux",
+        "reading_one": "Lecture de {{formatted}} source…",
+        "reading_many": "Lecture de {{formatted}} sources…",
+        "reading_other": "Lecture de {{formatted}} sources…",
+        "nothingAdded": "Rien n'a encore été ajouté",
+        "readyToUse": "Prêt à l'emploi",
+        "reviewPages_one": "{{formatted}} page à vérifier",
+        "reviewPages_many": "{{formatted}} pages à vérifier",
+        "reviewPages_other": "{{formatted}} pages à vérifier"
+    },
+    "emptyState": {
+        "heading": "Apprenez à l'IA ce que votre établissement enseigne",
+        "description": "Téléchargez vos manuels, notes et anciens sujets une seule fois. L'IA les lit — y compris les diagrammes, tableaux et formules — et peut ensuite répondre à des questions à partir de ceux-ci, et créer des cours et des sujets d'examen fondés sur votre propre contenu plutôt que sur du contenu générique tiré d'internet.",
+        "examples": {
+            "science": {
+                "title": "Sciences classe 9",
+                "body": "Deux manuels NCERT et les notes de vos enseignants."
+            },
+            "jee": {
+                "title": "JEE des années précédentes",
+                "body": "Dix ans de sujets d'examen avec solutions."
+            },
+            "instituteInfo": {
+                "title": "Informations sur l'établissement",
+                "body": "Politique de frais, horaires, règles d'examen et FAQ."
+            }
+        },
+        "createFirst": "Créer votre première base de connaissances"
+    },
+    "tabs": {
+        "mine": "Mes bases de connaissances",
+        "library": "Bibliothèque",
+        "curriculum": "Programme"
+    },
+    "mine": {
+        "heading": "Bases de connaissances",
+        "description": "Vos propres livres, notes et sujets, lus et indexés pour que l'IA puisse s'en servir.",
+        "newButton": "Nouvelle base de connaissances",
+        "loadError": "Impossible de charger vos bases de connaissances.",
+        "tryAgain": "Réessayer",
+        "tip": "Ouvrez une base de connaissances et utilisez <1>Interroger cette base de connaissances</1> pour vérifier ce qu'elle a réellement compris avant de créer des cours ou des sujets d'examen à partir d'elle."
+    }
+}

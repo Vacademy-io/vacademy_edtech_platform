@@ -1,0 +1,50 @@
+{
+    "unnamedEmployee": "Unnamed employee",
+    "heading": "Daily board",
+    "subtitle": "Everyone active on {{date}}, including the people with no record for the day — select them and mark the day in one go.",
+    "stats": {
+        "presentThisMonth": "Present this month",
+        "absent": "Absent",
+        "onLeave": "On leave",
+        "halfDays": "Half days",
+        "unmarkedToday": "Unmarked today",
+        "everyoneHasRecord": "Every employee has a record"
+    },
+    "dateLabel": "Date",
+    "findEmployeeLabel": "Find an employee",
+    "findEmployeePlaceholder": "Name or code",
+    "backToToday": "Back to today",
+    "freezeExplanation": "Attendance for a month freezes once that month's payroll has been processed — the figures have already been paid against. Marking is refused from that point, and the message you get back names what has to be undone in ERP → Payroll before the day can be edited.",
+    "dayLevelExplanation": "This institute runs attendance in day-level mode: employees don't check in or out, so those columns are hidden. Change it under Shifts & Holidays → Configuration.",
+    "notSavedTitle": "Attendance was not saved",
+    "dismissAria": "Dismiss",
+    "bulkBar": {
+        "markAs_one": "Mark {{count}} employee as",
+        "markAs_other": "Mark {{count}} employees as",
+        "remarksPlaceholder": "Remarks (optional)",
+        "marking": "Marking…",
+        "applyTo": "Apply to {{count}}",
+        "clearSelection": "Clear selection"
+    },
+    "loadError": "Couldn't load the day's attendance.",
+    "noSearchMatchTitle": "No employee matches that search",
+    "noSearchMatchDescription": "Clear the search to see everyone active on this day.",
+    "clearSearch": "Clear search",
+    "noActiveEmployeesTitle": "No active employees to mark",
+    "noActiveEmployeesDescription": "Attendance is taken against HR employee profiles. Add people under ERP → People first.",
+    "viewOnlyNote": "You can review attendance but not change it — marking a day needs an HR Admin role in this institute.",
+    "markSuccess_one": "{{count}} employee marked {{status}}",
+    "markSuccess_other": "{{count}} employees marked {{status}}",
+    "markError": "Could not mark attendance for this day.",
+    "selectAllAria": "Select every employee",
+    "selectEmployeeAria": "Select {{name}}",
+    "columns": {
+        "employee": "Employee",
+        "status": "Status",
+        "checkIn": "Check in",
+        "checkOut": "Check out",
+        "hours": "Hours",
+        "source": "Source",
+        "remarks": "Remarks"
+    }
+}

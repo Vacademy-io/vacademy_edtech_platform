@@ -5,23 +5,25 @@ import { useDoubtTable } from '../../-hooks/useDoubtTable';
 import { DOUBTS_TABLE_COLUMN_WIDTHS } from '@/components/design-system/utils/constants/table-layout';
 import { useDoubtTableColumns } from '../../-hooks/useDoubtColumns';
 import { ChatTeardropDots } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 
-const EmptyState = () => (
-    <div
-        role="status"
-        className="flex min-h-[360px] w-full animate-in fade-in duration-500 flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-neutral-200 bg-white/60 px-6 py-16 text-center"
-    >
-        <div className="flex size-16 items-center justify-center rounded-full bg-primary-50">
-            <ChatTeardropDots size={32} weight="duotone" className="text-primary-500" />
+const EmptyState = () => {
+    const { t } = useTranslation('studyLibraryDoubtTable');
+    return (
+        <div
+            role="status"
+            className="flex min-h-[360px] w-full animate-in fade-in duration-500 flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-neutral-200 bg-white/60 px-6 py-16 text-center"
+        >
+            <div className="flex size-16 items-center justify-center rounded-full bg-primary-50">
+                <ChatTeardropDots size={32} weight="duotone" className="text-primary-500" />
+            </div>
+            <div className="flex flex-col gap-1">
+                <h3 className="text-base font-semibold text-neutral-800">{t('emptyTitle')}</h3>
+                <p className="max-w-sm text-sm text-neutral-500">{t('emptyBody')}</p>
+            </div>
         </div>
-        <div className="flex flex-col gap-1">
-            <h3 className="text-base font-semibold text-neutral-800">No doubts yet</h3>
-            <p className="max-w-sm text-sm text-neutral-500">
-                You&apos;re all caught up. New doubts raised by learners will appear here.
-            </p>
-        </div>
-    </div>
-);
+    );
+};
 
 export const DoubtTable = () => {
     const { currentPage, setCurrentPage, doubts, isLoading, error } = useDoubtTable();

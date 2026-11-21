@@ -1,0 +1,42 @@
+{
+    "alerts": {
+        "fillRequired": "कृपया प्रोजेक्ट नाम और कंटेंट URL भरें",
+        "deploySuccess": "नोटबुक सफलतापूर्वक डिप्लॉय हो गई!"
+    },
+    "header": {
+        "configuration": "Jupyter नोटबुक कॉन्फ़िगरेशन"
+    },
+    "tabs": {
+        "preview": "पूर्वावलोकन",
+        "settings": "सेटिंग्स"
+    },
+    "form": {
+        "projectName": {
+            "label": "प्रोजेक्ट नाम",
+            "placeholder": "pythoncourse"
+        },
+        "contentUrl": {
+            "label": "कंटेंट URL (नोटबुक वाले Github रिपॉज़िटरी का लिंक)",
+            "placeholder": "https://github.com/amirtds/jupyter-notebooks"
+        },
+        "contentBranch": {
+            "label": "कंटेंट ब्रांच"
+        },
+        "notebookLocation": {
+            "label": "नोटबुक स्थान"
+        }
+    },
+    "deploy": {
+        "button": "नोटबुक डिप्लॉय करें",
+        "deploying": "नोटबुक डिप्लॉय हो रही है..."
+    },
+    "status": {
+        "readyToDeploy": "डिप्लॉय के लिए तैयार:",
+        "summary": "{{contentUrl}} से {{projectName}} ({{contentBranch}} ब्रांच, {{notebookLocation}} स्थान)"
+    },
+    "preview": {
+        "iframeTitle": "Jupyter नोटबुक पूर्वावलोकन",
+        "notConfigured": "कोई नोटबुक कॉन्फ़िगर नहीं की गई",
+        "switchToSettingsHint": "अपनी Jupyter नोटबुक कॉन्फ़िगर करने के लिए सेटिंग्स टैब पर जाएं"
+    }
+}

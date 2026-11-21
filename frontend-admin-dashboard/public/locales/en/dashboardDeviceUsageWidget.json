@@ -1,0 +1,26 @@
+{
+    "header": {
+        "title": "Device Usage",
+        "subtitle": "Platform distribution across users"
+    },
+    "error": {
+        "message": "Failed to load device data"
+    },
+    "empty": {
+        "message": "No device data available"
+    },
+    "device": {
+        "desktop": "Desktop",
+        "mobile": "Mobile",
+        "tablet": "Tablet"
+    },
+    "tooltip": {
+        "usage": "Usage: {{value}}",
+        "users": "Users: {{value}}",
+        "percentOfTotal": "{{percentage}}% of total"
+    },
+    "stats": {
+        "users_one": "{{count}} user",
+        "users_other": "{{count}} users"
+    }
+}

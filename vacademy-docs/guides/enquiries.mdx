@@ -1,0 +1,167 @@
+---
+title: "Send enquiries"
+description: "Post a visitor's enquiry into the institute's CRM from a Next.js server action."
+---
+
+`POST /leads` saves an enquiry in the institute's CRM (**Audience Manager → Recent Leads**), exactly as the hosted catalogue's own enquiry form does. The institute's lead routing, scoring, counsellor assignment and duplicate rules apply.
+
+## The request
+
+```bash
+curl https://api.vacademy.ai/catalog/v1/leads \
+  -H "X-API-Key: $VACADEMY_CATALOG_KEY" \
+  -H "Content-Type: application/json" \
+  -H "X-Client-IP: 203.0.113.24" \
+  -d '{
+    "full_name": "Asha Rao",
+    "email": "asha@example.com",
+    "phone": "+91 98765 43210",
+    "message": "Is the Hindi edition available as a printed book?",
+    "course_id": "7c12a9ec-22c3-4c55-ada1-2a93e107816f",
+    "source": "course-page",
+    "custom_fields": { "city": "Pune" }
+  }'
+```
+
+| Field | Required | Rules |
+|---|---|---|
+| `full_name` | Yes | 1-200 characters. |
+| `email` | Yes | A valid address, at most 254 characters. |
+| `phone` | No | Digits with optional `+`, spaces, `()`, `-`, `.`; at least 6 digits. E.g. `+91 98765 43210`. |
+| `message` | No | At most 2,000 characters. |
+| `course_id` | No | A course `id` from this API. Must be a published course, else `400`. |
+| `campaign_id` | No | The CRM campaign to file it under (below). |
+| `source` | No | Where the form is on your site, e.g. `homepage-hero`. At most 100 characters. |
+| `custom_fields` | No | Up to 30 extra fields. Keys: 1-64 letters, digits, spaces, `_`, `-`, `.`; not one of the reserved keys below. Values: text, number or boolean, at most 1,000 characters. Empty values are dropped. |
+
+Reserved `custom_fields` keys (any case) are refused with `400`; send them as the top-level fields instead: `full_name`, `fullname`, `name`, `email`, `phone`, `mobile`, `mobile_number`, `message`, `source`, `course_id`.
+
+Every field is a JSON string except `custom_fields`. `message`, `source` and `course_id` are also saved as fields of the lead, so the institute sees them in the CRM.
+
+## The response
+
+| Status | Body | Meaning |
+|---|---|---|
+| `201` | `{"status": "received"}` | A new enquiry was saved. |
+| `200` | `{"status": "duplicate"}` | This person already enquired in this campaign, or the institute's duplicate rules matched. Nothing new was saved. |
+
+Show the visitor the same thank-you for both.
+
+## `campaign_id`
+
+Without `campaign_id`, enquiries land in the institute's **Course Catalogue Leads** list, created automatically, like the hosted catalogue's own form.
+
+To file them under a specific campaign, ask the institute's admin for its id: in the dashboard, **Audience Manager** → open the campaign → copy `campaignId` from the page address. The campaign must be **active** and belong to the institute.
+
+<Warning>
+An unknown, inactive or foreign `campaign_id` is **not** an error: the enquiry is saved to the Course Catalogue Leads list instead, so no enquiry is ever lost. Test a new `campaign_id` once and check that the lead appears in that campaign.
+</Warning>
+
+## From a Next.js server action
+
+Calling from the server keeps the per-visitor limit accurate: pass the visitor's IP in `X-Client-IP`. Without it, only the per-key limit applies.
+
+```ts app/actions/enquiry.ts
+'use server';
+
+import { headers } from 'next/headers';
+
+export type EnquiryState = { ok: boolean; error?: string };
+
+export async function sendEnquiry(_prev: EnquiryState, form: FormData): Promise<EnquiryState> {
+  if (form.get('website')) return { ok: true }; // honeypot: bots fill hidden fields
+
+  const h = await headers();
+  const ip = h.get('x-forwarded-for')?.split(',')[0]?.trim() || h.get('x-real-ip') || undefined;
+
+  const text = (name: string) => {
+    const v = form.get(name);
+    return typeof v === 'string' && v.trim() ? v.trim() : undefined;
+  };
+
+  const res = await fetch('https://api.vacademy.ai/catalog/v1/leads', {
+    method: 'POST',
+    headers: {
+      'X-API-Key': process.env.VACADEMY_CATALOG_KEY!,
+      'Content-Type': 'application/json',
+      ...(ip ? { 'X-Client-IP': ip } : {}),
+    },
+    body: JSON.stringify({
+      full_name: text('full_name'),
+      email: text('email'),
+      phone: text('phone'),
+      message: text('message'),
+      course_id: text('course_id'),
+      source: 'course-page',
+    }),
+    cache: 'no-store',
+  });
+
+  if (res.ok) return { ok: true }; // 201 received or 200 duplicate
+
+  const body = await res.json().catch(() => null);
+  if (res.status === 400) return { ok: false, error: body?.error?.message ?? 'Please check the form.' };
+  if (res.status === 429) return { ok: false, error: 'Too many attempts. Please try again in a minute.' };
+  console.error('enquiry failed', res.status, body?.error?.request_id);
+  return { ok: false, error: 'Something went wrong. Please try again.' };
+}
+```
+
+```tsx app/components/enquiry-form.tsx
+'use client';
+
+import { useActionState } from 'react';
+import { sendEnquiry, type EnquiryState } from '@/app/actions/enquiry';
+
+export function EnquiryForm({ courseId }: { courseId?: string }) {
+  const [state, action, pending] = useActionState<EnquiryState, FormData>(sendEnquiry, { ok: false });
+  if (state.ok) return <p>Thank you. We will get back to you soon.</p>;
+  return (
+    <form action={action}>
+      <input name="full_name" required maxLength={200} placeholder="Your name" />
+      <input name="email" type="email" required placeholder="Email" />
+      <input name="phone" type="tel" placeholder="Phone (optional)" />
+      <textarea name="message" maxLength={2000} placeholder="Your question" />
+      {courseId && <input type="hidden" name="course_id" value={courseId} />}
+      <input name="website" tabIndex={-1} autoComplete="off" hidden />
+      <button disabled={pending}>Send</button>
+      {state.error && <p role="alert">{state.error}</p>}
+    </form>
+  );
+}
+```
+
+On Next.js 14, use `useFormState` from `react-dom` instead of `useActionState`.
+
+<Note>
+The IP header depends on your host. Vercel and most proxies set `x-forwarded-for` (first entry = the visitor); Cloudflare sets `cf-connecting-ip`. Pass the visitor's IP, never your server's.
+</Note>
+
+## Limits
+
+| Limit | Scope |
+|---|---|
+| 30 per minute | per key, all enquiries |
+| 5 per minute | per key and visitor IP (`X-Client-IP`, or the network address on browser calls) |
+
+Over a limit: `429 rate_limited` with `Retry-After`. Rejected requests count too, so validate on your side first. `X-Client-IP` is ignored on browser calls (requests with an `Origin` header), so a browser cannot choose its own bucket.
+
+## Errors
+
+| Status | Code | When |
+|---|---|---|
+| 400 | `invalid_request` | A field breaks a rule above; `details.param` names it. Also a body that is not a JSON object. |
+| 415 | `invalid_request` | Send `Content-Type: application/json`. |
+| 403 | `insufficient_scope` | The key has no `leads:write` scope. |
+| 429 | `rate_limited` | See limits. |
+
+```json
+{
+  "error": {
+    "code": "invalid_request",
+    "message": "email is not a valid email address.",
+    "request_id": "req_3f2a9c1d7e5b4a608f1e2d3c4b5a6978",
+    "details": { "param": "email" }
+  }
+}
+```

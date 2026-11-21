@@ -1,0 +1,24 @@
+{
+    "emptyState": "प्रश्न का विवरण दिखाने के लिए कृपया एक प्रश्न जोड़ें",
+    "settings": {
+        "title": "प्रश्न सेटिंग्स",
+        "questionType": "प्रश्न प्रकार",
+        "marks": "अंक",
+        "negativeMarking": "नकारात्मक अंकन",
+        "timeLimit": "समय सीमा",
+        "hours": "घंटे",
+        "minutes": "मिनट"
+    },
+    "question": {
+        "label": "प्रश्न {{number}}"
+    },
+    "answer": {
+        "label": "उत्तर:",
+        "optionLabel": "({{letter}}.)",
+        "removeOption": "विकल्प हटाएं",
+        "addOption": "विकल्प जोड़ें"
+    },
+    "explanation": {
+        "label": "व्याख्या:"
+    }
+}

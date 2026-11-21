@@ -1,0 +1,47 @@
+{
+    "artifactType": {
+        "questionPaper": "Question paper",
+        "course": "Course",
+        "presentation": "Presentation",
+        "quiz": "Quiz",
+        "assessment": "Assessment",
+        "notes": "Notes",
+        "summary": "Summary",
+        "lessonPlan": "Lesson plan",
+        "worksheet": "Worksheet"
+    },
+    "status": {
+        "draft": "Draft",
+        "generating": "Generating",
+        "notSavedYet": "Not saved yet",
+        "saved": "Saved",
+        "failed": "Failed"
+    },
+    "time": {
+        "justNow": "just now",
+        "minutesAgo_one": "{{count}} min ago",
+        "minutesAgo_other": "{{count}} min ago",
+        "hoursAgo_one": "{{count}} h ago",
+        "hoursAgo_other": "{{count}} h ago"
+    },
+    "progress": {
+        "questions_one": "{{delivered}} of {{planned}} question",
+        "questions_other": "{{delivered}} of {{planned}} questions",
+        "credits_one": "{{count}} credit",
+        "credits_other": "{{count}} credits"
+    },
+    "emptyState": {
+        "title": "Nothing made from this knowledge base yet.",
+        "description": "Papers and courses you create will be listed here so you can come back to them."
+    },
+    "actions": {
+        "tryAgain": "Try again",
+        "open": "Open",
+        "inQuestionBank": "In question bank",
+        "remove": "Remove"
+    },
+    "toast": {
+        "removed": "Removed from history",
+        "removeFailed": "Could not remove that entry"
+    }
+}

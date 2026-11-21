@@ -1,0 +1,139 @@
+{
+    "emptyState": "Aucune question pour l'instant.",
+    "questionNumber": "Question {{number}}",
+    "documentEditorName": "éditeur de document",
+    "survey": {
+        "notSupported": "Les questions tableur et réponse rédigée ne sont pas disponibles dans les sondages."
+    },
+    "scenario": {
+        "title": "Mise en situation (affichée à gauche)",
+        "hint": "Le cas que l'apprenant lit à côté de sa réponse. Facultatif — sans lui, la zone de réponse occupe toute la largeur.",
+        "placeholder": "Collez ou rédigez la mise en situation…"
+    },
+    "requirements": {
+        "title": "Consignes",
+        "titleNumbered": "Consignes · {{title}}",
+        "hint": "Ce que l'apprenant doit faire. Affiché au-dessus des parties de réponse.",
+        "placeholder": "ex. Établissez l'état consolidé de la situation financière au 31 mars…"
+    },
+    "parts": {
+        "title": "Parties de réponse",
+        "hint": "Chaque partie est un tableur ou un document rédigé. La question vaut la somme des points des parties.",
+        "total_one": "Total : {{count}} point",
+        "total_other": "Total : {{count}} points",
+        "addSpreadsheet": "Ajouter une partie tableur",
+        "addDocument": "Ajouter une partie document",
+        "empty": "Aucune partie pour l'instant. Ajoutez une partie tableur ou document."
+    },
+    "part": {
+        "kind": {
+            "SPREADSHEET": "Tableur",
+            "DOCUMENT": "Document"
+        },
+        "summary_one": "{{label}} {{kind}} · {{count}} point",
+        "summary_other": "{{label}} {{kind}} · {{count}} points",
+        "schemeBadge_one": "{{count}} ligne de barème",
+        "schemeBadge_other": "{{count}} lignes de barème",
+        "label": "Libellé",
+        "marks": "Points",
+        "marksRequired": "Attribuez plus de 0 point à cette partie.",
+        "prompt": "Consigne de cette partie",
+        "promptHint": "Facultatif. Affichée au-dessus de la zone de réponse de cette partie.",
+        "promptPlaceholder": "ex. (a) Établissez l'état consolidé de la situation financière…",
+        "moveUp": "Monter la partie",
+        "moveDown": "Descendre la partie",
+        "delete": "Supprimer la partie",
+        "deleteTitle": "Supprimer la partie {{label}} ?",
+        "deleteBody": "Son modèle de départ, sa solution et son barème sont aussi supprimés.",
+        "deleteCancel": "Annuler",
+        "deleteConfirm": "Supprimer la partie",
+        "tabs": {
+            "template": "Modèle de départ",
+            "solution": "Solution",
+            "scheme_one": "Barème ({{count}})",
+            "scheme_other": "Barème ({{count}})"
+        }
+    },
+    "template": {
+        "sheetHint": "Ce que voit l'apprenant au départ : titres, libellés, données fournies. Construisez-le dans la grille ou importez un fichier Excel.",
+        "docHint": "Texte de départ facultatif (titres, tableau à compléter).",
+        "import": "Importer un .xlsx",
+        "clear": "Effacer le modèle",
+        "gridLabel": "Modèle de départ de la partie {{label}}",
+        "docLabel": "Texte de départ de la partie {{label}}",
+        "docPlaceholder": "Titres ou tableau de départ pour l'apprenant…"
+    },
+    "solution": {
+        "sheetHint": "Le corrigé auquel l'IA compare la réponse. Importez le classeur de solution (tous les onglets sont conservés) ou construisez-le dans la grille. Une colonne « Marks » remplit le barème.",
+        "docHint": "Le corrigé auquel l'IA compare la réponse : les points d'une réponse complète.",
+        "import": "Importer la solution .xlsx",
+        "uploading": "Enregistrement du fichier d'origine…",
+        "fileAttached": "Classeur d'origine joint",
+        "gridLabel": "Solution de la partie {{label}}",
+        "docLabel": "Solution de la partie {{label}}",
+        "docPlaceholder": "Les points d'une réponse à la note maximale…"
+    },
+    "scheme": {
+        "hint": "Une ligne par élément qui rapporte des points. L'IA note chaque ligne et tient compte des erreurs reportées.",
+        "extract": "Relire depuis la solution",
+        "extractNone": "La solution n'a pas de colonne « Marks » à lire.",
+        "addLine": "Ajouter une ligne",
+        "removeLine": "Supprimer la ligne",
+        "empty": "Aucune ligne de barème. Importez une solution avec une colonne « Marks » ou ajoutez des lignes.",
+        "columns": {
+            "label": "Ligne",
+            "marks": "Points",
+            "expected": "Attendu",
+            "cellRef": "Cellule",
+            "guidance": "Indications"
+        },
+        "placeholders": {
+            "label": "ex. Écart d'acquisition",
+            "expected": "Facultatif",
+            "cellRef": "ex. Sheet1!B7",
+            "guidance": "Référence de calcul (facultatif)"
+        },
+        "sumMatches": "Les lignes du barème totalisent {{total}} — conforme aux points de la partie.",
+        "sumMismatch": "Les lignes du barème totalisent {{total}}, mais la partie vaut {{marks}}."
+    },
+    "import": {
+        "reading": "Lecture…",
+        "wrongType": "Choisissez un fichier Excel (.xlsx).",
+        "tooLarge": "Ce classeur dépasse 5 Mo. Supprimez les onglets inutiles et réessayez.",
+        "failed": "Impossible de lire ce classeur. Vérifiez qu'il s'ouvre dans Excel et réessayez.",
+        "templateDone_one": "Modèle importé ({{count}} onglet).",
+        "templateDone_other": "Modèle importé ({{count}} onglets).",
+        "solutionDone_one": "Solution importée — {{count}} ligne de barème pour {{marks}} points.",
+        "solutionDone_other": "Solution importée — {{count}} lignes de barème pour {{marks}} points.",
+        "solutionNoScheme": "Solution importée. Aucune colonne « Marks » trouvée — ajoutez vous-même les lignes du barème.",
+        "uploadFailed": "La solution a été importée, mais le fichier d'origine n'a pas pu être enregistré."
+    },
+    "gradingNotes": {
+        "title": "Notes de correction",
+        "hint": "Instructions pour le correcteur IA, ex. « Appliquer la règle du report d'erreur. Accepter ±1 d'arrondi. » Jamais montrées aux apprenants.",
+        "placeholder": "Appliquer la règle du report d'erreur. Accepter ±1 d'arrondi."
+    },
+    "secret": {
+        "loading": "Chargement de la solution et du barème enregistrés…",
+        "failedTitle": "Impossible de charger la solution enregistrée",
+        "failedBody": "La solution, le barème et les notes de correction restent tels qu'enregistrés ; vos autres modifications sont enregistrées sans les toucher.",
+        "retry": "Réessayer"
+    },
+    "validation": {
+        "noParts": "Ajoutez au moins une partie de réponse.",
+        "partMarks": "La partie {{label}} doit valoir plus de 0 point.",
+        "noSolution": "La partie {{label}} n'a ni solution ni barème — l'IA aura peu de repères pour noter.",
+        "schemeMismatch": "Partie {{label}} : le barème totalise {{scheme}}, la partie vaut {{marks}}.",
+        "uncomputedSolution": "Partie {{label}} : certaines formules de la solution n'ont pas encore de valeur, l'IA ne voit donc pas ces chiffres. Ouvrez chaque onglet de la solution pour qu'il se recalcule avant d'enregistrer, ou enregistrez le classeur dans Excel et importez-le à nouveau."
+    },
+    "summary": {
+        "scenario": "Mise en situation : {{text}}",
+        "noRequirements": "Pas encore de consignes",
+        "part_one": "{{label}} {{kind}} · {{count}} point",
+        "part_other": "{{label}} {{kind}} · {{count}} points",
+        "schemeLines_one": "{{count}} ligne",
+        "schemeLines_other": "{{count}} lignes",
+        "total_one": "{{count}} point",
+        "total_other": "{{count}} points"
+    }
+}

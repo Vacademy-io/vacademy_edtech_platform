@@ -30,6 +30,7 @@ import { Route } from '..';
 import { useNavigate } from '@tanstack/react-router';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { getTerminology, getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
+import { useTranslation } from 'react-i18next';
 
 export interface SelectedQuestionPaperFilters {
     name: string | { id: string; name: string }[];
@@ -47,6 +48,7 @@ export interface SelectedQuestionPaperFilters {
 }
 
 export const ScheduleTestMainComponent = () => {
+    const { t } = useTranslation('homeworkCreationScheduleTestMainComponent');
     const navigate = useNavigate();
     const searchParams = Route.useSearch();
     const accessToken = getTokenFromCookie(TokenKey.accessToken);
@@ -84,7 +86,7 @@ export const ScheduleTestMainComponent = () => {
     const [scheduleTestTabsData, setScheduleTestTabsData] = useState<ScheduleTestTab[]>([
         {
             value: 'liveTests',
-            message: 'No tests are currently live.',
+            message: t('tabs.liveEmpty'),
             data: {
                 content: [],
                 last: false,
@@ -96,7 +98,7 @@ export const ScheduleTestMainComponent = () => {
         },
         {
             value: 'upcomingTests',
-            message: 'No upcoming tests scheduled.',
+            message: t('tabs.upcomingEmpty'),
             data: {
                 content: [],
                 last: false,
@@ -108,7 +110,7 @@ export const ScheduleTestMainComponent = () => {
         },
         {
             value: 'previousTests',
-            message: 'No previous tests available.',
+            message: t('tabs.previousEmpty'),
             data: {
                 content: [],
                 last: false,
@@ -120,7 +122,7 @@ export const ScheduleTestMainComponent = () => {
         },
         {
             value: 'draftTests',
-            message: 'No draft tests available.',
+            message: t('tabs.draftEmpty'),
             data: {
                 content: [],
                 last: false,
@@ -427,7 +429,7 @@ export const ScheduleTestMainComponent = () => {
     }, []);
 
     useEffect(() => {
-        setNavHeading(<h1 className="text-lg">Homework Creation List</h1>);
+        setNavHeading(<h1 className="text-lg">{t('navHeading')}</h1>);
     }, []);
 
     useEffect(() => {
@@ -455,11 +457,8 @@ export const ScheduleTestMainComponent = () => {
     return (
         <>
             <Helmet>
-                <title>Schedule Tests</title>
-                <meta
-                    name="description"
-                    content="This page shows the list of all the schedules tests and also an assessment can be scheduled here."
-                />
+                <title>{t('meta.title')}</title>
+                <meta name="description" content={t('meta.description')} />
             </Helmet>
             <ScheduleTestHeaderDescription />
             <div className="flex flex-col gap-4">
@@ -487,7 +486,7 @@ export const ScheduleTestMainComponent = () => {
                                 }
                             />
                             <ScheduleTestFilters
-                                label="Mode"
+                                label={t('filters.mode')}
                                 data={ModeData}
                                 selectedItems={
                                     selectedQuestionPaperFilters['assessment_modes'] || []
@@ -497,7 +496,7 @@ export const ScheduleTestMainComponent = () => {
                                 }
                             />
                             <ScheduleTestFilters
-                                label="Type"
+                                label={t('filters.type')}
                                 data={AssessmentTypeData}
                                 selectedItems={
                                     selectedQuestionPaperFilters['access_statuses'] || []
@@ -507,7 +506,7 @@ export const ScheduleTestMainComponent = () => {
                                 }
                             />
                             <ScheduleTestFilters
-                                label="Evaluation"
+                                label={t('filters.evaluation')}
                                 data={EvaluationTypeData}
                                 selectedItems={
                                     selectedQuestionPaperFilters['evaluation_types'] || []
@@ -541,7 +540,7 @@ export const ScheduleTestMainComponent = () => {
                     ))}
                 </Tabs>
             </div>
-            <NoCourseDialog type={'Creating assessment'} isOpen={isOpen} setIsOpen={setIsOpen} />
+            <NoCourseDialog type={t('noCourseDialog.type')} isOpen={isOpen} setIsOpen={setIsOpen} />
         </>
     );
 };

@@ -1,0 +1,15 @@
+{
+    "toast": {
+        "errorAddingDoubt": "Erreur lors de l'ajout de la réponse"
+    },
+    "doubt": {
+        "status": {
+            "unknown": "Inconnu",
+            "resolved": "Résolu",
+            "unresolved": "Non résolu"
+        },
+        "anonymousUser": "Utilisateur anonyme",
+        "timestampLabel": "Horodatage : {{time}}",
+        "pageLabel": "Page : {{page}}"
+    }
+}

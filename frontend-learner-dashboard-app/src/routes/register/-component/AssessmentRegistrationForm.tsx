@@ -12,6 +12,7 @@ import {
   CheckCircle,
   ClipboardText,
   UserPlus,
+  EnvelopeSimple,
 } from "@phosphor-icons/react";
 import {
   InstituteBrandingComponent,
@@ -37,6 +38,10 @@ import { isRichTextEmpty, sanitizeHtml } from "@/lib/utils";
 import {
   calculateTimeDifference,
   calculateTimeLeft,
+  case1,
+  case2,
+  case3,
+  isEffectivelyUnbounded,
   getDynamicSchema,
   getOpenRegistrationUserDetailsByEmail,
 } from "../-utils/helper";
@@ -59,6 +64,7 @@ import {
 } from "@/lib/auth/sessionUtility";
 import { TokenKey } from "@/constants/auth/tokens";
 import { AxiosError } from "axios";
+import i18next from "i18next";
 import { toast } from "sonner";
 import AssessmentRegistrationCompleted from "./AssessmentRegistrationCompleted";
 import PostRegistrationOTPVerify from "./PostRegistrationOTPVerify";
@@ -66,6 +72,8 @@ import { useNavigate } from "@tanstack/react-router";
 import PhoneInputField from "@/components/design-system/phone-input-field";
 import { useInstituteDetails } from "../live-class/-hooks/useInstituteDetails";
 import { useTheme } from "@/providers/theme/theme-provider";
+import { useTranslation } from "react-i18next";
+import { classifyRequestError } from "../-utils/request-error";
 
 const MetaChip = ({
   icon,
@@ -101,65 +109,54 @@ const DateBlock = ({
   title: string;
   start: string;
   end: string;
-}) => (
-  <div className="flex flex-col gap-2 rounded-xl border border-neutral-100 bg-neutral-50 p-3">
-    <div className="flex items-center gap-1.5">
-      {icon}
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-700">
-        {title}
-      </h3>
-    </div>
-    <div className="flex flex-col gap-1 text-xs">
-      <div className="flex items-center gap-1.5">
-        <span className="inline-flex items-center rounded-md bg-success-50 px-1.5 py-0.5 text-caption font-semibold text-success-700">
-          START
-        </span>
-        <span className="text-neutral-700">{start}</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <span className="inline-flex items-center rounded-md bg-danger-50 px-1.5 py-0.5 text-caption font-semibold text-danger-700">
-          END
-        </span>
-        <span className="text-neutral-700">{end}</span>
-      </div>
-    </div>
-  </div>
-);
-
-const case1 = (serverTime: number, startDate: string) => {
-  const registrationStartDate: number = new Date(
-    Date.parse(startDate),
-  ).getTime();
-  return serverTime < registrationStartDate;
-};
-
-const case2 = (serverTime: number, startDate: string, endDate: string) => {
-  const registrationStartDate: number = new Date(
-    Date.parse(startDate),
-  ).getTime();
-  const registrationEndDate: number = new Date(Date.parse(endDate)).getTime();
+}) => {
+  const { t } = useTranslation("registrationA");
   return (
-    registrationStartDate <= serverTime && serverTime <= registrationEndDate
+    <div className="flex flex-col gap-2 rounded-xl border border-neutral-100 bg-neutral-50 p-3">
+      <div className="flex items-center gap-1.5">
+        {icon}
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-700">
+          {title}
+        </h3>
+      </div>
+      <div className="flex flex-col gap-1 text-xs">
+        <div className="flex items-center gap-1.5">
+          <span className="inline-flex items-center rounded-md bg-success-50 px-1.5 py-0.5 text-caption font-semibold text-success-700">
+            {t("form.dateBlock.start")}
+          </span>
+          <span className="text-neutral-700">
+            {start || t("form.dateBlock.noLimit")}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="inline-flex items-center rounded-md bg-danger-50 px-1.5 py-0.5 text-caption font-semibold text-danger-700">
+            {t("form.dateBlock.end")}
+          </span>
+          <span className="text-neutral-700">
+            {end || t("form.dateBlock.noLimit")}
+          </span>
+        </div>
+      </div>
+    </div>
   );
-};
-
-const case3 = (serverTime: number, endDate: string) => {
-  const registrationEndDate: number = new Date(Date.parse(endDate)).getTime();
-  return serverTime > registrationEndDate;
 };
 
 // Surface the backend's human-readable message (ErrorInfo.ex) when present,
 // falling back to the axios message. Also toasts plain Errors (e.g. the
 // client-side blank user_id guard) instead of letting them fail silently.
 const showRegistrationError = (error: unknown) => {
+  console.error("[register] registration failed:", error);
   if (error instanceof AxiosError) {
-    const serverMessage = (
-      error.response?.data as { ex?: string } | undefined
-    )?.ex;
-    toast.error(serverMessage || error.message, {
-      className: "error-toast",
-      duration: 2000,
-    });
+    const { kind, message } = classifyRequestError(error);
+    toast.error(
+      kind === "network"
+        ? i18next.t("registrationA:form.toast.networkError")
+        : message || error.message,
+      {
+        className: "error-toast",
+        duration: 3000,
+      },
+    );
   } else if (error instanceof Error) {
     toast.error(error.message, {
       className: "error-toast",
@@ -171,6 +168,7 @@ const showRegistrationError = (error: unknown) => {
 };
 
 const AssessmentRegistrationForm = () => {
+  const { t } = useTranslation("registrationA");
   const navigate = useNavigate();
   const [userHasAttemptCount, setUserHasAttemptCount] = useState(false);
   const [isAlreadyLoggedIn, setIsAlreadyLoggedIn] = useState(false);
@@ -180,6 +178,14 @@ const AssessmentRegistrationForm = () => {
   // CheckEmailStatusAlertDialog when an OTP is sent). onSubmit no longer relies
   // on this flag to decide the user_id — it keys off participantsDto.user_id.
   const [userAlreadyRegistered, setUserAlreadyRegistered] = useState(false);
+  // The "continue with your email" dialog. It never opens on its own: a
+  // first-time visitor goes straight to the form, and only a learner who says
+  // they registered before (or lands after registration closed) is asked.
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  // False until we know whether a saved session belongs to a learner already
+  // registered here. The loader stays up until then, so a returning learner
+  // never sees the form flash before their start screen.
+  const [sessionChecked, setSessionChecked] = useState(false);
   const { code } = Route.useSearch();
   const { data: instituteDetails } = useInstituteDetails();
   const { setPrimaryColor } = useTheme();
@@ -288,6 +294,11 @@ const AssessmentRegistrationForm = () => {
       ),
     );
 
+  const registrationDeadlineIsUnbounded = isEffectivelyUnbounded(
+    serverTime.current,
+    data.assessment_public_dto.registration_close_date,
+  );
+
   const [timeLeftForRegistrationCase2, setTimeLeftForRegistrationCase2] =
     useState(
       calculateTimeLeft(
@@ -386,7 +397,7 @@ const AssessmentRegistrationForm = () => {
       );
     },
     onSuccess: (_data, variables) => {
-      toast.success("You have been registered successfully!");
+      toast.success(t("form.toast.registeredSuccess"));
       setRegisteredEmail(variables.participantsDto.email);
     },
     onError: showRegistrationError,
@@ -404,7 +415,7 @@ const AssessmentRegistrationForm = () => {
     },
     onSuccess: async (response) => {
       if (!response?.user_id) {
-        toast.error("We couldn't resolve your account. Please try again.", {
+        toast.error(t("form.toast.accountUnresolved"), {
           className: "error-toast",
           duration: 3000,
         });
@@ -430,7 +441,7 @@ const AssessmentRegistrationForm = () => {
         participantsData,
         form.getValues(),
       );
-      toast.success("You have been registered successfully!");
+      toast.success(t("form.toast.registeredSuccess"));
       setRegisteredEmail(response.email);
     },
     onError: showRegistrationError,
@@ -515,7 +526,11 @@ const AssessmentRegistrationForm = () => {
   useEffect(() => {
     const fetchToken = async () => {
       const accessToken = await getTokenFromStorage(TokenKey.accessToken);
-      if (accessToken) {
+      if (!accessToken) return;
+      // Best effort: a stale token or a failed lookup simply means we treat
+      // the visitor as not logged in. Never let it surface as an unhandled
+      // rejection.
+      try {
         const decodedData = getTokenDecodedData(accessToken);
         const userId = decodedData?.user;
         const assessmentId = data.assessment_public_dto.assessment_id;
@@ -534,16 +549,39 @@ const AssessmentRegistrationForm = () => {
           psIds,
         );
         if (
-          getTestDetailsOfParticipants.is_already_registered &&
+          getTestDetailsOfParticipants?.is_already_registered &&
           getTestDetailsOfParticipants.remaining_attempts > 0
         ) {
           setIsAlreadyLoggedIn(true);
         }
+      } catch (error) {
+        console.warn("[register] logged-in status check skipped:", error);
       }
     };
 
-    fetchToken();
+    // Never hold the page longer than 5 s on this check: if the lookups hang,
+    // show the page as before and let the start screen replace it if they land.
+    const giveUp = setTimeout(() => setSessionChecked(true), 5000);
+    fetchToken().finally(() => {
+      clearTimeout(giveUp);
+      setSessionChecked(true);
+    });
+    return () => clearTimeout(giveUp);
   }, []);
+
+  // The page decided "not open yet" when it loaded. When the countdown reaches
+  // zero, load it again so the form appears without the learner refreshing.
+  // At most once every 15 s, so a clock a little off the server cannot loop.
+  useEffect(() => {
+    if (!case1Status) return;
+    const { days, hours, minutes, seconds } = timeLeftForRegistrationCase1;
+    if (days > 0 || hours > 0 || minutes > 0 || seconds > 0) return;
+    const key = `register-opened-reload:${code}`;
+    const last = Number(sessionStorage.getItem(key) || 0);
+    if (Date.now() - last < 15000) return;
+    sessionStorage.setItem(key, String(Date.now()));
+    window.location.reload();
+  }, [case1Status, timeLeftForRegistrationCase1, code]);
 
   useEffect(() => {
     if (data.error_message === "Assessment is Private") {
@@ -553,7 +591,12 @@ const AssessmentRegistrationForm = () => {
     }
   }, []);
 
-  if (isLoading) return <DashboardLoader />;
+  if (isLoading || !sessionChecked) return <DashboardLoader />;
+
+  const assessmentStillRunning = calculateTimeDifference(
+    serverTime.current,
+    data.assessment_public_dto.bound_end_time,
+  );
 
   if (
     userAlreadyRegistered &&
@@ -585,8 +628,12 @@ const AssessmentRegistrationForm = () => {
       />
     );
 
-  // Returning user who re-authenticated via OTP: already logged in, go straight to assessment.
-  if (isAlreadyLoggedIn && case2Status)
+  // A registered learner who is already signed in goes straight to the start
+  // screen — also after registration has closed, as long as the test is on.
+  if (
+    isAlreadyLoggedIn &&
+    (case2Status || (case3Status && assessmentStillRunning))
+  )
     return (
       <AssessmentRegistrationCompleted
         assessmentId={data.assessment_public_dto.assessment_id}
@@ -619,19 +666,49 @@ const AssessmentRegistrationForm = () => {
   // Render a clear "closed" screen instead of falling through to the
   // email-check dialog flow. The private-assessment case has its own
   // dedicated redirect handled elsewhere.
+  //
+  // "Not open yet" also arrives with can_register=false; it falls through to
+  // the countdown below instead of being called closed.
   if (
     data.can_register === false &&
-    data.error_message !== "Assessment is Private"
+    data.error_message !== "Assessment is Private" &&
+    !case1Status
   ) {
-    const isHardExpired = !calculateTimeDifference(
-      serverTime.current,
-      data.assessment_public_dto.bound_end_time,
-    );
+    if (!assessmentStillRunning) {
+      return (
+        <AssessmentClosedExpiredComponent
+          isExpired={true}
+          assessmentName={data.assessment_public_dto.assessment_name}
+        />
+      );
+    }
+    // Registration is over but the test is still on: anyone who registered
+    // earlier can sign in with their email and take it.
     return (
-      <AssessmentClosedExpiredComponent
-        isExpired={isHardExpired}
-        assessmentName={data.assessment_public_dto.assessment_name}
-      />
+      <>
+        {!userHasAttemptCount && (
+          <AssessmentClosedExpiredComponent
+            isExpired={false}
+            assessmentName={data.assessment_public_dto.assessment_name}
+            externalBranding={branding}
+            onContinueWithEmail={() => setEmailDialogOpen(true)}
+          />
+        )}
+        <CheckEmailStatusAlertDialog
+          timeLeft={timeLeft}
+          registrationData={data}
+          registrationForm={form}
+          setParticipantsDto={setParticipantsDto}
+          userAlreadyRegistered={userAlreadyRegistered}
+          setUserAlreadyRegistered={setUserAlreadyRegistered}
+          userHasAttemptCount={userHasAttemptCount}
+          setUserHasAttemptCount={setUserHasAttemptCount}
+          case3Status={true}
+          serverTime={serverTime.current}
+          open={emailDialogOpen}
+          onOpenChange={setEmailDialogOpen}
+        />
+      </>
     );
   }
 
@@ -658,16 +735,16 @@ const AssessmentRegistrationForm = () => {
       {case1Status && (
         <div className="flex justify-center items-start w-full p-3 sm:p-6 bg-gradient-to-b from-primary-50/40 via-background to-background">
           <div className="flex flex-col w-full max-w-2xl gap-5 bg-white/90 backdrop-blur-sm border border-primary-100 rounded-2xl px-4 sm:px-6 py-6 shadow-sm">
-            <div className="flex flex-col items-center gap-3">
+            <div className="flex flex-col items-center gap-stack">
               <InstituteBrandingComponent
                 branding={branding}
                 size="large"
                 showName={false}
               />
-              <div className="flex flex-col items-center gap-2 -mt-8">
+              <div className="flex flex-col items-center gap-2">
                 <span className="inline-flex items-center gap-1 rounded-full bg-warning-50 border border-warning-200 px-3 py-0.5 text-caption font-semibold uppercase tracking-wide text-warning-700">
                   <span className="size-1.5 rounded-full bg-warning-500 animate-pulse" />
-                  Registration Not Yet Open
+                  {t("form.notYetOpenBadge")}
                 </span>
                 <h1 className="text-base sm:text-2xl font-semibold text-center text-neutral-900">
                   {data?.assessment_public_dto?.assessment_name}
@@ -678,9 +755,11 @@ const AssessmentRegistrationForm = () => {
             <div className="flex flex-col items-center gap-2 rounded-2xl border border-primary-100 bg-gradient-to-r from-primary-50 to-primary-50/30 px-4 py-4">
               <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-primary-700">
                 <Timer size={14} weight="bold" />
-                Registration opens in
+                {t("form.opensIn")}
               </div>
               <span className="text-2xl sm:text-3xl font-bold tabular-nums text-primary-600">
+                {timeLeftForRegistrationCase1.days > 0 &&
+                  `${timeLeftForRegistrationCase1.days} ${t("form.countdown.dayUnit", { count: timeLeftForRegistrationCase1.days })} `}
                 {String(timeLeftForRegistrationCase1.hours).padStart(2, "0")}
                 :
                 {String(timeLeftForRegistrationCase1.minutes).padStart(2, "0")}
@@ -692,38 +771,38 @@ const AssessmentRegistrationForm = () => {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <MetaChip
                 icon={<Clock size={16} weight="bold" />}
-                label="Duration"
-                value={`${data.assessment_public_dto.duration} min`}
+                label={t("form.meta.duration")}
+                value={t("form.meta.durationValue", { minutes: data.assessment_public_dto.duration })}
               />
               <MetaChip
                 icon={<Exam size={16} weight="bold" />}
-                label="Mode"
+                label={t("form.meta.mode")}
                 value={data.assessment_public_dto.play_mode}
               />
               <MetaChip
                 icon={<Lightning size={16} weight="bold" />}
-                label="Evaluation"
+                label={t("form.meta.evaluation")}
                 value={data.assessment_public_dto.evaluation_type}
               />
               <MetaChip
                 icon={<ListChecks size={16} weight="bold" />}
-                label="Attempts"
+                label={t("form.meta.attempts")}
                 value={String(
                   data.assessment_public_dto.reattempt_count ?? 1,
                 )}
               />
             </div>
 
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-stack">
               <h2 className="text-sm font-semibold text-neutral-800 flex items-center gap-1.5">
                 <Calendar
                   size={16}
                   weight="bold"
                   className="text-primary-500"
                 />
-                Important Dates
+                {t("form.dates.heading")}
               </h2>
-              <div className="grid grid-cols-1 gap-3">
+              <div className="grid grid-cols-1 gap-stack">
                 <DateBlock
                   icon={
                     <UserPlus
@@ -732,7 +811,7 @@ const AssessmentRegistrationForm = () => {
                       className="text-info-600"
                     />
                   }
-                  title="Registration Window"
+                  title={t("form.dates.registrationWindow")}
                   start={convertToLocalDateTime(
                     data.assessment_public_dto.registration_open_date,
                   )}
@@ -748,7 +827,7 @@ const AssessmentRegistrationForm = () => {
                       className="text-warning-600"
                     />
                   }
-                  title="Assessment Live"
+                  title={t("form.dates.assessmentLive")}
                   start={convertToLocalDateTime(
                     data.assessment_public_dto.bound_start_time,
                   )}
@@ -767,7 +846,7 @@ const AssessmentRegistrationForm = () => {
                     weight="bold"
                     className="text-primary-500"
                   />
-                  Instructions
+                  {t("form.instructions")}
                 </h2>
                 <div
                   className="richtext-content text-sm text-neutral-600"
@@ -783,7 +862,7 @@ const AssessmentRegistrationForm = () => {
             {!isRichTextEmpty(data.assessment_public_dto.about?.content) && (
               <div className="flex flex-col gap-2 rounded-xl border border-neutral-100 bg-neutral-50 p-4">
                 <h2 className="text-sm font-semibold text-neutral-800">
-                  About Assessment
+                  {t("form.aboutAssessment")}
                 </h2>
                 <div
                   className="richtext-content text-sm text-neutral-600"
@@ -812,23 +891,25 @@ const AssessmentRegistrationForm = () => {
           setUserHasAttemptCount={setUserHasAttemptCount}
           case3Status={case3Status}
           serverTime={serverTime.current}
+          open={emailDialogOpen}
+          onOpenChange={setEmailDialogOpen}
         />
       )}
       {!userHasAttemptCount && case2Status && (
-        <div className="flex w-full items-start justify-center bg-gradient-to-b from-primary-50/40 via-background to-background gap-6 lg:gap-10 flex-col sm:flex-row p-2 sm:p-4">
+        <div className="flex w-full items-start justify-center bg-gradient-to-b from-primary-50/40 via-background to-background gap-section lg:gap-10 flex-col sm:flex-row p-2 sm:p-4">
           <div className="flex justify-center items-start w-full mt-2 sm:mt-4">
             <div className="flex flex-col w-full sm:w-11/12 gap-5 bg-white/90 backdrop-blur-sm border border-primary-100 rounded-2xl px-4 sm:px-6 py-6 shadow-sm">
               {/* Branding + title */}
-              <div className="flex flex-col items-center gap-3">
+              <div className="flex flex-col items-center gap-stack">
                 <InstituteBrandingComponent
                   branding={branding}
                   size="large"
                   showName={false}
                 />
-                <div className="flex flex-col items-center gap-2 -mt-8">
+                <div className="flex flex-col items-center gap-2">
                   <span className="inline-flex items-center gap-1 rounded-full bg-success-50 border border-success-200 px-3 py-0.5 text-caption font-semibold uppercase tracking-wide text-success-700">
                     <span className="size-1.5 rounded-full bg-success-500 animate-pulse" />
-                    Registration Open
+                    {t("form.openBadge")}
                   </span>
                   <h1 className="text-base sm:text-2xl font-semibold text-center text-neutral-900">
                     {data?.assessment_public_dto?.assessment_name}
@@ -840,45 +921,48 @@ const AssessmentRegistrationForm = () => {
               <div className="flex flex-col items-center gap-2 rounded-2xl border border-primary-100 bg-gradient-to-r from-primary-50 to-primary-50/30 px-4 py-4">
                 <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-primary-700">
                   <Timer size={14} weight="bold" />
-                  Registration closes in
+                  {registrationDeadlineIsUnbounded
+                    ? t("form.noClosingDate")
+                    : t("form.closesIn")}
                 </div>
-                {(timeLeftForRegistrationCase2.days > 0 ||
+                {(!registrationDeadlineIsUnbounded &&
+                  (timeLeftForRegistrationCase2.days > 0 ||
                   timeLeftForRegistrationCase2.hours > 0 ||
                   timeLeftForRegistrationCase2.minutes > 0 ||
-                  timeLeftForRegistrationCase2.seconds > 0) ? (
+                  timeLeftForRegistrationCase2.seconds > 0)) ? (
                   <div className="flex items-end gap-2 tabular-nums text-primary-600">
                     {timeLeftForRegistrationCase2.days > 0 && (
                       <div className="flex flex-col items-center">
                         <span className="text-2xl sm:text-3xl font-bold leading-none">
                           {timeLeftForRegistrationCase2.days}
                         </span>
-                        <span className="text-xs font-medium uppercase tracking-wider text-primary-400 mt-0.5">day{timeLeftForRegistrationCase2.days !== 1 ? "s" : ""}</span>
+                        <span className="text-xs font-medium uppercase tracking-wider text-primary-400 mt-0.5">{t("form.countdown.dayUnit", { count: timeLeftForRegistrationCase2.days })}</span>
                       </div>
                     )}
                     <div className="flex flex-col items-center">
                       <span className="text-2xl sm:text-3xl font-bold leading-none">
                         {String(timeLeftForRegistrationCase2.hours).padStart(2, "0")}
                       </span>
-                      <span className="text-xs font-medium uppercase tracking-wider text-primary-400 mt-0.5">hr</span>
+                      <span className="text-xs font-medium uppercase tracking-wider text-primary-400 mt-0.5">{t("form.countdown.hr")}</span>
                     </div>
                     <span className="text-2xl sm:text-3xl font-bold leading-none pb-4">:</span>
                     <div className="flex flex-col items-center">
                       <span className="text-2xl sm:text-3xl font-bold leading-none">
                         {String(timeLeftForRegistrationCase2.minutes).padStart(2, "0")}
                       </span>
-                      <span className="text-xs font-medium uppercase tracking-wider text-primary-400 mt-0.5">min</span>
+                      <span className="text-xs font-medium uppercase tracking-wider text-primary-400 mt-0.5">{t("form.countdown.min")}</span>
                     </div>
                     <span className="text-2xl sm:text-3xl font-bold leading-none pb-4">:</span>
                     <div className="flex flex-col items-center">
                       <span className="text-2xl sm:text-3xl font-bold leading-none">
                         {String(timeLeftForRegistrationCase2.seconds).padStart(2, "0")}
                       </span>
-                      <span className="text-xs font-medium uppercase tracking-wider text-primary-400 mt-0.5">sec</span>
+                      <span className="text-xs font-medium uppercase tracking-wider text-primary-400 mt-0.5">{t("form.countdown.sec")}</span>
                     </div>
                   </div>
                 ) : (
                   <span className="text-sm font-medium text-neutral-500">
-                    Closing soon
+                    {t("form.closingSoon")}
                   </span>
                 )}
                 <MyButton
@@ -889,7 +973,7 @@ const AssessmentRegistrationForm = () => {
                   className="block sm:hidden mt-1"
                   onClick={scrollToForm}
                 >
-                  Register Now
+                  {t("form.registerNowMobile")}
                 </MyButton>
               </div>
 
@@ -897,22 +981,22 @@ const AssessmentRegistrationForm = () => {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <MetaChip
                   icon={<Clock size={16} weight="bold" />}
-                  label="Duration"
-                  value={`${data.assessment_public_dto.duration} min`}
+                  label={t("form.meta.duration")}
+                  value={t("form.meta.durationValue", { minutes: data.assessment_public_dto.duration })}
                 />
                 <MetaChip
                   icon={<Exam size={16} weight="bold" />}
-                  label="Mode"
+                  label={t("form.meta.mode")}
                   value={data.assessment_public_dto.play_mode}
                 />
                 <MetaChip
                   icon={<Lightning size={16} weight="bold" />}
-                  label="Evaluation"
+                  label={t("form.meta.evaluation")}
                   value={data.assessment_public_dto.evaluation_type}
                 />
                 <MetaChip
                   icon={<ListChecks size={16} weight="bold" />}
-                  label="Attempts"
+                  label={t("form.meta.attempts")}
                   value={String(
                     data.assessment_public_dto.reattempt_count ?? 1,
                   )}
@@ -920,12 +1004,12 @@ const AssessmentRegistrationForm = () => {
               </div>
 
               {/* Important dates */}
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-stack">
                 <h2 className="text-sm font-semibold text-neutral-800 flex items-center gap-1.5">
                   <Calendar size={16} weight="bold" className="text-primary-500" />
-                  Important Dates
+                  {t("form.dates.heading")}
                 </h2>
-                <div className="grid grid-cols-1 gap-3">
+                <div className="grid grid-cols-1 gap-stack">
                   <DateBlock
                     icon={
                       <UserPlus
@@ -934,7 +1018,7 @@ const AssessmentRegistrationForm = () => {
                         className="text-info-600"
                       />
                     }
-                    title="Registration Window"
+                    title={t("form.dates.registrationWindow")}
                     start={convertToLocalDateTime(
                       data.assessment_public_dto.registration_open_date,
                     )}
@@ -950,7 +1034,7 @@ const AssessmentRegistrationForm = () => {
                         className="text-warning-600"
                       />
                     }
-                    title="Assessment Live"
+                    title={t("form.dates.assessmentLive")}
                     start={convertToLocalDateTime(
                       data.assessment_public_dto.bound_start_time,
                     )}
@@ -970,7 +1054,7 @@ const AssessmentRegistrationForm = () => {
                       weight="bold"
                       className="text-primary-500"
                     />
-                    Instructions
+                    {t("form.instructions")}
                   </h2>
                   <div
                     className="richtext-content text-sm text-neutral-600"
@@ -987,7 +1071,7 @@ const AssessmentRegistrationForm = () => {
               {!isRichTextEmpty(data.assessment_public_dto.about?.content) && (
                 <div className="flex flex-col gap-2 rounded-xl border border-neutral-100 bg-neutral-50 p-4">
                   <h2 className="text-sm font-semibold text-neutral-800">
-                    About Assessment
+                    {t("form.aboutAssessment")}
                   </h2>
                   <div
                     className="richtext-content text-sm text-neutral-600"
@@ -1013,12 +1097,28 @@ const AssessmentRegistrationForm = () => {
                 </div>
                 <div className="flex-1">
                   <h1 className="text-lg font-semibold text-neutral-900">
-                    Registration Form
+                    {t("common.registrationFormHeading")}
                   </h1>
                   <p className="text-xs sm:text-sm text-neutral-500 mt-0.5">
-                    Fill in your details to register for this assessment.
+                    {t("form.registrationFormSubheading")}
                   </p>
                 </div>
+              </div>
+              <div className="mt-4 flex w-full flex-wrap items-center justify-between gap-2 rounded-xl border border-primary-100 bg-primary-50/50 px-3 py-2.5">
+                <span className="text-xs sm:text-sm text-neutral-600">
+                  {t("form.alreadyRegistered")}
+                </span>
+                <MyButton
+                  type="button"
+                  buttonType="secondary"
+                  scale="medium"
+                  layoutVariant="default"
+                  className="gap-1.5"
+                  onClick={() => setEmailDialogOpen(true)}
+                >
+                  <EnvelopeSimple size={14} weight="bold" />
+                  {t("form.continueWithEmail")}
+                </MyButton>
               </div>
               {!isRichTextEmpty(
                 data.assessment_public_dto.registration_instructions?.content,
@@ -1045,8 +1145,13 @@ const AssessmentRegistrationForm = () => {
                 </div>
               )}
               <FormProvider {...form}>
-                <form className="w-full flex flex-col gap-6 mt-5 sm:max-h-screen-70 sm:overflow-auto pe-1">
+                <form className="w-full flex flex-col gap-section mt-5 sm:max-h-screen-70 sm:overflow-auto pe-1">
                   {Object.entries(form.getValues()).map(([key, value]) => {
+                    // A value without `name` is not a real form field (e.g. a
+                    // key injected by a reset for a field this form doesn't
+                    // have). Rendering it throws on `capitalise(value.name)`
+                    // and the route's errorComponent shows "Expired".
+                    if (!value || typeof value.name !== "string") return null;
                     if (key === "phone_number") {
                       return (
                         <FormField
@@ -1057,8 +1162,8 @@ const AssessmentRegistrationForm = () => {
                             <FormItem>
                               <FormControl>
                                 <PhoneInputField
-                                  label="Phone Number"
-                                  placeholder="123 456 7890"
+                                  label={t("form.phoneNumberLabel")}
+                                  placeholder={t("form.phoneNumberPlaceholder")}
                                   name={`${key}.value`}
                                   control={form.control}
                                   required
@@ -1119,7 +1224,7 @@ const AssessmentRegistrationForm = () => {
                       />
                     );
                   })}
-                  <div className="flex items-center justify-center flex-col gap-3 border-t border-neutral-100 pt-2">
+                  <div className="flex items-center justify-center flex-col gap-stack border-t border-neutral-100 pt-2">
                     <MyButton
                       type="button"
                       buttonType="primary"
@@ -1137,7 +1242,7 @@ const AssessmentRegistrationForm = () => {
                         },
                       )}
                     >
-                      Register
+                      {t("form.register")}
                       <ArrowRight
                         size={16}
                         weight="bold"
@@ -1148,7 +1253,7 @@ const AssessmentRegistrationForm = () => {
                       className="border-none !text-primary-500 !text-sm mb-1 cursor-pointer hover:underline"
                       onClick={() => form.reset()}
                     >
-                      Reset Form
+                      {t("form.resetForm")}
                     </p>
                   </div>
                 </form>

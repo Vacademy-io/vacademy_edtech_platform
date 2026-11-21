@@ -1,0 +1,57 @@
+{
+    "filters": {
+        "pending": "قيد الانتظار",
+        "approved": "تمت الموافقة",
+        "rejected": "مرفوض",
+        "all": "الكل"
+    },
+    "status": {
+        "approved": "تمت الموافقة",
+        "rejected": "مرفوض",
+        "pending": "قيد الانتظار"
+    },
+    "requestType": {
+        "timeIncrease": "زيادة الوقت",
+        "reattempt": "إعادة المحاولة"
+    },
+    "summary": {
+        "currentlyAllowed": "المسموح به حاليًا: {{value}}",
+        "used": "المستخدم: {{value}}",
+        "requested": "تم الطلب في {{date}}",
+        "reviewedOn": "في {{date}}",
+        "grantedCount_zero": "لم يتم منح أي محاولات ({{count}})",
+        "grantedCount_one": "تم منح محاولة واحدة ({{count}})",
+        "grantedCount_two": "تم منح محاولتين ({{count}})",
+        "grantedCount_few": "تم منح {{count}} محاولات",
+        "grantedCount_many": "تم منح {{count}} محاولة",
+        "grantedCount_other": "تم منح {{count}} محاولة"
+    },
+    "form": {
+        "attemptsToGrantLabel": "عدد المحاولات الممنوحة",
+        "attemptsRangeError": "من 1 إلى 20"
+    },
+    "actions": {
+        "approve": "الموافقة",
+        "reject": "الرفض"
+    },
+    "toasts": {
+        "granted_zero": "لم يتم منح أي محاولات ({{count}}) إلى {{name}}.",
+        "granted_one": "تم منح محاولة واحدة ({{count}}) إلى {{name}}.",
+        "granted_two": "تم منح محاولتين ({{count}}) إلى {{name}}.",
+        "granted_few": "تم منح {{count}} محاولات إلى {{name}}.",
+        "granted_many": "تم منح {{count}} محاولة إلى {{name}}.",
+        "granted_other": "تم منح {{count}} محاولة إلى {{name}}.",
+        "theLearner": "المتعلم",
+        "rejected": "تم رفض الطلب.",
+        "updateFailed": "تعذر تحديث هذا الطلب. يرجى المحاولة مرة أخرى."
+    },
+    "error": {
+        "title": "تعذر تحميل الطلبات",
+        "tryAgain": "أعد المحاولة"
+    },
+    "empty": {
+        "titleAll": "لا توجد طلبات",
+        "titleFiltered": "لا توجد طلبات {{status}}",
+        "description": "يمكن للمتعلمين طلب محاولة أخرى أو وقت إضافي من داخل الاختبار. تظهر طلباتهم هنا."
+    }
+}

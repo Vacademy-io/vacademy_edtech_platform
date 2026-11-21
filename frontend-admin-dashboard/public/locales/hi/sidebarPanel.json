@@ -1,0 +1,23 @@
+{
+    "logoAlt": "लोगो",
+    "poweredBy": "समर्थित",
+    "recentTabs": {
+        "heading": "हाल ही में देखे गए",
+        "emptyTitle": "कोई हाल का टैब नहीं",
+        "emptyDescription": "पेजों पर जाएं और वे यहां दिखाई देंगे"
+    },
+    "support": {
+        "button": "सहायता",
+        "planTooltip": "{{plan}} सहायता योजना",
+        "plan": {
+            "dedicated": "समर्पित",
+            "premium": "प्रीमियम",
+            "average": "औसत",
+            "low": "निम्न",
+            "none": "कोई योजना नहीं"
+        }
+    },
+    "settings": {
+        "searchPlaceholder": "सेटिंग्स खोजें"
+    }
+}

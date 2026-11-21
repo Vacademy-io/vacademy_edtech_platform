@@ -1,0 +1,14 @@
+{
+    "title": "صندوق البريد الإلكتروني",
+    "refresh": "تحديث",
+    "inboxFor": "صندوق الوارد لـ",
+    "noSendersConfigured": "لم يتم تهيئة أي مرسل",
+    "allSenders": "جميع المرسلين ({{count}})",
+    "direction": {
+        "all": "الكل",
+        "sent": "المرسلة",
+        "received": "المستلمة"
+    },
+    "searchPlaceholder": "ابحث في البريد حسب العنوان أو الموضوع",
+    "clearSearch": "مسح البحث"
+}

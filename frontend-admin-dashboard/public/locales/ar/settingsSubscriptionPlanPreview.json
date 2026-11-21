@@ -1,0 +1,22 @@
+{
+    "cardTitle": "معاينة فترات الاشتراك",
+    "subtitle": "معاينة حيّة لفترات اشتراكك مع مقارنة الميزات",
+    "errors": {
+        "missingPlans": "خطأ: بيانات خطط الاشتراك مفقودة",
+        "missingCurrency": "خطأ: لم يتم تحديد العملة"
+    },
+    "emptyState": {
+        "title": "لا توجد فترات اشتراك مفعّلة بعد",
+        "description": "فعّل الفترات وحدد الأسعار في الإعدادات لعرض بطاقات المعاينة",
+        "howToTitle": "لعرض خطة:",
+        "step1": "فعّل الخطة باستخدام المفتاح",
+        "step2": "حدد سعرًا صالحًا أكبر من 0"
+    },
+    "plan": {
+        "customIntervalTitle": "خطة {{interval}}",
+        "defaultTitle": "خطة مخصصة",
+        "percentOff": "خصم {{value}}%",
+        "amountOff": "خصم {{symbol}}{{value}}",
+        "selectPlan": "اختر الخطة"
+    }
+}

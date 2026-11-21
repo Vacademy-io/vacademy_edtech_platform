@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { MyButton } from '@/components/design-system/button';
@@ -14,14 +15,17 @@ import {
     useSecondsTicker,
 } from './pulse-shared';
 
-const STATE_META: Record<PulseState, { label: string; chip: string; rail: string }> = {
-    NEEDS_HELP: { label: 'Needs help', chip: 'bg-danger-50 text-danger-600', rail: 'bg-danger-500' },
-    IDLE: { label: 'Idle', chip: 'bg-warning-50 text-warning-600', rail: 'bg-warning-500' },
-    ACTIVE: { label: 'Active', chip: 'bg-success-50 text-success-600', rail: 'bg-success-500' },
-};
+function useStateMeta(t: (key: string) => string): Record<PulseState, { label: string; chip: string; rail: string }> {
+    return {
+        NEEDS_HELP: { label: t('needsHelp'), chip: 'bg-danger-50 text-danger-600', rail: 'bg-danger-500' },
+        IDLE: { label: t('idle'), chip: 'bg-warning-50 text-warning-600', rail: 'bg-warning-500' },
+        ACTIVE: { label: t('active'), chip: 'bg-success-50 text-success-600', rail: 'bg-success-500' },
+    };
+}
 
 function RosterRow({ row, secondsSinceFetch }: { row: PulseRosterRow; secondsSinceFetch: number }) {
-    const meta = STATE_META[row.state];
+    const { t } = useTranslation('studyLibraryPulseRosterView');
+    const meta = useStateMeta(t)[row.state];
     const Icon = slideIconFor(row.slideType);
     const liveSeconds = row.onSlideSeconds + secondsSinceFetch;
 
@@ -39,11 +43,11 @@ function RosterRow({ row, secondsSinceFetch }: { row: PulseRosterRow; secondsSin
 
             <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-neutral-700">
-                    {row.fullName ?? 'Unknown learner'}
+                    {row.fullName ?? t('unknownLearner')}
                 </p>
                 <p className="flex items-center gap-1.5 truncate text-xs text-neutral-500">
                     <Icon size={14} className="shrink-0 text-neutral-400" />
-                    <span className="truncate">{row.slideTitle ?? 'Untitled slide'}</span>
+                    <span className="truncate">{row.slideTitle ?? t('untitledSlide')}</span>
                 </p>
             </div>
 
@@ -59,6 +63,7 @@ function RosterRow({ row, secondsSinceFetch }: { row: PulseRosterRow; secondsSin
 }
 
 export default function RosterView({ batchId }: { batchId: string }) {
+    const { t } = useTranslation('studyLibraryPulseRosterView');
     const { data, isLoading, isError, refetch, dataUpdatedAt, isFetching } = useQuery(
         pulseSummaryQueryOptions(batchId)
     );
@@ -81,11 +86,11 @@ export default function RosterView({ batchId }: { batchId: string }) {
             <div className="rounded-lg border border-neutral-200 bg-white shadow-sm">
                 <PulseMessage
                     tone="danger"
-                    title="Couldn't load live pulse."
-                    subtitle="Check your connection and try again."
+                    title={t('couldNotLoadLivePulse')}
+                    subtitle={t('checkConnectionAndRetry')}
                     action={
                         <MyButton buttonType="secondary" scale="medium" onClick={() => refetch()}>
-                            Retry
+                            {t('retry')}
                         </MyButton>
                     }
                 />
@@ -101,29 +106,29 @@ export default function RosterView({ batchId }: { batchId: string }) {
             <LiveStatusLine secondsSinceFetch={secondsSinceFetch} isFetching={isFetching} />
 
             <div className="grid grid-cols-2 gap-2.5 md:grid-cols-5">
-                <KpiCard label="Active now" value={counts?.active ?? 0} hint="seen in last 2 min" tone="bg-success-500" />
-                <KpiCard label="Idle" value={counts?.idle ?? 0} hint="open, not engaging" tone="bg-warning-500" />
-                <KpiCard label="Offline" value={counts?.offline ?? 0} hint={`of ${counts?.enrolled ?? 0} enrolled`} tone="bg-neutral-300" />
-                <KpiCard label="Need help" value={counts?.needHelp ?? 0} hint="stuck on a slide" tone="bg-danger-500" />
-                <KpiCard label="Enrolled" value={counts?.enrolled ?? 0} hint="in this batch" tone="bg-primary-500" />
+                <KpiCard label={t('activeNow')} value={counts?.active ?? 0} hint={t('seenInLast2Min')} tone="bg-success-500" />
+                <KpiCard label={t('idle')} value={counts?.idle ?? 0} hint={t('openNotEngaging')} tone="bg-warning-500" />
+                <KpiCard label={t('offline')} value={counts?.offline ?? 0} hint={t('ofEnrolled', { count: counts?.enrolled ?? 0 })} tone="bg-neutral-300" />
+                <KpiCard label={t('needHelp')} value={counts?.needHelp ?? 0} hint={t('stuckOnASlide')} tone="bg-danger-500" />
+                <KpiCard label={t('enrolled')} value={counts?.enrolled ?? 0} hint={t('inThisBatch')} tone="bg-primary-500" />
             </div>
 
             <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm">
                 <div className="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-2.5">
                     <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                        Roster · needs attention first
+                        {t('rosterNeedsAttentionFirst')}
                     </p>
                     {data && data.totalPresent > roster.length && (
                         <p className="text-xs text-neutral-400">
-                            showing {roster.length} of {data.totalPresent} active
+                            {t('showingOfActive', { showing: roster.length, total: data.totalPresent })}
                         </p>
                     )}
                 </div>
 
                 {roster.length === 0 ? (
                     <PulseMessage
-                        title="No one's active in this batch right now"
-                        subtitle="Learners appear here the moment they open a slide."
+                        title={t('noOneActiveInBatch')}
+                        subtitle={t('learnersAppearHere')}
                     />
                 ) : (
                     roster.map((row) => (

@@ -1,0 +1,21 @@
+{
+    "title": "Accès hors ligne",
+    "enabled": {
+        "label": "Autoriser les téléchargements hors ligne pour tout l'établissement",
+        "hint": "Interrupteur principal. Désactivé, il annule toute autorisation hors ligne au niveau cours/promotion/nœud, quels que soient leurs propres réglages, et masque l'onglet Téléchargements du cours pour chaque rôle (chaque rôle conserve son propre bouton Téléchargements dans les paramètres d'affichage pour quand cette option sera réactivée)."
+    },
+    "revalidationDays": {
+        "label": "Durée de revalidation (jours)",
+        "hint": "Un appareil hors ligne doit se reconnecter en ligne dans ce délai (1 à 90 jours), sinon son contenu téléchargé se verrouille."
+    },
+    "maxDevices": {
+        "label": "Nombre maximal d'appareils hors ligne par apprenant",
+        "hint": "Nombre d'appareils hors ligne enregistrés simultanément (1 à 10) avant que l'enregistrement ne soit bloqué avec DEVICE_LIMIT_REACHED."
+    },
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "toasts": {
+        "saveSuccess": "Paramètres d'accès hors ligne enregistrés",
+        "saveError": "Échec de l'enregistrement des paramètres d'accès hors ligne"
+    }
+}

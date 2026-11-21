@@ -1,0 +1,16 @@
+{
+    "dialogs": {
+        "attentionLabel": "تنبيه",
+        "removeParticipant": {
+            "title": "إزالة المشارك",
+            "confirmMessagePrefix": "هل أنت متأكد أنك تريد إزالة",
+            "confirmMessageSuffix": "من هذا التقييم؟",
+            "remove": "إزالة"
+        }
+    },
+    "dropdown": {
+        "sendWhatsApp": "إرسال تذكير عبر واتساب",
+        "sendEmail": "إرسال تذكير عبر البريد الإلكتروني",
+        "removeParticipants": "إزالة المشاركين"
+    }
+}

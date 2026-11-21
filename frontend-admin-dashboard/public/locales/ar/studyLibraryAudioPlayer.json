@@ -1,0 +1,13 @@
+{
+    "audioPlayer": "مشغل الصوت",
+    "replace": "استبدال",
+    "noAudioUploaded": "لم يتم تحميل أي صوت",
+    "uploadingEllipsis": "جارٍ التحميل...",
+    "clickOrDragHint": "انقر أو اسحب ملف الصوت هنا",
+    "supportedFormats": "المدعوم: MP3، WAV، OGG، M4A",
+    "titlePlaceholder": "عنوان الصوت (اختياري)",
+    "selectAudioFile": "يرجى اختيار ملف صوتي",
+    "uploadFailedError": "فشل التحميل",
+    "failedToGetUrl": "فشل الحصول على الرابط",
+    "uploadFailedAlert": "فشل تحميل ملف الصوت"
+}

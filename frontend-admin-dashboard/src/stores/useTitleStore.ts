@@ -4,7 +4,11 @@ import { getCachedInstituteBranding } from '@/services/domain-routing';
 interface TitleStore {
     globalTitle: string | null;
     globalFavicon: string | null;
+    /** The sidebar section the user is on ("All Leads"), shown ahead of the
+     *  institute's title so browser tabs on different lists can be told apart. */
+    sectionTitle: string | null;
     setGlobalTitle: (title: string | null) => void;
+    setSectionTitle: (title: string | null) => void;
     setGlobalFavicon: (faviconUrl: string | null) => void;
     updateTitleFromCache: () => void;
     ensureCorrectTitle: () => void;
@@ -14,9 +18,15 @@ interface TitleStore {
 export const useTitleStore = create<TitleStore>((set, get) => ({
     globalTitle: null,
     globalFavicon: null,
+    sectionTitle: null,
 
     setGlobalTitle: (title: string | null) => {
         set({ globalTitle: title });
+        get().ensureCorrectTitle();
+    },
+
+    setSectionTitle: (title: string | null) => {
+        set({ sectionTitle: title });
         get().ensureCorrectTitle();
     },
 
@@ -31,7 +41,7 @@ export const useTitleStore = create<TitleStore>((set, get) => ({
             const tabText = cached?.tabText;
             const title = tabText && tabText.trim() ? tabText.trim() : 'Admin Dashboard';
             set({ globalTitle: title });
-            document.title = title;
+            get().ensureCorrectTitle();
 
             // Also update favicon from cache
             const faviconUrl = cached?.tabIconUrl;
@@ -46,8 +56,9 @@ export const useTitleStore = create<TitleStore>((set, get) => ({
     },
 
     ensureCorrectTitle: () => {
-        const { globalTitle } = get();
-        const finalTitle = globalTitle || 'Admin Dashboard';
+        const { globalTitle, sectionTitle } = get();
+        const baseTitle = globalTitle || 'Admin Dashboard';
+        const finalTitle = sectionTitle ? `${sectionTitle} · ${baseTitle}` : baseTitle;
         if (document.title !== finalTitle) {
             document.title = finalTitle;
         }

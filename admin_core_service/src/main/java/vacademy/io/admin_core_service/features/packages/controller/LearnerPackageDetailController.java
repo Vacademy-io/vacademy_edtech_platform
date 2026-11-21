@@ -32,6 +32,9 @@ public class LearnerPackageDetailController {
             @RequestParam(defaultValue = PageConstants.DEFAULT_PAGE_SIZE) int size) {
         String authUserId = org.springframework.util.StringUtils.hasText(user.getUserId()) ? user.getUserId()
                 : user.getId();
+        // Shipping and deposits are enrolments only so they flow through the payment plumbing;
+        // the learner never studies them. The admin endpoint below still lists them.
+        filterDTO.setExcludeChargePackages(true);
         Page<PackageDetailDTO> result = learnerPackageService.getLearnerPackageDetail(filterDTO, authUserId,
                 instituteId, page, size);
         return ResponseEntity.ok(result);

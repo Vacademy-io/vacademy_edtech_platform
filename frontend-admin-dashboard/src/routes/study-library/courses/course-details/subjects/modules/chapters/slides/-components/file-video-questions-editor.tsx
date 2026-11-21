@@ -3,6 +3,7 @@
 import { getActiveRoleDisplaySettingsKey } from '@/lib/auth/instituteUtils';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -53,6 +54,7 @@ interface FileVideoQuestionsEditorProps {
 export const FileVideoQuestionsEditor: React.FC<FileVideoQuestionsEditorProps> = ({
     videoRef,
 }) => {
+    const { t } = useTranslation('studyLibraryFileVideoQuestionsEditor');
     const searchParams = Route.useSearch();
     const isAddTimeFrameRef = useRef<HTMLButtonElement | null>(null);
     const isAddQuestionTypeRef = useRef<HTMLButtonElement | null>(null);
@@ -286,10 +288,10 @@ export const FileVideoQuestionsEditor: React.FC<FileVideoQuestionsEditorProps> =
                 newSlide: false,
             });
             await addUpdateVideoSlide(payload);
-            toast.success('Question deleted');
+            toast.success(t('toasts.questionDeleted'));
         } catch (err) {
             console.error('Failed to delete question:', err);
-            toast.error('Failed to delete question');
+            toast.error(t('toasts.questionDeleteFailed'));
         }
     };
 
@@ -334,10 +336,11 @@ export const FileVideoQuestionsEditor: React.FC<FileVideoQuestionsEditorProps> =
                             {hoveredQuestion === question && (
                                 <div className="absolute bottom-5 left-1/2 z-10 w-48 -translate-x-1/2 rounded border border-gray-300 bg-white p-4 shadow-xl">
                                     <p className="text-sm text-gray-500">
-                                        Timestamp:{' '}
-                                        {formatTimeStudyLibraryInSeconds(
-                                            timestampToSeconds(question.timestamp)
-                                        )}
+                                        {t('labels.timestamp', {
+                                            time: formatTimeStudyLibraryInSeconds(
+                                                timestampToSeconds(question.timestamp)
+                                            ),
+                                        })}
                                     </p>
                                     <span
                                         className="text-sm font-medium"
@@ -403,10 +406,12 @@ export const FileVideoQuestionsEditor: React.FC<FileVideoQuestionsEditorProps> =
                             >
                                 <div className="flex items-center gap-2">
                                     <p className="font-semibold">
-                                        {idx + 1}. Time stamp -{' '}
-                                        {formatTimeStudyLibraryInSeconds(
-                                            timestampToSeconds(question.timestamp)
-                                        )}
+                                        {t('labels.timeStampIndexed', {
+                                            index: idx + 1,
+                                            time: formatTimeStudyLibraryInSeconds(
+                                                timestampToSeconds(question.timestamp)
+                                            ),
+                                        })}
                                     </p>
                                     <VideoQuestionsTimeFrameEditDialog
                                         playerRef={controllerRef}
@@ -452,16 +457,14 @@ export const FileVideoQuestionsEditor: React.FC<FileVideoQuestionsEditorProps> =
                                                     />
                                                 </DialogClose>
                                                 <h1 className="rounded-t-lg bg-primary-50 p-4 font-semibold text-primary-500">
-                                                    Delete Question
+                                                    {t('deleteDialog.title')}
                                                 </h1>
                                                 <div className="flex flex-col gap-1 p-5">
                                                     <p className="text-subtitle font-semibold text-neutral-700">
-                                                        Are you sure you want to delete this
-                                                        question?
+                                                        {t('deleteDialog.confirmMessage')}
                                                     </p>
                                                     <p className="text-body text-neutral-500">
-                                                        This permanently removes the question at this
-                                                        timestamp and can&apos;t be undone.
+                                                        {t('deleteDialog.description')}
                                                     </p>
                                                 </div>
                                                 <div className="flex flex-col-reverse justify-end gap-2 border-t border-neutral-200 p-4 sm:flex-row sm:gap-3">
@@ -474,7 +477,7 @@ export const FileVideoQuestionsEditor: React.FC<FileVideoQuestionsEditorProps> =
                                                             closeDeleteDialogRef.current?.click()
                                                         }
                                                     >
-                                                        Cancel
+                                                        {t('actions.cancel')}
                                                     </MyButton>
                                                     <MyButton
                                                         type="button"
@@ -489,7 +492,7 @@ export const FileVideoQuestionsEditor: React.FC<FileVideoQuestionsEditorProps> =
                                                             );
                                                         }}
                                                     >
-                                                        Delete
+                                                        {t('actions.delete')}
                                                     </MyButton>
                                                 </div>
                                             </DialogContent>
@@ -577,7 +580,7 @@ export const FileVideoQuestionsEditor: React.FC<FileVideoQuestionsEditorProps> =
                                                                             size={16}
                                                                             weight="fill"
                                                                         />
-                                                                        Correct
+                                                                        {t('labels.correct')}
                                                                     </span>
                                                                 )}
                                                             </span>

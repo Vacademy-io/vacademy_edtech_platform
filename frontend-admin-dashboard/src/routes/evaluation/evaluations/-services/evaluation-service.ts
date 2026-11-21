@@ -56,6 +56,12 @@ export interface EvaluationDraftState {
     pageNumber: number;
     pagesVisited: number[];
     savedAt: string;
+    // Per-page view rotation (0/90/180/270) the evaluator applied to read a
+    // sideways/upside-down scan, plus the annotation canvas size that was in
+    // effect when each page's marks were captured — both optional so drafts
+    // saved before this existed still restore cleanly.
+    pageRotations?: Record<number, number>;
+    pageCanvasDims?: Record<number, { width: number; height: number }>;
 }
 
 export interface EvaluationDraftDto {

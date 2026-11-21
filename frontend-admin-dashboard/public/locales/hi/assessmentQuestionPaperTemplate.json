@@ -1,0 +1,43 @@
+{
+    "common": {
+        "questionCount_one": "{{count}} प्रश्न",
+        "questionCount_other": "{{count}} प्रश्न",
+        "tagCount_one": "{{count}} टैग",
+        "tagCount_other": "{{count}} टैग"
+    },
+    "header": {
+        "logoAlt": "लोगो",
+        "untitled": "शीर्षकहीन",
+        "exit": "बाहर निकलें",
+        "save": "सहेजें"
+    },
+    "sidebar": {
+        "questionsLabel": "प्रश्न",
+        "questionIncompleteAriaLabel": "प्रश्न पूरा नहीं है",
+        "questionIncompleteTooltip": "प्रश्न पूरा नहीं है"
+    },
+    "actions": {
+        "addQuestion": "प्रश्न जोड़ें"
+    },
+    "dialogs": {
+        "addQuestion": {
+            "title": "प्रश्न जोड़ें"
+        }
+    },
+    "emptyState": {
+        "title": "अभी तक कोई प्रश्न नहीं",
+        "description": "यह प्रश्नपत्र बनाना शुरू करने के लिए अपना पहला प्रश्न जोड़ें।"
+    },
+    "tags": {
+        "title": "विषय / टॉपिक टैग",
+        "description": "रिपोर्ट और प्रश्न खोज में प्रश्नों को समूहबद्ध करने के लिए उपयोग किया जाता है।",
+        "applyToAll": "सभी प्रश्नों पर लागू करें"
+    },
+    "toasts": {
+        "addTagFirst": "पहले इस प्रश्न में कम से कम एक टैग जोड़ें",
+        "tagsApplied": "{{tags}} को सभी {{questions}} पर लागू किया गया",
+        "updateSuccess": "प्रश्नपत्र सफलतापूर्वक अपडेट किया गया",
+        "incompleteQuestions": "आपके कुछ प्रश्न अधूरे हैं या ध्यान देने की आवश्यकता है!",
+        "numericAnswerMissing": "सेव करने से पहले प्रश्न {{number}} का सही उत्तर डालें"
+    }
+}

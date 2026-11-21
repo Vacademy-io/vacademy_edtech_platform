@@ -38,6 +38,17 @@ describe('renderLatexDelimiters', () => {
         ).toEqual(['math-block:\\int_0^1 x^2 dx = \\frac{1}{3}']);
     });
 
+    it('converts a coordinate pair or a bare arithmetic expression', () => {
+        // SN Class 9 maths, Q18: "If $(2,0)$ is a solution …" stayed as source.
+        const point = renderLatexDelimiters(
+            '<p>If $(2,0)$ is a solution of $2x+3y=k$, find k.</p>'
+        );
+        expect(point).toContain('data-latex="(2,0)"');
+        expect(point).toContain('data-latex="2x+3y=k"');
+        expect(point).not.toContain('$');
+        expect(renderLatexDelimiters('<p>So $2+2$ is four.</p>')).toContain('data-latex="2+2"');
+    });
+
     it('leaves prices and plain prose alone', () => {
         const money = '<p>Plans cost $5 and $10 per month.</p>';
         expect(renderLatexDelimiters(money)).toBe(money);
@@ -65,5 +76,42 @@ describe('renderLatexDelimiters', () => {
     it('passes through empty / null content', () => {
         expect(renderLatexDelimiters('')).toBe('');
         expect(renderLatexDelimiters(null)).toBe('');
+    });
+
+    it('leaves escaped braces alone (\\left\\{ … \\right.)', () => {
+        const tex = String.raw`g(x)=\left\{\begin{array}{ll}k \sqrt{x+1}, & 0 \leq x \leq 3 \\ mx+2, & 3<x \leq 5\end{array}\right.`;
+        // As stored by the paper converter: "<" inside the formula is "&lt;".
+        const out = renderLatexDelimiters(
+            `<p>If the function, $${tex.replace('<', '&lt;')}$ is differentiable</p>`
+        );
+        expect(latexOf(out)).toEqual([`math-inline:${tex}`]);
+        expect(out).not.toContain('katex-error');
+    });
+
+    // The question-paper converter wraps display maths as
+    // `<div class="math-block">$$ … $$</div>` — the editor's class, but with no
+    // data-latex. It used to be skipped here and then dropped as an empty formula.
+    it('renders a converter math-block wrapper instead of skipping it', () => {
+        const body = String.raw`\begin{aligned}
+& \text { So, } 52 m+42 f=50(m+f) \\
+& \Rightarrow m=4 f
+\end{aligned}`;
+        const out = renderLatexDelimiters(`<p>Sum of ages</p><div class="math-block">$$
+${body}
+$$</div><p>Let the total be 100.</p>`);
+        expect(latexOf(out)).toEqual([`math-block:${body}`]);
+        expect(out).not.toContain('$$');
+        expect(out).not.toContain('katex-error');
+        expect(out).toContain('Let the total be 100.');
+    });
+
+    it('keeps an editor math node (it has data-latex) as it is', () => {
+        const html = '<div class="math-block" data-latex="x^2"><span class="katex">x2</span></div>';
+        expect(renderLatexDelimiters(`<p>$y$</p>${html}`)).toContain(html);
+    });
+
+    it('keeps a math-block that already holds a rendered formula', () => {
+        const html = '<div class="math-block"><span class="katex">$x$</span></div>';
+        expect(renderLatexDelimiters(`<p>$y$</p>${html}`)).toContain(html);
     });
 });

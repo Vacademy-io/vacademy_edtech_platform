@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Form } from '@/components/ui/form';
@@ -11,14 +13,15 @@ import { MagnifyingGlass, X } from '@phosphor-icons/react';
 import { useAutosuggestUsers } from '../../../-hooks/useAutosuggestUsers';
 import { AutosuggestUser, ParentLinkPersonInput } from '../../../-types/bulk-assign-types';
 
-const createNewSchema = z.object({
-    fullName: z.string().min(1, 'Name is required'),
-    email: z.string().email('Enter a valid email'),
-    // PhoneInputField (react-phone-input-2) already restricts entry to
-    // digits and formats per country — no extra numeric regex needed here.
-    mobileNumber: z.string().optional(),
-});
-type CreateNewFormValues = z.infer<typeof createNewSchema>;
+const buildCreateNewSchema = (t: TFunction) =>
+    z.object({
+        fullName: z.string().min(1, t('validation.nameRequired')),
+        email: z.string().email(t('validation.invalidEmail')),
+        // PhoneInputField (react-phone-input-2) already restricts entry to
+        // digits and formats per country — no extra numeric regex needed here.
+        mobileNumber: z.string().optional(),
+    });
+type CreateNewFormValues = z.infer<ReturnType<typeof buildCreateNewSchema>>;
 
 interface Props {
     instituteId: string;
@@ -37,11 +40,12 @@ interface Props {
  * for the chip).
  */
 export const GuardianLinkPanel = ({ instituteId, personLabel, searchRoles, value, onChange }: Props) => {
+    const { t } = useTranslation('manageStudentsGuardianLinkPanel');
     const [tab, setTab] = useState<'create_new' | 'link_existing'>(value?.kind ?? 'create_new');
     const [searchQuery, setSearchQuery] = useState('');
 
     const form = useForm<CreateNewFormValues>({
-        resolver: zodResolver(createNewSchema),
+        resolver: zodResolver(buildCreateNewSchema(t)),
         mode: 'onChange',
         defaultValues: {
             fullName: value?.kind === 'create_new' ? value.fullName : '',
@@ -115,41 +119,41 @@ export const GuardianLinkPanel = ({ instituteId, personLabel, searchRoles, value
             <Tabs value={tab} onValueChange={(v) => setTab(v as 'create_new' | 'link_existing')}>
                 <TabsList className="h-8 w-full">
                     <TabsTrigger value="create_new" className="flex-1 text-caption">
-                        Add {personLabel}
+                        {t('tabs.addPerson', { person: personLabel })}
                     </TabsTrigger>
                     <TabsTrigger value="link_existing" className="flex-1 text-caption">
-                        Link Existing {personLabel}
+                        {t('tabs.linkExistingPerson', { person: personLabel })}
                     </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="create_new" className="mt-3">
                     <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                         <MyInput
-                            label="Full name"
+                            label={t('form.fullNameLabel')}
                             required
                             size="small"
                             inputType="text"
-                            inputPlaceholder={`${personLabel}'s full name`}
+                            inputPlaceholder={t('form.fullNamePlaceholder', { person: personLabel })}
                             input={form.watch('fullName')}
                             onChangeFunction={(e) => emitCreateNew('fullName', e.target.value)}
                             error={form.formState.errors.fullName?.message}
                         />
                         <MyInput
-                            label="Email"
+                            label={t('form.emailLabel')}
                             required
                             size="small"
                             inputType="email"
-                            inputPlaceholder="name@example.com"
+                            inputPlaceholder={t('form.emailPlaceholder')}
                             input={form.watch('email')}
                             onChangeFunction={(e) => emitCreateNew('email', e.target.value)}
                             error={form.formState.errors.email?.message}
                         />
-                        <div className="w-full sm:w-auto sm:min-w-[220px]">
+                        <div className="w-full sm:w-auto sm:min-w-56">
                             <PhoneInputField
-                                label="Mobile (optional)"
+                                label={t('form.mobileLabel')}
                                 name="mobileNumber"
                                 control={form.control}
-                                placeholder="9876543210"
+                                placeholder={t('form.mobilePlaceholder')}
                             />
                         </div>
                     </div>
@@ -168,7 +172,7 @@ export const GuardianLinkPanel = ({ instituteId, personLabel, searchRoles, value
                                 type="button"
                                 onClick={clearExisting}
                                 className="rounded-full text-primary-400 hover:text-primary-700"
-                                title="Change"
+                                title={t('existing.changeTitle')}
                             >
                                 <X size={12} weight="bold" />
                             </button>
@@ -183,11 +187,15 @@ export const GuardianLinkPanel = ({ instituteId, personLabel, searchRoles, value
                                 <Input
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder={`Search ${personLabel.toLowerCase()} by name, email…`}
+                                    placeholder={t('existing.searchPlaceholder', {
+                                        person: personLabel.toLowerCase(),
+                                    })}
                                     className="h-8 pl-9 text-caption"
                                 />
                             </div>
-                            {isFetching && <p className="mt-2 text-caption text-neutral-400">Searching…</p>}
+                            {isFetching && (
+                                <p className="mt-2 text-caption text-neutral-400">{t('existing.searching')}</p>
+                            )}
                             {!isFetching && suggestedUsers && suggestedUsers.length > 0 && (
                                 <div className="mt-2 rounded-md border border-neutral-200 bg-white shadow-sm">
                                     {suggestedUsers.map((u: AutosuggestUser) => (
@@ -203,19 +211,24 @@ export const GuardianLinkPanel = ({ instituteId, personLabel, searchRoles, value
                                                 </p>
                                                 <p className="text-caption text-neutral-400">{u.email}</p>
                                             </div>
-                                            <span className="font-medium text-primary-500">+ Select</span>
+                                            <span className="font-medium text-primary-500">
+                                                {t('existing.select')}
+                                            </span>
                                         </button>
                                     ))}
                                 </div>
                             )}
                             {!isFetching && searchQuery.length >= 2 && (!suggestedUsers || suggestedUsers.length === 0) && (
                                 <p className="mt-2 text-caption text-neutral-400">
-                                    No {personLabel.toLowerCase()} found matching "{searchQuery}"
+                                    {t('existing.noResults', {
+                                        person: personLabel.toLowerCase(),
+                                        query: searchQuery,
+                                    })}
                                 </p>
                             )}
                             {searchQuery.length < 2 && (
                                 <p className="mt-2 text-caption text-neutral-400">
-                                    Type at least 2 characters to search
+                                    {t('existing.minChars')}
                                 </p>
                             )}
                         </>

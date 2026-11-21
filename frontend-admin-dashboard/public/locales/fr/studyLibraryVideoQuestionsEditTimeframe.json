@@ -1,0 +1,10 @@
+{
+    "invalidTimestamp": "Horodatage invalide. Veuillez saisir une heure valide au format MM:SS ou en secondes ; l'horodatage actuel doit également être inférieur à la durée de la vidéo",
+    "timeStampTitle": "Horodatage",
+    "hrsLabel": "h",
+    "minLabel": "min",
+    "secLabel": "s",
+    "useCurrentPosition": "Utiliser la position actuelle",
+    "allowSkipLabel": "Autoriser les apprenants à passer cette question",
+    "editButton": "Modifier"
+}

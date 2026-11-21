@@ -1,0 +1,7 @@
+{
+    "validation": {
+        "inviteLinkRequired": "Invite link is required",
+        "maxCoursesRequired": "This field is required",
+        "inviteLinkAlreadyPresent": "invite link for this batch is already present"
+    }
+}

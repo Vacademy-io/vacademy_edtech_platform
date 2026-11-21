@@ -1,0 +1,20 @@
+{
+    "header": {
+        "logoAlt": "लोगो"
+    },
+    "generateMore": {
+        "triggerButton": "और जनरेट करें",
+        "dialogTitle": "और प्रश्न जनरेट करें",
+        "topicsPlaceholder": "प्रश्न जनरेट करने के लिए विषय दर्ज करें",
+        "numQuestionsPlaceholder": "प्रश्नों की संख्या (जैसे 5)",
+        "difficultyPlaceholder": "कठिनाई स्तर (आसान, मध्यम, कठिन)",
+        "languagePlaceholder": "भाषा (अंग्रेज़ी, हिंदी, आदि)",
+        "submitButton": "प्रश्न जनरेट करें"
+    },
+    "closeButton": "बंद करें",
+    "questionCard": {
+        "duplicate": "डुप्लिकेट करें",
+        "delete": "हटाएं"
+    },
+    "noQuestions": "कोई प्रश्न मौजूद नहीं है।"
+}

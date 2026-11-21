@@ -69,8 +69,11 @@ public class OverviewBuilder {
         // batch mismatch, modules excluded) was labelled at risk on the strength of nothing at all.
         if (attendancePct == null && avgScore == null) return "Insufficient Data";
 
-        boolean attendanceOk = attendancePct != null && attendancePct >= 75;
-        boolean scoreOk = avgScore != null && avgScore >= 60;
+        // Judge only the signals that exist. A missing one (module not selected, no sessions)
+        // used to count as a failure, so a 67%-average learner on an academics-only report was
+        // capped at "Needs Attention" for having no attendance data.
+        boolean attendanceOk = attendancePct == null || attendancePct >= 75;
+        boolean scoreOk = avgScore == null || avgScore >= 60;
         boolean attendanceLow = attendancePct != null && attendancePct >= 60;
         boolean scoreLow = avgScore != null && avgScore >= 40;
 
@@ -120,6 +123,38 @@ public class OverviewBuilder {
                     .change(null)
                     .sentiment(avgScore >= 70 ? "good" : (avgScore >= 50 ? "neutral" : "attention"))
                     .build());
+        }
+
+        // Academic context tiles — on an academics-only report a lone "Avg. Score" tile read as empty.
+        AcademicsSection academics = report.getAcademics();
+        if (academics != null && academics.isAvailable() && academics.getAssessments() != null
+                && !academics.getAssessments().isEmpty()) {
+            List<AcademicsSection.AssessmentItem> items = academics.getAssessments();
+            metrics.add(OverviewSection.HeadlineMetric.builder()
+                    .key("assessments_taken")
+                    .label("Assessments")
+                    .value(items.size())
+                    .sentiment("neutral")
+                    .build());
+            long compared = items.stream().filter(a -> a.getPercentage() != null && classPct(a) != null).count();
+            long above = items.stream().filter(a -> a.getPercentage() != null && classPct(a) != null
+                    && a.getPercentage() >= classPct(a)).count();
+            if (compared > 0) {
+                metrics.add(OverviewSection.HeadlineMetric.builder()
+                        .key("above_class_average")
+                        .label("Above Class Avg")
+                        .value(above + " / " + compared)
+                        .sentiment(above * 2 >= compared ? "good" : "attention")
+                        .build());
+            }
+            if (academics.getBestSubject() != null) {
+                metrics.add(OverviewSection.HeadlineMetric.builder()
+                        .key("best_subject")
+                        .label("Best Subject")
+                        .value(academics.getBestSubject())
+                        .sentiment("good")
+                        .build());
+            }
         }
 
         if (completionPct != null) {
@@ -173,6 +208,12 @@ public class OverviewBuilder {
     }
 
     // ── Extractors ────────────────────────────────────────────────────────────
+
+    /** Class average as a percentage of the paper's total, or null when unknown. */
+    private static Double classPct(AcademicsSection.AssessmentItem a) {
+        if (a.getClassAverage() == null || a.getTotalMarks() == null || a.getTotalMarks() <= 0) return null;
+        return a.getClassAverage() / a.getTotalMarks() * 100.0;
+    }
 
     private Double extractAvgScore(AcademicsSection academics) {
         if (academics == null || !academics.isAvailable()) return null;

@@ -211,11 +211,19 @@ public class InstituteAnnouncementSettingsResponse {
     public static class FirebaseSettings {
         @JsonProperty("enabled")
         private Boolean enabled;
-        
-        @JsonProperty("serviceAccountJson")
+
+        // The service-account key is a platform secret (full Firebase Admin access) and this response is
+        // served by unauthenticated/learner-facing GETs — it must never be serialized. WRITE_ONLY still lets
+        // the stored map deserialize into this DTO; InstituteAnnouncementSettingsService.mapToResponse also
+        // nulls both fields and reports presence via {@code configured} instead.
+        @JsonProperty(value = "serviceAccountJson", access = JsonProperty.Access.WRITE_ONLY)
         private String serviceAccountJson;
-        
-        @JsonProperty("serviceAccountJsonBase64")
+
+        @JsonProperty(value = "serviceAccountJsonBase64", access = JsonProperty.Access.WRITE_ONLY)
         private String serviceAccountJsonBase64;
+
+        /** True when a service-account key is stored for the institute (the key itself is never returned). */
+        @JsonProperty("configured")
+        private Boolean configured;
     }
 }

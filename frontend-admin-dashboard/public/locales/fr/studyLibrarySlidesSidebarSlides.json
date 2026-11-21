@@ -1,0 +1,21 @@
+{
+    "slideType": {
+        "aiContent": "Contenu IA",
+        "scorm": "SCORM",
+        "slide": "Diapositive"
+    },
+    "slideTitle": {
+        "assessmentFallback": "Évaluation {{ordinal}}",
+        "untitled": "Sans titre"
+    },
+    "statusBadge": {
+        "draft": "D",
+        "unsync": "U",
+        "deleted": "SUP"
+    },
+    "unsavedChangesTitle": "Modifications non enregistrées",
+    "empty": {
+        "heading": "Aucune {{term}} pour le moment",
+        "description": "Ajoutez votre première {{term}} pour commencer"
+    }
+}

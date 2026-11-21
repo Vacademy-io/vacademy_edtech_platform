@@ -1,0 +1,21 @@
+{
+    "emptyState": "प्रश्न का विवरण दिखाने के लिए कृपया एक प्रश्न जोड़ें",
+    "comprehension": {
+        "title": "गद्यांश (Comprehension) टेक्स्ट",
+        "hint": "इस समूह के हर प्रश्न का आधार यही गद्यांश है।",
+        "placeholder": "गद्यांश टेक्स्ट"
+    },
+    "question": {
+        "title": "प्रश्न",
+        "titleNumbered": "प्रश्न {{number}}",
+        "placeholder": "प्रश्न लिखें"
+    },
+    "answer": {
+        "typeFallback": "उत्तर"
+    },
+    "explanation": {
+        "typeFallback": "व्याख्या",
+        "hint": "परिणाम के साथ शिक्षार्थियों को दिखाई जाती है।",
+        "placeholder": "व्याख्या"
+    }
+}

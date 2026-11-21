@@ -1,9 +1,10 @@
-// Shared "Added to {chapter}" chip + unlink-with-confirm control, used by both
+// Shared "Added to {chapter}" chip + rename + unlink-with-confirm controls, used by both
 // the per-recording "Add to course" panel and the ClassMaterialsCard so the
 // two surfaces (Track B) stay visually and behaviorally identical.
 
 import { useState } from 'react';
-import { CheckCircle, FilePdf, Trash, VideoCamera } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import { CheckCircle, FilePdf, PencilSimple, Trash, VideoCamera } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
 import {
@@ -17,6 +18,17 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { MyInput } from '@/components/design-system/input';
+import { MyButton } from '@/components/design-system/button';
+import {
+    extractContentLinkErrorMessage,
+    useRenameSessionContent,
     useUnlinkSessionContent,
     type ContentLinkContentType,
 } from '../../-services/content-link-service';
@@ -42,15 +54,39 @@ export function UnlinkContentLinkButton({
     /** Destination batch display name — disambiguates same-named chapters across batches. */
     batchName?: string;
 }) {
+    const { t } = useTranslation('studyLibraryUnlinkContentLinkButton');
     const [confirmOpen, setConfirmOpen] = useState(false);
     const unlinkMutation = useUnlinkSessionContent();
+    const [renameOpen, setRenameOpen] = useState(false);
+    const [draftTitle, setDraftTitle] = useState('');
+    const renameMutation = useRenameSessionContent();
+
+    const openRename = () => {
+        setDraftTitle(slideTitle ?? '');
+        setRenameOpen(true);
+    };
+
+    const trimmedDraft = draftTitle.trim();
+    const canSaveRename =
+        !!trimmedDraft && trimmedDraft !== (slideTitle ?? '').trim() && !renameMutation.isPending;
+
+    const handleRename = async () => {
+        if (!canSaveRename) return;
+        try {
+            await renameMutation.mutateAsync({ linkId, title: trimmedDraft });
+            toast.success(t('renamed'));
+            setRenameOpen(false);
+        } catch (err) {
+            toast.error(extractContentLinkErrorMessage(err) || t('couldNotRename'));
+        }
+    };
 
     const handleConfirm = async () => {
         try {
             await unlinkMutation.mutateAsync(linkId);
-            toast.success(`Removed from ${chapterName}`);
+            toast.success(t('removedFrom', { chapterName }));
         } catch {
-            toast.error('Could not remove the link. Please try again.');
+            toast.error(t('couldNotRemove'));
         } finally {
             setConfirmOpen(false);
         }
@@ -74,38 +110,94 @@ export function UnlinkContentLinkButton({
                             {' · '}
                         </>
                     ) : null}
-                    Added to <span className="font-medium">{chapterName}</span>
+                    {t('addedTo')} <span className="font-medium">{chapterName}</span>
                     {batchName ? (
                         <span className="text-neutral-500"> · {batchName}</span>
                     ) : null}
                 </span>
                 <button
                     type="button"
+                    onClick={openRename}
+                    className="ml-1 shrink-0 text-neutral-400 transition-colors hover:text-primary-600"
+                    aria-label={t('renameAriaLabel', { chapterName })}
+                    title={t('rename')}
+                >
+                    <PencilSimple className="size-3.5" />
+                </button>
+                <button
+                    type="button"
                     onClick={() => setConfirmOpen(true)}
-                    className="ml-1 shrink-0 text-neutral-400 transition-colors hover:text-danger-600"
-                    aria-label={`Remove from ${chapterName}`}
-                    title="Remove"
+                    className="shrink-0 text-neutral-400 transition-colors hover:text-danger-600"
+                    aria-label={t('removeFromAriaLabel', { chapterName })}
+                    title={t('remove')}
                 >
                     <Trash className="size-3.5" />
                 </button>
             </div>
 
+            <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>{t('renameTitle')}</DialogTitle>
+                    </DialogHeader>
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            // Portaled, but React still bubbles submit up the component
+                            // tree — keep it from reaching any form the chip sits in.
+                            e.stopPropagation();
+                            void handleRename();
+                        }}
+                        className="flex flex-col gap-4"
+                    >
+                        <MyInput
+                            inputType="text"
+                            label={t('nameLabel')}
+                            input={draftTitle}
+                            onChangeFunction={(e) => setDraftTitle(e.target.value)}
+                            size="large"
+                            className="w-full sm:w-full"
+                            maxLength={255}
+                            required
+                        />
+                        <DialogFooter className="gap-2">
+                            <MyButton
+                                type="button"
+                                buttonType="secondary"
+                                scale="medium"
+                                onClick={() => setRenameOpen(false)}
+                            >
+                                {t('cancel')}
+                            </MyButton>
+                            <MyButton
+                                type="submit"
+                                buttonType="primary"
+                                scale="medium"
+                                disable={!canSaveRename}
+                            >
+                                {renameMutation.isPending ? t('savingEllipsis') : t('save')}
+                            </MyButton>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
             <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Remove this slide?</AlertDialogTitle>
+                        <AlertDialogTitle>{t('removeThisSlideTitle')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will also remove the slide from the chapter.
+                            {t('removeThisSlideDescription')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleConfirm}
                             disabled={unlinkMutation.isPending}
                             className="bg-danger-600 text-white hover:bg-danger-700"
                         >
-                            {unlinkMutation.isPending ? 'Removing…' : 'Remove'}
+                            {unlinkMutation.isPending ? t('removingEllipsis') : t('remove')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

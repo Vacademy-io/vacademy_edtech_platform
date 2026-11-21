@@ -1,0 +1,50 @@
+{
+    "sessionLabelDefault": "افتراضي",
+    "selectedRow": {
+        "loadingInvite": "جارٍ تحميل الدعوة…",
+        "selectingInvite": "جارٍ اختيار الدعوة…",
+        "invitesCount_zero": "لا توجد دعوات ({{count}})",
+        "invitesCount_one": "دعوة واحدة ({{count}})",
+        "invitesCount_two": "دعوتان ({{count}})",
+        "invitesCount_few": "{{count}} دعوات",
+        "invitesCount_many": "{{count}} دعوة",
+        "invitesCount_other": "{{count}} دعوة",
+        "free": "مجاني",
+        "preselected": "محدد مسبقًا",
+        "noMatchingPaymentOption": "لم يتم العثور على خيار دفع مطابق لهذه الدعوة والدورة.",
+        "noActiveInvite": "لا توجد دعوة نشطة لهذه الدورة. يرجى إنشاء دعوة أولاً."
+    },
+    "tabs": {
+        "courses": "الدورات",
+        "suggestions": "الاقتراحات"
+    },
+    "selectedCourses": {
+        "heading": "الدورات المحددة",
+        "addMore": "إضافة المزيد",
+        "combinedTotal": "الإجمالي الكلي:",
+        "newestFirst": "الأحدث أولاً",
+        "oldestFirst": "الأقدم أولاً",
+        "newestFirstHint": "ضع أحدث دورة مرفوعة في الأعلى",
+        "oldestFirstHint": "ضع أقدم دورة مرفوعة في الأعلى",
+        "sortFailed": "تعذّر ترتيب الدورات. يرجى المحاولة مرة أخرى."
+    },
+    "browser": {
+        "searchPlaceholder": "ابحث عن دورات أو دفعات…",
+        "selectAll": "+ تحديد الكل ({{count}})",
+        "refresh": "تحديث",
+        "loadingSessions": "جارٍ تحميل الدورات…",
+        "noSessionsMatch": "لا توجد دورات مطابقة لـ \"{{query}}\"",
+        "noActiveSessions": "لا توجد دورات نشطة.",
+        "otherGroup": "أخرى",
+        "added": "تمت الإضافة",
+        "add": "إضافة",
+        "loadingMore": "جارٍ تحميل المزيد…",
+        "loadMore_zero": "لا مزيد من الدورات لتحميلها ({{count}})",
+        "loadMore_one": "تحميل المزيد ({{count}} دورة واحدة متبقية)",
+        "loadMore_two": "تحميل المزيد ({{count}} دورتان متبقيتان)",
+        "loadMore_few": "تحميل المزيد ({{count}} دورات متبقية)",
+        "loadMore_many": "تحميل المزيد ({{count}} دورة متبقية)",
+        "loadMore_other": "تحميل المزيد ({{count}} دورة متبقية)",
+        "footerHint": "تم تحميل {{loaded}} من {{total}} دورة · تم تحديد {{selected}}"
+    }
+}

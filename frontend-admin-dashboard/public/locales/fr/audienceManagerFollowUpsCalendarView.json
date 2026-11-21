@@ -1,0 +1,49 @@
+{
+    "dayLabels": {
+        "sun": "Dim",
+        "mon": "Lun",
+        "tue": "Mar",
+        "wed": "Mer",
+        "thu": "Jeu",
+        "fri": "Ven",
+        "sat": "Sam"
+    },
+    "nav": {
+        "previousMonth": "Mois précédent",
+        "nextMonth": "Mois suivant",
+        "today": "Aujourd'hui"
+    },
+    "error": {
+        "title": "Impossible de charger les suivis",
+        "description": "Une erreur s'est produite lors du chargement du calendrier. Réessayez."
+    },
+    "overflowMore_one": "+{{count}} de plus",
+    "overflowMore_many": "+{{count}} de plus",
+    "overflowMore_other": "+{{count}} de plus",
+    "agenda": {
+        "emptyTitle": "Aucun suivi ce mois-ci",
+        "emptyDescription": "Changez de mois avec les flèches ci-dessus ou choisissez un conseiller.",
+        "tasks_one": "{{count}} tâche",
+        "tasks_many": "{{count}} tâche",
+        "tasks_other": "{{count}} tâches"
+    },
+    "dayCounts": {
+        "overdue_one": "{{count}} en retard",
+        "overdue_many": "{{count}} en retard",
+        "overdue_other": "{{count}} en retard",
+        "today_one": "{{count}} aujourd'hui",
+        "today_many": "{{count}} aujourd'hui",
+        "today_other": "{{count}} aujourd'hui",
+        "upcoming_one": "{{count}} à venir",
+        "upcoming_many": "{{count}} à venir",
+        "upcoming_other": "{{count}} à venir",
+        "none": "Aucun suivi"
+    },
+    "dayPanel": {
+        "emptyTitle": "Rien ce jour-là",
+        "emptyDescription": "Choisissez un autre jour dans le calendrier ci-dessus."
+    },
+    "pill": {
+        "openTooltip": "Ouvrir {{name}}"
+    }
+}

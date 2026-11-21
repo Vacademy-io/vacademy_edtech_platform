@@ -1,5 +1,7 @@
 import { ClockCounterClockwise, NotePencil, Phone, EnvelopeSimple, CalendarCheck, CheckCircle, Lightning, CaretRight, type Icon as PhosphorIcon } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { GET_CROSS_STAGE_TIMELINE } from '@/constants/urls';
 import { MyButton } from '@/components/design-system/button';
@@ -41,16 +43,16 @@ function iconForEvent(event: TimelineEvent): PhosphorIcon {
     return Lightning;
 }
 
-function formatRelative(iso: string): string {
+function formatRelative(iso: string, t: TFunction): string {
     try {
         const date = new Date(iso);
         const diffMs = Date.now() - date.getTime();
         const diffMin = Math.floor(diffMs / 60_000);
-        if (diffMin < 60) return `${Math.max(1, diffMin)}m ago`;
+        if (diffMin < 60) return t('relativeTime.minutesAgo', { count: Math.max(1, diffMin) });
         const diffHr = Math.floor(diffMin / 60);
-        if (diffHr < 24) return `${diffHr}h ago`;
+        if (diffHr < 24) return t('relativeTime.hoursAgo', { count: diffHr });
         const diffDay = Math.floor(diffHr / 24);
-        if (diffDay < 7) return `${diffDay}d ago`;
+        if (diffDay < 7) return t('relativeTime.daysAgo', { count: diffDay });
         return date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
     } catch {
         return '';
@@ -75,6 +77,7 @@ export const OverviewRecentActivity = ({
      *  affordance is suppressed. */
     onViewAll?: () => void;
 }) => {
+    const { t } = useTranslation('manageStudentsOverviewRecentActivity');
     const enabled = !!userId;
     const { data, isLoading } = useQuery({
         queryKey: ['overview-recent-timeline', userId],
@@ -90,11 +93,11 @@ export const OverviewRecentActivity = ({
     return (
         <ProfileSectionCard
             icon={ClockCounterClockwise}
-            heading="Recent Activity"
+            heading={t('heading')}
             action={
                 onViewAll && events.length > 0 ? (
                     <MyButton buttonType="text" scale="small" onClick={onViewAll}>
-                        All
+                        {t('viewAll')}
                         <CaretRight className="size-3.5" />
                     </MyButton>
                 ) : undefined
@@ -103,13 +106,13 @@ export const OverviewRecentActivity = ({
             {isLoading ? (
                 <div className="flex items-center gap-2 py-2 text-caption text-muted-foreground">
                     <div className="size-3 animate-spin rounded-full border border-muted-foreground border-t-transparent" />
-                    Loading activity…
+                    {t('loading')}
                 </div>
             ) : events.length === 0 ? (
                 <ProfileEmpty
                     icon={ClockCounterClockwise}
-                    title="No recent activity"
-                    hint="Notes, calls, and follow-ups will appear here."
+                    title={t('empty.title')}
+                    hint={t('empty.hint')}
                 />
             ) : (
                 <ul className="flex flex-col gap-3">
@@ -125,7 +128,7 @@ export const OverviewRecentActivity = ({
                                         className="truncate text-body font-semibold text-card-foreground"
                                         title={event.title}
                                     >
-                                        {event.title || 'Activity'}
+                                        {event.title || t('fallbackTitle')}
                                     </span>
                                     {event.description && (
                                         <span
@@ -137,8 +140,8 @@ export const OverviewRecentActivity = ({
                                     )}
                                     <span className="text-caption text-muted-foreground">
                                         {event.actor_name
-                                            ? `${event.actor_name} · ${formatRelative(event.created_at)}`
-                                            : formatRelative(event.created_at)}
+                                            ? `${event.actor_name} · ${formatRelative(event.created_at, t)}`
+                                            : formatRelative(event.created_at, t)}
                                     </span>
                                 </div>
                             </li>

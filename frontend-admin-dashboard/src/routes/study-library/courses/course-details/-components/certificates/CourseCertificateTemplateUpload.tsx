@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { FileArrowUp, Trash } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { getTokenDecodedData, getTokenFromCookie } from '@/lib/auth/sessionUtility';
@@ -68,6 +69,7 @@ export const CourseCertificateTemplateUpload = ({
     templateHtml,
     onChange,
 }: CourseCertificateTemplateUploadProps) => {
+    const { t } = useTranslation('studyLibraryCourseCertificateTemplateUpload');
     const [busy, setBusy] = useState(false);
     const [previewOpen, setPreviewOpen] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -81,12 +83,12 @@ export const CourseCertificateTemplateUpload = ({
             if (isHtml) {
                 const html = await readAsText(file);
                 if (!html.trim()) {
-                    toast.error('That HTML file is empty');
+                    toast.error(t('emptyHtmlFile'));
                     return;
                 }
                 onChange(html);
-                toast.success('Course certificate template uploaded', {
-                    description: 'Your HTML will be rendered as-is for this course.',
+                toast.success(t('templateUploaded'), {
+                    description: t('templateUploadedDescription'),
                 });
                 return;
             }
@@ -108,7 +110,7 @@ export const CourseCertificateTemplateUpload = ({
             );
             const publicUrl = fileId ? await getPublicUrl(fileId) : null;
             if (!publicUrl || typeof publicUrl !== 'string') {
-                toast.error('Could not upload the certificate image');
+                toast.error(t('imageUploadFailed'));
                 return;
             }
 
@@ -144,12 +146,11 @@ export const CourseCertificateTemplateUpload = ({
             }));
 
             onChange(serializeImageTemplateToHtml(template, fields));
-            toast.success('Course certificate design uploaded', {
-                description:
-                    'Placeholders use the default layout — check the preview and upload HTML if you need exact placement.',
+            toast.success(t('designUploaded'), {
+                description: t('designUploadedDescription'),
             });
         } catch {
-            toast.error('Could not process that file');
+            toast.error(t('processFailed'));
         } finally {
             setBusy(false);
             if (inputRef.current) inputRef.current.value = '';
@@ -173,7 +174,7 @@ export const CourseCertificateTemplateUpload = ({
                 <div className="flex flex-col gap-3 rounded-md border border-neutral-200 p-3">
                     <div className="flex items-center justify-between gap-3">
                         <span className="text-body text-neutral-700">
-                            This course uses its own certificate design.
+                            {t('usesOwnDesign')}
                         </span>
                         <div className="flex items-center gap-2">
                             <MyButton
@@ -182,7 +183,7 @@ export const CourseCertificateTemplateUpload = ({
                                 type="button"
                                 onClick={() => setPreviewOpen((v) => !v)}
                             >
-                                {previewOpen ? 'Hide preview' : 'Preview'}
+                                {previewOpen ? t('hidePreview') : t('preview')}
                             </MyButton>
                             <MyButton
                                 buttonType="secondary"
@@ -200,7 +201,7 @@ export const CourseCertificateTemplateUpload = ({
                     </div>
                     {previewOpen && (
                         <iframe
-                            title="Course certificate preview"
+                            title={t('previewIframeTitle')}
                             sandbox=""
                             srcDoc={templateHtml}
                             className="h-64 w-full rounded-md border border-neutral-200 bg-white"
@@ -210,7 +211,7 @@ export const CourseCertificateTemplateUpload = ({
             ) : (
                 <div className="flex flex-col items-start gap-2 rounded-md border border-dashed border-neutral-300 p-4">
                     <span className="text-body text-neutral-600">
-                        Inheriting the institute certificate template.
+                        {t('inheritingTemplate')}
                     </span>
                     <MyButton
                         buttonType="secondary"
@@ -220,15 +221,13 @@ export const CourseCertificateTemplateUpload = ({
                         onClick={() => inputRef.current?.click()}
                     >
                         <FileArrowUp className="mr-2" />
-                        {busy ? 'Uploading…' : 'Upload custom certificate'}
+                        {busy ? t('uploading') : t('uploadCustomCertificate')}
                     </MyButton>
                 </div>
             )}
 
             <p className="text-caption text-neutral-500">
-                PNG or JPG becomes the certificate background with the standard placeholders laid
-                out on top. Upload an .html file instead if you need exact control — it is rendered
-                as-is. Removing it falls back to the institute template.
+                {t('helperText')}
             </p>
         </div>
     );

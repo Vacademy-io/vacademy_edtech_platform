@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
+import type { TFunction } from 'i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { ArrowClockwise, DownloadSimple, Eye, PaperPlaneTilt } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { MyInput } from '@/components/design-system/input';
@@ -31,11 +33,13 @@ interface CertificateStudentTableProps {
 
 const PAGE_SIZE = 25;
 
-const STATUS_LABEL: Record<CourseCertificateLearner['status'], string> = {
-    GENERATED: 'Generated',
-    AWAITING: 'Awaiting',
-    PENDING: 'Pending',
-};
+const buildStatusLabel = (
+    t: TFunction
+): Record<CourseCertificateLearner['status'], string> => ({
+    GENERATED: t('status.generated'),
+    AWAITING: t('status.awaiting'),
+    PENDING: t('status.pending'),
+});
 
 const STATUS_VARIANT: Record<
     CourseCertificateLearner['status'],
@@ -53,6 +57,7 @@ export const CertificateStudentTable = ({
     courseName,
     certificatesEnabled,
 }: CertificateStudentTableProps) => {
+    const { t } = useTranslation('studyLibraryCertificateStudentTable');
     const [page, setPage] = useState(0);
     const [search, setSearch] = useState('');
     const queryClient = useQueryClient();
@@ -91,11 +96,11 @@ export const CertificateStudentTable = ({
             }),
         onSuccess: (_data, vars) => {
             toast.success(
-                vars.regenerate ? 'Certificate regenerated' : 'Certificate generated',
+                vars.regenerate ? t('toast.regenerated') : t('toast.generated'),
                 {
                     description: vars.regenerate
-                        ? 'The certificate number is unchanged; the PDF has been replaced.'
-                        : 'The learner has been emailed their certificate.',
+                        ? t('toast.regeneratedDescription')
+                        : t('toast.generatedDescription'),
                 }
             );
             invalidate();
@@ -104,17 +109,16 @@ export const CertificateStudentTable = ({
             // The backend refuses when certificates are switched off for this
             // course, or the learner is below the threshold — say so rather than
             // showing a bare failure.
-            toast.error('Could not generate certificate', {
-                description:
-                    'Check that certificates are enabled for this course and the learner is past the completion threshold.',
+            toast.error(t('toast.generateError'), {
+                description: t('toast.generateErrorDescription'),
             });
         },
     });
 
     const resendMutation = useMutation({
         mutationFn: (certificateId: string) => resendCourseCertificate(instituteId, certificateId),
-        onSuccess: () => toast.success('Certificate email sent'),
-        onError: () => toast.error('Could not send the certificate email'),
+        onSuccess: () => toast.success(t('toast.emailSent')),
+        onError: () => toast.error(t('toast.emailError')),
     });
 
     /**
@@ -143,17 +147,19 @@ export const CertificateStudentTable = ({
             URL.revokeObjectURL(blobUrl);
         } catch {
             window.open(learner.file_id, '_blank', 'noopener,noreferrer');
-            toast.info('Opened the certificate in a new tab', {
-                description: 'Your browser blocked the direct download — save it from there.',
+            toast.info(t('toast.openedInNewTab'), {
+                description: t('toast.openedInNewTabDescription'),
             });
         }
     };
+
+    const statusLabel = useMemo(() => buildStatusLabel(t), [t]);
 
     const columns: ColumnDef<CourseCertificateLearner>[] = useMemo(
         () => [
             {
                 accessorKey: 'full_name',
-                header: 'Learner',
+                header: t('columns.learner'),
                 cell: ({ row }) => (
                     <div className="flex flex-col">
                         <span className="text-body text-neutral-700">
@@ -169,7 +175,7 @@ export const CertificateStudentTable = ({
             },
             {
                 accessorKey: 'completion_percentage',
-                header: 'Completion',
+                header: t('columns.completion'),
                 cell: ({ row }) => {
                     const pct = row.original.completion_percentage;
                     return (
@@ -181,15 +187,15 @@ export const CertificateStudentTable = ({
             },
             {
                 accessorKey: 'status',
-                header: 'Status',
+                header: t('columns.status'),
                 cell: ({ row }) => {
                     const status = row.original.status;
-                    return <Badge variant={STATUS_VARIANT[status]}>{STATUS_LABEL[status]}</Badge>;
+                    return <Badge variant={STATUS_VARIANT[status]}>{statusLabel[status]}</Badge>;
                 },
             },
             {
                 accessorKey: 'issued_at',
-                header: 'Generated On',
+                header: t('columns.generatedOn'),
                 cell: ({ row }) => {
                     const raw = row.original.issued_at;
                     return (
@@ -201,7 +207,7 @@ export const CertificateStudentTable = ({
             },
             {
                 accessorKey: 'certificate_number',
-                header: 'Certificate Number',
+                header: t('columns.certificateNumber'),
                 cell: ({ row }) => (
                     <span className="text-body text-neutral-600">
                         {row.original.certificate_number || '—'}
@@ -210,7 +216,7 @@ export const CertificateStudentTable = ({
             },
             {
                 id: 'actions',
-                header: 'Actions',
+                header: t('columns.actions'),
                 cell: ({ row }) => {
                     const learner = row.original;
                     const hasCertificate = !!learner.certificate_number;
@@ -234,7 +240,7 @@ export const CertificateStudentTable = ({
                                     })
                                 }
                             >
-                                Generate
+                                {t('actions.generate')}
                             </MyButton>
                         );
                     }
@@ -297,7 +303,7 @@ export const CertificateStudentTable = ({
                 },
             },
         ],
-        [issueMutation, resendMutation, certificatesEnabled]
+        [issueMutation, resendMutation, certificatesEnabled, statusLabel, t]
     );
 
     const tableData: TableData<CourseCertificateLearner> | undefined = useMemo(() => {
@@ -322,22 +328,19 @@ export const CertificateStudentTable = ({
                         setSearch(e.target.value);
                         setPage(0);
                     }}
-                    inputPlaceholder="Search by name, email or certificate number"
+                    inputPlaceholder={t('searchPlaceholder')}
                     className="sm:w-96"
                 />
                 {tableData && (
                     <span className="text-caption text-neutral-500">
-                        {tableData.total_elements} learner
-                        {tableData.total_elements === 1 ? '' : 's'}
+                        {t('learnerCount', { count: tableData.total_elements })}
                     </span>
                 )}
             </div>
 
             {!isLoading && tableData && tableData.content.length === 0 ? (
                 <div className="py-8 text-center text-body text-neutral-500">
-                    {search
-                        ? 'No learners match your search.'
-                        : 'No learners are enrolled in this batch yet.'}
+                    {search ? t('emptyState.noMatch') : t('emptyState.noLearners')}
                 </div>
             ) : (
                 <>

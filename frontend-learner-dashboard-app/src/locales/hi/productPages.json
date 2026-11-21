@@ -1,0 +1,255 @@
+{
+    "common": {
+        "back": "वापस",
+        "previous": "पिछला",
+        "next": "अगला",
+        "free": "निःशुल्क",
+        "total": "कुल",
+        "processing": "प्रोसेस हो रहा है...",
+        "securedPayment": "सुरक्षित भुगतान",
+        "proceedToCheckout": "चेकआउट पर जाएँ",
+        "freeEnrollment": "निःशुल्क नामांकन",
+        "addToCart": "कार्ट में जोड़ें",
+        "peopleAlsoBuy": "लोग यह भी खरीदते हैं",
+        "addSuggested": "+ जोड़ें",
+        "removeSuggested": "− हटाएँ",
+        "couponAppliedLabel": "कूपन ({{code}})",
+        "orderSummaryTitle": "ऑर्डर सारांश",
+        "courseFallbackWithIndex": "{{course}} {{index}}",
+        "genericPaymentFailed": "भुगतान विफल रहा। कृपया पुनः प्रयास करें।",
+        "couldNotInitiatePayment": "भुगतान शुरू नहीं किया जा सका।",
+        "pay": "{{currency}} {{amount}} भुगतान करें",
+        "logoAlt": "लोगो",
+        "itemsSelected": "चयनित: {{count}} {{course}}",
+        "basketSaved": "{{amount}} की बचत",
+        "basketSavedWithPercent": "{{amount}} · {{percent}}% की बचत",
+        "basketNextTierAmount": "{{amount}} की छूट पाने के लिए {{count}} और {{course}} जोड़ें।",
+        "basketNextTierAmountMore": "{{amount}} की अतिरिक्त छूट पाने के लिए {{count}} और {{course}} जोड़ें।",
+        "basketNextTierPercent": "{{percent}}% की छूट पाने के लिए {{count}} और {{course}} जोड़ें।",
+        "priceChangedReload": "आपकी कार्ट में किसी पाठ्यक्रम की कीमत बदल गई है। कृपया अपनी कार्ट देखें और फिर से कोशिश करें।"
+    },
+    "errors": {
+        "pageNotAvailable": {
+            "title": "पेज उपलब्ध नहीं है",
+            "defaultMessage": "इस पेज को लोड करते समय कुछ गलत हो गया।"
+        },
+        "instituteNotFound": {
+            "title": "संस्थान नहीं मिला",
+            "message": "इस पेज के लिए संस्थान निर्धारित नहीं किया जा सका। कृपया मान्य लिंक का उपयोग करें।"
+        }
+    },
+    "catalogStep": {
+        "selectPrompt": "जिन {{courses}} में आप नामांकन लेना चाहते हैं उन्हें चुनें"
+    },
+    "courseFinder": {
+        "continueToRegister": "पंजीकरण के लिए आगे बढ़ें",
+        "dialogHeading": "अपनी कक्षा चुनें",
+        "showCourses": "मेरे {{courses}} दिखाएं",
+        "defaultSubheading": "अपना चुनें और अपने लिए उपलब्ध {{courses}} देखें",
+        "courseCount": "{{count}} {{courses}}",
+        "view": "देखें",
+        "skip": "सभी {{courses}} दिखाएं",
+        "change": "चयन बदलें"
+    },
+    "cartStep": {
+        "basket": {
+            "spendForTier": "पूरी बास्केट पर {{offer}} पाने के लिए {{amount}} और खर्च करें।",
+            "cartItems": "आपकी कार्ट में {{courses}}",
+            "emptyTitle": "आपकी कार्ट अभी खाली है",
+            "emptyBody": "चेकआउट जारी रखने के लिए कम से कम एक {{course}} चुनें।",
+            "browse": "{{courses}} देखें",
+            "addAnother": "एक और {{course}} जोड़ें",
+            "included": "शामिल",
+            "groupCount_one": "{{count}} {{course}}",
+            "groupCount_other": "{{count}} {{courses}}",
+            "oneMoreForGroup": "{{group}} के लिए एक और {{course}} जोड़ने पर केवल {{amount}} लगेंगे।",
+            "addForTier": "पूरी बास्केट पर {{offer}} पाने के लिए {{count}} और {{courses}} जोड़ें।",
+            "addForTier_other": "पूरी बास्केट पर {{offer}} पाने के लिए {{count}} और {{courses}} जोड़ें।",
+            "addForTier_one": "पूरी बास्केट पर {{offer}} पाने के लिए {{count}} और {{course}} जोड़ें।",
+            "offersHeading": "आपके लिए ऑफ़र",
+            "offersLabel": "उपलब्ध ऑफ़र",
+            "offerApplied": "आपके ऑर्डर पर लागू",
+            "offerReady": "लागू करने के लिए तैयार",
+            "offerAddAmount": "अनलॉक करने के लिए {{amount}} और जोड़ें",
+            "offerAddCourses_one": "अनलॉक करने के लिए {{count}} और {{course}} जोड़ें",
+            "offerAddCourses_other": "अनलॉक करने के लिए {{count}} और {{courses}} जोड़ें",
+            "emptyCart": "आपकी कार्ट खाली है",
+            "emptyCartBody": "अपना कुल देखने के लिए कोई {{course}} चुनें।",
+            "selectedLabel": "चयनित",
+            "thisSelection": "इस चयन",
+            "removeAll": "सभी हटाएं",
+            "priceDetails": "मूल्य विवरण",
+            "itemTotal_one": "आइटम कुल ({{count}} {{course}})",
+            "itemTotal_other": "आइटम कुल ({{count}} {{courses}})",
+            "basketDiscount": "बास्केट छूट",
+            "percentOff": "({{percent}}% छूट)",
+            "planSavings": "प्लान बचत",
+            "offerLine": "ऑफ़र · {{label}}",
+            "pricedPerGroup": "हर कक्षा की कीमत अलग से लगती है, इसलिए अलग-अलग बच्चों के {{courses}} एक साथ नहीं जुड़ते।",
+            "totalPayable": "कुल देय",
+            "inclusiveTaxes": "सभी करों सहित",
+            "youSave": "आपकी बचत {{amount}}",
+            "youSaveWithPercent": "आपकी बचत {{amount}} ({{percent}}%)",
+            "securePayment": "100% सुरक्षित भुगतान",
+            "viewSummary": "ऑर्डर सारांश देखें",
+            "addOneMore": "{{amount}} में एक और {{course}} जोड़ें।",
+            "addAnotherGroup": "{{amount}} में एक और {{group}} {{course}} जोड़ें।"
+        },
+        "heading": {
+            "title": "अपना कार्ट देखें",
+            "subtitlePlanChoice": "आगे बढ़ने से पहले अपना चयन जाँचें और अपने अनुकूल योजना चुनें।",
+            "subtitleDefault": "अपने विषयों की जाँच करें और जो जोड़ना नहीं चाहते थे उसे हटाएँ।"
+        },
+        "backToCourses": "कोर्स पर वापस जाएँ",
+        "couponChanged": "कार्ट बदल गया है — कृपया अपना कूपन फिर से लागू करें।",
+        "orderSummary": {
+            "subtitle": "भुगतान से पहले अपना ऑर्डर जाँच लें"
+        },
+        "item": {
+            "removeTooltip": "हटाएँ"
+        },
+        "subtotalItems_one": "उप-योग ({{count}} आइटम)",
+        "subtotalItems_other": "उप-योग ({{count}} आइटम)",
+        "couponCard": {
+            "errors": {
+                "belowMinItems": "इस कोड के लिए आपके कार्ट में और कोर्स चाहिए।",
+                "expired": "यह कोड समाप्त हो चुका है।",
+                "notStarted": "यह कोड अभी सक्रिय नहीं है।",
+                "limitReached": "यह कोड पूरी तरह से उपयोग हो चुका है।",
+                "emailRestricted": "यह कोड आपके ईमेल के लिए उपलब्ध नहीं है।",
+                "notApplicable": "यह कोड इन कोर्सेज़ पर लागू नहीं होता।"
+            },
+            "title": "कूपन कोड",
+            "placeholder": "कूपन कोड दर्ज करें",
+            "apply": "लागू करें",
+            "invalidCoupon": "अमान्य कूपन",
+            "failedToValidate": "कूपन सत्यापित नहीं हो सका। कृपया पुनः प्रयास करें।",
+            "discountOff": "− {{amount}} की छूट"
+        }
+    },
+    "combinedPaymentStep": {
+        "title": "भुगतान",
+        "subtotal": "उप-योग",
+        "allPricesIn": "सभी कीमतें {{currency}} में हैं",
+        "completeEnrollmentFor": "{{count}} {{course}} के लिए अपना नामांकन पूरा करें",
+        "amountPayable": "{{currency}} {{amount}} देय",
+        "completingEnrollment": "आपका नामांकन पूरा किया जा रहा है…",
+        "retryEnrollment": "नामांकन पुनः प्रयास करें",
+        "openingPayment": "भुगतान खोला जा रहा है...",
+        "courseDescriptionForGateway": "{{count}} {{course}} के लिए नामांकन"
+    },
+    "cpoInstallments": {
+        "noCpoOptionFoundInSelection": "चयन में कोई CPO भुगतान विकल्प नहीं मिला।",
+        "noCpoOptionFound": "कोई CPO भुगतान विकल्प नहीं मिला।",
+        "enrollmentDataMissingRetryLater": "नामांकन डेटा गायब है — कृपया वापस जाकर पुनः प्रयास करें।",
+        "enrollmentDataMissingRetry": "नामांकन डेटा गायब है। कृपया पुनः प्रयास करें।",
+        "noPendingInstallmentsFound": "नामांकन के बाद कोई लंबित किश्त नहीं मिली।",
+        "paymentConfirmationFailed": "भुगतान की पुष्टि विफल रही।",
+        "loadingSchedule": "किश्त शेड्यूल लोड हो रहा है...",
+        "failedToLoadSchedule": "किश्त शेड्यूल लोड नहीं हो सका।",
+        "selectInstallments": {
+            "title": "किश्तें चुनें",
+            "subtitle": "चुनें कि आप अभी कौन-सी किश्तें चुकाना चाहते हैं"
+        },
+        "installmentPaymentDescription": "किश्त भुगतान"
+    },
+    "multiEnrollForm": {
+        "title": "पंजीकरण विवरण",
+        "subtitle": "अपना नामांकन पूरा करने के लिए नीचे दिया गया विवरण भरें",
+        "enrollingFor": "नामांकन हेतु:",
+        "fieldRequired": "{{fieldName}} आवश्यक है",
+        "tncRequired": "जारी रखने के लिए कृपया नियम व शर्तें स्वीकार करें",
+        "enterPlaceholder": "{{fieldName}} दर्ज करें",
+        "readOurTnc": "कृपया हमारी",
+        "termsAndConditionsLink": "नियम व शर्तें",
+        "tncAgreeCheckbox": "मैंने नियम व शर्तें पढ़ ली हैं और उनसे सहमत हूँ",
+        "submissionFailed": "सबमिशन विफल रहा। कृपया पुनः प्रयास करें।",
+        "saving": "सहेजा जा रहा है...",
+        "continueToPayment": "भुगतान की ओर बढ़ें"
+    },
+    "pageRenderer": {
+        "filterBar": {
+            "filterLabel": "फ़िल्टर"
+        },
+        "courseDetailSheet": {
+            "viewLess": "कम दिखाएँ",
+            "viewMore": "अधिक दिखाएँ",
+            "priceLabel": "कीमत",
+            "ratingLabel": "रेटिंग",
+            "accessLabel": "एक्सेस",
+            "oneYear": "1 वर्ष",
+            "whatYoullLearn": "आप क्या सीखेंगे",
+            "aboutThisCourse": "इस {{course}} के बारे में",
+            "whoShouldJoin": "किसे शामिल होना चाहिए",
+            "removeFromCart": "कार्ट से हटाएँ"
+        },
+        "courseCard": {
+            "noDescriptionAvailable": "कोई विवरण उपलब्ध नहीं है",
+            "percentOff": "{{percent}}% छूट",
+            "viewCourse": "कोर्स देखें",
+            "addedToCart": "कार्ट में जोड़ा गया"
+        },
+        "courseGrid": {
+            "filtersTitle": "फ़िल्टर",
+            "clearAll": "सभी हटाएँ",
+            "showMore": "{{count}} और दिखाएँ",
+            "showLess": "कम दिखाएँ",
+            "priceRangeTitle": "मूल्य सीमा",
+            "min": "न्यूनतम",
+            "max": "अधिकतम",
+            "popularLabel": "लोकप्रिय",
+            "clear": "हटाएँ",
+            "searchPlaceholder": "{{courses}} खोजें…",
+            "noCoursesFound": "कोई {{courses}} नहीं",
+            "clearFilters": "फ़िल्टर हटाएँ",
+            "coursePagesAriaLabel": "{{courses}} के पेज",
+            "previousPageAriaLabel": "पिछला पेज",
+            "nextPageAriaLabel": "अगला पेज",
+            "pageAriaLabel": "पेज {{page}}",
+            "resultsAvailable": "उपलब्ध: {{count}} {{course}}",
+            "resultsFound": "मिलान: {{count}} {{course}}",
+            "pageSuffix": " · पेज {{page}} / {{total}}"
+        },
+        "videoEmbed": {
+            "addUrlPlaceholder": "प्रॉपर्टीज़ में एक वीडियो URL जोड़ें",
+            "defaultTitle": "वीडियो"
+        }
+    },
+    "stepRail": {
+        "secureTitle": "सुरक्षित",
+        "secureNote": "आपका डेटा सुरक्षित है"
+    },
+    "stepProgress": {
+        "ariaLabel": "नामांकन प्रगति",
+        "steps": {
+            "catalog": "{{courses}} चुनें",
+            "cart": "कार्ट",
+            "details": "विवरण",
+            "payment": "भुगतान",
+            "installments": "किश्तें"
+        }
+    },
+    "success": {
+        "title": "आपका नामांकन हो गया है!",
+        "defaultMessage": "{{count}} {{course}} में सफलतापूर्वक नामांकन हो गया है। अभी सीखना शुरू करें।",
+        "totalPaid": "कुल भुगतान",
+        "youSaved": "आपने {{amount}} बचाए",
+        "access": {
+            "oneYear": "1 वर्ष की एक्सेस",
+            "months_one": "{{count}} महीने की एक्सेस",
+            "months_other": "{{count}} महीने की एक्सेस",
+            "days_one": "{{count}} दिन की एक्सेस",
+            "days_other": "{{count}} दिन की एक्सेस"
+        },
+        "goToMyCourses": "{{courses}} पर जाएँ",
+        "redirecting": "आपको अगले पेज पर ले जा रहे हैं…",
+        "redirectNow": "अभी जारी रखें",
+        "loggingIn": "आपको लॉग इन किया जा रहा है…",
+        "existingAccountHint": "आपका अकाउंट पहले से है। अपने {{courses}} खोलने के लिए लॉग इन करें।",
+        "logInToContinue": "लॉग इन करें"
+    },
+    "planTiles": {
+        "coursesIncluded": "{{count}} {{courses}} शामिल",
+        "oneCourse": "1 {{course}}"
+    }
+}

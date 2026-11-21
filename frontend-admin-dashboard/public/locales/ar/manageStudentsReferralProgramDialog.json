@@ -1,0 +1,33 @@
+{
+    "dialog": {
+        "title": "اختيار برنامج الإحالة",
+        "description": "اختر برنامج إحالة لهذه الدورة"
+    },
+    "badge": {
+        "default": "افتراضي"
+    },
+    "refereeBenefit": {
+        "label": "ميزة المُحال عليه:",
+        "freeDays_zero": "لا أيام مجانية ({{count}})",
+        "freeDays_one": "يوم مجاني واحد ({{count}})",
+        "freeDays_two": "يومان مجانيان ({{count}})",
+        "freeDays_few": "{{count}} أيام مجانية",
+        "freeDays_many": "{{count}} يومًا مجانيًا",
+        "freeDays_other": "{{count}} يوم مجاني",
+        "bonusContent": "محتوى إضافي",
+        "genericOff": "خصم {{value}}"
+    },
+    "referrerTiers": {
+        "label": "مستويات المُحيل:"
+    },
+    "programSettings": {
+        "label": "إعدادات البرنامج:",
+        "vestingPeriod": "فترة الاستحقاق",
+        "combineOffers": "دمج العروض",
+        "yes": "نعم",
+        "no": "لا"
+    },
+    "actions": {
+        "addNewReferral": "+ إضافة برنامج إحالة جديد"
+    }
+}

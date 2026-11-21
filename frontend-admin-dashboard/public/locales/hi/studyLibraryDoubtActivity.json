@@ -1,0 +1,34 @@
+{
+    "title": "गतिविधि",
+    "empty": "अभी कोई गतिविधि नहीं",
+    "failedToLoad": "गतिविधि लोड नहीं हो सकी",
+    "someone": "कोई",
+    "rule": "स्वतः-असाइनमेंट नियम",
+    "system": "सिस्टम",
+    "ruleBadge": "नियम",
+    "defaultRouting": "डिफ़ॉल्ट रूटिंग: {{source}}",
+    "sources": {
+        "SUBJECT_TEACHER": "विषय शिक्षक",
+        "BATCH_TEACHER": "बैच शिक्षक",
+        "BOTH": "विषय + बैच शिक्षक",
+        "ROLE": "भूमिका",
+        "SPECIFIC_USERS": "विशिष्ट स्टाफ",
+        "NONE": "कोई नहीं",
+        "SUB_ORG": "उप-संगठन स्टाफ",
+        "ADMIN_FALLBACK": "एडमिन फ़ॉलबैक"
+    },
+    "lines": {
+        "created": "{{actor}} ने यह प्रश्न उठाया",
+        "assigned": "{{actor}} ने {{target}} को असाइन किया",
+        "autoAssigned": "{{target}} को नियम से स्वतः असाइन किया गया: {{rule}}",
+        "unassigned": "{{actor}} ने {{target}} को हटाया",
+        "removedDefault": "{{actor}} ने डिफ़ॉल्ट असाइनी {{target}} को हटाया",
+        "statusChanged": "{{actor}} ने स्थिति बदली {{from}} → {{to}}",
+        "remark": "{{actor}} ने {{status}} पर टिप्पणी की"
+    },
+    "remarkPlaceholder": "स्टाफ के लिए टिप्पणी जोड़ें (शिक्षार्थी इसे कभी नहीं देखते)",
+    "addRemark": "टिप्पणी जोड़ें",
+    "saving": "सहेजा जा रहा है…",
+    "remarkAdded": "टिप्पणी जोड़ी गई",
+    "remarkFailed": "टिप्पणी नहीं जोड़ी जा सकी"
+}

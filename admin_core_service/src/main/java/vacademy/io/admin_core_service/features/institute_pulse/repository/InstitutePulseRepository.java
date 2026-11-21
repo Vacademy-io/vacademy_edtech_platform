@@ -646,11 +646,18 @@ public interface InstitutePulseRepository extends JpaRepository<ActivityLog, Str
      * hours, and the poller then makes ZERO HTTP calls — so the feature costs nothing whenever
      * nothing is running, which is most of the day. One indexed query per poll replaces what would
      * otherwise be an unconditional fan-out to every configured server.
+     *
+     * <p>pg_timezone_names reads the whole timezone database (~9 ms) on every scan, and the
+     * per-row lookups scanned it twice per candidate schedule: 53 ms a poll, ~8k polls a day.
+     * The tz CTE scans it once per query; LEFT JOIN + COALESCE keeps the same fallback to
+     * Asia/Kolkata for a missing or unknown timezone.
      */
     @Query(value = """
+            WITH tz AS MATERIALIZED (SELECT name FROM pg_timezone_names)
             SELECT DISTINCT ss.bbb_server_id AS bbbServerId
             FROM session_schedules ss
                 JOIN live_session ls ON ls.id = ss.session_id
+                LEFT JOIN tz ON tz.name = btrim(COALESCE(ls.timezone, ''), '''" ')
             WHERE ls.status = 'LIVE'
               AND ls.link_type = 'bbb'
               AND ss.bbb_server_id IS NOT NULL
@@ -659,16 +666,10 @@ public interface InstitutePulseRepository extends JpaRepository<ActivityLog, Str
               AND ss.meeting_date BETWEEN CURRENT_DATE - 1 AND CURRENT_DATE + 1
               AND (ss.meeting_date + ss.start_time)
                       - make_interval(mins => :startGraceMinutes)
-                      <= CAST((CURRENT_TIMESTAMP AT TIME ZONE
-                           COALESCE((SELECT n.name FROM pg_timezone_names n
-                                     WHERE n.name = btrim(COALESCE(ls.timezone, ''), '''" ')),
-                                    'Asia/Kolkata')) AS timestamp)
+                      <= CAST((CURRENT_TIMESTAMP AT TIME ZONE COALESCE(tz.name, 'Asia/Kolkata')) AS timestamp)
               AND (ss.meeting_date + ss.last_entry_time)
                       + make_interval(mins => :endGraceMinutes)
-                      >= CAST((CURRENT_TIMESTAMP AT TIME ZONE
-                           COALESCE((SELECT n.name FROM pg_timezone_names n
-                                     WHERE n.name = btrim(COALESCE(ls.timezone, ''), '''" ')),
-                                    'Asia/Kolkata')) AS timestamp)
+                      >= CAST((CURRENT_TIMESTAMP AT TIME ZONE COALESCE(tz.name, 'Asia/Kolkata')) AS timestamp)
             """, nativeQuery = true)
     List<String> findActiveBbbServerIds(@Param("startGraceMinutes") int startGraceMinutes,
                                         @Param("endGraceMinutes") int endGraceMinutes);

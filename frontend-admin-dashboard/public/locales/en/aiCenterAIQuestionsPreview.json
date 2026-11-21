@@ -1,0 +1,49 @@
+{
+    "instituteLogoAlt": "logo",
+    "noResponseDialog": {
+        "title": "Failed to load questions",
+        "message": "We couldn't generate the questions for you. Please try again.",
+        "retryNow": "Retry Now"
+    },
+    "toast": {
+        "noDataExists": "No data exists!",
+        "incompleteQuestions": "Some of your questions are incomplete or need attention!",
+        "sectionsAdded": "Added {{sections}} sections with {{questions}} questions, as in the paper",
+        "savedToQuestionBank": "Paper added to the question bank"
+    },
+    "trigger": {
+        "retrying": "Retrying...",
+        "retry": "Retry",
+        "loading": "Loading…",
+        "viewQuestions": "View questions"
+    },
+    "header": {
+        "saving": "Saving...",
+        "saveChanges": "Save Changes",
+        "close": "Close",
+        "moreTagsBadge_one": "+{{count}}",
+        "moreTagsBadge_other": "+{{count}}",
+        "extractionSummary": "{{questions}} questions read from the paper · answers for {{keyed}} · explanations for {{explained}}",
+        "extractionUnkeyed_one": "{{count}} without an answer — mark it before use",
+        "extractionUnkeyed_other": "{{count}} without an answer — mark them before use",
+        "extractionCredits": "{{count}} credits",
+        "extractionCheck": "check Q {{numbers}}",
+        "extractionSectionsSplit": "{{count}} sections ({{names}}) — will be created as sections",
+        "extractionSectionsSingle": "{{count}} sections ({{names}}) — all questions go in one section",
+        "extractionMarking": "marking +{{marks}} / −{{negative}}",
+        "sectionChoiceLabel": "How to add the paper's sections",
+        "sectionChoiceSplit": "Create {{count}} sections as in the paper",
+        "sectionChoiceSingle": "Put all questions in this section",
+        "addToQuestionBank": "Add to question bank",
+        "addingToQuestionBank": "Adding…",
+        "addedToQuestionBank": "Added to question bank",
+        "extractionDuration": "time {{hrs}} h {{min}} min"
+    },
+    "questionCard": {
+        "duplicate": "Duplicate",
+        "delete": "Delete"
+    },
+    "content": {
+        "noQuestionsExist": "No Question Exists."
+    }
+}

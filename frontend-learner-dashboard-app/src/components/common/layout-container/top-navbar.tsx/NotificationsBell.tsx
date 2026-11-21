@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { Bell, CaretRight } from '@phosphor-icons/react';
 import {
   Popover,
@@ -29,6 +30,7 @@ const MAX_ROWS = 5;
 export const NotificationsBell: React.FC<{ className?: string }> = ({
   className,
 }) => {
+  const { t } = useTranslation('layoutCommonA');
   const navigate = useNavigate();
   const { alerts, loading, error, isEnabled, isLoadingSettings } =
     useSystemAlerts({
@@ -79,8 +81,8 @@ export const NotificationsBell: React.FC<{ className?: string }> = ({
           type="button"
           aria-label={
             unseenCount > 0
-              ? `Notifications, ${unseenCount} new`
-              : 'Notifications'
+              ? t('notificationsBell.ariaLabelWithCount', { count: unseenCount })
+              : t('common.notifications')
           }
           className={cn(
             // Default / vibrant: quiet ghost icon button matching navbar icon sizing
@@ -115,7 +117,7 @@ export const NotificationsBell: React.FC<{ className?: string }> = ({
       >
         <div className="border-b border-border px-4 py-3">
           <h3 className="text-sm font-semibold text-foreground">
-            Notifications
+            {t('common.notifications')}
           </h3>
         </div>
 
@@ -125,7 +127,7 @@ export const NotificationsBell: React.FC<{ className?: string }> = ({
 
         {loading && latest.length === 0 ? (
           <div
-            className="flex flex-col gap-3 px-4 py-3"
+            className="flex flex-col gap-stack px-4 py-3"
             role="status"
             aria-live="polite"
           >
@@ -139,8 +141,8 @@ export const NotificationsBell: React.FC<{ className?: string }> = ({
         ) : latest.length === 0 ? (
           <EmptyState
             icon={Bell}
-            title="All caught up"
-            description="New notifications will show up here."
+            title={t('notificationsBell.allCaughtUpTitle')}
+            description={t('notificationsBell.allCaughtUpDescription')}
             compact
             className="px-4"
           />
@@ -162,7 +164,7 @@ export const NotificationsBell: React.FC<{ className?: string }> = ({
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-1.5">
                       <span className="truncate text-sm font-medium text-foreground">
-                        {alert.title || 'Notification'}
+                        {alert.title || t('notificationsBell.fallbackNotificationTitle')}
                       </span>
                       {count > 1 && (
                         <span className="shrink-0 rounded-full bg-secondary px-1.5 text-caption text-secondary-foreground tabular-nums">
@@ -186,7 +188,7 @@ export const NotificationsBell: React.FC<{ className?: string }> = ({
             onClick={goToInbox}
             className="flex w-full items-center justify-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-primary-600 transition-colors hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring [.ui-play_&]:rounded-xl [.ui-play_&]:font-bold"
           >
-            All notifications
+            {t('notificationsBell.viewAll')}
             <CaretRight className="h-3.5 w-3.5" />
           </button>
         </div>

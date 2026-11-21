@@ -65,6 +65,20 @@ public class AssessmentNotificationMetadata {
     @Column(name = "parent_when_assessment_report_generated", nullable = false)
     private boolean parentWhenAssessmentReportGenerated;
 
+    /**
+     * Start time the "starts in N minutes" email already went out for (null = not sent).
+     * Written only by the claim UPDATE in the repository — read-only here so re-saving the
+     * notification settings in Step 3 can never clear or rewind it.
+     */
+    @JsonIgnore
+    @Column(name = "participant_reminder_sent_for", insertable = false, updatable = false)
+    private Date participantReminderSentFor;
+
+    /** Start time the "assessment is live" email already went out for. Same rules as above. */
+    @JsonIgnore
+    @Column(name = "participant_live_sent_for", insertable = false, updatable = false)
+    private Date participantLiveSentFor;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private Date createdAt;
 

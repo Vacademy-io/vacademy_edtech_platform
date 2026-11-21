@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
     Table,
@@ -10,14 +11,15 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { MyDialog } from '@/components/design-system/dialog';
+import { MyButton } from '@/components/design-system/button';
+import { cn } from '@/lib/utils';
 
 import { useTimerStore } from '@/stores/evaluation/timer-store';
 import { useMarksStore, feedbackKey } from '@/stores/evaluation/marks-store';
-import { ArrowSquareOut } from '@phosphor-icons/react';
+import { ArrowSquareOut, ChatText } from '@phosphor-icons/react';
 
 interface QuestionData {
     question_id: string;
@@ -30,7 +32,7 @@ interface QuestionData {
 }
 
 interface EvaluationProps {
-    questionData: Record<string, QuestionData[]>; // Section-wise question data
+    questionData?: Record<string, QuestionData[]>; // Section-wise question data
     totalPages: number; // Total number of pages
     pagesVisited: number[]; // Array of visited page numbers
 }
@@ -47,7 +49,26 @@ const parseMaxMark = (markingJson: string): number => {
     }
 };
 
-export default function Evaluation({ questionData, totalPages, pagesVisited }: EvaluationProps) {
+// Stable reference (not a fresh `{}` per render) — questionData feeds a
+// useMemo dependency array, and the standalone free tool never passes one.
+const EMPTY_QUESTION_DATA: Record<string, QuestionData[]> = {};
+
+export default function Evaluation({
+    questionData = EMPTY_QUESTION_DATA,
+    totalPages,
+    pagesVisited,
+}: EvaluationProps) {
+    const { t } = useTranslation('evaluationTool');
+    const { t: tReview } = useTranslation('copyCheckReview');
+    // Questions whose remark box is open in the per-question table.
+    const [openRemarks, setOpenRemarks] = useState<Set<string>>(() => new Set());
+    const toggleRemark = (key: string) =>
+        setOpenRemarks((prev) => {
+            const next = new Set(prev);
+            if (next.has(key)) next.delete(key);
+            else next.add(key);
+            return next;
+        });
     const [activeSection, setActiveSection] = useState<string>(Object.keys(questionData)[0] || '');
     const { elapsedTime } = useTimerStore();
     const { addOrUpdateMark, setQuestionFeedback, marksData, feedbackByQuestion } = useMarksStore();
@@ -82,6 +103,10 @@ export default function Evaluation({ questionData, totalPages, pagesVisited }: E
             }),
         }));
     }, [questionData, marksData]);
+    // The open section tab: the one the teacher picked, else the first section.
+    const shownSection = sections.some((s) => s.sectionId === activeSection)
+        ? activeSection
+        : sections[0]?.sectionId ?? '';
 
     // Flatten across sections so we can offer a single "overall marks" control when
     // the assessment is just one question (the assessment-as-a-slide shape).
@@ -108,12 +133,16 @@ export default function Evaluation({ questionData, totalPages, pagesVisited }: E
     // The overall remark is keyed to the primary question (the only one for a slide
     // assessment); it's merged into the marks payload at submit time.
     const primaryFeedback = primaryQuestion
-        ? feedbackByQuestion[
-              feedbackKey(primaryQuestion.sectionId, primaryQuestion.questionId)
-          ] ?? ''
+        ? feedbackByQuestion[feedbackKey(primaryQuestion.sectionId, primaryQuestion.questionId)] ??
+          ''
         : '';
 
-    const handleScoreChange = (sectionId: string, questionId: string, maxMarks: number, value: string) => {
+    const handleScoreChange = (
+        sectionId: string,
+        questionId: string,
+        maxMarks: number,
+        value: string
+    ) => {
         // Clamp to [0, maxMarks] instead of a blocking alert — the cap is shown
         // next to the field, so over-typing simply snaps to the maximum.
         const parsed = parseFloat(value);
@@ -135,7 +164,7 @@ export default function Evaluation({ questionData, totalPages, pagesVisited }: E
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
-        return `${mins}m ${secs}s`;
+        return t('timeFormat', { mins, secs });
     };
 
     return (
@@ -145,7 +174,7 @@ export default function Evaluation({ questionData, totalPages, pagesVisited }: E
         <div className="flex w-full flex-col gap-4">
             {/* Running total — the figure the evaluator most wants to track */}
             <div className="flex items-center justify-between rounded-md border border-primary-100 bg-primary-50 px-3 py-2">
-                <span className="text-xs font-medium text-neutral-600">Total awarded</span>
+                <span className="text-xs font-medium text-neutral-600">{t('totalAwarded')}</span>
                 <span className="text-sm font-bold tabular-nums text-primary-500">
                     {totals.scored} <span className="text-neutral-400">/ {totals.max}</span>
                 </span>
@@ -156,14 +185,16 @@ export default function Evaluation({ questionData, totalPages, pagesVisited }: E
             {isSingleQuestion && primaryQuestion ? (
                 <div className="space-y-2 rounded-lg border border-neutral-200 p-3">
                     <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-neutral-700">Marks awarded</span>
+                        <span className="text-sm font-medium text-neutral-700">
+                            {t('marksAwarded')}
+                        </span>
                         {primaryQuestion.content && (
                             <button
                                 type="button"
                                 onClick={() => setPreviewQuestionContent(primaryQuestion.content)}
                                 className="flex items-center gap-1 text-xs text-primary-500 hover:text-primary-400"
                             >
-                                <ArrowSquareOut className="size-3.5" /> View task
+                                <ArrowSquareOut className="size-3.5" /> {t('viewTask')}
                             </button>
                         )}
                     </div>
@@ -182,136 +213,222 @@ export default function Evaluation({ questionData, totalPages, pagesVisited }: E
                                     e.target.value
                                 )
                             }
+                            // No placeholder: a greyed-out "0" read as an
+                            // already-awarded zero, so evaluators who genuinely
+                            // meant 0 never typed it — leaving Submit disabled
+                            // and the evaluation unsaved. An empty box is honest.
                             className="w-24 text-center"
-                            placeholder="0"
                         />
                         <span className="text-sm text-neutral-500">
-                            out of {primaryQuestion.maxMarks}
+                            {t('outOf', { max: primaryQuestion.maxMarks })}
                         </span>
                     </div>
-                    <p className="text-xs text-neutral-400">
-                        Enter the overall score for this submission.
-                    </p>
+                    <p className="text-xs text-neutral-400">{t('enterOverallScoreHint')}</p>
                 </div>
             ) : (
-                <Tabs>
+                // Controlled, with the first section open by default. Uncontrolled
+                // Tabs had no value, so the question table stayed hidden until the
+                // teacher clicked "Section 1".
+                <Tabs value={shownSection} onValueChange={setActiveSection}>
                     <TabsList>
                         {sections.map((section, index) => (
-                            <TabsTrigger
-                                key={section.sectionId}
-                                onClick={() => setActiveSection(section.sectionId)}
-                                value={section.sectionId}
-                            >
-                                Section {index + 1}
+                            <TabsTrigger key={section.sectionId} value={section.sectionId}>
+                                {t('sectionNumber', { number: index + 1 })}
                             </TabsTrigger>
                         ))}
                     </TabsList>
 
                     {sections.map((section) => (
-                        <TabsContent
-                            key={section.sectionId}
-                            hidden={activeSection !== section.sectionId}
-                            value={activeSection}
-                        >
-                            <ScrollArea className="h-64 rounded-md border">
-                                <Table>
+                        <TabsContent key={section.sectionId} value={section.sectionId}>
+                            {/* Full list, no inner scroll box: the panel body already
+                                scrolls, and a fixed h-64 box showed only ~3 questions on
+                                laptop screens. Fixed layout keeps the remark column
+                                inside the narrow panel. */}
+                            <div className="overflow-hidden rounded-md border">
+                                <Table className="table-fixed">
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead className="w-fit">Question No</TableHead>
-                                            <TableHead className="text-center">
-                                                Scored Marks
+                                            <TableHead className="w-16">
+                                                {t('questionNo')}
                                             </TableHead>
-                                            <TableHead className="text-center">Max Marks</TableHead>
+                                            <TableHead className="text-center">
+                                                {t('scoredMarks')}
+                                            </TableHead>
+                                            <TableHead className="text-center">
+                                                {t('maxMarks')}
+                                            </TableHead>
+                                            <TableHead className="w-11">
+                                                <span className="sr-only">
+                                                    {tReview('manual.overallRemarks')}
+                                                </span>
+                                            </TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {section.questions.map((question) => (
-                                            <TableRow key={question.questionNo}>
-                                                <TableCell className="flex cursor-pointer items-center space-x-2 text-base font-medium">
-                                                    <strong>{question.questionNo}</strong>
-                                                    <ArrowSquareOut
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setPreviewQuestionContent(
-                                                                question.content
-                                                            );
-                                                        }}
-                                                    />
-                                                </TableCell>
+                                        {section.questions.map((question) => {
+                                            const key = feedbackKey(
+                                                question.sectionId,
+                                                question.questionId
+                                            );
+                                            const remark = feedbackByQuestion[key] ?? '';
+                                            const remarkOpen = openRemarks.has(key);
+                                            return (
+                                                <Fragment key={question.questionId}>
+                                                    <TableRow>
+                                                        <TableCell className="text-base font-medium">
+                                                            {/* flex on the inner div, not the td:
+                                                                a flex td drops out of the table
+                                                                layout and pushed the columns right. */}
+                                                            <div className="flex cursor-pointer items-center gap-2">
+                                                                <strong>
+                                                                    {question.questionNo}
+                                                                </strong>
+                                                                <ArrowSquareOut
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setPreviewQuestionContent(
+                                                                            question.content
+                                                                        );
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        </TableCell>
 
-                                                <TableCell className="text-center">
-                                                    <Input
-                                                        type="number"
-                                                        value={question.scoredMarks}
-                                                        max={String(question.maxMarks)}
-                                                        onChange={(e) =>
-                                                            handleScoreChange(
-                                                                question.sectionId,
-                                                                question.questionId,
-                                                                question.maxMarks,
-                                                                e.target.value
-                                                            )
-                                                        }
-                                                        className="mx-auto w-fit p-0.5 text-center"
-                                                        min={0}
-                                                        step="0.5"
-                                                    />
-                                                </TableCell>
-                                                <TableCell className="text-center">
-                                                    {question.maxMarks}
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
+                                                        <TableCell className="text-center">
+                                                            <Input
+                                                                type="number"
+                                                                value={question.scoredMarks}
+                                                                max={String(question.maxMarks)}
+                                                                onChange={(e) =>
+                                                                    handleScoreChange(
+                                                                        question.sectionId,
+                                                                        question.questionId,
+                                                                        question.maxMarks,
+                                                                        e.target.value
+                                                                    )
+                                                                }
+                                                                className="mx-auto w-16 p-0.5 text-center"
+                                                                min={0}
+                                                                step="0.5"
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell className="text-center">
+                                                            {question.maxMarks}
+                                                        </TableCell>
+                                                        <TableCell className="p-1">
+                                                            <MyButton
+                                                                type="button"
+                                                                layoutVariant="icon"
+                                                                buttonType="text"
+                                                                scale="small"
+                                                                aria-label={tReview(
+                                                                    'manual.remarksFor',
+                                                                    {
+                                                                        number: question.questionNo,
+                                                                    }
+                                                                )}
+                                                                aria-expanded={remarkOpen}
+                                                                onClick={() => toggleRemark(key)}
+                                                                className={cn(
+                                                                    'size-7',
+                                                                    remark
+                                                                        ? 'text-primary-500'
+                                                                        : 'text-neutral-400'
+                                                                )}
+                                                            >
+                                                                <ChatText
+                                                                    size={16}
+                                                                    weight={
+                                                                        remark ? 'fill' : 'regular'
+                                                                    }
+                                                                />
+                                                            </MyButton>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                    {remarkOpen && (
+                                                        <TableRow>
+                                                            <TableCell
+                                                                colSpan={4}
+                                                                className="bg-neutral-50"
+                                                            >
+                                                                <label className="mb-1 block text-caption font-medium text-neutral-600">
+                                                                    {tReview('manual.remarksFor', {
+                                                                        number: question.questionNo,
+                                                                    })}
+                                                                </label>
+                                                                <Textarea
+                                                                    value={remark}
+                                                                    onChange={(e) =>
+                                                                        setQuestionFeedback(
+                                                                            question.sectionId,
+                                                                            question.questionId,
+                                                                            e.target.value
+                                                                        )
+                                                                    }
+                                                                    placeholder={tReview(
+                                                                        'manual.remarksPlaceholder'
+                                                                    )}
+                                                                    className="min-h-16 resize-none bg-white"
+                                                                />
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    )}
+                                                </Fragment>
+                                            );
+                                        })}
                                     </TableBody>
                                 </Table>
-                            </ScrollArea>
+                            </div>
                         </TabsContent>
                     ))}
                 </Tabs>
             )}
 
-            {/* Remarks for the learner (optional). Fixed minimum height so it never
-                collapses into / overlaps the stats footer on short screens; the
-                panel body scrolls when everything doesn't fit. */}
-            <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3">
-                <span className="text-sm font-medium text-neutral-700">Remarks</span>
-                <Textarea
-                    value={primaryFeedback}
-                    onChange={(e) => handleFeedbackChange(e.target.value)}
-                    placeholder="Add remarks…"
-                    disabled={!primaryQuestion}
-                    className="min-h-24 resize-none"
-                />
-            </div>
+            {/* Remarks for the learner (optional), one-question (slide) assessments
+                only: with several questions each question has its own remark in the
+                table above, so a single box no longer lands on question 1. Fixed
+                minimum height so it never collapses into the stats footer. */}
+            {isSingleQuestion && (
+                <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3">
+                    <span className="text-sm font-medium text-neutral-700">{t('remarks')}</span>
+                    <Textarea
+                        value={primaryFeedback}
+                        onChange={(e) => handleFeedbackChange(e.target.value)}
+                        placeholder={t('addRemarksPlaceholder')}
+                        disabled={!primaryQuestion}
+                        className="min-h-24 resize-none"
+                    />
+                </div>
+            )}
 
             {/* Evaluation meta — de-emphasised */}
             <div className="space-y-1.5 rounded-lg bg-neutral-50 p-3 text-xs text-neutral-500">
                 <div className="flex items-center justify-between">
-                    <span>Pages reviewed</span>
+                    <span>{t('pagesReviewed')}</span>
                     <span className="font-medium text-neutral-700">
                         {pageData.pagesVisited.size} / {pageData.totalPages}
                     </span>
                 </div>
                 {pageData.pagesNotVisited.length > 0 && (
                     <div className="flex items-center justify-between">
-                        <span>Not visited</span>
+                        <span>{t('notVisited')}</span>
                         <span className="text-neutral-600">
                             {pageData.pagesNotVisited.join(', ')}
                         </span>
                     </div>
                 )}
                 <div className="flex items-center justify-between">
-                    <span>Time on evaluation</span>
+                    <span>{t('timeOnEvaluation')}</span>
                     <span className="font-medium text-neutral-700">{formatTime(elapsedTime)}</span>
                 </div>
             </div>
 
             <MyDialog
-                heading="Preview Question"
+                heading={t('previewQuestionHeading')}
                 open={!!previewQuestionContent}
                 onOpenChange={() => setPreviewQuestionContent('')}
             >
-                <strong className="-mt-10">Question :</strong>
+                <strong className="-mt-10">{t('questionLabel')}</strong>
                 <div
                     className="mb-5 mt-2 text-sm"
                     dangerouslySetInnerHTML={{ __html: previewQuestionContent }}

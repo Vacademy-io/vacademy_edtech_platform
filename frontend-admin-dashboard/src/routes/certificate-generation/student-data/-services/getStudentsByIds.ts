@@ -1,6 +1,9 @@
 import { GET_USER_DETAILS } from '@/constants/urls';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
+import i18n from '@/i18n';
 import { CertificateStudentData } from '@/types/certificate/certificate-types';
+
+const NS = 'certificateGenerationGetStudentsByIds';
 
 export interface RawStudentDetailsResponse {
     id: string;
@@ -102,7 +105,10 @@ export const fetchStudentDetailsByIds = async (
     } catch (error) {
         console.error('❌ Error fetching student details:', error);
         throw new Error(
-            `Failed to fetch student details: ${error instanceof Error ? error.message : 'Unknown error'}`
+            i18n.t(`${NS}:errors.fetchFailed`, {
+                message:
+                    error instanceof Error ? error.message : i18n.t(`${NS}:errors.unknownError`),
+            })
         );
     }
 };

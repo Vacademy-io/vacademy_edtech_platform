@@ -1,0 +1,11 @@
+{
+    "heading": "Invite Link",
+    "loading": "Loading invite link…",
+    "copy": "Copy",
+    "open": "Open",
+    "code": "Code:",
+    "inviteLink": "Invite link",
+    "inviteCode": "Invite code",
+    "copied": "{{label}} copied",
+    "noInviteLink": "No invite link configured. Create a subscription to generate one."
+}

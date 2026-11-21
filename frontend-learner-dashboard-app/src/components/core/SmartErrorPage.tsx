@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { isChunkLoadError, reloadForChunkError } from '@/lib/chunk-reload';
 import { classifyError } from '@/lib/error-classifier';
 import { GenericErrorPage } from './GenericErrorPage';
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function SmartErrorPage({ error }: Props) {
+    const { t } = useTranslation('courseComponentsExtra');
     const chunkError = isChunkLoadError(error);
 
     useEffect(() => {
@@ -22,7 +24,7 @@ export function SmartErrorPage({ error }: Props) {
     if (chunkError) {
         return (
             <div className="flex h-screen w-screen select-none items-center justify-center bg-gray-50 px-4 text-gray-700">
-                <p className="text-lg font-semibold">Updating application...</p>
+                <p className="text-lg font-semibold">{t('smartErrorPage.updatingApplication')}</p>
             </div>
         );
     }

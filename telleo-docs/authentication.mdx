@@ -1,0 +1,54 @@
+---
+title: "Authentication"
+description: "API keys, scopes, and keeping them safe."
+---
+
+Every request carries an API key in the `X-API-Key` header:
+
+```bash
+curl https://api.telleo.ai/v1/agents -H "X-API-Key: vak_call_…"
+```
+
+`Authorization: Bearer vak_call_…` works too, if your HTTP tool prefers it.
+
+## Creating and revoking keys
+
+An admin of your account manages keys in **CRM → Calling → AI Calling Settings → API & webhooks** (see [Getting API access](/getting-api-access)):
+
+- **Create key** issues a new key. It is shown once; we store only a hash and cannot show it again.
+- An optional **expiry date** makes the key stop working at the end of that day.
+- **Revoke** stops a key at once. Calls it already queued still go ahead.
+
+Use one key per system (CRM, website, automation tool). The table shows when each key was last used, so you can see which ones are still needed and revoke the rest.
+
+## Scopes
+
+A key created in the dashboard has `calls:read`, `calls:write` and `webhooks:manage`. The **human-call** and **management** scopes are only on keys created with their box ticked, because they let a key ring your staff's phones, add logins to your account or change what your callers hear. A request the key is not allowed to make fails with `403 insufficient_scope`.
+
+| Scope | Allows |
+|---|---|
+| `calls:read` | `GET /calls`, `GET /calls/{id}`, `GET /batches/{id}`, `GET /agents`, `GET /credits`, `GET /usage` |
+| `calls:write` | `POST /calls`, `POST /calls/{id}/cancel`, `POST /batches` |
+| `webhooks:manage` | Everything under `/webhook` |
+| `human_calls:read` | `GET /counsellors`, `GET /human-calls`, `GET /human-calls/{id}`, `GET /dispositions` |
+| `human_calls:write` | `POST /human-calls`, `POST /human-calls/{id}/disposition` |
+| `counsellors:manage` | `POST /counsellors`, `PATCH` and `DELETE /counsellors/{id}`; also `GET /counsellors` and `GET /counsellors/{id}` (with the mobile number of logins that belong to your account alone). Box: **Can manage counsellors**. |
+| `agents:manage` | `POST /agents`, `PATCH` and `DELETE /agents/{id}`, `POST /agents/{id}/enable` and `/disable`, `PUT /settings/default-agent`, `PUT /numbers/{id}/agent`. Box: **Can manage AI agents**. |
+
+`calls:read` also reads `GET /agents/{id}` (a summary without the script, handoff numbers, action rules and booking page; `agents:manage` sees everything), `GET /voices`, `GET /settings/default-agent` and `GET /numbers`; `human_calls:read` also reads `GET /counsellors/{id}`.
+
+Keys cannot be changed after they are created. To use [human calls](/concepts/human-calls) or the management endpoints with an existing integration, create a new key with the box ticked, switch your server to it, then revoke the old one. Keys created before 17 October 2026 never have the human-call scopes, and keys created before 19 October 2026 never have the management scopes.
+
+## Errors
+
+| Status | Code | Meaning |
+|---|---|---|
+| 401 | `missing_api_key` | No key in the request. |
+| 401 | `invalid_api_key` | The key is unknown, revoked or expired. |
+| 403 | `insufficient_scope` | The key does not have the scope this request needs. |
+
+## Keeping keys safe
+
+- Call the API **from your server only**. A key inside a web page or an app can be read by anyone who opens it.
+- Store keys in a secret manager or environment variables, not in code.
+- If a key may have leaked, create a new one, switch your system to it, then revoke the old one.

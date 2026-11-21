@@ -1,0 +1,127 @@
+{
+    "header": {
+        "title": "Default Admission Form",
+        "admissionForm": "Admission Form",
+        "bulkImport": "Bulk Import",
+        "subtitle": "Admissions and applications for a session — start a new one or convert an enquiry.",
+        "sessionLabel": "Session"
+    },
+    "filters": {
+        "status": "Status",
+        "source": "Source",
+        "dateRange": "Date Range",
+        "class": "Class",
+        "section": "Section",
+        "applyFilter": "Apply Filter",
+        "applying": "Applying...",
+        "clearAll": "Clear All"
+    },
+    "dateRanges": {
+        "today": "Today",
+        "last7Days": "Last 7 Days",
+        "last30Days": "Last 30 Days",
+        "last3Months": "Last 3 Months",
+        "last6Months": "Last 6 Months",
+        "lastYear": "Last Year"
+    },
+    "overallStatuses": {
+        "application": "Application",
+        "admission": "Admission"
+    },
+    "sourceTypes": {
+        "website": "Website",
+        "googleAds": "Google Ads",
+        "facebook": "Facebook",
+        "google": "Google",
+        "friends": "Friends",
+        "zohoForms": "Zoho Forms",
+        "audienceCampaign": "Audience Campaign",
+        "directApplication": "Direct Application",
+        "manualAdmission": "Manual Admission",
+        "other": "Other"
+    },
+    "searchByOptions": {
+        "studentName": "Student Name",
+        "applicationNo": "Application No",
+        "parentMobile": "Parent Mobile"
+    },
+    "search": {
+        "criteriaHeading": "Search Criteria",
+        "searchByLabel": "Search By",
+        "enterDetailsLabel": "Enter Details",
+        "enterDetailsPlaceholder": "Enter {{field}}",
+        "searchButton": "Search",
+        "searching": "Searching..."
+    },
+    "results": {
+        "totalResponses": "Total Responses:",
+        "noRecordsFound": "No records found matching your search criteria.",
+        "createAdmission": "Create Admission",
+        "alreadyAdmitted": "Already Admitted"
+    },
+    "table": {
+        "sNo": "S.No",
+        "class": "Class",
+        "studentName": "Student Name",
+        "gender": "Gender",
+        "dateOfBirth": "Date of Birth",
+        "parentName": "Parent Name",
+        "parentEmail": "Parent Email",
+        "parentMobile": "Parent Mobile",
+        "trackingId": "Tracking ID",
+        "status": "Status",
+        "source": "Source",
+        "actions": "Actions"
+    },
+    "genderLabels": {
+        "male": "Male",
+        "female": "Female",
+        "other": "Other"
+    },
+    "statusLabels": {
+        "new": "New",
+        "contacted": "Contacted",
+        "followUp": "Follow up",
+        "qualified": "Qualified",
+        "notEligible": "Not Eligible",
+        "enquiry": "Enquiry",
+        "application": "Application",
+        "admission": "Admission"
+    },
+    "emptyState": {
+        "title": "Select a student to begin",
+        "description": "Use the search panel above to find an existing Enquiry or Application. Alternatively, click 'Admission Form' to start a fresh form."
+    },
+    "admissionTypeModal": {
+        "title": "Choose Admission Type",
+        "subtitle": "Select how you would like to create a new admission",
+        "newAdmissionTitle": "New Admission",
+        "newAdmissionDesc": "Start a fresh admission form",
+        "fromEnquiryTitle": "From Enquiry",
+        "fromEnquiryDesc": "Create admission from existing enquiry",
+        "fromApplicationTitle": "From Application",
+        "fromApplicationDesc": "Create admission from existing application"
+    },
+    "applicationModal": {
+        "title": "Enter Application Details",
+        "applicationIdLabel": "Application ID / Tracking ID",
+        "applicationIdPlaceholder": "e.g., APP-12345",
+        "or": "OR",
+        "phoneLabel": "Phone Number",
+        "phonePlaceholder": "e.g., 9876543210",
+        "helperText": "Enter either the application ID or phone number of the application you want to convert to an admission",
+        "cancel": "Cancel",
+        "continueButton": "Continue",
+        "loading": "Loading..."
+    },
+    "alerts": {
+        "enterIdOrPhone": "Please enter either application ID or phone number",
+        "noApplicationFound": "No application found with the given details.",
+        "fetchFailed": "Failed to fetch application details. Please check the ID or phone number."
+    },
+    "quickViews": {
+        "admitted": "Admitted",
+        "applications": "Applications",
+        "all": "All records"
+    }
+}

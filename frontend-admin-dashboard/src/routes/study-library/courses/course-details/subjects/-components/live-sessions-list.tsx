@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { format } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from '@tanstack/react-router';
 import { Plus, VideoCamera } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
@@ -23,6 +24,7 @@ const getInstituteId = (): string => {
 };
 
 const LiveSessions = ({ packageSessionId }: { packageSessionId: string }) => {
+    const { t } = useTranslation('studyLibraryLiveSessionsList');
     const navigate = useNavigate();
     const instituteId = useMemo(getInstituteId, []);
     const { settings } = useLiveSessionSettings();
@@ -93,9 +95,11 @@ const LiveSessions = ({ packageSessionId }: { packageSessionId: string }) => {
         <div className="p-6 py-2">
             <div className="mb-4 flex flex-col items-start justify-between gap-2 md:flex-row md:items-center">
                 <div className="flex-1">
-                    <h2 className="text-base font-semibold text-gray-800">Manage {liveTerm}s</h2>
+                    <h2 className="text-base font-semibold text-gray-800">
+                        {t('manage', { term: liveTerm })}
+                    </h2>
                     <p className="mt-0.5 text-xs text-gray-500">
-                        Live and upcoming {liveTerm.toLocaleLowerCase()}s for this batch.
+                        {t('description', { term: liveTerm.toLocaleLowerCase() })}
                     </p>
                 </div>
                 {canSchedule && (
@@ -107,7 +111,7 @@ const LiveSessions = ({ packageSessionId }: { packageSessionId: string }) => {
                         className="flex items-center gap-1"
                     >
                         <Plus size={18} />
-                        Create {liveTerm}
+                        {t('create', { term: liveTerm })}
                     </MyButton>
                 )}
             </div>
@@ -118,13 +122,13 @@ const LiveSessions = ({ packageSessionId }: { packageSessionId: string }) => {
                 </div>
             ) : isError ? (
                 <div className="rounded-md bg-white p-6 text-center text-sm text-danger-500 shadow-sm">
-                    Failed to load {liveTerm.toLocaleLowerCase()}s. Please try again.
+                    {t('failedToLoad', { term: liveTerm.toLocaleLowerCase() })}
                 </div>
             ) : isEmpty ? (
                 <div className="flex flex-col items-center gap-3 rounded-md bg-white p-10 text-center shadow-sm">
                     <VideoCamera size={40} className="text-neutral-300" />
                     <div className="text-sm text-neutral-500">
-                        No live or upcoming {liveTerm.toLocaleLowerCase()}s for this batch yet.
+                        {t('emptyState', { term: liveTerm.toLocaleLowerCase() })}
                     </div>
                     {canSchedule && (
                         <MyButton
@@ -135,7 +139,7 @@ const LiveSessions = ({ packageSessionId }: { packageSessionId: string }) => {
                             className="flex items-center gap-1"
                         >
                             <Plus size={18} />
-                            Create {liveTerm}
+                            {t('create', { term: liveTerm })}
                         </MyButton>
                     )}
                 </div>
@@ -145,7 +149,9 @@ const LiveSessions = ({ packageSessionId }: { packageSessionId: string }) => {
                         <section className="flex flex-col gap-2">
                             <div className="flex items-center gap-2">
                                 <span className="inline-block size-2 animate-pulse rounded-full bg-danger-500" />
-                                <h3 className="text-sm font-semibold text-gray-800">Live Now</h3>
+                                <h3 className="text-sm font-semibold text-gray-800">
+                                    {t('liveNow')}
+                                </h3>
                             </div>
                             {liveSessions.map((session) => (
                                 <CompactSessionCard key={session.session_id} session={session} />
@@ -154,7 +160,9 @@ const LiveSessions = ({ packageSessionId }: { packageSessionId: string }) => {
                     )}
                     {upcomingSessions.length > 0 && (
                         <section className="flex flex-col gap-2">
-                            <h3 className="text-sm font-semibold text-gray-800">Upcoming</h3>
+                            <h3 className="text-sm font-semibold text-gray-800">
+                                {t('upcoming')}
+                            </h3>
                             {upcomingSessions.map((session) => (
                                 <CompactSessionCard key={session.session_id} session={session} />
                             ))}

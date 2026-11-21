@@ -1,0 +1,16 @@
+{
+    "aggTypes": {
+        "COUNT": "गिनती",
+        "SUM": "योग",
+        "AVG": "औसत",
+        "MIN": "न्यूनतम",
+        "MAX": "अधिकतम"
+    },
+    "operationLabel": "ऑपरेशन {{index}}",
+    "typeLabel": "प्रकार",
+    "saveAsLabel": "इस रूप में सहेजें",
+    "saveAsPlaceholder": "जैसे totalCount",
+    "fieldToLabel": "{{operation}} के लिए फ़ील्ड",
+    "fieldPlaceholder": "जैसे score, amount",
+    "addOperation": "ऑपरेशन जोड़ें"
+}

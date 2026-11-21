@@ -1,0 +1,42 @@
+{
+    "couldNotLoad": "सूचना आँकड़े लोड नहीं हो सके।",
+    "emailStats": {
+        "sent": "भेजे गए ईमेल",
+        "delivered": "डिलीवर हुए",
+        "opened": "खोले गए",
+        "clicked": "क्लिक किए गए",
+        "bounced": "बाउंस हुए",
+        "inbound": "आने वाले जवाब",
+        "complaints": "शिकायतें"
+    },
+    "waStats": {
+        "out": "WhatsApp आउटगोइंग",
+        "in": "WhatsApp इनकमिंग"
+    },
+    "sections": {
+        "email": "ईमेल",
+        "whatsapp": "WhatsApp"
+    },
+    "emailSubtitle": {
+        "notConfigured": "इस इंस्टीट्यूट के लिए कोई प्रेषक ईमेल कॉन्फ़िगर नहीं किया गया।",
+        "fullyConfigured": "प्रेषक + इनबाउंड इनबॉक्स कॉन्फ़िगर किया गया।",
+        "senderOnly": "प्रेषक कॉन्फ़िगर किया गया। इनबाउंड जवाब अभी सक्षम नहीं हैं।"
+    },
+    "waSubtitle": {
+        "connected": "WhatsApp बिज़नेस चैनल जुड़ा हुआ है।",
+        "notConfigured": "इस इंस्टीट्यूट से कोई WhatsApp चैनल जुड़ा नहीं है।"
+    },
+    "activeBatches": "सक्रिय बैच",
+    "batchesCompleted_one": "पूरे हुए बैच ({{count}} दिन)",
+    "batchesCompleted_other": "पूरे हुए बैच ({{count}} दिन)",
+    "viewStat": "{{label}} देखें",
+    "rates": {
+        "ofSent": "भेजे गए का {{rate}}",
+        "open": "{{rate}} ओपन दर",
+        "click": "{{rate}} क्लिक दर",
+        "bounce": "{{rate}} बाउंस दर",
+        "complaints": "स्पैम के रूप में चिह्नित"
+    },
+    "windowLabel_one": "पिछले 24 घंटे",
+    "windowLabel_other": "पिछले {{count}} दिन"
+}

@@ -101,6 +101,8 @@ public class InvoiceNumberingSettingsService {
                         ? request.getFyStartMonth() : defaults.getFyStartMonth())
                 .sanitizeTokens(request.getSanitizeTokens() == null || request.getSanitizeTokens())
                 .startFrom(request.getStartFrom() != null ? Math.max(0, request.getStartFrom()) : 0)
+                .neverReuseDeletedNumbers(request.getNeverReuseDeletedNumbers() == null
+                        || request.getNeverReuseDeletedNumbers())
                 .build();
     }
 

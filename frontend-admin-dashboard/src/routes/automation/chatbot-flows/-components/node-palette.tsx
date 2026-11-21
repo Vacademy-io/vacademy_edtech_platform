@@ -1,13 +1,15 @@
+import { useTranslation } from 'react-i18next';
 import { NODE_TYPE_REGISTRY, ChatbotNodeType } from '@/types/chatbot-flow/chatbot-flow-types';
 import { useChatbotFlowStore } from '../-stores/chatbot-flow-store';
 
 export function NodePalette() {
+    const { t } = useTranslation('automationNodePalette');
     const addNode = useChatbotFlowStore((s) => s.addNode);
 
     return (
         <div className="w-56 shrink-0 border-r bg-gray-50 p-3 overflow-y-auto">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">
-                Add Nodes
+                {t('heading')}
             </h3>
             <div className="space-y-2">
                 {NODE_TYPE_REGISTRY.map((info) => (

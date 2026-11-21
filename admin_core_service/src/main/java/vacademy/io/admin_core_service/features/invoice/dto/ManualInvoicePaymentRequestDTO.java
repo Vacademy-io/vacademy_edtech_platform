@@ -23,4 +23,6 @@ import lombok.NoArgsConstructor;
 public class ManualInvoicePaymentRequestDTO {
     private String transactionId;
     private String notes;
+    /** How it was paid (mode, sub-option, reference, date); see OfflinePaymentDetailsService. */
+    private vacademy.io.admin_core_service.features.offline_payment.dto.OfflinePaymentDetailsDTO paymentDetails;
 }

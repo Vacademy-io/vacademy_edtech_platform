@@ -1,8 +1,10 @@
 import { MyDialog } from '@/components/design-system/dialog';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { useEnrollRequestsDialogStore } from '../bulk-actions-store';
 
 export const DeclineRequestDialog = () => {
+    const { t } = useTranslation('manageStudentsDeclineRequestDialog');
     const { isDeclineRequestOpen, bulkActionInfo, selectedStudent, closeAllDialogs } =
         useEnrollRequestsDialogStore();
 
@@ -10,10 +12,10 @@ export const DeclineRequestDialog = () => {
         if (!bulkActionInfo) return;
 
         try {
-            toast.success('Request declined successfully');
+            toast.success(t('toasts.declineSuccess'));
             closeAllDialogs();
         } catch {
-            toast.error('Failed to decline request');
+            toast.error(t('toasts.declineFailed'));
         }
     };
 
@@ -21,16 +23,16 @@ export const DeclineRequestDialog = () => {
         if (!selectedStudent) return;
 
         try {
-            toast.success('Request accepted successfully');
+            toast.success(t('toasts.declineSuccess'));
             closeAllDialogs();
         } catch {
-            toast.error('Failed to accept request');
+            toast.error(t('toasts.declineFailed'));
         }
     };
 
     return (
         <MyDialog
-            heading="Accept Request"
+            heading={t('dialog.title')}
             open={isDeclineRequestOpen}
             onOpenChange={closeAllDialogs}
             footer={
@@ -39,25 +41,24 @@ export const DeclineRequestDialog = () => {
                         className="rounded-lg border border-neutral-300 px-4 py-2 text-neutral-600 hover:bg-neutral-100"
                         onClick={closeAllDialogs}
                     >
-                        Cancel
+                        {t('buttons.cancel')}
                     </button>
                     <button
                         className="hover:bg-primary-600 rounded-lg bg-primary-500 px-4 py-2 text-white"
                         onClick={selectedStudent ? handleDeclineRequest : handleDeclineRequestBulk}
                     >
-                        Decline Request
+                        {t('buttons.decline')}
                     </button>
                 </div>
             }
         >
             <div className="flex flex-col gap-4">
                 <p className="text-neutral-600">
-                    Are you sure you want to decline request for{' '}
-                    {selectedStudent ? selectedStudent?.full_name : bulkActionInfo?.displayText}?
+                    {t('dialog.confirmText', {
+                        name: selectedStudent ? selectedStudent?.full_name : bulkActionInfo?.displayText,
+                    })}
                 </p>
-                <p className="text-sm text-neutral-500">
-                    This will decline the request to the selected students via email.
-                </p>
+                <p className="text-sm text-neutral-500">{t('dialog.emailNotice')}</p>
             </div>
         </MyDialog>
     );

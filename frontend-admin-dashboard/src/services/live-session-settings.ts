@@ -1,7 +1,6 @@
 import { GET_INSTITUTE_SETTING_DATA, SAVE_INSTITUTE_SETTING } from '@/constants/urls';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
-import { getTokenDecodedData, getTokenFromCookie } from '@/lib/auth/sessionUtility';
-import { TokenKey } from '@/constants/auth/tokens';
+import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import { WaitingRoomType } from '@/routes/study-library/live-session/-constants/enums';
 
 export const SETTING_KEY_LIVE_SESSION = 'LIVE_SESSION_SETTING';
@@ -30,6 +29,27 @@ export type ZoomApprovalType = '0' | '1' | '2';
 export type ZoomAudioOption = 'both' | 'telephony' | 'voip';
 /** Zoom automatic-recording options. */
 export type ZoomAutoRecordingOption = 'cloud' | 'local' | 'none';
+
+/** How much of the institute's live-session list one role may see. */
+export type LiveSessionVisibilityMode = 'ALL' | 'OWN' | 'SPECIFIC_ROLES';
+
+export interface LiveSessionRoleVisibilityRule {
+    mode: LiveSessionVisibilityMode;
+    /**
+     * Role names whose sessions this role may also see. Read only when
+     * `mode === 'SPECIFIC_ROLES'`; the user's own sessions are always included
+     * on top of these.
+     */
+    roles: string[];
+}
+
+/** A session's instructor as the backend returns it. */
+export interface LiveSessionInstructor {
+    user_id: string;
+    full_name?: string | null;
+    email?: string | null;
+    profile_pic_file_id?: string | null;
+}
 
 export interface LiveSessionSettings {
     /** Per-platform allow-list. Missing key is treated as `true` (allowed). */
@@ -140,6 +160,20 @@ export interface LiveSessionSettings {
         enabled: boolean;
         minDurationPercent: number;
     };
+    /**
+     * Who can see which live sessions, keyed by role name (upper-case, custom
+     * roles included).
+     *
+     * A role with no entry — which is every role until an admin configures one
+     * — means ALL, i.e. exactly the behaviour that existed before this setting:
+     * one institute-wide list. A user holding several roles gets the most
+     * permissive of their rules, so restricting one role cannot accidentally
+     * restrict an admin who also holds it.
+     *
+     * Enforced server-side on the lists, search, detail, edit and delete — this
+     * is access control, not just a filtered view.
+     */
+    roleVisibility: Record<string, LiveSessionRoleVisibilityRule>;
     /**
      * "LMS Connection" — bridges live classes into course content (the LMS).
      * `recordingAddToCourseEnabled` shows/hides the per-recording "Add to
@@ -271,6 +305,28 @@ export interface LiveSessionSettings {
     defaultZoomAllowMultipleDevices: boolean;
     /** Default "add identity watermark". */
     defaultZoomWatermark: boolean;
+    /*
+     * Google Meet defaults, pre-filled in the Google Meet panel of a single class hosted on
+     * Meet with a connected account (keys read by GoogleMeetManager.buildSpaceConfig).
+     * Auto-record and join access are NOT here: they live on each connected Google account.
+     * Admins can still change them per class.
+     */
+    /** Default "auto-generate transcript". */
+    defaultGoogleMeetTranscription: boolean;
+    /** Default "Gemini notes (Take notes for me)". */
+    defaultGoogleMeetSmartNotes: boolean;
+    /** Default "Google attendance report". */
+    defaultGoogleMeetAttendanceReport: boolean;
+    /** Default "turn on host controls" — the four restrictions below apply only with it on. */
+    defaultGoogleMeetHostManagement: boolean;
+    /** Default "only hosts can chat". */
+    defaultGoogleMeetChatHostsOnly: boolean;
+    /** Default "only hosts can send reactions". */
+    defaultGoogleMeetReactionsHostsOnly: boolean;
+    /** Default "only hosts can share screen". */
+    defaultGoogleMeetPresentHostsOnly: boolean;
+    /** Default "learners join as viewers". */
+    defaultGoogleMeetJoinAsViewer: boolean;
     /**
      * Master switch for the disclaimer video. Off for every institute by default,
      * so nothing changes for anyone until an admin turns it on here.
@@ -288,6 +344,15 @@ export interface LiveSessionSettings {
      * present in any of this institute's classes is not asked again.
      */
     disclaimerVideoUrl: string;
+    /**
+     * "Attendance only" mode for institutes that teach offline and create live
+     * classes purely to record attendance. When on, learners never see the
+     * institute's live classes (upcoming, live or past) — only their
+     * attendance. Enforced server-side on the learner list endpoints. A live
+     * switch, not a scheduling default: it applies to existing classes too.
+     * Off by default.
+     */
+    attendanceOnlyMode: boolean;
 }
 
 export const DEFAULT_LIVE_SESSION_SETTINGS: LiveSessionSettings = {
@@ -319,6 +384,8 @@ export const DEFAULT_LIVE_SESSION_SETTINGS: LiveSessionSettings = {
         enabled: false,
         minDurationPercent: 60,
     },
+    // Empty = every role sees every session, which is the pre-existing behaviour.
+    roleVisibility: {},
     lmsConnection: {
         recordingAddToCourseEnabled: false,
         classMaterialsEnabled: false,
@@ -359,18 +426,29 @@ export const DEFAULT_LIVE_SESSION_SETTINGS: LiveSessionSettings = {
     defaultZoomFocusMode: false,
     defaultZoomAllowMultipleDevices: false,
     defaultZoomWatermark: false,
+    defaultGoogleMeetTranscription: false,
+    defaultGoogleMeetSmartNotes: false,
+    defaultGoogleMeetAttendanceReport: false,
+    defaultGoogleMeetHostManagement: false,
+    defaultGoogleMeetChatHostsOnly: false,
+    defaultGoogleMeetReactionsHostsOnly: false,
+    defaultGoogleMeetPresentHostsOnly: false,
+    defaultGoogleMeetJoinAsViewer: false,
     // Off by default: no institute gets a disclaimer in front of its learners,
     // and the per-class control stays hidden, until an admin turns this on.
     disclaimerVideoEnabled: false,
     disclaimerVideoUrl: '',
+    attendanceOnlyMode: false,
 };
 
+// The institute being worked in (selected institute, falling back to the token's first only
+// when none is selected) — NOT always the token's first institute. A multi-institute user
+// otherwise read and saved this setting on the wrong institute, and the backend now rejects
+// a setting save whose clientId isn't the target instituteId.
 const getInstituteId = (): string => {
-    const accessToken = getTokenFromCookie(TokenKey.accessToken);
-    const tokenData = getTokenDecodedData(accessToken);
-    const instituteIds = Object.keys(tokenData?.authorities || {});
-    if (instituteIds.length === 0) throw new Error('No institute ID found in token');
-    return instituteIds[0]!;
+    const instituteId = getCurrentInstituteId();
+    if (!instituteId) throw new Error('No institute ID found in token');
+    return instituteId;
 };
 
 export const getLiveSessionSettings = async (): Promise<LiveSessionSettings> => {
@@ -401,6 +479,9 @@ export const getLiveSessionSettings = async (): Promise<LiveSessionSettings> => 
                 ...DEFAULT_LIVE_SESSION_SETTINGS.defaultAttendanceCriteria,
                 ...(partial.defaultAttendanceCriteria ?? {}),
             },
+            // Replaced wholesale, not merged: a removed rule must actually be
+            // removed. Merging would make a role impossible to reset to ALL.
+            roleVisibility: partial.roleVisibility ?? {},
         };
     } catch (err) {
         console.error('Failed to load live-session settings, using defaults', err);

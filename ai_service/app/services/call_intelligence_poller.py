@@ -70,15 +70,18 @@ def _claim_batch() -> List[Dict[str, Any]]:
         if claimed:
             ids = [c["call_log_id"] for c in claimed]
             recs = db.execute(text("""
-                SELECT id, recording_storage_key, recording_private
+                SELECT id, recording_storage_key, recording_private, provider_type
                 FROM telephony_call_log
                 WHERE id = ANY(:ids)
             """), {"ids": ids}).mappings().all()
             keys = {r["id"]: r["recording_storage_key"] for r in recs}
             private = {r["id"]: r["recording_private"] for r in recs}
+            # provider_type decides billing: AI-agent calls are analysed free.
+            providers = {r["id"]: r["provider_type"] for r in recs}
             for c in claimed:
                 c["recording_storage_key"] = keys.get(c["call_log_id"])
                 c["recording_private"] = bool(private.get(c["call_log_id"]))
+                c["provider_type"] = providers.get(c["call_log_id"])
     return claimed
 
 

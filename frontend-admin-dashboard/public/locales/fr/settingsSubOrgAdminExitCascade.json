@@ -1,0 +1,19 @@
+{
+    "loading": "Chargement...",
+    "header": {
+        "title": "Départ de l'administrateur : {{term}}",
+        "description": "Choisissez ce qu'il advient des membres ({{term}}) lorsque l'accès de leur administrateur prend fin."
+    },
+    "enabled": {
+        "label": "Retirer les membres au départ de l'administrateur",
+        "description": "Lorsqu'une personne met fin à l'accès du dernier administrateur actif ({{term}}), les autres membres de ce cours perdent aussi leur accès : immédiatement avec une résiliation définitive, ou à la dernière date d'accès avec une annulation différée. Les adhésions expirées ne sont pas concernées."
+    },
+    "saveButton": {
+        "saving": "Enregistrement...",
+        "save": "Enregistrer les modifications"
+    },
+    "toasts": {
+        "saveSuccess": "Paramètre enregistré",
+        "saveError": "Échec de l'enregistrement du paramètre"
+    }
+}

@@ -1,0 +1,43 @@
+{
+    "header": {
+        "title": "{{term}} by location",
+        "subtitle": "Where your {{term}} are based"
+    },
+    "groupBy": {
+        "ariaLabel": "Group by"
+    },
+    "dims": {
+        "state": "State",
+        "city": "City",
+        "pincode": "Pincode"
+    },
+    "manage": "Manage",
+    "registered": "Registered",
+    "dateRange": {
+        "ariaLabel": "Registration date range",
+        "all": "All",
+        "last24h": "24h",
+        "last3d": "3d",
+        "last7d": "7d",
+        "custom": "Custom",
+        "fromDate": "From date",
+        "toDate": "To date",
+        "to": "to"
+    },
+    "stats": {
+        "states": "States",
+        "cities": "Cities",
+        "pincodes": "Pincodes",
+        "located": "Located"
+    },
+    "topLocations": {
+        "state": "Top states",
+        "city": "Top cities",
+        "pincode": "Top pincodes"
+    },
+    "table": {
+        "active": "Active",
+        "seats": "Seats"
+    },
+    "notSpecified": "Not specified"
+}

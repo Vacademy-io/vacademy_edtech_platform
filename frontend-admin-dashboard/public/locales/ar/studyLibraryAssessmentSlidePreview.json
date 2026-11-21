@@ -1,0 +1,30 @@
+{
+    "noAssessmentLinked": "لا يوجد اختبار مرتبط بهذه الشريحة.",
+    "status": {
+        "scheduled": "مجدول",
+        "closed": "مغلق",
+        "open": "مفتوح"
+    },
+    "availability": {
+        "range": "{{opens}} → {{closes}}",
+        "from": "من {{opens}}",
+        "until": "حتى {{closes}}",
+        "anytime": "في أي وقت"
+    },
+    "linkedAssessment": "الاختبار المرتبط",
+    "loadingEllipsis": "جارٍ التحميل…",
+    "viewSubmissions": "عرض التسليمات",
+    "manageInAssessments": "إدارة في الاختبارات",
+    "couldNotLoadDetails": "تعذّر تحميل تفاصيل الاختبار. قد يظل الرابط يعمل للمتعلمين.",
+    "totalMarks": "الدرجة الكلية",
+    "availableToLearners": "متاح للمتعلمين",
+    "lockedUntil": "هذه الشريحة مقفلة للمتعلمين حتى {{date}}.",
+    "itOpens": "فتحها",
+    "closedOnDate": "أُغلقت هذه الشريحة في {{date}} — لم يعد بإمكان المتعلمين محاولتها.",
+    "closedNoDate": "أُغلقت هذه الشريحة — لم يعد بإمكان المتعلمين محاولتها.",
+    "instructions": "التعليمات",
+    "loadingInstructions": "جارٍ تحميل التعليمات…",
+    "noInstructionsProvided": "لم تُقدَّم أي تعليمات.",
+    "submitted": "تم التسليم",
+    "enrolled": "مسجَّل"
+}

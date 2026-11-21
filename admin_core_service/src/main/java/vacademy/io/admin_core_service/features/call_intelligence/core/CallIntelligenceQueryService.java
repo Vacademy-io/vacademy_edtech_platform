@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.call_intelligence.core;
 
+import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -42,7 +43,7 @@ public class CallIntelligenceQueryService {
     private final AuthService authService;
 
     /** For fetching transcript artifacts from their stored S3 URLs. */
-    private final RestTemplate transcriptFetcher = new RestTemplate();
+    private final RestTemplate transcriptFetcher = ExternalCallLog.attach(new RestTemplate());
 
     public Optional<CallIntelligenceDto> getByCallLogId(String callLogId) {
         return repo.findByCallLogId(callLogId).map(CallIntelligenceDto::from);
@@ -58,9 +59,24 @@ public class CallIntelligenceQueryService {
         return repo.findByCallLogId(callLogId).map(row -> CallTranscriptDto.builder()
                 .callLogId(callLogId)
                 .detectedLanguage(row.getDetectedLanguage())
-                .sourceText(fetchText(row.getSourceTextKey()))
+                .sourceText(firstNonBlank(fetchText(row.getSourceTextKey()), inlineTranscript(row)))
                 .englishText(fetchText(row.getEnglishTextKey()))
                 .build());
+    }
+
+    /**
+     * Since 2026-09-11 the pipeline transcribes through OpenRouter, which returns
+     * text rather than a file: the transcript then lives in analysis_json
+     * ("transcript") and there is no S3 artifact to fetch.
+     */
+    private static String inlineTranscript(CallIntelligence row) {
+        Map<String, Object> a = row.getAnalysisJson();
+        Object t = a == null ? null : a.get("transcript");
+        return t == null ? null : String.valueOf(t);
+    }
+
+    private static String firstNonBlank(String a, String b) {
+        return (a != null && !a.isBlank()) ? a : b;
     }
 
     private String fetchText(String url) {

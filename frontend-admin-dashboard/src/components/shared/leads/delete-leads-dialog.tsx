@@ -63,20 +63,21 @@ export const DeleteLeadsDialog = ({
     const isBulk = responseIds.length > 1;
     const [scope, setScope] = useState<LeadDeleteScope>('RESPONSE');
 
-    // The person's other campaigns — only needed for the single-lead scope choice. The endpoint
+    // The person's other campaigns IN THIS INSTITUTE — only needed for the single-lead scope
+    // choice, and the delete never reaches past this institute either. The endpoint
     // returns deleted memberships too, so they're filtered out here: they're already gone and
     // re-deleting them is a no-op that would only inflate the count.
     const { data: memberships, isLoading } = useQuery({
-        queryKey: ['user-audiences', userId],
+        queryKey: ['user-audiences', userId, instituteId],
         queryFn: async (): Promise<AudienceMembership[]> => {
             const res = await authenticatedAxiosInstance({
                 method: 'GET',
                 url: GET_USER_AUDIENCES,
-                params: { userId },
+                params: { userId, instituteId },
             });
             return res?.data ?? [];
         },
-        enabled: open && !isBulk && !!userId,
+        enabled: open && !isBulk && !!userId && !!instituteId,
     });
 
     const liveMemberships = (memberships ?? []).filter(

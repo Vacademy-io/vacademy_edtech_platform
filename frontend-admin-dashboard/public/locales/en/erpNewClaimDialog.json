@@ -1,0 +1,26 @@
+{
+    "heading": "New claim",
+    "cancel": "Cancel",
+    "submit": "Submit claim",
+    "submitting": "Submitting…",
+    "pendingNotice": "Your claim goes to HR as Pending. Once approved, it is paid out with a future month's salary. Keep the receipt — you may be asked for it.",
+    "fields": {
+        "typeLabel": "What was it for?",
+        "amountLabel": "Amount you spent",
+        "dateLabel": "Date of the expense",
+        "descriptionLabel": "What was it?",
+        "descriptionPlaceholder": "Cab from the airport to the campus",
+        "descriptionHelp": "Optional, but it saves your HR team asking."
+    },
+    "toasts": {
+        "submitted": "Claim submitted"
+    },
+    "errors": {
+        "type": "Pick what this expense was for",
+        "amountRequired": "Enter the amount you spent",
+        "amountPositive": "Enter an amount greater than zero",
+        "date": "When did you spend it?",
+        "descriptionLength": "Keep it under 500 characters",
+        "submitFailed": "Could not submit your claim."
+    }
+}

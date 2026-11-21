@@ -1,0 +1,27 @@
+{
+    "pageHeading": "Évaluations",
+    "metaDescription": "Cette page présente tous les types d'évaluations que vous pouvez créer ici.",
+    "createAssessmentHeading": "Créer une évaluation",
+    "cards": {
+        "examination": {
+            "title": "Examen",
+            "description": "Une évaluation à horaire fixe qui se déroule selon un créneau précis, reproduisant les conditions réelles d'un examen."
+        },
+        "mock": {
+            "title": "Examen blanc",
+            "description": "Une évaluation d'entraînement toujours disponible, avec une durée fixe pour reproduire les conditions d'un examen."
+        },
+        "practice": {
+            "title": "Évaluation d'entraînement",
+            "description": "Une évaluation disponible à la demande, sans limite de temps, que les étudiants peuvent passer à tout moment."
+        },
+        "survey": {
+            "title": "Sondage",
+            "description": "Un ensemble de questions pour recueillir des avis ou des retours, sans bonnes ou mauvaises réponses."
+        },
+        "manualUploadExam": {
+            "title": "Examen à téléversement manuel",
+            "description": "Téléversez le sujet (et le corrigé / barème). Les élèves composent sur papier et téléversent leurs copies ; l'IA ou un enseignant les corrige."
+        }
+    }
+}

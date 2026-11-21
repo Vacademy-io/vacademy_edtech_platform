@@ -1,0 +1,82 @@
+{
+    "toasts": {
+        "updateSuccess": "चरण 3 का डेटा सफलतापूर्वक अपडेट कर दिया गया है!",
+        "createSuccess": "चरण 3 का डेटा सफलतापूर्वक सहेज दिया गया है!",
+        "saveFailed": "प्रतिभागियों को सहेजने में विफल।"
+    },
+    "header": {
+        "title": "प्रतिभागी जोड़ें",
+        "description": "तय करें कि इस असेसमेंट में कौन भाग ले सकता है। बैच से, व्यक्तिगत रूप से, या ओपन रजिस्ट्रेशन के ज़रिए छात्र जोड़ें।",
+        "updateButton": "अपडेट करें",
+        "nextButton": "अगला"
+    },
+    "accessSettings": {
+        "cardTitle": "प्रतिभागी एक्सेस सेटिंग्स",
+        "cardDescription": "चुनें कि शिक्षार्थी इस असेसमेंट तक पहुँच कैसे प्राप्त करेंगे।",
+        "closedTest": {
+            "label": "क्लोज़्ड टेस्ट",
+            "descriptionSurvey": "सर्वेक्षण को इंस्टिट्यूट बैचों को असाइन करके या व्यक्तिगत {{term}} चुनकर विशिष्ट प्रतिभागियों तक सीमित रखें।",
+            "descriptionAssessment": "असेसमेंट को इंस्टिट्यूट बैचों को असाइन करके या व्यक्तिगत {{term}} चुनकर विशिष्ट प्रतिभागियों तक सीमित रखें।"
+        },
+        "openTest": {
+            "label": "ओपन टेस्ट",
+            "descriptionSurvey": "किसी को भी शेयर किए गए लिंक के ज़रिए इस सर्वेक्षण के लिए रजिस्टर करने दें। इंस्टिट्यूट के {{term}} को भी पहले से रजिस्टर किया जा सकता है।",
+            "descriptionAssessment": "किसी को भी शेयर किए गए लिंक के ज़रिए इस असेसमेंट के लिए रजिस्टर करने दें। इंस्टिट्यूट के {{term}} को भी पहले से रजिस्टर किया जा सकता है।"
+        }
+    },
+    "registration": {
+        "titleSurvey": "सर्वेक्षण रजिस्ट्रेशन",
+        "titleAssessment": "असेसमेंट रजिस्ट्रेशन",
+        "aboutTitleSurvey": "सर्वेक्षण रजिस्ट्रेशन के बारे में",
+        "aboutTitleAssessment": "असेसमेंट रजिस्ट्रेशन के बारे में",
+        "instructionsPlaceholder": "रजिस्ट्रेशन निर्देश",
+        "startDateLabel": "आरंभ तिथि और समय",
+        "endDateLabel": "समाप्ति तिथि और समय",
+        "formFieldsTitle": "रजिस्ट्रेशन फ़ॉर्म फ़ील्ड्स",
+        "formFieldsSubtitle": "फ़ील्ड्स को फिर से व्यवस्थित करने और कस्टमाइज़ करने के लिए खींचें",
+        "addFieldHint": "फ़ील्ड जोड़ने के लिए नीचे दिए गए बटन का उपयोग करें",
+        "addGender": "लिंग जोड़ें",
+        "addState": "राज्य जोड़ें",
+        "addCity": "शहर जोड़ें",
+        "addSchoolCollege": "स्कूल/कॉलेज जोड़ें",
+        "addCustomField": "कस्टम फ़ील्ड जोड़ें",
+        "previewButton": "रजिस्ट्रेशन फ़ॉर्म प्रीव्यू करें",
+        "previewDialogTitle": "रजिस्ट्रेशन फ़ॉर्म प्रीव्यू",
+        "registerNowButton": "अभी रजिस्टर करें"
+    },
+    "shareAccess": {
+        "cardTitle": "एक्सेस शेयर करें",
+        "cardDescription": "प्रतिभागियों के साथ जॉइन लिंक या QR कोड शेयर करें।",
+        "joinLinkLabel": "जॉइन लिंक",
+        "joinLinkPlaceholder": "जॉइन लिंक",
+        "copyJoinLinkAriaLabel": "जॉइन लिंक कॉपी करें",
+        "qrCodeLabel": "QR कोड",
+        "downloadQrAriaLabel": "QR कोड डाउनलोड करें"
+    },
+    "notifications": {
+        "cardTitle": "ईमेल सूचनाएं",
+        "cardDescription": "चुनें कि कौन-सी घटनाएं स्वचालित ईमेल अलर्ट ट्रिगर करेंगी।",
+        "notifyBeforeLabel": "इससे पहले सूचित करें",
+        "items": {
+            "whenCreatedSurvey": "जब सर्वेक्षण बनाया जाए",
+            "whenCreatedAssessment": "जब असेसमेंट बनाया जाए",
+            "beforeLiveSurvey": "सर्वेक्षण लाइव होने से पहले",
+            "beforeLiveAssessment": "असेसमेंट लाइव होने से पहले",
+            "whenLiveSurvey": "जब सर्वेक्षण लाइव हो",
+            "whenLiveAssessment": "जब असेसमेंट लाइव हो",
+            "reportGeneratedSurvey": "जब सर्वेक्षण रिपोर्ट तैयार हो जाए",
+            "reportGeneratedAssessment": "जब असेसमेंट रिपोर्ट तैयार हो जाए"
+        },
+        "participants": {
+            "sectionTitle": "प्रतिभागियों को सूचित करें"
+        },
+        "parents": {
+            "sectionTitleSurvey": "प्रतिभागियों को सूचित करें",
+            "sectionTitleAssessment": "अभिभावकों को सूचित करें",
+            "whenStudentAppearsSurvey": "जब छात्र सर्वेक्षण में शामिल हों",
+            "whenStudentAppearsAssessment": "जब छात्र असेसमेंट में शामिल हों",
+            "whenStudentFinishesSurvey": "जब छात्र सर्वेक्षण पूरा करें",
+            "whenStudentFinishesAssessment": "जब छात्र असेसमेंट पूरा करें"
+        }
+    }
+}

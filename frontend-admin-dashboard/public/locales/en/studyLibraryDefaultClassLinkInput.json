@@ -1,0 +1,12 @@
+{
+    "addDefaultLinkForThisDay": "Add Default Link for This Day",
+    "shownToLearnersWhenNotLive": "Shown to learners when sessions are not live",
+    "defaultLink": "Default Link",
+    "shownWhenNotLive": "Shown when sessions are not live",
+    "copy": "Copy",
+    "remove": "Remove",
+    "className": "Class Name",
+    "classNamePlaceholder": "e.g., Mathematics Class",
+    "linkUrl": "Link URL",
+    "linkUrlPlaceholder": "https://example.com"
+}

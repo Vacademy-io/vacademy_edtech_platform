@@ -4,15 +4,18 @@
  * UNSAVED change; the admin then saves (draft) and publishes as usual.
  */
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
     Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { CircleNotch, ClockCounterClockwise } from '@phosphor-icons/react';
 import { useToast } from '@/hooks/use-toast';
+import { formatDateTime } from '@/lib/formatters';
 import {
     getRevisionHistory, getRevision, CatalogueRevision,
 } from '../-services/catalogue-service';
+import { findLiveRevision } from '../-utils/draft-staleness';
 
 const sourceLabel = (source?: string) =>
     source === 'AI_WIZARD' ? 'AI wizard' : source === 'AI_COPILOT' ? 'AI copilot' : 'Manual edit';
@@ -29,6 +32,7 @@ export const RevisionHistoryDialog = ({
     onRestore: (catalogueJson: string) => void;
 }) => {
     const { toast } = useToast();
+    const { t } = useTranslation('managePagesCatalogueEditor');
 
     const { data: revisions, isLoading } = useQuery({
         queryKey: ['catalogueRevisions', catalogueId],
@@ -53,6 +57,7 @@ export const RevisionHistoryDialog = ({
         onError: () =>
             toast({ title: 'Restore failed', description: 'Could not load that version.', variant: 'destructive' }),
     });
+    const liveRevisionId = findLiveRevision(revisions)?.id;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -81,11 +86,23 @@ export const RevisionHistoryDialog = ({
                                         <span className={r.status === 'DRAFT' ? 'text-amber-600' : 'text-green-600'}>
                                             {r.status === 'DRAFT' ? 'Draft' : 'Published'}
                                         </span>
+                                        {r.id === liveRevisionId && (
+                                            <span className="ms-2 rounded-full bg-green-100 px-1.5 py-0.5 text-caption font-semibold text-green-700">
+                                                {t('history.liveNow')}
+                                            </span>
+                                        )}
                                     </p>
                                     <p className="text-caption text-gray-400">
                                         {sourceLabel(r.source)}
-                                        {r.updated_at ? ` · ${new Date(r.updated_at).toLocaleString()}` : ''}
+                                        {r.updated_at ? ` · ${formatDateTime(r.updated_at)}` : ''}
                                     </p>
+                                    {r.status === 'DRAFT' && r.created_at && (
+                                        <p className="text-caption text-gray-400">
+                                            {t('history.draftStarted', {
+                                                date: formatDateTime(r.created_at),
+                                            })}
+                                        </p>
+                                    )}
                                 </div>
                                 <Button
                                     variant="ghost"

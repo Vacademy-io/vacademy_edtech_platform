@@ -1,0 +1,190 @@
+{
+    "common": {
+        "filters": "Filters",
+        "clear": "Clear",
+        "view": "View",
+        "close": "Close",
+        "previous": "Previous",
+        "next": "Next",
+        "selectPeriod": "Select Period",
+        "viewModeTimeline": "Timeline",
+        "viewModeTable": "Table",
+        "pageOf": "Page {{page}} of {{total}}"
+    },
+    "periodSelector": {
+        "today": "Today",
+        "tomorrow": "Tomorrow",
+        "allActivities": "All Activities"
+    },
+    "intervalTypeSelector": {
+        "today": "Today",
+        "thisWeek": "This Week",
+        "thisMonth": "This Month",
+        "thisQuarter": "This Quarter",
+        "allPlannings": "All Plannings"
+    },
+    "attachments": {
+        "label": "Attachments",
+        "openInNewTab": "Open in new tab",
+        "failedToLoad": "Failed to load",
+        "item": "Attachment {{index}}"
+    },
+    "filtersDialog": {
+        "title": "Filter Options",
+        "description": "Customize what you want to see",
+        "period": "Period",
+        "coursesAndBatches": "{{courses}}/{{batches}}",
+        "clearAllFilters": "Clear All Filters"
+    },
+    "planningFilters": {
+        "clearAll": "Clear all",
+        "intervalType": "Interval Type",
+        "unnamedBatch": "Unnamed {{batch}}"
+    },
+    "intervalTypeOptions": {
+        "dayOfWeek": "Day of week",
+        "weekly": "Weekly",
+        "monthly": "Monthly",
+        "quarterly": "Quarterly"
+    },
+    "intervalTypeLabel": {
+        "daily": "Daily",
+        "weekly": "Day of week",
+        "monthly": "Week",
+        "yearlyMonth": "Month",
+        "yearlyQuarter": "Quarter"
+    },
+    "todayIntervalLabel": {
+        "daily": "Daily",
+        "weekly": "This Week",
+        "monthly": "This Month",
+        "yearlyMonth": "This Month",
+        "yearlyQuarter": "This Quarter"
+    },
+    "weekdays": {
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday",
+        "sunday": "Sunday"
+    },
+    "monthsFull": {
+        "january": "January",
+        "february": "February",
+        "march": "March",
+        "april": "April",
+        "may": "May",
+        "june": "June",
+        "july": "July",
+        "august": "August",
+        "september": "September",
+        "october": "October",
+        "november": "November",
+        "december": "December"
+    },
+    "monthsShort": {
+        "jan": "Jan",
+        "feb": "Feb",
+        "mar": "Mar",
+        "apr": "Apr",
+        "may": "May",
+        "jun": "Jun",
+        "jul": "Jul",
+        "aug": "Aug",
+        "sep": "Sep",
+        "oct": "Oct",
+        "nov": "Nov",
+        "dec": "Dec"
+    },
+    "quarterRanges": {
+        "q1": "Jan - Mar",
+        "q2": "Apr - Jun",
+        "q3": "Jul - Sep",
+        "q4": "Oct - Dec"
+    },
+    "formatters": {
+        "weekLabel": "W{{week}} {{month}}",
+        "yearMonthLabel": "{{month}} '{{year}}",
+        "quarterFallback": "Q{{num}}"
+    },
+    "groups": {
+        "today": "Today",
+        "tomorrow": "Tomorrow",
+        "pastDays": "Past days",
+        "later": "Later",
+        "nextWeek": "Next week",
+        "nextMonth": "Next month",
+        "nextQuarter": "Next quarter",
+        "pastWeek": "Past week",
+        "pastMonth": "Past month",
+        "pastQuarter": "Past quarter"
+    },
+    "table": {
+        "empty": {
+            "title": "No planning or activities shared with you yet",
+            "description": "Your {{teachers}} will share planning and activities here"
+        },
+        "headers": {
+            "interval": "Interval",
+            "period": "Period",
+            "title": "Title",
+            "createdBy": "Created By",
+            "createdAt": "Created At",
+            "actions": "Actions"
+        }
+    },
+    "timeline": {
+        "previousPage": "Previous Page",
+        "loadMore": "Load More"
+    },
+    "timelineCard": {
+        "by": "By: {{name}}",
+        "viewDetails": "View Details"
+    },
+    "todayCard": {
+        "updatedAgo": "Updated {{time}} ago",
+        "createdBy": "Created by {{name}}"
+    },
+    "viewDialog": {
+        "interval": "Interval:",
+        "createdBy": "Created by:",
+        "createdAt": "Created at:",
+        "description": "Description",
+        "content": "Content",
+        "attachmentsCount": "Attachments ({{count}})"
+    },
+    "hub": {
+        "heading": "Planning & Activity",
+        "subtitle": "View plannings and activities shared by your {{teachers}}",
+        "plannings": {
+            "title": "Plannings",
+            "description": "View plannings from your {{teachers}}",
+            "cta": "View Plannings"
+        },
+        "activities": {
+            "title": "Activities",
+            "description": "View activities from your {{teachers}}",
+            "cta": "View activities"
+        }
+    },
+    "activityLogsPage": {
+        "navHeading": "My Activities",
+        "subtitle": "View daily learning activities",
+        "errorLoad": "Failed to load activities",
+        "empty": {
+            "title": "No activities yet",
+            "description": "Your {{teacher}} hasn't logged any activities"
+        }
+    },
+    "planningLogsPage": {
+        "navHeading": "My Plannings",
+        "subtitle": "View plans and schedules",
+        "errorLoad": "Failed to load plannings",
+        "empty": {
+            "title": "No plannings yet",
+            "description": "Your {{teacher}} hasn't added any plannings for this period"
+        }
+    }
+}

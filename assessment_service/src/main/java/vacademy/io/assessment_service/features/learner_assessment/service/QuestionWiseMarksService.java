@@ -46,7 +46,8 @@ public class QuestionWiseMarksService {
                                                                      Long timeTakenInSecs,
                                                                      String answerStatus,
                                                                      Section section,
-                                                                     double marks) {
+                                                                     double marks,
+                                                                     String marksSource) {
 
         Optional<QuestionWiseMarks> questionWiseMarksOpt = questionWiseMarksRepository.findByAssessmentIdAndStudentAttemptIdAndQuestionIdAndSectionId(assessment.getId(), attempt.getId(), question.getId(), section.getId());
 
@@ -59,10 +60,18 @@ public class QuestionWiseMarksService {
                 questionWiseMarks.setResponseJson(responseJson);
             }
 
+            if (Math.abs(questionWiseMarks.getMarks() - marks) > 0.0001
+                    || !Objects.equals(questionWiseMarks.getStatus(), answerStatus)
+                    || !Objects.equals(questionWiseMarks.getMarksSource(), marksSource)) {
+                // Submission review: the mark changed - an open edit form must notice.
+                questionWiseMarks.setRevision(questionWiseMarks.getRevision() + 1);
+            }
             questionWiseMarks.setMarks(marks);
 
             questionWiseMarks.setSection(section);
             questionWiseMarks.setStatus(answerStatus);
+            // The caller's (re)scored source: KEYWORD for a keyword-matched long answer.
+            questionWiseMarks.setMarksSource(marksSource);
 
             return questionWiseMarksRepository.save(questionWiseMarks);
         }
@@ -75,6 +84,7 @@ public class QuestionWiseMarksService {
                 .responseJson(responseJson)
                 .section(section)
                 .status(answerStatus)
+                .marksSource(marksSource)
                 .marks(marks).build();
 
 

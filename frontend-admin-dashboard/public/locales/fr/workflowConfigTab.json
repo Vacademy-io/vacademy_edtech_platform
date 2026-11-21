@@ -1,0 +1,112 @@
+{
+    "errors": {
+        "cannotBeEmpty": "Ne peut pas être vide",
+        "mustBeJsonObject": "Doit être un objet JSON ({ ... })",
+        "invalidJson": "JSON invalide",
+        "unknownError": "Erreur inconnue",
+        "failedToSave": "Échec de l'enregistrement"
+    },
+    "queryParamsEditor": {
+        "label": "Paramètres de l'étape",
+        "hint": "comment cette étape sélectionne ses données"
+    },
+    "objectListEditor": {
+        "hint": "ajoutez-en autant que nécessaire — un lien vide masque cette entrée",
+        "add": "Ajouter",
+        "remove": "Supprimer"
+    },
+    "flatMapEditor": {
+        "add": "Ajouter",
+        "removeKey": "Supprimer {{key}}"
+    },
+    "nestedMapGridEditor": {
+        "hint": "vide = utiliser le lien par défaut",
+        "linksSet_one": "{{count}} lien défini",
+        "linksSet_many": "{{count}} lien défini",
+        "linksSet_other": "{{count}} liens définis",
+        "usingDefault": "utilisation du défaut",
+        "defaultLinkPlaceholder": "lien par défaut"
+    },
+    "outputDataPointsEditor": {
+        "defaultLabelItems": "éléments",
+        "defaultLabelValues": "valeurs",
+        "defaultLabelSchedule": "planning",
+        "structuredValueHint": "valeur structurée — à modifier dans config_json ci-dessous",
+        "fieldNamePlaceholder": "fieldName",
+        "noEditableSettings": "Aucun paramètre texte modifiable sur ce nœud.",
+        "title": "Paramètres du workflow",
+        "hint": "texte des modèles, liens et valeurs d'audience",
+        "addSetting": "Ajouter un paramètre",
+        "modeSpelTitle": "Expression SpEL — cliquez pour traiter comme du texte brut",
+        "modeTextTitle": "Texte brut — cliquez pour traiter comme une expression SpEL",
+        "modeSpel": "SpEL",
+        "modeText": "Texte",
+        "removeSetting": "Supprimer le paramètre",
+        "advancedFormulas": "Formules avancées ({{count}}) — à modifier uniquement si vous connaissez SpEL"
+    },
+    "templateVarsEditor": {
+        "title": "Contenu du message",
+        "hint": "ce que ce nœud envoie — modifiez le texte librement",
+        "template": "Modèle",
+        "templatePlaceholder": "Choisissez un modèle WhatsApp",
+        "previewUnavailableTitle": "Aperçu du message indisponible",
+        "previewUnavailableNoBody": "Ce modèle WhatsApp n'a pas encore de texte de corps stocké ici.",
+        "previewUnavailableNotImported": "Ce modèle WhatsApp a été créé dans Meta et n'a pas encore été importé.",
+        "previewUnavailableSuffix": "Le message continue de s'envoyer normalement — seul l'aperçu est manquant. Importez vos modèles pour voir le texte complet avec vos valeurs renseignées.",
+        "importTemplates": "Importer les modèles depuis WhatsApp",
+        "importing": "Importation…",
+        "missingValuesTitle_one": "Ce modèle nécessite {{count}} valeur supplémentaire",
+        "missingValuesTitle_many": "Ce modèle nécessite {{count}} valeur supplémentaire",
+        "missingValuesTitle_other": "Ce modèle nécessite {{count}} valeurs supplémentaires",
+        "missingValuesBody_one": "Le modèle WhatsApp utilise {{list}}, mais cette étape ne la fournit pas. Les envois échoueront tant qu'elle ne sera pas renseignée.",
+        "missingValuesBody_many": "Le modèle WhatsApp utilise {{list}}, mais cette étape ne la fournit pas. Les envois échoueront tant qu'elle ne sera pas renseignée.",
+        "missingValuesBody_other": "Le modèle WhatsApp utilise {{list}}, mais cette étape ne les fournit pas. Les envois échoueront tant qu'elles ne seront pas renseignées.",
+        "addMissing_one": "L'ajouter",
+        "addMissing_many": "L'ajouter",
+        "addMissing_other": "Les ajouter",
+        "unusedKeys": "Plus utilisé par ce modèle : {{list}} — peut être laissé ou effacé sans risque.",
+        "fixedWording": "Le libellé de ce message est fixé par le modèle WhatsApp approuvé. Les parties surlignées ci-dessus sont renseignées pour chaque apprenant à l'envoi.",
+        "filledAutomatically": "Renseigné automatiquement : {{list}}",
+        "autoFilledVariables": "Variables auto-remplies ({{count}}) — nom, liens, dates",
+        "varFallbackLabel": "variable {{key}}"
+    },
+    "nodeCard": {
+        "unsaved": "non enregistré",
+        "startBadge": "Début",
+        "endBadge": "Fin",
+        "nodeName": "Nom du nœud",
+        "nodeNamePlaceholder": "Nom du nœud",
+        "nodeType": "Type de nœud",
+        "status": "Statut",
+        "startNode": "Nœud de début",
+        "endNode": "Nœud de fin",
+        "configJsonLabel": "config_json",
+        "configJsonHint": "le routage et les paramètres du nœud se trouvent ici",
+        "format": "Formater",
+        "formatTitle": "Formater le JSON",
+        "retryConfigLabel": "retry_config",
+        "retryConfigHint": "optionnel — p. ex. {{example}}",
+        "retryConfigNonePlaceholder": "(aucun)",
+        "automaticStep": "Étape automatique — rien à configurer ici.",
+        "saved": "Enregistré",
+        "unsavedChanges": "Modifications non enregistrées",
+        "revert": "Annuler",
+        "saving": "Enregistrement...",
+        "saveNode": "Enregistrer le nœud"
+    },
+    "page": {
+        "loading": "Chargement de la configuration...",
+        "failedToLoad": "Échec du chargement de la configuration",
+        "noNodes": "Ce workflow n'a aucun nœud à configurer.",
+        "devTitle": "Vue développeur — configuration complète du nœud",
+        "devDescription": "Modifiez directement le <0>config_json</0> brut de chaque nœud (y compris son <1>routing</1>). Les modifications sont validées et enregistrées directement dans le modèle de nœud — le workflow en cours les applique à sa prochaine exécution.",
+        "simpleTitle": "Paramètres du workflow",
+        "simpleDescription": "Modifiez vos messages, liens et paramètres ci-dessous, puis enregistrez chaque carte. Les modifications s'appliquent automatiquement à partir de la prochaine exécution du workflow.",
+        "expandAll": "Tout développer",
+        "collapseAll": "Tout réduire",
+        "expandAllTitle": "Développer chaque étape",
+        "collapseAllTitle": "Réduire chaque étape",
+        "simpleView": "Vue simple",
+        "developerView": "Vue développeur"
+    }
+}

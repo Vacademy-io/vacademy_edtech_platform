@@ -10,4 +10,9 @@ public interface EvaluationLogsRepository extends JpaRepository<EvaluationLogs, 
 
     List<EvaluationLogs> findAllBySourceAndSourceIdOrderByDateAndTimeDesc(String source, String sourceId);
 
+    /** Whether the attempt was ever marked on the answer sheet (manual evaluation). */
+    boolean existsBySourceIdAndType(String sourceId, String type);
+
+    List<EvaluationLogs> findAllBySourceIdOrderByDateAndTimeDesc(String sourceId);
+
 }

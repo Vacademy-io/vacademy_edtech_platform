@@ -3,6 +3,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import type { ChildProfile } from "@/types/parent-portal";
 import {
   Card,
@@ -16,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatDate } from "@/lib/formatters";
 import {
   CalendarCheck,
   Clock,
@@ -35,6 +37,7 @@ interface InterviewAssessmentModuleProps {
 export function InterviewAssessmentModule({
   child,
 }: InterviewAssessmentModuleProps) {
+  const { t } = useTranslation("parent");
   // Placeholder data - API endpoints for interview/assessment not implemented yet
   const interview = null;
   const assessment = null;
@@ -62,10 +65,12 @@ export function InterviewAssessmentModule({
       {/* Header */}
       <div>
         <h2 className="text-lg sm:text-xl font-bold text-foreground">
-          Interviews & Assessments
+          {t("admissionPortal.interview.heading")}
         </h2>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Scheduled sessions for {child.full_name}
+          {t("admissionPortal.interview.subheading", {
+            name: child.full_name,
+          })}
         </p>
       </div>
 
@@ -82,11 +87,15 @@ export function InterviewAssessmentModule({
                 className="mx-auto text-muted-foreground/40 mb-3"
               />
               <p className="text-sm font-medium text-muted-foreground">
-                No {getTerminologyPlural(ContentTerms.LiveSession, SystemTerms.LiveSession).toLowerCase()} scheduled yet
+                {t("admissionPortal.interview.emptyTitle", {
+                  liveSession: getTerminologyPlural(
+                    ContentTerms.LiveSession,
+                    SystemTerms.LiveSession,
+                  ).toLowerCase(),
+                })}
               </p>
               <p className="text-xs text-muted-foreground/60 mt-1">
-                Details will appear here once the admissions team schedules an
-                interview or assessment.
+                {t("admissionPortal.interview.emptyBody")}
               </p>
             </CardContent>
           </Card>
@@ -101,7 +110,7 @@ export function InterviewAssessmentModule({
           transition={{ delay: 0.05 }}
         >
           <ScheduleCard
-            type="Interview"
+            type={t("admissionPortal.interview.interviewType")}
             scheduleDate={interview.scheduled_date}
             scheduleTime={interview.scheduled_time}
             duration={interview.duration_minutes}
@@ -130,7 +139,7 @@ export function InterviewAssessmentModule({
           transition={{ delay: 0.1 }}
         >
           <ScheduleCard
-            type="Assessment"
+            type={t("admissionPortal.interview.assessmentType")}
             scheduleDate={assessment.scheduled_date}
             scheduleTime={assessment.scheduled_time}
             duration={assessment.duration_minutes}
@@ -185,6 +194,7 @@ function ScheduleCard({
   icon,
   accentColor,
 }: ScheduleCardProps) {
+  const { t } = useTranslation("parent");
   const isCompleted = status === "COMPLETED";
   const isCancelled = status === "CANCELLED";
   const isUpcoming = status === "SCHEDULED";
@@ -204,7 +214,7 @@ function ScheduleCard({
     : null;
 
   const dateObj = new Date(scheduleDate);
-  const dateStr = dateObj.toLocaleDateString("en-US", {
+  const dateStr = formatDate(dateObj, {
     weekday: "long",
     month: "long",
     day: "numeric",
@@ -230,10 +240,10 @@ function ScheduleCard({
               <CardTitle className="text-base">{type}</CardTitle>
               <CardDescription className="text-xs">
                 {isCompleted
-                  ? "Completed"
+                  ? t("admissionPortal.interview.completed")
                   : isCancelled
-                    ? "Cancelled"
-                    : "Upcoming"}
+                    ? t("admissionPortal.interview.cancelled")
+                    : t("admissionPortal.interview.upcoming")}
               </CardDescription>
             </div>
           </div>
@@ -261,7 +271,9 @@ function ScheduleCard({
           </div>
           <div className="flex items-center gap-2 text-sm">
             <Timer size={14} className="text-muted-foreground" />
-            <span className="text-muted-foreground">{duration} min</span>
+            <span className="text-muted-foreground">
+              {t("admissionPortal.interview.durationMin", { duration })}
+            </span>
           </div>
         </div>
 
@@ -274,10 +286,10 @@ function ScheduleCard({
           )}
           <span className="text-foreground">
             {mode === "ONLINE"
-              ? "Online"
+              ? t("admissionPortal.interview.online")
               : mode === "HYBRID"
-                ? "Hybrid"
-                : location || "On campus"}
+                ? t("admissionPortal.interview.hybrid")
+                : location || t("admissionPortal.interview.onCampus")}
           </span>
           <Badge variant="outline" className="text-caption ms-auto">
             {mode}
@@ -293,16 +305,16 @@ function ScheduleCard({
             onClick={() => window.open(meetingLink, "_blank")}
           >
             <VideoCamera size={12} />
-            Join Online Session
+            {t("admissionPortal.interview.joinOnlineSession")}
             <ArrowSquareOut size={10} />
           </Button>
         )}
 
         {/* Feedback */}
         {feedback && isCompleted && (
-          <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
-            <p className="text-xs font-medium text-muted-foreground mb-1">
-              Feedback
+          <div className="p-3 rounded-lg bg-muted/30 border border-border/50 space-y-1">
+            <p className="text-xs font-medium text-muted-foreground">
+              {t("admissionPortal.interview.feedback")}
             </p>
             <p className="text-sm text-foreground">{feedback}</p>
           </div>

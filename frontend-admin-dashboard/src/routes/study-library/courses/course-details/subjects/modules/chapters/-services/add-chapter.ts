@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import i18next from 'i18next';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { Chapter } from '@/stores/study-library/use-modules-with-chapters-store';
 import { ADD_CHAPTER } from '@/constants/urls';
@@ -39,7 +40,7 @@ export const useAddChapter = () => {
                 );
                 return response.data;
             } catch (error) {
-                throw new Error('Failed to add chapter');
+                throw new Error(i18next.t('studyLibraryAddChapter:failedToAddChapter'));
             }
         },
         onSuccess: () => {

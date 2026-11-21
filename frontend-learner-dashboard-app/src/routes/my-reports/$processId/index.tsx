@@ -1,6 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useStudentPermissions } from "@/hooks/use-student-permissions";
 import { DashboardLoader } from "@/components/core/dashboard-loader";
 import ReportDetailsPage from "@/components/common/my-reports/report-details-page";
@@ -22,6 +23,7 @@ export const Route = createFileRoute("/my-reports/$processId/")({
 });
 
 function RouteComponent() {
+  const { t } = useTranslation("miscRoutesA");
   const navigate = useNavigate();
   const params = Route.useParams();
   const processId = params.processId || "";
@@ -47,7 +49,7 @@ function RouteComponent() {
         const data = await fetchMyReport(processId);
         if (!cancelled) setDetail(data);
       } catch {
-        if (!cancelled) setError("Unable to load this report. Please try again.");
+        if (!cancelled) setError(t("myReports.detail.loadError"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -90,15 +92,17 @@ function RouteComponent() {
           <Card className="max-w-md w-full">
             <CardContent className="pt-6 text-center space-y-3">
               <ArrowCounterClockwise size={32} className="text-muted-foreground mx-auto" />
-              <p className="text-base font-semibold text-neutral-800">Could Not Load Report</p>
+              <p className="text-base font-semibold text-neutral-800">
+                {t("myReports.detail.couldNotLoad")}
+              </p>
               <p className="text-sm text-muted-foreground">
-                {error ?? "Report not found."}
+                {error ?? t("myReports.detail.reportNotFound")}
               </p>
               <button
                 onClick={() => navigate({ to: "/my-reports" })}
                 className="mt-2 px-4 py-2 text-sm font-medium bg-primary-500 text-white rounded-lg hover:bg-primary-400 transition-colors"
               >
-                Back to Reports
+                {t("myReports.detail.backToReports")}
               </button>
             </CardContent>
           </Card>
@@ -115,17 +119,19 @@ function RouteComponent() {
         <div className="flex items-center justify-center min-h-96 p-4">
           <Card className="max-w-md w-full">
             <CardContent className="pt-6 text-center space-y-3">
-              <p className="text-base font-semibold text-neutral-800">Report In Progress</p>
+              <p className="text-base font-semibold text-neutral-800">
+                {t("myReports.detail.inProgress")}
+              </p>
               <p className="text-sm text-muted-foreground">
                 {detail.status === "FAILED"
-                  ? (detail.error_message ?? "Report generation failed. Please contact your institute.")
-                  : "Your report is still being generated. Please check back shortly."}
+                  ? (detail.error_message ?? t("myReports.detail.generationFailed"))
+                  : t("myReports.detail.stillGenerating")}
               </p>
               <button
                 onClick={() => navigate({ to: "/my-reports" })}
                 className="mt-2 px-4 py-2 text-sm font-medium bg-primary-500 text-white rounded-lg hover:bg-primary-400 transition-colors"
               >
-                Back to Reports
+                {t("myReports.detail.backToReports")}
               </button>
             </CardContent>
           </Card>
@@ -145,7 +151,7 @@ function RouteComponent() {
               onClick={() => downloadReportPdf(detail.process_id)}
               className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 shadow-sm transition-colors hover:bg-neutral-50"
             >
-              <DownloadSimple size={16} /> Download PDF
+              <DownloadSimple size={16} /> {t("myReports.detail.downloadPdf")}
             </button>
           </div>
           <StudentReportCard
@@ -167,15 +173,17 @@ function RouteComponent() {
         <div className="flex items-center justify-center min-h-96 p-4">
           <Card className="max-w-md w-full">
             <CardContent className="pt-6 text-center space-y-3">
-              <p className="text-base font-semibold text-neutral-800">Report Content Unavailable</p>
+              <p className="text-base font-semibold text-neutral-800">
+                {t("myReports.detail.contentUnavailable")}
+              </p>
               <p className="text-sm text-muted-foreground">
-                The report content could not be loaded. Please try again later.
+                {t("myReports.detail.contentUnavailableDescription")}
               </p>
               <button
                 onClick={() => navigate({ to: "/my-reports" })}
                 className="mt-2 px-4 py-2 text-sm font-medium bg-primary-500 text-white rounded-lg hover:bg-primary-400 transition-colors"
               >
-                Back to Reports
+                {t("myReports.detail.backToReports")}
               </button>
             </CardContent>
           </Card>

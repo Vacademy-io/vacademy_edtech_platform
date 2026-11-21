@@ -1,4 +1,5 @@
 import { Helmet } from 'react-helmet';
+import { useTranslation } from 'react-i18next';
 import { Tabs } from '@/components/ui/tabs';
 import { useEffect, useState } from 'react';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
@@ -43,6 +44,7 @@ export interface SelectedQuestionPaperFilters {
 }
 
 export const ScheduleTestMainComponent = () => {
+    const { t } = useTranslation('evaluationScheduleTestMainComponent');
     const accessToken = getTokenFromCookie(TokenKey.accessToken);
     const [isOpen, setIsOpen] = useState(false);
     const data = getTokenDecodedData(accessToken);
@@ -82,7 +84,7 @@ export const ScheduleTestMainComponent = () => {
     const [scheduleTestTabsData, setScheduleTestTabsData] = useState<ScheduleTestTab[]>([
         {
             value: 'liveTests',
-            message: 'No tests are currently live.',
+            message: t('noLiveTests'),
             data: {
                 content: [],
                 last: false,
@@ -94,7 +96,7 @@ export const ScheduleTestMainComponent = () => {
         },
         {
             value: 'upcomingTests',
-            message: 'No upcoming tests scheduled.',
+            message: t('noUpcomingTests'),
             data: {
                 content: [],
                 last: false,
@@ -106,7 +108,7 @@ export const ScheduleTestMainComponent = () => {
         },
         {
             value: 'previousTests',
-            message: 'No previous tests available.',
+            message: t('noPreviousTests'),
             data: {
                 content: [],
                 last: false,
@@ -118,7 +120,7 @@ export const ScheduleTestMainComponent = () => {
         },
         {
             value: 'draftTests',
-            message: 'No draft tests available.',
+            message: t('noDraftTests'),
             data: {
                 content: [],
                 last: false,
@@ -394,7 +396,7 @@ export const ScheduleTestMainComponent = () => {
     }, []);
 
     useEffect(() => {
-        setNavHeading(<h1 className="text-lg">Assessments List</h1>);
+        setNavHeading(<h1 className="text-lg">{t('assessmentsList')}</h1>);
     }, []);
 
     useEffect(() => {
@@ -413,11 +415,8 @@ export const ScheduleTestMainComponent = () => {
     return (
         <>
             <Helmet>
-                <title>Evaluate Tests</title>
-                <meta
-                    name="description"
-                    content="This page shows the list of all the schedules tests and also an assessment can be scheduled here."
-                />
+                <title>{t('helmet.title')}</title>
+                <meta name="description" content={t('helmet.description')} />
             </Helmet>
             <div className="flex flex-col gap-4">
                 <Tabs value={selectedTab} onValueChange={handleTabChange}>
@@ -444,7 +443,7 @@ export const ScheduleTestMainComponent = () => {
                                 }
                             />
                             <ScheduleTestFilters
-                                label="Mode"
+                                label={t('mode')}
                                 data={ModeData}
                                 selectedItems={
                                     selectedQuestionPaperFilters['assessment_modes'] || []
@@ -454,7 +453,7 @@ export const ScheduleTestMainComponent = () => {
                                 }
                             />
                             <ScheduleTestFilters
-                                label="Type"
+                                label={t('type')}
                                 data={AssessmentTypeData}
                                 selectedItems={
                                     selectedQuestionPaperFilters['access_statuses'] || []
@@ -488,7 +487,11 @@ export const ScheduleTestMainComponent = () => {
                     ))}
                 </Tabs>
             </div>
-            <NoCourseDialog type={'Creating assessment'} isOpen={isOpen} setIsOpen={setIsOpen} />
+            <NoCourseDialog
+                type={t('noCourseDialogType')}
+                isOpen={isOpen}
+                setIsOpen={setIsOpen}
+            />
         </>
     );
 };

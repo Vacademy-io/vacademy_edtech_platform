@@ -1,12 +1,12 @@
 import { useRouter } from "@tanstack/react-router";
-import { CaretLeft } from "@phosphor-icons/react";
 import { shouldHidePaidPurchaseUI } from "@/utils/ios-iap-compliance";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import {
   CourseDetailsFormValues,
-  courseDetailsSchema,
+  makeCourseDetailsSchema,
 } from "./course-details-schema";
 import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { handleGetSlideCountDetails } from "../-services/get-slides-count";
@@ -16,17 +16,16 @@ import {
   handleGetCourseInit,
   handleGetCourseDetails,
 } from "../-services/get-course-details";
-import { useNavHeadingStore } from "@/stores/layout-container/useNavHeadingStore";
 import { CourseStructureDetails } from "./course-structure-details";
 import { DonationDialog } from "@/components/common/donation/DonationDialog";
 import { EnrollmentPaymentDialog } from "./payment-dialogs/EnrollmentPaymentDialog";
 import { EnrollmentPendingApprovalDialog } from "./payment-dialogs/EnrollmentPendingApprovalDialog";
 import { useEnrollmentStatus } from "@/hooks/use-enrollment-status";
 import { getSubjectDetails } from "@/routes/courses/course-details/-utils/helper";
-import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
-import { ContentTerms, SystemTerms } from "@/types/naming-settings";
-import { DashboardLoader } from "@/components/core/dashboard-loader";
-import { ContentOnlyCourseDetailsSkeleton } from "./course-details-skeleton";
+import {
+  ContentOnlyCourseDetailsSkeleton,
+  CourseDetailsSkeleton,
+} from "./course-details-skeleton";
 import { CourseHeader } from "./course-header";
 import { CourseSubscriptionCancel } from "./CourseSubscriptionCancel";
 import { CertificateCompletionBanner } from "./certificate-completion-banner.tsx";
@@ -38,6 +37,7 @@ import { processSlideCounts } from "../-utils/slide-counts";
 import {
   derivePrimaryInstructorName,
   extractReadTimeMinutes,
+  fillEnrolledSessionsFromInit,
   getCourseDepthFromInit,
   getFirstLevelSubjectsFromInit,
 } from "../-utils/course-init-extract";
@@ -46,6 +46,7 @@ import type {
   SlideCountType,
 } from "../-utils/course-details-types";
 import { useCourseDetailsLoadingStates } from "../-hooks/use-loading-states";
+import { useCourseDetailsNavHeading } from "../-hooks/use-course-details-nav-heading";
 import { useUserContext } from "../-hooks/use-user-context";
 import { useInstituteAndBatches } from "../-hooks/use-institute-and-batches";
 import { usePaymentType } from "../-hooks/use-payment-type";
@@ -54,6 +55,20 @@ import { useCertificateGeneration } from "../-hooks/use-certificate-generation";
 import { usePaymentStatusSync } from "../-hooks/use-payment-status-sync";
 import { useCourseDisplaySettings } from "../-hooks/use-course-display-settings";
 import { useEnrollmentActions } from "../-hooks/use-enrollment-actions";
+import { TutorEntryCard } from "@/components/tutor/TutorEntryCard";
+import { useFunTheme } from "@/hooks/use-fun-theme";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { courseColourClass } from "@/components/design-system/fun/course-palette";
+import { FunCourseBand, FunCourseBandSkeleton } from "./fun/FunCourseBand";
+import { FunPickUpCard, type FunCurrentSlide } from "./fun/FunPickUpCard";
+import {
+  courseHeaderPercent,
+  courseSizeCounts,
+  levelSessionLine,
+  listSnapshotPercent,
+  plainText,
+  totalSlides,
+} from "./fun/course-outline";
 
 export type {
   ChapterType,
@@ -61,24 +76,22 @@ export type {
   SubjectType,
 } from "../-utils/course-details-types";
 
-const heading = (
-  <div className="flex items-center">
-    <CaretLeft
-      onClick={() => window.history.back()}
-      className="cursor-pointer"
-    />
-    <h1 className="text-lg ms-2">
-      {getTerminology(ContentTerms.Course, SystemTerms.Course)} Details
-    </h1>
-  </div>
-);
-
 export const CourseDetailsPage = () => {
-  const { setNavHeading } = useNavHeadingStore();
+  const { i18n: i18nInstance } = useTranslation("courseDetailsA");
+  const { t: tSlideCounts } = useTranslation("courseDetailsC");
+  const courseDetailsSchema = useMemo(
+    () => makeCourseDetailsSchema(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [i18nInstance.language],
+  );
 
-  useEffect(() => {
-    setNavHeading(heading);
-  }, [setNavHeading]);
+  useCourseDetailsNavHeading();
+  const isFun = useFunTheme();
+  // Fun on a laptop: the course's own video or image goes in the right column,
+  // above the pick-up card, so the outline starts on the first screen.
+  const funWide = useMediaQuery("(min-width: 1024px)");
+  // Fun: the slide the outline marks as current, for the laptop side card.
+  const [funCurrentSlide, setFunCurrentSlide] = useState<FunCurrentSlide | null>(null);
 
   const router = useRouter();
   const searchParams = router.state.location.search;
@@ -105,7 +118,7 @@ export const CourseDetailsPage = () => {
   // Enrollment state. Its service reads are memoized (30s TTL), so the two
   // instances on this route (page + course structure) share network calls.
   const {
-    enrolledSessions,
+    enrolledSessions: rawEnrolledSessions,
     addEnrolledSession,
     isLoading: isEnrollmentLoading,
   } = useEnrollmentStatus(instituteId);
@@ -185,6 +198,13 @@ export const CourseDetailsPage = () => {
   const courseInitSubjectsFromCourseInit = useMemo(
     () => getFirstLevelSubjectsFromInit(courseDetailsData),
     [courseDetailsData],
+  );
+
+  // One enrolled-session list for everything on this page, with skeletal
+  // entries (no package id) filled from course-init's package_sessions.
+  const enrolledSessions = useMemo(
+    () => fillEnrolledSessionsFromInit(rawEnrolledSessions, courseDetailsData),
+    [rawEnrolledSessions, courseDetailsData],
   );
 
   // Find enrolled package_sessions for THIS course by matching student package_session_ids
@@ -323,6 +343,14 @@ export const CourseDetailsPage = () => {
     });
   }, [selectedSession, selectedLevel, form]);
 
+  // Fun skin: the header band counts modules and chapters at every depth, from
+  // the outline the structure block loads (the stats above come from the form,
+  // whose subjects carry no modules below depth 5).
+  const [funStructureCounts, setFunStructureCounts] = useState<{
+    modules: number;
+    chapters: number;
+  } | null>(null);
+
   // Function to update module statistics for depth 5 courses
   const updateModuleStats = (
     modulesData: Record<string, Array<{ chapters?: Array<unknown> }>>,
@@ -346,6 +374,21 @@ export const CourseDetailsPage = () => {
         totalChapters,
       }));
     }
+  };
+
+  const funUpdateModuleStats = (
+    modulesData: Record<string, Array<{ chapters?: Array<unknown> }>>,
+  ) => {
+    updateModuleStats(modulesData);
+    let modules = 0;
+    let chapters = 0;
+    Object.values(modulesData).forEach((list) => {
+      modules += list.length;
+      list.forEach((mod) => {
+        chapters += mod.chapters?.length ?? 0;
+      });
+    });
+    setFunStructureCounts({ modules, chapters });
   };
 
   const slideCountQuery = useQuery({
@@ -374,8 +417,12 @@ export const CourseDetailsPage = () => {
 
   // Custom slide count calculation to handle special document types
   const processedSlideCounts = useMemo(
-    () => processSlideCounts(slideCountQuery.data as SlideCountType[] | null),
-    [slideCountQuery.data],
+    () =>
+      processSlideCounts(
+        slideCountQuery.data as SlideCountType[] | null,
+        tSlideCounts,
+      ),
+    [slideCountQuery.data, tSlideCounts],
   );
 
   usePaymentStatusSync({
@@ -393,8 +440,11 @@ export const CourseDetailsPage = () => {
 
   const {
     showCourseConfiguration,
+    hideTags,
     overviewVisible,
     hideAuthorName,
+    hideOverviewCard,
+    hideProgressCard,
     showInstructors,
     enrolledLayout,
     chapterOpensFirstSlide: chapterOpensFirstSlideSetting,
@@ -462,12 +512,34 @@ export const CourseDetailsPage = () => {
     // Match the skeleton to the layout it resolves into — a full-page branded
     // spinner ahead of a title-plus-one-card page reads as a much heavier load
     // than it is, and makes the content visibly jump when it lands.
+    if (isFun) return <FunCourseBandSkeleton />;
     return contentOnly ? (
       <ContentOnlyCourseDetailsSkeleton />
     ) : (
-      <DashboardLoader />
+      <CourseDetailsSkeleton />
     );
   }
+
+  // Fun skin header band: the batch's percent from any entry path, and the
+  // level counts the sidebar would show (placeholder levels dropped).
+  const funDepth =
+    courseStructureFromApi ?? stableCourseData?.courseData?.courseStructure ?? 5;
+  const funCourseData = isFun ? form.getValues("courseData") : null;
+  const funPreviewImage = funCourseData?.coursePreviewImageMediaId ?? "";
+  const funCourseId = String(searchParams.courseId ?? "");
+  // The list's percent in the link counts only where it can be trusted: a 0
+  // from the All tab may be a course the learner never joined.
+  const funSearchPercent = listSnapshotPercent(
+    typeof selectedTab === "string" ? selectedTab : null,
+    searchParams.percentageCompleted,
+  );
+  // The session as the institute typed it (the select's label re-cases it),
+  // so the band reads the same as the Learn row.
+  const funSessionName =
+    funCourseData?.sessions?.find(
+      (s) => s.sessionDetails?.id === selectedSession,
+    )?.sessionDetails?.session_name ??
+    sessionOptions?.find((o) => o.value === selectedSession)?.label;
 
   return (
     <>
@@ -505,13 +577,61 @@ export const CourseDetailsPage = () => {
         courseTitle={form.getValues("courseData").title}
       />
 
-      <div className="min-h-screen bg-background relative w-full max-w-full">
+      <div
+        className={
+          isFun
+            ? "min-h-screen bg-background relative w-full max-w-full fun-course-page"
+            : "min-h-screen bg-background relative w-full max-w-full"
+        }
+      >
         {/* Course Header */}
-        <CourseHeader
-          courseData={form.getValues("courseData")}
-          showConfetti={showConfetti}
-          minimal={contentOnly}
-        />
+        {isFun && funCourseData ? (
+          <>
+            <FunCourseBand
+              courseId={funCourseId}
+              title={funCourseData.title}
+              eyebrow={levelSessionLine(
+                levelOptions?.find((o) => o.value === selectedLevel)?.label,
+                funSessionName,
+              )}
+              summary={contentOnly ? "" : plainText(funCourseData.description)}
+              imageUrl={/^https?:\/\//i.test(funPreviewImage) ? funPreviewImage : null}
+              counts={courseSizeCounts({
+                depth: funDepth,
+                subjects: getSubjectDetails(
+                  form.getValues(),
+                  selectedSession,
+                  selectedLevel,
+                ).length,
+                modules: funStructureCounts?.modules ?? moduleStats.totalModules,
+                chapters: funStructureCounts?.chapters ?? moduleStats.totalChapters,
+                slides: totalSlides(processedSlideCounts),
+              })}
+              percent={courseHeaderPercent(
+                courseDetailsData,
+                packageSessionIdForCurrentLevel,
+                funSearchPercent,
+                isEnrolledInCourse,
+              )}
+              hidePercent={hideProgressCard}
+            />
+            {!contentOnly && !(funWide && hasRightSidebar) && (
+              <CourseHeader
+                courseData={funCourseData}
+                minimal={false}
+                hideTags
+                mediaOnly
+              />
+            )}
+          </>
+        ) : (
+          <CourseHeader
+            courseData={form.getValues("courseData")}
+            showConfetti={showConfetti}
+            minimal={contentOnly}
+            hideTags={hideTags}
+          />
+        )}
 
         {/* Main Content Container */}
         <div className="relative z-10 w-full px-2 sm:px-0 py-2 lg:py-3">
@@ -587,6 +707,12 @@ export const CourseDetailsPage = () => {
                     className="animate-fade-in-up"
                     style={{ animationDelay: "0.2s" }}
                   >
+                    {/* Live AI Tutor entry (renders nothing unless the course is prepared) */}
+                    <TutorEntryCard
+                      courseId={searchParams.courseId || ""}
+                      packageSessionId={packageSessionIdForCurrentLevel || ""}
+                      selectedTab={searchParams.selectedTab}
+                    />
                     <CourseStructureDetails
                       selectedSession={selectedSession}
                       selectedLevel={selectedLevel}
@@ -598,7 +724,7 @@ export const CourseDetailsPage = () => {
                       courseData={stableCourseData}
                       packageSessionId={packageSessionIdForCurrentLevel || ""}
                       selectedTab={selectedTab}
-                      updateModuleStats={updateModuleStats}
+                      updateModuleStats={isFun ? funUpdateModuleStats : updateModuleStats}
                       isEnrolledInCourse={isEnrolledInCourse}
                       contentOnly={contentOnly}
                       chapterOpensFirstSlide={chapterOpensFirstSlide}
@@ -606,6 +732,7 @@ export const CourseDetailsPage = () => {
                       onLoadingChange={handleModulesLoadingChange}
                       courseInitSubjects={courseInitSubjectsFromCourseInit}
                       {...(paymentType && { paymentType })}
+                      {...(isFun && { onFunCurrentSlide: setFunCurrentSlide, funHideProgress: hideProgressCard })}
                     />
                   </div>
                 );
@@ -664,7 +791,24 @@ export const CourseDetailsPage = () => {
                 the right-side details" refers to. */}
             {hasRightSidebar && (
               <div className="lg:col-span-1">
-                <div className="sticky top-24 self-start">
+                <div
+                  className={
+                    isFun
+                      ? `sticky top-24 self-start ${courseColourClass(funCourseId)}`
+                      : "sticky top-24 self-start"
+                  }
+                >
+                  {isFun && funWide && funCourseData && (
+                    <div className="fun-course-rail-media">
+                      <CourseHeader
+                        courseData={funCourseData}
+                        minimal={false}
+                        hideTags
+                        mediaOnly
+                      />
+                    </div>
+                  )}
+                  {isFun && <FunPickUpCard current={funCurrentSlide} />}
                   <CourseSidebar
                     hasRightSidebar={hasRightSidebar}
                     levelOptions={levelOptions}
@@ -672,6 +816,8 @@ export const CourseDetailsPage = () => {
                     slideCountQuery={slideCountQuery}
                     overviewVisible={overviewVisible}
                     hideAuthorName={hideAuthorName}
+                    hideOverviewCard={hideOverviewCard}
+                    hideProgressCard={hideProgressCard}
                     processedSlideCounts={processedSlideCounts}
                     moduleStats={moduleStats}
                     currentSubjects={getSubjectDetails(
@@ -704,6 +850,7 @@ export const CourseDetailsPage = () => {
                     certificatesEnabled={certificatesEnabled}
                     onEnrollmentClick={onEnrollmentClick}
                     onRatingsLoadingChange={handleRatingsLoadingChange}
+                    {...(isFun && { hideEmptyRows: true })}
                   />
                 </div>
               </div>

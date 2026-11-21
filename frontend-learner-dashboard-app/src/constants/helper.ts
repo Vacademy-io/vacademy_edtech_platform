@@ -76,7 +76,7 @@ export const getSubjectNameById = (
 ): string => {
   const subject = subjects.find((item: Subject) => item.id === id);
 
-  return subject?.subject_name || "N/A";
+  return subject?.subject_name || "";
 };
 
 export const formatDuration = (durationInSeconds: number): string => {

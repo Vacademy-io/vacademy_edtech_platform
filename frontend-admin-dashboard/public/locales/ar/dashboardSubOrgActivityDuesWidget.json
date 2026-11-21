@@ -1,0 +1,13 @@
+{
+    "heading": "خطتي والمستحقات",
+    "planPayment": {
+        "label": "دفع الخطة",
+        "of": "من {{amount}}",
+        "percentPaid": "تم دفع {{percent}}٪"
+    },
+    "dues": {
+        "outstanding": "المستحق",
+        "pendingInstallments": "الأقساط المعلقة",
+        "nextDue": "الاستحقاق القادم"
+    }
+}

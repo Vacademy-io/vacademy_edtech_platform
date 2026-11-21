@@ -1,0 +1,92 @@
+---
+title: "Errors"
+description: "Every error has the same shape and a stable code."
+---
+
+Errors use standard HTTP status codes and always return this body:
+
+```json
+{
+  "error": {
+    "code": "invalid_request",
+    "message": "phone_number must be in E.164 format, e.g. +919876543210.",
+    "request_id": "req_8f2c1a7e",
+    "details": {
+      "errors": [{ "field": "phone_number", "message": "phone_number must be in E.164 format, e.g. +919876543210." }]
+    }
+  }
+}
+```
+
+- **`code`** is stable. Branch on it in your code.
+- **`message`** is a readable sentence for logs and operators. It may change wording.
+- **`request_id`** is also in the `X-Request-Id` response header. Quote it when you contact support.
+- **`details`** is present when there is more to say: every field error, the existing `call_id`, the current `status`.
+
+## Codes
+
+| HTTP | Code | What to do |
+|---|---|---|
+| 400 | `invalid_request` | Fix the request. `details.errors` lists each problem field. Also returned for malformed JSON. |
+| 415 | `invalid_request` | Send the body with `Content-Type: application/json`. |
+| 401 | `missing_api_key` | Send the key in `X-API-Key`. |
+| 401 | `invalid_api_key` | The key is wrong, revoked or expired. Check it in the dashboard. |
+| 402 | `insufficient_credits` | Top up. Already queued calls resume by themselves. |
+| 403 | `insufficient_scope` | The key cannot make this request (`details.required_scope` names the scope). Human calls need a key created with the human-call scopes; see [Authentication](/authentication#scopes). |
+| 403 | `product_not_enabled` | This key is not an AI calling key. |
+| 404 | `not_found` | No call, batch or webhook with this id in your account, or no such endpoint. |
+| 404 | `agent_not_found` | Check `agent_id` against `GET /v1/agents`. |
+| 404 | `counsellor_not_found` | Check `counsellor_id` / `counsellor_email` against `GET /v1/counsellors`. |
+| 404 | `number_not_found` | Check the number id against `GET /v1/numbers`. |
+| 403 | `counsellor_not_manageable` | The person is an admin or other staff of your account; the API only changes counsellors. |
+| 405 | `method_not_allowed` | Wrong HTTP method for this path. |
+| 409 | `call_already_queued` | The number already has a waiting call (`details.call_id`). Usually safe to ignore. |
+| 409 | `idempotency_key_reused` | This `Idempotency-Key` was used with a different body. Use a new key for a new call or batch. |
+| 409 | `request_in_progress` | A batch, human call, counsellor or agent with this `Idempotency-Key` (or a counsellor with this email) is still being created. Wait the seconds in `Retry-After`, then retry. |
+| 409 | `call_not_cancelable` | The call is past `queued`. |
+| 409 | `agent_disabled` | Turn the agent on in the dashboard, or use another one. |
+| 409 | `agent_inbound_only` | This agent only answers calls. Use an outbound agent. |
+| 409 | `agent_outbound_only` | `PUT /numbers/{id}/agent`: this agent only places calls. Set its `direction` to `inbound` or `both`. |
+| 409 | `agent_name_taken` | Another agent in your account has this name (ignoring case). |
+| 409 | `agent_in_use` | The agent is still the default, an IVR step, a workflow's AI call step or has waiting calls; `details.used_by` lists where. |
+| 409 | `ai_provider_not_supported` | Your AI calling provider is not Vacademy AI, so a Telleo agent cannot be the default. |
+| 409 | `number_routing_complex` | The number's menu needs changing in the dashboard (`details.reason`: `no_menu`, `menu_without_ai_agent`, `menu_with_several_ai_agents`, `menu_shared`). |
+| 409 | `number_not_inbound_capable` | Only Vacademy Voice numbers can be answered by an AI agent. |
+| 409 | `number_routing_changed` | The number's menu changed during the request. Read it again and retry. |
+| 409 | `account_has_other_role` | The email belongs to an admin or other member of your account. |
+| 409 | `email_in_use_elsewhere` | The email's login belongs to another account on the platform. Use another email, or have an admin add them in the dashboard. |
+| 409 | `version_conflict` | `PATCH /agents/{id}` with `If-Match`: the agent changed since you read it. Read it again and retry. |
+| 409 | `counsellor_inactive` | The email belongs to a deactivated counsellor. Reactivate with `PATCH {"active": true}`. |
+| 409 | `shared_account` | The counsellor's login also belongs to another account; their name and mobile number cannot be changed through the API. |
+| 409 | `extension_taken` / `extension_managed_elsewhere` | The Airtel extension is someone else's in your account, or this person's extension is managed by another account. |
+| 409 | `counsellor_busy` | The counsellor is on a call. Retry when it ends. |
+| 409 | `call_in_progress` | A call to this number is already ringing or in progress. |
+| 409 | `call_not_dialed` | This human call was never placed, so it cannot take a disposition. |
+| 409 | `conflict` | A conflict without a more specific code; the message says what. Fix the cause before retrying. |
+| 422 | `counsellor_cannot_call` | The counsellor is not set up for your calling provider (no or invalid mobile number, no Airtel extension); `details.reason` says what to fix. |
+| 422 | `invalid_request` | On `POST /human-calls`: your calling provider cannot dial this `phone_number`. |
+| 422 | `telephony_not_configured` | Connect a calling provider (or a caller ID number) under *Settings → Calling*. |
+| 422 | `outside_calling_hours` | Retry at `details.next_allowed_at`. Human calls are never queued. |
+| 422 | `contact_daily_limit_reached` | This number had the maximum calls for 24 hours. |
+| 422 | `contact_called_recently` | This number had a connected call within the last hour; retry after `Retry-After` seconds. |
+| 422 | `unknown_disposition` | Use a key from `GET /v1/dispositions`. |
+| 422 | `invalid_voice` | The voice is not one of the engine's; `details.valid_voices` lists them. Changing `tts_model` needs a voice of the new engine. |
+| 422 | `unsupported_tts_model` | Use an engine id from `GET /v1/voices` (`details.valid_tts_models`). |
+| 422 | `unsupported_language` | Use a language from `details.valid_languages`. |
+| 422 | `voice_language_mismatch` | `deepgram` speaks English only. Pick another engine or set `language` to English. |
+| 422 | `booking_page_not_found` | The booking page is not one of your account's. |
+| 422 | `invalid_agent` | The agent could not be saved as sent (usually an action rule); the message says what to fix. |
+| 429 | `rate_limited` | Wait the seconds in `Retry-After`, then retry. |
+| 429 | `test_limit_reached` | More than 500 test calls in 24 hours. |
+| 500 | `internal_error` | Retry with backoff. If it persists, contact us with the `request_id`. |
+| 500 | `role_update_failed` | A counsellor's role could not be disabled or restored; nothing else was changed. Contact us with the `request_id`. |
+| 500 | `role_unavailable` | The counsellor role could not be granted in your account. Contact us with the `request_id`. |
+| 502 | `dial_failed` | Your calling provider refused the call; the message says why. Nothing rang. |
+| 503 | `auth_unavailable` | Keys could not be checked for a moment. Retry shortly. |
+| 503 | `provider_unavailable` / `temporarily_unavailable` | Your calling provider or our user directory is briefly unavailable. Retry after `Retry-After`. |
+
+## Retrying safely
+
+Retry `429`, `500`, `503` and `409 request_in_progress`, with exponential backoff (1 s, 2 s, 4 s… up to a minute). Other `4xx` errors will fail again until the request changes.
+
+`POST /v1/calls` is safe to retry when it carries an [Idempotency-Key](/platform/idempotency): if the first attempt did create the call, the retry returns it instead of calling again.

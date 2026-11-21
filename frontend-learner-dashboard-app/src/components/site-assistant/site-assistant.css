@@ -1,0 +1,42 @@
+/* Site Assistant — the few rules utilities can't express. */
+
+/* A multi-course basket bar takes the foot of the viewport at every width
+   (catalogue-tokens.css lifts the WhatsApp bubble to 6.5rem for it); the
+   launcher clears it too, one slot higher when it is stacked above WhatsApp. */
+body.catalogue-has-checkout-bar .site-assistant-launcher {
+  bottom: 6.5rem;
+}
+
+body.catalogue-has-checkout-bar .site-assistant-launcher[data-stack="1"] {
+  bottom: 11rem;
+}
+
+/* Phone-width sheet: the page behind it stays put. */
+html.site-assistant-scroll-lock,
+html.site-assistant-scroll-lock body {
+  overflow: hidden;
+}
+
+/* The composer grows with what is typed (where supported), and clears the
+   iOS home indicator in the full-screen sheet. */
+.site-assistant-composer textarea {
+  field-sizing: content;
+}
+
+.site-assistant-composer {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+}
+
+/* The embed frame is transparent: only the launcher / panel paint. */
+html.site-assistant-embed,
+html.site-assistant-embed body,
+html.site-assistant-embed #root {
+  background: transparent !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-assistant-root * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

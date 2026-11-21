@@ -1,0 +1,43 @@
+{
+    "dialog": {
+        "heading": "वीस्मार्ट प्रॉम्प्ट"
+    },
+    "fields": {
+        "text": {
+            "label": "टेक्स्ट",
+            "placeholder": "टेक्स्ट दर्ज करें"
+        },
+        "num": {
+            "label": "प्रश्नों की संख्या",
+            "placeholder": "प्रश्नों की संख्या दर्ज करें"
+        },
+        "classLevel": {
+            "label": "कक्षा स्तर",
+            "placeholder": "कक्षा स्तर दर्ज करें"
+        },
+        "topics": {
+            "label": "विषय",
+            "placeholder": "विषय दर्ज करें"
+        },
+        "questionType": {
+            "label": "प्रश्न प्रकार",
+            "placeholder": "प्रश्न प्रकार दर्ज करें"
+        },
+        "questionLanguage": {
+            "label": "प्रश्न की भाषा",
+            "placeholder": "प्रश्न की भाषा दर्ज करें"
+        }
+    },
+    "actions": {
+        "cancel": "रद्द करें",
+        "regenerate": "पुनः जनरेट करें"
+    },
+    "validation": {
+        "textRequired": "टेक्स्ट आवश्यक है",
+        "numRequired": "प्रश्नों की संख्या कम से कम 1 होनी चाहिए",
+        "classLevelRequired": "कक्षा स्तर आवश्यक है",
+        "topicsRequired": "विषय आवश्यक हैं",
+        "questionTypeRequired": "प्रश्न प्रकार आवश्यक है",
+        "questionLanguageRequired": "प्रश्न की भाषा आवश्यक है"
+    }
+}

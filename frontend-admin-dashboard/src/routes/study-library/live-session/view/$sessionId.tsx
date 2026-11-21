@@ -30,7 +30,6 @@ import {
     ArrowLeft,
     CheckCircle as CheckCircle2,
     Copy,
-    Bell,
     FileText,
     ShareNetwork as Share2,
     List,
@@ -50,6 +49,7 @@ import {
 import { cn } from '@/lib/utils';
 import { SessionCalendarView } from '../-components/session-calendar-view';
 import { format, addMinutes, isAfter, isBefore, parseISO } from 'date-fns';
+import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 import { MyButton } from '@/components/design-system/button';
 import { useLiveSessionStore } from '../schedule/-store/sessionIdstore';
 import { useSessionDetailsStore } from '../-store/useSessionDetailsStore';
@@ -93,8 +93,21 @@ import {
 } from '@/components/ui/table';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { StreamingPlatform } from '../-constants/enums';
+import { useHostJoin } from '../-hooks/useHostJoin';
+import { getSessionJoinLink } from '../-utils/live-sesstions';
+import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
+import {
+    AssignedTeacherCard,
+    AttendanceStatTiles,
+    LinkedBatchesCard,
+    SessionStatusChips,
+} from './-components/SessionDetailCards';
+import { hasAssignedTeacher } from '../-components/session-card-shell';
+import { getTerminology, getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { AddRecordingToCourseCard } from '../-components/content-linking/AddRecordingToCourseCard';
 import { ClassMaterialsCard } from '../-components/content-linking/ClassMaterialsCard';
+import { RecordingDriveUploadAction } from '../-components/RecordingDriveUploadAction';
 import type { DestinationBatch } from '../-components/content-linking/SessionContentDestinationPicker';
 
 export const Route = createFileRoute('/study-library/live-session/view/$sessionId')({
@@ -206,34 +219,39 @@ function ViewLiveSession() {
         || sessionData?.schedule?.link_type === 'google meet'
         || sessionData?.schedule?.link_type === 'GOOGLE_MEET';
 
-    // Zoom provisioning status — surfaces the otherwise-silent async provisioning
-    // failures so the admin can re-create the meeting in one click.
-    const [zoomProvision, setZoomProvision] = useState<ZoomProvisionStatus | null>(null);
-    const [provisioningZoom, setProvisioningZoom] = useState(false);
+    // Zoom / Google Meet provisioning status — surfaces the otherwise-silent async
+    // provisioning failures so the admin can re-create the meeting in one click.
+    const { instituteDetails } = useInstituteDetailsStore();
+    const [showAttendanceDetail, setShowAttendanceDetail] = useState(false);
+    const [provision, setProvision] = useState<ZoomProvisionStatus | null>(null);
+    const [provisioning, setProvisioning] = useState(false);
+    const provisionedPlatform = isZoomSession ? 'Zoom' : 'Google Meet';
+    const provisionedItem = isZoomSession ? 'Zoom meeting' : 'Google Meet link';
+    const providerAccount = isZoomSession ? 'Zoom account' : 'Google account';
 
-    const loadZoomProvision = useCallback(async () => {
-        if (!isZoomSession || !sessionId) return;
+    const loadProvision = useCallback(async () => {
+        if (!(isZoomSession || isMeetSession) || !sessionId) return;
         try {
-            setZoomProvision(await getZoomProvisionStatus(sessionId));
+            setProvision(await getZoomProvisionStatus(sessionId));
         } catch {
             /* status is advisory — ignore fetch errors */
         }
-    }, [isZoomSession, sessionId]);
+    }, [isZoomSession, isMeetSession, sessionId]);
 
     useEffect(() => {
-        loadZoomProvision();
-    }, [loadZoomProvision]);
+        loadProvision();
+    }, [loadProvision]);
 
-    const handleProvisionZoomNow = async () => {
-        setProvisioningZoom(true);
+    const handleProvisionNow = async () => {
+        setProvisioning(true);
         try {
             const res = await provisionZoomNow(sessionId);
-            setZoomProvision(res);
+            setProvision(res);
             if (res.pending === 0) {
-                toast.success('Zoom meeting provisioned.');
+                toast.success(`${provisionedItem} provisioned.`);
             } else {
                 toast.error(
-                    `Still ${res.pending} not set up — check the Zoom account is connected (Settings → Live Session → Test Connection).`
+                    `Still ${res.pending} not set up — check the ${providerAccount} is connected (Settings → Live Session → Test Connection).`
                 );
             }
             try {
@@ -242,122 +260,64 @@ function ViewLiveSession() {
                 /* refresh is best-effort */
             }
         } catch {
-            toast.error('Could not provision the Zoom meeting. Check the Zoom account credentials.');
+            toast.error(
+                `Could not provision the ${provisionedPlatform} meeting. Check the ${providerAccount} credentials.`
+            );
         } finally {
-            setProvisioningZoom(false);
+            setProvisioning(false);
         }
     };
 
-    // Reusable Zoom provisioning badge — rendered in both the one-time and recurring views.
-    const zoomProvisionBadge =
-        isZoomSession && zoomProvision && zoomProvision.total > 0 ? (
-            zoomProvision.pending > 0 ? (
+    // Reusable provisioning badge — rendered in both the one-time and recurring views.
+    // Google Meet only when we create its links (a stored account); a pasted Meet link has
+    // no provider meeting on any row and would otherwise read as "N of N not set up".
+    const showProvisionBadge =
+        (isZoomSession || (isMeetSession && provision?.managed === true)) &&
+        !!provision &&
+        provision.total > 0;
+    const provisionBadge =
+        showProvisionBadge && provision ? (
+            provision.pending > 0 ? (
                 <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/20 p-3">
                     <div className="flex items-center gap-2 text-xs text-warning-700">
                         <WarningCircle className="size-4 shrink-0" weight="fill" />
                         <span>
-                            {zoomProvision.pending} of {zoomProvision.total} Zoom meeting
-                            {zoomProvision.total === 1 ? '' : 's'} not set up yet.
+                            {provision.pending} of {provision.total} {provisionedItem}
+                            {provision.total === 1 ? '' : 's'} not set up yet.
                         </span>
                     </div>
                     <button
-                        onClick={handleProvisionZoomNow}
-                        disabled={provisioningZoom}
+                        onClick={handleProvisionNow}
+                        disabled={provisioning}
                         className="shrink-0 text-xs font-medium text-primary hover:underline disabled:opacity-50"
                     >
-                        {provisioningZoom ? 'Provisioning…' : 'Provision now'}
+                        {provisioning ? 'Provisioning…' : 'Provision now'}
                     </button>
                 </div>
             ) : (
                 <div className="flex items-center gap-2 text-xs text-success-600">
                     <CheckCircle2 className="size-4 shrink-0" weight="fill" />
-                    Zoom meeting ready
+                    {provisionedItem} ready
                 </div>
             )
         ) : null;
 
-    /**
-     * For Zoom: navigate to the in-app host embed route which mounts the Zoom
-     * Web Meeting SDK with role=1 + ZAK token, so the admin starts the meeting
-     * inside our dashboard rather than being bounced to Zoom's hosted
-     * start_url page. The backend signature endpoint handles ZAK lookup.
-     */
-    const handleZoomStartAsHost = useCallback((scheduleId: string) => {
-        navigate({
-            to: '/study-library/live-session/host/$scheduleId',
-            params: { scheduleId },
-            search: { sessionId },
-        });
-    }, [navigate, sessionId]);
-
-    const handleJoinAsHost = useCallback(async (scheduleId: string, recreate = false) => {
-        try {
-            const response = await authenticatedAxiosInstance.get(
-                `${BASE_URL}/admin-core-service/live-sessions/provider/meeting/join`,
-                { params: { scheduleId, role: 'MODERATOR', recreate } }
-            );
-
-            // Meeting ended — ask moderator if they want to start a new one
-            if (response.data?.status === 'MEETING_ENDED') {
-                const confirmed = window.confirm(
-                    'This meeting has ended.\n\nDo you want to start a new meeting for this session?'
-                );
-                if (confirmed) {
-                    await handleJoinAsHost(scheduleId, true);
-                }
-                return;
-            }
-
-            // The backend refuses a recreate that would strand people: either
-            // someone is already in the room, or it was created moments ago and
-            // only looks "ended" because nobody has connected yet. Surface the
-            // reason and stop — the host should join the existing class instead.
-            if (response.data?.status === 'RECREATE_BLOCKED') {
-                toast.error(
-                    response.data?.message ||
-                        'This class is still active. Please join the existing class instead of starting a new one.'
-                );
-                return;
-            }
-
-            const joinUrl = response.data?.joinUrl;
-            if (joinUrl) {
-                window.open(joinUrl, '_blank', 'noopener,noreferrer');
-            } else {
-                toast.error('Failed to get host join URL');
-            }
-        } catch (err) {
-            console.error('Failed to join as host:', err);
-            toast.error('Failed to start session. Please try again.');
-        }
-    }, []);
-
-    /**
-     * For Google Meet (URL-join, no SDK): resolve the link via the authenticated
-     * google-meet-join endpoint (so the host hits the authorization + telemetry chokepoint), then
-     * open Meet. Reminds the host to be signed into the organizer account so auto-recording fires.
-     */
-    const handleMeetStartAsHost = useCallback(async (scheduleId: string) => {
-        try {
-            const response = await authenticatedAxiosInstance.get(
-                `${BASE_URL}/admin-core-service/live-sessions/provider/meeting/google-meet-join`,
-                { params: { scheduleId } }
-            );
-            const joinUrl = response.data?.joinUrl;
-            const organizerEmail = response.data?.organizerEmail;
-            if (joinUrl) {
-                if (organizerEmail) {
-                    toast.info(`Open Meet signed in to ${organizerEmail} so the session records.`);
-                }
-                window.open(joinUrl, '_blank', 'noopener,noreferrer');
-            } else {
-                toast.error('Failed to get the Google Meet link');
-            }
-        } catch (err) {
-            console.error('Failed to start Google Meet as host:', err);
-            toast.error('Failed to start session. Please try again.');
-        }
-    }, []);
+    // Host entry points live in useHostJoin so this page and the list cards
+    // cannot disagree about how a provider is started. Kept as local aliases so
+    // the call sites below read unchanged.
+    const { startBbb, startZoom, startMeet, startZoho } = useHostJoin();
+    const handleJoinAsHost = useCallback(
+        (scheduleId: string, recreate = false) => startBbb(scheduleId, recreate),
+        [startBbb]
+    );
+    const handleZoomStartAsHost = useCallback(
+        (scheduleId: string) => startZoom(sessionId, scheduleId),
+        [startZoom, sessionId]
+    );
+    const handleMeetStartAsHost = useCallback(
+        (scheduleId: string) => startMeet(scheduleId),
+        [startMeet]
+    );
 
     const handleEditSession = async () => {
         try {
@@ -403,6 +363,64 @@ function ViewLiveSession() {
     };
 
     // Group schedules by date for calendar view
+    /**
+     * Single source of truth for "which host entry point does this schedule
+     * get?", so the list and calendar views of a recurring session cannot
+     * disagree. Returns null for platforms we cannot host into (the caller
+     * falls back to the participant join link).
+     */
+    /**
+     * Live / Upcoming / Past for the header chip. Derived from the session's own
+     * window rather than the list's tab, because this page is reachable by URL
+     * and has no tab context.
+     */
+    const sessionTimeStatus = useMemo(() => {
+        const schedule = sessionData?.schedule;
+        if (!schedule?.start_time) return null;
+        const start = new Date(schedule.start_time);
+        const end = schedule.last_entry_time ? new Date(schedule.last_entry_time) : null;
+        if (Number.isNaN(start.getTime())) return null;
+        const now = new Date();
+        if (now < start) return 'Upcoming';
+        if (end && !Number.isNaN(end.getTime()) && now > end) return 'Past';
+        return 'Live';
+    }, [sessionData]);
+
+    /** Duration lives on the occurrence, not the session. For a one-time class
+     *  that is the only occurrence; for a recurring one they share a duration. */
+    const sessionDurationMins = useMemo(() => {
+        const first = sessionData?.schedule?.added_schedules?.[0];
+        const raw = first?.duration;
+        const mins = typeof raw === 'string' ? Number(raw) : raw;
+        return typeof mins === 'number' && Number.isFinite(mins) && mins > 0 ? mins : null;
+    }, [sessionData]);
+
+    const instructorTerm = getTerminology(RoleTerms.Teacher, SystemTerms.Teacher);
+    const batchesTerm = getTerminologyPlural(ContentTerms.Batch, SystemTerms.Batch);
+
+    const resolveHostAction = useCallback(
+        (session: { id: string; linkType?: string | null }) => {
+            // The session-level link_type is the fallback for occurrences that
+            // do not carry their own (ss.link_type is nullable).
+            const linkType = session.linkType ?? sessionData?.schedule?.link_type;
+            const norm = (linkType ?? '').trim().toLowerCase();
+            if (isBbbSession || norm === 'bbb' || norm === 'bbb_meeting') {
+                return () => startBbb(session.id);
+            }
+            if (norm === 'zoom' || norm === 'zoom_meeting') {
+                return () => startZoom(sessionId, session.id);
+            }
+            if (norm === 'google meet' || norm === 'google_meet' || norm === 'googlemeet') {
+                return () => startMeet(session.id);
+            }
+            if (norm === 'zoho' || norm === 'zoho_meeting') {
+                return () => startZoho(session.id, sessionData?.schedule?.default_meet_link);
+            }
+            return null;
+        },
+        [isBbbSession, sessionId, sessionData, startBbb, startZoom, startMeet, startZoho]
+    );
+
     const groupedSchedules = useMemo(() => {
         if (!sessionData?.schedule?.added_schedules) return [];
 
@@ -466,6 +484,131 @@ function ViewLiveSession() {
             .sort((a, b) => a.date.localeCompare(b.date));
     }, [sessionData]);
 
+    /**
+     * Occurrences of a recurring session whose attendance can be opened: every
+     * class that has STARTED, judged in the session's own timezone, newest first.
+     *
+     * Deliberately separate from the `status` above (browser clock, used by the
+     * recording sync and host buttons). Waiting for `past` hid an offline class's
+     * register until the class had ended, and an IST class viewed from London
+     * turned `past` 4.5 hours late. Not opened before the start: saving notifies
+     * the learner, so an early "absent" would land before the class even began.
+     */
+    const attendanceOccurrences = useMemo(() => {
+        const tz = sessionData?.schedule?.timezone;
+        const now = new Date();
+        const startOf = (date: string, time: string): Date => {
+            const local = `${date}T${time}`;
+            if (tz) {
+                try {
+                    // An unknown zone string yields Invalid Date rather than throwing.
+                    const zoned = fromZonedTime(local, tz);
+                    if (!isNaN(zoned.getTime())) return zoned;
+                } catch {
+                    // Fall through to the browser's clock.
+                }
+            }
+            return new Date(local);
+        };
+        let today = format(now, 'yyyy-MM-dd');
+        if (tz) {
+            try {
+                today = formatInTimeZone(now, tz, 'yyyy-MM-dd');
+            } catch {
+                // Same fallback as above.
+            }
+        }
+        return groupedSchedules
+            .flatMap((day) =>
+                day.sessions.map((s) => ({
+                    id: s.id,
+                    date: day.date,
+                    time: s.time,
+                    duration: s.duration,
+                    start: startOf(day.date, s.time),
+                    isToday: day.date === today,
+                }))
+            )
+            .filter((occ) => !isNaN(occ.start.getTime()) && occ.start <= now)
+            .sort((a, b) => b.start.getTime() - a.start.getTime());
+    }, [groupedSchedules, sessionData]);
+    const [showAllAttendanceDates, setShowAllAttendanceDates] = useState(false);
+    /** First occurrence not yet started, for the empty-picker hint. */
+    const nextAttendanceDate = useMemo(() => {
+        const opened = new Set(attendanceOccurrences.map((o) => o.id));
+        for (const day of groupedSchedules) {
+            if (day.sessions.some((s) => !opened.has(s.id))) return day.date;
+        }
+        return null;
+    }, [groupedSchedules, attendanceOccurrences]);
+
+    /**
+     * A one-time session has exactly one occurrence, so its attendance needs no
+     * date picker — load it up front and let the tiles render with the page.
+     * Worth the call even before the class runs: "Registered" is meaningful on
+     * an upcoming session, which is the case the design shows.
+     *
+     * Recurring sessions keep the picker: there is no single occurrence to
+     * summarise, and pre-fetching every date would be far more expensive.
+     *
+     * Recurrence is read off `sessionData` rather than the `isRecurring` const,
+     * which is declared below the loading guards and so is out of reach here.
+     */
+    useEffect(() => {
+        if (sessionData?.schedule?.recurrence_type === 'weekly') return;
+        if (attendanceData || selectedScheduleForAttendance) return;
+        const onlyScheduleId = groupedSchedules[0]?.sessions?.[0]?.id;
+        if (!onlyScheduleId) return;
+        void handleViewAttendance(onlyScheduleId);
+    }, [
+        sessionData,
+        attendanceData,
+        selectedScheduleForAttendance,
+        groupedSchedules,
+        handleViewAttendance,
+    ]);
+
+    /**
+     * The occurrence a host would actually want to start right now: the one in
+     * progress, else the next upcoming one. A recurring session has no single
+     * meeting, which is why the details card offered no host entry point at all
+     * and left the teacher holding only the participant join link.
+     */
+    /** The single occurrence of a one-time session, for the meeting strip. */
+    const soleSession = useMemo(
+        () => groupedSchedules.flatMap((day) => day.sessions)[0] ?? null,
+        [groupedSchedules]
+    );
+
+    /** Link an admin can hand to a learner: whatever the session stored, else the
+     *  same link the list cards build from access level + ids. */
+    const shareableLink = useMemo(() => {
+        const sch = sessionData?.schedule;
+        if (!sch) return '';
+        if (sch.join_link) return sch.join_link;
+        if (sch.default_meet_link) return sch.default_meet_link;
+        const scheduleId = sch.added_schedules?.[0]?.id ?? '';
+        if (!scheduleId) return '';
+        return getSessionJoinLink(
+            {
+                access_level: sch.access_type,
+                session_id: sessionId,
+                schedule_id: scheduleId,
+            } as never,
+            instituteDetails?.learner_portal_base_url ?? ''
+        );
+    }, [sessionData, sessionId, instituteDetails]);
+
+    const currentOrNextSession = useMemo(() => {
+        const all = groupedSchedules.flatMap((day) => day.sessions);
+        const live = all.find((s) => s.status === 'live');
+        if (live) return live;
+        const upcoming = all
+            .filter((s) => s.status === 'upcoming')
+            .sort((a, b) => (a.startDate?.getTime() ?? 0) - (b.startDate?.getTime() ?? 0));
+        return upcoming[0] ?? null;
+    }, [groupedSchedules]);
+
     // Collect all recordings across all schedules
     const allRecordings = useMemo(() => {
         const recordings: Array<MeetingRecording & { date: string; scheduleId: string }> = [];
@@ -492,6 +635,19 @@ function ViewLiveSession() {
                 .join(' · '),
         }));
     }, [sessionData]);
+
+    /** Batches on the session. Ids are the source of truth: the details
+     *  array is an enrichment and can be empty while ids are populated. */
+    const batchCount = Math.max(
+        sessionData?.schedule?.package_session_ids?.length ?? 0,
+        sessionData?.schedule?.package_session_details?.length ?? 0
+    );
+
+    /** Whether Class Materials shares the row with Attendance. When it does not,
+     *  Attendance takes the full width rather than leaving a dead 2/5 gap. */
+    const showClassMaterials =
+        contentLinkBatches.length > 0 &&
+        instituteLiveSessionSettings.lmsConnection.classMaterialsEnabled;
 
     // A single-schedule (non-recurring) session has one unambiguous scheduleId
     // to stamp on session-level materials; recurring sessions omit it.
@@ -806,9 +962,19 @@ function ViewLiveSession() {
     const { schedule, notifications } = sessionData;
     const isRecurring = schedule.recurrence_type === 'weekly';
 
+    /* Host action for a one-time session's single occurrence. Declared here
+       because resolveHostAction and the render body both live below the
+       loading guards. */
+    const soleMeetingHostAction = soleSession
+        ? resolveHostAction({
+              id: soleSession.id,
+              linkType: (soleSession as { linkType?: string | null }).linkType,
+          })
+        : null;
+
     return (
-        <LayoutContainer>
-            <div className="flex w-full flex-col gap-6 p-4 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <LayoutContainer className="overflow-x-clip">
+            <div className="flex w-full min-w-0 flex-col gap-6 animate-in fade-in duration-500">
                 {/* Header Section */}
                 <div className="flex flex-col gap-2 border-b pb-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="space-y-1">
@@ -821,11 +987,16 @@ function ViewLiveSession() {
                             </div>
                             Back to Sessions
                         </button>
-                        <div className="space-y-1">
-                            <div className="flex items-center gap-3">
+                        <div className="space-y-2">
+                            <div className="flex flex-wrap items-center gap-3">
                                 <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                                     {schedule.title}
                                 </h1>
+                                <SessionStatusChips
+                                    timeStatus={sessionTimeStatus}
+                                    accessType={schedule.access_type}
+                                    isRecurring={isRecurring}
+                                />
                             </div>
                             {schedule.subject && schedule.subject !== 'none' && (
                                 <p className="text-base text-muted-foreground">
@@ -840,9 +1011,46 @@ function ViewLiveSession() {
                     </MyButton>
                 </div>
 
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+                <div className="flex flex-col gap-6 lg:flex-row">
                     {/* Main Content Column */}
-                    <div className="space-y-6 lg:col-span-8 xl:col-span-9">
+                    <div className="min-w-0 flex-1 space-y-6">
+                        {/* Who teaches it and who attends it — the two questions
+                            asked most often about a session, answered before the
+                            scheduling detail. */}
+                        <div
+                            className={cn(
+                                'grid gap-4',
+                                // Only split the row when both cards are there;
+                                // otherwise the survivor sits at half width with
+                                // a hole beside it.
+                                hasAssignedTeacher(sessionData?.instructors) &&
+                                    batchCount > 0 &&
+                                    'sm:grid-cols-2'
+                            )}
+                        >
+                            <AssignedTeacherCard
+                                instructors={sessionData?.instructors}
+                                label={`Assigned ${instructorTerm}`}
+                                unassignedLabel="Not assigned"
+                                unknownLabel={`Unnamed ${instructorTerm.toLowerCase()}`}
+                            />
+                            {batchCount > 0 ? (
+                                /* Counts off the ids, not the details: the rail
+                                   card this replaced fell back to a bare count
+                                   when the backend sent ids without details, and
+                                   dropping that would blank the section out. */
+                                <LinkedBatchesCard
+                                    batches={schedule.package_session_details ?? []}
+                                    label={`Associated ${batchesTerm}`}
+                                    linkedLabel={`${batchCount} ${
+                                        batchCount === 1
+                                            ? batchesTerm.replace(/es$|s$/i, '')
+                                            : batchesTerm
+                                    } linked`.toLowerCase()}
+                                />
+                            ) : null}
+                        </div>
+
                         {/* Session Details Card */}
                         <Card className="overflow-hidden border-border/60 shadow-sm transition-all hover:border-border/80">
                             <CardHeader className="bg-muted/40 px-6 py-4">
@@ -850,11 +1058,12 @@ function ViewLiveSession() {
                                     <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-sm">
                                         <MonitorPlay className="size-5" />
                                     </div>
-                                    Session Details
+                                    Session Overview
                                 </CardTitle>
+                                <CardDescription>All key details about this live session</CardDescription>
                             </CardHeader>
                             <Separator />
-                            <CardContent className="grid gap-x-8 gap-y-6 p-6 sm:grid-cols-2 xhl:grid-cols-3">
+                            <CardContent className="grid gap-x-8 gap-y-6 p-6 sm:grid-cols-2 lg:grid-cols-3">
                                 <InfoItem
                                     icon={<CalendarRange className="size-4 text-primary" />}
                                     label="Session Type"
@@ -877,6 +1086,13 @@ function ViewLiveSession() {
                                         value={format(new Date(schedule.last_entry_time), 'PPP p')}
                                     />
                                 )}
+                                {sessionDurationMins ? (
+                                    <InfoItem
+                                        icon={<Timer className="size-4 text-primary" />}
+                                        label="Duration"
+                                        value={`${sessionDurationMins} mins`}
+                                    />
+                                ) : null}
                                 {isRecurring && schedule.session_end_date && (
                                     <InfoItem
                                         icon={<CalendarRange className="size-4 text-primary" />}
@@ -885,7 +1101,7 @@ function ViewLiveSession() {
                                     />
                                 )}
 
-                                <div className="sm:col-span-2 space-y-4 pt-2">
+                                <div className="space-y-4 pt-2 sm:col-span-2 lg:col-span-3">
                                     <div className="grid gap-4 sm:grid-cols-2">
                                         <InfoItem
                                             icon={<MonitorPlay className="size-4 text-primary" />}
@@ -901,102 +1117,121 @@ function ViewLiveSession() {
                                         />
                                     </div>
 
-                                    {/* Links Section */}
-                                    <div className="flex flex-col gap-4 pt-4 border-t mt-2">
-                                        {schedule.default_meet_link && (
-                                            <div className="space-y-2">
-                                                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                                    <Link2 className="size-3.5 text-primary" />
-                                                    Default Meeting Link
-                                                </div>
-                                                <div className="flex items-center gap-2 rounded-md border bg-muted/20 p-2 pr-2 transition-all hover:bg-muted/40 hover:border-border/80">
-                                                    <a
-                                                        href={schedule.default_meet_link}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="flex-1 truncate text-sm font-medium text-blue-600 hover:underline underline-offset-2"
-                                                        title={schedule.default_meet_link}
-                                                    >
-                                                        {schedule.default_meet_link}
-                                                    </a>
-                                                    <MyButton
-                                                        onClick={() => copyToClipboard(schedule.default_meet_link)}
-                                                        buttonType="text"
-                                                        scale="small"
-                                                        className="h-6 w-6 p-0 hover:bg-background shadow-none shrink-0"
-                                                        type="button"
-                                                        title="Copy link"
-                                                    >
-                                                        <Copy className="size-3.5 text-muted-foreground" />
-                                                    </MyButton>
-                                                </div>
-                                            </div>
-                                        )}
+                                    {/* Meeting strip.
+                                        Replaces two full-width panels that printed
+                                        the raw meeting and join URLs — the design
+                                        asks for one compact row, and the URLs were
+                                        the main source of this card's width.
 
-                                        {schedule.join_link && (
-                                            <div className="space-y-2">
-                                                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                                    <Share2 className="size-3.5 text-primary" />
-                                                    Join Link
-                                                </div>
-                                                <div className="flex items-center gap-2 rounded-md border bg-muted/20 p-2 pr-2 transition-all hover:bg-muted/40 hover:border-border/80">
-                                                    <a
-                                                        href={schedule.join_link}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="flex-1 truncate text-sm font-medium text-blue-600 hover:underline underline-offset-2"
-                                                        title={schedule.join_link}
-                                                    >
-                                                        {schedule.join_link}
-                                                    </a>
-                                                    <MyButton
-                                                        onClick={() => copyToClipboard(schedule.join_link)}
-                                                        buttonType="text"
-                                                        scale="small"
-                                                        className="h-6 w-6 p-0 hover:bg-background shadow-none shrink-0"
-                                                        type="button"
-                                                        title="Copy link"
-                                                    >
-                                                        <Copy className="size-3.5 text-muted-foreground" />
-                                                    </MyButton>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {isBbbSession && !isRecurring && groupedSchedules.length > 0 && (
-                                            <div className="space-y-2">
-                                                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                                    <MonitorPlay className="size-3.5 text-primary" />
-                                                    BBB Meeting
-                                                </div>
-                                                {groupedSchedules.flatMap(day => day.sessions).map((session) => (
-                                                    <div key={session.id} className="flex items-center justify-between rounded-md border bg-muted/20 p-3">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="flex items-center gap-2 text-sm">
-                                                                <Timer className="size-4 text-primary" />
-                                                                <span className="font-medium">{session.time}</span>
-                                                            </div>
-                                                            <span className="text-xs text-muted-foreground">
-                                                                {session.duration} mins
-                                                            </span>
-                                                            {session.status === 'live' && (
-                                                                <Badge variant="default" className="bg-green-500 text-white text-xs">
-                                                                    Live
-                                                                </Badge>
-                                                            )}
-                                                        </div>
-                                                        <button
-                                                            onClick={() => handleJoinAsHost(session.id)}
-                                                            className="text-xs font-medium text-primary hover:underline"
-                                                        >
-                                                            Start as Host →
-                                                        </button>
+                                        Previously the "start it" affordance here
+                                        was BBB-only, so a Zoom/Meet/Zoho one-time
+                                        class showed no way to start at all. It now
+                                        goes through the shared resolver, same as
+                                        the list cards. */}
+                                    {!isRecurring && (
+                                        <div className="mt-2 flex flex-col gap-3 rounded-lg border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+                                            <div className="flex min-w-0 items-center gap-3">
+                                                <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                                    <MonitorPlay className="size-5" />
+                                                </span>
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-2 font-semibold capitalize text-foreground">
+                                                        {schedule.link_type || 'Meeting'}
+                                                        {sessionTimeStatus === 'Live' ? (
+                                                            <Badge className="bg-success-500 text-xs text-white hover:bg-success-500">
+                                                                Live
+                                                            </Badge>
+                                                        ) : null}
                                                     </div>
-                                                ))}
+                                                </div>
                                             </div>
-                                        )}
+                                            <div className="flex shrink-0 flex-wrap items-center gap-2">
+                                                {soleMeetingHostAction ? (
+                                                    <MyButton
+                                                        type="button"
+                                                        buttonType="primary"
+                                                        scale="medium"
+                                                        className="sm:!min-w-0 sm:px-4"
+                                                        onClick={soleMeetingHostAction}
+                                                    >
+                                                        <MonitorPlay className="mr-2 size-4" />
+                                                        Start as Host
+                                                    </MyButton>
+                                                ) : null}
+                                                {shareableLink ? (
+                                                    <MyButton
+                                                        type="button"
+                                                        buttonType="secondary"
+                                                        scale="medium"
+                                                        className="sm:!min-w-0 sm:px-4"
+                                                        onClick={() => copyToClipboard(shareableLink)}
+                                                    >
+                                                        <Link2 className="mr-2 size-4" />
+                                                        Copy Join Link
+                                                    </MyButton>
+                                                ) : null}
+                                            </div>
+                                        </div>
+                                    )}
 
-                                        {zoomProvisionBadge}
+                                    <div className="flex flex-col gap-4">
+                                        {provisionBadge}
+
+                                        {/*
+                                          * Recurring sessions get a host entry point here too. Burying it in
+                                          * the Scheduled Sessions calendar at the foot of the page meant a
+                                          * teacher looking at this card saw no way to start her own class.
+                                          */}
+                                        {isRecurring &&
+                                            currentOrNextSession &&
+                                            (() => {
+                                                const startAsHost = resolveHostAction(
+                                                    currentOrNextSession as { id: string; linkType?: string | null }
+                                                );
+                                                if (!startAsHost) return null;
+                                                const isLive = currentOrNextSession.status === 'live';
+                                                return (
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                                            <MonitorPlay className="size-3.5 text-primary" />
+                                                            {isLive ? 'Class in progress' : 'Next class'}
+                                                        </div>
+                                                        <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/20 p-3">
+                                                            <div className="flex flex-wrap items-center gap-3">
+                                                                <div className="flex items-center gap-2 text-sm">
+                                                                    <Timer className="size-4 text-primary" />
+                                                                    <span className="font-medium">
+                                                                        {currentOrNextSession.startDate
+                                                                            ? `${format(currentOrNextSession.startDate, 'EEE, MMM d')} · `
+                                                                            : ''}
+                                                                        {currentOrNextSession.time}
+                                                                    </span>
+                                                                </div>
+                                                                <span className="text-xs text-muted-foreground">
+                                                                    {currentOrNextSession.duration} mins
+                                                                </span>
+                                                                {isLive && (
+                                                                    <Badge
+                                                                        variant="default"
+                                                                        className="bg-green-500 text-white text-xs"
+                                                                    >
+                                                                        Live
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
+                                                            <MyButton
+                                                                onClick={startAsHost}
+                                                                buttonType="primary"
+                                                                scale="small"
+                                                                type="button"
+                                                                className="shrink-0"
+                                                            >
+                                                                Start as Host
+                                                            </MyButton>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })()}
 
                                         {isZoomSession && !isRecurring && groupedSchedules.length > 0 && (
                                             <div className="space-y-2">
@@ -1132,6 +1367,10 @@ function ViewLiveSession() {
                             </Card>
                         )}
 
+                        {/* Attendance and Class Materials sit side by side, as in
+                            the design: both are summaries, and stacking them full
+                            width is what left a tall empty band beside the rail. */}
+                        <div className="flex flex-col gap-6">
                         {/* Attendance Section */}
                         <Card className="overflow-hidden border-border/60 shadow-sm">
                             <CardHeader className="bg-muted/40 px-6 py-4">
@@ -1148,57 +1387,62 @@ function ViewLiveSession() {
                                 </CardDescription>
                             </CardHeader>
                             <Separator />
-                            <CardContent className="p-6">
+                            <CardContent className="p-5">
                                 {isRecurring ? (
                                     <div className="space-y-3">
                                         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                                            {groupedSchedules
-                                                .filter(day => day.sessions.some(s => s.status === 'past'))
-                                                .slice(0, 12)
-                                                .map((day) => {
-                                                    const firstSession = day.sessions[0];
-                                                    if (!firstSession) return null;
-                                                    const isSelected = selectedScheduleForAttendance === firstSession.id;
-                                                    return (
-                                                        <button
-                                                            key={firstSession.id}
-                                                            onClick={() => handleViewAttendance(firstSession.id)}
-                                                            className={cn(
-                                                                "flex items-center justify-between rounded-lg border p-3 text-left text-sm transition-all hover:bg-muted/50",
-                                                                isSelected && "border-primary bg-primary/5"
-                                                            )}
-                                                        >
-                                                            <div>
-                                                                <div className="font-medium">
-                                                                    {format(new Date(day.date), 'MMM d, yyyy')}
-                                                                </div>
-                                                                <div className="text-xs text-muted-foreground">
-                                                                    {firstSession.time} · {firstSession.duration} mins
-                                                                </div>
+                                            {(showAllAttendanceDates
+                                                ? attendanceOccurrences
+                                                : attendanceOccurrences.slice(0, 12)
+                                            ).map((occ) => {
+                                                const isSelected = selectedScheduleForAttendance === occ.id;
+                                                return (
+                                                    <button
+                                                        key={occ.id}
+                                                        onClick={() => handleViewAttendance(occ.id)}
+                                                        className={cn(
+                                                            "flex items-center justify-between rounded-lg border p-3 text-left text-sm transition-all hover:bg-muted/50",
+                                                            isSelected && "border-primary bg-primary/5"
+                                                        )}
+                                                    >
+                                                        <div>
+                                                            <div className="flex items-center gap-2 font-medium">
+                                                                {format(parseISO(occ.date), 'MMM d, yyyy')}
+                                                                {occ.isToday && (
+                                                                    <Badge variant="secondary" className="text-xs">
+                                                                        Today
+                                                                    </Badge>
+                                                                )}
                                                             </div>
-                                                            <Users className="size-4 text-muted-foreground" />
-                                                        </button>
-                                                    );
-                                                })}
+                                                            <div className="text-xs text-muted-foreground">
+                                                                {occ.time} · {occ.duration} mins
+                                                            </div>
+                                                        </div>
+                                                        <Users className="size-4 text-muted-foreground" />
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
-                                        {groupedSchedules.filter(day => day.sessions.some(s => s.status === 'past')).length === 0 && (
-                                            <p className="text-sm text-muted-foreground">No past sessions yet.</p>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div>
-                                        {groupedSchedules.length > 0 && groupedSchedules[0]?.sessions[0] && (
-                                            <MyButton
-                                                onClick={() => handleViewAttendance(groupedSchedules[0]!.sessions[0]!.id)}
-                                                buttonType={selectedScheduleForAttendance ? 'secondary' : 'primary'}
-                                                scale="medium"
+                                        {attendanceOccurrences.length > 12 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowAllAttendanceDates((v) => !v)}
+                                                className="text-sm font-medium text-primary hover:underline"
                                             >
-                                                <Users className="mr-2 size-4" />
-                                                {selectedScheduleForAttendance ? 'Hide Attendance' : 'View Attendance'}
-                                            </MyButton>
+                                                {showAllAttendanceDates
+                                                    ? 'Show recent dates only'
+                                                    : `Show all ${attendanceOccurrences.length} dates`}
+                                            </button>
+                                        )}
+                                        {attendanceOccurrences.length === 0 && (
+                                            <p className="text-sm text-muted-foreground">
+                                                {nextAttendanceDate
+                                                    ? `Attendance opens when the first class starts (${format(parseISO(nextAttendanceDate), 'MMM d, yyyy')}).`
+                                                    : 'No classes scheduled yet.'}
+                                            </p>
                                         )}
                                     </div>
-                                )}
+                                ) : null}
 
                                 {/* Attendance Table */}
                                 {attendanceLoading && (
@@ -1208,33 +1452,78 @@ function ViewLiveSession() {
                                     </div>
                                 )}
                                 {attendanceData && !attendanceLoading && (
-                                    <div className="mt-4">
-                                        <FeedbackStats
-                                            data={attendanceData}
-                                            feedbackConfig={sessionData?.schedule?.feedback_config}
-                                        />
-                                        <AttendanceMarkingTable
-                                            data={attendanceData}
-                                            sessionId={sessionId}
-                                            scheduleId={selectedScheduleForAttendance!}
-                                            accessType={sessionData?.schedule?.access_type || 'private'}
-                                            sessionTitle={sessionData?.schedule?.title}
-                                            packageSessionDetails={sessionData?.schedule?.package_session_details}
-                                            onSaved={async () => {
-                                                if (selectedScheduleForAttendance) {
-                                                    const data = await getLiveSessionReport(
-                                                        sessionId,
-                                                        selectedScheduleForAttendance,
-                                                        sessionData?.schedule?.access_type || 'private'
-                                                    );
-                                                    setAttendanceData(data);
-                                                }
+                                    <div className="mt-4 space-y-4">
+                                        <AttendanceStatTiles
+                                            registered={attendanceData.length}
+                                            attended={
+                                                attendanceData.filter(
+                                                    (r) => r.attendanceStatus === 'PRESENT'
+                                                ).length
+                                            }
+                                            labels={{
+                                                registered: 'Registered',
+                                                attended: 'Attended',
+                                                rate: 'Attendance Rate',
+                                                students: 'students',
                                             }}
                                         />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowAttendanceDetail((v) => !v)}
+                                            className="text-sm font-medium text-primary hover:underline"
+                                        >
+                                            {showAttendanceDetail
+                                                ? 'Hide detailed attendance'
+                                                : 'Mark / view detailed attendance →'}
+                                        </button>
                                     </div>
                                 )}
                             </CardContent>
                         </Card>
+
+                        {showAttendanceDetail && attendanceData && !attendanceLoading ? (
+                            <Card className="overflow-hidden border-border/60 shadow-sm">
+                                <CardContent className="space-y-4 p-6">
+                                    <FeedbackStats
+                                        data={attendanceData}
+                                        feedbackConfig={sessionData?.schedule?.feedback_config}
+                                    />
+                                    <AttendanceMarkingTable
+                                        data={attendanceData}
+                                        sessionId={sessionId}
+                                        scheduleId={selectedScheduleForAttendance!}
+                                        accessType={sessionData?.schedule?.access_type || 'private'}
+                                        sessionTitle={sessionData?.schedule?.title}
+                                        packageSessionDetails={
+                                            sessionData?.schedule?.package_session_details
+                                        }
+                                        onSaved={async () => {
+                                            if (selectedScheduleForAttendance) {
+                                                const data = await getLiveSessionReport(
+                                                    sessionId,
+                                                    selectedScheduleForAttendance,
+                                                    sessionData?.schedule?.access_type || 'private'
+                                                );
+                                                setAttendanceData(data);
+                                            }
+                                        }}
+                                    />
+                                </CardContent>
+                            </Card>
+                        ) : null}
+
+                        {/* Class Materials — always visible, not tied to a recording */}
+                        {showClassMaterials ? (
+                            <div className="min-w-0">
+                                <ClassMaterialsCard
+                                    sessionId={sessionId}
+                                    scheduleId={soleScheduleId}
+                                    sessionTitle={sessionData?.schedule?.title}
+                                    batches={contentLinkBatches}
+                                />
+                            </div>
+                        ) : null}
+                        </div>
 
                         {/* Recordings Section */}
                         {allRecordings.length > 0 ? (
@@ -1281,6 +1570,10 @@ function ViewLiveSession() {
                                             : null;
                                         const canSaveToLibrary =
                                             rec.recordingStorage === 'ZOOM_CLOUD' && !rec.fileId;
+                                        // Meet recordings stay in the organiser's Drive until saved
+                                        // (server download, or a manual upload as fallback).
+                                        const needsDriveUpload =
+                                            rec.recordingStorage === 'GOOGLE_DRIVE' && !rec.fileId;
                                         return (
                                             <div
                                                 key={rec.recordingId || idx}
@@ -1330,6 +1623,13 @@ function ViewLiveSession() {
                                                                     {expiresInDays !== null
                                                                         ? ` · expires in ${Math.max(0, expiresInDays)}d`
                                                                         : ''}
+                                                                </Badge>
+                                                            ) : needsDriveUpload ? (
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className="border-amber-200 bg-amber-50 text-amber-700"
+                                                                >
+                                                                    Google Drive
                                                                 </Badge>
                                                             ) : null}
                                                         </div>
@@ -1401,6 +1701,17 @@ function ViewLiveSession() {
                                                                 ? 'Saving…'
                                                                 : 'Save to library'}
                                                         </button>
+                                                    )}
+                                                    {needsDriveUpload && (
+                                                        <RecordingDriveUploadAction
+                                                            rec={rec}
+                                                            onAttached={(scheduleId, recordings) =>
+                                                                setRefreshedRecordings((prev) => ({
+                                                                    ...prev,
+                                                                    [scheduleId]: recordings,
+                                                                }))
+                                                            }
+                                                        />
                                                     )}
                                                     <RecordingYoutubeAction
                                                         rec={rec}
@@ -1509,20 +1820,9 @@ function ViewLiveSession() {
                             </Card>
                         )}
 
-                        {/* Class Materials — always visible, not tied to a recording */}
-                        {contentLinkBatches.length > 0 &&
-                            instituteLiveSessionSettings.lmsConnection.classMaterialsEnabled && (
-                            <ClassMaterialsCard
-                                sessionId={sessionId}
-                                scheduleId={soleScheduleId}
-                                sessionTitle={sessionData?.schedule?.title}
-                                batches={contentLinkBatches}
-                            />
-                        )}
-
                         {/* Calendar View for Recurring Sessions */}
-                        {isRecurring && zoomProvisionBadge && (
-                            <div className="mb-4">{zoomProvisionBadge}</div>
+                        {isRecurring && provisionBadge && (
+                            <div className="mb-4">{provisionBadge}</div>
                         )}
 
                         {isRecurring && groupedSchedules.length > 0 && (
@@ -1685,37 +1985,26 @@ function ViewLiveSession() {
                                                                                             {session.duration} mins
                                                                                             </span>
                                                                                         </div>
-                                                                                        {isBbbSession ? (
-                                                                                            <button
-                                                                                                onClick={() => handleJoinAsHost(session.id)}
-                                                                                                className="text-xs font-medium text-primary hover:underline"
-                                                                                            >
-                                                                                                Start as Host →
-                                                                                            </button>
-                                                                                        ) : ((session as any).linkType === 'zoom' || (session as any).linkType === 'ZOOM_MEETING') ? (
-                                                                                            <button
-                                                                                                onClick={() => handleZoomStartAsHost(session.id)}
-                                                                                                className="text-xs font-medium text-primary hover:underline"
-                                                                                            >
-                                                                                                Start as Host →
-                                                                                            </button>
-                                                                                        ) : ((session as any).linkType === 'google meet' || (session as any).linkType === 'GOOGLE_MEET' || (session as any).linkType === 'googleMeet') ? (
-                                                                                            <button
-                                                                                                onClick={() => handleMeetStartAsHost(session.id)}
-                                                                                                className="text-xs font-medium text-primary hover:underline"
-                                                                                            >
-                                                                                                Start as Host →
-                                                                                            </button>
-                                                                                        ) : (
-                                                                                            <a
-                                                                                                href={session.link}
-                                                                                                target="_blank"
-                                                                                                rel="noopener noreferrer"
-                                                                                                className="text-xs font-medium text-primary hover:underline"
-                                                                                            >
-                                                                                                Join →
-                                                                                            </a>
-                                                                                        )}
+                                                                                        {(() => {
+                                                                                            const startAsHost = resolveHostAction(session as any);
+                                                                                            return startAsHost ? (
+                                                                                                <button
+                                                                                                    onClick={startAsHost}
+                                                                                                    className="text-xs font-medium text-primary hover:underline"
+                                                                                                >
+                                                                                                    Start as Host →
+                                                                                                </button>
+                                                                                            ) : (
+                                                                                                <a
+                                                                                                    href={session.link}
+                                                                                                    target="_blank"
+                                                                                                    rel="noopener noreferrer"
+                                                                                                    className="text-xs font-medium text-primary hover:underline"
+                                                                                                >
+                                                                                                    Join →
+                                                                                                </a>
+                                                                                            );
+                                                                                        })()}
                                                                                     </div>
                                                                                 </div>
                                                                         ))}
@@ -1809,7 +2098,7 @@ function ViewLiveSession() {
                                                 })()}
                                         </>
                                     ) : (
-                                        <SessionCalendarView schedules={groupedSchedules} />
+                                        <SessionCalendarView schedules={groupedSchedules} getHostAction={resolveHostAction} />
                                     )}
                                 </CardContent>
                             </Card>
@@ -1817,11 +2106,23 @@ function ViewLiveSession() {
                     </div>
 
                     {/* Sidebar Column */}
-                    <div className="space-y-6 lg:col-span-4 xl:col-span-3">
+                    <div className="w-full shrink-0 space-y-6 lg:sticky lg:top-24 lg:w-64 lg:self-start">
                         {/* Settings Card */}
                         <Card className="overflow-hidden border-border/60 shadow-sm">
                             <CardHeader className="bg-muted/40 px-6 py-4">
-                                <CardTitle className="text-lg font-semibold">Settings</CardTitle>
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                    <CardTitle className="flex min-w-0 items-center gap-2 text-base font-semibold">
+                                        <span className="truncate">Session Settings</span>
+                                    </CardTitle>
+                                    <button
+                                        type="button"
+                                        onClick={handleEditSession}
+                                        className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-primary-200 bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-600 transition-colors hover:bg-primary-100"
+                                    >
+                                        <Edit className="size-3" />
+                                        Edit
+                                    </button>
+                                </div>
                             </CardHeader>
                             <Separator />
                             <CardContent className="grid gap-4 p-6">
@@ -1859,14 +2160,18 @@ function ViewLiveSession() {
                         {uniqueNotifications.length > 0 && (
                             <Card className="overflow-hidden border-border/60 shadow-sm">
                                 <CardHeader className="bg-muted/40 px-6 py-4">
-                                    <div className="flex items-center justify-between">
-                                        <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-                                            <Bell className="size-5" />
-                                            Notifications
+                                    <div className="flex flex-wrap items-center justify-between gap-3">
+                                        <CardTitle className="flex min-w-0 items-center gap-2 text-base font-semibold">
+                                            <span className="truncate">Notifications</span>
                                         </CardTitle>
-                                        <Badge variant="secondary" className="rounded-full px-2 text-xs">
-                                            {uniqueNotifications.length}
-                                        </Badge>
+                                        <button
+                                            type="button"
+                                            onClick={handleEditSession}
+                                            className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-primary-200 bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-600 transition-colors hover:bg-primary-100"
+                                        >
+                                            <Edit className="size-3" />
+                                            Edit
+                                        </button>
                                     </div>
                                 </CardHeader>
                                 <Separator />
@@ -1951,47 +2256,9 @@ function ViewLiveSession() {
                                 </CardContent>
                             </Card>
                         )}
-
-                        {/* Associated Batches */}
-                        {schedule.package_session_ids && schedule.package_session_ids.length > 0 && (
-                                <Card className="overflow-hidden border-border/60 shadow-sm">
-                                    <CardHeader className="bg-muted/40 px-6 py-4">
-                                    <CardTitle className="text-lg font-semibold">Associated Batches</CardTitle>
-                                    <CardDescription>{schedule.package_session_ids.length} batch{schedule.package_session_ids.length > 1 ? 'es' : ''} linked</CardDescription>
-                                    </CardHeader>
-                                    <Separator />
-                                    <CardContent className="p-6">
-                                        {schedule.package_session_details && schedule.package_session_details.length > 0 ? (
-                                            <div className="flex flex-col gap-3">
-                                                {schedule.package_session_details.map((detail) => (
-                                                    <div
-                                                        key={detail.package_session_id}
-                                                        className="flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50 p-4 text-blue-700 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300"
-                                                    >
-                                                        <div className="flex flex-col gap-0.5">
-                                                            <span className="font-medium">{detail.level_name} {detail.package_name}</span>
-                                                            <span className="text-xs text-blue-500">{detail.session_name}</span>
-                                                        </div>
-                                                        <Badge className="bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600">
-                                                            <Users className="mr-1 h-3 w-3" />
-                                                            Batch
-                                                        </Badge>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50 p-4 text-blue-700 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
-                                                <span className="font-medium">Linked Batches</span>
-                                                <Badge className="bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600">
-                                                    {schedule.package_session_ids.length}
-                                                </Badge>
-                                            </div>
-                                        )}
-                                    </CardContent>
-                                </Card>
-                            )}
                     </div>
                 </div>
+
             </div>
         </LayoutContainer >
     );
@@ -2015,7 +2282,7 @@ function InfoItem({
                 {icon}
             </div>
             <div className="flex-1 space-y-1">
-                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60 transition-colors group-hover:text-muted-foreground">
+                <div className="text-xs text-muted-foreground transition-colors">
                     {label}
                 </div>
                 <div className="text-sm font-medium text-foreground">{value}</div>
@@ -2026,9 +2293,11 @@ function InfoItem({
 
 function SettingItem({ label, value }: { label: string; value: string }) {
     return (
-        <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">{label}</span>
-            <span className="text-sm font-medium text-foreground">{value}</span>
+        <div className="flex items-start justify-between gap-3">
+            <span className="min-w-0 text-sm text-muted-foreground">{label}</span>
+            <span className="shrink-0 text-right text-sm font-medium text-foreground">
+                {value}
+            </span>
         </div>
     );
 }
@@ -2411,6 +2680,7 @@ function RecordingTranscribeAction({
                 currentBalance={transcriptionPreview.currentBalance}
                 balanceAfter={transcriptionPreview.balanceAfter}
                 sufficient={transcriptionPreview.sufficient}
+                coverage={transcriptionPreview.coverage}
                 heading="Process this recording?"
                 confirmLabel="Process Recording"
                 onConfirm={() => mutate()}

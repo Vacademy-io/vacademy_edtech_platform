@@ -1,0 +1,93 @@
+{
+    "filters": {
+        "everyone": "الجميع",
+        "hasAttempted": "حاول",
+        "notStarted": "لم يبدأ",
+        "atRisk": "معرض للخطر"
+    },
+    "sorts": {
+        "lowestAverage": "أدنى متوسط",
+        "highestAverage": "أعلى متوسط",
+        "nameAz": "الاسم (أ–ي)",
+        "mostQuizzesDone": "أكثر عدد من الاختبارات المنجزة",
+        "fewestQuizzesDone": "أقل عدد من الاختبارات المنجزة",
+        "mostRecentActivity": "أحدث نشاط"
+    },
+    "csv": {
+        "name": "الاسم",
+        "email": "البريد الإلكتروني",
+        "mobile": "رقم الجوال",
+        "quizzesAttempted": "الاختبارات التي حاولها",
+        "quizzesInCourse": "الاختبارات في المقرر",
+        "totalAttempts": "إجمالي المحاولات",
+        "marksObtained": "الدرجات المحصّلة",
+        "maxMarksAttempted": "أقصى درجات (المحاولة)",
+        "maxMarksCourse": "أقصى درجات (المقرر)",
+        "averagePercent": "المتوسط %",
+        "bestPercent": "الأفضل %",
+        "lowestPercent": "الأدنى %",
+        "correct": "صحيح",
+        "wrong": "خطأ",
+        "skipped": "تم تخطيه",
+        "quizzesPassed": "الاختبارات الناجحة",
+        "lastActivity": "آخر نشاط"
+    },
+    "table": {
+        "learner": "المتعلم",
+        "quizzesDone": "الاختبارات المنجزة",
+        "averageScore": "متوسط الدرجة",
+        "notStarted": "لم يبدأ",
+        "passed": "ناجح",
+        "noPassMark": "لا توجد درجة نجاح",
+        "attempts": "المحاولات",
+        "lastActivity": "آخر نشاط"
+    },
+    "stats": {
+        "learners": "المتعلمون",
+        "quizzesInCourse_zero": "لا توجد اختبارات في هذا المقرر",
+        "quizzesInCourse_one": "اختبار واحد في هذا المقرر",
+        "quizzesInCourse_two": "اختباران في هذا المقرر",
+        "quizzesInCourse_few": "{{count}} اختبارات في هذا المقرر",
+        "quizzesInCourse_many": "{{count}} اختبارًا في هذا المقرر",
+        "quizzesInCourse_other": "{{count}} اختبار في هذا المقرر",
+        "haveAttempted": "حاولوا",
+        "haveNotStarted_zero": "لم يبدأ أحد بعد",
+        "haveNotStarted_one": "متعلم واحد لم يبدأ",
+        "haveNotStarted_two": "متعلمان لم يبدآ",
+        "haveNotStarted_few": "{{count}} متعلمين لم يبدأوا",
+        "haveNotStarted_many": "{{count}} متعلمًا لم يبدأوا",
+        "haveNotStarted_other": "{{count}} متعلم لم يبدأوا",
+        "classAverage": "متوسط الفصل",
+        "ofLearnersWhoStarted": "من المتعلمين الذين بدأوا",
+        "atRisk": "معرضون للخطر",
+        "averagingUnder50": "متوسط أقل من 50%"
+    },
+    "searchPlaceholder": "ابحث عن المتعلمين",
+    "filterLearnersAriaLabel": "تصفية المتعلمين",
+    "actions": {
+        "exportCsv": "تصدير CSV",
+        "refreshAriaLabel": "تحديث نتائج المتعلمين",
+        "clearFilters": "مسح عوامل التصفية",
+        "retry": "إعادة المحاولة"
+    },
+    "truncatedNotice": "يحتوي هذا الدفعة على متعلمين أكثر مما يعرضه التقرير دفعة واحدة — القائمة أدناه محدودة.",
+    "empty": {
+        "noneEnrolledTitle": "لا يوجد متعلمون مسجلون في هذه الدفعة بعد",
+        "noneEnrolledSubtitle": "بمجرد تسجيل المتعلمين، سيظهر تقدمهم في الاختبارات هنا.",
+        "noMatchTitle": "لا يوجد متعلمون يطابقون عوامل التصفية هذه",
+        "noMatchSubtitle": "جرّب كلمة بحث مختلفة أو امسح عوامل التصفية."
+    },
+    "errors": {
+        "couldNotLoad": "تعذّر تحميل نتائج المتعلمين",
+        "couldNotLoadSubtitle": "فشل الطلب. تحقق من اتصالك وحاول مرة أخرى."
+    },
+    "toast": {
+        "nothingToExport": "لا يوجد شيء لتصديره بعوامل التصفية هذه.",
+        "exported_zero": "لم يتم تصدير أي متعلم",
+        "exported_one": "تم تصدير متعلم واحد",
+        "exported_two": "تم تصدير متعلمين اثنين",
+        "exported_few": "تم تصدير {{count}} متعلمين",
+        "exported_many": "تم تصدير {{count}} متعلمًا",
+        "exported_other": "تم تصدير {{count}} متعلم"
+    }
+}

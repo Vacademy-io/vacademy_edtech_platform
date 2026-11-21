@@ -1,0 +1,18 @@
+{
+    "mentorFallback": "موجّه",
+    "learnerFallback": "الطالب",
+    "sessionBookedToast": "تم حجز الجلسة مع {{name}}",
+    "scheduleFailedFallback": "تعذر جدولة هذه الجلسة.",
+    "dialogHeading": "جدولة جلسة فردية",
+    "cancelButton": "إلغاء",
+    "bookingButton": "جارٍ الحجز…",
+    "bookButton": "حجز الجلسة",
+    "introParagraph": "يحصل الطالب على التأكيد ورابط الاجتماع والتذكيرات — تمامًا كما لو أنه حجزها بنفسه. لا يُطلب منه شيء.",
+    "mentorLabel": "الموجّه",
+    "mentorPlaceholder": "اختر موجّهًا",
+    "mentorSearchPlaceholder": "ابحث عن موجّهين…",
+    "mentorEmptyText": "لا يوجد موجّهون مطابقون",
+    "learnerLabel": "الطالب",
+    "pickTimeLabel": "اختر وقتًا",
+    "chooseMentorFirst": "اختر موجّهًا لمعرفة متى يكون متاحًا."
+}

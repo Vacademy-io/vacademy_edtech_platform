@@ -1,0 +1,38 @@
+{
+    "source": {
+        "pdf": "PDF से",
+        "audio": "ऑडियो से",
+        "image": "फ़ोटो से",
+        "doc": "दस्तावेज़ से",
+        "none": "विषय से"
+    },
+    "status": {
+        "completed": "तैयार",
+        "failed": "विफल",
+        "inProgress": "प्रगति पर"
+    },
+    "friendlyHeading": {
+        "vsmartUpload": "आपके प्रश्न पत्र",
+        "vsmartExtract": "आपकी निष्कर्षण सूची",
+        "vsmartImage": "आपकी निष्कर्षण सूची",
+        "vsmartAudio": "आपके ऑडियो-आधारित प्रश्न पत्र",
+        "vsmartTopics": "आपके विषय-आधारित प्रश्न पत्र",
+        "vsmartChat": "आपके चैट सत्र",
+        "vsmartOrganizer": "आपके क्रमबद्ध सेट",
+        "vsmartSorter": "आपके क्रमबद्ध सेट",
+        "vsmartLecturer": "आपकी पाठ योजनाएँ",
+        "vsmartFeedback": "आपकी व्याख्यान समीक्षाएँ"
+    },
+    "relativeTime": {
+        "justNow": "अभी अभी",
+        "minutesAgo_one": "{{count}} मिनट पहले",
+        "minutesAgo_other": "{{count}} मिनट पहले",
+        "hoursAgo_one": "{{count}} घंटा पहले",
+        "hoursAgo_other": "{{count}} घंटे पहले",
+        "daysAgo_one": "{{count}} दिन पहले",
+        "daysAgo_other": "{{count}} दिन पहले"
+    },
+    "taskDisplayName": {
+        "untitledDraft": "बिना शीर्षक का ड्राफ़्ट"
+    }
+}

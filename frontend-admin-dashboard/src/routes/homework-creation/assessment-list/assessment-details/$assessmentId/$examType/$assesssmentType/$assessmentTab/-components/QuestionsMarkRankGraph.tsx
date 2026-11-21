@@ -24,20 +24,26 @@ import ExportDialogPDFCSV from '@/components/common/export-dialog-pdf-csv';
 import { toast } from 'sonner';
 import Papa from 'papaparse';
 import { useTheme } from '@/providers/theme/theme-provider';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
-const chartConfig = {
-    mark: {
-        label: 'mark',
-        color: 'hsl(var(--chart-1))',
-    },
-} satisfies ChartConfig;
+function buildChartConfig(t: TFunction) {
+    return {
+        mark: {
+            label: t('chart.markSeriesLabel'),
+            color: 'hsl(var(--chart-1))',
+        },
+    } satisfies ChartConfig;
+}
 
 export function AssessmentDetailsMarkRankGraph({
     marksRanksData,
 }: {
     marksRanksData: AssessmentOverviewMarksRankInterface[];
 }) {
+    const { t } = useTranslation('homeworkCreationQuestionsMarkRankGraph');
     const { getPrimaryColorCode } = useTheme();
+    const chartConfig = buildChartConfig(t);
     const chartData = marksRanksData?.map(({ rank, marks }) => ({
         rank,
         mark: marks,
@@ -61,7 +67,7 @@ export function AssessmentDetailsMarkRankGraph({
                     axisLine={true}
                     tickMargin={8}
                     label={{
-                        value: 'Rank',
+                        value: t('chart.rankAxisLabel'),
                         position: 'left',
                         dx: 35,
                         dy: 30,
@@ -74,7 +80,7 @@ export function AssessmentDetailsMarkRankGraph({
                     axisLine={true}
                     tickMargin={8}
                     label={{
-                        value: 'Marks Obtained',
+                        value: t('chart.marksAxisLabel'),
                         angle: -90,
                         position: 'left',
                         dx: 10,
@@ -98,6 +104,7 @@ export function AssessmentDetailsMarkRankGraph({
 }
 
 export function QuestionsMarkRankGraph() {
+    const { t } = useTranslation('homeworkCreationQuestionsMarkRankGraph');
     const instituteId = getInstituteId();
     const { assessmentId } = Route.useParams();
     const { data, isLoading } = useSuspenseQuery(
@@ -149,7 +156,7 @@ export function QuestionsMarkRankGraph() {
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
-            toast.success('Student rank mark data for PDF exported successfully');
+            toast.success(t('export.pdfSuccess'));
         },
         onError: (error: unknown) => {
             throw error;
@@ -189,7 +196,7 @@ export function QuestionsMarkRankGraph() {
 
             // Clean up the created URL object
             URL.revokeObjectURL(url);
-            toast.success('Student rank mark data for CSV exported successfully');
+            toast.success(t('export.csvSuccess'));
         },
         onError: (error: unknown) => {
             throw error;
@@ -213,7 +220,7 @@ export function QuestionsMarkRankGraph() {
     return (
         <div className="flex flex-col">
             <div className="flex items-center justify-between">
-                <h1>Marks-Rank Graph</h1>
+                <h1>{t('title')}</h1>
                 <div className="flex items-center gap-6">
                     <ExportDialogPDFCSV
                         handleExportPDF={handleExportPDF}

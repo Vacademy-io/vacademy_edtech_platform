@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScheduleTestTab } from '@/types/assessments/assessment-list';
+import { useTranslation } from 'react-i18next';
 
 const ScheduleTestTabList = ({
     selectedTab,
@@ -9,6 +10,7 @@ const ScheduleTestTabList = ({
     selectedTab: string;
     scheduleTestTabsData: ScheduleTestTab[];
 }) => {
+    const { t } = useTranslation('evaluationScheduleTestTabList');
     return (
         <TabsList className="inline-flex h-auto justify-start gap-4 rounded-none border-b !bg-transparent p-0">
             <TabsTrigger
@@ -20,7 +22,7 @@ const ScheduleTestTabList = ({
                 }`}
             >
                 <span className={`${selectedTab === 'liveTests' ? 'text-primary-500' : ''}`}>
-                    Live
+                    {t('live')}
                 </span>
                 <Badge
                     className="rounded-[10px] bg-primary-500 p-0 px-2 text-[9px] text-white"
@@ -41,7 +43,7 @@ const ScheduleTestTabList = ({
                 }`}
             >
                 <span className={`${selectedTab === 'previousTests' ? 'text-primary-500' : ''}`}>
-                    Previous
+                    {t('previous')}
                 </span>
                 <Badge
                     className="rounded-[10px] bg-primary-500 p-0 px-2 text-[9px] text-white"

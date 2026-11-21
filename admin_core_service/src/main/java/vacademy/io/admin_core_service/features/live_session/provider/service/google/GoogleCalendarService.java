@@ -12,7 +12,8 @@ import vacademy.io.common.exceptions.VacademyException;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -177,10 +178,14 @@ public class GoogleCalendarService {
         return body;
     }
 
-    /** RFC-3339 instant (UTC) + display timezone — Google honors the instant, timeZone drives rendering. */
-    private Map<String, Object> timePart(Instant instant, String timezone) {
+    /**
+     * RFC-3339 instant (UTC) + display timezone — Google honors the instant, timeZone drives rendering.
+     * Must keep the seconds: OffsetDateTime.toString() drops ":00" ("10:30Z"), which Calendar rejects
+     * with a bare 400 — and every booking slot starts on a whole minute.
+     */
+    static Map<String, Object> timePart(Instant instant, String timezone) {
         Map<String, Object> part = new HashMap<>();
-        part.put("dateTime", instant.atOffset(ZoneOffset.UTC).toString());
+        part.put("dateTime", DateTimeFormatter.ISO_INSTANT.format(instant.truncatedTo(ChronoUnit.SECONDS)));
         if (timezone != null && !timezone.isBlank()) part.put("timeZone", timezone);
         return part;
     }

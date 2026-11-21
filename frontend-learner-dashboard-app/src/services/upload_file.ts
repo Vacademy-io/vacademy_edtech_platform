@@ -24,13 +24,20 @@ export enum StatusCode {
     success = 200,
 }
 
+/**
+ * Upload a file to S3 through a signed URL and acknowledge it. Returns the file id.
+ *
+ * @param onUploadProgress optional; called with 0–99 as the PUT progresses, then
+ *   with 100 once the upload is acknowledged.
+ */
 export const UploadFileInS3 = async (
     file: File | undefined,
     setIsUploadingFile: React.Dispatch<React.SetStateAction<boolean>> = () =>
         false,
     user_id: string,
     source?: string,
-    sourceId?: string
+    sourceId?: string,
+    onUploadProgress?: (percent: number) => void
 ): Promise<string | undefined> => {
     setIsUploadingFile(true);
     const effectiveSource = source || "FLOOR_DOCUMENTS";
@@ -61,11 +68,22 @@ export const UploadFileInS3 = async (
                     // MIME type (same value passed to getSignedURL above).
                     "Content-Type": file.type || "application/octet-stream",
                 },
+                onUploadProgress: onUploadProgress
+                    ? (event) => {
+                          // Some browsers omit the total; the file size is the same number.
+                          const total = event.total || file.size;
+                          if (!total) return;
+                          // Hold at 99 until the acknowledge lands.
+                          const percent = Math.round((event.loaded / total) * 100);
+                          onUploadProgress(Math.min(99, Math.max(0, percent)));
+                      }
+                    : undefined,
             });
 
             if (uploadResponse.status === StatusCode.success) {
                 await acknowledgeUpload(signedURLData.id, user_id);
             }
+            onUploadProgress?.(100);
 
             setIsUploadingFile(false);
             return signedURLData.id;

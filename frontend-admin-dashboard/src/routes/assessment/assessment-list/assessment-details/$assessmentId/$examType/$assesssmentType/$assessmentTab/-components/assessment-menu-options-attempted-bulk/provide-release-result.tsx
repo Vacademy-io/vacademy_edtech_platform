@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { useSubmissionsBulkActionsDialogStoreAttempted } from '../bulk-actions-zustand-store/useSubmissionsBulkActionsDialogStoreAttempted';
@@ -16,6 +17,7 @@ interface ProvideDialogDialogProps {
 }
 
 const ProvideReleaseResultDialogContent = () => {
+    const { t } = useTranslation('assessmentProvideReleaseResult');
     const { selectedStudent, bulkActionInfo, isBulkAction, closeAllDialogs } =
         useSubmissionsBulkActionsDialogStoreAttempted();
     const { assessmentId } = Route.useParams();
@@ -35,13 +37,10 @@ const ProvideReleaseResultDialogContent = () => {
             selectedFilter: SelectedReleaseResultFilterInterface;
         }) => getReleaseStudentResult(assessmentId, instituteId, methodType, selectedFilter),
         onSuccess: () => {
-            toast.success(
-                'Your result for this assessment has been released for the selected students. Please check your email!',
-                {
-                    className: 'success-toast',
-                    duration: 4000,
-                }
-            );
+            toast.success(t('toasts.releaseSuccess'), {
+                className: 'success-toast',
+                duration: 4000,
+            });
             closeAllDialogs();
         },
         onError: (error: unknown) => {
@@ -70,8 +69,9 @@ const ProvideReleaseResultDialogContent = () => {
     return (
         <div className="flex flex-col gap-6 px-4 pb-2 text-neutral-600">
             <h1>
-                Are you sure you want to release result for selected&nbsp;
-                <span className="text-primary-500">{displayText}</span>&nbsp;?
+                {t('dialog.confirmTextPrefix')}&nbsp;
+                <span className="text-primary-500">{displayText}</span>&nbsp;
+                {t('dialog.confirmSuffix')}
             </h1>
             <MyButton
                 buttonType="primary"
@@ -79,7 +79,7 @@ const ProvideReleaseResultDialogContent = () => {
                 layoutVariant="default"
                 onClick={handleSubmit}
             >
-                Done
+                {t('doneButton')}
             </MyButton>
         </div>
     );
@@ -90,11 +90,12 @@ export const ProvideReleaseResultDialog = ({
     open,
     onOpenChange,
 }: ProvideDialogDialogProps) => {
+    const { t } = useTranslation('assessmentProvideReleaseResult');
     return (
         <MyDialog
             trigger={trigger}
-            heading="Release Result"
-            dialogWidth="w-[400px] max-w-[400px]"
+            heading={t('dialog.heading')}
+            dialogWidth="w-full max-w-sm"
             content={<ProvideReleaseResultDialogContent />}
             open={open}
             onOpenChange={onOpenChange}

@@ -1,0 +1,21 @@
+{
+  "_doc": "Facts about the Brahm Varchas golden that the fixture JSON cannot carry: what the data setup needed. The design inputs themselves are client material and are never committed (see run.py).",
+  "fixture": "frontend-admin-dashboard/src/routes/manage-pages/-components/__fixtures__/brahm-varchas-site.json",
+  "fixture_ref": "brahm-varchas-site",
+  "design_code": {"1:36": "courses.tsx", "73:324": "paths.tsx"},
+  "metadata": "page1.xml",
+  "data_needs": {
+    "streams": 6,
+    "tag_families": ["stream", "format", "audience", "language"],
+    "paths": 4,
+    "store": true,
+    "forms": ["newsletter", "contact", "notify"]
+  },
+  "thresholds": {
+    "pattern_recall": 0.85,
+    "pattern_precision": 0.85,
+    "section_order": 0.85,
+    "palette_roles_within_de5": 12,
+    "content_width_tolerance_px": 16
+  }
+}

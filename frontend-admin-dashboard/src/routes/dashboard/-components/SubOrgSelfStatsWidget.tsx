@@ -1,5 +1,6 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -78,6 +79,7 @@ const nfmt = (n: number) => n.toLocaleString('en-IN');
  * Deep-links into the sub-org portal. Renders nothing if no sub-org resolves.
  */
 export default function SubOrgSelfStatsWidget() {
+    const { t } = useTranslation('dashboardSubOrgSelfStatsWidget');
     const navigate = useNavigate();
     const instituteId = getCurrentInstituteId();
     // Prefer the validated selected sub-org, else fall back to the caller's first
@@ -121,14 +123,14 @@ export default function SubOrgSelfStatsWidget() {
     const learners = finance?.totals?.learner_count ?? 0;
     const outstanding = finance?.totals?.total_outstanding ?? 0;
     const collected = collection?.total_amount ?? 0;
-    const heading = finance?.sub_org_name?.trim() || 'My organization';
+    const heading = finance?.sub_org_name?.trim() || t('defaultOrgName');
 
     const stats: Stat[] = [
         {
             key: 'learners',
-            label: 'Learners',
+            label: t('stats.learners.label'),
             value: nfmt(learners),
-            subtitle: 'Enrolled members',
+            subtitle: t('stats.learners.subtitle'),
             visual: {
                 Icon: GraduationCap,
                 iconBg: 'bg-blue-100',
@@ -138,12 +140,14 @@ export default function SubOrgSelfStatsWidget() {
         },
         {
             key: 'seats',
-            label: 'Seats',
+            label: t('stats.seats.label'),
             value: total != null ? `${nfmt(used)}/${nfmt(total)}` : nfmt(used),
             subtitle:
                 total != null
-                    ? `${nfmt(Math.max(remaining ?? total - used, 0))} seats left`
-                    : 'No seat cap',
+                    ? t('stats.seats.seatsLeft', {
+                          count: Math.max(remaining ?? total - used, 0),
+                      })
+                    : t('stats.seats.noCap'),
             visual: {
                 Icon: UsersThree,
                 iconBg: 'bg-violet-100',
@@ -153,9 +157,9 @@ export default function SubOrgSelfStatsWidget() {
         },
         {
             key: 'collected',
-            label: 'Collected',
+            label: t('stats.collected.label'),
             value: money(collected, collection?.currency),
-            subtitle: 'Fees received',
+            subtitle: t('stats.collected.subtitle'),
             visual: {
                 Icon: Coins,
                 iconBg: 'bg-emerald-100',
@@ -165,9 +169,9 @@ export default function SubOrgSelfStatsWidget() {
         },
         {
             key: 'outstanding',
-            label: 'Outstanding',
+            label: t('stats.outstanding.label'),
             value: money(outstanding, instituteCurrency),
-            subtitle: 'Fees due',
+            subtitle: t('stats.outstanding.subtitle'),
             visual: {
                 Icon: Money,
                 iconBg: 'bg-amber-100',
@@ -187,7 +191,9 @@ export default function SubOrgSelfStatsWidget() {
                         <UsersThree size={18} weight="duotone" />
                     </span>
                     <div className="min-w-0">
-                        <p className="text-xs font-medium text-neutral-400">Welcome back</p>
+                        <p className="text-xs font-medium text-neutral-400">
+                            {t('welcomeBack')}
+                        </p>
                         <h3 className="line-clamp-1 text-base font-semibold text-neutral-900">
                             {heading}
                         </h3>
@@ -198,7 +204,7 @@ export default function SubOrgSelfStatsWidget() {
                     onClick={go}
                     className="flex shrink-0 items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700"
                 >
-                    Manage
+                    {t('manage')}
                     <ArrowRight size={12} weight="bold" />
                 </button>
             </div>

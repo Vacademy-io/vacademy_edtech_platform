@@ -1,0 +1,53 @@
+{
+    "heading": "Attribution des conseillers",
+    "subheading": "Configurez la manière dont les conseillers sont affectés aux demandes",
+    "autoAssign": {
+        "label": "Attribution automatique",
+        "desc": "Attribuer automatiquement les demandes aux conseillers"
+    },
+    "allowParent": {
+        "label": "Autoriser le parent",
+        "desc": "Permettre aux parents de choisir leur conseiller préféré"
+    },
+    "assignmentStrategy": {
+        "label": "Stratégie d'attribution"
+    },
+    "strategies": {
+        "roundRobin": {
+            "label": "Tourniquet",
+            "desc": "Répartit équitablement à tour de rôle"
+        },
+        "random": {
+            "label": "Aléatoire",
+            "desc": "Choisit un conseiller au hasard"
+        },
+        "weighted": {
+            "label": "Pondéré",
+            "desc": "Les conseillers seniors en gèrent davantage",
+            "disabledNote": "Pondération par conseiller bientôt disponible"
+        },
+        "performance": {
+            "label": "Performance",
+            "desc": "Oriente vers le conseiller avec le meilleur taux de conversion"
+        },
+        "leastLoaded": {
+            "label": "Le moins chargé",
+            "desc": "Attribue au conseiller ayant le moins de prospects actifs"
+        }
+    },
+    "advanced": {
+        "trigger": "Avancé",
+        "maxActiveLeads": {
+            "label": "Nombre maximal de prospects actifs par conseiller",
+            "placeholder": "Aucune limite",
+            "helper": "Laissez vide pour aucune limite. Les nouveaux prospects au-delà de ce plafond iront au prochain conseiller disponible."
+        }
+    },
+    "counsellors": {
+        "label": "Conseillers",
+        "optional": "(Facultatif)",
+        "desc": "Ajoutez des identifiants de conseillers au pool d'attribution",
+        "inputPlaceholder": "Saisir l'identifiant du conseiller",
+        "addButton": "Ajouter"
+    }
+}

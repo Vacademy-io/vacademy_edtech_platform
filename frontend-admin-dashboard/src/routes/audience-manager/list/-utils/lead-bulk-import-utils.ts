@@ -2,6 +2,15 @@
  * Utilities for bulk CSV lead import.
  */
 
+import type { TFunction } from 'i18next';
+
+/** This file's own i18n namespace — passed explicitly via `{ ns: NAMESPACE }` so
+ *  callers whose bound `t` defaults to a different namespace (e.g. the dialog
+ *  that consumes these helpers) still resolve these keys correctly. Callers
+ *  must include this namespace in their own `useTranslation([...])` array (or
+ *  bind a separate `t` to it) so it's loaded before this runs. */
+const NAMESPACE = 'audienceManagerLeadBulkImportUtils';
+
 export interface CustomFieldConfig {
     id: string;
     fieldName: string;
@@ -53,12 +62,20 @@ export const LEAD_STATUS_COLUMN = 'Lead Status';
  * Generate a CSV template string with headers from the campaign's custom fields,
  * plus the optional Lead Owner + Lead Status columns the importer can resolve.
  * `statusSample` is the institute's default status label (shown in the sample row).
+ *
+ * `t` localizes the two well-known column headers and the sample-row filler text
+ * that ends up in the downloaded CSV. Email/phone sample values are left as
+ * plain format examples (not language-bound copy), matching the placeholder
+ * convention used elsewhere in the app.
  */
 export function generateCsvTemplate(
     customFields: CustomFieldConfig[],
+    t: TFunction,
     options?: { statusSample?: string }
 ): string {
-    const headers = [...customFields.map((f) => f.fieldName), LEAD_OWNER_COLUMN, LEAD_STATUS_COLUMN];
+    const leadOwnerColumn = t('csvTemplate.leadOwnerColumn', { ns: NAMESPACE });
+    const leadStatusColumn = t('csvTemplate.leadStatusColumn', { ns: NAMESPACE });
+    const headers = [...customFields.map((f) => f.fieldName), leadOwnerColumn, leadStatusColumn];
     const sampleRow = [
         ...customFields.map((f) => {
             const key = f.fieldKey.toLowerCase();
@@ -71,11 +88,12 @@ export function generateCsvTemplate(
                 name.includes('mobile');
             if (isEmail) return 'john@example.com';
             if (isPhone) return '+919876543210';
-            if (!isEmail && !isPhone && (key.includes('name') || name.includes('name'))) return 'John Doe';
+            if (!isEmail && !isPhone && (key.includes('name') || name.includes('name')))
+                return t('csvTemplate.sampleName', { ns: NAMESPACE });
             return '';
         }),
         'counsellor@example.com',
-        options?.statusSample || 'New',
+        options?.statusSample || t('csvTemplate.sampleStatus', { ns: NAMESPACE }),
     ];
 
     const escape = (v: string) => {
@@ -169,23 +187,23 @@ export interface OwnerResolution {
  * cell resolves to nothing without error. Emails resolve exactly; names resolve only when
  * unambiguous within the institute.
  */
-export function resolveOwner(value: string, resolver: CounsellorResolver): OwnerResolution {
+export function resolveOwner(value: string, resolver: CounsellorResolver, t: TFunction): OwnerResolution {
     const raw = (value || '').trim();
     if (!raw) return {};
 
     if (raw.includes('@')) {
         const match = resolver.byEmail.get(raw.toLowerCase());
         if (match) return { counsellorId: match.id, counsellorName: match.full_name };
-        return { error: `Unknown counsellor email: ${raw}` };
+        return { error: t('errors.unknownCounsellorEmail', { ns: NAMESPACE, email: raw }) };
     }
 
     const nameKey = raw.toLowerCase();
     if (resolver.ambiguousNames.has(nameKey)) {
-        return { error: `Multiple counsellors named "${raw}" — use their email instead` };
+        return { error: t('errors.ambiguousCounsellorName', { ns: NAMESPACE, name: raw }) };
     }
     const match = resolver.byName.get(nameKey);
     if (match) return { counsellorId: match.id, counsellorName: match.full_name };
-    return { error: `Unknown counsellor: ${raw}` };
+    return { error: t('errors.unknownCounsellor', { ns: NAMESPACE, name: raw }) };
 }
 
 // ─── Lead status resolution ─────────────────────────────────────────────────
@@ -236,7 +254,7 @@ export interface StatusResolution {
  * Resolve a CSV status cell (label or key) to a status_key. A blank cell falls back to the
  * institute default (so it shows as "New" rather than blank). An unrecognised value errors.
  */
-export function resolveStatus(value: string, resolver: StatusResolver): StatusResolution {
+export function resolveStatus(value: string, resolver: StatusResolver, t: TFunction): StatusResolution {
     const raw = (value || '').trim();
     if (!raw) {
         return resolver.defaultKey ? { leadStatusKey: resolver.defaultKey } : {};
@@ -246,8 +264,11 @@ export function resolveStatus(value: string, resolver: StatusResolver): StatusRe
     const match = resolver.byLabel.get(key) ?? resolver.byKey.get(key);
     if (match) return { leadStatusKey: match.status_key };
 
-    const valid = resolver.validLabels.length ? ` Valid: ${resolver.validLabels.join(', ')}` : '';
-    return { error: `Unknown lead status: ${raw}.${valid}` };
+    const base = t('errors.unknownLeadStatus', { ns: NAMESPACE, status: raw });
+    const valid = resolver.validLabels.length
+        ? ' ' + t('errors.validStatuses', { ns: NAMESPACE, statuses: resolver.validLabels.join(', ') })
+        : '';
+    return { error: base + valid };
 }
 
 /**
@@ -311,7 +332,7 @@ export function extractUserInfoFromRow(
             !phone &&
             (key.includes('phone') || key.includes('mobile') || name.includes('phone') || name.includes('mobile'))
         ) {
-            phone = value;
+            phone = normalizeMobile(value);
         }
         const isEmailField = key.includes('email') || name.includes('email');
         const isPhoneField =
@@ -338,7 +359,8 @@ export function extractUserInfoFromRow(
 export function validateRow(
     row: Record<string, string>,
     headerToFieldId: Map<string, string>,
-    customFields: CustomFieldConfig[]
+    customFields: CustomFieldConfig[],
+    t: TFunction
 ): string[] {
     const errors: string[] = [];
     const fieldIdToConfig = new Map(customFields.map((f) => [f.id, f]));
@@ -350,7 +372,7 @@ export function validateRow(
 
         const value = (row[header] || '').trim();
         if (config.isMandatory && !value) {
-            errors.push(`${config.fieldName} is required`);
+            errors.push(t('errors.fieldRequired', { ns: NAMESPACE, field: config.fieldName }));
         }
     }
 
@@ -364,7 +386,15 @@ export function validateRow(
 
         if (value && (key.includes('email') || name.includes('email'))) {
             if (!isValidEmail(value)) {
-                errors.push(`Invalid email: ${value}`);
+                errors.push(t('errors.invalidEmail', { ns: NAMESPACE, email: value }));
+            }
+        }
+        if (
+            value &&
+            (key.includes('phone') || key.includes('mobile') || name.includes('phone') || name.includes('mobile'))
+        ) {
+            if (!isValidMobile(normalizeMobile(value))) {
+                errors.push(t('errors.invalidMobile', { ns: NAMESPACE, mobile: value }));
             }
         }
     }
@@ -378,6 +408,24 @@ export function isValidEmail(v: string): boolean {
 
 export function isValidMobile(v: string): boolean {
     return /^\+?[0-9]{7,15}$/.test(v.replace(/[\s-]/g, ''));
+}
+
+/**
+ * Clean a phone cell before it is validated or stored.
+ *
+ * A phone column that has passed through Excel / pandas as a NUMBER exports as
+ * "9425677707.0". On 2026-09-11 a list uploaded that way put 43 such numbers into
+ * lead profiles; at dial time the backend stripped the "." and sent Plivo
+ * "+94256777070" — a Sri Lankan number — and every call failed. The trailing
+ * ".0" is dropped here (no real phone number ends in ".0"); a genuine decimal or
+ * scientific notation ("9.43E+09", digits already lost) is left alone so
+ * isValidMobile rejects it and the row shows up in the invalid-rows report.
+ */
+export function normalizeMobile(v: string): string {
+    return v
+        .trim()
+        .replace(/\.0+$/, '')
+        .replace(/[\s\-()]/g, '');
 }
 
 /**

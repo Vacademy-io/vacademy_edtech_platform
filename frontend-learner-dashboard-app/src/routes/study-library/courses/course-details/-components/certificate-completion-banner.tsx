@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { GraduationCap, Download, Eye, X, ArrowsClockwise } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { MyButton } from "@/components/design-system/button";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 
 interface CertificateCompletionBannerProps {
     certificateUrl: string | null;
@@ -31,6 +34,8 @@ export const CertificateCompletionBanner = ({
     threshold,
     onRegenerate,
 }: CertificateCompletionBannerProps) => {
+    const { t } = useTranslation("courseDetailsA");
+    const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
     const [previewOpen, setPreviewOpen] = useState(false);
     const [currentUrl, setCurrentUrl] = useState<string | null>(certificateUrl);
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -94,7 +99,7 @@ export const CertificateCompletionBanner = ({
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                         {/* Certificate Icon */}
                         <div className={cn(
-                            "flex-shrink-0 w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg",
+                            "flex-shrink-0 w-10 h-10 bg-gradient-to-br from-success-500 to-success-600 rounded-full flex items-center justify-center shadow-lg",
                             // Vibrant — flat semantic success disc (status)
                             "[.ui-vibrant_&]:bg-none [.ui-vibrant_&]:bg-success-600 [.ui-vibrant_&]:shadow-md",
                             // Play Styles — white icon disc with soft shadow
@@ -104,14 +109,14 @@ export const CertificateCompletionBanner = ({
                         </div>
 
                         {/* Content */}
-                        <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
+                        <div className="flex-1 min-w-0 space-y-1">
+                            <div className="flex items-center gap-2">
                                 <h3 className="text-base font-semibold text-black dark:text-white">
-                                    🎉 Course Completed!
+                                    🎉 {t("certificate.completedTitle", { course })}
                                 </h3>
                                 {/* <div className={`px-2 py-1 text-xs font-medium rounded-full ${
                                     percentageCompleted === 100 
-                                        ? 'bg-gradient-to-br from-green-500 to-emerald-600 text-white dark:text-white' 
+                                        ? 'bg-gradient-to-br from-success-500 to-success-600 text-white dark:text-white' 
                                         : 'bg-green-100 dark:bg-green-800/50 text-green-700 dark:text-green-300'
                                 }`}>
                                     {percentageCompleted}% Complete
@@ -119,7 +124,7 @@ export const CertificateCompletionBanner = ({
                             </div>
 
                             <p className="text-black dark:text-gray-300 text-sm">
-                                Congratulations! You've earned a certificate.
+                                {t("certificate.congratsMessage")}
                             </p>
                         </div>
                     </div>
@@ -134,7 +139,7 @@ export const CertificateCompletionBanner = ({
                                 onClick={() => setPreviewOpen(true)}
                             >
                                 <Eye size={14} />
-                                View Certificate
+                                {t("certificate.viewCertificate")}
                             </MyButton>
 
                             <MyButton
@@ -148,7 +153,7 @@ export const CertificateCompletionBanner = ({
                                     download={`${courseTitle}_Certificate.pdf`}
                                 >
                                     <Download size={14} />
-                                    Download Certificate
+                                    {t("certificate.downloadCertificate")}
                                 </a>
                             </MyButton>
                         </div>
@@ -161,7 +166,7 @@ export const CertificateCompletionBanner = ({
                     <div
                         role="dialog"
                         aria-modal="true"
-                        aria-label="Certificate preview"
+                        aria-label={t("certificate.previewAriaLabel")}
                         className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
                         onClick={() => setPreviewOpen(false)}
                     >
@@ -172,35 +177,35 @@ export const CertificateCompletionBanner = ({
                             <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 dark:border-gray-700 pe-24">
                                 <GraduationCap size={18} className="text-emerald-600 flex-shrink-0" />
                                 <span className="text-sm font-medium truncate">
-                                    {courseTitle} — Certificate Preview
+                                    {t("certificate.previewHeading", { courseTitle })}
                                 </span>
                             </div>
                             {onRegenerate && (
                                 <button
                                     type="button"
-                                    aria-label="Refresh certificate"
+                                    aria-label={t("certificate.refreshAriaLabel")}
                                     onClick={handleRefresh}
                                     disabled={isRefreshing}
-                                    title="Re-issue with the latest template"
+                                    title={t("certificate.refreshTitle")}
                                     className="absolute end-12 top-3 flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50"
                                 >
                                     <ArrowsClockwise
                                         size={14}
                                         className={isRefreshing ? "animate-spin" : ""}
                                     />
-                                    {isRefreshing ? "Refreshing" : "Refresh"}
+                                    {isRefreshing ? t("certificate.refreshing") : t("certificate.refresh")}
                                 </button>
                             )}
                             <button
                                 type="button"
-                                aria-label="Close preview"
+                                aria-label={t("certificate.closePreviewAriaLabel")}
                                 onClick={() => setPreviewOpen(false)}
                                 className="absolute end-3 top-3 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300"
                             >
                                 <X size={18} />
                             </button>
                             <iframe
-                                title="Certificate Preview"
+                                title={t("certificate.previewTitle")}
                                 src={previewSrc}
                                 className="flex-1 w-full bg-gray-100 dark:bg-gray-900"
                             />

@@ -1,0 +1,7 @@
+{
+    "triggerEvents": {
+        "entered": "Lorsqu'un sujet entre dans cette étape",
+        "completed": "Lorsque cette étape est terminée",
+        "skipped": "Lorsque cette étape est ignorée"
+    }
+}

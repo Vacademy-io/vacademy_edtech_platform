@@ -1,0 +1,23 @@
+{
+    "validation": {
+        "urlRequired": "URL is required",
+        "enterValidUrl": "Please enter a valid URL",
+        "enterValidVimeoUrl": "Please enter a valid Vimeo URL"
+    },
+    "defaultVideoName": "Vimeo Video",
+    "urlPlaceholder": "https://vimeo.com/...",
+    "videoThumbnailAlt": "Video thumbnail",
+    "updatingLink": "Updating Link...",
+    "addingVideo": "Adding Video...",
+    "updateVimeoLink": "Update Vimeo Link",
+    "addVimeoVideo": "Add Vimeo Video",
+    "toast": {
+        "invalidVimeoUrl": "Invalid Vimeo URL",
+        "durationReadFailed": "Could not read video duration from Vimeo. The video may be private or oEmbed failed. Please retry.",
+        "linkUpdated": "Vimeo link updated successfully!",
+        "videoAdded": "Vimeo video added successfully!",
+        "updateLinkFailed": "Failed to update link",
+        "addVideoFailed": "Failed to add video",
+        "reorderFailed": "Slide created but reordering failed"
+    }
+}

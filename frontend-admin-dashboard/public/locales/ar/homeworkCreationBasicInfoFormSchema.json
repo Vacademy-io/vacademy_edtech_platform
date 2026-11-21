@@ -1,0 +1,5 @@
+{
+    "assessmentNameRequired": "اسم التقييم مطلوب",
+    "endDateAfterStartDate": "يجب أن يكون تاريخ الانتهاء بعد تاريخ البدء",
+    "reattemptCountPositive": "يجب أن يكون عدد إعادة المحاولة أكبر من 0"
+}

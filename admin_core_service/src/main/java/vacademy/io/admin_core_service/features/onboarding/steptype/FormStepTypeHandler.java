@@ -8,9 +8,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.common.dto.request.CustomFieldValueDto;
 import vacademy.io.admin_core_service.features.common.entity.CustomFieldValues;
+import vacademy.io.admin_core_service.features.common.entity.CustomFields;
 import vacademy.io.admin_core_service.features.common.entity.InstituteCustomField;
 import vacademy.io.admin_core_service.features.common.enums.CustomFieldValueSourceTypeEnum;
 import vacademy.io.admin_core_service.features.common.enums.CustomFieldTypeEnum;
+import vacademy.io.admin_core_service.features.common.repository.CustomFieldRepository;
 import vacademy.io.admin_core_service.features.common.repository.CustomFieldValuesRepository;
 import vacademy.io.admin_core_service.features.common.repository.InstituteCustomFieldRepository;
 import vacademy.io.admin_core_service.features.common.service.CustomFieldValueService;
@@ -44,6 +46,7 @@ public class FormStepTypeHandler implements OnboardingStepTypeHandler {
     private final InstituteCustomFieldRepository instituteCustomFieldRepository;
     private final CustomFieldValueService customFieldValueService;
     private final CustomFieldValuesRepository customFieldValuesRepository;
+    private final CustomFieldRepository customFieldRepository;
     private final OnboardingStudentCreationService onboardingStudentCreationService;
     private final OnboardingRoleAccessResolutionService roleAccessResolutionService;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -97,8 +100,17 @@ public class FormStepTypeHandler implements OnboardingStepTypeHandler {
             String newValue = rawValue == null ? null : String.valueOf(rawValue);
             String effectiveValue = StringUtils.hasText(newValue) ? newValue : existingValues.get(customFieldId);
 
-            if (requireComplete && Boolean.TRUE.equals(fieldConfig.getIsMandatory()) && !StringUtils.hasText(effectiveValue)) {
-                missingMandatory.add(fieldConfig.getInstituteCustomFieldId());
+            // A hidden field is never rendered on any form (getResolvedFieldsForRole drops it),
+            // so requiring one would strand every caller on a step they can't possibly complete.
+            boolean required = Boolean.TRUE.equals(fieldConfig.getIsMandatory())
+                    && !Boolean.TRUE.equals(fieldConfig.getIsHidden());
+            if (requireComplete && required && !StringUtils.hasText(effectiveValue)) {
+                // Name the field, not its mapping UUID -- the message surfaces verbatim in the
+                // admin/learner form's error toast.
+                missingMandatory.add(customFieldRepository.findById(customFieldId)
+                        .map(CustomFields::getFieldName)
+                        .filter(StringUtils::hasText)
+                        .orElse(fieldConfig.getInstituteCustomFieldId()));
             }
 
             // Only ever write a value this specific call actually provided -- re-saving the

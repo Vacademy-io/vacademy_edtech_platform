@@ -1,0 +1,14 @@
+{
+    "placeholder": "اختر {{term}}",
+    "optionWebsite": "الموقع الإلكتروني",
+    "optionGoogleAds": "إعلانات جوجل",
+    "optionFacebook": "فيسبوك",
+    "optionInstagram": "إنستغرام",
+    "optionSocialMedia": "وسائل التواصل الاجتماعي",
+    "addCustomType": "إضافة نوع استفسار مخصص",
+    "customInputPlaceholder": "أدخل {{term}}",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "searchPlaceholder": "بحث…",
+    "noMatches": "لا توجد نتائج لـ «{{query}}»"
+}

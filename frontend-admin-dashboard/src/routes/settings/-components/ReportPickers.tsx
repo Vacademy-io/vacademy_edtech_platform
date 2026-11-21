@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MyInput } from '@/components/design-system/input';
 import { MyButton } from '@/components/design-system/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -41,6 +42,7 @@ interface ScopePickerProps {
 }
 
 export function ScopePicker({ scopeType, selected, onChange }: ScopePickerProps) {
+    const { t } = useTranslation('settingsReportPickers');
     const [query, setQuery] = useState('');
     const debounced = useDebounced(query);
     const [data, setData] = useState<ScopeOptions | null>(null);
@@ -72,7 +74,12 @@ export function ScopePicker({ scopeType, selected, onChange }: ScopePickerProps)
 
     if (scopeType === 'INSTITUTE') return null;
 
-    const noun = scopeType === 'BATCH' ? 'batches' : scopeType === 'SUBJECT' ? 'subjects' : 'faculty';
+    const noun =
+        scopeType === 'BATCH'
+            ? t('scopePicker.noun.batch')
+            : scopeType === 'SUBJECT'
+              ? t('scopePicker.noun.subject')
+              : t('scopePicker.noun.faculty');
 
     const toggle = (id: string, on: boolean) =>
         onChange(on ? [...selected, id] : selected.filter((x) => x !== id));
@@ -81,11 +88,11 @@ export function ScopePicker({ scopeType, selected, onChange }: ScopePickerProps)
         <div className="mb-3 rounded-md border border-border p-3">
             <div className="mb-2 flex items-center justify-between gap-3">
                 <p className="text-caption font-medium text-neutral-600">
-                    Which {noun}?
+                    {t('scopePicker.whichNoun', { noun })}
                 </p>
                 {selected.length > 0 && (
                     <MyButton buttonType="text" onClick={() => onChange([])}>
-                        Clear {selected.length}
+                        {t('scopePicker.clearCount', { count: selected.length })}
                     </MyButton>
                 )}
             </div>
@@ -94,8 +101,8 @@ export function ScopePicker({ scopeType, selected, onChange }: ScopePickerProps)
                 this type, which is what trips the 50-document cap. Say so plainly. */}
             {selected.length === 0 && (
                 <p className="mb-2 text-caption text-warning-700">
-                    Nothing picked means <b>every</b> one of them, which may exceed the
-                    per-run limit. Pick the {noun} you want.
+                    {t('scopePicker.emptyWarning.prefix')} <b>{t('scopePicker.emptyWarning.every')}</b>{' '}
+                    {t('scopePicker.emptyWarning.suffix', { noun })}
                 </p>
             )}
 
@@ -103,7 +110,7 @@ export function ScopePicker({ scopeType, selected, onChange }: ScopePickerProps)
                 inputType="text"
                 input={query}
                 onChangeFunction={(e) => setQuery(e.target.value)}
-                inputPlaceholder={`Search ${noun}…`}
+                inputPlaceholder={t('scopePicker.searchPlaceholder', { noun })}
                 className="mb-2 w-full"
             />
 
@@ -118,16 +125,18 @@ export function ScopePicker({ scopeType, selected, onChange }: ScopePickerProps)
             )}
 
             {state === 'loading' && (
-                <p className="text-caption text-neutral-500">Loading…</p>
+                <p className="text-caption text-neutral-500">{t('scopePicker.loading')}</p>
             )}
             {state === 'error' && (
                 <p className="text-caption text-danger-600">
-                    Could not load {noun}. Check your connection and try again.
+                    {t('scopePicker.errorLoad', { noun })}
                 </p>
             )}
             {state === 'idle' && data && data.options.length === 0 && (
                 <p className="text-caption text-neutral-500">
-                    {query ? `No ${noun} match “${query}”.` : `This institute has no ${noun}.`}
+                    {query
+                        ? t('scopePicker.emptyNoMatch', { noun, query })
+                        : t('scopePicker.emptyNoneAtInstitute', { noun })}
                 </p>
             )}
 
@@ -149,7 +158,10 @@ export function ScopePicker({ scopeType, selected, onChange }: ScopePickerProps)
                     </div>
                     {data.truncated && (
                         <p className="mt-1 text-caption text-neutral-500">
-                            Showing {data.options.length} of {data.total} — search to narrow.
+                            {t('scopePicker.truncatedNotice', {
+                                shown: data.options.length,
+                                total: data.total,
+                            })}
                         </p>
                     )}
                 </>
@@ -164,6 +176,7 @@ interface RecipientPickerProps {
 }
 
 export function RecipientPicker({ selected, onChange }: RecipientPickerProps) {
+    const { t } = useTranslation('settingsReportPickers');
     const [query, setQuery] = useState('');
     const debounced = useDebounced(query);
     const [people, setPeople] = useState<RecipientCandidate[]>([]);
@@ -204,11 +217,11 @@ export function RecipientPicker({ selected, onChange }: RecipientPickerProps) {
         <div className="mb-3 rounded-md border border-border p-3">
             <div className="mb-2 flex items-center justify-between gap-3">
                 <p className="text-caption font-medium text-neutral-600">
-                    Or pick specific people
+                    {t('recipientPicker.pickPeopleLabel')}
                 </p>
                 {selected.length > 0 && (
                     <MyButton buttonType="text" onClick={() => onChange([])}>
-                        Clear {selected.length}
+                        {t('recipientPicker.clearCount', { count: selected.length })}
                     </MyButton>
                 )}
             </div>
@@ -217,7 +230,7 @@ export function RecipientPicker({ selected, onChange }: RecipientPickerProps) {
                 inputType="text"
                 input={query}
                 onChangeFunction={(e) => setQuery(e.target.value)}
-                inputPlaceholder="Search by name or email…"
+                inputPlaceholder={t('recipientPicker.searchPlaceholder')}
                 className="mb-2 w-full"
             />
 
@@ -235,18 +248,21 @@ export function RecipientPicker({ selected, onChange }: RecipientPickerProps) {
                 looks like a delivery bug. Better to say it while it can be fixed. */}
             {noEmail.length > 0 && (
                 <p className="mb-2 text-caption text-warning-700">
-                    {noEmail.length} selected {noEmail.length === 1 ? 'person has' : 'people have'}{' '}
-                    no email on file and will not receive anything.
+                    {t('recipientPicker.noEmailWarning', { count: noEmail.length })}
                 </p>
             )}
 
-            {state === 'loading' && <p className="text-caption text-neutral-500">Loading…</p>}
+            {state === 'loading' && (
+                <p className="text-caption text-neutral-500">{t('recipientPicker.loading')}</p>
+            )}
             {state === 'error' && (
-                <p className="text-caption text-danger-600">Could not load people.</p>
+                <p className="text-caption text-danger-600">{t('recipientPicker.errorLoad')}</p>
             )}
             {state === 'idle' && people.length === 0 && (
                 <p className="text-caption text-neutral-500">
-                    {query ? `Nobody matches “${query}”.` : 'No eligible recipients found.'}
+                    {query
+                        ? t('recipientPicker.emptyNoMatch', { query })
+                        : t('recipientPicker.emptyNoneFound')}
                 </p>
             )}
             {state === 'idle' && people.length > 0 && (
@@ -258,8 +274,11 @@ export function RecipientPicker({ selected, onChange }: RecipientPickerProps) {
                                 onCheckedChange={(v) => toggle(p.userId, Boolean(v))}
                             />
                             <span className="truncate">
-                                {p.name || '(unnamed)'}
-                                <span className="text-neutral-500"> · {p.email || 'no email'}</span>
+                                {p.name || t('recipientPicker.unnamed')}
+                                <span className="text-neutral-500">
+                                    {' '}
+                                    · {p.email || t('recipientPicker.noEmail')}
+                                </span>
                             </span>
                             <span className="ml-auto shrink-0 text-caption text-neutral-500">
                                 {p.roles.join('/')}

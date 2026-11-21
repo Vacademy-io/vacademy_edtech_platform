@@ -1,0 +1,45 @@
+{
+    "title": "Automation Diagram",
+    "nodeCount_one": "{{count}} node",
+    "nodeCount_other": "{{count}} nodes",
+    "connectionCount_one": "{{count}} connection",
+    "connectionCount_other": "{{count}} connections",
+    "emptyState": {
+        "title": "No workflow diagram available",
+        "description": "This workflow may not have any configured nodes"
+    },
+    "tip": {
+        "label": "Tip:",
+        "description": "Click and drag to pan around the diagram. Use the zoom controls to zoom in/out. Click on any node to view its details."
+    },
+    "executions": {
+        "title": "Executions",
+        "count_one": "{{count}} execution",
+        "count_other": "{{count}} executions"
+    },
+    "filters": {
+        "startDateTime": "Start date & time",
+        "endDateTime": "End date & time",
+        "search": "Search",
+        "reset": "Reset",
+        "timezoneNote": "Times are sent as GMT/UTC in the request."
+    },
+    "table": {
+        "started": "Started",
+        "completed": "Completed",
+        "status": "Status",
+        "idempotencyKey": "Idempotency Key",
+        "loading": "Loading executions…",
+        "loadFailed": "Failed to load executions",
+        "empty": "No executions found for the selected range."
+    },
+    "pagination": {
+        "pageOf": "Page {{page}} of {{total}}",
+        "previous": "Previous",
+        "next": "Next"
+    },
+    "nodeDetails": {
+        "description": "Description:",
+        "configuration": "Configuration Details:"
+    }
+}

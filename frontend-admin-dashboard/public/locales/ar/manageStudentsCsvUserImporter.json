@@ -1,0 +1,83 @@
+{
+    "columns": {
+        "email": "البريد الإلكتروني",
+        "fullName": "الاسم الكامل",
+        "mobileNumber": "رقم الجوال",
+        "username": "اسم المستخدم",
+        "password": "كلمة المرور",
+        "address": "العنوان",
+        "pinCode": "الرمز البريدي",
+        "paymentDate": "تاريخ الدفع (يوم/شهر/سنة)",
+        "transactionId": "رقم المعاملة",
+        "gender": "الجنس",
+        "dateOfBirth": "تاريخ الميلاد",
+        "city": "المدينة",
+        "region": "الولاية/المنطقة",
+        "linkedInstituteName": "الكلية/المدرسة",
+        "fathersName": "اسم الأب",
+        "mothersName": "اسم الأم",
+        "fathersMobile": "جوال الأب",
+        "fathersEmail": "بريد الأب الإلكتروني",
+        "mothersMobile": "جوال الأم",
+        "mothersEmail": "بريد الأم الإلكتروني"
+    },
+    "template": {
+        "downloadTitle": "تنزيل القالب",
+        "instructions": "املأ القالب ثم أعد رفعه. الأعمدة المطلوبة:",
+        "optionalCount": "+ {{count}} اختياري",
+        "customFieldsIncluded_zero": "(بدون حقول مخصصة ({{count}}))",
+        "customFieldsIncluded_one": "(يشمل حقلًا مخصصًا واحدًا ({{count}}))",
+        "customFieldsIncluded_two": "(يشمل حقلين مخصصين ({{count}}))",
+        "customFieldsIncluded_few": "(يشمل {{count}} حقول مخصصة)",
+        "customFieldsIncluded_many": "(يشمل {{count}} حقلًا مخصصًا)",
+        "customFieldsIncluded_other": "(يشمل {{count}} حقل مخصص)",
+        "templateButton": "القالب"
+    },
+    "picker": {
+        "title": "اختر أعمدة القالب",
+        "description": "الأعمدة المطلوبة مُضمَّنة دائمًا؛ لا يزال الرفع يقبل أي مجموعة فرعية.",
+        "clearOptional": "مسح الاختياري",
+        "selectAll": "تحديد الكل",
+        "required": "مطلوب",
+        "columnsSelected_zero": "لا أعمدة محددة ({{count}})",
+        "columnsSelected_one": "عمود واحد محدد ({{count}})",
+        "columnsSelected_two": "عمودان محددان ({{count}})",
+        "columnsSelected_few": "{{count}} أعمدة محددة",
+        "columnsSelected_many": "{{count}} عمودًا محددًا",
+        "columnsSelected_other": "{{count}} عمود محدد",
+        "cancel": "إلغاء",
+        "download": "تنزيل"
+    },
+    "dropzone": {
+        "dragDrop": "اسحب ملف CSV وأفلته هنا",
+        "orBrowse": "أو انقر للتصفح"
+    },
+    "errors": {
+        "missingRequiredColumn": "عمود مطلوب مفقود: \"{{column}}\"",
+        "rowFieldRequired": "الصف {{rowNum}}: الحقل {{field}} مطلوب",
+        "rowUsernameSpaces": "الصف {{rowNum}}: لا يمكن أن يحتوي اسم المستخدم على مسافات",
+        "rowInvalidPaymentDate": "الصف {{rowNum}}: تنسيق تاريخ الدفع غير صالح \"{{value}}\"",
+        "notCsvFile": "يرجى رفع ملف بصيغة .csv"
+    },
+    "preview": {
+        "rowsDetected_zero": "لا صفوف صالحة ({{count}})",
+        "rowsDetected_one": "تم العثور على صف واحد صالح ({{count}})",
+        "rowsDetected_two": "تم العثور على صفين صالحين ({{count}})",
+        "rowsDetected_few": "تم العثور على {{count}} صفوف صالحة",
+        "rowsDetected_many": "تم العثور على {{count}} صفًا صالحًا",
+        "rowsDetected_other": "تم العثور على {{count}} صف صالح",
+        "addLearners_zero": "إضافة الطلاب ({{count}})",
+        "addLearners_one": "إضافة طالب واحد ({{count}})",
+        "addLearners_two": "إضافة طالبين ({{count}})",
+        "addLearners_few": "إضافة {{count}} طلاب",
+        "addLearners_many": "إضافة {{count}} طالبًا",
+        "addLearners_other": "إضافة {{count}} طالب",
+        "customFieldsCount_zero": "(بدون حقول مخصصة ({{count}}))",
+        "customFieldsCount_one": "(حقل مخصص واحد ({{count}}))",
+        "customFieldsCount_two": "(حقلان مخصصان ({{count}}))",
+        "customFieldsCount_few": "({{count}} حقول مخصصة)",
+        "customFieldsCount_many": "({{count}} حقلًا مخصصًا)",
+        "customFieldsCount_other": "({{count}} حقل مخصص)",
+        "andMore": "…و {{count}} أخرى"
+    }
+}

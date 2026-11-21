@@ -4,7 +4,6 @@ import { getActiveRoleDisplaySettingsKey } from '@/lib/auth/instituteUtils';
 import { MyButton } from '@/components/design-system/button';
 import { Lightning } from '@phosphor-icons/react';
 import { MyDropdown } from '@/components/design-system/dropdown';
-import { useSidebar } from '@/components/ui/sidebar';
 import {
     Plus,
     FilePdf,
@@ -16,6 +15,7 @@ import {
     BookOpen,
     MusicNotes,
     Package,
+    Sparkle,
 } from '@phosphor-icons/react';
 import { MyDialog } from '@/components/design-system/dialog';
 import { AddVideoDialog } from './add-video-dialog';
@@ -27,6 +27,9 @@ import { AddPptDialog } from './add-ppt-dialog';
 import { AddAudioDialog } from './add-audio-dialog';
 import { AddScormDialog } from './add-scorm-dialog';
 import { AddAssessmentSlideDialog } from './add-assessment-slide-dialog';
+import { AddAiVideoDialog } from './ai-video/add-ai-video-dialog';
+import { AddSpreadsheetDialog } from '../spreadsheet/add-spreadsheet-dialog';
+import { AddDocumentQuizDialog } from '../document-quiz/add-document-quiz-dialog';
 import { ListChecks } from '@phosphor-icons/react';
 import { useRouter } from '@tanstack/react-router';
 import {
@@ -35,7 +38,30 @@ import {
 } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-hooks/use-slides';
 import { useContentStore } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-stores/chapter-sidebar-store';
 import { useDialogStore } from '@/routes/study-library/courses/-stores/slide-add-dialogs-store';
-import { File, GameController, ClipboardText } from '@phosphor-icons/react';
+import {
+    File,
+    GameController,
+    ClipboardText,
+    ChatsCircle,
+    FileXls,
+    Files,
+    Cards,
+    ChartBar,
+} from '@phosphor-icons/react';
+import {
+    FLASHCARDS_DOC_TYPE,
+    GAME_DOC_TYPE,
+    POLL_DOC_TYPE,
+    createDefaultFlashcardsDataJson,
+    createDefaultGameData,
+    createDefaultPollData,
+    serializeGameData,
+    serializePollData,
+} from '../activity/activity-types';
+import {
+    DISCUSSION_DOC_TYPE,
+    createDefaultDiscussionDataJson,
+} from '../discussion/discussion-types';
 import { formatHTMLString } from '../slide-operations/formatHtmlString';
 import { EMPTY_LEXICAL_INNER } from '../lexical-editor/lexical-doc-marker';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
@@ -53,6 +79,7 @@ import { createPresentationSlidePayload } from '../create-presentation-slide';
 import AddQuestionDialog from './add-question-dialog';
 import { getSlideStatusForUser } from '../../non-admin/hooks/useNonAdminSlides';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type DisplaySettingsData } from '@/types/display-settings';
 import { getDisplaySettings, getDisplaySettingsFromCache } from '@/services/display-settings';
 
@@ -65,6 +92,7 @@ export const setFirstSlideAsActive = (setActiveItem: (slide: any) => void, items
 };
 
 export const ChapterSidebarAddButton = () => {
+    const { t } = useTranslation('slideAddMenu');
     // Load role display settings to enforce slide-type availability
     const [roleDisplay, setRoleDisplay] = useState<DisplaySettingsData | null>(null);
     useEffect(() => {
@@ -78,7 +106,6 @@ export const ChapterSidebarAddButton = () => {
             .then(setRoleDisplay)
             .catch(() => setRoleDisplay(null));
     }, []);
-    const { open } = useSidebar();
     const route = useRouter();
     const { getPackageSessionId } = useInstituteDetailsStore();
     const { courseId, levelId, chapterId, moduleId, subjectId, sessionId } =
@@ -100,6 +127,8 @@ export const ChapterSidebarAddButton = () => {
     );
 
     const { items, setActiveItem, setAssessmentCreateMode } = useContentStore();
+    const [isSpreadsheetDialogOpen, setSpreadsheetDialogOpen] = useState(false);
+    const [isDocumentQuizDialogOpen, setIsDocumentQuizDialogOpen] = useState(false);
 
     // Use the Zustand store instead of useState
     const {
@@ -134,6 +163,9 @@ export const ChapterSidebarAddButton = () => {
         isVimeoDialogOpen,
         openVimeoDialog,
         closeVimeoDialog,
+        isAiVideoDialogOpen,
+        openAiVideoDialog,
+        closeAiVideoDialog,
     } = useDialogStore();
 
     // Function to reorder slides after adding a new one at the bottom
@@ -152,155 +184,204 @@ export const ChapterSidebarAddButton = () => {
             });
         } catch (error) {
             console.error('Error reordering slides:', error);
-            toast.error('Slide created but reordering failed');
+            toast.error(t('toasts.reorderFailed'));
         }
     };
 
     const dropdownList = useMemo(
         () => [
             {
-                label: 'Quick Add (Bulk)',
+                label: t('menu.quickAdd.label'),
                 value: 'quick-add',
                 icon: <Plus className="size-4 text-primary-500" />,
-                description: 'Bulk upload & add multiple slides',
+                description: t('menu.quickAdd.description'),
             },
             {
-                label: 'PDF Document',
+                label: t('menu.pdf.label'),
                 value: 'pdf',
                 icon: <FilePdf className="size-4 text-red-500" />,
-                description: 'Upload PDF files',
+                description: t('menu.pdf.description'),
             },
             {
-                label: 'PPT Presentation',
+                label: t('menu.ppt.label'),
                 value: 'ppt',
                 icon: <PresentationChart className="size-4 text-orange-500" />,
-                description: 'Upload PPT/PPTX files (converted to PDF)',
+                description: t('menu.ppt.description'),
             },
             {
-                label: 'Document',
+                label: t('menu.doc.label'),
                 value: 'doc',
                 icon: <FileDoc className="size-4 text-blue-600" />,
-                description: 'Word documents & more',
+                description: t('menu.doc.description'),
                 subItems: [
                     {
-                        label: 'Upload from device',
+                        label: t('menu.uploadDoc.label'),
                         value: 'upload-doc',
-                        description: 'Upload existing document',
+                        description: t('menu.uploadDoc.description'),
                     },
                     {
-                        label: 'Create new document',
+                        label: t('menu.createDocLexical.label'),
                         value: 'create-doc-lexical',
-                        description: 'Start with blank document',
+                        description: t('menu.createDocLexical.description'),
                     },
                     {
-                        label: 'AI document',
+                        label: t('menu.createHtmlDoc.label'),
                         value: 'create-html-doc',
-                        description: 'Rich interactive page authored by AI',
+                        description: t('menu.createHtmlDoc.description'),
                     },
                     {
-                        label: 'Create document (Legacy editor)',
+                        label: t('menu.createDocLegacy.label'),
                         value: 'create-doc',
-                        description: 'Deprecated — old document editor',
+                        description: t('menu.createDocLegacy.description'),
                     },
                 ],
             },
             {
-                label: 'Video',
+                label: t('menu.video.label'),
                 value: 'video',
                 icon: <YoutubeLogo className="size-4 text-green-500" />,
-                description: 'Video content',
+                description: t('menu.video.description'),
                 subItems: [
                     {
-                        label: 'Upload video file',
+                        label: t('menu.uploadVideo.label'),
                         value: 'upload-video',
-                        description: 'Upload from device',
+                        description: t('menu.uploadVideo.description'),
                     },
                     {
-                        label: 'YouTube video',
+                        label: t('menu.youtubeVideo.label'),
                         value: 'youtube-video',
-                        description: 'Add YouTube link',
+                        description: t('menu.youtubeVideo.description'),
                     },
                     {
-                        label: 'Vimeo video',
+                        label: t('menu.vimeoVideo.label'),
                         value: 'vimeo-video',
-                        description: 'Add Vimeo link',
+                        description: t('menu.vimeoVideo.description'),
+                    },
+                    {
+                        label: t('menu.generateAiVideo.label'),
+                        value: 'generate-ai-video',
+                        description: t('menu.generateAiVideo.description'),
                     },
                 ],
             },
             {
-                label: 'Question',
+                label: t('menu.aiVideo.label'),
+                value: 'ai-video',
+                icon: <Sparkle className="size-4 text-primary-500" weight="fill" />,
+                description: t('menu.aiVideo.description'),
+            },
+            {
+                label: t('menu.question.label'),
                 value: 'question',
                 icon: <Question className="size-4 text-purple-500" />,
-                description: 'Interactive questions',
+                description: t('menu.question.description'),
             },
             {
-                label: 'Assignment',
+                label: t('menu.assignment.label'),
                 value: 'assignment',
                 icon: <File className="size-4 text-blue-500" />,
-                description: 'Student assignments',
+                description: t('menu.assignment.description'),
             },
             {
-                label: 'Presentation',
+                label: t('menu.presentation.label'),
                 value: 'presentation',
                 icon: <PresentationChart className="size-4 text-orange-500" />,
-                description: 'Interactive presentations',
+                description: t('menu.presentation.description'),
             },
             {
-                label: 'Jupyter Notebook',
+                label: t('menu.jupyterNotebook.label'),
                 value: 'jupyter-notebook',
                 icon: <BookOpen className="size-4 text-violet-500" />,
-                description: 'Interactive coding notebooks',
+                description: t('menu.jupyterNotebook.description'),
             },
             {
-                label: 'Scratch Project',
+                label: t('menu.scratchProject.label'),
                 value: 'scratch-project',
                 icon: <GameController className="size-4 text-yellow-500" />,
-                description: 'Visual programming blocks',
+                description: t('menu.scratchProject.description'),
             },
             {
-                label: 'Quiz',
+                label: t('menu.discussion.label'),
+                value: 'discussion',
+                icon: <ChatsCircle className="size-4 text-primary-500" />,
+                description: t('menu.discussion.description'),
+            },
+            {
+                label: t('menu.spreadsheet.label'),
+                value: 'spreadsheet',
+                icon: <FileXls className="size-4 text-success-600" />,
+                description: t('menu.spreadsheet.description'),
+            },
+            {
+                label: t('menu.flashcards.label'),
+                value: 'flashcards',
+                icon: <Cards className="size-4 text-primary-500" />,
+                description: t('menu.flashcards.description'),
+            },
+            {
+                label: t('menu.poll.label'),
+                value: 'poll',
+                icon: <ChartBar className="size-4 text-primary-500" />,
+                description: t('menu.poll.description'),
+            },
+            {
+                label: t('menu.game.label'),
+                value: 'game',
+                icon: <GameController className="size-4 text-primary-500" />,
+                description: t('menu.game.description'),
+            },
+            {
+                label: t('menu.quiz.label'),
                 value: 'quiz',
                 icon: <ClipboardText className="size-4 text-pink-500" />, // ✅ Changed to ListChecks
-                description: 'Timed quiz slide',
+                description: t('menu.quiz.description'),
             },
             {
-                label: 'Audio',
+                label: t('menu.documentQuiz.label'),
+                value: 'document-quiz',
+                icon: <Files className="size-4 text-primary-500" />,
+                description: t('menu.documentQuiz.description'),
+            },
+            {
+                label: t('menu.audio.label'),
                 value: 'audio',
                 icon: <MusicNotes className="size-4 text-indigo-500" />,
-                description: 'Audio slide with playback',
+                description: t('menu.audio.description'),
             },
             {
-                label: 'Code Editor',
+                label: t('menu.codeEditor.label'),
                 value: 'code-editor',
                 icon: <Code className="size-4 text-green-500" />,
-                description: 'Interactive code environment',
+                description: t('menu.codeEditor.description'),
             },
             {
-                label: 'SCORM Package',
+                label: t('menu.scorm.label'),
                 value: 'scorm',
                 icon: <Package className="size-4 text-teal-500" />,
-                description: 'Import SCORM 1.2/2004 modules',
+                description: t('menu.scorm.description'),
             },
             {
-                label: 'Assessment',
+                label: t('menu.assessment.label'),
                 value: 'assessment',
                 icon: <ListChecks className="size-4 text-rose-500" />,
-                description: 'Link or create an assessment',
+                description: t('menu.assessment.description'),
                 subItems: [
                     {
-                        label: 'Link existing assessment',
+                        label: t('menu.linkAssessment.label'),
                         value: 'link-assessment',
-                        description: 'Pick an assessment you already created',
+                        description: t('menu.linkAssessment.description'),
                     },
                     {
-                        label: 'Create new assessment',
+                        label: t('menu.createAssessment.label'),
                         value: 'create-assessment',
-                        description: 'Create a manual assessment in this slide',
+                        description: t('menu.createAssessment.description'),
                     },
                 ],
             },
         ],
-        []
+        // The catalog loads async, so the first render resolves every label to
+        // its raw key. Without t here the memo freezes those keys forever.
+        [t]
     );
 
     const filteredDropdownList = useMemo(() => {
@@ -338,6 +419,8 @@ export const ChapterSidebarAddButton = () => {
                 case 'upload-video':
                 case 'youtube-video':
                 case 'vimeo-video':
+                case 'ai-video':
+                case 'generate-ai-video':
                     return ct.video?.enabled !== false;
                 case 'question':
                     return ct.question !== false;
@@ -347,7 +430,10 @@ export const ChapterSidebarAddButton = () => {
                     return ct.jupyterNotebook !== false;
                 case 'scratch-project':
                     return ct.scratch !== false;
+                case 'discussion':
+                    return ct.discussion !== false;
                 case 'quiz':
+                case 'document-quiz':
                     return ct.quiz !== false;
                 case 'code-editor':
                     return ct.codeEditor !== false;
@@ -361,6 +447,7 @@ export const ChapterSidebarAddButton = () => {
                     return ct.assessment !== false;
                 // presentation treated as a document-type control
                 case 'presentation':
+                case 'spreadsheet':
                     return ct.document !== false;
                 default:
                     return true;
@@ -450,7 +537,7 @@ export const ChapterSidebarAddButton = () => {
                     }
                 } catch (err) {
                     console.error('Error creating new doc:', err);
-                    toast.error('Failed to create new document');
+                    toast.error(t('toasts.createDocFailed'));
                 }
                 break;
             }
@@ -487,7 +574,7 @@ export const ChapterSidebarAddButton = () => {
                     }
                 } catch (err) {
                     console.error('Error creating new doc:', err);
-                    toast.error('Failed to create new document');
+                    toast.error(t('toasts.createDocFailed'));
                 }
                 break;
             }
@@ -524,7 +611,7 @@ export const ChapterSidebarAddButton = () => {
                     }
                 } catch (err) {
                     console.error('Error creating new HTML doc:', err);
-                    toast.error('Failed to create new document');
+                    toast.error(t('toasts.createDocFailed'));
                 }
                 break;
             }
@@ -533,6 +620,10 @@ export const ChapterSidebarAddButton = () => {
                 break;
             case 'vimeo-video':
                 openVimeoDialog();
+                break;
+            case 'ai-video':
+            case 'generate-ai-video':
+                openAiVideoDialog();
                 break;
             case 'upload-video':
                 openVideoFileDialog(); // Open the new video file upload dialog
@@ -548,15 +639,13 @@ export const ChapterSidebarAddButton = () => {
 
                     if (response) {
                         await reorderSlidesAfterNewSlide(payload.id || '');
-                        toast.success('Assignment created successfully!');
+                        toast.success(t('toasts.assignmentCreated'));
                     } else {
                         throw new Error('Empty response returned from API.');
                     }
                 } catch (err) {
                     console.error('❌ Error creating assignment:', err);
-                    toast.error(
-                        (err as Error)?.message || 'Failed to create assignment. Please try again.'
-                    );
+                    toast.error((err as Error)?.message || t('toasts.assignmentCreateFailedRetry'));
                 }
                 break;
             }
@@ -581,7 +670,7 @@ export const ChapterSidebarAddButton = () => {
                             elements: [],
                             files: {},
                             appState: {
-                                viewBackgroundColor: '#ffffff',
+                                viewBackgroundColor: '#ffffff', // design-lint-ignore: Excalidraw appState takes a CSS colour string, not a token
                                 gridSize: null,
                             },
                             lastModified: Date.now(),
@@ -596,7 +685,7 @@ export const ChapterSidebarAddButton = () => {
                     }
                 } catch (err) {
                     console.error('Error creating new presentation:', err);
-                    toast.error('Failed to create new presentation');
+                    toast.error(t('toasts.presentationCreateFailed'));
                 }
                 break;
             }
@@ -643,7 +732,7 @@ export const ChapterSidebarAddButton = () => {
                     }
                 } catch (err) {
                     console.error('Error creating Jupyter notebook:', err);
-                    toast.error('Failed to create Jupyter notebook');
+                    toast.error(t('toasts.jupyterCreateFailed'));
                 }
                 break;
             }
@@ -689,7 +778,48 @@ export const ChapterSidebarAddButton = () => {
                     }
                 } catch (err) {
                     console.error('Error creating Scratch project:', err);
-                    toast.error('Failed to create Scratch project');
+                    toast.error(t('toasts.scratchCreateFailed'));
+                }
+                break;
+            }
+            case 'discussion': {
+                try {
+                    // A discussion is a DOCUMENT slide of type DISCUSSION whose data is the
+                    // question + per-discussion settings JSON (see discussion-types.ts).
+                    const slideId = crypto.randomUUID();
+                    const uniqueTitle = generateUniqueDocumentSlideTitle(
+                        items || [],
+                        DISCUSSION_DOC_TYPE
+                    );
+                    const slideStatus = getSlideStatusForUser();
+                    const discussionData = createDefaultDiscussionDataJson();
+                    const response = await addUpdateDocumentSlide({
+                        id: slideId,
+                        title: uniqueTitle,
+                        image_file_id: '',
+                        description: 'Discussion forum',
+                        slide_order: getNextSlideOrder(items || []),
+                        document_slide: {
+                            id: crypto.randomUUID(),
+                            type: DISCUSSION_DOC_TYPE,
+                            data: discussionData,
+                            title: uniqueTitle,
+                            cover_file_id: '',
+                            total_pages: 1,
+                            published_data: slideStatus === 'PUBLISHED' ? discussionData : null,
+                            published_document_total_pages: 1,
+                        },
+                        status: slideStatus,
+                        new_slide: true,
+                        notify: false,
+                    });
+
+                    if (response) {
+                        await reorderSlidesAfterNewSlide(slideId);
+                    }
+                } catch (err) {
+                    console.error('Error creating discussion:', err);
+                    toast.error(t('toasts.discussionCreateFailed'));
                 }
                 break;
             }
@@ -733,13 +863,13 @@ export const ChapterSidebarAddButton = () => {
                     if (response) {
                         // Trigger approval button visibility for auto-published slide
                         localStorage.setItem('triggerApprovalButton', Date.now().toString());
-                        toast.success('Slide created and auto-published for review');
+                        toast.success(t('toasts.slideAutoPublished'));
                         // Reorder slides and set as active
                         await reorderSlidesAfterNewSlide(slideId);
                     }
                 } catch (err) {
                     console.error('Error creating code editor:', err);
-                    toast.error('Failed to create code editor');
+                    toast.error(t('toasts.codeCreateFailed'));
                 }
                 break;
             }
@@ -773,18 +903,76 @@ export const ChapterSidebarAddButton = () => {
                         };
 
                         setActiveItem(newQuizSlide);
-                        toast.success('Quiz created successfully!');
+                        toast.success(t('toasts.quizCreated'));
                     } else {
                         throw new Error('Empty response returned from API.');
                     }
                 } catch (err) {
                     console.error('❌ Error creating quiz:', err);
-                    toast.error(
-                        (err as Error)?.message || 'Failed to create quiz. Please try again.'
-                    );
+                    toast.error((err as Error)?.message || t('toasts.quizCreateFailedRetry'));
                 }
                 break;
             }
+
+            case 'spreadsheet':
+                setSpreadsheetDialogOpen(true);
+                break;
+
+            case 'flashcards':
+            case 'poll':
+            case 'game': {
+                // Flashcards / Poll / Game: a DOCUMENT slide whose data is the deck, the
+                // poll or the game page as JSON (see activity/activity-types.ts). Created
+                // as a draft-ready slide; the teacher fills it in, then saves or publishes.
+                const docType =
+                    value === 'flashcards'
+                        ? FLASHCARDS_DOC_TYPE
+                        : value === 'poll'
+                          ? POLL_DOC_TYPE
+                          : GAME_DOC_TYPE;
+                const data =
+                    docType === FLASHCARDS_DOC_TYPE
+                        ? createDefaultFlashcardsDataJson()
+                        : docType === POLL_DOC_TYPE
+                          ? serializePollData(createDefaultPollData())
+                          : serializeGameData(createDefaultGameData());
+                try {
+                    const slideId = crypto.randomUUID();
+                    const uniqueTitle = generateUniqueDocumentSlideTitle(items || [], docType);
+                    // An empty deck, poll or game must never go live by itself: always a draft.
+                    const response = await addUpdateDocumentSlide({
+                        id: slideId,
+                        title: uniqueTitle,
+                        image_file_id: '',
+                        description: '',
+                        slide_order: getNextSlideOrder(items || []),
+                        document_slide: {
+                            id: crypto.randomUUID(),
+                            type: docType,
+                            data,
+                            title: uniqueTitle,
+                            cover_file_id: '',
+                            total_pages: 1,
+                            published_data: null,
+                            published_document_total_pages: 1,
+                        },
+                        status: 'DRAFT',
+                        new_slide: true,
+                        notify: false,
+                    });
+                    if (response) {
+                        await reorderSlidesAfterNewSlide(slideId);
+                    }
+                } catch (err) {
+                    console.error('Error creating activity slide:', err);
+                    toast.error(t('toasts.activityCreateFailed'));
+                }
+                break;
+            }
+
+            case 'document-quiz':
+                setIsDocumentQuizDialogOpen(true);
+                break;
 
             case 'audio':
                 openAudioDialog();
@@ -826,32 +1014,23 @@ export const ChapterSidebarAddButton = () => {
                             className={`
                                 group relative h-9 w-full min-w-0
                                 overflow-hidden border-0 bg-gradient-to-r from-primary-400
-                                to-primary-400 shadow-md
-                                shadow-primary-500/20 transition-all
-                                duration-300 ease-in-out hover:scale-[1.01]
-                                hover:from-primary-400 hover:to-primary-400
-                                hover:shadow-lg hover:shadow-primary-500/25
-                                active:scale-[0.99] sm:min-w-0
-                                ${open ? 'px-3' : 'px-2.5'}
+                                to-primary-400 px-3
+                                shadow-md shadow-primary-500/20
+                                transition-all duration-300 ease-in-out
+                                hover:scale-[1.01] hover:from-primary-400
+                                hover:to-primary-400 hover:shadow-lg
+                                hover:shadow-primary-500/25 active:scale-[0.99] sm:min-w-0
                             `}
                             id="add-slides"
-                            title="Add a single slide — pick a type (document, PDF, video, quiz, code…)"
+                            title={t('addSlideButtonTitle')}
                         >
                             <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-white/0 via-white/20 to-white/0 transition-transform duration-700 ease-out group-hover:translate-x-full" />
 
                             <div className="relative z-10 flex items-center justify-center gap-1.5">
-                                <Plus
-                                    className={`
-                                    transition-all duration-300 ease-in-out
-                                    group-hover:rotate-90 group-hover:scale-110
-                                    ${open ? 'size-4' : 'size-3.5'}
-                                `}
-                                />
-                                {open && (
-                                    <span className="text-sm font-medium tracking-wide duration-300 animate-in slide-in-from-left-2">
-                                        Add Slide
-                                    </span>
-                                )}
+                                <Plus className="size-4 transition-all duration-300 ease-in-out group-hover:rotate-90 group-hover:scale-110" />
+                                <span className="truncate text-sm font-medium tracking-wide">
+                                    {t('addSlide')}
+                                </span>
                             </div>
                         </MyButton>
                     </MyDropdown>
@@ -860,8 +1039,8 @@ export const ChapterSidebarAddButton = () => {
                     <MyButton
                         buttonType="primary"
                         scale="medium"
-                        className={`flex min-w-0 items-center justify-center gap-1.5 whitespace-nowrap sm:min-w-0 ${open ? 'px-3' : 'px-2.5'}`}
-                        title="Quick add — upload and publish several slides at once"
+                        className="flex min-w-0 items-center justify-center gap-1.5 whitespace-nowrap px-3 sm:min-w-0"
+                        title={t('quickAddButtonTitle')}
                         onClick={() => {
                             const s = route.state.location.search as Record<string, unknown>;
                             const search = {
@@ -888,7 +1067,7 @@ export const ChapterSidebarAddButton = () => {
                         id="quick-add-fast"
                     >
                         <Lightning className="size-4 shrink-0" />
-                        {open && <span className="text-sm font-medium">Quick Add</span>}
+                        <span className="text-sm font-medium">{t('quickAdd')}</span>
                     </MyButton>
                 </div>
             </div>
@@ -896,8 +1075,8 @@ export const ChapterSidebarAddButton = () => {
             {/* Enhanced Dialog Components with consistent styling */}
             <MyDialog
                 trigger={<></>}
-                heading="Upload PDF Document"
-                dialogWidth="min-w-[400px] w-auto"
+                heading={t('dialogs.uploadPdf')}
+                dialogWidth="min-w-slide-dialog-sm w-auto"
                 open={isPdfDialogOpen}
                 onOpenChange={closePdfDialog}
             >
@@ -908,8 +1087,8 @@ export const ChapterSidebarAddButton = () => {
 
             <MyDialog
                 trigger={<></>}
-                heading="Upload Document"
-                dialogWidth="min-w-[400px] w-auto"
+                heading={t('dialogs.uploadDoc')}
+                dialogWidth="min-w-slide-dialog-sm w-auto"
                 open={isDocUploadDialogOpen}
                 onOpenChange={closeDocUploadDialog}
             >
@@ -920,8 +1099,8 @@ export const ChapterSidebarAddButton = () => {
 
             <MyDialog
                 trigger={<></>}
-                heading="Add YouTube Video"
-                dialogWidth="min-w-[400px]"
+                heading={t('dialogs.addYoutubeVideo')}
+                dialogWidth="min-w-slide-dialog-sm"
                 open={isVideoDialogOpen}
                 onOpenChange={closeVideoDialog}
             >
@@ -932,8 +1111,8 @@ export const ChapterSidebarAddButton = () => {
 
             <MyDialog
                 trigger={<></>}
-                heading="Upload Video File"
-                dialogWidth="min-w-[400px]"
+                heading={t('dialogs.uploadVideoFile')}
+                dialogWidth="min-w-slide-dialog-sm"
                 open={isVideoFileDialogOpen}
                 onOpenChange={closeVideoFileDialog}
             >
@@ -944,8 +1123,8 @@ export const ChapterSidebarAddButton = () => {
 
             <MyDialog
                 trigger={<></>}
-                heading="Create Question"
-                dialogWidth="min-w-[500px]"
+                heading={t('dialogs.createQuestion')}
+                dialogWidth="min-w-slide-dialog-md"
                 open={isQuestionDialogOpen}
                 onOpenChange={closeQuestionDialog}
             >
@@ -956,8 +1135,8 @@ export const ChapterSidebarAddButton = () => {
 
             <MyDialog
                 trigger={<></>}
-                heading="Add Audio Slide"
-                dialogWidth="min-w-[500px]"
+                heading={t('dialogs.addAudioSlide')}
+                dialogWidth="min-w-slide-dialog-md"
                 open={isAudioDialogOpen}
                 onOpenChange={closeAudioDialog}
             >
@@ -968,8 +1147,8 @@ export const ChapterSidebarAddButton = () => {
 
             <MyDialog
                 trigger={<></>}
-                heading="Upload PPT Presentation"
-                dialogWidth="min-w-[400px] w-auto"
+                heading={t('dialogs.uploadPpt')}
+                dialogWidth="min-w-slide-dialog-sm w-auto"
                 open={isPptDialogOpen}
                 onOpenChange={closePptDialog}
             >
@@ -980,8 +1159,8 @@ export const ChapterSidebarAddButton = () => {
 
             <MyDialog
                 trigger={<></>}
-                heading="Import SCORM Package"
-                dialogWidth="min-w-[400px] w-auto"
+                heading={t('dialogs.importScorm')}
+                dialogWidth="min-w-slide-dialog-sm w-auto"
                 open={isScormDialogOpen}
                 onOpenChange={closeScormDialog}
             >
@@ -992,8 +1171,8 @@ export const ChapterSidebarAddButton = () => {
 
             <MyDialog
                 trigger={<></>}
-                heading="Link an Assessment"
-                dialogWidth="min-w-[520px] w-auto"
+                heading={t('dialogs.linkAssessment')}
+                dialogWidth="min-w-slide-dialog-lg w-auto"
                 open={isAssessmentDialogOpen}
                 onOpenChange={closeAssessmentDialog}
             >
@@ -1006,8 +1185,8 @@ export const ChapterSidebarAddButton = () => {
 
             <MyDialog
                 trigger={<></>}
-                heading="Add Vimeo Video"
-                dialogWidth="min-w-[400px]"
+                heading={t('dialogs.addVimeoVideo')}
+                dialogWidth="min-w-slide-dialog-sm"
                 open={isVimeoDialogOpen}
                 onOpenChange={closeVimeoDialog}
             >
@@ -1015,6 +1194,29 @@ export const ChapterSidebarAddButton = () => {
                     <AddVimeoDialog openState={(open) => !open && closeVimeoDialog()} />
                 </div>
             </MyDialog>
+
+            <MyDialog
+                trigger={<></>}
+                heading={t('dialogs.addDocumentQuiz')}
+                dialogWidth="min-w-slide-dialog-sm w-auto"
+                open={isDocumentQuizDialogOpen}
+                onOpenChange={setIsDocumentQuizDialogOpen}
+            >
+                <AddDocumentQuizDialog
+                    mode="create"
+                    onDone={() => setIsDocumentQuizDialogOpen(false)}
+                />
+            </MyDialog>
+
+            <AddAiVideoDialog
+                open={isAiVideoDialogOpen}
+                onOpenChange={(open) => !open && closeAiVideoDialog()}
+            />
+
+            <AddSpreadsheetDialog
+                open={isSpreadsheetDialogOpen}
+                onOpenChange={setSpreadsheetDialogOpen}
+            />
         </div>
     );
 };

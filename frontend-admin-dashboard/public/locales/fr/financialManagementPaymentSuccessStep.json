@@ -1,0 +1,34 @@
+{
+    "paymentSubmitted": "Paiement soumis",
+    "paymentRecordedFor": "Paiement enregistré pour",
+    "receiptWillBeGenerated": "Le reçu sera généré et envoyé automatiquement.",
+    "amountPaidNow": "Montant payé maintenant",
+    "downloadReceipt": "Télécharger le reçu",
+    "payForAnotherStudent": "Payer pour un autre élève",
+    "receipt": {
+        "receiptNo": "N° de reçu",
+        "date": "Date",
+        "studentLabel": "Élève :",
+        "modeLabel": "Mode :",
+        "txnIdLabel": "ID de transaction :"
+    },
+    "table": {
+        "feeType": "Type de frais",
+        "dueDate": "Date d'échéance",
+        "expected": "Attendu",
+        "adjustment": "Ajustement",
+        "paid": "Payé",
+        "outstanding": "Restant dû",
+        "status": "Statut"
+    },
+    "adjustmentType": {
+        "concession": "Concession",
+        "penalty": "Pénalité"
+    },
+    "totals": {
+        "totalExpected": "Total attendu",
+        "totalPaid": "Total payé",
+        "totalConcession": "Total des concessions",
+        "totalPenalty": "Total des pénalités"
+    }
+}

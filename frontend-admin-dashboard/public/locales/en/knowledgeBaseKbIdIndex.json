@@ -1,0 +1,51 @@
+{
+    "backToAll": "All knowledge bases",
+    "suggestions": {
+        "whatTopics": "What topics does {{title}} cover?",
+        "mainFormulas": "List the main formulas in this material.",
+        "suggestExamQuestions": "Suggest five exam questions from this material."
+    },
+    "pageTitleWithName": "{{name}} — Knowledge Base",
+    "pageTitleDefault": "Knowledge Base",
+    "navHeadingDefault": "Knowledge Base",
+    "loadError": "Could not load this knowledge base.",
+    "tryAgainButton": "Try again",
+    "sharedLibraryBadge": "Shared library — read only",
+    "whatItCoversButton": "What it covers",
+    "createQuestionPaperButton": "Create question paper",
+    "createCourseButton": "Create course",
+    "addMaterialButton": "Add material",
+    "stats": {
+        "sources": "Sources",
+        "pages": "Pages",
+        "searchablePassages": "Searchable passages",
+        "diagramsAndTables": "Diagrams & tables"
+    },
+    "processingSources_one": "Reading {{count}} source — you can leave this page, it keeps going.",
+    "processingSources_other": "Reading {{count}} sources — you can leave this page, it keeps going.",
+    "reviewPagesWarning_one": "{{formatted}} page may be inaccurate",
+    "reviewPagesWarning_other": "{{formatted}} pages may be inaccurate",
+    "materialHeading": "Material",
+    "checkItWorksHeading": "Check it works",
+    "madeFromHeading": "Made from this knowledge base",
+    "purpose": {
+        "instituteInfo": "Institute info",
+        "generalReference": "General reference"
+    },
+    "reviewDialog": {
+        "heading": "Pages that may be inaccurate",
+        "description": "These pages were scanned rather than digital, and came out unreliable when read. Everything else in this knowledge base is unaffected. The usual fix is to re-upload a clearer scan of just these pages as a separate document.",
+        "empty": "Nothing needs a look right now.",
+        "pageLabel": "Page {{number}}",
+        "noTextRead": "no text could be read",
+        "charsRead": "only {{formatted}} characters read",
+        "confidence": "{{percent}}% confidence"
+    },
+    "outlineDialog": {
+        "heading": "What this knowledge base covers",
+        "description": "Built while reading your material. This is what the AI will use to plan courses and question papers, so it is worth a skim — if a chapter is missing here, it will be missing from anything generated later.",
+        "empty": "No summary yet. It is built once a document finishes processing.",
+        "untitled": "Untitled",
+        "pagePrefix": "p. {{start}}"
+    }
+}

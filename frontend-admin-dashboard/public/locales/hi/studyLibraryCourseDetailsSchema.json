@@ -1,0 +1,17 @@
+{
+    "instructorEmailInvalid": "अमान्य ईमेल पता।",
+    "instructorNameRequired": "प्रशिक्षक का नाम आवश्यक है।",
+    "levelNameRequired": "स्तर का नाम आवश्यक है।",
+    "durationNonNegative": "अवधि एक गैर-ऋणात्मक पूर्णांक होनी चाहिए।",
+    "sessionNameRequired": "सत्र का नाम आवश्यक है।",
+    "statusNameRequired": "स्थिति का नाम आवश्यक है।",
+    "startDateFormat": "प्रारंभ तिथि YYYY-MM-DD प्रारूप में होनी चाहिए।",
+    "levelDetailsRequired": "प्रति सत्र कम से कम एक स्तर विवरण आवश्यक है।",
+    "titleRequired": "शीर्षक आवश्यक है।",
+    "descriptionMinLength": "विवरण कम से कम 10 अक्षरों का होना चाहिए।",
+    "tagsRequired": "कम से कम एक टैग आवश्यक है।",
+    "imageUrlInvalid": "छवि के लिए एक मान्य URL होना चाहिए।",
+    "instructorsRequired": "कम से कम एक प्रशिक्षक आवश्यक है।",
+    "sessionsRequired": "कम से कम एक सत्र आवश्यक है।",
+    "mockCourseTitleRequired": "मॉक कोर्स शीर्षक आवश्यक है।"
+}

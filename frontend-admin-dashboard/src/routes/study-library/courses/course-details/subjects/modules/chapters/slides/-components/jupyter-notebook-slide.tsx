@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,6 +29,7 @@ export const JupyterNotebookSlide: React.FC<JupyterNotebookSlideProps> = ({
     isEditable,
     onDataChange,
 }) => {
+    const { t } = useTranslation('studyLibraryJupyterNotebookSlide');
     // Use data from props, not local state
     const [notebookUrl, setNotebookUrl] = useState(notebookData?.contentUrl || '');
     const [projectName, setProjectName] = useState(notebookData?.projectName || '');
@@ -52,12 +54,12 @@ export const JupyterNotebookSlide: React.FC<JupyterNotebookSlideProps> = ({
 
     const handleSubmit = () => {
         if (!notebookUrl.trim()) {
-            toast.error('Please enter a notebook URL');
+            toast.error(t('errors.urlRequired'));
             return;
         }
 
         if (!validateNotebookUrl(notebookUrl)) {
-            toast.error('Please enter a valid URL');
+            toast.error(t('errors.urlInvalid'));
             return;
         }
 
@@ -76,7 +78,7 @@ export const JupyterNotebookSlide: React.FC<JupyterNotebookSlideProps> = ({
         // Save to backend via onDataChange
         onDataChange?.(updatedData);
         setShowForm(false);
-        toast.success('Notebook configuration saved successfully!');
+        toast.success(t('toast.saveSuccess'));
     };
 
     const handleEdit = () => {
@@ -91,24 +93,22 @@ export const JupyterNotebookSlide: React.FC<JupyterNotebookSlideProps> = ({
                         <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-violet-100">
                             <BookOpen className="size-8 text-violet-600" />
                         </div>
-                        <CardTitle className="text-2xl">Configure Jupyter Notebook</CardTitle>
-                        <CardDescription>
-                            Enter your Jupyter notebook URL to embed it in this slide.
-                        </CardDescription>
+                        <CardTitle className="text-2xl">{t('configureTitle')}</CardTitle>
+                        <CardDescription>{t('configureDescription')}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
                         <div className="space-y-2">
-                            <Label htmlFor="project-name">Project Name (Optional)</Label>
+                            <Label htmlFor="project-name">{t('projectNameLabel')}</Label>
                             <Input
                                 id="project-name"
-                                placeholder="My Jupyter Project"
+                                placeholder={t('projectNamePlaceholder')}
                                 value={projectName}
                                 onChange={(e) => setProjectName(e.target.value)}
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="notebook-url">Notebook URL *</Label>
+                            <Label htmlFor="notebook-url">{t('notebookUrlLabel')}</Label>
                             <Input
                                 id="notebook-url"
                                 placeholder="https://github.com/user/repo/blob/main/notebook.ipynb"
@@ -126,7 +126,7 @@ export const JupyterNotebookSlide: React.FC<JupyterNotebookSlideProps> = ({
                                 disabled={!notebookUrl.trim()}
                                 className="flex-1"
                             >
-                                Preview Notebook
+                                {t('previewNotebook')}
                             </MyButton>
                         </div>
                     </CardContent>
@@ -143,17 +143,15 @@ export const JupyterNotebookSlide: React.FC<JupyterNotebookSlideProps> = ({
                         <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-gray-100">
                             <AlertCircle className="size-8 text-gray-600" />
                         </div>
-                        <h3 className="mb-2 text-lg font-semibold">No Notebook Configured</h3>
-                        <p className="mb-4 text-gray-600">
-                            This slide doesn&apos;t have a notebook URL configured yet.
-                        </p>
+                        <h3 className="mb-2 text-lg font-semibold">{t('notConfiguredTitle')}</h3>
+                        <p className="mb-4 text-gray-600">{t('notConfiguredDescription')}</p>
                         {isEditable && (
                             <MyButton
                                 buttonType="primary"
                                 scale="medium"
                                 onClick={() => setShowForm(true)}
                             >
-                                Configure Notebook
+                                {t('configureNotebook')}
                             </MyButton>
                         )}
                     </CardContent>
@@ -171,8 +169,8 @@ export const JupyterNotebookSlide: React.FC<JupyterNotebookSlideProps> = ({
                         <BookOpen className="size-4 text-violet-600" />
                     </div>
                     <div>
-                        <h3 className="font-semibold">{projectName || 'Jupyter Notebook'}</h3>
-                        <p className="text-xs text-gray-500">Notebook</p>
+                        <h3 className="font-semibold">{projectName || t('defaultProjectName')}</h3>
+                        <p className="text-xs text-gray-500">{t('notebookLabel')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -183,11 +181,11 @@ export const JupyterNotebookSlide: React.FC<JupyterNotebookSlideProps> = ({
                         className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
                     >
                         <ExternalLink className="size-4" />
-                        Open
+                        {t('open')}
                     </a>
                     {isEditable && (
                         <MyButton buttonType="secondary" scale="small" onClick={handleEdit}>
-                            Edit
+                            {t('edit')}
                         </MyButton>
                     )}
                 </div>
@@ -198,11 +196,11 @@ export const JupyterNotebookSlide: React.FC<JupyterNotebookSlideProps> = ({
                 <iframe
                     src={notebookUrl}
                     className="size-full border-0"
-                    title={projectName || 'Jupyter Notebook'}
+                    title={projectName || t('defaultProjectName')}
                     sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
                     loading="lazy"
                     onError={() => {
-                        toast.error('Failed to load notebook. Please check the URL and try again.');
+                        toast.error(t('errors.loadFailed'));
                     }}
                 />
             </div>

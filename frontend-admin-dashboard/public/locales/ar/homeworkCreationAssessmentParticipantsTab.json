@@ -1,0 +1,22 @@
+{
+    "heading": "المشاركون في التقييم",
+    "participantsCountInternal_zero": "{{count}} مشارك (داخلي)",
+    "participantsCountInternal_one": "{{count}} مشارك واحد (داخلي)",
+    "participantsCountInternal_two": "{{count}} مشاركان (داخلي)",
+    "participantsCountInternal_few": "{{count}} مشاركين (داخلي)",
+    "participantsCountInternal_many": "{{count}} مشاركًا (داخلي)",
+    "participantsCountInternal_other": "{{count}} مشارك (داخلي)",
+    "joinLink": "رابط الانضمام",
+    "qrCode": "رمز الاستجابة السريعة",
+    "notifyParticipantsViaEmail": "إشعار المشاركين عبر البريد الإلكتروني:",
+    "whenAssessmentCreated": "عند إنشاء التقييم:",
+    "beforeAssessmentGoesLive": "قبل بدء التقييم مباشرةً:",
+    "minutesValue_zero": "{{count}} دقيقة",
+    "minutesValue_one": "{{count}} دقيقة",
+    "minutesValue_two": "{{count}} دقيقتان",
+    "minutesValue_few": "{{count}} دقائق",
+    "minutesValue_many": "{{count}} دقيقة",
+    "minutesValue_other": "{{count}} دقيقة",
+    "whenAssessmentGoesLive": "عند بدء التقييم مباشرةً:",
+    "whenAssessmentReportsGenerated": "عند إنشاء تقارير التقييم:"
+}

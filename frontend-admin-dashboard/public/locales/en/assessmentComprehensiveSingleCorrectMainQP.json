@@ -1,0 +1,21 @@
+{
+    "emptyState": "Please add a question to show question details",
+    "comprehension": {
+        "title": "Comprehension text",
+        "hint": "The passage every question in this set refers to.",
+        "placeholder": "Comprehension text"
+    },
+    "question": {
+        "title": "Question",
+        "titleNumbered": "Question {{number}}",
+        "placeholder": "Write the question"
+    },
+    "answer": {
+        "typeFallback": "Answer"
+    },
+    "explanation": {
+        "typeFallback": "Explanation",
+        "hint": "Shown to learners with their result.",
+        "placeholder": "Explanation"
+    }
+}

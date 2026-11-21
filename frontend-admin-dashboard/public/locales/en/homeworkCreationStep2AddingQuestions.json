@@ -1,0 +1,30 @@
+{
+    "heading": "Add Questions",
+    "defaultSectionName": "Section {{number}}",
+    "actions": {
+        "update": "Update",
+        "next": "Next",
+        "addSection": "Add Section"
+    },
+    "toast": {
+        "updateSuccess": "Step 2 data has been updated successfully!",
+        "saveSuccess": "Step 2 data has been saved successfully!"
+    },
+    "errors": {
+        "saveQuestionsFailed": "Failed to save questions."
+    },
+    "durationDistribution": {
+        "entireAssessmentLabel": "Entire Assessment Duration",
+        "sectionWiseLabel": "Section-Wise Duration",
+        "questionWiseLabel": "Question-Wise Duration",
+        "entireAssessmentHeading": "Entire Assessment Duration",
+        "entireAssessmentDescription": "Set a single time limit for the whole assessment.",
+        "sectionWiseHeading": "Section-wise Duration",
+        "sectionWiseDescription": "Assign a specific time for each section in the Sections tab. The total assessment duration will be the sum of all section times.",
+        "questionWiseHeading": "Question-wise Duration",
+        "questionWiseDescription": "Define individual time limits for each question in the Sections tab, where a time input field is available next to each question.",
+        "entireTestDurationLabel": "Entire Test Duration",
+        "hrs": "hrs",
+        "minutes": "minutes"
+    }
+}

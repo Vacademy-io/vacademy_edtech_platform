@@ -1,0 +1,272 @@
+{
+  "common": {
+    "cancel": "Annuler",
+    "saving": "Enregistrement...",
+    "saveCard": "Enregistrer la carte"
+  },
+  "changePassword": {
+    "checkingPermissions": "Vérification des autorisations..."
+  },
+  "progressStats": {
+    "title": "Statistiques de progression",
+    "loading": "Chargement...",
+    "empty": "Aucune statistique disponible.",
+    "strengths": "Points forts",
+    "weaknesses": "Points faibles",
+    "showLess": "Afficher moins",
+    "viewMore": "Voir plus ({{count}})"
+  },
+  "badgesRank": {
+    "title": "Badges et classement",
+    "viewAll": "Tout voir",
+    "badgesEarned_one": "{{count}} badge obtenu",
+    "badgesEarned_other": "{{count}} badges obtenus",
+    "bestRank": "meilleur classement",
+    "instituteRank": "classement de l'établissement",
+    "badgesEarned_many": "{{count}} badges obtenus"
+  },
+  "accountDetails": {
+    "validation": {
+      "usernameMin": "Le nom d'utilisateur doit contenir au moins 3 caractères",
+      "usernameMax": "Le nom d'utilisateur doit contenir moins de 50 caractères",
+      "usernameNoSpaces": "Le nom d'utilisateur ne peut pas contenir d'espaces",
+      "passwordMin": "Le nouveau mot de passe doit contenir au moins 6 caractères",
+      "confirmPasswordRequired": "Veuillez confirmer votre mot de passe",
+      "passwordsDontMatch": "Les mots de passe ne correspondent pas"
+    },
+    "toast": {
+      "loadUserError": "Échec du chargement des informations utilisateur",
+      "userIdMissing": "ID utilisateur introuvable. Veuillez réessayer.",
+      "updateSuccess": "Détails du compte mis à jour avec succès !",
+      "usernameExists": "Ce nom d'utilisateur existe déjà. Veuillez en choisir un autre.",
+      "updateError": "Échec de la mise à jour des détails du compte. Veuillez réessayer."
+    },
+    "header": "Détails du compte",
+    "usernameSection": "Nom d'utilisateur",
+    "usernameLabel": "Nom d'utilisateur*",
+    "usernamePlaceholder": "Saisissez votre nom d'utilisateur",
+    "currentUsername": "Actuel : {{username}}",
+    "passwordSection": "Changer le mot de passe",
+    "newPasswordLabel": "Nouveau mot de passe*",
+    "newPasswordPlaceholder": "Saisissez votre nouveau mot de passe",
+    "confirmPasswordLabel": "Confirmer le nouveau mot de passe*",
+    "confirmPasswordPlaceholder": "Confirmez votre nouveau mot de passe",
+    "passwordMinCharacters": "Au moins 6 caractères",
+    "passwordsMatch": "Les mots de passe correspondent",
+    "updating": "Mise à jour...",
+    "updateDetails": "Mettre à jour les détails"
+  },
+  "sessionExpiry": {
+    "accessDays": "Jours d'accès ({{count}})"
+  },
+  "profileEdit": {
+    "header": "Modifier le profil",
+    "profileImageAlt": "Profil",
+    "allowedFileTypes": "Formats autorisés : *.jpeg, *.jpg, *.png, *.gif",
+    "uploadNew": "Importer une nouvelle photo",
+    "removePhoto": "Supprimer la photo",
+    "sections": {
+      "generalDetails": "Informations générales",
+      "contactInformation": "Coordonnées",
+      "locationDetails": "Informations de localisation",
+      "guardianDetails": "Informations du tuteur"
+    },
+    "fields": {
+      "fullName": "Nom complet*",
+      "fullNamePlaceholder": "Saisissez votre nom complet",
+      "gender": "Genre*",
+      "genderPlaceholder": "Sélectionnez un genre",
+      "genderMale": "Homme",
+      "genderFemale": "Femme",
+      "genderOther": "Autre",
+      "instituteName": "Nom du collège/de l'école",
+      "instituteNamePlaceholder": "Saisissez le nom de l'établissement",
+      "mobileNumber": "Numéro de mobile*",
+      "mobileNumberPlaceholder": "Saisissez le numéro de mobile",
+      "email": "E-mail*",
+      "emailPlaceholder": "Saisissez l'adresse e-mail",
+      "country": "Pays",
+      "countryPlaceholder": "Saisissez le pays",
+      "addressLine": "Adresse (ligne 1)",
+      "addressLinePlaceholder": "Saisissez l'adresse",
+      "city": "Ville/Village",
+      "state": "État/Région",
+      "pincode": "Code postal",
+      "fatherName": "Nom du père",
+      "motherName": "Nom de la mère",
+      "guardianEmail": "E-mail du tuteur",
+      "guardianMobile": "Mobile du tuteur"
+    },
+    "saveChanges": "Enregistrer les modifications"
+  },
+  "enrollmentExpiry": {
+    "loading": "Chargement de vos inscriptions...",
+    "error": "Impossible de charger les détails d'expiration des inscriptions.",
+    "empty": "Vous n'êtes inscrit(e) à aucun {{courses}} pour le moment.",
+    "enrolledFallbackTitle": "{{course}} suivi",
+    "expired": "Expiré",
+    "expiresToday": "Expire aujourd'hui",
+    "daysLeft_one": "{{count}} jour restant",
+    "daysLeft_other": "{{count}} jours restants",
+    "noExpiry": "Aucune expiration",
+    "daysLeft_many": "{{count}} jours restants"
+  },
+  "billingDetailsForm": {
+    "validation": {
+      "nameRequired": "Le nom est requis",
+      "invalidEmail": "Saisissez une adresse e-mail valide"
+    },
+    "labels": {
+      "billingName": "Nom de facturation",
+      "billingEmail": "E-mail de facturation",
+      "address": "Adresse",
+      "city": "Ville",
+      "state": "État/Région",
+      "postalCode": "Code postal",
+      "country": "Pays"
+    },
+    "placeholders": {
+      "billingName": "Nom sur le compte",
+      "billingEmail": "billing@email.com",
+      "address": "Adresse postale",
+      "country": "ex. AU"
+    },
+    "toast": {
+      "success": "Détails de facturation mis à jour",
+      "error": "Échec de la mise à jour des détails de facturation. Veuillez réessayer."
+    },
+    "saveBillingDetails": "Enregistrer les détails de facturation"
+  },
+  "paymentBillingSection": {
+    "title": "Paiement et facturation",
+    "subscriptionsTitle": "Abonnements et paiement automatique",
+    "membershipTitle": "Adhésion et accès",
+    "loadingPayment": "Chargement des détails de paiement...",
+    "unavailable": "Les détails de paiement ne sont pas disponibles pour le moment. Veuillez réessayer plus tard.",
+    "reason": {
+      "noCustomer": "Aucun moyen de paiement enregistré pour le moment. Il apparaîtra ici après votre premier paiement par carte.",
+      "gatewayNotConfigured": "Les paiements en ligne ne sont pas configurés pour votre établissement.",
+      "managedAtCheckout": "Votre moyen de paiement est géré au moment du paiement et ne peut pas être modifié ici."
+    },
+    "noCardOnFile": "Aucune carte enregistrée",
+    "defaultCardBrand": "Carte",
+    "expires": "Expire le {{month}}/{{year}}",
+    "usedForRenewals": "Utilisée pour le renouvellement de l'abonnement",
+    "updateCard": "Mettre à jour la carte",
+    "addCard": "Ajouter une carte",
+    "billingDetailsLabel": "Détails de facturation"
+  },
+  "subscriptionMandate": {
+    "loading": "Chargement des abonnements...",
+    "error": "Les abonnements ne sont pas disponibles pour le moment. Veuillez réessayer plus tard.",
+    "empty": "Vous n'avez aucun abonnement actif à renouvellement automatique.",
+    "defaultPlanName": "Abonnement",
+    "trial": "Essai",
+    "autopayOff": "Paiement automatique désactivé",
+    "autoRenewsOn": "Se renouvelle automatiquement le {{date}}",
+    "accessUntil": "Accès jusqu'au {{date}}",
+    "recurringSubscription": "Abonnement récurrent",
+    "cancelAutopay": "Annuler le paiement automatique",
+    "toast": {
+      "cancelSuccessTitle": "Paiement automatique annulé",
+      "cancelSuccessDescription": "Vous conservez l'accès jusqu'à la fin de votre période en cours.",
+      "cancelErrorTitle": "Impossible d'annuler le paiement automatique",
+      "cancelErrorDescription": "Veuillez réessayer dans un instant.",
+      "planChangeOrderFailed": "We couldn't create the payment order.",
+      "planChangeFailedTitle": "Couldn't change the plan",
+      "planChangeFailedDescription": "Please try again in a moment.",
+      "planChangePaidTitle": "Payment received",
+      "planChangePaidDescription": "Your new plan will be active shortly."
+    },
+    "dialog": {
+      "title": "Annuler le paiement automatique ?",
+      "descriptionPrefix": "Le renouvellement automatique de",
+      "descriptionSuffix": "sera arrêté. Vous conserverez l'accès jusqu'au {{endDate}}, et ne serez plus débité(e).",
+      "defaultPlanName": "cet abonnement",
+      "defaultEndDate": "la fin de votre période en cours",
+      "keepAutopay": "Conserver le paiement automatique",
+      "cancelling": "Annulation..."
+    },
+    "changePlan": "Change plan",
+    "planChangeScheduled": "Moving to {{plan}} on {{date}}.",
+    "planChangeCancelScheduled": "Cancel this change",
+    "planChangeAwaitingPayment": "Your move to {{plan}} is waiting for payment of {{amount}}.",
+    "planChangeAwaitingPaymentNoAmount": "Your move to {{plan}} is waiting for payment.",
+    "planChangeCompletePayment": "Complete payment",
+    "planChangeDiscard": "Discard this change"
+  },
+  "cardUpdate": {
+    "success": "Votre carte a été mise à jour",
+    "genericError": "Échec de la mise à jour de la carte. Veuillez réessayer.",
+    "stripe": {
+      "formNotReady": "Le formulaire de paiement n'est pas prêt. Veuillez actualiser la page.",
+      "cardFormNotFound": "Formulaire de carte introuvable. Veuillez actualiser la page.",
+      "verificationFailed": "Échec de la vérification de la carte",
+      "verificationRetry": "La carte n'a pas pu être vérifiée. Veuillez réessayer.",
+      "note": "Votre nouvelle carte remplace celle utilisée pour le renouvellement de l'abonnement. Vous ne serez pas débité(e) maintenant."
+    },
+    "eway": {
+      "incomplete": "Veuillez d'abord compléter les détails de la carte"
+    }
+  },
+  "onboarding": {
+    "title": "Intégration",
+    "subtitle": "Terminez les étapes ci-dessous pour finaliser votre intégration.",
+    "loadingStatus": "Chargement de votre statut d'intégration...",
+    "loadError": "Nous n'avons pas pu charger votre statut d'intégration. Veuillez réessayer.",
+    "retry": "Réessayer",
+    "empty": "Rien à faire pour le moment.",
+    "onboardingFor": "Intégration pour {{name}}",
+    "flowComplete": "Ce parcours d'intégration est terminé. Il n'y a rien d'autre à faire ici.",
+    "handledByAdmin": "« {{stepName}} » est en cours de traitement par l'{{admin}} de votre établissement",
+    "handledByAdminHint": "Vous n'avez rien à faire ici — vous serez informé(e) une fois que ce sera terminé.",
+    "noActionNeeded": "Aucune action n'est requise de votre part pour cette étape pour le moment.",
+    "progress": "Progression"
+  },
+  "onboardingProgress": {
+    "status": {
+      "pending": "En attente",
+      "inProgress": "En cours",
+      "completed": "Terminée",
+      "skipped": "Ignorée"
+    },
+    "view": "Voir"
+  },
+  "onboardingStepForm": {
+    "subtitle": "Veuillez remplir les détails ci-dessous pour continuer.",
+    "loadingForm": "Chargement du formulaire...",
+    "loadError": "Impossible de charger le formulaire de cette étape. Veuillez réessayer plus tard.",
+    "noFieldsConfigured": "Aucun champ n'est configuré pour cette étape.",
+    "markAsComplete": "Marquer comme terminé",
+    "submitting": "Envoi en cours...",
+    "submit": "Envoyer",
+    "toast": {
+      "submittedTitle": "Étape envoyée",
+      "submittedDescription": "{{stepName}} a été enregistré(e).",
+      "errorTitle": "Impossible d'envoyer",
+      "errorFallback": "Une erreur s'est produite lors de l'envoi de cette étape. Veuillez réessayer."
+    },
+    "defaultFieldLabel": "Champ",
+    "defaultFieldPlaceholder": "valeur",
+    "notFilledIn": "Non renseigné",
+    "enterPlaceholder": "Saisissez {{field}}",
+    "validation": {
+      "fieldRequired": "{{field}} est requis",
+      "fieldRequiredDefaultField": "Ce champ"
+    }
+  },
+  "submittedFormDialog": {
+    "loading": "Chargement des détails envoyés...",
+    "error": "Impossible de charger ce qui a été envoyé pour cette étape. Veuillez réessayer plus tard.",
+    "empty": "Cette étape ne comportait aucun champ à remplir — elle a simplement été marquée comme terminée.",
+    "emptyValue": "—"
+  },
+  "onboardingDetails": {
+    "title": "Informations que vous avez fournies",
+    "loading": "Chargement de vos informations..."
+  },
+  "fieldValue": {
+    "yes": "Oui",
+    "no": "Non"
+  }
+}

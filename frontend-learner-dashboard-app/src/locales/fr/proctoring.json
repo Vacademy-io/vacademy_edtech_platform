@@ -1,0 +1,29 @@
+{
+    "checkIn": {
+        "title": "Vérification caméra",
+        "descriptionRequired": "Cette évaluation est surveillée. Votre caméra reste active pendant l'épreuve et de petites captures sont conservées pour votre enseignant. Autorisez la caméra pour continuer.",
+        "descriptionOptional": "Cette évaluation est surveillée. Votre caméra reste active pendant l'épreuve et de petites captures sont conservées pour votre enseignant.",
+        "allowCamera": "Autoriser la caméra",
+        "starting": "Démarrage de la caméra…",
+        "faceLooking": "Recherche de votre visage…",
+        "faceOk": "Parfait — un visage dans le cadre.",
+        "faceNone": "Aucun visage détecté. Faites face à la caméra dans une pièce éclairée.",
+        "faceMany": "Plusieurs visages dans le cadre. Vous seul devez être visible.",
+        "noDetector": "Assurez-vous que votre visage est bien visible, puis continuez.",
+        "confirm": "C'est bon, continuer",
+        "deniedRequired": "Accès à la caméra refusé. Cette évaluation ne peut pas démarrer sans — autorisez la caméra dans les réglages du navigateur et réessayez.",
+        "deniedOptional": "Accès à la caméra refusé. Vous pouvez continuer, mais le refus sera noté pour votre enseignant.",
+        "retry": "Réessayer",
+        "done": "Caméra prête. Vous pouvez commencer.",
+        "continueAnyway": "Continuer quand même",
+        "overrideNote": "Toujours pas détecté ? Vous pouvez continuer — votre enseignant vérifiera la photo."
+    },
+    "selfView": {
+        "recording": "Caméra active",
+        "denied": "Caméra bloquée",
+        "lost": "Caméra coupée",
+        "noFace": "Visage non visible",
+        "manyFaces": "Plusieurs visages",
+        "flags": "Signalements : {{count}} sur {{max}}"
+    }
+}

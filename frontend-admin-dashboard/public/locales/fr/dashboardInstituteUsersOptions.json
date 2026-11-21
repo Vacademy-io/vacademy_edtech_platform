@@ -1,0 +1,71 @@
+{
+  "menu": {
+    "editProfile": "Modifier le membre",
+    "changeRoleType": "Changer le type de rôle",
+    "disableUser": "Désactiver l'utilisateur",
+    "enableUser": "Activer l'utilisateur",
+    "deleteUser": "Supprimer l'utilisateur"
+  },
+  "changeRoleType": {
+    "title": "Modifier les rôles",
+    "roleTypeLabel": "Type de rôle",
+    "submit": "Soumettre",
+    "validation": {
+      "roleRequired": "Au moins un type de rôle est requis"
+    },
+    "toast": {
+      "success": "Les rôles de l'utilisateur ont été modifiés avec succès !"
+    }
+  },
+  "disableUser": {
+    "title": "Désactiver l'utilisateur",
+    "attention": "Attention",
+    "confirmPrefix": "Êtes-vous sûr de vouloir désactiver",
+    "confirmSuffix": " ?",
+    "confirmButton": "Oui",
+    "toast": {
+      "success": "L'utilisateur a été désactivé avec succès !"
+    }
+  },
+  "enableUser": {
+    "title": "Activer l'utilisateur",
+    "attention": "Attention",
+    "confirmPrefix": "Êtes-vous sûr de vouloir activer",
+    "confirmSuffix": " ?",
+    "confirmButton": "Oui",
+    "toast": {
+      "success": "L'utilisateur a été activé avec succès !"
+    }
+  },
+  "deleteUser": {
+    "title": "Supprimer l'utilisateur",
+    "attention": "Attention",
+    "confirmPrefix": "Êtes-vous sûr de vouloir supprimer",
+    "confirmSuffix": " ?",
+    "confirmButton": "Oui",
+    "toast": {
+      "success": "L'utilisateur a été supprimé avec succès !"
+    }
+  },
+  "editProfile": {
+    "title": "Profil de {{name}}",
+    "hint": "La photo, la fonction et la bio apparaissent partout où {{name}} figure sur un cours.",
+    "nameLabel": "Nom",
+    "emailLabel": "E-mail",
+    "mobileNumberLabel": "Numéro de mobile",
+    "photoLabel": "Photo de profil",
+    "designationLabel": "Fonction",
+    "designationPlaceholder": "ex. Professeur de physique",
+    "bioLabel": "Bio",
+    "bioPlaceholder": "Courte biographie",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "toast": {
+      "notImage": "Veuillez choisir un fichier image.",
+      "uploadFailed": "Échec du téléversement de l'image.",
+      "success": "Profil mis à jour.",
+      "error": "Impossible de mettre à jour le profil."
+    }
+  }
+}

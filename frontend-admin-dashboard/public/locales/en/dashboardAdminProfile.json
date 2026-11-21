@@ -1,0 +1,42 @@
+{
+    "trigger": {
+        "editProfile": "Edit Profile"
+    },
+    "dialog": {
+        "title": "Edit Profile"
+    },
+    "logoAlt": "logo",
+    "menu": {
+        "uploadNew": "Upload New",
+        "removeImage": "Remove Image"
+    },
+    "fields": {
+        "name": {
+            "label": "Profile Name",
+            "placeholder": "Full Name (First and Last)"
+        },
+        "email": {
+            "label": "Email",
+            "placeholder": "you@email.com"
+        },
+        "phone": {
+            "label": "Mobile Number",
+            "placeholder": "123 456 7890"
+        }
+    },
+    "roles": {
+        "label": "Role Type",
+        "empty": "No roles assigned",
+        "managedNote": "Roles are managed by your institute administrator and can't be changed here."
+    },
+    "sections": {
+        "contactInformation": "Contact Information"
+    },
+    "actions": {
+        "saveChanges": "Save Changes",
+        "cancel": "Cancel"
+    },
+    "toast": {
+        "updateSuccess": "Your details have been updated successfully!"
+    }
+}

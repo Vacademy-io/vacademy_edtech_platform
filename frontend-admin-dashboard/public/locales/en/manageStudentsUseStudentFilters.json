@@ -1,0 +1,22 @@
+{
+    "sessionSelector": {
+        "allOption": "All {{term}}"
+    },
+    "filterOptions": {
+        "sessionExpiryDays_one": "{{count}} Day",
+        "sessionExpiryDays_other": "{{count}} Days",
+        "paymentStatus": {
+            "paid": "Paid",
+            "failed": "Failed",
+            "pending": "Pending"
+        },
+        "approvalStatus": {
+            "pending": "Pending for Approval",
+            "invited": "Invited"
+        },
+        "learnerType": {
+            "abandonedCart": "Abandoned Cart",
+            "paymentFailed": "Payment Failed"
+        }
+    }
+}

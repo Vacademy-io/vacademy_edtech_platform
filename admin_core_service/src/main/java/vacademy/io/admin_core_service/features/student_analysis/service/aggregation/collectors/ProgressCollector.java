@@ -129,6 +129,11 @@ public class ProgressCollector {
                     overallCompletion /= subjects.size();
                     haveCompletionData = true;
                 }
+                // A course without subjects has one placeholder subject named "DEFAULT". It still
+                // counts toward the overall figure above, but a per-subject row labelled "DEFAULT"
+                // means nothing to a parent (and leaked into Areas to Improve).
+                subjects.removeIf(sp -> sp.getSubject() == null || sp.getSubject().isBlank()
+                        || sp.getSubject().trim().equalsIgnoreCase("default"));
             }
 
             // Overall completion precedence:

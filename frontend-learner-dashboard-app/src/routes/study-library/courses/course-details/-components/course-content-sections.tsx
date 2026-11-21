@@ -4,9 +4,13 @@ import {
     GraduationCap,
     ChalkboardTeacher,
 } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { extractTextFromHTML } from "@/components/common/helper";
-import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import {
+    getTerminology,
+    getTerminologyPlural,
+} from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, RoleTerms, SystemTerms } from "@/types/naming-settings";
 
 interface Instructor {
@@ -38,6 +42,8 @@ const getInitials = (email: string) => {
 };
 
 export const CourseContentSections = ({ courseData, showInstructors = false }: CourseContentSectionsProps) => {
+    const { t } = useTranslation("courseDetailsA");
+    const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
     return (
         <div className="space-y-4">
             {/* About Course Section */}
@@ -46,10 +52,10 @@ export const CourseContentSections = ({ courseData, showInstructors = false }: C
                     className="relative bg-white border border-gray-200 rounded-md shadow-sm hover:shadow-md transition-all duration-300 p-3 sm:p-4 group animate-fade-in-up"
                     style={{ animationDelay: "0.3s" }}
                 >
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
-                    <div className="relative">
-                        <div className="flex items-center space-x-2 mb-3">
-                            <div className="p-1.5 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg shadow-sm">
+                    <div className="absolute inset-0 bg-gradient-to-br from-info-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
+                    <div className="relative space-y-stack">
+                        <div className="flex items-center gap-x-2">
+                            <div className="p-1.5 bg-gradient-to-br from-info-100 to-info-200 rounded-lg shadow-sm">
                                 <File
                                     size={18}
                                     className="text-blue-600"
@@ -57,11 +63,7 @@ export const CourseContentSections = ({ courseData, showInstructors = false }: C
                                 />
                             </div>
                             <h2 className="text-base font-bold text-gray-900">
-                                About This{" "}
-                                {getTerminology(
-                                    ContentTerms.Course,
-                                    SystemTerms.Course
-                                )}
+                                {t("contentSections.aboutThisCourse", { course })}
                             </h2>
                         </div>
                         <div
@@ -81,8 +83,8 @@ export const CourseContentSections = ({ courseData, showInstructors = false }: C
                     style={{ animationDelay: "0.4s" }}
                 >
                     <div className="absolute inset-0 bg-gradient-to-br from-success-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
-                    <div className="relative">
-                        <div className="flex items-center space-x-2 mb-3">
+                    <div className="relative space-y-stack">
+                        <div className="flex items-center gap-x-2">
                             <div className="p-1.5 bg-gradient-to-br from-success-100 to-success-200 rounded-lg shadow-sm">
                                 <BookOpen
                                     size={18}
@@ -91,7 +93,7 @@ export const CourseContentSections = ({ courseData, showInstructors = false }: C
                                 />
                             </div>
                             <h2 className="text-base font-bold text-gray-900">
-                                What You'll Learn
+                                {t("contentSections.whatYoullLearn")}
                             </h2>
                         </div>
                         <div
@@ -111,8 +113,8 @@ export const CourseContentSections = ({ courseData, showInstructors = false }: C
                     style={{ animationDelay: "0.5s" }}
                 >
                     <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
-                    <div className="relative">
-                        <div className="flex items-center space-x-2 mb-3">
+                    <div className="relative space-y-stack">
+                        <div className="flex items-center gap-x-2">
                             <div className="p-1.5 bg-gradient-to-br from-purple-100 to-purple-200 rounded-lg shadow-sm">
                                 <GraduationCap
                                     size={18}
@@ -121,7 +123,7 @@ export const CourseContentSections = ({ courseData, showInstructors = false }: C
                                 />
                             </div>
                             <h2 className="text-base font-bold text-gray-900">
-                                Who Should Join
+                                {t("contentSections.whoShouldJoin")}
                             </h2>
                         </div>
                         <div
@@ -140,10 +142,10 @@ export const CourseContentSections = ({ courseData, showInstructors = false }: C
                     className="relative bg-white border border-gray-200 rounded-md shadow-sm hover:shadow-md transition-all duration-300 p-3 sm:p-4 group animate-fade-in-up"
                     style={{ animationDelay: "0.6s" }}
                 >
-                    <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
-                    <div className="relative">
-                        <div className="flex items-center space-x-2 mb-3">
-                            <div className="p-1.5 bg-gradient-to-br from-orange-100 to-orange-200 rounded-lg shadow-sm">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
+                    <div className="relative space-y-stack">
+                        <div className="flex items-center gap-x-2">
+                            <div className="p-1.5 bg-gradient-to-br from-primary-100 to-primary-200 rounded-lg shadow-sm">
                                 <ChalkboardTeacher
                                     size={18}
                                     className="text-orange-600"
@@ -151,11 +153,10 @@ export const CourseContentSections = ({ courseData, showInstructors = false }: C
                                 />
                             </div>
                             <h2 className="text-base font-bold text-gray-900">
-                                {getTerminology(
+                                {getTerminologyPlural(
                                     RoleTerms.Teacher,
                                     SystemTerms.Teacher
                                 )}
-                                s
                             </h2>
                         </div>
                         <div className="space-y-2">

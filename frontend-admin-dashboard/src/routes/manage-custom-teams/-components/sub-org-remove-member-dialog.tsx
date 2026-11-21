@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { getTerminology, getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
@@ -24,6 +25,7 @@ export const SubOrgRemoveMemberDialog = ({
     isPending,
     onConfirm,
 }: SubOrgRemoveMemberDialogProps) => {
+    const { t } = useTranslation('manageCustomTeamsSubOrgRemoveMemberDialog');
     const [mode, setMode] = useState<'SOFT' | 'HARD'>('HARD');
     const [accessTillDate, setAccessTillDate] = useState<string>('');
 
@@ -41,7 +43,7 @@ export const SubOrgRemoveMemberDialog = ({
     const footer = (
         <div className="flex w-full items-center justify-between">
             <MyButton buttonType="secondary" scale="small" onClick={() => handleOpenChange(false)}>
-                Cancel
+                {t('cancel')}
             </MyButton>
             <MyButton
                 buttonType="primary"
@@ -50,14 +52,16 @@ export const SubOrgRemoveMemberDialog = ({
                 onClick={() => onConfirm(mode, mode === 'SOFT' ? accessTillDate : null)}
                 className="!bg-red-500 hover:!bg-red-600"
             >
-                {isPending ? 'Removing...' : 'Remove'}
+                {isPending ? t('removing') : t('remove')}
             </MyButton>
         </div>
     );
 
     return (
         <MyDialog
-            heading={`Remove from ${getTerminology(OtherTerms.SubOrg, SystemTerms.SubOrg).toLowerCase()}`}
+            heading={t('heading', {
+                term: getTerminology(OtherTerms.SubOrg, SystemTerms.SubOrg).toLowerCase(),
+            })}
             open={open}
             onOpenChange={handleOpenChange}
             dialogWidth="max-w-md"
@@ -65,15 +69,18 @@ export const SubOrgRemoveMemberDialog = ({
         >
             <div className="flex flex-col gap-4">
                 <p className="text-sm text-neutral-600">
-                    Remove <strong>{memberName}</strong> from this{' '}
-                    {getTerminology(OtherTerms.SubOrg, SystemTerms.SubOrg).toLowerCase()}. Their
-                    account stays intact; access to other{' '}
-                    {getTerminologyPlural(OtherTerms.SubOrg, SystemTerms.SubOrg).toLowerCase()} (if
-                    any) is unaffected.
+                    {t('descriptionPrefix')} <strong>{memberName}</strong>{' '}
+                    {t('descriptionSuffix', {
+                        term: getTerminology(OtherTerms.SubOrg, SystemTerms.SubOrg).toLowerCase(),
+                        termPlural: getTerminologyPlural(
+                            OtherTerms.SubOrg,
+                            SystemTerms.SubOrg
+                        ).toLowerCase(),
+                    })}
                 </p>
 
                 <div className="flex flex-col gap-2 rounded-lg border border-neutral-100 bg-neutral-50 p-3">
-                    <p className="text-xs font-medium text-neutral-600">Removal Mode</p>
+                    <p className="text-xs font-medium text-neutral-600">{t('removalMode.label')}</p>
                     <label className="flex items-start gap-2">
                         <input
                             type="radio"
@@ -83,7 +90,8 @@ export const SubOrgRemoveMemberDialog = ({
                             className="mt-0.5 text-red-500"
                         />
                         <span className="text-xs text-neutral-700">
-                            <strong>Remove now</strong> — Access is revoked immediately.
+                            <strong>{t('removalMode.hardTitle')}</strong>{' '}
+                            {t('removalMode.hardDescription')}
                         </span>
                     </label>
                     <label className="flex items-start gap-2">
@@ -95,15 +103,15 @@ export const SubOrgRemoveMemberDialog = ({
                             className="mt-0.5 text-primary-500"
                         />
                         <span className="text-xs text-neutral-700">
-                            <strong>Keep until date</strong> — Access continues until the last
-                            access date below, then ends automatically.
+                            <strong>{t('removalMode.softTitle')}</strong>{' '}
+                            {t('removalMode.softDescription')}
                         </span>
                     </label>
 
                     {mode === 'SOFT' && (
                         <div className="ml-6 mt-1 flex flex-col gap-1.5">
                             <p className="text-[11px] font-medium text-neutral-600">
-                                Last access date
+                                {t('lastAccessDate.label')}
                             </p>
                             <input
                                 type="date"
@@ -114,7 +122,7 @@ export const SubOrgRemoveMemberDialog = ({
                             />
                             {softMissingDate && (
                                 <p className="text-[10px] text-red-500">
-                                    Pick a date to keep access until.
+                                    {t('lastAccessDate.missing')}
                                 </p>
                             )}
                         </div>

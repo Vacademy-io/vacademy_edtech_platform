@@ -1,0 +1,48 @@
+{
+    "title": "नया सदस्य जोड़ें",
+    "description": "एक नया उपयोगकर्ता बनाएं और उसे विशिष्ट अनुमतियों के साथ किसी टीम/भूमिका में असाइन करें।",
+    "sections": {
+        "userDetails": "उपयोगकर्ता विवरण",
+        "userAccessMapping": "उपयोगकर्ता एक्सेस मैपिंग",
+        "userAccessMappingHint": "एक्सेस देने के लिए एक या अधिक पैकेज सत्र चुनें।"
+    },
+    "form": {
+        "fullNameLabel": "पूरा नाम *",
+        "fullNamePlaceholder": "जॉन डो",
+        "emailLabel": "ईमेल *",
+        "emailPlaceholder": "john@example.com",
+        "phoneLabel": "फ़ोन",
+        "phonePlaceholder": "123 456 7890",
+        "roleLabel": "भूमिका *",
+        "selectRolePlaceholder": "भूमिका चुनें",
+        "customRoleOption": "+ कस्टम भूमिका",
+        "customRoleNamePlaceholder": "कस्टम भूमिका का नाम दर्ज करें",
+        "hasFacultyAssignedLabel": "क्या फैकल्टी असाइन अनुमति है?",
+        "packageSessionsLabel": "पैकेज सत्र",
+        "packageSessionsSearchPlaceholder": "पैकेज सत्र खोजें...",
+        "loadingSessions": "सत्र लोड हो रहे हैं...",
+        "noSessionsFound": "कोई पैकेज सत्र नहीं मिला।",
+        "sessionsPageInfo": "पृष्ठ {{page}} / {{totalPages}} ({{count}} कुल)",
+        "sessionsSelected_one": "{{count}} सत्र चयनित",
+        "sessionsSelected_other": "{{count}} सत्र चयनित",
+        "linkageTypeLabel": "लिंकेज प्रकार",
+        "selectLinkageTypePlaceholder": "लिंकेज प्रकार चुनें",
+        "linkageDirect": "सीधा",
+        "linkageInherited": "विरासत में मिला",
+        "linkagePartnership": "साझेदारी"
+    },
+    "validation": {
+        "fullNameRequired": "पूरा नाम आवश्यक है",
+        "invalidEmail": "अमान्य ईमेल पता",
+        "roleRequired": "भूमिका आवश्यक है"
+    },
+    "actions": {
+        "cancel": "रद्द करें",
+        "addMember": "सदस्य जोड़ें"
+    },
+    "toast": {
+        "addSuccess": "सदस्य सफलतापूर्वक जोड़ा गया",
+        "addFailed": "सदस्य जोड़ने में विफल",
+        "customRoleNameRequired": "कृपया एक कस्टम भूमिका का नाम दर्ज करें"
+    }
+}

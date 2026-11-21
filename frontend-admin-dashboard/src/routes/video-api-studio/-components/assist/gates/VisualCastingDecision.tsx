@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -36,6 +37,7 @@ interface VisualCastingDecisionProps {
  * by the query string (the backend forcing key); a null pick = "AI generates".
  */
 export function VisualCastingDecision({ decision, isSubmitting, onSubmit, apiKey }: VisualCastingDecisionProps) {
+    const { t } = useTranslation('videoApiStudioVisualCastingDecision');
     const groups: VisualCastingGroup[] = useMemo(() => {
         if (decision.payload?.groups?.length) return decision.payload.groups;
         if (decision.payload?.candidates?.length) {
@@ -78,7 +80,7 @@ export function VisualCastingDecision({ decision, isSubmitting, onSubmit, apiKey
         const results = await searchStock(g.kind, term, apiKey);
         setBusyFor(g.query, false);
         if (results.length === 0) {
-            toast.info('No results — try different terms.');
+            toast.info(t('toast.noResults'));
             return;
         }
         setCands((p) => ({ ...p, [g.query]: results }));
@@ -108,7 +110,7 @@ export function VisualCastingDecision({ decision, isSubmitting, onSubmit, apiKey
             setCands((p) => ({ ...p, [g.query]: [cand, ...(p[g.query] ?? [])] }));
             setPicks((p) => ({ ...p, [g.query]: cand.candidate_id }));
         } catch {
-            toast.error('Upload failed. Try a smaller image.');
+            toast.error(t('toast.uploadFailed'));
         } finally {
             setBusyFor(g.query, false);
         }
@@ -126,10 +128,10 @@ export function VisualCastingDecision({ decision, isSubmitting, onSubmit, apiKey
     if (groups.length === 0) {
         return (
             <div className="rounded-xl border bg-white p-6 text-center text-sm text-muted-foreground shadow-sm dark:bg-card">
-                No visual candidates to review.
+                {t('empty.noCandidates')}
                 <div className="mt-3">
                     <Button size="sm" disabled={isSubmitting} onClick={() => onSubmit({ kind: 'auto' })}>
-                        Continue
+                        {t('empty.continue')}
                     </Button>
                 </div>
             </div>
@@ -142,7 +144,7 @@ export function VisualCastingDecision({ decision, isSubmitting, onSubmit, apiKey
                 <span className="flex size-7 items-center justify-center rounded-md bg-violet-100 dark:bg-violet-900/30">
                     <ImageIcon className="size-4 text-violet-600" />
                 </span>
-                Pick visuals ({groups.length} {groups.length === 1 ? 'shot' : 'shots'})
+                {t('header.title', { count: groups.length })}
             </div>
 
             <div className="max-h-96 space-y-5 overflow-y-auto p-3">
@@ -156,7 +158,9 @@ export function VisualCastingDecision({ decision, isSubmitting, onSubmit, apiKey
                                 <span className="inline-flex size-5 items-center justify-center rounded-full bg-muted text-xs font-semibold text-foreground">
                                     {(g.shot_index ?? gi) + 1}
                                 </span>
-                                <span className="truncate text-muted-foreground">{g.query || 'visual'}</span>
+                                <span className="truncate text-muted-foreground">
+                                    {g.query || t('shot.queryFallback')}
+                                </span>
                                 <button
                                     type="button"
                                     disabled={isSubmitting}
@@ -169,7 +173,7 @@ export function VisualCastingDecision({ decision, isSubmitting, onSubmit, apiKey
                                     )}
                                 >
                                     <Sparkle className="size-3" />
-                                    Generate with AI
+                                    {t('shot.generateWithAi')}
                                 </button>
                             </div>
 
@@ -189,7 +193,11 @@ export function VisualCastingDecision({ decision, isSubmitting, onSubmit, apiKey
                                                 void runSearch(g);
                                             }
                                         }}
-                                        placeholder={`Search ${g.kind === 'video' ? 'clips' : 'photos'}…`}
+                                        placeholder={
+                                            g.kind === 'video'
+                                                ? t('shot.searchPlaceholderClips')
+                                                : t('shot.searchPlaceholderPhotos')
+                                        }
                                         className="h-8 pl-7 text-xs"
                                     />
                                 </div>
@@ -203,7 +211,7 @@ export function VisualCastingDecision({ decision, isSubmitting, onSubmit, apiKey
                                     {isBusy ? (
                                         <CircleNotch className="size-3.5 animate-spin" />
                                     ) : (
-                                        'Search'
+                                        t('shot.search')
                                     )}
                                 </Button>
                                 <Button
@@ -214,7 +222,7 @@ export function VisualCastingDecision({ decision, isSubmitting, onSubmit, apiKey
                                     className="h-8 gap-1"
                                 >
                                     <UploadSimple className="size-3.5" />
-                                    Upload
+                                    {t('shot.upload')}
                                 </Button>
                                 <input
                                     ref={(el) => {
@@ -233,7 +241,7 @@ export function VisualCastingDecision({ decision, isSubmitting, onSubmit, apiKey
 
                             {list.length === 0 ? (
                                 <div className="px-1 text-xs text-muted-foreground">
-                                    No candidates — search, upload, or let AI generate it.
+                                    {t('shot.noCandidates')}
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
@@ -265,7 +273,7 @@ export function VisualCastingDecision({ decision, isSubmitting, onSubmit, apiKey
                                                 )}
                                                 {c.provider === 'upload' && (
                                                     <span className="absolute left-1 top-1 rounded bg-emerald-600 px-1 py-0.5 text-xs font-semibold text-white">
-                                                        Yours
+                                                        {t('shot.yours')}
                                                     </span>
                                                 )}
                                                 {isSel && (
@@ -292,7 +300,7 @@ export function VisualCastingDecision({ decision, isSubmitting, onSubmit, apiKey
                     className="gap-1.5 text-muted-foreground"
                 >
                     <Sparkle className="size-3.5" />
-                    Let AI do all
+                    {t('footer.letAiDoAll')}
                 </Button>
                 <Button
                     size="sm"
@@ -301,7 +309,7 @@ export function VisualCastingDecision({ decision, isSubmitting, onSubmit, apiKey
                     className="gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-700 hover:to-indigo-700"
                 >
                     <Check className="size-4" />
-                    Use these
+                    {t('footer.useThese')}
                 </Button>
             </div>
         </div>

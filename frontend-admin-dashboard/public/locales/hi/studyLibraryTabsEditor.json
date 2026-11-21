@@ -1,0 +1,26 @@
+{
+    "tabbedContent": "टैब्ड कंटेंट",
+    "addTab": "+ टैब जोड़ें",
+    "preview": "पूर्वावलोकन",
+    "edit": "संपादित करें",
+    "switchOrRenameHint": "स्विच करने के लिए क्लिक करें · नाम बदलने के लिए डबल-क्लिक करें",
+    "untitled": "बिना शीर्षक",
+    "renameTab": "टैब का नाम बदलें",
+    "removeTab": "टैब हटाएं",
+    "tabColorLabel": "टैब रंग:",
+    "defaultTabLabel": "टैब {{number}}",
+    "genericTab": "टैब",
+    "contentPlaceholder": "\"{{label}}\" के लिए सामग्री…",
+    "emptyTabContent": "टैब सामग्री खाली है",
+    "tabColors": {
+        "default": "डिफ़ॉल्ट",
+        "blue": "नीला",
+        "green": "हरा",
+        "red": "लाल",
+        "orange": "नारंगी",
+        "purple": "बैंगनी",
+        "teal": "फ़िरोज़ी",
+        "pink": "गुलाबी",
+        "gray": "धूसर"
+    }
+}

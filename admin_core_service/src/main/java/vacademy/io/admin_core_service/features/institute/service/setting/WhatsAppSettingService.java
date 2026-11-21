@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vacademy.io.admin_core_service.features.institute.setting_history.InstituteSettingWriter;
 import vacademy.io.admin_core_service.features.institute.dto.settings.WhatsAppProviderCredentialsRequest;
 import vacademy.io.admin_core_service.features.institute.dto.settings.SwitchWhatsAppProviderRequest;
 import vacademy.io.admin_core_service.features.institute.dto.settings.WhatsAppProviderStatusResponse;
@@ -24,6 +25,7 @@ public class WhatsAppSettingService {
 
     private final InstituteRepository instituteRepository;
     private final ObjectMapper objectMapper;
+    private final InstituteSettingWriter instituteSettingWriter;
 
     /**
      * Gets the current status of configured and active WhatsApp providers for an
@@ -262,8 +264,7 @@ public class WhatsAppSettingService {
 
     private void saveSettings(Institute institute, ObjectNode root) {
         try {
-            institute.setSetting(objectMapper.writeValueAsString(root));
-            instituteRepository.save(institute);
+            instituteSettingWriter.save(institute, objectMapper.writeValueAsString(root));
         } catch (JsonProcessingException e) {
             throw new VacademyException("Error saving Institute JSON: " + e.getMessage());
         }

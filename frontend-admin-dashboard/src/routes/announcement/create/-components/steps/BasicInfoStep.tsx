@@ -1,12 +1,13 @@
 import { Suspense, lazy } from 'react';
 import { CircleNotch, Code, TextAa, TextT } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { MyButton } from '@/components/design-system/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { MediumType, ModeType } from '@/services/announcement';
-import { ANNOUNCEMENT_PRESETS } from '../../-utils/constants';
+import { buildAnnouncementPresets } from '../../-utils/constants';
 import { FieldError, FieldHint, SectionCard } from '../primitives';
 import type { FieldErrors } from '../../-types';
 
@@ -48,17 +49,19 @@ export function BasicInfoStep({
     errors,
     showErrors,
 }: BasicInfoStepProps) {
+    const { t } = useTranslation('announcementCreateBasicInfoStep');
+    const announcementPresets = buildAnnouncementPresets(t);
     const err = (key: string) => (showErrors ? errors[key] : undefined);
 
     return (
         <div className="space-y-6">
             <SectionCard
-                title="Announcement type"
-                description="A starting point — you can change where it appears and how it is delivered later."
+                title={t('typeSection.title')}
+                description={t('typeSection.description')}
                 Icon={TextAa}
             >
                 <div className="grid gap-3 sm:grid-cols-2">
-                    {ANNOUNCEMENT_PRESETS.map((preset) => {
+                    {announcementPresets.map((preset) => {
                         const active =
                             preset.modes.every((mode) => modes.includes(mode)) &&
                             preset.mediums.every((medium) => mediums.includes(medium));
@@ -102,15 +105,15 @@ export function BasicInfoStep({
             </SectionCard>
 
             <SectionCard
-                title="Message"
-                description="What people will read. The title doubles as the email subject unless you override it."
+                title={t('messageSection.title')}
+                description={t('messageSection.description')}
                 Icon={TextT}
                 invalid={Boolean(err('title') || err('content'))}
             >
                 <div className="space-y-1">
                     <div className="flex items-center justify-between gap-2">
                         <Label className="text-caption font-semibold">
-                            Title <span className="text-danger-600">*</span>
+                            {t('titleLabel')} <span className="text-danger-600">*</span>
                         </Label>
                         <span
                             className={cn(
@@ -126,7 +129,7 @@ export function BasicInfoStep({
                     <Input
                         value={title}
                         onChange={(e) => onTitleChange(e.target.value)}
-                        placeholder="e.g. New batch starting from Monday"
+                        placeholder={t('titlePlaceholder')}
                         className={cn(err('title') && 'border-danger-400')}
                     />
                     <FieldError message={err('title')} />
@@ -134,7 +137,9 @@ export function BasicInfoStep({
 
                 <div className="space-y-1">
                     <div className="flex items-center justify-between gap-2">
-                        <Label className="text-caption font-semibold">Preview text</Label>
+                        <Label className="text-caption font-semibold">
+                            {t('previewTextLabel')}
+                        </Label>
                         <span
                             className={cn(
                                 'text-caption tabular-nums',
@@ -149,17 +154,15 @@ export function BasicInfoStep({
                     <Input
                         value={previewText}
                         onChange={(e) => onPreviewTextChange(e.target.value)}
-                        placeholder="The line shown in the inbox, before the email is opened"
+                        placeholder={t('previewTextPlaceholder')}
                     />
-                    <FieldHint>
-                        Inboxes fall back to the first line of your content when this is empty.
-                    </FieldHint>
+                    <FieldHint>{t('previewTextHint')}</FieldHint>
                 </div>
 
                 <div className="space-y-2">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                         <Label className="text-caption font-semibold">
-                            Content <span className="text-danger-600">*</span>
+                            {t('contentLabel')} <span className="text-danger-600">*</span>
                         </Label>
                         <div className="flex items-center gap-1 rounded-md border p-0.5">
                             <MyButton
@@ -168,7 +171,7 @@ export function BasicInfoStep({
                                 onClick={() => onContentViewChange('editor')}
                             >
                                 <TextAa className="mr-1 size-4" />
-                                Rich text
+                                {t('richTextTab')}
                             </MyButton>
                             <MyButton
                                 buttonType={contentView === 'source' ? 'primary' : 'text'}
@@ -176,7 +179,7 @@ export function BasicInfoStep({
                                 onClick={() => onContentViewChange('source')}
                             >
                                 <Code className="mr-1 size-4" />
-                                HTML
+                                {t('htmlTab')}
                             </MyButton>
                         </div>
                     </div>
@@ -199,7 +202,7 @@ export function BasicInfoStep({
                                     value={htmlContent}
                                     onChange={onHtmlContentChange}
                                     onBlur={() => {}}
-                                    placeholder="Write the announcement…"
+                                    placeholder={t('editorPlaceholder')}
                                     minHeight={200}
                                     borderless
                                 />
@@ -209,7 +212,7 @@ export function BasicInfoStep({
                         <Textarea
                             value={htmlContent}
                             onChange={(e) => onHtmlContentChange(e.target.value)}
-                            placeholder="Paste or edit the raw HTML…"
+                            placeholder={t('sourcePlaceholder')}
                             className={cn(
                                 'min-h-52 font-mono text-caption',
                                 err('content') && 'border-danger-400'

@@ -33,7 +33,8 @@ public class ChatReportController {
             @RequestHeader(value = "clientId", required = false) String clientId,
             @RequestBody CreateReportRequest request) {
         ChatIdentity id = ChatIdentity.from(user, clientId);
-        return ResponseEntity.ok(reportService.createReport(id.userId(), request));
+        return ResponseEntity.ok(
+                reportService.createReport(id.userId(), id.role(), id.instituteId(), request));
     }
 
     @GetMapping("/admin")

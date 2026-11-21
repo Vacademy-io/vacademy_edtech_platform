@@ -1,0 +1,30 @@
+{
+    "heading": "Scratch Project",
+    "tabs": {
+        "preview": "Preview",
+        "settings": "Settings"
+    },
+    "form": {
+        "label": "Scratch Project ID",
+        "placeholder": "Enter Scratch project ID (e.g., 123456789)",
+        "hint": "You can find the project ID in the Scratch project URL: scratch.mit.edu/projects/[PROJECT_ID]"
+    },
+    "infoPanel": {
+        "title": "How to get your Scratch Project ID:",
+        "step1": "Open your Scratch project on scratch.mit.edu",
+        "step2": "Look at the URL in your browser address bar",
+        "step3": "Copy the numbers after \"/projects/\" - that's your project ID",
+        "step4": "Paste the ID in the field above"
+    },
+    "status": {
+        "ready": "Project ready:",
+        "readyDetail": "Scratch project ID {{id}} - Switch to Preview tab to view the project"
+    },
+    "preview": {
+        "iframeTitle": "Scratch Project {{id}}",
+        "empty": {
+            "title": "No Scratch project configured",
+            "subtitle": "Switch to Settings tab to enter your Scratch project ID"
+        }
+    }
+}

@@ -1,0 +1,18 @@
+{
+    "errors": {
+        "unknownCounsellorEmail": "E-mail du conseiller inconnu : {{email}}",
+        "ambiguousCounsellorName": "Plusieurs conseillers portent le nom \"{{name}}\" — utilisez plutôt leur e-mail",
+        "unknownCounsellor": "Conseiller inconnu : {{name}}",
+        "unknownLeadStatus": "Statut de prospect inconnu : {{status}}.",
+        "validStatuses": "Statuts valides : {{statuses}}",
+        "fieldRequired": "{{field}} est requis",
+        "invalidEmail": "E-mail invalide : {{email}}",
+        "invalidMobile": "Numéro de mobile invalide : {{mobile}}"
+    },
+    "csvTemplate": {
+        "leadOwnerColumn": "Responsable du prospect (e-mail du conseiller)",
+        "leadStatusColumn": "Statut du prospect",
+        "sampleName": "Jean Dupont",
+        "sampleStatus": "Nouveau"
+    }
+}

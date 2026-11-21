@@ -1,0 +1,18 @@
+{
+    "errorSavingSlide": "Erreur lors de l'enregistrement de la diapositive",
+    "couldNotReadContent": "Impossible de lire le contenu de l'éditeur. Veuillez réessayer.",
+    "slidePublished": "Diapositive publiée avec succès !",
+    "confirmForcePublish": "Pour éviter une perte de données accidentelle, veuillez confirmer.\n\n{{serverMessage}}\n\nÊtes-vous sûr de vouloir publier cette version ?",
+    "slidePublishedForced": "Diapositive publiée (remplacement forcé).",
+    "errorPublishingSlide": "Erreur lors de la publication de la diapositive",
+    "videoSlideMissing": "Les données de la diapositive vidéo sont manquantes.",
+    "quizPublished": "Quiz publié avec succès !",
+    "quizPublishFailed": "Échec de la publication du quiz",
+    "audioSlideMissing": "Les données de la diapositive audio sont manquantes.",
+    "scormSlideMissing": "Les données de la diapositive SCORM sont manquantes.",
+    "scormSlidePublished": "Diapositive SCORM publiée avec succès !",
+    "errorPublishingScormSlide": "Erreur lors de la publication de la diapositive SCORM",
+    "assessmentSlideMissing": "Les données de la diapositive d'évaluation sont manquantes.",
+    "assessmentSlidePublished": "Diapositive d'évaluation publiée avec succès !",
+    "errorPublishingAssessmentSlide": "Erreur lors de la publication de la diapositive d'évaluation"
+}

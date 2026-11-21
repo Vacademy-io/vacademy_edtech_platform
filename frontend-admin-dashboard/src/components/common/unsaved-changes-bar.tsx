@@ -72,6 +72,7 @@ export function UnsavedChangesBar({
 
     return (
         <div
+            data-assistant-fab="avoid-phone"
             role="region"
             aria-label="Unsaved changes"
             // Compact floating pill anchored to the bottom-CENTRE of the

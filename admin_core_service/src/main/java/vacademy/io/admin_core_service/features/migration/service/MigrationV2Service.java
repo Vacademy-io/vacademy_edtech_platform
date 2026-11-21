@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.migration.service;
 
+import vacademy.io.admin_core_service.features.commerce.common.CommerceLegacyGuard;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -71,6 +72,7 @@ public class MigrationV2Service {
     private final InstitutePaymentGatewayMappingRepository instituteGatewayMappingRepository;
     private final TagRepository tagRepository;
     private final UserTagRepository userTagRepository;
+    private final CommerceLegacyGuard commerceLegacyGuard;
 
     // ========================================
     // API 1: Import Users
@@ -966,6 +968,13 @@ public class MigrationV2Service {
      */
     private void updateInventoryOnEnrollment(PackageSession packageSession) {
         if (packageSession == null) {
+            return;
+        }
+
+        if (packageSession.getPackageEntity() != null && commerceLegacyGuard.isVariantSession(
+                packageSession.getId(), packageSession.getPackageEntity().getPackageType())) {
+            // A product's stock moves only through Commerce.
+            log.warn("Skipping inventory update for package session {} - shop product", packageSession.getId());
             return;
         }
 

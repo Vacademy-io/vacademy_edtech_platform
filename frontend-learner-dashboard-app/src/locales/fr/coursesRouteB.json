@@ -1,0 +1,46 @@
+{
+  "courseDetailsPage": {
+    "selectors": {
+      "sessionPlaceholder": "Sélectionner {{session}}",
+      "levelPlaceholder": "Sélectionner {{level}}"
+    },
+    "mobileCard": {
+      "overview": "{{course}} : aperçu",
+      "author": "Auteur",
+      "courseTime": "{{course}} : durée"
+    },
+    "sections": {
+      "whatYoullLearn": "Ce que vous allez apprendre",
+      "aboutThisCourse": "{{course}} — à propos",
+      "whoShouldJoin": "Qui devrait s'inscrire ?"
+    },
+    "enroll": "S'inscrire",
+    "courseBannerAlt": "Bannière — {{course}}",
+    "unknownInstructor": "{{instructor}} inconnu(e)"
+  },
+  "ratings": {
+    "heading": "Notes et avis",
+    "notAvailable": "N/D",
+    "reviewsCount_one": "{{count}} avis",
+    "reviewsCount_many": "{{count}} avis",
+    "reviewsCount_other": "{{count}} avis",
+    "loading": "Chargement des avis...",
+    "empty": "Aucun avis pour le moment",
+    "toast": {
+      "submitFailed": "Échec de l'envoi de la note",
+      "unexpectedError": "Une erreur inattendue s'est produite"
+    }
+  },
+  "videoPlayer": {
+    "unsupported": "Votre navigateur ne prend pas en charge la balise vidéo.",
+    "vimeoTitle": "Lecteur vidéo Vimeo",
+    "youtubeTitle": "Lecteur vidéo YouTube"
+  },
+  "courseStructure": {
+    "heading": "{{course}} : structure",
+    "collapseAll": "Tout réduire",
+    "expandAll": "Tout développer",
+    "noSlides": "Aucune diapositive dans ce chapitre.",
+    "navHeading": "{{course}} : détails"
+  }
+}

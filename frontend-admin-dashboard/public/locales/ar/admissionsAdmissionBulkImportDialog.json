@@ -1,0 +1,89 @@
+{
+    "dialog": {
+        "title": "استيراد القبولات بالجملة",
+        "description": "قم بتحميل ملف CSV، واختر الصف اختياريًا، ثم عاين التسجيلات وأكّد الاستيراد"
+    },
+    "steps": {
+        "label": "الخطوة {{number}}"
+    },
+    "upload": {
+        "templateHint": "قم بتنزيل نموذج CSV وتحميل استجابات المتعلمين المعبأة",
+        "downloadTemplateButton": "تنزيل النموذج",
+        "clickToUpload": "انقر لتحميل ملف `.csv`",
+        "rowsSummary": "الصفوف الصالحة: {{validCount}} | الصفوف المتجاوَزة: {{skippedCount}}"
+    },
+    "classStep": {
+        "description": "اختر الصف/الدفعة المطلوبة لتقديم القبولات. إذا تخطيت هذه الخطوة، سيُستخدم أول خيار متاح.",
+        "noClassOption": "لم يتم اختيار صف"
+    },
+    "preview": {
+        "summary_zero": "لا توجد صفوف صالحة للمعاينة ({{count}})",
+        "summary_one": "معاينة صف صالح واحد ({{count}})",
+        "summary_two": "معاينة صفين صالحين ({{count}})",
+        "summary_few": "معاينة {{count}} صفوف صالحة",
+        "summary_many": "معاينة {{count}} صفًا صالحًا",
+        "summary_other": "معاينة {{count}} صف صالح",
+        "columns": {
+            "studentName": "اسم الطالب",
+            "gender": "الجنس",
+            "dateOfBirth": "تاريخ الميلاد",
+            "fatherName": "اسم الأب",
+            "fatherEmail": "البريد الإلكتروني للأب",
+            "fatherMobile": "رقم جوال الأب",
+            "motherName": "اسم الأم",
+            "motherEmail": "البريد الإلكتروني للأم",
+            "motherMobile": "رقم جوال الأم",
+            "guardianName": "اسم ولي الأمر",
+            "guardianMobile": "رقم جوال ولي الأمر",
+            "status": "الحالة",
+            "source": "المصدر"
+        }
+    },
+    "actions": {
+        "back": "رجوع",
+        "cancel": "إلغاء",
+        "next": "التالي",
+        "confirmImport": "تأكيد الاستيراد",
+        "importing": "جارٍ الاستيراد..."
+    },
+    "errors": {
+        "onlyCsvSupported": "يتم دعم ملفات .csv فقط",
+        "missingColumns": "أعمدة مطلوبة مفقودة: {{columns}}",
+        "failedToParseCsv": "فشل تحليل ملف CSV",
+        "instituteNotLoaded": "لم يتم تحميل بيانات المؤسسة",
+        "sessionRequired": "الجلسة (الدورة) مطلوبة",
+        "selectClassRequired": "يرجى اختيار الصف/الدفعة"
+    },
+    "toast": {
+        "importSuccess_zero": "لم يتم استيراد أي قبولات ({{count}}) ({{failedCount}} فشل)",
+        "importSuccess_one": "تم استيراد قبول واحد ({{count}}) ({{failedCount}} فشل)",
+        "importSuccess_two": "تم استيراد قبولين ({{count}}) ({{failedCount}} فشل)",
+        "importSuccess_few": "تم استيراد {{count}} قبولات ({{failedCount}} فشل)",
+        "importSuccess_many": "تم استيراد {{count}} قبولًا ({{failedCount}} فشل)",
+        "importSuccess_other": "تم استيراد {{count}} قبول ({{failedCount}} فشل)",
+        "importError": "فشل استيراد القبولات"
+    },
+    "genderLabel": {
+        "MALE": "ذكر",
+        "FEMALE": "أنثى",
+        "OTHER": "آخر"
+    },
+    "statusLabel": {
+        "NEW": "جديد",
+        "CONTACTED": "تم التواصل",
+        "QUALIFIED": "مؤهل",
+        "NOT_ELIGIBLE": "غير مؤهل",
+        "FOLLOW_UP": "متابعة",
+        "CLOSED": "مغلق",
+        "CONVERTED": "تم التحويل",
+        "ADMITTED": "تم القبول"
+    },
+    "sourceLabel": {
+        "WEBSITE": "الموقع الإلكتروني",
+        "GOOGLE_ADS": "إعلانات جوجل",
+        "FACEBOOK": "فيسبوك",
+        "INSTAGRAM": "إنستغرام",
+        "REFERRAL": "إحالة",
+        "OTHER": "آخر"
+    }
+}

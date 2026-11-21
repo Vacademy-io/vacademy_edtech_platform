@@ -1,0 +1,10 @@
+{
+    "notInPlan": {
+        "title": "This isn't part of your institute's plan",
+        "description": "This feature isn't included in your institute's current plan. Contact your administrator if you need it.",
+        "cta": "Go to dashboard"
+    },
+    "displaySettings": {
+        "managedNote": "Some items are managed by your platform team and aren't shown here."
+    }
+}

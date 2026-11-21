@@ -1,0 +1,31 @@
+{
+    "chart": {
+        "ongoing": "En cours",
+        "pending": "En attente",
+        "attempted": "Tenté"
+    },
+    "info": {
+        "createdOn": "Créé le",
+        "startDateTime": "Date et heure de début",
+        "endDateTime": "Date et heure de fin",
+        "duration": "Durée",
+        "totalParticipants": "Participants au total",
+        "subjectFallback": "N/D"
+    },
+    "durationLabel": {
+        "hoursMinutes": "{{hours}} h {{minutes}} min",
+        "hoursOnly": "{{hours}} h",
+        "minutesOnly": "{{minutes}} min"
+    },
+    "stats": {
+        "avgDuration": "Durée moyenne",
+        "avgDurationUnit": "min",
+        "avgMarks": "Note moyenne"
+    },
+    "breakdown": {
+        "title": "Répartition de la participation",
+        "total_one": "{{count}} au total",
+        "total_many": "{{count}} au total",
+        "total_other": "{{count}} au total"
+    }
+}

@@ -1,4 +1,5 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -14,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import type { TFunction } from 'i18next';
 import {
     createSubOrg,
     createSubOrgWithSubscription,
@@ -79,31 +81,41 @@ const fetchInstituteCpoListLocal = async (
     return response.data;
 };
 
-// Step 1 schema: Sub-Org details
-const step1Schema = z.object({
-    instituteName: z.string().min(1, 'Name is required'),
-    instituteLogoFileId: z.string().optional(),
-});
+// Step 1 schema: Sub-Org details. Built with `t` so the validation message
+// follows the active locale — see the "module-scope constants" convention in
+// the i18n rollout guide (these were previously plain module-level z.object()s).
+const buildStep1Schema = (t: TFunction) =>
+    z.object({
+        instituteName: z
+            .string()
+            .min(1, t('manageCustomTeamsCreateSubOrgModal:validation.nameRequired')),
+        instituteLogoFileId: z.string().optional(),
+    });
 
 // Step 3 schema: Pricing & Seats
-const step3Schema = z.object({
-    paymentType: z.enum(['SUBSCRIPTION', 'ONE_TIME', 'FREE', 'CPO']),
-    actualPrice: z.number().min(0).optional(),
-    elevatedPrice: z.number().min(0).optional(),
-    currency: z.string().optional(),
-    memberCount: z.number().min(1, 'At least 1 seat required'),
-    validityInDays: z.number().min(1, 'Validity must be at least 1 day'),
-    vendor: z.string().optional(),
-    vendorId: z.string().optional(),
-    // Required when paymentType=CPO — picked from the institute's existing CPO list.
-    complexPaymentOptionId: z.string().optional(),
-    // Required for ONE_TIME / SUBSCRIPTION / FREE — picked from the institute's existing
-    // payment options (Payment Settings). The admin pays via this option + its plan.
-    paymentOptionId: z.string().optional(),
-});
+const buildStep3Schema = (t: TFunction) =>
+    z.object({
+        paymentType: z.enum(['SUBSCRIPTION', 'ONE_TIME', 'FREE', 'CPO']),
+        actualPrice: z.number().min(0).optional(),
+        elevatedPrice: z.number().min(0).optional(),
+        currency: z.string().optional(),
+        memberCount: z
+            .number()
+            .min(1, t('manageCustomTeamsCreateSubOrgModal:validation.seatRequired')),
+        validityInDays: z
+            .number()
+            .min(1, t('manageCustomTeamsCreateSubOrgModal:validation.validityRequired')),
+        vendor: z.string().optional(),
+        vendorId: z.string().optional(),
+        // Required when paymentType=CPO — picked from the institute's existing CPO list.
+        complexPaymentOptionId: z.string().optional(),
+        // Required for ONE_TIME / SUBSCRIPTION / FREE — picked from the institute's existing
+        // payment options (Payment Settings). The admin pays via this option + its plan.
+        paymentOptionId: z.string().optional(),
+    });
 
-type Step1Values = z.infer<typeof step1Schema>;
-type Step3Values = z.infer<typeof step3Schema>;
+type Step1Values = z.infer<ReturnType<typeof buildStep1Schema>>;
+type Step3Values = z.infer<ReturnType<typeof buildStep3Schema>>;
 
 interface CreateSubOrgModalProps {
     open: boolean;
@@ -112,6 +124,7 @@ interface CreateSubOrgModalProps {
 }
 
 export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOrgModalProps) {
+    const { t } = useTranslation('manageCustomTeamsCreateSubOrgModal');
     // Institutes rename this concept via Settings → Naming (Channel Partner,
     // Branch, Franchise, VLE …); user-facing labels must follow that.
     const subOrgTerm = getTerminology(OtherTerms.SubOrg, SystemTerms.SubOrg);
@@ -140,6 +153,11 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
     const [selectedAdminPermissions, setSelectedAdminPermissions] = useState<string[]>(['FULL']);
     const [showNewRoleInput, setShowNewRoleInput] = useState(false);
     const [newRoleName, setNewRoleName] = useState('');
+
+    // Schemas are rebuilt on every language change so validation messages stay
+    // in the active locale.
+    const step1Schema = useMemo(() => buildStep1Schema(t), [t]);
+    const step3Schema = useMemo(() => buildStep3Schema(t), [t]);
 
     // Step 1 form
     const step1Form = useForm<Step1Values>({
@@ -266,9 +284,9 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
     const subscriptionMutation = useMutation({
         mutationFn: createSubOrgWithSubscription,
         onSuccess: (data) => {
-            toast.success(`${subOrgTerm} created with subscription`);
+            toast.success(t('toast.createdWithSubscription', { subOrgTerm }));
             if (data.invite_code) {
-                toast.info(`Invite code: ${data.invite_code}`);
+                toast.info(t('toast.inviteCode', { code: data.invite_code }));
             }
             queryClient.invalidateQueries({ queryKey: ['sub-orgs-list', instituteId] });
             resetWizard();
@@ -276,9 +294,7 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
             if (onSuccess) onSuccess();
         },
         onError: (error: any) => {
-            toast.error(
-                error?.response?.data?.message || 'Failed to create sub-organization'
-            );
+            toast.error(error?.response?.data?.message || t('toast.createFailed'));
         },
     });
 
@@ -286,16 +302,14 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
     const simpleMutation = useMutation({
         mutationFn: createSubOrg,
         onSuccess: () => {
-            toast.success(`${subOrgTerm} created successfully`);
+            toast.success(t('toast.createdSuccessfully', { subOrgTerm }));
             queryClient.invalidateQueries({ queryKey: ['sub-orgs-list', instituteId] });
             resetWizard();
             onOpenChange(false);
             if (onSuccess) onSuccess();
         },
         onError: (error: any) => {
-            toast.error(
-                error?.response?.data?.message || 'Failed to create sub-organization'
-            );
+            toast.error(error?.response?.data?.message || t('toast.createFailed'));
         },
     });
 
@@ -303,20 +317,20 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
     const createRoleMutation = useMutation({
         mutationFn: (name: string) => createCustomRole({ name, permissionIds: ['109'] }),
         onSuccess: () => {
-            toast.success('Role created successfully');
+            toast.success(t('toast.roleCreated'));
             queryClient.invalidateQueries({ queryKey: ['roles'] });
             setNewRoleName('');
             setShowNewRoleInput(false);
         },
         onError: (error: any) => {
-            toast.error(error?.response?.data?.message || 'Failed to create role');
+            toast.error(error?.response?.data?.message || t('toast.roleCreateFailed'));
         },
     });
 
     const handleCreateRole = () => {
         const trimmed = newRoleName.trim();
         if (!trimmed) {
-            toast.error('Role name is required');
+            toast.error(t('validation.roleNameRequired'));
             return;
         }
         createRoleMutation.mutate(trimmed);
@@ -361,12 +375,12 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
 
             if (fileId && typeof fileId === 'string') {
                 step1Form.setValue('instituteLogoFileId', fileId);
-                toast.success('Logo uploaded successfully');
+                toast.success(t('logo.uploadSuccess'));
             } else {
-                toast.error('Upload did not return a file ID');
+                toast.error(t('logo.uploadNoFileId'));
             }
         } catch {
-            toast.error('Failed to upload logo');
+            toast.error(t('logo.uploadFailed'));
         }
         e.target.value = '';
     };
@@ -378,7 +392,7 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
 
     const handleStep2Next = () => {
         if (selectedPackageSessionIds.length === 0) {
-            toast.error('Select at least one package session');
+            toast.error(t('validation.selectPackageSession'));
             return;
         }
         setStep(3);
@@ -399,7 +413,7 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
         // CPO needs an explicit picker selection; price/vendor live on the CPO itself.
         if (data.paymentType === 'CPO' && !data.complexPaymentOptionId) {
             toast.error(
-                `Please select a fee structure (CPO) for the ${subOrgTerm.toLowerCase()} subscription`
+                t('validation.selectCpo', { subOrgTerm: subOrgTerm.toLowerCase() })
             );
             return;
         }
@@ -410,7 +424,9 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
             data.paymentType === 'SUBSCRIPTION' ||
             data.paymentType === 'FREE';
         if (reusesOption && !data.paymentOptionId) {
-            toast.error(`Please select a payment option for the ${subOrgTerm.toLowerCase()} admin`);
+            toast.error(
+                t('validation.selectPaymentOption', { subOrgTerm: subOrgTerm.toLowerCase() })
+            );
             return;
         }
 
@@ -460,15 +476,14 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
             <DialogContent className="flex max-h-[90vh] w-[95vw] flex-col overflow-hidden max-w-[425px] sm:max-w-[600px] md:max-w-[700px]">
                 <DialogHeader className="shrink-0">
                     <DialogTitle>
-                        {step === 1 && `Create ${getTerminology(OtherTerms.SubOrg, SystemTerms.SubOrg)}`}
-                        {step === 2 && 'Select Package Sessions'}
-                        {step === 3 && 'Pricing & Seats'}
+                        {step === 1 && t('step1.title', { subOrgTerm })}
+                        {step === 2 && t('step2.title')}
+                        {step === 3 && t('step3.title')}
                     </DialogTitle>
                     <DialogDescription>
-                        {step === 1 &&
-                            `Step 1 of 3: ${getTerminology(OtherTerms.SubOrg, SystemTerms.SubOrg)} details`}
-                        {step === 2 && 'Step 2 of 3: Choose courses to assign'}
-                        {step === 3 && 'Step 3 of 3: Configure pricing and seat limits'}
+                        {step === 1 && t('step1.description', { subOrgTerm })}
+                        {step === 2 && t('step2.description')}
+                        {step === 3 && t('step3.description')}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -505,12 +520,12 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
                         >
                             <div className="grid gap-6 sm:grid-cols-2">
                                 <div className="flex flex-col items-center gap-2 sm:col-span-2">
-                                    <Label className="text-sm font-medium">Logo</Label>
+                                    <Label className="text-sm font-medium">{t('logo.label')}</Label>
                                     <div className="relative flex h-28 w-28 flex-col items-center justify-center overflow-hidden rounded-full border border-input bg-muted">
                                         {logoPreview ? (
                                             <img
                                                 src={logoPreview}
-                                                alt="Logo"
+                                                alt={t('logo.alt')}
                                                 className="h-full w-full object-cover"
                                             />
                                         ) : (
@@ -526,7 +541,7 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
                                         className="sr-only"
                                         onChange={handleFileChange}
                                         disabled={isUploading}
-                                        aria-label="Upload logo"
+                                        aria-label={t('logo.ariaLabel')}
                                     />
                                     <Button
                                         type="button"
@@ -540,16 +555,16 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
                                         ) : (
                                             <UploadCloud className="mr-2 h-4 w-4" />
                                         )}
-                                        {isUploading ? 'Uploading...' : 'Upload Logo'}
+                                        {isUploading ? t('logo.uploading') : t('logo.upload')}
                                     </Button>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="name">Name</Label>
+                                    <Label htmlFor="name">{t('step1.nameLabel')}</Label>
                                     <Input
                                         id="name"
                                         {...step1Form.register('instituteName')}
-                                        placeholder={`${getTerminology(OtherTerms.SubOrg, SystemTerms.SubOrg)} Name`}
+                                        placeholder={t('step1.namePlaceholder', { subOrgTerm })}
                                     />
                                     {step1Form.formState.errors.instituteName && (
                                         <p className="text-sm text-destructive">
@@ -564,10 +579,10 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
                                     variant="outline"
                                     onClick={() => onOpenChange(false)}
                                 >
-                                    Cancel
+                                    {t('common.cancel')}
                                 </Button>
                                 <Button type="submit" disabled={isUploading}>
-                                    Next
+                                    {t('common.next')}
                                     <ChevronRight className="ml-1 h-4 w-4" />
                                 </Button>
                             </DialogFooter>
@@ -582,12 +597,12 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
                             {isLoadingSessions && flatRows.length === 0 && (
                                 <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
                                     <Loader2 className="h-4 w-4 animate-spin" />
-                                    Loading package sessions...
+                                    {t('step2.loading')}
                                 </div>
                             )}
                             {!isLoadingSessions && flatRows.length === 0 && (
                                 <p className="py-8 text-center text-sm text-muted-foreground">
-                                    No package sessions found.
+                                    {t('step2.empty')}
                                 </p>
                             )}
                             {(packagesSummary?.packages || []).map(
@@ -631,7 +646,9 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
 
                         {selectedPackageSessionIds.length > 0 && (
                             <p className="text-sm text-muted-foreground">
-                                {selectedPackageSessionIds.length} session(s) selected
+                                {t('step2.selectedCount', {
+                                    count: selectedPackageSessionIds.length,
+                                })}
                             </p>
                         )}
 
@@ -642,7 +659,7 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
                                 onClick={() => setStep(1)}
                             >
                                 <ChevronLeft className="mr-1 h-4 w-4" />
-                                Back
+                                {t('common.back')}
                             </Button>
                             <Button
                                 type="button"
@@ -653,10 +670,10 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
                                 {simpleMutation.isPending && (
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 )}
-                                Skip (No Subscription)
+                                {t('step2.skip')}
                             </Button>
                             <Button type="button" onClick={handleStep2Next}>
-                                Next
+                                {t('common.next')}
                                 <ChevronRight className="ml-1 h-4 w-4" />
                             </Button>
                         </DialogFooter>
@@ -672,7 +689,7 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
                         >
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="space-y-2 sm:col-span-2">
-                                    <Label>Payment Type</Label>
+                                    <Label>{t('step3.paymentTypeLabel')}</Label>
                                     <Select
                                         value={paymentType}
                                         onValueChange={(v) => {
@@ -690,13 +707,17 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="FREE">Free</SelectItem>
-                                            <SelectItem value="ONE_TIME">One-Time</SelectItem>
+                                            <SelectItem value="FREE">
+                                                {t('step3.paymentTypeFree')}
+                                            </SelectItem>
+                                            <SelectItem value="ONE_TIME">
+                                                {t('step3.paymentTypeOneTime')}
+                                            </SelectItem>
                                             <SelectItem value="SUBSCRIPTION">
-                                                Subscription
+                                                {t('step3.paymentTypeSubscription')}
                                             </SelectItem>
                                             <SelectItem value="CPO">
-                                                CPO (Custom Fee Structure)
+                                                {t('step3.paymentTypeCpo')}
                                             </SelectItem>
                                         </SelectContent>
                                     </Select>
@@ -704,11 +725,9 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
 
                                 {paymentType === 'CPO' && (
                                     <div className="space-y-2 sm:col-span-2">
-                                        <Label>Fee Structure (CPO) *</Label>
+                                        <Label>{t('step3.cpoLabel')}</Label>
                                         <p className="text-xs text-muted-foreground">
-                                            The admin who joins via this invite pays the CPO
-                                            installments. Learners ride free under the scoped
-                                            invites.
+                                            {t('step3.cpoDescription')}
                                         </p>
                                         <Select
                                             value={step3Form.watch('complexPaymentOptionId') || ''}
@@ -721,10 +740,10 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
                                                 <SelectValue
                                                     placeholder={
                                                         isLoadingCpos
-                                                            ? 'Loading fee structures...'
+                                                            ? t('step3.cpoLoading')
                                                             : cpoList.length === 0
-                                                              ? 'No active fee structures found'
-                                                              : 'Select a fee structure'
+                                                              ? t('step3.cpoEmpty')
+                                                              : t('step3.cpoPlaceholder')
                                                     }
                                                 />
                                             </SelectTrigger>
@@ -743,11 +762,11 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
                                     paymentType === 'SUBSCRIPTION' ||
                                     paymentType === 'FREE') && (
                                     <div className="space-y-2 sm:col-span-2">
-                                        <Label>Payment Option *</Label>
+                                        <Label>{t('step3.paymentOptionLabel')}</Label>
                                         <p className="text-xs text-muted-foreground">
-                                            The {subOrgTerm.toLowerCase()} admin pays via this existing institute
-                                            payment option. Price &amp; currency come from the
-                                            option&apos;s plan.
+                                            {t('step3.paymentOptionDescription', {
+                                                subOrgTerm: subOrgTerm.toLowerCase(),
+                                            })}
                                         </p>
                                         <Select
                                             value={step3Form.watch('paymentOptionId') || ''}
@@ -763,10 +782,10 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
                                                 <SelectValue
                                                     placeholder={
                                                         isLoadingPaymentOptions
-                                                            ? 'Loading payment options...'
+                                                            ? t('step3.paymentOptionLoading')
                                                             : optionsForType.length === 0
-                                                              ? 'No active option found'
-                                                              : 'Select a payment option'
+                                                              ? t('step3.paymentOptionEmpty')
+                                                              : t('step3.paymentOptionPlaceholder')
                                                     }
                                                 />
                                             </SelectTrigger>
@@ -789,10 +808,11 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
                                         {!isLoadingPaymentOptions &&
                                             optionsForType.length === 0 && (
                                                 <p className="text-sm text-amber-600">
-                                                    No active{' '}
-                                                    {paymentType.replace('_', '-').toLowerCase()}{' '}
-                                                    payment option found. Create one in Payment
-                                                    Settings first.
+                                                    {t('step3.paymentOptionNoneWarning', {
+                                                        type: paymentType
+                                                            .replace('_', '-')
+                                                            .toLowerCase(),
+                                                    })}
                                                 </p>
                                             )}
                                     </div>
@@ -801,10 +821,10 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
                                 {(paymentType === 'ONE_TIME' || paymentType === 'SUBSCRIPTION') && (
                                     <>
                                         <div className="space-y-2 sm:col-span-2">
-                                            <Label>Payment Vendor</Label>
+                                            <Label>{t('step3.vendorLabel')}</Label>
                                             {vendorsList.length === 0 ? (
                                                 <p className="text-sm text-amber-600">
-                                                    No payment vendor configured. Please link a payment vendor in Settings first.
+                                                    {t('step3.vendorNoneConfigured')}
                                                 </p>
                                             ) : vendorsList.length === 1 && vendorsList[0] ? (
                                                 <Input
@@ -822,7 +842,7 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
                                                     }}
                                                 >
                                                     <SelectTrigger>
-                                                        <SelectValue placeholder="Select payment vendor" />
+                                                        <SelectValue placeholder={t('step3.vendorPlaceholder')} />
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                         {vendorsList.map((v) => (
@@ -841,9 +861,9 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
                                 <div className="space-y-2 sm:col-span-2">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <Label>Admin Roles (auth service)</Label>
+                                            <Label>{t('step3.adminRolesLabel')}</Label>
                                             <p className="text-xs text-muted-foreground">
-                                                Roles assigned to users who join via this invite
+                                                {t('step3.adminRolesDescription')}
                                             </p>
                                         </div>
                                         {!showNewRoleInput && (
@@ -854,14 +874,14 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
                                                 onClick={() => setShowNewRoleInput(true)}
                                             >
                                                 <Plus className="mr-1 h-3 w-3" />
-                                                Add New
+                                                {t('step3.addNewRole')}
                                             </Button>
                                         )}
                                     </div>
                                     {showNewRoleInput && (
                                         <div className="flex items-center gap-2">
                                             <Input
-                                                placeholder="Enter role name"
+                                                placeholder={t('step3.roleNamePlaceholder')}
                                                 value={newRoleName}
                                                 onChange={(e) => setNewRoleName(e.target.value)}
                                                 onKeyDown={(e) => {
@@ -882,7 +902,7 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
                                                 {createRoleMutation.isPending ? (
                                                     <Loader2 className="h-3 w-3 animate-spin" />
                                                 ) : (
-                                                    'Create'
+                                                    t('step3.createRole')
                                                 )}
                                             </Button>
                                             <Button
@@ -920,7 +940,7 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
                                         ))}
                                         {rolesList.length === 0 && (
                                             <span className="text-xs text-muted-foreground">
-                                                No roles found
+                                                {t('step3.noRolesFound')}
                                             </span>
                                         )}
                                     </div>
@@ -932,11 +952,11 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
                                     detail modal. */}
                                 <div className="space-y-2 sm:col-span-2">
                                     <div>
-                                        <Label>Allowed team roles</Label>
+                                        <Label>{t('step3.allowedTeamRolesLabel')}</Label>
                                         <p className="text-xs text-muted-foreground">
-                                            Roles the {subOrgTerm.toLowerCase()} admin can pick when adding
-                                            their own team members. Leave empty to allow
-                                            any custom role.
+                                            {t('step3.allowedTeamRolesDescription', {
+                                                subOrgTerm: subOrgTerm.toLowerCase(),
+                                            })}
                                         </p>
                                     </div>
                                     <div className="flex flex-wrap gap-2 rounded-md border p-2">
@@ -960,7 +980,7 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
                                         ))}
                                         {rolesList.length === 0 && (
                                             <span className="text-xs text-muted-foreground">
-                                                No roles found
+                                                {t('step3.noRolesFound')}
                                             </span>
                                         )}
                                     </div>
@@ -972,10 +992,11 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
                                     back to "FULL" server-side. Editable later. */}
                                 <div className="space-y-2 sm:col-span-2">
                                     <div>
-                                        <Label>Admin permissions</Label>
+                                        <Label>{t('step3.adminPermissionsLabel')}</Label>
                                         <p className="text-xs text-muted-foreground">
-                                            What the {subOrgTerm.toLowerCase()} admin can do. Leave empty to
-                                            grant FULL access (default).
+                                            {t('step3.adminPermissionsDescription', {
+                                                subOrgTerm: subOrgTerm.toLowerCase(),
+                                            })}
                                         </p>
                                     </div>
                                     <div className="flex flex-wrap gap-2 rounded-md border p-2">
@@ -1001,13 +1022,13 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label>Seat Limit</Label>
+                                    <Label>{t('step3.seatLimitLabel')}</Label>
                                     <Input
                                         type="number"
                                         {...step3Form.register('memberCount', {
                                             valueAsNumber: true,
                                         })}
-                                        placeholder="10"
+                                        placeholder={t('step3.seatLimitPlaceholder')}
                                     />
                                     {step3Form.formState.errors.memberCount && (
                                         <p className="text-sm text-destructive">
@@ -1016,13 +1037,13 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
                                     )}
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Validity (Days)</Label>
+                                    <Label>{t('step3.validityLabel')}</Label>
                                     <Input
                                         type="number"
                                         {...step3Form.register('validityInDays', {
                                             valueAsNumber: true,
                                         })}
-                                        placeholder="365"
+                                        placeholder={t('step3.validityPlaceholder')}
                                     />
                                     {step3Form.formState.errors.validityInDays && (
                                         <p className="text-sm text-destructive">
@@ -1034,17 +1055,23 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
 
                             {/* Summary */}
                             <div className="rounded-md border bg-muted/50 p-3 text-sm">
-                                <p className="font-medium">Summary</p>
+                                <p className="font-medium">{t('step3.summaryTitle')}</p>
                                 <p>
-                                    Organization: {step1Data?.instituteName}
+                                    {t('step3.summaryOrganization', {
+                                        name: step1Data?.instituteName,
+                                    })}
                                 </p>
                                 <p>
-                                    Package Sessions: {selectedPackageSessionIds.length} selected
+                                    {t('step3.summaryPackageSessions', {
+                                        count: selectedPackageSessionIds.length,
+                                    })}
                                 </p>
                                 <p>
-                                    Payment: {paymentType} | Seats:{' '}
-                                    {step3Form.watch('memberCount')} | Validity:{' '}
-                                    {step3Form.watch('validityInDays')} days
+                                    {t('step3.summaryPayment', {
+                                        type: paymentType,
+                                        seats: step3Form.watch('memberCount'),
+                                        days: step3Form.watch('validityInDays'),
+                                    })}
                                 </p>
                             </div>
 
@@ -1056,13 +1083,13 @@ export function CreateSubOrgModal({ open, onOpenChange, onSuccess }: CreateSubOr
                                     disabled={isPending}
                                 >
                                     <ChevronLeft className="mr-1 h-4 w-4" />
-                                    Back
+                                    {t('common.back')}
                                 </Button>
                                 <Button type="submit" disabled={isPending}>
                                     {isPending && (
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                     )}
-                                    Create {subOrgTerm}
+                                    {t('step3.submit', { subOrgTerm })}
                                 </Button>
                             </DialogFooter>
                         </form>

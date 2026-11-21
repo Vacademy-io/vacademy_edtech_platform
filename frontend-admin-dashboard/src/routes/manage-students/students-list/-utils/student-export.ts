@@ -16,6 +16,7 @@ import { getCustomFieldSettingsFromCache } from '@/services/custom-field-setting
 import { formatCustomFieldValue } from '@/components/design-system/utils/constants/custom-field-columns';
 import { getSystemFieldColumnVisibility } from '@/components/design-system/utils/constants/system-field-columns';
 import { convertToUpperCase } from '@/utils/customFields';
+import type { TFunction } from 'i18next';
 
 export interface ExportContext {
     /** Resolve a package_session_id to its batch (course/level/session) details. */
@@ -30,6 +31,12 @@ export interface ExportColumn {
     group: string;
     /** Whether the column is pre-checked when the dialog opens. */
     defaultSelected: boolean;
+    /**
+     * Write the cell as forced text. Phone numbers are stored as long digit
+     * strings (e.g. 917736011420); written bare, Excel turns them into a number
+     * and shows 9.17736E+11, dropping any leading + or 0.
+     */
+    asText?: boolean;
     getValue: (student: StudentTable, ctx: ExportContext) => string;
 }
 
@@ -41,65 +48,120 @@ const formatDate = (value: unknown): string => {
     return Number.isNaN(date.getTime()) ? str(value) : date.toLocaleDateString();
 };
 
+const PHONE_FIELD_NAMES = new Set(['phone', 'phone number', 'mobile', 'mobile number']);
+
+/**
+ * Ids of the institute's phone custom fields: any field named Phone / Phone
+ * Number / Mobile / Mobile Number, or of type phone. Institutes collect the
+ * phone through these fields on enrol-invite and audience forms, while
+ * imports and admin edits write student.mobile_number, so a learner usually
+ * has the number in only one of the two places. Settings also treats a field
+ * named Phone Number as a system field (SYSTEM_FIELD_NAMES), so it can sit in
+ * fixedFields rather than the custom-field lists.
+ */
+const getPhoneCustomFieldIds = (): Set<string> => {
+    const cache = getCustomFieldSettingsFromCache();
+    if (!cache) return new Set();
+    const fields = [
+        ...cache.fixedFields,
+        ...cache.instituteFields,
+        ...cache.customFields,
+        ...cache.fieldGroups.flatMap((g) => g.fields),
+    ];
+    return new Set(
+        fields
+            .filter(
+                (f) =>
+                    f.id &&
+                    (f.type === 'phone' ||
+                        PHONE_FIELD_NAMES.has((f.name ?? '').trim().toLowerCase()))
+            )
+            .map((f) => f.id)
+    );
+};
+
+/** First non-empty value among the learner's phone custom fields. */
+const phoneFromCustomFields = (student: StudentTable, phoneFieldIds: Set<string>): string => {
+    for (const id of phoneFieldIds) {
+        const value = str(student.custom_fields?.[id]).trim();
+        if (value) return value;
+    }
+    return '';
+};
+
+/**
+ * The learner's phone from wherever it is stored: student.mobile_number
+ * first, then any phone custom field.
+ */
+const learnerPhone = (student: StudentTable, phoneFieldIds: Set<string>): string =>
+    str(student.mobile_number).trim() || phoneFromCustomFields(student, phoneFieldIds);
+
 /**
  * Build the full list of selectable export columns. Headers use the institute's
  * custom terminology and the list ends with one column per custom field.
+ *
+ * Takes the translation function rather than importing the i18next singleton —
+ * this is called from a single dialog component (export-columns-dialog.tsx),
+ * which already loads the 'manageStudentsExportUtil' namespace via useTranslation
+ * and owns the render that consumes these labels.
  */
-export const getStudentExportColumns = (): ExportColumn[] => {
+export const getStudentExportColumns = (t: TFunction): ExportColumn[] => {
     const courseTerm = getTerminology(ContentTerms.Course, SystemTerms.Course);
     const levelTerm = getTerminology(ContentTerms.Level, SystemTerms.Level);
     const sessionTerm = getTerminology(ContentTerms.Session, SystemTerms.Session);
     const learnerTerm = getTerminology('Learner', SystemTerms.Learner);
     const inviteTerm = getTerminology(OtherTerms.Invite, SystemTerms.Invite);
+    const phoneFieldIds = getPhoneCustomFieldIds();
 
     const columns: ExportColumn[] = [
         // Identity
         {
             id: 'full_name',
-            label: `${learnerTerm} Name`,
-            group: 'Identity',
+            label: t('manageStudentsExportUtil:columns.learnerName', { term: learnerTerm }),
+            group: t('manageStudentsExportUtil:groups.identity'),
             defaultSelected: true,
             getValue: (s) => str(s.full_name),
         },
         {
             id: 'institute_enrollment_number',
-            label: 'Enrollment Number',
-            group: 'Identity',
+            label: t('manageStudentsExportUtil:columns.enrollmentNumber'),
+            group: t('manageStudentsExportUtil:groups.identity'),
             defaultSelected: true,
             getValue: (s) => str(s.institute_enrollment_number ?? s.institute_enrollment_id),
         },
         {
             id: 'username',
-            label: 'Username',
-            group: 'Identity',
+            label: t('manageStudentsExportUtil:columns.username'),
+            group: t('manageStudentsExportUtil:groups.identity'),
             defaultSelected: true,
             getValue: (s) => str(s.username),
         },
         {
             id: 'email',
-            label: 'Email',
-            group: 'Identity',
+            label: t('manageStudentsExportUtil:columns.email'),
+            group: t('manageStudentsExportUtil:groups.identity'),
             defaultSelected: true,
             getValue: (s) => str(s.email),
         },
         {
             id: 'mobile_number',
-            label: 'Mobile Number',
-            group: 'Identity',
+            label: t('manageStudentsExportUtil:columns.mobileNumber'),
+            group: t('manageStudentsExportUtil:groups.identity'),
             defaultSelected: true,
-            getValue: (s) => str(s.mobile_number),
+            asText: true,
+            getValue: (s) => learnerPhone(s, phoneFieldIds),
         },
         {
             id: 'gender',
-            label: 'Gender',
-            group: 'Identity',
+            label: t('manageStudentsExportUtil:columns.gender'),
+            group: t('manageStudentsExportUtil:groups.identity'),
             defaultSelected: true,
             getValue: (s) => str(s.gender),
         },
         {
             id: 'date_of_birth',
-            label: 'Date of Birth',
-            group: 'Identity',
+            label: t('manageStudentsExportUtil:columns.dateOfBirth'),
+            group: t('manageStudentsExportUtil:groups.identity'),
             defaultSelected: false,
             getValue: (s) => str(s.date_of_birth),
         },
@@ -127,14 +189,14 @@ export const getStudentExportColumns = (): ExportColumn[] => {
         },
         {
             id: 'status',
-            label: 'Status',
+            label: t('manageStudentsExportUtil:columns.status'),
             group: `${courseTerm} / ${levelTerm} / ${sessionTerm}`,
             defaultSelected: true,
             getValue: (s) => str(s.status),
         },
         {
             id: 'expiry_date',
-            label: `${sessionTerm} Expiry Date`,
+            label: t('manageStudentsExportUtil:columns.sessionExpiryDate', { term: sessionTerm }),
             group: `${courseTerm} / ${levelTerm} / ${sessionTerm}`,
             defaultSelected: false,
             getValue: (s) => formatDate(s.expiry_date),
@@ -149,108 +211,110 @@ export const getStudentExportColumns = (): ExportColumn[] => {
         // Contact & address
         {
             id: 'address_line',
-            label: 'Address',
-            group: 'Contact & Address',
+            label: t('manageStudentsExportUtil:columns.address'),
+            group: t('manageStudentsExportUtil:groups.contactAddress'),
             defaultSelected: false,
             getValue: (s) => str(s.address_line),
         },
         {
             id: 'city',
-            label: 'City',
-            group: 'Contact & Address',
+            label: t('manageStudentsExportUtil:columns.city'),
+            group: t('manageStudentsExportUtil:groups.contactAddress'),
             defaultSelected: false,
             getValue: (s) => str(s.city),
         },
         {
             id: 'region',
-            label: 'State',
-            group: 'Contact & Address',
+            label: t('manageStudentsExportUtil:columns.state'),
+            group: t('manageStudentsExportUtil:groups.contactAddress'),
             defaultSelected: false,
             getValue: (s) => str(s.region),
         },
         {
             id: 'country',
-            label: 'Country',
-            group: 'Contact & Address',
+            label: t('manageStudentsExportUtil:columns.country'),
+            group: t('manageStudentsExportUtil:groups.contactAddress'),
             defaultSelected: false,
             getValue: (s) => str(s.country),
         },
         {
             id: 'pin_code',
-            label: 'Pin Code',
-            group: 'Contact & Address',
+            label: t('manageStudentsExportUtil:columns.pinCode'),
+            group: t('manageStudentsExportUtil:groups.contactAddress'),
             defaultSelected: false,
             getValue: (s) => str(s.pin_code),
         },
         {
             id: 'linked_institute_name',
-            label: 'College / School',
-            group: 'Contact & Address',
+            label: t('manageStudentsExportUtil:columns.collegeSchool'),
+            group: t('manageStudentsExportUtil:groups.contactAddress'),
             defaultSelected: false,
             getValue: (s) => str(s.linked_institute_name),
         },
         // Guardian
         {
             id: 'fathers_name',
-            label: "Father / Male Guardian's Name",
-            group: 'Guardian',
+            label: t('manageStudentsExportUtil:columns.fatherName'),
+            group: t('manageStudentsExportUtil:groups.guardian'),
             defaultSelected: false,
             getValue: (s) => str(s.fathers_name),
         },
         {
             id: 'parents_mobile_number',
-            label: "Father / Male Guardian's Mobile",
-            group: 'Guardian',
+            label: t('manageStudentsExportUtil:columns.fatherMobile'),
+            group: t('manageStudentsExportUtil:groups.guardian'),
             defaultSelected: false,
+            asText: true,
             getValue: (s) => str(s.parents_mobile_number),
         },
         {
             id: 'parents_email',
-            label: "Father / Male Guardian's Email",
-            group: 'Guardian',
+            label: t('manageStudentsExportUtil:columns.fatherEmail'),
+            group: t('manageStudentsExportUtil:groups.guardian'),
             defaultSelected: false,
             getValue: (s) => str(s.parents_email),
         },
         {
             id: 'mothers_name',
-            label: "Mother / Female Guardian's Name",
-            group: 'Guardian',
+            label: t('manageStudentsExportUtil:columns.motherName'),
+            group: t('manageStudentsExportUtil:groups.guardian'),
             defaultSelected: false,
             getValue: (s) => str(s.mothers_name),
         },
         {
             id: 'parents_to_mother_mobile_number',
-            label: "Mother / Female Guardian's Mobile",
-            group: 'Guardian',
+            label: t('manageStudentsExportUtil:columns.motherMobile'),
+            group: t('manageStudentsExportUtil:groups.guardian'),
             defaultSelected: false,
+            asText: true,
             getValue: (s) => str(s.parents_to_mother_mobile_number),
         },
         {
             id: 'parents_to_mother_email',
-            label: "Mother / Female Guardian's Email",
-            group: 'Guardian',
+            label: t('manageStudentsExportUtil:columns.motherEmail'),
+            group: t('manageStudentsExportUtil:groups.guardian'),
             defaultSelected: false,
             getValue: (s) => str(s.parents_to_mother_email),
         },
         // Other
         {
             id: 'attendance_percent',
-            label: 'Attendance %',
-            group: 'Other',
+            label: t('manageStudentsExportUtil:columns.attendancePercent'),
+            group: t('manageStudentsExportUtil:groups.other'),
             defaultSelected: false,
             getValue: (s) => str(s.attendance_percent),
         },
         {
             id: 'referral_count',
-            label: 'Referrals Count',
-            group: 'Other',
+            label: t('manageStudentsExportUtil:columns.referralsCount'),
+            group: t('manageStudentsExportUtil:groups.other'),
             defaultSelected: false,
             getValue: (s) => str(s.referral_count),
         },
         {
             id: 'created_at',
-            label: 'Created At',
-            group: 'Other',
+            label: t('manageStudentsExportUtil:columns.createdAt'),
+            group: t('manageStudentsExportUtil:groups.other'),
             defaultSelected: false,
             getValue: (s) => formatDate(s.created_at),
         },
@@ -275,10 +339,20 @@ export const getStudentExportColumns = (): ExportColumn[] => {
             columns.push({
                 id: `custom_${field.id}`,
                 label: convertToUpperCase(field.name),
-                group: 'Custom Fields',
+                group: t('manageStudentsExportUtil:groups.customFields'),
                 defaultSelected: true,
-                getValue: (s) =>
-                    formatCustomFieldValue(str(s.custom_fields?.[field.id]), field.type),
+                asText: phoneFieldIds.has(field.id),
+                // A phone column falls back to the learner's phone stored
+                // elsewhere (usually student.mobile_number) when this field is
+                // empty, so the column is not blank for learners who gave
+                // their number through another path.
+                getValue: (s) => {
+                    const raw = str(s.custom_fields?.[field.id]);
+                    if (phoneFieldIds.has(field.id) && !raw.trim()) {
+                        return learnerPhone(s, phoneFieldIds);
+                    }
+                    return formatCustomFieldValue(raw, field.type);
+                },
             });
         }
     }
@@ -299,6 +373,17 @@ const escapeCsvCell = (value: string): string => {
     return value;
 };
 
+/**
+ * Wrap a value as an Excel text formula (="...") so spreadsheet apps keep it
+ * verbatim instead of coercing it to a number. Excel, Google Sheets and
+ * LibreOffice all evaluate it to the plain string. Empty and placeholder
+ * values are left as they are.
+ */
+const asTextCell = (value: string): string => {
+    if (!value || value === '-') return value;
+    return `="${value.replace(/"/g, '""')}"`;
+};
+
 /** Build a CSV string (with BOM for Excel) from students and the selected columns. */
 export const buildStudentsCsv = (
     students: StudentTable[],
@@ -307,7 +392,12 @@ export const buildStudentsCsv = (
 ): string => {
     const header = columns.map((c) => escapeCsvCell(c.label)).join(',');
     const rows = students.map((student) =>
-        columns.map((c) => escapeCsvCell(c.getValue(student, ctx))).join(',')
+        columns
+            .map((c) => {
+                const value = c.getValue(student, ctx);
+                return escapeCsvCell(c.asText ? asTextCell(value) : value);
+            })
+            .join(',')
     );
     // Prefix a BOM so Excel opens the UTF-8 CSV with correct encoding.
     return '﻿' + [header, ...rows].join('\r\n');

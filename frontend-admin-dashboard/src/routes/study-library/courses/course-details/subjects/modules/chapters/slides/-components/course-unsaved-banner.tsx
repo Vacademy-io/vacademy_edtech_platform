@@ -7,6 +7,7 @@
  * grouped drafts dialog (subject → module → chapter → slide, jump links).
  */
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Warning, CaretRight } from '@phosphor-icons/react';
 import { getDraftUserId, useSlideDrafts } from '../-hooks/use-slide-drafts';
 import { UnsavedDraftsDialog } from './unsaved-drafts-dialog';
@@ -14,6 +15,7 @@ import { getTerminology } from '@/components/common/layout-container/sidebar/uti
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 export const CourseUnsavedBanner = ({ courseId }: { courseId: string }) => {
+    const { t } = useTranslation('studyLibraryCourseUnsavedBanner');
     const [userId] = useState<string>(() => getDraftUserId());
     const { drafts } = useSlideDrafts(userId, courseId);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -32,11 +34,13 @@ export const CourseUnsavedBanner = ({ courseId }: { courseId: string }) => {
             >
                 <Warning weight="fill" className="size-4 shrink-0 text-warning-600" />
                 <span className="flex-1 text-xs font-semibold text-neutral-700">
-                    {drafts.length} unsaved in this{' '}
-                    {getTerminology(ContentTerms.Course, SystemTerms.Course).toLowerCase()}
+                    {t('unsavedInCourse', {
+                        count: drafts.length,
+                        course: getTerminology(ContentTerms.Course, SystemTerms.Course).toLowerCase(),
+                    })}
                 </span>
                 <span className="flex items-center gap-0.5 text-xs font-bold text-warning-600">
-                    Review
+                    {t('review')}
                     <CaretRight className="size-3" weight="bold" />
                 </span>
             </button>

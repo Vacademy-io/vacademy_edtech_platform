@@ -1,0 +1,10 @@
+{
+    "viewDetails": "विवरण देखें",
+    "editLiveSession": "लाइव सेशन संपादित करें",
+    "deleteLiveSession": "लाइव सेशन हटाएँ",
+    "startDateTime": "प्रारंभ दिनांक और समय:",
+    "lastEntry": "अंतिम प्रवेश:",
+    "meetingType": "मीटिंग प्रकार:",
+    "joinLink": "जॉइन लिंक:",
+    "notAvailable": "उपलब्ध नहीं"
+}

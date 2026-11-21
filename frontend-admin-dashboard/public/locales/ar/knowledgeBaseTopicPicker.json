@@ -1,0 +1,26 @@
+{
+    "emptySelection": "لم يتم تحديد شيء — ستستمد الورقة من كل شيء.",
+    "selectedCount_zero": "تم تحديد {{count}} من {{total}}",
+    "selectedCount_one": "تم تحديد موضوع فرعي واحد من {{total}}",
+    "selectedCount_two": "تم تحديد موضوعين فرعيين من {{total}}",
+    "selectedCount_few": "تم تحديد {{count}} مواضيع فرعية من {{total}}",
+    "selectedCount_many": "تم تحديد {{count}} موضوعًا فرعيًا من {{total}}",
+    "selectedCount_other": "تم تحديد {{count}} من {{total}} مواضيع فرعية",
+    "actions": {
+        "clearAll": "مسح الكل",
+        "selectAll": "تحديد الكل"
+    },
+    "selectTopicAriaLabel": "تحديد {{title}}",
+    "subtopicsPartial_zero": "{{count}} من {{total}}",
+    "subtopicsPartial_one": "موضوع فرعي واحد من {{total}}",
+    "subtopicsPartial_two": "موضوعان فرعيان من {{total}}",
+    "subtopicsPartial_few": "{{count}} مواضيع فرعية من {{total}}",
+    "subtopicsPartial_many": "{{count}} موضوعًا فرعيًا من {{total}}",
+    "subtopicsPartial_other": "{{count}} من {{total}} مواضيع فرعية",
+    "subtopicsTotal_zero": "{{count}} موضوع فرعي",
+    "subtopicsTotal_one": "موضوع فرعي واحد",
+    "subtopicsTotal_two": "موضوعان فرعيان",
+    "subtopicsTotal_few": "{{count}} مواضيع فرعية",
+    "subtopicsTotal_many": "{{count}} موضوعًا فرعيًا",
+    "subtopicsTotal_other": "{{count}} موضوع فرعي"
+}

@@ -38,7 +38,7 @@ export function LoadingState({ variant = "list", count = 4, className }: Loading
         aria-live="polite"
       >
         {Array.from({ length: count }).map((_, i) => (
-          <div key={i} className="flex flex-col gap-3 rounded-xl border border-border p-4">
+          <div key={i} className="flex flex-col gap-stack rounded-xl border border-border p-4">
             <Skeleton className="h-32 w-full rounded-lg" />
             <Skeleton className="h-4 w-3/4" />
             <Skeleton className="h-3 w-1/2" />
@@ -55,7 +55,7 @@ export function LoadingState({ variant = "list", count = 4, className }: Loading
           <Skeleton className="h-7 w-48" />
           <Skeleton className="h-4 w-72" />
         </div>
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-stack">
           {Array.from({ length: count }).map((_, i) => (
             <Skeleton key={i} className="h-16 w-full rounded-lg" />
           ))}

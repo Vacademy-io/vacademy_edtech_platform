@@ -1,0 +1,15 @@
+{
+    "columnsLayout": "Disposition en colonnes",
+    "columnsCount_one": "{{count}} colonne",
+    "columnsCount_many": "{{count}} de colonnes",
+    "columnsCount_other": "{{count}} colonnes",
+    "gapTight": "Serré",
+    "gapNormal": "Normal",
+    "gapWide": "Large",
+    "gapExtraWide": "Très large",
+    "preview": "Aperçu",
+    "edit": "Modifier",
+    "columnLabel": "Colonne {{number}}",
+    "columnPlaceholder": "Colonne {{number}} — texte et/ou image…",
+    "emptyColumn": "Colonne vide"
+}

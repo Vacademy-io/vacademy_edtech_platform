@@ -1,0 +1,15 @@
+{
+    "heading": {
+        "title": "Liste des demandes d'inscription"
+    },
+    "search": {
+        "placeholder": "Rechercher par nom, inscription..."
+    },
+    "filters": {
+        "gender": "Genre",
+        "preferredBatch": "Groupe préféré",
+        "paymentStatus": "Statut du paiement",
+        "approvalStatus": "Statut d'approbation",
+        "paymentOption": "Option de paiement"
+    }
+}

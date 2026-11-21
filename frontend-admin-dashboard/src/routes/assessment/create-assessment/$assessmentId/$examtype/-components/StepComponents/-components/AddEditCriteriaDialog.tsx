@@ -2,8 +2,9 @@ import { MyButton } from '@/components/design-system/button';
 import { MyDialog } from '@/components/design-system/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sparkle, PencilSimple, FileText, Plus, Minus } from '@phosphor-icons/react';
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState, type ComponentProps } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import {
     CriteriaJson,
     CriteriaItem,
@@ -17,10 +18,42 @@ import {
 } from '../../../-services/criteria-services';
 import { FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { MyInput } from '@/components/design-system/input';
+import { MyLabel } from '@/components/design-system/my-label';
+import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 import SelectField from '@/components/design-system/select-field';
 import { toast } from 'sonner';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
+
+/** A textarea as tall as its text, so a long criterion description reads in full without scrolling. */
+const AutoGrowTextarea = ({ value, className, ...props }: ComponentProps<typeof Textarea>) => {
+    const ref = useRef<HTMLTextAreaElement>(null);
+    useLayoutEffect(() => {
+        const fit = () => {
+            const el = ref.current;
+            if (!el) return;
+            el.style.height = 'auto';
+            // Not laid out (hidden): keep the rows height rather than collapse to nothing.
+            if (!el.scrollHeight) return;
+            // scrollHeight leaves out the border, which the border-box height includes.
+            el.style.height = `${el.scrollHeight + el.offsetHeight - el.clientHeight}px`;
+        };
+        fit();
+        // A narrower box (a phone turned upright) wraps into more lines.
+        window.addEventListener('resize', fit);
+        return () => window.removeEventListener('resize', fit);
+    }, [value]);
+    return (
+        <Textarea
+            rows={2}
+            {...props}
+            ref={ref}
+            value={value}
+            className={cn('resize-none overflow-hidden leading-relaxed', className)}
+        />
+    );
+};
 
 interface QuestionData {
     id?: string;
@@ -34,7 +67,8 @@ interface AddEditCriteriaDialogProps {
     question: QuestionData;
     existingCriteria?: CriteriaJson;
     open: boolean;
-    onSave: (criteria: CriteriaJson, source: CriteriaSource) => void;
+    /** Return a promise when saving to the server: it reports the result and a failed save keeps the editor open. */
+    onSave: (criteria: CriteriaJson, source: CriteriaSource) => void | Promise<unknown>;
     onClose: () => void;
 }
 
@@ -45,6 +79,7 @@ export const AddEditCriteriaDialog = ({
     onSave,
     onClose,
 }: AddEditCriteriaDialogProps) => {
+    const { t } = useTranslation('assessmentAddEditCriteriaDialog');
     const [selectedTab, setSelectedTab] = useState<'ai' | 'manual' | 'template'>('manual');
     const [aiGeneratedCriteria, setAiGeneratedCriteria] = useState<CriteriaJson | null>(null);
     const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
@@ -52,6 +87,7 @@ export const AddEditCriteriaDialog = ({
         existingCriteria?.criteria || [{ name: '', description: '', max_marks: 0 }]
     );
     const [saveAsTemplate, setSaveAsTemplate] = useState<boolean>(false);
+    const [saving, setSaving] = useState(false);
 
     // Generate AI Criteria Mutation
     const generateMutation = useMutation({
@@ -64,10 +100,10 @@ export const AddEditCriteriaDialog = ({
             }),
         onSuccess: (data) => {
             setAiGeneratedCriteria(data);
-            toast.success('Criteria generated successfully!');
+            toast.success(t('toasts.criteriaGenerated'));
         },
         onError: () => {
-            toast.error('Failed to generate criteria. Please try again.');
+            toast.error(t('toasts.generateFailed'));
         },
     });
 
@@ -86,10 +122,10 @@ export const AddEditCriteriaDialog = ({
     const createTemplateMutation = useMutation({
         mutationFn: createCriteriaTemplate,
         onSuccess: () => {
-            toast.success('Criteria saved as template!');
+            toast.success(t('toasts.templateSaved'));
         },
         onError: () => {
-            toast.error('Failed to save template');
+            toast.error(t('toasts.templateSaveFailed'));
         },
     });
 
@@ -105,7 +141,7 @@ export const AddEditCriteriaDialog = ({
             const validation = validateCriteriaMarks(totalMarks, question.max_marks);
 
             if (!validation.isValid) {
-                toast.error(validation.message || 'Invalid marks distribution');
+                toast.error(validation.message || t('toasts.invalidMarksDistribution'));
                 return;
             }
 
@@ -132,19 +168,30 @@ export const AddEditCriteriaDialog = ({
                 }
             }
         } else if (selectedTab === 'template' && selectedTemplate) {
-            const template = templates.find((t) => t.id === selectedTemplate);
-            if (template) {
-                criteriaToSave = template.criteriaJson;
+            const matchedTemplate = templates.find((tpl) => tpl.id === selectedTemplate);
+            if (matchedTemplate) {
+                criteriaToSave = matchedTemplate.criteriaJson;
                 source = 'template';
             }
         }
 
         if (criteriaToSave) {
-            onSave(criteriaToSave, source);
+            const pending = onSave(criteriaToSave, source);
+            if (pending) {
+                setSaving(true);
+                try {
+                    await pending;
+                } catch {
+                    setSaving(false);
+                    return;
+                }
+                onClose();
+                return;
+            }
             onClose();
-            toast.success('Criteria saved successfully!');
+            toast.success(t('toasts.criteriaSaved'));
         } else {
-            toast.error('Please complete the criteria before saving');
+            toast.error(t('toasts.incompleteCriteria'));
         }
     };
 
@@ -169,15 +216,21 @@ export const AddEditCriteriaDialog = ({
         <MyDialog
             open={open}
             onOpenChange={onClose}
-            heading={`${existingCriteria ? 'Edit' : 'Add'} Evaluation Criteria`}
+            heading={existingCriteria ? t('dialog.headingEdit') : t('dialog.headingAdd')}
             dialogWidth="max-w-3xl"
             footer={
                 <>
                     <MyButton type="button" scale="large" buttonType="secondary" onClick={onClose}>
-                        Cancel
+                        {t('footer.cancel')}
                     </MyButton>
-                    <MyButton type="button" scale="large" buttonType="primary" onClick={handleSave}>
-                        Save Criteria
+                    <MyButton
+                        type="button"
+                        scale="large"
+                        buttonType="primary"
+                        disabled={saving}
+                        onClick={handleSave}
+                    >
+                        {t('footer.save')}
                     </MyButton>
                 </>
             }
@@ -185,10 +238,10 @@ export const AddEditCriteriaDialog = ({
             {/* Question Info */}
             <div className="mb-4 rounded-md border border-neutral-200 bg-neutral-50 p-4">
                 <p className="text-sm text-neutral-600">
-                    <strong>Question Type:</strong> {question.question_type}
+                    <strong>{t('questionInfo.typeLabel')}</strong> {question.question_type}
                 </p>
                 <p className="text-sm text-neutral-600">
-                    <strong>Max Marks:</strong> {question.max_marks}
+                    <strong>{t('questionInfo.maxMarksLabel')}</strong> {question.max_marks}
                 </p>
             </div>
 
@@ -199,17 +252,21 @@ export const AddEditCriteriaDialog = ({
                 className="flex flex-1 flex-col overflow-hidden"
             >
                 <TabsList className="grid w-full grid-cols-3 bg-neutral-100">
-                    <TabsTrigger value="manual" className="flex items-center gap-2">
-                        <PencilSimple size={16} weight="bold" />
-                        Manual
+                    <TabsTrigger value="manual" className="flex items-center gap-2 px-2 sm:px-3">
+                        <PencilSimple
+                            size={16}
+                            weight="bold"
+                            className="hidden shrink-0 sm:block"
+                        />
+                        {t('tabs.manual')}
                     </TabsTrigger>
-                    <TabsTrigger value="ai" className="flex items-center gap-2">
-                        <Sparkle size={16} weight="fill" />
-                        AI Generate
+                    <TabsTrigger value="ai" className="flex items-center gap-2 px-2 sm:px-3">
+                        <Sparkle size={16} weight="fill" className="hidden shrink-0 sm:block" />
+                        {t('tabs.ai')}
                     </TabsTrigger>
-                    <TabsTrigger value="template" className="flex items-center gap-2">
-                        <FileText size={16} weight="fill" />
-                        Use Template
+                    <TabsTrigger value="template" className="flex items-center gap-2 px-2 sm:px-3">
+                        <FileText size={16} weight="fill" className="hidden shrink-0 sm:block" />
+                        {t('tabs.template')}
                     </TabsTrigger>
                 </TabsList>
 
@@ -223,50 +280,67 @@ export const AddEditCriteriaDialog = ({
                             >
                                 <div className="flex items-center justify-between">
                                     <h4 className="font-medium text-neutral-700">
-                                        Criteria {index + 1}
+                                        {t('manual.criteriaHeading', { index: index + 1 })}
                                     </h4>
                                     {manualCriteria.length > 1 && (
                                         <button
+                                            type="button"
                                             onClick={() => removeManualCriteriaRow(index)}
-                                            className="text-red-500 hover:text-red-700"
+                                            className="rounded-md p-1 text-danger-500 hover:bg-danger-50 hover:text-danger-700"
                                         >
                                             <Minus size={20} />
                                         </button>
                                     )}
                                 </div>
-                                <MyInput
-                                    inputType="text"
-                                    inputPlaceholder="e.g., Content Quality"
-                                    label="Criteria Name"
-                                    input={item.name}
-                                    onChangeFunction={(e) =>
-                                        updateManualCriteria(index, 'name', e.target.value)
-                                    }
-                                    required
-                                />
-                                <MyInput
-                                    inputType="text"
-                                    inputPlaceholder="e.g., Depth and accuracy of content"
-                                    label="Description"
-                                    input={item.description}
-                                    onChangeFunction={(e) =>
-                                        updateManualCriteria(index, 'description', e.target.value)
-                                    }
-                                />
-                                <MyInput
-                                    inputType="number"
-                                    inputPlaceholder="0"
-                                    label="Max Marks"
-                                    input={String(item.max_marks)}
-                                    onChangeFunction={(e) =>
-                                        updateManualCriteria(
-                                            index,
-                                            'max_marks',
-                                            Number(e.target.value)
-                                        )
-                                    }
-                                    required
-                                />
+                                {/* Name and marks share a row from sm up; the description gets the full width. */}
+                                <div className="grid gap-3 sm:grid-cols-4">
+                                    <div className="sm:col-span-3">
+                                        <MyInput
+                                            inputType="text"
+                                            inputPlaceholder={t('manual.namePlaceholder')}
+                                            label={t('manual.nameLabel')}
+                                            input={item.name}
+                                            onChangeFunction={(e) =>
+                                                updateManualCriteria(index, 'name', e.target.value)
+                                            }
+                                            // MyInput caps itself at sm:w-60; only a same-breakpoint class lifts it.
+                                            className="sm:w-full"
+                                            required
+                                        />
+                                    </div>
+                                    <MyInput
+                                        inputType="number"
+                                        inputPlaceholder={t('manual.maxMarksPlaceholder')}
+                                        label={t('manual.maxMarksLabel')}
+                                        input={String(item.max_marks)}
+                                        onChangeFunction={(e) =>
+                                            updateManualCriteria(
+                                                index,
+                                                'max_marks',
+                                                Number(e.target.value)
+                                            )
+                                        }
+                                        className="sm:w-full"
+                                        required
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                    <MyLabel htmlFor={`criteria-description-${index}`}>
+                                        {t('manual.descriptionLabel')}
+                                    </MyLabel>
+                                    <AutoGrowTextarea
+                                        id={`criteria-description-${index}`}
+                                        placeholder={t('manual.descriptionPlaceholder')}
+                                        value={item.description ?? ''}
+                                        onChange={(e) =>
+                                            updateManualCriteria(
+                                                index,
+                                                'description',
+                                                e.target.value
+                                            )
+                                        }
+                                    />
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -277,7 +351,7 @@ export const AddEditCriteriaDialog = ({
                         onClick={addManualCriteriaRow}
                     >
                         <Plus size={16} className="mr-2" />
-                        Add Criteria
+                        {t('manual.addCriteria')}
                     </MyButton>
 
                     {/* Save as Template Checkbox */}
@@ -293,8 +367,10 @@ export const AddEditCriteriaDialog = ({
                             htmlFor="saveAsTemplate"
                             className="cursor-pointer text-sm font-medium text-primary-700"
                         >
-                            Save as template for reuse ({question.question_type} -{' '}
-                            {question.max_marks} marks)
+                            {t('manual.saveAsTemplateLabel', {
+                                questionType: question.question_type,
+                                count: question.max_marks,
+                            })}
                         </label>
                     </div>
 
@@ -304,8 +380,13 @@ export const AddEditCriteriaDialog = ({
                         <p
                             className={`text-sm font-medium ${isManualValid ? 'text-green-700' : 'text-yellow-700'}`}
                         >
-                            Total: {manualTotalMarks} / {question.max_marks} marks
-                            {isManualValid ? ' ✓' : ' (must match question marks)'}
+                            {t('manual.totalMarks', {
+                                achieved: manualTotalMarks,
+                                count: question.max_marks,
+                            })}
+                            {isManualValid
+                                ? t('manual.totalMarksValidSuffix')
+                                : t('manual.totalMarksInvalidSuffix')}
                         </p>
                     </div>
                 </TabsContent>
@@ -318,7 +399,7 @@ export const AddEditCriteriaDialog = ({
                         <>
                             <div className="rounded-md border border-green-200 bg-green-50 p-3">
                                 <p className="text-sm font-medium text-green-700">
-                                    ✓ Criteria generated successfully!
+                                    {t('ai.generatedBanner')}
                                 </p>
                             </div>
                             <div className="space-y-3">
@@ -337,7 +418,7 @@ export const AddEditCriteriaDialog = ({
                                                 </p>
                                             </div>
                                             <span className="ml-3 rounded-md bg-primary-50 px-2 py-1 text-sm font-semibold text-primary-600">
-                                                {item.max_marks} marks
+                                                {t('ai.marksBadge', { count: item.max_marks })}
                                             </span>
                                         </div>
                                     </div>
@@ -352,15 +433,13 @@ export const AddEditCriteriaDialog = ({
                                     generateMutation.mutate();
                                 }}
                             >
-                                Regenerate
+                                {t('ai.regenerate')}
                             </MyButton>
                         </>
                     ) : (
                         <div className="flex flex-col items-center justify-center py-8">
                             <Sparkle size={48} weight="fill" className="mb-4 text-primary-400" />
-                            <p className="mb-4 text-neutral-600">
-                                Let AI generate evaluation criteria for this question
-                            </p>
+                            <p className="mb-4 text-neutral-600">{t('ai.emptyPrompt')}</p>
                             <MyButton
                                 type="button"
                                 scale="large"
@@ -368,7 +447,7 @@ export const AddEditCriteriaDialog = ({
                                 onClick={() => generateMutation.mutate()}
                             >
                                 <Sparkle size={16} weight="fill" className="mr-2" />
-                                Generate with AI
+                                {t('ai.generateButton')}
                             </MyButton>
                         </div>
                     )}
@@ -381,13 +460,13 @@ export const AddEditCriteriaDialog = ({
                     ) : templates.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-8">
                             <FileText size={48} className="mb-4 text-neutral-300" />
-                            <p className="text-neutral-500">
-                                No templates found for this question type
-                            </p>
+                            <p className="text-neutral-500">{t('template.emptyState')}</p>
                         </div>
                     ) : (
                         <>
-                            <p className="text-sm text-neutral-600">Select a template to use:</p>
+                            <p className="text-sm text-neutral-600">
+                                {t('template.selectPrompt')}
+                            </p>
                             <div className="space-y-2">
                                 {templates.map((template) => (
                                     <div
@@ -406,8 +485,13 @@ export const AddEditCriteriaDialog = ({
                                             {template.description}
                                         </p>
                                         <p className="mt-2 text-xs text-neutral-500">
-                                            {template.criteriaJson.criteria.length} criteria •{' '}
-                                            {template.criteriaJson.max_marks} marks
+                                            {t('template.criteriaCount', {
+                                                count: template.criteriaJson.criteria.length,
+                                            })}{' '}
+                                            •{' '}
+                                            {t('template.marksCount', {
+                                                count: template.criteriaJson.max_marks,
+                                            })}
                                         </p>
                                     </div>
                                 ))}

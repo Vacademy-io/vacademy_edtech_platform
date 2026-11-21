@@ -1,0 +1,12 @@
+{
+    "requiredDocuments": "आवश्यक दस्तावेज़",
+    "supportedFormats": "समर्थित: JPG, PNG, PDF (अधिकतम 2MB)",
+    "upload": "अपलोड करें",
+    "documents": {
+        "photo": "पासपोर्ट साइज़ फोटो",
+        "birthCert": "जन्म प्रमाण पत्र",
+        "aadhar": "आधार कार्ड",
+        "tc": "स्थानांतरण प्रमाण पत्र",
+        "reportCard": "पिछला रिपोर्ट कार्ड"
+    }
+}

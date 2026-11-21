@@ -1,0 +1,46 @@
+{
+    "header": {
+        "title": "إعادة استخدام أسئلة موجودة",
+        "subtitle": "أفلت ورقة أسئلة (PDF أو Word أو PowerPoint). سنستخرج الأسئلة ونحوّلها إلى مجموعة قابلة للتعديل."
+    },
+    "dropzone": {
+        "instruction": "أفلت ورقة الأسئلة هنا، أو انقر للاختيار",
+        "hint": "ملف PDF أو Word أو PowerPoint يحتوي على أسئلة موجودة."
+    },
+    "fileCard": {
+        "removeAriaLabel": "إزالة الملف",
+        "status": {
+            "uploading": "جارٍ الرفع…",
+            "processing": "جارٍ القراءة…",
+            "ready": "جاهز للاستخراج",
+            "generating": "جارٍ استخراج الأسئلة",
+            "done": "تم"
+        }
+    },
+    "workingLabel": {
+        "uploading": "جارٍ قراءة ملفك…",
+        "processing": "جارٍ تجهيز مستندك…",
+        "generating": "جارٍ استخراج الأسئلة — يستغرق عادة نحو 30 ثانية."
+    },
+    "generatingState": {
+        "title": "جارٍ استخراج الأسئلة",
+        "subtitle": "جارٍ قراءة الورقة ورقمنة كل سؤال. يستغرق عادة نحو 30 ثانية."
+    },
+    "questionConfig": {
+        "ctaLabel": "استخراج الأسئلة"
+    },
+    "recentFiles": {
+        "title": "عمليات الاستخراج الأخيرة",
+        "emptyHint": "ستظهر عمليات الاستخراج هنا. أفلت ورقة أسئلة أعلاه للبدء.",
+        "fallbackLabel": "استخراج بلا عنوان"
+    },
+    "productName": "Vsmart Extract",
+    "errors": {
+        "unsupportedFormat": "لا يمكننا قراءة ملفات .{{ext}} حاليًا. جرّب PDF أو Word أو PowerPoint.",
+        "uploadFailed": "لم يكتمل الرفع. هل تريد المحاولة مرة أخرى؟",
+        "processFailed": "تعذّرت قراءة هذا الملف. جرّب ملفًا آخر؟",
+        "readFailed": "حدث خطأ ما أثناء قراءة ملفك. حاول مرة أخرى؟",
+        "extractionFailed": "تعذّر إنهاء هذا الاستخراج. هل تريد المحاولة مرة أخرى؟",
+        "generateFailed": "تعذّر استخراج الأسئلة من هذا الملف. جرّب ملفًا آخر؟"
+    }
+}

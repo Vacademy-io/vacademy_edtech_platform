@@ -1,7 +1,6 @@
-import { z } from 'zod';
 import {
     FormValuesStep1Signup,
-    organizationDetailsSignupStep1,
+    OrganizationDetailsSignupStep1Values,
 } from '../onboarding/-components/Step3AddOrgDetails';
 
 export const convertedSignupData = ({
@@ -12,7 +11,7 @@ export const convertedSignupData = ({
 }: {
     searchParams: Record<string, boolean>;
     formData: FormValuesStep1Signup;
-    formDataOrg: z.infer<typeof organizationDetailsSignupStep1>;
+    formDataOrg: OrganizationDetailsSignupStep1Values;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     signupData?: Record<string, any>;
 }) => {

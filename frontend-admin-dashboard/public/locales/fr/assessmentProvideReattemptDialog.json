@@ -1,0 +1,14 @@
+{
+    "dialogHeading": "Accorder une nouvelle tentative",
+    "confirmTitlePrefix": "Voulez-vous vraiment accorder une nouvelle tentative à",
+    "confirmTitleSuffix": " sélectionné(e) ?",
+    "inputLabel": "Nombre de tentatives à accorder",
+    "inputPlaceholder": "1",
+    "inputError": "Entrez un nombre entier compris entre 1 et 20",
+    "doneButton": "Terminé",
+    "toastSuccess_one": "{{count}} tentative accordée au(x) participant(s) sélectionné(s).",
+    "toastSuccess_many": "{{count}} tentatives accordées au(x) participant(s) sélectionné(s).",
+    "toastSuccess_other": "{{count}} tentatives accordées au(x) participant(s) sélectionné(s).",
+    "toastErrorBulk": "Impossible de résoudre les inscriptions des participants sélectionnés.",
+    "toastErrorSingle": "Impossible de résoudre l’inscription de ce participant."
+}

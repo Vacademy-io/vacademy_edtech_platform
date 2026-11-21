@@ -1,0 +1,8 @@
+{
+    "cornerLabel": {
+        "default": "RAPPORT D'APPRENTISSAGE"
+    },
+    "footer": {
+        "pageOf": "Page {{p}} sur {{pageCount}}"
+    }
+}

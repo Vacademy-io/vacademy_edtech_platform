@@ -1,0 +1,25 @@
+{
+    "header": {
+        "subtitle": "تفاصيل التسجيل",
+        "close": "إغلاق"
+    },
+    "states": {
+        "loadError": "فشل تحميل تفاصيل التسجيل.",
+        "noParticipantSelected": "اختر مشاركًا لعرض تفاصيل تسجيله."
+    },
+    "contact": {
+        "sectionTitle": "معلومات الاتصال",
+        "email": "البريد الإلكتروني",
+        "mobileNumber": "رقم الجوال",
+        "registeredOn": "تاريخ التسجيل"
+    },
+    "formResponses": {
+        "sectionTitle": "ردود النموذج",
+        "fieldFallback": "حقل",
+        "empty": "لم يتم إرسال أي حقول نموذج إضافية."
+    },
+    "common": {
+        "notProvided": "غير متوفر",
+        "participantFallback": "مشارك"
+    }
+}

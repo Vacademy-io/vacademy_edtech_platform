@@ -1,0 +1,8 @@
+{
+  "title": "{{term}} via email",
+  "emailInput": {
+    "label": "Enter invitee email",
+    "placeholder": "you@email.com"
+  },
+  "addButton": "Add"
+}

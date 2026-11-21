@@ -168,7 +168,7 @@ export function toAudioBuffer(audioCtx: AudioContext, decoded: DecodedAudio): Au
     );
     for (let i = 0; i < decoded.numberOfChannels; i++) {
         const channel = decoded.channels[i];
-        if (channel) buf.copyToChannel(channel, i);
+        if (channel) buf.getChannelData(i).set(channel);
     }
     return buf;
 }

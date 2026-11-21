@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Dialog,
     DialogContent,
@@ -61,6 +62,7 @@ export const UploadDiagnosticsDialog = ({
     onKeepAllAndEdit,
     onCancel,
 }: UploadDiagnosticsDialogProps) => {
+    const { t } = useTranslation('assessmentUploadDiagnosticsDialog');
     const grouped = useMemo(() => groupByQuestion(issues), [issues]);
     const [skipChecked, setSkipChecked] = useState<Set<number>>(new Set());
 
@@ -107,9 +109,9 @@ export const UploadDiagnosticsDialog = ({
         };
         try {
             await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
-            toast.success('Diagnostic info copied to clipboard');
+            toast.success(t('toasts.copySuccess'));
         } catch {
-            toast.error('Could not copy to clipboard');
+            toast.error(t('toasts.copyFailed'));
         }
     };
 
@@ -120,29 +122,26 @@ export const UploadDiagnosticsDialog = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[min(960px,95vw)] max-w-none gap-0 overflow-hidden p-0">
+            <DialogContent className="w-dialog-xl max-w-none gap-0 overflow-hidden p-0">
                 <DialogHeader className="bg-primary-50 px-6 py-4 pr-12">
                     <DialogTitle className="flex items-center gap-2 text-primary-500">
                         <Warning size={22} weight="fill" className="text-warning-500" />
-                        Review uploaded questions
+                        {t('header.title')}
                     </DialogTitle>
                     <p className="text-sm text-neutral-600">
-                        {grouped.length} of {totalQuestions} question
-                        {totalQuestions === 1 ? '' : 's'} need attention
+                        {t('header.summary', { count: totalQuestions, grouped: grouped.length })}
                         {errorCount > 0 && (
                             <>
                                 {' '}
-                                —{' '}
                                 <span className="font-medium text-danger-600">
-                                    {errorCount} with errors
+                                    {t('header.errorsCount', { count: errorCount })}
                                 </span>
                             </>
                         )}
                         {warningOnlyCount > 0 && (
                             <>
-                                ,{' '}
                                 <span className="font-medium text-warning-600">
-                                    {warningOnlyCount} with warnings
+                                    {t('header.warningsCount', { count: warningOnlyCount })}
                                 </span>
                             </>
                         )}
@@ -152,7 +151,7 @@ export const UploadDiagnosticsDialog = ({
 
                 <div className="flex items-center justify-between gap-2 border-b border-neutral-200 px-6 py-2 text-xs text-neutral-600">
                     <span>
-                        {skipCount} marked to skip · {proceedCount} will be added to the form
+                        {t('actionsBar.summary', { skipCount, proceedCount })}
                     </span>
                     <div className="flex gap-2">
                         <Button
@@ -162,7 +161,7 @@ export const UploadDiagnosticsDialog = ({
                             className="h-7 text-xs"
                             onClick={checkAll}
                         >
-                            Skip all
+                            {t('actionsBar.skipAll')}
                         </Button>
                         <Button
                             type="button"
@@ -171,12 +170,12 @@ export const UploadDiagnosticsDialog = ({
                             className="h-7 text-xs"
                             onClick={uncheckAll}
                         >
-                            Skip none
+                            {t('actionsBar.skipNone')}
                         </Button>
                     </div>
                 </div>
 
-                <ScrollArea className="max-h-[55vh]">
+                <ScrollArea className="max-h-[55vh]"> {/* design-lint-ignore: viewport-relative scroll-area height inside dialog, no token exists */}
                     <ul className="divide-y divide-neutral-100">
                         {grouped.map((g) => {
                             const isSkipped = skipChecked.has(g.questionIndex);
@@ -197,18 +196,20 @@ export const UploadDiagnosticsDialog = ({
                                     >
                                         <div className="mb-1 flex items-center gap-2">
                                             <span className="text-xs font-medium text-neutral-500">
-                                                Q{g.questionIndex + 1}
+                                                {t('listItem.questionNumber', {
+                                                    number: g.questionIndex + 1,
+                                                })}
                                             </span>
-                                            <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium uppercase text-neutral-600">
+                                            <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-2xs font-medium uppercase text-neutral-600">
                                                 {g.questionType}
                                             </span>
                                             {g.hasError ? (
-                                                <span className="rounded bg-danger-50 px-1.5 py-0.5 text-[10px] font-medium uppercase text-danger-600">
-                                                    Error
+                                                <span className="rounded bg-danger-50 px-1.5 py-0.5 text-2xs font-medium uppercase text-danger-600">
+                                                    {t('listItem.errorBadge')}
                                                 </span>
                                             ) : (
-                                                <span className="rounded bg-warning-50 px-1.5 py-0.5 text-[10px] font-medium uppercase text-warning-600">
-                                                    Warning
+                                                <span className="rounded bg-warning-50 px-1.5 py-0.5 text-2xs font-medium uppercase text-warning-600">
+                                                    {t('listItem.warningBadge')}
                                                 </span>
                                             )}
                                         </div>
@@ -216,8 +217,8 @@ export const UploadDiagnosticsDialog = ({
                                             {g.questionPreview}
                                         </p>
                                         <ul className="space-y-1.5">
-                                            {g.issues.map((iss, i) => (
-                                                <li key={i} className="flex gap-2 text-xs">
+                                            {g.issues.map((iss, idx) => (
+                                                <li key={idx} className="flex gap-2 text-xs">
                                                     <WarningCircle
                                                         size={14}
                                                         className={`mt-0.5 shrink-0 ${
@@ -253,7 +254,7 @@ export const UploadDiagnosticsDialog = ({
                         onClick={copyDiagnostics}
                     >
                         <Copy size={14} />
-                        Copy diagnostic JSON
+                        {t('footer.copyDiagnostics')}
                     </Button>
                     <div className="flex flex-wrap justify-end gap-2">
                         <MyButton
@@ -263,7 +264,7 @@ export const UploadDiagnosticsDialog = ({
                             layoutVariant="default"
                             onClick={onCancel}
                         >
-                            Cancel
+                            {t('footer.cancel')}
                         </MyButton>
                         <MyButton
                             type="button"
@@ -272,7 +273,7 @@ export const UploadDiagnosticsDialog = ({
                             layoutVariant="default"
                             onClick={onKeepAllAndEdit}
                         >
-                            Keep all & edit
+                            {t('footer.keepAllAndEdit')}
                         </MyButton>
                         <MyButton
                             type="button"
@@ -283,7 +284,7 @@ export const UploadDiagnosticsDialog = ({
                             disabled={proceedCount === 0}
                         >
                             <CheckCircle size={16} weight="fill" />
-                            Skip &amp; proceed ({proceedCount})
+                            {t('footer.skipAndProceed', { count: proceedCount })}
                         </MyButton>
                     </div>
                 </DialogFooter>

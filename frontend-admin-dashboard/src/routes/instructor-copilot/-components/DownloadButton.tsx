@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { DownloadSimple } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 
 interface DownloadButtonProps {
     onClick: () => void;
@@ -11,11 +12,13 @@ interface DownloadButtonProps {
 
 export const DownloadButton = ({
     onClick,
-    label = 'Download PDF',
+    label,
     variant = 'outline',
     size = 'sm',
     disabled = false,
 }: DownloadButtonProps) => {
+    const { t } = useTranslation('instructorCopilotDownloadButton');
+
     return (
         <Button
             onClick={onClick}
@@ -25,7 +28,7 @@ export const DownloadButton = ({
             disabled={disabled}
         >
             <DownloadSimple size={16} />
-            {label}
+            {label ?? t('defaultLabel')}
         </Button>
     );
 };

@@ -8,6 +8,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import vacademy.io.admin_core_service.features.workflow.automation_visualization.dto.AutomationDiagramDTO;
 import vacademy.io.admin_core_service.features.workflow.automation_visualization.service.AutomationParserService;
+import vacademy.io.admin_core_service.features.workflow.automation_visualization.service.NodeSummaryBuilder;
+import vacademy.io.admin_core_service.features.workflow.automation_visualization.service.TriggerScopeResolver;
+import vacademy.io.admin_core_service.features.workflow.entity.WorkflowSchedule;
+import vacademy.io.admin_core_service.features.workflow.entity.WorkflowTrigger;
+import vacademy.io.admin_core_service.features.workflow.repository.WorkflowScheduleRepository;
+import vacademy.io.admin_core_service.features.workflow.repository.WorkflowTriggerRepository;
 import vacademy.io.admin_core_service.features.workflow.entity.NodeTemplate;
 import vacademy.io.admin_core_service.features.workflow.entity.Workflow;
 import vacademy.io.admin_core_service.features.workflow.entity.WorkflowNodeMapping;
@@ -40,6 +46,15 @@ public class AutomationVisualizationController {
 
     @Autowired
     private NodeTemplateRepository nodeTemplateRepository; // Required to fetch templates
+
+    @Autowired
+    private WorkflowTriggerRepository workflowTriggerRepository;
+
+    @Autowired
+    private WorkflowScheduleRepository workflowScheduleRepository;
+
+    @Autowired
+    private TriggerScopeResolver triggerScopeResolver;
 
     @GetMapping("/{workflowId}/diagram")
     public ResponseEntity<AutomationDiagramDTO> getWorkflowDiagram(@PathVariable String workflowId) {
@@ -88,8 +103,12 @@ public class AutomationVisualizationController {
             }
 
             try {
-                // Step 5: Pass the dynamically constructed map to the parser.
-                AutomationDiagramDTO diagram = automationParserService.parse(nodeTemplates);
+                // Step 5: Pass the dynamically constructed map to the parser, along with the
+                // trigger/schedule context. The TRIGGER node's config only carries the event
+                // name; which audience/batch the workflow fires for lives on the trigger rows,
+                // so without this the diagram cannot answer "what does this run for?".
+                AutomationDiagramDTO diagram = automationParserService.parse(
+                        nodeTemplates, buildTriggerSummary(workflow));
                 return ResponseEntity.ok(diagram);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -98,6 +117,51 @@ public class AutomationVisualizationController {
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
+        }
+    }
+
+    /**
+     * Collect what actually starts this workflow: the event and the entities it is scoped to
+     * for EVENT_DRIVEN workflows, or the cron for SCHEDULED ones. Only ACTIVE trigger rows
+     * count — a row deactivated by an edit no longer fires, so showing it would misdescribe
+     * the workflow. Never throws: the diagram is a read-only view and must render even when
+     * a scope lookup fails.
+     */
+    private NodeSummaryBuilder.TriggerSummary buildTriggerSummary(Workflow workflow) {
+        try {
+            if ("SCHEDULED".equalsIgnoreCase(workflow.getWorkflowType())) {
+                WorkflowSchedule schedule = workflowScheduleRepository
+                        .findByWorkflowIdAndStatus(workflow.getId(), "ACTIVE")
+                        .stream().findFirst().orElse(null);
+                return NodeSummaryBuilder.TriggerSummary.builder()
+                        .workflowType("SCHEDULED")
+                        .cronExpression(schedule != null ? schedule.getCronExpression() : null)
+                        .timezone(schedule != null ? schedule.getTimezone() : null)
+                        .build();
+            }
+
+            List<WorkflowTrigger> triggers = workflowTriggerRepository.findByWorkflowId(workflow.getId())
+                    .stream()
+                    .filter(t -> "ACTIVE".equalsIgnoreCase(t.getStatus()))
+                    .collect(Collectors.toList());
+            if (triggers.isEmpty()) {
+                return null;
+            }
+            WorkflowTrigger first = triggers.get(0);
+            List<String> eventIds = triggers.stream()
+                    .map(WorkflowTrigger::getEventId)
+                    .filter(id -> id != null && !id.isBlank())
+                    .distinct()
+                    .collect(Collectors.toList());
+
+            return NodeSummaryBuilder.TriggerSummary.builder()
+                    .workflowType("EVENT_DRIVEN")
+                    .eventName(first.getTriggerEventName())
+                    .eventAppliedType(first.getEventAppliedType())
+                    .scopeLabels(triggerScopeResolver.resolveLabels(first.getEventAppliedType(), eventIds))
+                    .build();
+        } catch (Exception e) {
+            return null;
         }
     }
 }

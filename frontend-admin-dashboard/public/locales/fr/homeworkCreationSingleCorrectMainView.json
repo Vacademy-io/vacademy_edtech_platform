@@ -1,0 +1,24 @@
+{
+    "emptyState": "Veuillez ajouter une question pour afficher les détails de la question",
+    "settings": {
+        "title": "Paramètres des questions",
+        "questionType": "Type de question",
+        "marks": "Points",
+        "negativeMarking": "Points négatifs",
+        "timeLimit": "Durée limite",
+        "hours": "h",
+        "minutes": "min"
+    },
+    "question": {
+        "label": "Question {{number}}"
+    },
+    "answer": {
+        "label": "Réponse :",
+        "optionLabel": "({{letter}}.)",
+        "removeOption": "Supprimer l'option",
+        "addOption": "Ajouter une option"
+    },
+    "explanation": {
+        "label": "Explication :"
+    }
+}

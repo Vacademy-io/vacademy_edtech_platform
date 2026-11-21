@@ -21,6 +21,8 @@ export type RichTextEditorProps = {
     modalMinHeight?: number | string;
     /** Hide the toolbar for compact / inline use (e.g. answer options). */
     hideToolbar?: boolean;
+    /** Show the toolbar only while this editor is in use, for screens that stack several. */
+    toolbarOnFocus?: boolean;
     /** Show a slim, Slack-style toolbar (text formatting + lists + code only). */
     minimalToolbar?: boolean;
     /** Drop the editor chrome so the surrounding card reads as the input. */
@@ -43,6 +45,7 @@ export function RichTextEditor({
     enableModalCompose = false,
     modalMinHeight = 360,
     hideToolbar = false,
+    toolbarOnFocus = false,
     minimalToolbar = false,
     borderless = false,
 }: RichTextEditorProps) {
@@ -60,6 +63,7 @@ export function RichTextEditor({
                     placeholder={placeholder}
                     minHeight={minHeight ?? 70}
                     hideToolbar={hideToolbar}
+                    toolbarOnFocus={toolbarOnFocus}
                     minimalToolbar={minimalToolbar}
                     borderless={borderless}
                 />

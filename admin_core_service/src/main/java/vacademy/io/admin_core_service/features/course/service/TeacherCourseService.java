@@ -8,6 +8,7 @@ import vacademy.io.admin_core_service.features.level.service.TeacherLevelService
 import vacademy.io.admin_core_service.features.packages.enums.PackageStatusEnum;
 import vacademy.io.admin_core_service.features.packages.repository.PackageInstituteRepository;
 import vacademy.io.admin_core_service.features.packages.repository.PackageRepository;
+import vacademy.io.admin_core_service.features.packages.service.PackagePageContentService;
 import vacademy.io.admin_core_service.features.session.dto.AddNewSessionDTO;
 import vacademy.io.admin_core_service.features.session.service.TeacherSessionService;
 import vacademy.io.common.auth.model.CustomUserDetails;
@@ -39,6 +40,9 @@ public class TeacherCourseService {
     @Autowired
     private TeacherSessionService teacherSessionService;
 
+    @Autowired
+    private PackagePageContentService packagePageContentService;
+
     public String addCourse(AddCourseDTO addCourseDTO, CustomUserDetails userDetails, String instituteId) {
         // Ensure status is set to DRAFT for teacher courses (approval workflow)
         if (!StringUtils.hasText(addCourseDTO.getStatus())) {
@@ -52,9 +56,13 @@ public class TeacherCourseService {
         
         PackageEntity savedPackage = null;
 
+        // Reject a malformed course_page_json (HTTP 400) before anything is written.
+        PackagePageContentService.validate(addCourseDTO.getCoursePageJson());
+
         if (addCourseDTO.getNewCourse()) {
             PackageEntity packageEntity = getCourse(addCourseDTO, userDetails.getId()); // Pass user ID
             savedPackage = packageRepository.save(packageEntity);
+            packagePageContentService.applyOnCreate(savedPackage.getId(), addCourseDTO.getCoursePageJson());
         } else {
             savedPackage = packageRepository.findById(addCourseDTO.getId())
                     .orElseThrow(() -> new VacademyException("Package not found"));
@@ -153,8 +161,10 @@ public class TeacherCourseService {
             throw new VacademyException("You don't have permission to edit this course");
         }
 
+        PackagePageContentService.validate(addCourseDTO.getCoursePageJson());
         updateCourseFields(course, addCourseDTO);
         packageRepository.save(course);
+        packagePageContentService.applyOnUpdate(course.getId(), addCourseDTO.getCoursePageJson());
         
         return "Course updated successfully";
     }

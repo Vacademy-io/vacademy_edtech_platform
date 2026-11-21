@@ -25,6 +25,12 @@ public class LedgerBatchRequest {
     /** Window for the "recent*" counters, in days. Defaults to 7. */
     private Integer recentWindowDays;
 
+    /**
+     * B5: window for the cross-system contact count ({@code contact} in the response), in days.
+     * Null leaves it out (callers that do not enforce the contact limit).
+     */
+    private Integer contactWindowDays;
+
     private List<Subject> subjects;
 
     @Data

@@ -1,0 +1,37 @@
+{
+    "status": {
+        "generated": "Generated",
+        "awaiting": "Awaiting",
+        "pending": "Pending"
+    },
+    "columns": {
+        "learner": "Learner",
+        "completion": "Completion",
+        "status": "Status",
+        "generatedOn": "Generated On",
+        "certificateNumber": "Certificate Number",
+        "actions": "Actions"
+    },
+    "actions": {
+        "generate": "Generate"
+    },
+    "toast": {
+        "regenerated": "Certificate regenerated",
+        "generated": "Certificate generated",
+        "regeneratedDescription": "The certificate number is unchanged; the PDF has been replaced.",
+        "generatedDescription": "The learner has been emailed their certificate.",
+        "generateError": "Could not generate certificate",
+        "generateErrorDescription": "Check that certificates are enabled for this course and the learner is past the completion threshold.",
+        "emailSent": "Certificate email sent",
+        "emailError": "Could not send the certificate email",
+        "openedInNewTab": "Opened the certificate in a new tab",
+        "openedInNewTabDescription": "Your browser blocked the direct download — save it from there."
+    },
+    "searchPlaceholder": "Search by name, email or certificate number",
+    "learnerCount_one": "{{count}} learner",
+    "learnerCount_other": "{{count}} learners",
+    "emptyState": {
+        "noMatch": "No learners match your search.",
+        "noLearners": "No learners are enrolled in this batch yet."
+    }
+}

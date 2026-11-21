@@ -1,0 +1,15 @@
+{
+    "title": "Analyses de l'apprenant",
+    "description": "Afficher le rapport IA généré pour chaque tentative de l'apprenant — résumé de performance, répartition par sujet, idées fausses et prochaines étapes. Les rapports sont produits toutes les heures à partir de l'activité déjà enregistrée ; ce réglage change qui peut les voir, pas s'ils sont générés. Les apprenants voient les leurs sous Mes rapports dès lors que la permission canViewReports leur permet d'ouvrir cette section — il n'existe pas d'interrupteur séparé.",
+    "adminActivityToggle": {
+        "label": "Afficher dans le journal d'activité admin",
+        "hint": "Ajoute un panneau Analyses IA à la fenêtre du journal d'activité lorsque le personnel ouvre la tentative d'un apprenant sur un quiz, une question ou un devoir."
+    },
+    "reviewNotice": "Ces rapports sont rédigés par l'IA à partir de l'activité enregistrée. Relisez-en un avant de le transmettre à un apprenant ou à un tuteur.",
+    "saving": "Enregistrement…",
+    "save": "Enregistrer",
+    "toasts": {
+        "saveSuccess": "Paramètres des analyses IA enregistrés",
+        "saveError": "Impossible d'enregistrer les paramètres des analyses IA"
+    }
+}

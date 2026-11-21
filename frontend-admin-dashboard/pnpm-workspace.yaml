@@ -1,0 +1,17 @@
+packages:
+  - '.'
+
+# Native postinstalls we allow to run. Deliberately does NOT include `canvas`:
+# its install script falls back to a from-source node-gyp compile (twice — the
+# tree has canvas@2 and canvas@3), which costs ~20 min on the CI builder. It is
+# a Node-only addon pulled in as an OPTIONAL dep of pdfjs-dist/fabric/react-to-pdf;
+# a browser bundle never loads it, and every green deploy so far has had it
+# skipped. The rest below ship prebuilt binaries, so they cost seconds.
+onlyBuiltDependencies:
+  - '@firebase/util'
+  - '@swc/core'
+  - core-js
+  - core-js-pure
+  - esbuild
+  - protobufjs
+  - sharp

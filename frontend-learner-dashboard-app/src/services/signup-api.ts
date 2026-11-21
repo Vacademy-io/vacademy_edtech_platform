@@ -38,6 +38,8 @@ export interface RegisterUserRequest {
 export interface RegisterUserResponse {
   accessToken: string;
   refreshToken: string;
+  /** Register only: the account already existed and must sign in itself; no tokens were issued. */
+  account_exists?: boolean;
   user: {
     id: string;
     username: string;

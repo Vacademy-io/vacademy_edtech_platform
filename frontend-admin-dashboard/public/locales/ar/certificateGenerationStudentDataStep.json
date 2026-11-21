@@ -1,0 +1,14 @@
+{
+    "columns": {
+        "userId": "معرّف المستخدم",
+        "enrollmentId": "معرّف التسجيل",
+        "nameHeader": "اسم {{term}}",
+        "email": "البريد الإلكتروني",
+        "institute": "المؤسسة",
+        "phoneNumber": "رقم الهاتف"
+    },
+    "downloadTemplate": "تنزيل النموذج",
+    "headerSelected": "{{term}} المحددون ({{count}})",
+    "reviewSubtitle": "راجع بيانات {{term}} وقم بتحميل معلومات ديناميكية عبر CSV",
+    "nextPdfAnnotation": "التالي: تعليقات PDF"
+}

@@ -1,4 +1,5 @@
 import axios from "axios";
+import type { TFunction } from "i18next";
 import { BASE_URL } from "@/constants/urls";
 import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
@@ -77,8 +78,15 @@ export const validateCouponGeneric = async (
 /**
  * Maps stable backend error codes to learner-friendly copy. Falls back to
  * the raw message when an unknown code arrives (forward-compatible).
+ *
+ * `t` is given only on a public site with languages (useCheckoutCoupon),
+ * where the course word is the site language's: the message that names it
+ * is then a sentence of that language too. Without it, the copy below.
  */
-export const couponErrorMessage = (code: string | undefined | null): string => {
+export const couponErrorMessage = (
+    code: string | undefined | null,
+    t?: TFunction
+): string => {
     switch (code) {
         case "INVALID_COUPON":
             return "Invalid coupon code.";
@@ -92,11 +100,18 @@ export const couponErrorMessage = (code: string | undefined | null): string => {
             return "This coupon has reached its usage limit.";
         case "COUPON_EMAIL_RESTRICTED":
             return "This coupon isn’t available for your account.";
-        case "COUPON_NOT_APPLICABLE":
-            return `This coupon isn’t valid for this ${getTerminology(
+        case "COUPON_NOT_APPLICABLE": {
+            const course = getTerminology(
                 ContentTerms.Course,
                 SystemTerms.Course
-            ).toLowerCase()}.`;
+            ).toLowerCase();
+            return t
+                ? t("couponInput.errors.notApplicable", {
+                      course,
+                      defaultValue: "This coupon isn’t valid for this {{course}}.",
+                  })
+                : `This coupon isn’t valid for this ${course}.`;
+        }
         case "COUPON_NOT_FOR_PLAN_TYPE":
             return "This coupon can’t be used with this plan type.";
         case "COUPON_DISCOUNT_NOT_CONFIGURED":

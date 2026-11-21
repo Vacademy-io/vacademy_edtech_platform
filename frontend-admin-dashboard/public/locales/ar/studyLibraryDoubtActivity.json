@@ -1,0 +1,34 @@
+{
+    "title": "النشاط",
+    "empty": "لا يوجد نشاط بعد",
+    "failedToLoad": "تعذر تحميل النشاط",
+    "someone": "شخص ما",
+    "rule": "قاعدة الإسناد التلقائي",
+    "system": "النظام",
+    "ruleBadge": "قاعدة",
+    "defaultRouting": "التوجيه الافتراضي: {{source}}",
+    "sources": {
+        "SUBJECT_TEACHER": "معلم المادة",
+        "BATCH_TEACHER": "معلمو الدفعة",
+        "BOTH": "معلمو المادة والدفعة",
+        "ROLE": "الدور",
+        "SPECIFIC_USERS": "طاقم محدد",
+        "NONE": "لا أحد",
+        "SUB_ORG": "طاقم المؤسسة الفرعية",
+        "ADMIN_FALLBACK": "الرجوع إلى المسؤول"
+    },
+    "lines": {
+        "created": "{{actor}} طرح هذا الاستفسار",
+        "assigned": "{{actor}} أسند إلى {{target}}",
+        "autoAssigned": "أُسند {{target}} تلقائيًا بالقاعدة: {{rule}}",
+        "unassigned": "{{actor}} أزال {{target}}",
+        "removedDefault": "{{actor}} أزال المسؤول الافتراضي {{target}}",
+        "statusChanged": "{{actor}} غيّر الحالة {{from}} → {{to}}",
+        "remark": "{{actor}} ترك ملاحظة على {{status}}"
+    },
+    "remarkPlaceholder": "أضف ملاحظة للطاقم (لا يراها المتعلمون أبدًا)",
+    "addRemark": "إضافة ملاحظة",
+    "saving": "جارٍ الحفظ…",
+    "remarkAdded": "تمت إضافة الملاحظة",
+    "remarkFailed": "تعذر إضافة الملاحظة"
+}

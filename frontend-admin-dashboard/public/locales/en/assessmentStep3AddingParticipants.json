@@ -1,0 +1,82 @@
+{
+    "toasts": {
+        "updateSuccess": "Step 3 data has been updated successfully!",
+        "createSuccess": "Step 3 data has been saved successfully!",
+        "saveFailed": "Failed to save participants."
+    },
+    "header": {
+        "title": "Add Participants",
+        "description": "Define who can participate in this assessment. Add students from batches, individually, or via open registration.",
+        "updateButton": "Update",
+        "nextButton": "Next"
+    },
+    "accessSettings": {
+        "cardTitle": "Participant Access Settings",
+        "cardDescription": "Choose how learners gain access to this assessment.",
+        "closedTest": {
+            "label": "Closed Test",
+            "descriptionSurvey": "Restrict the survey to specific participants by assigning it to institute batches or selecting individual {{term}}s.",
+            "descriptionAssessment": "Restrict the assessment to specific participants by assigning it to institute batches or selecting individual {{term}}s."
+        },
+        "openTest": {
+            "label": "Open Test",
+            "descriptionSurvey": "Allow anyone to register for this survey via a shared link. Institute {{term}}s can also be pre-registered.",
+            "descriptionAssessment": "Allow anyone to register for this assessment via a shared link. Institute {{term}}s can also be pre-registered."
+        }
+    },
+    "registration": {
+        "titleSurvey": "Survey Registration",
+        "titleAssessment": "Assessment Registration",
+        "aboutTitleSurvey": "About Survey Registration",
+        "aboutTitleAssessment": "About Assessment Registration",
+        "instructionsPlaceholder": "Registration instructions",
+        "startDateLabel": "Start Date & Time",
+        "endDateLabel": "End Date & Time",
+        "formFieldsTitle": "Registration Form Fields",
+        "formFieldsSubtitle": "Drag to reorder fields and customize them",
+        "addFieldHint": "Use the buttons below to add a field",
+        "addGender": "Add Gender",
+        "addState": "Add State",
+        "addCity": "Add City",
+        "addSchoolCollege": "Add School/College",
+        "addCustomField": "Add Custom Field",
+        "previewButton": "Preview Registration Form",
+        "previewDialogTitle": "Preview Registration Form",
+        "registerNowButton": "Register Now"
+    },
+    "shareAccess": {
+        "cardTitle": "Share Access",
+        "cardDescription": "Share a join link or QR code with participants.",
+        "joinLinkLabel": "Join Link",
+        "joinLinkPlaceholder": "Join Link",
+        "copyJoinLinkAriaLabel": "Copy join link",
+        "qrCodeLabel": "QR Code",
+        "downloadQrAriaLabel": "Download QR code"
+    },
+    "notifications": {
+        "cardTitle": "Email Notifications",
+        "cardDescription": "Choose which events trigger automatic email alerts.",
+        "notifyBeforeLabel": "Notify Before",
+        "items": {
+            "whenCreatedSurvey": "When Survey is created",
+            "whenCreatedAssessment": "When Assessment is created",
+            "beforeLiveSurvey": "Before Survey goes live",
+            "beforeLiveAssessment": "Before Assessment goes live",
+            "whenLiveSurvey": "When Survey goes live",
+            "whenLiveAssessment": "When Assessment goes live",
+            "reportGeneratedSurvey": "When survey reports are generated",
+            "reportGeneratedAssessment": "When assessment reports are generated"
+        },
+        "participants": {
+            "sectionTitle": "Notify Participants"
+        },
+        "parents": {
+            "sectionTitleSurvey": "Notify Participants",
+            "sectionTitleAssessment": "Notify Parents",
+            "whenStudentAppearsSurvey": "When students appears for the Survey",
+            "whenStudentAppearsAssessment": "When students appears for the Assessment",
+            "whenStudentFinishesSurvey": "When students finishes the Survey",
+            "whenStudentFinishesAssessment": "When students finishes the Assessment"
+        }
+    }
+}

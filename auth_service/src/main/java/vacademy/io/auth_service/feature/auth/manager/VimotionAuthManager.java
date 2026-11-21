@@ -283,7 +283,7 @@ public class VimotionAuthManager {
         }
     }
 
-    private User upsertVimotionUser(VimotionSignupRequest request, Set<UserRole> roles) {
+    User upsertVimotionUser(VimotionSignupRequest request, Set<UserRole> roles) {
         String normalizedEmail = request.getEmail() == null ? null : request.getEmail().toLowerCase();
         String normalizedPhone = request.getPhoneNumber() == null
                 ? null
@@ -293,9 +293,8 @@ public class VimotionAuthManager {
         User user;
         if (existing.isPresent()) {
             user = existing.get();
-            if (!StringUtils.hasText(user.getMobileNumber()) && StringUtils.hasText(normalizedPhone)) {
-                user.setMobileNumber(normalizedPhone);
-            }
+            // An existing account keeps its sign-in identifiers (e-mail, mobile number) as they
+            // are; only an empty name is filled. A new account takes the phone below.
             if (!StringUtils.hasText(user.getFullName()) && StringUtils.hasText(request.getFullName())) {
                 user.setFullName(request.getFullName());
             }

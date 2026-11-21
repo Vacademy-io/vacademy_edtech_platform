@@ -1,0 +1,12 @@
+{
+    "addDefaultLinkForThisDay": "इस दिन के लिए डिफ़ॉल्ट लिंक जोड़ें",
+    "shownToLearnersWhenNotLive": "जब सत्र लाइव नहीं होते हैं तो शिक्षार्थियों को दिखाया जाता है",
+    "defaultLink": "डिफ़ॉल्ट लिंक",
+    "shownWhenNotLive": "जब सत्र लाइव नहीं होते हैं तब दिखाया जाता है",
+    "copy": "कॉपी करें",
+    "remove": "हटाएं",
+    "className": "कक्षा का नाम",
+    "classNamePlaceholder": "उदाहरण के लिए, गणित कक्षा",
+    "linkUrl": "लिंक URL",
+    "linkUrlPlaceholder": "https://example.com"
+}

@@ -1,4 +1,5 @@
 import { Check, Tag, X } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { MyButton } from "@/components/design-system/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -35,16 +36,19 @@ export const CouponInput = ({
     onClear,
     currencySymbol = "₹",
     surfaceClassName,
-    headingLabel = "Coupon Code",
-    placeholder = "Enter coupon code",
+    headingLabel,
+    placeholder,
 }: CouponInputProps) => {
+    const { t, i18n } = useTranslation("layoutCommonB");
     const isApplied = !!state.appliedCode;
+    const resolvedHeadingLabel = headingLabel ?? t("couponInput.heading");
+    const resolvedPlaceholder = placeholder ?? t("couponInput.placeholder");
 
     return (
         <div className={cn("rounded-lg bg-blue-50 p-4", surfaceClassName)}>
             <div className="mb-3 flex items-center gap-2">
                 <Tag className="size-5 text-blue-600" />
-                <h3 className="text-lg font-semibold text-gray-900">{headingLabel}</h3>
+                <h3 className="text-lg font-semibold text-gray-900">{resolvedHeadingLabel}</h3>
             </div>
 
             <div className="space-y-3">
@@ -57,15 +61,16 @@ export const CouponInput = ({
                             </span>
                             {state.discount > 0 && (
                                 <span className="text-sm text-green-700">
-                                    — {currencySymbol}
-                                    {state.discount.toLocaleString()} off
+                                    {t("couponInput.discountOff", {
+                                        amount: `${currencySymbol}${state.discount.toLocaleString(i18n.language)}`,
+                                    })}
                                 </span>
                             )}
                         </div>
                         <button
                             type="button"
                             onClick={onClear}
-                            aria-label="Remove coupon"
+                            aria-label={t("couponInput.removeCoupon")}
                             className="rounded p-1 text-gray-500 hover:text-red-500"
                         >
                             <X className="size-4" />
@@ -76,12 +81,12 @@ export const CouponInput = ({
                         <div className="flex-1">
                             <Input
                                 type="text"
-                                placeholder={placeholder}
+                                placeholder={resolvedPlaceholder}
                                 value={state.code}
                                 disabled={state.isApplying}
                                 onChange={(e) => onChange(e.target.value.toUpperCase())}
                                 className="!w-full font-mono uppercase"
-                                aria-label="Coupon code"
+                                aria-label={t("couponInput.couponCode")}
                             />
                         </div>
                         <MyButton
@@ -92,7 +97,7 @@ export const CouponInput = ({
                             disable={state.isApplying || !state.code.trim()}
                             className="whitespace-nowrap"
                         >
-                            {state.isApplying ? "Applying..." : "Apply"}
+                            {state.isApplying ? t("couponInput.applying") : t("couponInput.apply")}
                         </MyButton>
                     </div>
                 )}

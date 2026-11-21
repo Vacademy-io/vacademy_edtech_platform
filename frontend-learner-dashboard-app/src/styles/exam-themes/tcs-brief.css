@@ -1,0 +1,325 @@
+/* =====================================================================
+   Instruction page of the TCS-family themes
+   (components/common/instructionPage/templates/tcs.tsx).
+
+   Reuses the console tokens and the banner, candidate, button, chip and
+   footer rules of tcs.css; this file adds only the page's own regions:
+   a light-blue title bar, a sans-serif text column (serif only inside the
+   palette symbol table), a white button bar, and a white right column with
+   the candidate's photo or initial and name (as on the console).
+   Raw hex is allowed in this folder.
+   ===================================================================== */
+
+[data-exam-theme-family="tcs"] {
+  --tcs-brief-title-bg: #c6e7f4;
+  --tcs-brief-title-text: #2c3e50;
+  --tcs-brief-text: #1f1f1f;
+  --tcs-brief-font: Arial, Helvetica, sans-serif;
+  --tcs-brief-table-font: "Times New Roman", Times, Georgia, serif;
+  --tcs-brief-ready-bg: #39a8ed;
+  --tcs-brief-side-name: #526380;
+  --tcs-brief-rule: #c9c9c9;
+}
+
+.tcs-brief__body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.tcs-brief__main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tcs-brief__title {
+  flex: none;
+  margin: 0;
+  padding: 6px 12px;
+  background: var(--tcs-brief-title-bg);
+  color: var(--tcs-brief-title-text);
+  font-family: var(--tcs-font);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.tcs-brief__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 12px 18px 20px;
+}
+
+.tcs-brief__text {
+  max-width: 960px;
+  color: var(--tcs-brief-text);
+  font-family: var(--tcs-brief-font);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.tcs-brief__lead {
+  margin: 0 0 10px;
+  font-weight: 700;
+}
+
+.tcs-brief__heading {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.tcs-brief__subheading {
+  margin: 16px 0 6px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.tcs-brief__facts {
+  margin: 0;
+  padding-inline-start: 22px;
+  list-style: disc;
+}
+
+.tcs-brief__muted {
+  margin: 0;
+  color: #5a5a5a;
+  font-style: italic;
+}
+
+.tcs-brief__institute {
+  overflow-wrap: anywhere;
+}
+
+.tcs-brief__institute img {
+  max-width: 100%;
+  height: auto;
+}
+
+.tcs-brief__attachments {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tcs-brief__attachments a {
+  color: #1a5fa8;
+  text-decoration: underline;
+}
+
+.tcs-brief__pdf {
+  height: 70vh;
+  margin-top: 6px;
+  border: 1px solid var(--tcs-brief-rule);
+}
+
+.tcs-brief__proctor {
+  max-width: 960px;
+  margin-top: 16px;
+  font-family: var(--tcs-font);
+}
+
+.tcs-brief__proctor[hidden] {
+  display: none;
+}
+
+.tcs-brief__declaration {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 960px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--tcs-brief-rule);
+  color: var(--tcs-brief-text);
+  font-family: var(--tcs-brief-font);
+  font-size: 15px;
+  line-height: 1.45;
+  cursor: pointer;
+}
+
+.tcs-brief__declaration input {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 3px;
+}
+
+/* General instructions (page 1 and the in-test Instructions dialog). */
+
+.tcs-general h3 {
+  margin: 14px 0 6px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.tcs-general h3:first-child {
+  margin-top: 0;
+}
+
+.tcs-general p {
+  margin: 0 0 6px;
+}
+
+.tcs-general ol {
+  margin: 0 0 6px;
+  padding-inline-start: 22px;
+  list-style: decimal;
+}
+
+.tcs-general li + li {
+  margin-top: 3px;
+}
+
+/* Palette symbols: a bordered two-column table in a serif face. */
+.tcs-general__symbols {
+  margin: 6px 0 10px;
+  border-collapse: collapse;
+  font-family: var(--tcs-brief-table-font);
+}
+
+.tcs-general__symbols td {
+  padding: 6px 8px;
+  border: 1px solid #a9a9a9;
+  vertical-align: middle;
+}
+
+.tcs-general__symbols td:first-child {
+  width: 1%;
+  text-align: center;
+}
+
+/* Chip numbers keep the console font inside the serif table. */
+.tcs-general .tcs-chip {
+  font-family: var(--tcs-font);
+}
+
+.tcs-general .tcs-general__disclaimer {
+  margin-top: 14px;
+  color: #5a5a5a;
+  font-size: 12px;
+  font-style: italic;
+}
+
+/* Button bar */
+
+.tcs-brief__nav {
+  display: flex;
+  flex: none;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--tcs-brief-rule);
+  background: #ffffff;
+}
+
+[data-exam-theme-family="tcs"] .tcs-brief__nav .tcs-btn {
+  height: 34px;
+  font-size: 13px;
+}
+
+.tcs-brief__start {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.tcs-brief__nav-spacer {
+  width: 96px;
+}
+
+[data-exam-theme-family="tcs"] .tcs-btn--ready {
+  min-width: 180px;
+  border-color: var(--tcs-brief-ready-bg);
+  background: var(--tcs-brief-ready-bg);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+[data-exam-theme-family="tcs"] .tcs-btn--ready:not(:disabled):hover {
+  filter: brightness(0.92);
+}
+
+.tcs-brief__hint {
+  margin: 0;
+  color: #6a6a6a;
+  font-size: 11px;
+}
+
+/* Right column */
+
+.tcs-brief__side {
+  flex: none;
+  width: 220px;
+  border-left: 1px solid #c3c3c3;
+  background: #ffffff;
+}
+
+.tcs-brief__side .tcs-candidate {
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 8px;
+  border-bottom: 0;
+  background: transparent;
+  text-align: center;
+}
+
+.tcs-brief__side .tcs-candidate__photo {
+  width: 96px;
+  height: 96px;
+  font-size: 40px;
+}
+
+.tcs-brief__side .tcs-candidate__name {
+  color: var(--tcs-brief-side-name);
+}
+
+.tcs-brief__candidate-compact {
+  display: none;
+}
+
+.tcs-brief__footer {
+  height: auto;
+  min-height: 22px;
+}
+
+/* Phones: the right column folds into a compact candidate row on top. */
+@media (max-width: 767px) {
+  .tcs-brief__side,
+  .tcs-brief__nav-spacer {
+    display: none;
+  }
+
+  .tcs-brief__candidate-compact {
+    display: block;
+    margin: -12px -18px 10px;
+  }
+
+  .tcs-brief__scroll {
+    padding: 12px 16px 16px;
+  }
+
+  .tcs-brief__text,
+  .tcs-brief__declaration {
+    font-size: 14px;
+  }
+
+  [data-exam-theme-family="tcs"] .tcs-btn--ready {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .tcs-brief__footer {
+    min-height: 8px;
+  }
+}

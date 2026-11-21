@@ -1,0 +1,89 @@
+{
+    "dialogTitle": "API एकीकरण - {{campaignName}}",
+    "dialogDescription": "इन विवरणों का उपयोग Zapier, Make या कस्टम एप्लिकेशन जैसे ऑटोमेशन टूल के साथ एकीकृत करने के लिए करें।",
+    "tabs": {
+        "curl": "cURL कमांड",
+        "docs": "दस्तावेज़ीकरण"
+    },
+    "copyButton": {
+        "copy": "कॉपी करें",
+        "copied": "कॉपी हो गया",
+        "copyMarkdown": "Markdown कॉपी करें"
+    },
+    "toasts": {
+        "copiedToClipboard": "क्लिपबोर्ड पर कॉपी हो गया!",
+        "copyFailed": "कॉपी करने में विफल"
+    },
+    "curlTab": {
+        "replaceHintPrefix": "अनुरोध भेजने से पहले प्लेसहोल्डर मानों (उदाहरण के लिए,",
+        "replaceHintSuffix": ") को वास्तविक डेटा से बदलें।"
+    },
+    "common": {
+        "yes": "हाँ",
+        "no": "नहीं"
+    },
+    "docsPanel": {
+        "heading": "API एकीकरण गाइड",
+        "endpointHeading": "एंडपॉइंट",
+        "headersHeading": "हेडर",
+        "headersTable": {
+            "header": "हेडर",
+            "value": "मान"
+        },
+        "customFieldsHeading": "कस्टम फ़ील्ड्स",
+        "customFieldsTable": {
+            "fieldId": "फ़ील्ड ID",
+            "name": "नाम",
+            "type": "प्रकार",
+            "required": "आवश्यक"
+        },
+        "integrationExamplesHeading": "एकीकरण उदाहरण",
+        "zapierHeading": "Zapier एकीकरण",
+        "zapierSteps": {
+            "createZap": "एक नया Zap बनाएं",
+            "chooseTrigger": "अपना ट्रिगर ऐप चुनें",
+            "addWebhooks": "क्रिया के रूप में Webhooks by Zapier जोड़ें",
+            "selectPostMethod": "\"POST\" विधि चुनें",
+            "pasteUrl": "एंडपॉइंट URL पेस्ट करें",
+            "mapFields": "अपने फ़ील्ड्स को रिक्वेस्ट बॉडी से मैप करें"
+        }
+    },
+    "markdown": {
+        "guideHeading": "API एकीकरण गाइड",
+        "endpointHeading": "एंडपॉइंट",
+        "headersHeading": "हेडर",
+        "headersTable": {
+            "header": "हेडर",
+            "value": "मान"
+        },
+        "requestBodyHeading": "रिक्वेस्ट बॉडी संरचना",
+        "customFieldsHeading": "कस्टम फ़ील्ड्स संदर्भ",
+        "customFieldsTable": {
+            "fieldId": "फ़ील्ड ID",
+            "fieldName": "फ़ील्ड नाम",
+            "type": "प्रकार",
+            "required": "आवश्यक"
+        },
+        "responseHeading": "प्रतिक्रिया",
+        "successLabel": "सफलता",
+        "errorLabel": "त्रुटि",
+        "integrationExamplesHeading": "एकीकरण उदाहरण",
+        "zapierHeading": "Zapier एकीकरण",
+        "zapierSteps": {
+            "createZap": "एक नया Zap बनाएं",
+            "chooseTrigger": "अपना ट्रिगर ऐप चुनें (जैसे, Google Forms, Typeform)",
+            "addWebhooks": "क्रिया के रूप में Webhooks by Zapier जोड़ें",
+            "selectPostMethod": "\"POST\" विधि चुनें",
+            "pasteUrl": "एंडपॉइंट URL पेस्ट करें",
+            "setContentType": "Content-Type को application/json पर सेट करें",
+            "mapFields": "अपने ट्रिगर फ़ील्ड्स को रिक्वेस्ट बॉडी से मैप करें"
+        },
+        "makeHeading": "Make (Integromat)",
+        "makeSteps": {
+            "createScenario": "एक नया परिदृश्य बनाएं",
+            "addTrigger": "अपना ट्रिगर मॉड्यूल जोड़ें",
+            "addHttpModule": "HTTP > Make a request मॉड्यूल जोड़ें",
+            "configure": "ऊपर दिए गए एंडपॉइंट और पेलोड संरचना के साथ कॉन्फ़िगर करें"
+        }
+    }
+}

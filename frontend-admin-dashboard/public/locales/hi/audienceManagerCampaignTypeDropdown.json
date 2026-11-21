@@ -1,0 +1,14 @@
+{
+    "placeholder": "{{term}} चुनें",
+    "optionWebsite": "वेबसाइट",
+    "optionGoogleAds": "गूगल विज्ञापन",
+    "optionFacebook": "फेसबुक",
+    "optionInstagram": "इंस्टाग्राम",
+    "optionSocialMedia": "सोशल मीडिया",
+    "addCustomType": "कस्टम पूछताछ प्रकार जोड़ें",
+    "customInputPlaceholder": "{{term}} दर्ज करें",
+    "cancel": "रद्द करें",
+    "save": "सहेजें",
+    "searchPlaceholder": "खोजें…",
+    "noMatches": "“{{query}}” से कुछ मेल नहीं खाया"
+}

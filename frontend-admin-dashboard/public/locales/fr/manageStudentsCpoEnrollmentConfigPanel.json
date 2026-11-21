@@ -1,0 +1,105 @@
+{
+    "header": {
+        "title": "Configuration des frais",
+        "totalLabel": "Total :",
+        "afterDiscountLabel": "Après remise :"
+    },
+    "loading": "Chargement des échéances…",
+    "loadError": "Impossible de charger les détails du CPO.",
+    "table": {
+        "index": "#",
+        "feeType": "Type de frais",
+        "startDate": "Date de début",
+        "dueDate": "Date d'échéance",
+        "default": "Par défaut",
+        "amount": "Montant (₹)",
+        "discount": "Remise",
+        "amountOverrideTitle": "Montant modifié manuellement",
+        "effectiveTitle": "Effectif : {{effective}} (modèle {{template}} après remises)",
+        "discountOptions": {
+            "none": "aucune",
+            "percentage": "%",
+            "flat": "₹"
+        }
+    },
+    "cpoDiscount": {
+        "heading": "Remise (facultatif)",
+        "typeLabel": "Type",
+        "options": {
+            "none": "aucune",
+            "percentage": "% du total",
+            "flat": "remise fixe en ₹"
+        },
+        "valueLabel": "Valeur",
+        "reasonLabel": "Motif",
+        "reasonPlaceholder": "ex. remise fratrie",
+        "offSuffix": "= {{amount}} de remise",
+        "splitLabel": "Répartir la remise",
+        "split": {
+            "EVEN": "À parts égales",
+            "FIRST": "Première échéance",
+            "LAST": "Dernière échéance",
+            "CUSTOM": "Personnalisée"
+        },
+        "splitHint": {
+            "EVEN": "Le même montant est retiré de chaque échéance.",
+            "FIRST": "Tout est retiré de la première échéance (le reste de la suivante).",
+            "LAST": "Tout est retiré de la dernière échéance (le reste de la précédente).",
+            "CUSTOM": "Saisissez la remise de chaque échéance dans le tableau ci-dessous."
+        },
+        "cappedToInstallments": "Seuls {{amount}} peuvent être retirés des échéances ; les frais payés d’avance ne sont pas remisés."
+    },
+    "payment": {
+        "heading": "Paiement initial (facultatif)",
+        "skipLabelBold": "Ne pas enregistrer de paiement maintenant.",
+        "skipLabelRest": "L'apprenant paiera chaque échéance en ligne plus tard.",
+        "offlineLabelBold": "Enregistrer un paiement hors ligne.",
+        "offlineLabelRest": "Appliqué aux échéances les plus proches en premier.",
+        "amountLabel": "Montant (₹)",
+        "firstDue": "Première échéance : {{amount}}",
+        "netDues": "Solde net dû : {{amount}}",
+        "referenceLabel": "Référence (facultatif)",
+        "referencePlaceholder": "ex. chèque n°1234"
+    },
+    "schedule": {
+        "modeLabel": "Échéancier",
+        "usePlan": "Utiliser l’échéancier du plan",
+        "useCustom": "Choisir un échéancier pour cette inscription",
+        "flexibleIntro": "Ce plan de frais n’a pas de dates fixes. Choisissez le nombre d’échéances et leur espacement.",
+        "oneTimeIntro": "Le prix du cours est réparti en échéances pour les apprenants de cette inscription.",
+        "courseFee": "Frais du cours",
+        "countLabel": "Échéances",
+        "everyLabel": "Tous les",
+        "firstDueLabel": "Première échéance",
+        "units": {
+            "days": "jours",
+            "months": "mois"
+        },
+        "reset": "Revenir à une répartition égale",
+        "rebalance": "Répartir la différence sur les autres échéances",
+        "monthsHint": "Même date chaque mois ; les mois plus courts prennent leur dernier jour.",
+        "afterDiscount": "Après remise",
+        "multiFeeHint": "Ce plan répartit plusieurs frais : seules les dates peuvent être modifiées ici. Modifiez une échéance précise depuis le plan de frais de l’élève après l’inscription.",
+        "upfront": "Payé d’avance à la première échéance : {{fees}}",
+        "errors": {
+            "nothingToSplit": "Ce plan de frais ne contient aucun frais payable en plusieurs fois.",
+            "countRange": "Choisissez entre 1 et {{max}} échéances.",
+            "missingDueDate": "L’échéance {{n}} n’a pas de date.",
+            "datesOutOfOrder": "L’échéance {{n}} tombe avant l’échéance {{prev}}.",
+            "mixedAmounts": "Indiquez un montant pour chaque échéance, ou revenez à la répartition égale.",
+            "negativeAmount": "Chaque échéance doit avoir un montant supérieur à zéro.",
+            "amountMismatch": "Les échéances totalisent {{given}} mais les frais sont de {{total}}. Utilisez la remise ci-dessous pour changer le prix.",
+            "gapRange": "L’espacement doit être compris entre 1 et {{max}}.",
+            "tooSmall": "{{fee}} est trop faible pour être réparti en {{count}} échéances.",
+            "decimals": "Les montants ont au plus 2 décimales.",
+            "negativeDiscount": "L’échéance {{n}} a une remise négative.",
+            "discountTooBig": "L’échéance {{n}} a une remise supérieure à son montant."
+        },
+        "discountColumn": "Remise",
+        "toPay": "À payer",
+        "discountFor": "Remise sur l’échéance {{n}}",
+        "toPayFor": "À payer pour l’échéance {{n}}",
+        "toPayHint": "{{gross}} − {{off}} de remise = {{net}} à payer. Saisissez ce que l’apprenant paie dans « À payer » ; le montant suit et la remise reste.",
+        "sameDayWarning": "Les échéances {{a}} et {{b}} tombent le même jour. Un paiement va d’abord à l’échéance {{a}}."
+    }
+}

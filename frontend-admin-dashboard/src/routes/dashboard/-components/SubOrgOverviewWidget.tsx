@@ -1,5 +1,6 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -51,6 +52,7 @@ interface Stat {
  * so it never renders a wall of zeros.
  */
 export default function SubOrgOverviewWidget() {
+    const { t } = useTranslation('dashboardSubOrgOverviewWidget');
     const navigate = useNavigate();
     const instituteId = getCurrentInstituteId();
 
@@ -81,9 +83,9 @@ export default function SubOrgOverviewWidget() {
     const stats: Stat[] = [
         {
             key: 'total',
-            label: `Total ${plural}`,
+            label: t('stats.total.label', { plural }),
             value: nfmt(total),
-            subtitle: `Registered ${plural}`,
+            subtitle: t('stats.total.subtitle', { plural }),
             visual: {
                 Icon: Buildings,
                 iconBg: 'bg-violet-100',
@@ -93,9 +95,9 @@ export default function SubOrgOverviewWidget() {
         },
         {
             key: 'active',
-            label: 'Active',
+            label: t('stats.active.label'),
             value: nfmt(active),
-            subtitle: 'With an active plan',
+            subtitle: t('stats.active.subtitle'),
             visual: {
                 Icon: CheckCircle,
                 iconBg: 'bg-emerald-100',
@@ -105,9 +107,9 @@ export default function SubOrgOverviewWidget() {
         },
         {
             key: 'learners',
-            label: 'Learners',
+            label: t('stats.learners.label'),
             value: nfmt(learners),
-            subtitle: `Enrolled across ${plural}`,
+            subtitle: t('stats.learners.subtitle', { plural }),
             visual: {
                 Icon: GraduationCap,
                 iconBg: 'bg-blue-100',
@@ -117,9 +119,10 @@ export default function SubOrgOverviewWidget() {
         },
         {
             key: 'seats',
-            label: 'Seats',
+            label: t('stats.seats.label'),
             value: capacity > 0 ? `${nfmt(learners)}/${nfmt(capacity)}` : '—',
-            subtitle: capacity > 0 ? 'Occupied of capacity' : 'No cap configured',
+            subtitle:
+                capacity > 0 ? t('stats.seats.subtitleOccupied') : t('stats.seats.subtitleNoCap'),
             visual: {
                 Icon: UsersThree,
                 iconBg: 'bg-amber-100',
@@ -139,9 +142,11 @@ export default function SubOrgOverviewWidget() {
                         <Buildings size={14} weight="duotone" />
                     </span>
                     <div className="min-w-0">
-                        <h3 className="text-sm font-semibold text-neutral-900">{plural} snapshot</h3>
+                        <h3 className="text-sm font-semibold text-neutral-900">
+                            {t('header.title', { plural })}
+                        </h3>
                         <p className="line-clamp-1 text-xs text-neutral-500">
-                            Your {singular} network at a glance
+                            {t('header.subtitle', { singular })}
                         </p>
                     </div>
                 </div>
@@ -150,7 +155,7 @@ export default function SubOrgOverviewWidget() {
                     onClick={go}
                     className="flex shrink-0 items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700"
                 >
-                    Manage
+                    {t('manage')}
                     <ArrowRight size={12} weight="bold" />
                 </button>
             </div>

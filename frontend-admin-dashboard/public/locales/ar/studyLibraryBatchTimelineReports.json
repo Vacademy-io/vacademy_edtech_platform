@@ -1,0 +1,61 @@
+{
+    "form": {
+        "startDateRequired": "تاريخ البدء مطلوب",
+        "endDateRequired": "تاريخ الانتهاء مطلوب",
+        "dateRangeTooLong": "يجب أن يكون الفرق بين تاريخ البدء وتاريخ الانتهاء أقل من شهر واحد.",
+        "errorsHeading": "يرجى تصحيح الأخطاء التالية:",
+        "batchRequired": "اختر دفعة واحدة على الأقل"
+    },
+    "range": {
+        "label": "النطاق:",
+        "last7Days": "آخر 7 أيام",
+        "hide": "إخفاء",
+        "change": "تغيير"
+    },
+    "actions": {
+        "generateReport": "إنشاء التقرير",
+        "exporting": "جارٍ التصدير…",
+        "exportPdf": "تصدير PDF",
+        "exportCsv": "تصدير CSV"
+    },
+    "toast": {
+        "exportSuccess": "تم تصدير تقرير الدفعة",
+        "exportFailed": "فشل تصدير PDF",
+        "csvExportSuccess": "تم تصدير CSV",
+        "csvExportFailed": "فشل تصدير CSV"
+    },
+    "report": {
+        "duration": "المدة:",
+        "courseCompletedLabel": "{{term}} مكتمل",
+        "acrossBatch": "عبر الدفعة بأكملها",
+        "dailyTimeSpentAvg": "متوسط الوقت اليومي المستغرق",
+        "concentrationScoreAvg": "متوسط درجة التركيز",
+        "dailyLearningPerformance": "أداء التعلم اليومي",
+        "trackDailyProgress": "تتبّع التقدم اليومي وأنماط النشاط",
+        "activitySummary": "ملخص النشاط",
+        "leaderboard": "لوحة المتصدرين",
+        "topPerformingStudents": "الطلاب الأعلى أداءً في الدفعة",
+        "multiBatchTitle": "تقرير {{term}} · تم اختيار {{count}}",
+        "comparisonTitle": "مقارنة {{term}}",
+        "comparisonSubtitle": "المؤشرات الرئيسية لكل دفعة مختارة جنبًا إلى جنب",
+        "batchLoadFailed": "تعذر تحميل تقرير {{name}}.",
+        "loadFailed": "حدث خطأ أثناء تحميل التقرير. يرجى المحاولة مرة أخرى."
+    },
+    "csv": {
+        "fileStem": "learning-timeline",
+        "summaryTitle": "الملخص",
+        "startDate": "تاريخ البدء",
+        "endDate": "تاريخ الانتهاء",
+        "courseCompleted": "اكتمال {{term}} (%)",
+        "dailyTimeMin": "متوسط الوقت اليومي (دقيقة)",
+        "concentration": "درجة التركيز (%)",
+        "dailyTitle": "الوقت اليومي",
+        "date": "التاريخ",
+        "avgDailyTimeMin": "متوسط الوقت (دقيقة)",
+        "leaderboardTitle": "لوحة المتصدرين",
+        "rank": "الترتيب",
+        "name": "الاسم",
+        "email": "البريد الإلكتروني",
+        "totalTimeMin": "الوقت الإجمالي (دقيقة)"
+    }
+}

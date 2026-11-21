@@ -1,4 +1,5 @@
 import { Pie, PieChart } from "recharts";
+import { useTranslation } from "react-i18next";
 import {
     ChartConfig,
     ChartContainer,
@@ -13,26 +14,26 @@ interface MarksResponseDataInterface {
     skipped: number;
 }
 
-const chartConfig = {
-    correct: {
-        label: "Correct",
-        color: "hsl(var(--chart-1))",
-    },
-    partiallyCorrect: {
-        label: "Partially Correct",
-        color: "hsl(var(--chart-2))",
-    },
-    wrongResponse: {
-        label: "Wrong Response",
-        color: "hsl(var(--chart-3))",
-    },
-    skipped: {
-        label: "Skipped",
-        color: "hsl(var(--chart-4))",
-    },
-} satisfies ChartConfig;
-
 export function MarksBreakdownComponent({ marksData }: { marksData: MarksResponseDataInterface }) {
+    const { t } = useTranslation("testRecords");
+    const chartConfig = {
+        correct: {
+            label: t("common.correct"),
+            color: "hsl(var(--chart-1))",
+        },
+        partiallyCorrect: {
+            label: t("marksBreakdown.partiallyCorrect"),
+            color: "hsl(var(--chart-2))",
+        },
+        wrongResponse: {
+            label: t("marksBreakdown.wrongResponse"),
+            color: "hsl(var(--chart-3))",
+        },
+        skipped: {
+            label: t("common.skipped"),
+            color: "hsl(var(--chart-4))",
+        },
+    } satisfies ChartConfig;
     const chartData = [
         {
             responseType: "correct",

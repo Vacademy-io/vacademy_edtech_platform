@@ -1,0 +1,16 @@
+{
+    "emptyState": {
+        "noQuestions": "प्रश्न विवरण दिखाने के लिए कृपया एक प्रश्न जोड़ें"
+    },
+    "label": {
+        "comprehensionText": "गद्यांश पाठ",
+        "question": "प्रश्न",
+        "answer": "उत्तर"
+    },
+    "placeholder": {
+        "correctAnswer": "सही उत्तर दर्ज करें"
+    },
+    "explanation": {
+        "defaultLabel": "व्याख्या:"
+    }
+}

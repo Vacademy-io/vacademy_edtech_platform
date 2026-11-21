@@ -1,0 +1,65 @@
+{
+    "toolbar": {
+        "title": "इमेज एडिटर",
+        "fieldsMapped_one": "{{count}} फ़ील्ड मैप की गई",
+        "fieldsMapped_other": "{{count}} फ़ील्ड मैप की गईं",
+        "hint": "• चुनने के लिए क्लिक करें • संपादित करने के लिए डबल-क्लिक करें",
+        "save": "सहेजें",
+        "clearAll": "सभी साफ़ करें"
+    },
+    "canvas": {
+        "imageAlt": "प्रमाणपत्र टेम्पलेट",
+        "editingTitle": "संपादन समाप्त करने के लिए Enter या Escape दबाएँ",
+        "selectTitle": "चुनने के लिए क्लिक करें, टेक्स्ट संपादित करने के लिए डबल-क्लिक करें",
+        "deleteFieldTitle": "फ़ील्ड हटाएँ",
+        "loading": "टेम्पलेट लोड हो रहा है...",
+        "dropHere": "फ़ील्ड यहाँ छोड़ें",
+        "dropHint": "फ़ील्ड को अपने प्रमाणपत्र टेम्पलेट पर रखें"
+    },
+    "summary": {
+        "title": "फ़ील्ड मैपिंग ({{count}})",
+        "position": "x:{{x}}, y:{{y}}"
+    },
+    "properties": {
+        "title": "फ़ील्ड गुण",
+        "removeButton": "हटाएँ",
+        "closeTitle": "गुण बंद करें",
+        "fontSize": {
+            "label": "फ़ॉन्ट आकार",
+            "pxValue": "{{value}}px"
+        },
+        "fontFamily": {
+            "label": "फ़ॉन्ट प्रकार"
+        },
+        "fontWeight": {
+            "label": "फ़ॉन्ट वज़न",
+            "normal": "सामान्य",
+            "bold": "बोल्ड"
+        },
+        "textColor": {
+            "label": "टेक्स्ट रंग"
+        },
+        "textAlignment": {
+            "label": "टेक्स्ट संरेखण",
+            "left": "बाएँ",
+            "center": "मध्य",
+            "right": "दाएँ"
+        },
+        "backgroundColor": {
+            "label": "पृष्ठभूमि रंग",
+            "clear": "साफ़ करें",
+            "current": "वर्तमान: {{value}}",
+            "transparent": "पारदर्शी"
+        },
+        "position": {
+            "label": "स्थिति",
+            "x": "X स्थिति",
+            "y": "Y स्थिति"
+        },
+        "size": {
+            "label": "फ़ील्ड आकार",
+            "width": "चौड़ाई",
+            "height": "ऊँचाई"
+        }
+    }
+}

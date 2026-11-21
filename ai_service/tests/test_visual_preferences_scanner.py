@@ -76,7 +76,7 @@ assert_eq(
     extract_visual_preferences_from_text(None),  # type: ignore[arg-type]
     {
         "stock_video": None, "ai_imagery": None, "svg_illustrated": None,
-        "motion_graphics": None, "app_ui_mockup": None, "text_density": None,
+        "motion_graphics": None, "app_ui_mockup": None, "ai_video": None, "text_density": None,
     },
 )
 assert_eq(
@@ -84,7 +84,7 @@ assert_eq(
     extract_visual_preferences_from_text(""),
     {
         "stock_video": None, "ai_imagery": None, "svg_illustrated": None,
-        "motion_graphics": None, "app_ui_mockup": None, "text_density": None,
+        "motion_graphics": None, "app_ui_mockup": None, "ai_video": None, "text_density": None,
     },
 )
 assert_eq(
@@ -319,7 +319,7 @@ assert_eq(
     empty,
     {
         "stock_video": None, "ai_imagery": None, "svg_illustrated": None,
-        "motion_graphics": None, "app_ui_mockup": None, "text_density": None,
+        "motion_graphics": None, "app_ui_mockup": None, "ai_video": None, "text_density": None,
     },
 )
 

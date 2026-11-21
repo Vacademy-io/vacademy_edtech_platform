@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -24,6 +25,8 @@ class UserMessagesApiTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
+    // Postgres-only email-stats SQL in the create response rolls the create back on H2.
+    @MockBean private vacademy.io.notification_service.features.notification_log.repository.NotificationLogRepository notificationLogRepository;
 
     private String createAnnouncementAndReturnId() throws Exception {
         CreateAnnouncementRequest req = new CreateAnnouncementRequest();
@@ -46,7 +49,7 @@ class UserMessagesApiTest {
         medium.setConfig(Map.of("title","t","body","b"));
         req.setMediums(List.of(medium));
 
-        var res = mockMvc.perform(post("/notification-service/v1/announcements")
+        var res = mockMvc.perform(post("/notification-service/v1/announcements").with(AnnouncementTestAuth.admin("INST_TEST"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
@@ -58,7 +61,8 @@ class UserMessagesApiTest {
     @DisplayName("List user messages endpoint responds")
     void listUserMessages() throws Exception {
         createAnnouncementAndReturnId();
-        mockMvc.perform(get("/notification-service/v1/user-messages/user/USER_TEST?page=0&size=10"))
+        mockMvc.perform(get("/notification-service/v1/user-messages/user/USER_TEST?page=0&size=10")
+                        .with(AnnouncementTestAuth.as("INST_TEST", "USER_TEST", "STUDENT")))
                 .andExpect(status().isOk());
     }
 }

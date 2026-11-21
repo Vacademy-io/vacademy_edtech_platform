@@ -82,6 +82,13 @@ public class BookingInstance {
     @Column(name = "google_calendar_event_id")
     private String googleCalendarEventId;
 
+    /**
+     * Google account the Meet link + calendar event were created under (GoogleAccount.id).
+     * null = booked before this was recorded (resolve from the host); blank = institute default.
+     */
+    @Column(name = "google_account_id")
+    private String googleAccountId;
+
     /** Phase 3: booking-form custom-field answers. */
     @Column(name = "custom_field_values_json")
     private String customFieldValuesJson;

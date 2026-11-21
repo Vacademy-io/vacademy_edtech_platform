@@ -1,0 +1,8 @@
+{
+    "success": {
+        "updateCampaign": "تم التحديث بنجاح"
+    },
+    "errors": {
+        "updateCampaign": "فشل تحديث الحملة"
+    }
+}

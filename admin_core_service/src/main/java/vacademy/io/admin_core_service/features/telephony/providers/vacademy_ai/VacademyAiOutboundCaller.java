@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.telephony.providers.vacademy_ai;
 
+import vacademy.io.admin_core_service.features.telephony.core.PhoneNumbers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -99,7 +100,7 @@ public class VacademyAiOutboundCaller implements AiOutboundCaller {
         // are stored without the country code) is parsed by Plivo as some other region's
         // prefix → 403 "Calls to this destination region are barred". Normalise the same
         // way the Airtel adapter does before dialing.
-        String dialTo = toE164(spec.getPhoneNumber());
+        String dialTo = PhoneNumbers.toE164(spec.getPhoneNumber());
         if (dialTo == null) {
             throw new VacademyException("Lead has no valid phone number to dial");
         }
@@ -157,20 +158,4 @@ public class VacademyAiOutboundCaller implements AiOutboundCaller {
         return o == null ? null : o.toString();
     }
 
-    /**
-     * Normalise a lead number to E.164 with a leading +. Indian-aware (the only
-     * market today); other formats pass through with their digits + a leading +.
-     * PlivoHttpClient strips the '+' itself, but the country code must be present
-     * or Plivo bars the call as an unroutable destination region. Mirrors
-     * AirtelOutboundCallInitiator#toE164.
-     */
-    static String toE164(String raw) {
-        if (raw == null) return null;
-        String digits = raw.replaceAll("[^0-9]", "");
-        if (digits.isEmpty()) return null;
-        if (digits.length() == 10) return "+91" + digits;              // bare Indian mobile
-        if (digits.length() == 11 && digits.startsWith("0")) return "+91" + digits.substring(1);
-        if (digits.length() == 12 && digits.startsWith("91")) return "+" + digits;
-        return "+" + digits;                                            // already has a country code
-    }
 }

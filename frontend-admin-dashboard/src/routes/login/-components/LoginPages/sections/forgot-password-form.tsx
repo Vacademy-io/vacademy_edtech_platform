@@ -16,10 +16,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { EnvelopeSimple, WhatsappLogo } from '@phosphor-icons/react';
 import { goToMailSupport, goToWhatsappSupport } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 type FormValues = z.infer<typeof forgotPasswordSchema>;
 
 export function ForgotPassword() {
+    const { t } = useTranslation('loginForgotPasswordForm');
     const [cooldown, setCooldown] = useState(0);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
 
@@ -51,7 +53,7 @@ export function ForgotPassword() {
                 setShowSuccessModal(true);
                 form.reset();
             } else {
-                toast.error("We couldn't find an account with that email address.", {
+                toast.error(t('accountNotFound'), {
                     description: response.message,
                     className: 'error-toast',
                     duration: 4000,
@@ -60,8 +62,8 @@ export function ForgotPassword() {
         },
         onError: (error: unknown) => {
             const errorMessage =
-                error instanceof Error ? error.message : 'Unable to process your request';
-            toast.error('Something went wrong', {
+                error instanceof Error ? error.message : t('unableToProcessRequest');
+            toast.error(t('somethingWentWrong'), {
                 description: errorMessage,
                 className: 'error-toast',
                 duration: 3000,
@@ -81,8 +83,8 @@ export function ForgotPassword() {
             <FormContainer>
                 <div className="flex w-full flex-col items-center justify-center gap-20">
                     <Heading
-                        heading="Forgot Password"
-                        subHeading="Enter your email, and we'll send your password to your inbox"
+                        heading={t('forgotPasswordHeading')}
+                        subHeading={t('forgotPasswordSubHeading')}
                     />
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="w-full">
@@ -101,7 +103,7 @@ export function ForgotPassword() {
                                                     error={form.formState.errors.email?.message}
                                                     required={true}
                                                     size="large"
-                                                    label="Email"
+                                                    label={t('emailLabel')}
                                                     // Account identifier — keep browser fill.
                                                     autoComplete="email"
                                                     {...field}
@@ -123,10 +125,10 @@ export function ForgotPassword() {
                                             {isSending ? (
                                                 <div className="flex items-center gap-2">
                                                     <span className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                                    Sending...
+                                                    {t('sending')}
                                                 </div>
                                             ) : (
-                                                `Resend in ${cooldown}s`
+                                                t('resendIn', { count: cooldown })
                                             )}
                                         </MyButton>
                                     ) : (
@@ -136,19 +138,19 @@ export function ForgotPassword() {
                                             buttonType="primary"
                                             layoutVariant="default"
                                         >
-                                            Send Reset Link
+                                            {t('sendResetLink')}
                                         </MyButton>
                                     )}
 
                                     <div className="flex gap-1 text-body font-regular">
                                         <div className="text-neutral-500">
-                                            Remember your password?
+                                            {t('rememberYourPassword')}
                                         </div>
                                         <Link
                                             to="/login"
                                             className="cursor-pointer text-primary-500"
                                         >
-                                            Back to Login
+                                            {t('backToLogin')}
                                         </Link>
                                     </div>
                                 </div>
@@ -160,7 +162,7 @@ export function ForgotPassword() {
                                         </div>
                                         <div className="relative flex justify-center text-xs uppercase">
                                             <span className="bg-background px-2 text-muted-foreground">
-                                                Or connect with us
+                                                {t('orConnectWithUs')}
                                             </span>
                                         </div>
                                     </div>
@@ -182,7 +184,7 @@ export function ForgotPassword() {
                                             onClick={goToMailSupport}
                                         >
                                             <EnvelopeSimple className="size-6" />
-                                            Email
+                                            {t('emailLabel')}
                                         </MyButton>
                                     </div>
                                 </div>
@@ -200,16 +202,16 @@ export function ForgotPassword() {
                         <button
                             className="absolute right-4 top-4 text-neutral-500 hover:text-neutral-700"
                             onClick={() => setShowSuccessModal(false)}
-                            aria-label="Close"
+                            aria-label={t('closeAriaLabel')}
                         >
                             ×
                         </button>
 
                         <h2 className="mb-2 text-xl font-semibold text-neutral-800">
-                            Check Your Email
+                            {t('checkYourEmail')}
                         </h2>
                         <p className="mb-6 text-neutral-600">
-                            Your username and password have been sent to your email address.
+                            {t('credentialsSentMessage')}
                         </p>
 
                         {/* ✅ Replace "Got it" with "Back to Login" */}
@@ -220,7 +222,7 @@ export function ForgotPassword() {
                                 layoutVariant="default"
                                 className="mx-auto"
                             >
-                                Back to Login
+                                {t('backToLogin')}
                             </MyButton>
                         </Link>
                     </div>

@@ -1,4 +1,5 @@
 import { ColumnDef } from '@tanstack/react-table';
+import type { TFunction } from 'i18next';
 import { CaretUp, CaretDown } from '@phosphor-icons/react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useGetStudentBatch } from '@/routes/manage-students/students-list/-hooks/useGetStudentBatch';
@@ -20,7 +21,7 @@ const BatchCell = ({ package_session_id }: { package_session_id: string }) => {
     );
 };
 
-export const myAssessmentColumns: ColumnDef<StudentTable>[] = [
+export const buildAssessmentColumns = (t: TFunction): ColumnDef<StudentTable>[] => [
     {
         id: 'checkbox',
         header: ({ table }) => (
@@ -51,7 +52,7 @@ export const myAssessmentColumns: ColumnDef<StudentTable>[] = [
                         }}
                     >
                         <button className="flex w-full cursor-pointer items-center justify-between">
-                            <div>Name</div>
+                            <div>{t('columns.name')}</div>
                             <div>
                                 <CaretUp />
                                 <CaretDown />
@@ -69,30 +70,30 @@ export const myAssessmentColumns: ColumnDef<StudentTable>[] = [
     },
     {
         accessorKey: 'institute_enrollment_id',
-        header: 'Enrollment Number',
+        header: t('columns.enrollmentNumber'),
     },
     {
         accessorKey: 'linked_institute_name',
-        header: 'College/School',
+        header: t('columns.collegeSchool'),
     },
     {
         accessorKey: 'gender',
-        header: 'Gender',
+        header: t('columns.gender'),
     },
     {
         accessorKey: 'mobile_number',
-        header: 'Mobile Number',
+        header: t('columns.mobileNumber'),
     },
     {
         accessorKey: 'email',
-        header: 'Email ID',
+        header: t('columns.emailId'),
     },
     {
         accessorKey: 'city',
-        header: 'City',
+        header: t('columns.city'),
     },
     {
         accessorKey: 'region',
-        header: 'State',
+        header: t('columns.state'),
     },
 ];

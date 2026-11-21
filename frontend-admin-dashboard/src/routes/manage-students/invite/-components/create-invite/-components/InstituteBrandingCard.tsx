@@ -4,18 +4,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building } from '@phosphor-icons/react';
 import { FormField, FormItem, FormControl } from '@/components/ui/form';
 import { Switch } from '@/components/ui/switch';
+import { useTranslation } from 'react-i18next';
 
 interface DiscountSettingsDialogProps {
     form: UseFormReturn<InviteLinkFormValues>;
 }
 
 const InstituteBrandingCard = ({ form }: DiscountSettingsDialogProps) => {
+    const { t } = useTranslation('manageStudentsInstituteBrandingCard');
     return (
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Building size={20} />
-                    <span className="text-2xl font-bold">Institute Branding</span>
+                    <span className="text-2xl font-bold">{t('title')}</span>
                 </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
@@ -31,7 +33,7 @@ const InstituteBrandingCard = ({ form }: DiscountSettingsDialogProps) => {
                                         checked={field.value}
                                         onCheckedChange={field.onChange}
                                     />
-                                    <span>Include institute logo.</span>
+                                    <span>{t('includeLogo.label')}</span>
                                 </div>
                             </FormControl>
                         </FormItem>
@@ -50,11 +52,10 @@ const InstituteBrandingCard = ({ form }: DiscountSettingsDialogProps) => {
                                             checked={field.value}
                                             onCheckedChange={field.onChange}
                                         />
-                                        <span>Match header to theme background.</span>
+                                        <span>{t('blendHeader.label')}</span>
                                     </div>
                                     <span className="text-caption text-neutral-500">
-                                        Puts the logo header and invite title on the page
-                                        background instead of white. Only the form stays white.
+                                        {t('blendHeader.description')}
                                     </span>
                                 </div>
                             </FormControl>

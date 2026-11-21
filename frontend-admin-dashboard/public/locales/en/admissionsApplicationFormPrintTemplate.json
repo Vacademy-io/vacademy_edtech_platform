@@ -1,0 +1,76 @@
+{
+    "header": {
+        "applicationFormTitle": "Application Form",
+        "institutePlaceholder": "Institute Name",
+        "instituteLogoAlt": "Institute Logo",
+        "pastePhoto": "Paste Photo",
+        "dateLabel": "Date:",
+        "academicYearLabel": "Academic Year:"
+    },
+    "sections": {
+        "studentDetails": "Student Details",
+        "healthInformation": "Health Information",
+        "academicInformation": "Academic Information",
+        "fathersDetails": "Father's Details",
+        "mothersDetails": "Mother's Details",
+        "guardianDetails": "Guardian Details",
+        "emergencyContact": "Emergency Contact",
+        "addressDetails": "Address Details"
+    },
+    "fields": {
+        "fullNameBirthCertificate": "Full Name (As per Birth Certificate)",
+        "dateOfBirth": "Date of Birth",
+        "gender": "Gender",
+        "nationality": "Nationality",
+        "religion": "Religion",
+        "category": "Category",
+        "bloodGroup": "Blood Group",
+        "motherTongue": "Mother Tongue",
+        "languagesKnown": "Languages Known",
+        "idType": "ID Type",
+        "idNumber": "ID Number",
+        "medicalConditions": "Medical Conditions / Allergies",
+        "dietaryRestrictions": "Dietary Restrictions",
+        "specialEducationNeeds": "Special Education Needs",
+        "physicallyChallenged": "Physically Challenged",
+        "applyingForClass": "Applying For Class",
+        "preferredBoard": "Preferred Board",
+        "academicYear": "Academic Year",
+        "previousSchoolName": "Previous School Name",
+        "previousSchoolBoard": "Previous School Board",
+        "lastClassAttended": "Last Class Attended",
+        "lastExamResult": "Last Exam Result",
+        "subjectsStudied": "Subjects Studied",
+        "tcNumber": "TC Number",
+        "tcIssueDate": "TC Issue Date",
+        "tcPending": "TC Pending",
+        "name": "Name",
+        "mobile": "Mobile",
+        "email": "Email",
+        "qualification": "Qualification",
+        "occupation": "Occupation",
+        "annualIncome": "Annual Income",
+        "relation": "Relation",
+        "relationship": "Relationship",
+        "currentAddress": "Current Address",
+        "permanentAddress": "Permanent Address",
+        "sameAsCurrentAddress": "Same as Current Address"
+    },
+    "values": {
+        "yes": "Yes",
+        "no": "No"
+    },
+    "signature": {
+        "roleParentGuardian": "Parent / Guardian",
+        "roleStudent": "Student",
+        "rolePrincipal": "Principal",
+        "label": "{{role}}'s Signature"
+    },
+    "declaration": {
+        "title": "Declaration",
+        "text": "I hereby declare that all the information provided above is true and correct to the best of my knowledge. I understand that any false information may lead to the cancellation of the application / admission."
+    },
+    "footer": {
+        "generatedOn": "This is a computer-generated document. Generated on {{date}}."
+    }
+}

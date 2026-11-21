@@ -1,10 +1,12 @@
 import { App, type URLOpenListenerEvent } from '@capacitor/app';
 import { isNative } from './platform';
+import { getFlavor } from './flavor';
 
 // Accepted deep-link shapes:
 //   vimotion://open?path=/vim/dashboard?tab=recent
 //   vimotion://video/<id>                  → /vim/dashboard?videoId=<id>
 //   https://vimotion.app/v/<id>            → /vim/dashboard?videoId=<id>  (Universal Link)
+//   https://<flavor deepLinkHost>/<path>   → /<path>  (App Link, e.g. evalezy.vacademy.io/evalezy/<id>)
 export type DeepLinkPayload = { path: string; replace?: boolean };
 
 type DeepLinkListener = (payload: DeepLinkPayload) => void;
@@ -53,6 +55,12 @@ function parseUrl(raw: string): DeepLinkPayload | null {
                 return id ? { path: `/vim/dashboard?videoId=${encodeURIComponent(id)}` } : null;
             }
             return null;
+        }
+        // App Links / Universal Links on this flavor's own host: the web URL and the
+        // in-app route are the same path (the route guard keeps Evalezy in its shell).
+        const ownHost = getFlavor().deepLinkHost;
+        if (u.protocol === 'https:' && ownHost && u.host.toLowerCase() === ownHost) {
+            return { path: (u.pathname || '/') + u.search };
         }
         // Universal links — share the same path mapping.
         if (u.host === 'vimotion.app' || u.host.endsWith('.vimotion.app')) {

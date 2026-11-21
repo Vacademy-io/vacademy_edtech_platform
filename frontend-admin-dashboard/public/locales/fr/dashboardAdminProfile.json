@@ -1,0 +1,42 @@
+{
+    "trigger": {
+        "editProfile": "Modifier le profil"
+    },
+    "dialog": {
+        "title": "Modifier le profil"
+    },
+    "logoAlt": "logo",
+    "menu": {
+        "uploadNew": "Importer une nouvelle photo",
+        "removeImage": "Supprimer l'image"
+    },
+    "fields": {
+        "name": {
+            "label": "Nom du profil",
+            "placeholder": "Nom complet (prénom et nom)"
+        },
+        "email": {
+            "label": "E-mail",
+            "placeholder": "you@email.com"
+        },
+        "phone": {
+            "label": "Numéro de mobile",
+            "placeholder": "123 456 7890"
+        }
+    },
+    "roles": {
+        "label": "Type de rôle",
+        "empty": "Aucun rôle attribué",
+        "managedNote": "Les rôles sont gérés par l'administrateur de votre établissement et ne peuvent pas être modifiés ici."
+    },
+    "sections": {
+        "contactInformation": "Informations de contact"
+    },
+    "actions": {
+        "saveChanges": "Enregistrer les modifications",
+        "cancel": "Annuler"
+    },
+    "toast": {
+        "updateSuccess": "Vos informations ont été mises à jour avec succès !"
+    }
+}

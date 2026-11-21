@@ -1,0 +1,23 @@
+{
+    "tutorPreparing": "Preparing the AI teacher for this course in the background…",
+    "tutorReady_one": "AI teacher ready: {{count}} slide prepared.",
+    "tutorReady_other": "AI teacher ready: {{count}} slides prepared.",
+    "tutorPartial": "AI teacher: {{ready}} prepared, {{failed}} failed — see the course’s Tutor Mode tab.",
+    "unknownError": "unknown error",
+    "tutorPrepFailed": "The AI teacher could not be prepared ({{msg}}). Open the course’s Tutor Mode tab to retry.",
+    "metadataMissing": "Course metadata not found. Please regenerate the course outline.",
+    "noSessions": "No sessions found. Please generate content first.",
+    "progress": {
+        "initializing": "Initializing course creation...",
+        "creating": "Creating course...",
+        "created": "Course created successfully!",
+        "submitting": "Submitting for review...",
+        "publishing": "Publishing course..."
+    },
+    "defaultCourseName": "New Course",
+    "reviewSubmitted": "Course submitted for review!",
+    "reviewSubmitFailed": "Course created but failed to submit for review.",
+    "createFailed": "Failed to create course",
+    "coursePublished": "Course published!",
+    "publishFailed": "Course created but failed to publish."
+}

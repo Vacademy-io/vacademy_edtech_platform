@@ -1,0 +1,76 @@
+{
+    "dialog": {
+        "editHeading": "Modifier la politique de congé",
+        "addHeading": "Ajouter une politique de congé"
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "saving": "Enregistrement…",
+        "saveChanges": "Enregistrer les modifications",
+        "createPolicy": "Créer la politique"
+    },
+    "info": {
+        "accrualExplanationPrefix": "Le type d'accumulation détermine comment la tâche planifiée crédite le quota : ",
+        "accrualExplanationSuffix": " signifie que chaque exécution ajoute le montant d'accumulation au solde de chaque employé éligible. Le prorata répartit la première période d'un employé arrivé en cours de période, afin que quelqu'un qui rejoint au milieu du mois soit crédité de la moitié plutôt que de la totalité."
+    },
+    "noLeaveTypes": "Aucun type de congé pour l'instant — créez-en un dans l'onglet Types de congé d'abord. Une politique doit être rattachée à un type.",
+    "fields": {
+        "leaveType": {
+            "label": "Type de congé",
+            "fallback": "Congé"
+        },
+        "annualQuota": {
+            "label": "Quota annuel (jours)",
+            "placeholder": "12",
+            "description": "Le droit pour l'année entière."
+        },
+        "accrualType": {
+            "label": "Type d'accumulation"
+        },
+        "accrualAmount": {
+            "label": "Montant d'accumulation (jours)",
+            "placeholder": "1",
+            "description": "Crédité à chaque exécution {{accrualLabel}}."
+        },
+        "applicableAfterDays": {
+            "label": "Applicable après (jours d'ancienneté)",
+            "placeholder": "90",
+            "description": "Vide signifie qu'il s'applique dès la date d'embauche."
+        },
+        "effectiveFrom": {
+            "label": "Effectif à partir du"
+        },
+        "effectiveTo": {
+            "label": "Effectif jusqu'au",
+            "description": "Laisser vide rend la politique à durée indéterminée."
+        },
+        "status": {
+            "label": "Statut"
+        }
+    },
+    "checkbox": {
+        "proRata": {
+            "label": "Prorata pour les arrivées en cours de période",
+            "description": "Désactivé signifie qu'un nouvel arrivant reçoit l'accumulation complète de la période dès sa première exécution, quel que soit le nombre de jours travaillés."
+        }
+    },
+    "toast": {
+        "updated": "Politique mise à jour",
+        "created": "Politique créée"
+    },
+    "errors": {
+        "saveFailed": "Impossible d'enregistrer la politique de congé."
+    },
+    "validation": {
+        "leaveTypeRequired": "Choisissez le type de congé régi par cette politique",
+        "annualQuotaRequired": "Saisissez le quota annuel en jours",
+        "annualQuotaFormat": "Jours uniquement, ex. 12 ou 12,5",
+        "accrualTypeRequired": "Choisissez comment le quota est crédité",
+        "accrualAmountRequired": "Saisissez le nombre de jours crédités par période",
+        "accrualAmountFormat": "Jours uniquement, ex. 1 ou 1,5",
+        "wholeDaysOnly": "Jours entiers uniquement",
+        "effectiveFromRequired": "Une politique nécessite une date de début",
+        "statusRequired": "Choisissez un statut",
+        "endBeforeStart": "La date de fin ne peut pas être antérieure à la date de début"
+    }
+}

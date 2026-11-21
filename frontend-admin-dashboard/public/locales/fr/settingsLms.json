@@ -1,0 +1,69 @@
+{
+    "header": {
+        "title": "Connectez votre LMS",
+        "subtitle": "Ajoutez les systèmes d'apprentissage utilisés par votre établissement — vous pouvez en connecter plusieurs (par ex. un site LearnDash et un site Moodle). Appliquez une connexion à un cours donné depuis l'onglet Paramètres de ce cours."
+    },
+    "loading": "Chargement des paramètres LMS…",
+    "banner": {
+        "courseSourceInfo": "Nous avons trouvé une connexion LMS déjà configurée sur l'un de vos cours et l'avons listée ci-dessous. Vérifiez-la et cliquez sur <1>Enregistrer</1> pour la conserver comme connexion de l'établissement."
+    },
+    "emptyState": {
+        "title": "Aucun LMS externe connecté",
+        "description": "Vos apprenants utilisent le LMS Vacademy intégré. Connectez un site LearnDash ou Moodle ci-dessous pour y synchroniser les inscriptions."
+    },
+    "connectionCard": {
+        "defaultBadge": "Par défaut",
+        "makeDefault": "Définir par défaut",
+        "editAriaLabel": "Modifier",
+        "removeAriaLabel": "Supprimer"
+    },
+    "addProvider": "Ajouter {{name}}",
+    "editor": {
+        "addHeading": "Ajouter la connexion {{name}}",
+        "editHeading": "Modifier la connexion {{name}}",
+        "docsLink": "Comment trouver ces informations",
+        "connectionName": {
+            "label": "Nom de la connexion",
+            "placeholder": "ex. Main Moodle, CA-program LearnDash",
+            "hint": "Un libellé pour reconnaître cette connexion lorsque vous l'appliquez à un cours."
+        },
+        "optional": "(facultatif)",
+        "secretField": {
+            "show": "Afficher",
+            "hide": "Masquer"
+        },
+        "customFields": {
+            "label": "Champs personnalisés (facultatif)",
+            "keyPlaceholder": "clé (ex. région)",
+            "valuePlaceholder": "valeur",
+            "removeAriaLabel": "Supprimer le champ",
+            "addField": "Ajouter un champ",
+            "hint": "Ajoutez tout autre détail de connexion requis par votre LMS sous forme de paires clé-valeur."
+        },
+        "cancel": "Annuler",
+        "testConnection": "Tester la connexion",
+        "testing": "Test en cours…",
+        "addSubmit": "Ajouter la connexion",
+        "updateSubmit": "Mettre à jour la connexion"
+    },
+    "validation": {
+        "required": "Champ requis",
+        "invalidUrl": "Doit commencer par http:// ou https://"
+    },
+    "testResult": {
+        "genericFailure": "Impossible d'exécuter le test. Réessayez."
+    },
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "confirmSaveDialog": {
+        "title": "Enregistrer les modifications de la connexion LMS ?",
+        "description": "Les modifications apportées à une connexion <1>existante</1> (URL, identifiants, jeton) s'appliquent à tous les cours qui l'utilisent déjà — une modification incorrecte peut donc casser la synchronisation des inscriptions pour ces cours. Les nouvelles connexions n'auront aucun effet tant que vous ne les aurez pas appliquées à un cours. Vérifiez bien avant d'enregistrer.",
+        "cancel": "Annuler",
+        "confirm": "Oui, enregistrer"
+    },
+    "toasts": {
+        "loadFailed": "Échec du chargement des paramètres LMS",
+        "saveFailed": "Échec de l'enregistrement des paramètres LMS",
+        "saveSuccess": "Connexions LMS enregistrées"
+    }
+}

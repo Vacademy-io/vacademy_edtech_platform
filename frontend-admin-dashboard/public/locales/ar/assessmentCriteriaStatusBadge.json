@@ -1,0 +1,9 @@
+{
+  "labels": {
+    "aiGenerated": "تم إنشاؤه بالذكاء الاصطناعي",
+    "manual": "يدوي",
+    "template": "قالب",
+    "notAdded": "لم تتم الإضافة"
+  },
+  "previewTooltip": "معاينة المعايير"
+}

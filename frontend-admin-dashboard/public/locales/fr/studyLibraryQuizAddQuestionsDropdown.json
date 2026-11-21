@@ -1,0 +1,8 @@
+{
+    "addQuestion": "Ajouter une question",
+    "addManually": "Ajouter manuellement",
+    "uploadDocument": "Importer un document",
+    "createWithAi": "Créer avec l'IA",
+    "uploadCsvExcel": "Importer un CSV/Excel",
+    "fromQuestionBank": "Depuis la banque de questions / l'épreuve"
+}

@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { tierChipStyle, useLeadTiers, type LeadTierCatalog } from '@/hooks/use-lead-tiers';
 
 /**
  * LeadStageChip — the Orbitra-style "Lead Stage" soft pill.
@@ -31,26 +32,37 @@ interface LeadStageChipProps {
     className?: string;
 }
 
+/**
+ * Resolve the stage pill for a lead. With a catalog, any known tier key maps to
+ * its configured label + hex colour (returned as `color`, accent 'neutral');
+ * without one the legacy HOT/WARM/COLD accents apply.
+ */
 export function resolveStage(
     tier?: string | null,
-    conversionStatus?: string | null
-): { label: string; accent: StageAccent } {
+    conversionStatus?: string | null,
+    catalog?: Pick<LeadTierCatalog, 'byKey'>
+): { label: string; accent: StageAccent; color?: string } {
     if ((conversionStatus ?? '').toUpperCase() === 'CONVERTED') {
         return { label: 'Converted', accent: 'emerald' };
     }
     const key = (tier ?? '').toUpperCase();
+    const row = catalog?.byKey(key);
+    if (row) return { label: row.label, accent: 'neutral', color: row.color || undefined };
     return TIER_TO_STAGE[key] ?? { label: 'New', accent: 'neutral' };
 }
 
 export function LeadStageChip({ tier, conversionStatus, className }: LeadStageChipProps) {
-    const { label, accent } = resolveStage(tier, conversionStatus);
+    const catalog = useLeadTiers();
+    const { label, accent, color } = resolveStage(tier, conversionStatus, catalog);
     return (
         <span
             className={cn(
                 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-                ACCENT_STYLES[accent],
+                color ? 'border' : ACCENT_STYLES[accent],
                 className
             )}
+            // Inline style: tier colour is admin-picked hex with no design-token equivalent.
+            style={color ? tierChipStyle(color) : undefined}
         >
             {label}
         </span>

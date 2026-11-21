@@ -1,0 +1,1696 @@
+/* =====================================================================
+   TCS-family exam console (layouts/ConsoleLayout.tsx and QLT/widgets).
+
+   Tokens are set on [data-exam-theme-family="tcs"], which the console root
+   and each of its portalled dialogs carry, and overridden per preset under
+   [data-exam-theme="<preset>"] (preset rules come after the family block,
+   same specificity, so they win). Colours are sampled from the consoles
+   these presets model; every shape is drawn here (no vendor images).
+   Class names are all `tcs-*` and used only by the console, so the rules
+   below are plain class rules that read the tokens.
+
+   The institute's app skin is taken off <html> while a themed exam is open
+   (lib/app-skin.ts), so nothing here has to fight a skin. App tokens
+   (--primary-*, --radius) are still never read: the console keeps its own
+   look whatever the institute's brand.
+   Raw hex is allowed in this folder.
+   ===================================================================== */
+
+[data-exam-theme-family="tcs"] {
+  --exam-font-ui: Arial, Helvetica, sans-serif;
+  --exam-font-item: Arial, Helvetica, sans-serif;
+
+  --tcs-font: Arial, Helvetica, sans-serif;
+  --tcs-text: #252525;
+
+  /* Banner (blue style; white style uses --tcs-banner-white-*) */
+  --tcs-banner-bg: #2d70b6;
+  --tcs-banner-tab: #2c507c;
+  --tcs-banner-text: #ffffff;
+  --tcs-banner-white-text: #222222;
+  --tcs-banner-height: 49px;
+  --tcs-banner-logo-height: 36px;
+
+  /* Dark sub-header */
+  --tcs-subheader-bg: #363636;
+  --tcs-title: #f7f64e;
+  --tcs-link-text: #ffffff;
+  --tcs-icon-paper: #3fa33f;
+  --tcs-icon-info: #2f8fd8;
+
+  /* Group row, section tabs */
+  --tcs-group-row-bg: #eeeeee;
+  --tcs-group-tab: #147eb3;
+  --tcs-arrow: #948d86;
+  --tcs-sections-label: #3e637e;
+  --tcs-accent: #147eb3; /* active section tab, palette section bar */
+  --tcs-tab-text: #257198;
+  --tcs-tab-border: #b3b3b3;
+  --tcs-info-bg: #5bb1fa;
+
+  /* Header text weights (some consoles set these labels in regular weight) */
+  --tcs-title-size: 14px;
+  --tcs-title-weight: 700;
+  --tcs-label-weight: 700; /* "Sections", "Question Type: …" */
+  --tcs-clock-weight: 700;
+  --tcs-marks-weight: 700;
+
+  /* Question header */
+  --tcs-qtype-text: #f07f5f;
+  --tcs-marks-positive: #3a9a2a;
+  --tcs-marks-negative: #a80000;
+  --tcs-viewin-bg: #4e85c5;
+  --tcs-viewin-height: 41px;
+  --tcs-qno-bg: #ffffff;
+  --tcs-scroll-jump: #406eb2;
+  --tcs-watermark: #e9ebea;
+
+  /* Buttons and bars */
+  --tcs-save-bg: #147eb3;
+  --tcs-save-text: #ffffff;
+  --tcs-submit-bg: #147eb3;
+  /* --tcs-submit-disabled-bg / -opacity: Submit while it is held until time
+     is up (unset = Submit's own colour at reduced opacity). */
+  --tcs-secondary-bg: #ffffff;
+  --tcs-secondary-border: #c8c8c8;
+  --tcs-secondary-text: #252525;
+  --tcs-secondary-weight: 400;
+  --tcs-bottom-bg: #ffffff;
+  --tcs-bottom-rule: #cccccc;
+  --tcs-footer-bg: #617b8c;
+
+  /* Right panel */
+  --tcs-right-bg: #f8fbff;
+  --tcs-candidate-bg: #f9fbff;
+  --tcs-candidate-photo: #4b7589;
+  --tcs-candidate-name: #2c363f;
+  --tcs-grid-bg: #e5f6fd;
+  --tcs-collapse-bg: #030303;
+  --tcs-palette-border: #0a0a0a;
+
+  /* Chips */
+  --tcs-chip-nv-top: #f3f3f3;
+  --tcs-chip-nv-bottom: #d3d3d3;
+  --tcs-chip-nv-edge: #8c8b8b;
+  --tcs-chip-nv-text: #474747;
+  --tcs-chip-na-top: #ff934b;
+  --tcs-chip-na-bottom: #fe5207;
+  --tcs-chip-na-edge: #ad2806;
+  --tcs-chip-ans-top: #7fc322;
+  --tcs-chip-ans-bottom: #75bd20;
+  --tcs-chip-ans-edge: #4b9a16;
+  --tcs-chip-mk-top: #8d6bb0;
+  --tcs-chip-mk-bottom: #7f5ba2;
+  --tcs-chip-mk-edge: #5f3c82;
+  --tcs-chip-tick: #64bb46;
+
+  /* Exam Summary */
+  --tcs-summary-head: #cee3f8;
+  --tcs-summary-text: #546989;
+}
+
+/* JEE Advanced-style console colours. */
+[data-exam-theme="jee-advanced"] {
+  --tcs-banner-bg: #406fb0;
+  --tcs-banner-tab: #2c507c;
+  --tcs-banner-height: 38px;
+  --tcs-banner-logo-height: 30px;
+  --tcs-title-size: 12px;
+  --tcs-title-weight: 400;
+  --tcs-label-weight: 400;
+  --tcs-clock-weight: 400;
+  --tcs-marks-weight: 400;
+  --tcs-group-tab: #3b7dab;
+  --tcs-accent: #3a7baf;
+  --tcs-qtype-text: #343845;
+  --tcs-marks-positive: #1f8a8f;
+  --tcs-marks-negative: #c62d1f;
+  --tcs-viewin-bg: linear-gradient(#4876a4, #335e8a);
+  --tcs-viewin-height: 28px;
+  --tcs-qno-bg: #f5f5f5;
+  --tcs-save-bg: #3a7cad;
+  --tcs-submit-bg: #3a7cb0;
+  --tcs-bottom-bg: #ededed;
+  --tcs-footer-bg: #667a8a;
+  --tcs-grid-bg: #e9f6fc;
+  --tcs-chip-nv-top: #f6f6f6;
+  --tcs-chip-nv-bottom: #ececec;
+  /* Chip gradients are centred on the colour sampled mid-face. */
+  --tcs-chip-na-top: #e06536;
+  --tcs-chip-na-bottom: #d6491e;
+  --tcs-chip-ans-top: #88bc4a;
+  --tcs-chip-ans-bottom: #78b034;
+  --tcs-chip-mk-top: #6c5490;
+  --tcs-chip-mk-bottom: #5c447a;
+}
+
+/* GATE-style console (older official mock and a close replica). */
+[data-exam-theme="gate"] {
+  --tcs-title: #f7f66e;
+  --tcs-group-tab: #5ba7e3;
+  --tcs-accent: #5b84c0;
+  --tcs-qtype-text: #e5957a;
+  --tcs-marks-positive: #75b04f;
+  --tcs-marks-negative: #ca5341;
+  --tcs-save-bg: #3f7acf;
+  --tcs-submit-bg: #5fa8e3;
+  --tcs-submit-disabled-bg: #5bc0de;
+  --tcs-submit-disabled-opacity: 1;
+  --tcs-secondary-bg: #efefef;
+  --tcs-secondary-weight: 700;
+  --tcs-footer-bg: #66798a;
+  --tcs-right-bg: #e8f5fc;
+  --tcs-grid-bg: #e8f5fc;
+  --tcs-collapse-bg: #3c3c3b;
+  --tcs-chip-nv-top: #f2f2f2;
+  --tcs-chip-nv-bottom: #e4e3e2;
+  /* Chip gradients are centred on the colour sampled mid-face. */
+  --tcs-chip-na-top: #d05a33;
+  --tcs-chip-na-bottom: #c0421f;
+  --tcs-chip-ans-top: #9fc767;
+  --tcs-chip-ans-bottom: #8fbb51;
+  --tcs-chip-mk-top: #675596;
+  --tcs-chip-mk-bottom: #574582;
+}
+
+/* RRB JE-style console (2026 official mock). */
+[data-exam-theme="rrb-je"] {
+  --tcs-group-tab: #137eb2;
+  --tcs-accent: #147db1;
+  --tcs-save-bg: #147db1;
+  --tcs-submit-bg: #147db1;
+}
+
+/* ---------------------------------------------------------------- root */
+
+.tcs-root {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #ffffff;
+  color: var(--tcs-text);
+  font-family: var(--tcs-font);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.tcs-root button,
+.tcs-dialog button {
+  font-family: var(--tcs-font);
+}
+
+/* -------------------------------------------------------------- banner */
+
+.tcs-banner {
+  display: flex;
+  flex: none;
+  align-items: center;
+  height: var(--tcs-banner-height);
+  overflow: hidden;
+}
+
+.tcs-banner--blue {
+  background: var(--tcs-banner-bg);
+  color: var(--tcs-banner-text);
+}
+
+.tcs-banner__tab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 100%;
+  max-width: 70%;
+  padding: 0 16px;
+  background: var(--tcs-banner-tab);
+}
+
+.tcs-banner__name {
+  overflow: hidden;
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tcs-banner__logo {
+  display: block;
+  width: auto;
+  max-width: 120px;
+  height: var(--tcs-banner-logo-height);
+  padding: 2px;
+  border-radius: 3px;
+  background: #ffffff;
+  object-fit: contain;
+}
+
+.tcs-banner--white {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  height: 56px;
+  padding: 0 16px;
+  border-bottom: 1px solid #d9d9d9;
+  background: #ffffff;
+  color: var(--tcs-banner-white-text);
+}
+
+.tcs-banner--white .tcs-banner__title {
+  overflow: hidden;
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tcs-banner__side {
+  display: flex;
+  align-items: center;
+}
+
+/* ---------------------------------------------------------- sub-header */
+
+.tcs-subheader {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 30px;
+  padding: 0 12px;
+  background: var(--tcs-subheader-bg);
+}
+
+.tcs-subheader__title {
+  overflow: hidden;
+  color: var(--tcs-title);
+  font-size: var(--tcs-title-size);
+  font-weight: var(--tcs-title-weight);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+[data-exam-theme-family="tcs"] .tcs-subheader__links {
+  display: flex;
+  flex: none;
+  gap: 18px;
+}
+
+[data-exam-theme-family="tcs"] .tcs-subheader__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--tcs-link-text);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+[data-exam-theme-family="tcs"] .tcs-subheader__link:hover {
+  text-decoration: underline;
+}
+
+.tcs-round-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.tcs-round-icon--paper {
+  background: var(--tcs-icon-paper);
+}
+
+.tcs-round-icon--info {
+  background: var(--tcs-icon-info);
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+}
+
+/* ----------------------------------------------------------- body grid */
+
+.tcs-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.tcs-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tcs-footer {
+  flex: none;
+  height: 22px;
+  background: var(--tcs-footer-bg);
+}
+
+/* ----------------------------------------------------------- group row */
+
+.tcs-group-row {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  height: 36px;
+  padding: 0 6px;
+  border-bottom: 1px solid #dddddd;
+  background: var(--tcs-group-row-bg);
+}
+
+[data-exam-theme-family="tcs"] .tcs-arrow {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--tcs-arrow);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+[data-exam-theme-family="tcs"] .tcs-arrow:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+[data-exam-theme-family="tcs"] .tcs-arrow--box {
+  border: 1px solid #c9c9c9;
+  border-radius: 2px;
+  background: #f4f4f4;
+}
+
+.tcs-group-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 50%;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 2px;
+  background: var(--tcs-group-tab);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.tcs-group-tab::after {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  border-top: 6px solid var(--tcs-group-tab);
+  border-right: 6px solid transparent;
+  border-left: 6px solid transparent;
+  content: "";
+  transform: translateX(-50%);
+}
+
+.tcs-group-tab__name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tcs-group-row__tools {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+[data-exam-theme-family="tcs"] .tcs-tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: none;
+  color: #4a4a4a;
+  cursor: pointer;
+}
+
+[data-exam-theme-family="tcs"] .tcs-tool:hover,
+[data-exam-theme-family="tcs"] .tcs-tool[aria-pressed="true"] {
+  border-color: #b9b9b9;
+  background: #ffffff;
+}
+
+[data-exam-theme-family="tcs"] .tcs-tool:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+[data-exam-theme="gate"] .tcs-tool[aria-pressed] {
+  color: #f08a24;
+}
+
+/* "i" icon and its summary popover (group and section tabs) */
+
+.tcs-info {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--tcs-info-bg);
+  color: #ffffff;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 11px;
+  font-style: italic;
+  font-weight: 700;
+  cursor: help;
+}
+
+.tcs-group-tab .tcs-info {
+  background: #ffffff;
+  color: var(--tcs-group-tab);
+}
+
+.tcs-popover {
+  position: fixed;
+  z-index: 70;
+  display: block;
+  min-width: 230px;
+  padding: 8px 10px;
+  border: 1px solid #9a9a9a;
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.25);
+  color: #252525;
+  font-family: var(--tcs-font);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 400;
+  text-align: left;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.tcs-popover__title {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.tcs-popover__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 1px 0;
+}
+
+.tcs-popover__count {
+  font-weight: 700;
+}
+
+/* ------------------------------------------------------ sections + tabs */
+
+.tcs-sections-row {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  height: 26px;
+  padding: 0 10px;
+  background: #ffffff;
+}
+
+.tcs-sections-row__label {
+  color: var(--tcs-sections-label);
+  font-weight: var(--tcs-label-weight);
+}
+
+.tcs-clock {
+  color: #333333;
+  font-size: 13px;
+  font-weight: var(--tcs-clock-weight);
+  white-space: nowrap;
+}
+
+/* Whole-paper clock plus, on section- or question-timed papers, that clock. */
+.tcs-clocks {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px 14px;
+}
+
+.tcs-tabs-row {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px 9px;
+  border-bottom: 1px solid #dddddd;
+  background: #ffffff;
+}
+
+.tcs-tabs {
+  display: flex;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tcs-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tcs-tab {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  height: 29px;
+  padding: 0 8px;
+  border: 1px solid var(--tcs-tab-border);
+  border-radius: 3px;
+  background: #ffffff;
+  color: var(--tcs-tab-text);
+}
+
+[data-exam-theme-family="tcs"] .tcs-tab__name {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+[data-exam-theme-family="tcs"] .tcs-tab__name:disabled {
+  cursor: not-allowed;
+}
+
+.tcs-tab--active {
+  border-color: var(--tcs-accent);
+  background: var(--tcs-accent);
+  color: #ffffff;
+}
+
+.tcs-tab--active::after {
+  position: absolute;
+  bottom: -7px;
+  left: 50%;
+  border-top: 6px solid var(--tcs-accent);
+  border-right: 6px solid transparent;
+  border-left: 6px solid transparent;
+  content: "";
+  transform: translateX(-50%);
+}
+
+.tcs-tab--active .tcs-info {
+  background: #ffffff;
+  color: var(--tcs-accent);
+}
+
+.tcs-tab--locked {
+  opacity: 0.55;
+}
+
+/* ------------------------------------------------- question type, marks */
+
+.tcs-qtype-row {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 16px;
+  min-height: 30px;
+  padding: 4px 10px;
+  border-bottom: 1px solid #e2e2e2;
+  background: #ffffff;
+}
+
+.tcs-qtype-row__type {
+  color: var(--tcs-qtype-text);
+  font-weight: var(--tcs-label-weight);
+}
+
+.tcs-qtype-row__marks {
+  margin-left: auto;
+  color: #333333;
+}
+
+.tcs-qtype-row__sep {
+  margin: 0 6px;
+  color: #888888;
+}
+
+.tcs-marks {
+  font-weight: var(--tcs-marks-weight);
+}
+
+.tcs-marks--positive {
+  color: var(--tcs-marks-positive);
+}
+
+.tcs-marks--negative {
+  color: var(--tcs-marks-negative);
+}
+
+.tcs-viewin {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: flex-end;
+  height: var(--tcs-viewin-height);
+  padding: 0 10px;
+  background: var(--tcs-viewin-bg);
+  color: #ffffff;
+}
+
+.tcs-viewin__select {
+  height: min(24px, calc(var(--tcs-viewin-height) - 4px));
+  margin-left: 6px;
+  border-radius: 2px;
+  background: #ffffff;
+  color: #000000;
+  font-size: 12px;
+}
+
+.tcs-viewin__select:disabled {
+  opacity: 1;
+}
+
+@media (max-height: 720px) {
+  .tcs-viewin {
+    height: min(var(--tcs-viewin-height), 30px);
+  }
+}
+
+/* ------------------------------------------------------- question pane */
+
+.tcs-qpane {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.tcs-qno-row {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 4px 10px;
+  border-bottom: 1px solid #cccccc;
+  background: var(--tcs-qno-bg);
+}
+
+.tcs-qno-row__label {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+[data-exam-theme-family="tcs"] .tcs-scroll-jump {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--tcs-scroll-jump);
+  color: #ffffff;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.tcs-qpane__body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.tcs-qpane__scroll {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.tcs-qpane__content {
+  padding: 12px 16px 24px;
+  font-family: var(--exam-font-item);
+  font-size: calc(15px * var(--tcs-zoom, 1));
+  line-height: 1.5;
+}
+
+.tcs-qpane__content img {
+  max-width: 100%;
+  height: auto;
+}
+
+.tcs-watermark {
+  position: absolute;
+  inset: -50%;
+  z-index: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 56px 72px;
+  color: var(--tcs-watermark);
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  transform: rotate(-30deg);
+}
+
+.tcs-calculator-dock {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 30;
+  width: 320px;
+  max-width: calc(100% - 24px);
+}
+
+.tcs-question {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tcs-stem {
+  overflow-wrap: anywhere;
+}
+
+.tcs-note {
+  padding: 16px;
+  color: #555555;
+}
+
+.tcs-note--alert {
+  color: #a80000;
+  font-weight: 700;
+}
+
+.tcs-options {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tcs-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 4px;
+  cursor: pointer;
+}
+
+.tcs-option__input {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 0.25em;
+  cursor: pointer;
+}
+
+.tcs-option__prefix {
+  flex: none;
+}
+
+.tcs-option__text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Numerical answer and keypad */
+
+.tcs-numeric {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tcs-numeric__input {
+  width: 220px;
+  max-width: 100%;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid #8f8f8f;
+  background: #ffffff;
+  color: #000000;
+  font-family: var(--tcs-font);
+  font-size: 15px;
+}
+
+[data-exam-theme-family="tcs"] .tcs-keypad {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 150px;
+  padding: 4px;
+  border: 1px solid #b5b5b5;
+  background: #f0f0f0;
+}
+
+[data-exam-theme-family="tcs"] .tcs-keypad__row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+}
+
+[data-exam-theme-family="tcs"] .tcs-keypad__row--two {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+[data-exam-theme-family="tcs"] .tcs-key {
+  height: 28px;
+  padding: 0;
+  border: 1px solid #a9a9a9;
+  border-radius: 2px;
+  background: linear-gradient(#ffffff, #e4e4e4);
+  color: #222222;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+[data-exam-theme-family="tcs"] .tcs-key:active {
+  background: linear-gradient(#e4e4e4, #ffffff);
+}
+
+[data-exam-theme-family="tcs"] .tcs-key--wide {
+  width: 100%;
+}
+
+/* ------------------------------------------------------------- buttons */
+
+.tcs-bottom-bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 56px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--tcs-bottom-rule);
+  background: var(--tcs-bottom-bg);
+}
+
+.tcs-bottom-bar__group {
+  display: flex;
+  gap: 8px;
+}
+
+[data-exam-theme-family="tcs"] .tcs-btn {
+  height: 39px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+[data-exam-theme-family="tcs"] .tcs-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+[data-exam-theme-family="tcs"] .tcs-btn--secondary,
+[data-exam-theme-family="tcs"] .tcs-btn--mark {
+  border-color: var(--tcs-secondary-border);
+  background: var(--tcs-secondary-bg);
+  color: var(--tcs-secondary-text);
+  font-weight: var(--tcs-secondary-weight);
+}
+
+[data-exam-theme-family="tcs"] .tcs-btn--secondary:not(:disabled):hover,
+[data-exam-theme-family="tcs"] .tcs-btn--mark:not(:disabled):hover {
+  border-color: #333333;
+}
+
+[data-exam-theme-family="tcs"] .tcs-btn--primary,
+[data-exam-theme-family="tcs"] .tcs-btn--save-mark {
+  background: var(--tcs-save-bg);
+  color: var(--tcs-save-text);
+  font-weight: 700;
+}
+
+[data-exam-theme-family="tcs"] .tcs-btn--submit {
+  min-width: 113px;
+  background: var(--tcs-submit-bg);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+[data-exam-theme-family="tcs"] .tcs-btn--submit:disabled {
+  background: var(--tcs-submit-disabled-bg, var(--tcs-submit-bg));
+  opacity: var(--tcs-submit-disabled-opacity, 0.55);
+}
+
+/* Hint over a Submit that is held until time is up (hover; see SubmitButton). */
+.tcs-submit--locked {
+  position: relative;
+}
+
+.tcs-submit__tip {
+  position: absolute;
+  bottom: calc(100% - 4px);
+  left: 50%;
+  z-index: 5;
+  display: none;
+  width: max-content;
+  max-width: 220px;
+  padding: 6px 8px;
+  border-radius: 3px;
+  background: #333333;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.35;
+  text-align: center;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.tcs-submit--locked:hover .tcs-submit__tip {
+  display: block;
+}
+
+/* Touch screens have no hover: the reason is printed under the button. */
+@media (hover: none) {
+  .tcs-submit--locked {
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .tcs-submit--locked .tcs-submit__tip {
+    position: static;
+    display: block;
+    max-width: none;
+    padding: 0;
+    background: none;
+    color: #555555;
+    transform: none;
+  }
+}
+
+[data-exam-theme-family="tcs"] .tcs-btn--primary:not(:disabled):hover,
+[data-exam-theme-family="tcs"] .tcs-btn--save-mark:not(:disabled):hover,
+[data-exam-theme-family="tcs"] .tcs-btn--submit:not(:disabled):hover {
+  filter: brightness(0.92);
+}
+
+[data-exam-theme-family="tcs"] .tcs-btn:focus-visible,
+[data-exam-theme-family="tcs"] .tcs-subheader__link:focus-visible,
+[data-exam-theme-family="tcs"] .tcs-tab__name:focus-visible,
+[data-exam-theme-family="tcs"] .tcs-chip-button:focus-visible,
+.tcs-info:focus-visible {
+  outline: 2px solid #1a1a1a;
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------- right panel */
+
+.tcs-side {
+  position: relative;
+  flex: none;
+  width: 250px;
+  border-left: 1px solid #c3c3c3;
+  background: var(--tcs-right-bg);
+}
+
+.tcs-side--collapsed {
+  width: 0;
+  border-left: 0;
+}
+
+[data-exam-theme-family="tcs"] .tcs-collapse {
+  position: absolute;
+  top: 50%;
+  left: -14px;
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 56px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px 0 0 4px;
+  background: var(--tcs-collapse-bg);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.tcs-right {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.tcs-candidate {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-bottom: 1px solid #d7dde5;
+  background: var(--tcs-candidate-bg);
+}
+
+.tcs-candidate__photo {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+  background: var(--tcs-candidate-photo);
+  color: #ffffff;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.tcs-candidate__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tcs-candidate__name {
+  overflow: hidden;
+  color: var(--tcs-candidate-name);
+  font-size: 14px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+}
+
+.tcs-candidate--compact .tcs-candidate__photo {
+  width: 40px;
+  height: 40px;
+  font-size: 18px;
+}
+
+.tcs-right__box {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.tcs-right__box--bordered {
+  margin: 4px;
+  border: 2px solid var(--tcs-palette-border);
+}
+
+.tcs-legend {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 6px;
+  margin: 0;
+  padding: 8px;
+  background: #ffffff;
+  list-style: none;
+}
+
+.tcs-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.tcs-legend__item--wide {
+  grid-column: 1 / -1;
+}
+
+.tcs-section-bar {
+  flex: none;
+  overflow: hidden;
+  height: 31px;
+  padding: 0 8px;
+  background: var(--tcs-accent);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 31px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tcs-choose {
+  flex: none;
+  padding: 0 8px;
+  background: var(--tcs-grid-bg);
+  font-weight: 700;
+  line-height: 26px;
+}
+
+.tcs-right__grid {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 6px 8px 10px;
+  background: var(--tcs-grid-bg);
+}
+
+.tcs-palette {
+  display: grid;
+  grid-template-columns: repeat(4, 44px);
+  gap: 8px 10px;
+  justify-content: start;
+}
+
+.tcs-palette[data-columns="8"] {
+  grid-template-columns: repeat(8, 32px);
+  gap: 6px;
+}
+
+.tcs-submit {
+  display: flex;
+  flex: none;
+  justify-content: center;
+  padding: 10px;
+  background: var(--tcs-grid-bg);
+}
+
+/* ---------------------------------------------------------------- chips */
+
+[data-exam-theme-family="tcs"] .tcs-chip-button {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+[data-exam-theme-family="tcs"] .tcs-chip-button[aria-current="step"] .tcs-chip {
+  filter: drop-shadow(0 0 1.5px #1a1a1a);
+}
+
+.tcs-chip {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 41px;
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 400;
+}
+
+.tcs-chip--legend {
+  width: 29px;
+  height: 26px;
+  font-size: 12px;
+}
+
+.tcs-palette[data-columns="8"] .tcs-chip {
+  width: 32px;
+  height: 30px;
+  font-size: 13px;
+}
+
+/* The edge colour fills the shape; ::before draws the face 1px inside it. */
+.tcs-chip::before {
+  position: absolute;
+  inset: 1px;
+  content: "";
+}
+
+.tcs-chip__label {
+  position: relative;
+  z-index: 1;
+}
+
+.tcs-chip--not-visited {
+  border-radius: 3px;
+  background: var(--tcs-chip-nv-edge);
+  color: var(--tcs-chip-nv-text);
+}
+
+.tcs-chip--not-visited::before {
+  border-radius: 2px;
+  background: linear-gradient(var(--tcs-chip-nv-top), var(--tcs-chip-nv-bottom));
+}
+
+/* Flat top, bottom corners cut at 45 degrees (points down). */
+.tcs-chip--not-answered {
+  background: var(--tcs-chip-na-edge);
+  clip-path: polygon(0 0, 100% 0, 100% 68%, 76% 100%, 24% 100%, 0 68%);
+}
+
+.tcs-chip--not-answered::before {
+  background: linear-gradient(var(--tcs-chip-na-top), var(--tcs-chip-na-bottom));
+  clip-path: polygon(0 0, 100% 0, 100% 68%, 76% 100%, 24% 100%, 0 68%);
+}
+
+/* Top corners cut at 45 degrees, flat bottom (points up). */
+.tcs-chip--answered {
+  background: var(--tcs-chip-ans-edge);
+  clip-path: polygon(24% 0, 76% 0, 100% 32%, 100% 100%, 0 100%, 0 32%);
+}
+
+.tcs-chip--answered::before {
+  background: linear-gradient(var(--tcs-chip-ans-top), var(--tcs-chip-ans-bottom));
+  clip-path: polygon(24% 0, 76% 0, 100% 32%, 100% 100%, 0 100%, 0 32%);
+}
+
+.tcs-chip--marked,
+.tcs-chip--answered-marked {
+  border-radius: 50%;
+  background: var(--tcs-chip-mk-edge);
+}
+
+.tcs-chip--marked::before,
+.tcs-chip--answered-marked::before {
+  border-radius: 50%;
+  background: linear-gradient(var(--tcs-chip-mk-top), var(--tcs-chip-mk-bottom));
+}
+
+.tcs-chip--palette.tcs-chip--marked,
+.tcs-chip--palette.tcs-chip--answered-marked {
+  width: 41px;
+}
+
+.tcs-chip--legend.tcs-chip--marked,
+.tcs-chip--legend.tcs-chip--answered-marked {
+  width: 26px;
+}
+
+.tcs-chip__tick {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border: 1.5px solid #ffffff;
+  border-radius: 50%;
+  background: var(--tcs-chip-tick);
+}
+
+.tcs-chip--legend .tcs-chip__tick {
+  width: 11px;
+  height: 11px;
+  border-width: 1px;
+}
+
+.tcs-chip__tick svg {
+  width: 70%;
+  height: 70%;
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* -------------------------------------------------------------- dialogs */
+
+.tcs-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgb(0 0 0 / 0.45);
+}
+
+.tcs-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 61;
+  display: flex;
+  flex-direction: column;
+  width: min(560px, calc(100vw - 24px));
+  max-height: 85vh;
+  border: 1px solid #7a7a7a;
+  background: #ffffff;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.3);
+  color: #252525;
+  font-family: var(--tcs-font);
+  font-size: 13px;
+  transform: translate(-50%, -50%);
+}
+
+.tcs-dialog--wide {
+  width: min(900px, calc(100vw - 24px));
+}
+
+.tcs-dialog--sheet {
+  top: auto;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  max-height: 88vh;
+  border: 0;
+  border-radius: 12px 12px 0 0;
+  transform: none;
+}
+
+.tcs-dialog--sheet .tcs-dialog__body {
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+}
+
+.tcs-dialog__head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--tcs-summary-head);
+}
+
+.tcs-dialog__title {
+  margin: 0;
+  color: #1f2f46;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.tcs-dialog--centred-title .tcs-dialog__head {
+  position: relative;
+  justify-content: center;
+  padding-inline: 48px;
+}
+
+.tcs-dialog--centred-title .tcs-dialog__title {
+  text-align: center;
+}
+
+[data-exam-theme-family="tcs"].tcs-dialog--centred-title .tcs-dialog__close {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+}
+
+[data-exam-theme-family="tcs"] .tcs-dialog__close {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #333333;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tcs-dialog__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px;
+}
+
+.tcs-dialog__foot {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 10px 12px;
+  border-top: 1px solid #d9d9d9;
+}
+
+/* Exam Summary */
+
+.tcs-summary__scroll {
+  overflow-x: auto;
+}
+
+.tcs-summary {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--tcs-summary-text);
+  text-align: center;
+}
+
+.tcs-summary th,
+.tcs-summary td {
+  padding: 6px 8px;
+  border: 1px solid #000000;
+}
+
+.tcs-summary thead th {
+  background: var(--tcs-summary-head);
+  font-weight: 700;
+}
+
+.tcs-summary tbody th {
+  font-weight: 700;
+  text-align: left;
+}
+
+.tcs-summary__prompt {
+  flex: 1 1 100%;
+  margin: 0;
+  font-weight: 700;
+  text-align: center;
+}
+
+.tcs-summary__buttons {
+  display: flex;
+  flex: 1 1 100%;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* Question Paper */
+
+.tcs-paper__section + .tcs-paper__section {
+  margin-top: 18px;
+}
+
+.tcs-paper__section-name {
+  margin: 0 0 8px;
+  padding: 4px 8px;
+  background: var(--tcs-accent);
+  color: #ffffff;
+  font-size: 14px;
+}
+
+.tcs-paper__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tcs-paper__item {
+  padding: 10px 4px;
+  border-bottom: 1px solid #e3e3e3;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.tcs-paper__number {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+
+.tcs-paper__passage {
+  margin-bottom: 6px;
+  padding: 6px 8px;
+  background: #f6f6f6;
+}
+
+.tcs-paper__options {
+  margin: 6px 0 0;
+  padding-left: 22px;
+  list-style: decimal;
+}
+
+.tcs-paper__item img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Instructions */
+
+.tcs-instructions h3 {
+  margin: 14px 0 6px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.tcs-instructions h3:first-child {
+  margin-top: 0;
+}
+
+.tcs-instructions p {
+  margin: 0 0 6px;
+}
+
+.tcs-instructions__test {
+  overflow-wrap: anywhere;
+}
+
+/* ----------------------------------------------------------------- phone */
+
+.tcs-root--phone {
+  font-size: 13px;
+}
+
+.tcs-phone-top {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 12px;
+  background: var(--tcs-subheader-bg);
+}
+
+.tcs-phone-top__title {
+  overflow: hidden;
+  color: var(--tcs-title);
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tcs-phone-top .tcs-clock {
+  color: #ffffff;
+}
+
+.tcs-tabs-row--compact {
+  padding: 6px 8px 10px;
+}
+
+.tcs-tabs-row--compact .tcs-tab {
+  height: 32px;
+}
+
+[data-exam-theme-family="tcs"] .tcs-phone-palette-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  margin-left: auto;
+  padding: 0 10px;
+  border: 1px solid var(--tcs-secondary-border);
+  border-radius: 3px;
+  background: #ffffff;
+  color: var(--tcs-secondary-text);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Phone: the palette button takes the right end and the scroll arrow sits
+   after it, at the edge, as on the desktop question row. */
+.tcs-root--phone .tcs-qno-row .tcs-phone-palette-button {
+  order: 1;
+}
+
+.tcs-root--phone .tcs-qno-row .tcs-scroll-jump {
+  order: 2;
+  margin-left: 8px;
+}
+
+.tcs-phone-bottom {
+  flex: none;
+  border-top: 1px solid var(--tcs-bottom-rule);
+  background: var(--tcs-bottom-bg);
+}
+
+.tcs-root--phone .tcs-bottom-bar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  min-height: 0;
+  padding: 8px;
+  border-top: 0;
+}
+
+.tcs-root--phone .tcs-bottom-bar__group {
+  display: contents;
+}
+
+.tcs-root--phone .tcs-btn {
+  height: auto;
+  min-height: 44px;
+  padding: 4px 6px;
+  font-size: 12px;
+  line-height: 1.15;
+  white-space: normal;
+}
+
+.tcs-root--phone .tcs-qpane__content {
+  padding: 10px 12px 20px;
+}
+
+.tcs-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tcs-sheet .tcs-right__grid {
+  max-height: 40vh;
+}
+
+.tcs-sheet .tcs-palette {
+  grid-template-columns: repeat(auto-fill, 44px);
+}
+
+.tcs-sheet__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tcs-sheet__links .tcs-btn {
+  flex: 1;
+  min-height: 44px;
+}
+
+.tcs-sheet .tcs-submit {
+  background: none;
+}

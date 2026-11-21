@@ -1,0 +1,17 @@
+{
+    "validation": {
+        "fileNameRequired": "اسم الملف مطلوب",
+        "videoFileRequired": "ملف الفيديو مطلوب"
+    },
+    "toast": {
+        "reorderFailed": "تم إنشاء الشريحة لكن إعادة الترتيب فشلت",
+        "durationReadFailed": "تعذّرت قراءة مدة الفيديو. جرّب ملفًا مختلفًا أو أعد ترميزه.",
+        "uploadSuccess": "تم رفع الفيديو بنجاح!",
+        "uploadFailed": "فشل رفع الفيديو"
+    },
+    "importYourFile": "استورد ملفك",
+    "dragOrClickToUpload": "اسحب أو انقر للرفع",
+    "selected": "المحدد: {{name}}",
+    "uploading": "جارٍ الرفع...",
+    "uploadVideo": "رفع الفيديو"
+}

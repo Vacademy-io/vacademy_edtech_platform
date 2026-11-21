@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Direct build type only (assembleVacademyClassroomDirect, io.vacademy.classroom.direct):
+    the classroom APK for panels without an app store. Merged over main + vacademyClassroom.
+
+    - REQUEST_INSTALL_PACKAGES lets the in-app updater (PanelUpdaterPlugin, also only in
+      src/direct/) hand a verified APK to PackageInstaller. Android still asks the person at
+      the panel to allow it once and to confirm every install.
+    - Store builds (release, debug) have neither this permission nor the updater code.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <application>
+        <!-- Install session status from PackageInstaller. Not reachable from other apps. -->
+        <receiver
+            android:name="io.vacademy.admin.app.panel.update.PanelUpdateStatusReceiver"
+            android:exported="false" />
+    </application>
+</manifest>

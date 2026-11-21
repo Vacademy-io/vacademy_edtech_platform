@@ -1,5 +1,7 @@
 import { Dispatch, SetStateAction, RefObject } from 'react';
 import { toast } from 'sonner';
+import type { TFunction } from 'i18next';
+import i18n from '@/i18n';
 import {
     DocumentSlidePayload,
     Slide,
@@ -26,6 +28,16 @@ type SlideResponse = {
     description: string;
     status: string;
 };
+
+const NAMESPACE = 'studyLibraryHandleUnpublishSlide';
+
+/**
+ * This handler runs outside a React render tree (it's a plain exported async
+ * function invoked from event handlers), so it can't use the `useTranslation`
+ * hook. Fall back to the shared i18next singleton directly.
+ */
+const globalT: TFunction = ((key: string, options?: Record<string, unknown>) =>
+    i18n.t(key, { ns: NAMESPACE, ...options })) as TFunction;
 
 export const handleUnpublishSlide = async (
     setIsOpen: Dispatch<SetStateAction<boolean>>,
@@ -76,10 +88,10 @@ export const handleUnpublishSlide = async (
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-expect-error
             await updateQuestionOrder(convertedData!);
-            toast.success('Slide unpublished successfully!');
+            toast.success(globalT('unpublishSuccess'));
             setIsOpen(false);
         } catch {
-            toast.error('Error unpublishing question slide');
+            toast.error(globalT('errorUnpublishQuestion'));
         }
         return;
     }
@@ -116,17 +128,17 @@ export const handleUnpublishSlide = async (
                 notify,
             });
 
-            toast.success(`Slide unpublished successfully!`);
+            toast.success(globalT('unpublishSuccess'));
             setIsOpen(false);
         } catch {
-            toast.error(`Error in unpublishing the slide`);
+            toast.error(globalT('errorUnpublishGeneric'));
         }
         return;
     }
 
     if (activeItem?.source_type === 'VIDEO') {
         if (!activeItem.video_slide) {
-            toast.error('Video slide data is missing.');
+            toast.error(globalT('errorVideoDataMissing'));
             return;
         }
 
@@ -181,10 +193,10 @@ export const handleUnpublishSlide = async (
 
         try {
             await addUpdateVideoSlide(convertedData);
-            toast.success(`Slide unpublished successfully!`);
+            toast.success(globalT('unpublishSuccess'));
             setIsOpen(false);
         } catch {
-            toast.error(`Error in unpublishing the slide`);
+            toast.error(globalT('errorUnpublishGeneric'));
         }
         return;
     }
@@ -201,10 +213,10 @@ export const handleUnpublishSlide = async (
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-expect-error
             await updateAssignmentOrder(convertedData!);
-            toast.success(`Slide unpublished successfully!`);
+            toast.success(globalT('unpublishSuccess'));
             setIsOpen(false);
         } catch {
-            toast.error(`Error in unpublishing the slide`);
+            toast.error(globalT('errorUnpublishGeneric'));
         }
     }
 
@@ -218,17 +230,17 @@ export const handleUnpublishSlide = async (
 
             // Call the API to unpublish the quiz slide
             await addUpdateQuizSlide(payload);
-            toast.success('Quiz unpublished successfully!');
+            toast.success(globalT('quizUnpublishSuccess'));
             setIsOpen(false);
         } catch (error) {
             console.error('Error unpublishing quiz slide:', error);
-            toast.error('Failed to unpublish quiz');
+            toast.error(globalT('errorUnpublishQuiz'));
         }
     }
 
     if (activeItem?.source_type === 'AUDIO') {
         if (!activeItem.audio_slide) {
-            toast.error('Audio slide data is missing.');
+            toast.error(globalT('errorAudioDataMissing'));
             return;
         }
 
@@ -252,16 +264,16 @@ export const handleUnpublishSlide = async (
                     transcript: activeItem.audio_slide.transcript || null,
                 },
             });
-            toast.success('Slide unpublished successfully!');
+            toast.success(globalT('unpublishSuccess'));
             setIsOpen(false);
         } catch {
-            toast.error('Error in unpublishing the slide');
+            toast.error(globalT('errorUnpublishGeneric'));
         }
     }
 
     if (activeItem?.source_type === 'SCORM') {
         if (!activeItem.scorm_slide) {
-            toast.error('SCORM slide data is missing.');
+            toast.error(globalT('errorScormDataMissing'));
             return;
         }
 
@@ -279,16 +291,16 @@ export const handleUnpublishSlide = async (
                     id: activeItem.scorm_slide.id,
                 },
             });
-            toast.success('SCORM slide unpublished successfully!');
+            toast.success(globalT('scormUnpublishSuccess'));
             setIsOpen(false);
         } catch {
-            toast.error('Error in unpublishing the SCORM slide');
+            toast.error(globalT('errorUnpublishScorm'));
         }
     }
 
     if (activeItem?.source_type === 'ASSESSMENT') {
         if (!activeItem.assessment_slide || !addUpdateAssessmentSlide) {
-            toast.error('Assessment slide data is missing.');
+            toast.error(globalT('errorAssessmentDataMissing'));
             return;
         }
         try {
@@ -310,10 +322,10 @@ export const handleUnpublishSlide = async (
                     show_result: activeItem.assessment_slide.show_result ?? true,
                 },
             });
-            toast.success('Assessment slide unpublished successfully!');
+            toast.success(globalT('assessmentUnpublishSuccess'));
             setIsOpen(false);
         } catch {
-            toast.error('Error in unpublishing the assessment slide');
+            toast.error(globalT('errorUnpublishAssessment'));
         }
     }
 };

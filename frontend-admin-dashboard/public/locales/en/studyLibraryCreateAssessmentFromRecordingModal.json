@@ -1,0 +1,120 @@
+{
+    "dialog": {
+        "headingPreview": "Assessment Preview",
+        "headingCreate": "Create Assessment from Recording",
+        "close": "Close",
+        "cancel": "Cancel"
+    },
+    "toast": {
+        "generatedQuestions_one": "Generated {{count}} question",
+        "generatedQuestions_other": "Generated {{count}} questions",
+        "generationFailed": "Generation failed",
+        "createFailed": "Could not create assessment",
+        "dateTimeRequired": "Start and end datetime are required",
+        "endAfterStart": "End datetime must be after start datetime",
+        "questionCountRange": "Number of questions must be between 1 and 50",
+        "pickQuestionType": "Pick at least one question type",
+        "publishSuccess": "Assessment published",
+        "publishFailed": "Could not publish assessment"
+    },
+    "loading": {
+        "generating_one": "Generating {{count}} question with AI",
+        "generating_other": "Generating {{count}} questions with AI",
+        "withIllustrations": " + illustrations",
+        "hintWithImages": "Typically takes 30–90 seconds — the LLM picks a few questions where a diagram helps and we illustrate only those. Please don’t close this window.",
+        "hintPlain": "Typically takes 15–45 seconds. Please don’t close this window."
+    },
+    "failure": {
+        "title": "Generation failed",
+        "unknownError": "Unknown error",
+        "tryAgain": "Try Again"
+    },
+    "generate": "Generate Assessment",
+    "picker": {
+        "pickTypes": "Pick question types",
+        "selectedCount_one": "{{count}} selected",
+        "selectedCount_other": "{{count}} selected",
+        "note": "Note: the LLM currently only generates MCQs reliably. Other types are saved with your assessment but may still come back as MCQs until prompt support lands.",
+        "howMany": "How many questions?",
+        "rangeHint": "Between 1 and 50. You can change this on the next step too.",
+        "includeImages": "Generate illustrations for questions and options"
+    },
+    "form": {
+        "titleGroup": "Title",
+        "titleLabel": "Assessment title",
+        "titlePlaceholderLoading": "Suggesting from transcript…",
+        "titlePlaceholderEmpty": "Leave empty to auto-generate from the lecture",
+        "scheduleGroup": "Schedule",
+        "startLabel": "Start date & time",
+        "endLabel": "End date & time",
+        "timezoneHint": "Times shown in your local timezone:",
+        "markingGroup": "Marking",
+        "marksLabel": "Marks per question",
+        "durationLabel": "Entire Test Duration",
+        "negativeMarkingLabel": "Enable negative marking",
+        "deductLabel": "Deduct",
+        "perWrongAnswer": "per wrong answer",
+        "attemptsGroup": "Attempts & Preview",
+        "reattemptLabel": "Reattempts allowed",
+        "reattemptHint": "Retries after the first submission. 0 = single attempt.",
+        "previewTimeLabel": "Preview time (minutes)",
+        "previewTimeHint": "Instructions/cover screen time before the timer starts.",
+        "contentGroup": "Content & Access",
+        "numQuestionsLabel": "Number of questions",
+        "fixedAtGeneration": "fixed at generation",
+        "visibilityLabel": "Visibility",
+        "visibilityPrivate": "Private",
+        "visibilityPrivateHint": "batch-only",
+        "visibilityPublic": "Public",
+        "visibilityPublicHint": "open access"
+    },
+    "context": {
+        "hideBatchList": "Hide batch list",
+        "viewBatches": "View attached batches",
+        "assignedToBatches_one": "Assigned to {{count}} batch",
+        "assignedToBatches_other": "Assigned to {{count}} batches",
+        "noBatches": "No batches attached — assessment won’t auto-assign",
+        "languageHint": "Questions will be generated in {{language}}."
+    },
+    "duration": {
+        "hoursAria": "Hours",
+        "hoursUnit": "hrs",
+        "minutesAria": "Minutes",
+        "minutesUnit": "min"
+    },
+    "preview": {
+        "untitled": "Untitled",
+        "titleAria": "Assessment title",
+        "questionsCount_one": "{{count}} question",
+        "questionsCount_other": "{{count}} questions",
+        "batchesCount_one": "{{count}} batch",
+        "batchesCount_other": "{{count}} batches",
+        "assignedBatchesHeader": "Assigned batches ({{count}})",
+        "publishedBanner_one": "Published to the institute’s Assessments tab — registered to {{count}} batch.",
+        "publishedBanner_other": "Published to the institute’s Assessments tab — registered to {{count}} batches.",
+        "reviewHintPrefix": "Review the questions above. Open",
+        "reviewHintSuffix": "to set the title, schedule, and marking — you can publish from inside that dialog.",
+        "addToCourse": "Add to course",
+        "createAssessment": "Create Assessment",
+        "addToCourseAsSlide": "Add to course as slide",
+        "defaultTitle": "Assessment"
+    },
+    "config": {
+        "heading": "Create Assessment",
+        "description": "Set the title, schedule, marking, and visibility — these travel as overrides on the publish call so what you see here is exactly what learners will get.",
+        "cancel": "Cancel",
+        "publishing": "Publishing…",
+        "publish": "Publish Assessment"
+    },
+    "questions": {
+        "empty": "No questions to preview yet.",
+        "multipleChoice": "Multiple Choice",
+        "questionLabel": "Question {{number}}",
+        "difficultyMedium": "Medium",
+        "answer": "Answer",
+        "why": "Why:"
+    },
+    "timezone": {
+        "fallback": "your local timezone"
+    }
+}

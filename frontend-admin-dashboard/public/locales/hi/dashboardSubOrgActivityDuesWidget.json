@@ -1,0 +1,13 @@
+{
+    "heading": "मेरी योजना और बकाया",
+    "planPayment": {
+        "label": "योजना भुगतान",
+        "of": "{{amount}} में से",
+        "percentPaid": "{{percent}}% भुगतान किया गया"
+    },
+    "dues": {
+        "outstanding": "बकाया",
+        "pendingInstallments": "लंबित किश्तें",
+        "nextDue": "अगली देय तिथि"
+    }
+}

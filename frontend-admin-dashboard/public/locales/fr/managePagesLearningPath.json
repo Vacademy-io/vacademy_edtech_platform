@@ -1,0 +1,52 @@
+{
+    "heading": {
+        "goalsTitle": "Titre au-dessus des puces d’objectif"
+    },
+    "featured": {
+        "title": "Mise en page « à la une »",
+        "hint": "Des puces d’objectif, un parcours à la une et les autres parcours en cartes. Désactivez des parties pour les répartir sur deux sections.",
+        "showGoals": "Puces d’objectif",
+        "showFeatured": "Parcours à la une",
+        "showGrid": "Autres parcours",
+        "showGridHint": "Tous les autres parcours, en cartes.",
+        "sharedFrom": "Les objectifs et le parcours à la une viennent de la section « {{name}} » de cette page. Modifiez-les là-bas.",
+        "syncNote": "Les objectifs et le parcours à la une sont aussi copiés dans les autres sections de parcours de cette page qui affichent cette bibliothèque ({{count}}).",
+        "path": "Parcours à la une",
+        "pathFirst": "Le premier parcours (par défaut)",
+        "pathLoading": "Chargement des pages produit…",
+        "pathOutside": "{{value}} (hors de cette bibliothèque)",
+        "pathOutsideWarning": "Cette section ne liste pas cette page produit (hors de la bibliothèque ou du dossier choisi, ou dans un dossier « bientôt disponible ») : le site met donc le premier parcours à la une. Choisissez-en une autre.",
+        "badge": "Badge du parcours à la une",
+        "badgePlaceholder": "Parcours le plus populaire",
+        "sharedFromOpen": "Ouvrir cette section",
+        "sectionNumber": "section {{n}}",
+        "differsFeatured": "L’autre section met en avant un autre parcours ou badge. Les modifier ici remplace sa copie.",
+        "differsGoals": "L’autre section a des objectifs différents. Modifier les objectifs ici remplace les siens.",
+        "statusDraft": "brouillon",
+        "statusInactive": "inactive"
+    },
+    "goals": {
+        "title": "Puces d’objectif",
+        "hint": "Chaque puce affiche les parcours des filières choisies.",
+        "allLabel": "Première puce",
+        "allPlaceholder": "Tous les parcours",
+        "label": "Texte de la puce",
+        "key": "Clé de lien",
+        "keyHint": "Utilisée dans l’adresse sous la forme ?goal=… — ne la changez que si aucun lien ne l’utilise encore.",
+        "streams": "Filières",
+        "customTag": "Personnalisé : {{value}}",
+        "noStreams": "La bibliothèque n’a encore aucun dossier de filière à choisir.",
+        "remove": "Supprimer l’objectif",
+        "add": "Ajouter un objectif",
+        "hiddenUntilFilled": "Masqué sur le site tant qu’il n’a pas de texte de puce et de clé de lien.",
+        "foldersLoading": "Chargement des filières de la bibliothèque…",
+        "foldersFailed": "Les filières de la bibliothèque n’ont pas pu être chargées.",
+        "retry": "Réessayer",
+        "noLibrary": "Choisissez une bibliothèque ci-dessus pour en choisir les filières."
+    },
+    "more": {
+        "title": "Titre des autres parcours",
+        "titlePlaceholder": "Autres parcours",
+        "note": "Note à côté du titre"
+    }
+}

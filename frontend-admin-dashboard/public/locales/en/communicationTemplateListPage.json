@@ -1,0 +1,79 @@
+{
+    "pageTitle": "Message Templates",
+    "subtitleApi": "Create, manage, and submit templates for Meta approval",
+    "subtitleWati": "View synced templates. Create new templates in WATI Dashboard.",
+    "whatsappSettings": "WhatsApp settings",
+    "syncing": "Syncing...",
+    "syncTemplates": "Sync Templates",
+    "createTemplate": "Create Template",
+    "createInWati": "Create in WATI",
+    "watiBanner": {
+        "title": "WATI Provider Active",
+        "beforeLink": "Templates must be created in the",
+        "linkText": "WATI Dashboard",
+        "afterLink": ". Once approved by Meta, click \"Sync Templates\" to import them here. You can then use them in chatbot flows and the WhatsApp inbox."
+    },
+    "tabAll": "All",
+    "tabWhatsapp": "WhatsApp",
+    "tabEmail": "Email",
+    "searchPlaceholder": "Search templates...",
+    "loadingTemplates": "Loading templates...",
+    "tryAgain": "Try again",
+    "noTemplatesYet": "No templates yet. Create one or sync from {{provider}}.",
+    "noTemplatesMatchSearch": "No templates match your search.",
+    "vacademyBadge": "Vacademy",
+    "rejectionReason": "Rejection: {{reason}}",
+    "edit": "Edit",
+    "submitToMeta": "Submit to Meta",
+    "delete": "Delete",
+    "status": {
+        "draft": "Draft",
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "disabled": "Disabled",
+        "deleted": "Deleted"
+    },
+    "category": {
+        "marketing": "Marketing",
+        "utility": "Utility",
+        "authentication": "Authentication"
+    },
+    "couldNotLoadTemplates": "Could not load templates.",
+    "syncedCount_one": "Synced {{count}} template from {{provider}}",
+    "syncedCount_other": "Synced {{count}} templates from {{provider}}",
+    "noTemplatesForAccount": "{{provider}} has no templates for this account yet",
+    "couldNotSyncTemplates": "Could not sync templates from {{provider}}.",
+    "deleteConfirmLive": "Delete \"{{name}}\"? It will also be removed from {{provider}}, and anything still sending it will stop working.",
+    "deleteConfirmDraft": "Delete the draft \"{{name}}\"?",
+    "templateDeleted": "Template deleted",
+    "couldNotDeleteTemplate": "Could not delete \"{{name}}\".",
+    "approvedByMeta": "Template approved by Meta and ready to use.",
+    "submittedForApproval": "Template submitted to Meta for approval.",
+    "metaRejectedTemplate": "Meta rejected the template.",
+    "summary": {
+        "header": "{{type}} header",
+        "headerType": {
+            "text": "Text",
+            "image": "Image",
+            "video": "Video",
+            "document": "Document"
+        },
+        "variables_one": "{{count}} variable",
+        "variables_other": "{{count}} variables",
+        "buttons_one": "{{count}} button",
+        "buttons_other": "{{count}} buttons",
+        "footer": "Footer"
+    },
+    "showFullMessage": "Show full message",
+    "showLess": "Show less",
+    "providerChip": "Provider: {{provider}}",
+    "filters": {
+        "allCategories": "All categories",
+        "allLanguages": "All languages",
+        "clear": "Clear filters"
+    },
+    "resultsCount_one": "{{count}} template",
+    "resultsCount_other": "{{count}} templates",
+    "actionsNote": "Edit and Submit to Meta are available for drafts and rejected templates. Approved and pending templates can only be deleted."
+}

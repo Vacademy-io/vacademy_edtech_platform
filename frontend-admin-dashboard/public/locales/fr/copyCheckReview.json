@@ -1,0 +1,100 @@
+{
+    "penStyle": {
+        "title": "Stylo sur la copie corrigée",
+        "hint": "Comment l'IA écrit les notes et remarques sur la copie de l'élève.",
+        "ink": "Couleur de l'encre",
+        "font": "Écriture",
+        "size": "Taille",
+        "inks": {
+            "RED": "Rouge",
+            "BLUE": "Bleu",
+            "GREEN": "Vert",
+            "BLACK": "Noir",
+            "PURPLE": "Violet"
+        },
+        "fonts": {
+            "DAWNING_OF_A_NEW_DAY": "Enseignant (par défaut)",
+            "COVERED_BY_YOUR_GRACE": "Naturelle",
+            "OVER_THE_RAINBOW": "Griffonnée",
+            "CAVEAT": "Rapide",
+            "CEDARVILLE_CURSIVE": "Cursive",
+            "KALAM": "Classique (Kalam)",
+            "PATRICK_HAND": "Classique (Patrick Hand)",
+            "ARCHITECTS_DAUGHTER": "Classique (Architects Daughter)"
+        },
+        "sizes": {
+            "SMALL": "Petite",
+            "MEDIUM": "Moyenne",
+            "LARGE": "Grande"
+        },
+        "sample": "Bon travail · 4/5",
+        "customInk": "Personnalisée",
+        "darkness": "Intensité",
+        "darknessLight": "Clair",
+        "darknessDark": "Foncé",
+        "saveHint": "Les copies utilisent ce stylo une fois ces paramètres enregistrés.",
+        "previewButton": "Voir le rendu",
+        "previewTitle": "Rendu d’une copie corrigée",
+        "previewNote": "Une page d’exemple, dessinée comme une vraie copie corrigée. Sur les vraies copies, les remarques viennent de la correction par l’IA.",
+        "previewLoading": "Dessin de la page…",
+        "previewError": "Impossible de dessiner l’aperçu.",
+        "previewRetry": "Réessayer",
+        "previewAlt": "Page de réponse d’exemple corrigée avec le stylo choisi"
+    },
+    "redraw": {
+        "button": "Mettre à jour la copie corrigée",
+        "staleBanner": "Vous avez modifié des notes, remarques ou annotations. Mettez à jour la copie corrigée pour que le PDF de l'élève les affiche.",
+        "dialogTitle": "Mettre à jour la copie corrigée",
+        "dialogHint": "La copie est redessinée avec vos corrections. Les notes, remarques et annotations modifiées remplacent celles de l'IA ; le reste ne bouge pas.",
+        "keepPen": "Garder le stylo de la correction",
+        "layout": "Remarques",
+        "layoutKeep": "Comme corrigé",
+        "layoutInside": "Sur la copie",
+        "layoutOutside": "À côté de la copie",
+        "cancel": "Annuler",
+        "submit": "Mettre à jour",
+        "working": "Dessin de la copie...",
+        "done": "Copie corrigée mise à jour",
+        "failed": "Impossible de mettre à jour la copie corrigée. Réessayez."
+    },
+    "notes": {
+        "title": "Annotations sur la copie",
+        "hint": "Supprimez ou réécrivez une annotation. Appliqué à la mise à jour de la copie.",
+        "empty": "L'IA n'a écrit aucune annotation pour cette question.",
+        "remove": "Supprimer",
+        "undo": "Garder",
+        "removed": "Supprimée",
+        "edit": "Réécrire",
+        "editPlaceholder": "Texte de l'annotation",
+        "styles": {
+            "tick": "Coche",
+            "cross": "Croix",
+            "circle": "Cercle",
+            "strike": "Barré",
+            "strikethrough": "Barré",
+            "underline": "Soulignement",
+            "margin_note": "Note en marge",
+            "region_note": "Note",
+            "brace": "Accolade",
+            "summary": "Résumé",
+            "feedback": "Remarque",
+            "deduction_reason": "Motif de retrait",
+            "language": "Marque de langue",
+            "other": "Marque"
+        }
+    },
+    "manual": {
+        "remarksFor": "Remarques pour Q{{number}}",
+        "remarksPlaceholder": "Remarques pour cette question (facultatif)",
+        "overallRemarks": "Remarques"
+    },
+    "aiImport": {
+        "button": "Importer les marques IA",
+        "working": "Import des marques IA...",
+        "hint": "Placez les coches, notes et points de la correction IA sur cette copie pour les déplacer, modifier ou supprimer.",
+        "done": "{{marks}} marques IA placées sur la copie ; {{questions}} notes de questions remplies. Déplacez-les, modifiez-les ou supprimez-les comme les vôtres.",
+        "none": "Cette copie n'a pas encore de correction IA terminée.",
+        "already": "Les marques IA sont déjà sur cette copie.",
+        "failed": "Impossible d'importer les marques IA. Réessayez."
+    }
+}

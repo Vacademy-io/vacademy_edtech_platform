@@ -1,0 +1,19 @@
+{
+    "badge": {
+        "id": "ID : {{id}}",
+        "appliesTo": "→ S'applique à : {{target}}"
+    },
+    "rules": {
+        "title": "Règles ({{count}})"
+    },
+    "metadata": {
+        "created": "Créé le : {{date}}",
+        "updatedSuffix": " • Mis à jour le : {{date}}"
+    },
+    "actions": {
+        "enable": "Activer la condition",
+        "disable": "Désactiver la condition",
+        "edit": "Modifier la condition",
+        "delete": "Supprimer la condition"
+    }
+}

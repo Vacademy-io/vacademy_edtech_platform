@@ -1,0 +1,78 @@
+{
+    "title": "एक्सपोर्ट सेटिंग्स",
+    "sections": {
+        "layout": "लेआउट सेटिंग्स",
+        "display": "डिस्प्ले सेटिंग्स",
+        "paper": "पेपर सेटिंग्स",
+        "customFields": "कस्टम फ़ील्ड सेटिंग्स",
+        "advanced": "एडवांस्ड सेटिंग्स"
+    },
+    "layout": {
+        "columnsPerPage": "प्रति पृष्ठ कॉलम",
+        "spaceForRoughWork": "रफ़ कार्य के लिए स्थान",
+        "roughWorkPosition": {
+            "none": "कोई नहीं",
+            "bottom": "नीचे"
+        },
+        "roughWorkSize": {
+            "label": "रफ़ कार्य स्थान का आकार",
+            "small": "छोटा (50mm)",
+            "medium": "मध्यम (100mm)",
+            "large": "बड़ा (150mm)"
+        },
+        "pagePadding": {
+            "label": "पेज पैडिंग",
+            "low": "कम (10mm)",
+            "medium": "मध्यम (20mm)",
+            "high": "अधिक (30mm)"
+        },
+        "fontSize": {
+            "label": "फ़ॉन्ट आकार",
+            "small": "छोटा (10pt)",
+            "medium": "मध्यम (12pt)",
+            "large": "बड़ा (14pt)"
+        },
+        "imageSize": {
+            "label": "छवि आकार",
+            "maintainAspectRatio": "छवि का पहलू अनुपात बनाए रखें"
+        }
+    },
+    "display": {
+        "showInstitutionLetterhead": "संस्थान लेटरहेड दिखाएं",
+        "showFirstPageInstructions": "पहले पृष्ठ पर निर्देश दिखाएं",
+        "showAdaptiveMarkingRules": "अनुकूली अंकन नियम दिखाएं - संपूर्ण मूल्यांकन",
+        "showSectionInstructions": "सेक्शन-वार निर्देश दिखाएं",
+        "showSectionDuration": "सेक्शन-वार अवधि दिखाएं",
+        "showMarksPerQuestion": "प्रति प्रश्न अंक दिखाएं",
+        "showAdaptiveMarkingRulesSection": "अनुकूली अंकन नियम दिखाएं - सेक्शन-वार",
+        "showCheckboxesBeforeOptions": "विकल्पों से पहले चेकबॉक्स दिखाएं",
+        "showPageNumbers": "पृष्ठ संख्या दिखाएं"
+    },
+    "paper": {
+        "createSets": "प्रश्न पत्र सेट बनाएं",
+        "includeQuestionSetCode": "प्रश्न सेट कोड शामिल करें",
+        "randomizeQuestions": "प्रश्नों को यादृच्छिक करें",
+        "randomizeOptions": "विकल्पों को यादृच्छिक करें"
+    },
+    "customFields": {
+        "include": "कस्टम इनपुट फ़ील्ड शामिल करें",
+        "selectTypePlaceholder": "फ़ील्ड प्रकार चुनें",
+        "type": {
+            "blank": "खाली (डिफ़ॉल्ट)",
+            "blocks": "ब्लॉक्स",
+            "input": "इनपुट बॉक्स",
+            "checkbox": "चेकबॉक्स"
+        },
+        "newFieldPlaceholder": "नया फ़ील्ड लेबल दर्ज करें",
+        "add": "जोड़ें"
+    },
+    "advanced": {
+        "answerSpacing": "उत्तर स्पेसिंग",
+        "customSpacing": "कस्टम स्पेसिंग",
+        "customSpacingHint": "उत्तरों के लिए कस्टम स्थान कॉन्फ़िगर करें।"
+    },
+    "actions": {
+        "cancel": "रद्द करें",
+        "save": "सहेजें"
+    }
+}

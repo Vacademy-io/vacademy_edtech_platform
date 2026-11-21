@@ -1,0 +1,61 @@
+{
+    "header": {
+        "title": "Add Participants",
+        "update": "Update",
+        "next": "Next"
+    },
+    "participantAccess": {
+        "heading": "Participant Access Settings",
+        "closedTest": {
+            "label": "Closed Test:",
+            "description": "Restrict the Assessment to specific participants by assigning it to institute batches or selecting individual {{term}}s."
+        },
+        "openTest": {
+            "label": "Open Test:",
+            "description": "Allow anyone to register for this Assessment via a shared link. Institute {{term}}s can also be pre-registered by selecting batches or individuals."
+        }
+    },
+    "registration": {
+        "heading": "Assessment Registration",
+        "startDateLabel": "Start Date & Time",
+        "endDateLabel": "End Date & Time",
+        "aboutHeading": "About Assessment Registration",
+        "instructionsPlaceholder": "Registration instructions",
+        "fields": {
+            "heading": "Registration Form Fields",
+            "helperText": "Click the pencil to rename a field or edit its options",
+            "addGenderButton": "Add Gender",
+            "addStateButton": "Add State",
+            "addCityButton": "Add City",
+            "addSchoolCollegeButton": "Add School/College",
+            "addCustomFieldButton": "Add Custom Field"
+        },
+        "preview": {
+            "triggerButton": "Preview Registration Form",
+            "heading": "Preview Registration Form",
+            "registerNowButton": "Register Now"
+        }
+    },
+    "joinLink": {
+        "heading": "Join Link",
+        "placeholder": "Join Link"
+    },
+    "qrCode": {
+        "heading": "QR Code"
+    },
+    "notifyParticipants": {
+        "heading": "Notify Participants via Email:",
+        "whenAssessmentCreated": "When Assessment is created",
+        "beforeAssessmentGoesLive": "Before Assessment goes live",
+        "notifyBeforeLabel": "Notify Before",
+        "whenAssessmentLive": "When Assessment goes live",
+        "whenReportGenerated": "When assessment reports are generated"
+    },
+    "toasts": {
+        "updateSuccess": "Step 3 data has been updated successfully!",
+        "saveSuccess": "Step 3 data has been saved successfully!"
+    },
+    "errors": {
+        "saveFailed": "Failed to save participants."
+    }
+}

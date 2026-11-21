@@ -53,4 +53,26 @@ class CopyCheckQuestionAnswer(Base):
     )
 
 
-__all__ = ["CopyCheckRubric", "CopyCheckQuestionAnswer"]
+class CopyCheckJob(Base):
+    """Cross-pod claim on one grade run (spec 11.2, gate G6). Table created by
+    the admin_core migration (V546); ai_service only reads and writes it, with
+    raw ON CONFLICT SQL in CopyCheckJobRepository.
+
+    One row per assessment_service process_id. The pod running it refreshes
+    heartbeat_at every 30 s; another /grade for the same process gets the
+    existing job back while the heartbeat is younger than 2 minutes (whatever
+    the status) and takes the row over once it is older. Columns mirror V546.
+    """
+
+    __tablename__ = "copy_check_job"
+
+    process_id = Column(String(255), primary_key=True)
+    job_id = Column(String(64), nullable=False)
+    pod = Column(String(255), nullable=True)
+    heartbeat_at = Column(DateTime(timezone=True), nullable=False)
+    status = Column(String(16), nullable=False, default="RUNNING")   # RUNNING | COMPLETED | FAILED
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    updated_at = Column(DateTime(timezone=True), nullable=False)
+
+
+__all__ = ["CopyCheckRubric", "CopyCheckQuestionAnswer", "CopyCheckJob"]

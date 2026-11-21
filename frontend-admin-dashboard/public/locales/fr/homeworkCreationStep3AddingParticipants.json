@@ -1,0 +1,61 @@
+{
+    "header": {
+        "title": "Ajouter des participants",
+        "update": "Mettre à jour",
+        "next": "Suivant"
+    },
+    "participantAccess": {
+        "heading": "Paramètres d'accès des participants",
+        "closedTest": {
+            "label": "Test fermé :",
+            "description": "Limitez l'évaluation à des participants spécifiques en l'attribuant à des groupes de l'établissement ou en sélectionnant des {{term}} individuels."
+        },
+        "openTest": {
+            "label": "Test ouvert :",
+            "description": "Autorisez tout le monde à s'inscrire à cette évaluation via un lien partagé. Les {{term}} de l'établissement peuvent également être préinscrits en sélectionnant des groupes ou des individus."
+        }
+    },
+    "registration": {
+        "heading": "Inscription à l'évaluation",
+        "startDateLabel": "Date et heure de début",
+        "endDateLabel": "Date et heure de fin",
+        "aboutHeading": "À propos de l'inscription à l'évaluation",
+        "instructionsPlaceholder": "Instructions d'inscription",
+        "fields": {
+            "heading": "Champs du formulaire d'inscription",
+            "helperText": "Cliquez sur le crayon pour renommer un champ ou modifier ses options",
+            "addGenderButton": "Ajouter le genre",
+            "addStateButton": "Ajouter l'état/région",
+            "addCityButton": "Ajouter la ville",
+            "addSchoolCollegeButton": "Ajouter école/collège",
+            "addCustomFieldButton": "Ajouter un champ personnalisé"
+        },
+        "preview": {
+            "triggerButton": "Aperçu du formulaire d'inscription",
+            "heading": "Aperçu du formulaire d'inscription",
+            "registerNowButton": "S'inscrire maintenant"
+        }
+    },
+    "joinLink": {
+        "heading": "Lien de participation",
+        "placeholder": "Lien de participation"
+    },
+    "qrCode": {
+        "heading": "Code QR"
+    },
+    "notifyParticipants": {
+        "heading": "Notifier les participants par e-mail :",
+        "whenAssessmentCreated": "Lorsque l'évaluation est créée",
+        "beforeAssessmentGoesLive": "Avant que l'évaluation ne soit en direct",
+        "notifyBeforeLabel": "Notifier avant",
+        "whenAssessmentLive": "Lorsque l'évaluation est en direct",
+        "whenReportGenerated": "Lorsque les rapports d'évaluation sont générés"
+    },
+    "toasts": {
+        "updateSuccess": "Les données de l'étape 3 ont été mises à jour avec succès !",
+        "saveSuccess": "Les données de l'étape 3 ont été enregistrées avec succès !"
+    },
+    "errors": {
+        "saveFailed": "Échec de l'enregistrement des participants."
+    }
+}

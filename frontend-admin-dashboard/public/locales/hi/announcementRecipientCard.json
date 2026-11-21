@@ -1,0 +1,90 @@
+{
+    "ruleTypes": {
+        "role": "किसी भूमिका वाले सभी लोग",
+        "packageSession": "विशिष्ट बैच",
+        "packageSessionSpecific": "विशिष्ट {{batchNounPlural}}",
+        "user": "विशिष्ट लोग",
+        "tag": "टैग वाले लोग",
+        "audience": "एक अभियान ऑडियंस",
+        "customFieldFilter": "फ़ील्ड मानों से मेल खाने वाले लोग"
+    },
+    "removeAudience": "ऑडियंस {{index}} हटाएं",
+    "role": {
+        "label": "भूमिका",
+        "placeholder": "एक भूमिका चुनें",
+        "admins": "व्यवस्थापक"
+    },
+    "packageSession": {
+        "orgRoleLabel": "उप-संगठन के भीतर कौन?",
+        "orgRolePlaceholder": "व्यवस्थापक या शिक्षार्थी चुनें",
+        "orgRoleLearners": "शिक्षार्थी",
+        "orgRoleAdmins": "व्यवस्थापक",
+        "orgRoleHint": "चयनित {{batchNounPlural}} में से एक या अधिक उप-संगठन से संबंधित हैं, जिसके लिए स्पष्ट भूमिका आवश्यक है।"
+    },
+    "user": {
+        "label": "उपयोगकर्ता आईडी या ईमेल",
+        "placeholder": "आईडी या ईमेल पेस्ट करें, अल्पविराम से अलग करके",
+        "add": "जोड़ें",
+        "remove": "{{id}} हटाएं"
+    },
+    "tag": {
+        "label": "टैग",
+        "scopeAll": "सभी टैग",
+        "scopeDefault": "डिफ़ॉल्ट टैग",
+        "scopeInstitute": "संस्थान टैग",
+        "loading": "टैग लोड हो रहे हैं…",
+        "placeholder": "एक या अधिक टैग चुनें",
+        "hintPrefix": "चयनित टैग में से",
+        "hintAny": "किसी भी",
+        "hintSuffix": "टैग वाला कोई भी व्यक्ति इसे प्राप्त करता है।"
+    },
+    "audience": {
+        "label": "अभियान",
+        "loading": "अभियान लोड हो रहे हैं…",
+        "placeholder": "एक या अधिक अभियान चुनें",
+        "searchPlaceholder": "अभियान खोजें…",
+        "emptyText": "कोई अभियान नहीं मिला।",
+        "hint": "चुने गए किसी भी अभियान में शामिल सभी लोगों को यह मिलेगा।"
+    },
+    "customFieldFilter": {
+        "hintPrefix": "जिसकी प्रोफ़ाइल नीचे दिए गए फ़िल्टर से मेल खाती है, वह इसे प्राप्त करता है। उन्हें",
+        "hintRefine": "परिष्कृत करें"
+    },
+    "refine": {
+        "toggle": "परिष्कृत करें — फ़ील्ड फ़िल्टर और बहिष्करण",
+        "fieldFiltersLabel": "फ़ील्ड फ़िल्टर",
+        "addFilter": "फ़िल्टर जोड़ें",
+        "noCustomFields": "इस संस्थान के लिए कोई कस्टम फ़ील्ड कॉन्फ़िगर नहीं है।",
+        "noFilters": "कोई फ़िल्टर नहीं — ऊपर सभी शामिल हैं।",
+        "chooseField": "एक फ़ील्ड चुनें",
+        "removeFilter": "फ़िल्टर हटाएं",
+        "selectValues": "मान चुनें",
+        "enterNumber": "एक संख्या दर्ज करें",
+        "operatorEquals": "बराबर है",
+        "operatorContains": "इसमें शामिल है",
+        "operatorStartsWith": "इससे शुरू होता है",
+        "operatorEndsWith": "इस पर समाप्त होता है",
+        "valueToMatch": "मिलान करने के लिए मान",
+        "exclusionsLabel": "बहिष्करण",
+        "addExclusion": "बहिष्करण जोड़ें",
+        "noExclusions": "इस ऑडियंस से कोई भी बाहर नहीं है।",
+        "exclusionRole": "भूमिका",
+        "exclusionTag": "टैग",
+        "exclusionUser": "उपयोगकर्ता",
+        "selectRole": "एक भूमिका चुनें",
+        "removeExclusion": "बहिष्करण हटाएं",
+        "selectBatch": "एक {{batchNoun}} चुनें",
+        "searchBatches": "{{batchNounPlural}} खोजें…",
+        "noBatchesFound": "कोई {{batchNounPlural}} नहीं मिला।",
+        "selectTag": "एक टैग चुनें",
+        "searchTags": "टैग खोजें…",
+        "noTagsFound": "कोई टैग नहीं मिला।",
+        "userIdOrEmail": "उपयोगकर्ता आईडी या ईमेल"
+    },
+    "reach": {
+        "estimating": "पहुंच का अनुमान लगाया जा रहा है…",
+        "unavailable": "पहुंच अनुमान उपलब्ध नहीं है।",
+        "summary_one": "इस घोषणा में चयनित टैग लगभग {{formattedCount}} व्यक्ति के पास हैं।",
+        "summary_other": "इस घोषणा में चयनित टैग लगभग {{formattedCount}} लोगों के पास हैं।"
+    }
+}

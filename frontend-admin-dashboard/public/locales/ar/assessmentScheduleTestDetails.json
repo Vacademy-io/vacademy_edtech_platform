@@ -1,0 +1,93 @@
+{
+    "batchDialog": {
+        "moreLink_zero": "+{{count}} إضافية",
+        "moreLink_one": "+{{count}} إضافي",
+        "moreLink_two": "+{{count}} إضافيان",
+        "moreLink_few": "+{{count}} إضافية",
+        "moreLink_many": "+{{count}} إضافيًا",
+        "moreLink_other": "+{{count}} إضافية",
+        "title": "دفعات التقييم"
+    },
+    "info": {
+        "createdOn": "تم الإنشاء في: {{date}}",
+        "subject": "{{label}}: {{name}}",
+        "startDateTime": "تاريخ ووقت البدء: {{date}}",
+        "endDateTime": "تاريخ ووقت الانتهاء: {{date}}",
+        "duration": {
+            "label": "المدة: ",
+            "hours_zero": "{{count}} ساعة",
+            "hours_one": "{{count}} ساعة واحدة",
+            "hours_two": "{{count}} ساعتان",
+            "hours_few": "{{count}} ساعات",
+            "hours_many": "{{count}} ساعة",
+            "hours_other": "{{count}} ساعة",
+            "minutes_zero": "{{count}} دقيقة",
+            "minutes_one": "{{count}} دقيقة واحدة",
+            "minutes_two": "{{count}} دقيقتان",
+            "minutes_few": "{{count}} دقائق",
+            "minutes_many": "{{count}} دقيقة",
+            "minutes_other": "{{count}} دقيقة"
+        },
+        "totalParticipants_zero": "إجمالي المشاركين: {{count}}",
+        "totalParticipants_one": "إجمالي المشاركين: {{count}}",
+        "totalParticipants_two": "إجمالي المشاركين: {{count}}",
+        "totalParticipants_few": "إجمالي المشاركين: {{count}}",
+        "totalParticipants_many": "إجمالي المشاركين: {{count}}",
+        "totalParticipants_other": "إجمالي المشاركين: {{count}}"
+    },
+    "joinLink": {
+        "label": "رابط الانضمام:",
+        "privateWarning": "لا يعمل هذا الرابط إلا عندما يكون التقييم Public. اضبطه على Public في الخطوة 3 قبل المشاركة."
+    },
+    "types": {
+        "examination": "اختبار",
+        "mock": "اختبار تجريبي",
+        "practice": "تدريب",
+        "survey": "استبيان",
+        "offline": "اختبار ورقي",
+        "assignment": "واجب"
+    },
+    "status": {
+        "live": "مباشر",
+        "upcoming": "قادم",
+        "closed": "مغلق",
+        "draft": "مسودة"
+    },
+    "meta": {
+        "starts": "يبدأ",
+        "ends": "ينتهي",
+        "duration": "المدة",
+        "participants": "المشاركون",
+        "evaluation": "التقييم",
+        "evaluationAuto": "تلقائي",
+        "evaluationManual": "يدوي",
+        "createdOn": "أُنشئ في {{date}}"
+    },
+    "batches": {
+        "less": "عرض أقل"
+    },
+    "actions": {
+        "viewDetails": "عرض التفاصيل"
+    },
+    "privateLink": {
+        "title": "رابط الانضمام يعمل فقط مع الاختبار المفتوح",
+        "body": "هذا التقييم خاص (اختبار مغلق). يؤدّيه المتعلمون الذين عيّنتهم من تطبيق المتعلم الخاص بهم، فلا يحتاجون إلى رابط. لن يعمل رابط الانضمام ورمز QR إلا إذا كان اختبارًا مفتوحًا: عدّل التقييم، وانتقل إلى الخطوة 3 «إضافة مشاركين» واختر «اختبار مفتوح».",
+        "ariaLabel": "لماذا لا يعمل رابط الانضمام"
+    },
+    "share": {
+        "copyLink": "نسخ رابط الانضمام",
+        "qrCode": "عرض رمز QR",
+        "copied": "تم نسخ رابط الانضمام",
+        "copiedPrivate": "تم نسخ الرابط، لكنه لن يعمل إلا بعد تحويل هذا التقييم إلى «اختبار مفتوح» (الخطوة 3، «إضافة مشاركين»)."
+    },
+    "qrDialog": {
+        "title": "رابط الانضمام ورمز QR",
+        "description": "يمسح المتعلمون الرمز أو يفتحون الرابط للتسجيل وأداء التقييم.",
+        "copy": "نسخ",
+        "download": "تنزيل رمز QR"
+    },
+    "source": {
+        "api": "المصدر: API",
+        "apiTooltip": "أُنشئ عبر واجهة التقييم بالذكاء الاصطناعي"
+    }
+}

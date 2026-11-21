@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { WorkflowExecutionLogDTO } from '@/types/workflow/workflow-types';
 import { Badge } from '@/components/ui/badge';
 
@@ -16,6 +17,7 @@ const statusColor: Record<string, string> = {
 };
 
 export function ExecutionTimeline({ logs, selectedNodeId, onSelectNode }: Props) {
+    const { t } = useTranslation('workflowExecutionTimeline');
     if (logs.length === 0) return null;
 
     // Calculate time range
@@ -29,7 +31,7 @@ export function ExecutionTimeline({ logs, selectedNodeId, onSelectNode }: Props)
 
     return (
         <div className="border rounded-lg p-3 space-y-1.5">
-            <div className="text-xs font-semibold mb-2">Execution Timeline</div>
+            <div className="text-xs font-semibold mb-2">{t('title')}</div>
             {logs.map((log) => {
                 const start = log.started_at ? new Date(log.started_at).getTime() : minTime;
                 const end = log.completed_at
@@ -57,7 +59,7 @@ export function ExecutionTimeline({ logs, selectedNodeId, onSelectNode }: Props)
                                 style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
                             />
                         </div>
-                        <span className="text-[10px] text-muted-foreground w-12 text-right shrink-0">
+                        <span className="text-[10px] text-muted-foreground w-12 text-end shrink-0">
                             {log.execution_time_ms != null
                                 ? log.execution_time_ms < 1000
                                     ? `${Math.round(log.execution_time_ms)}ms`

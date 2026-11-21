@@ -1,0 +1,28 @@
+{
+    "columns": {
+        "fullName": "Nom complet",
+        "username": "Nom d'utilisateur",
+        "enrollmentNumber": "Numéro d'inscription",
+        "mobileNumber": "Numéro de mobile",
+        "email": "E-mail",
+        "status": "Statut",
+        "error": "Erreur"
+    },
+    "summary": {
+        "successCount_one": "{{count}} résultat réussi",
+        "successCount_many": "{{count}} résultats réussis",
+        "successCount_other": "{{count}} résultats réussis",
+        "failedCount_one": "{{count}} résultat échoué",
+        "failedCount_many": "{{count}} résultats échoués",
+        "failedCount_other": "{{count}} résultats échoués",
+        "warningMessage": "Certaines entrées n'ont pas été importées avec succès. Veuillez consulter la colonne {{column}} pour plus de détails."
+    },
+    "error": {
+        "none": "Aucune erreur",
+        "detailsLabel": "Détails de l'erreur :"
+    },
+    "actions": {
+        "view": "Voir",
+        "downloadResponse": "Télécharger la réponse"
+    }
+}

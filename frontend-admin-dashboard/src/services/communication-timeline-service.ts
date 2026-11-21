@@ -1,5 +1,7 @@
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { BASE_URL } from '@/constants/urls';
+import type { WhatsAppTemplateButton } from '@/components/shared/whatsapp/whatsapp-template-buttons';
+import type { MessageOrigin } from '@/components/shared/whatsapp/message-origin';
 
 export interface StatusEvent {
     status: string;
@@ -12,6 +14,11 @@ export interface CommunicationItem {
     channel: 'EMAIL' | 'WHATSAPP' | 'PUSH' | 'SMS';
     direction: 'OUTBOUND' | 'INBOUND';
     title: string;
+    /**
+     * Outbound email subject, as the send stored it. Absent for other channels and for rows written
+     * before notification_service returned it — callers fall back to scraping `title`/`fullBody`.
+     */
+    subject?: string;
     bodyPreview: string;
     fullBody?: string;
     templateName?: string;
@@ -19,6 +26,10 @@ export interface CommunicationItem {
     headerType?: string;
     /** Media URL for an IMAGE/VIDEO/DOCUMENT template header. */
     headerMediaUrl?: string;
+    /** WhatsApp template buttons, drawn under the message the way WhatsApp shows them. */
+    buttons?: WhatsAppTemplateButton[] | null;
+    /** Who sent this WhatsApp message — a workflow or a chatbot flow; null when unknown. */
+    origin?: MessageOrigin | null;
     status: string;
     statusTimeline: StatusEvent[];
     senderInfo: string;

@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -22,6 +23,7 @@ interface Props {
  * updates the parent AssessmentSettings state; the parent's Save persists it.
  */
 export default function ResultNotificationRecipientsCard({ roles, onChange }: Props) {
+    const { t } = useTranslation('settingsResultNotificationRecipientsCard');
     const { data: allRoles } = useQuery({
         queryKey: ['all-roles'],
         queryFn: getAllRoles,
@@ -42,13 +44,13 @@ export default function ResultNotificationRecipientsCard({ roles, onChange }: Pr
             seen.add(u);
             list.push({ key: k, label });
         };
-        add('ADMIN', 'Admin');
+        add('ADMIN', t('roles.admin'));
         for (const r of (allRoles as CustomRole[] | undefined) ?? []) {
             if (r?.name) add(r.name, r.name); // exact stored name → auth resolves its users
         }
-        if (!seen.has('STUDENT') && !seen.has('LEARNER')) add('STUDENT', 'Learner');
+        if (!seen.has('STUDENT') && !seen.has('LEARNER')) add('STUDENT', t('roles.learner'));
         return list;
-    }, [allRoles]);
+    }, [allRoles, t]);
 
     const isOn = (key: string): boolean => {
         const stored = roles?.[key];
@@ -62,12 +64,8 @@ export default function ResultNotificationRecipientsCard({ roles, onChange }: Pr
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="text-base">Result Notification Recipients</CardTitle>
-                <CardDescription>
-                    Choose which roles receive assessment result and re-evaluation notifications
-                    (result-release emails, and learner report emails). By default only learners are
-                    notified; admins and other roles are off.
-                </CardDescription>
+                <CardTitle className="text-base">{t('title')}</CardTitle>
+                <CardDescription>{t('description')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
                 {roleList.map((role) => {

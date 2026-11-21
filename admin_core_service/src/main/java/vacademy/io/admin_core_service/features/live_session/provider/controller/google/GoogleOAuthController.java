@@ -16,6 +16,7 @@ import vacademy.io.admin_core_service.features.audience.entity.OAuthConnectState
 import vacademy.io.admin_core_service.features.audience.repository.OAuthConnectStateRepository;
 import vacademy.io.admin_core_service.features.live_session.provider.dto.google.GoogleAccount;
 import vacademy.io.admin_core_service.features.live_session.provider.service.google.GoogleOAuthService;
+import vacademy.io.admin_core_service.features.booking.service.UserGoogleAccountService;
 import vacademy.io.admin_core_service.features.mentorship.repository.MentorRepository;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
@@ -52,15 +53,21 @@ public class GoogleOAuthController {
     private final OAuthConnectStateRepository stateRepository;
     private final InstituteAccessValidator instituteAccessValidator;
     private final MentorRepository mentorRepository;
+    private final UserGoogleAccountService userGoogleAccountService;
 
     @Value("${google.oauth.frontend.callback.url:https://dash.vacademy.io/settings}")
     private String frontendCallbackUrl;
 
-    /** Step 1 — return the Google consent URL the admin's browser should open. */
+    /**
+     * Step 1 — return the Google consent URL the admin's browser should open.
+     * {@code driveAccess=true} additionally asks for Drive read access to Meet recordings
+     * (used by "Save to library"); off by default because that scope is restricted.
+     */
     @PostMapping("/initiate")
     public ResponseEntity<Map<String, String>> initiate(
             @RequestAttribute("user") CustomUserDetails user,
-            @RequestParam String instituteId) {
+            @RequestParam String instituteId,
+            @RequestParam(defaultValue = "false") boolean driveAccess) {
         instituteAccessValidator.validateUserAccess(user, instituteId);
         requireAdminRole(user);
 
@@ -72,7 +79,7 @@ public class GoogleOAuthController {
                 .build());
 
         return ResponseEntity.ok(Map.of(
-                "oauth_url", googleOAuthService.buildAuthorizeUrl(state.getId()),
+                "oauth_url", googleOAuthService.buildAuthorizeUrl(state.getId(), driveAccess),
                 "session_key", state.getId()));
     }
 
@@ -104,6 +111,10 @@ public class GoogleOAuthController {
                     mentorRepository.save(m);
                 });
             }
+            // Per-user Google: a host connecting from My Schedule links the account to themselves.
+            if (saved != null && st.isLinkToUser() && st.getInitiatedBy() != null) {
+                userGoogleAccountService.link(st.getInstituteId(), st.getInitiatedBy(), saved.getId());
+            }
             // Single-shot flow: mark CONSUMED so the same ?state= can't be replayed within
             // its TTL
             // (findValidById only accepts PENDING/AUTHORIZED). Unlike Meta's
@@ -111,7 +122,7 @@ public class GoogleOAuthController {
             // Google connects once per callback.
             st.setSessionStatus("CONSUMED");
             stateRepository.save(st);
-            return redirect("google_connected=1");
+            return redirect("google_connected=1", st.getReturnPath());
         } catch (Exception e) {
             log.error("google.oauth.callback.fail state={} reason={}", state, e.getMessage());
             String reason = e.getMessage() == null ? "connect_failed" : e.getMessage();
@@ -119,14 +130,24 @@ public class GoogleOAuthController {
                 reason = reason.substring(0, 200);
             }
             return redirect("google_error=connect_failed&google_reason="
-                    + URLEncoder.encode(reason, StandardCharsets.UTF_8));
+                    + URLEncoder.encode(reason, StandardCharsets.UTF_8), st.getReturnPath());
         }
     }
 
     private ResponseEntity<Void> redirect(String query) {
-        String sep = frontendCallbackUrl.contains("?") ? "&" : "?";
+        return redirect(query, null);
+    }
+
+    /** {@code returnPath} (same-origin path only) swaps the landing page of the configured callback URL. */
+    private ResponseEntity<Void> redirect(String query, String returnPath) {
+        String base = frontendCallbackUrl;
+        if (returnPath != null && returnPath.matches("^/[A-Za-z0-9/_-]*$")) {
+            URI configured = URI.create(frontendCallbackUrl);
+            base = configured.getScheme() + "://" + configured.getAuthority() + returnPath;
+        }
+        String sep = base.contains("?") ? "&" : "?";
         return ResponseEntity.status(HttpStatus.FOUND)
-                .location(URI.create(frontendCallbackUrl + sep + query))
+                .location(URI.create(base + sep + query))
                 .build();
     }
 

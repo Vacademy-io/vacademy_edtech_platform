@@ -1,0 +1,75 @@
+{
+    "header": {
+        "title": "تعديل {{term}}: {{name}}",
+        "description": "تحديث أدوار المصادقة، وأدوار الفريق المسموح بها، وصلاحيات المسؤول، وخيار دفع المسؤول، وحد المقاعد، والصلاحية. لا يتم دعم تبديل CPO وإزالة الدورات المرتبطة هنا."
+    },
+    "toasts": {
+        "noChanges": "لا توجد تغييرات لحفظها",
+        "saved": "تم الحفظ: {{bits}}",
+        "linkedCourses_zero": "لم يتم ربط أي دورة",
+        "linkedCourses_one": "تم ربط دورة واحدة",
+        "linkedCourses_two": "تم ربط دورتين",
+        "linkedCourses_few": "تم ربط {{count}} دورات",
+        "linkedCourses_many": "تم ربط {{count}} دورة",
+        "linkedCourses_other": "تم ربط {{count}} دورة",
+        "updatedFields": "تم تحديث {{fields}}",
+        "updateFailed": "فشل تحديث {{term}}"
+    },
+    "validation": {
+        "seatCapPositive": "يجب أن يكون حد المقاعد رقمًا موجبًا",
+        "validityPositive": "يجب أن تكون الصلاحية رقمًا موجبًا"
+    },
+    "linkedCourses": {
+        "heading_zero": "الدورات المرتبطة ({{count}})",
+        "heading_one": "دورة مرتبطة ({{count}})",
+        "heading_two": "دورتان مرتبطتان ({{count}})",
+        "heading_few": "دورات مرتبطة ({{count}})",
+        "heading_many": "دورة مرتبطة ({{count}})",
+        "heading_other": "دورة مرتبطة ({{count}})",
+        "noneLinkedYet": "لا توجد دورات مرتبطة حتى الآن.",
+        "cannotRemoveLinked": "لا يمكن إزالة الدورات المرتبطة مسبقًا من هنا (سيؤدي ذلك إلى تيتم المتعلمين المسجّلين).",
+        "addCourses": "إضافة دورات",
+        "selectAll": "تحديد الكل",
+        "clearSelection": "إلغاء التحديد",
+        "searchPlaceholder": "البحث عن الدورات بالاسم",
+        "noMatch": "لا توجد دورات تطابق “{{query}}”.",
+        "willBeLinkedOnSave_zero": "لن يتم ربط أي دورة عند الحفظ.",
+        "willBeLinkedOnSave_one": "سيتم ربط دورة واحدة عند الحفظ.",
+        "willBeLinkedOnSave_two": "سيتم ربط دورتين عند الحفظ.",
+        "willBeLinkedOnSave_few": "سيتم ربط {{count}} دورات عند الحفظ.",
+        "willBeLinkedOnSave_many": "سيتم ربط {{count}} دورة عند الحفظ.",
+        "willBeLinkedOnSave_other": "سيتم ربط {{count}} دورة عند الحفظ.",
+        "noneAvailable": "لا توجد دورات أخرى متاحة للربط."
+    },
+    "roles": {
+        "authRolesHeading": "أدوار المصادقة (يتم تعيينها عند قبول الدعوة)",
+        "noRolesFound": "لم يتم العثور على أدوار",
+        "allowedTeamRolesHeading": "أدوار الفريق المسموح بها (قائمة اختيار مسؤول {{term}})",
+        "emptyMeansNoRestriction": "فراغ = بلا قيود."
+    },
+    "permissions": {
+        "heading": "صلاحيات المسؤول",
+        "description": "تُطبَّق على سجلات FSPSSM لمسؤول {{term}}. الفراغ يرجع إلى FULL. ينطبق فقط على المسؤولين المسجَّلين بعد هذا الحفظ."
+    },
+    "paymentOption": {
+        "heading": "خيار دفع المسؤول",
+        "cpoNotSupported": "يعتمد هذا {{term}} على بنية رسوم CPO. تبديل خيار دفع المسؤول غير مدعوم هنا.",
+        "description": "خيار دفع المؤسسة الذي يدفع من خلاله مسؤول {{term}}. يؤثر التغيير فقط على تسجيلات المسؤولين المستقبلية — يحتفظ المسؤول الذي دفع مسبقًا بخطته.",
+        "loading": "جارٍ تحميل خيارات الدفع...",
+        "noActiveOption": "لم يتم العثور على خيار نشط",
+        "selectPlaceholder": "اختر خيار دفع"
+    },
+    "seatCap": {
+        "label": "حد المقاعد",
+        "placeholder": "مثال: 25"
+    },
+    "validity": {
+        "label": "الصلاحية (أيام)",
+        "placeholder": "مثال: 365"
+    },
+    "footer": {
+        "cancel": "إلغاء",
+        "save": "حفظ",
+        "saving": "جارٍ الحفظ…"
+    }
+}

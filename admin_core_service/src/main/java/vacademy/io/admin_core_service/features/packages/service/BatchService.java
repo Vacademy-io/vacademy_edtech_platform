@@ -1,6 +1,7 @@
 package vacademy.io.admin_core_service.features.packages.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import vacademy.io.admin_core_service.features.commerce.common.CommerceLegacyGuard;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -39,6 +40,9 @@ public class BatchService {
 
     @Autowired
     private StudentSessionInstituteGroupMappingRepository ssigmRepository;
+
+    @Autowired
+    private CommerceLegacyGuard commerceLegacyGuard;
 
     @Transactional
     public List<PackageDTOWithBatchDetails> getBatchDetails(String sessionId, String instituteId, CustomUserDetails user){
@@ -90,6 +94,9 @@ public class BatchService {
     }
 
     public String deletePackageSession(String[] packageSessionIds, CustomUserDetails userDetails){
+        // A variant is archived in Commerce, which keeps its own status and the legacy rows in step.
+        commerceLegacyGuard.refuseVariantSessions(
+                packageSessionIds == null ? null : Arrays.asList(packageSessionIds), "delete it as a batch");
         packageSessionRepository.updateStatusByPackageSessionIds(PackageSessionStatusEnum.DELETED.name(),packageSessionIds);
         learnerInvitationService.deleteLearnerInvitationBySourceAndSourceId(LearnerInvitationSourceTypeEnum.PACKAGE_SESSION.name(), Arrays.stream(packageSessionIds).toList());
         return "Package Session deleted successfully.";

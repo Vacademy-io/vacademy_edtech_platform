@@ -1,0 +1,15 @@
+{
+    "heading": {
+        "uploadResponse": "अपलोड प्रतिक्रिया",
+        "previewData": "डेटा पूर्वावलोकन"
+    },
+    "buttons": {
+        "close": "बंद करें",
+        "done": "पूर्ण"
+    },
+    "error": {
+        "uploadFailed": "अपलोड विफल",
+        "checkDetails": "अधिक जानकारी के लिए त्रुटि विवरण देखें",
+        "unknownError": "अज्ञात त्रुटि"
+    }
+}

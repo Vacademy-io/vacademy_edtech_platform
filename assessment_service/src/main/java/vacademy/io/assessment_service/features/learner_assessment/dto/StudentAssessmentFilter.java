@@ -25,5 +25,9 @@ public class StudentAssessmentFilter {
     private Boolean getPassedAssessments;
     private Boolean getUpcomingAssessments;
     private List<String> instituteIds = new ArrayList<>();
+    /** Optional: only assessments in this (active) folder. */
+    private String folderId;
+    /** Optional: only assessments in no active folder ("Others"). */
+    private Boolean unfiledOnly;
     private Map<String, String> sortColumns = new HashMap<>();
 }

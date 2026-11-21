@@ -1,0 +1,61 @@
+{
+    "heading": "Ressources",
+    "subtitle": "Brochures, vidéos, grilles tarifaires et liens que l'agent peut envoyer sur WhatsApp.",
+    "hint": "Ajoutez des documents que l'agent enverra quand un prospect les demande ({{max}} maximum). La description est ce que l'agent lit pour savoir ce qu'est l'élément et quand l'envoyer.",
+    "noDescriptionWarning": "Ajoutez une description pour que l'agent sache quand l'envoyer.",
+    "limitReached": "La liste des ressources est pleine ({{max}} éléments). Supprimez-en un pour en ajouter.",
+    "loadFailed": "Impossible de charger les ressources.",
+    "empty": {
+        "title": "Rien dans les ressources pour l'instant",
+        "text": "Ajoutez des brochures, vidéos de démo, grilles tarifaires ou liens : l'agent enverra le bon élément à la demande. S'il ne trouve rien d'adapté, il alerte le conseiller du prospect."
+    },
+    "kind": {
+        "document": "Les documents",
+        "image": "Les images",
+        "video": "Les vidéos",
+        "audio": "Les fichiers audio",
+        "link": "Les liens"
+    },
+    "actions": {
+        "uploadFile": "Importer un fichier",
+        "addLink": "Ajouter un lien",
+        "edit": "Modifier",
+        "remove": "Supprimer",
+        "retry": "Réessayer"
+    },
+    "dialog": {
+        "fileHeading": "Ajouter un fichier",
+        "linkHeading": "Ajouter un lien",
+        "editHeading": "Modifier l'élément",
+        "title": "Titre",
+        "titlePlaceholder": "ex. Brochure des cours 2026",
+        "url": "Lien (https)",
+        "description": "Description",
+        "descriptionPlaceholder": "ex. Brochure 2026 complète avec frais et bourses. À envoyer quand on demande une brochure ou des détails sur les cours.",
+        "descriptionHint": "Indiquez ce que c'est et quand l'agent doit l'envoyer.",
+        "cancel": "Annuler",
+        "save": "Enregistrer",
+        "add": "Ajouter"
+    },
+    "remove": {
+        "title": "Supprimer cet élément ?",
+        "description": "L'agent n'enverra plus « {{title}} ».",
+        "confirm": "Supprimer",
+        "cancel": "Annuler"
+    },
+    "errors": {
+        "unsupported": "Ce type de fichier ne peut pas être envoyé sur WhatsApp. Utilisez un PDF ou document Office, une image, une vidéo ou un fichier audio.",
+        "tooLarge": "{{kind}} doivent faire {{mb}} Mo maximum pour WhatsApp.",
+        "httpsOnly": "Le lien doit commencer par https://",
+        "uploadFailed": "Échec de l'envoi. Réessayez.",
+        "saveFailed": "Enregistrement impossible. Réessayez."
+    },
+    "toast": {
+        "added": "Élément ajouté.",
+        "addFailed": "Impossible d'ajouter l'élément.",
+        "updated": "Élément mis à jour.",
+        "updateFailed": "Impossible de mettre à jour l'élément.",
+        "removed": "Élément supprimé.",
+        "removeFailed": "Impossible de supprimer l'élément."
+    }
+}

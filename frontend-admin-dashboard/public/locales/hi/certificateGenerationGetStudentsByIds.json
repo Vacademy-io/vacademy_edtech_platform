@@ -1,0 +1,6 @@
+{
+    "errors": {
+        "fetchFailed": "छात्र विवरण प्राप्त नहीं हो सका: {{message}}",
+        "unknownError": "अज्ञात त्रुटि"
+    }
+}

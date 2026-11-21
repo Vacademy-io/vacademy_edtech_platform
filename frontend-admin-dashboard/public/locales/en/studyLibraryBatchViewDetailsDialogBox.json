@@ -1,0 +1,13 @@
+{
+    "viewDetails": "View Details",
+    "heading": "Module Details Report",
+    "exporting": "Exporting…",
+    "exportPdf": "Export PDF",
+    "date": "Date",
+    "noActivity": "No activity found for this {{term}}.",
+    "toast": {
+        "noDataToExport": "No data to export yet",
+        "exportSuccess": "Report exported",
+        "exportFailed": "Failed to export PDF"
+    }
+}

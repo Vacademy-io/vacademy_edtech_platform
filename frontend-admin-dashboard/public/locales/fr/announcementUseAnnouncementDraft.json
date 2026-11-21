@@ -1,0 +1,20 @@
+{
+    "errors": {
+        "loadTags": "Impossible de charger les tags.",
+        "loadCustomFields": "Impossible de charger les champs personnalisés.",
+        "loadSenders": "Impossible de charger les adresses d'expéditeur.",
+        "loadEmailTemplates": "Impossible de charger les modèles d'e-mail.",
+        "loadWhatsappTemplates": "Impossible de charger les modèles WhatsApp.",
+        "syncFailed": "Échec de la synchronisation. Vérifiez la connexion WhatsApp dans les paramètres.",
+        "loadTemplate": "Impossible de charger ce modèle.",
+        "loadCampaigns": "Impossible de charger les campagnes."
+    },
+    "toast": {
+        "templateApplied": "« {{name}} » appliqué",
+        "templateCachedCopy": "Copie en cache de ce modèle chargée — rouvrez-le pour obtenir la dernière version.",
+        "templatesSynced_one": "{{count}} modèle synchronisé depuis Meta.",
+        "templatesSynced_many": "{{count}} modèles synchronisés depuis Meta.",
+        "templatesSynced_other": "{{count}} modèles synchronisés depuis Meta.",
+        "templatesUpToDate": "Les modèles sont à jour."
+    }
+}

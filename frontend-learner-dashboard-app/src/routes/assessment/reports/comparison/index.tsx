@@ -8,6 +8,7 @@ import { LayoutContainer } from "@/components/common/layout-container/layout-con
 import { DashboardLoader } from "@/components/core/dashboard-loader";
 import { useNavHeadingStore } from "@/stores/layout-container/useNavHeadingStore";
 import { ComparisonDashboard } from "@/components/common/student-test-records/comparison-dashboard";
+import { useTranslation } from "react-i18next";
 
 const comparisonParamsSchema = z.object({
   assessmentId: z.string(),
@@ -20,12 +21,13 @@ export const Route = createFileRoute("/assessment/reports/comparison/")({
 });
 
 function ComparisonRouteComponent() {
+  const { t } = useTranslation("assessment");
   const { assessmentId, attemptId } = Route.useSearch();
   const router = useRouter();
   const state = router.state.location.state as
     | { assessmentName?: string; evaluationType?: string }
     | undefined;
-  const assessmentName = state?.assessmentName || "Assessment";
+  const assessmentName = state?.assessmentName || t("comparison.defaultAssessmentName");
   const evaluationType = state?.evaluationType;
 
   const [comparisonData, setComparisonData] = useState<any>(null);
@@ -35,8 +37,8 @@ function ComparisonRouteComponent() {
   const { setNavHeading } = useNavHeadingStore();
 
   useEffect(() => {
-    setNavHeading("Performance Comparison");
-  }, [setNavHeading]);
+    setNavHeading(t("comparison.navHeading"));
+  }, [setNavHeading, t]);
 
   useEffect(() => {
     async function fetchInstituteId() {
@@ -60,7 +62,7 @@ function ComparisonRouteComponent() {
         setComparisonData(response.data);
       } catch (err) {
         console.error("Error fetching comparison data:", err);
-        setError("Failed to load comparison data. Please try again later.");
+        setError(t("comparison.error"));
       } finally {
         setLoading(false);
       }

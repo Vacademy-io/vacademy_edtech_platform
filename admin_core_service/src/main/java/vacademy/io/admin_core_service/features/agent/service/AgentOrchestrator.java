@@ -5,6 +5,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import vacademy.io.admin_core_service.features.agent.dto.*;
+import vacademy.io.admin_core_service.features.ai_usage.enums.RequestType;
+import vacademy.io.admin_core_service.features.credits.client.AuthorizeResult;
+import vacademy.io.admin_core_service.features.credits.client.CreditClient;
+import vacademy.io.admin_core_service.features.credits.client.MeteringFields;
 
 import java.io.IOException;
 import java.util.List;
@@ -29,6 +33,7 @@ public class AgentOrchestrator {
     private final VectorSearchService vectorSearchService;
     private final ToolExecutor toolExecutor;
     private final ConversationManager conversationManager;
+    private final CreditClient creditClient;
 
     // SSE emitters for each session
     private final Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
@@ -57,11 +62,13 @@ public class AgentOrchestrator {
             }
             conversationManager.resumeSession(session);
         } else {
+            // A model picked in the UI wins; null lets the admin_agent row decide (GLM by default).
             session = conversationManager.createSession(
                     userId,
                     request.getInstituteId(),
-                    request.getModel(),
+                    request.getModel() == null || request.getModel().isBlank() ? null : request.getModel().trim(),
                     userToken);
+            session.getContext().put(LLMService.CTX_USE_CASE, LLMService.DEFAULT_USE_CASE);
         }
 
         // Add context if provided
@@ -159,6 +166,21 @@ public class AgentOrchestrator {
             Thread.currentThread().interrupt();
         }
 
+        // AI usage limits: one check per user turn, before any model call. A refusal is
+        // shown in the chat (the limit's own message) and the session waits for the next
+        // message; a pending tool call is left in place for when the limit allows again.
+        AuthorizeResult limit = authorizeTurn(session);
+        if (AuthorizeResult.blocks(limit)) {
+            String message = limit.message();
+            log.info("[AgentOrchestrator] AI usage limit refused session {}: {}", sessionId, message);
+            conversationManager.addAssistantMessage(session, message);
+            conversationManager.setAwaitingInput(session);
+            // One AWAITING_INPUT event: the dashboard renders its question as the assistant's
+            // bubble and re-enables the input (a MESSAGE as well would show it twice).
+            emitEvent(sessionId, AgentEvent.awaitingInput(sessionId, message, null));
+            return;
+        }
+
         // Check if there's a pending tool call awaiting confirmation
         PendingToolCall pendingCall = pendingToolCalls.remove(sessionId);
         if (pendingCall != null) {
@@ -242,6 +264,21 @@ public class AgentOrchestrator {
             log.error("[AgentOrchestrator] Error in agent loop for session: {}: {}", sessionId, e.getMessage(), e);
             conversationManager.errorSession(session, e.getMessage());
             emitEvent(sessionId, AgentEvent.error(sessionId, "Error: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * The limit gate for one agent turn. Never throws: no limits on for the institute = no
+     * call at all, and any failure = allowed.
+     */
+    AuthorizeResult authorizeTurn(ConversationSession session) {
+        try {
+            Object configured = session.getContext() == null ? null : session.getContext().get(LLMService.CTX_USE_CASE);
+            String useCase = configured instanceof String s && !s.isBlank() ? s : LLMService.DEFAULT_USE_CASE;
+            return creditClient.authorize(session.getInstituteId(), useCase, RequestType.AGENT.getValue(),
+                    MeteringFields.user(useCase, MeteringFields.SURFACE_ADMIN_APP).build(), session.getUserId());
+        } catch (Exception e) {
+            return AuthorizeResult.ALLOW_NONE;
         }
     }
 

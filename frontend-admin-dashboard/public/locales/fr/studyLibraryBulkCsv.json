@@ -1,0 +1,22 @@
+{
+    "status": {
+        "success": "Réussi",
+        "failed": "Échec",
+        "created": "Créé",
+        "unknownError": "Erreur inconnue"
+    },
+    "errors": {
+        "missingColumns": "Colonne(s) requise(s) manquante(s) : {{columns}}. Utilisez la ligne d'en-tête du modèle téléchargé.",
+        "titleRequired": "Le titre est requis",
+        "startDateRequired": "start_date est requis",
+        "invalidStartDate": "start_date invalide (utilisez AAAA-MM-JJ)",
+        "startTimeRequired": "start_time est requis",
+        "invalidStartTime": "start_time invalide (utilisez le format 24h HH:mm)",
+        "durationRequired": "La durée doit être supérieure à zéro",
+        "unknownPlatform": "Plateforme inconnue ou désactivée \"{{platform}}\". Autorisées : {{allowed}}",
+        "linkRequired": "Le lien est requis pour la plateforme \"{{platform}}\"",
+        "invalidLink": "URL de lien invalide",
+        "unknownBatchId": "Identifiant de lot inconnu : {{id}}",
+        "failedToReadCsv": "Échec de la lecture du CSV"
+    }
+}

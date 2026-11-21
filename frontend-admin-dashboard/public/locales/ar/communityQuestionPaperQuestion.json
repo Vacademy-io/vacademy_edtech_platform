@@ -1,0 +1,11 @@
+{
+    "questionNumber": "السؤال {{number}}",
+    "questionImageAlt": "صورة السؤال {{number}}",
+    "marksCount_zero": "{{count}} علامة",
+    "marksCount_one": "علامة واحدة",
+    "marksCount_two": "علامتان",
+    "marksCount_few": "{{count}} علامات",
+    "marksCount_many": "{{count}} علامة",
+    "marksCount_other": "{{count}} علامة",
+    "minLabel": "دقيقة"
+}

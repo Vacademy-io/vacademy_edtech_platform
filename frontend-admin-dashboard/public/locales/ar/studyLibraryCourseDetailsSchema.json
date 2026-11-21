@@ -1,0 +1,17 @@
+{
+    "instructorEmailInvalid": "عنوان البريد الإلكتروني غير صالح.",
+    "instructorNameRequired": "اسم المدرّب مطلوب.",
+    "levelNameRequired": "اسم المستوى مطلوب.",
+    "durationNonNegative": "يجب أن تكون المدة عددًا صحيحًا غير سالب.",
+    "sessionNameRequired": "اسم الجلسة مطلوب.",
+    "statusNameRequired": "اسم الحالة مطلوب.",
+    "startDateFormat": "يجب أن يكون تاريخ البدء بالتنسيق YYYY-MM-DD.",
+    "levelDetailsRequired": "يلزم تفصيل مستوى واحد على الأقل لكل جلسة.",
+    "titleRequired": "العنوان مطلوب.",
+    "descriptionMinLength": "يجب أن يتكون الوصف من 10 أحرف على الأقل.",
+    "tagsRequired": "يلزم وسم واحد على الأقل.",
+    "imageUrlInvalid": "يجب أن يكون رابطًا صالحًا للصورة.",
+    "instructorsRequired": "يلزم مدرّب واحد على الأقل.",
+    "sessionsRequired": "يلزم جلسة واحدة على الأقل.",
+    "mockCourseTitleRequired": "عنوان الدورة التجريبية مطلوب."
+}

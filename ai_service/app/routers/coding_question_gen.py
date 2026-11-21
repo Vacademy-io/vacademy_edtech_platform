@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -24,7 +24,8 @@ from ..core.security import get_current_user
 from ..db import db_dependency
 from ..models.ai_token_usage import RequestType
 from ..schemas.auth import CustomUserDetails
-from ..services.ai_billing import preflight_tool_credits, record_tool_billing
+from ..services.ai_billing import metering_from_request, preflight_tool_credits, record_tool_billing
+from ..constants.model_defaults import GLM_DEFAULT
 from ..services.ai_models_service import AIModelsService
 from ..services.api_key_resolver import ApiKeyResolver
 from ..services.chat_llm_client import ChatLLMClient
@@ -38,7 +39,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/coding-question", tags=["coding-question-generation"])
 
 # Fallback if ai_model_defaults isn't populated.
-FALLBACK_MODEL = "google/gemini-2.5-flash"
+FALLBACK_MODEL = GLM_DEFAULT
 
 
 # ---------------------------------------------------------------------------
@@ -107,6 +108,7 @@ async def generate_coding_question(
     ),
     user: CustomUserDetails = Depends(get_current_user),
     db: Session = Depends(db_dependency),
+    http_request: Request = None,
 ):
     """Generate a coding-question config from a natural-language idea.
 
@@ -175,6 +177,9 @@ async def generate_coding_question(
         user_id=user_id,
         user_role="ADMIN" if user_id else None,
         idempotency_key=request.idempotency_key,
+        # Usage-event attribution only (the ledger role above is unchanged).
+        use_case="questions",
+        metering=metering_from_request(http_request, resolved_institute_id, user=user),
     )
 
     logger.info(

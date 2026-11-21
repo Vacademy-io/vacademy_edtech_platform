@@ -16,7 +16,7 @@ metadata:
   labels:
     app: assessment-service
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.services.assessment_service.replicas | default .Values.replicaCount }}
   strategy:
     type: RollingUpdate
     rollingUpdate:

@@ -1,0 +1,8 @@
+{
+    "legend": {
+        "correct": "सही",
+        "partiallyCorrect": "आंशिक रूप से सही",
+        "wrongResponse": "गलत उत्तर",
+        "skipped": "छोड़ा गया"
+    }
+}

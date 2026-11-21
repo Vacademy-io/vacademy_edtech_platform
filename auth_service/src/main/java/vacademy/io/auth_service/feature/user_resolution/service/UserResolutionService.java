@@ -1,7 +1,10 @@
 package vacademy.io.auth_service.feature.user_resolution.service;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Session;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -9,6 +12,7 @@ import vacademy.io.common.auth.entity.User;
 import vacademy.io.common.auth.repository.UserRepository;
 import vacademy.io.common.auth.repository.UserRoleRepository;
 
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,6 +23,9 @@ public class UserResolutionService {
 
     private final UserRoleRepository userRoleRepository;
     private final UserRepository userRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     /**
      * Get users by institute and role - with caching for performance.
@@ -88,6 +95,16 @@ public class UserResolutionService {
             return List.of();
         String inst = (instituteId != null && instituteId.isBlank()) ? null : instituteId;
         try {
+            // The search is LIKE '%term%' over trigram indexes (V24). A cached generic plan
+            // cannot see the term, so it picks one scan for every term: 2-letter terms (which
+            // have no trigrams) went from ~270 ms to ~500 ms and 5-letter terms stayed at
+            // ~130-270 ms instead of ~25 ms. Plan per call instead. SET LOCAL ends with this
+            // transaction, so nothing leaks to other clients through pgbouncer.
+            entityManager.unwrap(Session.class).doWork(connection -> {
+                try (Statement statement = connection.createStatement()) {
+                    statement.execute("SET LOCAL plan_cache_mode = force_custom_plan");
+                }
+            });
             List<String> ids = userRepository.searchUserIdsByQuery(query.trim(), inst);
             log.debug("searchUserIdsByQuery: query='{}', instituteId='{}', found={} ids",
                     query, inst, ids.size());

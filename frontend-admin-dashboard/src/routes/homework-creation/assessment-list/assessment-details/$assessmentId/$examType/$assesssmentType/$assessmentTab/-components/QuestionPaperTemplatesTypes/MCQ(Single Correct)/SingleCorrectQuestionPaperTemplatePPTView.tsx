@@ -12,6 +12,7 @@ import {
 import 'react-quill/dist/quill.snow.css';
 import { PPTViewQuillEditor } from '@/components/quill/PPTViewQuillEditor';
 import { SectionQuestionPaperFormProps } from '../../../-utils/assessment-question-paper';
+import { useTranslation } from 'react-i18next';
 
 interface ImageDetail {
     imageId: string;
@@ -37,6 +38,7 @@ export const SingleCorrectQuestionPaperTemplatePPTView = ({
     selectedSectionIndex,
 }: SectionQuestionPaperFormProps) => {
     const { control, getValues, setValue } = form;
+    const { t } = useTranslation('homeworkCreationSingleCorrectPPTView');
 
     const [isDropdownVisible, setIsDropdownVisible] = useState(false); // State to track dropdown visibility
     const [isDropdownOpen, setIsDropdownOpen] = useState(false); // State for dropdown open state
@@ -133,7 +135,7 @@ export const SingleCorrectQuestionPaperTemplatePPTView = ({
                     >
                         <div className="flex w-full items-center gap-4">
                             <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
-                                <span className="!p-0 text-sm">(a.)</span>
+                                <span className="!p-0 text-sm">{t('optionLabels.a')}</span>
                             </div>
                         </div>
                         <div className="flex size-10 items-center justify-center rounded-full bg-white px-4">
@@ -166,7 +168,7 @@ export const SingleCorrectQuestionPaperTemplatePPTView = ({
                     >
                         <div className="flex w-full items-center gap-4">
                             <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
-                                <span className="!p-0 text-sm">(b.)</span>
+                                <span className="!p-0 text-sm">{t('optionLabels.b')}</span>
                             </div>
                         </div>
                         <div className="flex size-10 items-center justify-center rounded-full bg-white px-4">
@@ -201,7 +203,7 @@ export const SingleCorrectQuestionPaperTemplatePPTView = ({
                     >
                         <div className="flex w-full items-center gap-4">
                             <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
-                                <span className="!p-0 text-sm">(c.)</span>
+                                <span className="!p-0 text-sm">{t('optionLabels.c')}</span>
                             </div>
                         </div>
                         <div className="flex size-10 items-center justify-center rounded-full bg-white px-4">
@@ -234,7 +236,7 @@ export const SingleCorrectQuestionPaperTemplatePPTView = ({
                     >
                         <div className="flex w-full items-center gap-4">
                             <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
-                                <span className="!p-0 text-sm">(d.)</span>
+                                <span className="!p-0 text-sm">{t('optionLabels.d')}</span>
                             </div>
                         </div>
                         <div className="flex size-10 items-center justify-center rounded-full bg-white px-4">
@@ -282,10 +284,10 @@ export const SingleCorrectQuestionPaperTemplatePPTView = ({
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="mt-1">
                             <DropdownMenuItem onClick={handleDuplicateSlide}>
-                                Duplicate Slide
+                                {t('menu.duplicateSlide')}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={handleDeleteSlide}>
-                                Delete Slide
+                                {t('menu.deleteSlide')}
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>

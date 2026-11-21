@@ -1,0 +1,15 @@
+{
+    "noSubOrgsFound": "No sub-organizations found",
+    "pleaseSelectASubOrg": "Please select a sub-organization",
+    "loadingSubOrgs": "Loading sub-organizations...",
+    "logoAlt": "Logo",
+    "selectSubOrg": "Select Sub-Organization",
+    "pleaseChooseSubOrgToAccess": "Please choose the sub-organization you want to access",
+    "availableSubOrgs": "Available Sub-Organizations",
+    "subOrgFallbackName": "Sub-Org {{subOrgId}}",
+    "chooseASubOrg": "Choose a sub-organization",
+    "idLabel": "ID: {{idPrefix}}...",
+    "continueToPortal": "Continue to Portal",
+    "selectASubOrg": "Select a Sub-Organization",
+    "backToLogin": "Back to Login"
+}

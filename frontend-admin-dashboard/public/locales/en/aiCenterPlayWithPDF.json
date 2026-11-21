@@ -1,0 +1,45 @@
+{
+    "header": {
+        "title": "Chat with a Document",
+        "subtitle": "Drop a PDF, then ask anything about it — summaries, questions, or explanations."
+    },
+    "upload": {
+        "dropTitle": "Drop your document here, or click to choose",
+        "dropSubtitle": "PDF, Word, or PowerPoint — anything you want to chat with.",
+        "fallbackFileName": "Chatting with document",
+        "statusUploading": "Uploading…",
+        "statusProcessing": "Reading…",
+        "statusReady": "Ready to chat",
+        "workingUploading": "Reading your file…",
+        "workingProcessing": "Getting your document ready to chat…",
+        "resetAriaLabel": "Start over with a new document"
+    },
+    "chat": {
+        "emptyTitle": "Ask anything about this document",
+        "emptySubtitle": "Use the suggestions below, or type your own question.",
+        "suggestions": {
+            "mainIdea": "What is the main idea of this document?",
+            "summarize": "Summarize the key points.",
+            "generateQuestions": "Generate 5 questions on the main concepts."
+        },
+        "pending": "Reading the document…",
+        "inputPlaceholder": "Ask anything about this document…",
+        "send": "Send",
+        "historyTitle": "Chat history"
+    },
+    "errors": {
+        "unsupportedFormat": "We can't read .{{ext}} files. Try PDF, Word, or PowerPoint.",
+        "uploadIncomplete": "Upload didn't complete. Want to try again?",
+        "readFailed": "We couldn't read this file. Try a different one?",
+        "genericFailure": "Something went wrong reading your file. Try again?",
+        "noResponse": "No response yet. Try asking again?"
+    },
+    "recentFiles": {
+        "title": "Your recent chats",
+        "fallbackLabel": "Document chat",
+        "emptyHint": "Your chat sessions will appear here. Drop a document above to start one."
+    },
+    "tasksList": {
+        "heading": "Vsmart Chat"
+    }
+}

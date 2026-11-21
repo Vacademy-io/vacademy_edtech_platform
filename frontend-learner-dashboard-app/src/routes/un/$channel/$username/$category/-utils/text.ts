@@ -1,6 +1,8 @@
-export const formatCategoryTitle = (value: string | null | undefined) => {
+import type { TFunction } from "i18next";
+
+export const formatCategoryTitle = (value: string | null | undefined, t: TFunction) => {
   if (!value) {
-    return "General updates";
+    return t("unsubscribe.generalUpdates");
   }
 
   return value
@@ -21,9 +23,9 @@ export const normalizeCategoryKey = (value: string | null | undefined) => {
   return value.toUpperCase().replace(/\s+/g, "_");
 };
 
-export const maskIdentifier = (value: string | null | undefined) => {
+export const maskIdentifier = (value: string | null | undefined, t: TFunction) => {
   if (!value) {
-    return "your account";
+    return t("unsubscribe.yourAccount");
   }
 
   const trimmed = value.trim();

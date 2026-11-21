@@ -1,0 +1,17 @@
+{
+    "selectAtLeastOneStudent": "Select at least one student",
+    "mentorFallback": "mentor",
+    "assignHeading": "Assign students to {{mentorName}}",
+    "selectedCount": "{{count}} selected",
+    "seatsFreeSuffix": " · {{slots}} of {{max}} seats free",
+    "cancel": "Cancel",
+    "selectAtLeastOneBelow": "Select at least one student below",
+    "assigning": "Assigning…",
+    "assignStudent_one": "Assign student",
+    "assignStudent_other": "Assign {{count}} students",
+    "assignmentResultFailed": "Failed to assign students",
+    "filterHelp": "Filter by batch to take a whole class at once, or search by name. Everything you tick stays selected as you move between batches.",
+    "atLimit": "This mentor is already at their limit of {{max}}. Nothing here will be assigned — raise their capacity, or spread the group across mentors with Bulk assign.",
+    "seatsLeft_one": "This mentor has {{count}} seat left. The first {{count}} will be assigned and the rest skipped — raise their capacity, or spread the group across mentors with Bulk assign.",
+    "seatsLeft_other": "This mentor has {{count}} seats left. The first {{count}} will be assigned and the rest skipped — raise their capacity, or spread the group across mentors with Bulk assign."
+}

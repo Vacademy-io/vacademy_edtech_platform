@@ -40,6 +40,8 @@ export interface LiveSessionStep1RequestDTO {
     link_type?: string;
     allow_rewind?: boolean;
     allow_play_pause?: boolean;
+    // Attendance-only institutes: true shows the class to learners.
+    show_to_learners?: boolean;
     is_live?: boolean;
     session_streaming_service_type?: string;
     cover_file_id?: string | null;
@@ -64,6 +66,8 @@ export interface BbbMeetingConfig {
     disable_shared_notes?: boolean;
     hide_user_list?: boolean;
     end_when_no_moderator?: boolean;
+    // Opt-in: learners can turn on an on-device camera activeness score
+    activeness_score?: boolean;
 }
 
 export interface FeedbackQuestionConfig {
@@ -113,6 +117,22 @@ export interface LiveSessionStep2RequestDTO {
     package_session_ids: string[];
     deleted_package_session_ids: string[];
     individual_user_ids?: string[];
+
+    /**
+     * Instructors / presenters of the class, as user ids.
+     *
+     * Tri-state on the backend: omit it and instructors are left alone (which
+     * is what every pre-existing caller does), send `[]` to clear them, or send
+     * the exact list. Cleared sessions fall back to whoever created them.
+     */
+    instructor_user_ids?: string[];
+
+    /**
+     * Instructors as typed by a human — user id, email or username. Used by the
+     * bulk CSV import; resolved server-side against the institute directory,
+     * with unmatched entries reported per row rather than failing the row.
+     */
+    instructor_identifiers?: string[];
 
     join_link: string;
 
@@ -340,6 +360,7 @@ export function transformFormToDTOStep1(
         sessionPlatform,
         allowRewind,
         allowPause,
+        showToLearners,
         timeZone,
         learner_button_config,
         bbbRecord,
@@ -354,6 +375,7 @@ export function transformFormToDTOStep1(
         bbbDisableSharedNotes,
         bbbHideUserList,
         bbbEndWhenNoModerator,
+        bbbActivenessScore,
         feedbackEnabled,
         feedbackCompulsory,
         feedbackQuestions,
@@ -426,6 +448,7 @@ export function transformFormToDTOStep1(
         link_type: sessionPlatform,
         allow_rewind: allowRewind,
         allow_play_pause: allowPause,
+        show_to_learners: showToLearners,
         session_streaming_service_type: streamingType,
         cover_file_id: coverFileId,
         time_zone: timeZone,
@@ -444,6 +467,7 @@ export function transformFormToDTOStep1(
             disable_shared_notes: bbbDisableSharedNotes ?? false,
             hide_user_list: bbbHideUserList ?? false,
             end_when_no_moderator: bbbEndWhenNoModerator ?? false,
+            activeness_score: bbbActivenessScore ?? false,
         } : null,
         feedback_config: feedbackEnabled ? {
             enabled: true,
@@ -494,7 +518,14 @@ export function transformFormToDTOStep2(
     formData: FormData,
     sessionId: string,
     packageSessionIds: string[],
-    previousSchedule?: PreviousScheduleInput | null
+    previousSchedule?: PreviousScheduleInput | null,
+    /**
+     * Batches the admin unlinked during this edit. `linkParticipants` on the
+     * backend is purely additive apart from this list — it deletes ONLY the ids
+     * named here — so leaving it empty (as this used to) meant a deselected
+     * batch stayed linked and kept showing up under the class.
+     */
+    deletedPackageSessionIds: string[] = []
 ): LiveSessionStep2RequestDTO {
     const {
         accessType,
@@ -514,6 +545,7 @@ export function transformFormToDTOStep2(
         recordingAutoLink,
         audiencePushEnabled,
         audiencePushAudienceIds,
+        instructorUserIds,
     } = formData;
 
     const addedNotificationActions: NotificationActionDTO[] = [];
@@ -608,7 +640,7 @@ export function transformFormToDTOStep2(
         session_id: sessionId,
         access_type: accessType,
         package_session_ids: batchSelectionType === 'batch' ? packageSessionIds : [],
-        deleted_package_session_ids: [],
+        deleted_package_session_ids: batchSelectionType === 'batch' ? deletedPackageSessionIds : [],
         join_link: joinLink,
         old_meeting_date,
         old_start_time,
@@ -634,6 +666,14 @@ export function transformFormToDTOStep2(
             audience_ids: audiencePushEnabled ? (audiencePushAudienceIds ?? []) : [],
         },
     };
+
+    // Only sent when the form actually carries a list. Omitting it leaves the
+    // stored instructors untouched, which is what keeps callers that don't know
+    // about instructors (and the edit flows that don't render the picker)
+    // from silently wiping them.
+    if (instructorUserIds) {
+        result.instructor_user_ids = instructorUserIds;
+    }
 
     // Add individual user IDs if individual selection is used
     if (batchSelectionType === 'individual' && selectedLearners) {

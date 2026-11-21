@@ -1,0 +1,25 @@
+{
+    "to": "à",
+    "loading": "Chargement...",
+    "statusFilters": {
+        "all": "TOUS",
+        "completed": "TERMINÉ",
+        "failed": "ÉCHOUÉ",
+        "processing": "EN COURS",
+        "pending": "EN ATTENTE"
+    },
+    "table": {
+        "started": "Démarré",
+        "completed": "Terminé",
+        "status": "Statut",
+        "duration": "Durée",
+        "error": "Erreur"
+    },
+    "empty": {
+        "title": "Aucune exécution trouvée",
+        "hint": "Pour les workflows événementiels, les exécutions apparaissent au déclenchement de l'événement (par ex. soumission de formulaire, inscription). Pour les workflows planifiés, attendez la prochaine exécution programmée. Essayez d'ajuster la plage de dates ou le filtre de statut ci-dessus."
+    },
+    "pagination": {
+        "summary": "Page {{current}} sur {{total}} ({{count}} au total)"
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "requiredDocuments": "المستندات المطلوبة",
+    "supportedFormats": "الصيغ المدعومة: JPG وPNG وPDF (بحد أقصى 2 ميجابايت)",
+    "upload": "رفع",
+    "documents": {
+        "photo": "صورة بحجم جواز السفر",
+        "birthCert": "شهادة الميلاد",
+        "aadhar": "بطاقة آدهار",
+        "tc": "شهادة النقل",
+        "reportCard": "بطاقة التقرير السابقة"
+    }
+}

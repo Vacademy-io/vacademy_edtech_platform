@@ -25,6 +25,7 @@ import { handleUpdateAttempt } from '@/routes/assessment/assessment-list/assessm
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import DummyProfile from '@/assets/svgs/dummy_profile_photo.svg';
 import { MyDialog } from '@/components/design-system/dialog';
+import { useTranslation } from 'react-i18next';
 
 interface FormData {
     file: FileList | null;
@@ -37,6 +38,7 @@ export const ParticipantSidebar = ({
     assessmentId: string;
     examType: string;
 }) => {
+    const { t } = useTranslation('evaluationParticipantSidebar');
     const [isUploading, setIsUploading] = useState(false);
     const { state } = useSidebar();
     const [openUploadConfirm, setOpenUploadConfirm] = useState(false);
@@ -96,7 +98,7 @@ export const ParticipantSidebar = ({
             return data;
         },
         onSuccess: () => {
-            toast.success('Attempt uploaded successfully');
+            toast.success(t('attemptUploadSuccess'));
             setFileId(undefined);
         },
     });
@@ -115,7 +117,7 @@ export const ParticipantSidebar = ({
             if (uploadedFileId) {
                 setFileId(uploadedFileId);
                 form.setValue('fileId', uploadedFileId);
-                toast.success('File uploaded successfully');
+                toast.success(t('fileUploadSuccess'));
             }
         } catch (error) {
             console.error('Upload failed:', error);
@@ -144,8 +146,7 @@ export const ParticipantSidebar = ({
             const backendMessage = (err as { response?: { data?: { ex?: string } } })?.response
                 ?.data?.ex;
             const errorMessage =
-                backendMessage ??
-                (err instanceof Error ? err.message : 'Upload failed. Please try again.');
+                backendMessage ?? (err instanceof Error ? err.message : t('uploadFailedRetry'));
             setError(errorMessage);
             toast.error(errorMessage);
         } finally {
@@ -162,7 +163,7 @@ export const ParticipantSidebar = ({
                     <div className={`flex flex-col items-center justify-center gap-10`}>
                         <div className={`flex w-full items-center justify-between`}>
                             <div className="text-h3 font-semibold text-primary-500">
-                                Participant Details
+                                {t('participantDetails')}
                             </div>
                             <X
                                 className="size-6 cursor-pointer text-neutral-500"
@@ -186,7 +187,7 @@ export const ParticipantSidebar = ({
                                     <div className="flex w-full items-center justify-center">
                                         <img
                                             src={imageUrl}
-                                            alt="face profile"
+                                            alt={t('faceProfileAlt')}
                                             className={`size-60 rounded-full object-cover`}
                                         />
                                     </div>
@@ -225,7 +226,7 @@ export const ParticipantSidebar = ({
                                     type="button"
                                     className={cn('block', fileId && 'hidden')}
                                 >
-                                    {isUploading ? 'Uploading' : 'Upload Attempt'}
+                                    {isUploading ? t('uploading') : t('uploadAttempt')}
                                 </MyButton>
 
                                 <MyButton
@@ -236,7 +237,7 @@ export const ParticipantSidebar = ({
                                     disabled={isUploading}
                                     className={cn('block', !fileId && 'hidden')}
                                 >
-                                    {'Submit'}
+                                    {t('submit')}
                                 </MyButton>
                             </form>
                         </Form>
@@ -258,15 +259,12 @@ export const ParticipantSidebar = ({
                                     });
                             }}
                         >
-                            Evaluate
+                            {t('evaluate')}
                         </MyButton>
                     </SidebarMenuItem>
-                    <MyDialog open={openUploadConfirm} heading="Confirm Upload?">
+                    <MyDialog open={openUploadConfirm} heading={t('confirmUploadHeading')}>
                         <div className="flex flex-col gap-y-4">
-                            <p>
-                                Uploading a new file will overwrite the student&apos;s existing
-                                response. Are you sure you want to continue?
-                            </p>
+                            <p>{t('confirmUploadBody')}</p>
                             <MyButton
                                 buttonType="primary"
                                 scale="medium"
@@ -276,9 +274,9 @@ export const ParticipantSidebar = ({
                                     fileInputRef.current?.click();
                                     setOpenUploadConfirm(false);
                                 }}
-                                className="ml-auto"
+                                className="ms-auto"
                             >
-                                Upload
+                                {t('upload')}
                             </MyButton>
                         </div>
                     </MyDialog>

@@ -1,0 +1,28 @@
+{
+    "header": {
+        "questionOf": "Question {{current}} sur {{total}}",
+        "typeAndMaxMarks": "{{type}} | Note maximale : {{maxMarks}}"
+    },
+    "question": {
+        "noContent": "Aucun texte de question disponible"
+    },
+    "options": {
+        "selectOne": "Sélectionnez une option :",
+        "selectAll": "Sélectionnez toutes les options applicables :",
+        "optionFallback": "Option {{number}}"
+    },
+    "directMarks": {
+        "marksLabel": "Notes",
+        "statusLabel": "Statut",
+        "statusSelect": "Sélectionner",
+        "statusCorrect": "Correct",
+        "statusIncorrect": "Incorrect",
+        "statusPartialCorrect": "Partiellement correct"
+    },
+    "navigation": {
+        "clearResponse": "Effacer la réponse",
+        "previous": "Précédent",
+        "submit": "Soumettre",
+        "next": "Suivant"
+    }
+}

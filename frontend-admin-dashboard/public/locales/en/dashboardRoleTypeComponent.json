@@ -1,0 +1,14 @@
+{
+    "dialog": {
+        "triggerButton": "Manage Users",
+        "title": "Manage Role Types Users"
+    },
+    "tabs": {
+        "instituteUsers": "Institute Users",
+        "invites": "Invites"
+    },
+    "filters": {
+        "roleTypeLabel": "Role Type",
+        "statusLabel": "Status"
+    }
+}

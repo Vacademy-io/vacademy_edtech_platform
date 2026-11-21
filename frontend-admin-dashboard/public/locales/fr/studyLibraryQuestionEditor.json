@@ -1,0 +1,12 @@
+{
+    "tabs": {
+        "problem": "Problème",
+        "testCases_one": "Cas de test ({{count}})",
+        "testCases_many": "Cas de test ({{count}})",
+        "testCases_other": "Cas de test ({{count}})",
+        "settings": "Paramètres",
+        "starterCode": "Code de départ",
+        "submissions": "Soumissions"
+    },
+    "problemPlaceholder": "Décrivez le problème. Indiquez les contraintes, le format d'entrée/sortie et des exemples."
+}

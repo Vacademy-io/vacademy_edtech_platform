@@ -1,0 +1,20 @@
+{
+    "coachingDrillIn": {
+        "loading": "कोचिंग लोड हो रही है…",
+        "noAnalyzedCalls": "अभी तक कोई विश्लेषित कॉल नहीं — इस प्रतिनिधि के लिए कोई कोचिंग नहीं है।",
+        "weakestLabel": "सबसे कमज़ोर:",
+        "scoreOutOfTen": "{{score}}/10"
+    },
+    "workPatterns": {
+        "sectionTitle": "काउंसलर कार्य पैटर्न",
+        "emptyMessage": "इस अवधि में कोई काउंसलर गतिविधि नहीं।",
+        "columns": {
+            "counsellor": "काउंसलर",
+            "leadsDispositioned": "निपटाए गए लीड",
+            "calls": "कॉल",
+            "connected": "कनेक्टेड",
+            "reach": "पहुँच"
+        },
+        "improveHeading": "वे किसमें सुधार कर सकते हैं"
+    }
+}

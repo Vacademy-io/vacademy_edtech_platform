@@ -731,6 +731,7 @@ def _build_sound_palette(
                     role=role,
                     used_ids=used_ids,
                     fallback_seed_salt=f"{video_id}:{i}",
+                    exclude_urls=seen_urls,
                 )
                 if not picked:
                     break
@@ -751,9 +752,9 @@ def _build_sound_palette(
             for i in range(4):
                 seed = f"{video_id}:palette:{role}:{i}"
                 if topic_kws:
-                    picked = cat.resolve_for_topic(role, topic_kws, seed_key=seed)
+                    picked = cat.resolve_for_topic(role, topic_kws, seed_key=seed, exclude_urls=seen_urls)
                 else:
-                    picked = cat.resolve(role, seed_key=seed)
+                    picked = cat.resolve(role, seed_key=seed, exclude_urls=seen_urls)
                 if picked and picked.get("url", "") not in seen_urls:
                     variations.append(picked)
                     seen_urls.add(picked.get("url", ""))

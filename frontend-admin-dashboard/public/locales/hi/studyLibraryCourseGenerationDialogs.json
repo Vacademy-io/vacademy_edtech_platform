@@ -1,0 +1,85 @@
+{
+    "regenerateSlideDialog": {
+        "title": "पेज फिर से बनाएं",
+        "promptPlaceholder": "बताएं कि आप इस पेज को दोबारा किस तरह बनवाना चाहते हैं...",
+        "regenerate": "फिर से बनाएं"
+    },
+    "regenerateSessionDialog": {
+        "title": "{{term}} फिर से बनाएं",
+        "promptLabel": "प्रॉम्प्ट",
+        "promptPlaceholder": "बताएं कि आप इस सत्र को दोबारा किस तरह बनवाना चाहते हैं...",
+        "lengthLabel": "{{term}} की अवधि",
+        "lengthPlaceholder": "सत्र की अवधि चुनें",
+        "length45": "45 मिनट",
+        "length60": "60 मिनट",
+        "length90": "90 मिनट",
+        "lengthCustom": "कस्टम",
+        "customLengthPlaceholder": "कस्टम अवधि मिनटों में दर्ज करें",
+        "componentsLabel": "सत्र के घटक",
+        "includeDiagrams": "डायग्राम शामिल करें",
+        "includeCodeSnippets": "कोड स्निपेट शामिल करें",
+        "includePracticeProblems": "अभ्यास प्रश्न शामिल करें",
+        "includeQuizzes": "क्विज़ शामिल करें",
+        "includeAssignments": "असाइनमेंट शामिल करें",
+        "includeSolutions": "समाधान शामिल करें",
+        "numberOfLabel": "{{term}} की संख्या",
+        "topicsCountPlaceholder": "उदाहरण: 3, 4, 5, आदि",
+        "topicsInLabel": "{{term}} में {{plural}} (वैकल्पिक)",
+        "topicsPlaceholder": "एक विषय दर्ज करें और एंटर दबाएं",
+        "regenerate": "फिर से बनाएं"
+    },
+    "addSlideDialog": {
+        "generationTitle": "AI जनरेशन प्रॉम्प्ट",
+        "selectTypeTitle": "पेज का प्रकार चुनें",
+        "selectTypeDescription": "वह पेज प्रकार चुनें जिसे आप इस सत्र में जोड़ना चाहते हैं।",
+        "types": {
+            "document": "दस्तावेज़",
+            "pdf": "पीडीएफ़",
+            "video": "वीडियो",
+            "image": "छवि",
+            "jupyter": "जुपिटर",
+            "codeEditor": "कोड एडिटर",
+            "scratch": "स्क्रैच",
+            "videoJupyter": "वीडियो + जुपिटर",
+            "videoCode": "वीडियो + कोड",
+            "videoScratch": "वीडियो + स्क्रैच",
+            "quiz": "क्विज़",
+            "assignment": "असाइनमेंट"
+        },
+        "promptPlaceholder": "उस पेज का वर्णन करते हुए प्रॉम्प्ट दर्ज करें जिसे आप बनाना चाहते हैं...",
+        "back": "वापस",
+        "createPage": "पेज बनाएं"
+    },
+    "addSessionDialog": {
+        "title": "नया {{term}} जोड़ें",
+        "nameLabel": "{{term}} का नाम",
+        "namePlaceholder": "{{term}} का नाम दर्ज करें",
+        "cancel": "रद्द करें",
+        "add": "{{term}} जोड़ें"
+    },
+    "generateCourseAssetsDialog": {
+        "title": "अंतिम पुष्टि",
+        "reviewNotice": "आगे बढ़ने से पहले कृपया हर पेज की टेक्स्ट सामग्री को ध्यान से जांच लें।",
+        "noComingBack": "आगे बढ़ने पर AI वास्तविक कोर्स सामग्री बनाना शुरू कर देगा और इसे वापस नहीं लिया जा सकता।",
+        "estimatedCost": "अनुमानित लागत: ≈ {{credits}} क्रेडिट",
+        "usageBilled_one": "+ {{count}} AI वीडियो/स्लाइड/स्टोरीबुक स्लाइड का शुल्क वास्तविक उपयोग के अनुसार लिया जाएगा",
+        "usageBilled_other": "+ {{count}} AI वीडियो/स्लाइड/स्टोरीबुक स्लाइड्स का शुल्क वास्तविक उपयोग के अनुसार लिया जाएगा",
+        "insufficientBalance": "आपके संस्थान का क्रेडिट बैलेंस अपर्याप्त हो सकता है — कृपया आगे बढ़ने से पहले टॉप-अप करें।",
+        "cancel": "रद्द करें",
+        "proceed": "आगे बढ़ें"
+    },
+    "leaveDuringGenerationDialog": {
+        "title": "जनरेशन अभी भी जारी है",
+        "progressPrefix": "अब तक केवल {{progressLabel}} पेज ही बने हैं। ",
+        "warning": "यदि आप अभी बाहर जाते हैं, तो जनरेशन रुक जाएगा और अब तक बनाई गई सारी सामग्री खो जाएगी। खर्च हो चुके क्रेडिट वापस नहीं किए जाएंगे।",
+        "leaveAndStop": "छोड़ें और रोकें",
+        "stayOnPage": "पेज पर बने रहें"
+    },
+    "backToLibraryDialog": {
+        "title": "कोर्स लाइब्रेरी में वापस जाएं?",
+        "description": "क्या आप वाकई कोर्स लाइब्रेरी में वापस जाना चाहते हैं? आप अपने वर्तमान कोर्स को हटा सकते हैं या उसे ड्राफ्ट में सहेज सकते हैं।",
+        "cancel": "रद्द करें",
+        "discardCourse": "कोर्स हटाएं",
+        "saveToDrafts": "ड्राफ्ट में सहेजें"
+    }
+}

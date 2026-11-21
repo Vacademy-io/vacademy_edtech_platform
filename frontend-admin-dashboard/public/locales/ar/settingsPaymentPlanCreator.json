@@ -1,0 +1,10 @@
+{
+    "dialog": {
+        "editTitle": "تعديل خطة الدفع",
+        "createTitle": "إنشاء خطة دفع"
+    },
+    "step2": {
+        "planCurrencyLabel": "عملة الخطة",
+        "defaultCurrencyHint": "الافتراضي: {{currency}} ({{symbol}})"
+    }
+}

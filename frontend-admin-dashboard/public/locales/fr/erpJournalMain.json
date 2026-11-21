@@ -1,0 +1,23 @@
+{
+    "intro": "Chaque écriture en partie double passée pour le mois, de la plus récente à la plus ancienne. Les écritures sont écrites par le module dont elles proviennent — approuver un cycle de paie enregistre son journal de salaires — et chacune doit être équilibrée : le total des débits égale le total des crédits.",
+    "periodLabel": "Période",
+    "exportCsv": "Exporter en CSV",
+    "preparingCsv": "Préparation du CSV…",
+    "exportHint": "S'importe dans Zoho Books ou Tally comme lot de pièces comptables.",
+    "totalDebits": "Total des débits",
+    "totalCredits": "Total des crédits",
+    "entriesPosted_one": "{{count}} écriture enregistrée en {{period}}",
+    "entriesPosted_many": "{{count}} écritures enregistrées en {{period}}",
+    "entriesPosted_other": "{{count}} écritures enregistrées en {{period}}",
+    "emptyState": {
+        "title": "Aucune écriture de journal pour {{period}}",
+        "description": "Les écritures sont enregistrées automatiquement — un cycle de paie inscrit son journal de salaires dès qu'il est APPROUVÉ. Si vous attendiez des écritures ici, vérifiez si le cycle de ce mois a déjà été approuvé."
+    },
+    "toasts": {
+        "downloaded": "Journal de {{period}} téléchargé"
+    },
+    "errors": {
+        "loadFailed": "Impossible de charger le journal de {{period}}.",
+        "exportFailed": "Impossible d'exporter le journal de ce mois."
+    }
+}

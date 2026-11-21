@@ -25,15 +25,17 @@ import SelectField from "@/components/design-system/select-field";
 import PhoneInputField from "@/components/design-system/phone-input-field";
 import {
   FieldRenderType,
+  dependentFieldKeys,
   getFieldRenderType,
+  getParentFieldKey,
+  resolveDependentField,
 } from "@/components/common/enroll-by-invite/-utils/custom-field-helpers";
 import { CustomFieldRenderer } from "@/components/common/custom-fields/CustomFieldRenderer";
 import { capitalise } from "@/utils/custom-field";
 import {
-  getCountryCode,
+  lookupCountryCode,
   findCountryFieldKey,
 } from "@/components/common/enroll-by-invite/-utils/country-code-mapping";
-import { getCachedPreferredCountries } from "@/services/domain-routing";
 import type { AudienceCampaignResponse } from "../-services/enquiry-campaign-services";
 import {
   submitEnquiryWithLead,
@@ -41,6 +43,7 @@ import {
 } from "../-services/enquiry-campaign-services";
 import { toast } from "sonner";
 import axios from "axios";
+import { useTranslation } from "react-i18next";
 import { BASE_URL } from "@/constants/urls";
 
 interface AudienceResponseFormProps {
@@ -78,6 +81,7 @@ const AudienceResponseForm = ({
   instituteId,
   audienceId,
 }: AudienceResponseFormProps) => {
+  const { t } = useTranslation("miscRoutesB");
   const domainRouting = useDomainRouting();
   const { setInstituteDetails } = useInstituteDetailsStore();
   const [loading, setLoading] = useState(false);
@@ -135,12 +139,25 @@ const AudienceResponseForm = ({
   }, [instituteId]);
 
   // Create dynamic schema and extend it with additional fields
-  const baseSchema = getDynamicSchema(formFields);
+  // A dependent dropdown (e.g. Course → Query) is only required when its
+  // parent's value offers it options — onSubmit checks those.
+  const baseSchema = getDynamicSchema(
+    formFields.map((field) =>
+      getParentFieldKey(field.config) ? { ...field, is_mandatory: false } : field
+    )
+  );
   const zodSchema = baseSchema.extend({
-    parentMobile: phoneSchema({ required: true, label: "Mobile number" }),
+    parentMobile: phoneSchema({
+      required: true,
+      label: t("enquiryResponse.form.validation.mobileLabel"),
+    }),
     gender: z.string().optional(),
-    parentRelationWithChild: z.string().min(1, "Relation with child is required"),
-    packageSessionId: z.string().min(1, "Class is required"),
+    parentRelationWithChild: z
+      .string()
+      .min(1, t("enquiryResponse.form.validation.relationRequired")),
+    packageSessionId: z
+      .string()
+      .min(1, t("enquiryResponse.form.validation.classRequired")),
   });
   type FormValues = z.infer<typeof zodSchema>;
 
@@ -264,34 +281,53 @@ const AudienceResponseForm = ({
     void syncBranding();
   }, [instituteId, instituteData]);
 
-  // Get phone country code dynamically, falling back to the institute's
-  // configured preferred country (commaSeparatedPreferredCountry) instead of
-  // a hardcoded default so the phone input honors institute settings.
-  const getPhoneCountryCode = () => {
-    const preferred = getCachedPreferredCountries();
-    const fallback = preferred[0] ?? "in";
+  // A country field in this form, when there is one, is the strongest signal
+  // — the visitor just told us where they are.
+  //
+  // Undefined means "no such signal", and PhoneInputField then resolves the
+  // country itself through the portal's chain (institute preference, else the
+  // region the form is opened in). It has to be undefined rather than that
+  // chain's answer read here: a `country` prop overrides the field's own
+  // resolution, so passing a value read before domain routing replied would
+  // pin the field to the platform fallback (+91) even after the real
+  // preference arrived.
+  const getPhoneCountryCode = (): string | undefined => {
     const formValues = form.getValues();
     const countryFieldKey = findCountryFieldKey(formValues);
     if (countryFieldKey) {
-      const countryValue = formValues[countryFieldKey]?.value || "";
-      return getCountryCode(countryValue, fallback);
+      return lookupCountryCode(formValues[countryFieldKey]?.value);
     }
-    return fallback;
+    return undefined;
   };
 
   const onSubmit = async (values: FormValues) => {
+    const current = values as unknown as Record<string, { value?: string } | undefined>;
+    const missingDependents = formFields.filter((field) => {
+      if (!field.is_mandatory || !getParentFieldKey(field.config)) return false;
+      const state = resolveDependentField(field.config, (k) => current[k]?.value);
+      return state.kind !== "empty" && !String(current[field.field_key]?.value ?? "").trim();
+    });
+    if (missingDependents.length > 0) {
+      missingDependents.forEach((field) =>
+        form.setError(`${field.field_key}.value` as never, {
+          type: "required",
+          message: `${field.field_name} is required`,
+        })
+      );
+      return;
+    }
     // Validate required fields
     if (!studentName.trim()) {
-      toast.error("Student name is required");
+      toast.error(t("enquiryResponse.toast.studentNameRequired"));
       return;
     }
     if (!parentEmail.trim()) {
-      toast.error("Parent email is required");
+      toast.error(t("enquiryResponse.toast.parentEmailRequired"));
       return;
     }
     const mobileValue = (values as any).parentMobile || "";
     if (!mobileValue.trim()) {
-      toast.error("Parent mobile number is required");
+      toast.error(t("enquiryResponse.toast.parentMobileRequired"));
       return;
     }
 
@@ -342,7 +378,7 @@ const AudienceResponseForm = ({
         error?.response?.data?.message ||
         error?.response?.data?.error ||
         error?.message ||
-        "Failed to submit enquiry. Please try again.";
+        t("enquiryResponse.toast.submitFailed");
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -356,7 +392,7 @@ const AudienceResponseForm = ({
   // Show success message after submission
   if (isSubmitted) {
     return (
-      <div className="w-full h-auto bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
+      <div className="w-full h-auto bg-gradient-to-br from-slate-50 to-info-50 min-h-screen">
         {/* Navbar Header */}
         <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-6">
@@ -417,15 +453,14 @@ const AudienceResponseForm = ({
                 {/* Success Message */}
                 <div className="space-y-3">
                   <h2 className="text-2xl sm:text-3xl font-bold text-neutral-800">
-                    Enquiry Submitted Successfully!
+                    {t("enquiryResponse.success.title")}
                   </h2>
                   <p className="text-lg text-neutral-600">
-                    Thank you for your response. Your enquiry has been submitted
-                    successfully.
+                    {t("enquiryResponse.success.description")}
                   </p>
                   {campaignData.send_respondent_email && (
                     <p className="text-sm text-neutral-500">
-                      A confirmation email will be sent to you shortly.
+                      {t("enquiryResponse.success.emailNotice")}
                     </p>
                   )}
                 </div>
@@ -433,7 +468,7 @@ const AudienceResponseForm = ({
                 {/* Campaign Info */}
                 <div className="mt-8 pt-6 border-t border-neutral-200">
                   <p className="text-sm text-neutral-600">
-                    <span className="font-semibold">Campaign:</span>{" "}
+                    <span className="font-semibold">{t("enquiryResponse.success.campaignLabel")}</span>{" "}
                     {campaignData.campaign_name}
                   </p>
                 </div>
@@ -446,7 +481,7 @@ const AudienceResponseForm = ({
   }
 
   return (
-    <div className="w-full h-auto bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
+    <div className="w-full h-auto bg-gradient-to-br from-slate-50 to-info-50 min-h-screen">
       {/* Navbar Header */}
       <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-6">
@@ -500,9 +535,9 @@ const AudienceResponseForm = ({
               />
             )}
             {campaignData.campaign_objective && (
-              <div className="mt-4">
-                <p className="text-sm font-semibold text-neutral-700 mb-2">
-                  Objective:
+              <div className="mt-4 space-y-2">
+                <p className="text-sm font-semibold text-neutral-700">
+                  {t("enquiryResponse.form.objectiveLabel")}
                 </p>
                 <p className="text-neutral-600">
                   {campaignData.campaign_objective}
@@ -516,59 +551,59 @@ const AudienceResponseForm = ({
             variant="glass"
             padding="lg"
             rounded="lg"
-            className="border border-white/40 bg-white/90 backdrop-blur-md shadow-lg"
+            className="border border-white/40 bg-white/90 backdrop-blur-md shadow-lg space-y-section"
             id="response-form-card"
           >
-            <ModernCardHeader className="p-0 mb-6">
+            <ModernCardHeader className="p-0 space-y-2">
               <ModernCardTitle
                 size="md"
-                className="text-neutral-800 text-xl sm:text-2xl mb-2"
+                className="text-neutral-800 text-xl sm:text-2xl"
               >
-                Please fill in your details
+                {t("enquiryResponse.form.heading")}
               </ModernCardTitle>
               <p className="text-neutral-600 text-sm">
-                This information will be used to contact you about the enquiry.
+                {t("enquiryResponse.form.description")}
               </p>
             </ModernCardHeader>
 
             <FormProvider {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
-                className="w-full flex flex-col gap-6"
+                className="w-full flex flex-col gap-section"
               >
                 {/* Student Details Section */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-neutral-700 border-b pb-2">
-                    Student Details
+                    {t("enquiryResponse.form.student.sectionTitle")}
                   </h3>
 
                   <MyInput
                     inputType="text"
-                    inputPlaceholder="Enter student's full name"
+                    inputPlaceholder={t("enquiryResponse.form.student.fullNamePlaceholder")}
                     input={studentName}
                     onChangeFunction={(e) => setStudentName(e.target.value)}
                     required={true}
                     size="large"
-                    label="Full Name"
+                    label={t("enquiryResponse.form.student.fullName")}
                   />
 
                   <MyInput
                     inputType="date"
-                    inputPlaceholder="Select date of birth"
+                    inputPlaceholder={t("enquiryResponse.form.student.dobPlaceholder")}
                     input={studentDob}
                     onChangeFunction={(e) => setStudentDob(e.target.value)}
                     required={false}
                     size="large"
-                    label="Date of Birth"
+                    label={t("enquiryResponse.form.student.dob")}
                   />
 
                   <SelectField
-                    label="Gender"
+                    label={t("enquiryResponse.form.student.gender.label")}
                     name="gender"
                     options={[
-                      { label: "Male", value: "MALE", _id: "MALE" },
-                      { label: "Female", value: "FEMALE", _id: "FEMALE" },
-                      { label: "Other", value: "OTHER", _id: "OTHER" },
+                      { label: t("enquiryResponse.form.student.gender.male"), value: "MALE", _id: "MALE" },
+                      { label: t("enquiryResponse.form.student.gender.female"), value: "FEMALE", _id: "FEMALE" },
+                      { label: t("enquiryResponse.form.student.gender.other"), value: "OTHER", _id: "OTHER" },
                     ]}
                     control={form.control}
                     required={false}
@@ -577,10 +612,10 @@ const AudienceResponseForm = ({
 
                   {packageSessions.length > 0 && (
                     <SelectField
-                      label="Class"
+                      label={t("enquiryResponse.form.student.class")}
                       name="packageSessionId"
                       options={packageSessions.map((session) => ({
-                        label: `${session.package_name} - ${session.level_name || "N/A"}`,
+                        label: `${session.package_name} - ${session.level_name || t("enquiryResponse.form.notAvailable")}`,
                         value: session.package_session_id,
                         _id: session.package_session_id,
                       }))}
@@ -594,32 +629,32 @@ const AudienceResponseForm = ({
                 {/* Parent Details Section */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-neutral-700 border-b pb-2">
-                    Parent Details
+                    {t("enquiryResponse.form.parent.sectionTitle")}
                   </h3>
 
                   <MyInput
                     inputType="text"
-                    inputPlaceholder="Enter parent's full name"
+                    inputPlaceholder={t("enquiryResponse.form.parent.fullNamePlaceholder")}
                     input={parentName}
                     onChangeFunction={(e) => setParentName(e.target.value)}
                     required={true}
                     size="large"
-                    label="Full Name"
+                    label={t("enquiryResponse.form.parent.fullName")}
                   />
 
                   <MyInput
                     inputType="email"
-                    inputPlaceholder="example@email.com"
+                    inputPlaceholder={t("enquiryResponse.form.parent.emailPlaceholder")}
                     input={parentEmail}
                     onChangeFunction={(e) => setParentEmail(e.target.value)}
                     required={true}
                     size="large"
-                    label="Email"
+                    label={t("enquiryResponse.form.parent.email")}
                   />
 
                   <PhoneInputField
-                    label="Mobile Number"
-                    placeholder="123 456 7890"
+                    label={t("enquiryResponse.form.parent.mobile")}
+                    placeholder={t("enquiryResponse.form.parent.mobilePlaceholder")}
                     name="parentMobile"
                     control={form.control}
                     required={true}
@@ -627,12 +662,12 @@ const AudienceResponseForm = ({
                   />
 
                   <SelectField
-                    label="Relation with Child"
+                    label={t("enquiryResponse.form.parent.relation.label")}
                     name="parentRelationWithChild"
                     options={[
-                      { label: "Father", value: "FATHER", _id: "FATHER" },
-                      { label: "Mother", value: "MOTHER", _id: "MOTHER" },
-                      { label: "Guardian", value: "GUARDIAN", _id: "GUARDIAN" },
+                      { label: t("enquiryResponse.form.parent.relation.father"), value: "FATHER", _id: "FATHER" },
+                      { label: t("enquiryResponse.form.parent.relation.mother"), value: "MOTHER", _id: "MOTHER" },
+                      { label: t("enquiryResponse.form.parent.relation.guardian"), value: "GUARDIAN", _id: "GUARDIAN" },
                     ]}
                     control={form.control}
                     required={true}
@@ -641,49 +676,49 @@ const AudienceResponseForm = ({
 
                   <MyInput
                     inputType="text"
-                    inputPlaceholder="Enter address"
+                    inputPlaceholder={t("enquiryResponse.form.parent.addressPlaceholder")}
                     input={addressLine}
                     onChangeFunction={(e) => setAddressLine(e.target.value)}
                     required={false}
                     size="large"
-                    label="Address"
+                    label={t("enquiryResponse.form.parent.address")}
                   />
 
                   <MyInput
                     inputType="text"
-                    inputPlaceholder="Enter city"
+                    inputPlaceholder={t("enquiryResponse.form.parent.cityPlaceholder")}
                     input={city}
                     onChangeFunction={(e) => setCity(e.target.value)}
                     required={false}
                     size="large"
-                    label="City"
+                    label={t("enquiryResponse.form.parent.city")}
                   />
 
                   <MyInput
                     inputType="text"
-                    inputPlaceholder="Enter state or region"
+                    inputPlaceholder={t("enquiryResponse.form.parent.regionPlaceholder")}
                     input={region}
                     onChangeFunction={(e) => setRegion(e.target.value)}
                     required={false}
                     size="large"
-                    label="State/Region"
+                    label={t("enquiryResponse.form.parent.region")}
                   />
 
                   <MyInput
                     inputType="text"
-                    inputPlaceholder="Enter pin code"
+                    inputPlaceholder={t("enquiryResponse.form.parent.pinCodePlaceholder")}
                     input={pinCode}
                     onChangeFunction={(e) => setPinCode(e.target.value)}
                     required={false}
                     size="large"
-                    label="Pin Code"
+                    label={t("enquiryResponse.form.parent.pinCode")}
                   />
                 </div>
 
                 {formFields.length > 0 && (
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold text-neutral-700 border-b pb-2">
-                      Additional Information
+                      {t("enquiryResponse.form.additionalInfo")}
                     </h3>
 
                     {formFields.map((field) => {
@@ -766,6 +801,20 @@ const AudienceResponseForm = ({
                         );
                       }
 
+                      // Cascading dropdown: options follow the parent field's value.
+                      const dependent = resolveDependentField(
+                        value.config ?? field.config,
+                        (k) => formValues[k]?.value
+                      );
+                      if (dependent.kind === "empty") return null;
+                      const parentName =
+                        dependent.kind === "waiting"
+                          ? capitalise(
+                              formFields.find((f) => f.field_key === dependent.parentFieldKey)
+                                ?.field_name ?? ""
+                            )
+                          : "";
+
                       // All other types — shared renderer handles text, number,
                       // email, url, date, textarea, checkbox, radio, dropdown, file
                       return (
@@ -787,9 +836,32 @@ const AudienceResponseForm = ({
                                     type={renderType}
                                     name={value.name}
                                     value={formField.value || ""}
-                                    onChange={(val) => formField.onChange(val)}
+                                    onChange={(val) => {
+                                      const changed = val !== formField.value;
+                                      formField.onChange(val);
+                                      // A changed parent invalidates its dependents' answers.
+                                      if (changed)
+                                        dependentFieldKeys(
+                                          key,
+                                          formFields.map((f) => ({ key: f.field_key, config: f.config }))
+                                        ).forEach((k) =>
+                                          form.setValue(`${k}.value` as never, "" as never)
+                                        );
+                                    }}
                                     config={value.config}
-                                    options={value.comma_separated_options}
+                                    options={
+                                      dependent.kind === "ready"
+                                        ? dependent.options
+                                        : value.comma_separated_options
+                                    }
+                                    disabled={dependent.kind === "waiting"}
+                                    placeholder={
+                                      dependent.kind === "waiting" && parentName
+                                        ? t("enquiryResponse.form.selectParentFirst", {
+                                            name: parentName.toLowerCase(),
+                                          })
+                                        : undefined
+                                    }
                                     required={value.is_mandatory}
                                   />
                                 </FormControl>
@@ -811,7 +883,9 @@ const AudienceResponseForm = ({
                     disabled={loading}
                     className="min-w-32"
                   >
-                    {loading ? "Submitting..." : "Submit Response"}
+                    {loading
+                      ? t("enquiryResponse.form.submitting")
+                      : t("enquiryResponse.form.submit")}
                   </MyButton>
                 </div>
               </form>

@@ -1,0 +1,107 @@
+{
+  "loadError": {
+    "title": "Couldn't load badges",
+    "hint": "Something went wrong while fetching this learner's badges."
+  },
+  "disabledBanner": {
+    "text": "Badges are turned off for this institute. Awards are saved, but learners won't see them or be notified until badges are enabled in Settings → Badges & Rewards (parents with portal access see them immediately)."
+  },
+  "picker": {
+    "label": "Badge",
+    "placeholder": "Choose a badge to award",
+    "empty": "No badges available to award yet.",
+    "groupManual": "Staff-awarded",
+    "groupAuto": "Achievement badges",
+    "earned": "Earned",
+    "create": "Create a new badge"
+  },
+  "trigger": {
+    "manual": "Awarded manually by staff",
+    "course_count": "Courses enrolled",
+    "slide_count": "Slides available",
+    "streak": "Daily streak",
+    "xp_total": "Total XP earned",
+    "course_completion": "Course completion %",
+    "assessment_score": "Assessment score %",
+    "live_session_count": "Live classes attended",
+    "live_session_streak": "Live class streak (in a row)"
+  },
+  "unit": {
+    "course_count": "courses",
+    "slide_count": "slides",
+    "streak": "days",
+    "xp_total": "XP",
+    "course_completion": "%",
+    "assessment_score": "%",
+    "live_session_count": "classes",
+    "live_session_streak": "classes"
+  },
+  "preview": {
+    "autoChip": "{{label}} · {{threshold}} {{unit}}",
+    "hidden": "Hidden",
+    "noDescription": "No description",
+    "autoHeldHint": "This learner already auto-unlocked this badge. Awarding it records it as a staff award with your note."
+  },
+  "award": {
+    "heading": "Award a badge",
+    "empty": "No badges configured yet. Add them in Settings → Badges & Rewards first.",
+    "noteLabel": "Note for the learner (optional)",
+    "notePlaceholder": "e.g. Top scorer in the unit test — the learner sees this with the badge",
+    "submit": "Award badge",
+    "toastNew": "Badge awarded",
+    "toastAlreadyActive": "Already holds this badge",
+    "toastNotEnrolled": "This learner is not a member of this institute, so the badge was not awarded.",
+    "toastUpgraded": "Recorded as a staff award",
+    "toastNotNotified": "Learners are not notified while badges are turned off",
+    "errorToast": "Failed to award badge"
+  },
+  "awarded": {
+    "heading": "Awarded badges",
+    "emptyTitle": "No badges yet",
+    "emptyHint": "Recognise this learner with a badge above.",
+    "badgeFallback": "badge",
+    "hidden": "Hidden",
+    "metaManual": "Awarded by staff · {{date}}",
+    "metaManualNoDate": "Awarded by staff",
+    "metaAuto": "Auto-unlocked · recorded {{date}}",
+    "metaAutoNoDate": "Auto-unlocked",
+    "revokeAriaLabel": "Revoke {{name}}",
+    "successToast": "Badge revoked",
+    "errorToast": "Failed to revoke badge"
+  },
+  "revoke": {
+    "title": "Revoke \"{{name}}\"?",
+    "manualBody": "The learner loses this badge; the record is kept for audit.",
+    "autoBody": "This removes it from leaderboards, stats and the parent view. The learner's own app may still show it as unlocked while the rule is met.",
+    "cancel": "Cancel",
+    "confirm": "Revoke"
+  },
+  "create": {
+    "title": "Create a new badge",
+    "intro": "Staff award this badge from a learner's profile or the students list. Each learner can hold a badge once — for recurring recognition create dated or tiered variants.",
+    "nameLabel": "Name",
+    "namePlaceholder": "e.g. Helping Hand",
+    "nameRequired": "Give the badge a name.",
+    "nameTooLong": "Keep the name under 120 characters.",
+    "duplicateWarning": "An enabled badge named \"{{name}}\" already exists. You can still create this one.",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "What this badge recognises — learners see it with the badge.",
+    "descriptionTooLong": "Keep the description under 500 characters.",
+    "iconLabel": "Icon",
+    "iconOptionAriaLabel": "Use the {{name}} icon",
+    "iconLibraryHint": "Using a library badge",
+    "iconCustomHint": "Using an uploaded image",
+    "chooseFromLibrary": "Choose from library",
+    "uploadImage": "Upload image",
+    "uploading": "Uploading…",
+    "imageUploaded": "Image uploaded",
+    "uploadFailed": "Image upload failed",
+    "hiddenLabel": "Hidden until earned",
+    "hiddenHelp": "Learners don't see this badge until they earn it. Applies on updated learner apps.",
+    "cancel": "Cancel",
+    "submit": "Create badge",
+    "submitting": "Creating…",
+    "successToast": "Badge \"{{name}}\" created and selected",
+    "errorToast": "Couldn't create the badge. Try again."
+  }
+}

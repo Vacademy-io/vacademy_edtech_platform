@@ -1,0 +1,12 @@
+{
+    "trigger": {
+        "uploadButton": "Upload"
+    },
+    "dialog": {
+        "title": "Upload File",
+        "uploadButton": "Upload PDF/DOCX/PPT"
+    },
+    "toast": {
+        "success": "File uploaded successfully!"
+    }
+}

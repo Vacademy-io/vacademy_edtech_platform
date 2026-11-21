@@ -1,0 +1,69 @@
+{
+    "header": {
+        "title": "Planificateur de cours",
+        "subtitle": "Indiquez-nous ce que les élèves doivent apprendre, et nous rédigerons un plan que vous pourrez affiner."
+    },
+    "steps": {
+        "goal": {
+            "title": "Que doivent apprendre ou savoir faire les élèves ?",
+            "hint": "Plus votre objectif est clair, meilleur sera le plan.",
+            "placeholder": "À la fin de ce cours, les élèves devraient comprendre le processus de la photosynthèse et être capables d'expliquer son importance dans l'écosystème.",
+            "requiredError": "Veuillez décrire ce que les élèves doivent apprendre."
+        },
+        "audience": {
+            "title": "Qui enseignez-vous, et pendant combien de temps ?",
+            "classLabel": "Classe",
+            "classPlaceholder": "ex. 8e année",
+            "classRequiredError": "Veuillez indiquer une classe",
+            "durationLabel": "Durée",
+            "hoursPlaceholder": "0",
+            "minutesPlaceholder": "40",
+            "hoursUnit": "h",
+            "minutesUnit": "min"
+        },
+        "refine": {
+            "title": "Affiner l'approche",
+            "hint": "Facultatif — nous avons déjà choisi des valeurs par défaut adaptées.",
+            "teachingStyleLabel": "Style pédagogique",
+            "languageLabel": "Langue",
+            "questionsToggleLabel": "Inclure des questions dans le plan",
+            "questionsToggleDescription": "Ajouter des questions de discussion ou de vérification de la compréhension à chaque segment.",
+            "homeworkToggleLabel": "Inclure des devoirs",
+            "homeworkToggleDescription": "Ajouter un court devoir que les élèves pourront faire après le cours."
+        }
+    },
+    "teachingMethodOptions": {
+        "conceptFirst": "Concept d'abord",
+        "storytelling": "Narration",
+        "problemSolution": "Problème-solution",
+        "questionLed": "Guidé par les questions",
+        "stepByStepTutorial": "Tutoriel étape par étape",
+        "gamified": "Ludifié",
+        "caseBasedLearning": "Apprentissage par étude de cas"
+    },
+    "languageOptions": {
+        "english": "Anglais",
+        "hindi": "Hindi"
+    },
+    "errors": {
+        "generateFailed": "Nous n'avons pas pu rédiger de plan. Voulez-vous réessayer ?",
+        "taskFailed": "Nous n'avons pas pu terminer ce plan. Voulez-vous réessayer ?"
+    },
+    "actions": {
+        "draftMyPlan": "Rédiger mon plan"
+    },
+    "generating": {
+        "title": "Rédaction de votre plan en cours",
+        "subtitle": "Organisation du cours en segments clairs. Généralement environ 30 secondes."
+    },
+    "draftingDone": {
+        "title": "Voici le plan de cours que nous avons rédigé",
+        "subtitle": "Ouvrez-le pour consulter la chronologie, modifier un segment ou l'exporter."
+    },
+    "recentFiles": {
+        "title": "Vos plans récents",
+        "fallbackLabel": "Plan de cours",
+        "emptyHint": "Vos plans de cours apparaîtront ici. Rédigez votre premier plan ci-dessus."
+    },
+    "productName": "Vsmart Lecturer"
+}

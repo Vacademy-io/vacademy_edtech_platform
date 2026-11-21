@@ -12,6 +12,8 @@ import vacademy.io.admin_core_service.features.user_subscription.enums.ReferralB
 import vacademy.io.admin_core_service.features.user_subscription.enums.ReferralStatusEnum;
 import vacademy.io.admin_core_service.features.user_subscription.service.MultiChannelDeliveryService;
 import vacademy.io.admin_core_service.features.user_subscription.service.ReferralBenefitLogService;
+import vacademy.io.admin_core_service.features.user_subscription.service.ReferralRewardService;
+import vacademy.io.admin_core_service.features.user_subscription.service.coupon.AdminDiscountService;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.auth.dto.learner.LearnerPackageSessionsEnrollDTO;
 
@@ -27,6 +29,9 @@ public class FlatDiscountHandler implements ReferralBenefitHandler {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private ReferralRewardService referralRewardService;
+
     @Override
     public void processBenefit(LearnerPackageSessionsEnrollDTO learnerPackageSessionsEnrollDTO,
                                ReferralOption referralOption,
@@ -40,11 +45,19 @@ public class FlatDiscountHandler implements ReferralBenefitHandler {
                                String status) {
         try {
             BenefitConfigDTO.FlatDiscountValue flatDiscountValue = objectMapper.convertValue(benefitDTO.getValue(), BenefitConfigDTO.FlatDiscountValue.class);
-            double discountAmount = getDiscountedAmount(learnerPackageSessionsEnrollDTO, flatDiscountValue);
 
-            learnerPackageSessionsEnrollDTO.getPaymentInitiationRequest().setAmount(
-                    learnerPackageSessionsEnrollDTO.getPaymentInitiationRequest().getAmount() - discountAmount
-            );
+            // Same routing as PercentageDiscountHandler: only a referee on a non-trial plan is
+            // discounted at this checkout.
+            boolean atCheckout = referralRewardService.routeDiscountBenefit(
+                    referralMapping, referrer.getId(), instituteId, beneficiary, status,
+                    AdminDiscountService.MODE_FLAT, flatDiscountValue.getAmount(), null);
+            if (atCheckout && learnerPackageSessionsEnrollDTO.getPaymentInitiationRequest() != null
+                    && learnerPackageSessionsEnrollDTO.getPaymentInitiationRequest().getAmount() != null) {
+                double discountAmount = getDiscountedAmount(learnerPackageSessionsEnrollDTO, flatDiscountValue);
+                learnerPackageSessionsEnrollDTO.getPaymentInitiationRequest().setAmount(
+                        learnerPackageSessionsEnrollDTO.getPaymentInitiationRequest().getAmount() - discountAmount
+                );
+            }
 
             // If the benefit is active, send a notification email.
             if (status.equalsIgnoreCase(ReferralStatusEnum.ACTIVE.name())) {

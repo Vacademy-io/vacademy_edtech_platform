@@ -1,0 +1,61 @@
+{
+    "button": {
+        "tat": "Exporter le rapport TAT",
+        "sla": "Exporter le rapport SLA",
+        "overdue": "Exporter les suivis en retard"
+    },
+    "exporting": "Export en cours…",
+    "teamNotSupported": "Retirez le filtre d’équipe pour exporter une ligne par prospect.",
+    "columns": {
+        "name": "Nom",
+        "phone": "Téléphone",
+        "email": "E-mail",
+        "source": "Source",
+        "counsellor": "Conseiller",
+        "leadStatus": "Statut du prospect",
+        "enquiredAt": "Demande reçue le",
+        "tatDueAt": "Échéance TAT",
+        "firstResponseAt": "Première réponse",
+        "responseMinutes": "Délai de réponse (min)",
+        "tatStatus": "Statut TAT",
+        "followUpDueAt": "Échéance du suivi",
+        "slaStage": "Étape SLA",
+        "tatOverdue": "TAT dépassé",
+        "followUpOverdue": "Suivi en retard",
+        "offClock": "Hors SLA (perdu / converti)",
+        "daysOverdue": "Jours de retard",
+        "followUpNote": "Note de suivi",
+        "studentResponse": "Réponse de l’étudiant",
+        "nextAction": "Action suivante",
+        "interestLevel": "Niveau d’intérêt"
+    },
+    "values": {
+        "yes": "Oui",
+        "no": "Non",
+        "met": "Respecté",
+        "breached": "Dépassé",
+        "breachedNoResponse": "Dépassé (pas encore de réponse)",
+        "pending": "En attente",
+        "responded": "Répondu",
+        "closed": "Clos",
+        "priorActivity": "Contact antérieur (prospect récurrent)"
+    },
+    "stages": {
+        "onTrack": "Dans les temps",
+        "tatDueSoon": "TAT bientôt dû",
+        "tatOverdue": "TAT dépassé",
+        "followUpDueSoon": "Suivi bientôt dû",
+        "followUpOverdue": "Suivi en retard",
+        "offClock": "Hors SLA (perdu / converti)"
+    },
+    "progress": "Export de {{done}} sur {{total}} lignes…",
+    "running": "Export en cours…",
+    "done_one": "{{count}} ligne exportée",
+    "done_other": "{{count}} lignes exportées",
+    "failed": "L’export a échoué — réessayez",
+    "alreadyRunning": "Cet export est déjà en cours",
+    "truncated_one": "Première ligne exportée ({{count}}, limite atteinte)",
+    "truncated_other": "{{count}} premières lignes exportées (limite atteinte)",
+    "partial_one": "Export interrompu — {{count}} ligne enregistrée",
+    "partial_other": "Export interrompu — {{count}} lignes enregistrées"
+}

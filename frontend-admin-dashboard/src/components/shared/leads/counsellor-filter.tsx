@@ -97,14 +97,18 @@ export function CounsellorFilter({
                                     onSelect={() => toggle(unassignedValue)}
                                     className="cursor-pointer"
                                 >
-                                    <Check
+                                    <span
                                         className={cn(
-                                            'mr-2 size-4',
+                                            'mr-2 flex size-4 shrink-0 items-center justify-center rounded border',
                                             values.includes(unassignedValue)
-                                                ? 'opacity-100'
-                                                : 'opacity-0'
+                                                ? 'border-primary-500 bg-primary-500 text-white'
+                                                : 'border-neutral-300'
                                         )}
-                                    />
+                                    >
+                                        {values.includes(unassignedValue) && (
+                                            <Check className="size-3" />
+                                        )}
+                                    </span>
                                     Unassigned
                                 </CommandItem>
                             )}
@@ -115,12 +119,16 @@ export function CounsellorFilter({
                                     onSelect={() => toggle(c.id)}
                                     className="cursor-pointer"
                                 >
-                                    <Check
+                                    <span
                                         className={cn(
-                                            'mr-2 size-4',
-                                            values.includes(c.id) ? 'opacity-100' : 'opacity-0'
+                                            'mr-2 flex size-4 shrink-0 items-center justify-center rounded border',
+                                            values.includes(c.id)
+                                                ? 'border-primary-500 bg-primary-500 text-white'
+                                                : 'border-neutral-300'
                                         )}
-                                    />
+                                    >
+                                        {values.includes(c.id) && <Check className="size-3" />}
+                                    </span>
                                     {c.full_name}
                                 </CommandItem>
                             ))}

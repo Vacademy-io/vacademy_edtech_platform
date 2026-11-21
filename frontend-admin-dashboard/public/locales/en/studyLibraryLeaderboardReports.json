@@ -1,0 +1,50 @@
+{
+    "badgesStats": {
+        "loading": "Loading badge stats…",
+        "heading": "Badges Awarded",
+        "totalAwarded": "Total awarded",
+        "learnersRecognised": "Learners recognised",
+        "noneAwarded": "No badges awarded yet."
+    },
+    "badgesDialog": {
+        "title": "Badges",
+        "titleWithName": "{{name}}'s badges",
+        "noneEarned": "No badges earned yet."
+    },
+    "leaderboardRow": {
+        "viewBadges": "View badges",
+        "points_one": "{{count}} pt",
+        "points_other": "{{count}} pts"
+    },
+    "toasts": {
+        "linkCopied": "Public leaderboard link copied"
+    },
+    "share": {
+        "dialogTitle": "Institute Leaderboard"
+    },
+    "viewToggle": {
+        "instituteWide": "Institute-wide",
+        "byCourse": "By course"
+    },
+    "batchSelector": {
+        "course": "Course",
+        "selectCourse": "Select a course",
+        "searchCourse": "Search course...",
+        "session": "Session",
+        "selectSession": "Select a session",
+        "level": "Level",
+        "selectLevel": "Select a level"
+    },
+    "leaderboardPanel": {
+        "instituteWideHeading": "Institute-wide Leaderboard",
+        "courseHeading": "Course Leaderboard",
+        "learnersCount_one": "{{count}} learner",
+        "learnersCount_other": "{{count}} learners",
+        "copyLink": "Copy link",
+        "shareAriaLabel": "Share public leaderboard link",
+        "selectToView": "Select a course, session and level to view its leaderboard.",
+        "loading": "Loading leaderboard…",
+        "noInstituteActivity": "No learner activity recorded yet.",
+        "noBatchActivity": "No activity recorded for this batch yet."
+    }
+}

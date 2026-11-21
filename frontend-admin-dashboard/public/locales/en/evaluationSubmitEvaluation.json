@@ -1,0 +1,4 @@
+{
+    "uploadFailedMessage": "The annotated answer sheet couldn't be uploaded.",
+    "unknownFailureMessage": "Something went wrong while submitting."
+}

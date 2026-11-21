@@ -1,0 +1,17 @@
+{
+    "title": "Onboarding Setting",
+    "description": "Controls whether Onboarding Flows (ordered checklists a lead/student goes through between \"agreed to join\" and \"fully enrolled\") are available institute-wide. Disabling hides the Onboarding sidebar entry, the flow builder, and the student side-view Onboarding tab without deleting any existing flows or progress.",
+    "loading": "Loading onboarding settings…",
+    "toggle": {
+        "enabled": "Enable Onboarding Flows",
+        "disabled": "Onboarding Flows Disabled"
+    },
+    "footer": {
+        "save": "Save",
+        "saving": "Saving…"
+    },
+    "toasts": {
+        "settingsSaved": "Onboarding settings saved",
+        "saveFailed": "Failed to save onboarding settings"
+    }
+}

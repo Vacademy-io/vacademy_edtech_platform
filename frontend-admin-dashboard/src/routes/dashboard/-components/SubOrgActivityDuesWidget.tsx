@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Receipt, CalendarBlank, WarningCircle } from '@phosphor-icons/react';
@@ -32,6 +33,7 @@ const shortDate = (v: string | number | null | undefined): string => {
  * plan — no empty "No active plan" card cluttering the dashboard.
  */
 export default function SubOrgActivityDuesWidget() {
+    const { t } = useTranslation('dashboardSubOrgActivityDuesWidget');
     const instituteId = getCurrentInstituteId();
     const subOrgId =
         getValidSelectedSubOrgId() ?? getFacultyAccessData()?.subOrgs?.[0]?.subOrgId ?? null;
@@ -66,7 +68,7 @@ export default function SubOrgActivityDuesWidget() {
                 <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
                     <Receipt size={14} weight="duotone" />
                 </span>
-                <h3 className="text-sm font-semibold text-neutral-900">My plan & dues</h3>
+                <h3 className="text-sm font-semibold text-neutral-900">{t('heading')}</h3>
             </div>
 
             {isLoading ? (
@@ -75,12 +77,16 @@ export default function SubOrgActivityDuesWidget() {
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     {/* Plan payment progress */}
                     <div className="rounded-lg border border-neutral-200 p-3">
-                        <div className="text-xs font-medium text-neutral-500">Plan payment</div>
+                        <div className="text-xs font-medium text-neutral-500">
+                            {t('planPayment.label')}
+                        </div>
                         <div className="mt-0.5 flex items-baseline gap-1.5">
                             <span className="text-xl font-semibold tabular-nums text-neutral-900">
                                 {money(planPaid)}
                             </span>
-                            <span className="text-xs text-neutral-500">of {money(planTotal)}</span>
+                            <span className="text-xs text-neutral-500">
+                                {t('planPayment.of', { amount: money(planTotal) })}
+                            </span>
                         </div>
                         <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-neutral-100">
                             <div
@@ -88,7 +94,9 @@ export default function SubOrgActivityDuesWidget() {
                                 style={{ width: `${Math.min(planPct, 100)}%` }}
                             />
                         </div>
-                        <div className="mt-1.5 text-xs text-neutral-500">{planPct}% paid</div>
+                        <div className="mt-1.5 text-xs text-neutral-500">
+                            {t('planPayment.percentPaid', { percent: planPct })}
+                        </div>
                     </div>
 
                     {/* Dues */}
@@ -96,14 +104,14 @@ export default function SubOrgActivityDuesWidget() {
                         <div className="flex items-center justify-between text-xs">
                             <span className="flex items-center gap-1.5 text-neutral-500">
                                 <WarningCircle size={13} weight="duotone" className="text-amber-500" />
-                                Outstanding
+                                {t('dues.outstanding')}
                             </span>
                             <span className="font-semibold tabular-nums text-neutral-900">
                                 {money(outstanding)}
                             </span>
                         </div>
                         <div className="flex items-center justify-between text-xs">
-                            <span className="text-neutral-500">Pending installments</span>
+                            <span className="text-neutral-500">{t('dues.pendingInstallments')}</span>
                             <span className="font-semibold tabular-nums text-neutral-800">
                                 {pendingInstallments}
                             </span>
@@ -111,7 +119,7 @@ export default function SubOrgActivityDuesWidget() {
                         <div className="flex items-center justify-between text-xs">
                             <span className="flex items-center gap-1.5 text-neutral-500">
                                 <CalendarBlank size={12} weight="duotone" />
-                                Next due
+                                {t('dues.nextDue')}
                             </span>
                             <span className="font-medium text-neutral-700">
                                 {nextDue?.due_date ? shortDate(nextDue.due_date) : '—'}

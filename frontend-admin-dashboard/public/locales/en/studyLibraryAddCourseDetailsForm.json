@@ -1,0 +1,7 @@
+{
+    "enterName": "Enter {{label}} name",
+    "durationDays": "Duration (days)",
+    "enterDurationInDays": "Enter duration in days",
+    "sessions": "Sessions",
+    "startDate": "Start date: {{date}}"
+}

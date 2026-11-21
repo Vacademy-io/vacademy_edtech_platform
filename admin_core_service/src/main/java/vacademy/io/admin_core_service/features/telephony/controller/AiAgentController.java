@@ -4,11 +4,17 @@ import vacademy.io.admin_core_service.features.telephony.core.TtsModelPricingAnn
 import vacademy.io.admin_core_service.features.telephony.core.TtsVoiceCatalog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
+import vacademy.io.admin_core_service.features.telephony.core.AiAgentKnowledgeExtractor;
 import vacademy.io.admin_core_service.features.telephony.core.AiAgentService;
+import vacademy.io.admin_core_service.features.telephony.core.AiAgentTestCallService;
 import vacademy.io.admin_core_service.features.telephony.core.dto.AiAgentDTO;
+import vacademy.io.admin_core_service.features.telephony.core.dto.AiAgentKnowledgeDocument;
+import vacademy.io.admin_core_service.features.telephony.core.dto.AiCallResponseDTO;
 import vacademy.io.common.auth.model.CustomUserDetails;
 
 import java.util.List;
@@ -28,6 +34,8 @@ import java.util.Map;
 public class AiAgentController {
 
     private final AiAgentService aiAgentService;
+    private final AiAgentKnowledgeExtractor knowledgeExtractor;
+    private final AiAgentTestCallService testCallService;
     private final InstituteAccessValidator instituteAccessValidator;
 
     @GetMapping
@@ -43,6 +51,36 @@ public class AiAgentController {
                                            @RequestAttribute("user") CustomUserDetails user) {
         instituteAccessValidator.validateUserAccess(user, dto.getInstituteId());
         return ResponseEntity.ok(aiAgentService.save(dto));
+    }
+
+    /**
+     * Text of a document for the agent's reference documents. Stores nothing: the editor
+     * adds the result to the agent and saving the agent stores it.
+     */
+    @PostMapping(value = "/knowledge/extract", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<AiAgentKnowledgeDocument> extractKnowledge(
+            @RequestParam("instituteId") String instituteId,
+            @RequestParam("file") MultipartFile file,
+            @RequestAttribute("user") CustomUserDetails user) {
+        instituteAccessValidator.validateUserAccess(user, instituteId);
+        return ResponseEntity.ok(knowledgeExtractor.extract(file));
+    }
+
+    public record TestCallBody(String instituteId, String phoneNumber, String name, String preferredNumberId) {}
+
+    /**
+     * The saved agent calls the number typed in the editor. A real call, billed like any
+     * other; staff only, the same guard as a manual lead call.
+     */
+    @PostMapping("/{agentId}/test-call")
+    public ResponseEntity<AiCallResponseDTO> testCall(@PathVariable("agentId") String agentId,
+                                                      @RequestBody TestCallBody body,
+                                                      @RequestAttribute("user") CustomUserDetails user) {
+        String instituteId = body == null ? null : body.instituteId();
+        instituteAccessValidator.requireInstituteStaff(user, instituteId);
+        return ResponseEntity.ok(testCallService.place(instituteId, agentId,
+                new AiAgentTestCallService.TestCallInput(body.phoneNumber(), body.name(), body.preferredNumberId()),
+                user == null ? null : user.getUserId()));
     }
 
     @DeleteMapping("/{agentId}")

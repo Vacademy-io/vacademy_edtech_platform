@@ -1,0 +1,13 @@
+{
+    "status": {
+        "active": "Active",
+        "revoked": "Revoked"
+    },
+    "created": "Created: {{date}}",
+    "revokeDialog": {
+        "title": "Revoke API Key",
+        "description": "Are you sure you want to revoke \"{{name}}\"? This action cannot be undone and any applications using this key will stop working.",
+        "cancel": "Cancel",
+        "confirm": "Revoke Key"
+    }
+}

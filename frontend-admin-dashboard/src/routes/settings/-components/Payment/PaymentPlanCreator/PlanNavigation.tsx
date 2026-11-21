@@ -1,6 +1,7 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { Calendar } from 'lucide-react';
+import { Calendar } from '@phosphor-icons/react';
 import { PaymentPlans } from '@/types/payment';
 
 interface PlanNavigationProps {
@@ -32,6 +33,8 @@ export const PlanNavigation: React.FC<PlanNavigationProps> = ({
     onClose,
     onPreviewToggle,
 }) => {
+    const { t } = useTranslation('settingsPlanNavigation');
+
     const canProceed = () => {
         if (currentStep === 1) {
             return planName && planType;
@@ -45,7 +48,7 @@ export const PlanNavigation: React.FC<PlanNavigationProps> = ({
             return (
                 <>
                     <div className="mr-2 size-4 animate-spin rounded-full border-b-2 border-white"></div>
-                    Saving...
+                    {t('buttons.saving')}
                 </>
             );
         }
@@ -55,14 +58,14 @@ export const PlanNavigation: React.FC<PlanNavigationProps> = ({
             (planType === PaymentPlans.DONATION && currentStep === 2) ||
             (planType === PaymentPlans.CPO && currentStep === 2)
         ) {
-            return 'Create Plan';
+            return t('buttons.createPlan');
         }
 
         if (currentStep < totalSteps) {
-            return 'Next';
+            return t('buttons.next');
         }
 
-        return 'Create Payment Plan';
+        return t('buttons.createPaymentPlan');
     };
 
     return (
@@ -70,7 +73,7 @@ export const PlanNavigation: React.FC<PlanNavigationProps> = ({
             <div>
                 {currentStep > 1 && (
                     <Button variant="outline" onClick={onBack}>
-                        Back
+                        {t('buttons.back')}
                     </Button>
                 )}
             </div>
@@ -82,12 +85,12 @@ export const PlanNavigation: React.FC<PlanNavigationProps> = ({
                             variant="outline"
                             className="flex items-center gap-2"
                         >
-                            {showPreview ? 'Hide Preview' : 'Preview Plans'}
+                            {showPreview ? t('buttons.hidePreview') : t('buttons.previewPlans')}
                             <Calendar className="size-4" />
                         </Button>
                     )}
                 <Button variant="outline" onClick={onClose} disabled={isSaving}>
-                    Cancel
+                    {t('buttons.cancel')}
                 </Button>
                 {currentStep < totalSteps ||
                 (currentStep === 2 &&

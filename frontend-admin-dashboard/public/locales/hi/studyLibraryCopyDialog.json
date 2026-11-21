@@ -1,0 +1,15 @@
+{
+    "dialog": {
+        "heading": "यहां कॉपी करें",
+        "submitLabel": "कॉपी करें",
+        "busyLabel": "कॉपी हो रहा है…"
+    },
+    "toast": {
+        "copiedSuccess": "स्लाइड सफलतापूर्वक कॉपी की गई!",
+        "copiedToLocations_one": "स्लाइड {{count}} स्थान पर कॉपी की गई",
+        "copiedToLocations_other": "स्लाइड {{count}} स्थानों पर कॉपी की गई",
+        "copyFailed": "स्लाइड कॉपी करने में विफल",
+        "partialSuccess_one": "{{total}} में से {{count}} स्थान पर कॉपी हुई। नीचे बाकी के लिए फिर से प्रयास करें।",
+        "partialSuccess_other": "{{total}} में से {{count}} स्थानों पर कॉपी हुई। नीचे बाकी के लिए फिर से प्रयास करें।"
+    }
+}

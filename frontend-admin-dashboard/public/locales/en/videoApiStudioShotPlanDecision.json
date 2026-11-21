@@ -1,0 +1,45 @@
+{
+    "header": {
+        "shotPlan_one": "{{count}}-shot plan",
+        "shotPlan_other": "{{count}}-shot plan",
+        "actedScenes_one": "{{count}} acted scene",
+        "actedScenes_other": "{{count}} acted scenes"
+    },
+    "row": {
+        "shotTypePlaceholder": "shot type",
+        "secondsPlaceholder": "secs",
+        "narrationBriefPlaceholder": "what this beat covers",
+        "transitionInAriaLabel": "transition in",
+        "transitionPlaceholder": "transition…",
+        "backgroundTreatmentAriaLabel": "background treatment",
+        "backgroundPlaceholder": "background…",
+        "actedScene": "Acted scene",
+        "dialogueLineAriaLabel": "Line for {{character}}",
+        "continuesPreviousScene": "continues previous scene",
+        "newScene": "new scene"
+    },
+    "transitions": {
+        "cut": "cut",
+        "fade": "fade",
+        "crossfade": "crossfade",
+        "slide_left": "slide left",
+        "slide_up": "slide up",
+        "zoom_in": "zoom in",
+        "whip_pan": "whip pan",
+        "circle_iris": "circle iris",
+        "smash_cut": "smash cut",
+        "dip_to_black": "dip to black",
+        "dissolve_up": "dissolve up"
+    },
+    "backgrounds": {
+        "brand_solid": "brand solid",
+        "brand_textured": "brand textured",
+        "brand_gradient": "brand gradient",
+        "media_hero": "media hero"
+    },
+    "footer": {
+        "letAiDecide": "Let AI decide",
+        "saveAndContinue": "Save & continue",
+        "approvePlan": "Approve plan"
+    }
+}

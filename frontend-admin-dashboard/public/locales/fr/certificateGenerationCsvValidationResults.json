@@ -1,0 +1,21 @@
+{
+    "validationPassed": "Validation du CSV réussie",
+    "validationFailed": "Échec de la validation du CSV",
+    "errorsCount_one": "{{count}} erreur",
+    "errorsCount_many": "{{count}} erreurs",
+    "errorsCount_other": "{{count}} erreurs",
+    "warningsCount_one": "{{count}} avertissement",
+    "warningsCount_many": "{{count}} avertissements",
+    "warningsCount_other": "{{count}} avertissements",
+    "allChecksPassed": "Toutes les vérifications ont réussi",
+    "hideDetails": "Masquer les détails",
+    "showDetails": "Afficher les détails",
+    "errorsHeading": "Erreurs ({{count}})",
+    "warningsHeading": "Avertissements ({{count}})",
+    "requirementsHeading": "Exigences du CSV :",
+    "requirementFirstColumns": "Les 3 premières colonnes doivent être : user_id, enrollment_number, student_name",
+    "requirementAllSelectedIncluded": "Tous les étudiants sélectionnés doivent figurer dans le CSV",
+    "requirementNoExtraStudents": "Aucun étudiant supplémentaire au-delà de ceux sélectionnés",
+    "requirementUniqueHeaders": "Les en-têtes après la 3ᵉ colonne doivent être uniques",
+    "requirementFileSize": "La taille du fichier ne doit pas dépasser 1 Mo"
+}

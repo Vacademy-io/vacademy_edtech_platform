@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
+import type { TFunction } from 'i18next';
+import { useTranslation } from 'react-i18next';
 import {
     ChatCircleDots,
     ChatsCircle,
@@ -34,27 +36,43 @@ import {
 const PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 400;
 
+/** Maps the fixed day-window values from chatbot-analytics.ts to translation keys. */
+const DAY_RANGE_KEY_BY_VALUE: Record<string, string> = {
+    '7': 'dayRange.last7',
+    '30': 'dayRange.last30',
+    '90': 'dayRange.last90',
+    '365': 'dayRange.last365',
+};
+
 /**
  * MyDropdown highlights the selected row by matching `currentValue` against the
- * list entries, so the lists are plain label arrays and the label is translated
- * back to the API value here.
+ * list entries, so the lists are plain translated-label arrays and the label is
+ * translated back to the API value here.
  */
-const DAY_RANGE_LABELS = DAY_RANGE_OPTIONS.map((o) => o.label);
-const DAYS_BY_LABEL = new Map(DAY_RANGE_OPTIONS.map((o) => [o.label, o.value]));
+function buildDayRangeOptions(t: TFunction) {
+    return DAY_RANGE_OPTIONS.map((o) => ({
+        label: t(DAY_RANGE_KEY_BY_VALUE[o.value] ?? o.label),
+        value: o.value,
+    }));
+}
 
-const STATUS_BY_LABEL = new Map<string, string | undefined>([
-    ['All chats', undefined],
-    ['Active', 'ACTIVE'],
-    ['Closed', 'CLOSED'],
-]);
+function buildStatusOptions(t: TFunction): { label: string; value: string | undefined }[] {
+    return [
+        { label: t('filters.status.all'), value: undefined },
+        { label: t('filters.status.active'), value: 'ACTIVE' },
+        { label: t('filters.status.closed'), value: 'CLOSED' },
+    ];
+}
 
-const MODE_BY_LABEL = new Map<string, string | undefined>([
-    ['All modes', undefined],
-    ['Text chat', 'text'],
-    ['Mock interview', 'voice_interview'],
-    ['Voice doubt', 'voice_doubt'],
-    ['Oral test', 'voice_oral_test'],
-]);
+function buildModeOptions(t: TFunction): { label: string; value: string | undefined }[] {
+    return [
+        { label: t('filters.mode.all'), value: undefined },
+        { label: t('filters.mode.textChat'), value: 'text' },
+        { label: t('filters.mode.mockInterview'), value: 'voice_interview' },
+        { label: t('filters.mode.voiceDoubt'), value: 'voice_doubt' },
+        { label: t('filters.mode.oralTest'), value: 'voice_oral_test' },
+    ];
+}
 
 // ── summary pieces ─────────────────────────────────────────────────────────
 
@@ -121,16 +139,14 @@ function ProportionBars({ rows, emptyText }: { rows: CountByValue[]; emptyText: 
 }
 
 /** Compact daily bar strip: one series (student messages), hover for the day's numbers. */
-function ActivityStrip({ rows }: { rows: DailyActivityRow[] }) {
+function ActivityStrip({ rows, t }: { rows: DailyActivityRow[]; t: TFunction }) {
     const peak = useMemo(
         () => rows.reduce((max, r) => Math.max(max, r.studentMessages), 0),
         [rows]
     );
 
     if (!rows.length || peak === 0) {
-        return (
-            <p className="text-caption text-neutral-400">No chat activity in this period yet.</p>
-        );
+        return <p className="text-caption text-neutral-400">{t('activity.empty')}</p>;
     }
 
     return (
@@ -141,7 +157,9 @@ function ActivityStrip({ rows }: { rows: DailyActivityRow[] }) {
                     return (
                         <div
                             key={row.date}
-                            title={`${row.date}: ${row.studentMessages} student messages, ${row.sessions} chats`}
+                            title={`${row.date}: ${t('activity.tooltip.studentMessages', {
+                                count: row.studentMessages,
+                            })}, ${t('activity.tooltip.chats', { count: row.sessions })}`}
                             className="flex h-full min-w-1 max-w-6 flex-1 items-end"
                         >
                             <div
@@ -158,7 +176,7 @@ function ActivityStrip({ rows }: { rows: DailyActivityRow[] }) {
             </div>
             <div className="flex justify-between text-caption text-neutral-400">
                 <span>{rows[0]?.date}</span>
-                <span>Peak {peak} messages/day</span>
+                <span>{t('activity.peak', { count: peak })}</span>
                 <span>{rows[rows.length - 1]?.date}</span>
             </div>
         </div>
@@ -168,11 +186,32 @@ function ActivityStrip({ rows }: { rows: DailyActivityRow[] }) {
 // ── screen ─────────────────────────────────────────────────────────────────
 
 export const ChatbotAnalysis = () => {
-    const [dayLabel, setDayLabel] = useState('Last 30 days');
+    const { t } = useTranslation('studyLibraryChatbotAnalysis');
+
+    const dayRangeOptions = useMemo(() => buildDayRangeOptions(t), [t]);
+    const statusOptions = useMemo(() => buildStatusOptions(t), [t]);
+    const modeOptions = useMemo(() => buildModeOptions(t), [t]);
+    const dayRangeLabels = useMemo(() => dayRangeOptions.map((o) => o.label), [dayRangeOptions]);
+    const daysByLabel = useMemo(
+        () => new Map(dayRangeOptions.map((o) => [o.label, o.value])),
+        [dayRangeOptions]
+    );
+    const statusLabels = useMemo(() => statusOptions.map((o) => o.label), [statusOptions]);
+    const statusByLabel = useMemo(
+        () => new Map(statusOptions.map((o) => [o.label, o.value])),
+        [statusOptions]
+    );
+    const modeLabels = useMemo(() => modeOptions.map((o) => o.label), [modeOptions]);
+    const modeByLabel = useMemo(
+        () => new Map(modeOptions.map((o) => [o.label, o.value])),
+        [modeOptions]
+    );
+
+    const [dayLabel, setDayLabel] = useState(dayRangeOptions[1]?.label ?? '');
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
-    const [statusLabel, setStatusLabel] = useState('All chats');
-    const [modeLabel, setModeLabel] = useState('All modes');
+    const [statusLabel, setStatusLabel] = useState(statusOptions[0]?.label ?? '');
+    const [modeLabel, setModeLabel] = useState(modeOptions[0]?.label ?? '');
     const [page, setPage] = useState(0);
     const [openSession, setOpenSession] = useState<ChatbotSessionRow | null>(null);
 
@@ -185,9 +224,9 @@ export const ChatbotAnalysis = () => {
         return () => clearTimeout(timer);
     }, [search]);
 
-    const windowDays = Number(DAYS_BY_LABEL.get(dayLabel) ?? '30');
-    const statusFilter = STATUS_BY_LABEL.get(statusLabel);
-    const modeFilter = MODE_BY_LABEL.get(modeLabel);
+    const windowDays = Number(daysByLabel.get(dayLabel) ?? '30');
+    const statusFilter = statusByLabel.get(statusLabel);
+    const modeFilter = modeByLabel.get(modeLabel);
     const hasFilters = !!debouncedSearch || !!statusFilter || !!modeFilter;
 
     const summaryQuery = useChatbotSummaryQuery(windowDays);
@@ -204,7 +243,7 @@ export const ChatbotAnalysis = () => {
         () => [
             {
                 id: 'student',
-                header: 'Student',
+                header: t('table.student'),
                 cell: ({ row }) => (
                     <div className="flex flex-col">
                         <span className="truncate text-body text-neutral-700">
@@ -220,7 +259,7 @@ export const ChatbotAnalysis = () => {
             },
             {
                 id: 'chat',
-                header: 'Chat about',
+                header: t('table.chatAbout'),
                 cell: ({ row }) => (
                     <div className="flex flex-col">
                         <span className="truncate text-body text-neutral-600">
@@ -229,14 +268,14 @@ export const ChatbotAnalysis = () => {
                                 prettifyLabel(row.original.contextType)}
                         </span>
                         <span className="line-clamp-1 text-caption text-neutral-400">
-                            {row.original.lastStudentMessage || 'No student message'}
+                            {row.original.lastStudentMessage || t('table.noStudentMessage')}
                         </span>
                     </div>
                 ),
             },
             {
                 id: 'mode',
-                header: 'Mode',
+                header: t('table.mode'),
                 cell: ({ row }) => (
                     <span className="text-body text-neutral-600">
                         {SESSION_MODE_LABELS[row.original.sessionMode ?? 'text'] ??
@@ -246,21 +285,21 @@ export const ChatbotAnalysis = () => {
             },
             {
                 id: 'messages',
-                header: 'Messages',
+                header: t('table.messages'),
                 cell: ({ row }) => (
                     <div className="text-right">
                         <span className="text-body text-neutral-700">
                             {row.original.messageCount}
                         </span>
                         <span className="block text-caption text-neutral-400">
-                            {row.original.studentMessageCount} from student
+                            {t('table.fromStudent', { count: row.original.studentMessageCount })}
                         </span>
                     </div>
                 ),
             },
             {
                 id: 'quizzes',
-                header: 'Quizzes',
+                header: t('table.quizzes'),
                 cell: ({ row }) => (
                     <span className="block text-right text-body text-neutral-600">
                         {row.original.quizCount}
@@ -269,7 +308,7 @@ export const ChatbotAnalysis = () => {
             },
             {
                 id: 'status',
-                header: 'Status',
+                header: t('table.status'),
                 cell: ({ row }) => (
                     <StatusChip
                         text={prettifyLabel(row.original.status)}
@@ -281,7 +320,7 @@ export const ChatbotAnalysis = () => {
             },
             {
                 id: 'lastActive',
-                header: 'Last active',
+                header: t('table.lastActive'),
                 cell: ({ row }) => (
                     <span className="text-caption text-neutral-500">
                         {formatDateTime(row.original.lastActive)}
@@ -297,24 +336,22 @@ export const ChatbotAnalysis = () => {
                         scale="small"
                         onClick={() => setOpenSession(row.original)}
                     >
-                        View chat
+                        {t('table.viewChat')}
                     </MyButton>
                 ),
             },
         ],
-        []
+        [t]
     );
 
     return (
         <div className="flex flex-col gap-6">
             {/* Window selector */}
             <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-body text-neutral-500">
-                    How students are using the AI tutor, and what they are asking about.
-                </p>
+                <p className="text-body text-neutral-500">{t('description')}</p>
                 <MyDropdown
                     currentValue={dayLabel}
-                    dropdownList={DAY_RANGE_LABELS}
+                    dropdownList={dayRangeLabels}
                     handleChange={(value) => {
                         setDayLabel(value);
                         setPage(0);
@@ -324,17 +361,19 @@ export const ChatbotAnalysis = () => {
 
             {/* Summary data points */}
             {summaryQuery.isLoading && (
-                <p className="animate-pulse text-body text-neutral-400">Loading summary…</p>
+                <p className="animate-pulse text-body text-neutral-400">
+                    {t('summary.loading')}
+                </p>
             )}
             {summaryQuery.error && (
                 <div className="flex items-center gap-3 rounded-lg border border-danger-200 bg-danger-50 p-4">
-                    <p className="text-body text-danger-600">Could not load the chatbot summary.</p>
+                    <p className="text-body text-danger-600">{t('summary.error')}</p>
                     <MyButton
                         buttonType="secondary"
                         scale="small"
                         onClick={() => summaryQuery.refetch()}
                     >
-                        Retry
+                        {t('summary.retry')}
                     </MyButton>
                 </div>
             )}
@@ -343,54 +382,58 @@ export const ChatbotAnalysis = () => {
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <StatTile
                             icon={ChatsCircle}
-                            label="Chats"
+                            label={t('summary.chats')}
                             value={summary.sessions}
-                            hint={`${summary.sessionsAllTime} all time`}
+                            hint={t('summary.allTime', { count: summary.sessionsAllTime })}
                         />
                         <StatTile
                             icon={Users}
-                            label="Students reached"
+                            label={t('summary.studentsReached')}
                             value={summary.uniqueStudents}
-                            hint={`${summary.uniqueStudentsAllTime} all time`}
+                            hint={t('summary.allTime', { count: summary.uniqueStudentsAllTime })}
                         />
                         <StatTile
                             icon={ChatCircleDots}
-                            label="Student messages"
+                            label={t('summary.studentMessages')}
                             value={summary.studentMessages}
-                            hint={`${summary.avgMessagesPerSession} messages per chat`}
+                            hint={t('summary.messagesPerChat', {
+                                count: summary.avgMessagesPerSession,
+                            })}
                         />
                         <StatTile
                             icon={Question}
-                            label="Doubts asked"
+                            label={t('summary.doubtsAsked')}
                             value={summary.doubtsAsked}
                         />
                         <StatTile
                             icon={Target}
-                            label="Practice quizzes taken"
+                            label={t('summary.practiceQuizzesTaken')}
                             value={summary.quizzesTaken}
                             hint={
                                 summary.avgQuizScorePct !== null
-                                    ? `${summary.avgQuizScorePct}% average score`
-                                    : 'No quiz submitted yet'
+                                    ? t('summary.averageScore', {
+                                          percent: summary.avgQuizScorePct,
+                                      })
+                                    : t('summary.noQuizSubmittedYet')
                             }
                         />
                         <StatTile
                             icon={Lightning}
-                            label="AI replies"
+                            label={t('summary.aiReplies')}
                             value={summary.aiMessages}
-                            hint={`${summary.toolCalls} tool look-ups`}
+                            hint={t('summary.toolLookups', { count: summary.toolCalls })}
                         />
                         <StatTile
                             icon={ChatsCircle}
-                            label="Active chats"
+                            label={t('summary.activeChats')}
                             value={summary.activeSessions}
-                            hint="Not yet closed by the student"
+                            hint={t('summary.notYetClosed')}
                         />
                         <StatTile
                             icon={Student}
-                            label="Quizzes generated"
+                            label={t('summary.quizzesGenerated')}
                             value={summary.quizzesGenerated}
-                            hint={`${summary.quizzesSubmitted} submitted`}
+                            hint={t('summary.submittedCount', { count: summary.quizzesSubmitted })}
                         />
                     </div>
 
@@ -398,35 +441,40 @@ export const ChatbotAnalysis = () => {
                     <div className="grid gap-4 lg:grid-cols-3">
                         <Card className="border-neutral-200">
                             <CardHeader className="pb-2">
-                                <CardTitle className="text-title">Chat modes</CardTitle>
+                                <CardTitle className="text-title">
+                                    {t('summary.chatModes')}
+                                </CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <ProportionBars
                                     rows={summary.modeBreakdown}
-                                    emptyText="No chats in this period yet."
+                                    emptyText={t('summary.noChatsYet')}
                                 />
                             </CardContent>
                         </Card>
                         <Card className="border-neutral-200">
                             <CardHeader className="pb-2">
-                                <CardTitle className="text-title">Where students chat</CardTitle>
+                                <CardTitle className="text-title">
+                                    {t('summary.whereStudentsChat')}
+                                </CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <ProportionBars
                                     rows={summary.contextBreakdown}
-                                    emptyText="No chats in this period yet."
+                                    emptyText={t('summary.noChatsYet')}
                                 />
                             </CardContent>
                         </Card>
                         <Card className="border-neutral-200">
                             <CardHeader className="pb-2">
-                                <CardTitle className="text-title">Most asked topics</CardTitle>
+                                <CardTitle className="text-title">
+                                    {t('summary.mostAskedTopics')}
+                                </CardTitle>
                             </CardHeader>
                             <CardContent>
                                 {summary.topTopics.length === 0 ? (
                                     <p className="text-caption text-neutral-400">
-                                        No topics recorded yet. Topics appear once students ask
-                                        doubts or take practice quizzes.
+                                        {t('summary.noTopicsYet')}
                                     </p>
                                 ) : (
                                     <ul className="flex flex-col gap-2">
@@ -440,8 +488,8 @@ export const ChatbotAnalysis = () => {
                                                 </span>
                                                 <span className="shrink-0 text-caption text-neutral-400">
                                                     {topic.eventType === 'quiz_score'
-                                                        ? 'quiz'
-                                                        : 'doubt'}{' '}
+                                                        ? t('summary.topicQuiz')
+                                                        : t('summary.topicDoubt')}{' '}
                                                     · {topic.count}
                                                 </span>
                                             </li>
@@ -454,10 +502,12 @@ export const ChatbotAnalysis = () => {
 
                     <Card className="border-neutral-200">
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-title">Daily activity</CardTitle>
+                            <CardTitle className="text-title">
+                                {t('summary.dailyActivity')}
+                            </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <ActivityStrip rows={summary.dailyActivity} />
+                            <ActivityStrip rows={summary.dailyActivity} t={t} />
                         </CardContent>
                     </Card>
                 </>
@@ -466,20 +516,20 @@ export const ChatbotAnalysis = () => {
             {/* Recent chats */}
             <Card className="border-neutral-200">
                 <CardHeader className="flex flex-col gap-3 pb-3 sm:flex-row sm:items-center sm:justify-between">
-                    <CardTitle className="text-title">Recent chats</CardTitle>
+                    <CardTitle className="text-title">{t('recentChats.title')}</CardTitle>
                     <div className="flex flex-wrap items-center gap-2">
                         <div className="w-56">
                             <MyInput
                                 inputType="text"
                                 input={search}
                                 onChangeFunction={(e) => setSearch(e.target.value)}
-                                inputPlaceholder="Search student name or email"
+                                inputPlaceholder={t('filters.searchPlaceholder')}
                                 size="small"
                             />
                         </div>
                         <MyDropdown
                             currentValue={statusLabel}
-                            dropdownList={[...STATUS_BY_LABEL.keys()]}
+                            dropdownList={statusLabels}
                             handleChange={(value) => {
                                 setStatusLabel(value);
                                 setPage(0);
@@ -487,7 +537,7 @@ export const ChatbotAnalysis = () => {
                         />
                         <MyDropdown
                             currentValue={modeLabel}
-                            dropdownList={[...MODE_BY_LABEL.keys()]}
+                            dropdownList={modeLabels}
                             handleChange={(value) => {
                                 setModeLabel(value);
                                 setPage(0);
@@ -498,25 +548,25 @@ export const ChatbotAnalysis = () => {
                 <CardContent className="flex flex-col gap-4">
                     {sessionsQuery.error ? (
                         <div className="flex items-center gap-3 rounded-lg border border-danger-200 bg-danger-50 p-4">
-                            <p className="text-body text-danger-600">
-                                Could not load recent chats.
-                            </p>
+                            <p className="text-body text-danger-600">{t('recentChats.error')}</p>
                             <MyButton
                                 buttonType="secondary"
                                 scale="small"
                                 onClick={() => sessionsQuery.refetch()}
                             >
-                                Retry
+                                {t('recentChats.retry')}
                             </MyButton>
                         </div>
                     ) : sessionsQuery.data && sessionsQuery.data.content.length === 0 ? (
                         <div className="flex flex-col items-center gap-2 py-10 text-center">
                             <ChatsCircle className="size-8 text-neutral-300" />
-                            <p className="text-body text-neutral-500">No chats found</p>
+                            <p className="text-body text-neutral-500">
+                                {t('recentChats.emptyTitle')}
+                            </p>
                             <p className="text-caption text-neutral-400">
                                 {hasFilters
-                                    ? 'Try clearing the search or filters.'
-                                    : 'Chats appear here once students start using the AI tutor.'}
+                                    ? t('recentChats.emptyFiltered')
+                                    : t('recentChats.emptyUnfiltered')}
                             </p>
                         </div>
                     ) : (

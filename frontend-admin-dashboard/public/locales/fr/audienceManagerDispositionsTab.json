@@ -1,0 +1,27 @@
+{
+    "sections": {
+        "currentStatus": {
+            "title": "Statut actuel par conseiller",
+            "emptyHint": "Aucun lead sur cette période.",
+            "description": "Leads reçus sur la période sélectionnée, selon le statut qu'ils ont actuellement. Total = tous les leads du conseiller sur cette période ; Sans statut = leads n'ayant jamais reçu de statut."
+        },
+        "statusChanges": {
+            "title": "Changements de statut par conseiller",
+            "emptyHint": "Aucun changement de statut sur cette période.",
+            "description": "Chaque cellule compte les transitions vers ce statut effectuées par le conseiller sur cette période. En attente = leads assignés sans aucun changement de statut enregistré, jamais (jamais traités)."
+        },
+        "callOutcomes": {
+            "title": "Résultats d'appels par conseiller",
+            "emptyHint": "Aucun résultat d'appel enregistré sur cette période.",
+            "description": "Nombre de résultats d'appels enregistrés par conseiller, selon les statuts d'appel de votre téléphonie."
+        }
+    },
+    "table": {
+        "counsellor": "Conseiller",
+        "noStatus": "Sans statut",
+        "total": "Total",
+        "totalLeads": "Total des leads",
+        "pending": "En attente",
+        "totalRowLabel": "TOTAL"
+    }
+}

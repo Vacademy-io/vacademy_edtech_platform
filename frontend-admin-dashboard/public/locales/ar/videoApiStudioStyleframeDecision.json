@@ -1,0 +1,47 @@
+{
+    "header": {
+        "title": "هوية التصميم"
+    },
+    "emptyState": {
+        "noIdentity": "لم تُرفَق أي هوية تصميم بهذا القرار."
+    },
+    "styleframe": {
+        "altText": "إطار النمط — {{name}}",
+        "caption": "إطار النمط — المظهر الذي تتبعه كل لقطة",
+        "notRendered": "لم يُنشأ أي إطار نمط لهذا التشغيل"
+    },
+    "typography": {
+        "label": "الطباعة",
+        "lockedByBrand": "مقفل بواسطة حزمة علامتك التجارية: {{display}} / {{body}}",
+        "pairingCaption": "{{display}} للعناوين · {{body}} للنص"
+    },
+    "motion": {
+        "label": "شخصية الحركة"
+    },
+    "finishing": {
+        "groups": {
+            "grain": "الحبيبات",
+            "vignette": "التظليل الطرفي",
+            "light": "الإضاءة"
+        },
+        "options": {
+            "none": "بلا",
+            "soft": "ناعم",
+            "film": "فيلم",
+            "medium": "متوسط",
+            "glow": "توهج"
+        }
+    },
+    "advanced": {
+        "toggle": "متقدم",
+        "colorArc": "مسار اللون",
+        "colorArcPlaceholder": "كيف يتطور اللون عبر الفيديو",
+        "imageArtDirection": "التوجيه الفني للصور",
+        "imageArtPlaceholder": "الشكل الذي ينبغي أن تبدو عليه الصور المولَّدة"
+    },
+    "actions": {
+        "letAiDecide": "دع الذكاء الاصطناعي يقرر",
+        "saveAndContinue": "حفظ ومتابعة",
+        "approveAndContinue": "اعتماد ومتابعة"
+    }
+}

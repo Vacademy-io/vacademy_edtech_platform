@@ -1,0 +1,22 @@
+{
+    "totalGross": {
+        "label": "Total brut",
+        "hint": "Gains avant toute retenue"
+    },
+    "totalDeductions": {
+        "label": "Total des retenues",
+        "hint": "TDS, PF, ESI, prêts, montants suspendus"
+    },
+    "totalNetPay": {
+        "label": "Total du net à payer",
+        "hint": "Ce que les employés reçoivent réellement"
+    },
+    "totalEmployerCost": {
+        "label": "Coût total employeur",
+        "hint": "Net à payer plus contributions de l'employeur"
+    },
+    "employees": {
+        "label": "Employés",
+        "hint": "Lignes calculées dans cette exécution"
+    }
+}

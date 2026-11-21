@@ -1,0 +1,59 @@
+{
+    "dialog": {
+        "heading": "Drip Conditions - {{chapterName}}",
+        "defaultChapterName": "Chapter",
+        "chapterDripConditions": "Chapter Drip Conditions",
+        "emptyState": "No drip conditions for this chapter yet."
+    },
+    "packageConflict": {
+        "title": "Course-Level Conditions Active",
+        "courseLevel": "Course Level",
+        "explanation": "These course-level conditions apply to all chapters. Chapter-specific conditions are disabled when course conditions target chapters."
+    },
+    "behavior": {
+        "lock": "lock"
+    },
+    "behaviorOptions": {
+        "lock": "Lock (show but prevent access)",
+        "hide": "Hide (completely hidden)"
+    },
+    "ruleTypes": {
+        "dateBased": "Date-based",
+        "completionBased": "Completion-based",
+        "prerequisite": "Prerequisite",
+        "sequential": "Sequential"
+    },
+    "form": {
+        "releaseDate": "Release Date",
+        "metric": "Metric",
+        "averageOfAll": "Average of All",
+        "averageOfLastN": "Average of Last N",
+        "count": "Count",
+        "thresholdPercent": "Threshold %",
+        "requiredChapters": "Required Chapters",
+        "selectChapters": "Select chapters",
+        "requiredChaptersHint": "Select the chapters that must be completed before unlocking",
+        "completionThresholdPercent": "Completion Threshold %",
+        "prerequisiteThresholdHint": "Percentage completion required for prerequisite chapters",
+        "requiresPreviousCompletion": "Requires previous chapter completion",
+        "sequentialThresholdHint": "Percentage completion required for previous chapter",
+        "behavior": "Behavior",
+        "unlockRule": "Unlock Rule",
+        "noRuleConfigured": "No rule configured. Please configure an unlock rule below.",
+        "enableConditionLabel": "Enable this chapter condition",
+        "enableConditionHint": "Controls whether this drip condition is active"
+    },
+    "actions": {
+        "addCondition": "Add Condition",
+        "edit": "Edit",
+        "deleteConditionTitle": "Delete condition",
+        "close": "Close",
+        "saving": "Saving...",
+        "saveCondition": "Save Condition"
+    },
+    "alerts": {
+        "cannotDeleteEnabled": "Cannot delete an enabled condition. Please disable the chapter drip condition first.",
+        "confirmDelete": "Are you sure you want to delete this drip condition?",
+        "fillRequiredFields": "Please fill in all required fields"
+    }
+}

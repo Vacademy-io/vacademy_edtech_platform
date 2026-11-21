@@ -36,6 +36,8 @@ public class EwayPoolingService {
     @Autowired
     private RenewalPaymentService renewalPaymentService;
     @Autowired
+    private vacademy.io.admin_core_service.features.plan_change.service.PlanChangeService planChangeService;
+    @Autowired
     private InstitutePaymentGatewayMappingService institutePaymentGatewayMappingService;
     @Autowired
     private EwayPaymentManager ewayPaymentManager;
@@ -113,7 +115,7 @@ public class EwayPoolingService {
     }
 
     /**
-     * Handles SUCCESS payment for both INITIAL and RENEWAL types.
+     * Handles SUCCESS payment for INITIAL, RENEWAL and PLAN_CHANGE types.
      */
     private void handleSuccess(EwayWebHookDTO dto, WebHook webhook) {
 
@@ -128,6 +130,9 @@ public class EwayPoolingService {
         switch (paymentType) {
             case INITIAL -> handleInitialPayment(dto);
             case RENEWAL -> handleRenewalPayment(dto);
+            // Without this case an upgrade paid through eWay would throw here, leaving the
+            // learner charged and still on their old plan.
+            case PLAN_CHANGE -> handlePlanChangePayment(dto);
             default -> throw new IllegalStateException("Unsupported payment type: " + paymentType);
         }
 
@@ -159,6 +164,23 @@ public class EwayPoolingService {
                 dto.getInstituteId(),
                 status,
                 response);
+    }
+
+    /** An upgrade paid through eWay. Same confirmation entry point as the push gateways. */
+    private void handlePlanChangePayment(EwayWebHookDTO dto) {
+        PaymentResponseDTO response = dto.getPaymentResponse();
+
+        PaymentStatusEnum status = PaymentStatusEnum.PAID;
+        if (response.getResponseData() != null &&
+                response.getResponseData().containsKey("paymentStatus")) {
+            status = PaymentStatusEnum.valueOf(
+                    (String) response.getResponseData().get("paymentStatus"));
+        }
+
+        planChangeService.handlePlanChangePaymentConfirmation(
+                response.getOrderId(),
+                dto.getInstituteId(),
+                status);
     }
 
     private void handleFailure(EwayWebHookDTO dto, WebHook webhook) {

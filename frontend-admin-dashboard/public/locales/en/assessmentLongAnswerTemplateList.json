@@ -1,0 +1,14 @@
+{
+    "settings": {
+        "title": "Questions Settings",
+        "questionType": "Question Type"
+    },
+    "comprehensionText": "Comprehension Text",
+    "question": {
+        "label": "Question"
+    },
+    "answer": "Answer",
+    "defaults": {
+        "explanation": "Explanation:"
+    }
+}

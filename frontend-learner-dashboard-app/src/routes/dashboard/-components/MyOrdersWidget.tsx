@@ -10,6 +10,9 @@ import { PAYMENT_LOGS_URL } from "@/constants/urls";
 import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
 import { cn } from "@/lib/utils";
 import { ShoppingBag, CaretLeft, CaretRight, Package } from "@phosphor-icons/react";
+import { usePlayTheme } from "@/hooks/use-play-theme";
+import { useCleanerPlayTheme } from "@/hooks/use-cleaner-play-theme";
+import iconOrders from "@/assets/cleaner-play/icon-orders.webp";
 import { shouldHidePaidPurchaseUI } from "@/utils/ios-iap-compliance";
 
 interface MyOrdersWidgetProps {
@@ -32,6 +35,9 @@ interface PaymentLogEntry {
     user_plan: {
         id: string;
         status: string;
+        /** Copies bought on this line (a subscription is always 1). Absent on a
+         *  BE build older than the quantity rollout, which reads as 1. */
+        quantity?: number;
         enroll_invite: {
             id: string;
             name: string;
@@ -85,6 +91,8 @@ const PAYMENT_STATUS_STYLES: Record<string, string> = {
     PAYMENT_PENDING: "bg-yellow-50 text-yellow-700",
     NOT_INITIATED: "bg-gray-100 text-gray-600",
     PENDING: "bg-yellow-50 text-yellow-700",
+    // A failed attempt paid on a later retry — the later order is the paid one.
+    RETRIED: "bg-gray-100 text-gray-600",
 };
 
 interface RawCouponSnapshot {
@@ -110,6 +118,12 @@ const getCouponCode = (entry: PaymentLogEntry): string | null => {
     }
 };
 
+/** Copies on this order line: a whole number of at least 1, 1 when the BE sent none. */
+const getQuantity = (entry: PaymentLogEntry): number => {
+    const quantity = Number(entry.user_plan?.quantity);
+    return Number.isFinite(quantity) && quantity >= 1 ? Math.floor(quantity) : 1;
+};
+
 const getCurrencySymbol = (currency: string | undefined): string => {
     switch ((currency || "").toUpperCase()) {
         case "USD":
@@ -127,15 +141,27 @@ const getCurrencySymbol = (currency: string | undefined): string => {
     }
 };
 
+/** "× 4" beside the book name. Always shown, subscriptions included ("× 1"). */
+const QuantityTag = ({ quantity }: { quantity: number }) => {
+    const { t } = useTranslation("dashboard");
+    return (
+        <span className="shrink-0 text-caption font-semibold text-muted-foreground whitespace-nowrap">
+            {t("orders.quantity", { quantity })}
+        </span>
+    );
+};
+
 /** Inline "Paid ₹X · saved ₹Y with CODE" line. Shown when a coupon was used
  *  AND the list price exceeded the paid amount. The widget is otherwise
  *  shipping-focused but this is the only learner-side surface that has both
- *  the list price (UserPlan.payment_plan_dto.actual_price) and the paid
- *  amount (PaymentLog.payment_amount) in the same response. */
+ *  the list price (UserPlan.payment_plan_dto.actual_price, per copy) and the
+ *  paid amount (PaymentLog.payment_amount, the line total) in the same
+ *  response. The list price is multiplied by the copies so both sides are the
+ *  whole line. */
 const PaidWithCouponInline = ({ entry }: { entry: PaymentLogEntry }) => {
     const { t } = useTranslation("dashboard");
     const code = getCouponCode(entry);
-    const listPrice = entry.user_plan?.payment_plan_dto?.actual_price ?? 0;
+    const listPrice = (entry.user_plan?.payment_plan_dto?.actual_price ?? 0) * getQuantity(entry);
     const paid = entry.payment_log?.payment_amount ?? 0;
     const currency = entry.user_plan?.payment_plan_dto?.currency || entry.payment_log?.currency;
     const symbol = getCurrencySymbol(currency);
@@ -207,8 +233,11 @@ const OrderTableRow = ({
     return (
         <tr className="border-b border-border last:border-0 hover:bg-secondary/20 transition-colors">
             <td className="py-2 px-3 max-w-44">
-                <div className="text-xs font-medium text-foreground truncate">
-                    {getBookName(entry)}
+                <div className="flex items-baseline gap-1.5 min-w-0">
+                    <span className="text-xs font-medium text-foreground truncate">
+                        {getBookName(entry)}
+                    </span>
+                    <QuantityTag quantity={getQuantity(entry)} />
                 </div>
                 <PaidWithCouponInline entry={entry} />
             </td>
@@ -265,9 +294,12 @@ const OrderCard = ({
                         <Package className="w-3.5 h-3.5 text-primary" />
                     </div>
                     <div className="min-w-0 flex-1">
-                        <p className="text-xs font-bold text-foreground truncate leading-tight">
-                            {getBookName(entry)}
-                        </p>
+                        <div className="flex items-baseline gap-1.5 min-w-0">
+                            <p className="text-xs font-bold text-foreground truncate leading-tight">
+                                {getBookName(entry)}
+                            </p>
+                            <QuantityTag quantity={getQuantity(entry)} />
+                        </div>
                         {storeName && (
                             <p className="text-caption text-muted-foreground truncate leading-none mt-0.5">
                                 {storeName}
@@ -315,6 +347,8 @@ const OrderCard = ({
 // ─── Main Widget ──────────────────────────────────────────────────────────────
 
 export const MyOrdersWidget: React.FC<MyOrdersWidgetProps> = ({ className }) => {
+    const isPlay = usePlayTheme();
+    const isCleanerPlay = useCleanerPlayTheme();
     const { t } = useTranslation("dashboard");
     const [loading, setLoading] = useState(true);
     const [orders, setOrders] = useState<PaymentLogEntry[]>([]);
@@ -386,10 +420,10 @@ export const MyOrdersWidget: React.FC<MyOrdersWidgetProps> = ({ className }) => 
     if (loading && orders.length === 0) {
         return (
             <Card className={cn("border border-border shadow-sm bg-card", "cp-card", className)}>
-                <CardHeader className="p-4 pb-2">
+                <CardHeader className="p-card pb-2">
                     <Skeleton className="h-5 w-32" />
                 </CardHeader>
-                <CardContent className="p-4">
+                <CardContent className="p-card">
                     <div className="space-y-2">
                         <Skeleton className="h-16 w-full rounded-lg" />
                         <Skeleton className="h-16 w-full rounded-lg" />
@@ -407,13 +441,22 @@ export const MyOrdersWidget: React.FC<MyOrdersWidgetProps> = ({ className }) => 
 
     return (
         <Card className={cn("border border-border shadow-sm bg-card", "cp-card", className)}>
-            <CardHeader className="p-4 pb-2">
+            <CardHeader className="p-card pb-2">
                 <CardTitle className="text-sm font-bold flex items-center gap-2 text-primary uppercase">
-                    <ShoppingBag className="w-5 h-5" />
+                    {isPlay || isCleanerPlay ? (
+                        <img
+                            src={iconOrders}
+                            alt=""
+                            aria-hidden="true"
+                            className="h-9 w-9 object-contain"
+                        />
+                    ) : (
+                        <ShoppingBag className="w-5 h-5" />
+                    )}
                     {t("orders.title")}
                 </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 pt-0">
+            <CardContent className="p-card pt-0">
                 {orders.length > 0 ? (
                     <>
                         {/* Desktop: Table */}

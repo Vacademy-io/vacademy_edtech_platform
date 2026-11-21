@@ -39,9 +39,15 @@ public class NotificationTemplateBindingService {
         if (!StringUtils.hasText(instituteId)) {
             throw new VacademyException("instituteId is required");
         }
+        return get(event, NotificationSourceType.INSTITUTE, instituteId, channel);
+    }
+
+    /** The template bound for this (event, source, channel), or an all-null DTO if none is. */
+    public CredentialTemplateConfigDTO get(NotificationEventType event, NotificationSourceType sourceType,
+                                           String sourceId, NotificationTemplateType channel) {
         NotificationEventConfig config = configRepository
                 .findFirstByEventNameAndSourceTypeAndSourceIdAndTemplateTypeAndIsActiveTrueOrderByUpdatedAtDesc(
-                        event, NotificationSourceType.INSTITUTE, instituteId, channel)
+                        event, sourceType, sourceId, channel)
                 .orElse(null);
         if (config == null || !StringUtils.hasText(config.getTemplateId())) {
             return CredentialTemplateConfigDTO.builder().build();
@@ -60,14 +66,20 @@ public class NotificationTemplateBindingService {
         if (!StringUtils.hasText(instituteId) || !StringUtils.hasText(templateId)) {
             throw new VacademyException("instituteId and templateId are required");
         }
+        set(event, NotificationSourceType.INSTITUTE, instituteId, channel, templateId);
+    }
+
+    /** Points this (event, source, channel) at a template, reactivating the row if it was cleared. */
+    public void set(NotificationEventType event, NotificationSourceType sourceType, String sourceId,
+                    NotificationTemplateType channel, String templateId) {
         Template template = templateRepository.findById(templateId)
                 .orElseThrow(() -> new VacademyException("Template not found: " + templateId));
 
         NotificationEventConfig config = configRepository
                 .findFirstByEventNameAndSourceTypeAndSourceIdAndTemplateTypeOrderByUpdatedAtDesc(
-                        event, NotificationSourceType.INSTITUTE, instituteId, channel)
+                        event, sourceType, sourceId, channel)
                 .orElseGet(() -> new NotificationEventConfig(
-                        event, NotificationSourceType.INSTITUTE, instituteId, channel, null));
+                        event, sourceType, sourceId, channel, null));
         config.setTemplateId(templateId);
         config.setTemplateName(channel == NotificationTemplateType.WHATSAPP ? template.getName() : null);
         config.setIsActive(true);
@@ -76,9 +88,15 @@ public class NotificationTemplateBindingService {
 
     /** Clears the binding so the channel stops sending for this event. */
     public void clear(NotificationEventType event, String instituteId, NotificationTemplateType channel) {
+        clear(event, NotificationSourceType.INSTITUTE, instituteId, channel);
+    }
+
+    /** Clears the binding for this (event, source, channel). */
+    public void clear(NotificationEventType event, NotificationSourceType sourceType, String sourceId,
+                      NotificationTemplateType channel) {
         configRepository
                 .findFirstByEventNameAndSourceTypeAndSourceIdAndTemplateTypeOrderByUpdatedAtDesc(
-                        event, NotificationSourceType.INSTITUTE, instituteId, channel)
+                        event, sourceType, sourceId, channel)
                 .ifPresent(config -> {
                     config.setIsActive(false);
                     configRepository.save(config);

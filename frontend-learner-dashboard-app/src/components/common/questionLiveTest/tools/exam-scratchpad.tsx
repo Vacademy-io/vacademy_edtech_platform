@@ -1,4 +1,5 @@
 import { PencilSimple } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { ToolPanel } from "./tool-panel";
 
 interface ExamScratchpadProps {
@@ -17,9 +18,10 @@ export function ExamScratchpad({
   onChange,
   onClose,
 }: ExamScratchpadProps) {
+  const { t } = useTranslation("questionTest");
   return (
     <ToolPanel
-      title="Scratchpad"
+      title={t("common.tools.scratchpad")}
       icon={<PencilSimple size={15} weight="duotone" />}
       onClose={onClose}
       className="w-full max-w-reg-320"
@@ -27,8 +29,8 @@ export function ExamScratchpad({
       <textarea
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        placeholder="Rough work — not submitted with your paper."
-        aria-label="Scratchpad for rough work"
+        placeholder={t("scratchpad.placeholder")}
+        aria-label={t("scratchpad.ariaLabel")}
         className="h-reg-150 w-full resize-none rounded-lg border border-neutral-200 bg-neutral-50 p-3 font-mono text-caption text-neutral-800 outline-none focus:border-primary-300"
       />
     </ToolPanel>

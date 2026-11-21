@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { CaretDown, CaretUp, XCircle } from "@phosphor-icons/react";
 import {
     DropdownMenu,
@@ -17,11 +18,13 @@ export const MyDropdown = ({
     dropdownList,
     children,
     onSelect,
-    placeholder = "Select an option",
+    placeholder,
     error,
     validation = dropdownSchema,
     onValidation,
 }: myDropDownProps) => {
+    const { t } = useTranslation("uiAtomsA");
+    const resolvedPlaceholder = placeholder ?? t("dropdown.placeholder");
     const [isOpen, setIsOpen] = useState<boolean>(false);
     const [validationError, setValidationError] = useState<string>("");
 
@@ -84,7 +87,7 @@ export const MyDropdown = ({
                         }`}
                     >
                         <div className={`truncate ${!currentValue ? "text-neutral-400" : ""}`}>
-                            {currentValue || placeholder}
+                            {currentValue || resolvedPlaceholder}
                         </div>
                         <div className="ms-2 flex-shrink-0">
                             <CaretDown className={`${isOpen ? "hidden" : "visible"} size-5`} />

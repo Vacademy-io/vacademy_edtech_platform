@@ -1,0 +1,43 @@
+{
+    "emptyState": {
+        "title": "لا يوجد {{term}} مرتبط",
+        "hint": "هذا المتعلم غير مرتبط بأي {{term}}."
+    },
+    "picker": {
+        "label": "{{term}} لـ"
+    },
+    "error": {
+        "title": "تعذّر تحميل تفاصيل {{term}}",
+        "hint": "حدث خطأ ما أثناء جلب هذا {{term}}. يرجى المحاولة مرة أخرى.",
+        "toast": "فشل جلب تفاصيل {{term}}"
+    },
+    "role": {
+        "admin": "مسؤول",
+        "member": "عضو"
+    },
+    "actions": {
+        "openManagementPortal": "فتح بوابة الإدارة"
+    },
+    "credentials": {
+        "heading": "بيانات اعتماد المسؤول",
+        "usernameLabel": "اسم المستخدم",
+        "passwordLabel": "كلمة المرور",
+        "usernameCopied": "تم نسخ اسم المستخدم!",
+        "passwordCopied": "تم نسخ كلمة المرور!"
+    },
+    "members": {
+        "heading_zero": "لا يوجد أعضاء تحت الإدارة ({{count}})",
+        "heading_one": "عضو واحد تحت الإدارة ({{count}})",
+        "heading_two": "عضوان تحت الإدارة ({{count}})",
+        "heading_few": "{{count}} أعضاء تحت الإدارة",
+        "heading_many": "{{count}} عضوًا تحت الإدارة",
+        "heading_other": "{{count}} عضو تحت الإدارة",
+        "emptyTitle": "لم يتم العثور على أعضاء",
+        "emptyHint": "لا يوجد متعلمون تتم إدارتهم حاليًا ضمن هذا {{term}}."
+    },
+    "admins": {
+        "heading": "مسؤولو {{term}}",
+        "emptyTitle": "لم يتم العثور على مسؤولين",
+        "emptyHint": "لا يوجد مسؤولون مرتبطون بهذا {{term}}."
+    }
+}

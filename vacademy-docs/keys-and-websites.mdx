@@ -1,0 +1,126 @@
+---
+title: "Keys and websites"
+description: "Publishable keys, verifying your domain, and which origins may call the API."
+---
+
+## Publishable keys
+
+Every request carries a **publishable key** in the `X-API-Key` header:
+
+```bash
+curl https://api.vacademy.ai/catalog/v1/site -H "X-API-Key: vak_pub_…"
+```
+
+`Authorization: Bearer vak_pub_…` works too.
+
+A key is `vak_pub_` followed by 48 hexadecimal characters. It can only:
+
+| Scope | Allows |
+|---|---|
+| `catalog:read` | Every `GET` endpoint: the institute's **published** catalogue |
+| `leads:write` | `POST /leads` |
+
+Keys created in the dashboard have both scopes. A key cannot read learners, payments or anything unpublished, so it is safe if it ends up in page source. It is still best kept on your server (see [Where to call from](#where-to-call-from)).
+
+### Create, list and revoke keys
+
+An admin of the institute manages keys in the Vacademy dashboard: **Settings → Integrations → Catalogue API & websites → Publishable API keys**.
+
+- **Create key** asks for a name (for example `School website`) and shows the key **once**. Vacademy stores only a hash.
+- The table shows each key's prefix, creation date and when it was last used.
+- **Revoke** stops a key. It can take up to 30 seconds to stop everywhere.
+
+Use one key per website, so you can rotate one without touching the others: create the new key, deploy it, then revoke the old one.
+
+## Where to call from
+
+| Caller | `Origin` header | Allowed |
+|---|---|---|
+| Your server: Next.js server components, route handlers, server actions, build steps, `curl` | none | Always |
+| Browser JavaScript on `localhost`, `127.0.0.1` or `[::1]`, any port, http or https | sent | Always (local development) |
+| Browser JavaScript on a **verified website** or any of its subdomains | sent | Yes |
+| Browser JavaScript on any other site | sent | No: `403 origin_not_allowed` |
+
+The check uses the `Origin` header only; `Referer` is ignored. Server-side `fetch` in Node.js sends no `Origin`, so server-rendered pages never need a verified website.
+
+<Tip>
+Rendering on the server is the recommended setup anyway: pages arrive fully rendered for search engines, and nothing depends on the visitor's browser.
+</Tip>
+
+### Matching rules
+
+A verified host covers itself and every subdomain below it, matched on whole labels:
+
+| Verified website | Origin | Allowed |
+|---|---|---|
+| `example.org` | `https://example.org` | Yes |
+| `example.org` | `https://www.example.org`, `https://courses.example.org:8443` | Yes |
+| `www.example.org` | `https://example.org` | No: verify `example.org` to cover both |
+| `example.org` | `https://myexample.org` | No |
+| `example.org` | `https://example.org.evil.io` | No |
+
+Scheme and port are not part of the match.
+
+### Preview deployments
+
+Preview URLs such as `my-site-git-feature-team.vercel.app` cannot be verified: proving ownership needs a DNS record on the host, and you do not control `vercel.app`. On previews, call the API **from the server only** (server components, route handlers, server actions). That is already the case if you follow the [quickstart](/quickstart).
+
+A preview on your own domain (for example `preview.example.org`) is covered once `example.org` is verified.
+
+## Verify your website
+
+Needed only for browser-side calls from your production domain.
+
+<Steps>
+  <Step title="Add the website">
+    In **Settings → Integrations → Catalogue API & websites → Your websites**, click **Add website** and enter the host, for example `example.org`. A full link such as `https://www.example.org/courses` is accepted and reduced to its host.
+
+    To cover `www` and every other subdomain with one record, add the bare domain.
+  </Step>
+  <Step title="Create the DNS record">
+    Vacademy shows a TXT record. At your DNS provider, create:
+
+    | Type | Name | Value |
+    |---|---|---|
+    | `TXT` | `_vacademy-verification.example.org` | `vacademy-site-verification=<token>` |
+
+    `<token>` is 32 hexadecimal characters, shown in the dashboard. Many DNS providers add your domain to the name for you; there, enter only `_vacademy-verification`.
+  </Step>
+  <Step title="Verify">
+    Click **Verify now**. Vacademy looks the record up over DNS-over-HTTPS (Cloudflare, then Google). The website turns **Verified**, or stays **Pending** with the reason, for example:
+
+    > No TXT record found at _vacademy-verification.example.org yet. DNS changes can take up to an hour.
+
+    Check the record yourself with:
+
+    ```bash
+    dig +short TXT _vacademy-verification.example.org
+    ```
+  </Step>
+</Steps>
+
+Allow up to a minute after verifying before browser calls from the new website succeed everywhere.
+
+### Rules
+
+- Up to 20 websites per institute.
+- IP addresses, single-label names (`intranet`) and `localhost` cannot be added. `localhost` is always allowed anyway.
+- **Remove** stops browser calls from that website within a minute. You can add it again; it needs verifying again.
+- A website can be blocked by Vacademy (status **Revoked**). It then stops working and cannot be re-added; contact [support@vacademy.io](mailto:support@vacademy.io).
+
+## Course page address
+
+Every course's `url` points to its page on the institute's hosted catalogue site. Vacademy works the address out from the institute's course site domain; the same dashboard card shows it under **Course page address**, where an admin can override it (must be `https://`, no query or fragment).
+
+`GET /site` returns it as `course_base_url`. When it cannot be worked out, `course_base_url` and every `url` are `null`.
+
+## Errors
+
+| Status | Code | Meaning |
+|---|---|---|
+| 401 | `missing_api_key` | No key in `X-API-Key` or `Authorization: Bearer`. |
+| 401 | `invalid_api_key` | Not a `vak_pub_` key, malformed, unknown, revoked or expired. |
+| 403 | `product_not_enabled` | A Vacademy key for another API. |
+| 403 | `insufficient_scope` | The key lacks the scope (`details.required_scope`). |
+| 403 | `origin_not_allowed` | Browser call from a host that is not verified (`details.origin`). |
+| 503 | `auth_unavailable` | Keys could not be checked for a moment. Retry after `Retry-After` seconds. |

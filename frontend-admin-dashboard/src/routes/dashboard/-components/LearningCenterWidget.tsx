@@ -3,6 +3,7 @@ import { MyButton } from '@/components/design-system/button';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, VideoCamera, Folder } from '@phosphor-icons/react';
 import { useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { getTerminology, getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
 
@@ -18,6 +19,7 @@ export default function LearningCenterWidget({
     subjectCount = 0,
 }: LearningCenterWidgetProps) {
     const navigate = useNavigate();
+    const { t } = useTranslation('dashboardLearningCenterWidget');
 
     const handleStudyLibrary = () => {
         navigate({ to: '/study-library' });
@@ -35,20 +37,22 @@ export default function LearningCenterWidget({
     const learningFeatures = [
         {
             icon: BookOpen,
-            title: 'Study Library',
-            description: 'Access course materials and resources',
+            title: t('features.studyLibrary.title'),
+            description: t('features.studyLibrary.description'),
             action: handleStudyLibrary,
         },
         {
             icon: VideoCamera,
             title: getTerminology(ContentTerms.LiveSession, SystemTerms.LiveSession),
-            description: 'Manage live teaching sessions',
+            description: t('features.liveSessions.description'),
             action: handleLiveSessions,
         },
         {
             icon: Folder,
-            title: `${getTerminology(ContentTerms.Batch, SystemTerms.Batch)} Management`,
-            description: 'Organize students into batches',
+            title: t('features.batchManagement.titleTemplate', {
+                term: getTerminology(ContentTerms.Batch, SystemTerms.Batch),
+            }),
+            description: t('features.batchManagement.description'),
             action: handleManageBatches,
         },
     ];
@@ -60,19 +64,20 @@ export default function LearningCenterWidget({
                     <div className="flex items-center gap-2">
                         <BookOpen size={18} className="text-primary-500" weight="duotone" />
                         <div>
-                            <CardTitle className="text-sm font-semibold">Learning Center</CardTitle>
+                            <CardTitle className="text-sm font-semibold">
+                                {t('header.title')}
+                            </CardTitle>
                             <CardDescription className="mt-1 text-xs text-neutral-600">
-                                Manage{' '}
-                                {getTerminology(
-                                    ContentTerms.Course,
-                                    SystemTerms.Course
-                                ).toLocaleLowerCase()}
-                                s,{' '}
-                                {getTerminology(
-                                    ContentTerms.Session,
-                                    SystemTerms.Session
-                                ).toLocaleLowerCase()}
-                                s, and study materials
+                                {t('header.description', {
+                                    courseTerm: getTerminology(
+                                        ContentTerms.Course,
+                                        SystemTerms.Course
+                                    ).toLocaleLowerCase(),
+                                    sessionTerm: getTerminology(
+                                        ContentTerms.Session,
+                                        SystemTerms.Session
+                                    ).toLocaleLowerCase(),
+                                })}
                             </CardDescription>
                         </div>
                     </div>

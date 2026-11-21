@@ -6,6 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import axios, { AxiosError } from "axios";
+import { useTranslation } from "react-i18next";
 
 interface ErrorResponse {
     message?: string;
@@ -59,6 +60,7 @@ export function PhoneLoginForm({
     allowUsernamePasswordAuth?: boolean;
     allowEmailOtpAuth?: boolean;
 }) {
+    const { t } = useTranslation("loginPhoneLoginForm");
     const [isOtpSent, setIsOtpSent] = useState(false);
     const { defaultCountry, preferredCountries } = useMemo(
         () => getPreferredPhoneCountries(),
@@ -126,7 +128,7 @@ export function PhoneLoginForm({
             setIsLoading(false);
             setIsOtpSent(true);
             startTimer();
-            toast.success("OTP sent to WhatsApp successfully");
+            toast.success(t("toast.otpSent"));
         },
         onError: (error: AxiosError<ErrorResponse>) => {
             setIsLoading(false);
@@ -135,7 +137,7 @@ export function PhoneLoginForm({
                 errorData?.ex === "User not found!" ||
                 errorData?.responseCode === "User not found!"
             ) {
-                toast.error("Account not found. Please sign up to continue.", {
+                toast.error(t("toast.accountNotFound"), {
                     duration: 5000,
                 });
                 setTimeout(() => {
@@ -145,10 +147,10 @@ export function PhoneLoginForm({
                 }, 2000);
             } else if (errorData?.ex || errorData?.responseCode) {
                 toast.error(
-                    errorData.ex || errorData.responseCode || "Failed to send OTP via WhatsApp",
+                    errorData.ex || errorData.responseCode || t("toast.sendOtpFailedFallback"),
                 );
             } else {
-                toast.error("Failed to send OTP. Please try again.");
+                toast.error(t("toast.sendOtpFailedGeneric"));
             }
         },
     });
@@ -159,7 +161,7 @@ export function PhoneLoginForm({
         onSuccess: async (response) => {
             try {
                 if (!response.data || !response.data.accessToken) {
-                    toast.error("Logged in successfully, but missing session credentials.");
+                    toast.error(t("toast.loginMissingCredentials"));
                     return;
                 }
 
@@ -181,19 +183,19 @@ export function PhoneLoginForm({
                     navigateFromLoginFlow(result);
                 }
             } catch {
-                toast.error("Error processing login data");
+                toast.error(t("toast.loginProcessingError"));
             }
         },
         onError: (error: AxiosError<ErrorResponse>) => {
             const errorData = error.response?.data;
             if (errorData?.ex || errorData?.responseCode) {
-                toast.error(errorData.ex || errorData.responseCode || "Invalid OTP", {
+                toast.error(errorData.ex || errorData.responseCode || t("toast.invalidOtpFallback"), {
                     duration: 5000,
-                    description: "Please check your OTP and try again.",
+                    description: t("toast.invalidOtpDescription"),
                 });
             } else {
-                toast.error("Invalid OTP", {
-                    description: "Please try again",
+                toast.error(t("toast.invalidOtpFallback"), {
+                    description: t("toast.invalidOtpGenericDescription"),
                     duration: 5000,
                 });
             }
@@ -222,7 +224,7 @@ export function PhoneLoginForm({
             });
         } else {
             setIsLoading(false);
-            toast.error("Please fill all OTP fields");
+            toast.error(t("toast.fillAllOtpFields"));
         }
     };
 
@@ -315,7 +317,7 @@ export function PhoneLoginForm({
                                             <FormItem>
                                                 <FormControl>
                                                     <div className="relative">
-                                                        <label className="text-[13px] font-bold text-gray-700 block mb-1">WhatsApp Number</label>
+                                                        <label className="text-[13px] font-bold text-gray-700 block mb-1">{t("whatsappLabel")}</label>
                                                         <div className="relative flex-1">
                                                             <PhoneInput
                                                                 country={defaultCountry}
@@ -361,12 +363,12 @@ export function PhoneLoginForm({
                                                 >
                                                     <RefreshCw className="w-4 h-4" />
                                                 </motion.div>
-                                                <span className="text-sm">Sending OTP...</span>
+                                                <span className="text-sm">{t("sendingOtp")}</span>
                                             </div>
                                         ) : (
                                             <div className="flex items-center justify-center space-x-2">
                                                 <Phone className="w-4 h-4" />
-                                                <span className="text-sm">Send OTP (WhatsApp)</span>
+                                                <span className="text-sm">{t("sendOtpWhatsapp")}</span>
                                             </div>
                                         )}
                                     </motion.button>
@@ -402,10 +404,10 @@ export function PhoneLoginForm({
                             </motion.div>
                             <div className="space-y-1">
                                 <h3 className="text-lg font-semibold text-gray-900">
-                                    Check your WhatsApp
+                                    {t("checkWhatsapp")}
                                 </h3>
                                 <p className="text-sm text-gray-600">
-                                    We've sent a 6-digit code to
+                                    {t("codeSentTo")}
                                 </p>
                                 <motion.div
                                     initial={{ scale: 0.9, opacity: 0 }}
@@ -506,12 +508,12 @@ export function PhoneLoginForm({
                                                 >
                                                     <RefreshCw className="w-4 h-4" />
                                                 </motion.div>
-                                                <span className="text-sm">Verifying...</span>
+                                                <span className="text-sm">{t("verifying")}</span>
                                             </div>
                                         ) : (
                                             <div className="flex items-center justify-center space-x-2">
                                                 <Shield className="w-4 h-4" />
-                                                <span className="text-sm">Verify & Sign In</span>
+                                                <span className="text-sm">{t("verifyAndSignIn")}</span>
                                             </div>
                                         )}
                                     </motion.button>
@@ -525,7 +527,7 @@ export function PhoneLoginForm({
                                             className="flex items-center space-x-1 text-gray-500 hover:text-gray-700 transition-colors duration-200 font-medium"
                                         >
                                             <ArrowLeft className="w-3 h-3" />
-                                            <span className="text-xs">Back to phone entry</span>
+                                            <span className="text-xs">{t("backToPhoneEntry")}</span>
                                         </motion.button>
 
                                         <div className="w-px h-3 bg-gray-300"></div>
@@ -550,12 +552,12 @@ export function PhoneLoginForm({
                                             {timer > 0 ? (
                                                 <div className="flex items-center space-x-1">
                                                     <RefreshCw className="w-3 h-3" />
-                                                    <span className="text-xs">Resend in {timer}s</span>
+                                                    <span className="text-xs">{t("resendIn", { count: timer })}</span>
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center space-x-1">
                                                     <RefreshCw className="w-3 h-3" />
-                                                    <span className="text-xs">Resend code</span>
+                                                    <span className="text-xs">{t("resendCode")}</span>
                                                 </div>
                                             )}
                                         </motion.button>
@@ -581,7 +583,7 @@ export function PhoneLoginForm({
                             className="text-gray-600 hover:text-gray-800 transition-colors duration-200 relative group"
                             onClick={onSwitchToEmail}
                         >
-                            Use Email OTP
+                            {t("useEmailOtp")}
                             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gray-800 transition-all duration-200 group-hover:w-full"></span>
                         </motion.button>
                     )}
@@ -593,14 +595,14 @@ export function PhoneLoginForm({
                             className="text-gray-600 hover:text-gray-800 transition-colors duration-200 relative group"
                             onClick={onSwitchToUsername}
                         >
-                            Use Username & Password
+                            {t("useUsernamePassword")}
                             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gray-800 transition-all duration-200 group-hover:w-full"></span>
                         </motion.button>
                     )}
                 </div>
 
                 <div className="text-sm text-gray-600 pt-2">
-                    Don't have an account?{" "}
+                    {t("noAccount")}{" "}
                     <motion.button
                         type="button"
                         whileHover={{ scale: 1.02 }}
@@ -609,7 +611,7 @@ export function PhoneLoginForm({
                         }
                         className="text-gray-800 hover:text-gray-900 font-medium underline cursor-pointer"
                     >
-                        Sign up here
+                        {t("signUpHere")}
                     </motion.button>
                 </div>
             </motion.div>

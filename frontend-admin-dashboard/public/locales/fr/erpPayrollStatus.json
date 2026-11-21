@@ -1,0 +1,16 @@
+{
+    "runStatus": {
+        "draft": "Brouillon",
+        "processing": "En cours de traitement",
+        "processed": "Traité",
+        "approved": "Approuvé",
+        "paid": "Payé",
+        "cancelled": "Annulé"
+    },
+    "runType": {
+        "regular": "Régulier",
+        "offCycle": "Hors cycle",
+        "fnf": "Solde de tout compte",
+        "bonus": "Prime"
+    }
+}

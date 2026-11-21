@@ -1,0 +1,34 @@
+{
+    "heading": "Review leave request",
+    "actions": {
+        "close": "Close",
+        "reject": "Reject",
+        "rejecting": "Rejecting…",
+        "approve": "Approve",
+        "approving": "Approving…"
+    },
+    "fields": {
+        "employee": "Employee",
+        "leaveType": "Leave type",
+        "dates": "Dates",
+        "totalDays": "Total days",
+        "halfDay": "half day",
+        "reasonGiven": "Reason given",
+        "rejectionReason": "Rejection reason",
+        "rejectionReasonPlaceholder": "Why this is being turned down",
+        "rejectionReasonDescription": "Required to reject. Ignored when you approve."
+    },
+    "approvalNotice": "Approving writes an ON_LEAVE attendance record for each of these days. The employee's balance and the month's payroll lock are re-checked as you approve — if the balance has since run out, or payroll has locked the month, the approval is refused and the reason appears here.",
+    "toast": {
+        "approved": "Leave approved",
+        "rejected": "Leave rejected"
+    },
+    "errors": {
+        "approveFailed": "Could not approve this leave.",
+        "rejectFailed": "Could not reject this leave."
+    },
+    "validation": {
+        "reasonRequired": "Give a reason — the employee is shown it with the rejection.",
+        "reasonTooLong": "Keep the reason under 500 characters"
+    }
+}

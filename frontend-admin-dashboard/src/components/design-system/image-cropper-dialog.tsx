@@ -1,5 +1,5 @@
 // src/components/design-system/image-cropper-dialog.tsx
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, type ReactNode } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { Cropper, CropperRef, RectangleStencil } from 'react-advanced-cropper';
@@ -16,7 +16,17 @@ export interface ImageCropperDialogProps {
     outputQuality?: number; // 0..1 for jpeg/webp
     confirmLabel?: string;
     cancelLabel?: string;
-    onCropped: (file: File) => void;
+    /** The crop, encoded with outputMimeType / outputQuality. */
+    onCropped?: (file: File) => void;
+    /** The crop as pixels, for a caller that encodes it itself (called instead of onCropped). */
+    onCroppedCanvas?: (canvas: HTMLCanvasElement) => void;
+    /** How `aspectRatio` is named on its preset when it is not one of the standard ones ("3:4"). */
+    aspectLabel?: string;
+    /** A line above the presets (size advice for the picked image). */
+    notice?: ReactNode;
+    /** Offers a button that keeps the whole image, uncropped. */
+    onUseOriginal?: () => void;
+    useOriginalLabel?: string;
 }
 
 export const ImageCropperDialog = ({
@@ -30,6 +40,11 @@ export const ImageCropperDialog = ({
     confirmLabel = 'Save',
     cancelLabel = 'Cancel',
     onCropped,
+    onCroppedCanvas,
+    aspectLabel,
+    notice,
+    onUseOriginal,
+    useOriginalLabel = 'Use as is',
 }: ImageCropperDialogProps) => {
     const cropperRef = useRef<CropperRef>(null);
     const [currentAspectRatio, setCurrentAspectRatio] = useState<number | undefined>(aspectRatio);
@@ -43,13 +58,18 @@ export const ImageCropperDialog = ({
     const handleConfirm = () => {
         const canvas = cropperRef.current?.getCanvas();
         if (!canvas) return;
+        if (onCroppedCanvas) {
+            onCroppedCanvas(canvas);
+            onOpenChange(false);
+            return;
+        }
         canvas.toBlob(
             (blob) => {
                 if (!blob) return;
                 const file = new File([blob], 'cropped-image.' + mimeToExt(outputMimeType), {
                     type: outputMimeType,
                 });
-                onCropped(file);
+                onCropped?.(file);
                 onOpenChange(false);
             },
             outputMimeType,
@@ -57,17 +77,24 @@ export const ImageCropperDialog = ({
         );
     };
 
-    const presets = [
+    const standard: Array<{ label: string; value: number | undefined }> = [
         { label: 'Free', value: undefined },
         { label: '1:1', value: 1 },
         { label: '16:9', value: 16 / 9 },
         { label: '4:3', value: 4 / 3 },
         { label: '2:1', value: 2 },
     ];
+    // The caller's shape gets a preset of its own when it is not a standard one.
+    const presets =
+        aspectRatio && !standard.some((p) => p.value && Math.abs(p.value - aspectRatio) < 0.001)
+            ? [standard[0]!, { label: aspectLabel || 'Suggested', value: aspectRatio }, ...standard.slice(1)]
+            : standard;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="z-[10000] flex h-[90vh] max-h-[90vh] w-[90vw] max-w-[90vw] flex-col p-0">
+            <DialogContent
+                className="z-[10000] flex h-[90vh] max-h-[90vh] w-[90vw] max-w-[90vw] flex-col p-0" // design-lint-ignore: pre-existing near-fullscreen cropper over other dialogs
+            >
                 <DialogHeader className="p-4">
                     <DialogTitle>{title}</DialogTitle>
                 </DialogHeader>
@@ -89,6 +116,7 @@ export const ImageCropperDialog = ({
                 </div>
 
                 <div className="flex flex-col gap-4 border-t px-4 py-3">
+                    {notice}
                     {/* Aspect Ratio Presets */}
                     <div className="flex flex-wrap items-center justify-center gap-2">
                         {presets.map((preset) => (
@@ -118,6 +146,20 @@ export const ImageCropperDialog = ({
                         >
                             {cancelLabel}
                         </MyButton>
+                        {onUseOriginal && (
+                            <MyButton
+                                type="button"
+                                buttonType="secondary"
+                                layoutVariant="default"
+                                scale="medium"
+                                onClick={() => {
+                                    onUseOriginal();
+                                    onOpenChange(false);
+                                }}
+                            >
+                                {useOriginalLabel}
+                            </MyButton>
+                        )}
                         <MyButton
                             type="button"
                             buttonType="primary"

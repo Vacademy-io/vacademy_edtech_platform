@@ -1,0 +1,35 @@
+{
+    "header": {
+        "title": "Expérience de test en direct",
+        "description": "Contrôle ce que les apprenants voient pendant une évaluation, sur le web comme sur mobile."
+    },
+    "calculator": {
+        "label": "Calculatrice",
+        "description": "Afficher une calculatrice à l'écran pendant le test.",
+        "typeLabel": "Type de calculatrice",
+        "typePlaceholder": "Sélectionner un type de calculatrice",
+        "basic": "Basique (quatre opérations)",
+        "scientific": "Scientifique (style JEE / NEET)",
+        "hint": "La calculatrice scientifique ajoute la trigonométrie et ses inverses, les logarithmes, les puissances et racines, la factorielle, π et e, ainsi qu'un bouton DEG/RAD."
+    },
+    "scratchpad": {
+        "label": "Brouillon",
+        "description": "Un bloc-notes pour le travail au brouillon. Son contenu n'est jamais soumis avec la copie."
+    },
+    "questionPalette": {
+        "label": "Palette de questions",
+        "description": "Permet aux apprenants de naviguer entre les questions et de voir le statut répondu / marqué.",
+        "viewLabel": "Vue par défaut",
+        "viewPlaceholder": "Sélectionner la vue par défaut",
+        "grid": "Grille des numéros de question",
+        "list": "Liste avec aperçu de la question"
+    },
+    "markingScheme": {
+        "label": "Afficher le barème sur chaque question",
+        "description": "Affiche les points attribués et déduits à côté de chaque question."
+    },
+    "mobileNav": {
+        "label": "Masquer la navigation de l'application sur mobile",
+        "description": "Pendant un test en direct sur téléphone, masquer le lanceur du chatbot et le reste de l'habillage de l'application afin que seule l'évaluation soit visible."
+    }
+}

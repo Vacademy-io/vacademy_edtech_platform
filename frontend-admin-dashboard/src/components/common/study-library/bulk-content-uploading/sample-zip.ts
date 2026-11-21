@@ -24,6 +24,8 @@ export interface HierarchyTermLabels {
     subject: string;
     module: string;
     chapter: string;
+    /** Institute's plural for chapter — naive +"s" breaks terms like "Class". */
+    chapterPlural: string;
 }
 
 export interface MultiTemplateOptions {
@@ -54,6 +56,7 @@ const readmeText = (terms: HierarchyTermLabels, multiCourse: boolean): string =>
         'BULK CONTENT UPLOAD — HOW TO USE THIS TEMPLATE',
         '',
         '1. Drop your files into the folders below (PDF, Word, PowerPoint, images, videos).',
+        '   A SCORM package goes in as its own .zip — leave it zipped, do not unzip it.',
         `2. A number prefix like "01 Introduction" controls the order and is removed from the name.`,
         `3. YouTube / external links: put a links.txt inside a ${terms.chapter.toLowerCase()} folder,`,
         '   one "Title | URL" per line (see links.example.txt — rename it to links.txt).',
@@ -66,7 +69,8 @@ const readmeText = (terms: HierarchyTermLabels, multiCourse: boolean): string =>
             : ['4. Zip these folders (not a parent folder around them) and upload.']),
         '',
         `Limits: zip up to ${formatBytes(MAX_ZIP_BYTES)}, ${formatBytes(MAX_SINGLE_FILE_BYTES)} per file, ${MAX_FILE_COUNT} files per zip.`,
-        `Folders must match your EXISTING structure — to add a new ${terms.chapter.toLowerCase()}, create it in the dashboard first, then re-download this template.`,
+        `Folders that don't exist yet are created for you — just add a new folder and re-zip.`,
+        `(Turn off "Create missing ${terms.chapterPlural.toLowerCase()}" in Options to upload only into folders that already exist.)`,
         'This README is ignored by the uploader — you can leave it in the zip.',
     ].join('\n');
 

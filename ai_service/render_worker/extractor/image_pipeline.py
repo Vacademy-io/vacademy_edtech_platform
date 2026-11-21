@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 
 from ._s3 import S3Helper
+from .llm_defaults import LLM_MAX_TOKENS, llm_model, reasoning_extra_body
 from .schemas import (
     DominantColor,
     ImageCaption,
@@ -226,7 +227,9 @@ def _matte_background(image_path: Path, output_path: Path) -> bool:
 
 
 def _generate_caption(image_path: Path, mode: str) -> Optional[ImageCaption]:
-    """Gemini 2.5 vision via OpenRouter. Returns None if API key not configured.
+    """Vision caption via OpenRouter. Model: $IMAGE_CAPTION_MODEL >
+    $RENDER_WORKER_LLM_MODEL > the platform default (GLM, low reasoning
+    effort). Returns None if API key not configured.
 
     Captioning is best-effort: a missing key, network error, or malformed
     response leaves caption as None — the rest of the pipeline still produces
@@ -251,8 +254,9 @@ def _generate_caption(image_path: Path, mode: str) -> Optional[ImageCaption]:
             api_key=api_key,
             base_url=os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
         )
+        model = llm_model("IMAGE_CAPTION_MODEL")
         resp = client.chat.completions.create(
-            model=os.environ.get("IMAGE_CAPTION_MODEL", "google/gemini-2.5-flash"),
+            model=model,
             messages=[{
                 "role": "user",
                 "content": [
@@ -261,7 +265,10 @@ def _generate_caption(image_path: Path, mode: str) -> Optional[ImageCaption]:
                 ],
             }],
             timeout=60,
+            # Room for GLM's (low-effort) reasoning on top of the caption JSON.
+            max_tokens=LLM_MAX_TOKENS,
             response_format={"type": "json_object"},
+            extra_body=reasoning_extra_body(model) or None,
         )
         raw = resp.choices[0].message.content or "{}"
         data = json.loads(raw)

@@ -27,6 +27,9 @@ public class CouponCodeDTO {
     private Date redeemStartDate;
     private Date redeemEndDate;
     private Long usageLimit;
+
+    /** Smallest basket this coupon may be used on. Null = no minimum. */
+    private Integer minItems;
     private Timestamp createdAt;
     private Timestamp updatedAt;
     private boolean canBeAdded;

@@ -18,16 +18,25 @@ const INVENTORY_BASE = (packageSessionId: string) =>
     `${BASE_URL}/admin-core-service/package-session/${packageSessionId}/inventory`;
 
 /**
+ * Fills in heldSlots from whichever spelling the server used (`heldSlots` or `held_slots`), and
+ * 0 when it sends neither (older servers hold no stock), so screens can rely on the number.
+ */
+const withHeldSlots = (availability: InventoryAvailability): InventoryAvailability => ({
+    ...availability,
+    heldSlots: availability.heldSlots ?? availability.held_slots ?? 0,
+});
+
+/**
  * Get availability for a specific package session
  */
 export const getInventoryAvailability = async (
     packageSessionId: string
 ): Promise<InventoryAvailability> => {
-    const response = await authenticatedAxiosInstance({
+    const response = await authenticatedAxiosInstance<InventoryAvailability>({
         method: 'GET',
         url: `${INVENTORY_BASE(packageSessionId)}/availability`,
     });
-    return response.data;
+    return withHeldSlots(response.data);
 };
 
 /**
@@ -114,7 +123,12 @@ export const fetchBatchInventoryAvailability = async (
         data: packageSessionIds,
     });
 
-    return response.data;
+    return Object.fromEntries(
+        Object.entries(response.data).map(([id, availability]) => [
+            id,
+            withHeldSlots(availability),
+        ])
+    );
 };
 
 /**

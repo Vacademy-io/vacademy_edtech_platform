@@ -1,0 +1,18 @@
+{
+    "label": {
+        "date": "التاريخ"
+    },
+    "options": {
+        "today": "اليوم",
+        "thisWeek": "هذا الأسبوع",
+        "thisMonth": "هذا الشهر",
+        "thisYear": "هذا العام",
+        "custom": "مخصص"
+    },
+    "customRange": {
+        "pickARange": "اختر نطاقًا",
+        "clear": "مسح",
+        "cancel": "إلغاء",
+        "apply": "تطبيق"
+    }
+}

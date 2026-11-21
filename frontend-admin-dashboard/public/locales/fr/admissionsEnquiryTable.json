@@ -1,0 +1,66 @@
+{
+    "toast": {
+        "bulkUpdateSuccess_one": "{{count}} demande mise à jour avec succès",
+        "bulkUpdateSuccess_many": "{{count}} de demandes mises à jour avec succès",
+        "bulkUpdateSuccess_other": "{{count}} demandes mises à jour avec succès",
+        "bulkUpdateError": "Échec de la mise à jour des statuts des demandes",
+        "selectAtLeastOneStatus": "Veuillez sélectionner au moins un statut à mettre à jour",
+        "downloadStarting": "Démarrage du téléchargement...",
+        "noDataToDownload": "Aucune donnée à télécharger",
+        "downloadSuccess": "Téléchargement terminé avec succès",
+        "downloadError": "Échec du téléchargement des données"
+    },
+    "loading": {
+        "enquiryResponses": "Chargement des réponses aux demandes..."
+    },
+    "error": {
+        "loadingEnquiryResponses": "Erreur lors du chargement des réponses aux demandes"
+    },
+    "empty": {
+        "noResponses": "Aucune réponse pour cette demande pour le moment !",
+        "addNewEnquiryResponse": "Ajouter une nouvelle réponse"
+    },
+    "header": {
+        "totalResponses": "Réponses totales :",
+        "rowsSelected_one": "{{count}} ligne sélectionnée",
+        "rowsSelected_many": "{{count}} de lignes sélectionnées",
+        "rowsSelected_other": "{{count}} lignes sélectionnées",
+        "bulkImport": "Importation groupée",
+        "downloadCsv": "Télécharger le CSV",
+        "downloading": "Téléchargement..."
+    },
+    "pagination": {
+        "previous": "Précédent",
+        "next": "Suivant",
+        "pageOf": "Page {{page}} sur {{total}}"
+    },
+    "bulkActionBar": {
+        "selectedLabel": "sélectionné(s)",
+        "enquiryStatusLabel": "Statut de la demande",
+        "conversionLabel": "Conversion",
+        "selectPlaceholder": "Sélectionner…",
+        "apply": "Appliquer",
+        "applying": "Application en cours…",
+        "clear": "Effacer"
+    },
+    "csv": {
+        "headers": {
+            "enquiryId": "ID de la demande",
+            "class": "Classe",
+            "studentName": "Nom de l'élève",
+            "gender": "Genre",
+            "dateOfBirth": "Date de naissance",
+            "parentName": "Nom du parent",
+            "parentEmail": "E-mail du parent",
+            "parentMobile": "Mobile du parent",
+            "trackingId": "ID de suivi",
+            "status": "Statut",
+            "source": "Source",
+            "counsellor": "Conseiller",
+            "submittedAt": "Soumis le"
+        },
+        "assigned": "Assigné",
+        "notAssigned": "Non assigné",
+        "filenameFallback": "demandes"
+    }
+}

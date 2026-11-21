@@ -1,0 +1,80 @@
+{
+    "colors": {
+        "title": "Report Colors",
+        "description": "Set primary and secondary colors used in the assessment report PDF and UI.",
+        "primaryColor": "Primary Color",
+        "secondaryColor": "Secondary Color"
+    },
+    "logoLetterhead": {
+        "title": "Logo & Letterhead",
+        "description": "Your institute logo and letterhead are shown below. You can change them or upload new ones.",
+        "logo": {
+            "label": "Show Logo in Header",
+            "hint": "Display institute logo at the top of the report",
+            "imageAlt": "Logo",
+            "none": "No logo",
+            "change": "Change",
+            "upload": "Upload Logo"
+        },
+        "letterhead": {
+            "label": "Show Letterhead Background",
+            "hint": "Use a full-page letterhead image as the report background",
+            "imageAlt": "Letterhead",
+            "none": "No letterhead",
+            "change": "Change",
+            "upload": "Upload Letterhead",
+            "crop": "Crop"
+        }
+    },
+    "watermark": {
+        "title": "Watermark",
+        "description": "Add a diagonal watermark text across each page of the report.",
+        "enable": "Enable Watermark",
+        "textLabel": "Watermark Text",
+        "textPlaceholder": "e.g. CONFIDENTIAL or your institute name",
+        "opacity": "Opacity ({{percent}}%)"
+    },
+    "headerFooter": {
+        "title": "Header & Footer",
+        "description": {
+            "prefix": "Custom HTML for the report header and footer. These appear on every page. Use",
+            "suffix": "as a placeholder — it will be replaced with the actual assessment name in the report."
+        },
+        "footerText": {
+            "label": "Footer Text",
+            "placeholder": "Footer text shown at the bottom of the report"
+        },
+        "headerHtml": {
+            "label": "Custom Header HTML",
+            "placeholder": "<div style=\"text-align:center;\">{{assessment_name}}</div>"
+        },
+        "footerHtml": {
+            "label": "Custom Footer HTML",
+            "placeholder": "<div style=\"text-align:center; font-size:10px; color:#999;\">Powered by MyInstitute</div>"
+        }
+    },
+    "preview": {
+        "title": "Preview",
+        "showButton": "Show Preview",
+        "hideButton": "Hide Preview",
+        "sample": {
+            "assessmentName": "Sample Maths Test",
+            "subtitle": "Student Performance Analysis",
+            "score": "Score",
+            "rank": "Rank",
+            "percentile": "Percentile",
+            "sectionPerformance": "Section Wise Performance",
+            "sectionTablePlaceholder": "Section data table preview"
+        }
+    },
+    "cropper": {
+        "titleLogo": "Crop Logo",
+        "titleLetterhead": "Crop Letterhead",
+        "confirmLabel": "Crop & Upload"
+    },
+    "toasts": {
+        "logoUploaded": "Logo uploaded",
+        "letterheadUploaded": "Letterhead uploaded",
+        "uploadFailed": "Upload failed"
+    }
+}

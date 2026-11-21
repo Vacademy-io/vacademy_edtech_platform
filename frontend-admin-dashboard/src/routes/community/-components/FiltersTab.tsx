@@ -8,8 +8,10 @@ import { Chip } from './Chips';
 import { useState, useRef } from 'react';
 import { useSelectedFilterStore } from '../-store/useSlectedFilterOption';
 import { useFilterStore } from '../-store/useFilterOptions';
+import { useTranslation } from 'react-i18next';
 
 export function FiltersTab() {
+    const { t } = useTranslation('communityFiltersTab');
     const { options } = useFilterStore();
     const [expanded, setExpanded] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -20,21 +22,24 @@ export function FiltersTab() {
             <div className="flex flex-row flex-wrap justify-around gap-4 rounded bg-sidebar-background p-4">
                 {selected.level && (
                     <FilterStreamDropdown
-                        placeholder="Select Stream"
+                        placeholder={t('selectStream')}
                         FilterList={options.streams[selected.level?.levelId] || []}
                     />
                 )}
                 {selected.stream && (
                     <FilterSubjectDropdown
                         FilterList={options.subjects[selected.stream.streamId] || []}
-                        placeholder="Select Subject"
+                        placeholder={t('selectSubject')}
                     />
                 )}
                 <FilterDifficultiesDropdown
                     FilterList={options.difficulties || []}
-                    placeholder="Select Difficulty"
+                    placeholder={t('selectDifficulty')}
                 />
-                <FilterTypesDropdown FilterList={options.types || []} placeholder="Select Type" />
+                <FilterTypesDropdown
+                    FilterList={options.types || []}
+                    placeholder={t('selectType')}
+                />
             </div>
             <div
                 ref={containerRef}
@@ -43,9 +48,9 @@ export function FiltersTab() {
                 }`}
             >
                 {options?.tags?.map((tag, index) => <Chip key={index} tag={tag} />)}
-                <div className="absolute -bottom-[6px] right-0">
+                <div className="absolute -bottom-[6px] end-0">
                     <button onClick={() => setExpanded(!expanded)} className="text-primary-500">
-                        {!expanded ? 'See More' : 'See Less'}
+                        {!expanded ? t('seeMore') : t('seeLess')}
                     </button>
                 </div>
             </div>

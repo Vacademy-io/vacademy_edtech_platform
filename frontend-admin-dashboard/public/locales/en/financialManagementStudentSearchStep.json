@@ -1,0 +1,25 @@
+{
+    "searchPlaceholder": "Search by student name or phone...",
+    "table": {
+        "coursePackage": "Course / Package",
+        "due": "Due",
+        "overdue": "Overdue",
+        "status": "Status"
+    },
+    "errors": {
+        "unableToLoad": "Unable to load students",
+        "tryAgain": "Please try again."
+    },
+    "empty": {
+        "noStudentsFound": "No students found.",
+        "trySearching": "Try searching by name or phone number."
+    },
+    "pagination": {
+        "showing": "Showing",
+        "of": "of"
+    },
+    "redesign": {
+        "findTitle": "Find the {{learner}}",
+        "findHint": "click a {{learner}} to see their installments"
+    }
+}

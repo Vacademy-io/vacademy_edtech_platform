@@ -1,0 +1,66 @@
+{
+    "heading": "छात्र विवरण",
+    "studentFirstName": {
+        "label": "छात्र का पहला नाम",
+        "placeholder": "पहला नाम दर्ज करें"
+    },
+    "middleName": {
+        "label": "मध्य नाम",
+        "placeholder": "मध्य नाम दर्ज करें"
+    },
+    "lastName": {
+        "label": "उपनाम",
+        "placeholder": "उपनाम दर्ज करें"
+    },
+    "gender": {
+        "label": "लिंग",
+        "select": "लिंग चुनें",
+        "male": "पुरुष",
+        "female": "महिला",
+        "other": "अन्य"
+    },
+    "applicationNumber": {
+        "label": "आवेदन संख्या",
+        "placeholder": "स्वतः जनरेट / संपादन योग्य"
+    },
+    "class": {
+        "label": "कक्षा",
+        "select": "कक्षा चुनें"
+    },
+    "section": {
+        "label": "अनुभाग",
+        "select": "अनुभाग चुनें"
+    },
+    "dateOfAdmission": {
+        "label": "प्रवेश की तिथि"
+    },
+    "dateOfBirth": {
+        "label": "जन्म तिथि"
+    },
+    "residentialPhone": {
+        "label": "आवासीय फोन नंबर"
+    },
+    "studentType": {
+        "label": "छात्र प्रकार",
+        "select": "प्रकार चुनें",
+        "regular": "नियमित",
+        "transfer": "स्थानांतरण"
+    },
+    "admissionType": {
+        "label": "प्रवेश प्रकार",
+        "select": "प्रकार चुनें",
+        "dayScholar": "डे स्कॉलर",
+        "hostel": "छात्रावास"
+    },
+    "transport": {
+        "label": "परिवहन आवश्यक",
+        "no": "नहीं",
+        "yes": "हाँ"
+    },
+    "aadhaarType": {
+        "label": "छात्र आधार प्रकार",
+        "select": "प्रकार चुनें",
+        "standard": "मानक",
+        "temporary": "अस्थायी"
+    }
+}

@@ -1,0 +1,134 @@
+{
+    "languages": {
+        "en": "الإنجليزية",
+        "en_US": "الإنجليزية (أمريكا)",
+        "hi": "الهندية",
+        "es": "الإسبانية",
+        "pt_BR": "البرتغالية (البرازيل)",
+        "ar": "العربية",
+        "fr": "الفرنسية",
+        "de": "الألمانية",
+        "id": "الإندونيسية",
+        "it": "الإيطالية",
+        "ja": "اليابانية",
+        "ko": "الكورية",
+        "zh_CN": "الصينية (المبسطة)"
+    },
+    "toast": {
+        "maxButtons": "الحد الأقصى 3 أزرار",
+        "multipleProblems_zero": "لا توجد عناصر بحاجة إلى إصلاح قبل الحفظ — راجع القائمة أعلاه.",
+        "multipleProblems_one": "هناك عنصر واحد بحاجة إلى إصلاح قبل الحفظ — راجع القائمة أعلاه.",
+        "multipleProblems_two": "هناك عنصران بحاجة إلى إصلاح قبل الحفظ — راجع القائمة أعلاه.",
+        "multipleProblems_few": "هناك {{count}} عناصر بحاجة إلى إصلاح قبل الحفظ — راجع القائمة أعلاه.",
+        "multipleProblems_many": "هناك {{count}} عنصرًا بحاجة إلى إصلاح قبل الحفظ — راجع القائمة أعلاه.",
+        "multipleProblems_other": "هناك {{count}} عنصر بحاجة إلى إصلاح قبل الحفظ — راجع القائمة أعلاه.",
+        "draftSaved": "تم حفظ المسودة",
+        "saveDraftFailed": "تعذر حفظ المسودة.",
+        "saveTemplateFailed": "تعذر حفظ القالب.",
+        "approvedByMeta": "تمت الموافقة على القالب من قبل Meta وهو جاهز للاستخدام.",
+        "submittedToMeta": "تم إرسال القالب إلى Meta للموافقة عليه.",
+        "metaRejected": "رفضت Meta القالب. تم حفظ مسودتك.",
+        "draftSavedRetry": "تم حفظ مسودتك — أصلح المشكلة أعلاه وأرسل مرة أخرى.",
+        "sampleUploaded": "تم رفع نموذج {{kind}} — تم ملء الرابط العام.",
+        "sampleUploadFailed": "تعذر رفع نموذج {{kind}}.",
+        "sampleWrongType": "هذا الملف ليس {{kind}} مدعومًا. استخدم {{formats}}.",
+        "sampleTooLarge": "هذا الملف كبير جدًا. استخدم {{formats}}."
+    },
+    "problemsBanner": {
+        "single": "يحتاج هذا القالب إلى إصلاح",
+        "multiple_zero": "لا توجد عناصر بحاجة إلى إصلاح",
+        "multiple_one": "عنصر واحد بحاجة إلى إصلاح",
+        "multiple_two": "عنصران بحاجة إلى إصلاح",
+        "multiple_few": "{{count}} عناصر بحاجة إلى إصلاح",
+        "multiple_many": "{{count}} عنصرًا بحاجة إلى إصلاح",
+        "multiple_other": "{{count}} عنصر بحاجة إلى إصلاح"
+    },
+    "header": {
+        "edit": "تعديل القالب",
+        "create": "إنشاء قالب",
+        "saveDraft": "حفظ المسودة",
+        "submitting": "جارٍ الإرسال...",
+        "submitForApproval": "إرسال للموافقة",
+        "back": "العودة إلى القوالب",
+        "subtitleCreate": "أنشئ قالبًا وأرسله إلى Meta. تستغرق الموافقة عادةً دقائق، و24 ساعة كحد أقصى.",
+        "subtitleEdit": "{{name}} · أصلح ما تم الإشارة إليه وأرسل مرة أخرى."
+    },
+    "fields": {
+        "templateName": "اسم القالب",
+        "templateNameHint": "أحرف صغيرة وشرطات سفلية فقط",
+        "category": "الفئة",
+        "categoryMarketing": "تسويق",
+        "categoryUtility": "خدمية",
+        "categoryAuthentication": "مصادقة",
+        "language": "اللغة",
+        "header": "الرأس",
+        "headerNone": "بلا",
+        "headerText": "نص",
+        "headerImage": "صورة",
+        "headerVideo": "فيديو",
+        "headerDocument": "مستند",
+        "headerTextPlaceholder": "نص الرأس (60 حرفًا كحد أقصى)",
+        "headerSampleValuePlaceholder": "قيمة نموذجية لمتغير الرأس (مثال: أكتوبر)",
+        "headerSampleUrlPlaceholder": "رابط {{kind}} نموذجي (لموافقة Meta)",
+        "bodyText": "نص الرسالة",
+        "addVariable": "إضافة متغير",
+        "charCount": "{{count}}/1024 حرفًا",
+        "variableConfiguration": "إعداد المتغيرات:",
+        "variableNamePlaceholder": "اسم المتغير (مثال: name، course)",
+        "sampleValuePlaceholder": "قيمة نموذجية (مثال: John)",
+        "apiNamedParamsHint": "تتيح لك أسماء المتغيرات استخدام معاملات مسمّاة في الواجهة البرمجية: {\"name\": \"John\"} بدلاً من {\"1\": \"John\"}",
+        "footer": "التذييل (اختياري)",
+        "footerPlaceholder": "شكرًا لتعاملكم معنا!",
+        "buttons": "الأزرار (3 كحد أقصى)",
+        "buttonTextPlaceholder": "نص الزر",
+        "buttonUrlSamplePlaceholder": "رابط كامل نموذجي (مثال: https://example.com/track/A123)",
+        "buttonPhonePlaceholder": "+919876543210",
+        "addQuickReply": "+ رد سريع",
+        "addUrlButton": "+ زر رابط",
+        "addPhone": "+ هاتف",
+        "headerSampleUpload": "رفع",
+        "headerSampleUploading": "جارٍ الرفع…",
+        "headerSampleUrlHint": "ارفع ملفًا أو الصق رابطًا عامًا — تقوم Meta بتنزيله للمراجعة. {{formats}}.",
+        "headerSampleFormats": {
+            "image": "JPG أو PNG، حتى 5 ميغابايت",
+            "video": "MP4، حتى 16 ميغابايت",
+            "document": "PDF، حتى 100 ميغابايت"
+        }
+    },
+    "headerKind": {
+        "image": "صورة",
+        "video": "فيديو",
+        "document": "مستند"
+    },
+    "preview": {
+        "title": "معاينة WhatsApp",
+        "headerTextFallback": "نص الرأس",
+        "imageFallback": "📷 صورة",
+        "videoFallback": "🎬 فيديو",
+        "documentFallback": "📄 مستند",
+        "bodyFallback": "سيظهر نص رسالتك هنا...",
+        "buttonFallback": "زر {{n}}",
+        "category": "الفئة:",
+        "language": "اللغة:",
+        "placeholders": "المتغيرات:",
+        "buttonsCount": "الأزرار:"
+    },
+    "sections": {
+        "basics": {
+            "title": "الأساسيات",
+            "description": "يحدد الاسم والفئة واللغة كيفية مراجعة Meta للقالب وتسعيره."
+        },
+        "header": {
+            "description": "اختياري. سطر عريض، أو صورة أو فيديو أو مستند يظهر فوق الرسالة."
+        },
+        "body": {
+            "description": "ما يقرأه المستلم. تُرقَّم المتغيرات {{first}} و{{second}} وهكذا بالترتيب."
+        },
+        "footer": {
+            "description": "سطر رمادي صغير اختياري أسفل الرسالة. بدون متغيرات."
+        },
+        "buttons": {
+            "description": "اختياري، حتى 3. تم استخدام {{used}}/3."
+        }
+    }
+}

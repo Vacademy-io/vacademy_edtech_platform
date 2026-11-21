@@ -31,10 +31,19 @@ public class LearnerService {
     @Autowired
     private LearnerLmsUserSyncService learnerLmsUserSyncService;
 
+    @Autowired
+    private LearnerProfileEditGuard learnerProfileEditGuard;
+
     public String editLearnerDetails(LearnerDetailsEditDTO learnerDetailsEditDTO, CustomUserDetails user) {
         if (Objects.isNull(learnerDetailsEditDTO)) {
             throw new VacademyException("Invalid request");
         }
+        // Only the learner themselves, or staff of an institute the learner belongs to.
+        UserDTO requested = new UserDTO();
+        requested.setEmail(learnerDetailsEditDTO.getEmail());
+        requested.setMobileNumber(learnerDetailsEditDTO.getContactNumber());
+        requested.setUsername(learnerDetailsEditDTO.getUserName());
+        learnerProfileEditGuard.requireCanEdit(user, learnerDetailsEditDTO.getUserId(), requested);
         Student student = instituteStudentRepository.findTopByUserId(learnerDetailsEditDTO.getUserId())
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
         // Captured before mutation: the LMS sync looks the user up by their
@@ -92,6 +101,12 @@ public class LearnerService {
      */
     private void syncProfileToLms(String userId, String previousEmail, String previousFullName,
             String newEmail, String newFullName) {
+        syncProfileToLms(userId, previousEmail, previousFullName, newEmail, newFullName, null);
+    }
+
+    /** As above, with an optional new password carried in the same LMS call. */
+    private void syncProfileToLms(String userId, String previousEmail, String previousFullName,
+            String newEmail, String newFullName, String newPassword) {
         String effectiveEmail = StringUtils.hasText(newEmail) ? newEmail : previousEmail;
         String effectiveFullName = StringUtils.hasText(newFullName) ? newFullName : previousFullName;
         boolean emailChanged = StringUtils.hasText(previousEmail)
@@ -100,7 +115,8 @@ public class LearnerService {
                 previousFullName != null ? previousFullName.trim() : null,
                 effectiveFullName != null ? effectiveFullName.trim() : null);
         if (emailChanged || nameChanged) {
-            learnerLmsUserSyncService.syncProfileUpdate(userId, previousEmail, effectiveEmail, effectiveFullName);
+            learnerLmsUserSyncService.syncProfileUpdate(userId, previousEmail, effectiveEmail, effectiveFullName,
+                    newPassword);
         }
     }
 
@@ -186,6 +202,11 @@ public class LearnerService {
         Student student = instituteStudentRepository.findTopByUserId(userDTO.getId())
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
+        // Captured before mutation, as in the other edit paths: the LMS sync below
+        // matches the WordPress user on their previous email.
+        String previousEmail = student.getEmail();
+        String previousFullName = student.getFullName();
+
         if (StringUtils.hasText(userDTO.getUsername())) {
             student.setUsername(userDTO.getUsername());
         }
@@ -220,6 +241,12 @@ public class LearnerService {
             student.setFaceFileId(userDTO.getProfilePicFileId());
         }
         instituteStudentRepository.save(student);
+
+        // auth_service reaches this from the learner profile update and from Portal Access
+        // when a username change also moves the email. Portal Access sends the password here
+        // too, so the rename and the password land on the LMS in one edit-user call.
+        syncProfileToLms(userDTO.getId(), previousEmail, previousFullName,
+                userDTO.getEmail(), userDTO.getFullName(), userDTO.getPassword());
         return "done";
     }
 
@@ -254,5 +281,27 @@ public class LearnerService {
         }
 
         instituteStudentRepository.save(student);
+    }
+
+    /**
+     * Saves a region (state) on the learner's profile only when the profile has none yet.
+     * <p>
+     * The auth service has no region column, so a region sent with a new user never comes
+     * back from it and has to be written here. A region already on the profile is never
+     * replaced. Picks the same student row that StudentRegistrationManager writes to.
+     *
+     * @return true when the region was saved
+     */
+    public boolean fillRegionIfBlank(String userId, String region) {
+        if (!StringUtils.hasText(userId) || !StringUtils.hasText(region)) {
+            return false;
+        }
+        Student student = instituteStudentRepository.findTopByUserIdOrderByCreatedAtDesc(userId).orElse(null);
+        if (student == null || StringUtils.hasText(student.getRegion())) {
+            return false;
+        }
+        student.setRegion(region.trim());
+        instituteStudentRepository.save(student);
+        return true;
     }
 }

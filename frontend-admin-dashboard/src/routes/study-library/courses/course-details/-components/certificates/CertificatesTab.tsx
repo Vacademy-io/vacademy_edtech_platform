@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Gear, Warning } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { getInstituteId } from '@/constants/helper';
@@ -25,6 +26,7 @@ export const CertificatesTab = ({
     packageSessionId,
     courseName,
 }: CertificatesTabProps) => {
+    const { t } = useTranslation('studyLibraryCertificatesTab');
     const [settingsOpen, setSettingsOpen] = useState(false);
     const instituteId = getInstituteId() ?? '';
 
@@ -52,7 +54,7 @@ export const CertificatesTab = ({
     if (!packageSessionId) {
         return (
             <div className="rounded-md bg-white p-6 text-body text-neutral-500 shadow-sm">
-                Select a batch to see certificate information for this course.
+                {t('selectBatchToSeeCertificateInfo')}
             </div>
         );
     }
@@ -61,9 +63,9 @@ export const CertificatesTab = ({
         <div className="flex flex-col gap-6 rounded-md bg-white p-6 shadow-sm">
             <div className="flex items-start justify-between gap-4">
                 <div>
-                    <h3 className="text-h3 font-semibold text-neutral-700">Certificates</h3>
+                    <h3 className="text-h3 font-semibold text-neutral-700">{t('certificates')}</h3>
                     <p className="text-caption text-neutral-500">
-                        Issue and manage completion certificates for this course.
+                        {t('issueAndManageCertificates')}
                     </p>
                 </div>
                 <MyButton
@@ -82,12 +84,12 @@ export const CertificatesTab = ({
                     <Warning className="mt-0.5 size-5 shrink-0 text-warning-500" />
                     <div>
                         <p className="text-body font-medium text-neutral-700">
-                            Certificates are turned off for this course
+                            {t('certificatesTurnedOff')}
                         </p>
                         <p className="text-caption text-neutral-500">
                             {settings.enabled_overridden_by_course
-                                ? 'This course overrides the institute default. Learners will not receive certificates until it is switched on.'
-                                : 'The institute default is off. You can still enable certificates for this course alone from the settings icon above.'}
+                                ? t('courseOverridesInstituteDefault')
+                                : t('instituteDefaultIsOff')}
                         </p>
                     </div>
                 </div>
@@ -95,16 +97,16 @@ export const CertificatesTab = ({
 
             {settings?.effective_enabled && (
                 <p className="text-caption text-neutral-500">
-                    Design:{' '}
+                    {t('design')}{' '}
                     <span className="font-medium text-neutral-700">
                         {templateInForce ??
                             (settings.has_course_template
-                                ? 'uploaded for this course'
-                                : instituteDefaultName ?? 'institute default')}
-                    </span>
+                                ? t('uploadedForThisCourse')
+                                : instituteDefaultName ?? t('instituteDefault'))}
+                    </span>{' '}
                     {settings.has_course_template
-                        ? ' — chosen for this course.'
-                        : ' — inherited from the institute.'}
+                        ? t('chosenForThisCourse')
+                        : t('inheritedFromInstitute')}
                 </p>
             )}
 

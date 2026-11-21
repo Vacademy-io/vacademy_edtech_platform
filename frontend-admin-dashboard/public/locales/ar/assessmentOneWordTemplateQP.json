@@ -1,0 +1,16 @@
+{
+    "emptyState": {
+        "noQuestions": "يرجى إضافة سؤال لعرض تفاصيل السؤال"
+    },
+    "label": {
+        "comprehensionText": "نص الفهم",
+        "question": "السؤال",
+        "answer": "الإجابة"
+    },
+    "placeholder": {
+        "correctAnswer": "أدخل الإجابة الصحيحة"
+    },
+    "explanation": {
+        "defaultLabel": "الشرح:"
+    }
+}

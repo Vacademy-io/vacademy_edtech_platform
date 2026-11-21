@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import type { ChildProfile, DuesFilterBody, StudentFeeDue, InvoiceReceipt } from "@/types/parent-portal";
 import { getStudentDues, getStudentReceipts, getReceiptDownloadUrl } from "@/services/parent-portal/parent-api";
 import { Card, CardContent } from "@/components/ui/card";
@@ -53,6 +54,7 @@ const formatReceiptDate = (dateStr: string) => {
 };
 
 export function ParentFeesAccordion({ child }: ParentFeesAccordionProps) {
+  const { t } = useTranslation("parent");
   const userId = child.id;
   const instituteId = child.institute_id;
 
@@ -98,13 +100,13 @@ export function ParentFeesAccordion({ child }: ParentFeesAccordionProps) {
 
   useEffect(() => {
     if (allDuesErrorObj) {
-      toast.error("Failed to load fee data. Please try again.");
+      toast.error(t("admissionPortal.fees.toast.loadFailed"));
     }
   }, [allDuesErrorObj]);
 
   useEffect(() => {
     if (filteredDuesErrorObj) {
-      toast.error("Failed to load fee data. Please try again.");
+      toast.error(t("admissionPortal.fees.toast.loadFailed"));
     }
   }, [filteredDuesErrorObj]);
 
@@ -161,7 +163,9 @@ export function ParentFeesAccordion({ child }: ParentFeesAccordionProps) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
         <div className="text-center py-12">
-          <p className="text-muted-foreground">Please select an institute</p>
+          <p className="text-muted-foreground">
+            {t("admissionPortal.fees.selectInstitute")}
+          </p>
         </div>
       </div>
     );
@@ -185,13 +189,13 @@ export function ParentFeesAccordion({ child }: ParentFeesAccordionProps) {
   if (allDuesError) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
-        <div className="text-center py-12">
+        <div className="text-center py-12 space-y-2">
           <Warning
             size={32}
-            className="mx-auto text-destructive/60 mb-2"
+            className="mx-auto text-destructive/60"
           />
           <p className="text-sm text-muted-foreground">
-            Failed to load fee data. Please try again.
+            {t("admissionPortal.fees.toast.loadFailed")}
           </p>
         </div>
       </div>
@@ -203,10 +207,10 @@ export function ParentFeesAccordion({ child }: ParentFeesAccordionProps) {
       {/* Header */}
       <div>
         <h2 className="text-lg sm:text-xl font-bold text-foreground">
-          Parent Payment
+          {t("admissionPortal.fees.heading")}
         </h2>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Fee details and payment history for {child.full_name}
+          {t("admissionPortal.fees.subheading", { name: child.full_name })}
         </p>
       </div>
 
@@ -214,12 +218,12 @@ export function ParentFeesAccordion({ child }: ParentFeesAccordionProps) {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="grid grid-cols-1 sm:grid-cols-3 gap-3"
+        className="grid grid-cols-1 sm:grid-cols-3 gap-stack"
       >
         <Card className="shadow-sm bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
-          <CardContent className="p-4 text-center">
-            <p className="text-caption font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1">
-              Total Fees
+          <CardContent className="p-card text-center space-y-1">
+            <p className="text-caption font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+              {t("admissionPortal.fees.totalFees")}
             </p>
             <p className="text-lg sm:text-xl font-bold text-blue-700 dark:text-blue-300">
               {formatINR(totalFees)}
@@ -228,9 +232,9 @@ export function ParentFeesAccordion({ child }: ParentFeesAccordionProps) {
         </Card>
 
         <Card className="shadow-sm bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800">
-          <CardContent className="p-4 text-center">
-            <p className="text-caption font-medium text-red-600 dark:text-red-400 uppercase tracking-wider mb-1">
-              Total Dues
+          <CardContent className="p-card text-center space-y-1">
+            <p className="text-caption font-medium text-red-600 dark:text-red-400 uppercase tracking-wider">
+              {t("admissionPortal.fees.totalDues")}
             </p>
             <p className="text-lg sm:text-xl font-bold text-red-700 dark:text-red-300">
               {formatINR(totalDues)}
@@ -239,9 +243,9 @@ export function ParentFeesAccordion({ child }: ParentFeesAccordionProps) {
         </Card>
 
         <Card className="shadow-sm bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800">
-          <CardContent className="p-4 text-center">
-            <p className="text-caption font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">
-              Total Paid
+          <CardContent className="p-card text-center space-y-1">
+            <p className="text-caption font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+              {t("admissionPortal.fees.totalPaid")}
             </p>
             <p className="text-lg sm:text-xl font-bold text-emerald-700 dark:text-emerald-300">
               {formatINR(totalPaid)}
@@ -258,29 +262,37 @@ export function ParentFeesAccordion({ child }: ParentFeesAccordionProps) {
       >
         <Card className="shadow-sm">
           <CardContent className="p-3">
-            <div className="flex flex-col sm:flex-row items-end gap-3">
-              <div className="w-full sm:w-40">
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                  Status
+            <div className="flex flex-col sm:flex-row items-end gap-stack">
+              <div className="w-full sm:w-40 space-y-1">
+                <label className="text-xs font-medium text-muted-foreground block">
+                  {t("admissionPortal.fees.filters.status")}
                 </label>
                 <Select
                   value={statusFilter}
                   onValueChange={setStatusFilter}
                 >
                   <SelectTrigger className="h-9">
-                    <SelectValue placeholder="All" />
+                    <SelectValue
+                      placeholder={t("admissionPortal.fees.filters.all")}
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ALL">All</SelectItem>
-                    <SelectItem value="PENDING">Pending</SelectItem>
-                    <SelectItem value="PARTIAL_PAID">Partial Paid</SelectItem>
+                    <SelectItem value="ALL">
+                      {t("admissionPortal.fees.filters.all")}
+                    </SelectItem>
+                    <SelectItem value="PENDING">
+                      {t("admissionPortal.fees.filters.pending")}
+                    </SelectItem>
+                    <SelectItem value="PARTIAL_PAID">
+                      {t("admissionPortal.fees.filters.partialPaid")}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="w-full sm:w-40">
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                  Start Date
+              <div className="w-full sm:w-40 space-y-1">
+                <label className="text-xs font-medium text-muted-foreground block">
+                  {t("admissionPortal.fees.filters.startDate")}
                 </label>
                 <Input
                   type="date"
@@ -290,9 +302,9 @@ export function ParentFeesAccordion({ child }: ParentFeesAccordionProps) {
                 />
               </div>
 
-              <div className="w-full sm:w-40">
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                  End Date
+              <div className="w-full sm:w-40 space-y-1">
+                <label className="text-xs font-medium text-muted-foreground block">
+                  {t("admissionPortal.fees.filters.endDate")}
                 </label>
                 <Input
                   type="date"
@@ -303,7 +315,7 @@ export function ParentFeesAccordion({ child }: ParentFeesAccordionProps) {
               </div>
 
               <Button onClick={handleApplyFilters} className="h-9 px-6">
-                Apply
+                {t("admissionPortal.fees.filters.apply")}
               </Button>
             </div>
           </CardContent>
@@ -344,13 +356,15 @@ export function ParentFeesAccordion({ child }: ParentFeesAccordionProps) {
                       {feeType}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {group.length} installment{group.length !== 1 ? "s" : ""}
+                      {t("admissionPortal.fees.installmentCount", {
+                        count: group.length,
+                      })}
                     </p>
                   </div>
                   <div className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm">
                     <div className="text-end">
                       <p className="uppercase text-caption text-muted-foreground tracking-wide">
-                        Total Amount
+                        {t("admissionPortal.fees.totalAmount")}
                       </p>
                       <p className="font-bold text-foreground">
                         {formatINR(totalExpected)}
@@ -358,7 +372,7 @@ export function ParentFeesAccordion({ child }: ParentFeesAccordionProps) {
                     </div>
                     <div className="text-end">
                       <p className="uppercase text-caption text-muted-foreground tracking-wide">
-                        Paid
+                        {t("admissionPortal.fees.table.paid")}
                       </p>
                       <p className="font-bold text-emerald-600 dark:text-emerald-400">
                         {formatINR(totalPaidType)}
@@ -370,18 +384,24 @@ export function ParentFeesAccordion({ child }: ParentFeesAccordionProps) {
                           variant="destructive"
                           className="text-caption px-3 py-1 rounded-full whitespace-nowrap"
                         >
-                          {overdues.length} Dues
+                          {t("admissionPortal.fees.duesCount", {
+                            count: overdues.length,
+                          })}
                         </Badge>
                       )}
                       <Badge
                         className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 text-caption px-3 py-1 rounded-full whitespace-nowrap"
                       >
-                        {pendingCount} Pending
+                        {t("admissionPortal.fees.pendingCount", {
+                          count: pendingCount,
+                        })}
                       </Badge>
                       <Badge
                         className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 text-caption px-3 py-1 rounded-full whitespace-nowrap"
                       >
-                        {paidCount} Paid
+                        {t("admissionPortal.fees.paidCount", {
+                          count: paidCount,
+                        })}
                       </Badge>
                     </div>
                   </div>
@@ -390,15 +410,19 @@ export function ParentFeesAccordion({ child }: ParentFeesAccordionProps) {
               <AccordionContent className="px-4 pb-4">
                 <Tabs defaultValue="installments">
                   <TabsList className="w-full sm:w-auto mb-3">
-                    <TabsTrigger value="installments">Installments</TabsTrigger>
-                    <TabsTrigger value="overdues">Dues</TabsTrigger>
+                    <TabsTrigger value="installments">
+                      {t("admissionPortal.fees.tabs.installments")}
+                    </TabsTrigger>
+                    <TabsTrigger value="overdues">
+                      {t("admissionPortal.fees.tabs.dues")}
+                    </TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="installments">
                     <DuesTable
                       items={group}
                       isLoading={hasActiveFilters ? loadingFilteredDues : false}
-                      emptyMessage="No installments found"
+                      emptyMessage={t("admissionPortal.fees.noInstallmentsFound")}
                     />
                   </TabsContent>
 
@@ -406,7 +430,7 @@ export function ParentFeesAccordion({ child }: ParentFeesAccordionProps) {
                     <DuesTable
                       items={overdues}
                       isLoading={hasActiveFilters ? loadingFilteredDues : false}
-                      emptyMessage="No due installments"
+                      emptyMessage={t("admissionPortal.fees.noDueInstallments")}
                     />
                   </TabsContent>
                 </Tabs>
@@ -417,14 +441,14 @@ export function ParentFeesAccordion({ child }: ParentFeesAccordionProps) {
       </Accordion>
 
       {/* Payment History - Overall */}
-      <div className="mt-6">
-        <h3 className="text-base font-semibold text-foreground mb-3">
-          Payment History
+      <div className="mt-6 space-y-stack">
+        <h3 className="text-base font-semibold text-foreground">
+          {t("admissionPortal.fees.tabs.history")}
         </h3>
         <ReceiptsTable
           items={receipts}
           isLoading={loadingReceipts}
-          emptyMessage="No payment history"
+          emptyMessage={t("admissionPortal.fees.noPaymentHistory")}
         />
       </div>
     </div>
@@ -442,6 +466,7 @@ function DuesTable({
   isLoading: boolean;
   emptyMessage: string;
 }) {
+  const { t } = useTranslation("parent");
   const PAGE_SIZE = 10;
   const [page, setPage] = useState(1);
 
@@ -459,7 +484,7 @@ function DuesTable({
   if (isLoading) {
     return (
       <Card className="shadow-sm">
-        <CardContent className="p-4 space-y-3">
+        <CardContent className="p-card space-y-3">
           {[...Array(3)].map((_, i) => (
             <Skeleton key={i} className="h-10 w-full" />
           ))}
@@ -471,10 +496,10 @@ function DuesTable({
   if (items.length === 0) {
     return (
       <Card className="shadow-sm">
-        <CardContent className="py-12 text-center">
+        <CardContent className="py-12 text-center space-y-2">
           <Receipt
             size={24}
-            className="mx-auto text-muted-foreground/40 mb-2"
+            className="mx-auto text-muted-foreground/40"
           />
           <p className="text-sm text-muted-foreground">{emptyMessage}</p>
         </CardContent>
@@ -488,13 +513,23 @@ function DuesTable({
         <TableHeader>
           <TableRow className="bg-muted/40">
             <TableHead className="w-10">#</TableHead>
-            <TableHead>Fees</TableHead>
-            <TableHead>Due Date</TableHead>
-            <TableHead className="text-end">Expected</TableHead>
-            <TableHead className="text-end">Discount</TableHead>
-            <TableHead className="text-end">Paid</TableHead>
-            <TableHead className="text-end font-semibold">Amt Due</TableHead>
-            <TableHead className="text-center">Status</TableHead>
+            <TableHead>{t("admissionPortal.fees.table.fees")}</TableHead>
+            <TableHead>{t("admissionPortal.fees.table.dueDate")}</TableHead>
+            <TableHead className="text-end">
+              {t("admissionPortal.fees.table.expected")}
+            </TableHead>
+            <TableHead className="text-end">
+              {t("admissionPortal.fees.table.discount")}
+            </TableHead>
+            <TableHead className="text-end">
+              {t("admissionPortal.fees.table.paid")}
+            </TableHead>
+            <TableHead className="text-end font-semibold">
+              {t("admissionPortal.fees.table.amtDue")}
+            </TableHead>
+            <TableHead className="text-center">
+              {t("admissionPortal.fees.table.status")}
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -546,8 +581,10 @@ function DuesTable({
 
       <CardContent className="py-2 px-3 border-t flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
         <p className="text-xs text-muted-foreground">
-          Showing <span className="font-medium text-foreground">{startIdx + 1}</span>
-          –<span className="font-medium text-foreground">{endIdx}</span> of{" "}
+          {t("admissionPortal.fees.table.showingPrefix")}
+          <span className="font-medium text-foreground">{startIdx + 1}</span>
+          –<span className="font-medium text-foreground">{endIdx}</span>{" "}
+          {t("admissionPortal.fees.table.showingOfPrefix")}{" "}
           <span className="font-medium text-foreground">{totalItems}</span>
         </p>
         <div className="flex items-center justify-end gap-2">
@@ -558,10 +595,12 @@ function DuesTable({
             disabled={safePage <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
-            Prev
+            {t("admissionPortal.fees.table.prev")}
           </Button>
           <span className="text-xs text-muted-foreground">
-            Page <span className="font-medium text-foreground">{safePage}</span> of{" "}
+            {t("admissionPortal.fees.table.pagePrefix")}{" "}
+            <span className="font-medium text-foreground">{safePage}</span>{" "}
+            {t("admissionPortal.fees.table.pageOfPrefix")}{" "}
             <span className="font-medium text-foreground">{totalPages}</span>
           </span>
           <Button
@@ -571,7 +610,7 @@ function DuesTable({
             disabled={safePage >= totalPages}
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
           >
-            Next
+            {t("admissionPortal.fees.table.next")}
           </Button>
         </div>
       </CardContent>
@@ -588,15 +627,20 @@ function StatusBadge({
   isOverdue: boolean;
   daysOverdue: number | null;
 }) {
+  const { t } = useTranslation("parent");
   if (isOverdue) {
     return (
       <div className="flex flex-col items-center gap-0.5">
         <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 text-caption hover:bg-red-100">
-          {status === "PARTIAL_PAID" ? "PARTIAL PAID" : status}
+          {status === "PARTIAL_PAID"
+            ? t("admissionPortal.fees.table.partialPaid")
+            : status}
         </Badge>
         {daysOverdue != null && (
           <span className="text-caption text-red-600 dark:text-red-400">
-            {daysOverdue} days overdue
+            {t("admissionPortal.fees.table.daysOverdue", {
+              count: daysOverdue,
+            })}
           </span>
         )}
       </div>
@@ -606,7 +650,7 @@ function StatusBadge({
   if (status === "PARTIAL_PAID") {
     return (
       <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 text-caption hover:bg-yellow-100">
-        PARTIAL PAID
+        {t("admissionPortal.fees.table.partialPaid")}
       </Badge>
     );
   }
@@ -616,7 +660,9 @@ function StatusBadge({
       <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 text-caption hover:bg-emerald-100">
         {status}
       </Badge>
-      <span className="text-caption text-muted-foreground">upcoming</span>
+      <span className="text-caption text-muted-foreground">
+        {t("admissionPortal.fees.table.upcoming")}
+      </span>
     </div>
   );
 }
@@ -637,6 +683,7 @@ function ReceiptsTable({
   isLoading: boolean;
   emptyMessage: string;
 }) {
+  const { t } = useTranslation("parent");
   const PAGE_SIZE = 10;
   const [page, setPage] = useState(1);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -660,8 +707,10 @@ function ReceiptsTable({
 
   const handleDownloadReceipt = async (invoice: InvoiceReceipt) => {
     if (!invoice.pdf_file_id) {
-      toast.error("Receipt PDF not available yet", {
-        description: `Receipt: ${invoice.invoice_number}`,
+      toast.error(t("admissionPortal.fees.toast.receiptNotAvailable"), {
+        description: t("admissionPortal.fees.toast.receiptRef", {
+          number: invoice.invoice_number,
+        }),
       });
       return;
     }
@@ -677,13 +726,15 @@ function ReceiptsTable({
       link.click();
       document.body.removeChild(link);
 
-      toast.success("Download started", {
-        description: `Receipt: ${invoice.invoice_number}`,
+      toast.success(t("admissionPortal.fees.toast.downloadStarted"), {
+        description: t("admissionPortal.fees.toast.receiptRef", {
+          number: invoice.invoice_number,
+        }),
       });
     } catch (error) {
       console.error("Failed to download receipt:", error);
-      toast.error("Failed to download receipt", {
-        description: "Please try again later.",
+      toast.error(t("admissionPortal.fees.toast.downloadFailed"), {
+        description: t("admissionPortal.fees.toast.tryAgainLater"),
       });
     } finally {
       setDownloadingId(null);
@@ -693,7 +744,7 @@ function ReceiptsTable({
   if (isLoading) {
     return (
       <Card className="shadow-sm">
-        <CardContent className="p-4 space-y-3">
+        <CardContent className="p-card space-y-3">
           {[...Array(3)].map((_, i) => (
             <Skeleton key={i} className="h-10 w-full" />
           ))}
@@ -705,10 +756,10 @@ function ReceiptsTable({
   if (items.length === 0) {
     return (
       <Card className="shadow-sm">
-        <CardContent className="py-12 text-center">
+        <CardContent className="py-12 text-center space-y-2">
           <Receipt
             size={24}
-            className="mx-auto text-muted-foreground/40 mb-2"
+            className="mx-auto text-muted-foreground/40"
           />
           <p className="text-sm text-muted-foreground">{emptyMessage}</p>
         </CardContent>
@@ -722,11 +773,17 @@ function ReceiptsTable({
         <TableHeader>
           <TableRow className="bg-muted/40">
             <TableHead className="w-8"></TableHead>
-            <TableHead>Date</TableHead>
-            <TableHead className="text-end">Amount</TableHead>
-            <TableHead className="text-center">Type</TableHead>
-            <TableHead>Receipt No.</TableHead>
-            <TableHead className="text-end">Action</TableHead>
+            <TableHead>{t("admissionPortal.fees.table.date")}</TableHead>
+            <TableHead className="text-end">
+              {t("admissionPortal.fees.table.amount")}
+            </TableHead>
+            <TableHead className="text-center">
+              {t("admissionPortal.fees.table.type")}
+            </TableHead>
+            <TableHead>{t("admissionPortal.fees.table.receiptNo")}</TableHead>
+            <TableHead className="text-end">
+              {t("admissionPortal.fees.table.action")}
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -759,7 +816,7 @@ function ReceiptsTable({
                         "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300"
                       }`}
                     >
-                      PAYMENT
+                      {t("admissionPortal.fees.table.paymentBadge")}
                     </Badge>
                   </TableCell>
                   <TableCell className="font-mono text-xs">
@@ -775,7 +832,11 @@ function ReceiptsTable({
                         e.stopPropagation();
                         handleDownloadReceipt(invoice);
                       }}
-                      title={invoice.pdf_file_id ? "Download receipt" : "PDF not available"}
+                      title={
+                        invoice.pdf_file_id
+                          ? t("admissionPortal.fees.table.downloadReceipt")
+                          : t("admissionPortal.fees.table.pdfNotAvailable")
+                      }
                     >
                       {downloadingId === invoice.invoice_id ? (
                         <SpinnerGap size={14} className="animate-spin" />
@@ -784,10 +845,10 @@ function ReceiptsTable({
                       )}
                       <span className="text-xs">
                         {!invoice.pdf_file_id
-                          ? "Generating..."
+                          ? t("admissionPortal.fees.table.generating")
                           : downloadingId === invoice.invoice_id
-                            ? "Downloading..."
-                            : "Download"}
+                            ? t("admissionPortal.fees.table.downloading")
+                            : t("admissionPortal.fees.table.download")}
                       </span>
                     </Button>
                   </TableCell>
@@ -799,7 +860,7 @@ function ReceiptsTable({
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                           <div>
                             <p className="text-caption uppercase text-muted-foreground tracking-wide">
-                              Amount Paid Now
+                              {t("admissionPortal.fees.table.amountPaidNow")}
                             </p>
                             <p className="font-semibold text-foreground">
                               {formatINR(invoice.amount_paid_now)}
@@ -807,7 +868,7 @@ function ReceiptsTable({
                           </div>
                           <div>
                             <p className="text-caption uppercase text-muted-foreground tracking-wide">
-                              Total Paid
+                              {t("admissionPortal.fees.table.totalPaid")}
                             </p>
                             <p className="font-semibold text-emerald-600 dark:text-emerald-400">
                               {formatINR(invoice.total_paid)}
@@ -815,7 +876,7 @@ function ReceiptsTable({
                           </div>
                           <div>
                             <p className="text-caption uppercase text-muted-foreground tracking-wide">
-                              Balance Due
+                              {t("admissionPortal.fees.table.balanceDue")}
                             </p>
                             <p className="font-semibold text-red-600 dark:text-red-400">
                               {formatINR(invoice.balance_due)}
@@ -823,7 +884,7 @@ function ReceiptsTable({
                           </div>
                           <div>
                             <p className="text-caption uppercase text-muted-foreground tracking-wide">
-                              Total Expected
+                              {t("admissionPortal.fees.table.totalExpected")}
                             </p>
                             <p className="font-semibold text-foreground">
                               {formatINR(invoice.total_expected)}
@@ -832,17 +893,23 @@ function ReceiptsTable({
                         </div>
 
                         {invoice.line_items.length > 0 && (
-                          <div>
-                            <p className="text-xs font-medium text-muted-foreground mb-2">
-                              Installments Covered:
+                          <div className="space-y-2">
+                            <p className="text-xs font-medium text-muted-foreground">
+                              {t("admissionPortal.fees.table.installmentsCovered")}
                             </p>
                             <div className="border rounded-md overflow-hidden">
                               <Table>
                                 <TableHeader>
                                   <TableRow className="bg-muted/50">
-                                    <TableHead className="text-xs">Description</TableHead>
-                                    <TableHead className="text-xs">Fee Type</TableHead>
-                                    <TableHead className="text-xs text-end">Amount</TableHead>
+                                    <TableHead className="text-xs">
+                                      {t("admissionPortal.fees.table.description")}
+                                    </TableHead>
+                                    <TableHead className="text-xs">
+                                      {t("admissionPortal.fees.table.feeType")}
+                                    </TableHead>
+                                    <TableHead className="text-xs text-end">
+                                      {t("admissionPortal.fees.table.amount")}
+                                    </TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -876,8 +943,10 @@ function ReceiptsTable({
 
       <CardContent className="py-2 px-3 border-t flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
         <p className="text-xs text-muted-foreground">
-          Showing <span className="font-medium text-foreground">{startIdx + 1}</span>
-          –<span className="font-medium text-foreground">{endIdx}</span> of{" "}
+          {t("admissionPortal.fees.table.showingPrefix")}
+          <span className="font-medium text-foreground">{startIdx + 1}</span>
+          –<span className="font-medium text-foreground">{endIdx}</span>{" "}
+          {t("admissionPortal.fees.table.showingOfPrefix")}{" "}
           <span className="font-medium text-foreground">{totalItems}</span>
         </p>
         <div className="flex items-center justify-end gap-2">
@@ -888,10 +957,12 @@ function ReceiptsTable({
             disabled={safePage <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
-            Prev
+            {t("admissionPortal.fees.table.prev")}
           </Button>
           <span className="text-xs text-muted-foreground">
-            Page <span className="font-medium text-foreground">{safePage}</span> of{" "}
+            {t("admissionPortal.fees.table.pagePrefix")}{" "}
+            <span className="font-medium text-foreground">{safePage}</span>{" "}
+            {t("admissionPortal.fees.table.pageOfPrefix")}{" "}
             <span className="font-medium text-foreground">{totalPages}</span>
           </span>
           <Button
@@ -901,7 +972,7 @@ function ReceiptsTable({
             disabled={safePage >= totalPages}
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
           >
-            Next
+            {t("admissionPortal.fees.table.next")}
           </Button>
         </div>
       </CardContent>

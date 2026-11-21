@@ -16,6 +16,15 @@ public interface UserLeadProfileRepository extends JpaRepository<UserLeadProfile
 
     Optional<UserLeadProfile> findByUserId(String userId);
 
+    /**
+     * Any profile this person is the counsellor on, used only to read the
+     * denormalized {@code assigned_counselor_name}: admin_core cannot see
+     * auth_service's users table, so this is the one place inside its own
+     * database where a staff member's name is written down.
+     */
+    Optional<UserLeadProfile> findFirstByAssignedCounselorIdAndAssignedCounselorNameIsNotNull(
+            String assignedCounselorId);
+
     Optional<UserLeadProfile> findByUserIdAndInstituteId(String userId, String instituteId);
 
     List<UserLeadProfile> findByUserIdIn(List<String> userIds);
@@ -41,13 +50,14 @@ public interface UserLeadProfileRepository extends JpaRepository<UserLeadProfile
     @Query("SELECT p FROM UserLeadProfile p " +
            "WHERE p.instituteId = :instituteId " +
            "  AND p.assignedCounselorId = :counsellorUserId " +
+           "  AND p.mergedIntoUserId IS NULL " +
            "  AND (p.conversionStatus IS NULL OR p.conversionStatus <> 'CONVERTED')")
     List<UserLeadProfile> findOpenByInstituteAndCounsellor(
             @Param("instituteId") String instituteId,
             @Param("counsellorUserId") String counsellorUserId);
 
     /** Count profiles per tier for a given institute. */
-    @Query("SELECT p.leadTier, COUNT(p) FROM UserLeadProfile p WHERE p.instituteId = :instituteId GROUP BY p.leadTier")
+    @Query("SELECT p.leadTier, COUNT(p) FROM UserLeadProfile p WHERE p.instituteId = :instituteId AND p.mergedIntoUserId IS NULL GROUP BY p.leadTier")
     List<Object[]> countByTierForInstitute(@Param("instituteId") String instituteId);
 
     /**
@@ -87,4 +97,31 @@ public interface UserLeadProfileRepository extends JpaRepository<UserLeadProfile
     List<String> findOpenLeadUserIdsForCounselorInPool(@Param("poolId") String poolId,
                                                        @Param("fromCounselorId") String fromCounselorId,
                                                        @Param("instituteId") String instituteId);
+
+    /**
+     * Users whose lead profile inputs changed since the given time: a response submitted or
+     * updated, a lead score updated, a timeline event (by student, or on one of their responses),
+     * or a demo attendance. Drives the incremental profile rebuild.
+     */
+    @Query(value = """
+            SELECT u FROM (
+                SELECT r.user_id AS u FROM audience_response r
+                 WHERE r.updated_at > :since OR r.submitted_at > :since
+                UNION SELECT r.student_user_id FROM audience_response r
+                 WHERE r.updated_at > :since OR r.submitted_at > :since
+                UNION SELECT r.user_id FROM lead_score ls JOIN audience_response r ON r.id = ls.audience_response_id
+                 WHERE ls.updated_at > :since
+                UNION SELECT r.student_user_id FROM lead_score ls JOIN audience_response r ON r.id = ls.audience_response_id
+                 WHERE ls.updated_at > :since
+                UNION SELECT te.student_user_id FROM timeline_event te WHERE te.created_at > :since
+                UNION SELECT r.user_id FROM timeline_event te JOIN audience_response r ON r.id = te.type_id
+                 WHERE te.type = 'AUDIENCE_RESPONSE' AND te.created_at > :since
+                UNION SELECT r.student_user_id FROM timeline_event te JOIN audience_response r ON r.id = te.type_id
+                 WHERE te.type = 'AUDIENCE_RESPONSE' AND te.created_at > :since
+                UNION SELECT l.user_source_id FROM live_session_logs l
+                 WHERE l.log_type = 'ATTENDANCE_RECORDED' AND l.created_at > :since
+            ) changed
+            WHERE u IS NOT NULL
+            """, nativeQuery = true)
+    List<String> findUserIdsWithLeadInputsChangedSince(@Param("since") java.sql.Timestamp since);
 }

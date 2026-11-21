@@ -1,0 +1,40 @@
+{
+    "buckets": {
+        "dueToday": "Échéance aujourd'hui",
+        "overdue1to3": "En retard 1–3 j",
+        "overdue3to7": "En retard 3–7 j",
+        "overdue7plus": "En retard 7 j+",
+        "upcoming": "À venir"
+    },
+    "section": {
+        "agingByCounsellor": "Ancienneté par conseiller",
+        "closureReasons": "Motifs de clôture (30 derniers jours)"
+    },
+    "table": {
+        "headers": {
+            "counsellor": "Conseiller",
+            "dueToday": "Échéance aujourd'hui",
+            "days1to3": "1–3 j",
+            "days3to7": "3–7 j",
+            "days7plus": "7 j+",
+            "upcoming": "À venir",
+            "oldestOverdue": "Retard le plus ancien"
+        },
+        "oldestOverdueValue": "{{count}} j"
+    },
+    "csv": {
+        "headers": {
+            "counsellor": "Conseiller",
+            "dueToday": "Échéance aujourd'hui",
+            "overdue1to3": "En retard 1-3 j",
+            "overdue3to7": "En retard 3-7 j",
+            "overdue7plus": "En retard 7 j+",
+            "upcoming": "À venir",
+            "oldestOverdueDays": "Retard le plus ancien (jours)"
+        }
+    },
+    "empty": {
+        "noOpenFollowups": "Aucun suivi ouvert pour le moment.",
+        "noClosures": "Aucun suivi clôturé au cours des 30 derniers jours."
+    }
+}

@@ -131,6 +131,9 @@ class ParsedDocument:
     ocr_pages: int = 0
     languages: List[str] = field(default_factory=list)
     truncated_at: Optional[int] = None   # set when MAX_PAGES_PER_SOURCE clipped it
+    # YouTube only, and only when parse_youtube(keep_timing=True): the caption
+    # snippets in order, [{"start": s, "duration": s, "text": str}] in seconds.
+    caption_timing: Optional[List[Dict[str, Any]]] = None
 
     @property
     def total_chars(self) -> int:
@@ -636,6 +639,27 @@ def _caption_from_page_text(page_text: str) -> Optional[str]:
 # URL / YouTube / raw text
 # ---------------------------------------------------------------------------
 
+def assert_public_http_url(url: str) -> None:
+    """Refuse anything that is not a public http(s) URL.
+
+    Same SSRF rule the scraper applies (no private / loopback / link-local
+    targets), surfaced as ValueError so a background ingest records a readable
+    failure instead of leaking an HTTPException out of a job.
+    """
+    from urllib.parse import urlparse
+
+    from fastapi import HTTPException
+
+    from ..scraper_service import ScraperService
+
+    if urlparse(url).scheme not in ("http", "https"):
+        raise ValueError("PDF URLs must be http(s)")
+    try:
+        ScraperService()._validate_url(url)  # noqa: SLF001 — the one shared SSRF gate
+    except HTTPException as exc:
+        raise ValueError(str(exc.detail)) from exc
+
+
 async def parse_url(url: str) -> ParsedDocument:
     """Scrape a web page into a single-page document.
 
@@ -677,64 +701,26 @@ def youtube_video_id(url: str) -> Optional[str]:
     return bare if re.fullmatch(r"[A-Za-z0-9_-]{11}", bare) else None
 
 
-async def parse_youtube(url: str, language_hint: Optional[str] = None) -> ParsedDocument:
+async def parse_youtube(
+    url: str, language_hint: Optional[str] = None, keep_timing: bool = False, *, purpose: str = "kb_ingest",
+) -> ParsedDocument:
     """Fetch a YouTube transcript as a single-page document.
 
-    Uses youtube-transcript-api, which reads the caption tracks YouTube already
-    publishes — free and instant, but only for videos that HAVE captions.
-    (`YouTubeService` in this package is a search/verify client and has no
-    transcript capability, so it is deliberately not used here.)
+    keep_timing=True also returns each caption snippet's start and duration in
+    ``doc.caption_timing`` (course knowledge cites the video second). The page
+    text is the same either way.
 
-    OPERATIONAL RISK, KNOWN AND UNRESOLVED: YouTube rate-limits and sometimes
-    blocks caption requests from datacenter IP ranges, which includes our Hetzner
-    nodes. When that starts happening the fix is either an egress proxy or
-    routing audio through the in-house Whisper transcription that already exists
-    at /transcription/v1/* — the latter costs per audio-minute but cannot be
-    IP-blocked. Not built yet; this path fails loudly rather than silently so the
-    switch-over is diagnosable.
+    A thin wrapper over the shared caption service (services/youtube_captions):
+    cache, direct, rotating proxy and Supadata fallbacks, with per-pod limits
+    and circuit breakers. Raises ValueError (a CaptionsError whose text is the
+    user-facing note) when there are no usable captions.
     """
-    video_id = youtube_video_id(url)
-    if not video_id:
+    if not youtube_video_id(url):
         raise ValueError("That does not look like a YouTube video URL")
 
-    try:
-        from youtube_transcript_api import YouTubeTranscriptApi
-    except ImportError as exc:  # pragma: no cover - dependency guard
-        raise ValueError(
-            "YouTube ingestion needs the youtube-transcript-api package, which is "
-            "not installed on this server"
-        ) from exc
-
-    def _fetch() -> str:
-        preferred = [language_hint] if language_hint else []
-        preferred += ["en", "hi"]
-        try:
-            listing = YouTubeTranscriptApi.list_transcripts(video_id)
-        except Exception as exc:  # noqa: BLE001
-            raise ValueError(f"Could not read captions for that video: {exc}") from exc
-
-        transcript = None
-        try:
-            transcript = listing.find_manually_created_transcript(preferred)
-        except Exception:  # noqa: BLE001
-            try:
-                transcript = listing.find_transcript(preferred)
-            except Exception:  # noqa: BLE001
-                # Any track at all beats nothing — a Tamil auto-caption is still
-                # usable content for a Tamil knowledge base.
-                for candidate in listing:
-                    transcript = candidate
-                    break
-        if transcript is None:
-            raise ValueError("That video has no captions, so there is no transcript to ingest")
-        return " ".join(
-            (seg.get("text") or "").strip()
-            for seg in transcript.fetch()
-            if (seg.get("text") or "").strip()
-        )
-
-    # The library is synchronous and does network I/O — keep it off the event loop.
-    text_out = (await asyncio.to_thread(_fetch)).strip()
+    from ..youtube_captions import service as yt_service
+    result = await yt_service.require_captions(url, language=language_hint, purpose=purpose)
+    text_out = result.text.strip()
     if not text_out:
         raise ValueError("That video's transcript came back empty")
 
@@ -743,6 +729,11 @@ async def parse_youtube(url: str, language_hint: Optional[str] = None) -> Parsed
         ParsedPage(page_number=1, text=text_out, parser="youtube", confidence=1.0)
     )
     doc.languages = detect_languages(text_out)
+    if keep_timing:
+        doc.caption_timing = [
+            {"start": s.start_ms / 1000.0, "duration": max(0, s.end_ms - s.start_ms) / 1000.0, "text": s.text}
+            for s in result.segments
+        ]
     return doc
 
 

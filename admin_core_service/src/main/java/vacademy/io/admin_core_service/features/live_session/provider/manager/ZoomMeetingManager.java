@@ -52,6 +52,9 @@ import java.util.Map;
 @Slf4j
 public class ZoomMeetingManager implements LiveSessionProviderStrategy {
 
+    /** Newest-N past instances fetched per sync; see fetchRecordings for why this is safe. */
+    private static final int MAX_INSTANCES_PER_SYNC = 30;
+
     private static final DateTimeFormatter ZOOM_UTC =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
@@ -179,16 +182,130 @@ public class ZoomMeetingManager implements LiveSessionProviderStrategy {
 
     /**
      * Fetches cloud recordings for a meeting from Zoom. Account-aware variant used
-     * by the polling job and webhook (they already hold the schedule's account).
+     * by the recording.completed webhook, which already holds the schedule's account.
+     * The hourly sweep uses {@link #fetchAllInstanceRecordings} instead.
      * GET /v2/meetings/{meetingId}/recordings
      */
     public List<MeetingRecordingDTO> fetchRecordings(ZoomAccount account, String meetingId) {
+        // Cheap path: one call, the meeting's LATEST instance. This is what the
+        // recording.completed webhook wants — it already names the meeting that just
+        // finished, and Zoom expects a prompt response, so fanning out over history here
+        // would only add latency and rate-limit pressure at the worst moment.
+        return fetchRecordingsForInstance(account, meetingId, meetingId);
+    }
+
+    /**
+     * Every instance of a recurring meeting, not just the latest.
+     *
+     * <p>A numeric meeting id addresses only the most recent instance. Trainers routinely
+     * rejoin the same meeting every day, so asking by id alone returns today's files and
+     * silently drops any earlier occurrence the poll happened to miss — those are then lost
+     * for good once Zoom's ~30-day retention expires. The hourly sweep uses this; the webhook
+     * does not need it.
+     */
+    public List<MeetingRecordingDTO> fetchAllInstanceRecordings(ZoomAccount account, String meetingId) {
+        List<MeetingRecordingDTO> all = new ArrayList<>();
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        List<String> instances = fetchPastInstanceUuids(account, meetingId);
+        // Each instance is one more Zoom call, and this job already competes for a shared
+        // rate limit. Zoom deletes cloud recordings after ~30 days and the poll runs hourly
+        // and merges (never removes), so the newest slice is all that can still be new.
+        if (instances.size() > MAX_INSTANCES_PER_SYNC) {
+            log.info("zoom.recordings.instances.capped meetingId={} total={} fetching newest={}",
+                    meetingId, instances.size(), MAX_INSTANCES_PER_SYNC);
+            instances = instances.subList(instances.size() - MAX_INSTANCES_PER_SYNC, instances.size());
+        }
+        for (String uuid : instances) {
+            for (MeetingRecordingDTO rec : fetchRecordingsForInstance(account, meetingId, encodeUuid(uuid))) {
+                if (rec.getRecordingId() == null || seen.add(rec.getRecordingId())) {
+                    all.add(rec);
+                }
+            }
+        }
+        if (all.isEmpty()) {
+            // Never ran, or the instance list was unavailable — fall back to the plain id call.
+            return fetchRecordingsForInstance(account, meetingId, meetingId);
+        }
+        return all;
+    }
+
+    /**
+     * Mints a FRESH host start url for a meeting.
+     * GET /v2/meetings/{meetingId} -> start_url, whose embedded ZAK is valid ~2 hours.
+     *
+     * <p>Why this exists: {@code session_schedules.provider_host_url} is written once, at
+     * scheduling time, and its ZAK expires about two hours later. Every occurrence of a
+     * recurring session therefore ships a host link that is already dead by the time the
+     * class runs — the host cannot start the meeting, so it never starts, so it never
+     * records. Anything that hands a host link to a human must refresh it through here.
+     * Returns null on failure so callers can fall back to the stored value.
+     */
+    public String fetchStartUrl(ZoomAccount account, String meetingId) {
+        try {
+            JsonNode resp = webClientBuilder.build()
+                    .get()
+                    .uri(ZoomEndpoints.API_BASE_URL + "/meetings/" + meetingId)
+                    .header("Authorization", "Bearer " + accessTokenService.getAccessToken(account))
+                    .retrieve()
+                    .bodyToMono(JsonNode.class)
+                    .block();
+            return resp != null && resp.hasNonNull("start_url") ? resp.get("start_url").asText() : null;
+        } catch (Exception e) {
+            log.warn("zoom.start_url.fetch.fail meetingId={} reason={}", meetingId,
+                    e.getClass().getSimpleName());
+            return null;
+        }
+    }
+
+    /**
+     * Lists the UUIDs of every past instance of a meeting.
+     * GET /v2/past_meetings/{meetingId}/instances
+     * Returns empty when the meeting never ran (404) or the call fails — callers then
+     * fall back to addressing the meeting by its numeric id.
+     */
+    private List<String> fetchPastInstanceUuids(ZoomAccount account, String meetingId) {
+        List<String> uuids = new ArrayList<>();
+        try {
+            JsonNode resp = webClientBuilder.build()
+                    .get()
+                    .uri(ZoomEndpoints.API_BASE_URL + "/past_meetings/" + meetingId + "/instances")
+                    .header("Authorization", "Bearer " + accessTokenService.getAccessToken(account))
+                    .retrieve()
+                    .bodyToMono(JsonNode.class)
+                    .block();
+            if (resp != null && resp.has("meetings")) {
+                for (JsonNode m : resp.get("meetings")) {
+                    String uuid = m.path("uuid").asText(null);
+                    if (uuid != null && !uuid.isBlank()) {
+                        uuids.add(uuid);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.debug("zoom.past_instances.fetch.fail meetingId={} reason={}", meetingId,
+                    e.getClass().getSimpleName());
+        }
+        return uuids;
+    }
+
+    /**
+     * Zoom requires a meeting UUID to be double URL-encoded when it starts with "/" or
+     * contains "//" — and double-encoding is harmless for the rest, so always do it.
+     */
+    static String encodeUuid(String uuid) {
+        String once = java.net.URLEncoder.encode(uuid, java.nio.charset.StandardCharsets.UTF_8);
+        return java.net.URLEncoder.encode(once, java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    /** Fetches the recording files for one meeting instance (by UUID) or meeting id. */
+    private List<MeetingRecordingDTO> fetchRecordingsForInstance(
+            ZoomAccount account, String meetingId, String addressBy) {
         String token = accessTokenService.getAccessToken(account);
         JsonNode response;
         try {
             response = webClientBuilder.build()
                     .get()
-                    .uri(ZoomEndpoints.API_BASE_URL + "/meetings/" + meetingId + "/recordings")
+                    .uri(ZoomEndpoints.API_BASE_URL + "/meetings/" + addressBy + "/recordings")
                     .header("Authorization", "Bearer " + token)
                     .retrieve()
                     .bodyToMono(JsonNode.class)

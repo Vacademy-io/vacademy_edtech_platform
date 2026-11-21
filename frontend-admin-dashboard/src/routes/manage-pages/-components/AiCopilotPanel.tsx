@@ -79,6 +79,11 @@ export const AiCopilotPanel = () => {
     // copilot can place them on the page ("use this photo in the hero").
     const [pendingImages, setPendingImages] = useState<string[]>([]);
     const [uploadBusy, setUploadBusy] = useState(false);
+    // A file drag is over the panel. dragenter/dragleave also fire for every
+    // child element the pointer crosses, so we count depth instead of toggling
+    // — otherwise the overlay flickers off the moment the cursor enters a bubble.
+    const [dragOver, setDragOver] = useState(false);
+    const dragDepth = useRef(0);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { uploadFile } = useFileUpload();
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -146,17 +151,28 @@ export const AiCopilotPanel = () => {
         scrollToEnd();
     };
 
-    // Upload from the composer — stages EVERY selected image for the next send
-    // (admins share several screenshots/photos at once; forcing one-by-one
+    // One upload path for all three ways an image arrives — the file picker, a
+    // drag-and-drop, and a pasted screenshot. Stages EVERY image for the next
+    // send (admins share several screenshots at once; forcing one-by-one
     // uploads was the field complaint).
-    const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files || []);
-        if (files.length === 0) return;
+    const uploadImages = async (files: File[]) => {
+        const images = files.filter((f) => f.type.startsWith('image/'));
+        if (images.length === 0) {
+            if (files.length > 0) {
+                toast({
+                    title: 'Images only',
+                    description:
+                        'Drop a PNG, JPG or screenshot — other files are not supported here.',
+                    variant: 'destructive',
+                });
+            }
+            return;
+        }
         const userId = getUserId();
         if (!userId) return;
         try {
             setUploadBusy(true);
-            for (const file of files) {
+            for (const file of images) {
                 const fileId = await uploadFile({
                     file,
                     setIsUploading: () => {},
@@ -174,8 +190,56 @@ export const AiCopilotPanel = () => {
             toast({ title: 'Upload failed', description: 'Some images may not have uploaded — please retry.', variant: 'destructive' });
         } finally {
             setUploadBusy(false);
-            if (fileInputRef.current) fileInputRef.current.value = '';
         }
+    };
+
+    const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        await uploadImages(Array.from(e.target.files || []));
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    /** Only OS file drags open the drop zone — dnd-kit's component drags are
+     *  pointer-based and never set a `Files` type, so they pass through. */
+    const isFileDrag = (e: React.DragEvent) =>
+        Array.from(e.dataTransfer?.types || []).includes('Files');
+
+    const handleDragEnter = (e: React.DragEvent) => {
+        if (!isFileDrag(e)) return;
+        e.preventDefault();
+        dragDepth.current += 1;
+        setDragOver(true);
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        if (!isFileDrag(e)) return;
+        // Without this the browser navigates away to the dropped file.
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        if (!isFileDrag(e)) return;
+        dragDepth.current = Math.max(0, dragDepth.current - 1);
+        if (dragDepth.current === 0) setDragOver(false);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        if (!isFileDrag(e)) return;
+        e.preventDefault();
+        dragDepth.current = 0;
+        setDragOver(false);
+        void uploadImages(Array.from(e.dataTransfer.files || []));
+    };
+
+    /** ⌘V straight from a screenshot — the fastest path, and the one admins
+     *  reach for first. Text pastes are left alone. */
+    const handlePaste = (e: React.ClipboardEvent) => {
+        const files = Array.from(e.clipboardData?.files || []).filter((f) =>
+            f.type.startsWith('image/')
+        );
+        if (files.length === 0) return;
+        e.preventDefault();
+        void uploadImages(files);
     };
 
     const brandMutation = useMutation({
@@ -217,7 +281,26 @@ export const AiCopilotPanel = () => {
     }
 
     return (
-        <div className="flex h-full flex-col">
+        <div
+            className="relative flex min-h-0 flex-1 flex-col"
+            onDragEnter={handleDragEnter}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+        >
+            {/* Drop zone — covers the whole panel so an admin can fling a
+                screenshot anywhere on it, not just onto the composer. */}
+            {dragOver && (
+                <div className="pointer-events-none absolute inset-2 z-20 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary-400 bg-primary-50 text-center">
+                    <ImageIcon className="size-7 text-primary-600" weight="duotone" />
+                    <p className="text-sm font-semibold text-gray-800">Drop to attach</p>
+                    <p className="px-4 text-caption text-gray-600">
+                        Screenshots, PNG or JPG — they are uploaded and staged for your next
+                        instruction.
+                    </p>
+                </div>
+            )}
+
             {/* Thread */}
             <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-3">
                 {messages.length === 0 && (
@@ -348,35 +431,69 @@ export const AiCopilotPanel = () => {
                     className="hidden"
                     onChange={handleFile}
                 />
-                <div className="flex items-end gap-2">
+                {/* Textarea on its own row: in a 320px rail the old single-row
+                    layout squeezed the send button off the edge, so the only way
+                    to submit was a keyboard Enter nobody could see. */}
+                <Textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onPaste={handlePaste}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            send();
+                        }
+                    }}
+                    rows={2}
+                    placeholder={
+                        pendingImages.length
+                            ? 'Where should these images go?'
+                            : 'Describe a change…'
+                    }
+                    className="w-full resize-none text-xs"
+                />
+                <div className="mt-2 flex items-center gap-2">
                     <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="h-9 shrink-0 px-2.5"
-                        title="Attach an image to use on the page"
+                        className="size-8 shrink-0 p-0"
+                        title="Attach an image — you can also drag one in or paste with ⌘V"
                         onClick={() => fileInputRef.current?.click()}
                         disabled={uploadBusy}
                     >
-                        {uploadBusy ? <CircleNotch className="size-4 animate-spin" /> : <ImageIcon className="size-4" />}
+                        {uploadBusy ? (
+                            <CircleNotch className="size-4 animate-spin" />
+                        ) : (
+                            <ImageIcon className="size-4" />
+                        )}
                     </Button>
-                    <Textarea
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault();
-                                send();
-                            }
-                        }}
-                        rows={2}
-                        placeholder={pendingImages.length ? 'Where should these images go?' : 'Describe a change…'}
-                        className="resize-none text-xs"
-                    />
-                    <Button size="sm" onClick={send} disabled={(!input.trim() && pendingImages.length === 0) || editMutation.isPending} className="h-9 shrink-0 px-3">
-                        <PaperPlaneRight className="size-4" />
+                    <span className="min-w-0 flex-1 truncate text-caption text-gray-500">
+                        {uploadBusy
+                            ? 'Uploading…'
+                            : pendingImages.length
+                              ? `${pendingImages.length} attached`
+                              : 'Enter to send'}
+                    </span>
+                    <Button
+                        size="sm"
+                        onClick={send}
+                        disabled={
+                            (!input.trim() && pendingImages.length === 0) || editMutation.isPending
+                        }
+                        className="h-8 shrink-0 px-3"
+                    >
+                        {editMutation.isPending ? (
+                            <CircleNotch className="size-4 animate-spin" />
+                        ) : (
+                            <PaperPlaneRight className="size-4" />
+                        )}
+                        Send
                     </Button>
                 </div>
+                <p className="mt-1.5 text-caption text-gray-500">
+                    Drag an image in, or paste one with ⌘V.
+                </p>
             </div>
         </div>
     );

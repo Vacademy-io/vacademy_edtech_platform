@@ -1,0 +1,23 @@
+{
+    "pickNewSlot": "एक नया स्लॉट चुनें",
+    "sessionCancelled": "सत्र रद्द किया गया",
+    "sessionMoved": "सत्र स्थानांतरित किया गया",
+    "cancelFailed": "सत्र रद्द नहीं किया जा सका।",
+    "rescheduleFailed": "सत्र स्थानांतरित नहीं किया जा सका।",
+    "cancelHeading": "सत्र रद्द करें",
+    "rescheduleHeading": "सत्र पुनर्निर्धारित करें",
+    "keepAsIs": "जैसा है वैसा रखें",
+    "saving": "सहेजा जा रहा है…",
+    "cancelSession": "सत्र रद्द करें",
+    "moveSession": "सत्र स्थानांतरित करें",
+    "learnerFallback": "शिक्षार्थी",
+    "mentorFallback": "मेंटर",
+    "cancelBody": "<bold1>{{studentName}}</bold1> और <bold2>{{mentorName}}</bold2> को इसकी सूचना दे दी जाएगी, और कैलेंडर प्रविष्टि व रिमाइंडर हटा दिए जाएंगे।",
+    "rescheduleBody": "पुराना स्लॉट खाली कर दिया जाएगा और <bold1>{{studentName}}</bold1> के लिए एक नई बुकिंग बनाई जाएगी। यदि नया समय अभी लिया जा चुका है, तो आपसे दूसरा समय चुनने के लिए कहा जाएगा।",
+    "learnerFallbackLower": "शिक्षार्थी",
+    "newDateTime": "नई तारीख और समय",
+    "reasonCancelPlaceholder": "उदा. मेंटर अस्वस्थ हैं",
+    "reasonOptionalPlaceholder": "वैकल्पिक टिप्पणी",
+    "reasonCancelLabel": "कारण (शिक्षार्थी को दिखाया जाएगा)",
+    "reasonOptionalLabel": "कारण (वैकल्पिक)"
+}

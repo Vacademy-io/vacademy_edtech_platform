@@ -1,0 +1,86 @@
+{
+    "description": "छात्र AI ट्यूटर का उपयोग कैसे कर रहे हैं, और वे क्या पूछ रहे हैं।",
+    "dayRange": {
+        "last7": "पिछले 7 दिन",
+        "last30": "पिछले 30 दिन",
+        "last90": "पिछले 90 दिन",
+        "last365": "पिछले 365 दिन"
+    },
+    "filters": {
+        "searchPlaceholder": "छात्र का नाम या ईमेल खोजें",
+        "status": {
+            "all": "सभी चैट",
+            "active": "सक्रिय",
+            "closed": "बंद"
+        },
+        "mode": {
+            "all": "सभी मोड",
+            "textChat": "टेक्स्ट चैट",
+            "mockInterview": "मॉक इंटरव्यू",
+            "voiceDoubt": "वॉइस डाउट",
+            "oralTest": "मौखिक परीक्षा"
+        }
+    },
+    "summary": {
+        "loading": "सारांश लोड हो रहा है…",
+        "error": "चैटबॉट सारांश लोड नहीं हो सका।",
+        "retry": "पुनः प्रयास करें",
+        "chats": "चैट",
+        "allTime": "कुल मिलाकर {{count}}",
+        "studentsReached": "पहुंचे छात्र",
+        "studentMessages": "छात्र संदेश",
+        "messagesPerChat_one": "प्रति चैट {{count}} संदेश",
+        "messagesPerChat_other": "प्रति चैट {{count}} संदेश",
+        "doubtsAsked": "पूछे गए डाउट",
+        "practiceQuizzesTaken": "ली गई अभ्यास क्विज़",
+        "averageScore": "{{percent}}% औसत स्कोर",
+        "noQuizSubmittedYet": "अभी तक कोई क्विज़ जमा नहीं हुई",
+        "aiReplies": "AI जवाब",
+        "toolLookups_one": "{{count}} टूल लुकअप",
+        "toolLookups_other": "{{count}} टूल लुकअप",
+        "activeChats": "सक्रिय चैट",
+        "notYetClosed": "छात्र द्वारा अभी तक बंद नहीं की गई",
+        "quizzesGenerated": "बनाई गई क्विज़",
+        "submittedCount_one": "{{count}} जमा हुई",
+        "submittedCount_other": "{{count}} जमा हुईं",
+        "chatModes": "चैट मोड",
+        "whereStudentsChat": "छात्र कहां चैट करते हैं",
+        "mostAskedTopics": "सबसे ज़्यादा पूछे गए विषय",
+        "noTopicsYet": "अभी तक कोई विषय दर्ज नहीं हुआ। जब छात्र डाउट पूछते हैं या अभ्यास क्विज़ लेते हैं, तब विषय दिखने लगते हैं।",
+        "topicQuiz": "क्विज़",
+        "topicDoubt": "डाउट",
+        "dailyActivity": "दैनिक गतिविधि",
+        "noChatsYet": "इस अवधि में अभी तक कोई चैट नहीं हुई।"
+    },
+    "activity": {
+        "empty": "इस अवधि में अभी तक कोई चैट गतिविधि नहीं हुई।",
+        "tooltip": {
+            "studentMessages_one": "{{count}} छात्र संदेश",
+            "studentMessages_other": "{{count}} छात्र संदेश",
+            "chats_one": "{{count}} चैट",
+            "chats_other": "{{count}} चैट"
+        },
+        "peak_one": "अधिकतम {{count}} संदेश/दिन",
+        "peak_other": "अधिकतम {{count}} संदेश/दिन"
+    },
+    "table": {
+        "student": "छात्र",
+        "chatAbout": "चैट किस बारे में",
+        "noStudentMessage": "कोई छात्र संदेश नहीं",
+        "mode": "मोड",
+        "messages": "संदेश",
+        "fromStudent": "छात्र से {{count}}",
+        "quizzes": "क्विज़",
+        "status": "स्थिति",
+        "lastActive": "अंतिम सक्रियता",
+        "viewChat": "चैट देखें"
+    },
+    "recentChats": {
+        "title": "हाल की चैट",
+        "error": "हाल की चैट लोड नहीं हो सकीं।",
+        "retry": "पुनः प्रयास करें",
+        "emptyTitle": "कोई चैट नहीं मिली",
+        "emptyFiltered": "खोज या फ़िल्टर हटाकर देखें।",
+        "emptyUnfiltered": "जब छात्र AI ट्यूटर का उपयोग शुरू करेंगे, तब चैट यहां दिखाई देंगी।"
+    }
+}

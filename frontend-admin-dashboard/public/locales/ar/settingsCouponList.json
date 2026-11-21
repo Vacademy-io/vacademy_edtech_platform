@@ -1,0 +1,50 @@
+{
+    "discount": {
+        "maxCap": "، بحد أقصى ₹{{amount}}"
+    },
+    "validity": {
+        "noExpiry": "بلا انتهاء",
+        "until": "حتى {{date}}"
+    },
+    "filters": {
+        "searchPlaceholder": "ابحث بالرمز",
+        "searchAriaLabel": "ابحث عن كوبونات بالرمز",
+        "statusAriaLabel": "تصفية حسب الحالة"
+    },
+    "status": {
+        "all": "كل الحالات",
+        "active": "نشط",
+        "inactive": "غير نشط",
+        "deleted": "محذوف"
+    },
+    "actions": {
+        "createCoupon": "إنشاء كوبون",
+        "tryAgain": "حاول مرة أخرى"
+    },
+    "table": {
+        "code": "الرمز",
+        "discount": "الخصم",
+        "validity": "الصلاحية",
+        "usage": "الاستخدام",
+        "status": "الحالة",
+        "actions": "الإجراءات",
+        "productPageBadge": "صفحة المنتج"
+    },
+    "confirm": {
+        "deleteMessage": "حذف الكوبون \"{{code}}\"؟ يتم الاحتفاظ بعمليات الاسترداد الحالية؛ هذا يمنع فقط التطبيقات الجديدة."
+    },
+    "toasts": {
+        "deleted": "تم حذف الكوبون \"{{code}}\""
+    },
+    "errors": {
+        "deleteFailed": "تعذر حذف الكوبون",
+        "loadFailed": "تعذر تحميل الكوبونات",
+        "loadTitle": "تعذر تحميل الكوبونات"
+    },
+    "empty": {
+        "filteredTitle": "لا توجد كوبونات مطابقة لهذه الفلاتر",
+        "emptyTitle": "لا توجد كوبونات بعد",
+        "filteredSubtitle": "جرّب مسح البحث أو فلتر الحالة.",
+        "emptySubtitle": "أنشئ كوبونًا للسماح لـ {{learnerPlural}} بتطبيق خصم عند الدفع."
+    }
+}

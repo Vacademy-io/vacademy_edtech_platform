@@ -1,0 +1,66 @@
+{
+    "overview": {
+        "loading": "सर्वेक्षण डेटा लोड हो रहा है...",
+        "errorTitle": "सर्वेक्षण डेटा लोड करने में त्रुटि",
+        "tryAgain": "पुनः प्रयास करें",
+        "emptyTitle": "कोई सर्वेक्षण डेटा उपलब्ध नहीं है",
+        "emptyDescription": "इस असेसमेंट के लिए कोई सर्वेक्षण प्रतिक्रिया नहीं मिली।",
+        "totalParticipants": "कुल प्रतिभागी",
+        "responded": "प्रतिक्रिया दी",
+        "outOf": "में से",
+        "completionRate": "पूर्णता दर",
+        "individualResponsesTitle": "व्यक्तिगत प्रतिक्रियाएं",
+        "loadingResponses": "प्रतिक्रियाएं लोड हो रही हैं...",
+        "loadingQuestionsData": "प्रश्न डेटा लोड हो रहा है...",
+        "loadingBatchData": "बैच डेटा लोड हो रहा है...",
+        "noResponsesForQuestion": "इस प्रश्न के लिए कोई प्रतिक्रिया नहीं मिली।",
+        "questionIdLabel": "प्रश्न आईडी: {{id}}",
+        "tableName": "नाम",
+        "tableEmail": "ईमेल",
+        "tableBatch": "बैच",
+        "tableResponse": "प्रतिक्रिया",
+        "notApplicable": "लागू नहीं"
+    },
+    "question": {
+        "number": "प्र{{number}}",
+        "viewIndividualResponses": "व्यक्तिगत प्रतिक्रियाएं देखें",
+        "unsupportedType": "असमर्थित प्रश्न प्रकार"
+    },
+    "common": {
+        "responseCount_one": "{{count}} प्रतिक्रिया",
+        "responseCount_other": "{{count}} प्रतिक्रियाएं"
+    },
+    "charts": {
+        "tooltipResponsesPercent_one": "{{count}} प्रतिक्रिया ({{percentage}}%)",
+        "tooltipResponsesPercent_other": "{{count}} प्रतिक्रियाएं ({{percentage}}%)",
+        "countLabel": "गिनती"
+    },
+    "legend": {
+        "percentResponses_one": "{{percentage}}% ({{count}} प्रतिक्रिया)",
+        "percentResponses_other": "{{percentage}}% ({{count}} प्रतिक्रियाएं)"
+    },
+    "trueFalse": {
+        "true": "सही",
+        "false": "गलत",
+        "tooltipPercent_one": "{{percentage}}% ({{count}} प्रतिक्रिया)",
+        "tooltipPercent_other": "{{percentage}}% ({{count}} प्रतिक्रियाएं)"
+    },
+    "textQuestion": {
+        "recentResponses_one": "हाल की प्रतिक्रियाएं (कुल {{count}} प्रतिक्रिया):",
+        "recentResponses_other": "हाल की प्रतिक्रियाएं (कुल {{count}} प्रतिक्रियाएं):",
+        "similarResponses_one": "{{count}} समान प्रतिक्रिया",
+        "similarResponses_other": "{{count}} समान प्रतिक्रियाएं"
+    },
+    "numerical": {
+        "responseDistribution": "प्रतिक्रिया वितरण:",
+        "responsesPercent_one": "{{count}} प्रतिक्रिया ({{percentage}}%)",
+        "responsesPercent_other": "{{count}} प्रतिक्रियाएं ({{percentage}}%)"
+    },
+    "responses": {
+        "noOptionsSelected": "कोई विकल्प चयनित नहीं",
+        "noNumericAnswer": "कोई संख्यात्मक उत्तर नहीं दिया गया",
+        "noTextAnswer": "कोई पाठ उत्तर नहीं दिया गया",
+        "unknownType": "अज्ञात प्रतिक्रिया प्रकार",
+        "errorParsing": "प्रतिक्रिया डेटा पार्स करने में त्रुटि"
+    }
+}

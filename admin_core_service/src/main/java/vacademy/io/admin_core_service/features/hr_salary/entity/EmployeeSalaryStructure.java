@@ -67,6 +67,13 @@ public class EmployeeSalaryStructure {
     @OneToMany(mappedBy = "salaryStructure", fetch = FetchType.LAZY)
     private List<EmployeeSalaryComponent> components;
 
+    @Version
+    @Column(name = "version")
+    private Long version;
+
+    @Column(name = "currency", length = 3)
+    private String currency;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 

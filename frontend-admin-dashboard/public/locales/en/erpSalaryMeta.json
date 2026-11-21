@@ -1,0 +1,7 @@
+{
+    "componentType": {
+        "earning": "Earning",
+        "deduction": "Deduction",
+        "employerContribution": "Employer contribution"
+    }
+}

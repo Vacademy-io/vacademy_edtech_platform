@@ -1,0 +1,11 @@
+{
+    "title": "WhatsApp इनबॉक्स",
+    "subtitle": "WhatsApp बातचीत देखें और जवाब दें",
+    "refresh": "रीफ़्रेश करें",
+    "waitingCount_one": "{{count}} बॉट द्वारा सौंपी गई",
+    "waitingCount_other": "{{count}} बॉट द्वारा सौंपी गईं",
+    "errors": {
+        "conversationsFallback": "बातचीत लोड नहीं हो सकीं",
+        "messagesFallback": "यह बातचीत लोड नहीं हो सकी"
+    }
+}

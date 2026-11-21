@@ -1,0 +1,90 @@
+{
+    "navHeading": "My Mentorship",
+    "pageTitle": "My Mentorship",
+    "pageSubtitle": "Your mentees, availability and booking link",
+    "retry": "Retry",
+    "connectGoogleError": "Couldn't start Google connect. Please try again.",
+    "chatError": "Couldn't open the chat. Please try again.",
+    "notMentor": {
+        "title": "You're not set up as a mentor here",
+        "description": "This page is a mentor's own workspace — their mentees, availability and booking link. To manage everyone's mentorship, use Overview, Mentors, Sessions or Requests."
+    },
+    "profile": {
+        "youFallback": "You",
+        "mentorFallback": "Mentor",
+        "menteesAssigned_one": "{{count}} mentee assigned",
+        "menteesAssigned_other": "{{count}} mentees assigned",
+        "ratingChip_one": "{{rating}} · {{count}} rating",
+        "ratingChip_other": "{{rating}} · {{count}} ratings",
+        "expertise": "Expertise: {{tags}}"
+    },
+    "googleCalendar": {
+        "title": "Google Calendar",
+        "connected": "Connected",
+        "connectedDescription": "Bookings automatically create a Google Meet and add the event to your calendar.",
+        "disconnectedDescription": "Connect your Google account so bookings get a Meet link and a calendar event.",
+        "redirecting": "Redirecting…",
+        "connect": "Connect Google"
+    },
+    "bookingLink": {
+        "title": "Your 1:1 booking link",
+        "shareDescription": "Share this link so learners can book a session with you.",
+        "notSetUpDescription": "Booking isn't set up yet. Ask your admin to enable your booking page.",
+        "editAvailability": "Edit availability",
+        "editAvailabilityTitle": "Set your weekly hours, meeting location and session types",
+        "copyLink": "Copy link",
+        "copyLinkTitle": "Copy your booking link to share with learners",
+        "copiedToast": "Booking link copied",
+        "copyFailedToast": "Could not copy link",
+        "open": "Open",
+        "openTitle": "Open your booking page in a new tab"
+    },
+    "awaitingReview": {
+        "heading_one": "{{count}} session to record",
+        "heading_other": "{{count}} sessions to record",
+        "description": "Until you record it, a session doesn't count as delivered anywhere.",
+        "menteeFallback": "Mentee",
+        "record": "Record",
+        "notCounted": "Not counted yet"
+    },
+    "mentees": {
+        "heading": "Mentees",
+        "subtitle": "Students assigned to you for mentorship.",
+        "filteredCount": "{{count}} of {{total}}",
+        "searchPlaceholder": "Search by name, email or phone",
+        "loadError": "Couldn't load your mentees.",
+        "emptyTitle": "No students assigned yet",
+        "emptyDescription": "Your admin will assign students to you here.",
+        "noSearchMatch": "No mentees match “{{query}}”",
+        "clearSearch": "Clear search"
+    },
+    "table": {
+        "student": "Student",
+        "phone": "Phone",
+        "assigned": "Assigned",
+        "autoAssigned": "Auto-assigned",
+        "actions": "Actions",
+        "defaultStudentLabel": "this student",
+        "openProfileTitle": "Open this student's profile",
+        "scheduleAriaLabel": "Schedule a 1:1 with {{name}}",
+        "scheduleTitle": "Book a 1:1 — the student doesn't have to do anything",
+        "messageAriaLabel": "Message {{name}}",
+        "openAriaLabel": "Open {{name}}",
+        "openRowTitle": "Learning progress, notes and scheduled calls"
+    },
+    "header": {
+        "schedule": "Schedule 1:1"
+    },
+    "kpi": {
+        "mentees": "My mentees",
+        "menteesLeft_one": "{{count}} place left of {{cap}}",
+        "menteesLeft_other": "{{count}} places left of {{cap}}",
+        "menteesNoLimit": "No limit set",
+        "rating": "My average rating",
+        "ratingDetail_one": "{{count}} rated session",
+        "ratingDetail_other": "{{count}} rated sessions",
+        "ratingNone": "No ratings yet",
+        "toRecord": "Sessions to record",
+        "toRecordDetail": "Not counted as delivered until recorded"
+    }
+}

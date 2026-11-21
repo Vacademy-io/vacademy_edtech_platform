@@ -1,0 +1,17 @@
+{
+    "android": "أندرويد",
+    "appNameSuffix": "تطبيق {{platformName}}",
+    "back": "رجوع",
+    "getTheAdminApp": "احصل على تطبيق الإدارة",
+    "installAppDescription": "قم بتثبيت تطبيق Vacademy Admin على هاتفك. اختر منصتك للحصول على رابط التنزيل عبر واتساب.",
+    "invalidMobileNumber": "أدخل رقم هاتف محمول صالح (مع رمز الدولة للأرقام خارج الهند).",
+    "ios": "آي أو إس",
+    "linkSendFailedToast": "تعذر إرسال الرابط. يرجى المحاولة مرة أخرى.",
+    "linkSentToast": "تم إرسال الرابط — تحقق من واتساب على هذا الرقم.",
+    "mobileNumberLabel": "رقم الهاتف المحمول",
+    "mobileNumberPlaceholder": "مثال: 9876543210",
+    "sendLink": "إرسال الرابط",
+    "sendOverWhatsappNote": "سنرسل رابط التطبيق إلى رقم هاتفك المحمول عبر واتساب.",
+    "sendTheAppLink": "إرسال رابط التطبيق",
+    "sending": "جارٍ الإرسال…"
+}

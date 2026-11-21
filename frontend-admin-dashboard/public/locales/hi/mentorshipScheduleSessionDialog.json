@@ -1,0 +1,18 @@
+{
+    "mentorFallback": "मेंटर",
+    "learnerFallback": "इस छात्र",
+    "sessionBookedToast": "{{name}} के साथ सत्र बुक हुआ",
+    "scheduleFailedFallback": "वह सत्र शेड्यूल नहीं हो सका।",
+    "dialogHeading": "1:1 शेड्यूल करें",
+    "cancelButton": "रद्द करें",
+    "bookingButton": "बुक किया जा रहा है…",
+    "bookButton": "सत्र बुक करें",
+    "introParagraph": "छात्र को पुष्टि, मीटिंग लिंक और रिमाइंडर मिलते हैं — बिल्कुल वैसे ही जैसे उसने खुद बुक किया हो। उससे कुछ नहीं पूछा जाता।",
+    "mentorLabel": "मेंटर",
+    "mentorPlaceholder": "एक मेंटर चुनें",
+    "mentorSearchPlaceholder": "मेंटर खोजें…",
+    "mentorEmptyText": "कोई मेंटर मेल नहीं खाता",
+    "learnerLabel": "छात्र",
+    "pickTimeLabel": "एक समय चुनें",
+    "chooseMentorFirst": "यह देखने के लिए मेंटर चुनें कि वे कब खाली हैं।"
+}

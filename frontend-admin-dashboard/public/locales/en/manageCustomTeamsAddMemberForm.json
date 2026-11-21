@@ -1,0 +1,48 @@
+{
+    "title": "Add New Member",
+    "description": "Create a new user and assign them to a team/role with specific access.",
+    "sections": {
+        "userDetails": "User Details",
+        "userAccessMapping": "User Access Mapping",
+        "userAccessMappingHint": "Select one or more package sessions to grant access to."
+    },
+    "form": {
+        "fullNameLabel": "Full Name *",
+        "fullNamePlaceholder": "John Doe",
+        "emailLabel": "Email *",
+        "emailPlaceholder": "john@example.com",
+        "phoneLabel": "Phone",
+        "phonePlaceholder": "123 456 7890",
+        "roleLabel": "Role *",
+        "selectRolePlaceholder": "Select Role",
+        "customRoleOption": "+ Custom Role",
+        "customRoleNamePlaceholder": "Enter custom role name",
+        "hasFacultyAssignedLabel": "Has Faculty Assigned Permission?",
+        "packageSessionsLabel": "Package Sessions",
+        "packageSessionsSearchPlaceholder": "Search package sessions...",
+        "loadingSessions": "Loading sessions...",
+        "noSessionsFound": "No package sessions found.",
+        "sessionsPageInfo": "Page {{page}} of {{totalPages}} ({{count}} total)",
+        "sessionsSelected_one": "{{count}} session selected",
+        "sessionsSelected_other": "{{count}} sessions selected",
+        "linkageTypeLabel": "Linkage Type",
+        "selectLinkageTypePlaceholder": "Select Linkage Type",
+        "linkageDirect": "Direct",
+        "linkageInherited": "Inherited",
+        "linkagePartnership": "Partnership"
+    },
+    "validation": {
+        "fullNameRequired": "Full Name is required",
+        "invalidEmail": "Invalid email address",
+        "roleRequired": "Role is required"
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "addMember": "Add Member"
+    },
+    "toast": {
+        "addSuccess": "Member added successfully",
+        "addFailed": "Failed to add member",
+        "customRoleNameRequired": "Please enter a custom role name"
+    }
+}

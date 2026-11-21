@@ -41,6 +41,8 @@ public class GetSessionByIdResponseDTO {
     private String coverFileId;
     private Boolean allowRewind;
     private Boolean allowPlayPause;
+    // Attendance-only institutes: true when this class is shown to learners.
+    private Boolean showToLearners;
     private String sessionStreamingServiceType;
     private String timezone;
     private Map<String, Object> bbbConfig;

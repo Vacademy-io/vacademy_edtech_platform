@@ -43,6 +43,14 @@ public class AiReportHtmlBuilder {
     private static final String[] BLOOM_COLORS = {GREEN, BLUE, PURPLE, YELLOW, ORANGE, RED};
 
     public String generateAiReportHtml(String assessmentName, String processedJson, ReportBrandingDto branding, StudentComparisonDto comparison) {
+        return generateAiReportHtml(assessmentName, processedJson, branding, comparison,
+                vacademy.io.assessment_service.features.assessment.service.aireport.ReportOptions.ALL);
+    }
+
+    /** Same report, leaving out the answers the assessment's report options hide. */
+    public String generateAiReportHtml(String assessmentName, String processedJson, ReportBrandingDto branding, StudentComparisonDto comparison,
+                                       vacademy.io.assessment_service.features.assessment.service.aireport.ReportOptions options) {
+        if (options == null) options = vacademy.io.assessment_service.features.assessment.service.aireport.ReportOptions.ALL;
         StringBuilder html = new StringBuilder();
         if (branding == null) branding = ReportBrandingDto.builder().build();
         String accent = branding.getPrimaryColor() != null ? branding.getPrimaryColor() : PURPLE;
@@ -73,7 +81,7 @@ public class AiReportHtmlBuilder {
             if (report.has("topic_analysis") && report.get("topic_analysis").isArray()) appendTopics(html, report.get("topic_analysis"));
             if (report.has("strengths") || report.has("weaknesses")) appendStrengthsWeaknesses(html, report);
             if (report.has("blooms_taxonomy")) appendBlooms(html, report.get("blooms_taxonomy"));
-            if (report.has("misconception_analysis") && report.get("misconception_analysis").isArray()) appendMisconceptions(html, report.get("misconception_analysis"));
+            if (report.has("misconception_analysis") && report.get("misconception_analysis").isArray()) appendMisconceptions(html, report.get("misconception_analysis"), options);
             if (report.has("behavioral_insights")) appendBehavioral(html, report.get("behavioral_insights"));
             if (report.has("recommended_learning_path") && report.get("recommended_learning_path").isArray()) appendLearningPath(html, report.get("recommended_learning_path"), accent);
             appendMarkdownSection(html, "Areas of Improvement", "\u25B6", YELLOW, textOrEmpty(report, "areas_of_improvement"));
@@ -324,17 +332,26 @@ public class AiReportHtmlBuilder {
     }
 
     // ── MISCONCEPTIONS ──
-    private void appendMisconceptions(StringBuilder html, JsonNode items) {
+    private void appendMisconceptions(StringBuilder html, JsonNode items,
+                                      vacademy.io.assessment_service.features.assessment.service.aireport.ReportOptions options) {
+        boolean yours = options.showQuestionWise() && options.showYourAnswer();
+        boolean right = options.showQuestionWise() && options.showCorrectAnswer();
         html.append("<div class=\"section\">");
         appendCardTitle(html, "Misconception Analysis", "\u25CF", RED);
         html.append("<p style=\"font-size: 11px; color: #888; margin: -8px 0 12px 0;\">Questions you got wrong and the specific conceptual errors behind each mistake.</p>");
         for (JsonNode m : items) {
             html.append("<div style=\"border:1px solid ").append(tint(RED, 0.2)).append("; border-radius:10px; padding:14px; margin-bottom:10px; background:").append(tint(RED, 0.05)).append(";\">");
             html.append("<div style=\"font-weight:600; font-size:13px; margin-bottom:6px;\">").append(esc(textOrEmpty(m, "question_summary"))).append("</div>");
-            html.append("<table style=\"font-size:11px; margin-bottom:8px;\"><tr>");
-            html.append("<td style=\"color:").append(RED).append("; padding-right:16px;\"><b>Your Answer:</b> ").append(esc(textOrEmpty(m, "student_answer"))).append("</td>");
-            html.append("<td style=\"color:").append(GREEN).append(";\"><b>Correct:</b> ").append(esc(textOrEmpty(m, "correct_answer"))).append("</td>");
-            html.append("</tr></table>");
+            if (yours || right) {
+                html.append("<table style=\"font-size:11px; margin-bottom:8px;\"><tr>");
+                if (yours) {
+                    html.append("<td style=\"color:").append(RED).append("; padding-right:16px;\"><b>Your Answer:</b> ").append(esc(textOrEmpty(m, "student_answer"))).append("</td>");
+                }
+                if (right) {
+                    html.append("<td style=\"color:").append(GREEN).append(";\"><b>Correct:</b> ").append(esc(textOrEmpty(m, "correct_answer"))).append("</td>");
+                }
+                html.append("</tr></table>");
+            }
             html.append("<div style=\"font-size:11px; color:").append(TEXT_DIM).append("; padding:8px; background:").append(tint(ORANGE, 0.08)).append("; border-radius:6px; border-left:3px solid ").append(ORANGE).append("; margin-bottom:4px;\">")
                     .append("<b style=\"color:").append(ORANGE).append(";\">Misconception: </b>").append(esc(textOrEmpty(m, "misconception"))).append("</div>");
             html.append("<div style=\"font-size:11px; color:").append(BLUE).append(";\">").append(esc(textOrEmpty(m, "remediation"))).append("</div>");

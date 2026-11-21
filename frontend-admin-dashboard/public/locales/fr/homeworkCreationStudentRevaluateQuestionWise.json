@@ -1,0 +1,13 @@
+{
+    "title": "Réévaluation par question",
+    "table": {
+        "qNo": "N° Q.",
+        "question": "Question"
+    },
+    "buttons": {
+        "revaluate": "Réévaluer"
+    },
+    "toasts": {
+        "revaluateSuccess": "Votre tentative pour cette évaluation a été réévaluée. Veuillez vérifier votre e-mail !"
+    }
+}

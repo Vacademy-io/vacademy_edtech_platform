@@ -1,14 +1,19 @@
 import React, { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { CaretLeft, CaretRight, X } from "@phosphor-icons/react";
 import axios from "axios";
 import { LIVE_SESSION_REQUEST_OTP, LIVE_SESSION_VERIFY_OTP, CATALOGUE_LEAD_SUBMIT_URL } from "@/constants/urls";
-import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { getTerminology, getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/bootstrap.css";
 import { isValidPhoneValue } from "@/lib/phone-validation";
-import { getCachedPreferredCountries } from "@/services/domain-routing";
+import {
+  phoneFieldHasInput,
+  usePreferredPhoneCountries,
+} from "@/hooks/use-preferred-phone-countries";
+import { useSiteT } from "../-utils/catalogue-locale";
 
 interface FieldOption {
   label: string;
@@ -70,6 +75,12 @@ export const LeadCollectionModal: React.FC<LeadCollectionModalProps> = ({
   mandatory,
   packageSessionId,
 }) => {
+  const { t } = useTranslation("coursePlayerA");
+  // Field and option LABELS are shown in the visitor's language; names and
+  // option values (what is matched and submitted) always stay as authored.
+  const siteT = useSiteT();
+  const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
+  const courses = getTerminologyPlural(ContentTerms.Course, SystemTerms.Course);
   const [formData, setFormData] = useState<FormData>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -136,13 +147,6 @@ export const LeadCollectionModal: React.FC<LeadCollectionModalProps> = ({
   }, [isOpen]);
 
   // Validation functions
-  // Preferred / default phone country — same source the enroll-invite flow uses.
-  const preferredCountries = React.useMemo(() => {
-    const cached = getCachedPreferredCountries();
-    return cached && cached.length > 0 ? cached : ["in"];
-  }, []);
-  const defaultPhoneCountry = preferredCountries[0] ?? "in";
-
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
@@ -159,6 +163,30 @@ export const LeadCollectionModal: React.FC<LeadCollectionModalProps> = ({
     /phone|mobile|contact|whatsapp/i.test(field.name || "") ||
     /phone|mobile|contact|whatsapp/i.test(field.label || "");
 
+  // What this phone field starts on: the institute's configured preferred
+  // countries, or — when it configured none, or the portal is on GEO_FIRST —
+  // the country the visitor is opening this page from.
+  //
+  // Declared below `isPhoneField` because the freeze flag needs it. Catalogue
+  // pages are public and can render before domain routing replies, which used to
+  // leave the field on the platform fallback (+91) for every visitor; this takes
+  // the institute's answer whenever it lands, and never once a number has been
+  // typed into any phone field on the form.
+  // `isPhoneField` alone is NOT the right test here: `renderField` returns early
+  // for a chips field, so one named e.g. "preferred_contact" matches that regex
+  // but renders as buttons, never as a phone input. Counting it would let a chip
+  // value with digits in it trip the hook's permanent freeze latch and stop the
+  // real phone field from ever picking up the institute's preference. Mirror the
+  // renderer's own precedence instead.
+  const rendersAsPhoneInput = (field: FormField) =>
+    !(field.type === "chips" && field.options) && isPhoneField(field);
+
+  const hasTypedPhone = settings.fields.some(
+    (field) => rendersAsPhoneInput(field) && phoneFieldHasInput(formData[field.name]),
+  );
+  const { defaultCountry: defaultPhoneCountry, preferredCountries } =
+    usePreferredPhoneCountries({ freeze: hasTypedPhone });
+
   // OTP verification functions
   const handleSendOtp = async () => {
     const email = formData.email;
@@ -167,7 +195,7 @@ export const LeadCollectionModal: React.FC<LeadCollectionModalProps> = ({
     console.log("[LeadCollectionModal] API URL:", LIVE_SESSION_REQUEST_OTP);
     
     if (!email || !validateEmail(email)) {
-      toast.error("Please enter a valid email address");
+      toast.error(t("common.invalidEmail"));
       return;
     }
 
@@ -190,20 +218,20 @@ export const LeadCollectionModal: React.FC<LeadCollectionModalProps> = ({
 
       setEmailOtpSent(true);
       setOtpCooldown(30);
-      toast.success("OTP sent to your email");
+      toast.success(t("common.otpSent"));
     } catch (error) {
       console.error("[LeadCollectionModal] Error sending OTP:", error);
       console.error("[LeadCollectionModal] Error details:", {
         message: error instanceof Error ? error.message : 'Unknown error',
         response: error instanceof Error && 'response' in error ? (error as any).response : null
       });
-      toast.error("Failed to send OTP. Please try again");
+      toast.error(t("common.otpSendFailed"));
     }
   };
 
   const handleVerifyOtp = async () => {
     if (!emailOtp || emailOtp.length !== 6) {
-      toast.error("Please enter the complete 6-digit OTP");
+      toast.error(t("leadCollectionModal.otpIncomplete"));
       return;
     }
 
@@ -228,10 +256,10 @@ export const LeadCollectionModal: React.FC<LeadCollectionModalProps> = ({
       setEmailVerified(true);
       setEmailOtpSent(false);
       setEmailOtp("");
-      toast.success("Email verified successfully");
+      toast.success(t("common.emailVerified"));
     } catch (error) {
       console.error("Error verifying OTP:", error);
-      toast.error("Failed to verify OTP. Please try again");
+      toast.error(t("common.otpVerifyFailed"));
     } finally {
       setIsVerifyingOtp(false);
     }
@@ -310,7 +338,7 @@ export const LeadCollectionModal: React.FC<LeadCollectionModalProps> = ({
     );
     
     if (missingRequiredFields.length > 0) {
-      toast.error("Please fill in all required fields");
+      toast.error(t("leadCollectionModal.requiredFieldsMissing"));
       return;
     }
 
@@ -319,11 +347,11 @@ export const LeadCollectionModal: React.FC<LeadCollectionModalProps> = ({
       const value = formData[field.name];
       if (!value) continue;
       if (field.type === "email" && !validateEmail(value)) {
-        toast.error("Please enter a valid email address");
+        toast.error(t("common.invalidEmail"));
         return;
       }
       if (isPhoneField(field) && !validatePhone(value)) {
-        toast.error("Please enter a valid phone number");
+        toast.error(t("leadCollectionModal.invalidPhone"));
         return;
       }
     }
@@ -367,13 +395,13 @@ export const LeadCollectionModal: React.FC<LeadCollectionModalProps> = ({
         response.data.toLowerCase().includes("already submitted");
       setSuccessMessage(
         alreadySubmitted
-          ? "We already have your information. Thank you for your interest!"
-          : "Thank you for your interest! We'll be in touch soon."
+          ? t("leadCollectionModal.success.alreadySubmitted")
+          : t("leadCollectionModal.success.submitted")
       );
       setShowSuccessPopup(true);
     } catch (error: any) {
       console.error("Error collecting lead data:", error);
-      toast.error("Failed to submit your information. Please try again.");
+      toast.error(t("leadCollectionModal.submitFailed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -503,7 +531,7 @@ export const LeadCollectionModal: React.FC<LeadCollectionModalProps> = ({
       return (
         <div key={field.name} className="space-y-3">
           <label className="block text-sm font-medium text-gray-700">
-            {field.label} {field.required && "*"}
+            {siteT(field.label)} {field.required && "*"}
           </label>
           <div className="flex flex-wrap gap-2">
             {field.options.map((option) => (
@@ -520,7 +548,7 @@ export const LeadCollectionModal: React.FC<LeadCollectionModalProps> = ({
                   backgroundColor: fieldValue === option.value ? field.style?.chipColor : undefined,
                 }}
               >
-                {option.label}
+                {siteT(option.label)}
               </button>
             ))}
           </div>
@@ -531,7 +559,7 @@ export const LeadCollectionModal: React.FC<LeadCollectionModalProps> = ({
     return (
       <div key={field.name} className="space-y-3">
         <label htmlFor={field.name} className="block text-sm font-medium text-gray-700 mb-1">
-          {field.label} {field.required && "*"}
+          {siteT(field.label)} {field.required && "*"}
         </label>
         <div className="space-y-2">
           {isPhoneField(field) ? (
@@ -540,10 +568,10 @@ export const LeadCollectionModal: React.FC<LeadCollectionModalProps> = ({
               enableSearch={true}
               value={fieldValue}
               onChange={(value) => handleInputChange(field.name, value)}
-              inputClass="!w-full !h-11 !rounded-md !border-gray-300"
-              buttonClass="!rounded-s-md !border-gray-300"
+              inputClass="!w-full !h-11 !rounded-catalogue-sm !border-gray-300"
+              buttonClass="!rounded-s-catalogue-sm !border-gray-300"
               containerClass="!w-full"
-              placeholder="Enter your phone number"
+              placeholder={t("leadCollectionModal.phonePlaceholder")}
               countryCodeEditable={false}
               enableAreaCodes={false}
               preferredCountries={preferredCountries}
@@ -554,12 +582,12 @@ export const LeadCollectionModal: React.FC<LeadCollectionModalProps> = ({
               id={field.name}
               value={fieldValue}
               onChange={(e) => handleInputChange(field.name, e.target.value)}
-              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+              className={`w-full px-3 py-2 border rounded-catalogue-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
                 field.type === 'email' && fieldValue && !validateEmail(fieldValue)
                   ? 'border-red-300'
                   : 'border-gray-300'
               }`}
-              placeholder={`Enter your ${field.label.toLowerCase()}`}
+              placeholder={t("leadCollectionModal.enterYourField", { field: siteT(field.label).toLowerCase() })}
               required={field.required}
             />
           )}
@@ -573,12 +601,12 @@ export const LeadCollectionModal: React.FC<LeadCollectionModalProps> = ({
                    onClick={handleSendOtp}
                    className="catalogue-btn catalogue-btn-primary catalogue-btn-sm w-full sm:w-auto"
                  >
-                   Send OTP
+                   {t("leadCollectionModal.sendOtp")}
                  </button>
                ) : (
                  <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
-                   <span className="inline-flex items-center px-3 py-2 bg-green-100 text-green-800 rounded-md text-sm" role="status" aria-live="polite">
-                     ✓ OTP sent to your email
+                   <span className="inline-flex items-center px-3 py-2 bg-green-100 text-green-800 rounded-catalogue-sm text-sm" role="status" aria-live="polite">
+                     {t("leadCollectionModal.otpSentToEmail")}
                    </span>
                    <button
                      type="button"
@@ -586,25 +614,25 @@ export const LeadCollectionModal: React.FC<LeadCollectionModalProps> = ({
                      disabled={otpCooldown > 0}
                      className="catalogue-btn catalogue-btn-secondary catalogue-btn-sm disabled:opacity-50 disabled:cursor-not-allowed"
                    >
-                     {otpCooldown > 0 ? `Resend in ${otpCooldown}s` : "Resend OTP"}
+                     {otpCooldown > 0 ? t("leadCollectionModal.resendIn", { seconds: otpCooldown }) : t("leadCollectionModal.resendOtp")}
                    </button>
                  </div>
                )}
              </div>
            )}
-          
+
           {field.type === 'email' && emailVerified && (
-            <div className="flex items-center justify-center sm:justify-start px-3 py-2 bg-green-100 text-green-800 rounded-md text-sm" role="status" aria-live="polite">
-              ✓ Email Verified
+            <div className="flex items-center justify-center sm:justify-start px-3 py-2 bg-green-100 text-green-800 rounded-catalogue-sm text-sm" role="status" aria-live="polite">
+              {t("leadCollectionModal.emailVerifiedConfirm")}
             </div>
           )}
         </div>
-        
+
          {/* OTP Verification Section */}
          {field.type === 'email' && emailOtpSent && !emailVerified && (
            <div className="space-y-2">
              <label htmlFor="lead-otp-input" className="block text-sm font-medium text-gray-700">
-               Enter OTP sent to your email
+               {t("leadCollectionModal.enterOtpLabel")}
              </label>
              <div className="space-y-2">
                <input
@@ -614,9 +642,9 @@ export const LeadCollectionModal: React.FC<LeadCollectionModalProps> = ({
                  autoComplete="one-time-code"
                  value={emailOtp}
                  onChange={(e) => setEmailOtp(e.target.value)}
-                 placeholder="Enter 6-digit OTP"
+                 placeholder={t("leadCollectionModal.otpPlaceholder")}
                  maxLength={6}
-                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                 className="w-full px-3 py-2 border border-gray-300 rounded-catalogue-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent"
                />
                <div className="flex justify-end">
                  <button
@@ -625,24 +653,24 @@ export const LeadCollectionModal: React.FC<LeadCollectionModalProps> = ({
                    disabled={isVerifyingOtp || emailOtp.length !== 6}
                    className="catalogue-btn catalogue-btn-primary catalogue-btn-sm w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
                  >
-                   {isVerifyingOtp ? 'Verifying...' : 'Verify OTP'}
+                   {isVerifyingOtp ? t("leadCollectionModal.verifying") : t("leadCollectionModal.verifyOtp")}
                  </button>
                </div>
              </div>
            </div>
          )}
-        
+
         {/* Helper Text for Phone Numbers */}
         {isPhoneField(field) && (
-          <p className="text-gray-500 text-xs">Pick your country code and enter your number.</p>
+          <p className="text-gray-500 text-xs">{t("leadCollectionModal.phoneHelper")}</p>
         )}
-        
+
         {/* Validation Messages */}
         {field.type === 'email' && fieldValue && !validateEmail(fieldValue) && (
-          <p className="text-red-500 text-sm">Please enter a valid email address</p>
+          <p className="text-red-500 text-sm">{t("common.invalidEmail")}</p>
         )}
         {isPhoneField(field) && fieldValue && !validatePhone(fieldValue) && (
-          <p className="text-red-500 text-sm">Please enter a valid phone number for the selected country</p>
+          <p className="text-red-500 text-sm">{t("leadCollectionModal.invalidPhoneCountry")}</p>
         )}
       </div>
     );
@@ -666,22 +694,22 @@ export const LeadCollectionModal: React.FC<LeadCollectionModalProps> = ({
           aria-modal="true"
           aria-labelledby="lead-modal-title"
           tabIndex={-1}
-          className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-auto outline-none"
+          className="relative bg-white rounded-catalogue-md shadow-xl max-w-md w-full mx-auto outline-none"
         >
           {/* Header */}
           <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
             <h2 id="lead-modal-title" className="text-lg sm:text-xl font-semibold text-gray-900">
               {mandatory
-                ? "Complete Your Registration"
-                : `Get ${getTerminology(ContentTerms.Course, SystemTerms.Course)} Details`}
+                ? t("leadCollectionModal.completeRegistration")
+                : t("common.getCourseDetails", { course })}
             </h2>
             <div className="flex items-center gap-2">
             {!mandatory && (
               <button
                 onClick={handleClose}
                 className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
-                aria-label="Close"
-                title="Close"
+                aria-label={t("common.close")}
+                title={t("common.close")}
               >
                   <X className="w-6 h-6" aria-hidden="true" />
               </button>
@@ -693,9 +721,9 @@ export const LeadCollectionModal: React.FC<LeadCollectionModalProps> = ({
           <form onSubmit={handleSubmit} className="p-4 sm:p-6">
             <div className="mb-4">
               <p className="text-gray-600 text-sm">
-                {mandatory 
-                  ? "Please provide your details to continue exploring our courses."
-                  : "Get personalized course recommendations and updates by sharing your details."
+                {mandatory
+                  ? t("leadCollectionModal.mandatoryHint", { courses })
+                  : t("leadCollectionModal.optionalHint", { course })
                 }
               </p>
               
@@ -725,10 +753,10 @@ export const LeadCollectionModal: React.FC<LeadCollectionModalProps> = ({
                   <button
                     type="button"
                     onClick={handlePreviousStep}
-                    className="flex items-center px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                    className="flex items-center px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-catalogue-sm transition-colors"
                   >
                     <CaretLeft className="w-4 h-4 me-1" />
-                    Previous
+                    {t("common.previous")}
                   </button>
                 )}
                 {!mandatory && formStyle.type === 'single' && (
@@ -737,7 +765,7 @@ export const LeadCollectionModal: React.FC<LeadCollectionModalProps> = ({
                   onClick={handleClose}
                     className="catalogue-btn catalogue-btn-secondary"
                 >
-                    Cancel
+                    {t("common.cancel")}
                 </button>
               )}
               </div>
@@ -751,7 +779,7 @@ export const LeadCollectionModal: React.FC<LeadCollectionModalProps> = ({
                     disabled={!canProceedToNextStep()}
                     className="catalogue-btn catalogue-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Next
+                    {t("common.next")}
                     <CaretRight className="w-4 h-4" aria-hidden="true" />
                   </button>
                 ) : (
@@ -760,7 +788,7 @@ export const LeadCollectionModal: React.FC<LeadCollectionModalProps> = ({
                     disabled={isSubmitting || (formStyle.type === 'multiStep' && !canProceedToNextStep())}
                     className="catalogue-btn catalogue-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isSubmitting ? "Submitting..." : "Submit"}
+                    {isSubmitting ? t("leadCollectionModal.submitting") : t("common.submit")}
               </button>
                 )}
               </div>
@@ -771,12 +799,12 @@ export const LeadCollectionModal: React.FC<LeadCollectionModalProps> = ({
           {settings.inviteLink && (
             <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
               <p className="text-xs text-gray-500 text-center">
-                Have an invite code?{" "}
+                {t("leadCollectionModal.haveInviteCode")}{" "}
                 <a
                   href={settings.inviteLink}
                   className="text-primary-600 hover:text-primary-700 underline"
                 >
-                  Click here
+                  {t("leadCollectionModal.clickHere")}
                 </a>
               </p>
             </div>
@@ -787,14 +815,14 @@ export const LeadCollectionModal: React.FC<LeadCollectionModalProps> = ({
       {/* Success Popup */}
       {showSuccessPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+          <div className="bg-white rounded-catalogue-md shadow-xl max-w-md w-full mx-4 p-6">
             <div className="text-center">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
                 <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Request Sent</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">{t("leadCollectionModal.requestSent")}</h3>
               <p className="text-sm text-gray-600 mb-6">{successMessage}</p>
               <button
                 ref={successCloseRef}
@@ -804,7 +832,7 @@ export const LeadCollectionModal: React.FC<LeadCollectionModalProps> = ({
                 }}
                 className="catalogue-btn catalogue-btn-primary w-full"
               >
-                Close
+                {t("common.close")}
               </button>
             </div>
           </div>

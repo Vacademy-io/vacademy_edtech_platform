@@ -1,0 +1,23 @@
+{
+    "trigger": {
+        "extracting": "Extraction en cours…",
+        "extractCopiedQuestions": "Extraire les questions copiées"
+    },
+    "header": {
+        "instituteLogoAlt": "Logo de l'établissement"
+    },
+    "generateMore": {
+        "triggerLabel": "Générer davantage",
+        "dialogTitle": "Générer plus de questions",
+        "inputPlaceholder": "Saisissez des sujets pour générer des questions",
+        "submitLabel": "Générer des questions"
+    },
+    "closeButton": "Fermer",
+    "pageActions": {
+        "duplicate": "Dupliquer",
+        "delete": "Supprimer"
+    },
+    "emptyState": {
+        "noQuestions": "Aucune question n'existe."
+    }
+}

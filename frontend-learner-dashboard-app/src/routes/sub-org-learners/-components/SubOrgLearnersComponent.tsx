@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AdminMappings, StudentMapping, getMembers, addMember, terminateMembers, AddMemberRequest, getInstituteCustomFields, InstituteCustomField } from '@/services/sub-organization-learner-management';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,11 +14,17 @@ import { Plus, Trash, Users, ArrowsClockwise, SpinnerGap, UploadSimple } from '@
 import { toast } from 'sonner';
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/bootstrap.css";
+import { Trans, useTranslation } from "react-i18next";
 import { isValidPhoneValue } from "@/lib/phone-validation";
 import { BulkUploadModal } from './BulkUploadModal';
 import { CustomFieldRenderer } from "@/components/common/custom-fields/CustomFieldRenderer";
 import { FieldRenderType, getFieldRenderType } from "@/components/common/enroll-by-invite/-utils/custom-field-helpers";
-import { getPreferredPhoneCountries } from "@/services/domain-routing";
+import {
+  phoneFieldHasInput,
+  usePreferredPhoneCountries,
+} from "@/hooks/use-preferred-phone-countries";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, RoleTerms, SystemTerms } from "@/types/naming-settings";
 
 interface SubOrgLearnersComponentProps {
   adminMappings: AdminMappings[];
@@ -30,12 +36,11 @@ interface SubOrgLearnersComponentProps {
 const STAFF_ORG_ROLE = 'LEARNER';
 
 export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: SubOrgLearnersComponentProps) {
+  const { t } = useTranslation('registrationB');
+  const admin = getTerminology(RoleTerms.Admin, SystemTerms.Admin);
+  const batch = getTerminology(ContentTerms.Batch, SystemTerms.Batch);
+  const batchLower = batch.toLocaleLowerCase();
   const [selectedPackageSession, setSelectedPackageSession] = useState<string>('');
-  // Default selected country + picker order from the institute's preferred countries.
-  const { defaultCountry, preferredCountries } = useMemo(
-    () => getPreferredPhoneCountries(),
-    [],
-  );
   const [members, setMembers] = useState<StudentMapping[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
@@ -58,6 +63,30 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
     full_name: '',
     username: '',
     status: 'ACTIVE'
+  });
+
+  // Default selected country + picker order from the institute's preferred
+  // countries. Declared after `formData` so the freeze flag can read it.
+  //
+  // Only the fields that actually RENDER as phone inputs count. Scanning every
+  // value instead would freeze on an ordinary text field that happens to hold a
+  // digit, silently opting this form out of ever picking up the institute's
+  // preference. The phone fields are the built-in `mobile_number` plus any
+  // custom field the shared helper types as PHONE — exactly what the renderer
+  // below asks.
+  const hasTypedPhone =
+    phoneFieldHasInput(formData.mobile_number) ||
+    instituteCustomFields.some((field) => {
+      const key = field.custom_field?.fieldKey;
+      if (!key) return false;
+      const renderType = getFieldRenderType(
+        field.custom_field?.fieldName || key,
+        field.custom_field?.fieldType,
+      );
+      return renderType === FieldRenderType.PHONE && phoneFieldHasInput(formData[key]);
+    });
+  const { defaultCountry, preferredCountries } = usePreferredPhoneCountries({
+    freeze: hasTypedPhone,
   });
 
 
@@ -97,7 +126,7 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
           }
         } catch (error) {
           console.error("Failed to fetch custom fields", error);
-          toast.error("Failed to load registration form configuration");
+          toast.error(t('subOrgLearners.toast.loadFormConfigFailed'));
         } finally {
           setLoadingCustomFields(false);
         }
@@ -144,7 +173,7 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
 
   const handleAddMember = async () => {
     if (!selectedPackageSession) {
-      toast.error('Please select a package session');
+      toast.error(t('subOrgLearners.toast.selectBatch', { batch: batchLower }));
       return;
     }
 
@@ -202,29 +231,29 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
         hasFormFields && (!emailField || (!nameField && !full_name));
       if (isConfigProblem) {
         toast.error(
-          "This institute's invite form is missing a recognizable Email or Full Name field. Ask an admin to verify the invite form configuration."
+          t('subOrgLearners.addStaff.toast.configProblem', { admin })
         );
       } else {
-        toast.error('Email and Name are required fields.');
+        toast.error(t('subOrgLearners.addStaff.toast.emailNameRequired'));
       }
       return;
     }
 
     // Email validation
     if (!validateEmail(email)) {
-      toast.error('Please enter a valid email address');
+      toast.error(t('subOrgLearners.addStaff.toast.invalidEmail'));
       return;
     }
 
     // Phone number validation (if provided)
     if (mobile_number && !validatePhoneNumber(mobile_number)) {
-      toast.error('Please enter a valid phone number with country code (e.g., +1234567890)');
+      toast.error(t('subOrgLearners.addStaff.toast.invalidPhone'));
       return;
     }
 
     const selectedMapping = adminMappings.find(m => m.package_session_id === selectedPackageSession);
     if (!selectedMapping) {
-      toast.error('Invalid package session selected');
+      toast.error(t('subOrgLearners.toast.invalidBatch', { batch }));
       return;
     }
 
@@ -263,7 +292,7 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
     } catch (error: any) {
       console.error('Error adding member:', error);
       // Extract error message from API response
-      const errorMessage = error?.response?.data?.ex || error?.response?.data?.message || 'Failed to add staff';
+      const errorMessage = error?.response?.data?.ex || error?.response?.data?.message || t('subOrgLearners.addStaff.toast.addFailed');
       toast.error(errorMessage);
     } finally {
       setIsAdding(false);
@@ -272,7 +301,7 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
 
   const openTerminateDialog = () => {
     if (selectedMembers.length === 0) {
-      toast.error('Please select members to terminate');
+      toast.error(t('subOrgLearners.terminate.toast.selectMembers'));
       return;
     }
     setTerminateMode('HARD');
@@ -282,18 +311,18 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
 
   const handleTerminateMembers = async () => {
     if (!selectedPackageSession) {
-      toast.error('Please select a package session');
+      toast.error(t('subOrgLearners.toast.selectBatch', { batch: batchLower }));
       return;
     }
 
     const selectedMapping = adminMappings.find(m => m.package_session_id === selectedPackageSession);
     if (!selectedMapping) {
-      toast.error('Invalid package session selected');
+      toast.error(t('subOrgLearners.toast.invalidBatch', { batch }));
       return;
     }
 
     if (terminateMode === 'SOFT' && !terminateAccessTillDate) {
-      toast.error('Please pick a last access date for a soft termination');
+      toast.error(t('subOrgLearners.terminate.toast.pickDate'));
       return;
     }
 
@@ -310,15 +339,20 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
 
       toast.success(
         terminateMode === 'SOFT'
-          ? `Access for ${selectedMembers.length} staff member(s) will continue until ${terminateAccessTillDate}`
-          : `Successfully terminated ${selectedMembers.length} staff member(s)`,
+          ? t('subOrgLearners.terminate.toast.softSuccess', {
+              count: selectedMembers.length,
+              date: terminateAccessTillDate,
+            })
+          : t('subOrgLearners.terminate.toast.hardSuccess', {
+              count: selectedMembers.length,
+            }),
       );
       setSelectedMembers([]);
       setIsTerminateDialogOpen(false);
       loadMembers(); // Refresh the list
     } catch (error) {
       console.error('Error terminating members:', error);
-      toast.error('Failed to terminate staff. Please try again.');
+      toast.error(t('subOrgLearners.terminate.toast.failed'));
     } finally {
       setIsTerminating(false);
     }
@@ -451,7 +485,7 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
               value={formData[fieldKey] || ''}
               onChange={(phone) => setFormData((prev: any) => ({ ...prev, [fieldKey]: phone.startsWith('+') ? phone : `+${phone}` }))}
               enableSearch={true}
-              placeholder="+1 234 567 8900"
+              placeholder={t('subOrgLearners.addStaff.phonePlaceholder')}
               inputClass="!w-full h-10 !rounded-md !border-input"
               buttonClass="!rounded-s-md !border-input"
               countryCodeEditable={false}
@@ -481,33 +515,39 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
     );
   };
 
+  const currentOrgName =
+    (adminMappings.find(m => m.package_session_id === selectedPackageSession) || adminMappings[0])?.sub_org_details?.institute_name ||
+    t('subOrgLearners.page.defaultOrgName');
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{(adminMappings.find(m => m.package_session_id === selectedPackageSession) || adminMappings[0])?.sub_org_details?.institute_name || 'Sub Organization'}</h1>
-          <p className="text-gray-600 mt-1">Manage staff for your {(adminMappings.find(m => m.package_session_id === selectedPackageSession) || adminMappings[0])?.sub_org_details?.institute_name || 'Sub Organization'}</p>
+          <h1 className="text-2xl font-bold text-gray-900">{currentOrgName}</h1>
+          <p className="text-gray-600 mt-1">
+            {t('subOrgLearners.page.subtitle', { orgName: currentOrgName })}
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <Button onClick={loadMembers} variant="outline" size="sm">
             <ArrowsClockwise className="w-4 h-4 me-2" />
-            Refresh
+            {t('subOrgLearners.page.refreshButton')}
           </Button>
           <Button variant="outline" onClick={() => setIsBulkUploadOpen(true)}>
             <UploadSimple className="w-4 h-4 me-2" />
-            Bulk Upload
+            {t('subOrgLearners.page.bulkUploadButton')}
           </Button>
           <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="w-4 h-4 me-2" />
-                Add Staff
+                {t('subOrgLearners.addStaff.addButton')}
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md w-vw-95 max-h-screen-90 overflow-y-auto p-4 sm:p-6 z-50">
               <DialogHeader>
-                <DialogTitle>Add New Staff</DialogTitle>
+                <DialogTitle>{t('subOrgLearners.addStaff.dialogTitle')}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 {loadingCustomFields ? (
@@ -529,27 +569,27 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
                   // Fallback hardcoded fields if no custom fields loaded
                   <>
                     <div>
-                      <Label htmlFor="email">Email *</Label>
+                      <Label htmlFor="email">{t('subOrgLearners.addStaff.fallback.emailLabel')}</Label>
                       <Input
                         id="email"
                         type="email"
                         value={formData.email}
                         onChange={(e) => setFormData((prev: any) => ({ ...prev, email: e.target.value }))}
-                        placeholder="staff@example.com"
+                        placeholder={t('subOrgLearners.addStaff.fallback.emailPlaceholder')}
                         className={formData.email && !validateEmail(formData.email) ? "border-red-500" : ""}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="full_name">Full Name *</Label>
+                      <Label htmlFor="full_name">{t('subOrgLearners.addStaff.fallback.fullNameLabel')}</Label>
                       <Input
                         id="full_name"
                         value={formData.full_name}
                         onChange={(e) => setFormData((prev: any) => ({ ...prev, full_name: e.target.value }))}
-                        placeholder="Enter full name"
+                        placeholder={t('subOrgLearners.addStaff.fallback.fullNamePlaceholder')}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="mobile_number">Mobile Number *</Label>
+                      <Label htmlFor="mobile_number">{t('subOrgLearners.addStaff.fallback.mobileLabel')}</Label>
                       <PhoneInput
                         country={defaultCountry}
                         preferredCountries={preferredCountries}
@@ -562,12 +602,12 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
                   </>
                 )}
 
-                <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
+                <div className="flex flex-col sm:flex-row justify-end gap-stack pt-4">
                   <Button variant="outline" onClick={() => setIsAddModalOpen(false)} className="w-full sm:w-auto" disabled={isAdding}>
-                    Cancel
+                    {t('common.cancel')}
                   </Button>
                   <Button onClick={handleAddMember} className="w-full sm:w-auto" disabled={isAdding}>
-                    {isAdding ? 'Adding...' : 'Add Staff'}
+                    {isAdding ? t('subOrgLearners.addStaff.addingLabel') : t('subOrgLearners.addStaff.addButton')}
                   </Button>
                 </div>
               </div>
@@ -581,12 +621,18 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
       {adminMappings.length > 1 ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Select Package Session</CardTitle>
+            <CardTitle className="text-lg">
+              {t('subOrgLearners.page.selectBatchTitle', { batch })}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <Select value={selectedPackageSession} onValueChange={setSelectedPackageSession}>
               <SelectTrigger className="w-full max-w-md">
-                <SelectValue placeholder="Select a package session" />
+                <SelectValue
+                  placeholder={t('subOrgLearners.page.selectBatchPlaceholder', {
+                    batch: batchLower,
+                  })}
+                />
               </SelectTrigger>
               <SelectContent>
                 {adminMappings.map((mapping) => (
@@ -601,7 +647,9 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
       ) : adminMappings.length === 1 && selectedPackageSession ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Practice Group </CardTitle>
+            <CardTitle className="text-lg">
+              {t('subOrgLearners.page.practiceGroupTitle')}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-gray-700 font-medium">
@@ -618,7 +666,7 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Users className="w-5 h-5" />
-                Staff ({members.length})
+                {t('subOrgLearners.table.staffCountTitle', { count: members.length })}
               </CardTitle>
               {selectedPackageSession && (
                 <p className="text-sm text-gray-600 mt-1">
@@ -627,7 +675,7 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
               )}
               {selectedMembers.length > 0 && (
                 <p className="text-sm text-gray-600 mt-1">
-                  {selectedMembers.length} staff member{selectedMembers.length > 1 ? 's' : ''} selected
+                  {t('subOrgLearners.table.selectedCount', { count: selectedMembers.length })}
                 </p>
               )}
             </div>
@@ -635,23 +683,33 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
               <>
                 <Button variant="destructive" size="sm" onClick={openTerminateDialog} className="text-white">
                   <Trash className="w-4 h-4 me-2 text-white" />
-                  Terminate Selected ({selectedMembers.length})
+                  {t('subOrgLearners.terminate.selectedButton', { count: selectedMembers.length })}
                 </Button>
 
                 <AlertDialog open={isTerminateDialogOpen} onOpenChange={setIsTerminateDialogOpen}>
                   <AlertDialogContent className="max-w-md">
                     <AlertDialogHeader>
                       <AlertDialogTitle className="text-xl font-semibold">
-                        Confirm Termination
+                        {t('subOrgLearners.terminate.confirmTitle')}
                       </AlertDialogTitle>
                       <AlertDialogDescription className="text-gray-600">
-                        Remove <span className="font-semibold text-gray-900">{selectedMembers.length}</span> staff member{selectedMembers.length > 1 ? 's' : ''} from this membership.
+                        <Trans
+                          t={t}
+                          i18nKey="subOrgLearners.terminate.confirmDescription"
+                          count={selectedMembers.length}
+                          values={{ count: selectedMembers.length }}
+                          components={{
+                            b1: <span className="font-semibold text-gray-900" />,
+                          }}
+                        />
                       </AlertDialogDescription>
                     </AlertDialogHeader>
 
                     {/* SOFT vs HARD choice + last-access date (SOFT only). */}
                     <div className="flex flex-col gap-2 rounded-lg border border-gray-100 bg-gray-50 p-3">
-                      <p className="text-xs font-medium text-gray-600">Termination Mode</p>
+                      <p className="text-xs font-medium text-gray-600">
+                        {t('subOrgLearners.terminate.modeLabel')}
+                      </p>
                       <label className="flex items-start gap-2">
                         <input
                           type="radio"
@@ -661,7 +719,8 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
                           className="mt-0.5"
                         />
                         <span className="text-xs text-gray-700">
-                          <strong>Terminate now</strong> — Access is revoked immediately.
+                          <strong>{t('subOrgLearners.terminate.hardLabel')}</strong>{' '}
+                          {t('subOrgLearners.terminate.hardDescription')}
                         </span>
                       </label>
                       <label className="flex items-start gap-2">
@@ -673,14 +732,16 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
                           className="mt-0.5"
                         />
                         <span className="text-xs text-gray-700">
-                          <strong>Keep until date</strong> — Access continues until the last
-                          access date below, then ends automatically.
+                          <strong>{t('subOrgLearners.terminate.softLabel')}</strong>{' '}
+                          {t('subOrgLearners.terminate.softDescription')}
                         </span>
                       </label>
 
                       {terminateMode === 'SOFT' && (
                         <div className="ms-6 mt-1 flex flex-col gap-1.5">
-                          <p className="text-[11px] font-medium text-gray-600">Last access date</p>
+                          <p className="text-2xs font-medium text-gray-600">
+                            {t('subOrgLearners.terminate.lastAccessDateLabel')}
+                          </p>
                           <input
                             type="date"
                             value={terminateAccessTillDate}
@@ -689,7 +750,9 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
                             className="w-fit rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-800 focus:border-primary-300 focus:outline-none"
                           />
                           {!terminateAccessTillDate && (
-                            <p className="text-[10px] text-red-500">Pick a date to keep access until.</p>
+                            <p className="text-3xs text-red-500">
+                              {t('subOrgLearners.terminate.pickDateHint')}
+                            </p>
                           )}
                         </div>
                       )}
@@ -697,7 +760,7 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
 
                     <AlertDialogFooter className="gap-2 sm:gap-0">
                       <AlertDialogCancel disabled={isTerminating} className="mt-0">
-                        Cancel
+                        {t('common.cancel')}
                       </AlertDialogCancel>
                       <AlertDialogAction
                         onClick={handleTerminateMembers}
@@ -710,12 +773,14 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
                         {isTerminating ? (
                           <>
                             <SpinnerGap className="w-4 h-4 me-2 animate-spin" />
-                            {terminateMode === 'SOFT' ? 'Scheduling...' : 'Terminating...'}
+                            {terminateMode === 'SOFT'
+                              ? t('subOrgLearners.terminate.schedulingLabel')
+                              : t('subOrgLearners.terminate.terminatingLabel')}
                           </>
                         ) : terminateMode === 'SOFT' ? (
-                          'Keep until date'
+                          t('subOrgLearners.terminate.softLabel')
                         ) : (
-                          'Terminate now'
+                          t('subOrgLearners.terminate.hardLabel')
                         )}
                       </AlertDialogAction>
                     </AlertDialogFooter>
@@ -729,13 +794,17 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
-              <span className="ms-3 text-gray-600">Loading staff...</span>
+              <span className="ms-3 text-gray-600">{t('subOrgLearners.table.loading')}</span>
             </div>
           ) : members.length === 0 ? (
             <div className="text-center py-8">
               <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No staff found</h3>
-              <p className="text-gray-600">Start by adding staff to this package session.</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                {t('subOrgLearners.table.emptyTitle')}
+              </h3>
+              <p className="text-gray-600">
+                {t('subOrgLearners.table.emptyDescription', { batch: batchLower })}
+              </p>
             </div>
           ) : (
             (() => {
@@ -857,7 +926,9 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
                             {capitalizeFieldName(col.field_name)}
                           </TableHead>
                         ))}
-                        <TableHead className="sticky end-0 bg-white z-10">Status</TableHead>
+                        <TableHead className="sticky end-0 bg-white z-10">
+                          {t('subOrgLearners.table.statusColumn')}
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>

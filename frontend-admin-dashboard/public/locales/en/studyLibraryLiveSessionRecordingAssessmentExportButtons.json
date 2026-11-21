@@ -1,0 +1,64 @@
+{
+    "defaultTitle": "Assessment",
+    "errors": {
+        "couldNotGeneratePdf": "Could not generate PDF"
+    },
+    "header": {
+        "instituteLogoAlt": "Institute logo",
+        "instituteFallback": "Institute",
+        "answerKey": "Answer Key",
+        "questionPaper": "Question Paper",
+        "questionsCount_one": "{{count}} Question",
+        "questionsCount_other": "{{count}} Questions",
+        "marksCount_one": "{{count}} Mark",
+        "marksCount_other": "{{count}} Marks"
+    },
+    "studentDetails": {
+        "ariaLabel": "Student details",
+        "fields": {
+            "name": "Name",
+            "rollNo": "Roll No.",
+            "classBatch": "Class / Batch",
+            "date": "Date"
+        }
+    },
+    "footer": {
+        "confidential": "Confidential"
+    },
+    "actions": {
+        "exportPdf": "Export PDF"
+    },
+    "dropdown": {
+        "chooseVersion": "Choose a version",
+        "studentVersion": "Student version",
+        "answerKey": "Answer key"
+    },
+    "dialog": {
+        "exportStudentPdf": "Export Student PDF",
+        "exportAnswerKeyPdf": "Export Answer Key PDF",
+        "cancel": "Cancel",
+        "tickSectionsHint": "Tick the sections you want in the exported PDF.",
+        "rows": {
+            "includeStudentDetails": {
+                "label": "Include student details fields",
+                "description": "Adds a fill-in strip on page 1 — Name, Roll No., Class / Batch, Date. Turn off for a cleaner practice handout."
+            },
+            "showTitle": {
+                "label": "Show assessment title",
+                "description": "Hides the large centred title (currently \"{{title}}\") on every page. The letterhead + variant badge remain."
+            },
+            "showHeaderInfo": {
+                "label": "Show header info strip"
+            },
+            "showFooterDate": {
+                "label": "Show date in footer",
+                "description": "Prints the export date alongside the institute name in the page footer."
+            },
+            "showFooterConfidential": {
+                "label": "Show \"Confidential\" in footer",
+                "descriptionLong": "Adds a Confidential label to the page footer. Useful for exams; remove for casual practice handouts.",
+                "descriptionShort": "Adds a Confidential label to the page footer."
+            }
+        }
+    }
+}

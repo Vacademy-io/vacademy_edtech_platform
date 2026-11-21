@@ -1,0 +1,8 @@
+{
+    "mirrorTitleAndContent": "Reprendre le titre et le contenu de l'annonce",
+    "pushTitle": "Titre de la notification",
+    "titlePlaceholder": "Titre court et précis",
+    "pushBody": "Corps de la notification",
+    "bodyPlaceholder": "Une ligne de détail",
+    "syncedHint": "Désactivez le commutateur pour rédiger un contenu de notification différent de l'annonce."
+}

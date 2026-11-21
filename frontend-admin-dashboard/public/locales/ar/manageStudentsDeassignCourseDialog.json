@@ -1,0 +1,116 @@
+{
+    "dialogTitle": "إزالة من {{term}}",
+    "config": {
+        "removePrompt": "إزالة <strong>{{name}}</strong> من الدورات المحددة.",
+        "noCourses": "لا توجد دورات لإلغاء التعيين",
+        "unnamedCourse": "دورة بدون اسم",
+        "removalMode": "وضع الإزالة",
+        "softCancel": {
+            "label": "إلغاء ناعم",
+            "description": "— يستمر الوصول حتى انتهاء صلاحية الخطة. الحالة ← ملغى"
+        },
+        "lastAccessDate": {
+            "label": "تاريخ آخر وصول",
+            "ariaLabel": "تاريخ آخر وصول",
+            "pickAriaLabel": "اختر تاريخ آخر وصول من التقويم",
+            "hintSelected": "ينتهي الوصول في التاريخ المحدد.",
+            "hintDefaultWithDate": "اترك الحقل فارغًا للاحتفاظ بالوصول حتى تاريخ انتهاء الخطة نفسها — {{date}}.",
+            "hintDefaultNoDate": "اترك الحقل فارغًا للاحتفاظ بالوصول حتى تاريخ انتهاء الخطة نفسها.",
+            "reset": "إعادة التعيين إلى تاريخ انتهاء الخطة"
+        },
+        "hardTerminate": {
+            "label": "إنهاء فوري",
+            "description": "— إلغاء فوري للوصول. الحالة ← منتهى",
+            "cannotUndo": "⚠ لا يمكن التراجع عن هذا الإجراء"
+        },
+        "reason": {
+            "label": "سبب الإنهاء",
+            "optional": "(اختياري)",
+            "placeholder": "لماذا يتم إنهاء هذا المتعلم؟"
+        },
+        "deletePaymentHistory": {
+            "label": "حذف سجل المدفوعات أيضًا",
+            "description": "يحذف نهائيًا مدفوعات هذه الدورة وأقساطها وفواتيرها وخطة الرسوم، فلا تظهر في سجل المدفوعات أو إدارة المدفوعات أو التقارير. لا يمكن حذف المدفوعات الإلكترونية (عبر البوابة).",
+            "warning": "ستنخفض المبالغ المحصلة في التقارير السابقة. لا يمكن التراجع عن هذا الإجراء."
+        },
+        "notifyLearners": "إشعار المتعلم بالإزالة"
+    },
+    "preview": {
+        "title": "معاينة — نتائج التشغيل التجريبي",
+        "reason": "السبب:",
+        "willBeRemoved_zero": "لن يتم إزالة أي دورات ({{count}})",
+        "willBeRemoved_one": "ستتم إزالة دورة واحدة ({{count}})",
+        "willBeRemoved_two": "ستتم إزالة دورتان ({{count}})",
+        "willBeRemoved_few": "ستتم إزالة {{count}} دورات",
+        "willBeRemoved_many": "ستتم إزالة {{count}} دورة",
+        "willBeRemoved_other": "ستتم إزالة {{count}} دورة",
+        "skipped_zero": "لم يتم تخطي أي دورات ({{count}})",
+        "skipped_one": "تم تخطي دورة واحدة ({{count}})",
+        "skipped_two": "تم تخطي دورتين ({{count}})",
+        "skipped_few": "تم تخطي {{count}} دورات",
+        "skipped_many": "تم تخطي {{count}} دورة",
+        "skipped_other": "تم تخطي {{count}} دورة",
+        "failed_zero": "لم تفشل أي دورة ({{count}})",
+        "failed_one": "فشلت دورة واحدة ({{count}})",
+        "failed_two": "فشلت دورتان ({{count}})",
+        "failed_few": "فشلت {{count}} دورات",
+        "failed_many": "فشلت {{count}} دورة",
+        "failed_other": "فشلت {{count}} دورة",
+        "tableHeaders": {
+            "course": "الدورة",
+            "action": "الإجراء",
+            "status": "الحالة"
+        }
+    },
+    "results": {
+        "title": "اكتملت الإزالة",
+        "removed_zero": "لم تتم إزالة أي دورة ({{count}})",
+        "removed_one": "تمت إزالة دورة واحدة ({{count}})",
+        "removed_two": "تمت إزالة دورتان ({{count}})",
+        "removed_few": "تمت إزالة {{count}} دورات",
+        "removed_many": "تمت إزالة {{count}} دورة",
+        "removed_other": "تمت إزالة {{count}} دورة",
+        "skipped_zero": "لم يتم تخطي أي دورات ({{count}})",
+        "skipped_one": "تم تخطي دورة واحدة ({{count}})",
+        "skipped_two": "تم تخطي دورتين ({{count}})",
+        "skipped_few": "تم تخطي {{count}} دورات",
+        "skipped_many": "تم تخطي {{count}} دورة",
+        "skipped_other": "تم تخطي {{count}} دورة",
+        "failed_zero": "لم تفشل أي دورة ({{count}})",
+        "failed_one": "فشلت دورة واحدة ({{count}})",
+        "failed_two": "فشلت دورتان ({{count}})",
+        "failed_few": "فشلت {{count}} دورات",
+        "failed_many": "فشلت {{count}} دورة",
+        "failed_other": "فشلت {{count}} دورة",
+        "tableHeaders": {
+            "course": "الدورة",
+            "status": "الحالة",
+            "message": "الرسالة"
+        }
+    },
+    "footer": {
+        "cancel": "إلغاء",
+        "loading": "جارٍ التحميل...",
+        "previewButton_zero": "معاينة (لا توجد دورات) ({{count}})",
+        "previewButton_one": "معاينة (دورة واحدة) ({{count}})",
+        "previewButton_two": "معاينة (دورتان) ({{count}})",
+        "previewButton_few": "معاينة ({{count}} دورات)",
+        "previewButton_many": "معاينة ({{count}} دورة)",
+        "previewButton_other": "معاينة ({{count}} دورة)",
+        "back": "← رجوع",
+        "removing": "جارٍ الإزالة...",
+        "confirmRemoval": "✓ تأكيد الإزالة",
+        "done": "تم"
+    },
+    "toasts": {
+        "previewFailed": "فشلت المعاينة",
+        "deassignFailed": "فشلت الإزالة",
+        "deassignSuccess_zero": "لم يتم إلغاء تعيين أي دورة بنجاح! ({{count}})",
+        "deassignSuccess_one": "تم إلغاء تعيين دورة واحدة بنجاح! ({{count}})",
+        "deassignSuccess_two": "تم إلغاء تعيين دورتين بنجاح! ({{count}})",
+        "deassignSuccess_few": "تم إلغاء تعيين {{count}} دورات بنجاح!",
+        "deassignSuccess_many": "تم إلغاء تعيين {{count}} دورة بنجاح!",
+        "deassignSuccess_other": "تم إلغاء تعيين {{count}} دورة بنجاح!",
+        "deassignPartial": "تمت إزالة {{successful}}، وفشل {{failed}}."
+    }
+}

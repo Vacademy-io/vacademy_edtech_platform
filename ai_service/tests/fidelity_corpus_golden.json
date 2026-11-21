@@ -1,0 +1,755 @@
+{
+ "audit": {
+  "coming-soon": [],
+  "courses": [
+   [
+    "warn",
+    "too-short",
+    "Only 2 sections — the page will feel thin."
+   ]
+  ],
+  "good": [],
+  "one-section": [
+   [
+    "fix",
+    "no-conversion",
+    "The page gives a visitor nothing to do — no CTA, form or catalogue."
+   ],
+   [
+    "warn",
+    "too-short",
+    "Only 1 sections — the page will feel thin."
+   ]
+  ],
+  "paths": [
+   [
+    "fix",
+    "duplicate-heading",
+    "The heading \"pick a path\" appears on 2 sections (p1, p2)."
+   ],
+   [
+    "warn",
+    "too-short",
+    "Only 2 sections — the page will feel thin."
+   ]
+  ],
+  "placeholder-key": [
+   [
+    "fix",
+    "placeholder-copy",
+    "'newsletterSignup' still contains placeholder text: \"placeholder text\"."
+   ],
+   [
+    "warn",
+    "too-short",
+    "Only 1 sections — the page will feel thin."
+   ]
+  ],
+  "thin": [
+   [
+    "fix",
+    "hero-split-no-image",
+    "The hero uses a split layout but has no image, so half the fold is empty."
+   ],
+   [
+    "fix",
+    "no-conversion",
+    "The page gives a visitor nothing to do — no CTA, form or catalogue."
+   ],
+   [
+    "warn",
+    "too-short",
+    "Only 3 sections — the page will feel thin."
+   ]
+  ]
+ },
+ "beauty": {
+  "coming-soon": [
+   87,
+   false,
+   [
+    [
+     "fix",
+     "placeholder-copy"
+    ],
+    [
+     "warn",
+     "hero-no-image"
+    ]
+   ]
+  ],
+  "courses": [
+   60,
+   false,
+   [
+    [
+     "fix",
+     "too-few-sections"
+    ],
+    [
+     "fix",
+     "no-hero"
+    ],
+    [
+     "fix",
+     "no-proof"
+    ]
+   ]
+  ],
+  "good": [
+   95,
+   true,
+   [
+    [
+     "warn",
+     "hero-no-image"
+    ]
+   ]
+  ],
+  "one-section": [
+   50,
+   false,
+   [
+    [
+     "fix",
+     "too-few-sections"
+    ],
+    [
+     "fix",
+     "no-conversion"
+    ],
+    [
+     "fix",
+     "no-proof"
+    ],
+    [
+     "warn",
+     "weak-ending"
+    ],
+    [
+     "warn",
+     "hero-no-image"
+    ],
+    [
+     "warn",
+     "hero-no-eyebrow"
+    ]
+   ]
+  ],
+  "paths": [
+   95,
+   true,
+   [
+    [
+     "warn",
+     "adjacent-twins"
+    ]
+   ]
+  ],
+  "placeholder-key": [
+   92,
+   false,
+   [
+    [
+     "fix",
+     "placeholder-copy"
+    ]
+   ]
+  ],
+  "thin": [
+   20,
+   false,
+   [
+    [
+     "fix",
+     "too-few-sections"
+    ],
+    [
+     "fix",
+     "no-conversion"
+    ],
+    [
+     "fix",
+     "hero-no-cta"
+    ],
+    [
+     "fix",
+     "hero-split-no-image"
+    ],
+    [
+     "fix",
+     "placeholder-copy"
+    ],
+    [
+     "fix",
+     "stats-no-numbers"
+    ],
+    [
+     "warn",
+     "hero-headline-long"
+    ],
+    [
+     "warn",
+     "weak-ending"
+    ],
+    [
+     "warn",
+     "hero-no-image"
+    ],
+    [
+     "warn",
+     "wall-of-text"
+    ],
+    [
+     "warn",
+     "hero-no-eyebrow"
+    ]
+   ]
+  ]
+ },
+ "corpus_publish_checks": [
+  {
+   "component_id": "cta",
+   "fix": "Pick a campaign for it, or change the button back to a link. Right now it does nothing when tapped.",
+   "page_id": "courses",
+   "page_name": "courses",
+   "page_route": "courses",
+   "severity": "error",
+   "title": "A button opens a form but no campaign is selected"
+  },
+  {
+   "fix": "Add one under the page's SEO settings. It becomes the text under your link on Google and in WhatsApp previews.",
+   "page_id": "good",
+   "page_name": "good",
+   "page_route": "good",
+   "severity": "warning",
+   "title": "“good” has no meta description"
+  },
+  {
+   "fix": "Add one under the page's SEO settings. It becomes the text under your link on Google and in WhatsApp previews.",
+   "page_id": "thin",
+   "page_name": "thin",
+   "page_route": "thin",
+   "severity": "warning",
+   "title": "“thin” has no meta description"
+  },
+  {
+   "fix": "Add one under the page's SEO settings. It becomes the text under your link on Google and in WhatsApp previews.",
+   "page_id": "one-section",
+   "page_name": "one-section",
+   "page_route": "one-section",
+   "severity": "warning",
+   "title": "“one-section” has no meta description"
+  },
+  {
+   "fix": "Add one under the page's SEO settings. It becomes the text under your link on Google and in WhatsApp previews.",
+   "page_id": "coming-soon",
+   "page_name": "coming-soon",
+   "page_route": "coming-soon",
+   "severity": "warning",
+   "title": "“coming-soon” has no meta description"
+  },
+  {
+   "fix": "Add one under the page's SEO settings. It becomes the text under your link on Google and in WhatsApp previews.",
+   "page_id": "courses",
+   "page_name": "courses",
+   "page_route": "courses",
+   "severity": "warning",
+   "title": "“courses” has no meta description"
+  },
+  {
+   "fix": "Add one under the page's SEO settings. It becomes the text under your link on Google and in WhatsApp previews.",
+   "page_id": "paths",
+   "page_name": "paths",
+   "page_route": "paths",
+   "severity": "warning",
+   "title": "“paths” has no meta description"
+  },
+  {
+   "fix": "Add one under the page's SEO settings. It becomes the text under your link on Google and in WhatsApp previews.",
+   "page_id": "placeholder-key",
+   "page_name": "placeholder-key",
+   "page_route": "placeholder-key",
+   "severity": "warning",
+   "title": "“placeholder-key” has no meta description"
+  },
+  {
+   "component_id": "nl",
+   "fix": "“placeholder text” looks like sample copy. Replace it with your own words.",
+   "page_id": "placeholder-key",
+   "page_name": "placeholder-key",
+   "page_route": "placeholder-key",
+   "severity": "warning",
+   "title": "Placeholder text is still on the page"
+  },
+  {
+   "fix": "Add a Google Analytics or Meta Pixel ID in Global Settings → Tracking to see where your enquiries come from.",
+   "severity": "warning",
+   "title": "No analytics connected"
+  }
+ ],
+ "corpus_surfaces": [
+  {
+   "audience_id": "c1",
+   "audience_name": "",
+   "kind": "button",
+   "label": "Book a demo",
+   "page_route": "good",
+   "page_title": null,
+   "path": "props.left.buttons[0].audienceId",
+   "required": true,
+   "section_id": "hero",
+   "section_label": "Hero Section",
+   "section_type": "heroSection"
+  },
+  {
+   "audience_id": "c1",
+   "audience_name": "",
+   "kind": "button",
+   "label": "Enquire",
+   "page_route": "good",
+   "page_title": null,
+   "path": "props.button.audienceId",
+   "required": true,
+   "section_id": "cta",
+   "section_label": "CTA Banner",
+   "section_type": "ctaBanner"
+  },
+  {
+   "audience_id": "c1",
+   "audience_name": "",
+   "kind": "button",
+   "label": "Enquire",
+   "page_route": "one-section",
+   "page_title": null,
+   "path": "props.left.buttons[0].audienceId",
+   "required": true,
+   "section_id": "hero",
+   "section_label": "Hero Section",
+   "section_type": "heroSection"
+  },
+  {
+   "audience_id": "c1",
+   "audience_name": "",
+   "kind": "button",
+   "label": "Book a demo",
+   "page_route": "coming-soon",
+   "page_title": null,
+   "path": "props.left.buttons[0].audienceId",
+   "required": true,
+   "section_id": "hero",
+   "section_label": "Hero Section",
+   "section_type": "heroSection"
+  },
+  {
+   "audience_id": "c1",
+   "audience_name": "",
+   "kind": "button",
+   "label": "Enquire",
+   "page_route": "coming-soon",
+   "page_title": null,
+   "path": "props.button.audienceId",
+   "required": true,
+   "section_id": "cta",
+   "section_label": "CTA Banner",
+   "section_type": "ctaBanner"
+  },
+  {
+   "audience_id": "",
+   "audience_name": "",
+   "kind": "button",
+   "label": "Talk to us",
+   "page_route": "courses",
+   "page_title": null,
+   "path": "props.button.audienceId",
+   "required": true,
+   "section_id": "cta",
+   "section_label": "CTA Banner",
+   "section_type": "ctaBanner"
+  },
+  {
+   "audience_id": "",
+   "audience_name": "",
+   "kind": "form_section",
+   "label": "Newsletter Signup",
+   "page_route": "placeholder-key",
+   "page_title": null,
+   "path": "props.audienceId",
+   "required": false,
+   "section_id": "nl",
+   "section_label": "Newsletter Signup",
+   "section_type": "newsletterSignup"
+  }
+ ],
+ "publish_checks": [
+  {
+   "component_id": "c-hero",
+   "fix": "Pick a campaign for it, or change the button back to a link. Right now it does nothing when tapped.",
+   "page_id": "p-home",
+   "page_name": "Home",
+   "page_route": "home",
+   "severity": "error",
+   "title": "A button opens a form but no campaign is selected"
+  },
+  {
+   "component_id": "c-offer",
+   "fix": "Pick a product page in its properties, or remove the section. It is hidden from visitors as-is.",
+   "page_id": "p-home",
+   "page_name": "Home",
+   "page_route": "home",
+   "severity": "error",
+   "title": "A course section has no product page selected"
+  },
+  {
+   "component_id": "c-header",
+   "fix": "Nothing on this site has the address “fees”. Fix the link or create that page.",
+   "page_id": "p-home",
+   "page_name": "Home",
+   "page_route": "home",
+   "severity": "warning",
+   "title": "Menu link “Fees” points to a page that doesn’t exist"
+  },
+  {
+   "component_id": "c-text",
+   "fix": "“<h2>Why us</h2><p>Replace this with your story.</p>” looks like sample copy. Replace it with your own words.",
+   "page_id": "p-home",
+   "page_name": "Home",
+   "page_route": "home",
+   "severity": "warning",
+   "title": "Placeholder text is still on the page"
+  },
+  {
+   "fix": "Add one under the page's SEO settings. It becomes the text under your link on Google and in WhatsApp previews.",
+   "page_id": "p-about",
+   "page_name": "About",
+   "page_route": "about",
+   "severity": "warning",
+   "title": "“About” has no meta description"
+  },
+  {
+   "fix": "Add a Google Analytics or Meta Pixel ID in Global Settings → Tracking to see where your enquiries come from.",
+   "severity": "warning",
+   "title": "No analytics connected"
+  }
+ ],
+ "review": {
+  "coming-soon": [
+   87,
+   false,
+   [
+    [
+     "fix",
+     "placeholder-copy",
+     "why"
+    ],
+    [
+     "warn",
+     "hero-no-image",
+     "hero"
+    ]
+   ]
+  ],
+  "courses": [
+   56,
+   false,
+   [
+    [
+     "fix",
+     "too-few-sections",
+     null
+    ],
+    [
+     "fix",
+     "no-hero",
+     null
+    ],
+    [
+     "fix",
+     "no-proof",
+     null
+    ],
+    [
+     "warn",
+     "too-short",
+     null
+    ]
+   ]
+  ],
+  "good": [
+   95,
+   true,
+   [
+    [
+     "warn",
+     "hero-no-image",
+     "hero"
+    ]
+   ]
+  ],
+  "one-section": [
+   46,
+   false,
+   [
+    [
+     "fix",
+     "too-few-sections",
+     null
+    ],
+    [
+     "fix",
+     "no-conversion",
+     null
+    ],
+    [
+     "fix",
+     "no-proof",
+     null
+    ],
+    [
+     "warn",
+     "weak-ending",
+     "hero"
+    ],
+    [
+     "warn",
+     "hero-no-image",
+     "hero"
+    ],
+    [
+     "warn",
+     "too-short",
+     null
+    ],
+    [
+     "warn",
+     "hero-no-eyebrow",
+     "hero"
+    ]
+   ]
+  ],
+  "paths": [
+   87,
+   true,
+   [
+    [
+     "warn",
+     "adjacent-twins",
+     "p2"
+    ],
+    [
+     "warn",
+     "duplicate-heading",
+     null
+    ],
+    [
+     "warn",
+     "too-short",
+     null
+    ]
+   ]
+  ],
+  "placeholder-key": [
+   88,
+   false,
+   [
+    [
+     "fix",
+     "placeholder-copy",
+     "nl"
+    ],
+    [
+     "warn",
+     "too-short",
+     null
+    ]
+   ]
+  ],
+  "sample:about": [
+   93,
+   true,
+   [
+    [
+     "warn",
+     "too-short",
+     null
+    ],
+    [
+     "warn",
+     "no-heading",
+     "c-cols"
+    ]
+   ]
+  ],
+  "sample:home": [
+   45,
+   false,
+   [
+    [
+     "fix",
+     "no-proof",
+     null
+    ],
+    [
+     "warn",
+     "flat-page",
+     null
+    ],
+    [
+     "warn",
+     "unstyled",
+     null
+    ],
+    [
+     "warn",
+     "hero-not-first",
+     "c-hero"
+    ],
+    [
+     "warn",
+     "weak-ending",
+     "c-text"
+    ],
+    [
+     "warn",
+     "hero-no-image",
+     "c-hero"
+    ],
+    [
+     "warn",
+     "offer-unbound",
+     "c-offer"
+    ],
+    [
+     "warn",
+     "placeholder-copy",
+     "c-text"
+    ],
+    [
+     "warn",
+     "hero-no-eyebrow",
+     "c-hero"
+    ]
+   ]
+  ],
+  "thin": [
+   16,
+   false,
+   [
+    [
+     "fix",
+     "too-few-sections",
+     null
+    ],
+    [
+     "fix",
+     "no-conversion",
+     null
+    ],
+    [
+     "fix",
+     "hero-no-cta",
+     "hero"
+    ],
+    [
+     "fix",
+     "hero-split-no-image",
+     "hero"
+    ],
+    [
+     "fix",
+     "placeholder-copy",
+     "hero"
+    ],
+    [
+     "fix",
+     "stats-no-numbers",
+     "stats"
+    ],
+    [
+     "warn",
+     "hero-headline-long",
+     "hero"
+    ],
+    [
+     "warn",
+     "weak-ending",
+     "stats"
+    ],
+    [
+     "warn",
+     "hero-no-image",
+     "hero"
+    ],
+    [
+     "warn",
+     "wall-of-text",
+     "text"
+    ],
+    [
+     "warn",
+     "too-short",
+     null
+    ],
+    [
+     "warn",
+     "hero-no-eyebrow",
+     "hero"
+    ]
+   ]
+  ]
+ },
+ "surfaces": [
+  {
+   "audience_id": "camp-1",
+   "audience_name": "",
+   "kind": "header_link",
+   "label": "Enquire now",
+   "page_route": "home",
+   "page_title": "Home",
+   "path": "props.authLinks[0].audienceId",
+   "required": true,
+   "section_id": "c-header",
+   "section_label": "Header",
+   "section_type": "header"
+  },
+  {
+   "audience_id": "",
+   "audience_name": "",
+   "kind": "button",
+   "label": "Book a demo",
+   "page_route": "home",
+   "page_title": "Home",
+   "path": "props.left.buttons[0].audienceId",
+   "required": true,
+   "section_id": "c-hero",
+   "section_label": "Hero Section",
+   "section_type": "heroSection"
+  },
+  {
+   "audience_id": "camp-1",
+   "audience_name": "Admissions 2027",
+   "kind": "form_section",
+   "label": "Lead Form",
+   "page_route": "home",
+   "page_title": "Home",
+   "path": "props.audienceId",
+   "required": true,
+   "section_id": "c-lead",
+   "section_label": "Lead Form",
+   "section_type": "leadForm"
+  },
+  {
+   "audience_id": "",
+   "audience_name": "",
+   "kind": "form_section",
+   "label": "Contact Form",
+   "page_route": "about",
+   "page_title": "About",
+   "path": "props.audienceId",
+   "required": false,
+   "section_id": "c-contact",
+   "section_label": "Contact Form",
+   "section_type": "contactForm"
+  }
+ ]
+}

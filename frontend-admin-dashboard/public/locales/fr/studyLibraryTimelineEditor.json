@@ -1,0 +1,9 @@
+{
+    "blockLabel": "Chronologie / Étapes",
+    "preview": "Aperçu",
+    "edit": "Modifier",
+    "defaultStepTitle": "Étape {{number}}",
+    "stepTitlePlaceholder": "Titre de l'étape",
+    "stepDescriptionPlaceholder": "Description de l'étape (facultatif)",
+    "addStep": "+ Ajouter une étape"
+}

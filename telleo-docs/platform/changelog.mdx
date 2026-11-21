@@ -1,0 +1,47 @@
+---
+title: "Changelog"
+description: "Changes to the Telleo API."
+---
+
+<Update label="19 October 2026" description="v1.3">
+  - **Manage counsellors** with the new `counsellors:manage` scope: [`POST /v1/counsellors`](/concepts/counsellors) adds a counsellor (a new email gets an active dashboard login and the welcome email; a login of another account is refused with `email_in_use_elsewhere`), `GET /v1/counsellors/{id}`, `PATCH /v1/counsellors/{id}` (name, mobile number, Airtel extension, active) and `DELETE /v1/counsellors/{id}` (deactivate: role disabled in your account, inactive in lead pools, out of IVR ring lists). Admins and other staff are never changed.
+  - **Manage AI agents** with the new `agents:manage` scope: [`POST /v1/agents`](/concepts/managing-agents), `GET` / `PATCH` / `DELETE /v1/agents/{id}`, `POST /v1/agents/{id}/enable` and `/disable`, `GET /v1/voices`, `GET` / `PUT /v1/settings/default-agent`, `GET /v1/numbers` and `PUT /v1/numbers/{id}/agent`. Invalid voices, engines and languages are refused with the valid options; an agent still in use cannot be deleted (`agent_in_use`); `If-Match` on `PATCH` prevents lost updates. `GET /v1/agents/{id}` with only `calls:read` returns a summary without the script, handoff numbers and action rules.
+  - `GET /v1/agents` adds `enabled`, `direction`, `voice`, `tts_model` and `updated_at`, and takes `include_disabled=true`. `GET /v1/counsellors` adds `status` and also accepts `counsellors:manage`; it never lists phone numbers.
+  - **Behaviour change:** turning an agent **off** now cancels the calls waiting for it from **every** source (workflows, bulk campaigns, the dashboard's AI call button), not only API calls, instead of dialling them with a generic voice. Each canceled call says why. Calls whose agent cannot be found at all (deleted, or a default that names no agent) are unchanged: API calls are canceled as before, other calls still dial with the generic voice.
+  - Existing keys are unchanged and never get the new scopes; create a new key with **Can manage counsellors** or **Can manage AI agents** ticked.
+</Update>
+
+<Update label="17 October 2026" description="v1.2">
+  - **Human calls need new scopes**, `human_calls:read` and `human_calls:write`. Existing keys do not have them and keep working exactly as before: an AI calling key cannot ring your staff or list them. Create a new key with **Can ring counsellors (human calls)** ticked to use the endpoints below.
+  - New: [human calls](/concepts/human-calls). `POST /v1/human-calls` rings one of your counsellors and connects them to a number on your own calling provider (Vacademy Voice, Exotel or Airtel); `GET /v1/human-calls`, `GET /v1/human-calls/{id}`, `GET /v1/counsellors`, `GET /v1/dispositions` and `POST /v1/human-calls/{id}/disposition`. See the [click-to-call guide](/guides/click-to-call).
+  - New webhook events: `human_call.completed`, `human_call.not_connected` and `human_call.analysis_ready`, on your existing endpoint.
+  - `GET /v1/usage` adds a `human_calls` block (calls, connected, talk time, credits); the existing fields are unchanged.
+</Update>
+
+<Update label="14 October 2026" description="v1.1.1">
+  - A batch retried with the same `Idempotency-Key` must be the same request (`409 idempotency_key_reused` otherwise) and returns the same accepted **and** rejected rows; a retry while the first request is still running gets `409 request_in_progress`. Batch keys are at most 251 characters.
+  - Variables named `name`, `lead_name` or a date/time word (`date`, `time`, `year`…) are accepted again, with a `warnings` entry; they never replace the built-in values.
+  - `calls_not_yet_billed` and `cost.billed` count only charges that will actually be made.
+</Update>
+
+<Update label="14 October 2026" description="v1.1">
+  - New: [`GET /v1/credits`](/platform/credits-and-usage) and [`GET /v1/usage`](/platform/credits-and-usage), and `cost` on every call.
+  - New: `outcome.call_quality`; calls that broke down on our side no longer report the contact as not interested.
+  - New: `Idempotency-Key` on `POST /v1/batches`; a batch row's own `agent_id` is honoured.
+  - `call.completed` now waits for the recording, so the webhook carries `recording_url`.
+  - Idempotency keys are honoured for 24 hours, and a replay must match the whole request, including `test`.
+  - Calls waiting for an agent that is turned off are canceled instead of dialled.
+  - Repeated test calls to the same number work; test calls are limited to 500 per 24 hours.
+  - Over-long `contact` fields and reserved variable names are rejected instead of being cut or ignored.
+  - Unknown endpoints and wrong methods return the standard error shape (404 / 405).
+</Update>
+
+<Update label="13 October 2026" description="v1">
+  First public version of the Telleo API at `https://api.telleo.ai/v1`.
+
+  - Calls: start, list, read, cancel; contact name and `variables` personalise the agent's script.
+  - Batches of up to 1,000 calls with per-row results.
+  - Outcomes: disposition, summary, answers, lead rating, callback, follow-up, meeting, transcript and recording.
+  - Signed webhooks (`call.completed`, `call.not_connected`) with retries.
+  - Idempotency keys, test mode, self-serve keys and webhook settings in the dashboard.
+</Update>

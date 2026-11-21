@@ -76,6 +76,12 @@ export const ACTIVITY_RESPONSE_COLUMN_WIDTHS: ColumnWidthConfig = {
     responseStatus: 'min-w-[140px]',
 };
 
+export const QUESTION_SLIDE_ACTIVITY_COLUMN_WIDTHS: ColumnWidthConfig = {
+    ...ACTIVITY_RESPONSE_COLUMN_WIDTHS,
+    attemptNumber: 'min-w-20',
+    correctAnswer: 'min-w-32',
+};
+
 export const ACTIVITY_RESPONSE_ASSIGNMENT_COLUMN_WIDTHS: ColumnWidthConfig = {
     uploadDate: 'min-w-[120px]',
     uploadTime: 'min-w-[140px]',
@@ -101,6 +107,9 @@ export const ASSESSMENT_STATUS_STUDENT_ATTEMPTED_COLUMNS_INTERNAL_WIDTH: ColumnW
     score: 'min-w-[180px]',
     evaluation_status: 'min-w-[180px]',
     result_status: 'min-w-[120px]',
+    email: 'min-w-[240px]',
+    mobile_number: 'min-w-[160px]',
+    username: 'min-w-[160px]',
     options: 'min-w-[56px] sticky right-0',
 };
 
@@ -130,6 +139,9 @@ export const ASSESSMENT_STATUS_STUDENT_ATTEMPTED_COLUMNS_EXTERNAL_WIDTH: ColumnW
     score: 'min-w-[180px]',
     evaluation_status: 'min-w-[180px]',
     result_status: 'min-w-[120px]',
+    email: 'min-w-[240px]',
+    mobile_number: 'min-w-[160px]',
+    username: 'min-w-[160px]',
     options: 'min-w-[56px] sticky right-0',
 };
 
@@ -145,6 +157,46 @@ export const ASSESSMENT_STATUS_STUDENT_PENDING_COLUMNS_EXTERNAL_WIDTH: ColumnWid
     checkbox: 'min-w-[20px] sticky left-0',
     details: 'min-w-[20px] sticky left-0',
     full_name: 'min-w-[460px] sticky left-[52px]',
+    options: 'min-w-[56px] sticky right-0',
+};
+
+// Ongoing with contact columns. Its own config for the same reason as the Pending one
+// below: ASSESSMENT_STATUS_STUDENT_ONGOING_COLUMNS_*_WIDTH is shared with the homework
+// module, whose Ongoing table still has only Name and Start Time.
+export const ASSESSMENT_STATUS_STUDENT_ONGOING_CONTACT_COLUMNS_WIDTH: ColumnWidthConfig = {
+    checkbox: 'min-w-[20px] sticky left-0',
+    details: 'min-w-[20px] sticky left-0',
+    full_name: 'min-w-[180px] sticky left-[52px]',
+    start_time: 'min-w-[160px]',
+    email: 'min-w-[240px]',
+    mobile_number: 'min-w-[160px]',
+    username: 'min-w-[160px]',
+    options: 'min-w-[56px] sticky right-0',
+};
+
+// Pending lists that show contact columns (Individual Selection, External). Separate from
+// ASSESSMENT_STATUS_STUDENT_PENDING_COLUMNS_*_WIDTH because those are shared with the
+// homework module, whose Pending table is still the single stretched name column.
+export const ASSESSMENT_STATUS_STUDENT_PENDING_CONTACT_COLUMNS_WIDTH: ColumnWidthConfig = {
+    checkbox: 'min-w-[20px] sticky left-0',
+    details: 'min-w-[20px] sticky left-0',
+    full_name: 'min-w-[180px] sticky left-[52px]',
+    email: 'min-w-[240px]',
+    mobile_number: 'min-w-[160px]',
+    username: 'min-w-[160px]',
+    options: 'min-w-[56px] sticky right-0',
+};
+
+// Batch "not attempted" list. Its own config because it is the only Pending list with
+// batch and contact columns; the others stay a single stretched name column.
+export const ASSESSMENT_STATUS_STUDENT_NOT_ATTEMPTED_COLUMNS_WIDTH: ColumnWidthConfig = {
+    checkbox: 'min-w-[20px] sticky left-0',
+    details: 'min-w-[20px] sticky left-0',
+    full_name: 'min-w-[180px] sticky left-[52px]',
+    package_session_id: 'min-w-[200px]',
+    email: 'min-w-[240px]',
+    mobile_number: 'min-w-[160px]',
+    username: 'min-w-[160px]',
     options: 'min-w-[56px] sticky right-0',
 };
 

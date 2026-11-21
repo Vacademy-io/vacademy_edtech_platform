@@ -2,6 +2,7 @@ import { MyDialog } from '@/components/design-system/dialog';
 import { DotsSixVertical, FileDoc, FilePdf, Video } from '@phosphor-icons/react';
 import { useNavigate, useRouter } from '@tanstack/react-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChapterMenuOptions } from './chapter-menu-options/chapter-menu-options';
 import { SortableDragHandle } from '@/components/ui/sortable';
 import { ChapterWithSlides } from '@/stores/study-library/use-modules-with-chapters-store';
@@ -14,6 +15,7 @@ interface ChapterCardProps {
 }
 
 export const ChapterCard = ({ chapter, onDelete }: ChapterCardProps) => {
+    const { t } = useTranslation('studyLibraryChapterCard');
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
     const router = useRouter();
@@ -92,13 +94,17 @@ export const ChapterCard = ({ chapter, onDelete }: ChapterCardProps) => {
 
             <MyDialog
                 trigger={<></>}
-                heading={`Edit ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)}`}
+                heading={t('editHeading', {
+                    term: getTerminology(ContentTerms.Chapters, SystemTerms.Chapters),
+                })}
                 dialogWidth="w-[400px]"
                 open={isEditDialogOpen}
                 onOpenChange={setIsEditDialogOpen}
             >
                 {/* Add ChapterForm component here later */}
-                Edit {getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)}
+                {t('editHeading', {
+                    term: getTerminology(ContentTerms.Chapters, SystemTerms.Chapters),
+                })}
             </MyDialog>
         </div>
     );

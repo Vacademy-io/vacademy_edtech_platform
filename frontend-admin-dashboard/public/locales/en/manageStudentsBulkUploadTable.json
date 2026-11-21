@@ -1,0 +1,42 @@
+{
+    "validation": {
+        "notApplicable": "N/A",
+        "fieldRequired": {
+            "message": "{{field}} is required",
+            "resolution": "Please provide a value for {{field}}"
+        },
+        "invalidValue": {
+            "message": "Invalid value for {{field}}",
+            "resolution": "Value must be one of: {{options}}"
+        },
+        "invalidDate": {
+            "message": "Invalid date format for {{field}}",
+            "resolution": "Date must be in format: {{format}}"
+        },
+        "invalidFormat": {
+            "message": "Invalid format for {{field}}",
+            "resolution": "Please check the format"
+        }
+    },
+    "errors": {
+        "unknownError": "Unknown error"
+    },
+    "emptyState": {
+        "noData": "No uploaded data found!"
+    },
+    "editingMode": {
+        "label": "Enable Editing Mode",
+        "hint": "Click on cell to edit"
+    },
+    "summary": {
+        "foundIssuesInRows": "Found {{issues}} in {{rows}}",
+        "issuesCount_one": "{{count}} validation issue",
+        "issuesCount_other": "{{count}} validation issues",
+        "rowsCount_one": "{{count}} row",
+        "rowsCount_other": "{{count}} rows"
+    },
+    "buttons": {
+        "downloadErrorCases": "Download Error Cases",
+        "downloadValidData": "Download Valid Data"
+    }
+}

@@ -1,0 +1,19 @@
+{
+    "sessionMode": {
+        "textChat": "Chat texte",
+        "mockInterview": "Entretien simulé",
+        "voiceDoubt": "Question vocale",
+        "oralTest": "Test oral"
+    },
+    "contextType": {
+        "studyMaterial": "Support de cours",
+        "coursePage": "Page du cours",
+        "general": "Général"
+    },
+    "dayRange": {
+        "last7": "7 derniers jours",
+        "last30": "30 derniers jours",
+        "last90": "90 derniers jours",
+        "last365": "365 derniers jours"
+    }
+}

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>aps-environment</key>
+	<string>development</string>
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
+	<!--
+	  Oui Académie's own learner host, and only that — same choice as Agilore and
+	  ZOE. The shared App/App.entitlements lists eight other brands' applinks hosts
+	  and none of Oui's. Universal links additionally need
+	  student.oui-academie.com to serve /.well-known/apple-app-site-association
+	  naming 35NLZB49QN.com.ouiacademie.app; that file ships with the WEB deploy,
+	  not with this .ipa.
+	-->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:student.oui-academie.com</string>
+	</array>
+</dict>
+</plist>

@@ -13,6 +13,11 @@ import {
 } from '../-types/bulk-create-types';
 import { bulkCreateCourses, fetchPaymentOptions } from '../-services/bulk-create-service';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
+import {
+    getTerminology,
+    getTerminologyPlural,
+} from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 const DEFAULT_COURSE_ITEM: Omit<BulkCourseItem, 'id'> = {
     course_name: '',
@@ -84,7 +89,9 @@ export const useBulkCreate = () => {
     const removeCourse = useCallback((id: string) => {
         setCourses((prev) => {
             if (prev.length <= 1) {
-                toast.error('At least one course is required');
+                toast.error(
+                    `At least one ${getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()} is required`
+                );
                 return prev;
             }
             return prev.filter((course) => course.id !== id);
@@ -139,7 +146,7 @@ export const useBulkCreate = () => {
                     courseId: course.id,
                     rowIndex: index,
                     field: 'course_name',
-                    message: 'Course name is required',
+                    message: `${getTerminology(ContentTerms.Course, SystemTerms.Course)} name is required`,
                 });
             }
 
@@ -158,7 +165,7 @@ export const useBulkCreate = () => {
                         courseId: course.id,
                         rowIndex: index,
                         field: 'payment_config.price',
-                        message: 'Price is required for paid courses',
+                        message: `Price is required for paid ${getTerminologyPlural(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}`,
                     });
                 }
             }
@@ -273,7 +280,9 @@ export const useBulkCreate = () => {
                         message: r.error_message || 'Unknown error',
                     }));
                 setValidationErrors(errors);
-                toast.error(`Validation failed for ${response.failure_count} course(s)`);
+                toast.error(
+                    `Validation failed for ${response.failure_count} ${getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}(s)`
+                );
             } else {
                 setValidationErrors([]);
                 setShowPreview(true);
@@ -289,12 +298,16 @@ export const useBulkCreate = () => {
         mutationFn: () => bulkCreateCourses(buildRequest(false)),
         onSuccess: (response) => {
             if (response.success_count > 0) {
-                toast.success(`Successfully created ${response.success_count} course(s)`);
+                toast.success(
+                    `Successfully created ${response.success_count} ${getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}(s)`
+                );
                 queryClient.invalidateQueries({ queryKey: ['package-sessions'] });
                 queryClient.invalidateQueries({ queryKey: ['batches-summary'] });
             }
             if (response.failure_count > 0) {
-                toast.error(`Failed to create ${response.failure_count} course(s)`);
+                toast.error(
+                    `Failed to create ${response.failure_count} ${getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}(s)`
+                );
             }
             setShowPreview(false);
         },

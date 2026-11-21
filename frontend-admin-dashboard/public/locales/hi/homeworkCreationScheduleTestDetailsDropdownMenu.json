@@ -1,0 +1,47 @@
+{
+    "common": {
+        "open": "खोलें",
+        "attention": "ध्यान दें",
+        "dateText": "तारीख़",
+        "timeText": "समय",
+        "reminderBodyPrefix": "एक होमवर्क रिमाइंडर सभी को भेजा जाएगा",
+        "participants_one": "{{count}} प्रतिभागी",
+        "participants_other": "{{count}} प्रतिभागी",
+        "reminderBodySuffix": "जो नियत बैचों में से अभी तक उपस्थित नहीं हुए हैं।"
+    },
+    "menu": {
+        "viewHomeworkDetails": "होमवर्क विवरण देखें",
+        "deleteHomework": "होमवर्क हटाएं"
+    },
+    "reminderDialog": {
+        "title": "रिमाइंडर भेजें",
+        "send": "भेजें"
+    },
+    "deleteDialog": {
+        "title": "होमवर्क हटाएं",
+        "confirmPrefix": "क्या आप वाकई हटाना चाहते हैं",
+        "confirmSuffix": "?",
+        "slidesDeleteFailedToast": "असेसमेंट हटा दिया गया है, लेकिन इसकी कोर्स स्लाइड्स हटाई नहीं जा सकीं।",
+        "successToast": "असेसमेंट सफलतापूर्वक हटा दिया गया है!",
+        "delete": "हटाएं"
+    },
+    "pauseDialog": {
+        "title": "लाइव स्थिति रोकें",
+        "pauseUntilLabel": "इस समय तक रोकें",
+        "pause": "रोकें"
+    },
+    "resumeDialog": {
+        "title": "लाइव स्थिति फिर से शुरू करें",
+        "confirmPrefix": "क्या आप अपना लाइव होमवर्क फिर से शुरू करना चाहते हैं",
+        "testName": "मानव नेत्र तथा रंगबिरंगा संसार",
+        "confirmSuffix": "?",
+        "resume": "फिर से शुरू करें"
+    },
+    "reopenDialog": {
+        "title": "होमवर्क फिर से खोलें",
+        "selectDateTime": "होमवर्क फिर से खोलने की तारीख़ और समय चुनें",
+        "startDateTimeLabel": "प्रारंभ तारीख़ एवं समय",
+        "endDateTimeLabel": "समाप्ति तारीख़ एवं समय",
+        "reopen": "फिर से खोलें"
+    }
+}

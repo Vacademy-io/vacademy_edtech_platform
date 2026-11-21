@@ -8,8 +8,9 @@ import {
     getLevelDisplayName,
     getLevelColor,
 } from '@/utils/drip-conditions';
-import { Edit2, Trash2, Lock, Eye, Target, List } from 'lucide-react';
+import { PencilSimple, Trash, Lock, Eye, Target, List } from '@phosphor-icons/react';
 import { Card } from '@/components/ui/card';
+import { useTranslation } from 'react-i18next';
 
 interface DripConditionItemProps {
     condition: DripCondition;
@@ -24,6 +25,8 @@ export const DripConditionItem: React.FC<DripConditionItemProps> = ({
     onDelete,
     onToggle,
 }) => {
+    const { t, i18n } = useTranslation('settingsDripConditionItem');
+
     const getBehaviorIcon = () => {
         const behavior = condition.drip_condition[0]?.behavior;
         switch (behavior) {
@@ -55,12 +58,14 @@ export const DripConditionItem: React.FC<DripConditionItemProps> = ({
                         </Badge>
 
                         <Badge variant="outline" className="font-mono text-xs">
-                            ID: {condition.level_id}
+                            {t('badge.id', { id: condition.level_id })}
                         </Badge>
 
                         {condition.level === 'package' && condition.drip_condition[0]?.target && (
                             <Badge variant="secondary" className="text-xs">
-                                → Applies to: {condition.drip_condition[0].target}s
+                                {t('badge.appliesTo', {
+                                    target: `${condition.drip_condition[0].target}s`,
+                                })}
                             </Badge>
                         )}
 
@@ -74,13 +79,15 @@ export const DripConditionItem: React.FC<DripConditionItemProps> = ({
                     <div className="space-y-2">
                         <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                             <List className="size-3" />
-                            Rules ({condition.drip_condition[0]?.rules.length || 0})
+                            {t('rules.title', {
+                                count: condition.drip_condition[0]?.rules.length || 0,
+                            })}
                         </div>
                         <div className="space-y-1.5 pl-5">
-                            {(condition.drip_condition[0]?.rules || []).map((rule, index) => (
-                                <div key={index} className="flex items-start gap-2 text-sm">
+                            {(condition.drip_condition[0]?.rules || []).map((rule, idx) => (
+                                <div key={idx} className="flex items-start gap-2 text-sm">
                                     <span className="min-w-4 text-muted-foreground">
-                                        {index + 1}.
+                                        {idx + 1}.
                                     </span>
                                     <span className="text-gray-700">{formatDripRule(rule)}</span>
                                 </div>
@@ -91,15 +98,14 @@ export const DripConditionItem: React.FC<DripConditionItemProps> = ({
                     {/* Metadata */}
                     {condition.created_at && (
                         <div className="text-xs text-muted-foreground">
-                            Created: {new Date(condition.created_at).toLocaleDateString()}
+                            {t('metadata.created', {
+                                date: new Date(condition.created_at).toLocaleDateString(i18n.language),
+                            })}
                             {condition.updated_at &&
-                                condition.updated_at !== condition.created_at && (
-                                    <>
-                                        {' '}
-                                        • Updated:{' '}
-                                        {new Date(condition.updated_at).toLocaleDateString()}
-                                    </>
-                                )}
+                                condition.updated_at !== condition.created_at &&
+                                t('metadata.updatedSuffix', {
+                                    date: new Date(condition.updated_at).toLocaleDateString(i18n.language),
+                                })}
                         </div>
                     )}
                 </div>
@@ -109,25 +115,25 @@ export const DripConditionItem: React.FC<DripConditionItemProps> = ({
                     <Switch
                         checked={condition.enabled}
                         onCheckedChange={(checked) => onToggle(condition.id, checked)}
-                        title={condition.enabled ? 'Disable condition' : 'Enable condition'}
+                        title={condition.enabled ? t('actions.disable') : t('actions.enable')}
                     />
                     <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => onEdit(condition)}
                         className="size-8 p-0"
-                        title="Edit condition"
+                        title={t('actions.edit')}
                     >
-                        <Edit2 className="size-4" />
+                        <PencilSimple className="size-4" />
                     </Button>
                     <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => onDelete(condition.id)}
                         className="size-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
-                        title="Delete condition"
+                        title={t('actions.delete')}
                     >
-                        <Trash2 className="size-4" />
+                        <Trash className="size-4" />
                     </Button>
                 </div>
             </div>

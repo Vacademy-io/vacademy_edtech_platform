@@ -31,21 +31,26 @@ import {
     getAuthoredChapterDescription,
 } from '@/constants/study-library/content-description';
 import { ADMIN_DISPLAY_SETTINGS_KEY, TEACHER_DISPLAY_SETTINGS_KEY, CUSTOM_ROLE_DISPLAY_SETTINGS_KEY } from '@/types/display-settings';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
-const formSchema = z.object({
-    chapterName: z.string().min(1, 'Chapter name is required'),
-    description: z
-        .string()
-        .max(
-            CONTENT_DESCRIPTION_MAX_LENGTH,
-            `Description must be ${CONTENT_DESCRIPTION_MAX_LENGTH} characters or fewer`
-        )
-        .optional(),
-    visibility: z.record(z.string(), z.array(z.string())),
-    thumbnailFileId: z.string().optional(),
-});
+const buildFormSchema = (t: TFunction) =>
+    z.object({
+        chapterName: z.string().min(1, t('studyLibraryAddChapterForm:validation.chapterNameRequired')),
+        description: z
+            .string()
+            .max(
+                CONTENT_DESCRIPTION_MAX_LENGTH,
+                t('studyLibraryAddChapterForm:validation.descriptionMaxLength', {
+                    max: CONTENT_DESCRIPTION_MAX_LENGTH,
+                })
+            )
+            .optional(),
+        visibility: z.record(z.string(), z.array(z.string())),
+        thumbnailFileId: z.string().optional(),
+    });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.infer<ReturnType<typeof buildFormSchema>>;
 
 interface AddChapterFormProps {
     initialValues?: ChapterWithSlides;
@@ -78,6 +83,7 @@ export const AddChapterForm = ({
     hideSubmitButton = false,
     onFormReady,
 }: AddChapterFormProps) => {
+    const { t } = useTranslation('studyLibraryAddChapterForm');
     const router = useRouter();
     const courseId: string = router.state.location.search.courseId || '';
     const subjectId: string = router.state.location.search.subjectId || subject_id || '';
@@ -180,6 +186,8 @@ export const AddChapterForm = ({
                 : [],
         [selectedVisibilitySessionId, getPackageWiseLevels]
     );
+
+    const formSchema = useMemo(() => buildFormSchema(t), [t]);
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
@@ -392,7 +400,7 @@ export const AddChapterForm = ({
             };
             reader.readAsDataURL(file);
         } else {
-            toast.error('Please select a valid image file');
+            toast.error(t('studyLibraryAddChapterForm:toast.invalidImageFile'));
         }
         // Reset input
         if (fileInputRef.current) {
@@ -416,11 +424,11 @@ export const AddChapterForm = ({
                 form.setValue('thumbnailFileId', fileId);
                 const publicUrl = await getPublicUrl(fileId);
                 setThumbnailPreview(publicUrl);
-                toast.success('Thumbnail uploaded successfully');
+                toast.success(t('studyLibraryAddChapterForm:toast.thumbnailUploadSuccess'));
             }
         } catch (error) {
             console.error('Failed to upload thumbnail:', error);
-            toast.error('Failed to upload thumbnail');
+            toast.error(t('studyLibraryAddChapterForm:toast.thumbnailUploadFailed'));
         } finally {
             setIsUploadingImage(false);
         }
@@ -480,8 +488,8 @@ export const AddChapterForm = ({
                 if (!selectedPackageSessionIds) {
                     toast.error(
                         requirePackageSelection
-                            ? 'Please select at least one package for visibility'
-                            : 'Package session not found'
+                            ? t('studyLibraryAddChapterForm:toast.selectPackageRequired')
+                            : t('studyLibraryAddChapterForm:toast.packageSessionNotFound')
                     );
                     return;
                 }
@@ -503,10 +511,10 @@ export const AddChapterForm = ({
                         chapter: newChapter,
                     });
 
-                    toast.success('Chapter added successfully');
+                    toast.success(t('studyLibraryAddChapterForm:toast.chapterAddSuccess'));
                 } else {
                     if (!initialValues) {
-                        toast.error('No chapter to update');
+                        toast.error(t('studyLibraryAddChapterForm:toast.noChapterToUpdate'));
                         return;
                     }
 
@@ -524,13 +532,17 @@ export const AddChapterForm = ({
                         chapter: updatedChapter,
                     });
 
-                    toast.success('Chapter updated successfully');
+                    toast.success(t('studyLibraryAddChapterForm:toast.chapterUpdateSuccess'));
                 }
 
                 onSubmitSuccess();
             } catch (error) {
                 console.error('Error handling chapter:', error);
-                toast.error(`Failed to ${mode} chapter. Please try again.`);
+                toast.error(
+                    mode === 'create'
+                        ? t('studyLibraryAddChapterForm:toast.chapterActionFailedCreate')
+                        : t('studyLibraryAddChapterForm:toast.chapterActionFailedEdit')
+                );
             }
         },
         [
@@ -544,6 +556,7 @@ export const AddChapterForm = ({
             isPerBatchMode,
             requirePackageSelection,
             package_session_id,
+            t,
         ]
     );
 
@@ -572,7 +585,9 @@ export const AddChapterForm = ({
                 {isLoadingCompleteData && mode === 'edit' && (
                     <div className="flex items-center gap-2 rounded-lg bg-blue-50 p-3 text-blue-700">
                         <div className="size-4 animate-spin rounded-full border-2 border-blue-300 border-t-blue-700"></div>
-                        <span className="text-sm">Loading complete visibility data...</span>
+                        <span className="text-sm">
+                            {t('studyLibraryAddChapterForm:loadingVisibilityData')}
+                        </span>
                     </div>
                 )}
                 {/* Chapter Name field */}
@@ -583,10 +598,12 @@ export const AddChapterForm = ({
                         <FormItem>
                             <FormControl>
                                 <MyInput
-                                    label={`${getTerminology(
-                                        ContentTerms.Chapters,
-                                        SystemTerms.Chapters
-                                    )} Name`}
+                                    label={t('studyLibraryAddChapterForm:nameLabel', {
+                                        term: getTerminology(
+                                            ContentTerms.Chapters,
+                                            SystemTerms.Chapters
+                                        ),
+                                    })}
                                     required={true}
                                     inputType="text"
                                     className="w-full"
@@ -607,12 +624,17 @@ export const AddChapterForm = ({
                         <FormItem>
                             <FormControl>
                                 <MyInput
-                                    label="Description (Optional)"
+                                    label={t('studyLibraryAddChapterForm:descriptionLabel')}
                                     inputType="text"
-                                    inputPlaceholder={`Enter ${getTerminology(
-                                        ContentTerms.Chapters,
-                                        SystemTerms.Chapters
-                                    ).toLowerCase()} description`}
+                                    inputPlaceholder={t(
+                                        'studyLibraryAddChapterForm:descriptionPlaceholder',
+                                        {
+                                            term: getTerminology(
+                                                ContentTerms.Chapters,
+                                                SystemTerms.Chapters
+                                            ).toLowerCase(),
+                                        }
+                                    )}
                                     className="w-full"
                                     input={field.value || ''}
                                     onChangeFunction={(e) => field.onChange(e.target.value)}
@@ -621,11 +643,14 @@ export const AddChapterForm = ({
                                 />
                             </FormControl>
                             <p className="text-caption text-neutral-400">
-                                Shown on the {getTerminology(
-                                    ContentTerms.Chapters,
-                                    SystemTerms.Chapters
-                                ).toLowerCase()} card — {(field.value || '').length}/
-                                {CONTENT_DESCRIPTION_MAX_LENGTH} characters
+                                {t('studyLibraryAddChapterForm:descriptionCharCount', {
+                                    term: getTerminology(
+                                        ContentTerms.Chapters,
+                                        SystemTerms.Chapters
+                                    ).toLowerCase(),
+                                    current: (field.value || '').length,
+                                    max: CONTENT_DESCRIPTION_MAX_LENGTH,
+                                })}
                             </p>
                             <FormMessage />
                         </FormItem>
@@ -640,21 +665,24 @@ export const AddChapterForm = ({
                         <FormItem>
                             <div className="flex flex-col gap-2">
                                 <label className="text-subtitle font-semibold text-neutral-700">
-                                    {getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)}{' '}
-                                    Thumbnail
-                                    <span className="ml-1 font-normal text-neutral-500">
-                                        (Optional)
+                                    {t('studyLibraryAddChapterForm:thumbnailLabel', {
+                                        term: getTerminology(
+                                            ContentTerms.Chapters,
+                                            SystemTerms.Chapters
+                                        ),
+                                    })}
+                                    <span className="ms-1 font-normal text-neutral-500">
+                                        {t('studyLibraryAddChapterForm:optional')}
                                     </span>
                                 </label>
                                 <div className="text-body text-neutral-500">
-                                    Upload a thumbnail image for this chapter. It will be cropped to
-                                    a 16:9 ratio for consistency (16:9 recommended).
+                                    {t('studyLibraryAddChapterForm:thumbnailHelpText')}
                                 </div>
                                 {thumbnailPreview ? (
                                     <div className="relative h-20 w-32 overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50">
                                         <img
                                             src={thumbnailPreview}
-                                            alt="Thumbnail preview"
+                                            alt={t('studyLibraryAddChapterForm:thumbnailPreviewAlt')}
                                             className="size-full object-cover"
                                         />
                                         <button
@@ -686,11 +714,11 @@ export const AddChapterForm = ({
                                             className="w-fit"
                                         >
                                             {isUploadingImage ? (
-                                                <>Uploading...</>
+                                                <>{t('studyLibraryAddChapterForm:uploading')}</>
                                             ) : (
                                                 <>
-                                                    <Upload size={16} className="mr-2" />
-                                                    Select Thumbnail
+                                                    <Upload size={16} className="me-2" />
+                                                    {t('studyLibraryAddChapterForm:selectThumbnail')}
                                                 </>
                                             )}
                                         </MyButton>
@@ -710,18 +738,18 @@ export const AddChapterForm = ({
                 {requirePackageSelection && !isPerBatchMode && (
                     <div className="flex flex-col gap-2 overflow-y-auto">
                         <div className="text-subtitle font-semibold">
-                            {getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)} Visibility
+                            {t('studyLibraryAddChapterForm:visibilityHeading', {
+                                term: getTerminology(ContentTerms.Chapters, SystemTerms.Chapters),
+                            })}
                         </div>
                         <div className="text-body text-neutral-500">
-                            Select the levels you want to grant access to this chapter. Only the
-                            chosen levels will be able to view the content. You can update
-                            visibility at any time.
+                            {t('studyLibraryAddChapterForm:visibilityHelpText')}
                         </div>
 
                         {allSessions.length > 1 && (
                             <div className="flex items-center gap-2">
                                 <label className="text-sm font-medium text-neutral-600">
-                                    Academic Session:
+                                    {t('studyLibraryAddChapterForm:academicSession')}
                                 </label>
                                 <select
                                     className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none"
@@ -807,12 +835,16 @@ export const AddChapterForm = ({
                                                                     );
                                                                 }}
                                                                 disabled={isFormDisabled}
-                                                                aria-label="Select all"
+                                                                aria-label={t(
+                                                                    'studyLibraryAddChapterForm:selectAllAriaLabel'
+                                                                )}
                                                             />
                                                             <span className="font-semibold">
                                                                 {course.package_dto.package_name}
                                                                 {isDefaultSessionCourse &&
-                                                                    ' (Default)'}
+                                                                    t(
+                                                                        'studyLibraryAddChapterForm:defaultSuffix'
+                                                                    )}
                                                             </span>
                                                         </div>
 
@@ -918,7 +950,7 @@ export const AddChapterForm = ({
                             <div className="flex items-center gap-2 text-neutral-500">
                                 <div className="size-4 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-500"></div>
                                 <span className="text-sm">
-                                    Please wait while we load complete data...
+                                    {t('studyLibraryAddChapterForm:loadingCompleteData')}
                                 </span>
                             </div>
                         ) : (
@@ -931,10 +963,22 @@ export const AddChapterForm = ({
                                 disabled={isPending}
                             >
                                 {isPending
-                                    ? `${mode === 'create' ? 'Adding' : 'Updating'}...`
+                                    ? mode === 'create'
+                                        ? t('studyLibraryAddChapterForm:adding')
+                                        : t('studyLibraryAddChapterForm:updating')
                                     : mode === 'create'
-                                      ? `Add ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)}`
-                                      : `Edit ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)}`}
+                                      ? t('studyLibraryAddChapterForm:addButton', {
+                                            term: getTerminology(
+                                                ContentTerms.Chapters,
+                                                SystemTerms.Chapters
+                                            ),
+                                        })
+                                      : t('studyLibraryAddChapterForm:editButton', {
+                                            term: getTerminology(
+                                                ContentTerms.Chapters,
+                                                SystemTerms.Chapters
+                                            ),
+                                        })}
                             </MyButton>
                         )}
                     </div>
@@ -946,10 +990,10 @@ export const AddChapterForm = ({
                     onOpenChange={setCropperOpen}
                     src={selectedImage || ''}
                     aspectRatio={16 / 9} // 16:9 ratio to match the display tile (no crop on display)
-                    title="Crop Chapter Thumbnail"
+                    title={t('studyLibraryAddChapterForm:cropDialogTitle')}
                     outputMimeType="image/jpeg"
                     outputQuality={0.9}
-                    confirmLabel="Save Thumbnail"
+                    confirmLabel={t('studyLibraryAddChapterForm:saveThumbnail')}
                     onCropped={handleImageCropped}
                 />
             </form>

@@ -31,7 +31,9 @@ export const convertBookingCustomFields = (
         comma_separated_options: customField.config || "",
         config: customField.config || "{}",
         status: field.status || "ACTIVE",
-        is_mandatory: customField.isMandatory || false,
+        // Per-form answer first, master row second — the builder's Required switch writes the
+        // mapping. `??` so an explicit false is respected.
+        is_mandatory: field.is_mandatory ?? customField.isMandatory ?? false,
         field_type: customField.fieldType || "text",
         created_at: customField.createdAt,
         updated_at: customField.updatedAt,

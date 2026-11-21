@@ -1,0 +1,70 @@
+{
+    "table": {
+        "date": "Date",
+        "class": "Cours",
+        "status": "Statut",
+        "present": "Présent",
+        "absent": "Absent",
+        "duration": "Durée",
+        "talkTime": "Temps de parole",
+        "chats": "Discussions",
+        "polls": "Sondages",
+        "raiseHand": "Main levée"
+    },
+    "export": {
+        "generatedOn": "Généré {{date}}",
+        "exportSuccess": "Rapport de l'apprenant exporté",
+        "exportFailed": "Échec de l'exportation du PDF",
+        "csvExportSuccess": "CSV exporté",
+        "csvExportFailed": "Échec de l'export CSV"
+    },
+    "errors": {
+        "loadFailed": "Une erreur s'est produite lors du chargement du rapport. Veuillez réessayer.",
+        "batchLoadFailed": "Impossible de charger le rapport pour {{name}}."
+    },
+    "emptyState": {
+        "title": "Aucun cours en direct trouvé",
+        "description": "Cet apprenant n'avait aucun cours en direct programmé durant la période sélectionnée."
+    },
+    "actions": {
+        "attendanceTracker": "Suivi de présence",
+        "exporting": "Exportation…",
+        "exportPdf": "Exporter en PDF",
+        "exportCsv": "Exporter en CSV"
+    },
+    "metrics": {
+        "attendance": "Présence",
+        "batchPercentage": "Groupe {{value}}%",
+        "classesAttended": "Cours suivis",
+        "avgDurationPerClass": "Durée moy. / cours",
+        "batchDuration": "Groupe {{value}}",
+        "engagement": "Engagement",
+        "batchEngagement": "Groupe {{value}} · sur 100",
+        "engagementInfo": "Score d'engagement (0–100) basé sur la participation en classe — temps de parole, discussions, sondages et mains levées, mesuré par cours. 100 = l'apprenant le plus actif de ce groupe. Disponible uniquement pour les cours synchronisés avec un fournisseur (Zoom/BBB)."
+    },
+    "sections": {
+        "classHistoryTitle": "Historique des cours",
+        "classHistorySubtitle": "Présence et participation pour chaque cours de la période"
+    },
+    "batchCount": "{{term}} · {{count}} sélectionné(s)",
+    "csv": {
+        "fileStem": "rapport-classes-en-direct-apprenant",
+        "summaryTitle": "Résumé",
+        "learner": "Apprenant",
+        "email": "E-mail",
+        "startDate": "Date de début",
+        "endDate": "Date de fin",
+        "attendancePct": "Assiduité (%)",
+        "batchAttendancePct": "Assiduité du {{batch}} (%)",
+        "attended": "Classes suivies",
+        "totalClasses": "Classes au total",
+        "avgDurationMin": "Durée moyenne (min)",
+        "batchAvgDurationMin": "Durée moyenne du {{batch}} (min)",
+        "engagementScore": "Score d'engagement (0-100)",
+        "batchEngagementScore": "Score d'engagement du {{batch}} (0-100)",
+        "classesTitle": "Historique des classes",
+        "durationMin": "Durée (min)",
+        "talkTimeMin": "Temps de parole (min)",
+        "emojis": "Émojis"
+    }
+}

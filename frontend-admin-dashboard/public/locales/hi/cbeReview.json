@@ -1,0 +1,35 @@
+{
+    "answer": {
+        "empty": "कोई उत्तर नहीं।",
+        "noSheet": "स्प्रेडशीट में कुछ नहीं भरा गया।",
+        "noText": "कोई लिखित उत्तर नहीं।",
+        "unknownPart": "भाग {{number}}"
+    },
+    "solution": {
+        "heading": "मॉडल हल और अंक योजना",
+        "none": "इस भाग का कोई मॉडल हल सहेजा नहीं गया।",
+        "noScheme": "अंक योजना की कोई पंक्ति नहीं।",
+        "gradingNotes": "जाँच निर्देश:"
+    },
+    "scheme": {
+        "line": "पंक्ति",
+        "marks": "अंक",
+        "expected": "अपेक्षित",
+        "cell": "सेल",
+        "guidance": "मार्गदर्शन"
+    },
+    "evaluation": {
+        "marks": "{{marks}} / {{max}} अंक",
+        "criteria": "पंक्ति",
+        "reason": "कारण",
+        "lineMarks": "अंक",
+        "pending": "जाँच हो रही है…",
+        "failed": "इस प्रयास की AI जाँच विफल रही।",
+        "noCredits": "जाँच नहीं हुई — संस्थान के AI क्रेडिट खत्म थे।"
+    },
+    "slide": {
+        "heading": "स्प्रेडशीट और लिखित उत्तर",
+        "attempt": "प्रयास {{number}}",
+        "evaluation": "AI जाँच"
+    }
+}

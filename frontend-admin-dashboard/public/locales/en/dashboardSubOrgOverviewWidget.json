@@ -1,0 +1,26 @@
+{
+    "header": {
+        "title": "{{plural}} snapshot",
+        "subtitle": "Your {{singular}} network at a glance"
+    },
+    "manage": "Manage",
+    "stats": {
+        "total": {
+            "label": "Total {{plural}}",
+            "subtitle": "Registered {{plural}}"
+        },
+        "active": {
+            "label": "Active",
+            "subtitle": "With an active plan"
+        },
+        "learners": {
+            "label": "Learners",
+            "subtitle": "Enrolled across {{plural}}"
+        },
+        "seats": {
+            "label": "Seats",
+            "subtitleOccupied": "Occupied of capacity",
+            "subtitleNoCap": "No cap configured"
+        }
+    }
+}

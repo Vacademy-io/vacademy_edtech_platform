@@ -1,0 +1,15 @@
+{
+    "dialog": {
+        "heading": "رفع دي سمارت"
+    },
+    "fields": {
+        "prompt": {
+            "label": "أدخل موجّهك",
+            "placeholder": "أدخل موجّهك هنا..."
+        }
+    },
+    "actions": {
+        "cancel": "إلغاء",
+        "regenerate": "إعادة الإنشاء"
+    }
+}

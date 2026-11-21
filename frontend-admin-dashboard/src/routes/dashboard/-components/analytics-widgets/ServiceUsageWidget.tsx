@@ -1,6 +1,7 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { fetchAnalyticsServiceUsage } from '../../-services/dashboard-services';
 import { useTheme } from '@/providers/theme/theme-provider';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from 'recharts';
@@ -12,6 +13,7 @@ interface ServiceUsageWidgetProps {
 }
 
 export default function ServiceUsageWidget({ instituteId }: ServiceUsageWidgetProps) {
+    const { t, i18n } = useTranslation('dashboardServiceUsageWidget');
     const { primaryColor } = useTheme();
 
     const { data, isLoading, error, refetch } = useQuery({
@@ -51,12 +53,12 @@ export default function ServiceUsageWidget({ instituteId }: ServiceUsageWidgetPr
 
     function getServiceColor(index: number) {
         const colors = [
-            '#3B82F6', // Blue
-            '#10B981', // Green
-            '#F59E0B', // Amber
-            '#EF4444', // Red
-            '#8B5CF6', // Purple
-            '#06B6D4', // Cyan
+            'hsl(var(--info-500))', // Blue
+            'hsl(var(--success-500))', // Green
+            'hsl(var(--warning-500))', // Amber
+            'hsl(var(--danger-600))', // Red
+            'hsl(var(--primary-500))', // Brand accent
+            'hsl(var(--info-700))', // Cyan
         ];
         return colors[index % colors.length];
     }
@@ -77,9 +79,15 @@ export default function ServiceUsageWidget({ instituteId }: ServiceUsageWidgetPr
             return (
                 <div className="rounded-lg border bg-white p-3 shadow-lg">
                     <p className="font-semibold capitalize text-gray-800">{data.name}</p>
-                    <p className="text-sm text-gray-600">Usage: {data.usage.toLocaleString()}</p>
-                    <p className="text-sm text-gray-600">Users: {data.users.toLocaleString()}</p>
-                    <p className="text-sm text-gray-600">Avg Response: {data.avgResponseTime}ms</p>
+                    <p className="text-sm text-gray-600">
+                        {t('tooltip.usage', { value: data.usage.toLocaleString(i18n.language) })}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                        {t('tooltip.users', { value: data.users.toLocaleString(i18n.language) })}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                        {t('tooltip.avgResponse', { value: data.avgResponseTime })}
+                    </p>
                 </div>
             );
         }
@@ -106,10 +114,10 @@ export default function ServiceUsageWidget({ instituteId }: ServiceUsageWidgetPr
                         </motion.div>
                         <div>
                             <CardTitle className="text-lg font-bold text-gray-800">
-                                Service Usage
+                                {t('header.title')}
                             </CardTitle>
                             <CardDescription className="text-sm text-gray-600">
-                                Most active services and APIs
+                                {t('header.subtitle')}
                             </CardDescription>
                         </div>
                     </div>
@@ -130,14 +138,14 @@ export default function ServiceUsageWidget({ instituteId }: ServiceUsageWidgetPr
                     ) : error ? (
                         <AnalyticsErrorDisplay
                             error={error}
-                            widgetName="service usage"
+                            widgetName={t('error.widgetName')}
                             onRetry={() => refetch()}
                             fallbackIcon={Database}
                         />
                     ) : serviceData.length === 0 ? (
                         <div className="py-8 text-center text-gray-500">
                             <Database size={32} className="mx-auto mb-2 opacity-50" />
-                            <p className="text-sm">No service data available</p>
+                            <p className="text-sm">{t('empty.message')}</p>
                         </div>
                     ) : (
                         <div className="space-y-4">
@@ -198,7 +206,7 @@ export default function ServiceUsageWidget({ instituteId }: ServiceUsageWidgetPr
                                                     {service.usage.toLocaleString()}
                                                 </div>
                                                 <div className="text-xs text-gray-500">
-                                                    {service.users} users
+                                                    {t('list.users', { count: service.users })}
                                                 </div>
                                             </div>
                                         </motion.div>
@@ -214,15 +222,17 @@ export default function ServiceUsageWidget({ instituteId }: ServiceUsageWidgetPr
                                 className="border-t border-gray-200 pt-2 text-center"
                             >
                                 <p className="text-xs text-gray-500">
-                                    Avg response time:{' '}
+                                    {t('footer.avgResponseTime')}{' '}
                                     <span className="font-medium text-gray-700">
-                                        {Math.round(
-                                            serviceData.reduce(
-                                                (sum: number, s: any) => sum + s.avgResponseTime,
-                                                0
-                                            ) / serviceData.length
-                                        )}
-                                        ms
+                                        {t('footer.ms', {
+                                            value: Math.round(
+                                                serviceData.reduce(
+                                                    (sum: number, s: any) =>
+                                                        sum + s.avgResponseTime,
+                                                    0
+                                                ) / serviceData.length
+                                            ),
+                                        })}
                                     </span>
                                 </p>
                             </motion.div>

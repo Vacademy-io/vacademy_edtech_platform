@@ -1,0 +1,12 @@
+{
+    "searchPlaceholder": "नाम या फ़ोन से खोजें...",
+    "feeType": "शुल्क प्रकार",
+    "clearAll": "सभी साफ़ करें",
+    "status": {
+        "label": "स्थिति",
+        "paid": "भुगतान हो गया",
+        "partial": "आंशिक",
+        "pending": "लंबित",
+        "overdue": "अतिदेय"
+    }
+}

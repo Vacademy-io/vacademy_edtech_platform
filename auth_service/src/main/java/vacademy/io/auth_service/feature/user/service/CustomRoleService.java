@@ -38,11 +38,7 @@ public class CustomRoleService {
             throw new VacademyException("Role with this name already exists in this institute.");
         }
 
-        // Also check if it conflicts with system roles (optional, but good practice to
-        // avoid confusion)
-        if (roleRepository.findByNameAndInstituteId(createRoleDTO.getName(), null).isPresent()) {
-            throw new VacademyException("Role name conflicts with a system role.");
-        }
+        rejectSystemRoleName(createRoleDTO.getName());
 
         Role role = new Role();
         role.setName(createRoleDTO.getName());
@@ -71,6 +67,7 @@ public class CustomRoleService {
             if (roleRepository.findByNameAndInstituteId(updateRoleDTO.getName(), instituteId).isPresent()) {
                 throw new VacademyException("Role with this name already exists in this institute.");
             }
+            rejectSystemRoleName(updateRoleDTO.getName());
         }
 
         role.setName(updateRoleDTO.getName());
@@ -104,9 +101,28 @@ public class CustomRoleService {
         roleRepository.delete(role);
     }
 
+    // Role names reach the token's authorities uppercased, so a custom role called "admin"
+    // would read as ADMIN everywhere authorities are checked. Compare ignoring case (the
+    // unused legacy rows only by exact name, as before).
+    private void rejectSystemRoleName(String name) {
+        if (name != null && roleRepository.findAllByInstituteIdIsNull().stream()
+                .anyMatch(role -> name.equals(role.getName()) || (!LEGACY_ROLE_NAMES.contains(role.getName())
+                        && name.trim().equalsIgnoreCase(role.getName())))) {
+            throw new VacademyException("Role name conflicts with a system role.");
+        }
+    }
+
+    // Global rows seeded in 2024 that are no longer used. "Admin" (id 1) duplicates the
+    // real "ADMIN" (id 5) and every one of them showed up in the role pickers, so admins
+    // kept assigning them. Exact-case match: role_name is unique, so these never hit
+    // ADMIN or an institute's custom role.
+    private static final Set<String> LEGACY_ROLE_NAMES = Set.of("Admin", "User", "Moderator", "Guest");
+
     public List<CustomRoleDTO> getRolesForInstitute(String instituteId) {
         // System roles have institute_id IS NULL
-        List<Role> systemRoles = roleRepository.findAllByInstituteIdIsNull();
+        List<Role> systemRoles = roleRepository.findAllByInstituteIdIsNull().stream()
+                .filter(role -> !LEGACY_ROLE_NAMES.contains(role.getName()))
+                .collect(Collectors.toList());
         List<Role> customRoles = roleRepository.findAllByInstituteId(instituteId);
 
         List<Role> allRoles = new java.util.ArrayList<>(systemRoles);

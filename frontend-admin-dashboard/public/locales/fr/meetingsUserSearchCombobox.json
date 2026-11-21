@@ -1,0 +1,8 @@
+{
+    "searchPlaceholder": "Rechercher un utilisateur par nom ou e-mail...",
+    "selectUser": "Sélectionner un utilisateur...",
+    "addParticipants": "Ajouter des participants...",
+    "typeToSearch": "Saisissez au moins 3 caractères pour rechercher...",
+    "noUsersFound": "Aucun utilisateur trouvé.",
+    "removeUser": "Supprimer {{name}}"
+}

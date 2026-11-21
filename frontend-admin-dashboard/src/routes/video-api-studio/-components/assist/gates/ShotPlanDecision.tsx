@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -30,8 +32,16 @@ const TRANSITIONS = [
     'smash_cut',
     'dip_to_black',
     'dissolve_up',
-];
-const BACKGROUNDS = ['brand_solid', 'brand_textured', 'brand_gradient', 'media_hero'];
+] as const;
+const BACKGROUNDS = ['brand_solid', 'brand_textured', 'brand_gradient', 'media_hero'] as const;
+
+/** Translated label for a transition-style option value. */
+const buildTransitionLabel = (t: TFunction, value: (typeof TRANSITIONS)[number]) =>
+    t(`transitions.${value}`);
+
+/** Translated label for a background-treatment option value. */
+const buildBackgroundLabel = (t: TFunction, value: (typeof BACKGROUNDS)[number]) =>
+    t(`backgrounds.${value}`);
 
 const selectCls =
     'h-8 rounded-md border bg-background px-2 text-xs text-foreground outline-none focus:border-violet-500';
@@ -48,6 +58,7 @@ const isActedScene = (r: Row) => (r.shot_type ?? '').toUpperCase() === 'DIALOGUE
  * plan. Editing any field switches "Approve" to an edit submission.
  */
 export function ShotPlanDecision({ decision, isSubmitting, onSubmit }: ShotPlanDecisionProps) {
+    const { t } = useTranslation('videoApiStudioShotPlanDecision');
     const initial = useMemo<Row[]>(
         () =>
             (decision.payload?.shots ?? []).map((s, i) => ({
@@ -97,7 +108,7 @@ export function ShotPlanDecision({ decision, isSubmitting, onSubmit }: ShotPlanD
                     <FilmSlate className="size-4 text-violet-600" />
                 </span>
                 <div className="text-sm font-semibold text-foreground">
-                    {rows.length}-shot plan
+                    {t('header.shotPlan', { count: rows.length })}
                 </div>
                 <span
                     className={cn(
@@ -107,7 +118,7 @@ export function ShotPlanDecision({ decision, isSubmitting, onSubmit }: ShotPlanD
                             : 'text-muted-foreground'
                     )}
                 >
-                    {actedCount} acted scene{actedCount === 1 ? '' : 's'}
+                    {t('header.actedScenes', { count: actedCount })}
                 </span>
             </div>
 
@@ -124,7 +135,7 @@ export function ShotPlanDecision({ decision, isSubmitting, onSubmit }: ShotPlanD
                                     disabled={isSubmitting}
                                     onChange={(e) => update(i, { shot_type: e.target.value })}
                                     className="h-8 text-xs"
-                                    placeholder="shot type"
+                                    placeholder={t('row.shotTypePlaceholder')}
                                 />
                                 <Input
                                     type="number"
@@ -134,14 +145,14 @@ export function ShotPlanDecision({ decision, isSubmitting, onSubmit }: ShotPlanD
                                         update(i, { duration_estimate_s: Number(e.target.value) })
                                     }
                                     className="h-8 text-xs"
-                                    placeholder="secs"
+                                    placeholder={t('row.secondsPlaceholder')}
                                 />
                                 <Input
                                     value={r.narration_brief ?? ''}
                                     disabled={isSubmitting}
                                     onChange={(e) => update(i, { narration_brief: e.target.value })}
                                     className="h-8 text-xs"
-                                    placeholder="what this beat covers"
+                                    placeholder={t('row.narrationBriefPlaceholder')}
                                 />
                             </div>
                             <div className="flex flex-wrap gap-2">
@@ -150,12 +161,12 @@ export function ShotPlanDecision({ decision, isSubmitting, onSubmit }: ShotPlanD
                                     disabled={isSubmitting}
                                     onChange={(e) => update(i, { transition_in: e.target.value })}
                                     className={selectCls}
-                                    aria-label="transition in"
+                                    aria-label={t('row.transitionInAriaLabel')}
                                 >
-                                    <option value="">transition…</option>
-                                    {TRANSITIONS.map((t) => (
-                                        <option key={t} value={t}>
-                                            {t.replace(/_/g, ' ')}
+                                    <option value="">{t('row.transitionPlaceholder')}</option>
+                                    {TRANSITIONS.map((transition) => (
+                                        <option key={transition} value={transition}>
+                                            {buildTransitionLabel(t, transition)}
                                         </option>
                                     ))}
                                 </select>
@@ -166,12 +177,12 @@ export function ShotPlanDecision({ decision, isSubmitting, onSubmit }: ShotPlanD
                                         update(i, { background_treatment: e.target.value })
                                     }
                                     className={selectCls}
-                                    aria-label="background treatment"
+                                    aria-label={t('row.backgroundTreatmentAriaLabel')}
                                 >
-                                    <option value="">background…</option>
-                                    {BACKGROUNDS.map((b) => (
-                                        <option key={b} value={b}>
-                                            {b.replace(/_/g, ' ')}
+                                    <option value="">{t('row.backgroundPlaceholder')}</option>
+                                    {BACKGROUNDS.map((background) => (
+                                        <option key={background} value={background}>
+                                            {buildBackgroundLabel(t, background)}
                                         </option>
                                     ))}
                                 </select>
@@ -181,7 +192,7 @@ export function ShotPlanDecision({ decision, isSubmitting, onSubmit }: ShotPlanD
                                     <div className="flex flex-wrap items-center gap-1.5">
                                         <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">
                                             <FilmSlate weight="fill" className="size-3" />
-                                            Acted scene
+                                            {t('row.actedScene')}
                                         </span>
                                         {(r.character_names ?? []).map((name) => (
                                             <span
@@ -213,7 +224,9 @@ export function ShotPlanDecision({ decision, isSubmitting, onSubmit }: ShotPlanD
                                                             )
                                                         }
                                                         className="min-h-9 flex-1 text-xs"
-                                                        aria-label={`Line for ${d.character}`}
+                                                        aria-label={t('row.dialogueLineAriaLabel', {
+                                                            character: d.character,
+                                                        })}
                                                     />
                                                 </div>
                                             ))}
@@ -236,8 +249,8 @@ export function ShotPlanDecision({ decision, isSubmitting, onSubmit }: ShotPlanD
                                             {r.scene_continuity && (
                                                 <span className={sceneChipCls}>
                                                     {r.scene_continuity === 'continuous'
-                                                        ? 'continues previous scene'
-                                                        : 'new scene'}
+                                                        ? t('row.continuesPreviousScene')
+                                                        : t('row.newScene')}
                                                 </span>
                                             )}
                                             {r.time_of_day && (
@@ -268,7 +281,7 @@ export function ShotPlanDecision({ decision, isSubmitting, onSubmit }: ShotPlanD
                     className="gap-1.5 text-muted-foreground"
                 >
                     <Sparkle className="size-3.5" />
-                    Let AI decide
+                    {t('footer.letAiDecide')}
                 </Button>
                 <Button
                     size="sm"
@@ -277,7 +290,7 @@ export function ShotPlanDecision({ decision, isSubmitting, onSubmit }: ShotPlanD
                     className="gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-700 hover:to-indigo-700"
                 >
                     <Check className="size-4" />
-                    {dirty ? 'Save & continue' : 'Approve plan'}
+                    {dirty ? t('footer.saveAndContinue') : t('footer.approvePlan')}
                 </Button>
             </div>
         </div>

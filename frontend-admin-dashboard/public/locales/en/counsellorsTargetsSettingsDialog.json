@@ -1,0 +1,40 @@
+{
+    "periods": {
+        "week": "Weekly (recurring)",
+        "month": "Monthly (recurring)",
+        "custom": "Custom date range"
+    },
+    "title": "Set counsellor targets",
+    "metric": "Metric",
+    "timeline": "Timeline",
+    "from": "From",
+    "to": "To",
+    "applyToAll": {
+        "label": "Apply to all {{count}}:",
+        "button": "Apply to all",
+        "placeholder": "e.g. 50"
+    },
+    "toast": {
+        "invalidBulkValue": "Enter a valid number to apply to everyone",
+        "pickDateRange": "Pick a custom date range first",
+        "appliedSuccess_one": "Applied to {{count}} counsellor",
+        "appliedSuccess_other": "Applied to {{count}} counsellors",
+        "applyError": "Could not apply targets",
+        "noChanges": "No changes to save",
+        "savedSuccess_one": "Saved {{count}} target",
+        "savedSuccess_other": "Saved {{count}} targets",
+        "saveError": "Could not save targets"
+    },
+    "list": {
+        "customIncomplete": "Pick a custom date range to edit targets.",
+        "loading": "Loading current targets…",
+        "empty": "No counsellors to set targets for.",
+        "unnamed": "Unnamed",
+        "noValuePlaceholder": "—"
+    },
+    "footer": {
+        "close": "Close",
+        "save": "Save changes",
+        "saving": "Saving…"
+    }
+}

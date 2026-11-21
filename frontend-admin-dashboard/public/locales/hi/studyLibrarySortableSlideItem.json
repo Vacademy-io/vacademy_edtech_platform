@@ -1,0 +1,64 @@
+{
+    "labels": {
+        "videoScript": "वीडियो स्क्रिप्ट",
+        "mermaidDiagramCode": "मरमेड डायग्राम कोड",
+        "codeSnippet": "कोड स्निपेट",
+        "diagramPreview": "डायग्राम पूर्वावलोकन",
+        "mermaidCode": "मरमेड कोड",
+        "video": "वीडियो",
+        "code": "कोड",
+        "output": "आउटपुट",
+        "aiVideo": "AI वीडियो",
+        "aiGeneratedVideo": "AI द्वारा जनरेट किया गया वीडियो",
+        "quizContent": "क्विज़ सामग्री",
+        "content": "सामग्री",
+        "assignment": "असाइनमेंट",
+        "aiPrompt": "AI प्रॉम्प्ट"
+    },
+    "actions": {
+        "regenerate": "पुनः जनरेट करें",
+        "regenerateVideoScript": "वीडियो स्क्रिप्ट पुनः जनरेट करें",
+        "regenerateDiagram": "डायग्राम पुनः जनरेट करें",
+        "regenerateCode": "कोड पुनः जनरेट करें",
+        "regenerateContent": "सामग्री पुनः जनरेट करें",
+        "regenerateQuiz": "क्विज़ पुनः जनरेट करें",
+        "regenerateAssignment": "असाइनमेंट पुनः जनरेट करें",
+        "regenerateSection": "{{label}} पुनः जनरेट करें",
+        "runCode": "कोड चलाएं",
+        "running": "चल रहा है...",
+        "showOutput": "आउटपुट दिखाएं",
+        "save": "सहेजें",
+        "cancel": "रद्द करें",
+        "edit": "संपादित करें",
+        "delete": "हटाएं",
+        "watchOnYoutube": "▶ YouTube पर देखें",
+        "hideAiPrompt": "AI प्रॉम्प्ट छिपाएं",
+        "viewAiPrompt": "AI प्रॉम्प्ट देखें",
+        "hideContent": "सामग्री छिपाएं",
+        "viewContent": "सामग्री देखें"
+    },
+    "status": {
+        "generatingDocument": "दस्तावेज़ जनरेट हो रहा है...",
+        "generatingQuiz": "क्विज़ जनरेट हो रहा है...",
+        "generatingVideo": "वीडियो जनरेट हो रहा है...",
+        "generatingContent": "सामग्री जनरेट हो रही है...",
+        "generatingVideoProgress": "वीडियो जनरेट हो रहा है... {{progress}}%",
+        "noContentAvailable": "अभी कोई सामग्री उपलब्ध नहीं है",
+        "noVideoAvailable": "कोई वीडियो उपलब्ध नहीं है",
+        "videoNotAvailableYet": "वीडियो अभी उपलब्ध नहीं है",
+        "loadingPythonEnv": "Python वातावरण लोड हो रहा है (पहली बार चलाने पर कुछ सेकंड लग सकते हैं)...",
+        "noOutputYet": "अभी तक कोई आउटपुट नहीं है। चलाने के लिए \"कोड चलाएं\" पर क्लिक करें।",
+        "failedToLoadScript": "स्क्रिप्ट लोड करने में विफल",
+        "mermaidSectionEmpty": "⚠️ मरमेड सेक्शन में कोई सामग्री नहीं है",
+        "youtubeVideoAvailable": "YouTube वीडियो उपलब्ध है",
+        "noVideoUrlFound": "कोई वीडियो URL नहीं मिला",
+        "checkContentForYoutubeLinks": "कृपया सामग्री में YouTube लिंक जांचें"
+    },
+    "alt": {
+        "videoThumbnail": "वीडियो थंबनेल"
+    },
+    "quizNote": {
+        "label": "नोट:",
+        "body": "प्रश्नों को \"प्रश्न 1\", \"प्रश्न 2\" आदि के रूप में क्रमांकित सूची के साथ विकल्पों सहित लिखें। सही उत्तर विकल्पों की सूची के नीचे \"सही उत्तर: [विकल्प टेक्स्ट]\" के रूप में लिखें।"
+    }
+}

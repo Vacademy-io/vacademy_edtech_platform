@@ -1,0 +1,12 @@
+{
+    "noProblemStatement": "(No problem statement)",
+    "languagesLabel": "Languages: {{languages}}",
+    "maxPointsLabel": "Max points: {{points}}",
+    "testsLabel": "Tests: {{count}}",
+    "sampleTestCasesHeading": "Sample Test Cases",
+    "sampleLabel": "Sample {{number}}",
+    "inputLabel": "Input",
+    "expectedLabel": "Expected",
+    "moreAccepted_one": "+{{count}} more accepted",
+    "moreAccepted_other": "+{{count}} more accepted"
+}

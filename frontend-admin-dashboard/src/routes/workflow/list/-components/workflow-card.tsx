@@ -5,12 +5,15 @@ import { WorkflowStatusBadge } from '@/routes/workflow/-components/workflow-stat
 import { formatDistanceToNow } from 'date-fns';
 import { useNavigate } from '@tanstack/react-router';
 import { Calendar, Clock, Tag } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 interface WorkflowCardProps {
     workflow: Workflow;
 }
 
 export function WorkflowCard({ workflow }: WorkflowCardProps) {
+    const { t, i18n } = useTranslation('workflowCard');
     const navigate = useNavigate();
 
     const formatDate = (dateString: string) => {
@@ -18,11 +21,11 @@ export function WorkflowCard({ workflow }: WorkflowCardProps) {
             const date = new Date(dateString);
             return formatDistanceToNow(date, { addSuffix: true });
         } catch (error) {
-            return 'Unknown';
+            return t('unknownDate');
         }
     };
 
-    const humanizeCronQuartz = (expr: string): string => {
+    const humanizeCronQuartz = (expr: string, t: TFunction): string => {
         const parts = expr.trim().split(/\s+/);
         if (parts.length < 6) return expr;
         const [sec, min, hour, dom, mon, dow] = parts as [
@@ -35,7 +38,7 @@ export function WorkflowCard({ workflow }: WorkflowCardProps) {
         ];
 
         const to12h = (h: number, m: number) => {
-            const period = h >= 12 ? 'PM' : 'AM';
+            const period = h >= 12 ? t('cron.pm') : t('cron.am');
             const h12 = h % 12 === 0 ? 12 : h % 12;
             const mm = m.toString().padStart(2, '0');
             return `${h12}:${mm} ${period}`;
@@ -47,61 +50,61 @@ export function WorkflowCard({ workflow }: WorkflowCardProps) {
         if (!Number.isNaN(nMin) && !Number.isNaN(nHour) && sec === '0') {
             const timeStr = to12h(nHour, nMin);
             if (isStar(dom) && isStar(mon) && isStar(dow)) {
-                return `Every day at ${timeStr}`;
+                return t('cron.everyDayAt', { time: timeStr });
             }
             const dowNames: Record<string, string> = {
-                SUN: 'Sunday',
-                MON: 'Monday',
-                TUE: 'Tuesday',
-                WED: 'Wednesday',
-                THU: 'Thursday',
-                FRI: 'Friday',
-                SAT: 'Saturday',
-                '1': 'Sunday',
-                '2': 'Monday',
-                '3': 'Tuesday',
-                '4': 'Wednesday',
-                '5': 'Thursday',
-                '6': 'Friday',
-                '7': 'Saturday',
+                SUN: t('cron.days.sunday'),
+                MON: t('cron.days.monday'),
+                TUE: t('cron.days.tuesday'),
+                WED: t('cron.days.wednesday'),
+                THU: t('cron.days.thursday'),
+                FRI: t('cron.days.friday'),
+                SAT: t('cron.days.saturday'),
+                '1': t('cron.days.sunday'),
+                '2': t('cron.days.monday'),
+                '3': t('cron.days.tuesday'),
+                '4': t('cron.days.wednesday'),
+                '5': t('cron.days.thursday'),
+                '6': t('cron.days.friday'),
+                '7': t('cron.days.saturday'),
             };
             if (!isStar(dow)) {
                 const days = dow
                     .split(',')
                     .map((d) => dowNames[d] || d)
                     .join(', ');
-                return `Every ${days} at ${timeStr}`;
+                return t('cron.everyDaysAt', { days, time: timeStr });
             }
             if (!isStar(dom) && isStar(mon)) {
-                return `On day ${dom} of every month at ${timeStr}`;
+                return t('cron.onDayOfEveryMonthAt', { day: dom, time: timeStr });
             }
             const monNames: Record<string, string> = {
-                JAN: 'January',
-                FEB: 'February',
-                MAR: 'March',
-                APR: 'April',
-                MAY: 'May',
-                JUN: 'June',
-                JUL: 'July',
-                AUG: 'August',
-                SEP: 'September',
-                OCT: 'October',
-                NOV: 'November',
-                DEC: 'December',
+                JAN: t('cron.months.january'),
+                FEB: t('cron.months.february'),
+                MAR: t('cron.months.march'),
+                APR: t('cron.months.april'),
+                MAY: t('cron.months.may'),
+                JUN: t('cron.months.june'),
+                JUL: t('cron.months.july'),
+                AUG: t('cron.months.august'),
+                SEP: t('cron.months.september'),
+                OCT: t('cron.months.october'),
+                NOV: t('cron.months.november'),
+                DEC: t('cron.months.december'),
             };
             if (!isStar(dom) && !isStar(mon)) {
                 const months = mon
                     .split(',')
                     .map((m) => monNames[m] || m)
                     .join(', ');
-                return `On day ${dom} of ${months} at ${timeStr}`;
+                return t('cron.onDayOfMonthsAt', { day: dom, months, time: timeStr });
             }
             if (isStar(dom) && !isStar(mon)) {
                 const months = mon
                     .split(',')
                     .map((m) => monNames[m] || m)
                     .join(', ');
-                return `Every day of ${months} at ${timeStr}`;
+                return t('cron.everyDayOfMonthsAt', { months, time: timeStr });
             }
         }
         return expr;
@@ -140,13 +143,13 @@ export function WorkflowCard({ workflow }: WorkflowCardProps) {
             <CardContent className="space-y-4">
                 {/* Description */}
                 <p className="line-clamp-3 min-h-12 text-sm text-neutral-600">
-                    {workflow.description || 'No description available'}
+                    {workflow.description || t('noDescription')}
                 </p>
 
                 {/* Workflow Type */}
                 <div className="flex items-center gap-2 text-sm">
                     <Tag className="text-primary-500" size={16} weight="fill" />
-                    <span className="text-neutral-500">Type:</span>
+                    <span className="text-neutral-500">{t('type')}</span>
                     <Badge variant="outline" className="font-medium text-primary-600">
                         {formatWorkflowType(workflow.workflow_type)}
                     </Badge>
@@ -155,7 +158,7 @@ export function WorkflowCard({ workflow }: WorkflowCardProps) {
                 {/* Schedules (only for SCHEDULED workflows) */}
                 {isScheduled && (
                     <div className="space-y-2 rounded-md border border-neutral-200 bg-neutral-50 p-3">
-                        <div className="text-xs font-medium text-neutral-600">Schedules</div>
+                        <div className="text-xs font-medium text-neutral-600">{t('schedules')}</div>
                         {workflow.schedules && workflow.schedules.length > 0 ? (
                             <div className="space-y-2">
                                 {workflow.schedules.slice(0, 3).map((s, idx) => (
@@ -167,39 +170,39 @@ export function WorkflowCard({ workflow }: WorkflowCardProps) {
                                             variant="secondary"
                                             className="bg-blue-50 text-blue-700"
                                         >
-                                            {s.schedule_type || 'CRON'}
+                                            {s.schedule_type || t('cronBadge')}
                                         </Badge>
                                         {s.cron_expression && (
                                             <span
                                                 className="truncate"
                                                 title={s.cron_expression || undefined}
                                             >
-                                                {humanizeCronQuartz(s.cron_expression)}
+                                                {humanizeCronQuartz(s.cron_expression, t)}
                                             </span>
                                         )}
                                         {s.timezone && <span>({s.timezone})</span>}
                                         {s.last_run_at && (
                                             <span className="flex items-center gap-1">
                                                 <Clock size={12} className="text-neutral-400" />
-                                                last: {new Date(s.last_run_at).toLocaleString()}
+                                                {t('lastRun', { time: new Date(s.last_run_at).toLocaleString(i18n.language) })}
                                             </span>
                                         )}
                                         {s.next_run_at && (
                                             <span className="flex items-center gap-1">
                                                 <Clock size={12} className="text-neutral-400" />
-                                                next: {new Date(s.next_run_at).toLocaleString()}
+                                                {t('nextRun', { time: new Date(s.next_run_at).toLocaleString(i18n.language) })}
                                             </span>
                                         )}
                                     </div>
                                 ))}
                                 {workflow.schedules.length > 3 && (
                                     <div className="text-xs text-neutral-500">
-                                        and {workflow.schedules.length - 3} more…
+                                        {t('andMore', { count: workflow.schedules.length - 3 })}
                                     </div>
                                 )}
                             </div>
                         ) : (
-                            <div className="text-xs text-neutral-500">No schedule added</div>
+                            <div className="text-xs text-neutral-500">{t('noScheduleAdded')}</div>
                         )}
                     </div>
                 )}
@@ -207,7 +210,7 @@ export function WorkflowCard({ workflow }: WorkflowCardProps) {
                 {/* Trigger (for EVENT_DRIVEN/TRIGGER workflows) */}
                 {isEventDriven && (
                     <div className="space-y-2 rounded-md border border-neutral-200 bg-neutral-50 p-3">
-                        <div className="text-xs font-medium text-neutral-600">Trigger</div>
+                        <div className="text-xs font-medium text-neutral-600">{t('trigger')}</div>
                         {workflow.trigger ? (
                             <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-600">
                                 {workflow.trigger.trigger_event_name && (
@@ -220,7 +223,7 @@ export function WorkflowCard({ workflow }: WorkflowCardProps) {
                                 )}
                                 {workflow.trigger.event_applied_type && (
                                     <span className="text-xs text-muted-foreground">
-                                        Applies to: {workflow.trigger.event_applied_type.replace(/_/g, ' ')}
+                                        {t('appliesTo', { type: workflow.trigger.event_applied_type.replace(/_/g, ' ') })}
                                     </span>
                                 )}
                                 {workflow.trigger.trigger_status && (
@@ -235,7 +238,7 @@ export function WorkflowCard({ workflow }: WorkflowCardProps) {
                                 )}
                             </div>
                         ) : (
-                            <div className="text-xs text-neutral-500">No trigger details</div>
+                            <div className="text-xs text-neutral-500">{t('noTriggerDetails')}</div>
                         )}
                     </div>
                 )}
@@ -244,11 +247,11 @@ export function WorkflowCard({ workflow }: WorkflowCardProps) {
                 <div className="space-y-2 border-t border-neutral-200 pt-3">
                     <div className="flex items-center gap-2 text-xs text-neutral-500">
                         <Calendar size={14} weight="duotone" className="text-neutral-400" />
-                        <span>Created {formatDate(workflow.created_at)}</span>
+                        <span>{t('created', { time: formatDate(workflow.created_at) })}</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-neutral-500">
                         <Clock size={14} weight="duotone" className="text-neutral-400" />
-                        <span>Updated {formatDate(workflow.updated_at)}</span>
+                        <span>{t('updated', { time: formatDate(workflow.updated_at) })}</span>
                     </div>
                 </div>
             </CardContent>

@@ -1,0 +1,24 @@
+{
+    "header": {
+        "title": "Download Permissions",
+        "description": "Choose which slide types {{roleLabel}} can download. Turning a slide type off hides its in-app download control — a best-effort deterrent that cannot block all browser-level saves (e.g. right-click or third-party viewers)."
+    },
+    "slideTypes": {
+        "documentPdfDownload": "PDF — Download",
+        "documentPdfPrint": "PDF — Print",
+        "documentCode": "Code",
+        "assignment": "Assignment",
+        "video": "Video",
+        "documentDoc": "Document (Docs) — Download",
+        "audio": "Audio — Download",
+        "image": "Images (in Docs) — Download"
+    },
+    "footer": {
+        "saving": "Saving…",
+        "save": "Save"
+    },
+    "toasts": {
+        "saveSuccess": "Slide download permissions saved",
+        "saveError": "Failed to save slide download permissions"
+    }
+}

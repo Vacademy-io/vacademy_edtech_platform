@@ -1,0 +1,18 @@
+{
+    "title": "Confirmer la soumission",
+    "studentLabel": "Élève :",
+    "scoringModeLabel": "Mode de notation :",
+    "scoringModeAutoCalculate": "Calcul automatique",
+    "scoringModeDirectMarks": "Notes directes",
+    "answeredCount_one": "{{count}} répondue",
+    "answeredCount_many": "{{count}} répondues",
+    "answeredCount_other": "{{count}} répondues",
+    "unansweredCount_one": "{{count}} sans réponse",
+    "unansweredCount_many": "{{count}} sans réponse",
+    "unansweredCount_other": "{{count}} sans réponse",
+    "unansweredWarning": "Les questions sans réponse seront notées 0 point.",
+    "attachmentsHeading": "Pièces jointes ({{count}})",
+    "cancel": "Annuler",
+    "submitting": "Envoi en cours...",
+    "submit": "Soumettre"
+}

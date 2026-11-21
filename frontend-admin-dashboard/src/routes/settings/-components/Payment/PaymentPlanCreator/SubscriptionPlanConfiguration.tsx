@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,17 +12,22 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash } from '@phosphor-icons/react';
+import { cn } from '@/lib/utils';
 import { getCurrencySymbol } from '../utils/utils';
 import { DAYS_IN_MONTH } from '@/routes/settings/-constants/terms';
 
 interface CustomInterval {
+    /** payment_plan.id — carried so an edit updates this plan instead of replacing it. */
+    id?: string;
     value: number | string;
     unit: 'days' | 'months';
     price: number | string;
     features?: string[];
     newFeature?: string;
     title?: string;
+    /** Members on another plan may switch to this interval. */
+    planChangeAllowed?: boolean;
 }
 
 interface SubscriptionPlanConfigurationProps {
@@ -32,6 +38,11 @@ interface SubscriptionPlanConfigurationProps {
     onCustomIntervalsChange: (intervals: CustomInterval[]) => void;
     selectedUnit: 'days' | 'months';
     onUnitChange: (unit: 'days' | 'months') => void;
+    /**
+     * Option-level master switch. The per-interval checkboxes are disabled while it is off,
+     * because the backend ignores a plan's flag unless its option carries one too.
+     */
+    planChangeAllowed?: boolean;
 }
 
 export const SubscriptionPlanConfiguration: React.FC<SubscriptionPlanConfigurationProps> = ({
@@ -42,7 +53,10 @@ export const SubscriptionPlanConfiguration: React.FC<SubscriptionPlanConfigurati
     onCustomIntervalsChange,
     selectedUnit,
     onUnitChange,
+    planChangeAllowed = false,
 }) => {
+    const { t } = useTranslation('settingsSubscriptionPlanConfiguration');
+
     // Helper function to convert unit and value to days
     const convertToDays = (value: number, unit: 'days' | 'months'): number => {
         if (unit === 'days') {
@@ -93,6 +107,7 @@ export const SubscriptionPlanConfiguration: React.FC<SubscriptionPlanConfigurati
             price: 0,
             features: [...featuresGlobal],
             newFeature: '',
+            planChangeAllowed: false,
         };
         onCustomIntervalsChange([...customIntervals, newInterval as CustomInterval]);
     };
@@ -102,8 +117,12 @@ export const SubscriptionPlanConfiguration: React.FC<SubscriptionPlanConfigurati
         if (updatedIntervals[index]) {
             const currentInterval = updatedIntervals[index];
             if (!currentInterval) return;
-            // Create a new interval with only the properties that are actually defined
+            // Create a new interval with only the properties that are actually defined.
+            // Every field the interval can carry must be listed here — this rebuilds the
+            // object from scratch, so anything omitted is silently dropped on the first
+            // edit (which is how `id` would be lost, retiring the plan on save).
             const updatedInterval: CustomInterval = {
+                id: updates.id !== undefined ? updates.id : currentInterval.id,
                 value: updates.value !== undefined ? updates.value : currentInterval.value,
                 unit: updates.unit !== undefined ? updates.unit : currentInterval.unit,
                 price: updates.price !== undefined ? updates.price : currentInterval.price,
@@ -114,6 +133,10 @@ export const SubscriptionPlanConfiguration: React.FC<SubscriptionPlanConfigurati
                         ? updates.newFeature
                         : currentInterval.newFeature,
                 title: updates.title !== undefined ? updates.title : currentInterval.title,
+                planChangeAllowed:
+                    updates.planChangeAllowed !== undefined
+                        ? updates.planChangeAllowed
+                        : currentInterval.planChangeAllowed,
             };
 
             updatedIntervals[index] = updatedInterval;
@@ -164,12 +187,12 @@ export const SubscriptionPlanConfiguration: React.FC<SubscriptionPlanConfigurati
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="text-lg">Subscription Configuration</CardTitle>
+                <CardTitle className="text-lg">{t('title')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
                 {/* Global Unit Selection */}
                 <div className="mb-4">
-                    <Label className="text-sm font-medium">Duration Unit</Label>
+                    <Label className="text-sm font-medium">{t('durationUnit.label')}</Label>
                     <Select
                         value={selectedUnit}
                         onValueChange={(value: 'days' | 'months') => handleUnitChange(value)}
@@ -178,22 +201,20 @@ export const SubscriptionPlanConfiguration: React.FC<SubscriptionPlanConfigurati
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="days">Days</SelectItem>
-                            <SelectItem value="months">Months</SelectItem>
+                            <SelectItem value="days">{t('durationUnit.days')}</SelectItem>
+                            <SelectItem value="months">{t('durationUnit.months')}</SelectItem>
                         </SelectContent>
                     </Select>
-                    <p className="mt-1 text-xs text-gray-500">
-                        This unit will apply to all pricing intervals
-                    </p>
+                    <p className="mt-1 text-xs text-gray-500">{t('durationUnit.hint')}</p>
                 </div>
 
                 {/* Custom Intervals Section */}
                 <div className="space-y-6">
                     <div className="mb-4 flex items-center justify-between">
-                        <h3 className="text-sm font-medium">Pricing Intervals</h3>
+                        <h3 className="text-sm font-medium">{t('pricingIntervals.heading')}</h3>
                         <Button type="button" variant="outline" size="sm" onClick={addInterval}>
                             <Plus className="mr-2 size-4" />
-                            Add Pricing Interval
+                            {t('pricingIntervals.addButton')}
                         </Button>
                     </div>
 
@@ -202,10 +223,14 @@ export const SubscriptionPlanConfiguration: React.FC<SubscriptionPlanConfigurati
                             <div key={idx} className="space-y-4 rounded-lg border p-4">
                                 <div className="grid flex-1 grid-cols-3 gap-3">
                                     <div>
-                                        <Label className="text-xs">Interval Title</Label>
+                                        <Label className="text-xs">
+                                            {t('pricingIntervals.interval.titleLabel')}
+                                        </Label>
                                         <Input
                                             type="text"
-                                            placeholder="e.g. Starter, Pro, 9 Months Access"
+                                            placeholder={t(
+                                                'pricingIntervals.interval.titlePlaceholder'
+                                            )}
                                             value={interval.title || ''}
                                             onChange={(e) =>
                                                 updateInterval(idx, { title: e.target.value })
@@ -214,7 +239,11 @@ export const SubscriptionPlanConfiguration: React.FC<SubscriptionPlanConfigurati
                                         />
                                     </div>
                                     <div>
-                                        <Label className="text-xs">Duration ({selectedUnit})</Label>
+                                        <Label className="text-xs">
+                                            {t('pricingIntervals.interval.durationLabel', {
+                                                unit: selectedUnit,
+                                            })}
+                                        </Label>
                                         <Input
                                             type="number"
                                             value={interval.value}
@@ -231,14 +260,18 @@ export const SubscriptionPlanConfiguration: React.FC<SubscriptionPlanConfigurati
                                         />
                                     </div>
                                     <div>
-                                        <Label className="text-xs">Price</Label>
+                                        <Label className="text-xs">
+                                            {t('pricingIntervals.interval.priceLabel')}
+                                        </Label>
                                         <div className="mt-1 flex items-center space-x-2">
                                             <span className="text-sm">
                                                 {getCurrencySymbol(currency)}
                                             </span>
                                             <Input
                                                 type="number"
-                                                placeholder="0"
+                                                placeholder={t(
+                                                    'pricingIntervals.interval.pricePlaceholder'
+                                                )}
                                                 value={interval.price}
                                                 onChange={(e) => {
                                                     const inputValue = e.target.value;
@@ -256,7 +289,9 @@ export const SubscriptionPlanConfiguration: React.FC<SubscriptionPlanConfigurati
 
                                 {/* Features for this interval */}
                                 <div className="mt-4">
-                                    <h4 className="mb-2 text-xs font-semibold">Features</h4>
+                                    <h4 className="mb-2 text-xs font-semibold">
+                                        {t('pricingIntervals.interval.featuresHeading')}
+                                    </h4>
                                     <div className="space-y-2">
                                         {featuresGlobal.map((feature, fidx) => (
                                             <div key={fidx} className="flex items-center gap-2">
@@ -277,7 +312,9 @@ export const SubscriptionPlanConfiguration: React.FC<SubscriptionPlanConfigurati
                                         <Input
                                             type="text"
                                             className="flex-1 rounded border px-2 py-1"
-                                            placeholder="Add new feature"
+                                            placeholder={t(
+                                                'pricingIntervals.interval.addFeaturePlaceholder'
+                                            )}
                                             value={interval.newFeature || ''}
                                             onChange={(e) =>
                                                 updateInterval(idx, { newFeature: e.target.value })
@@ -288,9 +325,40 @@ export const SubscriptionPlanConfiguration: React.FC<SubscriptionPlanConfigurati
                                             className="rounded border hover:bg-gray-200"
                                             onClick={() => addFeature(idx)}
                                         >
-                                            Add
+                                            {t('pricingIntervals.interval.addFeatureButton')}
                                         </Button>
                                     </div>
+                                </div>
+
+                                {/* Switchable target opt-in for this interval */}
+                                <div className="mt-4 border-t pt-3">
+                                    <label
+                                        className={cn(
+                                            'flex items-start gap-2 text-xs',
+                                            planChangeAllowed
+                                                ? 'cursor-pointer text-neutral-700'
+                                                : 'cursor-not-allowed text-neutral-400'
+                                        )}
+                                    >
+                                        <Checkbox
+                                            className="mt-0.5"
+                                            checked={interval.planChangeAllowed || false}
+                                            disabled={!planChangeAllowed}
+                                            onCheckedChange={(checked) =>
+                                                updateInterval(idx, {
+                                                    planChangeAllowed: !!checked,
+                                                })
+                                            }
+                                        />
+                                        <span>
+                                            {t('pricingIntervals.interval.planChangeLabel')}
+                                            {!planChangeAllowed && (
+                                                <span className="ms-1 text-neutral-400">
+                                                    {t('pricingIntervals.interval.planChangeHint')}
+                                                </span>
+                                            )}
+                                        </span>
+                                    </label>
                                 </div>
 
                                 {/* Remove interval button */}
@@ -302,8 +370,8 @@ export const SubscriptionPlanConfiguration: React.FC<SubscriptionPlanConfigurati
                                         onClick={() => removeInterval(idx)}
                                         className="text-red-600 hover:text-red-700"
                                     >
-                                        <Trash2 className="mr-2 size-4" />
-                                        Remove Interval
+                                        <Trash className="me-2 size-4" />
+                                        {t('pricingIntervals.interval.removeButton')}
                                     </Button>
                                 </div>
                             </div>

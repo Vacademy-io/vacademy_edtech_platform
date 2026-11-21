@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { CalendarPlus, ChatCircle, UserPlus, UsersThree, VideoCamera } from "@phosphor-icons/react";
+import { usePlayTheme } from "@/hooks/use-play-theme";
+import { useCleanerPlayTheme } from "@/hooks/use-cleaner-play-theme";
+import iconMentors from "@/assets/cleaner-play/icon-mentors.webp";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -39,6 +43,9 @@ function fmtWhen(v?: string | number | null): string {
  * mentors, so the widget still self-hides where mentorship isn't in use.
  */
 export function MyMentorsWidget() {
+    const isPlay = usePlayTheme();
+    const isCleanerPlay = useCleanerPlayTheme();
+    const { t } = useTranslation("dashboard");
     const navigate = useNavigate();
     const [instituteId, setInstituteId] = useState<string | undefined>();
     const [userId, setUserId] = useState<string | undefined>();
@@ -84,9 +91,9 @@ export function MyMentorsWidget() {
         return (
             <Card>
                 <CardHeader className="pb-3">
-                    <CardTitle className="text-base">My Mentors</CardTitle>
+                    <CardTitle className="text-base">{t("mentors.title")}</CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-col gap-3">
+                <CardContent className="flex flex-col gap-stack">
                     {Array.from({ length: 2 }, (_, i) => (
                         <div key={i} className="flex items-center gap-3">
                             <Skeleton className="h-9 w-9 rounded-full" />
@@ -104,14 +111,22 @@ export function MyMentorsWidget() {
             <Card>
                 <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2 text-base">
-                        <UsersThree size={18} weight="duotone" className="text-primary-500" />
-                        Mentorship
+                        {isPlay || isCleanerPlay ? (
+                            <img
+                                src={iconMentors}
+                                alt=""
+                                aria-hidden="true"
+                                className="h-8 w-8 object-contain"
+                            />
+                        ) : (
+                            <UsersThree size={18} weight="duotone" className="text-primary-500" />
+                        )}
+                        {t("mentors.emptyStateTitle")}
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-col items-start gap-3">
+                <CardContent className="flex flex-col items-start gap-stack">
                     <p className="text-caption text-neutral-500">
-                        Get one-to-one guidance — browse your institute&apos;s mentors and request
-                        the one that fits what you&apos;re working on.
+                        {t("mentors.emptyStateBody")}
                     </p>
                     <MyButton
                         type="button"
@@ -119,7 +134,7 @@ export function MyMentorsWidget() {
                         scale="small"
                         onClick={() => navigate({ to: "/my-mentors" })}
                     >
-                        <UserPlus size={16} /> Find a mentor
+                        <UserPlus size={16} /> {t("mentors.findMentorButton")}
                     </MyButton>
                 </CardContent>
             </Card>
@@ -149,7 +164,7 @@ export function MyMentorsWidget() {
             toast.error(
                 describeDirectChatError(
                     error,
-                    "Couldn't open the chat. Please try again.",
+                    t("mentors.chatOpenError"),
                 ),
             );
         } finally {
@@ -161,25 +176,34 @@ export function MyMentorsWidget() {
         <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
-                    <UsersThree size={18} weight="duotone" className="text-primary-500" />
-                    My Mentors
+                    {isPlay || isCleanerPlay ? (
+                        <img
+                            src={iconMentors}
+                            alt=""
+                            aria-hidden="true"
+                            className="h-8 w-8 object-contain"
+                        />
+                    ) : (
+                        <UsersThree size={18} weight="duotone" className="text-primary-500" />
+                    )}
+                    {t("mentors.title")}
                 </CardTitle>
                 <button
                     type="button"
                     onClick={() => navigate({ to: "/my-mentors" })}
                     className="text-xs font-medium text-primary-600 hover:text-primary-700"
                 >
-                    View all
+                    {t("mentors.viewAll")}
                 </button>
             </CardHeader>
-            <CardContent className="flex flex-col gap-3">
+            <CardContent className="flex flex-col gap-stack">
                 {nextSession && (
                     <div className="flex flex-col gap-1 rounded-lg border border-primary-200 bg-primary-50 p-3">
                         <span className="text-xs font-medium uppercase tracking-wide text-primary-600">
-                            Next session
+                            {t("mentors.nextSession")}
                         </span>
                         <span className="text-sm font-medium text-neutral-700">
-                            {nextSession.booking_page_title || nextSession.host_name || "Mentor session"}
+                            {nextSession.booking_page_title || nextSession.host_name || t("mentors.mentorSessionFallback")}
                         </span>
                         <div className="flex items-center justify-between gap-2">
                             <span className="text-xs text-neutral-500">
@@ -192,7 +216,7 @@ export function MyMentorsWidget() {
                                     rel="noreferrer"
                                     className="flex items-center gap-1 text-xs font-medium text-primary-600"
                                 >
-                                    <VideoCamera size={14} /> Join
+                                    <VideoCamera size={14} /> {t("hero.join")}
                                 </a>
                             ) : (
                                 // The link is minted after the booking commits, so a fresh
@@ -200,9 +224,9 @@ export function MyMentorsWidget() {
                                 // silently offers no way in.
                                 <span
                                     className="text-xs text-neutral-400"
-                                    title="Your mentor's meeting link is still being created. Check back shortly."
+                                    title={t("mentors.linkPendingTooltip")}
                                 >
-                                    Link coming soon
+                                    {t("mentors.linkComingSoon")}
                                 </span>
                             )}
                         </div>
@@ -219,7 +243,7 @@ export function MyMentorsWidget() {
                             />
                             <div className="flex min-w-0 flex-col">
                                 <span className="truncate text-sm font-medium text-neutral-700">
-                                    {m.display_name || m.name || "Mentor"}
+                                    {m.display_name || m.name || t("mentors.mentorFallbackName")}
                                 </span>
                                 {m.title && (
                                     <span className="truncate text-xs text-neutral-400">{m.title}</span>

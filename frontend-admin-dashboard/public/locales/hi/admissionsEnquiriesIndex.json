@@ -1,0 +1,70 @@
+{
+    "pageTitle": "पूछताछ",
+    "selectEnquiryPlaceholder": "पूछताछ चुनें",
+    "enquiryTypeLabel": "पूछताछ प्रकार: {{type}}",
+    "addNewEnquiryResponse": "नई पूछताछ प्रतिक्रिया जोड़ें",
+    "copyFormLink": "फ़ॉर्म लिंक कॉपी करें",
+    "copyLinkTitle": "पूछताछ लिंक क्लिपबोर्ड पर कॉपी करें",
+    "walkInRegister": "वॉक-इन पंजीकरण",
+    "walkInRegisterTitle": "वॉक-इन पंजीकरण फ़ॉर्म खोलें",
+    "toast": {
+        "linkCopied": "पूछताछ लिंक क्लिपबोर्ड पर कॉपी हो गया!",
+        "copyFailed": "लिंक कॉपी करने में विफल"
+    },
+    "filters": {
+        "status": "स्थिति",
+        "source": "स्रोत",
+        "dateRange": "दिनांक सीमा",
+        "class": "कक्षा"
+    },
+    "searchPlaceholder": "नाम या मोबाइल से खोजें...",
+    "sortBy": {
+        "placeholder": "इसके अनुसार क्रमबद्ध करें...",
+        "defaultOrder": "डिफ़ॉल्ट क्रम",
+        "dateSubmitted": "सबमिट करने की तारीख",
+        "leadScore": "लीड स्कोर",
+        "parentName": "अभिभावक का नाम"
+    },
+    "showDuplicates": "डुप्लिकेट दिखाएं",
+    "clearAll": "सभी साफ़ करें",
+    "selectEnquiryPrompt": "प्रतिक्रियाएं देखने के लिए कृपया एक पूछताछ चुनें",
+    "createNewEnquiryForm": "नया पूछताछ फ़ॉर्म बनाएं",
+    "walkInRegistration": "वॉक-इन पंजीकरण",
+    "walkInRegistrationFormTitle": "वॉक-इन पंजीकरण फ़ॉर्म",
+    "dateRanges": {
+        "today": "आज",
+        "last7Days": "पिछले 7 दिन",
+        "last30Days": "पिछले 30 दिन",
+        "last3Months": "पिछले 3 महीने",
+        "last6Months": "पिछले 6 महीने",
+        "lastYear": "पिछला वर्ष"
+    },
+    "enquiryStatuses": {
+        "new": "नया",
+        "contacted": "संपर्क किया गया",
+        "notEligible": "अपात्र",
+        "qualified": "योग्य",
+        "followUp": "फॉलो-अप",
+        "closed": "बंद",
+        "converted": "परिवर्तित",
+        "admitted": "प्रवेशित"
+    },
+    "sourceTypes": {
+        "website": "वेबसाइट",
+        "googleAds": "गूगल विज्ञापन",
+        "facebook": "फेसबुक",
+        "instagram": "इंस्टाग्राम",
+        "referral": "रेफरल",
+        "other": "अन्य"
+    },
+    "leadTiers": {
+        "hot": "हॉट",
+        "warm": "वार्म",
+        "cold": "कोल्ड"
+    },
+    "pageSubtitle": "आपके पूछताछ फ़ॉर्म के जवाब — फ़ॉलो-अप करें, फिर आवेदन या प्रवेश में बदलें।",
+    "formStatus": "फ़ॉर्म {{status}}",
+    "quickViews": {
+        "all": "सभी पूछताछ"
+    }
+}

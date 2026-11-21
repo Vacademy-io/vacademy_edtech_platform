@@ -1,0 +1,29 @@
+{
+    "summary": {
+        "selectedBanner": "{{term}} selected — {{learners}} will be enrolled in all selected."
+    },
+    "search": {
+        "placeholder": "Search {{coursesTerm}}, {{levelsTerm}}..."
+    },
+    "filters": {
+        "filterBy": "Filter by {{term}}",
+        "noneFound": "No {{term}} found",
+        "tagLabel": "{{term}}: {{value}}",
+        "clearAll": "Clear all"
+    },
+    "errors": {
+        "failedToLoad": "Failed to load {{term}}.",
+        "tryAgain": "Please try again."
+    },
+    "list": {
+        "batchCount": "{{count}} {{term}}",
+        "empty": {
+            "title": "No {{term}} found",
+            "subtitle": "Try adjusting your search or filters."
+        }
+    },
+    "pagination": {
+        "showingRange": "Showing {{from}}–{{to}} of {{total}}",
+        "pageOf": "{{current}} / {{total}}"
+    }
+}

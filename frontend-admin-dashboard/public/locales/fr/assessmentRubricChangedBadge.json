@@ -1,0 +1,4 @@
+{
+    "tooltip": "La grille d'évaluation a été mise à jour vers la v{{currentVersion}} depuis cette évaluation (v{{evaluationVersion}})",
+    "badgeLabel": "Grille d'évaluation mise à jour depuis cette évaluation"
+}

@@ -30,6 +30,9 @@ public class AssessmentMapper {
                 .batchIds((assessment[17] == null) ? new ArrayList<>() : Arrays.asList((String[]) assessment[17]))
                 .subjectId((String) assessment[18])
                 .joinLink((String) assessment[19])
+                // a.source ("API" for partner-API exams, null for dashboard ones), when the
+                // query projects it (spec 12, Source badge).
+                .source(assessment.length > 20 ? (String) assessment[20] : null)
                 .build();
 
         return dto;

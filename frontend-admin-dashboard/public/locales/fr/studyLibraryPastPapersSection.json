@@ -1,0 +1,44 @@
+{
+    "kind": {
+        "assessment": "Évaluation",
+        "notes": "Notes"
+    },
+    "status": {
+        "generating": "Génération en cours",
+        "ready": "Prêt",
+        "published": "Publié",
+        "failed": "Échoué"
+    },
+    "bucket": {
+        "today": "Aujourd'hui",
+        "yesterday": "Hier",
+        "thisWeek": "Plus tôt cette semaine",
+        "older": "Plus ancien"
+    },
+    "rowTime": {
+        "today": "Aujourd'hui, {{time}}",
+        "yesterday": "Hier, {{time}}"
+    },
+    "error": {
+        "couldNotLoad": "Impossible de charger l'historique IA.",
+        "retry": "Réessayer"
+    },
+    "empty": {
+        "heading": "Aucun historique IA pour le moment",
+        "description": "Générez une évaluation ou des notes ci-dessous — chaque exécution apparaîtra ici pour que vous puissiez réexporter ou republier sans consommer une nouvelle génération."
+    },
+    "header": {
+        "title": "Historique IA",
+        "subtitle": "Généré à partir de cet enregistrement",
+        "refresh": "Actualiser"
+    },
+    "row": {
+        "lectureNotesChars_one": "Notes de cours · {{count}} caractère",
+        "lectureNotesChars_many": "Notes de cours · {{count}} caractères",
+        "lectureNotesChars_other": "Notes de cours · {{count}} caractères",
+        "questionsCount_one": "{{count}} question",
+        "questionsCount_many": "{{count}} questions",
+        "questionsCount_other": "{{count}} questions",
+        "quotedTitle": "« {{title}} »"
+    }
+}

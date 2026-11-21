@@ -1,0 +1,11 @@
+{
+    "courseSettings": "Course settings",
+    "leadConversion": "Lead conversion",
+    "countEnrollmentAsConversion": "Count enrolment in this course as a conversion",
+    "countEnrollmentDescription": "When a lead is enrolled into this course, mark them Converted. That shows the green \"Converted\" badge against them in the leads list, drops them out of the default (open leads) view, and counts them in your conversion reports.",
+    "freeCourseHint": "Turn this off for a free course, trial, webinar or lead magnet — enrolling into one of those is a top-of-funnel step, not a sale, so the lead should stay open for your counsellors to keep working.",
+    "notRetroactiveHint": "Applies to enrolments from now on. Leads already marked Converted stay converted — change those from the lead's own profile.",
+    "willConvert": "Enrolling in this course will mark the lead as Converted.",
+    "willNotConvert": "Enrolling in this course will no longer mark the lead as Converted.",
+    "couldNotSaveSetting": "Couldn't save the setting. Please try again."
+}

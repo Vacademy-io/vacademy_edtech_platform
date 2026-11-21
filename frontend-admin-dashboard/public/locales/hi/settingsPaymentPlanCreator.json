@@ -1,0 +1,10 @@
+{
+    "dialog": {
+        "editTitle": "भुगतान योजना संपादित करें",
+        "createTitle": "भुगतान योजना बनाएं"
+    },
+    "step2": {
+        "planCurrencyLabel": "योजना मुद्रा",
+        "defaultCurrencyHint": "डिफ़ॉल्ट: {{currency}} ({{symbol}})"
+    }
+}

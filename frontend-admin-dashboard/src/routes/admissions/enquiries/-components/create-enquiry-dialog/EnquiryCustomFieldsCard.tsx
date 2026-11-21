@@ -6,6 +6,7 @@ import { DotsSixVertical, PencilSimple, TrashSimple } from '@phosphor-icons/reac
 import { Switch } from '@/components/ui/switch';
 import { getCustomFieldSettingsFromCache } from '@/services/custom-field-settings';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     AddCustomFieldDialog as SharedAddCustomFieldDialog,
     type DropdownOption,
@@ -59,6 +60,7 @@ const EnquiryCustomFieldsCard = ({
     toggleIsRequired,
     handleEditFieldAt,
 }: EnquiryCustomFieldsCardProps) => {
+    const { t } = useTranslation('admissionsEnquiryCustomFieldsCard');
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const { control, getValues, setValue } = form;
     const { fields: customFieldsArray, move: moveCustomField } = useFieldArray({
@@ -120,22 +122,17 @@ const EnquiryCustomFieldsCard = ({
         <Card className="mb-4">
             <CardHeader>
                 <CardTitle className="flex flex-col text-lg font-semibold">
-                    <span className="text-2xl font-bold">Enquiry Form Fields</span>
-                    <span className="text-sm text-gray-600">
-                        Configure fields from Custom Field Settings
-                    </span>
+                    <span className="text-2xl font-bold">{t('header.title')}</span>
+                    <span className="text-sm text-gray-600">{t('header.description')}</span>
                 </CardTitle>
             </CardHeader>
             <CardContent>
                 <div className="flex w-full flex-col gap-4">
                     {customFieldsArray.length === 0 ? (
                         <div className="rounded-lg border border-dashed border-neutral-300 bg-neutral-50 px-4 py-8 text-center">
-                            <p className="text-sm text-neutral-600">
-                                No custom fields with "Enquiry" location enabled.
-                            </p>
+                            <p className="text-sm text-neutral-600">{t('emptyState.title')}</p>
                             <p className="mt-1 text-xs text-neutral-500">
-                                Go to Settings → Custom Fields to enable fields for Enquiry
-                                location.
+                                {t('emptyState.description')}
                             </p>
                         </div>
                     ) : (
@@ -169,7 +166,6 @@ const EnquiryCustomFieldsCard = ({
                                                         name={typedField.name}
                                                         type={typedField.type}
                                                         isRequired={typedField.isRequired}
-                                                        locked={typedField.oldKey}
                                                         isEditing={isEditing}
                                                         onToggleRequired={() =>
                                                             toggleIsRequired(index)

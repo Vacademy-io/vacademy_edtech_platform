@@ -1,0 +1,58 @@
+{
+    "navHeading": "Knowledge Base",
+    "meta": {
+        "title": "Knowledge Base",
+        "description": "Upload your institute's books, notes and past papers so the AI can teach, test and answer from your own material."
+    },
+    "purpose": {
+        "instituteInfo": "Institute info",
+        "generalReference": "General reference"
+    },
+    "kbCard": {
+        "sharedLibrary": "Shared library",
+        "sources_one": "{{formatted}} source",
+        "sources_other": "{{formatted}} sources",
+        "pages_one": "{{formatted}} page",
+        "pages_other": "{{formatted}} pages",
+        "figures_one": "{{formatted}} diagram & table",
+        "figures_other": "{{formatted}} diagrams & tables",
+        "reading_one": "Reading {{formatted}} source…",
+        "reading_other": "Reading {{formatted}} sources…",
+        "nothingAdded": "Nothing added yet",
+        "readyToUse": "Ready to use",
+        "reviewPages_one": "{{formatted}} page needs a look",
+        "reviewPages_other": "{{formatted}} pages need a look"
+    },
+    "emptyState": {
+        "heading": "Teach the AI what your institute teaches",
+        "description": "Upload your textbooks, notes and past papers once. The AI reads them — including the diagrams, tables and formulas — and can then answer questions from them, and build courses and question papers grounded in your own material instead of generic internet content.",
+        "examples": {
+            "science": {
+                "title": "Class 9 Science",
+                "body": "Two NCERT books and your teachers’ notes."
+            },
+            "jee": {
+                "title": "JEE previous years",
+                "body": "Ten years of question papers with solutions."
+            },
+            "instituteInfo": {
+                "title": "Institute info",
+                "body": "Fee policy, timings, exam rules and FAQs."
+            }
+        },
+        "createFirst": "Create your first knowledge base"
+    },
+    "tabs": {
+        "mine": "My knowledge bases",
+        "library": "Library",
+        "curriculum": "Curriculum"
+    },
+    "mine": {
+        "heading": "Knowledge bases",
+        "description": "Your own books, notes and papers, read and indexed so the AI can work from them.",
+        "newButton": "New knowledge base",
+        "loadError": "Could not load your knowledge bases.",
+        "tryAgain": "Try again",
+        "tip": "Open a knowledge base and use <1>Ask this knowledge base</1> to check what it has actually understood before you build courses or question papers from it."
+    }
+}

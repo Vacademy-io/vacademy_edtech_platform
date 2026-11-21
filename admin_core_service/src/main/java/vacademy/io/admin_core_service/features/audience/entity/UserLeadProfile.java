@@ -10,8 +10,12 @@ import java.sql.Timestamp;
  * Aggregated lead profile per user, across all campaigns in an institute.
  * Updated asynchronously after score recalculation or lead events.
  * Keyed by (user_id, institute_id) — user_id can be a parent or a student.
+ *
+ * <p>An update writes only the columns that changed, so two saves of different columns of
+ * one row (or a save and a direct SQL update) never undo each other.
  */
 @Entity
+@org.hibernate.annotations.DynamicUpdate
 @Table(name = "user_lead_profile",
         uniqueConstraints = @UniqueConstraint(name = "user_lead_profile_user_id_institute_id_key",
                 columnNames = {"user_id", "institute_id"}))
@@ -43,7 +47,7 @@ public class UserLeadProfile {
     private String bestScoreResponseId;
 
     /** HOT / WARM / COLD — derived from bestScore. */
-    @Column(name = "lead_tier", length = 10)
+    @Column(name = "lead_tier", length = 100)
     private String leadTier;
 
     /**
@@ -112,10 +116,26 @@ public class UserLeadProfile {
     @Column(name = "updated_at")
     private Timestamp updatedAt;
 
-    /** Compute tier from bestScore (same thresholds as LeadScore). */
+    /**
+     * Set when this person was merged into another person in the same institute (their
+     * enquiries moved there). A merged profile is not counted as a lead or an admission.
+     */
+    @Column(name = "merged_into_user_id")
+    private String mergedIntoUserId;
+
+    @Column(name = "merged_at")
+    private Timestamp mergedAt;
+
+    @Column(name = "merged_by_user_id")
+    private String mergedByUserId;
+
+    /**
+     * LEGACY tier from bestScore using the fixed 80/50 thresholds. Prefer
+     * {@code LeadTierService.deriveTier(instituteId, bestScore)}, which honours the
+     * institute's own tier catalog; this stays only for callers with no institute context.
+     */
     public String computeTier() {
-        if (bestScore >= 80) return "HOT";
-        if (bestScore >= 50) return "WARM";
-        return "COLD";
+        return vacademy.io.admin_core_service.features.audience.service.LeadTierService
+                .legacyTier(bestScore != null ? bestScore : 0);
     }
 }

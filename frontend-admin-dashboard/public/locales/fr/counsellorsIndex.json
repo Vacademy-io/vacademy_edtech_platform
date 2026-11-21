@@ -1,0 +1,79 @@
+{
+    "featureDisabled": {
+        "title": "La page des conseillers n'est pas activée",
+        "settingsLabel": "Espace de travail des conseillers"
+    },
+    "toast": {
+        "markedActive": "Marqué comme actif",
+        "statusChangeError": "Impossible de modifier le statut",
+        "loadLeadsError": "Impossible de charger les demandes ouvertes",
+        "markedInactive": "Marqué comme inactif",
+        "markInactiveError": "Impossible de marquer comme inactif"
+    },
+    "header": {
+        "breadcrumbFallback": "Équipe de conseil",
+        "titleFallback": "Conseillers",
+        "subtitle": "Cliquez sur une carte pour voir les demandes et l'activité récente de cette personne."
+    },
+    "stats": {
+        "counsellors": "Conseillers",
+        "active": "Actifs",
+        "assignedLeads": "Demandes assignées"
+    },
+    "search": {
+        "placeholder": "Rechercher par nom ou e-mail…"
+    },
+    "statusFilter": {
+        "all": "Tous",
+        "active": "Actifs",
+        "inactive": "Inactifs"
+    },
+    "targets": {
+        "setTargets": "Définir les objectifs"
+    },
+    "viewMode": {
+        "ariaLabel": "Mode d'affichage",
+        "cardTitle": "Vue en cartes",
+        "cards": "Cartes",
+        "listTitle": "Vue en liste",
+        "list": "Liste"
+    },
+    "list": {
+        "loading": "Chargement des conseillers…",
+        "emptyTeam": "Aucun conseiller dans cette équipe pour le moment. Ajoutez-les depuis Gérer l'établissement → Équipes → Organigramme.",
+        "emptyFiltered": "Personne ne correspond à vos filtres."
+    },
+    "pagination": {
+        "showing": "Affichage de {{from}}–{{to}} sur {{total}}",
+        "loadingSuffix": " · chargement…"
+    },
+    "card": {
+        "unnamed": "Sans nom",
+        "assignedLeads": "Demandes assignées",
+        "team": "Équipe",
+        "targets": "Objectifs",
+        "active": "Actif",
+        "inactive": "Inactif",
+        "reassignLeads": "Réassigner les demandes",
+        "markInactive": "Marquer comme inactif",
+        "markActive": "Marquer comme actif",
+        "confirmMarkActive": "Marquer {{name}} comme actif à nouveau ?"
+    },
+    "table": {
+        "colCounsellor": "Conseiller",
+        "colTeam": "Équipe",
+        "colRating": "Note",
+        "colAssignedLeads": "Demandes assignées",
+        "colTargets": "Objectifs",
+        "colStatus": "Statut",
+        "colActions": "Actions"
+    },
+    "drawer": {
+        "tabLeads": "Demandes ({{count}})",
+        "tabActivity": "Activité",
+        "tabCalls": "Appels",
+        "tabCoaching": "Coaching",
+        "tabPerformance": "Performance",
+        "tabTargets": "Objectifs"
+    }
+}

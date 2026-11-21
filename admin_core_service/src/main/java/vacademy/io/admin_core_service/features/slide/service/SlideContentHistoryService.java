@@ -70,6 +70,9 @@ public class SlideContentHistoryService {
      * trigger snapshots the pre-restore state first, so a restore is itself
      * undoable. A PUBLISHED slide flips to UNSYNC — live content is untouched
      * until the author explicitly re-publishes.
+     *
+     * Course knowledge: deliberately not wired to ContentIndexMarker. A restore
+     * changes only the draft; the later publish is what gets re-indexed.
      */
     @Transactional
     public SlideContentRestoreResponseDTO restore(String slideId, Long historyId, String source,

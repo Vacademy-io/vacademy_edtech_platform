@@ -37,32 +37,61 @@ public class AiEvaluationStaleJobSweeper {
     private final AiEvaluationProcessRepository processRepository;
 
     /** States that mean "still running" and are eligible to be swept if too old. */
-    private static final List<String> NON_TERMINAL = List.of(
-            "PENDING", "PROCESSING", "DISPATCHED", "STARTED",
-            "EXTRACTING", "EVALUATING", "GRADING", "IN_PROGRESS");
+    /**
+     * Rows with the AI service. PENDING is deliberately absent: a queued copy is
+     * waiting for the in-flight cap, not stuck, however long it has been there.
+     */
+    private static final List<String> DISPATCHED = AiEvaluationQueuePoller.IN_FLIGHT;
 
     @Value("${assessment.ai-evaluation.stale-timeout-minutes:30}")
     private long staleTimeoutMinutes;
+
+    /**
+     * A silent copy goes back to the queue this many times before it is failed.
+     * The usual cause is an ai-service deploy that killed the in-process job;
+     * re-running it costs tokens but never credits twice (billing is idempotent
+     * on the process id), and a student's copy is not lost to a redeploy.
+     */
+    @Value("${assessment.ai-evaluation.max-requeues:2}")
+    private int maxRequeues;
 
     @Scheduled(fixedDelayString = "${assessment.ai-evaluation.sweeper-interval-ms:300000}",
             initialDelayString = "${assessment.ai-evaluation.sweeper-initial-delay-ms:120000}")
     @Transactional
     public void sweepStaleProcesses() {
         Date cutoff = Date.from(Instant.now().minus(staleTimeoutMinutes, ChronoUnit.MINUTES));
-        List<AiEvaluationProcess> stale = processRepository.findStaleNonTerminal(NON_TERMINAL, cutoff);
-        if (stale.isEmpty()) {
+        List<AiEvaluationProcess> silent = processRepository.findSilentDispatched(DISPATCHED, cutoff);
+        if (silent.isEmpty()) {
             return;
         }
-        log.warn("[ai-eval-sweeper] marking {} stale AI-evaluation process(es) FAILED (no activity for > {} min)",
-                stale.size(), staleTimeoutMinutes);
         Date now = new Date();
-        for (AiEvaluationProcess process : stale) {
-            process.setStatus("FAILED");
-            process.setCurrentStep("TIMED_OUT");
-            process.setErrorMessage(
-                    "Evaluation timed out — no response from the AI service. Please retry.");
-            process.setCompletedAt(now);
+        int requeued = 0, failed = 0, moved = 0;
+        // Guarded per-row updates, not a saveAll of what was read: a complete
+        // callback (or a fresh heartbeat) landing between the read and the write
+        // must win, not be turned back into PENDING or FAILED (gate G6).
+        for (AiEvaluationProcess process : silent) {
+            String id = process.getId();
+            String status = process.getStatus();
+            int retries = process.getRetryCount() == null ? 0 : process.getRetryCount();
+            if (retries < maxRequeues) {
+                String message = "No response from the AI service for " + staleTimeoutMinutes
+                        + " min; queued again (attempt " + (retries + 2) + ").";
+                if (processRepository.sweepRequeue(id, status, cutoff, retries + 1, message, now) > 0) {
+                    requeued++;
+                } else {
+                    moved++;
+                }
+            } else {
+                String message = "Evaluation timed out " + (retries + 1)
+                        + " times with no response from the AI service. Please retry.";
+                if (processRepository.sweepFail(id, status, cutoff, message, now) > 0) {
+                    failed++;
+                } else {
+                    moved++;
+                }
+            }
         }
-        processRepository.saveAll(stale);
+        log.warn("[ai-eval-sweeper] {} silent evaluation(s): {} queued again, {} failed, {} moved on meanwhile "
+                + "(no heartbeat for > {} min)", silent.size(), requeued, failed, moved, staleTimeoutMinutes);
     }
 }

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFileUpload } from '@/hooks/use-file-upload';
 import { getInstituteId } from '@/constants/helper';
 import {
@@ -28,6 +29,22 @@ const ACCEPTED_FORMATS = '.mp3,.wav,.flac,.aac,.m4a';
 const ACCEPTED_EXTENSIONS = ['mp3', 'wav', 'flac', 'aac', 'm4a'];
 const DIFFICULTY_OPTIONS = ['Easy', 'Medium', 'Hard'];
 
+// DIFFICULTY_OPTIONS holds the literal values submitted to the API (and
+// compared against the current selection); map each one to its translation
+// key so the *displayed* label can be localized without touching the value.
+const DIFFICULTY_LABEL_KEYS: Record<string, string> = {
+    Easy: 'easy',
+    Medium: 'medium',
+    Hard: 'hard',
+};
+
+// languageSupport (shared constant) holds raw enum values like 'ENGLISH' /
+// 'HINDI'; map them to translation keys for display only.
+const LANGUAGE_LABEL_KEYS: Record<string, string> = {
+    ENGLISH: 'english',
+    HINDI: 'hindi',
+};
+
 type Phase = 'idle' | 'uploading' | 'processing' | 'configuring' | 'generating' | 'done';
 
 export const GenerateQuestionsFromAudio = ({
@@ -37,6 +54,7 @@ export const GenerateQuestionsFromAudio = ({
     form?: UseFormReturn<SectionFormType>;
     currentSectionIndex?: number;
 }) => {
+    const { t } = useTranslation('aiCenterGenerateQuestionsFromAudio');
     const queryClient = useQueryClient();
     const instituteId = getInstituteId();
     const { uploadFile } = useFileUpload();
@@ -75,7 +93,7 @@ export const GenerateQuestionsFromAudio = ({
         if (match.status === 'COMPLETED') {
             setReadyTask(match);
         } else if (match.status === 'FAILED') {
-            setErrorMessage("We couldn't finish this draft. Want to try again?");
+            setErrorMessage(t('errors.taskFailed'));
             setPendingTaskId(null);
         }
     }, [recentTasksData, pendingTaskId]);
@@ -129,7 +147,7 @@ export const GenerateQuestionsFromAudio = ({
             setLoader(false);
             setKey(null);
             setPhase('configuring');
-            setErrorMessage("We couldn't draft questions from this recording. Try again?");
+            setErrorMessage(t('errors.generateFailed'));
         },
     });
 
@@ -143,7 +161,7 @@ export const GenerateQuestionsFromAudio = ({
     const processFile = async (file: File) => {
         const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
         if (!ACCEPTED_EXTENSIONS.includes(ext)) {
-            setErrorMessage(`We can't read .${ext} files. Try MP3, WAV, FLAC, AAC, or M4A.`);
+            setErrorMessage(t('errors.unsupportedFormat', { ext }));
             return;
         }
         setErrorMessage(null);
@@ -159,7 +177,7 @@ export const GenerateQuestionsFromAudio = ({
                 sourceId: 'STUDENTS',
             });
             if (!fileId) {
-                setErrorMessage("Upload didn't complete. Want to try again?");
+                setErrorMessage(t('errors.uploadIncomplete'));
                 resetAll();
                 return;
             }
@@ -170,7 +188,7 @@ export const GenerateQuestionsFromAudio = ({
             setPhase('configuring');
         } catch (err) {
             console.error(err);
-            setErrorMessage('Something went wrong reading your recording. Try again?');
+            setErrorMessage(t('errors.readError'));
             resetAll();
         }
     };
@@ -192,11 +210,11 @@ export const GenerateQuestionsFromAudio = ({
         e.preventDefault();
         if (!audioId) return;
         if (!prompt.trim()) {
-            setErrorMessage('Tell us what the questions should focus on.');
+            setErrorMessage(t('errors.missingFocus'));
             return;
         }
         if (!numQuestions || Number(numQuestions) < 1) {
-            setErrorMessage('How many questions would you like?');
+            setErrorMessage(t('errors.missingCount'));
             return;
         }
         setErrorMessage(null);
@@ -215,24 +233,21 @@ export const GenerateQuestionsFromAudio = ({
     const isUploadWorking = phase === 'uploading' || phase === 'processing';
     const uploadLabel =
         phase === 'uploading'
-            ? 'Uploading your recording…'
+            ? t('upload.uploading')
             : phase === 'processing'
-              ? 'Transcribing — usually ~30 seconds.'
+              ? t('upload.transcribing')
               : '';
 
     return (
         <div className="flex w-full flex-col gap-8 px-4 pb-12 sm:px-8">
             <header className="flex flex-col gap-1">
                 <h1 className="text-2xl font-semibold text-gray-900 sm:text-3xl">
-                    Questions from Audio
+                    {t('header.title')}
                 </h1>
-                <p className="text-sm text-gray-500">
-                    Drop a recording. We&apos;ll transcribe it, then ask what kind of questions
-                    you want.
-                </p>
+                <p className="text-sm text-gray-500">{t('header.subtitle')}</p>
             </header>
 
-            <Section step={1} title="Drop your recording">
+            <Section step={1} title={t('sections.dropRecording')}>
                 {!fileChosen ? (
                     <div
                         onDragOver={(e) => {
@@ -253,11 +268,9 @@ export const GenerateQuestionsFromAudio = ({
                         </div>
                         <div className="flex flex-col gap-1">
                             <p className="text-sm font-medium text-gray-900">
-                                Drop your recording here, or click to choose
+                                {t('upload.dropzoneTitle')}
                             </p>
-                            <p className="text-xs text-neutral-500">
-                                MP3, WAV, FLAC, AAC, or M4A.
-                            </p>
+                            <p className="text-xs text-neutral-500">{t('upload.dropzoneHint')}</p>
                         </div>
                     </div>
                 ) : (
@@ -272,11 +285,12 @@ export const GenerateQuestionsFromAudio = ({
                                         {fileName}
                                     </span>
                                     <span className="text-xs text-neutral-500">
-                                        {phase === 'uploading' && 'Uploading…'}
-                                        {phase === 'processing' && 'Transcribing…'}
-                                        {phase === 'configuring' && 'Ready to configure'}
-                                        {phase === 'generating' && 'Drafting questions'}
-                                        {phase === 'done' && 'Done'}
+                                        {phase === 'uploading' && t('fileStatus.uploading')}
+                                        {phase === 'processing' && t('fileStatus.transcribing')}
+                                        {phase === 'configuring' &&
+                                            t('fileStatus.readyToConfigure')}
+                                        {phase === 'generating' && t('fileStatus.drafting')}
+                                        {phase === 'done' && t('fileStatus.done')}
                                     </span>
                                 </div>
                             </div>
@@ -287,7 +301,7 @@ export const GenerateQuestionsFromAudio = ({
                                         type="button"
                                         onClick={resetAll}
                                         className="rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
-                                        aria-label="Remove file"
+                                        aria-label={t('upload.removeFile')}
                                     >
                                         <X size={18} />
                                     </button>
@@ -308,17 +322,17 @@ export const GenerateQuestionsFromAudio = ({
                 phase !== 'uploading' &&
                 phase !== 'processing' && (
                     <>
-                        <Section step={2} title="What kind of questions do you want?">
+                        <Section step={2} title={t('sections.questionKind')}>
                             <form onSubmit={onGenerate} className="flex flex-col gap-4">
                                 <div className="flex flex-col gap-1.5">
                                     <label className="text-xs font-medium text-neutral-600">
-                                        Focus areas
+                                        {t('fields.focusAreas.label')}
                                     </label>
                                     <textarea
                                         value={prompt}
                                         onChange={(e) => setPrompt(e.target.value)}
                                         rows={3}
-                                        placeholder="e.g. focus on key concepts about photosynthesis, including the process and factors that affect it"
+                                        placeholder={t('fields.focusAreas.placeholder')}
                                         disabled={phase === 'generating'}
                                         className="w-full resize-y rounded-xl border border-neutral-200 bg-white p-3 text-sm placeholder:text-neutral-400 focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:bg-neutral-50"
                                     />
@@ -327,7 +341,7 @@ export const GenerateQuestionsFromAudio = ({
                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-xs font-medium text-neutral-600">
-                                            How many?
+                                            {t('fields.numQuestions.label')}
                                         </label>
                                         <input
                                             value={numQuestions}
@@ -337,14 +351,14 @@ export const GenerateQuestionsFromAudio = ({
                                                 )
                                             }
                                             inputMode="numeric"
-                                            placeholder="10"
+                                            placeholder={t('fields.numQuestions.placeholder')}
                                             disabled={phase === 'generating'}
                                             className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:bg-neutral-50"
                                         />
                                     </div>
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-xs font-medium text-neutral-600">
-                                            Difficulty
+                                            {t('fields.difficulty.label')}
                                         </label>
                                         <div className="flex gap-1.5">
                                             {DIFFICULTY_OPTIONS.map((d) => (
@@ -359,14 +373,14 @@ export const GenerateQuestionsFromAudio = ({
                                                             : 'border-neutral-200 bg-white text-neutral-600 hover:border-primary-200'
                                                     } disabled:opacity-50`}
                                                 >
-                                                    {d}
+                                                    {t(`difficulties.${DIFFICULTY_LABEL_KEYS[d]}`)}
                                                 </button>
                                             ))}
                                         </div>
                                     </div>
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-xs font-medium text-neutral-600">
-                                            Language
+                                            {t('fields.language.label')}
                                         </label>
                                         <select
                                             value={language}
@@ -376,8 +390,12 @@ export const GenerateQuestionsFromAudio = ({
                                         >
                                             {languageSupport.map((lang) => (
                                                 <option key={lang} value={lang}>
-                                                    {lang.charAt(0) +
-                                                        lang.slice(1).toLowerCase()}
+                                                    {LANGUAGE_LABEL_KEYS[lang]
+                                                        ? t(
+                                                              `languages.${LANGUAGE_LABEL_KEYS[lang]}`
+                                                          )
+                                                        : lang.charAt(0) +
+                                                          lang.slice(1).toLowerCase()}
                                                 </option>
                                             ))}
                                         </select>
@@ -389,7 +407,7 @@ export const GenerateQuestionsFromAudio = ({
                                         readyTask={readyTask}
                                         openPreview={openPreviewDialog}
                                         setOpenPreview={setOpenPreviewDialog}
-                                        heading="Vsmart Audio"
+                                        heading={t('taskListHeading')}
                                         sectionsForm={form}
                                         currentSectionIndex={currentSectionIndex}
                                         onDraftAnother={() => {
@@ -405,15 +423,15 @@ export const GenerateQuestionsFromAudio = ({
                                     />
                                 ) : phase === 'generating' || (pendingTaskId && !readyTask) ? (
                                     <GeneratingState
-                                        title="Drafting your questions"
-                                        subtitle="Listening to the recording and crafting questions. Usually ~30 seconds."
+                                        title={t('progress.title')}
+                                        subtitle={t('progress.subtitle')}
                                     />
                                 ) : (
                                     <button
                                         type="submit"
                                         className="inline-flex w-fit items-center gap-2 rounded-xl bg-primary-500 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-600"
                                     >
-                                        Draft my questions
+                                        {t('actions.draftQuestions')}
                                         <ArrowRight size={16} weight="bold" />
                                     </button>
                                 )}
@@ -438,14 +456,14 @@ export const GenerateQuestionsFromAudio = ({
 
             <RecentFilesPanel
                 tasks={recentTasks}
-                title="Your recent drafts"
-                fallbackLabel="Audio-based draft"
-                emptyHint="Your audio-based drafts will appear here. Drop a recording above to start."
+                title={t('recentDrafts.title')}
+                fallbackLabel={t('recentDrafts.fallbackLabel')}
+                emptyHint={t('recentDrafts.emptyHint')}
                 onOpenAll={() => setEnableTasksDialog(true)}
             />
 
             <AITasksList
-                heading="Vsmart Audio"
+                heading={t('taskListHeading')}
                 enableDialog={enableTasksDialog}
                 setEnableDialog={setEnableTasksDialog}
                 sectionsForm={form}

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getPublicUrl, UploadFileInS3 } from '@/services/upload_file';
 import { getTokenDecodedData, getTokenFromCookie } from '@/lib/auth/sessionUtility';
 import { TokenKey } from '@/constants/auth/tokens';
@@ -197,6 +198,7 @@ export function RichTextField({
     placeholder?: string;
     minHeight?: number;
 }) {
+    const { t } = useTranslation('studyLibraryRichTextField');
     const ref = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -253,7 +255,7 @@ export function RichTextField({
     const insertLink = () => {
         const el = ref.current;
         if (!el) return;
-        const raw = window.prompt('Link URL:');
+        const raw = window.prompt(t('toolbar.linkPrompt'));
         if (!raw) return;
         const href = safeLinkHref(raw);
         if (!href) return;
@@ -361,13 +363,13 @@ export function RichTextField({
                     backgroundColor: C.surface,
                 }}
             >
-                {tbBtn('B', () => exec('bold'), 'Bold', { fontWeight: 700 })}
-                {tbBtn('I', () => exec('italic'), 'Italic', { fontStyle: 'italic' })}
-                {tbBtn('U', () => exec('underline'), 'Underline', { textDecoration: 'underline' })}
-                {tbBtn('•', () => exec('insertUnorderedList'), 'Bullet list')}
-                {tbBtn('1.', () => exec('insertOrderedList'), 'Numbered list')}
-                {tbBtn('🔗', insertLink, 'Insert link')}
-                {tbBtn('🖼', insertImage, 'Insert image')}
+                {tbBtn('B', () => exec('bold'), t('toolbar.bold'), { fontWeight: 700 })}
+                {tbBtn('I', () => exec('italic'), t('toolbar.italic'), { fontStyle: 'italic' })}
+                {tbBtn('U', () => exec('underline'), t('toolbar.underline'), { textDecoration: 'underline' })}
+                {tbBtn('•', () => exec('insertUnorderedList'), t('toolbar.bulletList'))}
+                {tbBtn('1.', () => exec('insertOrderedList'), t('toolbar.numberedList'))}
+                {tbBtn('🔗', insertLink, t('toolbar.insertLink'))}
+                {tbBtn('🖼', insertImage, t('toolbar.insertImage'))}
             </div>
 
             <div

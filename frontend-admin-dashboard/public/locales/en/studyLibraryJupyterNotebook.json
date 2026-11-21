@@ -1,0 +1,42 @@
+{
+    "alerts": {
+        "fillRequired": "Please fill in Project Name and Content URL",
+        "deploySuccess": "Notebook deployed successfully!"
+    },
+    "header": {
+        "configuration": "Jupyter Notebook Configuration"
+    },
+    "tabs": {
+        "preview": "Preview",
+        "settings": "Settings"
+    },
+    "form": {
+        "projectName": {
+            "label": "Project Name",
+            "placeholder": "pythoncourse"
+        },
+        "contentUrl": {
+            "label": "Content URL (Link to a Github repo that contains the notebook)",
+            "placeholder": "https://github.com/amirtds/jupyter-notebooks"
+        },
+        "contentBranch": {
+            "label": "Content Branch"
+        },
+        "notebookLocation": {
+            "label": "Notebook Location"
+        }
+    },
+    "deploy": {
+        "button": "Deploy Notebook",
+        "deploying": "Deploying notebook..."
+    },
+    "status": {
+        "readyToDeploy": "Ready to deploy:",
+        "summary": "{{projectName}} from {{contentUrl}} ({{contentBranch}} branch, {{notebookLocation}} location)"
+    },
+    "preview": {
+        "iframeTitle": "Jupyter Notebook Preview",
+        "notConfigured": "No notebook configured",
+        "switchToSettingsHint": "Switch to Settings tab to configure your Jupyter notebook"
+    }
+}

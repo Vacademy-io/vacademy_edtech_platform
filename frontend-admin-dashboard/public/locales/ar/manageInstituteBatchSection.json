@@ -1,0 +1,33 @@
+{
+    "toast": {
+        "batchDeletedSuccess": "تم حذف الدفعة بنجاح",
+        "batchDeleteFailed": "فشل حذف الدفعة",
+        "inviteLinkCopied": "تم نسخ رابط الدعوة إلى الحافظة"
+    },
+    "batchCard": {
+        "studentCount_zero": "{{count}} {{term}}",
+        "studentCount_one": "{{term}} واحد",
+        "studentCount_two": "{{term}}ان",
+        "studentCount_few": "{{count}} {{term}}",
+        "studentCount_many": "{{count}} {{term}}",
+        "studentCount_other": "{{count}} {{term}}",
+        "inviteCodeLabel": "رمز الدعوة:",
+        "enrollButton": "تسجيل {{term}}",
+        "viewBatchButton": "عرض الدفعة",
+        "startsOn": "Starts {{date}}",
+        "startedOn": "Started {{date}}"
+    },
+    "deleteDialog": {
+        "heading": "حذف الدفعة",
+        "cancel": "إلغاء",
+        "confirm": "نعم، احذف",
+        "confirmMessage": "هل أنت متأكد أنك تريد حذف الدفعة \"{{batchName}}\"؟ لا يمكن التراجع عن هذا الإجراء."
+    },
+    "section": {
+        "noBatches": "لم يتم العثور على دفعات لهذه الباقة.",
+        "noBatchesInSession": "لم يتم العثور على دفعات لهذه الباقة في الجلسة المحددة."
+    },
+    "course": {
+        "addBatch": "Add {{term}}"
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "noQuestionsAvailable": "No quiz questions available.",
+    "questionNotFound": "Question not found.",
+    "questionsCount_one": "{{count}} Question",
+    "questionsCount_other": "{{count}} Questions",
+    "questionOf": "Question {{current}} of {{total}}",
+    "options": "Options:",
+    "explanation": "Explanation",
+    "tags": "Tags:",
+    "previous": "Previous",
+    "next": "Next"
+}

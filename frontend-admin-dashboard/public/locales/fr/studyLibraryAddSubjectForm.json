@@ -1,0 +1,15 @@
+{
+    "validation": {
+        "subjectNameRequired": "Le nom de la matière est requis"
+    },
+    "nameLabel": "Nom de {{subject}}",
+    "namePlaceholder": "Entrez le nom de {{subject}}",
+    "imageLabel": "Image de {{subject}} (facultatif)",
+    "clickToUpload": "Cliquez pour envoyer une image",
+    "uploadHint": "PNG, JPG, GIF jusqu’à 10 Mo · 16:9 recommandé",
+    "previewAlt": "Aperçu",
+    "uploading": "Envoi en cours...",
+    "saveChanges": "Enregistrer les modifications",
+    "add": "Ajouter",
+    "cropTitle": "Recadrer la vignette de la matière"
+}

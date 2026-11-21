@@ -1,0 +1,24 @@
+{
+    "header": {
+        "title": "Mes modèles",
+        "descriptionPart1": "Conservez autant de designs que vous le souhaitez. Celui marqué",
+        "descriptionDefault": "Par défaut",
+        "descriptionPart2": "est le certificat remis aux apprenants."
+    },
+    "addTemplate": "Ajouter un modèle",
+    "emptyState": {
+        "title": "Aucun modèle enregistré pour le moment.",
+        "description": "Choisissez un design prêt à l'emploi ci-dessous, ou importez le vôtre — il sera enregistré ici et défini par défaut."
+    },
+    "card": {
+        "openTitle": "Ouvrir ce design dans l'éditeur",
+        "defaultBadge": "Par défaut",
+        "editingBadge": "Modification en cours",
+        "renameInputAriaLabel": "Nom du modèle",
+        "renameTitle": "Renommer",
+        "issuedToLearners": "Remis aux apprenants",
+        "makeDefault": "Définir par défaut",
+        "deleteTitle": "Supprimer ce modèle",
+        "deleteAriaLabel": "Supprimer {{name}}"
+    }
+}

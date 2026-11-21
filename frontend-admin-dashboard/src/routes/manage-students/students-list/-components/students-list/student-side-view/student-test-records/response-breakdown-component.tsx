@@ -4,7 +4,9 @@ import {
     ChartTooltip,
     ChartTooltipContent,
 } from '@/components/ui/chart';
+import type { TFunction } from 'i18next';
 import React, { Suspense } from 'react';
+import { useTranslation } from 'react-i18next';
 const PieChart = React.lazy(() => import('recharts').then(module => ({ default: module.PieChart as unknown as React.ComponentType<any> })));
 const Pie = React.lazy(() => import('recharts').then(module => ({ default: module.Pie as unknown as React.ComponentType<any> })));
 
@@ -13,16 +15,17 @@ interface ResponseData {
     skipped: number;
 }
 
-const chartConfig = {
-    correct: {
-        label: 'Correct',
-        color: 'hsl(var(--chart-1))',
-    },
-    skipped: {
-        label: 'Skipped',
-        color: 'hsl(var(--chart-4))',
-    },
-} satisfies ChartConfig;
+const buildChartConfig = (t: TFunction) =>
+    ({
+        correct: {
+            label: t('legend.correct'),
+            color: 'hsl(var(--chart-1))',
+        },
+        skipped: {
+            label: t('legend.skipped'),
+            color: 'hsl(var(--chart-4))',
+        },
+    }) satisfies ChartConfig;
 
 // Recharts fill values resolved from CSS chart variables — no raw hex in JSX.
 const RESPONSE_CHART_FILLS = {
@@ -31,6 +34,8 @@ const RESPONSE_CHART_FILLS = {
 } as const;
 
 export function ResponseBreakdownComponent({ responseData }: { responseData: ResponseData }) {
+    const { t } = useTranslation('manageStudentsResponseBreakdownComponent');
+    const chartConfig = buildChartConfig(t);
     const chartData = [
         {
             responseType: 'correct',

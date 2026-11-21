@@ -14,6 +14,13 @@ import java.util.List;
 @Repository
 public interface DoubtsRepository extends JpaRepository<Doubts, String> {
 
+    /**
+     * Assignee predicate: with {@code assigneeUserIds} set, doubts that have an ACTIVE explicit
+     * assignee among them; with {@code unassignedOnly}, doubts with no ACTIVE explicit assignee at
+     * all; both set ⇒ either. Workflow-status predicate: legacy rows with a NULL workflow_status match
+     * through their coarse status (RESOLVED → RESOLVED, anything else → PENDING), mirroring
+     * {@code DoubtStatusCatalog#effectiveKey}.
+     */
     @Query(value = """
         SELECT d.* FROM doubts d
         WHERE (:contentPositions IS NULL OR d.content_position IN :contentPositions)
@@ -27,6 +34,20 @@ public interface DoubtsRepository extends JpaRepository<Doubts, String> {
           AND (d.raised_time BETWEEN :startDate AND :endDate)
           AND d.parent_id IS NULL
           AND (CAST(:hasBatchIds AS boolean) = false OR d.package_session_id IN :batchIds)
+          AND (
+            (CAST(:hasAssigneeUserIds AS boolean) = false AND CAST(:unassignedOnly AS boolean) = false)
+            OR (CAST(:hasAssigneeUserIds AS boolean) = true AND EXISTS (
+                SELECT 1 FROM doubt_assignee fa
+                WHERE fa.doubt_id = d.id AND fa.source = 'USER' AND fa.status = 'ACTIVE'
+                  AND fa.source_id IN :assigneeUserIds
+            ))
+            OR (CAST(:unassignedOnly AS boolean) = true AND NOT EXISTS (
+                SELECT 1 FROM doubt_assignee fa
+                WHERE fa.doubt_id = d.id AND fa.source = 'USER' AND fa.status = 'ACTIVE'
+            ))
+          )
+          AND (CAST(:hasWorkflowStatuses AS boolean) = false
+               OR COALESCE(d.workflow_status, CASE WHEN d.status = 'RESOLVED' THEN 'RESOLVED' ELSE 'PENDING' END) IN :workflowStatuses)
         """,
             countQuery = """
         SELECT COUNT(d.*) FROM doubts d
@@ -41,6 +62,20 @@ public interface DoubtsRepository extends JpaRepository<Doubts, String> {
           AND (d.raised_time BETWEEN :startDate AND :endDate)
           AND d.parent_id IS NULL
           AND (CAST(:hasBatchIds AS boolean) = false OR d.package_session_id IN :batchIds)
+          AND (
+            (CAST(:hasAssigneeUserIds AS boolean) = false AND CAST(:unassignedOnly AS boolean) = false)
+            OR (CAST(:hasAssigneeUserIds AS boolean) = true AND EXISTS (
+                SELECT 1 FROM doubt_assignee fa
+                WHERE fa.doubt_id = d.id AND fa.source = 'USER' AND fa.status = 'ACTIVE'
+                  AND fa.source_id IN :assigneeUserIds
+            ))
+            OR (CAST(:unassignedOnly AS boolean) = true AND NOT EXISTS (
+                SELECT 1 FROM doubt_assignee fa
+                WHERE fa.doubt_id = d.id AND fa.source = 'USER' AND fa.status = 'ACTIVE'
+            ))
+          )
+          AND (CAST(:hasWorkflowStatuses AS boolean) = false
+               OR COALESCE(d.workflow_status, CASE WHEN d.status = 'RESOLVED' THEN 'RESOLVED' ELSE 'PENDING' END) IN :workflowStatuses)
         """,nativeQuery = true)
     Page<Doubts> findDoubtsWithFilter(@Param("contentPositions") List<String> contentPositions,
                                       @Param("contentTypes") List<String> contentTypes,
@@ -52,6 +87,11 @@ public interface DoubtsRepository extends JpaRepository<Doubts, String> {
                                       @Param("instituteId") String instituteId,
                                       @Param("batchIds") List<String> batchIds,
                                       @Param("hasBatchIds") boolean hasBatchIds,
+                                      @Param("assigneeUserIds") List<String> assigneeUserIds,
+                                      @Param("hasAssigneeUserIds") boolean hasAssigneeUserIds,
+                                      @Param("unassignedOnly") boolean unassignedOnly,
+                                      @Param("workflowStatuses") List<String> workflowStatuses,
+                                      @Param("hasWorkflowStatuses") boolean hasWorkflowStatuses,
                                       @Param("startDate") Date startDate,
                                       @Param("endDate") Date endDate,
                                       Pageable pageable);
@@ -91,6 +131,20 @@ public interface DoubtsRepository extends JpaRepository<Doubts, String> {
           AND (d.raised_time BETWEEN :startDate AND :endDate)
           AND d.parent_id IS NULL
           AND (CAST(:hasBatchIds AS boolean) = false OR d.package_session_id IN :batchIds)
+          AND (
+            (CAST(:hasAssigneeUserIds AS boolean) = false AND CAST(:unassignedOnly AS boolean) = false)
+            OR (CAST(:hasAssigneeUserIds AS boolean) = true AND EXISTS (
+                SELECT 1 FROM doubt_assignee fa
+                WHERE fa.doubt_id = d.id AND fa.source = 'USER' AND fa.status = 'ACTIVE'
+                  AND fa.source_id IN :assigneeUserIds
+            ))
+            OR (CAST(:unassignedOnly AS boolean) = true AND NOT EXISTS (
+                SELECT 1 FROM doubt_assignee fa
+                WHERE fa.doubt_id = d.id AND fa.source = 'USER' AND fa.status = 'ACTIVE'
+            ))
+          )
+          AND (CAST(:hasWorkflowStatuses AS boolean) = false
+               OR COALESCE(d.workflow_status, CASE WHEN d.status = 'RESOLVED' THEN 'RESOLVED' ELSE 'PENDING' END) IN :workflowStatuses)
           AND (
             d.user_id = :viewerUserId
             OR EXISTS (
@@ -157,6 +211,20 @@ public interface DoubtsRepository extends JpaRepository<Doubts, String> {
           AND (d.raised_time BETWEEN :startDate AND :endDate)
           AND d.parent_id IS NULL
           AND (CAST(:hasBatchIds AS boolean) = false OR d.package_session_id IN :batchIds)
+          AND (
+            (CAST(:hasAssigneeUserIds AS boolean) = false AND CAST(:unassignedOnly AS boolean) = false)
+            OR (CAST(:hasAssigneeUserIds AS boolean) = true AND EXISTS (
+                SELECT 1 FROM doubt_assignee fa
+                WHERE fa.doubt_id = d.id AND fa.source = 'USER' AND fa.status = 'ACTIVE'
+                  AND fa.source_id IN :assigneeUserIds
+            ))
+            OR (CAST(:unassignedOnly AS boolean) = true AND NOT EXISTS (
+                SELECT 1 FROM doubt_assignee fa
+                WHERE fa.doubt_id = d.id AND fa.source = 'USER' AND fa.status = 'ACTIVE'
+            ))
+          )
+          AND (CAST(:hasWorkflowStatuses AS boolean) = false
+               OR COALESCE(d.workflow_status, CASE WHEN d.status = 'RESOLVED' THEN 'RESOLVED' ELSE 'PENDING' END) IN :workflowStatuses)
           AND (
             d.user_id = :viewerUserId
             OR EXISTS (
@@ -220,6 +288,11 @@ public interface DoubtsRepository extends JpaRepository<Doubts, String> {
                                                @Param("instituteId") String instituteId,
                                                @Param("batchIds") List<String> batchIds,
                                                @Param("hasBatchIds") boolean hasBatchIds,
+                                               @Param("assigneeUserIds") List<String> assigneeUserIds,
+                                               @Param("hasAssigneeUserIds") boolean hasAssigneeUserIds,
+                                               @Param("unassignedOnly") boolean unassignedOnly,
+                                               @Param("workflowStatuses") List<String> workflowStatuses,
+                                               @Param("hasWorkflowStatuses") boolean hasWorkflowStatuses,
                                                @Param("startDate") Date startDate,
                                                @Param("endDate") Date endDate,
                                                @Param("viewerUserId") String viewerUserId,

@@ -1,0 +1,34 @@
+{
+    "tiles": {
+        "submissionsAttempts": {
+            "label": "Submissions / Attempts",
+            "sublabel": "Answer sheets received"
+        },
+        "submitted": {
+            "label": "Attempts",
+            "sublabel": "Students attempted"
+        },
+        "evaluated": {
+            "label": "Evaluated",
+            "sublabel": "Evaluations completed"
+        },
+        "pendingEvaluation": {
+            "label": "Pending Evaluation",
+            "sublabel": "Awaiting evaluation"
+        },
+        "resultsReleased": {
+            "label": "Results Released",
+            "sublabel": "Results published"
+        },
+        "avgHighLow": {
+            "label": "Avg / High / Low  (/ {{totalMarks}})",
+            "value": "{{avg}} / {{high}} / {{low}}"
+        },
+        "ratio": "{{numerator}} / {{denominator}}",
+        "averageScore": {
+            "label": "Average Score",
+            "value": "{{avg}} / {{totalMarks}}",
+            "sublabel": "Highest {{high}} · Lowest {{low}}"
+        }
+    }
+}

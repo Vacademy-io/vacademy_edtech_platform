@@ -1,0 +1,12 @@
+{
+    "addToCourse": "Add to course",
+    "titleLabel": "Title",
+    "savingEllipsis": "Saving…",
+    "saveToLibraryAndAdd": "Save to library & add",
+    "add": "Add",
+    "sessionFallback": "Session",
+    "defaultTitle": "{{label}} – Recording ({{formatted}})",
+    "defaultTitleNoDate": "{{label}} – Recording",
+    "saveRecordingFirst": "Save the recording to the library first, then try again.",
+    "couldNotAdd": "Could not add this recording to the course."
+}

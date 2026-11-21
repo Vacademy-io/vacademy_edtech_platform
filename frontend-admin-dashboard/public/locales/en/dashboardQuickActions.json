@@ -1,0 +1,14 @@
+{
+    "actions": {
+        "addStudent": "Add Student",
+        "newBatch": "New Batch",
+        "announcement": "Announcement",
+        "payments": "Payments",
+        "reports": "Reports",
+        "todaysClasses": "Today's Classes",
+        "myCourses": "My Courses",
+        "newCourse": "New Course",
+        "assessments": "Assessments",
+        "evaluations": "Evaluations"
+    }
+}

@@ -3,10 +3,13 @@ package vacademy.io.admin_core_service.features.learner_study_library.controller
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vacademy.io.admin_core_service.features.learner_quiz.answerkey.AnswerKeySurface;
+import vacademy.io.admin_core_service.features.learner_quiz.answerkey.WithoutAnswerKeys;
 import vacademy.io.admin_core_service.features.learner_study_library.dto.LearnerChapterSlidesDTO;
 import vacademy.io.admin_core_service.features.learner_study_library.dto.LearnerModuleDTOWithDetails;
 import vacademy.io.admin_core_service.features.learner_study_library.dto.LearnerSlidesDetailDTO;
 import vacademy.io.admin_core_service.features.learner_study_library.dto.LearnerSubjectProjection;
+import vacademy.io.admin_core_service.features.learner_study_library.service.LearnerContentAccessGuard;
 import vacademy.io.admin_core_service.features.learner_study_library.service.LearnerStudyLibraryService;
 import vacademy.io.admin_core_service.features.slide.dto.SlideDetailProjection;
 import vacademy.io.admin_core_service.features.study_library.dto.ChapterDTOWithDetails;
@@ -32,26 +35,34 @@ public class LearnerStudyLibraryController {
     @Autowired
     private ContentTranslationService contentTranslationService;
 
+    /** Enrollment check for learners; off unless learner.content.enrollment-guard.enabled. */
+    @Autowired
+    private LearnerContentAccessGuard contentAccessGuard;
+
     @GetMapping("/init-details")
     @ClientCacheable(maxAgeSeconds = 0, scope = CacheScope.NO_STORE, varyHeaders = {"X-User-Id", "X-Package-Session-Id", "Accept-Language"})
     public ResponseEntity<List<LearnerSubjectProjection>> getLearnerStudyLibraryInitDetails(
             @RequestParam String packageSessionId,
             @RequestAttribute("user") CustomUserDetails user) {
+        contentAccessGuard.requireEnrolled(user, packageSessionId);
         return ResponseEntity.ok(learnerStudyLibraryService.getSubjectsByPackageSessionId(packageSessionId, user));
     }
 
     @GetMapping("/modules-with-chapters")
     @ClientCacheable(maxAgeSeconds = 0, scope = CacheScope.NO_STORE, varyHeaders = {"X-User-Id", "X-Package-Session-Id", "Accept-Language"})
     public ResponseEntity<List<LearnerModuleDTOWithDetails>> modulesWithChapters(@RequestParam("subjectId") String subjectId, @RequestParam("packageSessionId") String packageSessionId, @RequestAttribute("user") CustomUserDetails user) {
+        contentAccessGuard.requireEnrolled(user, packageSessionId);
         return ResponseEntity.ok(learnerStudyLibraryService.getModulesDetailsWithChapters(subjectId, packageSessionId, user));
     }
 
+    @WithoutAnswerKeys(AnswerKeySurface.LEARNER)
     @GetMapping("/get-slides/{chapterId}")
     @ClientCacheable(maxAgeSeconds = 0, scope = CacheScope.NO_STORE, varyHeaders = {"X-User-Id", "Accept-Language"})
     public ResponseEntity<List<SlideDetailProjection>> getSlidesByChapterId(@PathVariable String chapterId, @RequestAttribute("user") CustomUserDetails user) {
         return ResponseEntity.ok(learnerStudyLibraryService.getSlidesByChapterId(chapterId, user));
     }
 
+    @WithoutAnswerKeys(AnswerKeySurface.LEARNER)
     @GetMapping("/slides")
     @ClientCacheable(maxAgeSeconds = 0, scope = CacheScope.NO_STORE, varyHeaders = {"X-User-Id", "Accept-Language"})
     public ResponseEntity<List<LearnerSlidesDetailDTO>> getLearnerSlidesByChapterId(@RequestParam String chapterId, @RequestAttribute("user") CustomUserDetails user) {
@@ -64,9 +75,11 @@ public class LearnerStudyLibraryController {
      * per-chapter request storm the course-details page used to fire (one GET
      * per chapter — hundreds on large courses).
      */
+    @WithoutAnswerKeys(AnswerKeySurface.LEARNER)
     @GetMapping("/slides-by-package-session")
     @ClientCacheable(maxAgeSeconds = 0, scope = CacheScope.NO_STORE, varyHeaders = {"X-User-Id", "X-Package-Session-Id", "Accept-Language"})
     public ResponseEntity<List<LearnerChapterSlidesDTO>> getLearnerSlidesByPackageSession(@RequestParam String packageSessionId, @RequestAttribute("user") CustomUserDetails user) {
+        contentAccessGuard.requireEnrolled(user, packageSessionId);
         return ResponseEntity.ok(learnerStudyLibraryService.getLearnerSlidesByPackageSession(packageSessionId, user));
     }
 
@@ -83,13 +96,16 @@ public class LearnerStudyLibraryController {
                 packageSessionId, contentTranslationService.getAvailableLanguages(packageSessionId)));
     }
 
+    @WithoutAnswerKeys(AnswerKeySurface.LEARNER)
     @GetMapping("/chapters-with-slides")
     public ResponseEntity<List<ChapterDTOWithDetails>>getChaptersWithSlides(@RequestParam("moduleId") String subjectId, @RequestParam("packageSessionId") String packageSessionId) {
         return ResponseEntity.ok(studyLibraryService.getChaptersWithSlides(subjectId, packageSessionId, null));
     }
 
+    @WithoutAnswerKeys(AnswerKeySurface.LEARNER)
     @GetMapping("/modules-chapters-slides")
     public ResponseEntity<List<LearnerModuleDTOWithDetails>>getModuleChapterSlides(@RequestParam("subjectId") String subjectId, @RequestParam("packageSessionId") String packageSessionId,@RequestAttribute("user")CustomUserDetails userDetails) {
+        contentAccessGuard.requireEnrolled(userDetails, packageSessionId);
         return ResponseEntity.ok(learnerStudyLibraryService.getModulesDetailsWithChaptersAndSlides(subjectId, packageSessionId, userDetails));
     }
 

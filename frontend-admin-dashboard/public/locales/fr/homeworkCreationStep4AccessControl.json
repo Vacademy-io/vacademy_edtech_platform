@@ -1,0 +1,40 @@
+{
+    "page": {
+        "title": "Contrôle d'accès",
+        "updateButton": "Mettre à jour",
+        "saveButton": "Enregistrer",
+        "publishButton": "Publier"
+    },
+    "sections": {
+        "creationAccess": "Accès à la création d'évaluation",
+        "liveAssessmentNotification": "Notification d'évaluation en direct",
+        "submissionAndReportAccess": "Accès aux soumissions et rapports d'évaluation",
+        "evaluationProcess": "Processus d'évaluation"
+    },
+    "toast": {
+        "updateSuccess": "Votre évaluation a été mise à jour avec succès !",
+        "saveSuccess": "Votre évaluation a été enregistrée avec succès !",
+        "updateAndPublishSuccess": "Votre évaluation a été mise à jour et publiée avec succès !",
+        "publishSuccess": "Votre évaluation a été publiée avec succès !",
+        "cancelInvitationSuccess": "L'invitation de cet utilisateur a été annulée avec succès !"
+    },
+    "errors": {
+        "saveFailed": "Échec de l'enregistrement du contrôle d'accès.",
+        "publishFailed": "Échec de la publication de l'évaluation."
+    },
+    "addUserDialog": {
+        "addButton": "Ajouter",
+        "title": "Ajouter un utilisateur",
+        "roleTypeFilterLabel": "Type de rôle",
+        "selectAllLabel": "Tout sélectionner",
+        "doneButton": "Terminé"
+    },
+    "cancelInvitationDialog": {
+        "trigger": "Annuler l'invitation",
+        "title": "Annuler l'invitation",
+        "attention": "Attention",
+        "confirmMessagePrefix": "Êtes-vous sûr de vouloir annuler l'invitation pour",
+        "confirmMessageSuffix": " ?",
+        "confirmButton": "Oui"
+    }
+}

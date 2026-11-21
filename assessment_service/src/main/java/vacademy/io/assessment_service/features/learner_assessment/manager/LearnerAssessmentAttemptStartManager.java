@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import vacademy.io.assessment_service.features.assessment.dto.AssessmentQuestionPreviewDto;
+import vacademy.io.assessment_service.features.question_core.util.CbeConfigRedactor;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.SectionDto;
 import vacademy.io.assessment_service.features.question_core.enums.QuestionTypes;
 import vacademy.io.assessment_service.features.assessment.entity.*;
@@ -62,6 +63,9 @@ public class LearnerAssessmentAttemptStartManager {
     @Autowired
     vacademy.io.assessment_service.features.translation.service.TranslationService translationService;
 
+    @Autowired
+    vacademy.io.assessment_service.features.exam_interface.service.ExamInterfaceService examInterfaceService;
+
 
     @Transactional
     public ResponseEntity<LearnerAssessmentStartPreviewResponse> startAssessmentPreview(CustomUserDetails user, String assessmentId, String instituteId, String batchIds, BasicParticipantDTO basicParticipantDTO) {
@@ -105,6 +109,7 @@ public class LearnerAssessmentAttemptStartManager {
         List<SectionDto> sectionDtos = createSectionDtoList(assessment.get());
         translationService.localizeSectionDtos(sectionDtos);
         learnerAssessmentStartPreviewResponse.setSectionDtos(sectionDtos);
+        learnerAssessmentStartPreviewResponse.setExamInterface(examInterfaceService.read(assessment.get()));
         return ResponseEntity.ok(learnerAssessmentStartPreviewResponse);
     }
 
@@ -211,6 +216,7 @@ public class LearnerAssessmentAttemptStartManager {
             AssessmentQuestionPreviewDto question = new AssessmentQuestionPreviewDto(mapping.getQuestion(), mapping);
             question.fillOptionsOfQuestion(mapping.getQuestion());
             redactHiddenTestExpectedStdout(question);
+            redactCbeSecrets(question);
             questions.add(question);
         }
         return questions;
@@ -257,6 +263,18 @@ public class LearnerAssessmentAttemptStartManager {
         }
     }
 
+    // CBE_RESPONSE: the config carries the model solution, marking scheme, solution
+    // file and grading notes. The learner gets the parts, prompts and templates only.
+    // Covers preview, start and restart/resume (all build their sections here).
+    static void redactCbeSecrets(AssessmentQuestionPreviewDto preview) {
+        if (preview == null) return;
+        String evaluationJson = preview.getEvaluationJson();
+        String redacted = CbeConfigRedactor.redact(evaluationJson, preview.getQuestionType());
+        if (redacted != evaluationJson) {
+            preview.setEvaluationJson(redacted);
+        }
+    }
+
     // SHA-256 hex of the trimmed input, matching the client's normalizeOutput()
     // (trim leading/trailing whitespace) so hidden-test digests compare equal.
     private String sha256Normalized(String raw) {
@@ -293,6 +311,15 @@ public class LearnerAssessmentAttemptStartManager {
         Optional<StudentAttempt> maybeAttempt = studentAttemptRepository.findById(startAssessmentRequest.getAttemptId());
         if (maybeAttempt.isEmpty()) throw new VacademyException("Student attempt not found");
         StudentAttempt studentAttempt = maybeAttempt.get();
+
+        // The attempt id is the only input here, and `user` used to be ignored entirely
+        // — so any authenticated caller could flip another learner's PREVIEW attempt to
+        // LIVE and reset its start time out from under them.
+        //
+        // Checked BEFORE the idempotent replay below: that path returns the attempt's
+        // real startTime and registration id, so letting a non-owner reach it would leak
+        // another learner's exam state even though it mutates nothing.
+        LearnerAssessmentAttemptStatusManager.assertOwnershipOrStaff(studentAttempt, user, "start-assessment");
 
         if (AssessmentAttemptEnum.LIVE.name().equals(studentAttempt.getStatus()) && studentAttempt.getStartTime() != null)
             return ResponseEntity.ok(buildStartAssessmentResponse(studentAttempt, studentAttempt.getStartTime()));

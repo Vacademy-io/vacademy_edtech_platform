@@ -1,0 +1,14 @@
+{
+    "questionsSettings": "Questions Settings",
+    "questionType": "Question Type",
+    "comprehensionText": "Comprehension Text",
+    "comprehensionTextPlaceholder": "Comprehension text",
+    "questionNumber": "Question {{number}}",
+    "writeTheQuestion": "Write the question",
+    "answer": "Answer:",
+    "optionPlaceholder": "Option {{letter}}",
+    "removeOption": "Remove option",
+    "addOption": "Add Option",
+    "explanation": "Explanation:",
+    "explanationPlaceholder": "Explanation"
+}

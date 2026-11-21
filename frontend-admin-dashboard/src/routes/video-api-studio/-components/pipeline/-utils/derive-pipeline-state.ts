@@ -6,6 +6,7 @@
  * generation and after completion.
  */
 
+import type { TFunction } from 'i18next';
 import type {
     ContentType,
     GenerateVideoRequest,
@@ -25,6 +26,18 @@ import {
     type PipelineNodeId,
     type PipelineStage,
 } from './stage-vocab';
+
+const NS = 'videoApiStudioDerivePipelineState';
+
+/**
+ * Translated "X cut from production" / halt error text for a `NodeSlot`'s
+ * `error` field (rendered verbatim by `NodeDetailSheet`). Falls back to the
+ * English literal when `t` isn't threaded through by the caller, so callers
+ * that haven't been migrated yet keep working exactly as before.
+ */
+function cutError(t: TFunction | undefined, key: string, fallback: string): string {
+    return t ? t(`${NS}:${key}`) : fallback;
+}
 
 // ── Slot shapes ──────────────────────────────────────────────────────────
 
@@ -579,6 +592,7 @@ function derivedResearchLive(args: {
     runWrapped: boolean;
     halted: boolean;
     pipelineStage: PipelineStage;
+    t?: TFunction;
 }): NodeSlot<ResearchArtifact> | undefined {
     const hasUrl = promptContainsUrl(args.prompt);
     const overrides = args.routingOverrides?.tools;
@@ -604,7 +618,7 @@ function derivedResearchLive(args: {
         };
     }
     if (args.halted) {
-        return { state: 'cut', error: 'Research cut from production' };
+        return { state: 'cut', error: cutError(args.t, 'errors.researchCut', 'Research cut from production') };
     }
     // Pre-script — research either is or about to be running.
     if (
@@ -639,6 +653,7 @@ function derivedBeatsLive(args: {
     /** Hint: if the script step appears in_production OR the run is mid-SCRIPT
      *  and we've ALREADY seen a beats_* event during this session. */
     sawBeatsEver: boolean;
+    t?: TFunction;
 }): NodeSlot<BeatsArtifact> | undefined {
     const beatsActive = args.activeSubStage === 'beats_planning';
     if (!beatsActive && !args.sawBeatsEver) return undefined;
@@ -647,7 +662,10 @@ function derivedBeatsLive(args: {
         return { state: 'wrapped', data: { count: 0 } };
     }
     if (args.halted) {
-        return { state: 'cut', error: 'Beat planning cut from production' };
+        return {
+            state: 'cut',
+            error: cutError(args.t, 'errors.beatsCut', 'Beat planning cut from production'),
+        };
     }
     if (beatsActive) {
         return { state: 'in_production' };
@@ -671,6 +689,7 @@ function derivedTalent(args: {
     hostShotCompleted?: number;
     hostBatchDone?: boolean;
     hostSubStage?: string;
+    t?: TFunction;
 }): NodeSlot<TalentArtifact> | undefined {
     const { requested, sawStage, runWrapped, halted } = args;
     if (!requested && !sawStage) return undefined;
@@ -683,7 +702,7 @@ function derivedTalent(args: {
         return { state: 'wrapped', data: { completed: total || done, total: total || done } };
     }
     if (halted) {
-        return { state: 'cut', error: 'Talent cut from production' };
+        return { state: 'cut', error: cutError(args.t, 'errors.talentCut', 'Talent cut from production') };
     }
     if (sawStage) {
         return {
@@ -830,6 +849,7 @@ function derivedScore(args: {
     musicDone?: boolean;
     musicUrl?: string;
     musicSubStage?: string;
+    t?: TFunction;
 }): NodeSlot<ScoreArtifact> | undefined {
     const { sawStage, runWrapped, halted } = args;
     if (!sawStage && !args.musicUrl) return undefined;
@@ -845,7 +865,7 @@ function derivedScore(args: {
         };
     }
     if (halted) {
-        return { state: 'cut', error: 'Score cut from production' };
+        return { state: 'cut', error: cutError(args.t, 'errors.scoreCut', 'Score cut from production') };
     }
     return {
         state: 'in_production',
@@ -859,7 +879,8 @@ function derivedScore(args: {
 
 export function derivePipelineFromLive(
     cg: LiveCurrentGeneration,
-    nowMs: number = Date.now()
+    nowMs: number = Date.now(),
+    t?: TFunction
 ): PipelineState {
     const pipelineStage = (cg.stage as PipelineStage) ?? 'PENDING';
     // Prefer the universal `currentSubStage` field that the SSE handler
@@ -985,7 +1006,8 @@ export function derivePipelineFromLive(
                 ? {
                       state: 'cut',
                       error:
-                          cg.recentErrors?.find((e) => !e.retrying)?.error || 'Production halted',
+                          cg.recentErrors?.find((e) => !e.retrying)?.error ||
+                          cutError(t, 'errors.productionHalted', 'Production halted'),
                   }
                 : { state: 'scheduled' };
 
@@ -1020,7 +1042,7 @@ export function derivePipelineFromLive(
               },
           }
         : halted
-          ? { state: 'cut', error: 'Production halted' }
+          ? { state: 'cut', error: cutError(t, 'errors.productionHalted', 'Production halted') }
           : { state: 'in_production' };
 
     // ── Research (Phase 4) ───────────────────────────────────────────────
@@ -1035,6 +1057,7 @@ export function derivePipelineFromLive(
         runWrapped,
         halted,
         pipelineStage,
+        t,
     });
 
     // ── Beats (v2 pipeline) ──────────────────────────────────────────────
@@ -1049,6 +1072,7 @@ export function derivePipelineFromLive(
         halted,
         // Active OR script_done implies we definitely saw beats fire on v2.
         sawBeatsEver: activeSub === 'beats_planning' || activeSub === 'beats_done',
+        t,
     });
 
     // ── Talent / Score (Phase 3) ─────────────────────────────────────────
@@ -1068,6 +1092,7 @@ export function derivePipelineFromLive(
         hostShotCompleted: cg.hostShotCompleted,
         hostBatchDone: cg.hostBatchDone,
         hostSubStage: cg.hostSubStage,
+        t,
     });
 
     // Music gating: live `cg.options` doesn't carry `background_music_enabled`
@@ -1084,6 +1109,7 @@ export function derivePipelineFromLive(
         musicDone: cg.musicDone,
         musicUrl: cg.musicUrl,
         musicSubStage: cg.musicSubStage,
+        t,
     });
 
     const status: PipelineState['status'] = halted
@@ -1124,7 +1150,10 @@ export function derivePipelineFromLive(
         } else if (plannerActive) {
             shotPlanner = { state: 'in_production' };
         } else if (halted) {
-            shotPlanner = { state: 'cut', error: 'Shot planning cut from production' };
+            shotPlanner = {
+                state: 'cut',
+                error: cutError(t, 'errors.shotPlanningCut', 'Shot planning cut from production'),
+            };
         } else {
             shotPlanner = { state: 'scheduled' };
         }
@@ -1150,7 +1179,14 @@ export function derivePipelineFromLive(
         } else if (writerActive) {
             narrationWriter = { state: 'in_production' };
         } else if (halted) {
-            narrationWriter = { state: 'cut', error: 'Narration writing cut from production' };
+            narrationWriter = {
+                state: 'cut',
+                error: cutError(
+                    t,
+                    'errors.narrationWritingCut',
+                    'Narration writing cut from production'
+                ),
+            };
         } else if (plannerDone) {
             // Planner done but writer hasn't started — scheduled.
             narrationWriter = { state: 'scheduled' };
@@ -1218,7 +1254,8 @@ export function derivePipelineFromStatus(
         contentTypeOverride?: ContentType;
         orientationOverride?: VideoOrientation;
     },
-    nowMs: number = Date.now()
+    nowMs: number = Date.now(),
+    t?: TFunction
 ): PipelineState {
     const gp = status.generation_progress ?? null;
     const meta = status.metadata ?? null;
@@ -1315,7 +1352,12 @@ export function derivePipelineFromStatus(
               data: { shotsCompleted: shotsTotal || shotsCompleted, shotsTotal },
           }
         : halted
-          ? { state: 'cut', error: status.error_message || 'Production halted' }
+          ? {
+                state: 'cut',
+                error:
+                    status.error_message ||
+                    cutError(t, 'errors.productionHalted', 'Production halted'),
+            }
           : pipelineStage === 'HTML' && shotsTotal > 0
             ? { state: 'in_production', partialData: { shotsCompleted, shotsTotal } }
             : { state: 'scheduled' };
@@ -1347,7 +1389,12 @@ export function derivePipelineFromStatus(
               },
           }
         : halted
-          ? { state: 'cut', error: status.error_message || 'Production halted' }
+          ? {
+                state: 'cut',
+                error:
+                    status.error_message ||
+                    cutError(t, 'errors.productionHalted', 'Production halted'),
+            }
           : { state: awaitingReview ? 'scheduled' : 'in_production' };
 
     // ── Research (from metadata.intent_outcomes) ──────────────────────
@@ -1361,6 +1408,7 @@ export function derivePipelineFromStatus(
         pipelineStage,
         runWrapped,
         halted,
+        t,
     });
 
     // ── Talent (from metadata.host) ───────────────────────────────────
@@ -1373,6 +1421,7 @@ export function derivePipelineFromStatus(
         metaHost: meta?.host,
         runWrapped,
         halted,
+        t,
     });
 
     // ── Score (from user_selections + metadata.audio_tracks) ──────────
@@ -1387,6 +1436,7 @@ export function derivePipelineFromStatus(
         audioTracks: meta?.audio_tracks,
         runWrapped,
         halted,
+        t,
     });
 
     const tokenUsage = status.token_usage ?? null;
@@ -1423,7 +1473,10 @@ export function derivePipelineFromStatus(
             haveShots ||
             STAGE_ORDER.indexOf(pipelineStage) >= STAGE_ORDER.indexOf('TTS');
         if (halted && !plannerDone) {
-            shotPlanner = { state: 'cut', error: 'Shot planning cut from production' };
+            shotPlanner = {
+                state: 'cut',
+                error: cutError(t, 'errors.shotPlanningCut', 'Shot planning cut from production'),
+            };
         } else if (plannerDone) {
             shotPlanner = {
                 state: 'wrapped',
@@ -1444,7 +1497,14 @@ export function derivePipelineFromStatus(
             !!audioUrl ||
             runWrapped;
         if (halted && !writerDone) {
-            narrationWriter = { state: 'cut', error: 'Narration writing cut from production' };
+            narrationWriter = {
+                state: 'cut',
+                error: cutError(
+                    t,
+                    'errors.narrationWritingCut',
+                    'Narration writing cut from production'
+                ),
+            };
         } else if (writerDone) {
             narrationWriter = {
                 state: 'wrapped',
@@ -1619,6 +1679,7 @@ function derivedResearchFromStatus(args: {
     pipelineStage: PipelineStage;
     runWrapped: boolean;
     halted: boolean;
+    t?: TFunction;
 }): NodeSlot<ResearchArtifact> | undefined {
     const { intent, runWrapped, halted, pipelineStage, prompt } = args;
     const hasUrl = promptContainsUrl(prompt);
@@ -1659,7 +1720,11 @@ function derivedResearchFromStatus(args: {
         searchQuery: searchArt?.query,
     };
 
-    if (halted) return { state: 'cut', error: 'Research cut from production' };
+    if (halted)
+        return {
+            state: 'cut',
+            error: cutError(args.t, 'errors.researchCut', 'Research cut from production'),
+        };
 
     // Research runs entirely pre-SCRIPT. Once the pipeline has moved past
     // SCRIPT (or the run is wrapped), it's done. While in PENDING/SCRIPT,
@@ -1680,6 +1745,7 @@ function derivedTalentFromStatus(args: {
     metaHost?: VideoStatusMetadata['host'];
     runWrapped: boolean;
     halted: boolean;
+    t?: TFunction;
 }): NodeSlot<TalentArtifact> | undefined {
     const { userSelHostType, userSelGenerateAvatar, metaHost, runWrapped, halted } = args;
     const requested = userSelHostType === 'avatar' || userSelGenerateAvatar === true;
@@ -1703,7 +1769,11 @@ function derivedTalentFromStatus(args: {
     );
     const total = outputs?.host_shot_count ?? takes.length ?? 0;
 
-    if (halted) return { state: 'cut', error: 'Talent cut from production' };
+    if (halted)
+        return {
+            state: 'cut',
+            error: cutError(args.t, 'errors.talentCut', 'Talent cut from production'),
+        };
     if (runWrapped || completedTakes.length > 0) {
         return {
             state: 'wrapped',
@@ -1725,13 +1795,18 @@ function derivedScoreFromStatus(args: {
     audioTracks?: VideoStatusMetadata['audio_tracks'];
     runWrapped: boolean;
     halted: boolean;
+    t?: TFunction;
 }): NodeSlot<ScoreArtifact> | undefined {
     const enabled = args.userSelEnabled === true || args.metaEnabled === true;
-    const bgTrack = (args.audioTracks ?? []).find((t) => t?.id === 'background-music');
+    const bgTrack = (args.audioTracks ?? []).find((track) => track?.id === 'background-music');
     const url = bgTrack?.url;
 
     if (!enabled && !url) return undefined;
-    if (args.halted) return { state: 'cut', error: 'Score cut from production' };
+    if (args.halted)
+        return {
+            state: 'cut',
+            error: cutError(args.t, 'errors.scoreCut', 'Score cut from production'),
+        };
     if (args.runWrapped || url) {
         return { state: 'wrapped', data: { audioUrl: url, label: bgTrack?.label } };
     }

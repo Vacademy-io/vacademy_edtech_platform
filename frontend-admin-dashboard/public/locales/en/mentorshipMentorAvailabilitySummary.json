@@ -1,0 +1,15 @@
+{
+    "noHoursSet": "No weekly hours set — learners are offered no slots.",
+    "sessionDuration_one": "{{count}}-minute session",
+    "sessionDuration_other": "{{count}}-minute sessions",
+    "defaultLength": "Default length",
+    "days": {
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday",
+        "sunday": "Sunday"
+    }
+}

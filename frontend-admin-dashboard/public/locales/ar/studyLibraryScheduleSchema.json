@@ -1,0 +1,41 @@
+{
+    "validation": {
+        "buttonTextRequired": "نص الزر مطلوب",
+        "buttonTextMaxLength": "يجب ألا يتجاوز نص الزر 50 حرفًا",
+        "invalidUrl": "رابط غير صالح",
+        "invalidHexColor": "تنسيق لون سداسي غير صالح",
+        "hoursRange": "يجب أن تكون الساعات بين 0 و24",
+        "minutesRange": "يجب أن تكون الدقائق بين 0 و59",
+        "classNameMaxLength": "يجب ألا يتجاوز اسم الفصل 100 حرف",
+        "titleMinLength": "يجب أن يتكون العنوان من حرف واحد على الأقل",
+        "startTimeRequired": "وقت البدء مطلوب",
+        "invalidDate": "تاريخ غير صالح",
+        "endDateRequired": "تاريخ الانتهاء مطلوب",
+        "timeZoneRequired": "المنطقة الزمنية مطلوبة",
+        "mustBeNumber": "يجب أن يكون رقمًا",
+        "durationRequired": "المدة مطلوبة",
+        "liveClassLinkRequired": "رابط الحصة المباشرة مطلوب",
+        "durationGreaterThanZero": "يجب أن تكون المدة أكبر من صفر.",
+        "endDateRequiredRecurring": "تاريخ الانتهاء مطلوب للاجتماعات المتكررة.",
+        "endDateAfterStartDate": "يجب أن يكون تاريخ الانتهاء بعد تاريخ البدء.",
+        "enterValidUrl": "أدخل رابطًا صالحًا",
+        "selectTime": "اختر الوقت",
+        "fieldLabelRequired": "تسمية الحقل مطلوبة",
+        "fieldLabelTooLong": "تسمية الحقل طويلة جدًا",
+        "paidClassPriceRequired": "أدخل سعرًا أكبر من 0 للحصة المباشرة المدفوعة.",
+        "paidClassCurrencyRequired": "اختر عملة للحصة المباشرة المدفوعة.",
+        "emailOrPhoneRequired": "أبقِ البريد الإلكتروني أو رقم الهاتف مطلوبًا — يحتاج التسجيل إلى أحدهما لتحديد هوية المتعلم.",
+        "fieldStaysRequired": "يجب أن يظل \"{{label}}\" مطلوبًا {{why}}.",
+        "fieldRequiredGeneric": "يحتاج هذا النموذج إلى حقل {{role}} مطلوب {{why}}.",
+        "roleName": {
+            "phone": "رقم الهاتف",
+            "email": "البريد الإلكتروني"
+        },
+        "whyReason": {
+            "whatsappOtp": "طالما أن التحقق عبر رمز واتساب مفعّل، أو أوقف ذلك التحقق",
+            "emailOtp": "طالما أن التحقق عبر رمز البريد الإلكتروني مفعّل، أو أوقف ذلك التحقق",
+            "paidClass": "في حصة مدفوعة — يتم إصدار الفاتورة وإرسالها إلى هذا البريد الإلكتروني"
+        },
+        "selectAudienceList": "اختر قائمة جمهور واحدة على الأقل، أو أوقف هذا الخيار."
+    }
+}

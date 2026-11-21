@@ -1,0 +1,37 @@
+{
+    "toast": {
+        "noteAdded": "Note added",
+        "addNoteFailed": "Failed to add note",
+        "chatOpenFailed": "Couldn't open the chat. Please try again."
+    },
+    "schedule": {
+        "button": "Schedule 1:1",
+        "buttonTitle": "Book a 1:1 for this student — they don't have to do anything"
+    },
+    "message": {
+        "button": "Message",
+        "off": "Messaging is off for this institute.",
+        "turnOn": "Turn on In-App Messages",
+        "offSuffix": "to message students from here."
+    },
+    "sections": {
+        "learning": "Learning",
+        "scheduledCalls": "Scheduled calls",
+        "notes": "Notes"
+    },
+    "learning": {
+        "empty": "This student hasn't started any courses yet."
+    },
+    "calls": {
+        "empty": "No sessions booked with this student yet.",
+        "defaultTitle": "Session",
+        "join": "Join"
+    },
+    "notes": {
+        "sharedHint": "Shared with your team's activity timeline for this student.",
+        "addPlaceholder": "Add a note…",
+        "label": "Note",
+        "add": "Add",
+        "empty": "No notes yet — add one above to keep track of this student."
+    }
+}

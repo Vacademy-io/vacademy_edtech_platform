@@ -1,0 +1,15 @@
+{
+    "errors": {
+        "noInstitute": "Could not resolve your institute.",
+        "pickDestination": "Pick at least one destination chapter to continue.",
+        "emptyNotes": "These notes are empty — nothing to add.",
+        "pdfUploadFailed": "Could not upload the notes PDF.",
+        "publishAssessmentFirst": "Publish the assessment first to link it as an assessment slide.",
+        "noQuestions": "There are no questions to add.",
+        "allChaptersFailed": "Could not add the slide to any chapter."
+    },
+    "defaultTitles": {
+        "notes": "Lecture Notes",
+        "assessment": "Assessment"
+    }
+}

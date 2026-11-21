@@ -64,7 +64,7 @@ const SearchAndSortBar: React.FC<SearchAndSortBarProps> = ({
             "[.ui-play_&]:!bg-white [.ui-play_&]:rounded-2xl [.ui-play_&]:border [.ui-play_&]:!border-primary-100",
             "[.ui-play_&]:shadow-play-glow-primary"
         )}>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-stack sm:flex-row sm:items-center sm:justify-between">
                 {/* Filter toggle — desktop only, only shown when filter is closed */}
                 {showFilterToggle && onFilterToggle && !isFilterOpen && (
                     <Button

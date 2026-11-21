@@ -1,0 +1,16 @@
+{
+    "settings": {
+        "title": "Questions Settings",
+        "questionType": "Question Type",
+        "numericalType": "Numerical Type",
+        "decimalPrecision": "Decimal Precision"
+    },
+    "comprehensionText": "Comprehension Text",
+    "question": {
+        "label": "Question"
+    },
+    "defaults": {
+        "answer": "Answer:",
+        "explanation": "Explanation:"
+    }
+}

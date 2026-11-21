@@ -14,6 +14,7 @@ public interface StudentListV2Projection {
     String getAddressLine();
     String getRegion();
     String getCity();
+    String getCountry();
     String getPinCode();
     String getDateOfBirth();
     String getGender();
@@ -26,6 +27,12 @@ public interface StudentListV2Projection {
     String getUpdatedAt();
     String getFaceFileId();
     String getExpiryDate();
+    /** user_plan.is_trial for the enrolment's plan; null when it has no plan. */
+    Boolean getIsTrial();
+    /** ssigm.enrolled_date -- the learner's join date. */
+    String getEnrolledDate();
+    /** user_plan.end_date — separates a running trial from one that has ended. */
+    String getPlanEndDate();
     String getParentsToMotherMobileNumber();
     String getParentsToMotherEmail();
     String getBillingContactName();

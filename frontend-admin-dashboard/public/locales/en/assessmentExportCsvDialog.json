@@ -1,0 +1,33 @@
+{
+    "trigger": {
+        "label": "Export",
+        "tooltip": "Export the submissions list as a CSV spreadsheet"
+    },
+    "dialog": {
+        "heading": "Export CSV"
+    },
+    "errors": {
+        "columnsLoadFailed": "Could not load the column list. You can still export the standard result columns."
+    },
+    "chooseColumns": "Choose the columns to include in the file.",
+    "selectAll": "Select all",
+    "clearAll": "Clear all",
+    "resultColumns": {
+        "title": "Result columns"
+    },
+    "registrationFields": {
+        "title": "Registration form fields",
+        "empty": "This assessment collects no extra details at registration."
+    },
+    "exporting": "Exporting…",
+    "exportCsvButton": "Export CSV",
+    "toasts": {
+        "noData": "No data returned. Please try again.",
+        "exportSuccess": "Results exported successfully.",
+        "exportFailed": "Failed to export CSV. Please try again.",
+        "noSubmissions": "No submitted attempts to put on a result sheet yet.",
+        "pdfFailed": "Could not build the result sheet. Please try again."
+    },
+    "resultSheetButton": "Result Sheet (PDF)",
+    "buildingPdf": "Building…"
+}

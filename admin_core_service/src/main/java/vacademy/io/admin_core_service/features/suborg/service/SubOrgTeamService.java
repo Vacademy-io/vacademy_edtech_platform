@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.suborg.service;
 
+import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -107,6 +108,9 @@ public class SubOrgTeamService {
     @Autowired
     private SubOrgAccessScopeService subOrgAccessScopeService;
 
+    @Autowired
+    private vacademy.io.admin_core_service.core.security.InstituteAccessValidator instituteAccessValidator;
+
     /** Resolves a sub-org invite's package sessions when an assign request doesn't name them. */
     @Autowired
     private vacademy.io.admin_core_service.features.enroll_invite.service
@@ -207,7 +211,7 @@ public class SubOrgTeamService {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(10000);
         factory.setReadTimeout(30000);
-        return new RestTemplate(factory);
+        return ExternalCallLog.attach(new RestTemplate(factory));
     }
 
     private String currentRequestAuthHeader() {
@@ -247,6 +251,11 @@ public class SubOrgTeamService {
         // For non-admin callers, reject system roles.
         boolean callerIsSystemAdmin = hasSystemRole(caller, request.getInstituteId(), "ADMIN", "TEACHER");
         String roleName = request.getRoleName();
+        // Commerce roles are granted only from the team screen by an institute ADMIN, never
+        // through a sub-org team invite.
+        if (vacademy.io.admin_core_service.core.security.InstituteAccessValidator.isCommerceRoleName(roleName)) {
+            throw new VacademyException("Commerce roles cannot be assigned to a sub-org team member");
+        }
         if (!callerIsSystemAdmin) {
             if (!StringUtils.hasText(roleName) || SYSTEM_ROLES.contains(roleName.toUpperCase())) {
                 throw new VacademyException("Sub-org admins can only assign custom roles");
@@ -262,6 +271,12 @@ public class SubOrgTeamService {
                         "Role '" + roleName + "' is not in this sub-org's allowed roles. "
                                 + "Allowed: " + String.join(", ", allowed));
             }
+        }
+
+        // Only an ADMIN of the institute may create another ADMIN there. hasSystemRole reads
+        // authorities minted for the clientId institute, which need not be this one.
+        if ("ADMIN".equalsIgnoreCase(roleName)) {
+            instituteAccessValidator.requireInstituteAdmin(caller, request.getInstituteId());
         }
 
         // Validate package sessions are within caller's scope (sub-org admins only).

@@ -1,0 +1,25 @@
+{
+    "tabs": {
+        "instituteWide": {
+            "label": "पूरे संस्थान में",
+            "description": "इस संस्थान में दाखिला लेने वाला कोई भी {{learner}} इस कूपन का उपयोग कर सकता है।"
+        },
+        "specificBatches": {
+            "label": "विशिष्ट {{batch}}",
+            "description": "केवल चयनित {{batch}} में दाखिला लेने वाले {{learner}} ही इस कूपन का उपयोग कर सकते हैं।"
+        },
+        "specificInvites": {
+            "label": "विशिष्ट {{invite}}",
+            "description": "केवल सूचीबद्ध आमंत्रण लिंक के माध्यम से दाखिला लेने वाले {{learner}} ही इस कूपन का उपयोग कर सकते हैं।"
+        }
+    },
+    "sessions": {
+        "pickLabel": "एक या अधिक {{sessions}} चुनें"
+    },
+    "invites": {
+        "pasteLabel": "{{invite}} आईडी पेस्ट करें",
+        "placeholder": "अल्पविराम या नई पंक्ति से अलग किए गए आमंत्रण आईडी",
+        "captured_one": "{{count}} आईडी दर्ज की गई",
+        "captured_other": "{{count}} आईडी दर्ज की गईं"
+    }
+}

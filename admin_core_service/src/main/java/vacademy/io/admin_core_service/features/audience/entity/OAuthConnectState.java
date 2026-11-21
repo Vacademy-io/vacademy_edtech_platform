@@ -49,6 +49,15 @@ public class OAuthConnectState {
     @Column(name = "mentor_id")
     private String mentorId;
 
+    /** When true, the connected Google account is linked to {@code initiatedBy} (per-user Google). */
+    @Column(name = "link_to_user", nullable = false)
+    @Builder.Default
+    private boolean linkToUser = false;
+
+    /** Frontend path to land on after the Google callback (e.g. /meetings/my-schedule); null → default. */
+    @Column(name = "return_path", length = 255)
+    private String returnPath;
+
     /** User ID of the admin who initiated OAuth */
     @Column(name = "initiated_by")
     private String initiatedBy;
@@ -94,6 +103,13 @@ public class OAuthConnectState {
      */
     @Column(name = "frontend_origin", length = 255)
     private String frontendOrigin;
+
+    /**
+     * Marketing OAuth only: SHA-256 (hex) of the nonce set in an HttpOnly cookie by /initiate. The
+     * callback accepts only the browser that holds the matching cookie. Null for other flows.
+     */
+    @Column(name = "browser_nonce_hash", length = 64)
+    private String browserNonceHash;
 
     @PrePersist
     void onCreate() {

@@ -1,0 +1,11 @@
+{
+    "errors": {
+        "generic": "Erreur lors de {{operation}}",
+        "operations": {
+            "savePaymentPlan": "l'enregistrement du plan de paiement"
+        }
+    },
+    "success": {
+        "feePlanCreated": "Plan de frais créé — sélectionnez-le dans la liste des plans"
+    }
+}

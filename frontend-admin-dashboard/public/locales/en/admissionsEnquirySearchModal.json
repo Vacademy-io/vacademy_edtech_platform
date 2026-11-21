@@ -1,0 +1,43 @@
+{
+    "title": "Search Enquiry",
+    "filters": {
+        "nameLabel": "Student / Parent Name",
+        "namePlaceholder": "e.g., John Doe",
+        "phoneLabel": "Phone Number",
+        "phonePlaceholder": "e.g., 9876543210",
+        "trackingIdLabel": "Tracking ID",
+        "trackingIdPlaceholder": "e.g., A9KQ2"
+    },
+    "actions": {
+        "searching": "Searching...",
+        "searchEnquiries": "Search Enquiries",
+        "apply": "Apply",
+        "applied": "Applied",
+        "admit": "Admit",
+        "admitted": "Admitted"
+    },
+    "table": {
+        "headers": {
+            "trackingId": "Tracking ID",
+            "studentName": "Student Name",
+            "parentName": "Parent Name",
+            "phone": "Phone",
+            "status": "Status",
+            "application": "Application",
+            "admission": "Admission"
+        },
+        "empty": {
+            "noResults": "No enquiries found matching your search.",
+            "prompt": "Enter search criteria and click Search to find enquiries."
+        }
+    },
+    "statusBadge": {
+        "enquiry": "Enquiry",
+        "applied": "Applied",
+        "admitted": "Admitted"
+    },
+    "toast": {
+        "enterAtLeastOneCriteria": "Please enter at least one search criteria",
+        "searchFailed": "Failed to search enquiries. Please try again."
+    }
+}

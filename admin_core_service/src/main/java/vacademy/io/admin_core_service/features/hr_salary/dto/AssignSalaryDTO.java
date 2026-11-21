@@ -23,5 +23,7 @@ public class AssignSalaryDTO {
     private BigDecimal ctcAnnual;
     private LocalDate effectiveFrom;
     private String revisionReason;
+    /** Optional ISO-4217 code (e.g. INR, USD); defaults to INR. */
+    private String currency;
     private List<ComponentOverrideDTO> componentOverrides;
 }

@@ -1,0 +1,51 @@
+{
+  "learn": {
+    "count_one": "{{count}} {{course}}",
+    "count_zero": "{{count}} {{courses}}",
+    "count_two": "{{count}} {{courses}}",
+    "count_few": "{{count}} {{courses}}",
+    "count_many": "{{count}} {{courses}}",
+    "count_other": "{{count}} {{courses}}",
+    "searchLabel": "ابحث في {{courses}}",
+    "retry": "حاول مرة أخرى"
+  },
+  "course": {
+    "back": "رجوع",
+    "progressLabel": "تقدّم {{course}}",
+    "percentOfCourse": "{{percent}}٪ من {{course}}",
+    "sizeLabel": "حجم {{course}}",
+    "countChip": "{{count}} {{term}}",
+    "doneOf": "{{done}} من {{total}} {{slides}} مكتملة",
+    "levelEyebrow": "{{level}} {{index}}",
+    "levelDone": "{{count}} {{term}} · مكتمل",
+    "onlyUnfinished": "غير المكتملة فقط",
+    "expandAll": "فتح الكل",
+    "collapseAll": "إغلاق الكل",
+    "searchSlides": "ابحث في {{slides}}",
+    "noSlides": "لا توجد {{slides}} هنا بعد",
+    "continue": "متابعة",
+    "locked": "مقفل",
+    "quizTag": "اختبار قصير",
+    "pickUpEyebrow": "تابع من حيث توقفت",
+    "nextUpEyebrow": "التالي",
+    "pickUpCta": "متابعة",
+    "inProgress": "قيد التقدّم",
+    "stateLabel": "{{state}}: {{title}}"
+  },
+  "lesson": {
+    "position": "{{index}} من {{total}}",
+    "positionLabel": "{{slide}} {{index}} من {{total}}",
+    "chapterProgress": "تقدّم {{chapter}}",
+    "upNext": "التالي: {{title}}",
+    "upNextShort": "التالي",
+    "upNextLocked": "التالي: {{title}} · مقفل",
+    "chapterComplete": "اكتمل {{chapter}}",
+    "dismiss": "إغلاق",
+    "navLabel": "التنقل بين {{slide}}",
+    "close": "إغلاق {{slide}}",
+    "outline": "محتويات {{chapter}}",
+    "prevShort": "السابق",
+    "nextChapterShort": "التالي: {{chapter}}",
+    "feedback": "ملاحظات"
+  }
+}

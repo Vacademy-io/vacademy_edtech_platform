@@ -1,0 +1,21 @@
+{
+    "title": "E-mail et WhatsApp de résultat",
+    "description": "Ce que reçoivent les apprenants quand vous publiez les résultats. Le rapport PDF est joint aux deux.",
+    "email": {
+        "label": "E-mail de résultat",
+        "description": "Laissez vide pour envoyer l’e-mail de résultat par défaut.",
+        "placeholder": "E-mail de résultat par défaut"
+    },
+    "whatsapp": {
+        "label": "WhatsApp de résultat",
+        "description": "Envoyé seulement si un modèle est choisi. Il doit être approuvé par WhatsApp avec un en-tête Document, qui contient le rapport PDF.",
+        "placeholder": "Pas de message WhatsApp"
+    },
+    "variablesHelp": "Valeurs utilisables dans les modèles :",
+    "loading": "Chargement…",
+    "toasts": {
+        "updated": "{{label}} mis à jour",
+        "updateFailed": "Impossible de mettre à jour : {{label}}"
+    },
+    "variablesProfile": "Ainsi que toute valeur du profil de rapport de l’évaluation, par exemple :"
+}

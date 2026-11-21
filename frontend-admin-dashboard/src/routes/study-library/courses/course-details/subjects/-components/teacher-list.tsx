@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { MyTable } from '@/components/design-system/table';
 import { MyPagination } from '@/components/design-system/pagination';
 import { useTeacherList } from '@/routes/dashboard/-hooks/useTeacherList';
@@ -26,6 +27,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 export const TeachersList = ({ packageSessionId }: { packageSessionId: string }) => {
+    const { t } = useTranslation('studyLibraryTeacherList');
     const [page, setPage] = useState(0);
     const pageSize = 10;
     const accessToken = getTokenFromCookie(TokenKey.accessToken);
@@ -55,12 +57,6 @@ export const TeachersList = ({ packageSessionId }: { packageSessionId: string })
 
     const removeMutation = useMutation({
         mutationFn: async ({ facultyId, subjects }: { facultyId: string; subjects: { id: string }[] }) => {
-            const subjectAssignments = subjects.map((s) => ({
-                subject_id: s.id,
-                is_new_assignment: false,
-            }));
-            if (subjectAssignments.length === 0) return;
-
             await authenticatedAxiosInstance({
                 method: 'PUT',
                 url: UPDATE_FACULTY_ASSIGNMENTS,
@@ -69,18 +65,28 @@ export const TeachersList = ({ packageSessionId }: { packageSessionId: string })
                     batch_subject_assignments: [
                         {
                             batch_id: packageSessionId,
-                            subject_assignments: subjectAssignments,
+                            subject_assignments: [
+                                // Teachers added from Add Course -> Authors have a batch-level
+                                // row with no subject (Subjects column shows "--"). Always ask
+                                // the backend to retire it too, so "remove from batch" clears
+                                // the teacher whether or not they also hold subject rows.
+                                { subject_id: null, is_new_assignment: false },
+                                ...subjects.map((s) => ({
+                                    subject_id: s.id,
+                                    is_new_assignment: false,
+                                })),
+                            ],
                         },
                     ],
                 },
             });
         },
         onSuccess: () => {
-            toast.success('Teacher removed from this batch');
+            toast.success(t('toast.removeSuccess'));
             queryClient.invalidateQueries({ queryKey: ['facultyList'] });
         },
         onError: () => {
-            toast.error('Failed to remove teacher.');
+            toast.error(t('toast.removeFailed'));
             queryClient.invalidateQueries({ queryKey: ['facultyList'] });
         },
     });
@@ -92,7 +98,7 @@ export const TeachersList = ({ packageSessionId }: { packageSessionId: string })
     const columns = [
         {
             accessorKey: 'name',
-            header: 'Name',
+            header: t('table.name'),
             // @ts-expect-error: Binding element 'row' implicitly has an 'any' type.
             cell: ({ row }) => {
                 const name = row.getValue('name') ?? 'N/A';
@@ -111,19 +117,19 @@ export const TeachersList = ({ packageSessionId }: { packageSessionId: string })
         },
         {
             id: 'status',
-            header: 'Status',
+            header: t('table.status'),
             cell: () => {
                 return (
                     <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">
                         <span className="size-1.5 rounded-full bg-green-500"></span>
-                        Active
+                        {t('table.active')}
                     </span>
                 );
             },
         },
         {
             id: 'actions',
-            header: 'Actions',
+            header: t('table.actions'),
             // @ts-expect-error: Binding element 'row' implicitly has an 'any' type.
             cell: ({ row }) => {
                 const teacher = row.original;
@@ -134,20 +140,26 @@ export const TeachersList = ({ packageSessionId }: { packageSessionId: string })
                         <AlertDialogTrigger asChild>
                             <button
                                 className="rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-500"
-                                title="Remove from this batch"
+                                title={t('removeFromBatchTitle')}
                             >
                                 <TrashSimple size={16} />
                             </button>
                         </AlertDialogTrigger>
                         <AlertDialogContent className="max-w-sm">
                             <AlertDialogHeader>
-                                <AlertDialogTitle>Remove Teacher</AlertDialogTitle>
+                                <AlertDialogTitle>{t('dialog.title')}</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    Remove <strong>{teacher.name}</strong> from this batch? They will no longer have access to teach here.
+                                    <Trans
+                                        i18nKey="studyLibraryTeacherList:dialog.description"
+                                        values={{ name: teacher.name }}
+                                        components={{ strong: <strong /> }}
+                                    />
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                                <AlertDialogCancel disabled={removeMutation.isPending}>Cancel</AlertDialogCancel>
+                                <AlertDialogCancel disabled={removeMutation.isPending}>
+                                    {t('dialog.cancel')}
+                                </AlertDialogCancel>
                                 <AlertDialogAction
                                     className="bg-red-500 text-white hover:bg-red-600"
                                     disabled={removeMutation.isPending}
@@ -158,7 +170,9 @@ export const TeachersList = ({ packageSessionId }: { packageSessionId: string })
                                         })
                                     }
                                 >
-                                    {removeMutation.isPending ? 'Removing...' : 'Remove'}
+                                    {removeMutation.isPending
+                                        ? t('dialog.removing')
+                                        : t('dialog.remove')}
                                 </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
@@ -173,9 +187,7 @@ export const TeachersList = ({ packageSessionId }: { packageSessionId: string })
         const is403 = (error as { response?: { status?: number } })?.response?.status === 403;
         return (
             <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-                {is403
-                    ? "You don't have permission to load teachers for this batch."
-                    : 'Error loading teachers'}
+                {is403 ? t('errors.forbidden') : t('errors.loadFailed')}
             </div>
         );
     }

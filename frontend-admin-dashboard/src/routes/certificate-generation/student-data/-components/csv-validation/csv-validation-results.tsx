@@ -3,12 +3,14 @@ import { formatValidationError, formatValidationWarning } from '../../-utils/csv
 import { CheckCircle, XCircle, Warning, Info } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface CsvValidationResultsProps {
     validationResult: CsvValidationResult;
 }
 
 export const CsvValidationResults = ({ validationResult }: CsvValidationResultsProps) => {
+    const { t } = useTranslation('certificateGenerationCsvValidationResults');
     const [showDetails, setShowDetails] = useState(false);
 
     const { isValid, errors, warnings } = validationResult;
@@ -46,15 +48,13 @@ export const CsvValidationResults = ({ validationResult }: CsvValidationResultsP
                                     isValid ? 'text-green-700' : 'text-red-700'
                                 )}
                             >
-                                {isValid ? 'CSV Validation Passed' : 'CSV Validation Failed'}
+                                {isValid ? t('validationPassed') : t('validationFailed')}
                             </h4>
                             <p className="mt-0.5 text-xs text-neutral-600">
-                                {hasErrors &&
-                                    `${errors.length} error${errors.length > 1 ? 's' : ''}`}
+                                {hasErrors && t('errorsCount', { count: errors.length })}
                                 {hasErrors && hasWarnings && ' • '}
-                                {hasWarnings &&
-                                    `${warnings.length} warning${warnings.length > 1 ? 's' : ''}`}
-                                {!hasErrors && !hasWarnings && 'All checks passed successfully'}
+                                {hasWarnings && t('warningsCount', { count: warnings.length })}
+                                {!hasErrors && !hasWarnings && t('allChecksPassed')}
                             </p>
                         </div>
                     </div>
@@ -64,7 +64,7 @@ export const CsvValidationResults = ({ validationResult }: CsvValidationResultsP
                             onClick={() => setShowDetails(!showDetails)}
                             className="text-xs text-neutral-500 underline transition-colors duration-200 hover:text-neutral-700"
                         >
-                            {showDetails ? 'Hide Details' : 'Show Details'}
+                            {showDetails ? t('hideDetails') : t('showDetails')}
                         </button>
                     )}
                 </div>
@@ -79,7 +79,7 @@ export const CsvValidationResults = ({ validationResult }: CsvValidationResultsP
                             <div className="mb-3 flex items-center gap-2">
                                 <XCircle className="size-4 text-red-600" />
                                 <h5 className="text-sm font-medium text-red-700">
-                                    Errors ({errors.length})
+                                    {t('errorsHeading', { count: errors.length })}
                                 </h5>
                             </div>
                             <div className="space-y-2">
@@ -113,7 +113,7 @@ export const CsvValidationResults = ({ validationResult }: CsvValidationResultsP
                             <div className="mb-3 flex items-center gap-2">
                                 <Warning className="size-4 text-amber-600" />
                                 <h5 className="text-sm font-medium text-amber-700">
-                                    Warnings ({warnings.length})
+                                    {t('warningsHeading', { count: warnings.length })}
                                 </h5>
                             </div>
                             <div className="space-y-2">
@@ -146,16 +146,13 @@ export const CsvValidationResults = ({ validationResult }: CsvValidationResultsP
                         <div className="flex items-start gap-2">
                             <Info className="mt-0.5 size-4 text-blue-600" />
                             <div className="text-xs leading-relaxed text-blue-700">
-                                <p className="mb-1 font-medium">CSV Requirements:</p>
+                                <p className="mb-1 font-medium">{t('requirementsHeading')}</p>
                                 <ul className="list-inside list-disc space-y-0.5">
-                                    <li>
-                                        First 3 columns must be: user_id, enrollment_number,
-                                        student_name
-                                    </li>
-                                    <li>All selected students must be included in the CSV</li>
-                                    <li>No additional students beyond those selected</li>
-                                    <li>Headers after the 3rd column must be unique</li>
-                                    <li>File size must not exceed 1MB</li>
+                                    <li>{t('requirementFirstColumns')}</li>
+                                    <li>{t('requirementAllSelectedIncluded')}</li>
+                                    <li>{t('requirementNoExtraStudents')}</li>
+                                    <li>{t('requirementUniqueHeaders')}</li>
+                                    <li>{t('requirementFileSize')}</li>
                                 </ul>
                             </div>
                         </div>

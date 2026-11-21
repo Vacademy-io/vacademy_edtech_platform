@@ -1,0 +1,20 @@
+{
+    "title": {
+        "generatingOutline": "{{aiName}} आपकी रूपरेखा तैयार कर रहा है"
+    },
+    "steps": {
+        "analyzingTopic": "आपके विषय का विश्लेषण किया जा रहा है...",
+        "structuringOutline": "रूपरेखा तैयार की जा रही है...",
+        "organizing": "{{terms}} और विषयों को व्यवस्थित किया जा रहा है...",
+        "creatingObjectives": "सीखने के उद्देश्य तैयार किए जा रहे हैं...",
+        "finalizingOutline": "आपकी रूपरेखा को अंतिम रूप दिया जा रहा है..."
+    },
+    "description": {
+        "estimatedTimeMinutes_one": "अनुमानित समय: {{minutes}} मिनट {{seconds}} सेकंड",
+        "estimatedTimeMinutes_other": "अनुमानित समय: {{minutes}} मिनट {{seconds}} सेकंड",
+        "estimatedTimeSeconds_one": "अनुमानित समय: {{seconds}} सेकंड",
+        "estimatedTimeSeconds_other": "अनुमानित समय: {{seconds}} सेकंड",
+        "stillWorking": "अभी भी काम चल रहा है — लगभग तैयार...",
+        "craftingStructure": "{{aiName}} आपके कोर्स की संरचना तैयार कर रहा है। इसमें थोड़ा समय लग सकता है।"
+    }
+}

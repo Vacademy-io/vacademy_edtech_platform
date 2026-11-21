@@ -13,7 +13,7 @@
             <repositories>
                 <repository>
                     <id>github</id>
-                    <url>https://maven.pkg.github.com/Vacademy-io/vacademy_platform</url>
+                    <url>https://maven.pkg.github.com/Vacademy-io/vacademy_edtech_platform</url>
                     <snapshots>
                         <enabled>true</enabled>
                     </snapshots>

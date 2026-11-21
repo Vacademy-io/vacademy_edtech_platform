@@ -1,0 +1,13 @@
+{
+    "selectionLabel": "{{session}} चयन",
+    "selectExisting": "मौजूदा {{session}} चुनें",
+    "createNew": "नया {{session}} बनाएं",
+    "selectPlaceholder": "एक {{session}} चुनें",
+    "startDate": "प्रारंभ तिथि: {{date}}",
+    "validation": {
+        "selectSession": "कृपया एक सेशन चुनें"
+    },
+    "searchPlaceholder": "{{session}} खोजें…",
+    "emptyForCourse": "इस कोर्स में अभी कोई {{session}} नहीं है — नीचे पहला जोड़ें।",
+    "optionalHint": "वैकल्पिक। छोड़ने पर डिफ़ॉल्ट {{session}} लगेगा।"
+}

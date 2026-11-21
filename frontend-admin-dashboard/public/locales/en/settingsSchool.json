@@ -1,0 +1,15 @@
+{
+    "loading": "Loading...",
+    "header": {
+        "title": "School Settings",
+        "description": "Configure school-wide settings for enquiry management and operations"
+    },
+    "actions": {
+        "save": "Save Changes",
+        "saving": "Saving..."
+    },
+    "toasts": {
+        "updateSuccess": "School settings updated successfully",
+        "updateFailed": "Failed to update settings"
+    }
+}

@@ -11,9 +11,14 @@ import java.util.Set;
  * pack purchases.
  *
  * Decision tree (first match wins):
- *   1. Institute has a manual `currency` override → use it.
+ *   1. Institute `currency` is one we bill in (INR / USD) → use it.
  *   2. Institute country looks Indian → INR.
  *   3. Otherwise → USD (MVP fallback).
+ *
+ * `institutes.currency` is the institute's OWN operating currency (what it charges its
+ * learners, e.g. AED for a UAE institute). It is only honoured when Vacademy prices packs in
+ * it; any other value falls through, otherwise a UAE institute found no AED pack prices and
+ * saw "No credit packs are available for your region" (EduStream, 2026-10-21).
  *
  * Country values are free-text in `institutes.country`, so we do best-effort
  * normalization. Add more synonyms here as we discover them in production.
@@ -24,6 +29,9 @@ public class CurrencyResolver {
     public static final String INR = "INR";
     public static final String USD = "USD";
 
+    /** Currencies credit packs are priced in (credit_pack_price rows). */
+    private static final Set<String> BILLING_CURRENCIES = Set.of(INR, USD);
+
     private static final Set<String> INDIA_COUNTRY_TOKENS = Set.of(
             "IN", "IND", "INDIA", "BHARAT");
 
@@ -33,7 +41,7 @@ public class CurrencyResolver {
         }
 
         String override = trimToNull(institute.getCurrency());
-        if (override != null) {
+        if (override != null && BILLING_CURRENCIES.contains(override.toUpperCase(Locale.ROOT))) {
             return override.toUpperCase(Locale.ROOT);
         }
 

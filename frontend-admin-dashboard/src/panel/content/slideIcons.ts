@@ -1,0 +1,43 @@
+/** Phosphor icon per slide type (list rows, player cards). */
+import {
+    ChalkboardSimple,
+    ClipboardText,
+    Code,
+    Exam,
+    File,
+    FilePdf,
+    FileText,
+    FilmStrip,
+    Globe,
+    ListChecks,
+    Package,
+    Question,
+    Slideshow,
+    SpeakerHigh,
+    VideoCamera,
+    YoutubeLogo,
+    type Icon,
+} from '@phosphor-icons/react';
+import type { SlideTypeKey } from './slideSource';
+
+export const SLIDE_TYPE_ICONS: Record<SlideTypeKey, Icon> = {
+    video: VideoCamera,
+    youtube: YoutubeLogo,
+    vimeo: VideoCamera,
+    aiVideo: FilmStrip,
+    pdf: FilePdf,
+    deck: Slideshow,
+    presentation: ChalkboardSimple,
+    doc: FileText,
+    html: Globe,
+    code: Code,
+    jupyter: Code,
+    scratch: Code,
+    quiz: ListChecks,
+    question: Question,
+    assignment: ClipboardText,
+    audio: SpeakerHigh,
+    scorm: Package,
+    assessment: Exam,
+    other: File,
+};

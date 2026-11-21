@@ -1,0 +1,40 @@
+{
+    "header": {
+        "credits_one": "{{value}} क्रेडिट",
+        "credits_other": "{{value}} क्रेडिट",
+        "requests_one": "{{count}} अनुरोध",
+        "requests_other": "{{count}} अनुरोध"
+    },
+    "toolLabel": {
+        "usedTool": "टूल इस्तेमाल किया गया: {{name}}",
+        "usedToolGeneric": "AI ने एक टूल इस्तेमाल किया",
+        "toolResult": "{{name}} का परिणाम",
+        "toolResultGeneric": "टूल का परिणाम"
+    },
+    "transcript": {
+        "selectConversation": "पूरी बातचीत पढ़ने के लिए एक बातचीत चुनें।",
+        "loading": "बातचीत लोड हो रही है…",
+        "loadError": "यह बातचीत लोड नहीं हो सकी।",
+        "empty": "इस बातचीत में कोई संदेश नहीं है।"
+    },
+    "conversations": {
+        "loading": "बातचीतें लोड हो रही हैं…",
+        "emptyTitle": "अभी तक कोई AI बातचीत नहीं",
+        "emptyDescription": "{{name}} ने चुनी गई तारीख़ सीमा में स्टूडेंट-AI ट्यूटर से बात नहीं की है। अधिक देखने के लिए तारीख़ सीमा बढ़ाकर देखें।",
+        "thisMember": "यह सदस्य",
+        "noMessagePreview": "शिक्षार्थी का कोई संदेश नहीं"
+    },
+    "activity": {
+        "columns": {
+            "when": "कब",
+            "tool": "टूल",
+            "model": "मॉडल",
+            "credits": "क्रेडिट"
+        },
+        "description": "चुनी गई अवधि में सभी AI टूल में हुई हर क्रेडिट कटौती।"
+    },
+    "tabs": {
+        "conversations": "बातचीतें",
+        "creditActivity": "क्रेडिट गतिविधि"
+    }
+}

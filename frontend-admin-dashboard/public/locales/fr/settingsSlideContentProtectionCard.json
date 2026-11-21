@@ -1,0 +1,21 @@
+{
+    "card": {
+        "title": "Protection contre la copie et la capture d'écran",
+        "description": {
+            "part1": "Désactive le clic droit et les raccourcis courants de développeur / affichage du code source (F12, Ctrl/Cmd+Maj+I/J/C, Ctrl+U) sur les diapositives pour",
+            "part2": "dans l'application apprenant. Il s'agit d'une dissuasion réalisée au mieux — elle n'empêche pas totalement l'inspection (les outils de développement peuvent toujours être ouverts depuis le menu du navigateur). Ajoutez",
+            "part3": "à l'URL pour la contourner pendant les tests."
+        }
+    },
+    "toggle": {
+        "label": "Désactiver le clic droit et les raccourcis d'inspection sur les diapositives"
+    },
+    "button": {
+        "save": "Enregistrer",
+        "saving": "Enregistrement…"
+    },
+    "toasts": {
+        "saveSuccess": "Protection du contenu des diapositives enregistrée",
+        "saveFailed": "Échec de l'enregistrement de la protection du contenu des diapositives"
+    }
+}

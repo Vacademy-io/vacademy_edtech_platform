@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import logging
+import uuid
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
@@ -26,7 +27,7 @@ from sqlalchemy.orm import Session
 
 from ..llm_json import generate_json
 from ..model_selection import resolve_models
-from .repository import KbRepository
+from .repository import KbRepository, normalize_topic_title, stable_topic_ids_enabled
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,19 @@ class TopicNode:
     page_start: Optional[int] = None
     page_end: Optional[int] = None
     subtopics: List["TopicNode"] = field(default_factory=list)
+    # Set by the AUTHORED builder: the one source (chapter) this node is about.
+    # Page spans are only meaningful relative to a source, and every chapter
+    # PDF starts at page 1.
+    source_id: Optional[str] = None
+    # AUTHORED trees mint deterministic ids (uuid5 of source + heading) so a
+    # rebuild after the next chapter lands does not invalidate the node ids a
+    # saved blueprint, a course plan or a question's provenance already holds.
+    id: Optional[str] = None
+
+
+# Knowledge bases whose topic tree is WRITTEN, not derived. Set in
+# knowledge_base.meta_json by the curriculum loader (V517).
+TOPIC_TREE_MODE_AUTHORED = "AUTHORED"
 
 
 @dataclass
@@ -184,28 +198,45 @@ DOCUMENT:
 """
 
 
-async def _heading_topics(
-    db: Session, repo: KbRepository, kb: Dict[str, Any], kb_id: str
-) -> Optional[List[TopicNode]]:
-    """Verbatim-verified heading tree, or None to fall back to the LLM tree."""
-    sources = [s for s in repo.list_sources(kb_id) if s.get("is_active")]
-    if len(sources) != 1:
-        return None  # multi-source KBs genuinely need the merging LLM view
-
-    chunks = repo.get_all_chunk_summaries(
-        kb_id=kb_id, institute_id=kb["institute_id"], limit=400
-    )
-    if not chunks:
-        return None
+def _corpus_for_chunks(chunks: List[Dict[str, Any]]) -> str:
     pages: Dict[int, List[str]] = {}
     for c in chunks:
         pages.setdefault(c.get("page_start") or 0, []).append(c.get("content_text") or "")
-    corpus = "\n\n".join(
+    return "\n\n".join(
         f"[PAGE {p}]\n" + "\n".join(texts) for p, texts in sorted(pages.items())
     )
-    if len(corpus) > MAX_HEADING_CORPUS_CHARS:
-        return None  # windowing not implemented; the merge view handles big books
 
+
+def _page_windows(chunks: List[Dict[str, Any]], max_chars: int) -> List[str]:
+    """The corpus as page-aligned windows of at most `max_chars` each.
+
+    Splitting between pages (never inside one) keeps every [PAGE n] marker
+    with its text, so headings quoted from a window carry the right page.
+    """
+    pages: Dict[int, List[str]] = {}
+    for c in chunks:
+        pages.setdefault(c.get("page_start") or 0, []).append(c.get("content_text") or "")
+    windows: List[str] = []
+    current: List[str] = []
+    size = 0
+    for p, texts in sorted(pages.items()):
+        block = f"[PAGE {p}]\n" + "\n".join(texts)
+        if current and size + len(block) > max_chars:
+            windows.append("\n\n".join(current))
+            current, size = [], 0
+        current.append(block)
+        size += len(block) + 2
+    if current:
+        windows.append("\n\n".join(current))
+    return windows
+
+
+async def _verbatim_headings(db: Session, corpus: str, *, label: str) -> List[Dict[str, Any]]:
+    """The model lists the corpus's printed headings; only literal quotes survive.
+
+    Returns [{title, page, level, page_end}] in document order (possibly empty).
+    Raises on LLM failure — callers decide whether that is fatal.
+    """
     primary, fallbacks = resolve_models(db, USE_CASE)
     raw, _model, _usage = await generate_json(
         _heading_prompt(corpus), [primary, *fallbacks], label="kb-headings"
@@ -228,16 +259,38 @@ async def _heading_topics(
             page = None
         level = 1 if h.get("level") == 1 else 2
         valid.append({"title": title, "page": page, "level": level})
-    if len(valid) < MIN_VALID_HEADINGS:
-        logger.info(
-            "Heading tree: only %d verbatim headings for kb=%s; falling back", len(valid), kb_id
-        )
-        return None
 
     # Page span: a heading's section runs to the next heading's page.
     for i, h in enumerate(valid):
         nxt = next((v["page"] for v in valid[i + 1:] if v["page"]), None)
         h["page_end"] = max(h["page"] or 0, (nxt or h["page"] or 0)) or None
+    logger.info("Verbatim headings for %s: %d survived", label, len(valid))
+    return valid
+
+
+async def _heading_topics(
+    db: Session, repo: KbRepository, kb: Dict[str, Any], kb_id: str
+) -> Optional[List[TopicNode]]:
+    """Verbatim-verified heading tree, or None to fall back to the LLM tree."""
+    sources = [s for s in repo.list_sources(kb_id) if s.get("is_active")]
+    if len(sources) != 1:
+        return None  # multi-source KBs genuinely need the merging LLM view
+
+    chunks = repo.get_all_chunk_summaries(
+        kb_id=kb_id, institute_id=kb["institute_id"], limit=400
+    )
+    if not chunks:
+        return None
+    corpus = _corpus_for_chunks(chunks)
+    if len(corpus) > MAX_HEADING_CORPUS_CHARS:
+        return None  # windowing not implemented; the merge view handles big books
+
+    valid = await _verbatim_headings(db, corpus, label=f"kb={kb_id}")
+    if len(valid) < MIN_VALID_HEADINGS:
+        logger.info(
+            "Heading tree: only %d verbatim headings for kb=%s; falling back", len(valid), kb_id
+        )
+        return None
 
     topics: List[TopicNode] = []
     if not any(h["level"] == 1 for h in valid):
@@ -271,6 +324,229 @@ async def _heading_topics(
 
 
 
+# ── Authored tree (curriculum libraries) ─────────────────────────────────────
+# One topic per chapter SOURCE, in chapter order, titled from the book's own
+# table of contents (source.meta_json.chapter_no / chapter_title, written by the
+# loader). Subtopics are the chapter's printed headings, quoted verbatim by the
+# same gate the heading tree uses, and cached on the source so a rebuild after
+# the fifteenth chapter lands does not re-read the first fourteen.
+#
+# Nothing here asks a model to decide structure. The LLM merge (below) is free
+# to re-theme "Chapter 3: Classification of Elements" into "Periodic Trends";
+# a teacher comparing the picker against the book they teach from reads that
+# as the chapter being missing.
+
+# Cached under source.meta_json so the LLM quoter runs once per chapter.
+_HEADINGS_META_KEY = "headings"
+
+
+def _chapter_sort_key(source: Dict[str, Any]) -> tuple:
+    meta = source.get("meta") or {}
+    try:
+        no = int(meta.get("chapter_no"))
+    except (TypeError, ValueError):
+        no = 10_000  # untagged sources go last, in upload order
+    return (no, source.get("created_at") or "")
+
+
+# Headings supplied by hand (the loader's structure files, or an admin edit)
+# live here on the source; they take precedence over the LLM quoter.
+_MANUAL_HEADINGS_META_KEY = "headings_manual"
+
+
+_LOOSE_MAP = str.maketrans({"\u2019": "'", "\u2018": "'", "\u201c": '"', "\u201d": '"',
+                            "\u2013": "-", "\u2014": "-", "\u00a0": " "})
+
+
+def _loose(text: str) -> str:
+    """_norm plus typographic quotes/dashes folded — a hand-typed heading
+    uses ' and -, the PDF text layer usually has ’ and –."""
+    return _norm((text or "").translate(_LOOSE_MAP))
+
+
+def locate_headings(titles: List[str], chunks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Give hand-written headings their page numbers by finding them in the text.
+
+    Same idea as the quoter's verbatim gate, in reverse: the heading is
+    trusted, the page is looked up. A heading that appears nowhere keeps
+    page=None — it still becomes a subtopic (a teacher can pick it, and
+    retrieval falls back to similarity), it just cannot own a page span.
+    """
+    pages: Dict[int, str] = {}
+    for c in chunks:
+        p = c.get("page_start") or 0
+        pages[p] = pages.get(p, "") + "\n" + _loose(c.get("content_text") or "")
+    ordered = sorted(pages.items())
+    cleaned = [" ".join(str(raw).split()).strip() for raw in titles]
+    keys = [_loose(t) for t in cleaned]
+    # A chapter opener often carries a contents box listing every heading of
+    # the chapter on page 1-2. A page where many headings co-occur is that
+    # box, not the sections themselves — never locate a heading there.
+    toc_pages = {
+        pg for pg, txt in ordered[:3]
+        if sum(1 for k in keys if k and k in txt) >= 3
+    }
+    out: List[Dict[str, Any]] = []
+    cursor = 0  # headings are in book order; never look backwards
+    for title, key in zip(cleaned, keys):
+        if not (2 <= len(title) <= 200):
+            continue
+        page = None
+        for idx in range(cursor, len(ordered)):
+            pg, txt = ordered[idx]
+            if pg in toc_pages:
+                continue
+            if key in txt:
+                page = pg or None
+                cursor = idx
+                break
+        out.append({"title": title, "page": page, "level": 1})
+    # Page span: to the next located heading's page.
+    for i, h in enumerate(out):
+        nxt = next((v["page"] for v in out[i + 1:] if v["page"]), None)
+        h["page_end"] = max(h["page"] or 0, (nxt or h["page"] or 0)) or None
+    return out
+
+
+async def _chapter_headings(
+    db: Session, repo: KbRepository, kb: Dict[str, Any], source: Dict[str, Any]
+) -> List[Dict[str, Any]]:
+    """Headings for one chapter: hand-supplied (located in the text) beat the
+    cached quoter result, which beats a fresh quoter call."""
+    meta = source.get("meta") or {}
+    manual = meta.get(_MANUAL_HEADINGS_META_KEY)
+    if isinstance(manual, list) and manual:
+        chunks = repo.get_all_chunk_summaries(
+            kb_id=kb["id"], institute_id=kb["institute_id"], limit=400, source_id=source["id"]
+        )
+        return locate_headings([str(t) for t in manual], chunks)
+
+    cached = meta.get(_HEADINGS_META_KEY)
+    if isinstance(cached, list):
+        return cached
+
+    chunks = repo.get_all_chunk_summaries(
+        kb_id=kb["id"], institute_id=kb["institute_id"], limit=400, source_id=source["id"]
+    )
+    headings: List[Dict[str, Any]] = []
+    try:
+        # A long chapter (NCERT Equilibrium is 53 pages, ~200k chars) is read
+        # in page-aligned windows rather than skipped: page numbers stay
+        # exact inside each window and the lists simply concatenate.
+        for window in _page_windows(chunks, MAX_HEADING_CORPUS_CHARS):
+            headings.extend(
+                await _verbatim_headings(db, window, label=f"source={source['id']}")
+            )
+    except Exception:  # noqa: BLE001
+        logger.warning(
+            "Heading extraction failed for source %s; chapter stays childless",
+            source["id"], exc_info=True,
+        )
+        return []  # not cached: a transient failure should be retried next rebuild
+    # Cache even an empty result — a chapter with no printed headings (the new
+    # NCF books, a poem) will not grow any on a second reading.
+    repo.update_source_fields(
+        source["id"], kb["institute_id"], meta={_HEADINGS_META_KEY: headings}
+    )
+    return headings
+
+
+def _node_id(*parts: str) -> str:
+    """Deterministic node id: the same chapter/heading always gets the same id."""
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, "vacademy-kb-node:" + "|".join(parts)))
+
+
+async def build_authored_tree(
+    db: Session, repo: KbRepository, kb: Dict[str, Any], *,
+    current_source_id: Optional[str] = None,
+) -> List[TopicNode]:
+    """Topic = chapter source, subtopic = its printed headings. Deterministic.
+
+    Membership: finished chapters (READY/PARTIAL) plus `current_source_id`,
+    the chapter whose ingest is rebuilding the tree right now — its chunks
+    are all in, but its status flips only in the finalize step that follows.
+    A SIBLING chapter still mid-embedding is deliberately left out: it has
+    some chunks already, and quoting headings from a half-embedded corpus
+    would cache a truncated heading list against it.
+    """
+    with_chunks = set(repo.sources_with_chunks(kb["id"]))
+    sources = sorted(
+        (
+            s for s in repo.list_sources(kb["id"])
+            if s.get("is_active") and s["id"] in with_chunks
+            and (s.get("status") in ("READY", "PARTIAL") or s["id"] == current_source_id)
+        ),
+        key=_chapter_sort_key,
+    )
+    # kb.stable_topic_ids: a NEW subtopic id is keyed on the heading text, not
+    # its position, so inserting a heading does not shift every id after it.
+    # Ids already stored keep matching through replace_topic_tree's key match.
+    stable_ids = stable_topic_ids_enabled()
+    topics: List[TopicNode] = []
+    for source in sources:
+        meta = source.get("meta") or {}
+        chapter_no = meta.get("chapter_no")
+        chapter_title = (meta.get("chapter_title") or source.get("title") or "").strip()
+        title = (
+            f"Chapter {chapter_no}: {chapter_title}"
+            if chapter_no is not None and chapter_title
+            and not chapter_title.lower().startswith("chapter")
+            else chapter_title or source["title"]
+        )
+        page_count = int(source.get("page_count") or 0) or None
+        topic = TopicNode(
+            id=_node_id(kb["id"], source["id"], "chapter"),
+            title=title[:300],
+            summary=meta.get("chapter_summary"),
+            keywords=[str(k) for k in (meta.get("keywords") or [])][:20],
+            page_start=1,
+            page_end=page_count,
+            source_id=source["id"],
+        )
+        headings = await _chapter_headings(db, repo, kb, source)
+        # Only major headings become subtopics: NCERT's "1.2 Nature of Matter"
+        # is the unit a teacher sets questions on; its "1.2.1 States" is not.
+        majors = [h for h in headings if h.get("level") == 1] or headings
+        majors = [h for h in majors if str(h.get("title") or "").strip()][:MAX_SUBTOPICS_PER_TOPIC * 2]
+        # Spans are recomputed HERE, over the merged list: a major section runs
+        # to the next MAJOR heading (not to its own first sub-heading, and not
+        # to the end of the page window the quoter happened to read it in),
+        # and the last one runs to the end of the chapter. A heading with no
+        # page (hand-supplied, not found in the text) becomes a subtopic with
+        # no span: pickable, retrieved by similarity, owning no chunks.
+        seen_headings: Dict[str, int] = {}
+        for i, h in enumerate(majors):
+            page = h.get("page")
+            end = None
+            if page:
+                nxt = next((m["page"] for m in majors[i + 1:] if m.get("page")), None)
+                end = max(int(page), int(nxt) if nxt else (page_count or int(page)))
+            heading = str(h.get("title") or "")
+            if stable_ids:
+                # Occurrence suffix only when two headings share a title.
+                key = normalize_topic_title(heading)
+                seen_headings[key] = seen_headings.get(key, 0) + 1
+                occurrence = seen_headings[key]
+                sub_id = (
+                    _node_id(kb["id"], source["id"], "heading", key)
+                    if occurrence == 1
+                    else _node_id(kb["id"], source["id"], "heading", key, str(occurrence))
+                )
+            else:
+                sub_id = _node_id(kb["id"], source["id"], str(i), heading)
+            topic.subtopics.append(
+                TopicNode(
+                    id=sub_id,
+                    title=str(h.get("title") or "")[:300],
+                    page_start=int(page) if page else None,
+                    page_end=end,
+                    source_id=source["id"],
+                )
+            )
+        topics.append(topic)
+    return topics
+
+
 def _relink_chunks(repo: KbRepository, kb_id: str) -> None:
     """Re-attach chunks now the topic tree exists.
 
@@ -290,6 +566,7 @@ async def build_topic_tree(
     *,
     kb_id: str,
     institute_id: str,
+    current_source_id: Optional[str] = None,
 ) -> TopicTreeResult:
     """Derive and PERSIST the topic tree for one knowledge base.
 
@@ -302,6 +579,20 @@ async def build_topic_tree(
     kb = repo.get_kb(kb_id, institute_id)
     if not kb:
         raise ValueError("Knowledge base not found")
+
+    # Curriculum libraries: the tree IS the table of contents. No model ever
+    # decides the structure; see build_authored_tree.
+    if (kb.get("meta") or {}).get("topic_tree_mode") == TOPIC_TREE_MODE_AUTHORED:
+        authored = await build_authored_tree(db, repo, kb, current_source_id=current_source_id)
+        if authored:
+            repo.replace_topic_tree(kb_id, institute_id, authored)
+            _relink_chunks(repo, kb_id)
+        result.topics = authored
+        logger.info(
+            "Authored topic tree for kb=%s: %d chapter(s), %d node(s)",
+            kb_id, len(authored), result.total_nodes,
+        )
+        return result
 
     # Single-source KBs get the mechanical, verbatim-verified heading tree —
     # structure the reviewer can check against their own book. Any failure
@@ -396,4 +687,7 @@ async def build_topic_tree(
     return result
 
 
-__all__ = ["build_topic_tree", "TopicNode", "TopicTreeResult", "MAX_TOPICS"]
+__all__ = [
+    "build_topic_tree", "build_authored_tree", "TopicNode", "TopicTreeResult",
+    "MAX_TOPICS", "TOPIC_TREE_MODE_AUTHORED",
+]

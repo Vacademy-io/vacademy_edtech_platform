@@ -91,6 +91,10 @@ async def question_done(
         # This payload is an explicit field list, so forgetting a key here means
         # the field silently never reaches Java.
         "error_detail": verdict.get("error_detail"),
+        # False = internal choice: graded, but outside the `attempt` of its
+        # choice group, so not part of the total (T1.36). Older Java builds
+        # ignore the key and count every question, as before.
+        "counted": bool(verdict.get("counted", True)),
     }
     await _post(f"{base_url.rstrip('/')}/copy-check/callback/question", payload)
 
@@ -123,9 +127,13 @@ async def failed(
     process_id: str,
     job_id: str,
     error_message: str,
+    error_code: Optional[str] = None,
 ) -> None:
+    # error_code: spec 8.3 machine code (failure.py); error_message stays the
+    # human text. Java builds without the field ignore it.
     await _post(f"{base_url.rstrip('/')}/copy-check/callback/failed", {
         "process_id": process_id,
         "job_id": job_id,
         "error_message": error_message,
+        "error_code": error_code,
     })

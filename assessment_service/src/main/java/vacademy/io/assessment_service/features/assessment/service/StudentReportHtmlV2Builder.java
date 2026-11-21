@@ -1,5 +1,7 @@
 package vacademy.io.assessment_service.features.assessment.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -143,6 +145,12 @@ public class StudentReportHtmlV2Builder {
         /** Section id -> name/order source (ReportClassContext.sections); nullable. */
         private final List<SectionSnapshot> sections;
         private final StudentReportAnalyticsService.StudentReportAnalytics analytics;
+        /** Report option: leave out easy misses, expertise, answer review and question-wise detail. */
+        private final boolean hideQuestionWise;
+        /** Report options (assessment.report_options): leave these out of every question card. */
+        private final boolean hideYourAnswer;
+        private final boolean hideCorrectAnswer;
+        private final boolean hideExplanation;
     }
 
     // ------------------------------------------------------------------ entry
@@ -171,22 +179,27 @@ public class StudentReportHtmlV2Builder {
             appendPerformanceSummary(sb, in);
         }
         appendSectionComparison(sb, in, accent, manual);
+        boolean questionWise = !in.isHideQuestionWise();
         if (!manual) {
-            appendEasyMisses(sb, in);
-            appendExpertise(sb, in);
+            if (questionWise) {
+                appendEasyMisses(sb, in);
+                appendExpertise(sb, in);
+            }
             appendPotential(sb, in, accent);
         }
         appendLeaderboard(sb, in);
         if (manual) {
             appendEvaluatedSheetNote(sb, in);
-        } else {
+        } else if (questionWise) {
             appendAnswerReview(sb, in);
         }
         // The student's own attempt, question by question. Rendered for MANUAL
         // too — it self-skips when no per-question rows exist, which is the
         // usual pen-and-paper case, so the evaluated-sheet note still stands
         // alone there.
-        appendQuestionDetail(sb, in, manual);
+        if (questionWise) {
+            appendQuestionDetail(sb, in, manual);
+        }
         appendFooter(sb, in, branding);
         sb.append("</div></body></html>");
         return sb.toString();
@@ -994,7 +1007,7 @@ public class StudentReportHtmlV2Builder {
                     continue;
                 }
                 Integer number = row.getQuestionOrder();
-                appendQuestionCard(body, row, number != null ? number : fallbackNumber, manual);
+                appendQuestionCard(body, row, number != null ? number : fallbackNumber, manual, in);
                 fallbackNumber++;
                 anyRendered = true;
             }
@@ -1010,7 +1023,7 @@ public class StudentReportHtmlV2Builder {
         sb.append("</div>");
     }
 
-    private void appendQuestionCard(StringBuilder sb, StudentReportAnswerReviewDto row, int number, boolean manual) {
+    private void appendQuestionCard(StringBuilder sb, StudentReportAnswerReviewDto row, int number, boolean manual, Input in) {
         String status = row.getAnswerStatus();
         String color = statusColor(status);
 
@@ -1030,8 +1043,12 @@ public class StudentReportHtmlV2Builder {
             sb.append("<div class=\"qtext\">").append(esc(truncate(questionText))).append("</div>");
         }
 
-        appendStudentAnswer(sb, row, status);
-        appendCorrectAnswer(sb, row, status);
+        if (!in.isHideYourAnswer()) {
+            appendStudentAnswer(sb, row, status);
+        }
+        if (!in.isHideCorrectAnswer()) {
+            appendCorrectAnswer(sb, row, status);
+        }
 
         // Evaluator remark / AI copy-check feedback — the same per-question
         // feedback the learner dashboard's answer review shows.
@@ -1041,6 +1058,7 @@ public class StudentReportHtmlV2Builder {
         if (feedback != null && !feedback.isBlank()) {
             appendQuestionRow(sb, "Feedback", HtmlBuilderService.stripHtmlTags(feedback), MUTED);
         }
+        appendAiCriteriaBreakdown(sb, row.getAiCriteriaBreakdown());
 
         // Marks, and time only where time is meaningful (never on MANUAL).
         StringBuilder foot = new StringBuilder();
@@ -1052,7 +1070,7 @@ public class StudentReportHtmlV2Builder {
         }
         sb.append("<div class=\"qfoot\">").append(foot).append("</div>");
 
-        String explanation = HtmlBuilderService.stripHtmlTags(row.getExplanation());
+        String explanation = in.isHideExplanation() ? "" : HtmlBuilderService.stripHtmlTags(row.getExplanation());
         if (!explanation.isBlank()) {
             sb.append("<div class=\"qexp\"><b>Explanation:</b> ").append(esc(truncate(explanation))).append("</div>");
         }
@@ -1070,7 +1088,7 @@ public class StudentReportHtmlV2Builder {
             return;
         }
         if (response != null) {
-            List<String> answers = htmlBuilderService.extractResponseContent(response);
+            List<String> answers = htmlBuilderService.extractResponseContent(response, row.getCorrectOptions());
             if (!answers.isEmpty()) {
                 String color = QuestionResponseEnum.CORRECT.name().equals(status) ? GREEN
                         : (QuestionResponseEnum.INCORRECT.name().equals(status) ? RED : INK);
@@ -1096,7 +1114,8 @@ public class StudentReportHtmlV2Builder {
         if (correct.isEmpty()) {
             return;
         }
-        appendQuestionRow(sb, "CODING".equals(row.getQuestionType()) ? "Graded On" : "Correct Answer",
+        appendQuestionRow(sb, "CODING".equals(row.getQuestionType()) || "CBE_RESPONSE".equals(row.getQuestionType())
+                        ? "Graded On" : "Correct Answer",
                 String.join(", ", correct), GREEN);
     }
 
@@ -1104,6 +1123,42 @@ public class StudentReportHtmlV2Builder {
         sb.append("<table class=\"qrow\"><tr><td class=\"qlabel\">").append(label).append(":</td>")
                 .append("<td style=\"color: ").append(color).append(";\">")
                 .append(esc(truncate(value))).append("</td></tr></table>");
+    }
+
+    /**
+     * Renders the rubric returned by copy-check AI.  It is stored as JSON on
+     * question_wise_marks, so it needs to be decoded before a PDF is created;
+     * otherwise the report shows the awarded score but hides why it was given.
+     */
+    private void appendAiCriteriaBreakdown(StringBuilder sb, String rawBreakdown) {
+        if (rawBreakdown == null || rawBreakdown.isBlank()) {
+            return;
+        }
+        try {
+            JsonNode criteria = new ObjectMapper().readTree(rawBreakdown);
+            if (!criteria.isArray() || criteria.isEmpty()) {
+                return;
+            }
+            sb.append("<div style=\"margin: 7px 0 4px 0; padding: 7px 9px; background: #F6F8FB; border-left: 2px solid ")
+                    .append(NAVY).append("; font-size: 10px;\">")
+                    .append("<div style=\"font-weight: 700; color: ").append(NAVY)
+                    .append("; margin-bottom: 4px;\">AI EVALUATION</div>");
+            for (JsonNode criterion : criteria) {
+                String name = criterion.path("criteria_name").asText("Criterion");
+                String marks = criterion.has("marks") && !criterion.get("marks").isNull()
+                        ? criterion.get("marks").asText() : "-";
+                String reason = criterion.path("reason").asText("");
+                sb.append("<div style=\"margin-top: 3px;\"><b>").append(esc(name)).append(" (")
+                        .append(esc(marks)).append(" marks):</b>");
+                if (!reason.isBlank()) {
+                    sb.append(" ").append(esc(truncate(HtmlBuilderService.stripHtmlTags(reason))));
+                }
+                sb.append("</div>");
+            }
+            sb.append("</div>");
+        } catch (Exception ignored) {
+            // An older or malformed stored AI result must never prevent a report download.
+        }
     }
 
     /** One long essay answer must not push the rest of the report off the page. */

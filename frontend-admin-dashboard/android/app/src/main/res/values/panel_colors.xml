@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Vacademy Classroom (panel mode) native screen colours. panel_brand mirrors the
+     web primary-500 token (hsl 24 85% 54%). -->
+<resources>
+    <color name="panel_brand">#ED7626</color>
+    <color name="panel_background">#FAFAF7</color>
+    <color name="panel_surface">#FFFFFF</color>
+    <color name="panel_text">#1C1917</color>
+    <color name="panel_text_muted">#57534E</color>
+    <color name="panel_border">#E7E5E4</color>
+</resources>

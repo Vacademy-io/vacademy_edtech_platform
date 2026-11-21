@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     YooptaPlugin,
     useYooptaEditor,
@@ -87,6 +88,7 @@ const escapeAttr = (s: string): string =>
     s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 export function FlashcardBlock({ element, attributes, children, blockId }: PluginElementRenderProps) {
+    const { t } = useTranslation('studyLibraryFlashcardEditor');
     const editor = useYooptaEditor();
     const isReadOnly = useYooptaReadOnly();
 
@@ -186,7 +188,7 @@ export function FlashcardBlock({ element, attributes, children, blockId }: Plugi
                         textTransform: 'uppercase',
                     }}
                 >
-                    {isFront ? 'Front' : 'Back'}
+                    {isFront ? t('front') : t('back')}
                 </div>
                 {empty ? (
                     <span
@@ -195,7 +197,7 @@ export function FlashcardBlock({ element, attributes, children, blockId }: Plugi
                             fontStyle: 'italic',
                         }}
                     >
-                        No content
+                        {t('noContent')}
                     </span>
                 ) : (
                     <div className={imgWrapClass} style={{ width: '100%', maxWidth: '100%' }}>
@@ -221,7 +223,7 @@ export function FlashcardBlock({ element, attributes, children, blockId }: Plugi
                         color: isFront ? C.hint : 'rgba(255,255,255,0.6)',
                     }}
                 >
-                    {isFront ? 'Click to flip' : 'Click to flip back'}
+                    {isFront ? t('clickToFlip') : t('clickToFlipBack')}
                 </div>
             </div>
         );
@@ -250,14 +252,14 @@ export function FlashcardBlock({ element, attributes, children, blockId }: Plugi
                     borderBottom: `1px solid ${C.border}`,
                 }}
             >
-                <span style={{ fontSize: '14px', fontWeight: 600, color: C.text }}>Flashcard</span>
+                <span style={{ fontSize: '14px', fontWeight: 600, color: C.text }}>{t('flashcard')}</span>
                 {!isReadOnly && (
                     <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                         {isEditing && (
                             <select
                                 value={data.aspectRatio || 'original'}
                                 onChange={(e) => updateAspectRatio(e.target.value)}
-                                title="Image aspect ratio"
+                                title={t('imageAspectRatioTitle')}
                                 style={{
                                     fontSize: '11px',
                                     padding: '3px 4px',
@@ -270,7 +272,9 @@ export function FlashcardBlock({ element, attributes, children, blockId }: Plugi
                             >
                                 {ASPECT_RATIOS.map((r) => (
                                     <option key={r.value} value={r.value}>
-                                        {r.value === 'original' ? 'Image: Original' : `Image: ${r.label}`}
+                                        {r.value === 'original'
+                                            ? t('imageAspectRatioOriginal')
+                                            : t('imageAspectRatioValue', { label: r.label })}
                                     </option>
                                 ))}
                             </select>
@@ -290,7 +294,7 @@ export function FlashcardBlock({ element, attributes, children, blockId }: Plugi
                                 cursor: 'pointer',
                             }}
                         >
-                            {isEditing ? 'Preview' : 'Edit'}
+                            {isEditing ? t('preview') : t('edit')}
                         </button>
                     </div>
                 )}
@@ -302,24 +306,24 @@ export function FlashcardBlock({ element, attributes, children, blockId }: Plugi
                     <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                         {/* Front side */}
                         <div style={{ flex: 1, minWidth: '200px' }}>
-                            <div style={labelStyle}>Front (Question / Term)</div>
+                            <div style={labelStyle}>{t('frontLabel')}</div>
                             <div className={imgWrapClass}>
                                 <RichTextField
                                     value={data.front}
                                     onChange={updateFront}
-                                    placeholder="Front — add text and/or an image…"
+                                    placeholder={t('frontPlaceholder')}
                                     minHeight={80}
                                 />
                             </div>
                         </div>
                         {/* Back side */}
                         <div style={{ flex: 1, minWidth: '200px' }}>
-                            <div style={labelStyle}>Back (Answer / Definition)</div>
+                            <div style={labelStyle}>{t('backLabel')}</div>
                             <div className={imgWrapClass}>
                                 <RichTextField
                                     value={data.back}
                                     onChange={updateBack}
-                                    placeholder="Back — add text and/or an image…"
+                                    placeholder={t('backPlaceholder')}
                                     minHeight={80}
                                 />
                             </div>

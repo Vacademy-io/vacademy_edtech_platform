@@ -1,0 +1,36 @@
+{
+    "scopePicker": {
+        "noun": {
+            "batch": "lots",
+            "subject": "matières",
+            "faculty": "enseignants"
+        },
+        "whichNoun": "Quels {{noun}} ?",
+        "clearCount": "Effacer {{count}}",
+        "emptyWarning": {
+            "prefix": "Ne rien sélectionner signifie",
+            "every": "chacun",
+            "suffix": "d'entre eux, ce qui peut dépasser la limite par exécution. Choisissez les {{noun}} que vous voulez."
+        },
+        "searchPlaceholder": "Rechercher {{noun}}…",
+        "loading": "Chargement…",
+        "errorLoad": "Impossible de charger {{noun}}. Vérifiez votre connexion et réessayez.",
+        "emptyNoMatch": "Aucun {{noun}} ne correspond à « {{query}} ».",
+        "emptyNoneAtInstitute": "Cet établissement n'a aucun {{noun}}.",
+        "truncatedNotice": "Affichage de {{shown}} sur {{total}} — affinez votre recherche."
+    },
+    "recipientPicker": {
+        "pickPeopleLabel": "Ou choisissez des personnes spécifiques",
+        "clearCount": "Effacer {{count}}",
+        "searchPlaceholder": "Rechercher par nom ou e-mail…",
+        "noEmailWarning_one": "{{count}} personne sélectionnée n'a pas d'e-mail enregistré et ne recevra rien.",
+        "noEmailWarning_many": "{{count}} personnes sélectionnées n'ont pas d'e-mail enregistré et ne recevront rien.",
+        "noEmailWarning_other": "{{count}} personnes sélectionnées n'ont pas d'e-mail enregistré et ne recevront rien.",
+        "loading": "Chargement…",
+        "errorLoad": "Impossible de charger les personnes.",
+        "emptyNoMatch": "Personne ne correspond à « {{query}} ».",
+        "emptyNoneFound": "Aucun destinataire éligible trouvé.",
+        "unnamed": "(sans nom)",
+        "noEmail": "pas d'e-mail"
+    }
+}

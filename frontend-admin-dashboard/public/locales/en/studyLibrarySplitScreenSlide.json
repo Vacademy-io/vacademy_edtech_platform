@@ -1,0 +1,11 @@
+{
+    "videoFallbackTitle": "Video",
+    "unknownSplitScreenType": "Unknown split screen type",
+    "videoNotFoundTitle": "Video Not Found",
+    "videoNotFoundDescription": "The video slide for this split screen could not be found. Please check if the video slide still exists.",
+    "videoIdLabel": "Video ID: {{videoId}}",
+    "splitScreenModeTitle": "Split Screen Mode",
+    "untitledVideo": "Untitled Video",
+    "videoBeingGenerated": "Video is being generated...",
+    "videoBeingGeneratedHint": "This may take a few minutes. Please check back later."
+}

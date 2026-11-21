@@ -1,0 +1,32 @@
+{
+    "title": "Add New Discount",
+    "fields": {
+        "title": {
+            "label": "Discount Title",
+            "placeholder": "Enter discount title"
+        },
+        "code": {
+            "label": "Discount Code",
+            "placeholder": "Enter discount code"
+        },
+        "type": {
+            "label": "Discount Type",
+            "placeholder": "Select type",
+            "options": {
+                "percent": "Percentage Off",
+                "rupees": "Rupees Off"
+            }
+        },
+        "value": {
+            "label": "Discount Value",
+            "placeholderPercent": "Enter percentage (e.g. 10)",
+            "placeholderRupees": "Enter amount (e.g. 500)"
+        },
+        "expires": {
+            "label": "Expiry Date"
+        }
+    },
+    "actions": {
+        "save": "Save"
+    }
+}

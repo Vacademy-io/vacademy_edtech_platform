@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vacademy.io.admin_core_service.features.institute.repository.InstituteRepository;
+import vacademy.io.admin_core_service.features.live_session.client.InstituteRoleUserClient;
 import vacademy.io.admin_core_service.features.suborg.registration.dto.CreateRegistrationTemplateDTO;
 import vacademy.io.admin_core_service.features.suborg.registration.dto.SubOrgRegistrationFlowDTOs.RegistrationFacetsDTO;
 import vacademy.io.admin_core_service.features.suborg.registration.dto.SubOrgRegistrationFlowDTOs.RegistrationListItemDTO;
@@ -17,7 +18,6 @@ import vacademy.io.admin_core_service.features.suborg.registration.dto.SubOrgReg
 import vacademy.io.admin_core_service.features.suborg.registration.dto.TemplateDetailDTO;
 import vacademy.io.admin_core_service.features.suborg.registration.service.SubOrgRegistrationTemplateService;
 import vacademy.io.common.auth.model.CustomUserDetails;
-import vacademy.io.common.auth.repository.UserRoleRepository;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.util.ArrayList;
@@ -35,7 +35,7 @@ public class SubOrgRegistrationAdminController {
     private static final String ROLE_NAME_ADMIN = "ADMIN";
 
     private final SubOrgRegistrationTemplateService templateService;
-    private final UserRoleRepository userRoleRepository;
+    private final InstituteRoleUserClient instituteRoleUserClient;
     private final InstituteRepository instituteRepository;
 
     @PostMapping("/template/create")
@@ -154,7 +154,7 @@ public class SubOrgRegistrationAdminController {
      * check is bound to THIS instituteId (never to a client-supplied header or a
      * global authority list, which would allow cross-institute access):
      * 1) root users (platform superadmins) bypass;
-     * 2) an ACTIVE ADMIN row in the canonical user_role table for this institute;
+     * 2) an ACTIVE ADMIN role for this institute, resolved via auth_service;
      * 3) fallback: legacy staff-table membership in this institute.
      */
     private void assertInstituteAdmin(CustomUserDetails user, String instituteId) {
@@ -169,8 +169,10 @@ public class SubOrgRegistrationAdminController {
             return;
         }
 
-        if (userRoleRepository.existsByUserIdAndInstituteIdAndRoleName(
-                user.getUserId(), instituteId, ROLE_NAME_ADMIN)) {
+        // Roles live in auth_service's DB (admin_core has no user_role table); a failed
+        // lookup falls through to the staff-membership check below.
+        if (instituteRoleUserClient.findRolesOfUser(instituteId, user.getUserId())
+                .map(roles -> roles.contains(ROLE_NAME_ADMIN)).orElse(false)) {
             return;
         }
 

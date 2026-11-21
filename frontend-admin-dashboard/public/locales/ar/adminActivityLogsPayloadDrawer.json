@@ -1,0 +1,40 @@
+{
+    "unknownUser": "مستخدم غير معروف",
+    "titleFallback": "{{action}} {{entityType}}",
+    "sections": {
+        "performedBy": "قام بالتنفيذ",
+        "request": "الطلب",
+        "whatChanged": "ما الذي تغيّر",
+        "submittedData": "البيانات المُرسلة"
+    },
+    "fields": {
+        "name": "الاسم",
+        "email": "البريد الإلكتروني",
+        "userId": "معرّف المستخدم",
+        "method": "الطريقة",
+        "endpoint": "نقطة النهاية",
+        "ipAddress": "عنوان IP",
+        "response": "الاستجابة",
+        "latency": "زمن الاستجابة",
+        "entityId": "معرّف الكيان",
+        "logId": "معرّف السجل",
+        "device": "الجهاز"
+    },
+    "buttons": {
+        "seeEverythingByPerson": "عرض كل ما قام به هذا الشخص",
+        "fields": "الحقول",
+        "rawJson": "JSON الخام",
+        "copy": "نسخ",
+        "copied": "تم النسخ"
+    },
+    "payload": {
+        "before": "قبل",
+        "afterSubmitted": "بعد (المُرسل)",
+        "noPayloadCaptured": "لم يتم تسجيل أي بيانات لهذا الإجراء.",
+        "null": "لا شيء",
+        "emptyList": "قائمة فارغة",
+        "noFields": "لا توجد حقول",
+        "yes": "نعم",
+        "no": "لا"
+    }
+}

@@ -1,0 +1,51 @@
+{
+  "dialog": {
+    "title": "Bulk Import Enquiry Responses",
+    "description": "Upload CSV, optionally choose class, preview and confirm import"
+  },
+  "steps": {
+    "stepLabel": "Step {{step}}"
+  },
+  "upload": {
+    "templateHint": "Download CSV template and upload filled learner responses",
+    "downloadTemplateButton": "Download Template",
+    "dropzoneHint": "Click to upload `.csv` file",
+    "validSummary": "Valid rows: {{valid}} | Skipped rows: {{skipped}}",
+    "onlyCsvSupported": "Only .csv files are supported",
+    "missingColumns_one": "Missing required column: {{columns}}",
+    "missingColumns_other": "Missing required columns: {{columns}}",
+    "parseFailed": "Failed to parse CSV"
+  },
+  "classStep": {
+    "selectClassHint": "Select class (optional). If not selected, class is not sent in payload.",
+    "noClassOption": "No class selected"
+  },
+  "preview": {
+    "previewingRows_one": "Previewing {{count}} valid row",
+    "previewingRows_other": "Previewing {{count}} valid rows"
+  },
+  "columns": {
+    "studentName": "Student Name",
+    "gender": "Gender",
+    "dateOfBirth": "Date of Birth",
+    "parentName": "Parent Name",
+    "parentEmail": "Parent Email",
+    "parentMobile": "Parent Mobile",
+    "relationWithChild": "Relation With Child",
+    "relation": "Relation",
+    "status": "Status",
+    "source": "Source"
+  },
+  "actions": {
+    "back": "Back",
+    "cancel": "Cancel",
+    "next": "Next",
+    "importing": "Importing...",
+    "confirmImport": "Confirm Import"
+  },
+  "toasts": {
+    "importResult_one": "Imported {{success}} enquiry response ({{failed}} failed)",
+    "importResult_other": "Imported {{success}} enquiry responses ({{failed}} failed)",
+    "importFailed": "Failed to import enquiries"
+  }
+}

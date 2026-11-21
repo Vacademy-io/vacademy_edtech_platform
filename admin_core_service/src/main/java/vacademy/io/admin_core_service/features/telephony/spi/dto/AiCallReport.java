@@ -46,6 +46,25 @@ public class AiCallReport {
      */
     Map<String, Object> diagnostics;
 
+    /**
+     * The counsellor's one-sentence answer to "do I call this lead myself?" —
+     * {@code followUpGist} is the sentence (recommendation + the concrete reason
+     * from the call) and {@code followUp} is CALL / CALL_LATER / SKIP, used only to
+     * colour and filter it. Not a grade of the assistant and not the disposition
+     * restated. Provider-optional: a null followUp means NOT ASSESSED and must never
+     * be read as CALL.
+     */
+    String followUp;
+    String followUpGist;
+
+    /**
+     * Words the caller actually contributed, as MEASURED by the bot from the
+     * transcript — not a model judgement. The outcome classifier uses it to route an
+     * engaged-but-unjudged call to a human instead of retrying it. Null = the
+     * provider did not measure it, which is NOT the same as zero.
+     */
+    Integer callerWordCount;
+
     String recordingUrl;
     String transcript;
 

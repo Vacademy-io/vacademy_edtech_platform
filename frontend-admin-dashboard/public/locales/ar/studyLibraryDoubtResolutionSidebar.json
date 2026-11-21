@@ -1,0 +1,9 @@
+{
+    "errorFetchingDoubts": "حدث خطأ أثناء جلب الاستفسارات",
+    "doubtResolution": "حل الاستفسارات",
+    "tabs": {
+        "all": "الكل",
+        "resolved": "تم الحل",
+        "unresolved": "لم يُحل"
+    }
+}

@@ -1,0 +1,76 @@
+{
+    "dialog": {
+        "editHeading": "تعديل سياسة الإجازة",
+        "addHeading": "إضافة سياسة إجازة"
+    },
+    "actions": {
+        "cancel": "إلغاء",
+        "saving": "جارٍ الحفظ…",
+        "saveChanges": "حفظ التغييرات",
+        "createPolicy": "إنشاء السياسة"
+    },
+    "info": {
+        "accrualExplanationPrefix": "يحدد نوع الاستحقاق كيفية إضافة الوظيفة المجدولة للحصة: ",
+        "accrualExplanationSuffix": " يعني أن كل تشغيل يضيف مقدار الاستحقاق إلى رصيد كل موظف مؤهل. يوزّع خيار التناسب الفترة الأولى للموظف المنضم في منتصف الفترة، بحيث يُمنح من ينضم في منتصف الشهر نصف الاستحقاق فقط بدلًا من كامله."
+    },
+    "noLeaveTypes": "لا توجد أنواع إجازات بعد — أنشئ واحدًا في علامة تبويب أنواع الإجازات أولًا. يجب أن ترتبط السياسة بنوع.",
+    "fields": {
+        "leaveType": {
+            "label": "نوع الإجازة",
+            "fallback": "إجازة"
+        },
+        "annualQuota": {
+            "label": "الحصة السنوية (أيام)",
+            "placeholder": "12",
+            "description": "استحقاق العام بأكمله."
+        },
+        "accrualType": {
+            "label": "نوع الاستحقاق"
+        },
+        "accrualAmount": {
+            "label": "مقدار الاستحقاق (أيام)",
+            "placeholder": "1",
+            "description": "يُضاف في كل تشغيل {{accrualLabel}}."
+        },
+        "applicableAfterDays": {
+            "label": "ينطبق بعد (أيام الخدمة)",
+            "placeholder": "90",
+            "description": "الحقل الفارغ يعني أنه ينطبق منذ تاريخ الانضمام."
+        },
+        "effectiveFrom": {
+            "label": "ساري من"
+        },
+        "effectiveTo": {
+            "label": "ساري حتى",
+            "description": "تركه فارغًا يجعل السياسة مفتوحة النهاية."
+        },
+        "status": {
+            "label": "الحالة"
+        }
+    },
+    "checkbox": {
+        "proRata": {
+            "label": "تناسب للمنضمين في منتصف الفترة",
+            "description": "التعطيل يعني أن المنضم الجديد يحصل على استحقاق الفترة كاملًا في أول تشغيل له، مهما كان عدد أيام عمله قليلًا."
+        }
+    },
+    "toast": {
+        "updated": "تم تحديث السياسة",
+        "created": "تم إنشاء السياسة"
+    },
+    "errors": {
+        "saveFailed": "تعذّر حفظ سياسة الإجازة."
+    },
+    "validation": {
+        "leaveTypeRequired": "اختر نوع الإجازة الذي تحكمه هذه السياسة",
+        "annualQuotaRequired": "أدخل الحصة السنوية بالأيام",
+        "annualQuotaFormat": "أيام فقط، مثل 12 أو 12.5",
+        "accrualTypeRequired": "اختر كيفية استحقاق الحصة",
+        "accrualAmountRequired": "أدخل عدد الأيام التي تُستحق في كل فترة",
+        "accrualAmountFormat": "أيام فقط، مثل 1 أو 1.5",
+        "wholeDaysOnly": "أيام صحيحة فقط",
+        "effectiveFromRequired": "تحتاج السياسة إلى تاريخ بدء",
+        "statusRequired": "اختر حالة",
+        "endBeforeStart": "لا يمكن أن يكون تاريخ الانتهاء قبل تاريخ البدء"
+    }
+}

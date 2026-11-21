@@ -1,0 +1,53 @@
+{
+    "header": {
+        "shotPlan_zero": "خطة من {{count}} لقطة",
+        "shotPlan_one": "خطة من لقطة واحدة ({{count}})",
+        "shotPlan_two": "خطة من لقطتين ({{count}})",
+        "shotPlan_few": "خطة من {{count}} لقطات",
+        "shotPlan_many": "خطة من {{count}} لقطة",
+        "shotPlan_other": "خطة من {{count}} لقطة",
+        "actedScenes_zero": "{{count}} مشهد تمثيلي",
+        "actedScenes_one": "مشهد تمثيلي واحد ({{count}})",
+        "actedScenes_two": "مشهدان تمثيليان ({{count}})",
+        "actedScenes_few": "{{count}} مشاهد تمثيلية",
+        "actedScenes_many": "{{count}} مشهدًا تمثيليًا",
+        "actedScenes_other": "{{count}} مشهد تمثيلي"
+    },
+    "row": {
+        "shotTypePlaceholder": "نوع اللقطة",
+        "secondsPlaceholder": "ثوانٍ",
+        "narrationBriefPlaceholder": "ما يغطيه هذا الجزء",
+        "transitionInAriaLabel": "انتقال الدخول",
+        "transitionPlaceholder": "انتقال…",
+        "backgroundTreatmentAriaLabel": "معالجة الخلفية",
+        "backgroundPlaceholder": "خلفية…",
+        "actedScene": "مشهد تمثيلي",
+        "dialogueLineAriaLabel": "سطر {{character}}",
+        "continuesPreviousScene": "استمرار للمشهد السابق",
+        "newScene": "مشهد جديد"
+    },
+    "transitions": {
+        "cut": "قطع",
+        "fade": "تلاشي",
+        "crossfade": "تلاشٍ متقاطع",
+        "slide_left": "انزلاق لليسار",
+        "slide_up": "انزلاق للأعلى",
+        "zoom_in": "تكبير",
+        "whip_pan": "بانوراما سريعة",
+        "circle_iris": "قزحية دائرية",
+        "smash_cut": "قطع حاد",
+        "dip_to_black": "تلاشٍ إلى الأسود",
+        "dissolve_up": "ذوبان تصاعدي"
+    },
+    "backgrounds": {
+        "brand_solid": "لون العلامة الصلب",
+        "brand_textured": "ملمس العلامة",
+        "brand_gradient": "تدرّج العلامة",
+        "media_hero": "وسائط رئيسية"
+    },
+    "footer": {
+        "letAiDecide": "دع الذكاء الاصطناعي يقرر",
+        "saveAndContinue": "حفظ ومتابعة",
+        "approvePlan": "اعتماد الخطة"
+    }
+}

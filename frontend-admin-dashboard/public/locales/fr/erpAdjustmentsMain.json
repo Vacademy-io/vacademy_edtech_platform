@@ -1,0 +1,51 @@
+{
+    "restricted": {
+        "title": "La rémunération variable est restreinte",
+        "description": "Les gains et retenues ponctuels ne sont visibles que par les rôles RH. Demandez à un administrateur de vous accorder l'accès Responsable RH ou Administrateur RH dans cet établissement."
+    },
+    "tabs": {
+        "adjustments": "Ajustements",
+        "teachingPay": "Rémunération d'enseignement",
+        "incentives": "Primes"
+    },
+    "toast": {
+        "removed": "Ajustement supprimé"
+    },
+    "errors": {
+        "deleteFailed": "Impossible de supprimer cet ajustement. Si un cycle de paie l'a déjà pris en compte, rejetez d'abord ce cycle.",
+        "loadFailed": "Impossible de charger les ajustements de ce mois."
+    },
+    "columns": {
+        "employee": "Employé",
+        "type": "Type",
+        "code": "Code",
+        "label": "Libellé",
+        "amount": "Montant",
+        "runScope": "Portée du cycle",
+        "source": "Source",
+        "pickedUp": "Pris en compte"
+    },
+    "manualSource": "MANUEL",
+    "inPayroll": "Dans la paie",
+    "pending": "En attente",
+    "locked": "Verrouillé",
+    "removeAdjustment": "Supprimer {{label}}",
+    "adjustmentNoun": "ajustement",
+    "thisAdjustment": "Cet ajustement",
+    "intro": "Gains et retenues ponctuels pour un seul mois — une prime, un arriéré, une récupération. Chacun attend ici qu'un cycle de paie pour son mois et sa portée le prenne en compte ; une fois pris en compte, il est verrouillé et ne peut être annulé qu'en rejetant ce cycle.",
+    "monthLabel": "Mois",
+    "addAdjustment": "Ajouter un ajustement",
+    "retrying": "Nouvelle tentative…",
+    "retry": "Réessayer",
+    "emptyState": {
+        "title": "Rien de plus ce mois-ci",
+        "description": "Aucun ajustement enregistré pour le mois sélectionné. Tout ce que vous ajoutez ici sera pris en compte par le prochain cycle de paie correspondant."
+    },
+    "removeDialog": {
+        "title": "Supprimer cet ajustement ?",
+        "description": "{{label}} ne sera plus appliqué au prochain cycle de paie pour {{month}}/{{year}}. Cette action est irréversible — vous devrez le rajouter."
+    },
+    "keepIt": "Le conserver",
+    "removing": "Suppression…",
+    "remove": "Supprimer"
+}

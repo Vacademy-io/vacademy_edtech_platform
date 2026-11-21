@@ -1,5 +1,8 @@
 package vacademy.io.assessment_service.features.assessment.service;
 
+import vacademy.io.assessment_service.features.submission_review.model.QuestionKinds;
+
+import vacademy.io.assessment_service.features.assessment.copy_intake.service.CopyIntakeService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +13,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import vacademy.io.assessment_service.features.assessment.dto.QuestionWiseBasicDetailDto;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.request.RevaluateRequest;
 import vacademy.io.assessment_service.features.assessment.dto.manual_evaluation.ManualAttemptResponseDto;
@@ -18,11 +23,13 @@ import vacademy.io.assessment_service.features.assessment.entity.QuestionAssessm
 import vacademy.io.assessment_service.features.assessment.entity.Section;
 import vacademy.io.assessment_service.features.assessment.entity.StudentAttempt;
 import vacademy.io.assessment_service.features.assessment.enums.AttemptResultStatusEnum;
+import vacademy.io.assessment_service.features.assessment.enums.QuestionResponseEnum;
 import vacademy.io.assessment_service.features.assessment.enums.ReleaseResultStatusEnum;
 import vacademy.io.assessment_service.features.assessment.enums.ResultTypeEnum;
 import vacademy.io.assessment_service.features.assessment.repository.QuestionAssessmentSectionMappingRepository;
 import vacademy.io.assessment_service.features.assessment.repository.SectionRepository;
 import vacademy.io.assessment_service.features.assessment.repository.StudentAttemptRepository;
+import vacademy.io.assessment_service.features.assessment.service.evaluation_ai.TypedAnswerEvaluation;
 import vacademy.io.assessment_service.features.learner_assessment.constants.AttemptJsonConstants;
 import vacademy.io.assessment_service.features.learner_assessment.dto.status_json.LearnerAssessmentAttemptDataDto;
 import vacademy.io.assessment_service.features.learner_assessment.dto.status_json.manual.LearnerManualAttemptDataDto;
@@ -34,6 +41,7 @@ import vacademy.io.assessment_service.features.notification.service.AssessmentNo
 import vacademy.io.assessment_service.features.question_core.entity.Question;
 import vacademy.io.assessment_service.features.question_core.enums.EvaluationTypes;
 import vacademy.io.assessment_service.features.question_core.repository.QuestionRepository;
+import vacademy.io.assessment_service.features.submission_review.model.MarksSource;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.util.*;
@@ -43,6 +51,10 @@ import java.util.stream.StreamSupport;
 @Slf4j
 @Service
 public class StudentAttemptService {
+
+    /** Internal choice ("any 4 of 5"); absent in unit tests that do not need it. */
+    @Autowired(required = false)
+    private vacademy.io.assessment_service.features.assessment.service.evaluation_ai.DashboardChoiceGroups choiceGroups;
 
     @Autowired
     StudentAttemptRepository studentAttemptRepository;
@@ -68,6 +80,60 @@ public class StudentAttemptService {
     @Autowired
     AssessmentWorkflowEventPublisher assessmentWorkflowEventPublisher;
 
+    @Autowired
+    TypedAnswerEvaluation typedAnswerEvaluation;
+
+    /** Submission review: SKIPPED_PROTECTED history of a re-mark. Optional in unit tests. */
+    @Autowired(required = false)
+    vacademy.io.assessment_service.features.submission_review.service.MarkHistory markHistory;
+
+    @Autowired(required = false)
+    vacademy.io.assessment_service.features.assessment.repository.EvaluationLogsRepository evaluationLogsRepository;
+
+    /**
+     * Submission review: a re-mark works on one attempt at a time under its row lock (the
+     * lock every marks writer takes first), on a copy read after the lock. Optional in unit
+     * tests (then the old unlocked path runs).
+     */
+    @Autowired(required = false)
+    org.springframework.transaction.PlatformTransactionManager transactionManager;
+
+    /** Submission review R6 total (newest row per paper key, choice groups). Optional in unit tests. */
+    @Autowired(required = false)
+    @org.springframework.context.annotation.Lazy
+    vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService submissionReleaseService;
+
+    @Autowired(required = false)
+    @org.springframework.context.annotation.Lazy
+    vacademy.io.assessment_service.features.submission_review.service.SubmissionReviewStore submissionReviewStore;
+
+    /**
+     * Set only around a revaluate ("re-mark with the answer key") of one attempt, never on
+     * submit or autosave. While set, a legacy row with no marks_source counts as a teacher's
+     * mark when the test is marked by hand (contract 7.5), and every row the re-mark skipped
+     * is collected for the history.
+     */
+    static final class RevaluateScope {
+        final LegacyProtection protectLegacy;
+        final java.util.List<String> skippedKeys = new java.util.ArrayList<>();
+
+        RevaluateScope(LegacyProtection protectLegacy) {
+            this.protectLegacy = protectLegacy;
+        }
+    }
+
+    /**
+     * Which legacy (NULL marks_source) rows a re-mark keeps. NONE: re-score them all.
+     * PERSON_MARKED (the attempt has a MANUAL_EVALUATION log): only questions a person marks
+     * (not answer-key types - nothing ever wrote a source on key-scored rows, so those are
+     * the key's own marks; also a MANUAL test answered on screen). ALL: a hand-marked
+     * (evaluationType MANUAL) attempt on an uploaded sheet, where every legacy row is the
+     * teacher's (contract 4.4 rule 5).
+     */
+    enum LegacyProtection { NONE, PERSON_MARKED, ALL }
+
+    private static final ThreadLocal<RevaluateScope> REVALUATE = new ThreadLocal<>();
+
     public StudentAttempt updateStudentAttempt(StudentAttempt studentAttempt) {
         return studentAttemptRepository.save(studentAttempt);
     }
@@ -76,30 +142,23 @@ public class StudentAttemptService {
         return updateStudentAttempt(studentAttempt);
     }
 
-    public void releaseResultsForEndedAutoReleaseAssessments() {
-        List<StudentAttempt> unreleased = studentAttemptRepository.findUnreleasedAttemptsForEndedAutoReleaseAssessments();
-        Date now = new Date();
-        for (StudentAttempt attempt : unreleased) {
-            attempt.setReportReleaseStatus(ReleaseResultStatusEnum.RELEASED.name());
-            attempt.setReportLastReleaseDate(now);
-        }
-        if (!unreleased.isEmpty()) {
-            studentAttemptRepository.saveAll(unreleased);
-            log.info("[AUTO-RELEASE] Released results for {} attempts after assessment end", unreleased.size());
-            // The query only returns attempts that were NOT yet released, so every row here
-            // is a genuine transition — no re-notification risk on a repeated cron pass.
-            assessmentWorkflowEventPublisher.publishResultReleased(unreleased);
-        }
-    }
 
-
+    // @Transactional is load-bearing, not decorative: without it the rows loaded by
+    // the marks calculation detach the instant their read finishes, so saveAll() falls
+    // back to merge() and fires a SELECT per row — each dragging this entity's four
+    // EAGER @ManyToOne graphs. A 42-question paper became ~84 round trips per autosave
+    // per candidate, which took a live exam's background recalcs to 29s on 2026-08-29.
+    // Inside a transaction the entities stay managed, dirty checking emits plain
+    // batched UPDATEs, and the same work costs a couple of round trips.
     @Async
+    @Transactional
     @CacheEvict(value = "comparisonData", allEntries = true)
     public CompletableFuture<StudentAttempt> updateStudentAttemptWithTotalAfterMarksCalculationAsync(Optional<StudentAttempt> studentAttemptOptional) {
         return CompletableFuture.completedFuture(updateStudentAttemptWithTotalAfterMarksCalculation(studentAttemptOptional));
     }
 
     @Async
+    @Transactional
     @CacheEvict(value = "comparisonData", allEntries = true)
     public CompletableFuture<StudentAttempt> updateStudentAttemptResultAfterMarksCalculationAsync(Optional<StudentAttempt> studentAttemptOptional) {
         return updateStudentAttemptResultAfterMarksCalculationAsync(studentAttemptOptional, null);
@@ -107,6 +166,7 @@ public class StudentAttemptService {
 
     /** @param endSource see {@link #updateStudentAttemptWithResultAfterMarksCalculation(Optional, String)}. */
     @Async
+    @Transactional
     @CacheEvict(value = "comparisonData", allEntries = true)
     public CompletableFuture<StudentAttempt> updateStudentAttemptResultAfterMarksCalculationAsync(Optional<StudentAttempt> studentAttemptOptional,
                                                                                                  String endSource) {
@@ -127,6 +187,7 @@ public class StudentAttemptService {
      *                  cannot be inferred from here, because callers reach this method with
      *                  a non-ENDED attempt for several different reasons.
      */
+    @Transactional
     @CacheEvict(value = "comparisonData", allEntries = true)
     public StudentAttempt updateStudentAttemptWithResultAfterMarksCalculation(Optional<StudentAttempt> studentAttemptOptional,
                                                                              String endSource) {
@@ -148,9 +209,41 @@ public class StudentAttemptService {
         // attempt-expiry cron) must not flip such attempts to COMPLETED
         // ("Evaluated") or release their results.
         boolean isManualEvaluation = isManualEvaluationAssessment(attempt);
-        if (isManualEvaluation) {
-            if (!AssessmentAttemptResultEnum.COMPLETED.name().equals(attempt.getResultStatus())) {
+        // An online attempt whose written answers the AI is about to grade is held
+        // the same way: until then those answers carry only the word-overlap score,
+        // and the AI's marks are a draft the teacher reviews and releases.
+        // A Spreadsheet & Written Response (CBE) answer is never auto-scored: it is
+        // stored as 0 / PENDING, so the attempt is held for the teacher even when
+        // the assessment's AI evaluation is off - releasing it would publish that 0.
+        // A long answer with only a keyword-match score (KEYWORD) waits for the teacher too
+        // (owner decision 2026-11-19); it is released when its last answer is confirmed.
+        boolean awaitsKeyword = !isManualEvaluation && awaitsKeywordConfirmation(attempt);
+        boolean heldForAi = !isManualEvaluation && (awaitsAiGrading(attempt) || awaitsTeacherGrading(attempt)
+                || awaitsKeyword);
+        if (heldForAi) {
+            // Still an AUTO attempt: keep result_marks as the release path expects;
+            // the AI run replaces both totals when it completes.
+            attempt.setResultMarks(totalMarks);
+        }
+        if (isManualEvaluation || heldForAi) {
+            // A re-mark that leaves a keyword suggestion on an unreleased attempt reopens a
+            // stored COMPLETED: the after-end cron releases on COMPLETED alone, and would
+            // publish the unconfirmed suggestion (spec decision 5).
+            boolean releasedNow = ReleaseResultStatusEnum.RELEASED.name().equals(attempt.getReportReleaseStatus());
+            if (!AssessmentAttemptResultEnum.COMPLETED.name().equals(attempt.getResultStatus())
+                    || (awaitsKeyword && !releasedNow)) {
                 attempt.setResultStatus(AssessmentAttemptResultEnum.PENDING.name());
+            }
+            // Nothing automatic will ever release a manually-evaluated attempt
+            // (autoRelease is skipped below), so make the hold explicit. Left
+            // NULL, the attempt was invisible on the learner's Reports list —
+            // it filters on report_release_status IN ('RELEASED','PENDING') —
+            // and read "Not available" in the admin's Result Status column;
+            // the PDF-upload submit path already writes PENDING. Only fill the
+            // gap: a RELEASED attempt that comes back through here (a
+            // re-calculation) must stay released.
+            if (attempt.getReportReleaseStatus() == null) {
+                attempt.setReportReleaseStatus(ReleaseResultStatusEnum.PENDING.name());
             }
         } else {
             attempt.setResultMarks(totalMarks);
@@ -164,8 +257,12 @@ public class StudentAttemptService {
             attempt.setStatus(AssessmentAttemptEnum.ENDED.name());
         }
 
-        // Auto-release result based on assessment's result_type
-        boolean justReleased = !isManualEvaluation && autoReleaseResultIfApplicable(attempt);
+        // Auto-release result based on assessment's result_type. An OMR-mode assessment
+        // is never auto-released: its scanned sheets are reviewed (faint marks, double
+        // bubbles, a mis-bubbled roll number) and the admin releases them.
+        boolean heldForOmrReview = isOmrModeAssessment(attempt);
+        boolean justReleased = !isManualEvaluation && !heldForAi && !heldForOmrReview
+                && autoReleaseResultIfApplicable(attempt);
 
         StudentAttempt saved = studentAttemptRepository.save(attempt);
         if (endedByThisCall && endSource != null) {
@@ -173,8 +270,85 @@ public class StudentAttemptService {
         }
         if (justReleased) {
             assessmentWorkflowEventPublisher.publishResultReleased(saved, null, null);
+            // The result email (report PDF attached) is sent by AutoResultReleaseJob a minute
+            // or two later, not here: rendering a PDF on the submit request would slow every
+            // submission of a live exam. Written as its own UPDATE, not an entity field, so a
+            // later save of an older copy of this attempt cannot set the flag again. After
+            // commit, so a failure here cannot roll back the learner's submission.
+            // EXAM only: a mock / practice test is retaken freely (up to 19 attempts each in
+            // prod), and a report email per attempt would be spam.
+            if (isExamPlayMode(saved)) {
+                queueResultNoticeAfterCommit(saved.getId());
+            }
         }
         return saved;
+    }
+
+    private static boolean isExamPlayMode(StudentAttempt attempt) {
+        try {
+            String playMode = attempt.getRegistration().getAssessment().getPlayMode();
+            return "EXAM".equalsIgnoreCase(playMode);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private void queueResultNoticeAfterCommit(String attemptId) {
+        Runnable mark = () -> {
+            try {
+                studentAttemptRepository.markResultNoticePending(attemptId);
+            } catch (Exception e) {
+                log.error("[AUTO-RELEASE] could not queue the result email for attempt {}: {}",
+                        attemptId, e.getMessage());
+            }
+        };
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    mark.run();
+                }
+            });
+        } else {
+            mark.run();
+        }
+    }
+
+    private boolean awaitsAiGrading(StudentAttempt attempt) {
+        try {
+            return typedAnswerEvaluation.awaitsAiGrading(attempt, attempt.getRegistration().getAssessment());
+        } catch (Exception e) {
+            log.error("Failed to resolve AI grading for attempt {}: {}", attempt.getId(), e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean awaitsTeacherGrading(StudentAttempt attempt) {
+        try {
+            return typedAnswerEvaluation.awaitsTeacherGrading(attempt, attempt.getRegistration().getAssessment());
+        } catch (Exception e) {
+            log.error("Failed to resolve teacher grading for attempt {}: {}", attempt.getId(), e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean awaitsKeywordConfirmation(StudentAttempt attempt) {
+        try {
+            return typedAnswerEvaluation.awaitsKeywordConfirmation(attempt, attempt.getRegistration().getAssessment());
+        } catch (Exception e) {
+            log.error("Failed to resolve keyword confirmation for attempt {}: {}", attempt.getId(), e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean isOmrModeAssessment(StudentAttempt attempt) {
+        try {
+            Assessment assessment = attempt.getRegistration().getAssessment();
+            return assessment != null && Boolean.TRUE.equals(assessment.getOmrMode());
+        } catch (Exception e) {
+            log.error("Failed to resolve OMR mode for attempt {}: {}", attempt.getId(), e.getMessage());
+            return false;
+        }
     }
 
     private boolean isManualEvaluationAssessment(StudentAttempt attempt) {
@@ -199,7 +373,20 @@ public class StudentAttemptService {
 
         double totalMarks = calculateTotalMarksForAttemptAndUpdateQuestionWiseMarks(studentAttemptOptional);
 
-        StudentAttempt attempt = studentAttemptOptional.get();
+        // Re-read before writing. This runs async off a 60s autosave, so the
+        // learner may have submitted while it was calculating; the entity we
+        // were handed is a snapshot from before that submit. StudentAttempt has
+        // no @Version, so saving the snapshot is a full-row overwrite that
+        // resets status to LIVE and wipes submit_time/result_marks — measured at
+        // 6.6% of submits in the 1000-VU load test (2026-08-27). The submit and
+        // expiry paths compute authoritative marks, so once the attempt has
+        // ended there is nothing here worth persisting.
+        StudentAttempt attempt = studentAttemptRepository.findById(studentAttemptOptional.get().getId())
+                .orElse(studentAttemptOptional.get());
+        if (AssessmentAttemptEnum.ENDED.name().equals(attempt.getStatus()) || attempt.getSubmitTime() != null) {
+            log.debug("Skipping live-sync marks write, attempt already submitted: attemptId={}", attempt.getId());
+            return attempt;
+        }
         attempt.setTotalMarks(totalMarks);
         attempt.setTotalTimeInSeconds(timeElapsedInSeconds);
 
@@ -221,6 +408,8 @@ public class StudentAttemptService {
 
             boolean alreadyReleased = ReleaseResultStatusEnum.RELEASED.name()
                     .equals(attempt.getReportReleaseStatus());
+            // A teacher pressed "Hide result again": no automatic release shows it again.
+            if (!alreadyReleased && attempt.getResultWithheldAt() != null) return false;
 
             if (ResultTypeEnum.AUTO_AFTER_SUBMISSION.name().equals(resultType)) {
                 attempt.setReportReleaseStatus(ReleaseResultStatusEnum.RELEASED.name());
@@ -228,7 +417,12 @@ public class StudentAttemptService {
                 return !alreadyReleased;
             } else if (ResultTypeEnum.AUTO_AFTER_ASSESSMENT_END.name().equals(resultType)) {
                 Date now = new Date();
-                if (assessment.getBoundEndTime() != null && now.after(assessment.getBoundEndTime())) {
+                // A mock or practice test never ends (its window closes in 9999),
+                // so "after the assessment ends" would mean never. Release on
+                // submission instead - the only reading that shows results at all.
+                boolean openEnded = OPEN_ENDED_PLAY_MODES.contains(
+                        assessment.getPlayMode() == null ? "" : assessment.getPlayMode().toUpperCase());
+                if (openEnded || (assessment.getBoundEndTime() != null && now.after(assessment.getBoundEndTime()))) {
                     attempt.setReportReleaseStatus(ReleaseResultStatusEnum.RELEASED.name());
                     attempt.setReportLastReleaseDate(now);
                     return !alreadyReleased;
@@ -315,6 +509,8 @@ public class StudentAttemptService {
         final Map<String, String> responseJsonByQuestionId = new HashMap<>();
         final List<QuestionWiseMarks> dirtyQuestionWiseMarks = new ArrayList<>();
         final Set<String> dirtyKeys = new HashSet<>();
+        /** "qid|sid" where any marks row (an old duplicate too) holds a person's or the AI's mark. */
+        final Set<String> protectedKeys = new HashSet<>();
     }
 
     private MarksCalculationContext buildMarksCalculationContext(Assessment assessment, StudentAttempt studentAttempt,
@@ -347,13 +543,19 @@ public class StudentAttemptService {
 
         sectionRepository.findAllById(sectionIds).forEach(section -> context.sectionById.put(section.getId(), section));
 
-        for (QuestionWiseMarks existing : questionWiseMarksService
-                .getAllQuestionWiseMarksForAttemptId(studentAttempt.getId(), assessment.getId())) {
+        // Newest row first, as every other reader (MarkWriter, R6, the per-key lookup): an old
+        // duplicate row must never be the one re-scored or counted.
+        List<QuestionWiseMarks> existingRows = new ArrayList<>(questionWiseMarksService
+                .getAllQuestionWiseMarksForAttemptId(studentAttempt.getId(), assessment.getId()));
+        existingRows.sort(Comparator.comparing(QuestionWiseMarks::getCreatedAt,
+                Comparator.nullsLast(Comparator.reverseOrder())));
+        for (QuestionWiseMarks existing : existingRows) {
             String questionId = existing.getQuestion() != null ? existing.getQuestion().getId() : null;
             String sectionId = existing.getSectionId() != null ? existing.getSectionId()
                     : (existing.getSection() != null ? existing.getSection().getId() : null);
             if (questionId != null && sectionId != null) {
                 context.marksRowByQuestionAndSection.putIfAbsent(questionId + "|" + sectionId, existing);
+                if (isEvaluatorMarked(existing)) context.protectedKeys.add(questionId + "|" + sectionId);
             }
         }
 
@@ -421,6 +623,16 @@ public class StudentAttemptService {
         Long timeTakenInSecs = attemptDataParserService.extractTimeTakenInSecondsFromQuestionJson(questionJson);
 
         QuestionWiseMarks marksRow = context.marksRowByQuestionAndSection.get(questionId + "|" + sectionId);
+        if (marksRow != null && (isEvaluatorMarked(marksRow)
+                || legacyProtectedOnRevaluate(marksRow, scoringType(type, markingScheme.getMarkingJson()))
+                || context.protectedKeys.contains(questionId + "|" + sectionId))) {
+            // Read by the AI (and maybe a teacher) - a recalculation must not put
+            // the word-overlap score back over that mark.
+            RevaluateScope scope = REVALUATE.get();
+            if (scope != null) scope.skippedKeys.add(sectionId + ":" + questionId);
+            return marksRow.getMarks();
+        }
+        boolean released = ReleaseResultStatusEnum.RELEASED.name().equals(studentAttempt.getReportReleaseStatus());
         if (marksRow != null) {
             if (!Objects.isNull(timeTakenInSecs)) {
                 marksRow.setTimeTakenInSeconds(timeTakenInSecs);
@@ -428,9 +640,17 @@ public class StudentAttemptService {
             if (!Objects.isNull(questionWiseResponseData)) {
                 marksRow.setResponseJson(questionWiseResponseData);
             }
+            String source = keywordSource(type, answerStatus, marksRow.getMarksSource(), released);
+            if (Math.abs(marksRow.getMarks() - marksObtained) > 0.0001
+                    || !Objects.equals(marksRow.getStatus(), answerStatus)
+                    || !Objects.equals(marksRow.getMarksSource(), source)) {
+                // Submission review: the answer's mark changed - an open edit form must notice.
+                marksRow.setRevision(marksRow.getRevision() + 1);
+            }
             marksRow.setMarks(marksObtained);
             marksRow.setSection(section);
             marksRow.setStatus(answerStatus);
+            marksRow.setMarksSource(source);
             if (context.dirtyKeys.add(questionId + "|" + sectionId)) {
                 context.dirtyQuestionWiseMarks.add(marksRow);
             }
@@ -445,6 +665,7 @@ public class StudentAttemptService {
                     .responseJson(questionWiseResponseData)
                     .section(section)
                     .status(answerStatus)
+                    .marksSource(keywordSource(type, answerStatus, null, released))
                     .marks(marksObtained).build();
             context.marksRowByQuestionAndSection.put(questionId + "|" + sectionId, created);
             context.dirtyKeys.add(questionId + "|" + sectionId);
@@ -452,6 +673,31 @@ public class StudentAttemptService {
         }
 
         return marksObtained;
+    }
+
+    /**
+     * marks_source of a row the answer key just scored (owner decision 2026-11-19): a long
+     * answer the keyword match scored is KEYWORD, "Needs marking" until a teacher or the AI
+     * confirms it; unscored (PENDING) drops it. A re-mark of a released result never adds
+     * KEYWORD, so old results do not turn "released with unmarked answers". Other types keep
+     * their source.
+     */
+    static String keywordSource(String scoringType, String status, String current, boolean released) {
+        if (!QuestionKinds.isLongAnswer(scoringType)) return current;
+        boolean scored = QuestionResponseEnum.CORRECT.name().equals(status)
+                || QuestionResponseEnum.INCORRECT.name().equals(status);
+        if (!scored) return MarksSource.KEYWORD.equals(current) ? null : current;
+        return released ? current : MarksSource.KEYWORD;
+    }
+
+    /**
+     * A mark the answer key must not overwrite: the AI's, or one a person set (submission
+     * review: a teacher's MANUAL mark or its legacy alias TEACHER from PR #3814, an OMR fix,
+     * an offline entry). Also guards the submit and offline re-scoring of such rows.
+     */
+    static boolean isEvaluatorMarked(QuestionWiseMarks marksRow) {
+        String source = marksRow.getMarksSource();
+        return MarksSource.AI.equals(source) || MarksSource.isProtected(source);
     }
 
     public LearnerAssessmentAttemptDataDto validateAndCreateJsonObject(String jsonContent) {
@@ -507,68 +753,277 @@ public class StudentAttemptService {
     }
 
     public void revaluateForAllParticipants(String assessmentId) {
+        revaluateForAllParticipants(assessmentId, null);
+    }
+
+    public void revaluateForAllParticipants(String assessmentId, String actorUserId) {
         List<StudentAttempt> allAttempts = studentAttemptRepository.findAllParticipantsFromAssessmentAndStatusNotIn(assessmentId, List.of("DELETED"));
-        revaluateAssessmentForAttempts(allAttempts);
+        revaluateAssessmentForAttempts(allAttempts, "ENTIRE_ASSESSMENT", actorUserId);
     }
 
     public void revaluateAssessmentForAttempts(List<StudentAttempt> allAttempts) {
-        allAttempts.forEach(attempt -> {
+        revaluateAssessmentForAttempts(allAttempts, "ENTIRE_ASSESSMENT_PARTICIPANTS", null);
+    }
+
+    public void revaluateAssessmentForAttempts(List<StudentAttempt> allAttempts, String mode, String actorUserId) {
+        allAttempts.forEach(loaded -> inAttemptLock(loaded, attempt -> {
             if (attempt.getStatus().equals("ENDED")) {
-                updateStudentAttemptWithResultAfterMarksCalculation(Optional.of(attempt));
+                Double before = attempt.getTotalMarks();
+                RevaluateScope scope = new RevaluateScope(legacyProtection(attempt));
+                REVALUATE.set(scope);
+                StudentAttempt saved;
+                try {
+                    saved = updateStudentAttemptWithResultAfterMarksCalculation(Optional.of(attempt));
+                } finally {
+                    REVALUATE.remove();
+                }
+                afterRevaluate(saved != null ? saved : attempt, before, scope.skippedKeys, mode, actorUserId, null);
             } else if (attempt.getStatus().equals("LIVE")) {
                 updateStudentAttemptWithTotalAfterMarksCalculation(Optional.of(attempt));
             }
+        }));
+    }
 
+    /**
+     * Runs one attempt's re-mark in its own transaction holding the attempt row lock (the
+     * lock MarkWriter, the release and the AI callback take first), on a copy read AFTER the
+     * lock. The list was loaded when the re-mark started, possibly minutes ago: saving that
+     * copy would undo a release or a teacher's mark made since.
+     */
+    private void inAttemptLock(StudentAttempt loaded, java.util.function.Consumer<StudentAttempt> work) {
+        if (transactionManager == null) {
+            work.accept(loaded);
+            return;
+        }
+        new org.springframework.transaction.support.TransactionTemplate(transactionManager).executeWithoutResult(tx -> {
+            studentAttemptRepository.lockById(loaded.getId());
+            StudentAttempt fresh = studentAttemptRepository.findById(loaded.getId()).orElse(null);
+            if (fresh == null) return;
+            work.accept(fresh);
         });
     }
 
     public void revaluateForCustomParticipantsAndQuestions(Assessment assessment, RevaluateRequest request) {
+        revaluateForCustomParticipantsAndQuestions(assessment, request, null);
+    }
+
+    public void revaluateForCustomParticipantsAndQuestions(Assessment assessment, RevaluateRequest request,
+                                                           String actorUserId) {
         List<StudentAttempt> allAttempts = StreamSupport
                 .stream(studentAttemptRepository.findAllById(request.getAttemptIds()).spliterator(), false)
                 .toList();
-
         List<RevaluateRequest.RevaluateQuestionDto> questionDtos = request.getQuestions();
-        questionDtos.forEach(question -> {
-            String sectionId = question.getSectionId();
-            List<String> questionIds = question.getQuestionIds();
-
-            for (StudentAttempt attempt : allAttempts) {
-                calculateMarksForSectionIdAndQuestionIds(Optional.of(attempt), sectionId, questionIds, assessment);
+        // One attempt at a time, under its lock, on a fresh copy (see inAttemptLock).
+        for (StudentAttempt loaded : allAttempts) {
+            inAttemptLock(loaded, attempt -> {
+                Double before = attempt.getTotalMarks();
+                LegacyProtection protectLegacy = legacyProtection(attempt);
+                for (RevaluateRequest.RevaluateQuestionDto question : questionDtos) {
+                    String sectionId = question.getSectionId();
+                    List<String> questionIds = question.getQuestionIds();
+                    RevaluateScope scope = new RevaluateScope(protectLegacy);
+                    REVALUATE.set(scope);
+                    try {
+                        calculateMarksForSectionIdAndQuestionIds(Optional.of(attempt), sectionId, questionIds,
+                                assessment);
+                    } finally {
+                        REVALUATE.remove();
+                    }
+                    for (String key : scope.skippedKeys) {
+                        int colon = key.indexOf(':');
+                        recordSkipped(attempt, List.of(key), "PARTICIPANTS_AND_QUESTIONS", actorUserId,
+                                key.substring(0, colon), key.substring(colon + 1));
+                    }
+                }
                 updateMarksAfterRevaluation(attempt, assessment.getId());
+                afterRevaluate(attempt, before, List.of(), "PARTICIPANTS_AND_QUESTIONS", actorUserId, null);
+            });
+        }
+    }
+
+    /**
+     * A legacy row (no marks_source) a person marked - only during a revaluate. On a test
+     * that is not hand-marked, an answer-key question is never protected this way: the
+     * answer key wrote that row (no scoring path sets a source), so "Re-mark with answer
+     * key" must re-score it (pre-ship review R1).
+     */
+    private static boolean legacyProtectedOnRevaluate(QuestionWiseMarks row, String questionType) {
+        RevaluateScope scope = REVALUATE.get();
+        if (scope == null || row.getMarksSource() != null) return false;
+        return switch (scope.protectLegacy) {
+            case ALL -> true;
+            case PERSON_MARKED -> !QuestionKinds.isObjective(questionType);
+            case NONE -> false;
+        };
+    }
+
+    /** The question type the key scores with: the response's, else the marking scheme's. */
+    static String scoringType(String responseType, String markingJson) {
+        if (responseType != null && !responseType.isBlank()) return responseType;
+        if (markingJson == null || markingJson.isBlank()) return null;
+        try {
+            JsonNode node = new ObjectMapper().readTree(markingJson).path("type");
+            return node.isMissingNode() || node.isNull() ? null : node.asText();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private LegacyProtection legacyProtection(StudentAttempt attempt) {
+        try {
+            Assessment assessment = attempt.getRegistration().getAssessment();
+            if (assessment != null && EvaluationTypes.MANUAL.name().equals(assessment.getEvaluationType())) {
+                // ALL only when a person marks an uploaded sheet: there a legacy row is the
+                // teacher's mark (a scanned sheet has no option ids for the key to score). A
+                // hand-marked test answered on screen (the learner app submits it through the
+                // normal endpoint when no PDF is attached) has key-scored objective rows, which
+                // the re-mark must re-score (second review of F1).
+                return marksAnUploadedSheet(attempt) ? LegacyProtection.ALL : LegacyProtection.PERSON_MARKED;
             }
-        });
+            boolean logged = evaluationLogsRepository != null && evaluationLogsRepository.existsBySourceIdAndType(
+                    attempt.getId(),
+                    vacademy.io.assessment_service.features.assessment.enums.EvaluationLogsTypeEnum.MANUAL_EVALUATION.name());
+            return logged ? LegacyProtection.PERSON_MARKED : LegacyProtection.NONE;
+        } catch (Exception e) {
+            log.warn("Could not tell whether attempt {} was marked by hand: {}", attempt.getId(), e.getMessage());
+            return LegacyProtection.PERSON_MARKED;
+        }
+    }
+
+    /**
+     * Whether the attempt's marks were given on an uploaded answer sheet: a copy-check copy,
+     * the learner's (or an admin's) uploaded sheet in attempt_data "fileId", or an older
+     * attempt whose sheet only reached evaluated_file_id (the upload used to write it there
+     * and drop the "fileId" key).
+     */
+    static boolean marksAnUploadedSheet(StudentAttempt attempt) {
+        if ("COPY_CHECK".equals(attempt.getStatus())) return true;
+        if (attempt.getEvaluatedFileId() != null && !attempt.getEvaluatedFileId().isBlank()) return true;
+        String data = attempt.getAttemptData();
+        if (data == null || data.isBlank()) return false;
+        try {
+            JsonNode id = new ObjectMapper().readTree(data).path("fileId");
+            return id.isTextual() && !id.asText().isBlank();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Submission review after a re-mark (contract 7.5, D9, D11): one SKIPPED_PROTECTED event
+     * per attempt that kept a person's marks, and "Released, changed" when the re-mark moved
+     * a released total.
+     */
+    private void afterRevaluate(StudentAttempt attempt, Double totalBefore, List<String> skippedKeys, String mode,
+                                String actorUserId, String unused) {
+        try {
+            if (!skippedKeys.isEmpty()) {
+                recordSkipped(attempt, skippedKeys, mode, actorUserId, null, null);
+            }
+            Double after = attempt.getTotalMarks();
+            boolean changed = (totalBefore == null) != (after == null)
+                    || (totalBefore != null && Math.abs(totalBefore - after) > 0.005);
+            if (changed && ReleaseResultStatusEnum.RELEASED.name().equals(attempt.getReportReleaseStatus())) {
+                studentAttemptRepository.bumpRevisionAfterRevaluate(attempt.getId(), new Date());
+            }
+        } catch (Exception e) {
+            log.warn("Could not record the re-mark of attempt {}: {}", attempt.getId(), e.getMessage());
+        }
+    }
+
+    private void recordSkipped(StudentAttempt attempt, List<String> keys, String mode, String actorUserId,
+                               String sectionId, String questionId) {
+        if (markHistory == null) return;
+        java.util.Map<String, Object> payload = new java.util.LinkedHashMap<>();
+        payload.put("keys", keys);
+        payload.put("mode", mode);
+        boolean released = ReleaseResultStatusEnum.RELEASED.name().equals(attempt.getReportReleaseStatus());
+        markHistory.save(markHistory.base(attempt,
+                        vacademy.io.assessment_service.features.submission_review.model.MarkEventType.SKIPPED_PROTECTED,
+                        vacademy.io.assessment_service.features.submission_review.model.ActorType.SYSTEM, actorUserId,
+                        released)
+                .sectionId(sectionId).questionId(questionId)
+                .payloadJson(vacademy.io.assessment_service.features.submission_review.service.MarkHistory.json(payload))
+                .reason("Kept the mark a person gave")
+                .build());
     }
 
     @Async
     public CompletableFuture<Void> revaluateForAllParticipantsWrapper(Assessment assessment, String instituteId) {
-        return CompletableFuture.runAsync(() -> revaluateForAllParticipants(assessment.getId()))
+        return revaluateForAllParticipantsWrapper(assessment, instituteId, null);
+    }
+
+    @Async
+    public CompletableFuture<Void> revaluateForAllParticipantsWrapper(Assessment assessment, String instituteId,
+                                                                      String actorUserId) {
+        return CompletableFuture.runAsync(() -> revaluateForAllParticipants(assessment.getId(), actorUserId))
                 .thenRun(() -> sendEmail(instituteId, assessment));
     }
 
     @Async
     public CompletableFuture<Void> revaluateForParticipantIdsWrapper(Assessment assessment, List<String> allAttemptIds, String instituteId) {
+        return revaluateForParticipantIdsWrapper(assessment, allAttemptIds, instituteId, null);
+    }
+
+    @Async
+    public CompletableFuture<Void> revaluateForParticipantIdsWrapper(Assessment assessment, List<String> allAttemptIds,
+                                                                     String instituteId, String actorUserId) {
         List<StudentAttempt> allAttempts = StreamSupport
                 .stream(studentAttemptRepository.findAllById(allAttemptIds).spliterator(), false)
                 .toList();
 
-        return CompletableFuture.runAsync(() -> revaluateAssessmentForAttempts(allAttempts))
+        return CompletableFuture.runAsync(() -> revaluateAssessmentForAttempts(allAttempts,
+                        "ENTIRE_ASSESSMENT_PARTICIPANTS", actorUserId))
                 .thenRun(() -> sendEmail(instituteId, assessment));
     }
 
     @Async
     public CompletableFuture<Void> revaluateCustomParticipantAndQuestionsWrapper(Assessment assessment, RevaluateRequest request, String instituteId) {
+        return revaluateCustomParticipantAndQuestionsWrapper(assessment, request, instituteId, null);
+    }
 
-        return CompletableFuture.runAsync(() -> revaluateForCustomParticipantsAndQuestions(assessment, request))
+    @Async
+    public CompletableFuture<Void> revaluateCustomParticipantAndQuestionsWrapper(Assessment assessment,
+                                                                                RevaluateRequest request,
+                                                                                String instituteId,
+                                                                                String actorUserId) {
+        return CompletableFuture.runAsync(() -> revaluateForCustomParticipantsAndQuestions(assessment, request,
+                        actorUserId))
                 .thenRun(() -> sendEmail(instituteId, assessment));
     }
 
 
     public void updateMarksAfterRevaluation(StudentAttempt studentAttempt, String assessmentId) {
         List<QuestionWiseMarks> allQuestionWiseMarks = questionWiseMarksService.getAllQuestionWiseMarksForAttemptId(studentAttempt.getId(), assessmentId);
+        // Submission review R6 (newest row per question of the paper, choice groups): the total
+        // every other screen shows. Summing every row counted old duplicates and rows of
+        // questions no longer on the paper. The query above flushed this re-mark's rows.
+        Double r6 = r6Total(studentAttempt);
+        holdForKeywordAfterRemark(studentAttempt);
+        if (r6 != null) {
+            studentAttempt.setTotalMarks(r6);
+            if (studentAttempt.getStatus().equals("ENDED")) {
+                studentAttempt.setResultMarks(r6);
+            }
+            studentAttemptRepository.save(studentAttempt);
+            return;
+        }
         double totalMarks = 0.0;
 
         for (QuestionWiseMarks questionWiseMarks : allQuestionWiseMarks) {
             totalMarks += questionWiseMarks.getMarks();
+        }
+        // Internal choice ("any 4 of 5"): the extra answers keep their marks but leave
+        // the total. Nothing changes for a paper without groups.
+        if (choiceGroups != null) {
+            java.util.Map<String, Double> byQuestion = new java.util.HashMap<>();
+            for (QuestionWiseMarks m : allQuestionWiseMarks) {
+                if (m.getQuestion() != null) byQuestion.put(m.getQuestion().getId(), m.getMarks());
+            }
+            for (String left : choiceGroups.notCountedByMarks(assessmentId, byQuestion)) {
+                Double marks = byQuestion.get(left);
+                if (marks != null) totalMarks -= marks;
+            }
         }
 
         studentAttempt.setTotalMarks(totalMarks);
@@ -577,6 +1032,35 @@ public class StudentAttemptService {
         }
 
         studentAttemptRepository.save(studentAttempt);
+    }
+
+    /**
+     * The per-question re-mark can turn an answer into a keyword suggestion (marks_source
+     * KEYWORD) on an attempt already stored COMPLETED but not yet released (e.g. a test
+     * released after its end). Hold it as the submit does: result PENDING, so the after-end
+     * cron (result_status = 'COMPLETED') does not publish the suggestion; the teacher's
+     * confirmation of the last answer completes it again (MarkWriter).
+     */
+    private void holdForKeywordAfterRemark(StudentAttempt attempt) {
+        if (!AssessmentAttemptEnum.ENDED.name().equals(attempt.getStatus())) return;
+        if (!AssessmentAttemptResultEnum.COMPLETED.name().equals(attempt.getResultStatus())) return;
+        if (ReleaseResultStatusEnum.RELEASED.name().equals(attempt.getReportReleaseStatus())) return;
+        if (isManualEvaluationAssessment(attempt) || !awaitsKeywordConfirmation(attempt)) return;
+        attempt.setResultStatus(AssessmentAttemptResultEnum.PENDING.name());
+        if (attempt.getReportReleaseStatus() == null) {
+            attempt.setReportReleaseStatus(ReleaseResultStatusEnum.PENDING.name());
+        }
+    }
+
+    private Double r6Total(StudentAttempt attempt) {
+        if (submissionReleaseService == null || submissionReviewStore == null) return null;
+        try {
+            var state = submissionReviewStore.attempt(attempt.getId());
+            return state == null ? null : submissionReleaseService.snapshot(attempt, state).total();
+        } catch (Exception e) {
+            log.warn("Could not compute the review total of attempt {}: {}", attempt.getId(), e.getMessage());
+            return null;
+        }
     }
 
     public void calculateMarksForSectionIdAndQuestionIds(Optional<StudentAttempt> studentAttemptOptional, String sectionId, List<String> questionIds, Assessment assessment) {
@@ -602,6 +1086,17 @@ public class StudentAttemptService {
 
         QuestionAssessmentSectionMapping markingScheme = questionAssessmentSectionMapping.get();
         Question questionAsked = markingScheme.getQuestion();
+
+        // Submission review guard (contract 7.5): a mark a person set (or the AI's) is kept.
+        Optional<QuestionWiseMarks> existing = questionWiseMarksService
+                .getQuestionWiseMarkForAssessmentIdAndSectionIdAndQuestionIdAndAttemptId(assessment.getId(),
+                        studentAttempt.getId(), sectionId, questionId);
+        if (existing.isPresent() && (isEvaluatorMarked(existing.get())
+                || legacyProtectedOnRevaluate(existing.get(), questionAsked.getQuestionType()))) {
+            RevaluateScope scope = REVALUATE.get();
+            if (scope != null) scope.skippedKeys.add(sectionId + ":" + questionId);
+            return existing.get().getMarks();
+        }
         String questionWiseResponseData = getQuestionDetails(questionId, jsonAttemptData);
 
         QuestionWiseBasicDetailDto questionWiseBasicDetailDto = QuestionBasedStrategyFactory.calculateMarks(
@@ -616,8 +1111,24 @@ public class StudentAttemptService {
 
         Section section = questionAssessmentSectionMapping.get().getSection();
 
+        // Any older duplicate row of this question a person or the AI marked keeps the
+        // question too (the guard above sees one row only). A list lookup, so old duplicate
+        // rows add no new failure path (PR #3814).
+        for (QuestionWiseMarks row : questionWiseMarksService.getAllQuestionWiseMarksForQuestionIdsAndAttemptId(
+                studentAttempt.getId(), List.of(questionId), section.getId())) {
+            if (isEvaluatorMarked(row)) {
+                RevaluateScope scope = REVALUATE.get();
+                if (scope != null) scope.skippedKeys.add(sectionId + ":" + questionId);
+                return row.getMarks();
+            }
+        }
+
+        boolean released = ReleaseResultStatusEnum.RELEASED.name().equals(studentAttempt.getReportReleaseStatus());
+        String source = keywordSource(questionAsked.getQuestionType(), answerStatus,
+                existing.map(QuestionWiseMarks::getMarksSource).orElse(null), released);
         questionWiseMarksService.updateQuestionWiseMarksForEveryQuestion(
-                assessment, studentAttempt, questionAsked, questionWiseResponseData, null, answerStatus, section, marksObtained
+                assessment, studentAttempt, questionAsked, questionWiseResponseData, null, answerStatus, section,
+                marksObtained, source
         );
 
         return marksObtained;
@@ -638,7 +1149,25 @@ public class StudentAttemptService {
     }
 
     public List<StudentAttempt> getAllLiveAttempt() {
-        return studentAttemptRepository.findByStatusNotIn(List.of(AssessmentAttemptEnum.ENDED.name()));
+        // A copy checked in a bulk AI check without a student (COPY_CHECK) is not an
+        // attempt anyone is sitting: the hourly sweep must never end it on time.
+        return studentAttemptRepository.findByStatusNotIn(
+                List.of(AssessmentAttemptEnum.ENDED.name(), CopyIntakeService.COPY_CHECK_ATTEMPT_STATUS));
+    }
+
+    /**
+     * Assessment types with no clock. A practice test is "no time limits" and a
+     * survey cannot even be given a duration; the learner app shows them no
+     * timer. Their attempts must never be ended for running out of time.
+     */
+    public static final List<String> UNTIMED_PLAY_MODES = List.of("PRACTICE", "SURVEY");
+
+    /** Always-available types: their live window is "now until 9999", so they never end. */
+    public static final List<String> OPEN_ENDED_PLAY_MODES = List.of("MOCK", "PRACTICE");
+
+    public Set<String> getOpenUntimedAttemptIds() {
+        return new HashSet<>(studentAttemptRepository.findOpenAttemptIdsByPlayModes(
+                List.of(AssessmentAttemptEnum.ENDED.name()), UNTIMED_PLAY_MODES));
     }
 
     public List<StudentAttempt> getAllAttemptsFromIds(List<String> attemptIds) {

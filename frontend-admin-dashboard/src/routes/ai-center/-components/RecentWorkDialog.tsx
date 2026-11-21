@@ -1,6 +1,8 @@
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { AITaskIndividualListInterface } from '@/types/ai/generate-assessment/generate-complete-assessment';
 import {
     ArrowRight,
@@ -16,11 +18,11 @@ import {
 } from '@phosphor-icons/react';
 import {
     FileFamily,
+    buildSourceLabel,
     classifyFile,
     isQuestionTask,
     relativeTime,
-    routeForFamily,
-    sourceLabel,
+    routeForTask,
     statusLabel,
     statusStyles,
     taskDisplayName,
@@ -36,17 +38,29 @@ const FamilyIcon = ({ family }: { family: FileFamily }) => {
 
 type SourceFilter = 'all' | FileFamily;
 
-const SOURCE_FILTERS: Array<{ value: SourceFilter; label: string }> = [
-    { value: 'all', label: 'All sources' },
-    { value: 'pdf', label: 'PDFs' },
-    { value: 'audio', label: 'Audio' },
-    { value: 'image', label: 'Photos' },
-    { value: 'doc', label: 'Documents' },
-    { value: 'none', label: 'Topic-based' },
+// value is the internal filter identifier used for logic/equality; label is the
+// only user-facing part, so it's built from `t` rather than hardcoded.
+const buildSourceFilters = (t: TFunction): Array<{ value: SourceFilter; label: string }> => [
+    { value: 'all', label: t('sourceFilters.all') },
+    { value: 'pdf', label: t('sourceFilters.pdf') },
+    { value: 'audio', label: t('sourceFilters.audio') },
+    { value: 'image', label: t('sourceFilters.image') },
+    { value: 'doc', label: t('sourceFilters.doc') },
+    { value: 'none', label: t('sourceFilters.none') },
 ];
 
+// These identifiers double as record keys (see bucketForDate/grouped below), so
+// they stay as fixed English strings for logic; DATE_BUCKET_LABEL_KEYS maps each
+// one to the translation key used only when rendering the bucket heading.
 const DATE_BUCKETS = ['Today', 'Yesterday', 'Earlier this week', 'Older'] as const;
 type DateBucket = (typeof DATE_BUCKETS)[number];
+
+const DATE_BUCKET_LABEL_KEYS: Record<DateBucket, string> = {
+    Today: 'dateBuckets.today',
+    Yesterday: 'dateBuckets.yesterday',
+    'Earlier this week': 'dateBuckets.earlierThisWeek',
+    Older: 'dateBuckets.older',
+};
 
 const bucketForDate = (iso: string): DateBucket => {
     const today = new Date();
@@ -76,11 +90,16 @@ type Props = {
 };
 
 export const RecentWorkDialog = ({ open, onOpenChange, tasks, onPreviewTask }: Props) => {
+    const { t } = useTranslation('aiCenterRecentWorkDialog');
+    const { t: tFormat } = useTranslation('aiCenterFormat');
     const navigate = useNavigate();
     const [search, setSearch] = useState('');
     const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
     const [page, setPage] = useState(1);
     const ITEMS_PER_PAGE = 10;
+
+    const SOURCE_FILTERS = useMemo(() => buildSourceFilters(t), [t]);
+    const sourceLabel = useMemo(() => buildSourceLabel(tFormat), [tFormat]);
 
     const sourceCounts = useMemo(() => {
         const counts: Record<SourceFilter, number> = {
@@ -91,8 +110,8 @@ export const RecentWorkDialog = ({ open, onOpenChange, tasks, onPreviewTask }: P
             doc: 0,
             none: 0,
         };
-        for (const t of tasks) {
-            const family = classifyFile(t.file_detail?.file_type);
+        for (const task of tasks) {
+            const family = classifyFile(task.file_detail?.file_type);
             counts[family]++;
         }
         return counts;
@@ -102,24 +121,24 @@ export const RecentWorkDialog = ({ open, onOpenChange, tasks, onPreviewTask }: P
         let result = tasks;
         if (sourceFilter !== 'all') {
             result = result.filter(
-                (t) => classifyFile(t.file_detail?.file_type) === sourceFilter
+                (task) => classifyFile(task.file_detail?.file_type) === sourceFilter
             );
         }
         const q = search.trim().toLowerCase();
         if (q) {
-            result = result.filter((t) => {
-                const family = classifyFile(t.file_detail?.file_type);
+            result = result.filter((task) => {
+                const family = classifyFile(task.file_detail?.file_type);
                 const fallback = sourceLabel[family];
-                const display = taskDisplayName(t, fallback).toLowerCase();
-                const name = (t.task_name || '').toLowerCase();
-                const file = (t.file_detail?.file_name || '').toLowerCase();
+                const display = taskDisplayName(task, tFormat, fallback).toLowerCase();
+                const name = (task.task_name || '').toLowerCase();
+                const file = (task.file_detail?.file_name || '').toLowerCase();
                 return (
                     display.includes(q) || name.includes(q) || file.includes(q)
                 );
             });
         }
         return result;
-    }, [tasks, sourceFilter, search]);
+    }, [tasks, sourceFilter, search, sourceLabel, tFormat]);
 
     const sortedFiltered = useMemo(
         () => [...filtered].sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1)),
@@ -145,8 +164,8 @@ export const RecentWorkDialog = ({ open, onOpenChange, tasks, onPreviewTask }: P
             'Earlier this week': [],
             Older: [],
         };
-        for (const t of pagedTasks) {
-            groups[bucketForDate(t.updated_at)].push(t);
+        for (const task of pagedTasks) {
+            groups[bucketForDate(task.updated_at)].push(task);
         }
         return groups;
     }, [pagedTasks]);
@@ -156,18 +175,12 @@ export const RecentWorkDialog = ({ open, onOpenChange, tasks, onPreviewTask }: P
     const rangeEnd = Math.min(safePage * ITEMS_PER_PAGE, sortedFiltered.length);
 
     const handleOpenTask = (task: AITaskIndividualListInterface) => {
-        if (
-            onPreviewTask &&
-            isQuestionTask(task) &&
-            task.status === 'COMPLETED'
-        ) {
+        if (onPreviewTask && isQuestionTask(task) && task.status === 'COMPLETED') {
             onPreviewTask(task);
             return;
         }
-        const family = classifyFile(task.file_detail?.file_type);
-        const route = routeForFamily[family];
         onOpenChange(false);
-        navigate({ to: route });
+        navigate({ to: routeForTask(task) });
     };
 
     const hasAny = tasks.length > 0;
@@ -177,25 +190,28 @@ export const RecentWorkDialog = ({ open, onOpenChange, tasks, onPreviewTask }: P
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 onClick={(e) => e.stopPropagation()}
-                className="no-scrollbar !m-0 flex size-[90%] flex-col !gap-0 overflow-hidden !p-0"
+                className="no-scrollbar !m-0 flex size-11/12 flex-col !gap-0 overflow-hidden !p-0"
             >
                 <div className="sticky top-0 z-10 flex flex-col gap-4 border-b border-neutral-200 bg-white p-5">
                     <div className="flex items-start justify-between gap-4">
                         <div className="flex flex-col gap-0.5">
-                            <h2 className="text-lg font-semibold text-gray-900">
-                                Your recent work
-                            </h2>
-                            <p className="text-xs text-neutral-500">
+                            {/* Radix requires a Title (and warns without a
+                                Description) on every DialogContent — these are
+                                the same two lines, just as the primitives. */}
+                            <DialogTitle className="text-lg font-semibold text-gray-900">
+                                {t('dialog.title')}
+                            </DialogTitle>
+                            <DialogDescription className="text-xs text-neutral-500">
                                 {tasks.length === 0
-                                    ? 'Nothing here yet'
-                                    : `${tasks.length} ${tasks.length === 1 ? 'item' : 'items'} across all tools`}
-                            </p>
+                                    ? t('emptyState.nothingHereYet')
+                                    : t('dialog.itemCount', { count: tasks.length })}
+                            </DialogDescription>
                         </div>
                         <button
                             type="button"
                             onClick={() => onOpenChange(false)}
                             className="rounded-lg border border-neutral-200 p-2 text-neutral-500 transition-colors hover:bg-neutral-50 hover:text-neutral-700"
-                            aria-label="Close"
+                            aria-label={t('dialog.close')}
                         >
                             <X size={16} />
                         </button>
@@ -210,7 +226,7 @@ export const RecentWorkDialog = ({ open, onOpenChange, tasks, onPreviewTask }: P
                                 <input
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Search by name or filename…"
+                                    placeholder={t('dialog.searchPlaceholder')}
                                     className="w-full rounded-lg border border-neutral-200 bg-white py-2 pl-9 pr-9 text-sm placeholder:text-neutral-400 focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100"
                                 />
                                 {search && (
@@ -218,7 +234,7 @@ export const RecentWorkDialog = ({ open, onOpenChange, tasks, onPreviewTask }: P
                                         type="button"
                                         onClick={() => setSearch('')}
                                         className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600"
-                                        aria-label="Clear search"
+                                        aria-label={t('dialog.clearSearch')}
                                     >
                                         <X size={12} />
                                     </button>
@@ -242,7 +258,7 @@ export const RecentWorkDialog = ({ open, onOpenChange, tasks, onPreviewTask }: P
                                         >
                                             {f.label}
                                             <span
-                                                className={`inline-flex min-w-[20px] items-center justify-center rounded px-1 text-[10px] ${
+                                                className={`inline-flex min-w-5 items-center justify-center rounded px-1 text-2xs ${
                                                     active
                                                         ? 'bg-primary-100 text-primary-700'
                                                         : 'bg-neutral-100 text-neutral-500'
@@ -261,17 +277,21 @@ export const RecentWorkDialog = ({ open, onOpenChange, tasks, onPreviewTask }: P
                 {!hasAny ? (
                     <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
                         <Sparkle size={28} weight="fill" className="text-primary-300" />
-                        <p className="text-sm font-medium text-gray-900">Nothing here yet</p>
+                        <p className="text-sm font-medium text-gray-900">
+                            {t('emptyState.nothingHereYet')}
+                        </p>
                         <p className="max-w-xs text-xs text-neutral-500">
-                            Anything you generate will show up here.
+                            {t('emptyState.nothingHereYetDescription')}
                         </p>
                     </div>
                 ) : !hasResults ? (
                     <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
                         <MagnifyingGlass size={24} className="text-neutral-300" />
-                        <p className="text-sm font-medium text-gray-900">No matches</p>
+                        <p className="text-sm font-medium text-gray-900">
+                            {t('emptyState.noMatches')}
+                        </p>
                         <p className="max-w-xs text-xs text-neutral-500">
-                            Try a different search term or filter.
+                            {t('emptyState.noMatchesDescription')}
                         </p>
                         {(search || sourceFilter !== 'all') && (
                             <button
@@ -282,7 +302,7 @@ export const RecentWorkDialog = ({ open, onOpenChange, tasks, onPreviewTask }: P
                                 }}
                                 className="mt-1 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-50"
                             >
-                                Clear filters
+                                {t('emptyState.clearFilters')}
                             </button>
                         )}
                     </div>
@@ -295,9 +315,9 @@ export const RecentWorkDialog = ({ open, onOpenChange, tasks, onPreviewTask }: P
                                 <section key={bucket} className="flex flex-col gap-3">
                                     <div className="flex items-baseline gap-2">
                                         <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                                            {bucket}
+                                            {t(DATE_BUCKET_LABEL_KEYS[bucket])}
                                         </h3>
-                                        <span className="text-[11px] text-neutral-400">
+                                        <span className="text-2xs text-neutral-400">
                                             {items.length}
                                         </span>
                                     </div>
@@ -308,6 +328,7 @@ export const RecentWorkDialog = ({ open, onOpenChange, tasks, onPreviewTask }: P
                                             );
                                             const display = taskDisplayName(
                                                 task,
+                                                tFormat,
                                                 sourceLabel[family]
                                             );
                                             return (
@@ -326,15 +347,15 @@ export const RecentWorkDialog = ({ open, onOpenChange, tasks, onPreviewTask }: P
                                                         </span>
                                                         <span className="text-xs text-neutral-500">
                                                             {sourceLabel[family]} ·{' '}
-                                                            {relativeTime(task.updated_at)}
+                                                            {relativeTime(task.updated_at, tFormat)}
                                                         </span>
                                                     </div>
                                                     <span
-                                                        className={`inline-flex shrink-0 items-center rounded-md px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ${statusStyles(
+                                                        className={`inline-flex shrink-0 items-center rounded-md px-2 py-0.5 text-2xs font-medium ring-1 ring-inset ${statusStyles(
                                                             task.status
                                                         )}`}
                                                     >
-                                                        {statusLabel(task.status)}
+                                                        {statusLabel(task.status, tFormat)}
                                                     </span>
                                                     <ArrowRight
                                                         size={14}
@@ -353,7 +374,11 @@ export const RecentWorkDialog = ({ open, onOpenChange, tasks, onPreviewTask }: P
                 {hasResults && totalPages > 1 && (
                     <div className="sticky bottom-0 z-10 flex items-center justify-between gap-3 border-t border-neutral-200 bg-white px-5 py-3">
                         <span className="text-xs text-neutral-500">
-                            Showing {rangeStart}–{rangeEnd} of {sortedFiltered.length}
+                            {t('pagination.showingRange', {
+                                start: rangeStart,
+                                end: rangeEnd,
+                                total: sortedFiltered.length,
+                            })}
                         </span>
                         <div className="flex items-center gap-1">
                             <button
@@ -363,10 +388,10 @@ export const RecentWorkDialog = ({ open, onOpenChange, tasks, onPreviewTask }: P
                                 className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 <CaretLeft size={12} weight="bold" />
-                                Prev
+                                {t('pagination.prev')}
                             </button>
                             <span className="px-2 text-xs text-neutral-600">
-                                Page {safePage} of {totalPages}
+                                {t('pagination.pageOf', { current: safePage, total: totalPages })}
                             </span>
                             <button
                                 type="button"
@@ -374,7 +399,7 @@ export const RecentWorkDialog = ({ open, onOpenChange, tasks, onPreviewTask }: P
                                 disabled={safePage === totalPages}
                                 className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
                             >
-                                Next
+                                {t('pagination.next')}
                                 <CaretRight size={12} weight="bold" />
                             </button>
                         </div>

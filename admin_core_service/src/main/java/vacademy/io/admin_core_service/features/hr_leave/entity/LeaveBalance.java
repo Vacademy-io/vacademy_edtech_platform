@@ -53,6 +53,10 @@ public class LeaveBalance {
     @Column(name = "encashed", precision = 5, scale = 1)
     private BigDecimal encashed;
 
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 

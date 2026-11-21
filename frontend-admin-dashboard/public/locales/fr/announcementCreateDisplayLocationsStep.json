@@ -1,0 +1,6 @@
+{
+    "title": "Où cela doit-il apparaître ?",
+    "description": "Choisissez un ou plusieurs emplacements dans le produit. Ceci est distinct du mode de diffusion.",
+    "blockedTooltip": "Votre rôle ne permet pas d'envoyer à {{label}}.",
+    "settingsTitle": "Paramètres — {{label}}"
+}

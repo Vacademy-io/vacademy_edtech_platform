@@ -1,0 +1,16 @@
+{
+    "title": "Générer un quiz à partir de la transcription",
+    "description": "Générer des questions de quiz à partir de la transcription de l'instructeur",
+    "numberOfQuestions": "Nombre de questions",
+    "classLevel": "Niveau de classe",
+    "classLevelPlaceholder": "ex. : 9e année, CM2, lycée",
+    "classLevelHint": "Précisez le niveau ou la classe scolaire",
+    "questionType": "Type de question",
+    "language": "Langue",
+    "generateButton": "Générer un quiz à partir de la transcription",
+    "generatingButton": "Génération du quiz en cours...",
+    "errors": {
+        "noTranscript": "Aucune transcription disponible. Veuillez d'abord transcrire l'audio.",
+        "classLevelRequired": "Veuillez saisir un niveau de classe"
+    }
+}

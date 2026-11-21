@@ -168,7 +168,7 @@ sweeper defers when the box is at half its concurrent-call cap or above — synt
 network but the decode is real CPU on a 1 vCPU node, and background work must never be why a
 live caller hears a glitch. The periodic tick then catches up during a lull.
 
-**Admission:** an LLM sentence is rendered after `TTS_CACHE_MIN_SEEN` (default 2) qualifying
+**Admission:** an LLM sentence is rendered after `TTS_CACHE_MIN_SEEN` (default 1) qualifying
 sightings, so it first hits on its third. Break-even is 3 uses.
 
 **A fixed line is rendered after ONE sighting.** The threshold exists because an LLM sentence
@@ -343,7 +343,7 @@ LLM-sentence half earns its complexity.
 | `TTS_CACHE_LLM_ENABLED` | `true` | ops KILL switch for the LLM-sentence path |
 | `TTS_CACHE_AGENTS` | *(empty)* | optional extra ops restriction. Empty = no restriction |
 | `TTS_CACHE_SALT` | `v1` | bump to invalidate everything |
-| `TTS_CACHE_MIN_SEEN` | `2` | qualifying sightings before one render is spent |
+| `TTS_CACHE_MIN_SEEN` | `1` | qualifying sightings before one render is spent. 1 makes a line free from its SECOND use rather than its third |
 | `TTS_SPEECH_CACHE_MAX_BYTES` | 2 GB | own eviction budget |
 | `TTS_CACHE_MIN_BLOB_MS` | `200` | G5 floor |
 
@@ -454,7 +454,7 @@ priciest engine and the one whose renders are non-deterministic.
 |---|---|
 | Fixed lines | ~10–15% of TTS chars on a 5-min call. **Only the opening is pre-warmed**, and only if it has no `{{placeholder}}`; the farewells, handbacks, fillers and nudge reach the cache the same way an LLM sentence does — see the row below |
 | LLM sentences | **Unknown until the ledger runs.** `NoRepeatGate` needed *fuzzy* matching at 0.80 precisely because exact repeats were not frequent enough, and paraphrases of one question score ~0.6. Plan for 15–35%, not 60% |
-| **What hits on call 1** | Only a pre-warmed, placeholder-free opening. Everything else needs `TTS_CACHE_MIN_SEEN` sightings first, so its first hit is call 3 (or call 2 if the line is spoken twice in one call). A `hits=0` first call is the expected reading, not a broken cache — read `misses=N` and `laddered N` to confirm the plumbing works |
+| **What hits on call 1** | Only a pre-warmed, placeholder-free opening. Everything else needs `TTS_CACHE_MIN_SEEN` sightings first — at the default of 1 that means its first hit is call 2. A `hits=0` first call is the expected reading, not a broken cache — read `misses=N` and `laddered N` to confirm the plumbing works |
 | Ramp | starts near zero and climbs. G3/G4 make "qualifying" stricter than "spoken", so it climbs slower than a naive model predicts |
 | Where money is at stake | `sarvam` (₹2.34/min) and high-volume `google` (₹2.06/min past its 1M chars/month free tier ≈ 1,284 call-min). `edge` is free, `rumik` ₹0.45/min |
 | **The bigger lever** | not the cache — script determinism. `AI_CALL_ACTIONS.md` §10 flags the prompt at ~19k chars with the two-sentence turn cap not holding. A tighter script fixes that bug **and** raises the exact-match rate from the same edit |

@@ -1,0 +1,4 @@
+{
+    "loadingWorkflow": "Chargement du workflow...",
+    "failedToLoad": "Échec du chargement du workflow : {{message}}"
+}

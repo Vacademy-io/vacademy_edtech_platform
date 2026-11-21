@@ -1,0 +1,63 @@
+{
+    "header": {
+        "mcqSingleCorrect": "QCM (réponse unique) :",
+        "mcqMultipleCorrect": "QCM (réponses multiples) :",
+        "total": "Total :"
+    },
+    "uploadSection": {
+        "title": "Téléverser le questionnaire",
+        "uploadFromDevice": "Téléverser depuis l'appareil",
+        "uploadFromDeviceDialogTitle": "Téléverser le questionnaire depuis l'appareil",
+        "createManually": "Créer manuellement",
+        "createManuallyDialogTitle": "Créer un questionnaire manuellement",
+        "chooseSavedPaper": "Choisir un questionnaire enregistré",
+        "chooseSavedDialogTitle": "Choisir un questionnaire enregistré dans la liste"
+    },
+    "sectionDescription": {
+        "title": "Description de la section",
+        "placeholder": "Décrivez cette section"
+    },
+    "duration": {
+        "questionDuration": "Durée par question",
+        "sectionDuration": "Durée de la section",
+        "hrs": "h",
+        "minutes": "minutes"
+    },
+    "markingScheme": {
+        "marksPerQuestion": {
+            "title": "Points par question",
+            "default": "(Par défaut)"
+        },
+        "negativeMarking": "Points négatifs",
+        "partialMarking": "Notation partielle"
+    },
+    "randomization": {
+        "problemRandomization": "Randomisation des questions"
+    },
+    "table": {
+        "adaptiveMarkingRulesTitle": "Règles de notation adaptative",
+        "headers": {
+            "qno": "N° Q.",
+            "question": "Question",
+            "questionType": "Type de question",
+            "marks": "Points",
+            "penalty": "Pénalité",
+            "time": "Durée"
+        },
+        "questionTypeLabels": {
+            "MCQS": "QCM (réponse unique)",
+            "MCQM": "QCM (réponses multiples)",
+            "NUMERIC": "Numérique",
+            "CMCQS": "Compréhension QCM (réponse unique)",
+            "CMCQM": "Compréhension QCM (réponses multiples)",
+            "CNUMERIC": "Compréhension numérique",
+            "ONE_WORD": "Un seul mot",
+            "LONG_ANSWER": "Réponse longue",
+            "TRUE_FALSE": "Vrai/Faux",
+            "CODING": "Programmation"
+        }
+    },
+    "totalMarks": {
+        "label": "Total des points"
+    }
+}

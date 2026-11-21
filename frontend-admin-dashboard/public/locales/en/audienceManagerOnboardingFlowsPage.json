@@ -1,0 +1,66 @@
+{
+    "navHeading": {
+        "onboarding": "Onboarding"
+    },
+    "loading": "Loading…",
+    "notEnabled": {
+        "title": "Onboarding Flows is not enabled",
+        "prefix": "An admin can turn this on under",
+        "settingsPath": "Settings → Onboarding Settings"
+    },
+    "page": {
+        "title": "Onboarding Flows",
+        "subtitle": "Ordered checklists a lead/student goes through between agreeing to join and being fully enrolled."
+    },
+    "actions": {
+        "createFlow": "Create Flow",
+        "manage": "Manage",
+        "retry": "Retry",
+        "cancel": "Cancel",
+        "deleting": "Deleting…",
+        "deleteFlow": "Delete Flow",
+        "settings": "Onboarding settings"
+    },
+    "columns": {
+        "name": "Name",
+        "description": "Description",
+        "status": "Status",
+        "steps": "Steps",
+        "actions": "Actions",
+        "noSteps": "No steps yet",
+        "updated": "Updated"
+    },
+    "statusLabels": {
+        "draft": "Draft",
+        "active": "Active",
+        "archived": "Archived"
+    },
+    "states": {
+        "noInstitute": "Pick an institute to view onboarding flows.",
+        "loadError": "Couldn't load onboarding flows.",
+        "emptyTitle": "No onboarding flows yet",
+        "emptyDescription": "Create your first flow to define the steps a lead or student completes on the way to being fully enrolled."
+    },
+    "deleteDialog": {
+        "heading": "Delete Onboarding Flow",
+        "confirmPrefix": "Delete",
+        "confirmSuffix": "? This archives the flow — new instances can no longer be started from it, and it's removed from this list, but any onboarding instances already in progress on it are left untouched."
+    },
+    "toasts": {
+        "deleted": "Onboarding flow deleted",
+        "deleteError": "Could not delete the flow. Please try again."
+    },
+    "summary": {
+        "activeFlows": "Active flows",
+        "drafts_one": "{{count}} draft not live yet",
+        "drafts_other": "{{count}} drafts not live yet",
+        "inProgress": "In progress",
+        "inProgressDetail": "People part-way through a flow",
+        "completed": "Completed",
+        "abandoned": "Abandoned"
+    },
+    "table": {
+        "title": "Flows",
+        "subtitle": "Deleting a flow archives it — people already on it keep going."
+    }
+}

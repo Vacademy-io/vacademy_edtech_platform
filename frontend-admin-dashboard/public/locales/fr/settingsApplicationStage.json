@@ -1,0 +1,78 @@
+{
+    "emptyState": {
+        "title": "Aucune étape de candidature pour l'instant",
+        "description": "Créez des étapes pour définir votre processus d'admission",
+        "addFirstStage": "Ajouter la première étape"
+    },
+    "stageCard": {
+        "first": "Première",
+        "last": "Dernière",
+        "paymentOptionIdLabel": "ID de l'option de paiement :"
+    },
+    "toast": {
+        "qrUploadSuccess": "Code QR téléversé avec succès",
+        "qrUploadError": "Échec du téléversement du code QR",
+        "stageAddedSuccess": "Étape de candidature ajoutée avec succès",
+        "stageAddError": "Échec de l'ajout de l'étape",
+        "stageNameRequired": "Veuillez saisir un nom d'étape",
+        "sequenceInvalid": "Veuillez saisir un numéro de séquence valide",
+        "paymentOptionRequired": "Veuillez sélectionner une option de paiement"
+    },
+    "dialog": {
+        "heading": "Ajouter une étape de candidature",
+        "cancel": "Annuler",
+        "addStage": "Ajouter l'étape",
+        "adding": "Ajout en cours…",
+        "stageName": {
+            "label": "Nom de l'étape",
+            "placeholder": "ex. Formulaire de candidature, Paiement"
+        },
+        "stageType": {
+            "label": "Type d'étape",
+            "placeholder": "Sélectionner un type",
+            "form": "Formulaire",
+            "payment": "Paiement"
+        },
+        "sequence": {
+            "label": "Séquence",
+            "placeholder": "1"
+        },
+        "workflowType": {
+            "label": "Type de flux de travail",
+            "placeholder": "Sélectionner le type de flux de travail"
+        },
+        "lastStage": "Dernière étape",
+        "paymentSection": {
+            "heading": "Configuration du paiement",
+            "paymentOption": {
+                "label": "Option de paiement",
+                "loading": "Chargement des options de paiement…",
+                "empty": "Aucune option de paiement trouvée. Veuillez d'abord en créer une dans les paramètres de paiement.",
+                "placeholder": "Sélectionner une option de paiement"
+            },
+            "displayText": {
+                "label": "Texte affiché",
+                "placeholder": "Message affiché aux candidats avant le paiement",
+                "defaultValue": "Veuillez régler les frais de candidature pour continuer."
+            },
+            "qrCode": {
+                "label": "Code QR de paiement",
+                "previewAlt": "Aperçu du code QR",
+                "uploadCta": "Cliquer pour téléverser le code QR",
+                "uploadHint": "PNG, JPG, SVG — 5 Mo maximum",
+                "fileId": "ID du fichier : {{fileId}}"
+            },
+            "upi": {
+                "vpaLabel": "ID UPI (VPA)",
+                "vpaPlaceholder": "ex. school@oksbi",
+                "payeeLabel": "Nom du bénéficiaire",
+                "payeePlaceholder": "ex. Vacademy School"
+            }
+        }
+    },
+    "main": {
+        "title": "Paramètres de candidature",
+        "description": "Configurez les étapes que suivent les candidats pendant le processus d'admission",
+        "addStage": "Ajouter une étape"
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "title": "निष्पादन विवरण",
+    "started": "शुरू हुआ",
+    "completed": "पूर्ण हुआ",
+    "duration": "अवधि",
+    "idempotencyKey": "इडेम्पोटेंसी कुंजी",
+    "viewOnDiagram": "डायग्राम पर देखें",
+    "nodeExecutionLogs": "नोड निष्पादन लॉग",
+    "nodeExecutionLogsCount": "नोड निष्पादन लॉग ({{count}})",
+    "loadingLogs": "लॉग लोड हो रहे हैं...",
+    "noNodeLogsFound": "कोई नोड लॉग नहीं मिला"
+}

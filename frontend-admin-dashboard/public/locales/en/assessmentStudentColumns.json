@@ -1,0 +1,30 @@
+{
+    "columns": {
+        "details": "Details",
+        "name": "Name",
+        "attemptDate": "Attempt Date",
+        "startTime": "Start Time",
+        "endTime": "End Time",
+        "duration": "Duration",
+        "score": "Score",
+        "evaluationStatus": "Evaluation Status",
+        "resultStatus": "Result Status",
+        "enrollmentNumber": "Enrollment Number",
+        "gender": "Gender",
+        "responseTime": "Response Time",
+        "phoneNumber": "Phone Number",
+        "emailId": "Email ID",
+        "city": "City",
+        "state": "State",
+        "submission": "Submission"
+    },
+    "status": {
+        "released": "Released",
+        "pending": "Pending",
+        "notAvailable": "N/A",
+        "notReleased": "Not Released"
+    },
+    "tooltip": {
+        "instantSubmit": "Instant submit — no measurable time spent. Possible non-attempt or auto-submit."
+    }
+}

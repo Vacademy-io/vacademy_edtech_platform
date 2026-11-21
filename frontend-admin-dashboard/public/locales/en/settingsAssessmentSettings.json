@@ -1,0 +1,36 @@
+{
+    "header": {
+        "title": "Assessment Settings",
+        "subtitle": "Configure assessment features for your institute",
+        "saveChanges": "Save Changes",
+        "saving": "Saving..."
+    },
+    "loading": "Loading assessment settings...",
+    "errors": {
+        "loadSettings": "Failed to load assessment settings",
+        "saveSettings": "Failed to save assessment settings"
+    },
+    "toasts": {
+        "settingsSaved": "Assessment settings saved successfully"
+    },
+    "offlineEntry": {
+        "title": "Offline Data Entry",
+        "description": "Allow data entry users to manually input student responses from paper-based tests. This enables analytics for both online and offline exams.",
+        "enableLabel": "Enable Offline Entry",
+        "enableHint": "Shows the \"Offline Entry\" button on the assessment submissions page"
+    },
+    "reportBranding": {
+        "title": "Assessment Report Branding",
+        "description": "Customize the look and feel of PDF reports generated for students. These settings apply to all assessment reports across your institute."
+    },
+    "aiCopyCheck": {
+        "title": "AI copy checking",
+        "description": "How copies are checked by AI: where the teacher's remarks appear, the instructions the AI follows and whether spelling and grammar errors are highlighted. Preselected when copies are sent for checking and can be changed for each batch."
+    },
+    "assessmentFolders": {
+        "title": "Assessment folders",
+        "description": "Group assessments into folders such as English or Maths. Students see the folders first and open one to see its tests.",
+        "enableLabel": "Organise assessments in folders",
+        "enableHint": "Shows a folder panel on the assessment list, a folder step after publishing, and folder cards in the student app."
+    }
+}

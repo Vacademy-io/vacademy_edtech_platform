@@ -96,6 +96,57 @@ export const resolveAdditionalCharges = (
   return resolved;
 };
 
+/**
+ * Rent-mode (membership) charges, e.g. the refundable security deposit. They are flat — one per
+ * order — so they resolve as for a cart of one. Empty when the catalogue has none linked to a
+ * chargeable plan yet (an unlinked config entry is skipped, see resolveAdditionalCharges).
+ */
+export const resolveRentModeCharges = (
+  globalSettings: GlobalSettings | undefined | null,
+): ResolvedCharge[] => resolveAdditionalCharges(globalSettings, "rent", 1);
+
+/** The `oncePerUser` flag of a resolved charge's config entry (false when absent). */
+export const isOncePerUserCharge = (
+  globalSettings: GlobalSettings | undefined | null,
+  key: string,
+): boolean => Boolean(findRentModeChargeConfig(globalSettings, key)?.oncePerUser);
+
+/**
+ * The rent-mode config entry of a charge key. A buy-mode entry can share the key (e.g. "shipping"
+ * in both modes), so rent wording must never be read from it.
+ */
+export const findRentModeChargeConfig = (
+  globalSettings: GlobalSettings | undefined | null,
+  key: string,
+): AdditionalCharge | undefined =>
+  globalSettings?.payment?.additionalCharges?.find((c) => c.key === key && isApplicable(c, "rent"));
+
+/**
+ * A resolved charge plus the config flags the cart shows and the checkout acts on. The flags
+ * are optional so a plain ResolvedCharge (buy-mode shipping) is one too.
+ */
+export interface ChargeLine extends ResolvedCharge {
+  /** Shown as "(refundable)" next to the label. */
+  refundable?: boolean;
+  /** Charged on the user's first order only; the server drops it for a user who paid it before. */
+  oncePerUser?: boolean;
+}
+
+/** resolveRentModeCharges, each with its config entry's `refundable` / `oncePerUser` flags. */
+export const resolveRentModeChargeLines = (
+  globalSettings: GlobalSettings | undefined | null,
+): ChargeLine[] =>
+  resolveRentModeCharges(globalSettings).map((charge) => {
+    const config = globalSettings?.payment?.additionalCharges?.find(
+      (c) => c.key === charge.key && isApplicable(c, "rent"),
+    );
+    return {
+      ...charge,
+      refundable: Boolean(config?.refundable),
+      oncePerUser: Boolean(config?.oncePerUser),
+    };
+  });
+
 export const sumChargeAmounts = (charges: ResolvedCharge[]): number =>
   charges.reduce((sum, c) => sum + c.amount, 0);
 
@@ -104,6 +155,9 @@ export const sumChargeAmounts = (charges: ResolvedCharge[]): number =>
  * Shape matches the existing entries CheckoutForm builds for books, so the backend
  * treats them uniformly (creates UserPlan + PaymentLog per entry, sums per
  * `PaymentPlan.actualPrice` for amount verification).
+ *
+ * A charge is always one unit: the tier already prices the whole cart, so its
+ * entry carries `requested_quantity: 1` (the server rejects more on a charge).
  */
 export const buildChargeEnrollmentEntries = (charges: ResolvedCharge[]) =>
   charges.map((c) => ({
@@ -111,4 +165,5 @@ export const buildChargeEnrollmentEntries = (charges: ResolvedCharge[]) =>
     plan_id: c.planId,
     payment_option_id: c.paymentOptionId,
     enroll_invite_id: c.enrollInviteId,
+    requested_quantity: 1,
   }));

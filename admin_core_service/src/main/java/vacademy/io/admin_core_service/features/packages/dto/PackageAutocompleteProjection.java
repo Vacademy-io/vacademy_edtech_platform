@@ -17,4 +17,7 @@ public interface PackageAutocompleteProjection {
     String getSessionId();
 
     String getSessionName();
+
+    /** package_session.name — the batch's own name, null/blank when it was never named. */
+    String getBatchName();
 }

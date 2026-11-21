@@ -1,0 +1,330 @@
+{
+    "hero": {
+        "eyebrow": "Live class analytics",
+        "title": "{{term}} Dashboard",
+        "compared": "compared with {{range}}"
+    },
+    "presets": {
+        "today": "Today",
+        "last5": "Last 5 days",
+        "last7": "Last 7 days",
+        "last30": "Last 30 days",
+        "next7": "Next 7 days",
+        "custom": "Custom"
+    },
+    "filters": {
+        "rangeLabel": "Date range",
+        "allOf": "All {{term}}",
+        "noTeachers": "No one taught in this range",
+        "clear": "Clear",
+        "refresh": "Refresh",
+        "startDate": "Start date",
+        "endDate": "End date",
+        "apply": "Apply",
+        "invalidRange": "End date must be on or after the start date",
+        "rangeTooLong": "Pick a range of at most {{days}} days",
+        "updatedAt": "Updated {{time}} · refreshes every minute"
+    },
+    "units": {
+        "hourShort": "h",
+        "minuteShort": "m"
+    },
+    "delta": {
+        "points": "{{v}} pts",
+        "percent": "{{v}}%",
+        "plain": "{{v}}",
+        "vs": "vs {{range}}"
+    },
+    "kpis": {
+        "classes": "{{term}}",
+        "classesDetail": "{{completed}} completed · {{live}} live · {{upcoming}} upcoming",
+        "attendance": "Attendance",
+        "attendanceDetail": "{{present}} present of {{expected}} expected",
+        "noCompleted": "No completed classes in this range yet",
+        "avgJoined": "Avg. joined per class",
+        "avgJoinedDetail": "Total joins: {{joined}}",
+        "avgJoinedDetailGuests": "Total joins: {{joined}} (guests: {{guests}})",
+        "timeInClass": "Avg. time in class",
+        "timeInClassDetail": "of {{scheduled}} scheduled · stayed {{rate}}",
+        "noDurationData": "Time in class is not reported for these classes",
+        "engagement": "Engagement",
+        "engagementBreakdown": "Spoke {{spoke}} · Chatted {{chatted}}",
+        "engagementNotTracked": "Engagement is tracked for Vacademy Meet classes only",
+        "rating": "Avg. rating",
+        "ratingDetail": "{{n}} responses · {{rate}} of attendees",
+        "noFeedback": "No feedback yet"
+    },
+    "insights": {
+        "best": "Best attended",
+        "lowest": "Needs attention",
+        "topTeacher": "Top rated",
+        "busiestDay": "Busiest day",
+        "zeroJoin": "Empty classes",
+        "classMeta": "{{rate}} attendance · {{date}}",
+        "teacherMeta": "★ {{rating}} from {{n}} ratings",
+        "busiestMeta": "{{n}} {{term}} scheduled",
+        "zeroJoinTitle": "{{n}} {{term}} with no one",
+        "zeroJoinNone": "Every class had learners",
+        "zeroJoinMeta": "Completed classes nobody joined"
+    },
+    "trend": {
+        "title": "Attendance trend",
+        "present": "Present",
+        "expected": "Expected",
+        "rateLine": "Attendance {{rate}}",
+        "subtitles": {
+            "attendance": "Expected vs present learners per day (completed classes)",
+            "rate": "Attendance % per day (completed classes)",
+            "classes": "Classes scheduled per day",
+            "rating": "Average feedback rating per day"
+        },
+        "metrics": {
+            "attendance": "Present vs expected",
+            "rate": "Attendance %",
+            "classes": "{{term}}",
+            "rating": "Rating"
+        }
+    },
+    "heatmap": {
+        "title": "When classes happen",
+        "subtitle": "{{term}} by weekday and start time — hover a slot for its attendance",
+        "cellClasses": "{{n}} {{term}}",
+        "cellAttendance": "Attendance {{rate}}",
+        "fewer": "Fewer",
+        "more": "More"
+    },
+    "empty": {
+        "noClassesInRange": "No {{term}} in this range",
+        "noMatch": "No {{term}} match these filters",
+        "noBatches": "No {{term}} data for this range"
+    },
+    "donut": {
+        "title": "Attendance breakdown",
+        "subtitle": "Expected learners of completed classes",
+        "present": "Present",
+        "belowRule": "Joined, below attendance rule",
+        "notJoined": "Did not join",
+        "center": "attendance",
+        "guestsNote": "Also joined (guests or learners outside these batches): {{n}}"
+    },
+    "ratings": {
+        "title": "Feedback ratings",
+        "subtitle": "{{n}} responses · {{rate}} of attendees"
+    },
+    "engagement": {
+        "title": "Engagement",
+        "subtitle": "{{rate}} of attendees interacted · Attendees tracked: {{n}}",
+        "talks": "Spoke on mic",
+        "chats": "Chatted",
+        "raiseHands": "Raised a hand",
+        "pollVotes": "Voted in a poll",
+        "emojis": "Reacted",
+        "totals": "Chat messages: {{chats}} · Hands raised: {{hands}} · Poll votes: {{votes}}"
+    },
+    "platforms": {
+        "title": "Platforms",
+        "subtitle": "{{term}} by platform",
+        "names": {
+            "bbb": "Vacademy Meet",
+            "youtube": "YouTube",
+            "google_meet": "Google Meet",
+            "zoom": "Zoom",
+            "zoho": "Zoho",
+            "recorded": "Recorded video",
+            "other": "Other"
+        }
+    },
+    "liveNow": {
+        "none": "No {{term}} are live right now",
+        "title": "Live now",
+        "autoRefresh": "Join counts update every minute",
+        "joinedOf": "{{joined}} of {{expected}} joined",
+        "joinedCount": "{{n}} joined",
+        "open": "Open class"
+    },
+    "status": {
+        "LIVE": "Live",
+        "UPCOMING": "Upcoming",
+        "COMPLETED": "Completed",
+        "ALL": "All"
+    },
+    "table": {
+        "title": "All {{term}}",
+        "subtitle": "Showing {{n}}",
+        "truncated": "Showing the latest {{limit}} — narrow the range to see the rest",
+        "when": "Date & time",
+        "class": "Class",
+        "status": "Status",
+        "attendance": "Attendance",
+        "avgTime": "Avg. time",
+        "engagement": "Engagement",
+        "feedback": "Rating",
+        "untitled": "Untitled class",
+        "search": "Search class, subject or {{term}}"
+    },
+    "teachers": {
+        "title": "{{term}} leaderboard",
+        "subtitle": "Ranked by classes taught, with attendance of their {{term}}",
+        "classesCount": "{{n}} {{term}}",
+        "joinsCount": "{{n}} joins",
+        "avgTime": "{{time}} avg. stay"
+    },
+    "batches": {
+        "title": "{{term}} attendance",
+        "subtitle": "Completed {{term}} only",
+        "unknown": "Other batch",
+        "meta": "{{n}} {{term}} · {{present}} present of {{expected}} expected",
+        "sort": {
+            "lowest": "Lowest first",
+            "highest": "Highest first",
+            "largest": "Largest"
+        }
+    },
+    "error": {
+        "title": "Couldn't load the dashboard",
+        "body": "Check your connection and try again.",
+        "retry": "Retry"
+    },
+    "share": {
+        "csv": "Export CSV",
+        "pdf": "Download PDF"
+    },
+    "actions": {
+        "whatsapp": "WhatsApp",
+        "email": "Email",
+        "csv": "CSV",
+        "learnersCount": "{{n}} learners",
+        "nobodyToMessage": "No learners to message in this list"
+    },
+    "drilldown": {
+        "guest": "Guest",
+        "guestNote": "Guest / public registration",
+        "notExpected": "Not in these batches",
+        "joined": "Joined",
+        "openFull": "Open class page",
+        "search": "Search name, email or phone",
+        "empty": "No learners in this list",
+        "timeInClass": "Time in class",
+        "filters": {
+            "ALL": "All",
+            "PRESENT": "Present",
+            "BELOW_RULE": "Below rule",
+            "NOT_JOINED": "Didn't join"
+        },
+        "status": {
+            "PRESENT": "Present",
+            "BELOW_RULE": "Below rule",
+            "NOT_JOINED": "Didn't join"
+        },
+        "activeness": "Activeness",
+        "activenessOnScreen": "On screen {{value}}%",
+        "activenessAttention": "Attention {{value}}%",
+        "activenessTracked": "tracked {{duration}}",
+        "activenessAway": "stepped away {{count}}×"
+    },
+    "csv": {
+        "name": "Name",
+        "email": "Email",
+        "mobile": "Mobile",
+        "batch": "Batch",
+        "status": "Status",
+        "minutesInClass": "Minutes in class",
+        "talks": "Spoke (times)",
+        "chats": "Chat messages",
+        "hands": "Hands raised",
+        "pollVotes": "Poll votes",
+        "rating": "Rating",
+        "feedback": "Feedback",
+        "expected": "Expected",
+        "attended": "Attended",
+        "missed": "Missed",
+        "attendance": "Attendance %",
+        "missStreak": "Missed in a row",
+        "lastAttended": "Last attended",
+        "date": "Date",
+        "start": "Start",
+        "end": "End",
+        "class": "Class",
+        "subject": "Subject",
+        "teachers": "Teachers",
+        "batches": "Batches",
+        "platform": "Platform",
+        "joined": "Joined",
+        "present": "Present",
+        "avgMinutes": "Avg. minutes stayed",
+        "scheduledMinutes": "Scheduled minutes",
+        "engagement": "Engagement %",
+        "feedbackCount": "Feedback responses",
+        "activeness": "Activeness %",
+        "activenessOnScreen": "On screen %",
+        "activenessAttention": "Attention %",
+        "activenessMinutesTracked": "Minutes camera tracked",
+        "activenessAwayCount": "Times stepped away",
+        "activenessStatus": "Activeness status"
+    },
+    "atRisk": {
+        "title": "Learners at risk",
+        "none": "No learner missed {{missed}}+ finished {{term}} in this range",
+        "loading": "Finding learners who keep missing classes…",
+        "threshold": "Missed at least",
+        "missedPlus": "{{n}}+ missed",
+        "messageAll": "WhatsApp all ({{n}})",
+        "showingTop": "Showing the top {{shown}} of {{total}}",
+        "missedOf": "Missed {{missed}}/{{expected}}",
+        "streak": "{{n}} in a row",
+        "lastAttended": "Last attended {{date}}",
+        "neverAttended": "Hasn't attended in this range",
+        "rate": "Attendance {{rate}}",
+        "viewLabel": "Show",
+        "views": {
+            "DROPPED": "Stopped coming",
+            "NEVER": "Never came",
+            "ALL": "All"
+        },
+        "subtitles": {
+            "DROPPED": "{{n}} learners came before, then missed {{missed}}+ finished {{term}}",
+            "NEVER": "{{n}} learners haven't joined any of their {{missed}}+ finished {{term}}",
+            "ALL": "{{n}} learners missed {{missed}}+ finished {{term}} in this range"
+        }
+    },
+    "wall": {
+        "title": "What learners are saying",
+        "subtitle": "Latest written feedback on {{term}} in this range",
+        "filters": {
+            "all": "All",
+            "low": "Low rated",
+            "doubts": "Doubts"
+        },
+        "empty": "No written feedback in this range",
+        "showMore": "Show {{n}} more",
+        "showLess": "Show less",
+        "anonymous": "Learner"
+    },
+    "page": {
+        "description": "Attendance, time in class, engagement and feedback of live classes, by teacher and batch."
+    },
+    "activenessState": {
+        "1": "Measured",
+        "2": "Turned off by the learner",
+        "3": "Phone/tablet — not measured",
+        "4": "Camera blocked",
+        "5": "No camera",
+        "6": "Camera in use by another app",
+        "7": "Device too slow",
+        "8": "Couldn't load",
+        "9": "Camera stopped",
+        "10": "Camera not allowed"
+    },
+    "activenessStateShort": {
+        "1": "Measured",
+        "2": "Turned off",
+        "3": "Phone",
+        "4": "Camera blocked",
+        "5": "No camera",
+        "6": "Camera busy",
+        "7": "Too slow",
+        "8": "Couldn't load",
+        "9": "Camera stopped",
+        "10": "No permission"
+    }
+}

@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MyButton } from '@/components/design-system/button';
 import { useSubmissionsBulkActionsDialogStoreOngoing } from '../bulk-actions-zustand-store/useSubmissionsBulkActionsDialogStoreOngoing';
+import { useTranslation } from 'react-i18next';
 
 interface BulkActionsMenuProps {
     selectedCount: number;
@@ -17,7 +18,15 @@ interface BulkActionsMenuProps {
     trigger: ReactNode;
 }
 
+// Internal action-type constants used for dispatch logic. These must never be
+// swapped for translated display text — see handleMenuOptionsChange below.
+const MENU_ACTION = {
+    INCREASE_ASSESSMENT_TIME: 'INCREASE_ASSESSMENT_TIME',
+    CLOSE_SUBMISSION: 'CLOSE_SUBMISSION',
+} as const;
+
 export const BulkActionsMenuOngoing = ({ selectedStudents, trigger }: BulkActionsMenuProps) => {
+    const { t } = useTranslation('homeworkCreationBulkActionsMenuOngoing');
     const { openBulkIncreaseAssessmentTimeDialog, openBulkCloseSubmissionDialog } =
         useSubmissionsBulkActionsDialogStoreOngoing();
 
@@ -32,14 +41,14 @@ export const BulkActionsMenuOngoing = ({ selectedStudents, trigger }: BulkAction
         const bulkActionInfo: AssessmentSubmissionsBulkActionInfo = {
             selectedStudentIds: validStudents.map((student) => student.user_id),
             selectedStudents: validStudents,
-            displayText: `${validStudents.length} students`,
+            displayText: t('actionInfo.selectedStudents', { count: validStudents.length }),
         };
 
         switch (value) {
-            case 'Increase Assessment Time':
+            case MENU_ACTION.INCREASE_ASSESSMENT_TIME:
                 openBulkIncreaseAssessmentTimeDialog(bulkActionInfo);
                 break;
-            case 'Close Submission':
+            case MENU_ACTION.CLOSE_SUBMISSION:
                 openBulkCloseSubmissionDialog(bulkActionInfo);
                 break;
         }
@@ -61,15 +70,17 @@ export const BulkActionsMenuOngoing = ({ selectedStudents, trigger }: BulkAction
                 <DropdownMenuContent>
                     <DropdownMenuItem
                         className="cursor-pointer"
-                        onClick={() => handleMenuOptionsChange('Increase Assessment Time')}
+                        onClick={() =>
+                            handleMenuOptionsChange(MENU_ACTION.INCREASE_ASSESSMENT_TIME)
+                        }
                     >
-                        Increase Assessment Time
+                        {t('menu.increaseAssessmentTime')}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                         className="cursor-pointer"
-                        onClick={() => handleMenuOptionsChange('Close Submission')}
+                        onClick={() => handleMenuOptionsChange(MENU_ACTION.CLOSE_SUBMISSION)}
                     >
-                        Close Submission
+                        {t('menu.closeSubmission')}
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>

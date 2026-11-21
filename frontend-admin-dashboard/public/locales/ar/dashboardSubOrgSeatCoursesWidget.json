@@ -1,0 +1,29 @@
+{
+    "heading": "المتعلمون والدورات",
+    "manage": "إدارة",
+    "recentEnrollments": {
+        "label": "التسجيلات الأخيرة",
+        "oweFees_zero": "لا أحد عليه رسوم مستحقة ({{count}})",
+        "oweFees_one": "شخص واحد عليه رسوم مستحقة ({{count}})",
+        "oweFees_two": "شخصان عليهما رسوم مستحقة ({{count}})",
+        "oweFees_few": "{{count}} عليهم رسوم مستحقة",
+        "oweFees_many": "{{count}} عليهم رسوم مستحقة",
+        "oweFees_other": "{{count}} عليهم رسوم مستحقة",
+        "empty": "لا توجد تسجيلات حتى الآن",
+        "learnerFallback": "متعلم",
+        "joined": "انضم في {{date}}",
+        "due": "{{amount}} مستحق",
+        "paid": "مدفوع"
+    },
+    "courses": {
+        "label": "دوراتي",
+        "fallbackName": "دورة",
+        "empty": "لا توجد دورات معيّنة حتى الآن",
+        "learnerCountTitle_zero": "لا يوجد متعلمون ({{count}})",
+        "learnerCountTitle_one": "متعلم واحد ({{count}})",
+        "learnerCountTitle_two": "متعلمان ({{count}})",
+        "learnerCountTitle_few": "{{count}} متعلمين",
+        "learnerCountTitle_many": "{{count}} متعلمًا",
+        "learnerCountTitle_other": "{{count}} متعلم"
+    }
+}

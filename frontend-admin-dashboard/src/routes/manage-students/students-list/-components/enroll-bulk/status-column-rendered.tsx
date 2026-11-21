@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle, X } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { ErrorDetailsDialog } from './error-details-dialog';
@@ -24,6 +25,7 @@ export const StatusColumnRenderer: React.FC<StatusColumnRendererProps> = ({
     currentPage,
     ITEMS_PER_PAGE,
 }) => {
+    const { t } = useTranslation('manageStudentsStatusColumnRendered');
     const [showErrorDialog, setShowErrorDialog] = useState(false);
     const rowIndex = row.index;
     const rowData = row.original;
@@ -55,7 +57,7 @@ export const StatusColumnRenderer: React.FC<StatusColumnRendererProps> = ({
                             <p className="text-sm text-danger-700">
                                 {typeof apiError === 'string' && apiError.length > 100
                                     ? apiError.substring(0, 97) + '...'
-                                    : apiError || 'Upload failed'}
+                                    : apiError || t('apiStatus.uploadFailed')}
                             </p>
                         </TooltipContent>
                     )}
@@ -68,9 +70,9 @@ export const StatusColumnRenderer: React.FC<StatusColumnRendererProps> = ({
                         errors={[
                             {
                                 path: [rowIndex, 'ERROR'],
-                                message: 'Upload failed',
-                                resolution: 'Check the error details for more information',
-                                currentVal: String(apiError || 'Unknown error'),
+                                message: t('apiStatus.uploadFailed'),
+                                resolution: t('apiStatus.errorResolution'),
+                                currentVal: String(apiError || t('apiStatus.unknownError')),
                                 format: '',
                             },
                         ]}
@@ -104,7 +106,7 @@ export const StatusColumnRenderer: React.FC<StatusColumnRendererProps> = ({
                     onClick={() => setShowErrorDialog(true)}
                     className="bg-danger-600"
                 >
-                    Errors ({validationErrors.length})
+                    {t('validationErrors.errorsButton', { count: validationErrors.length })}
                 </MyButton>
             </div>
 

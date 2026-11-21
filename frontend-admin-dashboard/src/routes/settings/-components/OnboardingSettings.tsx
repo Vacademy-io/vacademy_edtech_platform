@@ -7,6 +7,7 @@
  */
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -59,6 +60,7 @@ const saveOnboardingSettings = async (data: OnboardingSettingsData): Promise<voi
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function OnboardingSettings() {
+    const { t } = useTranslation('settingsOnboarding');
     const queryClient = useQueryClient();
     const [settings, setSettings] = useState<OnboardingSettingsData>(DEFAULT_ONBOARDING_SETTINGS);
     const [hasChanges, setHasChanges] = useState(false);
@@ -79,13 +81,13 @@ export default function OnboardingSettings() {
     const { mutate: save, isPending: saving } = useMutation({
         mutationFn: saveOnboardingSettings,
         onSuccess: () => {
-            toast.success('Onboarding settings saved');
+            toast.success(t('toasts.settingsSaved'));
             setHasChanges(false);
             queryClient.invalidateQueries({ queryKey: ['onboarding-settings'] });
             queryClient.invalidateQueries({ queryKey: ['onboarding-settings-config'] });
         },
         onError: () => {
-            toast.error('Failed to save onboarding settings');
+            toast.error(t('toasts.saveFailed'));
         },
     });
 
@@ -103,18 +105,12 @@ export default function OnboardingSettings() {
             <div className="space-y-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Onboarding Setting</CardTitle>
-                        <CardDescription>
-                            Controls whether Onboarding Flows (ordered checklists a lead/student
-                            goes through between &quot;agreed to join&quot; and &quot;fully
-                            enrolled&quot;) are available institute-wide. Disabling hides the
-                            Onboarding sidebar entry, the flow builder, and the student side-view
-                            Onboarding tab without deleting any existing flows or progress.
-                        </CardDescription>
+                        <CardTitle>{t('title')}</CardTitle>
+                        <CardDescription>{t('description')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {isLoading ? (
-                            <div className="text-body text-neutral-500">Loading onboarding settings…</div>
+                            <div className="text-body text-neutral-500">{t('loading')}</div>
                         ) : (
                             <div className="flex items-center gap-3">
                                 <Switch
@@ -124,8 +120,8 @@ export default function OnboardingSettings() {
                                 />
                                 <Label htmlFor="onboarding-enabled" className="cursor-pointer">
                                     {settings.enabled
-                                        ? 'Enable Onboarding Flows'
-                                        : 'Onboarding Flows Disabled'}
+                                        ? t('toggle.enabled')
+                                        : t('toggle.disabled')}
                                 </Label>
                             </div>
                         )}
@@ -140,7 +136,7 @@ export default function OnboardingSettings() {
                             onClick={handleSave}
                             disable={saving || !hasChanges}
                         >
-                            {saving ? 'Saving…' : 'Save'}
+                            {saving ? t('footer.saving') : t('footer.save')}
                         </MyButton>
                     </div>
                 )}

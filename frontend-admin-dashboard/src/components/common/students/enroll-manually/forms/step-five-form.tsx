@@ -18,6 +18,7 @@ import { useReEnrollStudent } from '@/hooks/student-list-section/enroll-student-
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { AutofillDecoy } from '@/components/design-system/autofill-decoy';
+import { useLearnerUsernamePolicy } from '@/services/student-display-settings';
 export const StepFiveForm = ({
     initialValues,
     handleNextButtonDisable,
@@ -63,7 +64,13 @@ export const StepFiveForm = ({
         mode: 'onChange',
     });
 
+    // This form's generated username is not "typed", so when Settings → Login &
+    // Signup applies the Email rule to admin adds the server uses the email: show it.
+    const usernamePolicy = useLearnerUsernamePolicy();
+
     const generateUsername = () => {
+        const email = stepTwoData?.email?.trim().toLowerCase();
+        if (usernamePolicy.applies && usernamePolicy.strategy === 'email' && email) return email;
         let namePart =
             stepTwoData?.full_name?.replace(/\s+/g, '').substring(0, 4).toLowerCase() || '';
         while (namePart.length < 4) namePart += 'X';

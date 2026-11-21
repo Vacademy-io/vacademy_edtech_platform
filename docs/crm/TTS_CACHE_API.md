@@ -10,7 +10,8 @@ Headers on every call:
 -H 'clientid: 00000000-0000-0000-0000-000000000001'
 ```
 
-All six require a **super-admin** token (`SuperAdminAuthUtil.requireSuperAdmin`); anything else
+All six require a **super-admin** token (`SuperAdminAuthUtil.requireSuperAdmin`: the caller's
+`users.id` must be on `SUPER_ADMIN_USER_IDS`); anything else
 gets `403`. Field names are **snake_case**, matching the rest of the super-admin surface.
 
 ---

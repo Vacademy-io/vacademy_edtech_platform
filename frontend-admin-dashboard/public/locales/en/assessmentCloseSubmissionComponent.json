@@ -1,0 +1,7 @@
+{
+    "dialog": {
+        "heading": "Close Submission",
+        "confirmMessagePrefix": "Are you sure you want to close submission for",
+        "doneButton": "Done"
+    }
+}

@@ -6,13 +6,20 @@ import { MyPagination } from '@/components/design-system/pagination';
 import {
     ACTIVITY_LOG_COLUMN_WIDTHS,
     ACTIVITY_RESPONSE_COLUMN_WIDTHS,
+    QUESTION_SLIDE_ACTIVITY_COLUMN_WIDTHS,
 } from '@/components/design-system/utils/constants/table-layout';
 import { usePaginationState } from '@/hooks/pagination';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     activityLogColumns,
     activityResponseTypeColumns,
+    questionSlideActivityColumns,
 } from '@/components/design-system/utils/constants/table-column-data';
+import {
+    questionSlideCorrectAnswer,
+    questionSlideQuestionName,
+    questionSlideResponseText,
+} from './question-slide-activity';
 import { useActivityStatsStore } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-stores/activity-stats-store';
 import { useContentStore } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-stores/chapter-sidebar-store';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -44,7 +51,12 @@ import { useRouter } from '@tanstack/react-router';
 import AssessmentAttemptActivity from './assessment-attempt-activity';
 import DocumentInteractionsPanel from './document-interactions-panel';
 import AiInsightsPanel from './ai-insights-panel';
+import { AssignmentAiEvaluator } from './assignment-ai-evaluator';
+import type { AssignmentAiEvaluation } from '@/services/study-library/slide-operations/assignment-ai-evaluation';
 import { getInstituteId } from '@/constants/helper';
+import { CbeSlideAttempts, type CbeSlideAttemptRow } from '@/components/common/cbe-review/cbe-slide-attempts';
+import { htmlToPlainText, parseCbeConfig } from '@/components/cbe/types';
+import { parseCbeSlideResponse } from '@/routes/assessment/question-papers/-utils/cbe-question';
 
 interface AssignmentFileInfo {
     fileId: string;
@@ -140,6 +152,8 @@ const SubmissionCard = ({
     const [isUploading, setIsUploading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [savedFlash, setSavedFlash] = useState(false);
+    // The form holds an AI suggestion the teacher has not saved yet.
+    const [aiFilled, setAiFilled] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     // marks=0 is set by default at student submission time, so the teacher has
     // only actually graded if any of: positive marks, feedback, or checked copy.
@@ -170,6 +184,14 @@ const SubmissionCard = ({
         }
     };
 
+    // AI Evaluator result -> grade form. A suggestion only: nothing is saved until Save Grade.
+    const handleApplyAiEvaluation = useCallback((evaluation: AssignmentAiEvaluation) => {
+        if (evaluation.marks_awarded != null) setMarks(String(evaluation.marks_awarded));
+        if (evaluation.feedback) setFeedback(evaluation.feedback);
+        if (evaluation.evaluated_file_id) setCheckedFileId(evaluation.evaluated_file_id);
+        setAiFilled(true);
+    }, []);
+
     const handleViewCheckedFile = async () => {
         if (!checkedFileId) return;
         const url = await getPublicUrl(checkedFileId);
@@ -187,6 +209,7 @@ const SubmissionCard = ({
                 checked_file_id: checkedFileId || undefined,
             });
             setSavedFlash(true);
+            setAiFilled(false);
             onGradeSaved();
             setTimeout(() => setSavedFlash(false), 2000);
         } catch (err) {
@@ -333,6 +356,15 @@ const SubmissionCard = ({
                             </span>
                         </div>
 
+                        {/* AI Evaluator */}
+                        {row.trackedId && (
+                            <AssignmentAiEvaluator
+                                trackedId={row.trackedId}
+                                hasFiles={row.files.length > 0}
+                                onApply={handleApplyAiEvaluation}
+                            />
+                        )}
+
                         {/* Marks */}
                         <div className="flex flex-col gap-1">
                             <label className="text-[11px] font-medium text-neutral-600">
@@ -433,6 +465,13 @@ const SubmissionCard = ({
                                 </button>
                             )}
                         </div>
+
+                        {aiFilled && (
+                            <p className="rounded-md bg-warning-50 px-2.5 py-1.5 text-caption text-warning-700">
+                                Filled in by the AI Evaluator. Review and edit, then save - the
+                                learner sees nothing until you do.
+                            </p>
+                        )}
 
                         {/* Save */}
                         <button
@@ -541,6 +580,41 @@ const lookupOptionName = (q: QuizSlideQuestion | undefined, id: string): string 
     // answers) flow through unchanged.
     if (UUID_RE.test(id)) return '';
     return id;
+};
+
+/**
+ * A Spreadsheet & Written Response answer inside a quiz attempt, as one line:
+ * "Spreadsheet: 14 cells · Document: IAS 38 prohibits…", then the AI feedback once marked.
+ */
+const cbeQuizAnswerSummary = (
+    row: NonNullable<ReturnType<typeof parseCbeSlideResponse>>,
+    cbeState: unknown
+): string => {
+    if (!row.answer) return '';
+    const parts = Object.values(row.answer.parts ?? {}).map((part) => {
+        if (part.kind === 'SPREADSHEET' && 'sheet' in part) {
+            const cells = (part.sheet?.sheets ?? []).reduce(
+                (sum, tab) => sum + Object.keys(tab.cells ?? {}).length,
+                0
+            );
+            return `Spreadsheet: ${cells} cells`;
+        }
+        const text = 'html' in part ? htmlToPlainText(part.html) : '';
+        return `Document: ${text.length > 120 ? `${text.slice(0, 120)}…` : text}`;
+    });
+    const status =
+        cbeState === 'EVALUATED'
+            ? row.evaluation?.feedback
+                ? `AI feedback: ${row.evaluation.feedback}`
+                : ''
+            : cbeState === 'FAILED'
+              ? 'AI check failed (learner can retry)'
+              : cbeState === 'NO_CHECKS_LEFT'
+                ? 'Not marked: AI checks used up'
+                : cbeState === 'UNATTEMPTED'
+                  ? 'Not marked: same as the starting template'
+                  : 'Waiting for AI check';
+    return [parts.join(' · '), status].filter(Boolean).join(' — ');
 };
 
 interface QuizQuestionRow {
@@ -1057,7 +1131,34 @@ export const ActivityLogDialog = ({
             }));
         }
         if (activeItem?.source_type === 'QUESTION') {
-            transformedContent = activityLogs.content.map((item: ActivityContent) => ({
+            const questionSlideAnswerKey = questionSlideCorrectAnswer(activeItem?.question_slide);
+            transformedContent = activityLogs.content.map((item: ActivityContent) => {
+                // Spreadsheet & Written Response: {type, answer, evaluation} — shown as
+                // cards under the table, not as a selected-options string.
+                const cbeAttempt = parseCbeSlideResponse(item.question_slides[0]?.response_json);
+                if (cbeAttempt) {
+                    return {
+                        activityId: item.id,
+                        activityDate: formatDateTime(item.start_time_in_millis).split(',')[0],
+                        attemptNumber: item.question_slides[0]?.attempt_number,
+                        startTime: formatDateTime(item.start_time_in_millis).split(',')[1],
+                        endTime: formatDateTime(item.end_time_in_millis).split(',')[1],
+                        duration: `${(
+                            (item.end_time_in_millis - item.start_time_in_millis) /
+                            1000 /
+                            60
+                        ).toFixed(2)} mins`,
+                        questionName: '',
+                        response:
+                            cbeAttempt.evaluation?.marks_awarded != null
+                                ? `${cbeAttempt.evaluation.marks_awarded} / ${cbeAttempt.evaluation.max_marks ?? '—'}`
+                                : '—',
+                        responseStatus: item.question_slides[0]?.response_status,
+                        cbeAttempt,
+                    };
+                }
+                const responseJson = item.question_slides[0]?.response_json;
+                return {
                 activityDate: formatDateTime(item.start_time_in_millis).split(',')[0],
                 attemptNumber: item.question_slides[0]?.attempt_number,
                 startTime: formatDateTime(item.start_time_in_millis).split(',')[1],
@@ -1067,18 +1168,13 @@ export const ActivityLogDialog = ({
                     1000 /
                     60
                 ).toFixed(2)} mins`,
-                questionName: item.question_slides[0]?.response_json
-                    ? JSON.parse(item.question_slides[0]?.response_json || '')?.questionName
-                    : '',
-                response: item.question_slides[0]?.response_json
-                    ? JSON.parse(item.question_slides[0]?.response_json || '')
-                          ?.selectedOptions?.map(
-                              (option: { id: string; name: string }) => option.name
-                          )
-                          .join(',')
-                    : '',
+                questionName: questionSlideQuestionName(responseJson),
+                // Option labels are stored as editor HTML ("<p>9 J</p>").
+                response: questionSlideResponseText(responseJson),
+                correctAnswer: questionSlideAnswerKey,
                 responseStatus: item.question_slides[0]?.response_status,
-            }));
+                };
+            });
         }
 
         if (activeItem?.source_type === 'QUIZ') {
@@ -1139,7 +1235,13 @@ export const ActivityLogDialog = ({
                         // from the slide config.
                         let selectedAnswer = '';
                         let answerIds: string[] = [];
-                        if (
+                        // Spreadsheet & Written Response: a per-part summary of the answer and,
+                        // once the AI has marked it, its feedback. Never an option list.
+                        const cbeRow = parseCbeSlideResponse(qs.response_json);
+                        if (cbeRow) {
+                            selectedAnswer = cbeQuizAnswerSummary(cbeRow, parsed?.cbeState);
+                            answerIds = cbeRow.answer ? ['cbe-answer'] : [];
+                        } else if (
                             Array.isArray(parsed?.selectedOptions) &&
                             parsed.selectedOptions.length > 0
                         ) {
@@ -1597,10 +1699,10 @@ export const ActivityLogDialog = ({
                                 <div className="no-scrollbar mt-6 overflow-x-scroll px-4">
                                     <MyTable
                                         data={tableData}
-                                        columns={activityResponseTypeColumns}
+                                        columns={questionSlideActivityColumns}
                                         isLoading={isLoading}
                                         error={error}
-                                        columnWidths={ACTIVITY_RESPONSE_COLUMN_WIDTHS}
+                                        columnWidths={QUESTION_SLIDE_ACTIVITY_COLUMN_WIDTHS}
                                         currentPage={page}
                                     />
                                     {tableData.total_pages > 1 && (
@@ -1612,6 +1714,29 @@ export const ActivityLogDialog = ({
                                             />
                                         </div>
                                     )}
+                                    <CbeSlideAttempts
+                                        rows={(
+                                            tableData.content as Array<{
+                                                activityId?: string;
+                                                attemptNumber?: number;
+                                                activityDate?: string;
+                                                responseStatus?: string;
+                                                cbeAttempt?: CbeSlideAttemptRow['attempt'] | null;
+                                            }>
+                                        )
+                                            .filter((row) => row.cbeAttempt)
+                                            .map((row, i) => ({
+                                                key: row.activityId ?? `cbe-${i}`,
+                                                attemptNumber: row.attemptNumber,
+                                                activityDate: row.activityDate,
+                                                responseStatus: row.responseStatus,
+                                                attempt: row.cbeAttempt as CbeSlideAttemptRow['attempt'],
+                                            }))}
+                                        config={parseCbeConfig(
+                                            (activeItem?.question_slide as { cbeConfig?: unknown } | null)
+                                                ?.cbeConfig
+                                        )}
+                                    />
                                 </div>
                             )}
 

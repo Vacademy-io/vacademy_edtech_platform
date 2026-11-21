@@ -1,0 +1,40 @@
+{
+ "corr": "22062aac-fixture",
+ "instituteId": "fixture-institute",
+ "instituteName": "Shiksha Fixture",
+ "direction": "OUTBOUND",
+ "leadName": "रमन",
+ "leadFields": {},
+ "responseId": null,
+ "userId": null,
+ "handoff": {
+  "enabled": false,
+  "numbers": []
+ },
+ "callRetry": 0,
+ "webhookToken": null,
+ "agent": {
+  "id": "hindi-parent-fixture",
+  "name": "Shreya",
+  "language": "hinglish",
+  "voice": "mrunal",
+  "tts_model": "smallest_pro",
+  "speech_cache_mode": "FIXED",
+  "openingLine": "नमस्ते जी, मैं श्रेया बोल रही हूँ Shiksha Nation से। आपने अपने बच्चे के लिए live classes की inquiry की थी, उसी के बारे में दो मिनट बात करनी थी। क्या मैं जान सकती हूँ कि मैं बच्चे के माता-पिता में से किससे बात कर रही हूँ?",
+  "systemPrompt": "You are श्रेया from Shiksha Nation, calling a parent who enquired about live classes. Ask the child's name and class, then last year's marks, then the parent's expectations; recommend a program; close with a WhatsApp brochure, the scholarship quiz link and an advisor callback time. One short question per turn, Hindi in Devanagari.",
+  "extractionQuestions": [
+   "Student's class",
+   "Previous marks"
+  ],
+  "dispositions": [
+   "Counselling_Scheduled",
+   "Callback",
+   "Not_Interested",
+   "Incomplete"
+  ],
+  "maxCallMinutes": 6,
+  "pace": 1.05,
+  "temperature": 0.9,
+  "voiceModulation": 2.0
+ }
+}

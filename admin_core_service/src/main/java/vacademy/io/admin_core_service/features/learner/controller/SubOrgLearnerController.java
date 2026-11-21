@@ -1,12 +1,17 @@
 package vacademy.io.admin_core_service.features.learner.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
 import vacademy.io.admin_core_service.features.learner.dto.*;
 import vacademy.io.admin_core_service.features.learner.service.SubOrgLearnerService;
 import vacademy.io.admin_core_service.features.suborg.service.SubOrgAccessScopeService;
 import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.common.auth.util.SuperAdminAuthUtil;
+import vacademy.io.common.exceptions.VacademyException;
 
 @RestController
 @RequestMapping("/admin-core-service/sub-org/v1")
@@ -19,6 +24,9 @@ public class SubOrgLearnerController {
      *  Root / true institute admins are unrestricted. */
     @Autowired
     private SubOrgAccessScopeService subOrgAccessScopeService;
+
+    @Autowired
+    private InstituteAccessValidator instituteAccessValidator;
 
 
     @GetMapping("/members")
@@ -38,9 +46,40 @@ public class SubOrgLearnerController {
             @RequestBody SubOrgEnrollRequestDTO request,
             @RequestAttribute(value = "user", required = false) CustomUserDetails user) {
 
+        requireCanAddMember(user, request);
         SubOrgEnrollResponseDTO response = subOrgLearnerService.enrollLearnerToSubOrg(request,user);
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Adding a member: a platform super-admin, an admin of this sub-organization (the learner
+     * portal's team page), or staff of the institute (admin dashboard, assistant tools) who is
+     * not limited to other sub-organizations.
+     */
+    private void requireCanAddMember(CustomUserDetails user, SubOrgEnrollRequestDTO request) {
+        if (request == null) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "Request body is required");
+        }
+        if (user == null || !StringUtils.hasText(user.getUserId())) {
+            throw new VacademyException(HttpStatus.FORBIDDEN, "Only staff of this institute can add members");
+        }
+        if (isSuperAdmin(user)
+                || subOrgLearnerService.isActiveAdminOfSubOrg(user.getUserId(), request.getSubOrgId(),
+                        request.getInstituteId())) {
+            return;
+        }
+        instituteAccessValidator.requireInstituteStaff(user, request.getInstituteId());
+        subOrgAccessScopeService.assertNotCrossSubOrg(user, request.getSubOrgId());
+    }
+
+    private static boolean isSuperAdmin(CustomUserDetails user) {
+        try {
+            SuperAdminAuthUtil.requireSuperAdmin(user);
+            return true;
+        } catch (VacademyException e) {
+            return false;
+        }
     }
 
     @PostMapping("/terminate-member")
@@ -86,6 +125,22 @@ public class SubOrgLearnerController {
             @RequestAttribute(value = "user", required = false) CustomUserDetails user) {
 
         return ResponseEntity.ok(subOrgLearnerService.getSubOrgsByPackageSession(packageSessionId));
+    }
+
+    /**
+     * Search box of the same picker: sub-orgs anywhere in the institute whose name contains
+     * {@code search} (at least 2 characters), so an organization with no member in the batch yet
+     * can still be picked. Limited to the sub-orgs the caller may see.
+     */
+    @GetMapping("/search")
+    public ResponseEntity<java.util.List<vacademy.io.admin_core_service.features.learner.dto.PackageSessionSubOrgDTO>> searchSubOrgs(
+            @RequestParam("instituteId") String instituteId,
+            @RequestParam("search") String search,
+            @RequestAttribute(value = "user", required = false) CustomUserDetails user) {
+
+        instituteAccessValidator.validateUserAccess(user, instituteId);
+        java.util.List<String> visible = subOrgAccessScopeService.resolveVisibleSubOrgIds(user, instituteId);
+        return ResponseEntity.ok(subOrgLearnerService.searchInstituteSubOrgs(instituteId, search, visible));
     }
 
     @GetMapping("/all-admins")

@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     handleConvertPDFToHTML,
     handleGenerateAssessmentQuestions,
@@ -14,6 +15,7 @@ import GeneratePageWiseAssessment from '../../ai-tools/vsmart-upload/-components
 import { getRandomTaskName } from '../../-utils/helper';
 
 const GenerateQuestionsComponent = ({ fileId }: { fileId: string }) => {
+    const { t } = useTranslation('aiCenterMyResourcesGenerateQuestions');
     const [prompt, setPrompt] = useState('');
     const [enableDialog, setEnableDialog] = useState(false);
     const [extractQuestionsDialog, setExtractQuestionsDialog] = useState(false);
@@ -171,22 +173,22 @@ const GenerateQuestionsComponent = ({ fileId }: { fileId: string }) => {
         <>
             <Dialog open={extractQuestionsDialog} onOpenChange={handleCloseExtractQuestionDialog}>
                 <DialogTrigger>
-                    <Badge className="cursor-pointer whitespace-nowrap bg-[#FFF4F5]">
-                        Generate Questions
+                    <Badge className="cursor-pointer whitespace-nowrap bg-danger-50">
+                        {t('trigger.label')}
                     </Badge>
                 </DialogTrigger>
                 <DialogContent className="p-0">
                     <h1 className="rounded-t-lg bg-primary-50 p-4 font-semibold text-primary-500">
-                        Generate Questions
+                        {t('dialog.title')}
                     </h1>
                     <div className="flex flex-col gap-4 p-4">
                         <MyInput
                             inputType="text"
-                            inputPlaceholder="Enter Your Prompt Here"
+                            inputPlaceholder={t('dialog.promptPlaceholder')}
                             input={prompt}
                             onChangeFunction={(e) => setPrompt(e.target.value)}
                             required={true}
-                            label="Prompt"
+                            label={t('dialog.promptLabel')}
                             className="w-full"
                         />
 
@@ -203,7 +205,7 @@ const GenerateQuestionsComponent = ({ fileId }: { fileId: string }) => {
                                     className="text-sm"
                                     disable={!prompt}
                                 >
-                                    Generate
+                                    {t('dialog.generateButton')}
                                 </MyButton>
                             </DialogTrigger>
                             <DialogContent>
@@ -231,7 +233,7 @@ const GenerateQuestionsComponent = ({ fileId }: { fileId: string }) => {
             />
             {enableDialog && (
                 <AITasksList
-                    heading="Vsmart Upload"
+                    heading={t('tasksList.heading')}
                     enableDialog={enableDialog}
                     setEnableDialog={setEnableDialog}
                 />

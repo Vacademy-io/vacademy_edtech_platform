@@ -31,6 +31,7 @@ import vacademy.io.common.auth.model.CustomUserDetails;
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.stream.Collectors;
+import vacademy.io.admin_core_service.features.live_activity.core.LiveActivityCounsellorRecorder;
 
 /**
  * Top-level facade for /counsellor-workbench/*. Composes the scope service,
@@ -43,6 +44,7 @@ import java.util.stream.Collectors;
 public class CounsellorWorkbenchService {
 
     private final CounsellorScopeService scopeService;
+    private final LiveActivityCounsellorRecorder liveActivityCounsellorRecorder;
     private final WorkbenchLeadRepository leadRepo;
     private final WorkbenchActivityRepository activityRepo;
     private final OrganizationTeamAuthClient orgTeamClient;
@@ -368,6 +370,13 @@ public class CounsellorWorkbenchService {
             openLeads = hydrateLeadIdentities(
                     leadRepo.findOpenLeadsForCounsellor(instituteId, userId, 0, 200));
         }
+        // Live activity feed. This is the closest thing the platform has to counsellor
+        // presence -- ACTIVE/INACTIVE only, deliberately not labelled "online" anywhere,
+        // because nothing here changes when someone logs in or picks up a call.
+        liveActivityCounsellorRecorder.recordStatusChanged(
+                instituteId, userId, null, status,
+                actor != null ? actor.getUserId() : null);
+
         return StatusChangeResponseDTO.builder()
                 .userId(userId)
                 .status(status)

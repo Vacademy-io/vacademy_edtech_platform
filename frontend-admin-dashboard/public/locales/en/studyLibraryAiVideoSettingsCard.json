@@ -1,0 +1,31 @@
+{
+    "title": "AI Video Settings",
+    "appliesTo": "applies to AI Video, AI Slides & Storybook pages",
+    "language": "Language",
+    "videoModel": "Video model",
+    "autoRecommended": "Auto (recommended)",
+    "loading": "Loading...",
+    "audioQuality": "Audio quality",
+    "audioQualityStandard": "Standard (included)",
+    "audioQualityPremium": "Premium (2x credits)",
+    "voiceGender": "Voice gender",
+    "genderFemale": "Female",
+    "genderMale": "Male",
+    "voice": "Voice",
+    "auto": "Auto",
+    "autoBestForLanguage": "Auto (best for language)",
+    "videoDuration": "Video duration",
+    "qualityTierLabel": "Quality tier",
+    "durationLabel": {
+        "oneToTwoMinutes": "1-2 minutes",
+        "twoToThreeMinutes": "2-3 minutes",
+        "threeToFiveMinutes": "3-5 minutes",
+        "fiveToEightMinutes": "5-8 minutes"
+    },
+    "qualityTier": {
+        "free": "Free (fastest, basic quality)",
+        "standard": "Standard",
+        "premium": "Premium",
+        "ultra": "Ultra (best quality)"
+    }
+}

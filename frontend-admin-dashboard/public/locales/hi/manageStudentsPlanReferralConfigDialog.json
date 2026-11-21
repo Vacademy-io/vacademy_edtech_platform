@@ -1,0 +1,53 @@
+{
+    "dialog": {
+        "titleSelectPlan": "भुगतान योजना चुनें",
+        "titleConfigureReferral": "{{planName}} के लिए रेफ़रल कॉन्फ़िगर करें",
+        "descriptionSelectPlan": "रेफ़रल सेटिंग्स कॉन्फ़िगर करने के लिए भुगतान योजना चुनें",
+        "descriptionSelectReferral": "इस भुगतान योजना के लिए एक रेफ़रल प्रोग्राम चुनें"
+    },
+    "planList": {
+        "empty": "कोई भुगतान योजना उपलब्ध नहीं है",
+        "noReferralConfigured": "कोई रेफ़रल कॉन्फ़िगर नहीं किया गया"
+    },
+    "currentReferral": {
+        "configuredLabel": "वर्तमान में कॉन्फ़िगर किया गया: {{name}}",
+        "changeHint": "बदलने के लिए नीचे किसी दूसरे रेफ़रल पर क्लिक करें, या वर्तमान वाला हटाएं",
+        "remove": "हटाएं"
+    },
+    "referralList": {
+        "empty": "कोई रेफ़रल प्रोग्राम उपलब्ध नहीं है",
+        "currentBadge": "वर्तमान"
+    },
+    "refereeBenefit": {
+        "label": "रेफ़री को मिलता है:",
+        "freeDays_one": "{{count}} मुफ़्त दिन",
+        "freeDays_other": "{{count}} मुफ़्त दिन",
+        "bonusContentDefaultTitle": "बोनस सामग्री",
+        "contentTypePrefix": "प्रकार:",
+        "contentTypeLink": "बाहरी लिंक",
+        "contentTypeFile": "फ़ाइल अपलोड",
+        "templatePrefix": "टेम्पलेट:",
+        "discountPercentage": "{{value}}% छूट",
+        "discountFixed": "₹{{value}} छूट",
+        "pointsSystemTitle": "पॉइंट सिस्टम",
+        "pointsPerReferral_one": "प्रति रेफ़रल {{count}} पॉइंट",
+        "pointsPerReferral_other": "प्रति रेफ़रल {{count}} पॉइंट",
+        "genericOff": "{{value}} की छूट"
+    },
+    "referrerBenefit": {
+        "label": "रेफ़रर को मिलता है:",
+        "refCount_one": "{{count}} रेफ़रल",
+        "refCount_other": "{{count}} रेफ़रल",
+        "typePoints": "पॉइंट्स",
+        "typeContent": "सामग्री",
+        "typeReward": "इनाम",
+        "noRewards": "कोई इनाम नहीं",
+        "moreCount": "+{{count}} और"
+    },
+    "vesting": {
+        "label": "{{count}} दिन वेस्टिंग"
+    },
+    "actions": {
+        "addNewReferral": "+ नया रेफ़रल प्रोग्राम जोड़ें"
+    }
+}

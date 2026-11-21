@@ -1,0 +1,15 @@
+{
+    "fieldRow": {
+        "copyAriaLabel": "{{label}} कॉपी करें"
+    },
+    "error": {
+        "defaultTitle": "यह सेक्शन लोड नहीं हो सका",
+        "defaultHint": "कुछ गड़बड़ हो गई। कृपया फिर से कोशिश करें।",
+        "retry": "फिर से कोशिश करें"
+    },
+    "quickContact": {
+        "email": "ईमेल",
+        "call": "कॉल करें",
+        "whatsapp": "व्हाट्सएप"
+    }
+}

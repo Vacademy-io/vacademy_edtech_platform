@@ -1,0 +1,60 @@
+{
+    "actionBar": {
+        "title": "{{label}} Reports",
+        "checkStatus": "Check Status",
+        "checking": "Checking..."
+    },
+    "status": {
+        "processing": "Processing",
+        "completed": "Completed",
+        "failed": "Failed"
+    },
+    "error": {
+        "title": "Couldn't load reports",
+        "hint": "Something went wrong while fetching reports. Please try again."
+    },
+    "empty": {
+        "title": "No reports yet",
+        "hint": "Generate a new report to analyze learner performance."
+    },
+    "card": {
+        "createdOn": "Created {{date}}",
+        "view": "View",
+        "loading": "Loading…",
+        "defaultTitle": "Analysis Report"
+    },
+    "pagination": {
+        "pageOf": "{{page}} / {{total}}"
+    },
+    "toast": {
+        "reportDataNotAvailable": "Report data is not available yet",
+        "loadDetailsFailed": "Failed to load report details",
+        "reportsCompleted_one": "{{count}} report completed successfully",
+        "reportsCompleted_other": "{{count}} reports completed successfully",
+        "reportsFailed_one": "{{count}} report failed",
+        "reportsFailed_other": "{{count}} reports failed",
+        "reportsPending_one": "{{count}} report is still processing",
+        "reportsPending_other": "{{count}} reports are still processing",
+        "checkStatusFailed": "Failed to check report statuses"
+    },
+    "learned": {
+        "heading": "Learned from AI chats",
+        "subtitle": "What the AI tutor noticed while this learner chatted with it. Remove anything that looks wrong.",
+        "seenTimes_one": "Seen {{count}} time",
+        "seenTimes_other": "Seen {{count}} times",
+        "stated": "Said by the learner",
+        "dismiss": "Remove this note",
+        "dismissed": "Note removed",
+        "dismissFailed": "Could not remove the note",
+        "kind": {
+            "GOAL": "Goal",
+            "PREFERENCE": "Prefers",
+            "STRENGTH": "Strength",
+            "WEAKNESS": "Weakness",
+            "MISCONCEPTION": "Misconception",
+            "INTEREST": "Interest"
+        },
+        "showAll": "Show all {{count}}",
+        "showLess": "Show less"
+    }
+}

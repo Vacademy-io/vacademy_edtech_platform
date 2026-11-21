@@ -1,0 +1,72 @@
+{
+    "actionBar": {
+        "title": "تقارير {{label}}",
+        "checkStatus": "التحقق من الحالة",
+        "checking": "جارٍ التحقق..."
+    },
+    "status": {
+        "processing": "قيد المعالجة",
+        "completed": "مكتمل",
+        "failed": "فشل"
+    },
+    "error": {
+        "title": "تعذر تحميل التقارير",
+        "hint": "حدث خطأ ما أثناء جلب التقارير. يرجى المحاولة مرة أخرى."
+    },
+    "empty": {
+        "title": "لا توجد تقارير بعد",
+        "hint": "أنشئ تقريرًا جديدًا لتحليل أداء الطالب."
+    },
+    "card": {
+        "createdOn": "تم الإنشاء في {{date}}",
+        "view": "عرض",
+        "loading": "جارٍ التحميل…",
+        "defaultTitle": "تقرير التحليل"
+    },
+    "pagination": {
+        "pageOf": "{{page}} / {{total}}"
+    },
+    "toast": {
+        "reportDataNotAvailable": "بيانات التقرير غير متاحة بعد",
+        "loadDetailsFailed": "فشل تحميل تفاصيل التقرير",
+        "reportsCompleted_zero": "لا توجد تقارير مكتملة ({{count}})",
+        "reportsCompleted_one": "تم إكمال تقرير واحد بنجاح ({{count}})",
+        "reportsCompleted_two": "تم إكمال تقريرين بنجاح ({{count}})",
+        "reportsCompleted_few": "تم إكمال {{count}} تقارير بنجاح",
+        "reportsCompleted_many": "تم إكمال {{count}} تقريرًا بنجاح",
+        "reportsCompleted_other": "تم إكمال {{count}} تقرير بنجاح",
+        "reportsFailed_zero": "لا توجد تقارير فاشلة ({{count}})",
+        "reportsFailed_one": "فشل تقرير واحد ({{count}})",
+        "reportsFailed_two": "فشل تقريران ({{count}})",
+        "reportsFailed_few": "فشلت {{count}} تقارير",
+        "reportsFailed_many": "فشل {{count}} تقريرًا",
+        "reportsFailed_other": "فشل {{count}} تقرير",
+        "reportsPending_zero": "لا توجد تقارير قيد المعالجة ({{count}})",
+        "reportsPending_one": "لا يزال تقرير واحد قيد المعالجة ({{count}})",
+        "reportsPending_two": "لا يزال تقريران قيد المعالجة ({{count}})",
+        "reportsPending_few": "لا تزال {{count}} تقارير قيد المعالجة",
+        "reportsPending_many": "لا يزال {{count}} تقريرًا قيد المعالجة",
+        "reportsPending_other": "لا يزال {{count}} تقرير قيد المعالجة",
+        "checkStatusFailed": "فشل التحقق من حالة التقارير"
+    },
+    "learned": {
+        "heading": "ما تعلمناه من محادثات الذكاء الاصطناعي",
+        "subtitle": "ما لاحظه المعلم الذكي أثناء محادثته مع هذا المتعلم. احذف ما يبدو خاطئًا.",
+        "seenTimes_one": "شوهد مرة واحدة",
+        "seenTimes_other": "شوهد {{count}} مرات",
+        "stated": "قاله المتعلم",
+        "dismiss": "حذف هذه الملاحظة",
+        "dismissed": "تم حذف الملاحظة",
+        "dismissFailed": "تعذر حذف الملاحظة",
+        "kind": {
+            "GOAL": "هدف",
+            "PREFERENCE": "يفضّل",
+            "STRENGTH": "نقطة قوة",
+            "WEAKNESS": "نقطة ضعف",
+            "MISCONCEPTION": "مفهوم خاطئ",
+            "INTEREST": "اهتمام"
+        },
+        "showAll": "عرض الكل ({{count}})",
+        "showLess": "عرض أقل"
+    }
+}

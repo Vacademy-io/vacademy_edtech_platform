@@ -1,0 +1,94 @@
+{
+    "overview": {
+        "loading": "جارٍ تحميل بيانات الاستبيان...",
+        "errorTitle": "خطأ في تحميل بيانات الاستبيان",
+        "tryAgain": "أعد المحاولة",
+        "emptyTitle": "لا توجد بيانات استبيان متاحة",
+        "emptyDescription": "لم يتم العثور على ردود على الاستبيان لهذا التقييم.",
+        "totalParticipants": "إجمالي المشاركين",
+        "responded": "استجاب",
+        "outOf": "من أصل",
+        "completionRate": "معدل الإكمال",
+        "individualResponsesTitle": "الردود الفردية",
+        "loadingResponses": "جارٍ تحميل الردود...",
+        "loadingQuestionsData": "جارٍ تحميل بيانات الأسئلة...",
+        "loadingBatchData": "جارٍ تحميل بيانات الدفعة...",
+        "noResponsesForQuestion": "لم يتم العثور على ردود لهذا السؤال.",
+        "questionIdLabel": "معرف السؤال: {{id}}",
+        "tableName": "الاسم",
+        "tableEmail": "البريد الإلكتروني",
+        "tableBatch": "الدفعة",
+        "tableResponse": "الرد",
+        "notApplicable": "غير متاح"
+    },
+    "question": {
+        "number": "س{{number}}",
+        "viewIndividualResponses": "عرض الردود الفردية",
+        "unsupportedType": "نوع سؤال غير مدعوم"
+    },
+    "common": {
+        "responseCount_zero": "{{count}} استجابة",
+        "responseCount_one": "{{count}} استجابة واحدة",
+        "responseCount_two": "{{count}} استجابتان",
+        "responseCount_few": "{{count}} استجابات",
+        "responseCount_many": "{{count}} استجابة",
+        "responseCount_other": "{{count}} استجابة"
+    },
+    "charts": {
+        "tooltipResponsesPercent_zero": "{{count}} استجابة ({{percentage}}%)",
+        "tooltipResponsesPercent_one": "{{count}} استجابة واحدة ({{percentage}}%)",
+        "tooltipResponsesPercent_two": "{{count}} استجابتان ({{percentage}}%)",
+        "tooltipResponsesPercent_few": "{{count}} استجابات ({{percentage}}%)",
+        "tooltipResponsesPercent_many": "{{count}} استجابة ({{percentage}}%)",
+        "tooltipResponsesPercent_other": "{{count}} استجابة ({{percentage}}%)",
+        "countLabel": "العدد"
+    },
+    "legend": {
+        "percentResponses_zero": "{{percentage}}% ({{count}} استجابة)",
+        "percentResponses_one": "{{percentage}}% ({{count}} استجابة واحدة)",
+        "percentResponses_two": "{{percentage}}% ({{count}} استجابتان)",
+        "percentResponses_few": "{{percentage}}% ({{count}} استجابات)",
+        "percentResponses_many": "{{percentage}}% ({{count}} استجابة)",
+        "percentResponses_other": "{{percentage}}% ({{count}} استجابة)"
+    },
+    "trueFalse": {
+        "true": "صحيح",
+        "false": "خطأ",
+        "tooltipPercent_zero": "{{percentage}}% ({{count}} استجابة)",
+        "tooltipPercent_one": "{{percentage}}% ({{count}} استجابة واحدة)",
+        "tooltipPercent_two": "{{percentage}}% ({{count}} استجابتان)",
+        "tooltipPercent_few": "{{percentage}}% ({{count}} استجابات)",
+        "tooltipPercent_many": "{{percentage}}% ({{count}} استجابة)",
+        "tooltipPercent_other": "{{percentage}}% ({{count}} استجابة)"
+    },
+    "textQuestion": {
+        "recentResponses_zero": "الردود الأخيرة ({{count}} استجابة إجمالاً):",
+        "recentResponses_one": "الردود الأخيرة ({{count}} استجابة واحدة إجمالاً):",
+        "recentResponses_two": "الردود الأخيرة ({{count}} استجابتان إجمالاً):",
+        "recentResponses_few": "الردود الأخيرة ({{count}} استجابات إجمالاً):",
+        "recentResponses_many": "الردود الأخيرة ({{count}} استجابة إجمالاً):",
+        "recentResponses_other": "الردود الأخيرة ({{count}} استجابة إجمالاً):",
+        "similarResponses_zero": "{{count}} استجابة مشابهة",
+        "similarResponses_one": "{{count}} استجابة مشابهة واحدة",
+        "similarResponses_two": "{{count}} استجابتان مشابهتان",
+        "similarResponses_few": "{{count}} استجابات مشابهة",
+        "similarResponses_many": "{{count}} استجابة مشابهة",
+        "similarResponses_other": "{{count}} استجابة مشابهة"
+    },
+    "numerical": {
+        "responseDistribution": "توزيع الردود:",
+        "responsesPercent_zero": "{{count}} استجابة ({{percentage}}%)",
+        "responsesPercent_one": "{{count}} استجابة واحدة ({{percentage}}%)",
+        "responsesPercent_two": "{{count}} استجابتان ({{percentage}}%)",
+        "responsesPercent_few": "{{count}} استجابات ({{percentage}}%)",
+        "responsesPercent_many": "{{count}} استجابة ({{percentage}}%)",
+        "responsesPercent_other": "{{count}} استجابة ({{percentage}}%)"
+    },
+    "responses": {
+        "noOptionsSelected": "لم يتم تحديد أي خيارات",
+        "noNumericAnswer": "لم يتم تقديم إجابة رقمية",
+        "noTextAnswer": "لم يتم تقديم إجابة نصية",
+        "unknownType": "نوع رد غير معروف",
+        "errorParsing": "خطأ في تحليل بيانات الرد"
+    }
+}

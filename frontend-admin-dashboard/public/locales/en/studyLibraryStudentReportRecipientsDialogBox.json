@@ -1,0 +1,19 @@
+{
+    "reportRecipients": "Report Recipients",
+    "generateTypeReports": "Generate {{type}} reports",
+    "sendReportsToStudentViaMail": "Send Reports to Student via mail",
+    "sendReportsToStudentViaWhatsapp": "Send Reports to Student via whatsapp",
+    "sendReportsToParentViaMail": "Send Reports to Parent/Guardian via mail",
+    "sendReportsToParentViaWhatsapp": "Send Reports to Parent/Guardian via whatsapp",
+    "studentsEmail": "Student's Email",
+    "learnerMobileNumberLabel": "{{term}}s's Mobile Number",
+    "parentGuardianEmail": "Parent/Guardian's Email",
+    "parentGuardianMobileNumber": "Parent/Guardian's Mobile Number",
+    "studentLearningProgressReport": "Student Learning Progress Report",
+    "batchLearningProgressReport": "Batch Learning Progress Report",
+    "saveChanges": "Save Changes",
+    "toast": {
+        "settingsUpdated": "Settings updated!",
+        "updateFailed": "Failed to update"
+    }
+}

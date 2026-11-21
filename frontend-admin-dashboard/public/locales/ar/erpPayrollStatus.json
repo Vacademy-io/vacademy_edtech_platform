@@ -1,0 +1,16 @@
+{
+    "runStatus": {
+        "draft": "مسودة",
+        "processing": "قيد المعالجة",
+        "processed": "تمت المعالجة",
+        "approved": "معتمد",
+        "paid": "مدفوع",
+        "cancelled": "ملغى"
+    },
+    "runType": {
+        "regular": "عادية",
+        "offCycle": "خارج الدورة",
+        "fnf": "التسوية النهائية",
+        "bonus": "مكافأة"
+    }
+}

@@ -1,0 +1,32 @@
+{
+    "quizTitle": "Quiz {{number}}",
+    "quizQuestionVariantTitle": "Quiz Question",
+    "sections": {
+        "quickAccess": "Quick Access",
+        "writingSkills": "Writing Skills",
+        "readingSkills": "Reading Skills"
+    },
+    "questionTypes": {
+        "mcqSingle": "MCQ (Single correct)",
+        "mcqMultiple": "MCQ (Multiple correct)",
+        "numerical": "Numerical",
+        "trueFalse": "True False",
+        "longAnswer": "Long Answer",
+        "singleWord": "Single Word",
+        "comprehensionMcqSingle": "Comprehension MCQ (Single correct)",
+        "comprehensionMcqMultiple": "Comprehension MCQ (Multiple correct)",
+        "comprehensionNumeric": "Comprehension Numeric"
+    },
+    "errors": {
+        "noQuestions": "No questions provided for quiz creation.",
+        "addFailed": "Failed to add quiz",
+        "addAtLeastOneQuestion": "Please add at least one question before creating the quiz.",
+        "questionNameRequired": "All questions must have a question name.",
+        "slideCreationFailed": "Quiz slide creation failed."
+    },
+    "toasts": {
+        "quizAdded": "Quiz added successfully!",
+        "quizCreated": "Quiz created successfully!",
+        "previewUpdateIssue": "Quiz created, but there was an issue updating the preview. Please refresh the page."
+    }
+}

@@ -4,10 +4,13 @@
  * shows one person at a time; this is for the admin who needs to see who's
  * pending, on which flow, and stuck at which step, across the whole institute.
  */
+import { OnboardingEnhancedHeader } from './OnboardingEnhancedHeader';
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Path } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { MyTable } from '@/components/design-system/table';
 import { MyPagination } from '@/components/design-system/pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -22,7 +25,22 @@ import {
 
 const STATUS_OPTIONS = ['IN_PROGRESS', 'COMPLETED', 'ABANDONED', 'CANCELLED'] as const;
 
-function StatusBadge({ status }: { status: string }) {
+function statusLabel(status: string, t: TFunction): string {
+    switch (status) {
+        case 'IN_PROGRESS':
+            return t('statusLabels.inProgress');
+        case 'COMPLETED':
+            return t('statusLabels.completed');
+        case 'ABANDONED':
+            return t('statusLabels.abandoned');
+        case 'CANCELLED':
+            return t('statusLabels.cancelled');
+        default:
+            return status;
+    }
+}
+
+function StatusBadge({ status, t }: { status: string; t: TFunction }) {
     const toneClass =
         status === 'COMPLETED'
             ? 'bg-success-50 text-success-700'
@@ -31,7 +49,7 @@ function StatusBadge({ status }: { status: string }) {
               : 'bg-info-50 text-info-600';
     return (
         <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-caption font-medium ${toneClass}`}>
-            {status}
+            {statusLabel(status, t)}
         </span>
     );
 }
@@ -39,6 +57,7 @@ function StatusBadge({ status }: { status: string }) {
 const ALL_VALUE = '__all__';
 
 export function OnboardingDashboardPage({ instituteId }: { instituteId: string }) {
+    const { t } = useTranslation('audienceManagerOnboardingDashboardPage');
     const [flowId, setFlowId] = useState<string>(ALL_VALUE);
     const [status, setStatus] = useState<string>(ALL_VALUE);
     const [page, setPage] = useState(0);
@@ -69,7 +88,7 @@ export function OnboardingDashboardPage({ instituteId }: { instituteId: string }
         () => [
             {
                 id: 'subject',
-                header: 'Person',
+                header: t('columns.person'),
                 size: 320,
                 cell: ({ row }) => (
                     <div className="flex flex-col">
@@ -81,7 +100,7 @@ export function OnboardingDashboardPage({ instituteId }: { instituteId: string }
                         )}
                         {row.original.resolved_subject_name && (
                             <span className="text-2xs text-success-600">
-                                → student: {row.original.resolved_subject_name}
+                                {t('resolvedStudentPrefix', { name: row.original.resolved_subject_name })}
                             </span>
                         )}
                     </div>
@@ -89,7 +108,7 @@ export function OnboardingDashboardPage({ instituteId }: { instituteId: string }
             },
             {
                 accessorKey: 'flow_name',
-                header: 'Flow',
+                header: t('columns.flow'),
                 size: 260,
                 cell: ({ row }) => (
                     <span className="text-body text-neutral-700">{row.original.flow_name ?? '—'}</span>
@@ -97,23 +116,24 @@ export function OnboardingDashboardPage({ instituteId }: { instituteId: string }
             },
             {
                 accessorKey: 'current_step_name',
-                header: 'Current step',
+                header: t('columns.currentStep'),
                 size: 260,
                 cell: ({ row }) => (
                     <span className="text-body text-neutral-700">
-                        {row.original.current_step_name ?? (row.original.status === 'COMPLETED' ? '—' : 'Unknown')}
+                        {row.original.current_step_name ??
+                            (row.original.status === 'COMPLETED' ? '—' : t('unknownStep'))}
                     </span>
                 ),
             },
             {
                 accessorKey: 'status',
-                header: 'Status',
+                header: t('columns.status'),
                 size: 160,
-                cell: ({ row }) => <StatusBadge status={row.original.status} />,
+                cell: ({ row }) => <StatusBadge status={row.original.status} t={t} />,
             },
             {
                 accessorKey: 'started_by',
-                header: 'Started by',
+                header: t('columns.startedBy'),
                 size: 160,
                 cell: ({ row }) => (
                     <span className="text-body text-neutral-600">{row.original.started_by ?? '—'}</span>
@@ -121,7 +141,7 @@ export function OnboardingDashboardPage({ instituteId }: { instituteId: string }
             },
             {
                 accessorKey: 'started_at',
-                header: 'Started',
+                header: t('columns.started'),
                 size: 200,
                 cell: ({ row }) =>
                     row.original.started_at ? (
@@ -133,22 +153,30 @@ export function OnboardingDashboardPage({ instituteId }: { instituteId: string }
                     ),
             },
         ],
-        []
+        [t]
     );
 
     return (
         <div className="flex flex-col gap-4 p-2">
             <div className="flex flex-col gap-1">
-                <h1 className="text-h1 font-medium text-neutral-900">Onboarding Dashboard</h1>
-                <p className="text-subtitle text-neutral-500">
-                    Every onboarding instance across every lead/student — see who&apos;s pending, on
-                    which flow, and at which step, without opening each profile.
-                </p>
+                <h1 className="text-h1 font-medium text-neutral-900">{t('page.title')}</h1>
+                <p className="text-subtitle text-neutral-500">{t('page.subtitle')}</p>
             </div>
+
+            {/* Summary header. */}
+            <OnboardingEnhancedHeader
+                instituteId={instituteId}
+                flowId={effectiveFlowId}
+                status={effectiveStatus}
+                onStatus={(next) => {
+                    setStatus(next ?? ALL_VALUE);
+                    setPage(0);
+                }}
+            />
 
             <div className="flex flex-wrap items-end gap-3">
                 <div className="flex flex-col gap-1">
-                    <Label className="text-caption text-neutral-600">Flow</Label>
+                    <Label className="text-caption text-neutral-600">{t('filters.flow')}</Label>
                     <Select
                         value={flowId}
                         onValueChange={(v) => {
@@ -157,10 +185,10 @@ export function OnboardingDashboardPage({ instituteId }: { instituteId: string }
                         }}
                     >
                         <SelectTrigger className="w-56">
-                            <SelectValue placeholder="All flows" />
+                            <SelectValue placeholder={t('filters.allFlows')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value={ALL_VALUE}>All flows</SelectItem>
+                            <SelectItem value={ALL_VALUE}>{t('filters.allFlows')}</SelectItem>
                             {(flowsQuery.data ?? []).map((f) => (
                                 <SelectItem key={f.id} value={f.id}>
                                     {f.name}
@@ -170,7 +198,7 @@ export function OnboardingDashboardPage({ instituteId }: { instituteId: string }
                     </Select>
                 </div>
                 <div className="flex flex-col gap-1">
-                    <Label className="text-caption text-neutral-600">Status</Label>
+                    <Label className="text-caption text-neutral-600">{t('filters.status')}</Label>
                     <Select
                         value={status}
                         onValueChange={(v) => {
@@ -179,13 +207,13 @@ export function OnboardingDashboardPage({ instituteId }: { instituteId: string }
                         }}
                     >
                         <SelectTrigger className="w-44">
-                            <SelectValue placeholder="All statuses" />
+                            <SelectValue placeholder={t('filters.allStatuses')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value={ALL_VALUE}>All statuses</SelectItem>
+                            <SelectItem value={ALL_VALUE}>{t('filters.allStatuses')}</SelectItem>
                             {STATUS_OPTIONS.map((s) => (
                                 <SelectItem key={s} value={s}>
-                                    {s}
+                                    {statusLabel(s, t)}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -195,22 +223,19 @@ export function OnboardingDashboardPage({ instituteId }: { instituteId: string }
 
             {!instituteId ? (
                 <div className="rounded-lg border border-warning-200 bg-warning-50 p-4 text-body text-warning-700">
-                    Pick an institute to view the onboarding dashboard.
+                    {t('states.noInstitute')}
                 </div>
             ) : dashboardQuery.isError ? (
                 <div className="flex flex-col items-center gap-3 rounded-lg border border-danger-200 bg-danger-50 p-8 text-center">
-                    <p className="text-body text-danger-700">Couldn&apos;t load the onboarding dashboard.</p>
+                    <p className="text-body text-danger-700">{t('states.loadError')}</p>
                 </div>
             ) : !dashboardQuery.isLoading && (dashboardQuery.data?.content.length ?? 0) === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-neutral-200 bg-white py-16 text-center shadow-sm">
                     <div className="flex size-16 items-center justify-center rounded-full border border-neutral-100 bg-neutral-50">
                         <Path size={32} className="text-neutral-400" weight="duotone" />
                     </div>
-                    <h3 className="text-lg font-semibold text-neutral-900">No onboarding instances found</h3>
-                    <p className="max-w-sm text-body text-neutral-500">
-                        Nobody matches these filters yet — start an onboarding flow from a student or
-                        lead&apos;s side-view to see them appear here.
-                    </p>
+                    <h3 className="text-lg font-semibold text-neutral-900">{t('states.emptyTitle')}</h3>
+                    <p className="max-w-sm text-body text-neutral-500">{t('states.emptyDescription')}</p>
                 </div>
             ) : (
                 <>

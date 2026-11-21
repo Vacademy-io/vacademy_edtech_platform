@@ -1,0 +1,49 @@
+{
+    "relativeDate": {
+        "unlocksOnDay": "Unlocks on day",
+        "dayOneNote": "Day 1 is the learner's first day of access.",
+        "countedFrom": "Counted from",
+        "enrollmentDate": "Each learner's enrollment date",
+        "sessionStartDate": "The batch start date",
+        "opensAt": "Opens at"
+    },
+    "dateBased": {
+        "releaseDate": "Release date",
+        "sameMomentNote": "The same calendar moment for every learner."
+    },
+    "sequential": {
+        "completedAtLeastLabel": "Previous {{level}} completed at least (%)"
+    },
+    "completionBased": {
+        "metric": "Metric",
+        "averageOfAll": "Average of all",
+        "averageOfLastN": "Average of last N",
+        "howMany": "How many",
+        "threshold": "Threshold %"
+    },
+    "prerequisite": {
+        "mustFinishFirst": "Must finish first",
+        "selectLevelsPlaceholder": "Select {{level}}s",
+        "completionThreshold": "Completion threshold %"
+    },
+    "heading": "Unlock rule — {{item}}",
+    "alerts": {
+        "dripDisabled": "Drip conditions are switched off for this institute, so nothing saved here will lock content yet. Turn them on in Settings → Course → Drip Conditions.",
+        "previewOnly": "This rule depends on learner progress, so it stays in preview: it saves, but learners are unaffected until \"Apply progress rules to learners\" is switched on in Settings → Course → Drip Conditions. Date and day-wise rules apply as soon as they are saved.",
+        "courseWideHeading": "A course-wide rule already covers every {{level}}",
+        "courseWideFootnote": "A rule saved here takes precedence for this {{level}}."
+    },
+    "unlockWhen": "Unlock when",
+    "untilThen": "Until then",
+    "lockBehavior": "Show the card with a lock and the unlock date",
+    "hideBehavior": "Hide it completely",
+    "ruleActive": "Rule active",
+    "ruleActiveNote": "Switch off to keep the rule but stop applying it.",
+    "removeRule": "Remove rule",
+    "editingExistingRule": "Editing existing rule",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving…",
+    "confirmRemoveActive": "Remove the unlock rule on \"{{item}}\"? It is active, so this {{level}} opens for every learner immediately.",
+    "confirmRemove": "Remove the unlock rule on \"{{item}}\"?"
+}

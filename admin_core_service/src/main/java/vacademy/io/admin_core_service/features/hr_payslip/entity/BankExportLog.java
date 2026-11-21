@@ -52,6 +52,9 @@ public class BankExportLog {
     @Column(name = "generated_at")
     private LocalDateTime generatedAt;
 
+    @Column(name = "currency", length = 3)
+    private String currency;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 }

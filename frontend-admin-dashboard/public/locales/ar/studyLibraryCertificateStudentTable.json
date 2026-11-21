@@ -1,0 +1,41 @@
+{
+    "status": {
+        "generated": "تم الإصدار",
+        "awaiting": "بانتظار",
+        "pending": "معلّق"
+    },
+    "columns": {
+        "learner": "المتعلّم",
+        "completion": "نسبة الإنجاز",
+        "status": "الحالة",
+        "generatedOn": "تاريخ الإصدار",
+        "certificateNumber": "رقم الشهادة",
+        "actions": "الإجراءات"
+    },
+    "actions": {
+        "generate": "إصدار"
+    },
+    "toast": {
+        "regenerated": "تمت إعادة إصدار الشهادة",
+        "generated": "تم إصدار الشهادة",
+        "regeneratedDescription": "رقم الشهادة لم يتغيّر؛ تم استبدال ملف PDF.",
+        "generatedDescription": "تم إرسال الشهادة إلى المتعلّم عبر البريد الإلكتروني.",
+        "generateError": "تعذّر إصدار الشهادة",
+        "generateErrorDescription": "تحقق من تفعيل الشهادات لهذه الدورة ومن تجاوز المتعلّم لحد الإنجاز المطلوب.",
+        "emailSent": "تم إرسال بريد الشهادة",
+        "emailError": "تعذّر إرسال بريد الشهادة",
+        "openedInNewTab": "تم فتح الشهادة في تبويب جديد",
+        "openedInNewTabDescription": "منع متصفحك التنزيل المباشر — احفظها من هناك."
+    },
+    "searchPlaceholder": "ابحث بالاسم أو البريد الإلكتروني أو رقم الشهادة",
+    "learnerCount_zero": "{{count}} متعلّم",
+    "learnerCount_one": "متعلّم واحد",
+    "learnerCount_two": "متعلّمان",
+    "learnerCount_few": "{{count}} متعلّمين",
+    "learnerCount_many": "{{count}} متعلّمًا",
+    "learnerCount_other": "{{count}} متعلّم",
+    "emptyState": {
+        "noMatch": "لا يوجد متعلّمون يطابقون بحثك.",
+        "noLearners": "لا يوجد متعلّمون مسجّلون في هذه الدفعة بعد."
+    }
+}

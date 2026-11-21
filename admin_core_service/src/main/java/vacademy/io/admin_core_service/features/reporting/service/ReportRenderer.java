@@ -54,16 +54,20 @@ public class ReportRenderer {
      * remote images by default, and an icon that vanishes takes its meaning with it,
      * whereas an emoji is text and always arrives.
      */
-    private static final java.util.Map<String, String> ICONS = java.util.Map.of(
-            "inactivity", "🌙",
-            "live_attendance", "🎥",
-            "learner_engagement", "📈",
-            "doubts", "❓",
-            "session_feedback", "⭐",
-            "payments", "💳",
-            "ai_assistant", "🤖",
-            "ai_spend", "⚡",
-            "assessments", "📝");
+    // Map.ofEntries, not Map.of: the latter is capped at ten key-value pairs and
+    // this list has already reached it.
+    private static final java.util.Map<String, String> ICONS = java.util.Map.ofEntries(
+            java.util.Map.entry("inactivity", "🌙"),
+            java.util.Map.entry("live_attendance", "🎥"),
+            java.util.Map.entry("learner_engagement", "📈"),
+            java.util.Map.entry("doubts", "❓"),
+            java.util.Map.entry("session_feedback", "⭐"),
+            java.util.Map.entry("payments", "💳"),
+            java.util.Map.entry("ai_assistant", "🤖"),
+            java.util.Map.entry("ai_spend", "⚡"),
+            java.util.Map.entry("assessments", "📝"),
+            java.util.Map.entry("admissions", "🎯"),
+            java.util.Map.entry("calling", "📞"));
 
     private static final String GOOD = "#12996b";
     private static final String WARN = "#b4690e";
@@ -87,8 +91,9 @@ public class ReportRenderer {
                          List<SectionFacts> sections,
                          ReportNarratorService.Narrative narrative) {
         String accent = accentFor(branding == null ? null : branding.themeCode());
+        // Unknown name stays null: a white-label report must never fall back to the platform name.
         String institute = branding == null || branding.instituteName() == null
-                ? "Vacademy" : branding.instituteName();
+                || branding.instituteName().isBlank() ? null : branding.instituteName();
         String logoUrl = branding == null ? null : branding.logoUrl();
 
         StringBuilder b = new StringBuilder(8192);
@@ -107,7 +112,7 @@ public class ReportRenderer {
         for (int i = 0; i < sections.size(); i++) {
             renderSection(b, sections.get(i), i + 1, accent);
         }
-        renderFooter(b);
+        renderFooter(b, institute);
         b.append("</td></tr></table></td></tr></table></div>");
         return b.toString();
     }
@@ -123,9 +128,11 @@ public class ReportRenderer {
                     .append("<img src=\"").append(esc(logoUrl)).append("\" alt=\"\" height=\"26\" ")
                     .append("style=\"display:block;max-height:26px;border:0;outline:none;\"></td>");
         }
-        b.append("<td style=\"vertical-align:middle;font-family:").append(MONO)
-                .append(";font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:")
-                .append(SHELL_TEXT).append(";\">").append(esc(institute)).append("</td>");
+        if (institute != null) {
+            b.append("<td style=\"vertical-align:middle;font-family:").append(MONO)
+                    .append(";font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:")
+                    .append(SHELL_TEXT).append(";\">").append(esc(institute)).append("</td>");
+        }
         b.append("</tr></table>");
 
         b.append("<div style=\"font-size:24px;line-height:1.25;font-weight:700;color:#ffffff;margin:14px 0 0;\">")
@@ -298,11 +305,13 @@ public class ReportRenderer {
         };
     }
 
-    private void renderFooter(StringBuilder b) {
+    private void renderFooter(StringBuilder b, String institute) {
         b.append("<div style=\"margin-top:34px;padding-top:14px;border-top:1px solid ").append(RULE)
                 .append(";font-family:").append(MONO).append(";font-size:10px;line-height:1.6;color:")
                 .append(MUTED).append(";\">")
-                .append("Sent by Vacademy because scheduled reports are switched on for this institute.<br>")
+                .append(institute != null
+                        ? "Sent by " + esc(institute) + " because scheduled reports are switched on for this institute.<br>"
+                        : "This report was sent because scheduled reports are switched on for this institute.<br>")
                 .append("Every figure is computed directly from your data.")
                 .append("</div>");
     }

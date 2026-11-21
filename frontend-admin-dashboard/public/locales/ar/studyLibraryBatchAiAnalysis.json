@@ -1,0 +1,68 @@
+{
+    "description": "أنشئ تقرير ذكاء اصطناعي لكل متعلم نشط في الدفعات المختارة.",
+    "form": {
+        "startDateRequired": "تاريخ البدء مطلوب",
+        "endDateRequired": "تاريخ الانتهاء مطلوب",
+        "dateRangeTooLong": "يجب أن يكون الفرق بين تاريخ البدء وتاريخ الانتهاء أقل من شهر واحد.",
+        "errorsHeading": "يرجى تصحيح الأخطاء التالية:",
+        "batchRequired": "اختر دفعة واحدة على الأقل"
+    },
+    "range": {
+        "label": "النطاق:",
+        "last7Days": "آخر 7 أيام",
+        "hide": "إخفاء",
+        "change": "تغيير"
+    },
+    "actions": {
+        "loadingLearners": "جارٍ تحميل المتعلمين…",
+        "generating": "جارٍ الإنشاء…",
+        "generateReports": "إنشاء تقارير الذكاء الاصطناعي",
+        "stop": "إيقاف",
+        "retryFailed": "إعادة محاولة الفاشل",
+        "view": "عرض",
+        "exportCsv": "تصدير CSV"
+    },
+    "toast": {
+        "resolveBatchFailed": "اختر دفعة واحدة على الأقل.",
+        "noActiveLearners": "لم يتم العثور على متعلمين نشطين في هذه الدفعة.",
+        "generationFinished": "اكتمل إنشاء تقارير الدفعة.",
+        "loadLearnersFailed": "فشل تحميل متعلمي الدفعة.",
+        "stopping": "جارٍ الإيقاف بعد المتعلم الحالي…",
+        "reselectRequired": "أعد اختيار الدفعة ونطاق التاريخ لإعادة المحاولة.",
+        "reportNotReady": "التقرير غير جاهز للعرض بعد.",
+        "loadReportFailed": "فشل تحميل التقرير.",
+        "generationStartFailed": "تعذّر بدء الإنشاء",
+        "generationFailedOrTimedOut": "فشل الإنشاء أو انتهت المهلة"
+    },
+    "progress": {
+        "doneCount": "{{done}}/{{total}} مكتمل",
+        "completedCount_zero": "لا يوجد مكتمل",
+        "completedCount_one": "مكتمل واحد",
+        "completedCount_two": "مكتملان",
+        "completedCount_few": "{{count}} مكتملة",
+        "completedCount_many": "{{count}} مكتملًا",
+        "completedCount_other": "{{count}} مكتمل",
+        "failedCount_zero": "لا يوجد فاشل",
+        "failedCount_one": "فاشل واحد",
+        "failedCount_two": "فاشلان",
+        "failedCount_few": "{{count}} فاشلة",
+        "failedCount_many": "{{count}} فاشلًا",
+        "failedCount_other": "{{count}} فاشل"
+    },
+    "status": {
+        "queued": "في الانتظار",
+        "generating": "جارٍ الإنشاء",
+        "completed": "مكتمل",
+        "failed": "فاشل"
+    },
+    "csv": {
+        "fileStem": "ai-analysis-run",
+        "title": "إنشاء تقارير الذكاء الاصطناعي",
+        "name": "الاسم",
+        "email": "البريد الإلكتروني",
+        "status": "الحالة",
+        "processId": "معرّف التقرير",
+        "error": "الخطأ",
+        "exportSuccess": "تم تصدير CSV"
+    }
+}

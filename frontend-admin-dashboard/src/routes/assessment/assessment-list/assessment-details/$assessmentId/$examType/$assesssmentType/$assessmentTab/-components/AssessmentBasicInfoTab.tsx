@@ -12,17 +12,23 @@ import {
     Repeat,
     Timer,
     Eye,
-    ArrowLeftRight,
-    CheckCircle2,
+    ArrowsLeftRight,
+    CheckCircle,
     Info,
-    Settings2,
-} from 'lucide-react';
+    GearSix,
+} from '@phosphor-icons/react';
 import { Route } from '..';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { convertToLocalDateTime } from '@/constants/helper';
-import { getSubjectNameById } from '@/routes/assessment/question-papers/-utils/helper';
+import {
+    resolveSubjectName,
+    unresolvedSubjectIds,
+    useSubjectNamesByIds,
+} from '@/services/subject-names';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import { useTranslation } from 'react-i18next';
+import { sanitizeRichHtml } from '@/lib/sanitize-html';
 
 interface InfoCardItem {
     icon: React.ComponentType<{ className?: string }>;
@@ -37,7 +43,7 @@ const InfoCard = ({ icon: Icon, label, value }: InfoCardItem) => (
                 <Icon className="h-4 w-4" />
             </div>
             <div className="flex min-w-0 flex-col">
-                <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
+                <p className="text-caption font-medium uppercase tracking-wider text-slate-500">
                     {label}
                 </p>
                 <p className="truncate text-sm font-semibold text-slate-900">{value}</p>
@@ -93,12 +99,13 @@ const SettingRow = ({
                     {value}
                 </Badge>
             )}
-            {enabled && <CheckCircle2 className="h-5 w-5 text-emerald-500" />}
+            {enabled && <CheckCircle className="h-5 w-5 text-emerald-500" />}
         </div>
     </div>
 );
 
 export const AssessmentBasicInfoTab = () => {
+    const { t } = useTranslation('assessmentBasicInfoTab');
     const { assessmentId, examType } = Route.useParams();
     const { data: instituteDetails } = useSuspenseQuery(useInstituteQuery());
     const { data: assessmentDetails, isLoading } = useSuspenseQuery(
@@ -108,13 +115,20 @@ export const AssessmentBasicInfoTab = () => {
             type: examType,
         })
     );
+    // Before the early return: the institute list only holds one subject per distinct
+    // name and drops subjects whose course was deleted, so most stored ids need the
+    // direct lookup to render as anything but "N/A".
+    const savedSubjectId = assessmentDetails[0]?.saved_data?.subject_selection;
+    const subjectNamesById = useSubjectNamesByIds(
+        unresolvedSubjectIds(instituteDetails?.subjects, [savedSubjectId])
+    );
     if (isLoading) return <DashboardLoader />;
 
     const saved = assessmentDetails[0]?.saved_data;
     const subjectLabel = getTerminology(ContentTerms.Subjects, SystemTerms.Subjects);
     const subjectName =
-        getSubjectNameById(instituteDetails?.subjects || [], saved?.subject_selection ?? '') ||
-        'N/A';
+        resolveSubjectName(instituteDetails?.subjects, subjectNamesById, savedSubjectId) ||
+        t('basicInfo.notAvailable');
     const instructionsHtml = saved?.instructions?.content || '';
     const previewDuration = saved?.assessment_preview ?? 0;
     const totalDurationMin = assessmentDetails[1]?.saved_data?.duration;
@@ -125,8 +139,8 @@ export const AssessmentBasicInfoTab = () => {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <InfoCard
                     icon={Tag}
-                    label="Assessment Name"
-                    value={saved?.name || 'Untitled'}
+                    label={t('basicInfo.assessmentName')}
+                    value={saved?.name || t('basicInfo.untitled')}
                 />
                 <InfoCard icon={BookOpen} label={subjectLabel} value={subjectName} />
             </div>
@@ -136,18 +150,18 @@ export const AssessmentBasicInfoTab = () => {
                 <CardContent className="p-5">
                     <SectionHeader
                         icon={FileText}
-                        title="Assessment Instructions"
-                        description="Shown to participants before they begin the assessment"
+                        title={t('instructions.title')}
+                        description={t('instructions.description')}
                     />
                     {instructionsHtml ? (
                         <div
-                            dangerouslySetInnerHTML={{ __html: instructionsHtml }}
+                            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(instructionsHtml) }}
                             className="custom-html-content prose prose-sm mt-2 max-w-none text-slate-700"
                         />
                     ) : (
                         <div className="mt-2 flex items-center gap-2 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
                             <Info className="h-4 w-4" />
-                            No instructions provided.
+                            {t('instructions.empty')}
                         </div>
                     )}
                 </CardContent>
@@ -157,16 +171,16 @@ export const AssessmentBasicInfoTab = () => {
             {(examType === 'EXAM' || examType === 'SURVEY') && (
                 <Card className="border-slate-200 shadow-sm">
                     <CardContent className="p-5">
-                        <SectionHeader icon={Timer} title="Live Date Range" />
+                        <SectionHeader icon={Timer} title={t('liveDateRange.title')} />
                         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                             <InfoCard
                                 icon={PlayCircle}
-                                label="Start Date & Time"
+                                label={t('liveDateRange.startDateTime')}
                                 value={convertToLocalDateTime(saved?.boundation_start_date ?? '')}
                             />
                             <InfoCard
                                 icon={StopCircle}
-                                label="End Date & Time"
+                                label={t('liveDateRange.endDateTime')}
                                 value={convertToLocalDateTime(saved?.boundation_end_date ?? '')}
                             />
                         </div>
@@ -178,35 +192,43 @@ export const AssessmentBasicInfoTab = () => {
             <Card className="border-slate-200 shadow-sm">
                 <CardContent className="p-5">
                     <SectionHeader
-                        icon={Settings2}
-                        title="Attempt Settings"
-                        description="Controls how participants can take the assessment"
+                        icon={GearSix}
+                        title={t('attemptSettings.title')}
+                        description={t('attemptSettings.description')}
                     />
                     <div className="mt-3 flex flex-col gap-2">
                         {examType === 'EXAM' && saved?.reattempt_count != null && (
                             <SettingRow
                                 icon={Repeat}
-                                label="Reattempt Count"
+                                label={t('attemptSettings.reattemptCount')}
                                 value={String(saved.reattempt_count)}
                             />
                         )}
                         <SettingRow
                             icon={Timer}
-                            label="Total Duration"
-                            value={totalDurationMin ? `${totalDurationMin} min` : '—'}
+                            label={t('attemptSettings.totalDuration')}
+                            value={
+                                totalDurationMin
+                                    ? t('attemptSettings.durationMinutes', {
+                                          count: totalDurationMin,
+                                      })
+                                    : t('attemptSettings.durationNotSet')
+                            }
                         />
                         {previewDuration > 0 && (
                             <SettingRow
                                 icon={Eye}
-                                label="Assessment Preview"
-                                value={`${previewDuration} min`}
+                                label={t('attemptSettings.assessmentPreview')}
+                                value={t('attemptSettings.durationMinutes', {
+                                    count: previewDuration,
+                                })}
                                 enabled
                             />
                         )}
                         {saved?.can_switch_section && (
                             <SettingRow
-                                icon={ArrowLeftRight}
-                                label="Allow switching between sections"
+                                icon={ArrowsLeftRight}
+                                label={t('attemptSettings.allowSwitchingSections')}
                                 enabled
                             />
                         )}

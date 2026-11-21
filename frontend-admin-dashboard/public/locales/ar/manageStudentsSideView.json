@@ -1,0 +1,24 @@
+{
+    "profile": {
+        "avatarAlt": "الصورة الشخصية",
+        "unknownName": "غير معروف"
+    },
+    "status": {
+        "cancelledMember": "عضو ملغى",
+        "cancelledMemberTooltip": "تم إلغاء العضوية — يستمر الوصول حتى انتهاء صلاحية الخطة"
+    },
+    "roles": {
+        "admin": "مسؤول التدريب",
+        "learner": "طاقم التدريب"
+    },
+    "actions": {
+        "deleteLead": "حذف العميل المحتمل",
+        "openFullProfile": "فتح الملف الشخصي الكامل",
+        "closePanel": "إغلاق اللوحة"
+    },
+    "tabBar": {
+        "ariaLabel": "أقسام الملف الشخصي",
+        "scrollLeft": "تمرير علامات التبويب لليسار",
+        "scrollRight": "تمرير علامات التبويب لليمين"
+    }
+}

@@ -28,4 +28,10 @@ public class QuestionAssessmentSectionMappingService {
     public List<QuestionAssessmentSectionMapping> getQuestionAssessmentSectionMappingBySectionIds(List<String> sectionIds) {
         return repository.getQuestionAssessmentSectionMappingBySectionIds(sectionIds);
     }
+
+    /** Flat marking rows (no Question/Section hydration); duplicates of a pair are not merged. */
+    public List<QuestionAssessmentSectionMappingRepository.MarkingSchemeRow> getMarkingSchemeRowsBySectionIds(
+            List<String> sectionIds) {
+        return repository.findMarkingSchemeRowsBySectionIds(sectionIds);
+    }
 }

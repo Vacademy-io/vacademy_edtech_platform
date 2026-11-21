@@ -1,0 +1,55 @@
+{
+    "yes": "Yes",
+    "no": "No",
+    "leave": "Leave",
+    "leaveFallback": "leave",
+    "leaveTypeFallback": "leave type",
+    "uncapped": "Uncapped",
+    "upTo": "Up to {{count}}",
+    "open": "open",
+    "fromJoining": "From joining",
+    "daysCount_one": "{{count}} day",
+    "daysCount_other": "{{count}} days",
+    "editLeaveType": "Edit {{name}}",
+    "editLeavePolicy": "Edit the {{name}} policy",
+    "columns": {
+        "leaveType": "Leave type",
+        "code": "Code",
+        "paid": "Paid",
+        "carryForward": "Carry forward",
+        "encashable": "Encashable",
+        "document": "Document",
+        "minDays": "Min days",
+        "maxConsecutive": "Max consecutive",
+        "appliesTo": "Applies to",
+        "status": "Status",
+        "annualQuota": "Annual quota",
+        "accrual": "Accrual",
+        "perPeriod": "Per period",
+        "proRata": "Pro-rata",
+        "applicableAfter": "Applicable after",
+        "effective": "Effective"
+    },
+    "intro": "What kinds of leave your institute grants, and how much of each an employee gets. Requests and balances both read this configuration, so a change here affects future accruals and approvals — never leave that has already been approved.",
+    "tabs": {
+        "types": "Leave types",
+        "policies": "Policies"
+    },
+    "typesTabIntro": "The kinds of leave themselves — their rules, not their quota. Codes are what balances and payroll match on, so treat them as identifiers rather than labels.",
+    "addLeaveType": "Add leave type",
+    "errors": {
+        "loadTypes": "Couldn't load leave types.",
+        "loadPolicies": "Couldn't load leave policies."
+    },
+    "emptyTypes": {
+        "title": "No leave types yet",
+        "description": "Start with the leave you actually grant — casual, sick and earned leave are the usual three. Unpaid leave is worth adding too: payroll treats it as loss of pay."
+    },
+    "policiesTabIntro": "How much of each leave type an employee gets, and on what rhythm the scheduled accrual credits it. A leave type with no active policy grants nobody anything.",
+    "addPolicy": "Add policy",
+    "emptyPolicies": {
+        "title": "No policies yet",
+        "descriptionNoTypes": "Create a leave type first — a policy has to attach to one.",
+        "description": "Give each leave type a quota and an accrual rhythm. Until then the accrual run has nothing to credit."
+    }
+}

@@ -1,0 +1,36 @@
+---
+title: "Pagination"
+description: "Walk through long lists of calls."
+---
+
+`GET /v1/calls` returns calls **newest first**, in pages:
+
+```json
+{ "object": "list", "data": [ { "id": "call_…" }, "…" ], "has_more": true }
+```
+
+| Parameter | Default | |
+|---|---|---|
+| `limit` | 25 | 1 to 100 calls per page. |
+| `starting_after` | | The `id` of the **last** call of the previous page. |
+
+To fetch the next page, pass the last id you received:
+
+```python
+import os, requests
+
+def all_calls(**filters):
+    params = {"limit": 100, **filters}
+    while True:
+        page = requests.get("https://api.telleo.ai/v1/calls", params=params,
+                            headers={"X-API-Key": os.environ["TELLEO_API_KEY"]}, timeout=15).json()
+        yield from page["data"]
+        if not page["has_more"]:
+            return
+        params["starting_after"] = page["data"][-1]["id"]
+
+for call in all_calls(batch_id="batch_2b9e0c1d4f6a8e7c5b3a1d0f"):
+    print(call["id"], call["status"])
+```
+
+Combine with the filters `batch_id`, `external_id` and `created_after`.

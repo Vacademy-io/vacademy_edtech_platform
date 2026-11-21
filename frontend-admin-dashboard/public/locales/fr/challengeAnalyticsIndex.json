@@ -1,0 +1,17 @@
+{
+    "pageHeading": "Tableau de bord des analyses de défis",
+    "pageTitle": "Tableau de bord des analyses de défis | Vacademy",
+    "metaDescription": "Suivez l'engagement des parents dans les programmes de défis grâce à des informations exploitables",
+    "loadingTemplates": "Chargement des modèles d'analyse...",
+    "centerFilterLabel": "Centre",
+    "tabs": {
+        "overview": "Aperçu",
+        "centers": "Centres",
+        "participation": "Participation",
+        "churn": "Attrition",
+        "referrals": "Parrainages",
+        "leaderboard": "Classement",
+        "completions": "Complétions",
+        "templates": "Modèles"
+    }
+}

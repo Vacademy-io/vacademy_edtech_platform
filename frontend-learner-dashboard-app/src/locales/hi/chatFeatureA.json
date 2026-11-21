@@ -1,0 +1,111 @@
+{
+    "common": {
+        "cancel": "रद्द करें",
+        "save": "सहेजें",
+        "saving": "सहेजा जा रहा है…",
+        "loading": "लोड हो रहा है…",
+        "memberFallback": "सदस्य",
+        "typeCommunity": "समुदाय",
+        "typeDirectMessage": "सीधा संदेश",
+        "typeGroupMessages": "समूह संदेश",
+        "noPermissionToPost": "आपको यहाँ पोस्ट करने की अनुमति नहीं है।"
+    },
+    "conversationList": {
+        "typeFallback": {
+            "batchGroup": "{{batch}} समूह"
+        },
+        "empty": {
+            "title": "अभी तक कोई बातचीत नहीं",
+            "description": "नई बातचीत शुरू करें या समुदाय चैनल खोलें।"
+        },
+        "noMessagesYet": "अभी तक कोई संदेश नहीं",
+        "unreadOverflow": "99+"
+    },
+    "thread": {
+        "loadEarlier": "पुराने संदेश लोड करें",
+        "empty": "अभी तक कोई संदेश नहीं। बातचीत शुरू करने के लिए नमस्ते कहें।",
+        "deletedMessage": "यह संदेश हटा दिया गया है",
+        "editMessage": "संदेश संपादित करें",
+        "deleteMessage": "संदेश हटाएं",
+        "attachmentAltFallback": "अटैचमेंट",
+        "attachmentNameFallback": "अटैचमेंट",
+        "failedAria": "संदेश भेजना विफल रहा",
+        "retry": "पुनः प्रयास करें",
+        "dismissFailedAria": "विफल संदेश हटाएं",
+        "sendingAria": "संदेश भेजा जा रहा है",
+        "sending": "भेजा जा रहा है…",
+        "timestampEdited": "{{time}} · संपादित",
+        "dayToday": "आज",
+        "dayYesterday": "कल",
+        "editDialog": {
+            "inputAria": "संदेश टेक्स्ट",
+            "notice": "बातचीत में सभी को यह बदलाव दिखेगा, जिसे संपादित के रूप में चिह्नित किया जाएगा।"
+        },
+        "deleteDialog": {
+            "body": "यह बातचीत में सभी के लिए संदेश हटा देगा। इसे वापस नहीं लाया जा सकता।",
+            "confirm": "हटाएं"
+        }
+    },
+    "composer": {
+        "placeholder": "संदेश लिखें…",
+        "attachAria": "छवि संलग्न करें",
+        "sendAria": "संदेश भेजें",
+        "removeAttachmentAria": "अटैचमेंट हटाएं",
+        "disabledDefault": "आप इस बातचीत में पोस्ट नहीं कर सकते।",
+        "imageOnlyError": "केवल इमेज अटैचमेंट समर्थित हैं।",
+        "uploadFailedError": "इमेज अपलोड करने में विफल। कृपया पुनः प्रयास करें।"
+    },
+    "communityRules": {
+        "defaultTitle": "समुदाय दिशानिर्देश",
+        "acceptNotice": "इस चैनल में पोस्ट करना शुरू करने के लिए कृपया दिशानिर्देश स्वीकार करें।",
+        "accept": "स्वीकार करें और जारी रखें",
+        "accepting": "स्वीकार किया जा रहा है…"
+    },
+    "newChatModal": {
+        "title": "नया संदेश",
+        "searchPlaceholder": "नाम से लोगों को खोजें…",
+        "everyone": "सभी",
+        "empty": "कोई व्यक्ति नहीं मिला।",
+        "opening": "खोला जा रहा है…",
+        "startError": "चैट शुरू नहीं हो सकी। कृपया पुनः प्रयास करें।"
+    },
+    "ruleRejection": {
+        "slowMode": "स्लो मोड चालू है — कृपया दोबारा भेजने से पहले प्रतीक्षा करें",
+        "blockedByModeration": "संदेश रोका गया: इसमें प्रतिबंधित शब्द है",
+        "rulesNotAcknowledged": "कृपया पहले समुदाय के नियम स्वीकार करें",
+        "linksNotAllowed": "यहाँ लिंक की अनुमति नहीं है",
+        "attachmentsNotAllowed": "यहाँ अटैचमेंट की अनुमति नहीं है",
+        "newMemberReadonly": "नए सदस्य अभी पोस्ट नहीं कर सकते",
+        "chatDisabled": "इस संस्थान के लिए चैट अक्षम है"
+    },
+    "screen": {
+        "loadThreadError": "यह बातचीत लोड नहीं हो सकी।",
+        "sendGenericError": "संदेश भेजना विफल रहा।",
+        "deleteError": "संदेश हटाया नहीं जा सका। कृपया पुनः प्रयास करें।",
+        "editError": "संपादन सहेजा नहीं जा सका। कृपया पुनः प्रयास करें।",
+        "acknowledgeError": "दिशानिर्देश स्वीकार नहीं किए जा सके। कृपया पुनः प्रयास करें।",
+        "ackGateReason": "पोस्ट करना शुरू करने के लिए ऊपर दिए गए समुदाय दिशानिर्देश स्वीकार करें।",
+        "headerGroupFallback": "समूह",
+        "newMessage": "नया संदेश",
+        "chatDisabledTitle": "आपके संस्थान के लिए इन-ऐप संदेश बंद हैं",
+        "chatDisabledDescription": "मैसेजिंग अभी उपलब्ध नहीं है। बाद में देखें या अपने संस्थान के एडमिन से संपर्क करें।",
+        "header": {
+            "messages": "संदेश",
+            "refreshAria": "रीफ्रेश करें",
+            "backAria": "वापस",
+            "communitySubtitle": "संस्थान समुदाय"
+        },
+        "emptySelection": {
+            "title": "एक बातचीत चुनें",
+            "description": "सूची से कोई बातचीत चुनें, समुदाय चैनल खोलें, या नया सीधा संदेश शुरू करें।"
+        }
+    },
+    "batchPanel": {
+        "disabledFallback": "इस संस्थान के लिए मैसेजिंग बंद है",
+        "genericErrorTitle": "चर्चा लोड नहीं हो सकी",
+        "genericErrorDescription": "इन संदेशों को खोलते समय कुछ गड़बड़ हुई। कृपया बाद में पुनः प्रयास करें।"
+    },
+    "route": {
+        "openChatError": "चैट नहीं खुल सकी। कृपया पुनः प्रयास करें।"
+    }
+}

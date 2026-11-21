@@ -1,0 +1,30 @@
+{
+    "untitled": "बिना नाम {{term}}",
+    "helmet": {
+        "title": "{{termPlural}} प्रबंधित करें",
+        "titleWithName": "{{name}} — {{termPlural}} प्रबंधित करें"
+    },
+    "backToList": "{{termPlural}} पर वापस जाएं",
+    "subtitle": {
+        "manage": "इस {{term}} का एडमिन पेमेंट, शिक्षार्थी, इनवॉइस और टीम सदस्य प्रबंधित करें।",
+        "view": "इस {{term}} का एडमिन पेमेंट, शिक्षार्थी, इनवॉइस और टीम सदस्य देखें।"
+    },
+    "editTerm": "{{term}} संपादित करें",
+    "resync": {
+        "action": "आमंत्रण फिर से सिंक करें",
+        "inProgress": "फिर से सिंक हो रहा है…",
+        "failed": "आमंत्रण फिर से सिंक करने में विफल",
+        "alreadyInSync": "पहले से सिंक है — कोई बदलाव आवश्यक नहीं",
+        "createdSummary": "{{courses}} में {{invites}} फिर से सिंक किए गए",
+        "inviteCount_one": "{{count}} आमंत्रण",
+        "inviteCount_other": "{{count}} आमंत्रण",
+        "courseCount_one": "{{count}} कोर्स",
+        "courseCount_other": "{{count}} कोर्स",
+        "renamedSummary_one": "आपकी नामकरण सेटिंग्स से मेल करने के लिए {{count}} का नाम बदला गया",
+        "renamedSummary_other": "आपकी नामकरण सेटिंग्स से मेल करने के लिए {{count}} का नाम बदला गया"
+    },
+    "notFound": {
+        "message": "इस लिंक से मेल खाने वाला कोई {{term}} नहीं मिला।",
+        "goingBack": "सूची पर वापस जा रहे हैं…"
+    }
+}

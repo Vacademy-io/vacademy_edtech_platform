@@ -1,6 +1,8 @@
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { resolveSubjectName } from '@/services/subject-names';
 import React, { MutableRefObject, useEffect, useState } from 'react';
-import { useFieldArray, UseFormReturn } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
+import { UseFormReturn } from 'react-hook-form';
 import { PencilSimpleLine, TrashSimple, X } from '@phosphor-icons/react';
 import {
     AlertDialog,
@@ -36,7 +38,6 @@ import sectionDetailsSchema from '../../-utils/section-details-schema';
 import { useSavedAssessmentStore } from '../../-utils/global-states';
 import { Route } from '../..';
 import { useQuestionsForSection } from '../../-hooks/getQuestionsDataForSection';
-import { getSubjectNameById } from '@/routes/assessment/question-papers/-utils/helper';
 import { useBasicInfoStore } from '../../-utils/zustand-global-states/step1-basic-info';
 import { calculateAveragePenalty } from '@/routes/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab/-utils/helper';
 import Step2GenerateQuestionsFromAIHomework from './-components/Step2GenerateQuestionsFromAIHomework';
@@ -48,12 +49,16 @@ export const Step2SectionInfo = ({
     index,
     currentStep,
     oldData,
+    onDelete,
 }: {
     form: UseFormReturn<SectionFormType>;
     index: number;
     currentStep: number;
     oldData: MutableRefObject<SectionFormType>;
+    /** Removes this section — the parent's field array owns the list. */
+    onDelete: (index: number) => void;
 }) => {
+    const { t } = useTranslation('homeworkCreationStep2SectionInfo');
     const { assessmentId, examtype } = Route.useParams();
     const [enableSectionName, setEnableSectionName] = useState(true);
     const { instituteDetails } = useInstituteDetailsStore();
@@ -69,13 +74,17 @@ export const Step2SectionInfo = ({
 
     // Get subject name from Step 1 context (Zustand store or saved assessment details)
     const basicInfoStore = useBasicInfoStore();
-    const defaultSubject =
+    // Step 1 stores the subject *id*; the question-paper form below is keyed by name, so
+    // resolve it here. Unresolvable ids (a subject whose course was deleted, or the "N/A"
+    // sentinel older saves wrote) yield '', which leaves the paper's own subject picker
+    // visible instead of pinning it to a bogus value.
+    const defaultSubject = resolveSubjectName(
+        instituteDetails?.subjects,
+        {},
         basicInfoStore.testCreation?.subject ||
-        getSubjectNameById(
-            instituteDetails?.subjects || [],
-            assessmentDetails?.[0]?.saved_data?.subject_selection ?? ''
-        ) ||
-        '';
+            assessmentDetails?.[0]?.saved_data?.subject_selection ||
+            ''
+    );
 
     const adaptiveMarking = useQuestionsForSection(
         assessmentId,
@@ -94,14 +103,9 @@ export const Step2SectionInfo = ({
     const { setValue, getValues, control, watch } = form;
     const allSections = getValues('section');
 
-    const { remove } = useFieldArray({
-        control,
-        name: 'section', // Matches the key in defaultValues
-    });
-
     const handleDeleteSection = (e: React.MouseEvent, index: number) => {
         e.stopPropagation();
-        remove(index);
+        onDelete(index);
     };
 
     useEffect(() => {
@@ -185,6 +189,21 @@ export const Step2SectionInfo = ({
         }
     }, [watch(`section.${index}`)]);
 
+    // Maps the raw backend question-type enum (e.g. "MCQS") to a translated,
+    // human-readable label for display in the Adaptive Marking Rules table.
+    const questionTypeLabels: Record<string, string> = {
+        MCQS: t('table.questionTypeLabels.MCQS'),
+        MCQM: t('table.questionTypeLabels.MCQM'),
+        NUMERIC: t('table.questionTypeLabels.NUMERIC'),
+        CMCQS: t('table.questionTypeLabels.CMCQS'),
+        CMCQM: t('table.questionTypeLabels.CMCQM'),
+        CNUMERIC: t('table.questionTypeLabels.CNUMERIC'),
+        ONE_WORD: t('table.questionTypeLabels.ONE_WORD'),
+        LONG_ANSWER: t('table.questionTypeLabels.LONG_ANSWER'),
+        TRUE_FALSE: t('table.questionTypeLabels.TRUE_FALSE'),
+        CODING: t('table.questionTypeLabels.CODING'),
+    };
+
     if (isLoading || adaptiveMarking.isLoading) return <DashboardLoader />;
 
     return (
@@ -216,19 +235,19 @@ export const Step2SectionInfo = ({
                             {allSections?.[index]!.adaptive_marking_for_each_question.length >
                                 0 && (
                                 <span className="font-thin !text-neutral-600">
-                                    (MCQ(Single Correct):&nbsp;
+                                    ({t('header.mcqSingleCorrect')}&nbsp;
                                     {allSections?.[index]?.adaptive_marking_for_each_question
                                         ? getQuestionTypeCounts(
                                               allSections[index]!.adaptive_marking_for_each_question
                                           ).MCQS
                                         : 0}
-                                    ,&nbsp; MCQ(Multiple Correct):&nbsp;
+                                    ,&nbsp; {t('header.mcqMultipleCorrect')}&nbsp;
                                     {allSections?.[index]?.adaptive_marking_for_each_question
                                         ? getQuestionTypeCounts(
                                               allSections[index]!.adaptive_marking_for_each_question
                                           ).MCQM
                                         : 0}
-                                    ,&nbsp; Total:&nbsp;
+                                    ,&nbsp; {t('header.total')}&nbsp;
                                     {allSections?.[index]?.adaptive_marking_for_each_question
                                         ? getQuestionTypeCounts(
                                               allSections[index]!.adaptive_marking_for_each_question
@@ -279,7 +298,7 @@ export const Step2SectionInfo = ({
                     className="flex flex-wrap items-center justify-start gap-5"
                     id="upload-question-paper"
                 >
-                    <h3>Upload Question Paper</h3>
+                    <h3>{t('uploadSection.title')}</h3>
                     <AlertDialog
                         open={isUploadFromDeviceDialogOpen}
                         onOpenChange={setIsUploadFromDeviceDialogOpen}
@@ -291,13 +310,13 @@ export const Step2SectionInfo = ({
                                 buttonType="secondary"
                                 className="font-thin"
                             >
-                                Upload from Device
+                                {t('uploadSection.uploadFromDevice')}
                             </MyButton>
                         </AlertDialogTrigger>
                         <AlertDialogContent className="p-0">
                             <div className="flex items-center justify-between rounded-md bg-primary-50">
                                 <h1 className="rounded-sm p-4 font-bold text-primary-500">
-                                    Upload Question Paper From Device
+                                    {t('uploadSection.uploadFromDeviceDialogTitle')}
                                 </h1>
                                 <AlertDialogCancel
                                     className="border-none bg-primary-50 shadow-none hover:bg-primary-50"
@@ -328,13 +347,13 @@ export const Step2SectionInfo = ({
                                 buttonType="secondary"
                                 className="font-thin"
                             >
-                                Create Manually
+                                {t('uploadSection.createManually')}
                             </MyButton>
                         </AlertDialogTrigger>
                         <AlertDialogContent className="p-0">
                             <div className="flex items-center justify-between rounded-md bg-primary-50">
                                 <h1 className="rounded-sm p-4 font-bold text-primary-500">
-                                    Create Question Paper Manually
+                                    {t('uploadSection.createManuallyDialogTitle')}
                                 </h1>
                                 <AlertDialogCancel
                                     className="border-none bg-primary-50 shadow-none hover:bg-primary-50"
@@ -365,13 +384,13 @@ export const Step2SectionInfo = ({
                                 buttonType="secondary"
                                 className="font-thin"
                             >
-                                Choose Saved Paper
+                                {t('uploadSection.chooseSavedPaper')}
                             </MyButton>
                         </DialogTrigger>
-                        <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col items-start !gap-0 overflow-y-auto !p-0 [&>button]:hidden">
+                        <DialogContent className="no-scrollbar !m-0 flex max-h-dialog-tall w-dialog-xl flex-col items-start !gap-0 overflow-y-auto !p-0 [&>button]:hidden">
                             <div className="flex h-14 w-full items-center justify-between rounded-md bg-primary-50">
                                 <h1 className="rounded-sm p-4 font-bold text-primary-500">
-                                    Choose Saved Question Paper From List
+                                    {t('uploadSection.chooseSavedDialogTitle')}
                                 </h1>
                                 <DialogClose
                                     className="mr-4 !border-none bg-primary-50 shadow-none hover:bg-primary-50"
@@ -394,7 +413,7 @@ export const Step2SectionInfo = ({
                     <Step2GenerateQuestionsFromAIHomework form={form} index={index} />
                 </div>
                 <div className="flex flex-col gap-2" id="section-instructions">
-                    <h1 className="font-thin">Section Description</h1>
+                    <h1 className="font-thin">{t('sectionDescription.title')}</h1>
                     <FormField
                         control={control}
                         name={`section.${index}.section_description`}
@@ -405,7 +424,7 @@ export const Step2SectionInfo = ({
                                         onChange={field.onChange}
                                         onBlur={field.onBlur}
                                         value={field.value}
-                                        placeholder="Describe this section"
+                                        placeholder={t('sectionDescription.placeholder')}
                                         minHeight={120}
                                     />
                                 </FormControl>
@@ -416,7 +435,7 @@ export const Step2SectionInfo = ({
                 {watch(`testDuration.questionWiseDuration`) && (
                     <div className="flex w-96 items-center justify-between text-sm font-thin">
                         <h1 className="font-normal">
-                            Question Duration{' '}
+                            {t('duration.questionDuration')}{' '}
                             {getStepKey({
                                 assessmentDetails,
                                 currentStep,
@@ -457,7 +476,7 @@ export const Step2SectionInfo = ({
                                     </FormItem>
                                 )}
                             />
-                            <span>hrs</span>
+                            <span>{t('duration.hrs')}</span>
                             <span>:</span>
                             <FormField
                                 control={control}
@@ -490,14 +509,14 @@ export const Step2SectionInfo = ({
                                     </FormItem>
                                 )}
                             />
-                            <span>minutes</span>
+                            <span>{t('duration.minutes')}</span>
                         </div>
                     </div>
                 )}
                 {watch(`testDuration.sectionWiseDuration`) && (
                     <div className="flex w-96 items-center justify-between text-sm font-thin">
                         <h1 className="font-normal">
-                            Section Duration{' '}
+                            {t('duration.sectionDuration')}{' '}
                             {getStepKey({
                                 assessmentDetails,
                                 currentStep,
@@ -538,7 +557,7 @@ export const Step2SectionInfo = ({
                                     </FormItem>
                                 )}
                             />
-                            <span>hrs</span>
+                            <span>{t('duration.hrs')}</span>
                             <span>:</span>
                             <FormField
                                 control={control}
@@ -571,7 +590,7 @@ export const Step2SectionInfo = ({
                                     </FormItem>
                                 )}
                             />
-                            <span>minutes</span>
+                            <span>{t('duration.minutes')}</span>
                         </div>
                     </div>
                 )}
@@ -583,7 +602,7 @@ export const Step2SectionInfo = ({
                         >
                             <div className="flex flex-col font-normal">
                                 <h1>
-                                    Marks Per Question
+                                    {t('markingScheme.marksPerQuestion.title')}
                                     {getStepKey({
                                         assessmentDetails,
                                         currentStep,
@@ -592,7 +611,7 @@ export const Step2SectionInfo = ({
                                         <span className="text-subtitle text-danger-600">*</span>
                                     )}
                                 </h1>
-                                <h1>(Default)</h1>
+                                <h1>{t('markingScheme.marksPerQuestion.default')}</h1>
                             </div>
                             <FormField
                                 control={control}
@@ -634,7 +653,7 @@ export const Step2SectionInfo = ({
                         <div className="flex w-1/2 items-center justify-between">
                             <div className="flex w-52 items-center justify-between gap-4">
                                 <h1>
-                                    Negative Marking
+                                    {t('markingScheme.negativeMarking')}
                                     {getStepKey({
                                         assessmentDetails,
                                         currentStep,
@@ -709,7 +728,7 @@ export const Step2SectionInfo = ({
                             render={({ field }) => (
                                 <FormItem className="flex w-1/2 items-center justify-between">
                                     <FormLabel className="font-normal">
-                                        Partial Marking
+                                        {t('markingScheme.partialMarking')}
                                         {getStepKey({
                                             assessmentDetails,
                                             currentStep,
@@ -800,7 +819,7 @@ export const Step2SectionInfo = ({
                         render={({ field }) => (
                             <FormItem className="flex w-1/2 items-center justify-between">
                                 <FormLabel className="font-normal">
-                                    Problem Randomization
+                                    {t('randomization.problemRandomization')}
                                     {getStepKey({
                                         assessmentDetails,
                                         currentStep,
@@ -821,17 +840,17 @@ export const Step2SectionInfo = ({
                 )}
                 {Boolean(allSections?.[index]?.adaptive_marking_for_each_question?.length) && (
                     <div>
-                        <h1 className="mb-4 text-primary-500">Adaptive Marking Rules</h1>
+                        <h1 className="mb-4 text-primary-500">{t('table.adaptiveMarkingRulesTitle')}</h1>
                         <Table>
                             <TableHeader className="bg-primary-200">
                                 <TableRow>
-                                    <TableHead>Q.No.</TableHead>
-                                    <TableHead>Question</TableHead>
-                                    <TableHead>Question Type</TableHead>
-                                    <TableHead>Marks</TableHead>
-                                    <TableHead>Penalty</TableHead>
+                                    <TableHead>{t('table.headers.qno')}</TableHead>
+                                    <TableHead>{t('table.headers.question')}</TableHead>
+                                    <TableHead>{t('table.headers.questionType')}</TableHead>
+                                    <TableHead>{t('table.headers.marks')}</TableHead>
+                                    <TableHead>{t('table.headers.penalty')}</TableHead>
                                     {watch(`testDuration.questionWiseDuration`) && (
-                                        <TableHead>Time</TableHead>
+                                        <TableHead>{t('table.headers.time')}</TableHead>
                                     )}
                                 </TableRow>
                             </TableHeader>
@@ -847,7 +866,11 @@ export const Step2SectionInfo = ({
                                                             __html: question.questionName || '',
                                                         }}
                                                     />
-                                                    <TableCell>{question.questionType}</TableCell>
+                                                    <TableCell>
+                                                        {questionTypeLabels[
+                                                            question.questionType
+                                                        ] ?? question.questionType}
+                                                    </TableCell>
                                                     <TableCell>
                                                         <FormField
                                                             control={control}
@@ -962,7 +985,7 @@ export const Step2SectionInfo = ({
                     (watch(`section.${index}.marks_per_question`) ||
                         watch(`section.${index}.total_marks`)) && (
                         <div className="flex items-center justify-end gap-1">
-                            <span>Total Marks</span>
+                            <span>{t('totalMarks.label')}</span>
                             <span>:</span>
                             <h1>
                                 {calculateTotalMarks(

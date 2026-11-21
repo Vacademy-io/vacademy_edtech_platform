@@ -1,0 +1,22 @@
+{
+    "joinLink": {
+        "label": "رابط الانضمام:"
+    },
+    "announcement": {
+        "dialogTitle": "إعلان الواجب المباشر",
+        "empty": "لا توجد إعلانات",
+        "postedTodayAt": "اليوم، 11:28 صباحًا"
+    },
+    "actions": {
+        "save": "حفظ",
+        "exit": "خروج",
+        "addQuestion": "إضافة سؤال"
+    },
+    "questionType": {
+        "MCQS": "اختيار من متعدد (إجابة واحدة)",
+        "MCQM": "اختيار من متعدد (إجابات متعددة)"
+    },
+    "errors": {
+        "incompleteQuestions": "بعض أسئلتك غير مكتملة أو تحتاج إلى مراجعة!"
+    }
+}

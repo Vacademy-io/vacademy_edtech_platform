@@ -16,6 +16,24 @@ import java.util.Optional;
 public interface PackageSessionLearnerInvitationToPaymentOptionRepository
                 extends JpaRepository<PackageSessionLearnerInvitationToPaymentOption, String> {
 
+        /**
+         * Invite links of an institute on the given gateway that sell at least one
+         * non-free plan, so their checkout needs that gateway. Free invites never call
+         * it. Payment option types include lowercase legacy values, hence UPPER.
+         */
+        @Query("SELECT COUNT(DISTINCT psl.enrollInvite.id) "
+                        + "FROM PackageSessionLearnerInvitationToPaymentOption psl "
+                        + "WHERE psl.enrollInvite.instituteId = :instituteId "
+                        + "AND UPPER(psl.enrollInvite.vendor) = :vendor "
+                        + "AND psl.enrollInvite.status IN :inviteStatuses "
+                        + "AND psl.status IN :linkStatuses "
+                        + "AND UPPER(psl.paymentOption.type) <> :freeType")
+        long countPaidInvitesByInstituteIdAndVendor(@Param("instituteId") String instituteId,
+                        @Param("vendor") String vendor,
+                        @Param("inviteStatuses") List<String> inviteStatuses,
+                        @Param("linkStatuses") List<String> linkStatuses,
+                        @Param("freeType") String freeType);
+
         @Query("SELECT psl FROM PackageSessionLearnerInvitationToPaymentOption psl " +
                         "WHERE psl.enrollInvite.id = :enrollInviteId " +
                         "AND psl.packageSession.id = :packageSessionId " +
@@ -52,6 +70,10 @@ public interface PackageSessionLearnerInvitationToPaymentOptionRepository
         List<PackageSessionLearnerInvitationToPaymentOption> findByEnrollInvite_IdInAndPaymentOption_IdInAndPackageSession_IdInAndStatusIn(
                         List<String> enrollInviteIds, List<String> paymentOptionIds, List<String> packageSessionIds,
                         List<String> status);
+
+        /** One entry per package type on the invite, whatever the link's status; null for an untyped course. */
+        @Query("SELECT DISTINCT p.packageSession.packageEntity.packageType FROM PackageSessionLearnerInvitationToPaymentOption p WHERE p.enrollInvite.id = :enrollInviteId")
+        List<String> findPackageTypesByEnrollInviteId(@Param("enrollInviteId") String enrollInviteId);
 
         @Query("SELECT p.packageSession.id FROM PackageSessionLearnerInvitationToPaymentOption p WHERE p.enrollInvite = :enrollInvite AND p.status IN :status")
         List<String> findPackageSessionIdsByEnrollInviteAndStatusIn(@Param("enrollInvite") EnrollInvite enrollInvite,

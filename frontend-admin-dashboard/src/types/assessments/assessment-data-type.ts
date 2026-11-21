@@ -1,3 +1,4 @@
+import type { ProctoringConfigWire } from './proctoring';
 export interface Instructions {
     id: string;
     type: string;
@@ -60,7 +61,10 @@ export interface SavedData {
     assessment_visibility: string;
     expected_participants: string | null;
     duration_distribution: 'ASSESSMENT' | 'QUESTION' | 'SECTION';
-    omr_mode: string | null;
+    /** OMR sheet (pen & paper) mode; the backend sends a Boolean (null on older assessments). */
+    omr_mode: boolean | null;
+    /** Step 1 "Evaluate submissions with AI" toggle. */
+    ai_evaluation_enabled?: boolean | null;
     boundation_end_date: string;
     assessment_url: string;
     duration: number;
@@ -79,11 +83,15 @@ export interface SavedData {
     live_assessment_access: AccessControl;
     evaluation_access: AccessControl;
     pre_user_registrations: number;
+    /** Of pre_user_registrations, those from the public link; absent on older backends. */
+    open_user_registrations?: number;
     registration_form_fields: RegistrationFormField[];
     registration_open_date: string | null;
     pre_batch_registrations: PreBatchRegistration[];
     registration_close_date: string | null;
     notifications: AssessmentNotification;
+    /** Effective proctoring config (V48). Absent/NONE on older assessments. */
+    proctoring_config?: ProctoringConfigWire | null;
 }
 
 export interface Section {

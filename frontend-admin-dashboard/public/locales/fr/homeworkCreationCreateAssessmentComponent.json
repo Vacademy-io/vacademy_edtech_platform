@@ -1,0 +1,15 @@
+{
+    "steps": {
+        "basicInfo": "Informations de base",
+        "addQuestion": "Ajouter une question",
+        "addParticipants": "Ajouter des participants",
+        "accessControl": "Contrôle d'accès"
+    },
+    "page": {
+        "title": "Créer une évaluation",
+        "metaDescription": "Cette page permet à l'administrateur de créer une évaluation pour les étudiants."
+    },
+    "noCourseDialog": {
+        "type": "Créer une évaluation"
+    }
+}

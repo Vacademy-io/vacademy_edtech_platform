@@ -1,0 +1,62 @@
+{
+    "unknown": "अज्ञात",
+    "unknownCourse": "अज्ञात कोर्स",
+    "untitled": "बिना शीर्षक",
+    "dropdown": {
+        "allNoRestriction": "सभी (कोई प्रतिबंध नहीं)",
+        "loading": "लोड हो रहा है...",
+        "noOptions": "कोई विकल्प उपलब्ध नहीं"
+    },
+    "multiSelect": {
+        "selectedCount_one": "{{count}} चयनित",
+        "selectedCount_other": "{{count}} चयनित",
+        "searchPlaceholder": "खोजें...",
+        "noMatches": "“{{search}}” से कुछ भी मेल नहीं खाता।",
+        "someHiddenBySearch": "कुछ चयनित आइटम खोज के कारण छिपे हैं"
+    },
+    "batch": {
+        "selectPlaceholder": "-- एक बैच चुनें --",
+        "emptyRequired": "कम से कम एक बैच चुनें।",
+        "emptyOptional": "कोई चयन नहीं — आपके संस्थान के सभी सक्रिय बैचों में चलेगा।"
+    },
+    "audience": {
+        "emptyRequired": "कम से कम एक कैंपेन चुनें।",
+        "emptyOptional": "कोई चयन नहीं — सभी कैंपेन में चलेगा।"
+    },
+    "template": {
+        "emailPlaceholder": "-- एक ईमेल टेम्पलेट चुनें --",
+        "whatsappPlaceholder": "-- एक WhatsApp टेम्पलेट चुनें --",
+        "livesessionPlaceholder": "-- एक लाइव सत्र चुनें --",
+        "invitePlaceholder": "-- एक आमंत्रण चुनें --",
+        "coursePlaceholder": "-- एक कोर्स चुनें --",
+        "creating": "बनाया जा रहा है...",
+        "useSample": "सैंपल का उपयोग करें: \"{{name}}\"",
+        "useSampleHint": "सही वेरिएबल्स के साथ पूर्व-निर्मित टेम्पलेट — आपकी टेम्पलेट लाइब्रेरी में जोड़ा गया",
+        "noWhatsappTemplates": "कोई स्वीकृत WhatsApp टेम्पलेट नहीं मिला। ये Meta से सिंक होते हैं — संचार → WhatsApp टेम्पलेट्स खोलकर सिंक करें, या पहले Meta में टेम्पलेट स्वीकृत कराएं।",
+        "whatsappVarsNeedMapping": "यह टेमप्लेट {{vars}} का उपयोग करता है। लीड फ़ील्ड के नाम वाले वेरिएबल अपने आप भर जाते हैं; नंबर वाले जनरेट करने के बाद बिल्डर में मैप करने होंगे — कोई भी खाली रह गया तो WhatsApp संदेश अस्वीकार कर देता है।"
+    },
+    "jsonPayload": {
+        "invalidObject": "पेलोड एक JSON ऑब्जेक्ट होना चाहिए (कोई ऐरे या प्रिमिटिव नहीं)।",
+        "valid": "✓ मान्य JSON",
+        "errorPrefix": "⚠ {{error}}"
+    },
+    "picker": {
+        "heading": "आप इस वर्कफ़्लो को कैसे बनाना चाहेंगे?",
+        "subheading": "नीचे दिया गया तैयार टेम्पलेट चुनें, या विज़ुअल एडिटर का उपयोग करके अपना वर्कफ़्लो शुरू से बनाएं।",
+        "templatesForTrigger": "इस ट्रिगर के लिए टेम्पलेट",
+        "useThisTemplate": "इस टेम्पलेट का उपयोग करें",
+        "noTemplates": "इस ट्रिगर के लिए अभी कोई पूर्व-निर्मित टेम्पलेट उपलब्ध नहीं है।",
+        "noTemplatesHint": "अपना वर्कफ़्लो शुरू से बनाने के लिए एडवांस्ड बिल्डर का उपयोग करें।",
+        "or": "या",
+        "buildFromScratch": "शुरू से बनाएं",
+        "buildFromScratchHint": "पूर्ण नियंत्रण के साथ कस्टम वर्कफ़्लो बनाने के लिए विज़ुअल ड्रैग-एंड-ड्रॉप एडिटर का उपयोग करें।",
+        "back": "वापस"
+    },
+    "wizard": {
+        "backToTemplates": "टेम्पलेट्स पर वापस जाएं",
+        "configureHeading": "अपना वर्कफ़्लो कॉन्फ़िगर करें",
+        "whatWillBeCreated": "क्या बनाया जाएगा",
+        "back": "वापस",
+        "generate": "वर्कफ़्लो जनरेट करें"
+    }
+}

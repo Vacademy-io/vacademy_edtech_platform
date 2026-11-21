@@ -1,0 +1,98 @@
+{
+    "meta": {
+        "title": "कोर्स कंटेंट व्यूअर",
+        "description": "अपना जनरेट किया गया कोर्स कंटेंट देखें"
+    },
+    "header": {
+        "backToLibrary": "कोर्स लाइब्रेरी पर वापस जाएं",
+        "create": "बनाएं",
+        "heading": "अंतिम चरण: अपने कोर्स की पुष्टि करें",
+        "subheading": "पूरे कोर्स कंटेंट की ध्यान से समीक्षा करें। कोर्स बनाने से पहले कोई भी अंतिम बदलाव कर लें।"
+    },
+    "empty": {
+        "noContent": "कोई कोर्स कंटेंट उपलब्ध नहीं है।",
+        "generateFirst": "कृपया पहले जनरेटिंग पेज से कोर्स कंटेंट जनरेट करें।"
+    },
+    "ordinal": {
+        "first": "पहली",
+        "second": "दूसरी"
+    },
+    "session": {
+        "untitled": "शीर्षक रहित सेशन",
+        "edit": "संपादित करें",
+        "delete": "हटाएं",
+        "save": "सहेजें",
+        "cancel": "रद्द करें",
+        "pagesProgress_one": "{{completed}}/{{count}} पेज",
+        "pagesProgress_other": "{{completed}}/{{count}} पेज",
+        "confirmDelete": "क्या आप वाकई इस सेशन को हटाना चाहते हैं?"
+    },
+    "slide": {
+        "edit": "संपादित करें",
+        "delete": "हटाएं",
+        "save": "सहेजें",
+        "cancel": "रद्द करें",
+        "confirmDelete": "क्या आप वाकई इस {{term}} को हटाना चाहते हैं?",
+        "noContent": "कोई कंटेंट उपलब्ध नहीं है",
+        "regenerate": "फिर से बनाएं",
+        "regenerateCode": "कोड फिर से बनाएं",
+        "regenerateVideo": "वीडियो फिर से बनाएं",
+        "regenerateVideoScript": "वीडियो स्क्रिप्ट फिर से बनाएं",
+        "regenerateQuiz": "क्विज़ फिर से बनाएं",
+        "regenerateSolution": "समाधान फिर से बनाएं",
+        "regenerateAssignment": "असाइनमेंट फिर से बनाएं",
+        "codeEditor": "कोड एडिटर",
+        "videoPlayer": "वीडियो प्लेयर",
+        "videoWillBeDisplayed": "वीडियो यहां दिखाया जाएगा",
+        "uploadOrUrlHint": "वीडियो जोड़ने के लिए अपलोड या URL आइकन पर क्लिक करें",
+        "uploadVideoFromDevice": "डिवाइस से वीडियो अपलोड करें",
+        "addVideoUrl": "वीडियो URL जोड़ें",
+        "videoUrlLabel": "वीडियो URL",
+        "videoUrlPlaceholder": "https://www.youtube.com/watch?v=...",
+        "selectVideoFileAlert": "कृपया एक वीडियो फ़ाइल चुनें",
+        "learningObjectives": "सीखने के उद्देश्य",
+        "document": "दस्तावेज़",
+        "videoScript": "वीडियो स्क्रिप्ट",
+        "solutionCode": "समाधान कोड",
+        "homework": "गृहकार्य",
+        "assignment": "असाइनमेंट"
+    },
+    "quiz": {
+        "content": "क्विज़ कंटेंट",
+        "addQuestion": "प्रश्न जोड़ें",
+        "noQuestions": "अभी तक कोई प्रश्न नहीं है। शुरू करने के लिए \"प्रश्न जोड़ें\" पर क्लिक करें।",
+        "questionLabel": "प्रश्न {{number}}",
+        "delete": "हटाएं",
+        "questionText": "प्रश्न पाठ",
+        "questionPlaceholder": "यहां अपना प्रश्न लिखें...",
+        "options": "विकल्प",
+        "optionPlaceholder": "विकल्प {{number}}",
+        "removeOption": "विकल्प हटाएं",
+        "addOption": "+ विकल्प जोड़ें"
+    },
+    "regenerateWarningDialog": {
+        "title": "पुनर्जनन सीमा चेतावनी",
+        "description": "आप इस कंटेंट को केवल दो बार फिर से बना सकते हैं। यह आपका {{ordinal}} पुनर्जनन है।",
+        "body": "आगे बढ़ने से पहले कृपया अपने कंटेंट की ध्यान से समीक्षा करें। दो बार पुनर्जनन के बाद, आप इस कंटेंट को फिर से नहीं बना पाएंगे।",
+        "cancel": "रद्द करें",
+        "proceed": "आगे बढ़ें"
+    },
+    "regenerateDialog": {
+        "title": "पेज फिर से बनाएं",
+        "warningTitle": "पुनर्जनन सीमा चेतावनी",
+        "warningBody": "आप इस कंटेंट को केवल दो बार फिर से बना सकते हैं। यह आपका {{ordinal}} पुनर्जनन है। दो बार पुनर्जनन के बाद, आप इस कंटेंट को फिर से नहीं बना पाएंगे।",
+        "promptPlaceholder": "यह पेज किस तरह फिर से बनाया जाए, इसका विवरण दें... (वैकल्पिक - सरल पुनर्जनन के लिए खाली छोड़ दें)",
+        "regenerate": "फिर से बनाएं"
+    },
+    "regenerationLimitAlert": {
+        "video": "आप पहले ही इस वीडियो कंटेंट को दो बार फिर से बना चुके हैं। आगे पुनर्जनन की अनुमति नहीं है।",
+        "generic": "आप पहले ही इस कंटेंट को दो बार फिर से बना चुके हैं। आगे पुनर्जनन की अनुमति नहीं है।"
+    },
+    "backToLibraryDialog": {
+        "title": "क्या कोर्स लाइब्रेरी पर वापस जाना है?",
+        "description": "क्या आप वाकई कोर्स लाइब्रेरी पर वापस जाना चाहते हैं? आप या तो अपना मौजूदा कोर्स हटा सकते हैं या इसे ड्राफ्ट में सहेज सकते हैं।",
+        "cancel": "रद्द करें",
+        "discard": "कोर्स हटाएं",
+        "saveToDrafts": "ड्राफ्ट में सहेजें"
+    }
+}

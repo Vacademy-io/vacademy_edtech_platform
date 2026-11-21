@@ -19,6 +19,7 @@ import vacademy.io.admin_core_service.features.fee_management.entity.AftInstallm
 import vacademy.io.admin_core_service.features.fee_management.entity.AssignedFeeValue;
 import vacademy.io.admin_core_service.features.fee_management.entity.ComplexPaymentOption;
 import vacademy.io.admin_core_service.features.fee_management.entity.FeeType;
+import vacademy.io.admin_core_service.features.fee_management.enums.CpoScheduleMode;
 import vacademy.io.admin_core_service.features.fee_management.repository.AftInstallmentRepository;
 import vacademy.io.admin_core_service.features.fee_management.repository.AssignedFeeValueRepository;
 import vacademy.io.admin_core_service.features.fee_management.repository.ComplexPaymentOptionRepository;
@@ -90,12 +91,30 @@ public class FeeManagementService {
         // Non-ADMIN → PENDING_APPROVAL (requires approval before enrollment use)
         String cpoStatus = isTrustedAdmin(userDetails) ? "ACTIVE" : "PENDING_APPROVAL";
 
+        boolean flexible = CpoScheduleMode.isFlexible(request.getScheduleMode());
+        if (request.getScheduleMode() != null && !flexible
+                && !CpoScheduleMode.FIXED.name().equalsIgnoreCase(request.getScheduleMode())) {
+            throw new VacademyException("schedule_mode must be FIXED or FLEXIBLE");
+        }
+        if (flexible && hasTemplateInstallments(request)) {
+            throw new VacademyException("A flexible fee plan has no fixed installments; "
+                    + "the schedule is chosen for each learner at enrollment");
+        }
+        if (flexible && !hasSplitFee(request)) {
+            // Every enrollment on such a plan would fail: there is nothing to schedule.
+            throw new VacademyException("A flexible fee plan needs at least one fee that is split into installments");
+        }
+
         ComplexPaymentOption cpo = new ComplexPaymentOption();
         cpo.setName(request.getName());
         cpo.setInstituteId(request.getInstituteId());
         cpo.setDefaultPaymentOptionId(request.getDefaultPaymentOptionId());
         cpo.setStatus(cpoStatus);
         cpo.setCreatedBy(userDetails != null ? userDetails.getUserId() : null);
+        cpo.setScheduleMode(flexible ? CpoScheduleMode.FLEXIBLE.name() : CpoScheduleMode.FIXED.name());
+        if (flexible && request.getFlexibleDefaults() != null) {
+            CpoFlexibleDefaults.write(cpo, request.getFlexibleDefaults());
+        }
         ComplexPaymentOption savedCpo = cpoRepository.save(cpo);
 
         if (request.getFeeTypes() != null) {
@@ -118,7 +137,9 @@ public class FeeManagementService {
                     afv.setDiscountType(afvDTO.getDiscountType());
                     afv.setDiscountValue(afvDTO.getDiscountValue());
                     afv.setNoOfInstallments(afvDTO.getNoOfInstallments() != null ? afvDTO.getNoOfInstallments() : 1);
-                    afv.setHasInstallment(afvDTO.getHasInstallment() != null ? afvDTO.getHasInstallment() : false);
+                    // On a flexible plan a fee is split over the learner's schedule unless the
+                    // caller marks it as paid upfront (has_installment = false).
+                    afv.setHasInstallment(afvDTO.getHasInstallment() != null ? afvDTO.getHasInstallment() : flexible);
                     afv.setIsRefundable(afvDTO.getIsRefundable() != null ? afvDTO.getIsRefundable() : false);
                     afv.setHasPenalty(afvDTO.getHasPenalty() != null ? afvDTO.getHasPenalty() : false);
                     afv.setPenaltyPercentage(afvDTO.getPenaltyPercentage());
@@ -190,12 +211,27 @@ public class FeeManagementService {
         return result;
     }
 
+    /** On a flexible plan a fee is split unless it is explicitly marked has_installment = false. */
+    private static boolean hasSplitFee(ComplexPaymentOptionDTO request) {
+        if (request.getFeeTypes() == null) return false;
+        return request.getFeeTypes().stream()
+                .map(ComplexPaymentOptionDTO.FeeTypeDTO::getAssignedFeeValue)
+                .anyMatch(afv -> afv != null && !Boolean.FALSE.equals(afv.getHasInstallment()));
+    }
+
+    private static boolean hasTemplateInstallments(ComplexPaymentOptionDTO request) {
+        if (request.getFeeTypes() == null) return false;
+        return request.getFeeTypes().stream()
+                .map(ComplexPaymentOptionDTO.FeeTypeDTO::getAssignedFeeValue)
+                .anyMatch(afv -> afv != null && afv.getInstallments() != null && !afv.getInstallments().isEmpty());
+    }
+
     /**
      * API #2: List all CPOs for an institute (lightweight - no nested children).
      */
     public Page<ComplexPaymentOptionDTO> listCposByInstitute(String instituteId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<ComplexPaymentOption> cposPage = cpoRepository.findByInstituteIdAndStatusNot(instituteId, "DELETED", pageable);
+        Page<ComplexPaymentOption> cposPage = cpoRepository.findByInstituteIdAndStatusNotAndSourcePaymentPlanIdIsNull(instituteId, "DELETED", pageable);
 
         if (!cposPage.hasContent()) {
             return cposPage.map(cpo -> ComplexPaymentOptionDTO.builder().id(cpo.getId()).build());
@@ -268,6 +304,8 @@ public class FeeManagementService {
                     .status(cpo.getStatus())
                     .createdBy(cpo.getCreatedBy())
                     .approvedBy(cpo.getApprovedBy())
+                    .scheduleMode(cpo.getScheduleMode())
+                    .flexibleDefaults(CpoFlexibleDefaults.read(cpo))
                     .feeTypes(feeTypeDTOs)
                     .packageSessionLinks(linkDTOs)
                     .build();
@@ -368,6 +406,8 @@ public class FeeManagementService {
                 .createdBy(cpo.getCreatedBy())
                 .approvedBy(cpo.getApprovedBy())
                 .requireApproval(paymentOptionService.getMirrorRequireApproval(cpo.getId()))
+                .scheduleMode(cpo.getScheduleMode())
+                .flexibleDefaults(CpoFlexibleDefaults.read(cpo))
                 .feeTypes(feeTypeDTOs)
                 .packageSessionLinks(linkDTOs)
                 .build();
@@ -409,6 +449,12 @@ public class FeeManagementService {
             cpo.setDefaultPaymentOptionId(request.getDefaultPaymentOptionId());
         if (request.getStatus() != null)
             cpo.setStatus(request.getStatus());
+        if (request.getFlexibleDefaults() != null) {
+            if (!CpoScheduleMode.isFlexible(cpo.getScheduleMode())) {
+                throw new VacademyException("Installment defaults only apply to flexible fee plans");
+            }
+            CpoFlexibleDefaults.write(cpo, request.getFlexibleDefaults());
+        }
 
         cpoRepository.save(cpo);
         paymentOptionService.syncMirrorForCpo(cpo);

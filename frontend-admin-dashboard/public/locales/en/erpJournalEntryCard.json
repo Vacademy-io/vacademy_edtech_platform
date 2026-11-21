@@ -1,0 +1,17 @@
+{
+    "unknownSource": "Unknown source",
+    "statusPosted": "Posted",
+    "statusReversed": "Reversed",
+    "statusUnknown": "Unknown",
+    "defaultAccount": "Account",
+    "undated": "Undated",
+    "doesNotBalance": "Does not balance",
+    "noMemo": "No memo recorded for this entry.",
+    "debit": "Debit",
+    "credit": "Credit",
+    "accountColumn": "Account",
+    "noLinesStored": "This entry has no lines stored against it. Its totals came from the entry header alone, so there is nothing to reconcile here.",
+    "totalsBalanced": "Totals — debits equal credits",
+    "totalsUnbalanced": "Totals — debits and credits differ",
+    "unbalancedWarning": "This entry does not balance. A journal entry must always post equal debits and credits — report this to whoever owns the ledger before importing the month into your accounting system."
+}

@@ -1,0 +1,62 @@
+{
+    "column": {
+        "revenue": "الإيرادات",
+        "payments": "المدفوعات",
+        "source": "المصدر",
+        "counsellor": "المستشار"
+    },
+    "kpi": {
+        "revenueSub": "{{payments}} دفعة من {{students}} طالب في هذه الفترة"
+    },
+    "dailyRevenue": {
+        "title": "الإيرادات اليومية",
+        "barTooltip_zero": "{{date}}: {{amount}} ({{count}} دفعة)",
+        "barTooltip_one": "{{date}}: {{amount}} ({{count}} دفعة)",
+        "barTooltip_two": "{{date}}: {{amount}} ({{count}} دفعتان)",
+        "barTooltip_few": "{{date}}: {{amount}} ({{count}} دفعات)",
+        "barTooltip_many": "{{date}}: {{amount}} ({{count}} دفعة)",
+        "barTooltip_other": "{{date}}: {{amount}} ({{count}} دفعة)",
+        "hoverAmount_zero": "{{amount}} · {{count}} دفعة",
+        "hoverAmount_one": "{{amount}} · {{count}} دفعة",
+        "hoverAmount_two": "{{amount}} · {{count}} دفعة",
+        "hoverAmount_few": "{{amount}} · {{count}} دفعة",
+        "hoverAmount_many": "{{amount}} · {{count}} دفعة",
+        "hoverAmount_other": "{{amount}} · {{count}} دفعة",
+        "footnote": "تُحتسب كل دفعة في يوم سدادها (تاريخ المعاملة المُدخل للدفعات اليدوية)."
+    },
+    "bySource": {
+        "title": "الإيرادات حسب المصدر"
+    },
+    "byCounsellor": {
+        "title": "الإيرادات حسب المستشار",
+        "footnote": "المبالغ المستلمة في هذه الفترة، بما في ذلك أقساط طلاب قُبلوا سابقًا. القبولات والرسوم في تبويب القبولات."
+    },
+    "payments": {
+        "title": "المدفوعات — {{name}}",
+        "rowHint": "انقر على مستشار لعرض المدفوعات وراء المبلغ.",
+        "summary_one": "{{count}} دفعة · {{amount}}",
+        "summary_other": "{{count}} دفعات · {{amount}}",
+        "loading": "جارٍ تحميل المدفوعات…",
+        "empty": "لا توجد مدفوعات لـ {{name}} في هذه الفترة.",
+        "close": "إغلاق",
+        "total": "الإجمالي",
+        "enteredOn": "أُدخلت {{date}}",
+        "truncated": "عرض أحدث {{shown}} من {{count}} دفعة. صدّر أو ضيّق نطاق التاريخ لعرض الكل.",
+        "headers": {
+            "date": "تاريخ الدفع",
+            "student": "الطالب",
+            "phone": "الهاتف",
+            "courses": "الدورات",
+            "amount": "المبلغ",
+            "mode": "الطريقة",
+            "reference": "المرجع",
+            "receipt": "رقم الإيصال",
+            "source": "المصدر",
+            "enteredOn": "تاريخ الإدخال"
+        }
+    },
+    "empty": {
+        "noRevenue": "لا توجد إيرادات في هذا النطاق الزمني.",
+        "noCounsellorRevenue": "لا توجد إيرادات منسوبة إلى مستشار في هذا النطاق الزمني."
+    }
+}

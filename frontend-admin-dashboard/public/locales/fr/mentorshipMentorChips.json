@@ -1,0 +1,14 @@
+{
+    "ratingTooltip_one": "Moyenne de {{count}} séance notée — cliquez pour lire les retours",
+    "ratingTooltip_many": "Moyenne de {{count}} de séances notées — cliquez pour lire les retours",
+    "ratingTooltip_other": "Moyenne de {{count}} séances notées — cliquez pour lire les retours",
+    "noCapTooltip": "Étudiants actuellement assignés à ce mentor (aucune limite définie)",
+    "atCapacityTooltip": "Capacité atteinte — aucun nouvel étudiant ne peut être assigné tant que la limite n'est pas relevée ou qu'un mentoré n'est pas retiré",
+    "placesOpenTooltip_one": "{{count}} place encore disponible sur {{cap}}",
+    "placesOpenTooltip_many": "{{count}} de places encore disponibles sur {{cap}}",
+    "placesOpenTooltip_other": "{{count}} places encore disponibles sur {{cap}}",
+    "fullSuffix": "complet",
+    "studentsSuffix_one": "étudiant",
+    "studentsSuffix_many": "d'étudiants",
+    "studentsSuffix_other": "étudiants"
+}

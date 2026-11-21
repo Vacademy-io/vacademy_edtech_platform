@@ -18,6 +18,7 @@ import {
     GraduationCap,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 // `remark-gfm` adds GitHub-Flavored Markdown support to react-markdown:
@@ -33,6 +34,7 @@ import { saveStudyNotes, type AssessmentArtifact } from '../-services/utils';
 import { PastPapersSection } from './PastPapersSection';
 import { AddToCourseDialog } from './add-to-course/AddToCourseDialog';
 import type { jsPDF as JsPDF } from 'jspdf';
+import type { TFunction } from 'i18next';
 
 /**
  * Single entrypoint dialog opened from the "Show Transcript" button on a
@@ -92,22 +94,24 @@ interface TextState {
     error?: string;
 }
 
-const LANGUAGE_NAMES: Record<string, string> = {
-    en: 'English',
-    hi: 'Hindi',
-    bn: 'Bengali',
-    ta: 'Tamil',
-    te: 'Telugu',
-    mr: 'Marathi',
-    gu: 'Gujarati',
-    kn: 'Kannada',
-    ml: 'Malayalam',
-    pa: 'Punjabi',
-    ur: 'Urdu',
-};
+const buildLanguageNames = (t: TFunction): Record<string, string> => ({
+    en: t('languages.en'),
+    hi: t('languages.hi'),
+    bn: t('languages.bn'),
+    ta: t('languages.ta'),
+    te: t('languages.te'),
+    mr: t('languages.mr'),
+    gu: t('languages.gu'),
+    kn: t('languages.kn'),
+    ml: t('languages.ml'),
+    pa: t('languages.pa'),
+    ur: t('languages.ur'),
+});
 
-const langName = (code?: string) =>
-    code ? LANGUAGE_NAMES[code.toLowerCase()] ?? code.toUpperCase() : 'Source';
+const langName = (code: string | undefined, t: TFunction) =>
+    code
+        ? (buildLanguageNames(t)[code.toLowerCase()] ?? code.toUpperCase())
+        : t('languages.source');
 
 /**
  * Break a long Whisper transcript into readable paragraphs by sentence
@@ -587,12 +591,12 @@ const NOTES_MARKDOWN_COMPONENTS = {
     hr: () => <hr className="my-6 border-neutral-200" />,
 } as Components;
 
-const copyToClipboard = async (text: string, label: string) => {
+const copyToClipboard = async (text: string, label: string, t: TFunction) => {
     try {
         await navigator.clipboard.writeText(text);
-        toast.success(`${label} copied`);
+        toast.success(t('toasts.copied', { label }));
     } catch {
-        toast.error('Could not access clipboard');
+        toast.error(t('toasts.clipboardError'));
     }
 };
 
@@ -612,6 +616,7 @@ export function TranscriptActionsDialog({
     onOpenArtifact,
     linkedBatches,
 }: Props) {
+    const { t, i18n } = useTranslation('studyLibraryLiveSessionTranscriptActionsDialog');
     const [source, setSource] = useState<TextState>({ state: 'idle', text: '' });
     const [english, setEnglish] = useState<TextState>({ state: 'idle', text: '' });
     // Hydrate notes from the server-side cache so reopening the dialog shows
@@ -709,7 +714,9 @@ export function TranscriptActionsDialog({
     const activeText = showingEnglish && english.text
         ? english.text
         : source.text || english.text;
-    const activeLanguageLabel = showingEnglish ? 'English' : langName(detectedLanguage);
+    const activeLanguageLabel = showingEnglish
+        ? t('languages.en')
+        : langName(detectedLanguage, t);
 
     const activeParagraphs = useMemo(() => formatTranscript(activeText), [activeText]);
     const activeWordCount = useMemo(() => wordCount(activeText), [activeText]);
@@ -717,7 +724,7 @@ export function TranscriptActionsDialog({
     const handleGenerateNotes = async () => {
         const transcriptForLlm = english.text || source.text;
         if (!transcriptForLlm || transcriptForLlm.trim().length < 20) {
-            toast.error('Transcript is empty or too short to generate notes');
+            toast.error(t('errors.transcriptTooShort'));
             return;
         }
         setNotes({ state: 'loading', markdown: '' });
@@ -757,16 +764,16 @@ export function TranscriptActionsDialog({
                 onSavedNotesChange?.(data.markdown, generatedAt);
             } catch (saveErr) {
                 console.warn('[study-notes] save failed (non-fatal):', saveErr);
-                toast.warning('Notes generated, but caching failed — regenerate to retry.');
+                toast.warning(t('errors.cachingFailed'));
             }
-            toast.success('Lecture notes generated');
+            toast.success(t('toasts.notesGenerated'));
         } catch (e) {
             // Prefer the ai-service detail (e.g. the 402 "insufficient credits"
             // message) over the generic axios "status code 402".
             const axiosDetail = (e as { response?: { data?: { detail?: string } } })?.response
                 ?.data?.detail;
             const msg =
-                axiosDetail || (e instanceof Error ? e.message : 'Failed to generate notes');
+                axiosDetail || (e instanceof Error ? e.message : t('errors.generateFailed'));
             setNotes({ state: 'error', markdown: '', error: msg });
             toast.error(msg);
         }
@@ -776,7 +783,7 @@ export function TranscriptActionsDialog({
         <MyDialog
             open={open}
             onOpenChange={onOpenChange}
-            heading="Transcript"
+            heading={t('dialogHeading')}
             dialogWidth="max-w-3xl"
         >
             {/* MyDialog already caps the body to a sensible viewport
@@ -787,17 +794,20 @@ export function TranscriptActionsDialog({
                 <div className="flex flex-wrap items-center gap-2">
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
                         <Sparkles className="size-3" />
-                        Transcript ready
+                        {t('statusPill.transcriptReady')}
                     </span>
                     {detectedLanguage && (
                         <span className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-2.5 py-1 text-xs font-medium text-neutral-600">
                             <Languages className="size-3" />
-                            {langName(detectedLanguage)}
+                            {langName(detectedLanguage, t)}
                         </span>
                     )}
                     {transcriptReady && activeWordCount > 0 && (
                         <span className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-2.5 py-1 text-xs font-medium text-neutral-600">
-                            {activeWordCount.toLocaleString()} words
+                            {t('statusPill.wordCount', {
+                                count: activeWordCount,
+                                formattedCount: activeWordCount.toLocaleString(i18n.language),
+                            })}
                         </span>
                     )}
                 </div>
@@ -820,7 +830,7 @@ export function TranscriptActionsDialog({
                                                 : 'rounded-sm px-2.5 py-1 text-xs font-medium text-neutral-500 hover:text-neutral-700'
                                         }
                                     >
-                                        {langName(detectedLanguage)}
+                                        {langName(detectedLanguage, t)}
                                     </button>
                                     <button
                                         type="button"
@@ -831,12 +841,14 @@ export function TranscriptActionsDialog({
                                                 : 'rounded-sm px-2.5 py-1 text-xs font-medium text-neutral-500 hover:text-neutral-700'
                                         }
                                     >
-                                        English
+                                        {t('languages.en')}
                                     </button>
                                 </div>
                             ) : (
                                 <div className="text-xs font-medium text-neutral-500">
-                                    {activeLanguageLabel} transcript
+                                    {t('reader.transcriptLabel', {
+                                        language: activeLanguageLabel,
+                                    })}
                                 </div>
                             )}
                             <div className="flex items-center gap-1.5">
@@ -847,12 +859,15 @@ export function TranscriptActionsDialog({
                                     onClick={() =>
                                         copyToClipboard(
                                             activeText,
-                                            `${activeLanguageLabel} transcript`,
+                                            t('reader.transcriptLabel', {
+                                                language: activeLanguageLabel,
+                                            }),
+                                            t,
                                         )
                                     }
                                 >
                                     <Copy className="mr-1.5 size-3.5" />
-                                    Copy
+                                    {t('buttons.copy')}
                                 </MyButton>
                                 <MyButton
                                     type="button"
@@ -885,7 +900,7 @@ export function TranscriptActionsDialog({
                                     ))
                                 ) : (
                                     <p className="text-neutral-500">
-                                        Transcript is empty for this recording.
+                                        {t('reader.emptyTranscript')}
                                     </p>
                                 )}
                             </div>
@@ -898,18 +913,18 @@ export function TranscriptActionsDialog({
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <ActionCard
                             icon={<FileText className="size-5" />}
-                            title="Create Assessment"
-                            description="Auto-generate an MCQ assessment from this lecture and publish it to your batches."
-                            cta="Create Assessment"
+                            title={t('actions.createAssessment.title')}
+                            description={t('actions.createAssessment.description')}
+                            cta={t('actions.createAssessment.cta')}
                             onClick={onCreateAssessment}
                             tone="primary"
                             disabled={!transcriptReady}
                         />
                         <ActionCard
                             icon={<BookText className="size-5" />}
-                            title="Generate Lecture Notes"
-                            description="Turn this transcript into clean, structured study notes you can share with learners."
-                            cta="Generate Notes"
+                            title={t('actions.generateNotes.title')}
+                            description={t('actions.generateNotes.description')}
+                            cta={t('actions.generateNotes.cta')}
                             onClick={handleGenerateNotes}
                             tone="violet"
                             disabled={!transcriptReady}
@@ -960,10 +975,10 @@ export function TranscriptActionsDialog({
                     <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
                         <Loader2 className="size-6 animate-spin text-primary-500" />
                         <div className="text-sm font-medium text-neutral-800">
-                            Generating lecture notes…
+                            {t('loading.generatingNotes')}
                         </div>
                         <div className="text-xs text-neutral-500">
-                            Usually takes 5–15 seconds.
+                            {t('loading.usuallyTakes')}
                         </div>
                     </div>
                 )}
@@ -973,7 +988,7 @@ export function TranscriptActionsDialog({
                     <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
                         <Alert variant="destructive" className="max-w-md text-left">
                             <AlertDescription>
-                                {notes.error ?? 'Could not generate notes.'}
+                                {notes.error ?? t('errors.couldNotGenerateNotes')}
                             </AlertDescription>
                         </Alert>
                         <div className="flex items-center gap-2">
@@ -983,7 +998,7 @@ export function TranscriptActionsDialog({
                                 scale="small"
                                 onClick={() => setNotes({ state: 'idle', markdown: '' })}
                             >
-                                Back
+                                {t('buttons.back')}
                             </MyButton>
                             <MyButton
                                 type="button"
@@ -991,7 +1006,7 @@ export function TranscriptActionsDialog({
                                 onClick={handleGenerateNotes}
                             >
                                 <Wand2 className="mr-1.5 size-3.5" />
-                                Retry
+                                {t('buttons.retry')}
                             </MyButton>
                         </div>
                     </div>
@@ -1009,16 +1024,20 @@ export function TranscriptActionsDialog({
                                     onClick={() => setNotes({ state: 'idle', markdown: '' })}
                                     className="text-xs font-medium text-primary-600 hover:underline"
                                 >
-                                    ← Back to actions
+                                    {t('loaded.backToActions')}
                                 </button>
                                 {notesGeneratedAt && (
                                     <span
                                         className="text-xs text-neutral-500"
-                                        title={new Date(notesGeneratedAt).toLocaleString()}
+                                        title={new Date(notesGeneratedAt).toLocaleString(
+                                            i18n.language,
+                                        )}
                                     >
-                                        Generated{' '}
-                                        {formatDistanceToNow(new Date(notesGeneratedAt), {
-                                            addSuffix: true,
+                                        {t('loaded.generated', {
+                                            timeAgo: formatDistanceToNow(
+                                                new Date(notesGeneratedAt),
+                                                { addSuffix: true },
+                                            ),
                                         })}
                                     </span>
                                 )}
@@ -1031,18 +1050,22 @@ export function TranscriptActionsDialog({
                                     onClick={() => setAddToCourseOpen(true)}
                                 >
                                     <GraduationCap className="mr-1.5 size-3.5" />
-                                    Add to course
+                                    {t('loaded.addToCourse')}
                                 </MyButton>
                                 <MyButton
                                     type="button"
                                     buttonType="secondary"
                                     scale="small"
                                     onClick={() =>
-                                        copyToClipboard(notes.markdown, 'Lecture notes')
+                                        copyToClipboard(
+                                            notes.markdown,
+                                            t('loaded.lectureNotes'),
+                                            t,
+                                        )
                                     }
                                 >
                                     <Copy className="mr-1.5 size-3.5" />
-                                    Copy
+                                    {t('buttons.copy')}
                                 </MyButton>
                                 <MyButton
                                     type="button"
@@ -1058,12 +1081,12 @@ export function TranscriptActionsDialog({
                                                 node,
                                                 `${fileBase}.notes.pdf`,
                                             );
-                                            toast.success('PDF downloaded');
+                                            toast.success(t('toasts.pdfDownloaded'));
                                         } catch (e) {
                                             const msg =
                                                 e instanceof Error
                                                     ? e.message
-                                                    : 'Could not generate PDF';
+                                                    : t('errors.pdfGenerationFailed');
                                             toast.error(msg);
                                         } finally {
                                             setDownloadingPdf(false);
@@ -1071,7 +1094,9 @@ export function TranscriptActionsDialog({
                                     }}
                                 >
                                     <Download className="mr-1.5 size-3.5" />
-                                    {downloadingPdf ? 'Preparing…' : 'Download PDF'}
+                                    {downloadingPdf
+                                        ? t('loaded.preparing')
+                                        : t('loaded.downloadPdf')}
                                 </MyButton>
                                 <MyButton
                                     type="button"
@@ -1080,7 +1105,7 @@ export function TranscriptActionsDialog({
                                     onClick={handleGenerateNotes}
                                 >
                                     <Wand2 className="mr-1.5 size-3.5" />
-                                    Regenerate
+                                    {t('loaded.regenerate')}
                                 </MyButton>
                             </div>
                         </div>
@@ -1116,7 +1141,7 @@ export function TranscriptActionsDialog({
                     the middle of generating notes. */}
                 {!transcriptReady && notes.state === 'idle' && (
                     <div className="rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-neutral-500">
-                        Loading transcript…
+                        {t('reader.loadingTranscript')}
                     </div>
                 )}
 
@@ -1136,7 +1161,7 @@ export function TranscriptActionsDialog({
                         // Capture the exact rendered notes node the Download-PDF
                         // button uses, so the uploaded PDF slide matches 1:1.
                         const printNode = notesPrintRef.current;
-                        if (!printNode) throw new Error('Notes are not ready to export.');
+                        if (!printNode) throw new Error(t('errors.notesNotReady'));
                         return captureNodeToPdfBlob(printNode, captureOpts);
                     }}
                 />

@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  isStudentPreviewMode,
+  readStudentPreviewDraft,
+  readThemeRoleSettingsRaw,
+} from "@/lib/student-preview";
 import type React from "react";
 import { createContext, useContext, useEffect, useState } from "react";
 import convert from "color-convert";
@@ -7,12 +12,15 @@ import themeData from "@/constants/themes/theme.json";
 import { HOLISTIC_INSTITUTE_ID } from "@/constants/urls";
 import { getInstituteId } from "@/utils/study-library/get-list-from-stores/getPackageSessionId";
 import {
-  THEME_ROLE_SETTINGS_KEY,
   type NavRoleColors,
   type ThemeRoleSettings,
 } from "@/types/theme-role-settings";
 import { rampFromHsl, hslVar, SHADES } from "@/lib/theme-ramp";
-import { applyInstituteBackground, applyInstituteFont } from "@/utils/institute-theme-roles";
+import {
+  applyInstituteBackground,
+  applyInstituteFont,
+  applyInstituteUiAxes,
+} from "@/utils/institute-theme-roles";
 
 // Generates a full 50-500 shade ramp around an arbitrary HSL base — same
 // tint curve for every caller (primary, secondary, tertiary) and identical
@@ -35,7 +43,7 @@ const applySecondaryTertiaryOverrides = () => {
   let secondary: string | undefined;
   let tertiary: string | undefined;
   try {
-    const raw = localStorage.getItem(THEME_ROLE_SETTINGS_KEY);
+    const raw = readThemeRoleSettingsRaw();
     const parsed: ThemeRoleSettings | null = raw ? JSON.parse(raw) : null;
     secondary = parsed?.roles?.secondary;
     tertiary = parsed?.roles?.tertiary;
@@ -72,7 +80,7 @@ const applyNavRoles = (h: number, s: number, l: number) => {
 
   let nav: NavRoleColors | undefined;
   try {
-    const raw = localStorage.getItem(THEME_ROLE_SETTINGS_KEY);
+    const raw = readThemeRoleSettingsRaw();
     const parsed: ThemeRoleSettings | null = raw ? JSON.parse(raw) : null;
     nav = parsed?.roles?.nav;
   } catch {
@@ -236,9 +244,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       // Institute-authored page canvas, if any.
       applyInstituteBackground();
       applyInstituteFont();
+      applyInstituteUiAxes();
 
-      // Store the theme selection
-      localStorage.setItem("theme-code", primaryColor);
+      // Store the theme selection (never from the admin preview frame: its
+      // colour is an unsaved draft and this origin's storage is the real one)
+      if (!isStudentPreviewMode()) localStorage.setItem("theme-code", primaryColor);
     } else if (primaryColor.startsWith("#")) {
       // Handle custom hex colors (for color picker)
       const [h, s, l] = convert.hex.hsl(primaryColor.replace("#", ""));
@@ -265,15 +275,24 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       // Institute-authored page canvas, if any.
       applyInstituteBackground();
       applyInstituteFont();
+      applyInstituteUiAxes();
 
-      // Store the custom color
-      localStorage.setItem("theme-custom-color", primaryColor);
-      localStorage.removeItem("theme-code");
+      // Store the custom color (not from the admin preview frame, as above)
+      if (!isStudentPreviewMode()) {
+        localStorage.setItem("theme-custom-color", primaryColor);
+        localStorage.removeItem("theme-code");
+      }
     }
   }, [primaryColor]);
 
   useEffect(() => {
     const initializeTheme = async () => {
+      // Admin live-preview frame: the unsaved brand colour wins.
+      const previewBrand = readStudentPreviewDraft()?.brand;
+      if (previewBrand) {
+        setPrimaryColor(previewBrand);
+        return;
+      }
       const instituteId = await getInstituteId();
       // Check if institute ID matches and set holistic theme
       if (instituteId === HOLISTIC_INSTITUTE_ID) {

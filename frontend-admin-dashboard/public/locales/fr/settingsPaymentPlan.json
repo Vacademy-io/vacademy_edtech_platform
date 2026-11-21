@@ -1,0 +1,58 @@
+{
+    "step1": {
+        "planNameLabel": "Nom du forfait *",
+        "planNamePlaceholder": "Saisissez le nom du forfait",
+        "planCurrencyLabel": "Devise du forfait",
+        "setAsDefault": "Définir comme forfait par défaut"
+    },
+    "units": {
+        "days": "Jours",
+        "months": "Mois"
+    },
+    "subscription": {
+        "title": "Configuration du forfait d'abonnement",
+        "durationUnitLabel": "Unité de durée",
+        "durationUnitHint": "Cette unité s'appliquera à tous les intervalles de tarification",
+        "pricingIntervals": "Intervalles de tarification",
+        "addInterval": "Ajouter un intervalle",
+        "intervalTitleLabel": "Titre",
+        "durationLabel": "Durée ({{unit}})",
+        "priceLabel": "Prix",
+        "featuresLabel": "Fonctionnalités",
+        "removeInterval": "Supprimer l'intervalle",
+        "intervalPlanFallback": "Forfait de {{value}} {{unit}}",
+        "planChangeLabel": "Members can switch to this plan",
+        "planChangeHint": "(turn on plan switching for this option first)"
+    },
+    "donation": {
+        "title": "Configuration du don",
+        "suggestedAmountsLabel": "Montants suggérés ({{currency}})",
+        "suggestedAmountsPlaceholder": "10, 25, 50, 100",
+        "minimumAmountLabel": "Montant minimum ({{currency}})",
+        "allowCustomAmounts": "Autoriser les montants personnalisés"
+    },
+    "discounts": {
+        "title": "Appliquer des réductions au forfait",
+        "subtitle": "Définissez des réductions pour chaque intervalle ou palier de prix du forfait",
+        "subscriptionIntervalColumn": "Intervalle d'abonnement",
+        "originalPriceColumn": "Prix d'origine",
+        "discountTypeColumn": "Type de réduction",
+        "discountAmountColumn": "Montant de la réduction",
+        "finalPriceColumn": "Prix final",
+        "planTypeColumn": "Type de forfait",
+        "noDiscount": "Aucune réduction",
+        "percentOff": "% de réduction",
+        "flatOff": "Réduction forfaitaire",
+        "oneTimePayment": "Paiement unique",
+        "save": "Économisez {{amount}}",
+        "noPricingInfo": "Aucune information tarifaire disponible pour ce type de forfait."
+    },
+    "actions": {
+        "back": "Retour",
+        "cancel": "Annuler",
+        "saving": "Enregistrement...",
+        "updatePlan": "Mettre à jour le forfait",
+        "next": "Suivant",
+        "updatePaymentPlan": "Mettre à jour le forfait de paiement"
+    }
+}

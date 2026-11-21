@@ -1,0 +1,36 @@
+{
+    "title": "Séries de reçus par champ",
+    "description": "Numérotez les reçus avec un compteur séparé pour chaque valeur d'un champ apprenant, par exemple une série par agence. Les apprenants sans série utilisent la numérotation par défaut ci-dessus.",
+    "enable": {
+        "label": "Numéroter les reçus selon un champ apprenant",
+        "hint": "Désactivé par défaut. Activé, le premier paiement de chaque inscription demande le champ, et tous les reçus suivants de ce cours restent dans la même série."
+    },
+    "field": {
+        "label": "Champ qui choisit la série",
+        "placeholder": "Choisir un champ",
+        "loading": "Chargement des champs…",
+        "hint": "Seuls les champs avec une liste d'options conviennent."
+    },
+    "series": {
+        "heading": "Série {{n}}",
+        "remove": "Supprimer la série",
+        "values": "Apprenants dont {{field}} est",
+        "format": "Format du numéro de reçu",
+        "formatPlaceholder": "ex. {{example}}",
+        "startFrom": "Prochain numéro",
+        "example": "Prochain reçu : {{example}}",
+        "add": "Ajouter une série"
+    },
+    "defaultSeries": "Tous les autres : numérotation par défaut ({{format}}).",
+    "policy": {
+        "ask": "Le demander lors du premier paiement d'une inscription",
+        "required": "Obligatoire : pas de reçu sans lui",
+        "hint": "Demandé une fois par cours. Les échéances suivantes, quel que soit qui les enregistre, et les paiements en ligne gardent la même série."
+    },
+    "errors": {
+        "field": "Choisissez le champ qui choisit la série.",
+        "values": "Série {{n}} : cochez au moins une valeur.",
+        "format": "Série {{n}} : le format doit contenir {{token}}.",
+        "duplicateValue": "« {{value}} » est dans deux séries."
+    }
+}

@@ -1,0 +1,19 @@
+{
+    "title": {
+        "generated": "API Key Generated",
+        "create": "Create New API Key"
+    },
+    "description": {
+        "generated": "Copy your API key now. You won't be able to see it again!",
+        "create": "Give your API key a name to help you identify it later."
+    },
+    "keyNameLabel": "Key Name",
+    "keyNamePlaceholder": "e.g., Production Key, Dev Key",
+    "cancelButton": "Cancel",
+    "generatingButton": "Generating...",
+    "generateButton": "Generate Key",
+    "saveKeyWarningTitle": "⚠️ Save this key now!",
+    "saveKeyWarningDescription": "This is the only time you'll see the full key. Store it securely.",
+    "yourApiKeyLabel": "Your API Key",
+    "doneButton": "Done"
+}

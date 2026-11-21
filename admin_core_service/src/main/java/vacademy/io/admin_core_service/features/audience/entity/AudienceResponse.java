@@ -11,8 +11,12 @@ import java.sql.Timestamp;
  * Entity representing a Lead/Response submission to an Audience Campaign
  * Captures leads from multiple sources (website forms, Google Ads, Facebook
  * Ads, etc.)
+ *
+ * <p>An update writes only the columns that changed, so two saves of different columns of
+ * one row (or a save and a direct SQL update) never undo each other.
  */
 @Entity
+@org.hibernate.annotations.DynamicUpdate
 @Table(name = "audience_response")
 @Data
 @NoArgsConstructor
@@ -27,6 +31,19 @@ public class AudienceResponse {
 
     @Column(name = "audience_id", nullable = true)
     private String audienceId;
+
+    /**
+     * The lead list this response was FIRST created in, set on the first migration and never
+     * overwritten. NULL means the lead has never been moved, so {@link #audienceId} is still the
+     * original.
+     *
+     * <p>Moving a lead rewrites campaign attribution — a list that acquired 500 leads reports 400
+     * once some move out. Source-attribution reporting should read
+     * {@code COALESCE(original_audience_id, audience_id)}. The full ordered chain of moves lives
+     * in the timeline as LEAD_LIST_CHANGED events; this column is the part a query can join on.</p>
+     */
+    @Column(name = "original_audience_id")
+    private String originalAudienceId;
 
     @Column(name = "user_id")
     private String userId; // Parent user ID (references auth_service.users)
@@ -75,6 +92,13 @@ public class AudienceResponse {
     @Column(name = "applicant_id")
     private String applicantId;
 
+    /**
+     * Staff member who entered this lead from the admin panel (single add or CSV
+     * import) — Check Lead's "Enquired By". Null for every self-submitted lead.
+     */
+    @Column(name = "created_by_user_id")
+    private String createdByUserId;
+
     @Column(name = "conversion_status", length = 50)
     private String conversionStatus;
 
@@ -106,6 +130,13 @@ public class AudienceResponse {
     @Column(name = "primary_response_id")
     private String primaryResponseId;
 
+    /**
+     * When this lead last enquired again (newest later live duplicate), else null. Written only
+     * by AudienceResponseRepository.refreshEnquiryDates, never by an entity save.
+     */
+    @Column(name = "last_enquiry_at", insertable = false, updatable = false)
+    private Timestamp lastEnquiryAt;
+
     // ── TAT / Follow-up SLA reminder dedup state ──────────────
     // Linear stage machine: BEFORE_* -> OVERDUE -> FOLLOW_UP_DUE -> FOLLOW_UP_OVERDUE.
     // The scheduler only EMITS workflow triggers; these columns guarantee one emit per stage.
@@ -127,9 +158,22 @@ public class AudienceResponse {
     @Column(name = "tat_reminder_assignee_id", length = 255)
     private String tatReminderAssigneeId;
 
-    /** Denormalized TAT deadline (submitted_at + tatHours) for scanning + the frontend badge. */
+    /** Scheduler-stamped TAT deadline (written when a reminder stage is claimed). */
     @Column(name = "tat_due_at")
     private Timestamp tatDueAt;
+
+    /**
+     * Admin-set TAT deadline for this lead. When non-null it replaces the computed deadline
+     * everywhere (list badge, SLA filter, reports, scheduler). Null = automatic.
+     */
+    @Column(name = "tat_due_override_at")
+    private Timestamp tatDueOverrideAt;
+
+    @Column(name = "tat_due_override_by", length = 255)
+    private String tatDueOverrideBy;
+
+    @Column(name = "tat_due_override_set_at")
+    private Timestamp tatDueOverrideSetAt;
 
     /** Current pipeline status (FK to lead_status.id). Replaces the JSON/enquiry_status approach. */
     @Column(name = "lead_status_id")
@@ -138,6 +182,36 @@ public class AudienceResponse {
     /** Snapshot of audience.defaultInitialScore at creation time. Null for leads created before this feature → treated as 0 in scoring. */
     @Column(name = "initial_score")
     private Integer initialScore;
+
+    // ── Ad the lead came from (Meta Lead Ads, Google lead forms) ──
+    // Written once when an ad-platform lead is created; null for every other source and
+    // for leads created before these columns existed. Names are only set when the
+    // platform returned them (Google never sends names).
+
+    @Column(name = "ad_campaign_id", length = 100)
+    private String adCampaignId;
+
+    @Column(name = "ad_campaign_name", length = 255)
+    private String adCampaignName;
+
+    @Column(name = "ad_set_id", length = 100)
+    private String adSetId;
+
+    @Column(name = "ad_set_name", length = 255)
+    private String adSetName;
+
+    @Column(name = "ad_id", length = 100)
+    private String adId;
+
+    @Column(name = "ad_name", length = 255)
+    private String adName;
+
+    @Column(name = "ad_form_id", length = 100)
+    private String adFormId;
+
+    /** The user this enquiry belonged to before a person merge moved it; cleared when the merge is undone. */
+    @Column(name = "merged_from_user_id")
+    private String mergedFromUserId;
 
     /**
      * Constructor from DTO

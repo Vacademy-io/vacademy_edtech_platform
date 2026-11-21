@@ -1,10 +1,10 @@
 import { useState, useRef } from 'react';
-import { Download, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 // Lazy-load heavy libs at call site when exporting
 import { MyButton } from '@/components/design-system/button';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { CircleNotch } from '@phosphor-icons/react';
+import { CircleNotch, DownloadSimple, X } from '@phosphor-icons/react';
 import { ExportSettings } from '@/components/common/export-offline/contexts/export-settings-context';
 import { Question } from '@/components/common/export-offline/types/question';
 import { PaperSetQuestionsAI } from './PaperSetQuestionsAI';
@@ -20,6 +20,7 @@ export function ExportHandlerQuestionPaperAI({
     settings,
     setNumber,
 }: ExportHandlerProps) {
+    const { t } = useTranslation('aiCenterExportHandlerQuestionPaperAI');
     const [isExporting, setIsExporting] = useState(false);
     const [exportProgress, setExportProgress] = useState(34);
     const pagesRef = useRef<HTMLDivElement>(null);
@@ -111,7 +112,7 @@ export function ExportHandlerQuestionPaperAI({
                     allowTaint: true,
                     useCORS: true,
                     logging: true,
-                    backgroundColor: '#ffffff',
+                    backgroundColor: '#ffffff', // design-lint-ignore: html2canvas requires a literal color string, not a Tailwind class
                     width: pageElement.offsetWidth,
                     height: pageElement.offsetHeight,
                     windowWidth: pageElement.offsetWidth,
@@ -190,11 +191,14 @@ export function ExportHandlerQuestionPaperAI({
             <div className="flex flex-col">
                 <div className="flex w-full items-center gap-4">
                     <MyButton onClick={handleExport} disabled={isExporting} className="gap-2">
-                        <Download className="size-4" />
+                        <DownloadSimple className="size-4" />
                         {isExporting
-                            ? 'Exporting...'
-                            : `Export ${settings.exportFormat.toUpperCase()}`}
-                        {setNumber !== undefined && ` (Set ${String.fromCharCode(65 + setNumber)})`}
+                            ? t('button.exporting')
+                            : t('button.export', { format: settings.exportFormat.toUpperCase() })}
+                        {setNumber !== undefined &&
+                            t('button.setSuffix', {
+                                letter: String.fromCharCode(65 + setNumber),
+                            })}
                     </MyButton>
                 </div>
 
@@ -213,23 +217,25 @@ export function ExportHandlerQuestionPaperAI({
                 </div>
             </div>
             {isExporting && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
                     <div className="flex w-full max-w-md flex-col items-center gap-4 rounded-lg bg-white p-4 shadow-xl">
                         <div className="flex w-full items-start justify-between">
                             <p>
                                 <h3 className="flex items-center gap-x-2 text-base font-semibold text-gray-800">
-                                    Generating PDF{' '}
+                                    {t('dialog.generatingPdf')}{' '}
                                     <CircleNotch className="size-4 animate-spin text-primary-300" />
                                     {setNumber !== undefined &&
-                                        ` (Set ${String.fromCharCode(65 + setNumber)})`}
+                                        t('button.setSuffix', {
+                                            letter: String.fromCharCode(65 + setNumber),
+                                        })}
                                 </h3>
-                                <h6 className="text-xs text-gray-500">This might take a while</h6>
+                                <h6 className="text-xs text-gray-500">{t('dialog.pleaseWait')}</h6>
                             </p>
                             <Button
                                 onClick={handleCancelExport}
                                 variant="ghost"
                                 size="icon"
-                                aria-label="Cancel PDF Generation"
+                                aria-label={t('dialog.cancelAriaLabel')}
                             >
                                 <X />
                             </Button>
@@ -240,7 +246,9 @@ export function ExportHandlerQuestionPaperAI({
                                 className="h-1.5 w-full bg-slate-600"
                             />
                         </div>
-                        <span className="text-sm text-gray-600">{exportProgress}% Complete</span>
+                        <span className="text-sm text-gray-600">
+                            {t('dialog.progressComplete', { progress: exportProgress })}
+                        </span>
                     </div>
                 </div>
             )}

@@ -1,0 +1,13 @@
+{
+    "status": {
+        "SUCCESS": "نجاح",
+        "FAILED": "فشل",
+        "PARTIAL_SUCCESS": "جزئي",
+        "SKIPPED": "تم التخطي",
+        "RUNNING": "قيد التشغيل"
+    },
+    "error": "خطأ: ",
+    "details": "التفاصيل",
+    "started": "بدأ: ",
+    "completed": "اكتمل: "
+}

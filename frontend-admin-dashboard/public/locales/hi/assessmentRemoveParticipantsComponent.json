@@ -1,0 +1,8 @@
+{
+    "dialog": {
+        "heading": "प्रतिभागियों को हटाएं",
+        "confirmMessagePrefix": "क्या आप वाकई",
+        "confirmMessageSuffix": "के लिए प्रतिभागियों को हटाना चाहते हैं?",
+        "done": "हो गया"
+    }
+}

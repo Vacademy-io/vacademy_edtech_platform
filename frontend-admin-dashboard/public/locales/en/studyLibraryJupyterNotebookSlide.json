@@ -1,0 +1,23 @@
+{
+    "errors": {
+        "urlRequired": "Please enter a notebook URL",
+        "urlInvalid": "Please enter a valid URL",
+        "loadFailed": "Failed to load notebook. Please check the URL and try again."
+    },
+    "toast": {
+        "saveSuccess": "Notebook configuration saved successfully!"
+    },
+    "configureTitle": "Configure Jupyter Notebook",
+    "configureDescription": "Enter your Jupyter notebook URL to embed it in this slide.",
+    "projectNameLabel": "Project Name (Optional)",
+    "projectNamePlaceholder": "My Jupyter Project",
+    "notebookUrlLabel": "Notebook URL *",
+    "previewNotebook": "Preview Notebook",
+    "notConfiguredTitle": "No Notebook Configured",
+    "notConfiguredDescription": "This slide doesn't have a notebook URL configured yet.",
+    "configureNotebook": "Configure Notebook",
+    "defaultProjectName": "Jupyter Notebook",
+    "notebookLabel": "Notebook",
+    "open": "Open",
+    "edit": "Edit"
+}

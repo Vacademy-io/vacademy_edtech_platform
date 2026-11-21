@@ -1,0 +1,75 @@
+{
+    "filters": {
+        "everyone": "Tout le monde",
+        "attempted": "A tenté",
+        "notAttempted": "N'a pas tenté",
+        "passed": "Réussi",
+        "failed": "Échoué"
+    },
+    "sorts": {
+        "highestScore": "Score le plus élevé",
+        "lowestScore": "Score le plus bas",
+        "nameAz": "Nom (A–Z)",
+        "mostRecentAttempt": "Tentative la plus récente",
+        "mostAttempts": "Le plus de tentatives"
+    },
+    "csv": {
+        "name": "Nom",
+        "email": "E-mail",
+        "mobile": "Mobile",
+        "status": "Statut",
+        "attempts": "Tentatives",
+        "marksObtained": "Points obtenus",
+        "totalMarks": "Points totaux",
+        "scorePercent": "Score %",
+        "correct": "Correct",
+        "wrong": "Incorrect",
+        "skipped": "Ignoré",
+        "unanswered": "Sans réponse",
+        "timeSpentSeconds": "Temps passé (s)",
+        "lastAttempt": "Dernière tentative"
+    },
+    "table": {
+        "learner": "Apprenant",
+        "status": "Statut",
+        "score": "Score",
+        "responses": "Réponses",
+        "attempts": "Tentatives",
+        "timeSpent": "Temps passé",
+        "lastAttempt": "Dernière tentative"
+    },
+    "breakdown": {
+        "correct_one": "{{count}} correcte",
+        "correct_many": "{{count}} correctes",
+        "correct_other": "{{count}} correctes",
+        "wrong_one": "{{count}} incorrecte",
+        "wrong_many": "{{count}} incorrectes",
+        "wrong_other": "{{count}} incorrectes",
+        "skipped_one": "{{count}} ignorée",
+        "skipped_many": "{{count}} ignorées",
+        "skipped_other": "{{count}} ignorées",
+        "unanswered_one": "{{count}} sans réponse",
+        "unanswered_many": "{{count}} sans réponse",
+        "unanswered_other": "{{count}} sans réponse"
+    },
+    "searchPlaceholder": "Rechercher des apprenants",
+    "filterLearnersAriaLabel": "Filtrer les apprenants",
+    "actions": {
+        "exportCsv": "Exporter en CSV",
+        "clearFilters": "Effacer les filtres"
+    },
+    "truncatedNotice": "Ce lot compte plus d'apprenants que le rapport n'en renvoie en une fois — la liste ci-dessous est plafonnée, les totaux peuvent donc être incomplets.",
+    "empty": {
+        "noMatchTitle": "Aucun apprenant ne correspond à ces filtres",
+        "noMatchSubtitle": "Essayez un autre terme de recherche, ou revenez à « Tout le monde »."
+    },
+    "toast": {
+        "nothingToExport": "Rien à exporter avec ces filtres.",
+        "exported_one": "{{count}} ligne exportée",
+        "exported_many": "{{count}} lignes exportées",
+        "exported_other": "{{count}} lignes exportées"
+    },
+    "footer": {
+        "summary": "Affichage de {{visible}} sur {{total}} apprenants inscrits · {{percent}} du lot a tenté ce quiz."
+    }
+}

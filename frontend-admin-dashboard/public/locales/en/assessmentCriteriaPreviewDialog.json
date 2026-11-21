@@ -1,0 +1,13 @@
+{
+    "heading": "Evaluation Criteria",
+    "invalidFormat": {
+        "title": "Invalid Criteria Format",
+        "description": "The criteria data structure is not valid. Please regenerate or manually create the criteria."
+    },
+    "totalMarksLabel": "Total Marks:",
+    "totalMarksValue_one": "{{count}} Mark",
+    "totalMarksValue_other": "{{count}} Marks",
+    "breakdownHeading": "Criteria Breakdown:",
+    "itemMarks_one": "{{count}} mark",
+    "itemMarks_other": "{{count}} marks"
+}

@@ -97,7 +97,13 @@ export function LeadBoardColumn({
         <div className="flex w-72 shrink-0 flex-col rounded-xl border border-neutral-200 bg-neutral-50/60">
             <header className="flex items-center justify-between px-3 py-2.5">
                 <div className="flex items-center gap-2">
-                    <span className={cn('size-2 rounded-full', ACCENT_DOT[config.accent])} />
+                    <span
+                        className={cn(
+                            'size-2 rounded-full',
+                            !config.color && ACCENT_DOT[config.accent]
+                        )}
+                        style={config.color ? { backgroundColor: config.color } : undefined}
+                    />
                     <span className="text-sm font-semibold text-neutral-700">{config.label}</span>
                 </div>
                 <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium tabular-nums text-neutral-500">

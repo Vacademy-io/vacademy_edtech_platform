@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { MyButton } from '@/components/design-system/button';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
@@ -21,6 +22,7 @@ const fetchSettings = async () => {
 };
 
 export default function MaxActiveSessionsSetting() {
+    const { t } = useTranslation('settingsMaxActiveSessions');
     const queryClient = useQueryClient();
     const [maxActiveSessions, setMaxActiveSessions] = useState<number>(0);
 
@@ -68,15 +70,15 @@ export default function MaxActiveSessionsSetting() {
                 });
             } catch (syncError) {
                 console.error('Auth-service sync failed:', syncError);
-                toast.warning('Setting saved but sync to auth-service failed. It may take a moment to take effect.');
+                toast.warning(t('toasts.syncFailed'));
             }
         },
         onSuccess: () => {
-            toast.success('Concurrent session limit updated successfully');
+            toast.success(t('toasts.saveSuccess'));
             queryClient.invalidateQueries({ queryKey: ['school-settings'] });
         },
         onError: (error: any) => {
-            toast.error(error?.response?.data?.message || 'Failed to update session limit');
+            toast.error(error?.response?.data?.message || t('toasts.saveFailed'));
         },
     });
 
@@ -91,15 +93,12 @@ export default function MaxActiveSessionsSetting() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="text-lg">Concurrent Session Limit</CardTitle>
-                <CardDescription>
-                    Control the maximum number of active sessions a learner can have at the same
-                    time.
-                </CardDescription>
+                <CardTitle className="text-lg">{t('card.title')}</CardTitle>
+                <CardDescription>{t('card.description')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="space-y-2">
-                    <Label htmlFor="max-active-sessions">Max Active Sessions</Label>
+                    <Label htmlFor="max-active-sessions">{t('field.label')}</Label>
                     <Input
                         id="max-active-sessions"
                         type="number"
@@ -107,9 +106,7 @@ export default function MaxActiveSessionsSetting() {
                         value={maxActiveSessions}
                         onChange={(e) => setMaxActiveSessions(Number(e.target.value))}
                     />
-                    <p className="text-sm text-muted-foreground">
-                        0 means unlimited (no restriction)
-                    </p>
+                    <p className="text-sm text-muted-foreground">{t('field.hint')}</p>
                 </div>
                 <div className="flex justify-end gap-3 border-t pt-4">
                     <MyButton
@@ -117,7 +114,7 @@ export default function MaxActiveSessionsSetting() {
                         onClick={handleSave}
                         disabled={updateMutation.isPending}
                     >
-                        {updateMutation.isPending ? 'Saving...' : 'Save'}
+                        {updateMutation.isPending ? t('button.saving') : t('button.save')}
                     </MyButton>
                 </div>
             </CardContent>

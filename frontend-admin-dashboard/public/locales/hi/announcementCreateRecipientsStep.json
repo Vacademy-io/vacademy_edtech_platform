@@ -1,0 +1,14 @@
+{
+    "sectionTitle": "इसे कौन प्राप्त करेगा?",
+    "sectionDescription": "एक या अधिक ऑडियंस जोड़ें। ओवरलैप हटा दिए जाते हैं, ताकि किसी को यह दो बार न मिले।",
+    "addAudience": "ऑडियंस जोड़ें",
+    "quickAdd": {
+        "allLearners": "सभी {{noun}}",
+        "allTeachers": "सभी {{noun}}",
+        "specificBatches": "विशिष्ट {{noun}}",
+        "byTag": "टैग द्वारा",
+        "campaign": "एक कैंपेन"
+    },
+    "emptyTitle": "अभी तक कोई ऑडियंस नहीं",
+    "emptyDescription": "ऊपर दिए गए किसी शॉर्टकट को चुनें, या एक ऑडियंस जोड़कर तय करें कि यह किसे लक्षित करेगी।"
+}

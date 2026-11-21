@@ -1,6 +1,12 @@
 import { createEditor } from 'lexical';
+import i18n from '@/i18n';
 import { editorNodes, editorTheme, onEditorError } from './editor-config';
 import { importDocHtml, exportDocHtml } from './serialization';
+
+/** Namespace holding this module's user-visible copy (see studyLibraryConvertYoopta.json).
+ *  Read via the i18next singleton, not useTranslation(): this file runs pure
+ *  functions with no React context (see the ConvertToLexicalDialog caller). */
+const NS = 'studyLibraryConvertYoopta';
 
 /**
  * Opt-in "convert to new editor" pre-flight for an existing Yoopta document.
@@ -127,10 +133,10 @@ function formattingWarnings(sourceDoc: Document, convertedDoc: Document): string
     const convHtml = conv.innerHTML;
 
     const checks: Array<[RegExp, string]> = [
-        [/(?:^|[;"\s])color\s*:/i, 'text colour'],
-        [/background(?:-color)?\s*:/i, 'background / highlight colour'],
-        [/text-align\s*:\s*(?:center|right|justify)/i, 'text alignment'],
-        [/font-size\s*:/i, 'custom font sizes'],
+        [/(?:^|[;"\s])color\s*:/i, i18n.t(`${NS}:formatting.textColour`)],
+        [/background(?:-color)?\s*:/i, i18n.t(`${NS}:formatting.backgroundColour`)],
+        [/text-align\s*:\s*(?:center|right|justify)/i, i18n.t(`${NS}:formatting.textAlignment`)],
+        [/font-size\s*:/i, i18n.t(`${NS}:formatting.customFontSizes`)],
     ];
     for (const [re, label] of checks) {
         if (re.test(srcHtml) && !re.test(convHtml)) warnings.push(label);
@@ -139,7 +145,7 @@ function formattingWarnings(sourceDoc: Document, convertedDoc: Document): string
     // had them and the conversion dropped them entirely.
     const hasMark = (h: string) => /<(mark|u|s|strike)\b/i.test(h);
     if (hasMark(srcHtml) && !hasMark(convHtml))
-        warnings.push('highlight / underline / strikethrough');
+        warnings.push(i18n.t(`${NS}:formatting.highlightUnderlineStrikethrough`));
     return warnings;
 }
 
@@ -164,7 +170,7 @@ export function analyzeConversion(sourceHtml: string): ConversionAnalysis {
         return {
             convertedHtml: '',
             safe: false,
-            lostBlocks: ['(conversion failed — the document could not be parsed)'],
+            lostBlocks: [i18n.t(`${NS}:conversionFailed`)],
             lostMedia: [],
             textChanged: false,
             formattingWarnings: [],

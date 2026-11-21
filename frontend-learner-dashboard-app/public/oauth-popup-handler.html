@@ -2,6 +2,39 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <script>
+      // Sign-in hand-off: keep credentials out of the address.
+      // parseUrlParams below reads them.
+      (function () {
+        try {
+          var has = function (s) {
+            return s.has("accessToken") || s.has("refreshToken");
+          };
+          var q = new URLSearchParams(location.search);
+          if (!has(q)) return;
+          var kept = location.search
+            .slice(1)
+            .split("&")
+            .filter(function (p) {
+              return !has(new URLSearchParams(p));
+            })
+            .join("&");
+          Object.defineProperty(window, "__arrivalTokens", {
+            configurable: true,
+            value: {
+              accessToken: q.get("accessToken"),
+              refreshToken: q.get("refreshToken"),
+              path: location.pathname
+            }
+          });
+          history.replaceState(
+            history.state,
+            "",
+            location.pathname + (kept ? "?" + kept : "") + location.hash
+          );
+        } catch (e) {}
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OAuth Authentication</title>
     <style>
@@ -222,8 +255,8 @@
                 emailVerified: urlParams.get('emailVerified'),
                 error: urlParams.get('error') || hashParams.get('error'),
                 error_description: urlParams.get('error_description') || hashParams.get('error_description'),
-                accessToken: urlParams.get('accessToken') || hashParams.get('accessToken'),
-                refreshToken: urlParams.get('refreshToken') || hashParams.get('refreshToken')
+                accessToken: urlParams.get('accessToken') || hashParams.get('accessToken') || (window.__arrivalTokens || {}).accessToken,
+                refreshToken: urlParams.get('refreshToken') || hashParams.get('refreshToken') || (window.__arrivalTokens || {}).refreshToken
             };
         }
 

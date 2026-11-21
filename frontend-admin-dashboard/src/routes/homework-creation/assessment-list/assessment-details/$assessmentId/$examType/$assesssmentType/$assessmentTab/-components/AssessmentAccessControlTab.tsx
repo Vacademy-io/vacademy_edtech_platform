@@ -6,12 +6,30 @@ import { getAssessmentDetails } from '@/routes/assessment/create-assessment/$ass
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { handleGetInstituteUsersForAccessControl } from '@/routes/dashboard/-services/dashboard-services';
 import { RoleTypeUserIcon } from '@/svgs';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 interface Role {
     role_name: string;
     status: string;
     role_id: string;
 }
+
+// Known backend role codes -> translation keys. Roles outside this fixed set
+// (there isn't one today, but the API contract doesn't guarantee it) fall
+// back to the raw backend value instead of rendering blank/missing text.
+const ROLE_NAME_TRANSLATION_KEYS: Record<string, string> = {
+    ADMIN: 'roles.admin',
+    'CONTENT CREATOR': 'roles.contentCreator',
+    'ASSESSMENT CREATOR': 'roles.assessmentCreator',
+    EVALUATOR: 'roles.evaluator',
+    TEACHER: 'roles.teacher',
+};
+
+const getRoleDisplayName = (t: TFunction, roleName: string): string => {
+    const translationKey = ROLE_NAME_TRANSLATION_KEYS[roleName];
+    return translationKey ? t(translationKey) : roleName;
+};
 
 interface AccessControlUser {
     id: string;
@@ -33,6 +51,7 @@ interface AccessControlUser {
 }
 
 const AssessmentAccessControlTab = () => {
+    const { t } = useTranslation('homeworkCreationAssessmentAccessControlTab');
     const { assessmentId, examType } = Route.useParams();
     const { data: instituteDetails } = useSuspenseQuery(useInstituteQuery());
     const { data: assessmentDetails, isLoading } = useSuspenseQuery(
@@ -63,10 +82,10 @@ const AssessmentAccessControlTab = () => {
     return (
         <div className="mt-4 flex flex-col gap-5">
             <div className="flex flex-col gap-3 rounded-xl border p-5">
-                <h1 className="font-semibold">Homework Creation Access</h1>
+                <h1 className="font-semibold">{t('sections.creationAccessTitle')}</h1>
                 <div className="flex flex-wrap items-center gap-4">
                     <div className="flex flex-wrap items-center gap-4">
-                        {assessmentDetails[3]?.saved_data.creation_access.user_ids?.map(
+                        {assessmentDetails[3]?.saved_data?.creation_access?.user_ids?.map(
                             (userId) => {
                                 const matchedUser = accessControlUsers?.find(
                                     (user: AccessControlUser) => user.id === userId
@@ -92,17 +111,20 @@ const AssessmentAccessControlTab = () => {
                                                                         className={`whitespace-nowrap rounded-lg border border-neutral-300 ${
                                                                             role.role_name ===
                                                                             'ADMIN'
-                                                                                ? 'bg-[#F4F9FF]'
+                                                                                ? 'bg-info-50'
                                                                                 : role.role_name ===
                                                                                     'CONTENT CREATOR'
-                                                                                  ? 'bg-[#F4FFF9]'
+                                                                                  ? 'bg-success-50'
                                                                                   : role.role_name ===
                                                                                       'ASSESSMENT CREATOR'
-                                                                                    ? 'bg-[#FFF4F5]'
-                                                                                    : 'bg-[#F5F0FF]'
+                                                                                    ? 'bg-danger-50'
+                                                                                    : 'bg-violet-50'
                                                                         } py-1.5 font-thin shadow-none`}
                                                                     >
-                                                                        {role.role_name}
+                                                                        {getRoleDisplayName(
+                                                                            t,
+                                                                            role.role_name
+                                                                        )}
                                                                     </Badge>
                                                                 );
                                                             })}
@@ -120,10 +142,10 @@ const AssessmentAccessControlTab = () => {
                 </div>
             </div>
             <div className="flex flex-col gap-3 rounded-xl border p-5">
-                <h1 className="font-semibold">Live Homework Notifications</h1>
+                <h1 className="font-semibold">{t('sections.liveNotificationsTitle')}</h1>
                 <div className="flex items-center gap-4">
                     <div className="flex flex-wrap items-center gap-4">
-                        {assessmentDetails[3]?.saved_data.live_assessment_access.user_ids?.map(
+                        {assessmentDetails[3]?.saved_data?.live_assessment_access?.user_ids?.map(
                             (userId) => {
                                 const matchedUser = accessControlUsers?.find(
                                     (user: AccessControlUser) => user.id === userId
@@ -149,17 +171,20 @@ const AssessmentAccessControlTab = () => {
                                                                         className={`whitespace-nowrap rounded-lg border border-neutral-300 ${
                                                                             role.role_name ===
                                                                             'ADMIN'
-                                                                                ? 'bg-[#F4F9FF]'
+                                                                                ? 'bg-info-50'
                                                                                 : role.role_name ===
                                                                                     'CONTENT CREATOR'
-                                                                                  ? 'bg-[#F4FFF9]'
+                                                                                  ? 'bg-success-50'
                                                                                   : role.role_name ===
                                                                                       'ASSESSMENT CREATOR'
-                                                                                    ? 'bg-[#FFF4F5]'
-                                                                                    : 'bg-[#F5F0FF]'
+                                                                                    ? 'bg-danger-50'
+                                                                                    : 'bg-violet-50'
                                                                         } py-1.5 font-thin shadow-none`}
                                                                     >
-                                                                        {role.role_name}
+                                                                        {getRoleDisplayName(
+                                                                            t,
+                                                                            role.role_name
+                                                                        )}
                                                                     </Badge>
                                                                 );
                                                             })}
@@ -177,10 +202,10 @@ const AssessmentAccessControlTab = () => {
                 </div>
             </div>
             <div className="flex flex-col gap-3 rounded-xl border p-5">
-                <h1 className="font-semibold">Homework Submission & Reports Access</h1>
+                <h1 className="font-semibold">{t('sections.submissionReportsTitle')}</h1>
                 <div className="flex items-center gap-4">
                     <div className="flex flex-wrap items-center gap-4">
-                        {assessmentDetails[3]?.saved_data.report_and_submission_access.user_ids?.map(
+                        {assessmentDetails[3]?.saved_data?.report_and_submission_access?.user_ids?.map(
                             (userId) => {
                                 const matchedUser = accessControlUsers?.find(
                                     (user: AccessControlUser) => user.id === userId
@@ -206,17 +231,20 @@ const AssessmentAccessControlTab = () => {
                                                                         className={`whitespace-nowrap rounded-lg border border-neutral-300 ${
                                                                             role.role_name ===
                                                                             'ADMIN'
-                                                                                ? 'bg-[#F4F9FF]'
+                                                                                ? 'bg-info-50'
                                                                                 : role.role_name ===
                                                                                     'CONTENT CREATOR'
-                                                                                  ? 'bg-[#F4FFF9]'
+                                                                                  ? 'bg-success-50'
                                                                                   : role.role_name ===
                                                                                       'ASSESSMENT CREATOR'
-                                                                                    ? 'bg-[#FFF4F5]'
-                                                                                    : 'bg-[#F5F0FF]'
+                                                                                    ? 'bg-danger-50'
+                                                                                    : 'bg-violet-50'
                                                                         } py-1.5 font-thin shadow-none`}
                                                                     >
-                                                                        {role.role_name}
+                                                                        {getRoleDisplayName(
+                                                                            t,
+                                                                            role.role_name
+                                                                        )}
                                                                     </Badge>
                                                                 );
                                                             })}
@@ -234,10 +262,10 @@ const AssessmentAccessControlTab = () => {
                 </div>
             </div>
             <div className="flex flex-col gap-3 rounded-xl border p-5">
-                <h1 className="font-semibold">Evaluation Access</h1>
+                <h1 className="font-semibold">{t('sections.evaluationTitle')}</h1>
                 <div className="flex items-center gap-4">
                     <div className="flex flex-wrap items-center gap-4">
-                        {assessmentDetails[3]?.saved_data.evaluation_access.user_ids?.map(
+                        {assessmentDetails[3]?.saved_data?.evaluation_access?.user_ids?.map(
                             (userId) => {
                                 const matchedUser = accessControlUsers?.find(
                                     (user: AccessControlUser) => user.id === userId
@@ -263,17 +291,20 @@ const AssessmentAccessControlTab = () => {
                                                                         className={`whitespace-nowrap rounded-lg border border-neutral-300 ${
                                                                             role.role_name ===
                                                                             'ADMIN'
-                                                                                ? 'bg-[#F4F9FF]'
+                                                                                ? 'bg-info-50'
                                                                                 : role.role_name ===
                                                                                     'CONTENT CREATOR'
-                                                                                  ? 'bg-[#F4FFF9]'
+                                                                                  ? 'bg-success-50'
                                                                                   : role.role_name ===
                                                                                       'ASSESSMENT CREATOR'
-                                                                                    ? 'bg-[#FFF4F5]'
-                                                                                    : 'bg-[#F5F0FF]'
+                                                                                    ? 'bg-danger-50'
+                                                                                    : 'bg-violet-50'
                                                                         } py-1.5 font-thin shadow-none`}
                                                                     >
-                                                                        {role.role_name}
+                                                                        {getRoleDisplayName(
+                                                                            t,
+                                                                            role.role_name
+                                                                        )}
                                                                     </Badge>
                                                                 );
                                                             })}

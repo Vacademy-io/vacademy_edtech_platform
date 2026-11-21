@@ -1,0 +1,24 @@
+{
+    "errors": {
+        "downloadFailed": "{{name}} के लिए प्रमाणपत्र डाउनलोड नहीं हो सका",
+        "noCertificatesAvailable": "डाउनलोड के लिए कोई प्रमाणपत्र उपलब्ध नहीं है"
+    },
+    "summary": {
+        "title": "प्रमाणपत्र निर्माण सारांश",
+        "generatedOn": "बनाया गया: {{timestamp}}",
+        "totalStudents": "कुल छात्र: {{count}}",
+        "successful": "सफल: {{count}}",
+        "errorsLabel": "त्रुटियां: {{count}}",
+        "successfulCertificatesHeading": "सफल प्रमाणपत्र:",
+        "errorsHeading": "त्रुटियां:"
+    },
+    "fileSize": {
+        "zeroBytes": "0 बाइट्स",
+        "units": {
+            "bytes": "बाइट्स",
+            "kb": "केबी",
+            "mb": "एमबी",
+            "gb": "जीबी"
+        }
+    }
+}

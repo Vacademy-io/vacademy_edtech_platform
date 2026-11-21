@@ -1,0 +1,36 @@
+{
+    "empty": {
+        "noData": "No test-case data recorded for this submission."
+    },
+    "verdict": {
+        "accepted": "Accepted",
+        "partial": "Partial",
+        "rejected": "Rejected",
+        "error": "Error",
+        "timedOut": "Timed Out"
+    },
+    "score": {
+        "points": "{{score}} pts"
+    },
+    "pasteAttempts_one": "{{count}} paste attempt",
+    "pasteAttempts_other": "{{count}} paste attempts",
+    "testCases": {
+        "passedLabel": "Test cases passed:",
+        "gradedSuffixHidden": "hidden",
+        "gradedSuffixSample": "sample",
+        "sampleBreakdown": "Sample {{passed}}/{{total}}",
+        "hiddenTag": "(hidden)",
+        "fallbackLabel": "Test {{number}}"
+    },
+    "runtime": {
+        "timeLabel": "Time:",
+        "memoryLabel": "Memory:",
+        "timeValue": "{{value}} ms",
+        "memoryValue": "{{value}} KB",
+        "timeAllowed": "/ {{value}} ms allowed",
+        "memoryAllowed": "/ {{value}} KB allowed"
+    },
+    "sourceCode": {
+        "toggleLabel": "Show submitted source code"
+    }
+}

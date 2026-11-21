@@ -1,0 +1,50 @@
+{
+    "header": {
+        "title": "Input Videos",
+        "subtitle": "Upload videos for AI indexing (transcript, visual metadata, speaker extraction)",
+        "refreshButton": "Refresh"
+    },
+    "uploadVideoButton": "Upload Video",
+    "noApiKey": {
+        "message": "No API key found. Create one in the Video API Studio first.",
+        "goToApiKeysButton": "Go to API Keys"
+    },
+    "table": {
+        "columnName": "Name",
+        "columnMode": "Mode",
+        "columnStatus": "Status",
+        "columnDuration": "Duration",
+        "columnCreated": "Created",
+        "columnOutputs": "Outputs",
+        "deleteTooltip": "Delete",
+        "noValue": "-",
+        "processingProgress": "{{percent}}%",
+        "durationSeconds_one": "{{count}}s",
+        "durationSeconds_other": "{{count}}s"
+    },
+    "empty": {
+        "loading": "Loading...",
+        "title": "No input videos yet",
+        "subtitle": "Upload a podcast or demo recording to get started"
+    },
+    "status": {
+        "PENDING": "Pending",
+        "QUEUED": "Queued",
+        "PROCESSING": "Processing",
+        "COMPLETED": "Completed",
+        "FAILED": "Failed"
+    },
+    "mode": {
+        "podcast": "Podcast",
+        "demo": "Demo"
+    },
+    "deleteConfirm": {
+        "message": "Delete \"{{name}}\"? This cannot be undone."
+    },
+    "toast": {
+        "apiKeysLoadError": "Failed to load API keys",
+        "videosLoadError": "Failed to load input videos",
+        "deleteSuccess": "Deleted",
+        "deleteError": "Delete failed"
+    }
+}

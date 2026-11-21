@@ -1,0 +1,36 @@
+{
+    "empty": {
+        "title": "No approved WhatsApp templates yet",
+        "description": "WhatsApp only delivers messages built from a template Meta has approved. Sync your WhatsApp Business account, or create a template and submit it for approval."
+    },
+    "action": {
+        "syncing": "Syncing…",
+        "syncFromMeta": "Sync from Meta",
+        "manageTemplates": "Manage templates"
+    },
+    "template": {
+        "label": "Approved template",
+        "searchPlaceholder": "Search your approved templates",
+        "approvedOnlyHint": "Only templates Meta has approved can be sent.",
+        "availableCount_one": "{{count}} available.",
+        "availableCount_other": "{{count}} available."
+    },
+    "headerKind": {
+        "badge": "{{kind}} header",
+        "type": {
+            "image": "Image",
+            "video": "Video",
+            "document": "Document"
+        }
+    },
+    "headerUrl": {
+        "label": "{{kind}} URL",
+        "placeholder": "https://…/your-{{kind}}",
+        "requiredHint": "Meta rejects the entire send if a media-header template arrives without its media, so this is required."
+    },
+    "variables": {
+        "label": "Template variables",
+        "hint": "Each variable is filled in per recipient at send time.",
+        "customValuePlaceholder": "Text to use for {{name}}"
+    }
+}

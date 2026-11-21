@@ -1,0 +1,203 @@
+{
+    "heading": "Student companions",
+    "subheading": "AI study buddies that teach your students this material topic by topic, give practice questions and answer doubts, strictly from the book with page citations.",
+    "createButton": "Create companion",
+    "loadError": "We couldn’t load the companions.",
+    "empty": {
+        "title": "No companion yet",
+        "body": "Create a visual study buddy on this knowledge base. Choose the topics it covers and who gets it; it teaches only what the material says. Your institute’s AI credits pay for it."
+    },
+    "status": {
+        "active": "Active",
+        "paused": "Paused"
+    },
+    "assign": {
+        "wholeInstitute": "Whole institute",
+        "batchCount_one": "{{count}} batch",
+        "batchCount_other": "{{count}} batches",
+        "studentCount_one": "{{count}} student",
+        "studentCount_other": "{{count}} students",
+        "nobody": "Not assigned to anyone yet"
+    },
+    "row": {
+        "lessonsReady": "Lessons ready {{ready}} / {{total}}",
+        "preparing": "Preparing…",
+        "edit": "Edit",
+        "lessons": "Lessons",
+        "prepare": "Prepare lessons",
+        "progress": "Learner progress",
+        "archive": "Archive"
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "close": "Close",
+        "tryAgain": "Try again",
+        "saving": "Saving…",
+        "saveChanges": "Save changes",
+        "create": "Create companion"
+    },
+    "toast": {
+        "created": "{{name}} is ready for your students",
+        "updated": "{{name}} saved",
+        "saveFailed": "Couldn’t save the companion. Please try again.",
+        "archived": "{{name}} archived",
+        "archiveFailed": "Couldn’t archive the companion. Please try again."
+    },
+    "archive": {
+        "heading": "Archive {{name}}?",
+        "body": "Students will stop seeing it on their dashboard and can’t open it any more. Their progress is kept.",
+        "confirm": "Archive"
+    },
+    "form": {
+        "defaultName": "{{kb}} Buddy",
+        "createHeading": "Create a student companion",
+        "editHeading": "Edit companion",
+        "errors": {
+            "name": "Give the companion a name.",
+            "modes": "Turn on at least one of Learn, Practice or Ask doubts.",
+            "audience": "Choose at least one batch or student.",
+            "cap": "Enter a whole number from 0 to 500.",
+            "dates": "The end date must be after the start date."
+        },
+        "basics": {
+            "title": "Basics",
+            "name": "Name",
+            "description": "Short description",
+            "descriptionPlaceholder": "Learn Class 10 Biology with me, one chapter at a time",
+            "avatar": "Avatar",
+            "color": "Accent colour",
+            "persona": "Personality and tone",
+            "personaPlaceholder": "Friendly and patient, uses cricket examples, celebrates small wins…",
+            "personaHint": "This shapes the tone only. Answers always stay within the book.",
+            "language": "Language",
+            "languages": {
+                "en": "English",
+                "hi": "Hindi",
+                "kn": "Kannada"
+            }
+        },
+        "scope": {
+            "title": "What it covers",
+            "hint": "Pick chapters or subtopics, or leave everything unticked to cover the whole knowledge base.",
+            "noTopics": "This knowledge base has no topic map yet, so the companion will cover all of it.",
+            "whole": "Covers the whole knowledge base.",
+            "some": "Covers only the ticked topics."
+        },
+        "modes": {
+            "title": "What students can do",
+            "learn": {
+                "label": "Learn",
+                "hint": "Visual lessons built from the book: figures, tables, worked examples and quick checks."
+            },
+            "practice": {
+                "label": "Practice",
+                "hint": "Multiple-choice questions per topic with instant explanations."
+            },
+            "ask": {
+                "label": "Ask doubts",
+                "hint": "Answers from the book with page citations. Off-topic questions are politely declined."
+            }
+        },
+        "who": {
+            "title": "Who sees it",
+            "institute": "Whole institute",
+            "specific": "Specific batches and students",
+            "batches": "Batches",
+            "chooseBatches": "Choose batches",
+            "noBatches": "No batches chosen.",
+            "students": "Students",
+            "studentSearch": "Search students by name, email or username",
+            "noStudents": "No students match that search.",
+            "remove": "Remove {{name}}",
+            "unnamedBatch": "Batch",
+            "unnamedStudent": "Student"
+        },
+        "display": {
+            "title": "Display and limits",
+            "dashboard": "Show on students’ home dashboard",
+            "dashboardHint": "Appears in the “Your study companions” row.",
+            "voice": "Read aloud",
+            "voiceHint": "Students can listen to lessons and answers.",
+            "active": "Active",
+            "activeHint": "Paused companions are hidden from students until you turn them back on.",
+            "cap": "Daily questions per student",
+            "capHint": "0 = unlimited",
+            "startsAt": "Available from",
+            "endsAt": "Available until",
+            "windowHint": "Optional. Leave both dates empty to keep it available all the time."
+        }
+    },
+    "prepare": {
+        "heading": "Prepare lessons",
+        "why": "Each lesson is prepared once and shared by every student. If you don’t prepare in advance, the first student to open a topic waits about 1-2 minutes while it’s prepared.",
+        "estimateFailed": "Couldn’t work out the cost. Please try again.",
+        "nothingToDo": "All lessons are ready or already being prepared.",
+        "question_one": "Prepare {{count}} lesson now?",
+        "question_other": "Prepare {{count}} lessons now?",
+        "questionNext": "Prepare the next {{count}} of {{total}} lessons now?",
+        "cost": "About {{credits}} credits ({{per}} each).",
+        "balance": "Balance: {{balance}}.",
+        "noCredits": "Not enough AI credits. Top up to prepare these lessons.",
+        "runAgain": "Lessons are prepared in batches of up to 40. Run this again for the rest.",
+        "confirm_one": "Prepare {{count}} lesson",
+        "confirm_other": "Prepare {{count}} lessons",
+        "started_one": "Preparing {{count}} lesson — it’ll be ready in a few minutes",
+        "started_other": "Preparing {{count}} lessons — they’ll be ready in a few minutes",
+        "startFailed": "Couldn’t start preparing the lessons. Please try again."
+    },
+    "insights": {
+        "heading": "Learner progress · {{name}}",
+        "loadError": "We couldn’t load learner progress.",
+        "kpi": {
+            "started": "Students started",
+            "questions": "Questions asked",
+            "completed": "Topics completed"
+        },
+        "emptyTitle": "No student has started yet",
+        "emptyBody": "Progress appears here as soon as a student opens a topic or asks a doubt.",
+        "topicsHeading": "By topic",
+        "learnersHeading": "By student",
+        "cols": {
+            "topic": "Topic",
+            "started": "Started",
+            "completed": "Completed",
+            "mastery": "Avg. mastery",
+            "student": "Student",
+            "topicsDone": "Topics completed",
+            "lastActive": "Last active"
+        },
+        "doneOf": "{{done}} / {{total}}",
+        "untitledTopic": "Topic",
+        "unnamedStudent": "Student"
+    },
+    "lessons": {
+        "heading": "Lessons · {{name}}",
+        "summary": "{{ready}} of {{total}} lessons ready. Preview any topic to see exactly what students will see.",
+        "learnOff": "Learn is turned off for this companion, so lessons can’t be previewed.",
+        "noTopics": "No topics in this companion’s scope.",
+        "untitled": "Untitled topic",
+        "preview": "Preview",
+        "status": {
+            "ready": "Ready",
+            "preparing": "Preparing",
+            "failed": "Failed",
+            "notPrepared": "Not prepared"
+        }
+    },
+    "preview": {
+        "heading": "Preview · {{title}}",
+        "intro": "This is exactly what students see, card by card. The correct answer of each quick check is highlighted for you.",
+        "willPrepare": "This lesson isn’t prepared yet. Previewing it will prepare it now, which uses AI credits (about 5) and takes a minute or two. Students will then get it instantly.",
+        "prepareAndPreview": "Prepare and preview",
+        "loadFailed": "Couldn’t load the lesson. Please try again.",
+        "missing": "This lesson hasn’t been prepared yet.",
+        "failed": "We couldn’t prepare this lesson.",
+        "retry": "Try preparing again",
+        "generating": "Preparing the lesson…",
+        "generatingProgress": "Preparing the lesson… {{ready}} of {{total}} cards ready",
+        "cardTitle": "{{n}}. {{title}}",
+        "cardPending": "This card is still being prepared…",
+        "narration": "Read aloud: “{{text}}”",
+        "explanation": "Why:"
+    }
+}

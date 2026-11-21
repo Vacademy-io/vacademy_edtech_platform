@@ -1,0 +1,38 @@
+{
+    "viewAssessmentDetails": "मूल्यांकन विवरण देखें",
+    "deleteAssessment": "मूल्यांकन हटाएं",
+    "open": "खोलें",
+    "attention": "ध्यान दें",
+    "sendReminder": "रिमाइंडर भेजें",
+    "reminderBody": {
+        "prefix": "सभी को मूल्यांकन रिमाइंडर भेजा जाएगा",
+        "participantCount_one": "{{count}} प्रतिभागी",
+        "participantCount_other": "{{count}} प्रतिभागियों",
+        "suffix": "जो निर्धारित बैचों से अभी तक उपस्थित नहीं हुए हैं।"
+    },
+    "send": "भेजें",
+    "toasts": {
+        "slideDeleteFailed": "मूल्यांकन हटा दिया गया, लेकिन इसकी कोर्स स्लाइड्स को हटाया नहीं जा सका।",
+        "deleteSuccess": "मूल्यांकन सफलतापूर्वक हटा दिया गया है!"
+    },
+    "deleteConfirm": {
+        "prefix": "क्या आप वाकई हटाना चाहते हैं"
+    },
+    "delete": "हटाएं",
+    "pauseLiveStatus": "लाइव स्थिति रोकें",
+    "date": "तारीख",
+    "pauseUntil": "इस तक रोकें",
+    "time": "समय",
+    "pause": "रोकें",
+    "resumeLiveStatus": "लाइव स्थिति फिर से शुरू करें",
+    "resumeConfirm": {
+        "prefix": "क्या आप अपना लाइव मूल्यांकन फिर से शुरू करना चाहते हैं",
+        "assessmentName": "द ह्यूमन आई एंड द कलरफुल वर्ल्ड"
+    },
+    "resume": "फिर से शुरू करें",
+    "reopenAssessment": "मूल्यांकन फिर से खोलें",
+    "selectReopenDateTime": "मूल्यांकन को फिर से खोलने की तारीख और समय चुनें",
+    "startDateTime": "प्रारंभ तिथि और समय",
+    "endDateTime": "समाप्ति तिथि और समय",
+    "reopen": "फिर से खोलें"
+}

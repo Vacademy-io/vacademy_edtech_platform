@@ -1,0 +1,51 @@
+{
+    "heading": {
+        "createHomework": "إنشاء واجب منزلي",
+        "updateHomework": "تحديث الواجب المنزلي"
+    },
+    "page": {
+        "title": "معلومات أساسية",
+        "nextButton": "التالي",
+        "updateButton": "تحديث"
+    },
+    "toast": {
+        "updateSuccess": "تم تحديث بيانات الخطوة 1 بنجاح!",
+        "saveSuccess": "تم حفظ بيانات الخطوة 1 بنجاح!"
+    },
+    "errors": {
+        "saveFailed": "فشل حفظ المعلومات الأساسية."
+    },
+    "fields": {
+        "assessmentName": {
+            "label": "اسم التقييم",
+            "placeholder": "أضف العنوان"
+        },
+        "assessmentInstructions": {
+            "sectionTitle": "تعليمات التقييم",
+            "placeholder": "اكتب تعليمات الواجب المنزلي"
+        },
+        "liveDateRange": {
+            "sectionTitle": "نطاق التاريخ المباشر",
+            "startDateLabel": "تاريخ ووقت البدء",
+            "endDateLabel": "تاريخ ووقت الانتهاء"
+        },
+        "attemptSettings": {
+            "sectionTitle": "إعدادات المحاولات",
+            "reattemptCountLabel": "عدد إعادة المحاولة",
+            "reattemptCountPlaceholder": "عدد إعادة المحاولة"
+        },
+        "evaluationType": {
+            "label": "نوع التقييم"
+        },
+        "submissionType": {
+            "label": "نوع التسليم"
+        },
+        "assessmentPreview": {
+            "allowLabel": "السماح بمعاينة التقييم",
+            "previewTimeLimitLabel": "الحد الزمني للمعاينة"
+        },
+        "switchSections": {
+            "label": "السماح لـ {{term}} بالتبديل بين الأقسام"
+        }
+    }
+}

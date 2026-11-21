@@ -70,22 +70,30 @@ def get_complete_health(db: Session = Depends(db_dependency)) -> dict:
     
     overall_status = "HEALTHY" if db_response["status"] == "UP" else "UNHEALTHY"
     
+    settings = get_settings()
+
     return {
         "service": "ai-service",
         "timestamp": datetime.utcnow().isoformat(),
         "database": db_response,
+        # Reports the global switch only. Whether any given institute can use the
+        # MCP server is a per-institute setting, not a service health property.
+        "mcp": {
+            "enabled": bool(settings.mcp_server_enabled),
+            "endpoint": f"{settings.api_base_path}/mcp" if settings.mcp_server_enabled else None,
+        },
         "overall_status": overall_status
     }
 
 # Keep original endpoints for backward compatibility if needed by K8s probes
 @router.get("", include_in_schema=False)
 @router.get("/", include_in_schema=False)
-def health_root() -> dict:
+async def health_root() -> dict:
     return {"status": "ok"}
 
 # Keep original endpoints for backward compatibility if needed by K8s probes
 @router.get("/health", include_in_schema=False)
-def health_legacy() -> dict:
+async def health_legacy() -> dict:
     return {"status": "ok"}
 
 

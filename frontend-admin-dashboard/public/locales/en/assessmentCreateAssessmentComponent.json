@@ -1,0 +1,41 @@
+{
+    "sidebar": {
+        "stepLabel": "Step {{number}}",
+        "done": "· Done"
+    },
+    "steps": {
+        "basicInfo": {
+            "label": "Basic Info",
+            "description": "Name, schedule, and settings"
+        },
+        "addQuestions": {
+            "label": "Add Questions",
+            "description": "Upload or create questions"
+        },
+        "addParticipants": {
+            "label": "Add Participants",
+            "description": "Choose who can take this"
+        },
+        "accessControl": {
+            "label": "Access Control",
+            "description": "Permissions for managing"
+        }
+    },
+    "examTypeLabel": {
+        "exam": "Examination",
+        "mock": "Mock Assessment",
+        "practice": "Practice Assessment",
+        "survey": "Survey",
+        "manualUploadExam": "Manual Upload Exam"
+    },
+    "header": {
+        "stepOf": "Step {{current}} of {{total}}",
+        "completed": "{{count}} / {{total}} completed"
+    },
+    "helmet": {
+        "titleSurvey": "Create Survey",
+        "titleAssessment": "Create Assessment",
+        "descriptionSurvey": "This page is for creating a survey for students via admin.",
+        "descriptionAssessment": "This page is for creating an assessment for students via admin."
+    }
+}

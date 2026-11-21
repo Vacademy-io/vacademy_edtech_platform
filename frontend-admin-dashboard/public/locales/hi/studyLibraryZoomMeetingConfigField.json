@@ -1,0 +1,44 @@
+{
+    "loadingAccounts": "Zoom खाते लोड हो रहे हैं…",
+    "notSetUpMessage": "इस संस्थान के लिए Zoom इंटीग्रेशन सेट अप नहीं है। <strong>सेटिंग्स → लाइव सेशन → Zoom इंटीग्रेशन</strong> के तहत Zoom खाता जोड़ें, या नीचे लाइव क्लास लिंक फ़ील्ड में मीटिंग लिंक पेस्ट करें।",
+    "zoomMeetingSettings": "Zoom मीटिंग सेटिंग्स",
+    "zoomAccount": "Zoom खाता",
+    "defaultSuffix": "(डिफ़ॉल्ट)",
+    "section": {
+        "entrySecurity": "प्रवेश और सुरक्षा",
+        "audioVideoDefaults": "ऑडियो / वीडियो डिफ़ॉल्ट",
+        "inMeetingFeatures": "मीटिंग-इन-सुविधाएँ"
+    },
+    "field": {
+        "enableWaitingRoom": "प्रतीक्षा कक्ष सक्षम करें",
+        "allowJoinBeforeHost": "होस्ट से पहले शामिल होने की अनुमति दें",
+        "requireZoomLogin": "शामिल होने के लिए Zoom लॉगिन आवश्यक करें",
+        "registrationApproval": "पंजीकरण स्वीकृति",
+        "alternativeHosts": "वैकल्पिक होस्ट (कॉमा-सेपरेटेड ईमेल)",
+        "alternativeHostsPlaceholder": "जैसे cohost1@inst.edu, cohost2@inst.edu",
+        "muteOnEntry": "प्रवेश पर प्रतिभागियों को म्यूट करें",
+        "startHostVideoOn": "होस्ट वीडियो चालू करके शुरू करें",
+        "startParticipantVideoOn": "प्रतिभागी वीडियो चालू करके शुरू करें",
+        "audio": "ऑडियो",
+        "enableBreakoutRooms": "ब्रेकआउट रूम सक्षम करें",
+        "startInFocusMode": "फ़ोकस मोड में शुरू करें",
+        "allowMultipleDevices": "कई डिवाइस से शामिल होने की अनुमति दें",
+        "addIdentityWatermark": "पहचान वॉटरमार्क जोड़ें",
+        "automaticRecording": "स्वचालित रिकॉर्डिंग"
+    },
+    "approval": {
+        "noneRequired": "पंजीकरण आवश्यक नहीं",
+        "automatic": "स्वचालित रूप से स्वीकृत करें",
+        "manual": "मैन्युअल रूप से स्वीकृत करें"
+    },
+    "audio": {
+        "computerAndTelephony": "कंप्यूटर + टेलीफ़ोनी",
+        "computerOnly": "केवल कंप्यूटर ऑडियो",
+        "telephonyOnly": "केवल टेलीफ़ोनी"
+    },
+    "recording": {
+        "cloud": "Zoom क्लाउड में रिकॉर्ड करें",
+        "local": "स्थानीय रिकॉर्डिंग (होस्ट मशीन)",
+        "none": "रिकॉर्ड न करें"
+    }
+}

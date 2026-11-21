@@ -1,0 +1,32 @@
+{
+    "intro": "Les dépenses que vous avez fait rembourser, et tout ce que vous remboursez via votre salaire.",
+    "tabs": {
+        "reimbursements": "Remboursements",
+        "loans": "Prêts et avances"
+    },
+    "reimbursementsIntro": "Argent dépensé pour le travail que l'établissement rembourse. Les demandes approuvées sont versées avec le salaire d'un mois à venir.",
+    "newClaim": "Nouvelle demande",
+    "reimbursementsLoadError": "Impossible de charger vos demandes.",
+    "emptyClaimsTitle": "Vous n'avez encore rien demandé",
+    "emptyClaimsDescription": "Demandez le remboursement d'une dépense professionnelle et elle apparaîtra ici avec son statut, d'En attente jusqu'à payé.",
+    "makeClaim": "Faire une demande",
+    "defaultExpenseType": "Dépense",
+    "spentOn": "Dépensé le {{date}}",
+    "noExpenseDate": "Aucune date de dépense enregistrée",
+    "turnedDown": "Refusé : {{reason}}",
+    "loansInfo": "Les prêts et avances sur salaire sont configurés par votre équipe RH — il n'y a rien à demander ici. La mensualité est déduite automatiquement de votre salaire chaque mois jusqu'à ce que le solde atteigne zéro.",
+    "loansLoadError": "Impossible de charger vos prêts.",
+    "emptyLoansTitle": "Vous n'avez aucun prêt ni avance",
+    "emptyLoansDescription": "Rien n'est déduit de votre salaire au titre d'un remboursement. Si votre équipe RH configure un prêt, il apparaîtra ici.",
+    "defaultLoanType": "Prêt",
+    "stats": {
+        "borrowed": "Emprunté",
+        "monthlyEmi": "Mensualité",
+        "stillToRepay": "Reste à rembourser",
+        "over": "Durée"
+    },
+    "tenureMonths_one": "{{count}} mois",
+    "tenureMonths_many": "{{count}} mois",
+    "tenureMonths_other": "{{count}} mois",
+    "fromDate": "à partir du {{month}}/{{year}}"
+}

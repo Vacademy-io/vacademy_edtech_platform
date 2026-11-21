@@ -13,8 +13,10 @@ import { createFileRoute } from "@tanstack/react-router"
 import { Route as rootRouteImport } from "./routes/__root"
 import { Route as LockedFeatureRouteImport } from "./routes/locked-feature"
 import { Route as ErrorPageRouteImport } from "./routes/error-page"
+import { Route as DemoRouteImport } from "./routes/demo"
 import { Route as ChatRouteImport } from "./routes/chat"
 import { Route as AgentChatRouteImport } from "./routes/agent-chat"
+import { Route as EvalezyRouteRouteImport } from "./routes/evalezy/route"
 import { Route as VimIndexRouteImport } from "./routes/vim/index"
 import { Route as VideoApiStudioIndexRouteImport } from "./routes/video-api-studio/index"
 import { Route as StudyLibraryIndexRouteImport } from "./routes/study-library/index"
@@ -22,6 +24,7 @@ import { Route as SignupIndexRouteImport } from "./routes/signup/index"
 import { Route as SettingsIndexRouteImport } from "./routes/settings/index"
 import { Route as SalesDashboardIndexRouteImport } from "./routes/sales-dashboard/index"
 import { Route as PlanningIndexRouteImport } from "./routes/planning/index"
+import { Route as PlanWeekIndexRouteImport } from "./routes/plan-week/index"
 import { Route as PaymentDashboardIndexRouteImport } from "./routes/payment-dashboard/index"
 import { Route as MembershipStatsIndexRouteImport } from "./routes/membership-stats/index"
 import { Route as MembershipExpiryIndexRouteImport } from "./routes/membership-expiry/index"
@@ -35,17 +38,22 @@ import { Route as ManageCustomTeamsIndexRouteImport } from "./routes/manage-cust
 import { Route as ManageContactsIndexRouteImport } from "./routes/manage-contacts/index"
 import { Route as ManageBookingsIndexRouteImport } from "./routes/manage-bookings/index"
 import { Route as LoginIndexRouteImport } from "./routes/login/index"
+import { Route as LmsDashboardIndexRouteImport } from "./routes/lms-dashboard/index"
+import { Route as LiveActivityIndexRouteImport } from "./routes/live-activity/index"
 import { Route as LearnerInsightsIndexRouteImport } from "./routes/learner-insights/index"
+import { Route as LearnerHomeIndexRouteImport } from "./routes/learner-home/index"
 import { Route as KnowledgeBaseIndexRouteImport } from "./routes/knowledge-base/index"
 import { Route as InstructorCopilotIndexRouteImport } from "./routes/instructor-copilot/index"
 import { Route as InstitutePulseIndexRouteImport } from "./routes/institute-pulse/index"
-import { Route as EvaluatorAiIndexRouteImport } from "./routes/evaluator-ai/index"
 import { Route as EvaluationIndexRouteImport } from "./routes/evaluation/index"
+import { Route as EvalezyIndexRouteImport } from "./routes/evalezy/index"
+import { Route as EngagementIndexRouteImport } from "./routes/engagement/index"
 import { Route as EngagementEnginesIndexRouteImport } from "./routes/engagement-engines/index"
 import { Route as DashboardIndexRouteImport } from "./routes/dashboard/index"
 import { Route as CounsellorsIndexRouteImport } from "./routes/counsellors/index"
 import { Route as ConnectorCenterDetailsIndexRouteImport } from "./routes/connector-center-details/index"
 import { Route as CommunityIndexRouteImport } from "./routes/community/index"
+import { Route as CommerceIndexRouteImport } from "./routes/commerce/index"
 import { Route as ChallengeAnalyticsIndexRouteImport } from "./routes/challenge-analytics/index"
 import { Route as CenterManagementIndexRouteImport } from "./routes/center-management/index"
 import { Route as AuthTransferIndexRouteImport } from "./routes/auth-transfer/index"
@@ -54,11 +62,24 @@ import { Route as AiCenterIndexRouteImport } from "./routes/ai-center/index"
 import { Route as AdmissionsIndexRouteImport } from "./routes/admissions/index"
 import { Route as AdminPackageManagementIndexRouteImport } from "./routes/admin-package-management/index"
 import { Route as AdminActivityLogsIndexRouteImport } from "./routes/admin-activity-logs/index"
+import { Route as AccessPassesIndexRouteImport } from "./routes/access-passes/index"
 import { Route as VimWaitlistRouteImport } from "./routes/vim/waitlist"
 import { Route as VimLoginRouteImport } from "./routes/vim/login"
 import { Route as VimDashboardRouteImport } from "./routes/vim/dashboard"
+import { Route as TelleoSetupRouteImport } from "./routes/telleo/setup"
+import { Route as TelleoPlanRouteImport } from "./routes/telleo/plan"
+import { Route as TelleoApiRouteImport } from "./routes/telleo/api"
+import { Route as SignupStartRouteImport } from "./routes/signup/start"
+import { Route as McpAuthorizeRouteImport } from "./routes/mcp/authorize"
 import { Route as KnowledgeBasePublishRouteImport } from "./routes/knowledge-base/publish"
 import { Route as KnowledgeBaseKbIdRouteImport } from "./routes/knowledge-base/$kbId"
+import { Route as EvalezySettingsRouteImport } from "./routes/evalezy/settings"
+import { Route as EvalezyProfileRouteImport } from "./routes/evalezy/profile"
+import { Route as EvalezyPlanRouteImport } from "./routes/evalezy/plan"
+import { Route as EvalezyNewRouteImport } from "./routes/evalezy/new"
+import { Route as EvalezyHelpRouteImport } from "./routes/evalezy/help"
+import { Route as EvalezyCreditsRouteImport } from "./routes/evalezy/credits"
+import { Route as EvalezyAssessmentIdRouteImport } from "./routes/evalezy/$assessmentId"
 import { Route as EngagementEnginesEngineIdRouteImport } from "./routes/engagement-engines/$engineId"
 import { Route as CounsellorsUserIdRouteImport } from "./routes/counsellors/$userId"
 import { Route as WorkflowListIndexRouteImport } from "./routes/workflow/list/index"
@@ -75,6 +96,7 @@ import { Route as StudyLibraryVoltIndexRouteImport } from "./routes/study-librar
 import { Route as StudyLibraryStudentAiIndexRouteImport } from "./routes/study-library/student-ai/index"
 import { Route as StudyLibraryReportsIndexRouteImport } from "./routes/study-library/reports/index"
 import { Route as StudyLibraryLiveSessionIndexRouteImport } from "./routes/study-library/live-session/index"
+import { Route as StudyLibraryGamificationIndexRouteImport } from "./routes/study-library/gamification/index"
 import { Route as StudyLibraryDoubtManagementIndexRouteImport } from "./routes/study-library/doubt-management/index"
 import { Route as StudyLibraryCoursesIndexRouteImport } from "./routes/study-library/courses/index"
 import { Route as StudyLibraryBulkContentUploadingIndexRouteImport } from "./routes/study-library/bulk-content-uploading/index"
@@ -92,13 +114,18 @@ import { Route as MentorshipMentorsIndexRouteImport } from "./routes/mentorship/
 import { Route as MentorshipDashboardIndexRouteImport } from "./routes/mentorship/dashboard/index"
 import { Route as MeetingsTeamIndexRouteImport } from "./routes/meetings/team/index"
 import { Route as MeetingsMyScheduleIndexRouteImport } from "./routes/meetings/my-schedule/index"
+import { Route as MeetingsDashboardIndexRouteImport } from "./routes/meetings/dashboard/index"
 import { Route as ManageStudentsStudentsListIndexRouteImport } from "./routes/manage-students/students-list/index"
 import { Route as ManageStudentsInviteIndexRouteImport } from "./routes/manage-students/invite/index"
 import { Route as ManageStudentsEnrollRequestsIndexRouteImport } from "./routes/manage-students/enroll-requests/index"
+import { Route as ManagePagesSiteAssistantIndexRouteImport } from "./routes/manage-pages/site-assistant/index"
 import { Route as ManagePagesProductPagesIndexRouteImport } from "./routes/manage-pages/product-pages/index"
+import { Route as ManagePagesBlogIndexRouteImport } from "./routes/manage-pages/blog/index"
 import { Route as ManageInstituteTeamsIndexRouteImport } from "./routes/manage-institute/teams/index"
 import { Route as ManageInstituteSessionsIndexRouteImport } from "./routes/manage-institute/sessions/index"
+import { Route as ManageInstituteOverviewIndexRouteImport } from "./routes/manage-institute/overview/index"
 import { Route as ManageInstituteBatchesIndexRouteImport } from "./routes/manage-institute/batches/index"
+import { Route as ManageContactsDashboardIndexRouteImport } from "./routes/manage-contacts/dashboard/index"
 import { Route as LoginForgotPasswordIndexRouteImport } from "./routes/login/forgot-password/index"
 import { Route as LoginKeyIndexRouteImport } from "./routes/login/$key/index"
 import { Route as HomeworkCreationAssessmentListIndexRouteImport } from "./routes/homework-creation/assessment-list/index"
@@ -107,31 +134,55 @@ import { Route as FinancialManagementManageFinancesIndexRouteImport } from "./ro
 import { Route as FinancialManagementFeePlansIndexRouteImport } from "./routes/financial-management/fee-plans/index"
 import { Route as FinancialManagementCollectionDashboardIndexRouteImport } from "./routes/financial-management/collection-dashboard/index"
 import { Route as FinancialManagementAdjustmentApprovalsIndexRouteImport } from "./routes/financial-management/adjustment-approvals/index"
-import { Route as EvaluatorAiStudentsIndexRouteImport } from "./routes/evaluator-ai/students/index"
-import { Route as EvaluatorAiEvaluationIndexRouteImport } from "./routes/evaluator-ai/evaluation/index"
-import { Route as EvaluatorAiAssessmentIndexRouteImport } from "./routes/evaluator-ai/assessment/index"
 import { Route as EvaluationEvaluationsIndexRouteImport } from "./routes/evaluation/evaluations/index"
 import { Route as EvaluationEvaluationToolIndexRouteImport } from "./routes/evaluation/evaluation-tool/index"
+import { Route as ErpPeopleIndexRouteImport } from "./routes/erp/people/index"
+import { Route as ErpPayrollIndexRouteImport } from "./routes/erp/payroll/index"
+import { Route as ErpMyHrIndexRouteImport } from "./routes/erp/my-hr/index"
+import { Route as ErpLeaveIndexRouteImport } from "./routes/erp/leave/index"
+import { Route as ErpComplianceIndexRouteImport } from "./routes/erp/compliance/index"
+import { Route as ErpAttendanceIndexRouteImport } from "./routes/erp/attendance/index"
 import { Route as EngagementEnginesInboxIndexRouteImport } from "./routes/engagement-engines/inbox/index"
+import { Route as EngagementEnginesDashboardIndexRouteImport } from "./routes/engagement-engines/dashboard/index"
 import { Route as EngagementEnginesCreateIndexRouteImport } from "./routes/engagement-engines/create/index"
 import { Route as ContentContentIdIndexRouteImport } from "./routes/content/$contentId/index"
 import { Route as CommunityQuestionPaperIndexRouteImport } from "./routes/community/question-paper/index"
 import { Route as CommunicationWhatsappTemplatesIndexRouteImport } from "./routes/communication/whatsapp-templates/index"
 import { Route as CommunicationNotificationHubIndexRouteImport } from "./routes/communication/notification-hub/index"
 import { Route as CommunicationInboxIndexRouteImport } from "./routes/communication/inbox/index"
+import { Route as CommunicationDashboardIndexRouteImport } from "./routes/communication/dashboard/index"
+import { Route as CommerceSettingsIndexRouteImport } from "./routes/commerce/settings/index"
+import { Route as CommerceReportsIndexRouteImport } from "./routes/commerce/reports/index"
+import { Route as CommerceProductsIndexRouteImport } from "./routes/commerce/products/index"
+import { Route as CommercePosIndexRouteImport } from "./routes/commerce/pos/index"
+import { Route as CommerceParallelRunIndexRouteImport } from "./routes/commerce/parallel-run/index"
+import { Route as CommerceOrdersIndexRouteImport } from "./routes/commerce/orders/index"
+import { Route as CommerceInventoryIndexRouteImport } from "./routes/commerce/inventory/index"
+import { Route as CommerceDiscountsIndexRouteImport } from "./routes/commerce/discounts/index"
+import { Route as CommerceCustomersIndexRouteImport } from "./routes/commerce/customers/index"
+import { Route as CommerceCollectionsIndexRouteImport } from "./routes/commerce/collections/index"
 import { Route as CertificateGenerationStudentDataIndexRouteImport } from "./routes/certificate-generation/student-data/index"
+import { Route as CallingDashboardIndexRouteImport } from "./routes/calling/dashboard/index"
+import { Route as CallingCallQueueIndexRouteImport } from "./routes/calling/call-queue/index"
 import { Route as CallingAiAgentsIndexRouteImport } from "./routes/calling/ai-agents/index"
+import { Route as AutomationDashboardIndexRouteImport } from "./routes/automation/dashboard/index"
 import { Route as AutomationChatbotFlowsIndexRouteImport } from "./routes/automation/chatbot-flows/index"
+import { Route as AudienceManagerSocialPostsIndexRouteImport } from "./routes/audience-manager/social-posts/index"
 import { Route as AudienceManagerReportsIndexRouteImport } from "./routes/audience-manager/reports/index"
 import { Route as AudienceManagerRecentLeadsIndexRouteImport } from "./routes/audience-manager/recent-leads/index"
 import { Route as AudienceManagerOnboardingIndexRouteImport } from "./routes/audience-manager/onboarding/index"
 import { Route as AudienceManagerListIndexRouteImport } from "./routes/audience-manager/list/index"
+import { Route as AudienceManagerLeadLookupIndexRouteImport } from "./routes/audience-manager/lead-lookup/index"
 import { Route as AudienceManagerLeadBoardIndexRouteImport } from "./routes/audience-manager/lead-board/index"
+import { Route as AudienceManagerLeadAgentIndexRouteImport } from "./routes/audience-manager/lead-agent/index"
 import { Route as AudienceManagerFollowUpsIndexRouteImport } from "./routes/audience-manager/follow-ups/index"
 import { Route as AudienceManagerCallLogIndexRouteImport } from "./routes/audience-manager/call-log/index"
 import { Route as AudienceManagerAiIntelligenceIndexRouteImport } from "./routes/audience-manager/ai-intelligence/index"
+import { Route as AudienceManagerAdPerformanceIndexRouteImport } from "./routes/audience-manager/ad-performance/index"
 import { Route as AssessmentQuestionPapersIndexRouteImport } from "./routes/assessment/question-papers/index"
+import { Route as AssessmentQuestionLibraryIndexRouteImport } from "./routes/assessment/question-library/index"
 import { Route as AssessmentEvaluationAiIndexRouteImport } from "./routes/assessment/evaluation-ai/index"
+import { Route as AssessmentDashboardIndexRouteImport } from "./routes/assessment/dashboard/index"
 import { Route as AssessmentAssessmentListIndexRouteImport } from "./routes/assessment/assessment-list/index"
 import { Route as AnnouncementScheduleIndexRouteImport } from "./routes/announcement/schedule/index"
 import { Route as AnnouncementHistoryIndexRouteImport } from "./routes/announcement/history/index"
@@ -170,14 +221,51 @@ import { Route as VideoApiStudioEditVideoIdIndexRouteImport } from "./routes/vid
 import { Route as StudyLibraryVoltAddIndexRouteImport } from "./routes/study-library/volt/add/index"
 import { Route as StudyLibraryLiveSessionScheduleIndexRouteImport } from "./routes/study-library/live-session/schedule/index"
 import { Route as StudyLibraryLiveSessionFeedbackIndexRouteImport } from "./routes/study-library/live-session/feedback/index"
+import { Route as StudyLibraryLiveSessionDashboardIndexRouteImport } from "./routes/study-library/live-session/dashboard/index"
 import { Route as StudyLibraryCoursesCourseDetailsIndexRouteImport } from "./routes/study-library/courses/course-details/index"
 import { Route as StudyLibraryAiCopilotCourseOutlineIndexRouteImport } from "./routes/study-library/ai-copilot/course-outline/index"
 import { Route as PlanningPlanningCreateIndexRouteImport } from "./routes/planning/planning/create/index"
 import { Route as PlanningActivityLogsCreateIndexRouteImport } from "./routes/planning/activity-logs/create/index"
 import { Route as MentorshipMentorsMentorIdIndexRouteImport } from "./routes/mentorship/mentors/$mentorId/index"
-import { Route as EvaluatorAiEvaluationStudentSummaryIndexRouteImport } from "./routes/evaluator-ai/evaluation/student-summary/index"
-import { Route as EvaluatorAiAssessmentCreateAssessmentIndexRouteImport } from "./routes/evaluator-ai/assessment/create-assessment/index"
+import { Route as ErpPeopleStaffBridgeIndexRouteImport } from "./routes/erp/people/staff-bridge/index"
+import { Route as ErpPeopleOrgIndexRouteImport } from "./routes/erp/people/org/index"
+import { Route as ErpPeopleEmployeeIdIndexRouteImport } from "./routes/erp/people/$employeeId/index"
+import { Route as ErpPayrollSalarySetupIndexRouteImport } from "./routes/erp/payroll/salary-setup/index"
+import { Route as ErpPayrollAdjustmentsIndexRouteImport } from "./routes/erp/payroll/adjustments/index"
+import { Route as ErpPayrollRunIdIndexRouteImport } from "./routes/erp/payroll/$runId/index"
+import { Route as ErpMyHrTaxIndexRouteImport } from "./routes/erp/my-hr/tax/index"
+import { Route as ErpMyHrPayslipsIndexRouteImport } from "./routes/erp/my-hr/payslips/index"
+import { Route as ErpMyHrLeaveIndexRouteImport } from "./routes/erp/my-hr/leave/index"
+import { Route as ErpMyHrClaimsIndexRouteImport } from "./routes/erp/my-hr/claims/index"
+import { Route as ErpLeaveSetupIndexRouteImport } from "./routes/erp/leave/setup/index"
+import { Route as ErpLeaveBalancesIndexRouteImport } from "./routes/erp/leave/balances/index"
+import { Route as ErpFinancePnlIndexRouteImport } from "./routes/erp/finance/pnl/index"
+import { Route as ErpFinanceJournalIndexRouteImport } from "./routes/erp/finance/journal/index"
+import { Route as ErpComplianceProvisionsIndexRouteImport } from "./routes/erp/compliance/provisions/index"
+import { Route as ErpComplianceChallansIndexRouteImport } from "./routes/erp/compliance/challans/index"
+import { Route as ErpAttendanceSetupIndexRouteImport } from "./routes/erp/attendance/setup/index"
+import { Route as ErpAttendanceRegularizationsIndexRouteImport } from "./routes/erp/attendance/regularizations/index"
+import { Route as EngagementEnginesDashboardOutcomesIndexRouteImport } from "./routes/engagement-engines/dashboard/outcomes/index"
+import { Route as CommerceSettingsTaxClassesIndexRouteImport } from "./routes/commerce/settings/tax-classes/index"
+import { Route as CommerceSettingsStaffIndexRouteImport } from "./routes/commerce/settings/staff/index"
+import { Route as CommerceSettingsRegistersIndexRouteImport } from "./routes/commerce/settings/registers/index"
+import { Route as CommerceSettingsNotificationsIndexRouteImport } from "./routes/commerce/settings/notifications/index"
+import { Route as CommerceSettingsLocationsIndexRouteImport } from "./routes/commerce/settings/locations/index"
+import { Route as CommerceSettingsBusinessIndexRouteImport } from "./routes/commerce/settings/business/index"
+import { Route as CommerceReportsAuditIndexRouteImport } from "./routes/commerce/reports/audit/index"
+import { Route as CommerceProductsImportIndexRouteImport } from "./routes/commerce/products/import/index"
+import { Route as CommerceProductsProductIdIndexRouteImport } from "./routes/commerce/products/$productId/index"
+import { Route as CommercePosSessionsIndexRouteImport } from "./routes/commerce/pos/sessions/index"
+import { Route as CommercePosSessionIdIndexRouteImport } from "./routes/commerce/pos/$sessionId/index"
+import { Route as CommerceOrdersRemittancesIndexRouteImport } from "./routes/commerce/orders/remittances/index"
+import { Route as CommerceOrdersPrintIndexRouteImport } from "./routes/commerce/orders/print/index"
+import { Route as CommerceOrdersPackIndexRouteImport } from "./routes/commerce/orders/pack/index"
+import { Route as CommerceOrdersNewIndexRouteImport } from "./routes/commerce/orders/new/index"
+import { Route as CommerceOrdersOrderIdIndexRouteImport } from "./routes/commerce/orders/$orderId/index"
+import { Route as CommerceCustomersCustomerIdIndexRouteImport } from "./routes/commerce/customers/$customerId/index"
 import { Route as AudienceManagerListCampaignUsersIndexRouteImport } from "./routes/audience-manager/list/campaign-users/index"
+import { Route as AudienceManagerLeadAgentAgentIdIndexRouteImport } from "./routes/audience-manager/lead-agent/$agentId/index"
+import { Route as AssessmentSubmissionAttemptIdIndexRouteImport } from "./routes/assessment/submission/$attemptId/index"
 import { Route as AssessmentExportAssessmentIdIndexRouteImport } from "./routes/assessment/export/$assessmentId/index"
 import { Route as AiCenterAiToolsVsmartUploadIndexRouteImport } from "./routes/ai-center/ai-tools/vsmart-upload/index"
 import { Route as AiCenterAiToolsVsmartSorterIndexRouteImport } from "./routes/ai-center/ai-tools/vsmart-sorter/index"
@@ -195,6 +283,7 @@ import { Route as StudyLibraryLiveSessionViewSessionIdRouteImport } from "./rout
 import { Route as StudyLibraryLiveSessionHostScheduleIdRouteImport } from "./routes/study-library/live-session/host/$scheduleId"
 import { Route as SettingsLeadsPoolsPoolIdRouteImport } from "./routes/settings/leads/pools/$poolId"
 import { Route as ManagePagesProductPagesEditorProductPageIdRouteImport } from "./routes/manage-pages/product-pages/editor/$productPageId"
+import { Route as ManagePagesBlogEditorPostIdRouteImport } from "./routes/manage-pages/blog/editor/$postId"
 import { Route as StudyLibraryLiveSessionScheduleStep2IndexRouteImport } from "./routes/study-library/live-session/schedule/step2/index"
 import { Route as StudyLibraryLiveSessionScheduleStep1IndexRouteImport } from "./routes/study-library/live-session/schedule/step1/index"
 import { Route as StudyLibraryLiveSessionScheduleBulkIndexRouteImport } from "./routes/study-library/live-session/schedule/bulk/index"
@@ -202,9 +291,18 @@ import { Route as StudyLibraryCoursesCourseDetailsTranslationIndexRouteImport } 
 import { Route as StudyLibraryCoursesCourseDetailsSubjectsIndexRouteImport } from "./routes/study-library/courses/course-details/subjects/index"
 import { Route as StudyLibraryAiCopilotCourseOutlineGeneratingIndexRouteImport } from "./routes/study-library/ai-copilot/course-outline/generating/index"
 import { Route as HomeworkCreationCreateAssessmentAssessmentIdExamtypeIndexRouteImport } from "./routes/homework-creation/create-assessment/$assessmentId/$examtype/index"
+import { Route as CommercePosSessionsSessionIdIndexRouteImport } from "./routes/commerce/pos/sessions/$sessionId/index"
+import { Route as CommercePosSessionIdReturnsIndexRouteImport } from "./routes/commerce/pos/$sessionId/returns/index"
+import { Route as CommercePosSessionIdCloseIndexRouteImport } from "./routes/commerce/pos/$sessionId/close/index"
+import { Route as CommercePosSessionIdBillsIndexRouteImport } from "./routes/commerce/pos/$sessionId/bills/index"
+import { Route as CommercePosSessionIdBillBookIndexRouteImport } from "./routes/commerce/pos/$sessionId/bill-book/index"
+import { Route as CommerceInventoryTransfersTransferIdIndexRouteImport } from "./routes/commerce/inventory/transfers/$transferId/index"
+import { Route as CommerceInventoryReceiptsReceiptIdIndexRouteImport } from "./routes/commerce/inventory/receipts/$receiptId/index"
+import { Route as CommerceInventoryCountsCountIdIndexRouteImport } from "./routes/commerce/inventory/counts/$countId/index"
 import { Route as AudienceManagerListCampaignUsersAddIndexRouteImport } from "./routes/audience-manager/list/campaign-users/add/index"
 import { Route as AssessmentEvaluationAiAttemptIdProcessIdIndexRouteImport } from "./routes/assessment/evaluation-ai/$attemptId/$processId/index"
 import { Route as AssessmentCreateAssessmentAssessmentIdExamtypeIndexRouteImport } from "./routes/assessment/create-assessment/$assessmentId/$examtype/index"
+import { Route as AssessmentAssessmentListScanStationAssessmentIdIndexRouteImport } from "./routes/assessment/assessment-list/scan-station/$assessmentId/index"
 import { Route as AssessmentAssessmentListOfflineEntryAssessmentIdIndexRouteImport } from "./routes/assessment/assessment-list/offline-entry/$assessmentId/index"
 import { Route as StudyLibraryAiCopilotSharedComponentsYouTubePlayerSimpleRouteImport } from "./routes/study-library/ai-copilot/shared/components/YouTubePlayerSimple"
 import { Route as StudyLibraryCoursesCourseDetailsSubjectsModulesIndexRouteImport } from "./routes/study-library/courses/course-details/subjects/modules/index"
@@ -254,6 +352,11 @@ const ErrorPageRoute = ErrorPageRouteImport.update({
   path: "/error-page",
   getParentRoute: () => rootRouteImport,
 } as any)
+const DemoRoute = DemoRouteImport.update({
+  id: "/demo",
+  path: "/demo",
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChatRoute = ChatRouteImport.update({
   id: "/chat",
   path: "/chat",
@@ -264,6 +367,11 @@ const AgentChatRoute = AgentChatRouteImport.update({
   path: "/agent-chat",
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() => import("./routes/agent-chat.lazy").then((d) => d.Route))
+const EvalezyRouteRoute = EvalezyRouteRouteImport.update({
+  id: "/evalezy",
+  path: "/evalezy",
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VimIndexRoute = VimIndexRouteImport.update({
   id: "/vim/",
   path: "/vim/",
@@ -303,6 +411,11 @@ const SalesDashboardIndexRoute = SalesDashboardIndexRouteImport.update({
 const PlanningIndexRoute = PlanningIndexRouteImport.update({
   id: "/planning/",
   path: "/planning/",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlanWeekIndexRoute = PlanWeekIndexRouteImport.update({
+  id: "/plan-week/",
+  path: "/plan-week/",
   getParentRoute: () => rootRouteImport,
 } as any)
 const PaymentDashboardIndexRoute = PaymentDashboardIndexRouteImport.update({
@@ -394,12 +507,33 @@ const LoginIndexRoute = LoginIndexRouteImport.update({
   path: "/login/",
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() => import("./routes/login/index.lazy").then((d) => d.Route))
+const LmsDashboardIndexRoute = LmsDashboardIndexRouteImport.update({
+  id: "/lms-dashboard/",
+  path: "/lms-dashboard/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/lms-dashboard/index.lazy").then((d) => d.Route),
+)
+const LiveActivityIndexRoute = LiveActivityIndexRouteImport.update({
+  id: "/live-activity/",
+  path: "/live-activity/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/live-activity/index.lazy").then((d) => d.Route),
+)
 const LearnerInsightsIndexRoute = LearnerInsightsIndexRouteImport.update({
   id: "/",
   path: "/",
   getParentRoute: () => LearnerInsightsLazyRoute,
 } as any).lazy(() =>
   import("./routes/learner-insights/index.lazy").then((d) => d.Route),
+)
+const LearnerHomeIndexRoute = LearnerHomeIndexRouteImport.update({
+  id: "/learner-home/",
+  path: "/learner-home/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/learner-home/index.lazy").then((d) => d.Route),
 )
 const KnowledgeBaseIndexRoute = KnowledgeBaseIndexRouteImport.update({
   id: "/knowledge-base/",
@@ -422,19 +556,24 @@ const InstitutePulseIndexRoute = InstitutePulseIndexRouteImport.update({
 } as any).lazy(() =>
   import("./routes/institute-pulse/index.lazy").then((d) => d.Route),
 )
-const EvaluatorAiIndexRoute = EvaluatorAiIndexRouteImport.update({
-  id: "/evaluator-ai/",
-  path: "/evaluator-ai/",
-  getParentRoute: () => rootRouteImport,
-} as any).lazy(() =>
-  import("./routes/evaluator-ai/index.lazy").then((d) => d.Route),
-)
 const EvaluationIndexRoute = EvaluationIndexRouteImport.update({
   id: "/evaluation/",
   path: "/evaluation/",
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() =>
   import("./routes/evaluation/index.lazy").then((d) => d.Route),
+)
+const EvalezyIndexRoute = EvalezyIndexRouteImport.update({
+  id: "/",
+  path: "/",
+  getParentRoute: () => EvalezyRouteRoute,
+} as any)
+const EngagementIndexRoute = EngagementIndexRouteImport.update({
+  id: "/engagement/",
+  path: "/engagement/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/engagement/index.lazy").then((d) => d.Route),
 )
 const EngagementEnginesIndexRoute = EngagementEnginesIndexRouteImport.update({
   id: "/engagement-engines/",
@@ -471,6 +610,13 @@ const CommunityIndexRoute = CommunityIndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() =>
   import("./routes/community/index.lazy").then((d) => d.Route),
+)
+const CommerceIndexRoute = CommerceIndexRouteImport.update({
+  id: "/commerce/",
+  path: "/commerce/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/commerce/index.lazy").then((d) => d.Route),
 )
 const ChallengeAnalyticsIndexRoute = ChallengeAnalyticsIndexRouteImport.update({
   id: "/challenge-analytics/",
@@ -529,6 +675,13 @@ const AdminActivityLogsIndexRoute = AdminActivityLogsIndexRouteImport.update({
 } as any).lazy(() =>
   import("./routes/admin-activity-logs/index.lazy").then((d) => d.Route),
 )
+const AccessPassesIndexRoute = AccessPassesIndexRouteImport.update({
+  id: "/access-passes/",
+  path: "/access-passes/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/access-passes/index.lazy").then((d) => d.Route),
+)
 const VimWaitlistRoute = VimWaitlistRouteImport.update({
   id: "/vim/waitlist",
   path: "/vim/waitlist",
@@ -542,6 +695,31 @@ const VimLoginRoute = VimLoginRouteImport.update({
 const VimDashboardRoute = VimDashboardRouteImport.update({
   id: "/vim/dashboard",
   path: "/vim/dashboard",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TelleoSetupRoute = TelleoSetupRouteImport.update({
+  id: "/telleo/setup",
+  path: "/telleo/setup",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TelleoPlanRoute = TelleoPlanRouteImport.update({
+  id: "/telleo/plan",
+  path: "/telleo/plan",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TelleoApiRoute = TelleoApiRouteImport.update({
+  id: "/telleo/api",
+  path: "/telleo/api",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupStartRoute = SignupStartRouteImport.update({
+  id: "/signup/start",
+  path: "/signup/start",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpAuthorizeRoute = McpAuthorizeRouteImport.update({
+  id: "/mcp/authorize",
+  path: "/mcp/authorize",
   getParentRoute: () => rootRouteImport,
 } as any)
 const KnowledgeBasePublishRoute = KnowledgeBasePublishRouteImport.update({
@@ -558,6 +736,41 @@ const KnowledgeBaseKbIdRoute = KnowledgeBaseKbIdRouteImport.update({
 } as any).lazy(() =>
   import("./routes/knowledge-base/$kbId.lazy").then((d) => d.Route),
 )
+const EvalezySettingsRoute = EvalezySettingsRouteImport.update({
+  id: "/settings",
+  path: "/settings",
+  getParentRoute: () => EvalezyRouteRoute,
+} as any)
+const EvalezyProfileRoute = EvalezyProfileRouteImport.update({
+  id: "/profile",
+  path: "/profile",
+  getParentRoute: () => EvalezyRouteRoute,
+} as any)
+const EvalezyPlanRoute = EvalezyPlanRouteImport.update({
+  id: "/plan",
+  path: "/plan",
+  getParentRoute: () => EvalezyRouteRoute,
+} as any)
+const EvalezyNewRoute = EvalezyNewRouteImport.update({
+  id: "/new",
+  path: "/new",
+  getParentRoute: () => EvalezyRouteRoute,
+} as any)
+const EvalezyHelpRoute = EvalezyHelpRouteImport.update({
+  id: "/help",
+  path: "/help",
+  getParentRoute: () => EvalezyRouteRoute,
+} as any)
+const EvalezyCreditsRoute = EvalezyCreditsRouteImport.update({
+  id: "/credits",
+  path: "/credits",
+  getParentRoute: () => EvalezyRouteRoute,
+} as any)
+const EvalezyAssessmentIdRoute = EvalezyAssessmentIdRouteImport.update({
+  id: "/$assessmentId",
+  path: "/$assessmentId",
+  getParentRoute: () => EvalezyRouteRoute,
+} as any)
 const EngagementEnginesEngineIdRoute =
   EngagementEnginesEngineIdRouteImport.update({
     id: "/engagement-engines/$engineId",
@@ -669,6 +882,16 @@ const StudyLibraryLiveSessionIndexRoute =
     getParentRoute: () => rootRouteImport,
   } as any).lazy(() =>
     import("./routes/study-library/live-session/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const StudyLibraryGamificationIndexRoute =
+  StudyLibraryGamificationIndexRouteImport.update({
+    id: "/study-library/gamification/",
+    path: "/study-library/gamification/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/study-library/gamification/index.lazy").then(
       (d) => d.Route,
     ),
   )
@@ -806,6 +1029,13 @@ const MeetingsMyScheduleIndexRoute = MeetingsMyScheduleIndexRouteImport.update({
 } as any).lazy(() =>
   import("./routes/meetings/my-schedule/index.lazy").then((d) => d.Route),
 )
+const MeetingsDashboardIndexRoute = MeetingsDashboardIndexRouteImport.update({
+  id: "/meetings/dashboard/",
+  path: "/meetings/dashboard/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/meetings/dashboard/index.lazy").then((d) => d.Route),
+)
 const ManageStudentsStudentsListIndexRoute =
   ManageStudentsStudentsListIndexRouteImport.update({
     id: "/manage-students/students-list/",
@@ -832,6 +1062,16 @@ const ManageStudentsEnrollRequestsIndexRoute =
       (d) => d.Route,
     ),
   )
+const ManagePagesSiteAssistantIndexRoute =
+  ManagePagesSiteAssistantIndexRouteImport.update({
+    id: "/manage-pages/site-assistant/",
+    path: "/manage-pages/site-assistant/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/manage-pages/site-assistant/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
 const ManagePagesProductPagesIndexRoute =
   ManagePagesProductPagesIndexRouteImport.update({
     id: "/manage-pages/product-pages/",
@@ -842,6 +1082,11 @@ const ManagePagesProductPagesIndexRoute =
       (d) => d.Route,
     ),
   )
+const ManagePagesBlogIndexRoute = ManagePagesBlogIndexRouteImport.update({
+  id: "/manage-pages/blog/",
+  path: "/manage-pages/blog/",
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ManageInstituteTeamsIndexRoute =
   ManageInstituteTeamsIndexRouteImport.update({
     id: "/manage-institute/teams/",
@@ -860,6 +1105,16 @@ const ManageInstituteSessionsIndexRoute =
       (d) => d.Route,
     ),
   )
+const ManageInstituteOverviewIndexRoute =
+  ManageInstituteOverviewIndexRouteImport.update({
+    id: "/manage-institute/overview/",
+    path: "/manage-institute/overview/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/manage-institute/overview/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
 const ManageInstituteBatchesIndexRoute =
   ManageInstituteBatchesIndexRouteImport.update({
     id: "/manage-institute/batches/",
@@ -867,6 +1122,16 @@ const ManageInstituteBatchesIndexRoute =
     getParentRoute: () => rootRouteImport,
   } as any).lazy(() =>
     import("./routes/manage-institute/batches/index.lazy").then((d) => d.Route),
+  )
+const ManageContactsDashboardIndexRoute =
+  ManageContactsDashboardIndexRouteImport.update({
+    id: "/manage-contacts/dashboard/",
+    path: "/manage-contacts/dashboard/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/manage-contacts/dashboard/index.lazy").then(
+      (d) => d.Route,
+    ),
   )
 const LoginForgotPasswordIndexRoute =
   LoginForgotPasswordIndexRouteImport.update({
@@ -943,30 +1208,6 @@ const FinancialManagementAdjustmentApprovalsIndexRoute =
       "./routes/financial-management/adjustment-approvals/index.lazy"
     ).then((d) => d.Route),
   )
-const EvaluatorAiStudentsIndexRoute =
-  EvaluatorAiStudentsIndexRouteImport.update({
-    id: "/evaluator-ai/students/",
-    path: "/evaluator-ai/students/",
-    getParentRoute: () => rootRouteImport,
-  } as any).lazy(() =>
-    import("./routes/evaluator-ai/students/index.lazy").then((d) => d.Route),
-  )
-const EvaluatorAiEvaluationIndexRoute =
-  EvaluatorAiEvaluationIndexRouteImport.update({
-    id: "/evaluator-ai/evaluation/",
-    path: "/evaluator-ai/evaluation/",
-    getParentRoute: () => rootRouteImport,
-  } as any).lazy(() =>
-    import("./routes/evaluator-ai/evaluation/index.lazy").then((d) => d.Route),
-  )
-const EvaluatorAiAssessmentIndexRoute =
-  EvaluatorAiAssessmentIndexRouteImport.update({
-    id: "/evaluator-ai/assessment/",
-    path: "/evaluator-ai/assessment/",
-    getParentRoute: () => rootRouteImport,
-  } as any).lazy(() =>
-    import("./routes/evaluator-ai/assessment/index.lazy").then((d) => d.Route),
-  )
 const EvaluationEvaluationsIndexRoute =
   EvaluationEvaluationsIndexRouteImport.update({
     id: "/evaluation/evaluations/",
@@ -985,6 +1226,48 @@ const EvaluationEvaluationToolIndexRoute =
       (d) => d.Route,
     ),
   )
+const ErpPeopleIndexRoute = ErpPeopleIndexRouteImport.update({
+  id: "/erp/people/",
+  path: "/erp/people/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/erp/people/index.lazy").then((d) => d.Route),
+)
+const ErpPayrollIndexRoute = ErpPayrollIndexRouteImport.update({
+  id: "/erp/payroll/",
+  path: "/erp/payroll/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/erp/payroll/index.lazy").then((d) => d.Route),
+)
+const ErpMyHrIndexRoute = ErpMyHrIndexRouteImport.update({
+  id: "/erp/my-hr/",
+  path: "/erp/my-hr/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/erp/my-hr/index.lazy").then((d) => d.Route),
+)
+const ErpLeaveIndexRoute = ErpLeaveIndexRouteImport.update({
+  id: "/erp/leave/",
+  path: "/erp/leave/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/erp/leave/index.lazy").then((d) => d.Route),
+)
+const ErpComplianceIndexRoute = ErpComplianceIndexRouteImport.update({
+  id: "/erp/compliance/",
+  path: "/erp/compliance/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/erp/compliance/index.lazy").then((d) => d.Route),
+)
+const ErpAttendanceIndexRoute = ErpAttendanceIndexRouteImport.update({
+  id: "/erp/attendance/",
+  path: "/erp/attendance/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/erp/attendance/index.lazy").then((d) => d.Route),
+)
 const EngagementEnginesInboxIndexRoute =
   EngagementEnginesInboxIndexRouteImport.update({
     id: "/engagement-engines/inbox/",
@@ -992,6 +1275,16 @@ const EngagementEnginesInboxIndexRoute =
     getParentRoute: () => rootRouteImport,
   } as any).lazy(() =>
     import("./routes/engagement-engines/inbox/index.lazy").then((d) => d.Route),
+  )
+const EngagementEnginesDashboardIndexRoute =
+  EngagementEnginesDashboardIndexRouteImport.update({
+    id: "/engagement-engines/dashboard/",
+    path: "/engagement-engines/dashboard/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/engagement-engines/dashboard/index.lazy").then(
+      (d) => d.Route,
+    ),
   )
 const EngagementEnginesCreateIndexRoute =
   EngagementEnginesCreateIndexRouteImport.update({
@@ -1045,6 +1338,86 @@ const CommunicationInboxIndexRoute = CommunicationInboxIndexRouteImport.update({
 } as any).lazy(() =>
   import("./routes/communication/inbox/index.lazy").then((d) => d.Route),
 )
+const CommunicationDashboardIndexRoute =
+  CommunicationDashboardIndexRouteImport.update({
+    id: "/communication/dashboard/",
+    path: "/communication/dashboard/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/communication/dashboard/index.lazy").then((d) => d.Route),
+  )
+const CommerceSettingsIndexRoute = CommerceSettingsIndexRouteImport.update({
+  id: "/commerce/settings/",
+  path: "/commerce/settings/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/commerce/settings/index.lazy").then((d) => d.Route),
+)
+const CommerceReportsIndexRoute = CommerceReportsIndexRouteImport.update({
+  id: "/commerce/reports/",
+  path: "/commerce/reports/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/commerce/reports/index.lazy").then((d) => d.Route),
+)
+const CommerceProductsIndexRoute = CommerceProductsIndexRouteImport.update({
+  id: "/commerce/products/",
+  path: "/commerce/products/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/commerce/products/index.lazy").then((d) => d.Route),
+)
+const CommercePosIndexRoute = CommercePosIndexRouteImport.update({
+  id: "/commerce/pos/",
+  path: "/commerce/pos/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/commerce/pos/index.lazy").then((d) => d.Route),
+)
+const CommerceParallelRunIndexRoute =
+  CommerceParallelRunIndexRouteImport.update({
+    id: "/commerce/parallel-run/",
+    path: "/commerce/parallel-run/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/parallel-run/index.lazy").then((d) => d.Route),
+  )
+const CommerceOrdersIndexRoute = CommerceOrdersIndexRouteImport.update({
+  id: "/commerce/orders/",
+  path: "/commerce/orders/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/commerce/orders/index.lazy").then((d) => d.Route),
+)
+const CommerceInventoryIndexRoute = CommerceInventoryIndexRouteImport.update({
+  id: "/commerce/inventory/",
+  path: "/commerce/inventory/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/commerce/inventory/index.lazy").then((d) => d.Route),
+)
+const CommerceDiscountsIndexRoute = CommerceDiscountsIndexRouteImport.update({
+  id: "/commerce/discounts/",
+  path: "/commerce/discounts/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/commerce/discounts/index.lazy").then((d) => d.Route),
+)
+const CommerceCustomersIndexRoute = CommerceCustomersIndexRouteImport.update({
+  id: "/commerce/customers/",
+  path: "/commerce/customers/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/commerce/customers/index.lazy").then((d) => d.Route),
+)
+const CommerceCollectionsIndexRoute =
+  CommerceCollectionsIndexRouteImport.update({
+    id: "/commerce/collections/",
+    path: "/commerce/collections/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/collections/index.lazy").then((d) => d.Route),
+  )
 const CertificateGenerationStudentDataIndexRoute =
   CertificateGenerationStudentDataIndexRouteImport.update({
     id: "/certificate-generation/student-data/",
@@ -1055,6 +1428,20 @@ const CertificateGenerationStudentDataIndexRoute =
       (d) => d.Route,
     ),
   )
+const CallingDashboardIndexRoute = CallingDashboardIndexRouteImport.update({
+  id: "/calling/dashboard/",
+  path: "/calling/dashboard/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/calling/dashboard/index.lazy").then((d) => d.Route),
+)
+const CallingCallQueueIndexRoute = CallingCallQueueIndexRouteImport.update({
+  id: "/calling/call-queue/",
+  path: "/calling/call-queue/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/calling/call-queue/index.lazy").then((d) => d.Route),
+)
 const CallingAiAgentsIndexRoute = CallingAiAgentsIndexRouteImport.update({
   id: "/calling/ai-agents/",
   path: "/calling/ai-agents/",
@@ -1062,6 +1449,14 @@ const CallingAiAgentsIndexRoute = CallingAiAgentsIndexRouteImport.update({
 } as any).lazy(() =>
   import("./routes/calling/ai-agents/index.lazy").then((d) => d.Route),
 )
+const AutomationDashboardIndexRoute =
+  AutomationDashboardIndexRouteImport.update({
+    id: "/automation/dashboard/",
+    path: "/automation/dashboard/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/automation/dashboard/index.lazy").then((d) => d.Route),
+  )
 const AutomationChatbotFlowsIndexRoute =
   AutomationChatbotFlowsIndexRouteImport.update({
     id: "/automation/chatbot-flows/",
@@ -1069,6 +1464,16 @@ const AutomationChatbotFlowsIndexRoute =
     getParentRoute: () => rootRouteImport,
   } as any).lazy(() =>
     import("./routes/automation/chatbot-flows/index.lazy").then((d) => d.Route),
+  )
+const AudienceManagerSocialPostsIndexRoute =
+  AudienceManagerSocialPostsIndexRouteImport.update({
+    id: "/audience-manager/social-posts/",
+    path: "/audience-manager/social-posts/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/audience-manager/social-posts/index.lazy").then(
+      (d) => d.Route,
+    ),
   )
 const AudienceManagerReportsIndexRoute =
   AudienceManagerReportsIndexRouteImport.update({
@@ -1106,6 +1511,16 @@ const AudienceManagerListIndexRoute =
   } as any).lazy(() =>
     import("./routes/audience-manager/list/index.lazy").then((d) => d.Route),
   )
+const AudienceManagerLeadLookupIndexRoute =
+  AudienceManagerLeadLookupIndexRouteImport.update({
+    id: "/audience-manager/lead-lookup/",
+    path: "/audience-manager/lead-lookup/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/audience-manager/lead-lookup/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
 const AudienceManagerLeadBoardIndexRoute =
   AudienceManagerLeadBoardIndexRouteImport.update({
     id: "/audience-manager/lead-board/",
@@ -1113,6 +1528,16 @@ const AudienceManagerLeadBoardIndexRoute =
     getParentRoute: () => rootRouteImport,
   } as any).lazy(() =>
     import("./routes/audience-manager/lead-board/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const AudienceManagerLeadAgentIndexRoute =
+  AudienceManagerLeadAgentIndexRouteImport.update({
+    id: "/audience-manager/lead-agent/",
+    path: "/audience-manager/lead-agent/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/audience-manager/lead-agent/index.lazy").then(
       (d) => d.Route,
     ),
   )
@@ -1146,6 +1571,16 @@ const AudienceManagerAiIntelligenceIndexRoute =
       (d) => d.Route,
     ),
   )
+const AudienceManagerAdPerformanceIndexRoute =
+  AudienceManagerAdPerformanceIndexRouteImport.update({
+    id: "/audience-manager/ad-performance/",
+    path: "/audience-manager/ad-performance/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/audience-manager/ad-performance/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
 const AssessmentQuestionPapersIndexRoute =
   AssessmentQuestionPapersIndexRouteImport.update({
     id: "/assessment/question-papers/",
@@ -1156,10 +1591,26 @@ const AssessmentQuestionPapersIndexRoute =
       (d) => d.Route,
     ),
   )
+const AssessmentQuestionLibraryIndexRoute =
+  AssessmentQuestionLibraryIndexRouteImport.update({
+    id: "/assessment/question-library/",
+    path: "/assessment/question-library/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/assessment/question-library/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
 const AssessmentEvaluationAiIndexRoute =
   AssessmentEvaluationAiIndexRouteImport.update({
     id: "/assessment/evaluation-ai/",
     path: "/assessment/evaluation-ai/",
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AssessmentDashboardIndexRoute =
+  AssessmentDashboardIndexRouteImport.update({
+    id: "/assessment/dashboard/",
+    path: "/assessment/dashboard/",
     getParentRoute: () => rootRouteImport,
   } as any)
 const AssessmentAssessmentListIndexRoute =
@@ -1448,6 +1899,12 @@ const StudyLibraryLiveSessionFeedbackIndexRoute =
     path: "/study-library/live-session/feedback/",
     getParentRoute: () => rootRouteImport,
   } as any)
+const StudyLibraryLiveSessionDashboardIndexRoute =
+  StudyLibraryLiveSessionDashboardIndexRouteImport.update({
+    id: "/study-library/live-session/dashboard/",
+    path: "/study-library/live-session/dashboard/",
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const StudyLibraryCoursesCourseDetailsIndexRoute =
   StudyLibraryCoursesCourseDetailsIndexRouteImport.update({
     id: "/study-library/courses/course-details/",
@@ -1492,22 +1949,323 @@ const MentorshipMentorsMentorIdIndexRoute =
       (d) => d.Route,
     ),
   )
-const EvaluatorAiEvaluationStudentSummaryIndexRoute =
-  EvaluatorAiEvaluationStudentSummaryIndexRouteImport.update({
-    id: "/evaluator-ai/evaluation/student-summary/",
-    path: "/evaluator-ai/evaluation/student-summary/",
+const ErpPeopleStaffBridgeIndexRoute =
+  ErpPeopleStaffBridgeIndexRouteImport.update({
+    id: "/erp/people/staff-bridge/",
+    path: "/erp/people/staff-bridge/",
     getParentRoute: () => rootRouteImport,
-  } as any)
-const EvaluatorAiAssessmentCreateAssessmentIndexRoute =
-  EvaluatorAiAssessmentCreateAssessmentIndexRouteImport.update({
-    id: "/evaluator-ai/assessment/create-assessment/",
-    path: "/evaluator-ai/assessment/create-assessment/",
+  } as any).lazy(() =>
+    import("./routes/erp/people/staff-bridge/index.lazy").then((d) => d.Route),
+  )
+const ErpPeopleOrgIndexRoute = ErpPeopleOrgIndexRouteImport.update({
+  id: "/erp/people/org/",
+  path: "/erp/people/org/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/erp/people/org/index.lazy").then((d) => d.Route),
+)
+const ErpPeopleEmployeeIdIndexRoute =
+  ErpPeopleEmployeeIdIndexRouteImport.update({
+    id: "/erp/people/$employeeId/",
+    path: "/erp/people/$employeeId/",
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any).lazy(() =>
+    import("./routes/erp/people/$employeeId/index.lazy").then((d) => d.Route),
+  )
+const ErpPayrollSalarySetupIndexRoute =
+  ErpPayrollSalarySetupIndexRouteImport.update({
+    id: "/erp/payroll/salary-setup/",
+    path: "/erp/payroll/salary-setup/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/erp/payroll/salary-setup/index.lazy").then((d) => d.Route),
+  )
+const ErpPayrollAdjustmentsIndexRoute =
+  ErpPayrollAdjustmentsIndexRouteImport.update({
+    id: "/erp/payroll/adjustments/",
+    path: "/erp/payroll/adjustments/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/erp/payroll/adjustments/index.lazy").then((d) => d.Route),
+  )
+const ErpPayrollRunIdIndexRoute = ErpPayrollRunIdIndexRouteImport.update({
+  id: "/erp/payroll/$runId/",
+  path: "/erp/payroll/$runId/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/erp/payroll/$runId/index.lazy").then((d) => d.Route),
+)
+const ErpMyHrTaxIndexRoute = ErpMyHrTaxIndexRouteImport.update({
+  id: "/erp/my-hr/tax/",
+  path: "/erp/my-hr/tax/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/erp/my-hr/tax/index.lazy").then((d) => d.Route),
+)
+const ErpMyHrPayslipsIndexRoute = ErpMyHrPayslipsIndexRouteImport.update({
+  id: "/erp/my-hr/payslips/",
+  path: "/erp/my-hr/payslips/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/erp/my-hr/payslips/index.lazy").then((d) => d.Route),
+)
+const ErpMyHrLeaveIndexRoute = ErpMyHrLeaveIndexRouteImport.update({
+  id: "/erp/my-hr/leave/",
+  path: "/erp/my-hr/leave/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/erp/my-hr/leave/index.lazy").then((d) => d.Route),
+)
+const ErpMyHrClaimsIndexRoute = ErpMyHrClaimsIndexRouteImport.update({
+  id: "/erp/my-hr/claims/",
+  path: "/erp/my-hr/claims/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/erp/my-hr/claims/index.lazy").then((d) => d.Route),
+)
+const ErpLeaveSetupIndexRoute = ErpLeaveSetupIndexRouteImport.update({
+  id: "/erp/leave/setup/",
+  path: "/erp/leave/setup/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/erp/leave/setup/index.lazy").then((d) => d.Route),
+)
+const ErpLeaveBalancesIndexRoute = ErpLeaveBalancesIndexRouteImport.update({
+  id: "/erp/leave/balances/",
+  path: "/erp/leave/balances/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/erp/leave/balances/index.lazy").then((d) => d.Route),
+)
+const ErpFinancePnlIndexRoute = ErpFinancePnlIndexRouteImport.update({
+  id: "/erp/finance/pnl/",
+  path: "/erp/finance/pnl/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/erp/finance/pnl/index.lazy").then((d) => d.Route),
+)
+const ErpFinanceJournalIndexRoute = ErpFinanceJournalIndexRouteImport.update({
+  id: "/erp/finance/journal/",
+  path: "/erp/finance/journal/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/erp/finance/journal/index.lazy").then((d) => d.Route),
+)
+const ErpComplianceProvisionsIndexRoute =
+  ErpComplianceProvisionsIndexRouteImport.update({
+    id: "/erp/compliance/provisions/",
+    path: "/erp/compliance/provisions/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/erp/compliance/provisions/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const ErpComplianceChallansIndexRoute =
+  ErpComplianceChallansIndexRouteImport.update({
+    id: "/erp/compliance/challans/",
+    path: "/erp/compliance/challans/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/erp/compliance/challans/index.lazy").then((d) => d.Route),
+  )
+const ErpAttendanceSetupIndexRoute = ErpAttendanceSetupIndexRouteImport.update({
+  id: "/erp/attendance/setup/",
+  path: "/erp/attendance/setup/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/erp/attendance/setup/index.lazy").then((d) => d.Route),
+)
+const ErpAttendanceRegularizationsIndexRoute =
+  ErpAttendanceRegularizationsIndexRouteImport.update({
+    id: "/erp/attendance/regularizations/",
+    path: "/erp/attendance/regularizations/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/erp/attendance/regularizations/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const EngagementEnginesDashboardOutcomesIndexRoute =
+  EngagementEnginesDashboardOutcomesIndexRouteImport.update({
+    id: "/engagement-engines/dashboard/outcomes/",
+    path: "/engagement-engines/dashboard/outcomes/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/engagement-engines/dashboard/outcomes/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const CommerceSettingsTaxClassesIndexRoute =
+  CommerceSettingsTaxClassesIndexRouteImport.update({
+    id: "/commerce/settings/tax-classes/",
+    path: "/commerce/settings/tax-classes/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/settings/tax-classes/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const CommerceSettingsStaffIndexRoute =
+  CommerceSettingsStaffIndexRouteImport.update({
+    id: "/commerce/settings/staff/",
+    path: "/commerce/settings/staff/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/settings/staff/index.lazy").then((d) => d.Route),
+  )
+const CommerceSettingsRegistersIndexRoute =
+  CommerceSettingsRegistersIndexRouteImport.update({
+    id: "/commerce/settings/registers/",
+    path: "/commerce/settings/registers/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/settings/registers/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const CommerceSettingsNotificationsIndexRoute =
+  CommerceSettingsNotificationsIndexRouteImport.update({
+    id: "/commerce/settings/notifications/",
+    path: "/commerce/settings/notifications/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/settings/notifications/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const CommerceSettingsLocationsIndexRoute =
+  CommerceSettingsLocationsIndexRouteImport.update({
+    id: "/commerce/settings/locations/",
+    path: "/commerce/settings/locations/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/settings/locations/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const CommerceSettingsBusinessIndexRoute =
+  CommerceSettingsBusinessIndexRouteImport.update({
+    id: "/commerce/settings/business/",
+    path: "/commerce/settings/business/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/settings/business/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const CommerceReportsAuditIndexRoute =
+  CommerceReportsAuditIndexRouteImport.update({
+    id: "/commerce/reports/audit/",
+    path: "/commerce/reports/audit/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/reports/audit/index.lazy").then((d) => d.Route),
+  )
+const CommerceProductsImportIndexRoute =
+  CommerceProductsImportIndexRouteImport.update({
+    id: "/commerce/products/import/",
+    path: "/commerce/products/import/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/products/import/index.lazy").then((d) => d.Route),
+  )
+const CommerceProductsProductIdIndexRoute =
+  CommerceProductsProductIdIndexRouteImport.update({
+    id: "/commerce/products/$productId/",
+    path: "/commerce/products/$productId/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/products/$productId/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const CommercePosSessionsIndexRoute =
+  CommercePosSessionsIndexRouteImport.update({
+    id: "/commerce/pos/sessions/",
+    path: "/commerce/pos/sessions/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/pos/sessions/index.lazy").then((d) => d.Route),
+  )
+const CommercePosSessionIdIndexRoute =
+  CommercePosSessionIdIndexRouteImport.update({
+    id: "/commerce/pos/$sessionId/",
+    path: "/commerce/pos/$sessionId/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/pos/$sessionId/index.lazy").then((d) => d.Route),
+  )
+const CommerceOrdersRemittancesIndexRoute =
+  CommerceOrdersRemittancesIndexRouteImport.update({
+    id: "/commerce/orders/remittances/",
+    path: "/commerce/orders/remittances/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/orders/remittances/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const CommerceOrdersPrintIndexRoute =
+  CommerceOrdersPrintIndexRouteImport.update({
+    id: "/commerce/orders/print/",
+    path: "/commerce/orders/print/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/orders/print/index.lazy").then((d) => d.Route),
+  )
+const CommerceOrdersPackIndexRoute = CommerceOrdersPackIndexRouteImport.update({
+  id: "/commerce/orders/pack/",
+  path: "/commerce/orders/pack/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/commerce/orders/pack/index.lazy").then((d) => d.Route),
+)
+const CommerceOrdersNewIndexRoute = CommerceOrdersNewIndexRouteImport.update({
+  id: "/commerce/orders/new/",
+  path: "/commerce/orders/new/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/commerce/orders/new/index.lazy").then((d) => d.Route),
+)
+const CommerceOrdersOrderIdIndexRoute =
+  CommerceOrdersOrderIdIndexRouteImport.update({
+    id: "/commerce/orders/$orderId/",
+    path: "/commerce/orders/$orderId/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/orders/$orderId/index.lazy").then((d) => d.Route),
+  )
+const CommerceCustomersCustomerIdIndexRoute =
+  CommerceCustomersCustomerIdIndexRouteImport.update({
+    id: "/commerce/customers/$customerId/",
+    path: "/commerce/customers/$customerId/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/customers/$customerId/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
 const AudienceManagerListCampaignUsersIndexRoute =
   AudienceManagerListCampaignUsersIndexRouteImport.update({
     id: "/audience-manager/list/campaign-users/",
     path: "/audience-manager/list/campaign-users/",
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AudienceManagerLeadAgentAgentIdIndexRoute =
+  AudienceManagerLeadAgentAgentIdIndexRouteImport.update({
+    id: "/audience-manager/lead-agent/$agentId/",
+    path: "/audience-manager/lead-agent/$agentId/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/audience-manager/lead-agent/$agentId/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const AssessmentSubmissionAttemptIdIndexRoute =
+  AssessmentSubmissionAttemptIdIndexRouteImport.update({
+    id: "/assessment/submission/$attemptId/",
+    path: "/assessment/submission/$attemptId/",
     getParentRoute: () => rootRouteImport,
   } as any)
 const AssessmentExportAssessmentIdIndexRoute =
@@ -1654,6 +2412,12 @@ const ManagePagesProductPagesEditorProductPageIdRoute =
     path: "/manage-pages/product-pages/editor/$productPageId",
     getParentRoute: () => rootRouteImport,
   } as any)
+const ManagePagesBlogEditorPostIdRoute =
+  ManagePagesBlogEditorPostIdRouteImport.update({
+    id: "/manage-pages/blog/editor/$postId",
+    path: "/manage-pages/blog/editor/$postId",
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const StudyLibraryLiveSessionScheduleStep2IndexRoute =
   StudyLibraryLiveSessionScheduleStep2IndexRouteImport.update({
     id: "/study-library/live-session/schedule/step2/",
@@ -1712,6 +2476,86 @@ const HomeworkCreationCreateAssessmentAssessmentIdExamtypeIndexRoute =
       "./routes/homework-creation/create-assessment/$assessmentId/$examtype/index.lazy"
     ).then((d) => d.Route),
   )
+const CommercePosSessionsSessionIdIndexRoute =
+  CommercePosSessionsSessionIdIndexRouteImport.update({
+    id: "/commerce/pos/sessions/$sessionId/",
+    path: "/commerce/pos/sessions/$sessionId/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/pos/sessions/$sessionId/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const CommercePosSessionIdReturnsIndexRoute =
+  CommercePosSessionIdReturnsIndexRouteImport.update({
+    id: "/commerce/pos/$sessionId/returns/",
+    path: "/commerce/pos/$sessionId/returns/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/pos/$sessionId/returns/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const CommercePosSessionIdCloseIndexRoute =
+  CommercePosSessionIdCloseIndexRouteImport.update({
+    id: "/commerce/pos/$sessionId/close/",
+    path: "/commerce/pos/$sessionId/close/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/pos/$sessionId/close/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const CommercePosSessionIdBillsIndexRoute =
+  CommercePosSessionIdBillsIndexRouteImport.update({
+    id: "/commerce/pos/$sessionId/bills/",
+    path: "/commerce/pos/$sessionId/bills/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/pos/$sessionId/bills/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const CommercePosSessionIdBillBookIndexRoute =
+  CommercePosSessionIdBillBookIndexRouteImport.update({
+    id: "/commerce/pos/$sessionId/bill-book/",
+    path: "/commerce/pos/$sessionId/bill-book/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/pos/$sessionId/bill-book/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const CommerceInventoryTransfersTransferIdIndexRoute =
+  CommerceInventoryTransfersTransferIdIndexRouteImport.update({
+    id: "/commerce/inventory/transfers/$transferId/",
+    path: "/commerce/inventory/transfers/$transferId/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/inventory/transfers/$transferId/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const CommerceInventoryReceiptsReceiptIdIndexRoute =
+  CommerceInventoryReceiptsReceiptIdIndexRouteImport.update({
+    id: "/commerce/inventory/receipts/$receiptId/",
+    path: "/commerce/inventory/receipts/$receiptId/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/inventory/receipts/$receiptId/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const CommerceInventoryCountsCountIdIndexRoute =
+  CommerceInventoryCountsCountIdIndexRouteImport.update({
+    id: "/commerce/inventory/counts/$countId/",
+    path: "/commerce/inventory/counts/$countId/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/inventory/counts/$countId/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
 const AudienceManagerListCampaignUsersAddIndexRoute =
   AudienceManagerListCampaignUsersAddIndexRouteImport.update({
     id: "/audience-manager/list/campaign-users/add/",
@@ -1732,6 +2576,16 @@ const AssessmentCreateAssessmentAssessmentIdExamtypeIndexRoute =
   } as any).lazy(() =>
     import(
       "./routes/assessment/create-assessment/$assessmentId/$examtype/index.lazy"
+    ).then((d) => d.Route),
+  )
+const AssessmentAssessmentListScanStationAssessmentIdIndexRoute =
+  AssessmentAssessmentListScanStationAssessmentIdIndexRouteImport.update({
+    id: "/assessment/assessment-list/scan-station/$assessmentId/",
+    path: "/assessment/assessment-list/scan-station/$assessmentId/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import(
+      "./routes/assessment/assessment-list/scan-station/$assessmentId/index.lazy"
     ).then((d) => d.Route),
   )
 const AssessmentAssessmentListOfflineEntryAssessmentIdIndexRoute =
@@ -1850,8 +2704,10 @@ const AssessmentAssessmentListAssessmentDetailsAssessmentIdExamTypeAssesssmentTy
   )
 
 export interface FileRoutesByFullPath {
+  "/evalezy": typeof EvalezyRouteRouteWithChildren
   "/agent-chat": typeof AgentChatRoute
   "/chat": typeof ChatRoute
+  "/demo": typeof DemoRoute
   "/error-page": typeof ErrorPageRoute
   "/locked-feature": typeof LockedFeatureRoute
   "/explore-ai": typeof ExploreAiLazyRoute
@@ -1860,11 +2716,24 @@ export interface FileRoutesByFullPath {
   "/pricing": typeof PricingLazyRoute
   "/counsellors/$userId": typeof CounsellorsUserIdRoute
   "/engagement-engines/$engineId": typeof EngagementEnginesEngineIdRoute
+  "/evalezy/$assessmentId": typeof EvalezyAssessmentIdRoute
+  "/evalezy/credits": typeof EvalezyCreditsRoute
+  "/evalezy/help": typeof EvalezyHelpRoute
+  "/evalezy/new": typeof EvalezyNewRoute
+  "/evalezy/plan": typeof EvalezyPlanRoute
+  "/evalezy/profile": typeof EvalezyProfileRoute
+  "/evalezy/settings": typeof EvalezySettingsRoute
   "/knowledge-base/$kbId": typeof KnowledgeBaseKbIdRoute
   "/knowledge-base/publish": typeof KnowledgeBasePublishRoute
+  "/mcp/authorize": typeof McpAuthorizeRoute
+  "/signup/start": typeof SignupStartRoute
+  "/telleo/api": typeof TelleoApiRoute
+  "/telleo/plan": typeof TelleoPlanRoute
+  "/telleo/setup": typeof TelleoSetupRoute
   "/vim/dashboard": typeof VimDashboardRoute
   "/vim/login": typeof VimLoginRoute
   "/vim/waitlist": typeof VimWaitlistRoute
+  "/access-passes/": typeof AccessPassesIndexRoute
   "/admin-activity-logs/": typeof AdminActivityLogsIndexRoute
   "/admin-package-management/": typeof AdminPackageManagementIndexRoute
   "/admissions/": typeof AdmissionsIndexRoute
@@ -1873,17 +2742,22 @@ export interface FileRoutesByFullPath {
   "/auth-transfer/": typeof AuthTransferIndexRoute
   "/center-management/": typeof CenterManagementIndexRoute
   "/challenge-analytics/": typeof ChallengeAnalyticsIndexRoute
+  "/commerce/": typeof CommerceIndexRoute
   "/community/": typeof CommunityIndexRoute
   "/connector-center-details/": typeof ConnectorCenterDetailsIndexRoute
   "/counsellors/": typeof CounsellorsIndexRoute
   "/dashboard/": typeof DashboardIndexRoute
   "/engagement-engines/": typeof EngagementEnginesIndexRoute
+  "/engagement/": typeof EngagementIndexRoute
+  "/evalezy/": typeof EvalezyIndexRoute
   "/evaluation/": typeof EvaluationIndexRoute
-  "/evaluator-ai/": typeof EvaluatorAiIndexRoute
   "/institute-pulse/": typeof InstitutePulseIndexRoute
   "/instructor-copilot/": typeof InstructorCopilotIndexRoute
   "/knowledge-base/": typeof KnowledgeBaseIndexRoute
+  "/learner-home/": typeof LearnerHomeIndexRoute
   "/learner-insights/": typeof LearnerInsightsIndexRoute
+  "/live-activity/": typeof LiveActivityIndexRoute
+  "/lms-dashboard/": typeof LmsDashboardIndexRoute
   "/login/": typeof LoginIndexRoute
   "/manage-bookings/": typeof ManageBookingsIndexRoute
   "/manage-contacts/": typeof ManageContactsIndexRoute
@@ -1897,6 +2771,7 @@ export interface FileRoutesByFullPath {
   "/membership-expiry/": typeof MembershipExpiryIndexRoute
   "/membership-stats/": typeof MembershipStatsIndexRoute
   "/payment-dashboard/": typeof PaymentDashboardIndexRoute
+  "/plan-week/": typeof PlanWeekIndexRoute
   "/planning/": typeof PlanningIndexRoute
   "/sales-dashboard/": typeof SalesDashboardIndexRoute
   "/settings/": typeof SettingsIndexRoute
@@ -1933,31 +2808,55 @@ export interface FileRoutesByFullPath {
   "/announcement/history/": typeof AnnouncementHistoryIndexRoute
   "/announcement/schedule/": typeof AnnouncementScheduleIndexRoute
   "/assessment/assessment-list/": typeof AssessmentAssessmentListIndexRoute
+  "/assessment/dashboard/": typeof AssessmentDashboardIndexRoute
   "/assessment/evaluation-ai/": typeof AssessmentEvaluationAiIndexRoute
+  "/assessment/question-library/": typeof AssessmentQuestionLibraryIndexRoute
   "/assessment/question-papers/": typeof AssessmentQuestionPapersIndexRoute
+  "/audience-manager/ad-performance/": typeof AudienceManagerAdPerformanceIndexRoute
   "/audience-manager/ai-intelligence/": typeof AudienceManagerAiIntelligenceIndexRoute
   "/audience-manager/call-log/": typeof AudienceManagerCallLogIndexRoute
   "/audience-manager/follow-ups/": typeof AudienceManagerFollowUpsIndexRoute
+  "/audience-manager/lead-agent/": typeof AudienceManagerLeadAgentIndexRoute
   "/audience-manager/lead-board/": typeof AudienceManagerLeadBoardIndexRoute
+  "/audience-manager/lead-lookup/": typeof AudienceManagerLeadLookupIndexRoute
   "/audience-manager/list/": typeof AudienceManagerListIndexRoute
   "/audience-manager/onboarding/": typeof AudienceManagerOnboardingIndexRoute
   "/audience-manager/recent-leads/": typeof AudienceManagerRecentLeadsIndexRoute
   "/audience-manager/reports/": typeof AudienceManagerReportsIndexRoute
+  "/audience-manager/social-posts/": typeof AudienceManagerSocialPostsIndexRoute
   "/automation/chatbot-flows/": typeof AutomationChatbotFlowsIndexRoute
+  "/automation/dashboard/": typeof AutomationDashboardIndexRoute
   "/calling/ai-agents/": typeof CallingAiAgentsIndexRoute
+  "/calling/call-queue/": typeof CallingCallQueueIndexRoute
+  "/calling/dashboard/": typeof CallingDashboardIndexRoute
   "/certificate-generation/student-data/": typeof CertificateGenerationStudentDataIndexRoute
+  "/commerce/collections/": typeof CommerceCollectionsIndexRoute
+  "/commerce/customers/": typeof CommerceCustomersIndexRoute
+  "/commerce/discounts/": typeof CommerceDiscountsIndexRoute
+  "/commerce/inventory/": typeof CommerceInventoryIndexRoute
+  "/commerce/orders/": typeof CommerceOrdersIndexRoute
+  "/commerce/parallel-run/": typeof CommerceParallelRunIndexRoute
+  "/commerce/pos/": typeof CommercePosIndexRoute
+  "/commerce/products/": typeof CommerceProductsIndexRoute
+  "/commerce/reports/": typeof CommerceReportsIndexRoute
+  "/commerce/settings/": typeof CommerceSettingsIndexRoute
+  "/communication/dashboard/": typeof CommunicationDashboardIndexRoute
   "/communication/inbox/": typeof CommunicationInboxIndexRoute
   "/communication/notification-hub/": typeof CommunicationNotificationHubIndexRoute
   "/communication/whatsapp-templates/": typeof CommunicationWhatsappTemplatesIndexRoute
   "/community/question-paper/": typeof CommunityQuestionPaperIndexRoute
   "/content/$contentId/": typeof ContentContentIdIndexRoute
   "/engagement-engines/create/": typeof EngagementEnginesCreateIndexRoute
+  "/engagement-engines/dashboard/": typeof EngagementEnginesDashboardIndexRoute
   "/engagement-engines/inbox/": typeof EngagementEnginesInboxIndexRoute
+  "/erp/attendance/": typeof ErpAttendanceIndexRoute
+  "/erp/compliance/": typeof ErpComplianceIndexRoute
+  "/erp/leave/": typeof ErpLeaveIndexRoute
+  "/erp/my-hr/": typeof ErpMyHrIndexRoute
+  "/erp/payroll/": typeof ErpPayrollIndexRoute
+  "/erp/people/": typeof ErpPeopleIndexRoute
   "/evaluation/evaluation-tool/": typeof EvaluationEvaluationToolIndexRoute
   "/evaluation/evaluations/": typeof EvaluationEvaluationsIndexRoute
-  "/evaluator-ai/assessment/": typeof EvaluatorAiAssessmentIndexRoute
-  "/evaluator-ai/evaluation/": typeof EvaluatorAiEvaluationIndexRoute
-  "/evaluator-ai/students/": typeof EvaluatorAiStudentsIndexRoute
   "/financial-management/adjustment-approvals/": typeof FinancialManagementAdjustmentApprovalsIndexRoute
   "/financial-management/collection-dashboard/": typeof FinancialManagementCollectionDashboardIndexRoute
   "/financial-management/fee-plans/": typeof FinancialManagementFeePlansIndexRoute
@@ -1966,13 +2865,18 @@ export interface FileRoutesByFullPath {
   "/homework-creation/assessment-list/": typeof HomeworkCreationAssessmentListIndexRoute
   "/login/$key/": typeof LoginKeyIndexRoute
   "/login/forgot-password/": typeof LoginForgotPasswordIndexRoute
+  "/manage-contacts/dashboard/": typeof ManageContactsDashboardIndexRoute
   "/manage-institute/batches/": typeof ManageInstituteBatchesIndexRoute
+  "/manage-institute/overview/": typeof ManageInstituteOverviewIndexRoute
   "/manage-institute/sessions/": typeof ManageInstituteSessionsIndexRoute
   "/manage-institute/teams/": typeof ManageInstituteTeamsIndexRoute
+  "/manage-pages/blog/": typeof ManagePagesBlogIndexRoute
   "/manage-pages/product-pages/": typeof ManagePagesProductPagesIndexRoute
+  "/manage-pages/site-assistant/": typeof ManagePagesSiteAssistantIndexRoute
   "/manage-students/enroll-requests/": typeof ManageStudentsEnrollRequestsIndexRoute
   "/manage-students/invite/": typeof ManageStudentsInviteIndexRoute
   "/manage-students/students-list/": typeof ManageStudentsStudentsListIndexRoute
+  "/meetings/dashboard/": typeof MeetingsDashboardIndexRoute
   "/meetings/my-schedule/": typeof MeetingsMyScheduleIndexRoute
   "/meetings/team/": typeof MeetingsTeamIndexRoute
   "/mentorship/dashboard/": typeof MentorshipDashboardIndexRoute
@@ -1990,6 +2894,7 @@ export interface FileRoutesByFullPath {
   "/study-library/bulk-content-uploading/": typeof StudyLibraryBulkContentUploadingIndexRoute
   "/study-library/courses/": typeof StudyLibraryCoursesIndexRoute
   "/study-library/doubt-management/": typeof StudyLibraryDoubtManagementIndexRoute
+  "/study-library/gamification/": typeof StudyLibraryGamificationIndexRoute
   "/study-library/live-session/": typeof StudyLibraryLiveSessionIndexRoute
   "/study-library/reports/": typeof StudyLibraryReportsIndexRoute
   "/study-library/student-ai/": typeof StudyLibraryStudentAiIndexRoute
@@ -2004,6 +2909,7 @@ export interface FileRoutesByFullPath {
   "/workflow/$workflowId/": typeof WorkflowWorkflowIdIndexRoute
   "/workflow/create/": typeof WorkflowCreateIndexRoute
   "/workflow/list/": typeof WorkflowListIndexRoute
+  "/manage-pages/blog/editor/$postId": typeof ManagePagesBlogEditorPostIdRoute
   "/manage-pages/product-pages/editor/$productPageId": typeof ManagePagesProductPagesEditorProductPageIdRoute
   "/settings/leads/pools/$poolId": typeof SettingsLeadsPoolsPoolIdRoute
   "/study-library/live-session/host/$scheduleId": typeof StudyLibraryLiveSessionHostScheduleIdRoute
@@ -2021,14 +2927,51 @@ export interface FileRoutesByFullPath {
   "/ai-center/ai-tools/vsmart-sorter/": typeof AiCenterAiToolsVsmartSorterIndexRoute
   "/ai-center/ai-tools/vsmart-upload/": typeof AiCenterAiToolsVsmartUploadIndexRoute
   "/assessment/export/$assessmentId/": typeof AssessmentExportAssessmentIdIndexRoute
+  "/assessment/submission/$attemptId/": typeof AssessmentSubmissionAttemptIdIndexRoute
+  "/audience-manager/lead-agent/$agentId/": typeof AudienceManagerLeadAgentAgentIdIndexRoute
   "/audience-manager/list/campaign-users/": typeof AudienceManagerListCampaignUsersIndexRoute
-  "/evaluator-ai/assessment/create-assessment/": typeof EvaluatorAiAssessmentCreateAssessmentIndexRoute
-  "/evaluator-ai/evaluation/student-summary/": typeof EvaluatorAiEvaluationStudentSummaryIndexRoute
+  "/commerce/customers/$customerId/": typeof CommerceCustomersCustomerIdIndexRoute
+  "/commerce/orders/$orderId/": typeof CommerceOrdersOrderIdIndexRoute
+  "/commerce/orders/new/": typeof CommerceOrdersNewIndexRoute
+  "/commerce/orders/pack/": typeof CommerceOrdersPackIndexRoute
+  "/commerce/orders/print/": typeof CommerceOrdersPrintIndexRoute
+  "/commerce/orders/remittances/": typeof CommerceOrdersRemittancesIndexRoute
+  "/commerce/pos/$sessionId/": typeof CommercePosSessionIdIndexRoute
+  "/commerce/pos/sessions/": typeof CommercePosSessionsIndexRoute
+  "/commerce/products/$productId/": typeof CommerceProductsProductIdIndexRoute
+  "/commerce/products/import/": typeof CommerceProductsImportIndexRoute
+  "/commerce/reports/audit/": typeof CommerceReportsAuditIndexRoute
+  "/commerce/settings/business/": typeof CommerceSettingsBusinessIndexRoute
+  "/commerce/settings/locations/": typeof CommerceSettingsLocationsIndexRoute
+  "/commerce/settings/notifications/": typeof CommerceSettingsNotificationsIndexRoute
+  "/commerce/settings/registers/": typeof CommerceSettingsRegistersIndexRoute
+  "/commerce/settings/staff/": typeof CommerceSettingsStaffIndexRoute
+  "/commerce/settings/tax-classes/": typeof CommerceSettingsTaxClassesIndexRoute
+  "/engagement-engines/dashboard/outcomes/": typeof EngagementEnginesDashboardOutcomesIndexRoute
+  "/erp/attendance/regularizations/": typeof ErpAttendanceRegularizationsIndexRoute
+  "/erp/attendance/setup/": typeof ErpAttendanceSetupIndexRoute
+  "/erp/compliance/challans/": typeof ErpComplianceChallansIndexRoute
+  "/erp/compliance/provisions/": typeof ErpComplianceProvisionsIndexRoute
+  "/erp/finance/journal/": typeof ErpFinanceJournalIndexRoute
+  "/erp/finance/pnl/": typeof ErpFinancePnlIndexRoute
+  "/erp/leave/balances/": typeof ErpLeaveBalancesIndexRoute
+  "/erp/leave/setup/": typeof ErpLeaveSetupIndexRoute
+  "/erp/my-hr/claims/": typeof ErpMyHrClaimsIndexRoute
+  "/erp/my-hr/leave/": typeof ErpMyHrLeaveIndexRoute
+  "/erp/my-hr/payslips/": typeof ErpMyHrPayslipsIndexRoute
+  "/erp/my-hr/tax/": typeof ErpMyHrTaxIndexRoute
+  "/erp/payroll/$runId/": typeof ErpPayrollRunIdIndexRoute
+  "/erp/payroll/adjustments/": typeof ErpPayrollAdjustmentsIndexRoute
+  "/erp/payroll/salary-setup/": typeof ErpPayrollSalarySetupIndexRoute
+  "/erp/people/$employeeId/": typeof ErpPeopleEmployeeIdIndexRoute
+  "/erp/people/org/": typeof ErpPeopleOrgIndexRoute
+  "/erp/people/staff-bridge/": typeof ErpPeopleStaffBridgeIndexRoute
   "/mentorship/mentors/$mentorId/": typeof MentorshipMentorsMentorIdIndexRoute
   "/planning/activity-logs/create/": typeof PlanningActivityLogsCreateIndexRoute
   "/planning/planning/create/": typeof PlanningPlanningCreateIndexRoute
   "/study-library/ai-copilot/course-outline/": typeof StudyLibraryAiCopilotCourseOutlineIndexRoute
   "/study-library/courses/course-details/": typeof StudyLibraryCoursesCourseDetailsIndexRoute
+  "/study-library/live-session/dashboard/": typeof StudyLibraryLiveSessionDashboardIndexRoute
   "/study-library/live-session/feedback/": typeof StudyLibraryLiveSessionFeedbackIndexRoute
   "/study-library/live-session/schedule/": typeof StudyLibraryLiveSessionScheduleIndexRoute
   "/study-library/volt/add/": typeof StudyLibraryVoltAddIndexRoute
@@ -2040,9 +2983,18 @@ export interface FileRoutesByFullPath {
   "/workflow/$workflowId/edit/": typeof WorkflowWorkflowIdEditIndexRoute
   "/study-library/ai-copilot/shared/components/YouTubePlayerSimple": typeof StudyLibraryAiCopilotSharedComponentsYouTubePlayerSimpleRoute
   "/assessment/assessment-list/offline-entry/$assessmentId/": typeof AssessmentAssessmentListOfflineEntryAssessmentIdIndexRoute
+  "/assessment/assessment-list/scan-station/$assessmentId/": typeof AssessmentAssessmentListScanStationAssessmentIdIndexRoute
   "/assessment/create-assessment/$assessmentId/$examtype/": typeof AssessmentCreateAssessmentAssessmentIdExamtypeIndexRoute
   "/assessment/evaluation-ai/$attemptId/$processId/": typeof AssessmentEvaluationAiAttemptIdProcessIdIndexRoute
   "/audience-manager/list/campaign-users/add/": typeof AudienceManagerListCampaignUsersAddIndexRoute
+  "/commerce/inventory/counts/$countId/": typeof CommerceInventoryCountsCountIdIndexRoute
+  "/commerce/inventory/receipts/$receiptId/": typeof CommerceInventoryReceiptsReceiptIdIndexRoute
+  "/commerce/inventory/transfers/$transferId/": typeof CommerceInventoryTransfersTransferIdIndexRoute
+  "/commerce/pos/$sessionId/bill-book/": typeof CommercePosSessionIdBillBookIndexRoute
+  "/commerce/pos/$sessionId/bills/": typeof CommercePosSessionIdBillsIndexRoute
+  "/commerce/pos/$sessionId/close/": typeof CommercePosSessionIdCloseIndexRoute
+  "/commerce/pos/$sessionId/returns/": typeof CommercePosSessionIdReturnsIndexRoute
+  "/commerce/pos/sessions/$sessionId/": typeof CommercePosSessionsSessionIdIndexRoute
   "/homework-creation/create-assessment/$assessmentId/$examtype/": typeof HomeworkCreationCreateAssessmentAssessmentIdExamtypeIndexRoute
   "/study-library/ai-copilot/course-outline/generating/": typeof StudyLibraryAiCopilotCourseOutlineGeneratingIndexRoute
   "/study-library/courses/course-details/subjects/": typeof StudyLibraryCoursesCourseDetailsSubjectsIndexRoute
@@ -2063,6 +3015,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   "/agent-chat": typeof AgentChatRoute
   "/chat": typeof ChatRoute
+  "/demo": typeof DemoRoute
   "/error-page": typeof ErrorPageRoute
   "/locked-feature": typeof LockedFeatureRoute
   "/explore-ai": typeof ExploreAiLazyRoute
@@ -2070,11 +3023,24 @@ export interface FileRoutesByTo {
   "/pricing": typeof PricingLazyRoute
   "/counsellors/$userId": typeof CounsellorsUserIdRoute
   "/engagement-engines/$engineId": typeof EngagementEnginesEngineIdRoute
+  "/evalezy/$assessmentId": typeof EvalezyAssessmentIdRoute
+  "/evalezy/credits": typeof EvalezyCreditsRoute
+  "/evalezy/help": typeof EvalezyHelpRoute
+  "/evalezy/new": typeof EvalezyNewRoute
+  "/evalezy/plan": typeof EvalezyPlanRoute
+  "/evalezy/profile": typeof EvalezyProfileRoute
+  "/evalezy/settings": typeof EvalezySettingsRoute
   "/knowledge-base/$kbId": typeof KnowledgeBaseKbIdRoute
   "/knowledge-base/publish": typeof KnowledgeBasePublishRoute
+  "/mcp/authorize": typeof McpAuthorizeRoute
+  "/signup/start": typeof SignupStartRoute
+  "/telleo/api": typeof TelleoApiRoute
+  "/telleo/plan": typeof TelleoPlanRoute
+  "/telleo/setup": typeof TelleoSetupRoute
   "/vim/dashboard": typeof VimDashboardRoute
   "/vim/login": typeof VimLoginRoute
   "/vim/waitlist": typeof VimWaitlistRoute
+  "/access-passes": typeof AccessPassesIndexRoute
   "/admin-activity-logs": typeof AdminActivityLogsIndexRoute
   "/admin-package-management": typeof AdminPackageManagementIndexRoute
   "/admissions": typeof AdmissionsIndexRoute
@@ -2083,17 +3049,22 @@ export interface FileRoutesByTo {
   "/auth-transfer": typeof AuthTransferIndexRoute
   "/center-management": typeof CenterManagementIndexRoute
   "/challenge-analytics": typeof ChallengeAnalyticsIndexRoute
+  "/commerce": typeof CommerceIndexRoute
   "/community": typeof CommunityIndexRoute
   "/connector-center-details": typeof ConnectorCenterDetailsIndexRoute
   "/counsellors": typeof CounsellorsIndexRoute
   "/dashboard": typeof DashboardIndexRoute
   "/engagement-engines": typeof EngagementEnginesIndexRoute
+  "/engagement": typeof EngagementIndexRoute
+  "/evalezy": typeof EvalezyIndexRoute
   "/evaluation": typeof EvaluationIndexRoute
-  "/evaluator-ai": typeof EvaluatorAiIndexRoute
   "/institute-pulse": typeof InstitutePulseIndexRoute
   "/instructor-copilot": typeof InstructorCopilotIndexRoute
   "/knowledge-base": typeof KnowledgeBaseIndexRoute
+  "/learner-home": typeof LearnerHomeIndexRoute
   "/learner-insights": typeof LearnerInsightsIndexRoute
+  "/live-activity": typeof LiveActivityIndexRoute
+  "/lms-dashboard": typeof LmsDashboardIndexRoute
   "/login": typeof LoginIndexRoute
   "/manage-bookings": typeof ManageBookingsIndexRoute
   "/manage-contacts": typeof ManageContactsIndexRoute
@@ -2107,6 +3078,7 @@ export interface FileRoutesByTo {
   "/membership-expiry": typeof MembershipExpiryIndexRoute
   "/membership-stats": typeof MembershipStatsIndexRoute
   "/payment-dashboard": typeof PaymentDashboardIndexRoute
+  "/plan-week": typeof PlanWeekIndexRoute
   "/planning": typeof PlanningIndexRoute
   "/sales-dashboard": typeof SalesDashboardIndexRoute
   "/settings": typeof SettingsIndexRoute
@@ -2143,31 +3115,55 @@ export interface FileRoutesByTo {
   "/announcement/history": typeof AnnouncementHistoryIndexRoute
   "/announcement/schedule": typeof AnnouncementScheduleIndexRoute
   "/assessment/assessment-list": typeof AssessmentAssessmentListIndexRoute
+  "/assessment/dashboard": typeof AssessmentDashboardIndexRoute
   "/assessment/evaluation-ai": typeof AssessmentEvaluationAiIndexRoute
+  "/assessment/question-library": typeof AssessmentQuestionLibraryIndexRoute
   "/assessment/question-papers": typeof AssessmentQuestionPapersIndexRoute
+  "/audience-manager/ad-performance": typeof AudienceManagerAdPerformanceIndexRoute
   "/audience-manager/ai-intelligence": typeof AudienceManagerAiIntelligenceIndexRoute
   "/audience-manager/call-log": typeof AudienceManagerCallLogIndexRoute
   "/audience-manager/follow-ups": typeof AudienceManagerFollowUpsIndexRoute
+  "/audience-manager/lead-agent": typeof AudienceManagerLeadAgentIndexRoute
   "/audience-manager/lead-board": typeof AudienceManagerLeadBoardIndexRoute
+  "/audience-manager/lead-lookup": typeof AudienceManagerLeadLookupIndexRoute
   "/audience-manager/list": typeof AudienceManagerListIndexRoute
   "/audience-manager/onboarding": typeof AudienceManagerOnboardingIndexRoute
   "/audience-manager/recent-leads": typeof AudienceManagerRecentLeadsIndexRoute
   "/audience-manager/reports": typeof AudienceManagerReportsIndexRoute
+  "/audience-manager/social-posts": typeof AudienceManagerSocialPostsIndexRoute
   "/automation/chatbot-flows": typeof AutomationChatbotFlowsIndexRoute
+  "/automation/dashboard": typeof AutomationDashboardIndexRoute
   "/calling/ai-agents": typeof CallingAiAgentsIndexRoute
+  "/calling/call-queue": typeof CallingCallQueueIndexRoute
+  "/calling/dashboard": typeof CallingDashboardIndexRoute
   "/certificate-generation/student-data": typeof CertificateGenerationStudentDataIndexRoute
+  "/commerce/collections": typeof CommerceCollectionsIndexRoute
+  "/commerce/customers": typeof CommerceCustomersIndexRoute
+  "/commerce/discounts": typeof CommerceDiscountsIndexRoute
+  "/commerce/inventory": typeof CommerceInventoryIndexRoute
+  "/commerce/orders": typeof CommerceOrdersIndexRoute
+  "/commerce/parallel-run": typeof CommerceParallelRunIndexRoute
+  "/commerce/pos": typeof CommercePosIndexRoute
+  "/commerce/products": typeof CommerceProductsIndexRoute
+  "/commerce/reports": typeof CommerceReportsIndexRoute
+  "/commerce/settings": typeof CommerceSettingsIndexRoute
+  "/communication/dashboard": typeof CommunicationDashboardIndexRoute
   "/communication/inbox": typeof CommunicationInboxIndexRoute
   "/communication/notification-hub": typeof CommunicationNotificationHubIndexRoute
   "/communication/whatsapp-templates": typeof CommunicationWhatsappTemplatesIndexRoute
   "/community/question-paper": typeof CommunityQuestionPaperIndexRoute
   "/content/$contentId": typeof ContentContentIdIndexRoute
   "/engagement-engines/create": typeof EngagementEnginesCreateIndexRoute
+  "/engagement-engines/dashboard": typeof EngagementEnginesDashboardIndexRoute
   "/engagement-engines/inbox": typeof EngagementEnginesInboxIndexRoute
+  "/erp/attendance": typeof ErpAttendanceIndexRoute
+  "/erp/compliance": typeof ErpComplianceIndexRoute
+  "/erp/leave": typeof ErpLeaveIndexRoute
+  "/erp/my-hr": typeof ErpMyHrIndexRoute
+  "/erp/payroll": typeof ErpPayrollIndexRoute
+  "/erp/people": typeof ErpPeopleIndexRoute
   "/evaluation/evaluation-tool": typeof EvaluationEvaluationToolIndexRoute
   "/evaluation/evaluations": typeof EvaluationEvaluationsIndexRoute
-  "/evaluator-ai/assessment": typeof EvaluatorAiAssessmentIndexRoute
-  "/evaluator-ai/evaluation": typeof EvaluatorAiEvaluationIndexRoute
-  "/evaluator-ai/students": typeof EvaluatorAiStudentsIndexRoute
   "/financial-management/adjustment-approvals": typeof FinancialManagementAdjustmentApprovalsIndexRoute
   "/financial-management/collection-dashboard": typeof FinancialManagementCollectionDashboardIndexRoute
   "/financial-management/fee-plans": typeof FinancialManagementFeePlansIndexRoute
@@ -2176,13 +3172,18 @@ export interface FileRoutesByTo {
   "/homework-creation/assessment-list": typeof HomeworkCreationAssessmentListIndexRoute
   "/login/$key": typeof LoginKeyIndexRoute
   "/login/forgot-password": typeof LoginForgotPasswordIndexRoute
+  "/manage-contacts/dashboard": typeof ManageContactsDashboardIndexRoute
   "/manage-institute/batches": typeof ManageInstituteBatchesIndexRoute
+  "/manage-institute/overview": typeof ManageInstituteOverviewIndexRoute
   "/manage-institute/sessions": typeof ManageInstituteSessionsIndexRoute
   "/manage-institute/teams": typeof ManageInstituteTeamsIndexRoute
+  "/manage-pages/blog": typeof ManagePagesBlogIndexRoute
   "/manage-pages/product-pages": typeof ManagePagesProductPagesIndexRoute
+  "/manage-pages/site-assistant": typeof ManagePagesSiteAssistantIndexRoute
   "/manage-students/enroll-requests": typeof ManageStudentsEnrollRequestsIndexRoute
   "/manage-students/invite": typeof ManageStudentsInviteIndexRoute
   "/manage-students/students-list": typeof ManageStudentsStudentsListIndexRoute
+  "/meetings/dashboard": typeof MeetingsDashboardIndexRoute
   "/meetings/my-schedule": typeof MeetingsMyScheduleIndexRoute
   "/meetings/team": typeof MeetingsTeamIndexRoute
   "/mentorship/dashboard": typeof MentorshipDashboardIndexRoute
@@ -2200,6 +3201,7 @@ export interface FileRoutesByTo {
   "/study-library/bulk-content-uploading": typeof StudyLibraryBulkContentUploadingIndexRoute
   "/study-library/courses": typeof StudyLibraryCoursesIndexRoute
   "/study-library/doubt-management": typeof StudyLibraryDoubtManagementIndexRoute
+  "/study-library/gamification": typeof StudyLibraryGamificationIndexRoute
   "/study-library/live-session": typeof StudyLibraryLiveSessionIndexRoute
   "/study-library/reports": typeof StudyLibraryReportsIndexRoute
   "/study-library/student-ai": typeof StudyLibraryStudentAiIndexRoute
@@ -2214,6 +3216,7 @@ export interface FileRoutesByTo {
   "/workflow/$workflowId": typeof WorkflowWorkflowIdIndexRoute
   "/workflow/create": typeof WorkflowCreateIndexRoute
   "/workflow/list": typeof WorkflowListIndexRoute
+  "/manage-pages/blog/editor/$postId": typeof ManagePagesBlogEditorPostIdRoute
   "/manage-pages/product-pages/editor/$productPageId": typeof ManagePagesProductPagesEditorProductPageIdRoute
   "/settings/leads/pools/$poolId": typeof SettingsLeadsPoolsPoolIdRoute
   "/study-library/live-session/host/$scheduleId": typeof StudyLibraryLiveSessionHostScheduleIdRoute
@@ -2231,14 +3234,51 @@ export interface FileRoutesByTo {
   "/ai-center/ai-tools/vsmart-sorter": typeof AiCenterAiToolsVsmartSorterIndexRoute
   "/ai-center/ai-tools/vsmart-upload": typeof AiCenterAiToolsVsmartUploadIndexRoute
   "/assessment/export/$assessmentId": typeof AssessmentExportAssessmentIdIndexRoute
+  "/assessment/submission/$attemptId": typeof AssessmentSubmissionAttemptIdIndexRoute
+  "/audience-manager/lead-agent/$agentId": typeof AudienceManagerLeadAgentAgentIdIndexRoute
   "/audience-manager/list/campaign-users": typeof AudienceManagerListCampaignUsersIndexRoute
-  "/evaluator-ai/assessment/create-assessment": typeof EvaluatorAiAssessmentCreateAssessmentIndexRoute
-  "/evaluator-ai/evaluation/student-summary": typeof EvaluatorAiEvaluationStudentSummaryIndexRoute
+  "/commerce/customers/$customerId": typeof CommerceCustomersCustomerIdIndexRoute
+  "/commerce/orders/$orderId": typeof CommerceOrdersOrderIdIndexRoute
+  "/commerce/orders/new": typeof CommerceOrdersNewIndexRoute
+  "/commerce/orders/pack": typeof CommerceOrdersPackIndexRoute
+  "/commerce/orders/print": typeof CommerceOrdersPrintIndexRoute
+  "/commerce/orders/remittances": typeof CommerceOrdersRemittancesIndexRoute
+  "/commerce/pos/$sessionId": typeof CommercePosSessionIdIndexRoute
+  "/commerce/pos/sessions": typeof CommercePosSessionsIndexRoute
+  "/commerce/products/$productId": typeof CommerceProductsProductIdIndexRoute
+  "/commerce/products/import": typeof CommerceProductsImportIndexRoute
+  "/commerce/reports/audit": typeof CommerceReportsAuditIndexRoute
+  "/commerce/settings/business": typeof CommerceSettingsBusinessIndexRoute
+  "/commerce/settings/locations": typeof CommerceSettingsLocationsIndexRoute
+  "/commerce/settings/notifications": typeof CommerceSettingsNotificationsIndexRoute
+  "/commerce/settings/registers": typeof CommerceSettingsRegistersIndexRoute
+  "/commerce/settings/staff": typeof CommerceSettingsStaffIndexRoute
+  "/commerce/settings/tax-classes": typeof CommerceSettingsTaxClassesIndexRoute
+  "/engagement-engines/dashboard/outcomes": typeof EngagementEnginesDashboardOutcomesIndexRoute
+  "/erp/attendance/regularizations": typeof ErpAttendanceRegularizationsIndexRoute
+  "/erp/attendance/setup": typeof ErpAttendanceSetupIndexRoute
+  "/erp/compliance/challans": typeof ErpComplianceChallansIndexRoute
+  "/erp/compliance/provisions": typeof ErpComplianceProvisionsIndexRoute
+  "/erp/finance/journal": typeof ErpFinanceJournalIndexRoute
+  "/erp/finance/pnl": typeof ErpFinancePnlIndexRoute
+  "/erp/leave/balances": typeof ErpLeaveBalancesIndexRoute
+  "/erp/leave/setup": typeof ErpLeaveSetupIndexRoute
+  "/erp/my-hr/claims": typeof ErpMyHrClaimsIndexRoute
+  "/erp/my-hr/leave": typeof ErpMyHrLeaveIndexRoute
+  "/erp/my-hr/payslips": typeof ErpMyHrPayslipsIndexRoute
+  "/erp/my-hr/tax": typeof ErpMyHrTaxIndexRoute
+  "/erp/payroll/$runId": typeof ErpPayrollRunIdIndexRoute
+  "/erp/payroll/adjustments": typeof ErpPayrollAdjustmentsIndexRoute
+  "/erp/payroll/salary-setup": typeof ErpPayrollSalarySetupIndexRoute
+  "/erp/people/$employeeId": typeof ErpPeopleEmployeeIdIndexRoute
+  "/erp/people/org": typeof ErpPeopleOrgIndexRoute
+  "/erp/people/staff-bridge": typeof ErpPeopleStaffBridgeIndexRoute
   "/mentorship/mentors/$mentorId": typeof MentorshipMentorsMentorIdIndexRoute
   "/planning/activity-logs/create": typeof PlanningActivityLogsCreateIndexRoute
   "/planning/planning/create": typeof PlanningPlanningCreateIndexRoute
   "/study-library/ai-copilot/course-outline": typeof StudyLibraryAiCopilotCourseOutlineIndexRoute
   "/study-library/courses/course-details": typeof StudyLibraryCoursesCourseDetailsIndexRoute
+  "/study-library/live-session/dashboard": typeof StudyLibraryLiveSessionDashboardIndexRoute
   "/study-library/live-session/feedback": typeof StudyLibraryLiveSessionFeedbackIndexRoute
   "/study-library/live-session/schedule": typeof StudyLibraryLiveSessionScheduleIndexRoute
   "/study-library/volt/add": typeof StudyLibraryVoltAddIndexRoute
@@ -2250,9 +3290,18 @@ export interface FileRoutesByTo {
   "/workflow/$workflowId/edit": typeof WorkflowWorkflowIdEditIndexRoute
   "/study-library/ai-copilot/shared/components/YouTubePlayerSimple": typeof StudyLibraryAiCopilotSharedComponentsYouTubePlayerSimpleRoute
   "/assessment/assessment-list/offline-entry/$assessmentId": typeof AssessmentAssessmentListOfflineEntryAssessmentIdIndexRoute
+  "/assessment/assessment-list/scan-station/$assessmentId": typeof AssessmentAssessmentListScanStationAssessmentIdIndexRoute
   "/assessment/create-assessment/$assessmentId/$examtype": typeof AssessmentCreateAssessmentAssessmentIdExamtypeIndexRoute
   "/assessment/evaluation-ai/$attemptId/$processId": typeof AssessmentEvaluationAiAttemptIdProcessIdIndexRoute
   "/audience-manager/list/campaign-users/add": typeof AudienceManagerListCampaignUsersAddIndexRoute
+  "/commerce/inventory/counts/$countId": typeof CommerceInventoryCountsCountIdIndexRoute
+  "/commerce/inventory/receipts/$receiptId": typeof CommerceInventoryReceiptsReceiptIdIndexRoute
+  "/commerce/inventory/transfers/$transferId": typeof CommerceInventoryTransfersTransferIdIndexRoute
+  "/commerce/pos/$sessionId/bill-book": typeof CommercePosSessionIdBillBookIndexRoute
+  "/commerce/pos/$sessionId/bills": typeof CommercePosSessionIdBillsIndexRoute
+  "/commerce/pos/$sessionId/close": typeof CommercePosSessionIdCloseIndexRoute
+  "/commerce/pos/$sessionId/returns": typeof CommercePosSessionIdReturnsIndexRoute
+  "/commerce/pos/sessions/$sessionId": typeof CommercePosSessionsSessionIdIndexRoute
   "/homework-creation/create-assessment/$assessmentId/$examtype": typeof HomeworkCreationCreateAssessmentAssessmentIdExamtypeIndexRoute
   "/study-library/ai-copilot/course-outline/generating": typeof StudyLibraryAiCopilotCourseOutlineGeneratingIndexRoute
   "/study-library/courses/course-details/subjects": typeof StudyLibraryCoursesCourseDetailsSubjectsIndexRoute
@@ -2272,8 +3321,10 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  "/evalezy": typeof EvalezyRouteRouteWithChildren
   "/agent-chat": typeof AgentChatRoute
   "/chat": typeof ChatRoute
+  "/demo": typeof DemoRoute
   "/error-page": typeof ErrorPageRoute
   "/locked-feature": typeof LockedFeatureRoute
   "/explore-ai": typeof ExploreAiLazyRoute
@@ -2282,11 +3333,24 @@ export interface FileRoutesById {
   "/pricing": typeof PricingLazyRoute
   "/counsellors/$userId": typeof CounsellorsUserIdRoute
   "/engagement-engines/$engineId": typeof EngagementEnginesEngineIdRoute
+  "/evalezy/$assessmentId": typeof EvalezyAssessmentIdRoute
+  "/evalezy/credits": typeof EvalezyCreditsRoute
+  "/evalezy/help": typeof EvalezyHelpRoute
+  "/evalezy/new": typeof EvalezyNewRoute
+  "/evalezy/plan": typeof EvalezyPlanRoute
+  "/evalezy/profile": typeof EvalezyProfileRoute
+  "/evalezy/settings": typeof EvalezySettingsRoute
   "/knowledge-base/$kbId": typeof KnowledgeBaseKbIdRoute
   "/knowledge-base/publish": typeof KnowledgeBasePublishRoute
+  "/mcp/authorize": typeof McpAuthorizeRoute
+  "/signup/start": typeof SignupStartRoute
+  "/telleo/api": typeof TelleoApiRoute
+  "/telleo/plan": typeof TelleoPlanRoute
+  "/telleo/setup": typeof TelleoSetupRoute
   "/vim/dashboard": typeof VimDashboardRoute
   "/vim/login": typeof VimLoginRoute
   "/vim/waitlist": typeof VimWaitlistRoute
+  "/access-passes/": typeof AccessPassesIndexRoute
   "/admin-activity-logs/": typeof AdminActivityLogsIndexRoute
   "/admin-package-management/": typeof AdminPackageManagementIndexRoute
   "/admissions/": typeof AdmissionsIndexRoute
@@ -2295,17 +3359,22 @@ export interface FileRoutesById {
   "/auth-transfer/": typeof AuthTransferIndexRoute
   "/center-management/": typeof CenterManagementIndexRoute
   "/challenge-analytics/": typeof ChallengeAnalyticsIndexRoute
+  "/commerce/": typeof CommerceIndexRoute
   "/community/": typeof CommunityIndexRoute
   "/connector-center-details/": typeof ConnectorCenterDetailsIndexRoute
   "/counsellors/": typeof CounsellorsIndexRoute
   "/dashboard/": typeof DashboardIndexRoute
   "/engagement-engines/": typeof EngagementEnginesIndexRoute
+  "/engagement/": typeof EngagementIndexRoute
+  "/evalezy/": typeof EvalezyIndexRoute
   "/evaluation/": typeof EvaluationIndexRoute
-  "/evaluator-ai/": typeof EvaluatorAiIndexRoute
   "/institute-pulse/": typeof InstitutePulseIndexRoute
   "/instructor-copilot/": typeof InstructorCopilotIndexRoute
   "/knowledge-base/": typeof KnowledgeBaseIndexRoute
+  "/learner-home/": typeof LearnerHomeIndexRoute
   "/learner-insights/": typeof LearnerInsightsIndexRoute
+  "/live-activity/": typeof LiveActivityIndexRoute
+  "/lms-dashboard/": typeof LmsDashboardIndexRoute
   "/login/": typeof LoginIndexRoute
   "/manage-bookings/": typeof ManageBookingsIndexRoute
   "/manage-contacts/": typeof ManageContactsIndexRoute
@@ -2319,6 +3388,7 @@ export interface FileRoutesById {
   "/membership-expiry/": typeof MembershipExpiryIndexRoute
   "/membership-stats/": typeof MembershipStatsIndexRoute
   "/payment-dashboard/": typeof PaymentDashboardIndexRoute
+  "/plan-week/": typeof PlanWeekIndexRoute
   "/planning/": typeof PlanningIndexRoute
   "/sales-dashboard/": typeof SalesDashboardIndexRoute
   "/settings/": typeof SettingsIndexRoute
@@ -2355,31 +3425,55 @@ export interface FileRoutesById {
   "/announcement/history/": typeof AnnouncementHistoryIndexRoute
   "/announcement/schedule/": typeof AnnouncementScheduleIndexRoute
   "/assessment/assessment-list/": typeof AssessmentAssessmentListIndexRoute
+  "/assessment/dashboard/": typeof AssessmentDashboardIndexRoute
   "/assessment/evaluation-ai/": typeof AssessmentEvaluationAiIndexRoute
+  "/assessment/question-library/": typeof AssessmentQuestionLibraryIndexRoute
   "/assessment/question-papers/": typeof AssessmentQuestionPapersIndexRoute
+  "/audience-manager/ad-performance/": typeof AudienceManagerAdPerformanceIndexRoute
   "/audience-manager/ai-intelligence/": typeof AudienceManagerAiIntelligenceIndexRoute
   "/audience-manager/call-log/": typeof AudienceManagerCallLogIndexRoute
   "/audience-manager/follow-ups/": typeof AudienceManagerFollowUpsIndexRoute
+  "/audience-manager/lead-agent/": typeof AudienceManagerLeadAgentIndexRoute
   "/audience-manager/lead-board/": typeof AudienceManagerLeadBoardIndexRoute
+  "/audience-manager/lead-lookup/": typeof AudienceManagerLeadLookupIndexRoute
   "/audience-manager/list/": typeof AudienceManagerListIndexRoute
   "/audience-manager/onboarding/": typeof AudienceManagerOnboardingIndexRoute
   "/audience-manager/recent-leads/": typeof AudienceManagerRecentLeadsIndexRoute
   "/audience-manager/reports/": typeof AudienceManagerReportsIndexRoute
+  "/audience-manager/social-posts/": typeof AudienceManagerSocialPostsIndexRoute
   "/automation/chatbot-flows/": typeof AutomationChatbotFlowsIndexRoute
+  "/automation/dashboard/": typeof AutomationDashboardIndexRoute
   "/calling/ai-agents/": typeof CallingAiAgentsIndexRoute
+  "/calling/call-queue/": typeof CallingCallQueueIndexRoute
+  "/calling/dashboard/": typeof CallingDashboardIndexRoute
   "/certificate-generation/student-data/": typeof CertificateGenerationStudentDataIndexRoute
+  "/commerce/collections/": typeof CommerceCollectionsIndexRoute
+  "/commerce/customers/": typeof CommerceCustomersIndexRoute
+  "/commerce/discounts/": typeof CommerceDiscountsIndexRoute
+  "/commerce/inventory/": typeof CommerceInventoryIndexRoute
+  "/commerce/orders/": typeof CommerceOrdersIndexRoute
+  "/commerce/parallel-run/": typeof CommerceParallelRunIndexRoute
+  "/commerce/pos/": typeof CommercePosIndexRoute
+  "/commerce/products/": typeof CommerceProductsIndexRoute
+  "/commerce/reports/": typeof CommerceReportsIndexRoute
+  "/commerce/settings/": typeof CommerceSettingsIndexRoute
+  "/communication/dashboard/": typeof CommunicationDashboardIndexRoute
   "/communication/inbox/": typeof CommunicationInboxIndexRoute
   "/communication/notification-hub/": typeof CommunicationNotificationHubIndexRoute
   "/communication/whatsapp-templates/": typeof CommunicationWhatsappTemplatesIndexRoute
   "/community/question-paper/": typeof CommunityQuestionPaperIndexRoute
   "/content/$contentId/": typeof ContentContentIdIndexRoute
   "/engagement-engines/create/": typeof EngagementEnginesCreateIndexRoute
+  "/engagement-engines/dashboard/": typeof EngagementEnginesDashboardIndexRoute
   "/engagement-engines/inbox/": typeof EngagementEnginesInboxIndexRoute
+  "/erp/attendance/": typeof ErpAttendanceIndexRoute
+  "/erp/compliance/": typeof ErpComplianceIndexRoute
+  "/erp/leave/": typeof ErpLeaveIndexRoute
+  "/erp/my-hr/": typeof ErpMyHrIndexRoute
+  "/erp/payroll/": typeof ErpPayrollIndexRoute
+  "/erp/people/": typeof ErpPeopleIndexRoute
   "/evaluation/evaluation-tool/": typeof EvaluationEvaluationToolIndexRoute
   "/evaluation/evaluations/": typeof EvaluationEvaluationsIndexRoute
-  "/evaluator-ai/assessment/": typeof EvaluatorAiAssessmentIndexRoute
-  "/evaluator-ai/evaluation/": typeof EvaluatorAiEvaluationIndexRoute
-  "/evaluator-ai/students/": typeof EvaluatorAiStudentsIndexRoute
   "/financial-management/adjustment-approvals/": typeof FinancialManagementAdjustmentApprovalsIndexRoute
   "/financial-management/collection-dashboard/": typeof FinancialManagementCollectionDashboardIndexRoute
   "/financial-management/fee-plans/": typeof FinancialManagementFeePlansIndexRoute
@@ -2388,13 +3482,18 @@ export interface FileRoutesById {
   "/homework-creation/assessment-list/": typeof HomeworkCreationAssessmentListIndexRoute
   "/login/$key/": typeof LoginKeyIndexRoute
   "/login/forgot-password/": typeof LoginForgotPasswordIndexRoute
+  "/manage-contacts/dashboard/": typeof ManageContactsDashboardIndexRoute
   "/manage-institute/batches/": typeof ManageInstituteBatchesIndexRoute
+  "/manage-institute/overview/": typeof ManageInstituteOverviewIndexRoute
   "/manage-institute/sessions/": typeof ManageInstituteSessionsIndexRoute
   "/manage-institute/teams/": typeof ManageInstituteTeamsIndexRoute
+  "/manage-pages/blog/": typeof ManagePagesBlogIndexRoute
   "/manage-pages/product-pages/": typeof ManagePagesProductPagesIndexRoute
+  "/manage-pages/site-assistant/": typeof ManagePagesSiteAssistantIndexRoute
   "/manage-students/enroll-requests/": typeof ManageStudentsEnrollRequestsIndexRoute
   "/manage-students/invite/": typeof ManageStudentsInviteIndexRoute
   "/manage-students/students-list/": typeof ManageStudentsStudentsListIndexRoute
+  "/meetings/dashboard/": typeof MeetingsDashboardIndexRoute
   "/meetings/my-schedule/": typeof MeetingsMyScheduleIndexRoute
   "/meetings/team/": typeof MeetingsTeamIndexRoute
   "/mentorship/dashboard/": typeof MentorshipDashboardIndexRoute
@@ -2412,6 +3511,7 @@ export interface FileRoutesById {
   "/study-library/bulk-content-uploading/": typeof StudyLibraryBulkContentUploadingIndexRoute
   "/study-library/courses/": typeof StudyLibraryCoursesIndexRoute
   "/study-library/doubt-management/": typeof StudyLibraryDoubtManagementIndexRoute
+  "/study-library/gamification/": typeof StudyLibraryGamificationIndexRoute
   "/study-library/live-session/": typeof StudyLibraryLiveSessionIndexRoute
   "/study-library/reports/": typeof StudyLibraryReportsIndexRoute
   "/study-library/student-ai/": typeof StudyLibraryStudentAiIndexRoute
@@ -2426,6 +3526,7 @@ export interface FileRoutesById {
   "/workflow/$workflowId/": typeof WorkflowWorkflowIdIndexRoute
   "/workflow/create/": typeof WorkflowCreateIndexRoute
   "/workflow/list/": typeof WorkflowListIndexRoute
+  "/manage-pages/blog/editor/$postId": typeof ManagePagesBlogEditorPostIdRoute
   "/manage-pages/product-pages/editor/$productPageId": typeof ManagePagesProductPagesEditorProductPageIdRoute
   "/settings/leads/pools/$poolId": typeof SettingsLeadsPoolsPoolIdRoute
   "/study-library/live-session/host/$scheduleId": typeof StudyLibraryLiveSessionHostScheduleIdRoute
@@ -2443,14 +3544,51 @@ export interface FileRoutesById {
   "/ai-center/ai-tools/vsmart-sorter/": typeof AiCenterAiToolsVsmartSorterIndexRoute
   "/ai-center/ai-tools/vsmart-upload/": typeof AiCenterAiToolsVsmartUploadIndexRoute
   "/assessment/export/$assessmentId/": typeof AssessmentExportAssessmentIdIndexRoute
+  "/assessment/submission/$attemptId/": typeof AssessmentSubmissionAttemptIdIndexRoute
+  "/audience-manager/lead-agent/$agentId/": typeof AudienceManagerLeadAgentAgentIdIndexRoute
   "/audience-manager/list/campaign-users/": typeof AudienceManagerListCampaignUsersIndexRoute
-  "/evaluator-ai/assessment/create-assessment/": typeof EvaluatorAiAssessmentCreateAssessmentIndexRoute
-  "/evaluator-ai/evaluation/student-summary/": typeof EvaluatorAiEvaluationStudentSummaryIndexRoute
+  "/commerce/customers/$customerId/": typeof CommerceCustomersCustomerIdIndexRoute
+  "/commerce/orders/$orderId/": typeof CommerceOrdersOrderIdIndexRoute
+  "/commerce/orders/new/": typeof CommerceOrdersNewIndexRoute
+  "/commerce/orders/pack/": typeof CommerceOrdersPackIndexRoute
+  "/commerce/orders/print/": typeof CommerceOrdersPrintIndexRoute
+  "/commerce/orders/remittances/": typeof CommerceOrdersRemittancesIndexRoute
+  "/commerce/pos/$sessionId/": typeof CommercePosSessionIdIndexRoute
+  "/commerce/pos/sessions/": typeof CommercePosSessionsIndexRoute
+  "/commerce/products/$productId/": typeof CommerceProductsProductIdIndexRoute
+  "/commerce/products/import/": typeof CommerceProductsImportIndexRoute
+  "/commerce/reports/audit/": typeof CommerceReportsAuditIndexRoute
+  "/commerce/settings/business/": typeof CommerceSettingsBusinessIndexRoute
+  "/commerce/settings/locations/": typeof CommerceSettingsLocationsIndexRoute
+  "/commerce/settings/notifications/": typeof CommerceSettingsNotificationsIndexRoute
+  "/commerce/settings/registers/": typeof CommerceSettingsRegistersIndexRoute
+  "/commerce/settings/staff/": typeof CommerceSettingsStaffIndexRoute
+  "/commerce/settings/tax-classes/": typeof CommerceSettingsTaxClassesIndexRoute
+  "/engagement-engines/dashboard/outcomes/": typeof EngagementEnginesDashboardOutcomesIndexRoute
+  "/erp/attendance/regularizations/": typeof ErpAttendanceRegularizationsIndexRoute
+  "/erp/attendance/setup/": typeof ErpAttendanceSetupIndexRoute
+  "/erp/compliance/challans/": typeof ErpComplianceChallansIndexRoute
+  "/erp/compliance/provisions/": typeof ErpComplianceProvisionsIndexRoute
+  "/erp/finance/journal/": typeof ErpFinanceJournalIndexRoute
+  "/erp/finance/pnl/": typeof ErpFinancePnlIndexRoute
+  "/erp/leave/balances/": typeof ErpLeaveBalancesIndexRoute
+  "/erp/leave/setup/": typeof ErpLeaveSetupIndexRoute
+  "/erp/my-hr/claims/": typeof ErpMyHrClaimsIndexRoute
+  "/erp/my-hr/leave/": typeof ErpMyHrLeaveIndexRoute
+  "/erp/my-hr/payslips/": typeof ErpMyHrPayslipsIndexRoute
+  "/erp/my-hr/tax/": typeof ErpMyHrTaxIndexRoute
+  "/erp/payroll/$runId/": typeof ErpPayrollRunIdIndexRoute
+  "/erp/payroll/adjustments/": typeof ErpPayrollAdjustmentsIndexRoute
+  "/erp/payroll/salary-setup/": typeof ErpPayrollSalarySetupIndexRoute
+  "/erp/people/$employeeId/": typeof ErpPeopleEmployeeIdIndexRoute
+  "/erp/people/org/": typeof ErpPeopleOrgIndexRoute
+  "/erp/people/staff-bridge/": typeof ErpPeopleStaffBridgeIndexRoute
   "/mentorship/mentors/$mentorId/": typeof MentorshipMentorsMentorIdIndexRoute
   "/planning/activity-logs/create/": typeof PlanningActivityLogsCreateIndexRoute
   "/planning/planning/create/": typeof PlanningPlanningCreateIndexRoute
   "/study-library/ai-copilot/course-outline/": typeof StudyLibraryAiCopilotCourseOutlineIndexRoute
   "/study-library/courses/course-details/": typeof StudyLibraryCoursesCourseDetailsIndexRoute
+  "/study-library/live-session/dashboard/": typeof StudyLibraryLiveSessionDashboardIndexRoute
   "/study-library/live-session/feedback/": typeof StudyLibraryLiveSessionFeedbackIndexRoute
   "/study-library/live-session/schedule/": typeof StudyLibraryLiveSessionScheduleIndexRoute
   "/study-library/volt/add/": typeof StudyLibraryVoltAddIndexRoute
@@ -2462,9 +3600,18 @@ export interface FileRoutesById {
   "/workflow/$workflowId/edit/": typeof WorkflowWorkflowIdEditIndexRoute
   "/study-library/ai-copilot/shared/components/YouTubePlayerSimple": typeof StudyLibraryAiCopilotSharedComponentsYouTubePlayerSimpleRoute
   "/assessment/assessment-list/offline-entry/$assessmentId/": typeof AssessmentAssessmentListOfflineEntryAssessmentIdIndexRoute
+  "/assessment/assessment-list/scan-station/$assessmentId/": typeof AssessmentAssessmentListScanStationAssessmentIdIndexRoute
   "/assessment/create-assessment/$assessmentId/$examtype/": typeof AssessmentCreateAssessmentAssessmentIdExamtypeIndexRoute
   "/assessment/evaluation-ai/$attemptId/$processId/": typeof AssessmentEvaluationAiAttemptIdProcessIdIndexRoute
   "/audience-manager/list/campaign-users/add/": typeof AudienceManagerListCampaignUsersAddIndexRoute
+  "/commerce/inventory/counts/$countId/": typeof CommerceInventoryCountsCountIdIndexRoute
+  "/commerce/inventory/receipts/$receiptId/": typeof CommerceInventoryReceiptsReceiptIdIndexRoute
+  "/commerce/inventory/transfers/$transferId/": typeof CommerceInventoryTransfersTransferIdIndexRoute
+  "/commerce/pos/$sessionId/bill-book/": typeof CommercePosSessionIdBillBookIndexRoute
+  "/commerce/pos/$sessionId/bills/": typeof CommercePosSessionIdBillsIndexRoute
+  "/commerce/pos/$sessionId/close/": typeof CommercePosSessionIdCloseIndexRoute
+  "/commerce/pos/$sessionId/returns/": typeof CommercePosSessionIdReturnsIndexRoute
+  "/commerce/pos/sessions/$sessionId/": typeof CommercePosSessionsSessionIdIndexRoute
   "/homework-creation/create-assessment/$assessmentId/$examtype/": typeof HomeworkCreationCreateAssessmentAssessmentIdExamtypeIndexRoute
   "/study-library/ai-copilot/course-outline/generating/": typeof StudyLibraryAiCopilotCourseOutlineGeneratingIndexRoute
   "/study-library/courses/course-details/subjects/": typeof StudyLibraryCoursesCourseDetailsSubjectsIndexRoute
@@ -2485,8 +3632,10 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | "/evalezy"
     | "/agent-chat"
     | "/chat"
+    | "/demo"
     | "/error-page"
     | "/locked-feature"
     | "/explore-ai"
@@ -2495,11 +3644,24 @@ export interface FileRouteTypes {
     | "/pricing"
     | "/counsellors/$userId"
     | "/engagement-engines/$engineId"
+    | "/evalezy/$assessmentId"
+    | "/evalezy/credits"
+    | "/evalezy/help"
+    | "/evalezy/new"
+    | "/evalezy/plan"
+    | "/evalezy/profile"
+    | "/evalezy/settings"
     | "/knowledge-base/$kbId"
     | "/knowledge-base/publish"
+    | "/mcp/authorize"
+    | "/signup/start"
+    | "/telleo/api"
+    | "/telleo/plan"
+    | "/telleo/setup"
     | "/vim/dashboard"
     | "/vim/login"
     | "/vim/waitlist"
+    | "/access-passes/"
     | "/admin-activity-logs/"
     | "/admin-package-management/"
     | "/admissions/"
@@ -2508,17 +3670,22 @@ export interface FileRouteTypes {
     | "/auth-transfer/"
     | "/center-management/"
     | "/challenge-analytics/"
+    | "/commerce/"
     | "/community/"
     | "/connector-center-details/"
     | "/counsellors/"
     | "/dashboard/"
     | "/engagement-engines/"
+    | "/engagement/"
+    | "/evalezy/"
     | "/evaluation/"
-    | "/evaluator-ai/"
     | "/institute-pulse/"
     | "/instructor-copilot/"
     | "/knowledge-base/"
+    | "/learner-home/"
     | "/learner-insights/"
+    | "/live-activity/"
+    | "/lms-dashboard/"
     | "/login/"
     | "/manage-bookings/"
     | "/manage-contacts/"
@@ -2532,6 +3699,7 @@ export interface FileRouteTypes {
     | "/membership-expiry/"
     | "/membership-stats/"
     | "/payment-dashboard/"
+    | "/plan-week/"
     | "/planning/"
     | "/sales-dashboard/"
     | "/settings/"
@@ -2568,31 +3736,55 @@ export interface FileRouteTypes {
     | "/announcement/history/"
     | "/announcement/schedule/"
     | "/assessment/assessment-list/"
+    | "/assessment/dashboard/"
     | "/assessment/evaluation-ai/"
+    | "/assessment/question-library/"
     | "/assessment/question-papers/"
+    | "/audience-manager/ad-performance/"
     | "/audience-manager/ai-intelligence/"
     | "/audience-manager/call-log/"
     | "/audience-manager/follow-ups/"
+    | "/audience-manager/lead-agent/"
     | "/audience-manager/lead-board/"
+    | "/audience-manager/lead-lookup/"
     | "/audience-manager/list/"
     | "/audience-manager/onboarding/"
     | "/audience-manager/recent-leads/"
     | "/audience-manager/reports/"
+    | "/audience-manager/social-posts/"
     | "/automation/chatbot-flows/"
+    | "/automation/dashboard/"
     | "/calling/ai-agents/"
+    | "/calling/call-queue/"
+    | "/calling/dashboard/"
     | "/certificate-generation/student-data/"
+    | "/commerce/collections/"
+    | "/commerce/customers/"
+    | "/commerce/discounts/"
+    | "/commerce/inventory/"
+    | "/commerce/orders/"
+    | "/commerce/parallel-run/"
+    | "/commerce/pos/"
+    | "/commerce/products/"
+    | "/commerce/reports/"
+    | "/commerce/settings/"
+    | "/communication/dashboard/"
     | "/communication/inbox/"
     | "/communication/notification-hub/"
     | "/communication/whatsapp-templates/"
     | "/community/question-paper/"
     | "/content/$contentId/"
     | "/engagement-engines/create/"
+    | "/engagement-engines/dashboard/"
     | "/engagement-engines/inbox/"
+    | "/erp/attendance/"
+    | "/erp/compliance/"
+    | "/erp/leave/"
+    | "/erp/my-hr/"
+    | "/erp/payroll/"
+    | "/erp/people/"
     | "/evaluation/evaluation-tool/"
     | "/evaluation/evaluations/"
-    | "/evaluator-ai/assessment/"
-    | "/evaluator-ai/evaluation/"
-    | "/evaluator-ai/students/"
     | "/financial-management/adjustment-approvals/"
     | "/financial-management/collection-dashboard/"
     | "/financial-management/fee-plans/"
@@ -2601,13 +3793,18 @@ export interface FileRouteTypes {
     | "/homework-creation/assessment-list/"
     | "/login/$key/"
     | "/login/forgot-password/"
+    | "/manage-contacts/dashboard/"
     | "/manage-institute/batches/"
+    | "/manage-institute/overview/"
     | "/manage-institute/sessions/"
     | "/manage-institute/teams/"
+    | "/manage-pages/blog/"
     | "/manage-pages/product-pages/"
+    | "/manage-pages/site-assistant/"
     | "/manage-students/enroll-requests/"
     | "/manage-students/invite/"
     | "/manage-students/students-list/"
+    | "/meetings/dashboard/"
     | "/meetings/my-schedule/"
     | "/meetings/team/"
     | "/mentorship/dashboard/"
@@ -2625,6 +3822,7 @@ export interface FileRouteTypes {
     | "/study-library/bulk-content-uploading/"
     | "/study-library/courses/"
     | "/study-library/doubt-management/"
+    | "/study-library/gamification/"
     | "/study-library/live-session/"
     | "/study-library/reports/"
     | "/study-library/student-ai/"
@@ -2639,6 +3837,7 @@ export interface FileRouteTypes {
     | "/workflow/$workflowId/"
     | "/workflow/create/"
     | "/workflow/list/"
+    | "/manage-pages/blog/editor/$postId"
     | "/manage-pages/product-pages/editor/$productPageId"
     | "/settings/leads/pools/$poolId"
     | "/study-library/live-session/host/$scheduleId"
@@ -2656,14 +3855,51 @@ export interface FileRouteTypes {
     | "/ai-center/ai-tools/vsmart-sorter/"
     | "/ai-center/ai-tools/vsmart-upload/"
     | "/assessment/export/$assessmentId/"
+    | "/assessment/submission/$attemptId/"
+    | "/audience-manager/lead-agent/$agentId/"
     | "/audience-manager/list/campaign-users/"
-    | "/evaluator-ai/assessment/create-assessment/"
-    | "/evaluator-ai/evaluation/student-summary/"
+    | "/commerce/customers/$customerId/"
+    | "/commerce/orders/$orderId/"
+    | "/commerce/orders/new/"
+    | "/commerce/orders/pack/"
+    | "/commerce/orders/print/"
+    | "/commerce/orders/remittances/"
+    | "/commerce/pos/$sessionId/"
+    | "/commerce/pos/sessions/"
+    | "/commerce/products/$productId/"
+    | "/commerce/products/import/"
+    | "/commerce/reports/audit/"
+    | "/commerce/settings/business/"
+    | "/commerce/settings/locations/"
+    | "/commerce/settings/notifications/"
+    | "/commerce/settings/registers/"
+    | "/commerce/settings/staff/"
+    | "/commerce/settings/tax-classes/"
+    | "/engagement-engines/dashboard/outcomes/"
+    | "/erp/attendance/regularizations/"
+    | "/erp/attendance/setup/"
+    | "/erp/compliance/challans/"
+    | "/erp/compliance/provisions/"
+    | "/erp/finance/journal/"
+    | "/erp/finance/pnl/"
+    | "/erp/leave/balances/"
+    | "/erp/leave/setup/"
+    | "/erp/my-hr/claims/"
+    | "/erp/my-hr/leave/"
+    | "/erp/my-hr/payslips/"
+    | "/erp/my-hr/tax/"
+    | "/erp/payroll/$runId/"
+    | "/erp/payroll/adjustments/"
+    | "/erp/payroll/salary-setup/"
+    | "/erp/people/$employeeId/"
+    | "/erp/people/org/"
+    | "/erp/people/staff-bridge/"
     | "/mentorship/mentors/$mentorId/"
     | "/planning/activity-logs/create/"
     | "/planning/planning/create/"
     | "/study-library/ai-copilot/course-outline/"
     | "/study-library/courses/course-details/"
+    | "/study-library/live-session/dashboard/"
     | "/study-library/live-session/feedback/"
     | "/study-library/live-session/schedule/"
     | "/study-library/volt/add/"
@@ -2675,9 +3911,18 @@ export interface FileRouteTypes {
     | "/workflow/$workflowId/edit/"
     | "/study-library/ai-copilot/shared/components/YouTubePlayerSimple"
     | "/assessment/assessment-list/offline-entry/$assessmentId/"
+    | "/assessment/assessment-list/scan-station/$assessmentId/"
     | "/assessment/create-assessment/$assessmentId/$examtype/"
     | "/assessment/evaluation-ai/$attemptId/$processId/"
     | "/audience-manager/list/campaign-users/add/"
+    | "/commerce/inventory/counts/$countId/"
+    | "/commerce/inventory/receipts/$receiptId/"
+    | "/commerce/inventory/transfers/$transferId/"
+    | "/commerce/pos/$sessionId/bill-book/"
+    | "/commerce/pos/$sessionId/bills/"
+    | "/commerce/pos/$sessionId/close/"
+    | "/commerce/pos/$sessionId/returns/"
+    | "/commerce/pos/sessions/$sessionId/"
     | "/homework-creation/create-assessment/$assessmentId/$examtype/"
     | "/study-library/ai-copilot/course-outline/generating/"
     | "/study-library/courses/course-details/subjects/"
@@ -2698,6 +3943,7 @@ export interface FileRouteTypes {
   to:
     | "/agent-chat"
     | "/chat"
+    | "/demo"
     | "/error-page"
     | "/locked-feature"
     | "/explore-ai"
@@ -2705,11 +3951,24 @@ export interface FileRouteTypes {
     | "/pricing"
     | "/counsellors/$userId"
     | "/engagement-engines/$engineId"
+    | "/evalezy/$assessmentId"
+    | "/evalezy/credits"
+    | "/evalezy/help"
+    | "/evalezy/new"
+    | "/evalezy/plan"
+    | "/evalezy/profile"
+    | "/evalezy/settings"
     | "/knowledge-base/$kbId"
     | "/knowledge-base/publish"
+    | "/mcp/authorize"
+    | "/signup/start"
+    | "/telleo/api"
+    | "/telleo/plan"
+    | "/telleo/setup"
     | "/vim/dashboard"
     | "/vim/login"
     | "/vim/waitlist"
+    | "/access-passes"
     | "/admin-activity-logs"
     | "/admin-package-management"
     | "/admissions"
@@ -2718,17 +3977,22 @@ export interface FileRouteTypes {
     | "/auth-transfer"
     | "/center-management"
     | "/challenge-analytics"
+    | "/commerce"
     | "/community"
     | "/connector-center-details"
     | "/counsellors"
     | "/dashboard"
     | "/engagement-engines"
+    | "/engagement"
+    | "/evalezy"
     | "/evaluation"
-    | "/evaluator-ai"
     | "/institute-pulse"
     | "/instructor-copilot"
     | "/knowledge-base"
+    | "/learner-home"
     | "/learner-insights"
+    | "/live-activity"
+    | "/lms-dashboard"
     | "/login"
     | "/manage-bookings"
     | "/manage-contacts"
@@ -2742,6 +4006,7 @@ export interface FileRouteTypes {
     | "/membership-expiry"
     | "/membership-stats"
     | "/payment-dashboard"
+    | "/plan-week"
     | "/planning"
     | "/sales-dashboard"
     | "/settings"
@@ -2778,31 +4043,55 @@ export interface FileRouteTypes {
     | "/announcement/history"
     | "/announcement/schedule"
     | "/assessment/assessment-list"
+    | "/assessment/dashboard"
     | "/assessment/evaluation-ai"
+    | "/assessment/question-library"
     | "/assessment/question-papers"
+    | "/audience-manager/ad-performance"
     | "/audience-manager/ai-intelligence"
     | "/audience-manager/call-log"
     | "/audience-manager/follow-ups"
+    | "/audience-manager/lead-agent"
     | "/audience-manager/lead-board"
+    | "/audience-manager/lead-lookup"
     | "/audience-manager/list"
     | "/audience-manager/onboarding"
     | "/audience-manager/recent-leads"
     | "/audience-manager/reports"
+    | "/audience-manager/social-posts"
     | "/automation/chatbot-flows"
+    | "/automation/dashboard"
     | "/calling/ai-agents"
+    | "/calling/call-queue"
+    | "/calling/dashboard"
     | "/certificate-generation/student-data"
+    | "/commerce/collections"
+    | "/commerce/customers"
+    | "/commerce/discounts"
+    | "/commerce/inventory"
+    | "/commerce/orders"
+    | "/commerce/parallel-run"
+    | "/commerce/pos"
+    | "/commerce/products"
+    | "/commerce/reports"
+    | "/commerce/settings"
+    | "/communication/dashboard"
     | "/communication/inbox"
     | "/communication/notification-hub"
     | "/communication/whatsapp-templates"
     | "/community/question-paper"
     | "/content/$contentId"
     | "/engagement-engines/create"
+    | "/engagement-engines/dashboard"
     | "/engagement-engines/inbox"
+    | "/erp/attendance"
+    | "/erp/compliance"
+    | "/erp/leave"
+    | "/erp/my-hr"
+    | "/erp/payroll"
+    | "/erp/people"
     | "/evaluation/evaluation-tool"
     | "/evaluation/evaluations"
-    | "/evaluator-ai/assessment"
-    | "/evaluator-ai/evaluation"
-    | "/evaluator-ai/students"
     | "/financial-management/adjustment-approvals"
     | "/financial-management/collection-dashboard"
     | "/financial-management/fee-plans"
@@ -2811,13 +4100,18 @@ export interface FileRouteTypes {
     | "/homework-creation/assessment-list"
     | "/login/$key"
     | "/login/forgot-password"
+    | "/manage-contacts/dashboard"
     | "/manage-institute/batches"
+    | "/manage-institute/overview"
     | "/manage-institute/sessions"
     | "/manage-institute/teams"
+    | "/manage-pages/blog"
     | "/manage-pages/product-pages"
+    | "/manage-pages/site-assistant"
     | "/manage-students/enroll-requests"
     | "/manage-students/invite"
     | "/manage-students/students-list"
+    | "/meetings/dashboard"
     | "/meetings/my-schedule"
     | "/meetings/team"
     | "/mentorship/dashboard"
@@ -2835,6 +4129,7 @@ export interface FileRouteTypes {
     | "/study-library/bulk-content-uploading"
     | "/study-library/courses"
     | "/study-library/doubt-management"
+    | "/study-library/gamification"
     | "/study-library/live-session"
     | "/study-library/reports"
     | "/study-library/student-ai"
@@ -2849,6 +4144,7 @@ export interface FileRouteTypes {
     | "/workflow/$workflowId"
     | "/workflow/create"
     | "/workflow/list"
+    | "/manage-pages/blog/editor/$postId"
     | "/manage-pages/product-pages/editor/$productPageId"
     | "/settings/leads/pools/$poolId"
     | "/study-library/live-session/host/$scheduleId"
@@ -2866,14 +4162,51 @@ export interface FileRouteTypes {
     | "/ai-center/ai-tools/vsmart-sorter"
     | "/ai-center/ai-tools/vsmart-upload"
     | "/assessment/export/$assessmentId"
+    | "/assessment/submission/$attemptId"
+    | "/audience-manager/lead-agent/$agentId"
     | "/audience-manager/list/campaign-users"
-    | "/evaluator-ai/assessment/create-assessment"
-    | "/evaluator-ai/evaluation/student-summary"
+    | "/commerce/customers/$customerId"
+    | "/commerce/orders/$orderId"
+    | "/commerce/orders/new"
+    | "/commerce/orders/pack"
+    | "/commerce/orders/print"
+    | "/commerce/orders/remittances"
+    | "/commerce/pos/$sessionId"
+    | "/commerce/pos/sessions"
+    | "/commerce/products/$productId"
+    | "/commerce/products/import"
+    | "/commerce/reports/audit"
+    | "/commerce/settings/business"
+    | "/commerce/settings/locations"
+    | "/commerce/settings/notifications"
+    | "/commerce/settings/registers"
+    | "/commerce/settings/staff"
+    | "/commerce/settings/tax-classes"
+    | "/engagement-engines/dashboard/outcomes"
+    | "/erp/attendance/regularizations"
+    | "/erp/attendance/setup"
+    | "/erp/compliance/challans"
+    | "/erp/compliance/provisions"
+    | "/erp/finance/journal"
+    | "/erp/finance/pnl"
+    | "/erp/leave/balances"
+    | "/erp/leave/setup"
+    | "/erp/my-hr/claims"
+    | "/erp/my-hr/leave"
+    | "/erp/my-hr/payslips"
+    | "/erp/my-hr/tax"
+    | "/erp/payroll/$runId"
+    | "/erp/payroll/adjustments"
+    | "/erp/payroll/salary-setup"
+    | "/erp/people/$employeeId"
+    | "/erp/people/org"
+    | "/erp/people/staff-bridge"
     | "/mentorship/mentors/$mentorId"
     | "/planning/activity-logs/create"
     | "/planning/planning/create"
     | "/study-library/ai-copilot/course-outline"
     | "/study-library/courses/course-details"
+    | "/study-library/live-session/dashboard"
     | "/study-library/live-session/feedback"
     | "/study-library/live-session/schedule"
     | "/study-library/volt/add"
@@ -2885,9 +4218,18 @@ export interface FileRouteTypes {
     | "/workflow/$workflowId/edit"
     | "/study-library/ai-copilot/shared/components/YouTubePlayerSimple"
     | "/assessment/assessment-list/offline-entry/$assessmentId"
+    | "/assessment/assessment-list/scan-station/$assessmentId"
     | "/assessment/create-assessment/$assessmentId/$examtype"
     | "/assessment/evaluation-ai/$attemptId/$processId"
     | "/audience-manager/list/campaign-users/add"
+    | "/commerce/inventory/counts/$countId"
+    | "/commerce/inventory/receipts/$receiptId"
+    | "/commerce/inventory/transfers/$transferId"
+    | "/commerce/pos/$sessionId/bill-book"
+    | "/commerce/pos/$sessionId/bills"
+    | "/commerce/pos/$sessionId/close"
+    | "/commerce/pos/$sessionId/returns"
+    | "/commerce/pos/sessions/$sessionId"
     | "/homework-creation/create-assessment/$assessmentId/$examtype"
     | "/study-library/ai-copilot/course-outline/generating"
     | "/study-library/courses/course-details/subjects"
@@ -2906,8 +4248,10 @@ export interface FileRouteTypes {
     | "/study-library/courses/course-details/subjects/modules/chapters/slides"
   id:
     | "__root__"
+    | "/evalezy"
     | "/agent-chat"
     | "/chat"
+    | "/demo"
     | "/error-page"
     | "/locked-feature"
     | "/explore-ai"
@@ -2916,11 +4260,24 @@ export interface FileRouteTypes {
     | "/pricing"
     | "/counsellors/$userId"
     | "/engagement-engines/$engineId"
+    | "/evalezy/$assessmentId"
+    | "/evalezy/credits"
+    | "/evalezy/help"
+    | "/evalezy/new"
+    | "/evalezy/plan"
+    | "/evalezy/profile"
+    | "/evalezy/settings"
     | "/knowledge-base/$kbId"
     | "/knowledge-base/publish"
+    | "/mcp/authorize"
+    | "/signup/start"
+    | "/telleo/api"
+    | "/telleo/plan"
+    | "/telleo/setup"
     | "/vim/dashboard"
     | "/vim/login"
     | "/vim/waitlist"
+    | "/access-passes/"
     | "/admin-activity-logs/"
     | "/admin-package-management/"
     | "/admissions/"
@@ -2929,17 +4286,22 @@ export interface FileRouteTypes {
     | "/auth-transfer/"
     | "/center-management/"
     | "/challenge-analytics/"
+    | "/commerce/"
     | "/community/"
     | "/connector-center-details/"
     | "/counsellors/"
     | "/dashboard/"
     | "/engagement-engines/"
+    | "/engagement/"
+    | "/evalezy/"
     | "/evaluation/"
-    | "/evaluator-ai/"
     | "/institute-pulse/"
     | "/instructor-copilot/"
     | "/knowledge-base/"
+    | "/learner-home/"
     | "/learner-insights/"
+    | "/live-activity/"
+    | "/lms-dashboard/"
     | "/login/"
     | "/manage-bookings/"
     | "/manage-contacts/"
@@ -2953,6 +4315,7 @@ export interface FileRouteTypes {
     | "/membership-expiry/"
     | "/membership-stats/"
     | "/payment-dashboard/"
+    | "/plan-week/"
     | "/planning/"
     | "/sales-dashboard/"
     | "/settings/"
@@ -2989,31 +4352,55 @@ export interface FileRouteTypes {
     | "/announcement/history/"
     | "/announcement/schedule/"
     | "/assessment/assessment-list/"
+    | "/assessment/dashboard/"
     | "/assessment/evaluation-ai/"
+    | "/assessment/question-library/"
     | "/assessment/question-papers/"
+    | "/audience-manager/ad-performance/"
     | "/audience-manager/ai-intelligence/"
     | "/audience-manager/call-log/"
     | "/audience-manager/follow-ups/"
+    | "/audience-manager/lead-agent/"
     | "/audience-manager/lead-board/"
+    | "/audience-manager/lead-lookup/"
     | "/audience-manager/list/"
     | "/audience-manager/onboarding/"
     | "/audience-manager/recent-leads/"
     | "/audience-manager/reports/"
+    | "/audience-manager/social-posts/"
     | "/automation/chatbot-flows/"
+    | "/automation/dashboard/"
     | "/calling/ai-agents/"
+    | "/calling/call-queue/"
+    | "/calling/dashboard/"
     | "/certificate-generation/student-data/"
+    | "/commerce/collections/"
+    | "/commerce/customers/"
+    | "/commerce/discounts/"
+    | "/commerce/inventory/"
+    | "/commerce/orders/"
+    | "/commerce/parallel-run/"
+    | "/commerce/pos/"
+    | "/commerce/products/"
+    | "/commerce/reports/"
+    | "/commerce/settings/"
+    | "/communication/dashboard/"
     | "/communication/inbox/"
     | "/communication/notification-hub/"
     | "/communication/whatsapp-templates/"
     | "/community/question-paper/"
     | "/content/$contentId/"
     | "/engagement-engines/create/"
+    | "/engagement-engines/dashboard/"
     | "/engagement-engines/inbox/"
+    | "/erp/attendance/"
+    | "/erp/compliance/"
+    | "/erp/leave/"
+    | "/erp/my-hr/"
+    | "/erp/payroll/"
+    | "/erp/people/"
     | "/evaluation/evaluation-tool/"
     | "/evaluation/evaluations/"
-    | "/evaluator-ai/assessment/"
-    | "/evaluator-ai/evaluation/"
-    | "/evaluator-ai/students/"
     | "/financial-management/adjustment-approvals/"
     | "/financial-management/collection-dashboard/"
     | "/financial-management/fee-plans/"
@@ -3022,13 +4409,18 @@ export interface FileRouteTypes {
     | "/homework-creation/assessment-list/"
     | "/login/$key/"
     | "/login/forgot-password/"
+    | "/manage-contacts/dashboard/"
     | "/manage-institute/batches/"
+    | "/manage-institute/overview/"
     | "/manage-institute/sessions/"
     | "/manage-institute/teams/"
+    | "/manage-pages/blog/"
     | "/manage-pages/product-pages/"
+    | "/manage-pages/site-assistant/"
     | "/manage-students/enroll-requests/"
     | "/manage-students/invite/"
     | "/manage-students/students-list/"
+    | "/meetings/dashboard/"
     | "/meetings/my-schedule/"
     | "/meetings/team/"
     | "/mentorship/dashboard/"
@@ -3046,6 +4438,7 @@ export interface FileRouteTypes {
     | "/study-library/bulk-content-uploading/"
     | "/study-library/courses/"
     | "/study-library/doubt-management/"
+    | "/study-library/gamification/"
     | "/study-library/live-session/"
     | "/study-library/reports/"
     | "/study-library/student-ai/"
@@ -3060,6 +4453,7 @@ export interface FileRouteTypes {
     | "/workflow/$workflowId/"
     | "/workflow/create/"
     | "/workflow/list/"
+    | "/manage-pages/blog/editor/$postId"
     | "/manage-pages/product-pages/editor/$productPageId"
     | "/settings/leads/pools/$poolId"
     | "/study-library/live-session/host/$scheduleId"
@@ -3077,14 +4471,51 @@ export interface FileRouteTypes {
     | "/ai-center/ai-tools/vsmart-sorter/"
     | "/ai-center/ai-tools/vsmart-upload/"
     | "/assessment/export/$assessmentId/"
+    | "/assessment/submission/$attemptId/"
+    | "/audience-manager/lead-agent/$agentId/"
     | "/audience-manager/list/campaign-users/"
-    | "/evaluator-ai/assessment/create-assessment/"
-    | "/evaluator-ai/evaluation/student-summary/"
+    | "/commerce/customers/$customerId/"
+    | "/commerce/orders/$orderId/"
+    | "/commerce/orders/new/"
+    | "/commerce/orders/pack/"
+    | "/commerce/orders/print/"
+    | "/commerce/orders/remittances/"
+    | "/commerce/pos/$sessionId/"
+    | "/commerce/pos/sessions/"
+    | "/commerce/products/$productId/"
+    | "/commerce/products/import/"
+    | "/commerce/reports/audit/"
+    | "/commerce/settings/business/"
+    | "/commerce/settings/locations/"
+    | "/commerce/settings/notifications/"
+    | "/commerce/settings/registers/"
+    | "/commerce/settings/staff/"
+    | "/commerce/settings/tax-classes/"
+    | "/engagement-engines/dashboard/outcomes/"
+    | "/erp/attendance/regularizations/"
+    | "/erp/attendance/setup/"
+    | "/erp/compliance/challans/"
+    | "/erp/compliance/provisions/"
+    | "/erp/finance/journal/"
+    | "/erp/finance/pnl/"
+    | "/erp/leave/balances/"
+    | "/erp/leave/setup/"
+    | "/erp/my-hr/claims/"
+    | "/erp/my-hr/leave/"
+    | "/erp/my-hr/payslips/"
+    | "/erp/my-hr/tax/"
+    | "/erp/payroll/$runId/"
+    | "/erp/payroll/adjustments/"
+    | "/erp/payroll/salary-setup/"
+    | "/erp/people/$employeeId/"
+    | "/erp/people/org/"
+    | "/erp/people/staff-bridge/"
     | "/mentorship/mentors/$mentorId/"
     | "/planning/activity-logs/create/"
     | "/planning/planning/create/"
     | "/study-library/ai-copilot/course-outline/"
     | "/study-library/courses/course-details/"
+    | "/study-library/live-session/dashboard/"
     | "/study-library/live-session/feedback/"
     | "/study-library/live-session/schedule/"
     | "/study-library/volt/add/"
@@ -3096,9 +4527,18 @@ export interface FileRouteTypes {
     | "/workflow/$workflowId/edit/"
     | "/study-library/ai-copilot/shared/components/YouTubePlayerSimple"
     | "/assessment/assessment-list/offline-entry/$assessmentId/"
+    | "/assessment/assessment-list/scan-station/$assessmentId/"
     | "/assessment/create-assessment/$assessmentId/$examtype/"
     | "/assessment/evaluation-ai/$attemptId/$processId/"
     | "/audience-manager/list/campaign-users/add/"
+    | "/commerce/inventory/counts/$countId/"
+    | "/commerce/inventory/receipts/$receiptId/"
+    | "/commerce/inventory/transfers/$transferId/"
+    | "/commerce/pos/$sessionId/bill-book/"
+    | "/commerce/pos/$sessionId/bills/"
+    | "/commerce/pos/$sessionId/close/"
+    | "/commerce/pos/$sessionId/returns/"
+    | "/commerce/pos/sessions/$sessionId/"
     | "/homework-creation/create-assessment/$assessmentId/$examtype/"
     | "/study-library/ai-copilot/course-outline/generating/"
     | "/study-library/courses/course-details/subjects/"
@@ -3118,8 +4558,10 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  EvalezyRouteRoute: typeof EvalezyRouteRouteWithChildren
   AgentChatRoute: typeof AgentChatRoute
   ChatRoute: typeof ChatRoute
+  DemoRoute: typeof DemoRoute
   ErrorPageRoute: typeof ErrorPageRoute
   LockedFeatureRoute: typeof LockedFeatureRoute
   ExploreAiLazyRoute: typeof ExploreAiLazyRoute
@@ -3130,9 +4572,15 @@ export interface RootRouteChildren {
   EngagementEnginesEngineIdRoute: typeof EngagementEnginesEngineIdRoute
   KnowledgeBaseKbIdRoute: typeof KnowledgeBaseKbIdRoute
   KnowledgeBasePublishRoute: typeof KnowledgeBasePublishRoute
+  McpAuthorizeRoute: typeof McpAuthorizeRoute
+  SignupStartRoute: typeof SignupStartRoute
+  TelleoApiRoute: typeof TelleoApiRoute
+  TelleoPlanRoute: typeof TelleoPlanRoute
+  TelleoSetupRoute: typeof TelleoSetupRoute
   VimDashboardRoute: typeof VimDashboardRoute
   VimLoginRoute: typeof VimLoginRoute
   VimWaitlistRoute: typeof VimWaitlistRoute
+  AccessPassesIndexRoute: typeof AccessPassesIndexRoute
   AdminActivityLogsIndexRoute: typeof AdminActivityLogsIndexRoute
   AdminPackageManagementIndexRoute: typeof AdminPackageManagementIndexRoute
   AdmissionsIndexRoute: typeof AdmissionsIndexRoute
@@ -3141,16 +4589,20 @@ export interface RootRouteChildren {
   AuthTransferIndexRoute: typeof AuthTransferIndexRoute
   CenterManagementIndexRoute: typeof CenterManagementIndexRoute
   ChallengeAnalyticsIndexRoute: typeof ChallengeAnalyticsIndexRoute
+  CommerceIndexRoute: typeof CommerceIndexRoute
   CommunityIndexRoute: typeof CommunityIndexRoute
   ConnectorCenterDetailsIndexRoute: typeof ConnectorCenterDetailsIndexRoute
   CounsellorsIndexRoute: typeof CounsellorsIndexRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
   EngagementEnginesIndexRoute: typeof EngagementEnginesIndexRoute
+  EngagementIndexRoute: typeof EngagementIndexRoute
   EvaluationIndexRoute: typeof EvaluationIndexRoute
-  EvaluatorAiIndexRoute: typeof EvaluatorAiIndexRoute
   InstitutePulseIndexRoute: typeof InstitutePulseIndexRoute
   InstructorCopilotIndexRoute: typeof InstructorCopilotIndexRoute
   KnowledgeBaseIndexRoute: typeof KnowledgeBaseIndexRoute
+  LearnerHomeIndexRoute: typeof LearnerHomeIndexRoute
+  LiveActivityIndexRoute: typeof LiveActivityIndexRoute
+  LmsDashboardIndexRoute: typeof LmsDashboardIndexRoute
   LoginIndexRoute: typeof LoginIndexRoute
   ManageBookingsIndexRoute: typeof ManageBookingsIndexRoute
   ManageContactsIndexRoute: typeof ManageContactsIndexRoute
@@ -3164,6 +4616,7 @@ export interface RootRouteChildren {
   MembershipExpiryIndexRoute: typeof MembershipExpiryIndexRoute
   MembershipStatsIndexRoute: typeof MembershipStatsIndexRoute
   PaymentDashboardIndexRoute: typeof PaymentDashboardIndexRoute
+  PlanWeekIndexRoute: typeof PlanWeekIndexRoute
   PlanningIndexRoute: typeof PlanningIndexRoute
   SalesDashboardIndexRoute: typeof SalesDashboardIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
@@ -3200,31 +4653,55 @@ export interface RootRouteChildren {
   AnnouncementHistoryIndexRoute: typeof AnnouncementHistoryIndexRoute
   AnnouncementScheduleIndexRoute: typeof AnnouncementScheduleIndexRoute
   AssessmentAssessmentListIndexRoute: typeof AssessmentAssessmentListIndexRoute
+  AssessmentDashboardIndexRoute: typeof AssessmentDashboardIndexRoute
   AssessmentEvaluationAiIndexRoute: typeof AssessmentEvaluationAiIndexRoute
+  AssessmentQuestionLibraryIndexRoute: typeof AssessmentQuestionLibraryIndexRoute
   AssessmentQuestionPapersIndexRoute: typeof AssessmentQuestionPapersIndexRoute
+  AudienceManagerAdPerformanceIndexRoute: typeof AudienceManagerAdPerformanceIndexRoute
   AudienceManagerAiIntelligenceIndexRoute: typeof AudienceManagerAiIntelligenceIndexRoute
   AudienceManagerCallLogIndexRoute: typeof AudienceManagerCallLogIndexRoute
   AudienceManagerFollowUpsIndexRoute: typeof AudienceManagerFollowUpsIndexRoute
+  AudienceManagerLeadAgentIndexRoute: typeof AudienceManagerLeadAgentIndexRoute
   AudienceManagerLeadBoardIndexRoute: typeof AudienceManagerLeadBoardIndexRoute
+  AudienceManagerLeadLookupIndexRoute: typeof AudienceManagerLeadLookupIndexRoute
   AudienceManagerListIndexRoute: typeof AudienceManagerListIndexRoute
   AudienceManagerOnboardingIndexRoute: typeof AudienceManagerOnboardingIndexRoute
   AudienceManagerRecentLeadsIndexRoute: typeof AudienceManagerRecentLeadsIndexRoute
   AudienceManagerReportsIndexRoute: typeof AudienceManagerReportsIndexRoute
+  AudienceManagerSocialPostsIndexRoute: typeof AudienceManagerSocialPostsIndexRoute
   AutomationChatbotFlowsIndexRoute: typeof AutomationChatbotFlowsIndexRoute
+  AutomationDashboardIndexRoute: typeof AutomationDashboardIndexRoute
   CallingAiAgentsIndexRoute: typeof CallingAiAgentsIndexRoute
+  CallingCallQueueIndexRoute: typeof CallingCallQueueIndexRoute
+  CallingDashboardIndexRoute: typeof CallingDashboardIndexRoute
   CertificateGenerationStudentDataIndexRoute: typeof CertificateGenerationStudentDataIndexRoute
+  CommerceCollectionsIndexRoute: typeof CommerceCollectionsIndexRoute
+  CommerceCustomersIndexRoute: typeof CommerceCustomersIndexRoute
+  CommerceDiscountsIndexRoute: typeof CommerceDiscountsIndexRoute
+  CommerceInventoryIndexRoute: typeof CommerceInventoryIndexRoute
+  CommerceOrdersIndexRoute: typeof CommerceOrdersIndexRoute
+  CommerceParallelRunIndexRoute: typeof CommerceParallelRunIndexRoute
+  CommercePosIndexRoute: typeof CommercePosIndexRoute
+  CommerceProductsIndexRoute: typeof CommerceProductsIndexRoute
+  CommerceReportsIndexRoute: typeof CommerceReportsIndexRoute
+  CommerceSettingsIndexRoute: typeof CommerceSettingsIndexRoute
+  CommunicationDashboardIndexRoute: typeof CommunicationDashboardIndexRoute
   CommunicationInboxIndexRoute: typeof CommunicationInboxIndexRoute
   CommunicationNotificationHubIndexRoute: typeof CommunicationNotificationHubIndexRoute
   CommunicationWhatsappTemplatesIndexRoute: typeof CommunicationWhatsappTemplatesIndexRoute
   CommunityQuestionPaperIndexRoute: typeof CommunityQuestionPaperIndexRoute
   ContentContentIdIndexRoute: typeof ContentContentIdIndexRoute
   EngagementEnginesCreateIndexRoute: typeof EngagementEnginesCreateIndexRoute
+  EngagementEnginesDashboardIndexRoute: typeof EngagementEnginesDashboardIndexRoute
   EngagementEnginesInboxIndexRoute: typeof EngagementEnginesInboxIndexRoute
+  ErpAttendanceIndexRoute: typeof ErpAttendanceIndexRoute
+  ErpComplianceIndexRoute: typeof ErpComplianceIndexRoute
+  ErpLeaveIndexRoute: typeof ErpLeaveIndexRoute
+  ErpMyHrIndexRoute: typeof ErpMyHrIndexRoute
+  ErpPayrollIndexRoute: typeof ErpPayrollIndexRoute
+  ErpPeopleIndexRoute: typeof ErpPeopleIndexRoute
   EvaluationEvaluationToolIndexRoute: typeof EvaluationEvaluationToolIndexRoute
   EvaluationEvaluationsIndexRoute: typeof EvaluationEvaluationsIndexRoute
-  EvaluatorAiAssessmentIndexRoute: typeof EvaluatorAiAssessmentIndexRoute
-  EvaluatorAiEvaluationIndexRoute: typeof EvaluatorAiEvaluationIndexRoute
-  EvaluatorAiStudentsIndexRoute: typeof EvaluatorAiStudentsIndexRoute
   FinancialManagementAdjustmentApprovalsIndexRoute: typeof FinancialManagementAdjustmentApprovalsIndexRoute
   FinancialManagementCollectionDashboardIndexRoute: typeof FinancialManagementCollectionDashboardIndexRoute
   FinancialManagementFeePlansIndexRoute: typeof FinancialManagementFeePlansIndexRoute
@@ -3233,13 +4710,18 @@ export interface RootRouteChildren {
   HomeworkCreationAssessmentListIndexRoute: typeof HomeworkCreationAssessmentListIndexRoute
   LoginKeyIndexRoute: typeof LoginKeyIndexRoute
   LoginForgotPasswordIndexRoute: typeof LoginForgotPasswordIndexRoute
+  ManageContactsDashboardIndexRoute: typeof ManageContactsDashboardIndexRoute
   ManageInstituteBatchesIndexRoute: typeof ManageInstituteBatchesIndexRoute
+  ManageInstituteOverviewIndexRoute: typeof ManageInstituteOverviewIndexRoute
   ManageInstituteSessionsIndexRoute: typeof ManageInstituteSessionsIndexRoute
   ManageInstituteTeamsIndexRoute: typeof ManageInstituteTeamsIndexRoute
+  ManagePagesBlogIndexRoute: typeof ManagePagesBlogIndexRoute
   ManagePagesProductPagesIndexRoute: typeof ManagePagesProductPagesIndexRoute
+  ManagePagesSiteAssistantIndexRoute: typeof ManagePagesSiteAssistantIndexRoute
   ManageStudentsEnrollRequestsIndexRoute: typeof ManageStudentsEnrollRequestsIndexRoute
   ManageStudentsInviteIndexRoute: typeof ManageStudentsInviteIndexRoute
   ManageStudentsStudentsListIndexRoute: typeof ManageStudentsStudentsListIndexRoute
+  MeetingsDashboardIndexRoute: typeof MeetingsDashboardIndexRoute
   MeetingsMyScheduleIndexRoute: typeof MeetingsMyScheduleIndexRoute
   MeetingsTeamIndexRoute: typeof MeetingsTeamIndexRoute
   MentorshipDashboardIndexRoute: typeof MentorshipDashboardIndexRoute
@@ -3257,6 +4739,7 @@ export interface RootRouteChildren {
   StudyLibraryBulkContentUploadingIndexRoute: typeof StudyLibraryBulkContentUploadingIndexRoute
   StudyLibraryCoursesIndexRoute: typeof StudyLibraryCoursesIndexRoute
   StudyLibraryDoubtManagementIndexRoute: typeof StudyLibraryDoubtManagementIndexRoute
+  StudyLibraryGamificationIndexRoute: typeof StudyLibraryGamificationIndexRoute
   StudyLibraryLiveSessionIndexRoute: typeof StudyLibraryLiveSessionIndexRoute
   StudyLibraryReportsIndexRoute: typeof StudyLibraryReportsIndexRoute
   StudyLibraryStudentAiIndexRoute: typeof StudyLibraryStudentAiIndexRoute
@@ -3271,6 +4754,7 @@ export interface RootRouteChildren {
   WorkflowWorkflowIdIndexRoute: typeof WorkflowWorkflowIdIndexRoute
   WorkflowCreateIndexRoute: typeof WorkflowCreateIndexRoute
   WorkflowListIndexRoute: typeof WorkflowListIndexRoute
+  ManagePagesBlogEditorPostIdRoute: typeof ManagePagesBlogEditorPostIdRoute
   ManagePagesProductPagesEditorProductPageIdRoute: typeof ManagePagesProductPagesEditorProductPageIdRoute
   SettingsLeadsPoolsPoolIdRoute: typeof SettingsLeadsPoolsPoolIdRoute
   StudyLibraryLiveSessionHostScheduleIdRoute: typeof StudyLibraryLiveSessionHostScheduleIdRoute
@@ -3288,14 +4772,51 @@ export interface RootRouteChildren {
   AiCenterAiToolsVsmartSorterIndexRoute: typeof AiCenterAiToolsVsmartSorterIndexRoute
   AiCenterAiToolsVsmartUploadIndexRoute: typeof AiCenterAiToolsVsmartUploadIndexRoute
   AssessmentExportAssessmentIdIndexRoute: typeof AssessmentExportAssessmentIdIndexRoute
+  AssessmentSubmissionAttemptIdIndexRoute: typeof AssessmentSubmissionAttemptIdIndexRoute
+  AudienceManagerLeadAgentAgentIdIndexRoute: typeof AudienceManagerLeadAgentAgentIdIndexRoute
   AudienceManagerListCampaignUsersIndexRoute: typeof AudienceManagerListCampaignUsersIndexRoute
-  EvaluatorAiAssessmentCreateAssessmentIndexRoute: typeof EvaluatorAiAssessmentCreateAssessmentIndexRoute
-  EvaluatorAiEvaluationStudentSummaryIndexRoute: typeof EvaluatorAiEvaluationStudentSummaryIndexRoute
+  CommerceCustomersCustomerIdIndexRoute: typeof CommerceCustomersCustomerIdIndexRoute
+  CommerceOrdersOrderIdIndexRoute: typeof CommerceOrdersOrderIdIndexRoute
+  CommerceOrdersNewIndexRoute: typeof CommerceOrdersNewIndexRoute
+  CommerceOrdersPackIndexRoute: typeof CommerceOrdersPackIndexRoute
+  CommerceOrdersPrintIndexRoute: typeof CommerceOrdersPrintIndexRoute
+  CommerceOrdersRemittancesIndexRoute: typeof CommerceOrdersRemittancesIndexRoute
+  CommercePosSessionIdIndexRoute: typeof CommercePosSessionIdIndexRoute
+  CommercePosSessionsIndexRoute: typeof CommercePosSessionsIndexRoute
+  CommerceProductsProductIdIndexRoute: typeof CommerceProductsProductIdIndexRoute
+  CommerceProductsImportIndexRoute: typeof CommerceProductsImportIndexRoute
+  CommerceReportsAuditIndexRoute: typeof CommerceReportsAuditIndexRoute
+  CommerceSettingsBusinessIndexRoute: typeof CommerceSettingsBusinessIndexRoute
+  CommerceSettingsLocationsIndexRoute: typeof CommerceSettingsLocationsIndexRoute
+  CommerceSettingsNotificationsIndexRoute: typeof CommerceSettingsNotificationsIndexRoute
+  CommerceSettingsRegistersIndexRoute: typeof CommerceSettingsRegistersIndexRoute
+  CommerceSettingsStaffIndexRoute: typeof CommerceSettingsStaffIndexRoute
+  CommerceSettingsTaxClassesIndexRoute: typeof CommerceSettingsTaxClassesIndexRoute
+  EngagementEnginesDashboardOutcomesIndexRoute: typeof EngagementEnginesDashboardOutcomesIndexRoute
+  ErpAttendanceRegularizationsIndexRoute: typeof ErpAttendanceRegularizationsIndexRoute
+  ErpAttendanceSetupIndexRoute: typeof ErpAttendanceSetupIndexRoute
+  ErpComplianceChallansIndexRoute: typeof ErpComplianceChallansIndexRoute
+  ErpComplianceProvisionsIndexRoute: typeof ErpComplianceProvisionsIndexRoute
+  ErpFinanceJournalIndexRoute: typeof ErpFinanceJournalIndexRoute
+  ErpFinancePnlIndexRoute: typeof ErpFinancePnlIndexRoute
+  ErpLeaveBalancesIndexRoute: typeof ErpLeaveBalancesIndexRoute
+  ErpLeaveSetupIndexRoute: typeof ErpLeaveSetupIndexRoute
+  ErpMyHrClaimsIndexRoute: typeof ErpMyHrClaimsIndexRoute
+  ErpMyHrLeaveIndexRoute: typeof ErpMyHrLeaveIndexRoute
+  ErpMyHrPayslipsIndexRoute: typeof ErpMyHrPayslipsIndexRoute
+  ErpMyHrTaxIndexRoute: typeof ErpMyHrTaxIndexRoute
+  ErpPayrollRunIdIndexRoute: typeof ErpPayrollRunIdIndexRoute
+  ErpPayrollAdjustmentsIndexRoute: typeof ErpPayrollAdjustmentsIndexRoute
+  ErpPayrollSalarySetupIndexRoute: typeof ErpPayrollSalarySetupIndexRoute
+  ErpPeopleEmployeeIdIndexRoute: typeof ErpPeopleEmployeeIdIndexRoute
+  ErpPeopleOrgIndexRoute: typeof ErpPeopleOrgIndexRoute
+  ErpPeopleStaffBridgeIndexRoute: typeof ErpPeopleStaffBridgeIndexRoute
   MentorshipMentorsMentorIdIndexRoute: typeof MentorshipMentorsMentorIdIndexRoute
   PlanningActivityLogsCreateIndexRoute: typeof PlanningActivityLogsCreateIndexRoute
   PlanningPlanningCreateIndexRoute: typeof PlanningPlanningCreateIndexRoute
   StudyLibraryAiCopilotCourseOutlineIndexRoute: typeof StudyLibraryAiCopilotCourseOutlineIndexRoute
   StudyLibraryCoursesCourseDetailsIndexRoute: typeof StudyLibraryCoursesCourseDetailsIndexRoute
+  StudyLibraryLiveSessionDashboardIndexRoute: typeof StudyLibraryLiveSessionDashboardIndexRoute
   StudyLibraryLiveSessionFeedbackIndexRoute: typeof StudyLibraryLiveSessionFeedbackIndexRoute
   StudyLibraryLiveSessionScheduleIndexRoute: typeof StudyLibraryLiveSessionScheduleIndexRoute
   StudyLibraryVoltAddIndexRoute: typeof StudyLibraryVoltAddIndexRoute
@@ -3307,9 +4828,18 @@ export interface RootRouteChildren {
   WorkflowWorkflowIdEditIndexRoute: typeof WorkflowWorkflowIdEditIndexRoute
   StudyLibraryAiCopilotSharedComponentsYouTubePlayerSimpleRoute: typeof StudyLibraryAiCopilotSharedComponentsYouTubePlayerSimpleRoute
   AssessmentAssessmentListOfflineEntryAssessmentIdIndexRoute: typeof AssessmentAssessmentListOfflineEntryAssessmentIdIndexRoute
+  AssessmentAssessmentListScanStationAssessmentIdIndexRoute: typeof AssessmentAssessmentListScanStationAssessmentIdIndexRoute
   AssessmentCreateAssessmentAssessmentIdExamtypeIndexRoute: typeof AssessmentCreateAssessmentAssessmentIdExamtypeIndexRoute
   AssessmentEvaluationAiAttemptIdProcessIdIndexRoute: typeof AssessmentEvaluationAiAttemptIdProcessIdIndexRoute
   AudienceManagerListCampaignUsersAddIndexRoute: typeof AudienceManagerListCampaignUsersAddIndexRoute
+  CommerceInventoryCountsCountIdIndexRoute: typeof CommerceInventoryCountsCountIdIndexRoute
+  CommerceInventoryReceiptsReceiptIdIndexRoute: typeof CommerceInventoryReceiptsReceiptIdIndexRoute
+  CommerceInventoryTransfersTransferIdIndexRoute: typeof CommerceInventoryTransfersTransferIdIndexRoute
+  CommercePosSessionIdBillBookIndexRoute: typeof CommercePosSessionIdBillBookIndexRoute
+  CommercePosSessionIdBillsIndexRoute: typeof CommercePosSessionIdBillsIndexRoute
+  CommercePosSessionIdCloseIndexRoute: typeof CommercePosSessionIdCloseIndexRoute
+  CommercePosSessionIdReturnsIndexRoute: typeof CommercePosSessionIdReturnsIndexRoute
+  CommercePosSessionsSessionIdIndexRoute: typeof CommercePosSessionsSessionIdIndexRoute
   HomeworkCreationCreateAssessmentAssessmentIdExamtypeIndexRoute: typeof HomeworkCreationCreateAssessmentAssessmentIdExamtypeIndexRoute
   StudyLibraryAiCopilotCourseOutlineGeneratingIndexRoute: typeof StudyLibraryAiCopilotCourseOutlineGeneratingIndexRoute
   StudyLibraryCoursesCourseDetailsSubjectsIndexRoute: typeof StudyLibraryCoursesCourseDetailsSubjectsIndexRoute
@@ -3372,6 +4902,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof ErrorPageRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/demo": {
+      id: "/demo"
+      path: "/demo"
+      fullPath: "/demo"
+      preLoaderRoute: typeof DemoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/chat": {
       id: "/chat"
       path: "/chat"
@@ -3384,6 +4921,13 @@ declare module "@tanstack/react-router" {
       path: "/agent-chat"
       fullPath: "/agent-chat"
       preLoaderRoute: typeof AgentChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/evalezy": {
+      id: "/evalezy"
+      path: "/evalezy"
+      fullPath: "/evalezy"
+      preLoaderRoute: typeof EvalezyRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/vim/": {
@@ -3433,6 +4977,13 @@ declare module "@tanstack/react-router" {
       path: "/planning"
       fullPath: "/planning/"
       preLoaderRoute: typeof PlanningIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/plan-week/": {
+      id: "/plan-week/"
+      path: "/plan-week"
+      fullPath: "/plan-week/"
+      preLoaderRoute: typeof PlanWeekIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/payment-dashboard/": {
@@ -3526,12 +5077,33 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof LoginIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/lms-dashboard/": {
+      id: "/lms-dashboard/"
+      path: "/lms-dashboard"
+      fullPath: "/lms-dashboard/"
+      preLoaderRoute: typeof LmsDashboardIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/live-activity/": {
+      id: "/live-activity/"
+      path: "/live-activity"
+      fullPath: "/live-activity/"
+      preLoaderRoute: typeof LiveActivityIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/learner-insights/": {
       id: "/learner-insights/"
       path: "/"
       fullPath: "/learner-insights/"
       preLoaderRoute: typeof LearnerInsightsIndexRouteImport
       parentRoute: typeof LearnerInsightsLazyRoute
+    }
+    "/learner-home/": {
+      id: "/learner-home/"
+      path: "/learner-home"
+      fullPath: "/learner-home/"
+      preLoaderRoute: typeof LearnerHomeIndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     "/knowledge-base/": {
       id: "/knowledge-base/"
@@ -3554,18 +5126,25 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof InstitutePulseIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    "/evaluator-ai/": {
-      id: "/evaluator-ai/"
-      path: "/evaluator-ai"
-      fullPath: "/evaluator-ai/"
-      preLoaderRoute: typeof EvaluatorAiIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     "/evaluation/": {
       id: "/evaluation/"
       path: "/evaluation"
       fullPath: "/evaluation/"
       preLoaderRoute: typeof EvaluationIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/evalezy/": {
+      id: "/evalezy/"
+      path: "/"
+      fullPath: "/evalezy/"
+      preLoaderRoute: typeof EvalezyIndexRouteImport
+      parentRoute: typeof EvalezyRouteRoute
+    }
+    "/engagement/": {
+      id: "/engagement/"
+      path: "/engagement"
+      fullPath: "/engagement/"
+      preLoaderRoute: typeof EngagementIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/engagement-engines/": {
@@ -3601,6 +5180,13 @@ declare module "@tanstack/react-router" {
       path: "/community"
       fullPath: "/community/"
       preLoaderRoute: typeof CommunityIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/": {
+      id: "/commerce/"
+      path: "/commerce"
+      fullPath: "/commerce/"
+      preLoaderRoute: typeof CommerceIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/challenge-analytics/": {
@@ -3659,6 +5245,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AdminActivityLogsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/access-passes/": {
+      id: "/access-passes/"
+      path: "/access-passes"
+      fullPath: "/access-passes/"
+      preLoaderRoute: typeof AccessPassesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/vim/waitlist": {
       id: "/vim/waitlist"
       path: "/vim/waitlist"
@@ -3680,6 +5273,41 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof VimDashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/telleo/setup": {
+      id: "/telleo/setup"
+      path: "/telleo/setup"
+      fullPath: "/telleo/setup"
+      preLoaderRoute: typeof TelleoSetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/telleo/plan": {
+      id: "/telleo/plan"
+      path: "/telleo/plan"
+      fullPath: "/telleo/plan"
+      preLoaderRoute: typeof TelleoPlanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/telleo/api": {
+      id: "/telleo/api"
+      path: "/telleo/api"
+      fullPath: "/telleo/api"
+      preLoaderRoute: typeof TelleoApiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/signup/start": {
+      id: "/signup/start"
+      path: "/signup/start"
+      fullPath: "/signup/start"
+      preLoaderRoute: typeof SignupStartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/mcp/authorize": {
+      id: "/mcp/authorize"
+      path: "/mcp/authorize"
+      fullPath: "/mcp/authorize"
+      preLoaderRoute: typeof McpAuthorizeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/knowledge-base/publish": {
       id: "/knowledge-base/publish"
       path: "/knowledge-base/publish"
@@ -3693,6 +5321,55 @@ declare module "@tanstack/react-router" {
       fullPath: "/knowledge-base/$kbId"
       preLoaderRoute: typeof KnowledgeBaseKbIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    "/evalezy/settings": {
+      id: "/evalezy/settings"
+      path: "/settings"
+      fullPath: "/evalezy/settings"
+      preLoaderRoute: typeof EvalezySettingsRouteImport
+      parentRoute: typeof EvalezyRouteRoute
+    }
+    "/evalezy/profile": {
+      id: "/evalezy/profile"
+      path: "/profile"
+      fullPath: "/evalezy/profile"
+      preLoaderRoute: typeof EvalezyProfileRouteImport
+      parentRoute: typeof EvalezyRouteRoute
+    }
+    "/evalezy/plan": {
+      id: "/evalezy/plan"
+      path: "/plan"
+      fullPath: "/evalezy/plan"
+      preLoaderRoute: typeof EvalezyPlanRouteImport
+      parentRoute: typeof EvalezyRouteRoute
+    }
+    "/evalezy/new": {
+      id: "/evalezy/new"
+      path: "/new"
+      fullPath: "/evalezy/new"
+      preLoaderRoute: typeof EvalezyNewRouteImport
+      parentRoute: typeof EvalezyRouteRoute
+    }
+    "/evalezy/help": {
+      id: "/evalezy/help"
+      path: "/help"
+      fullPath: "/evalezy/help"
+      preLoaderRoute: typeof EvalezyHelpRouteImport
+      parentRoute: typeof EvalezyRouteRoute
+    }
+    "/evalezy/credits": {
+      id: "/evalezy/credits"
+      path: "/credits"
+      fullPath: "/evalezy/credits"
+      preLoaderRoute: typeof EvalezyCreditsRouteImport
+      parentRoute: typeof EvalezyRouteRoute
+    }
+    "/evalezy/$assessmentId": {
+      id: "/evalezy/$assessmentId"
+      path: "/$assessmentId"
+      fullPath: "/evalezy/$assessmentId"
+      preLoaderRoute: typeof EvalezyAssessmentIdRouteImport
+      parentRoute: typeof EvalezyRouteRoute
     }
     "/engagement-engines/$engineId": {
       id: "/engagement-engines/$engineId"
@@ -3804,6 +5481,13 @@ declare module "@tanstack/react-router" {
       path: "/study-library/live-session"
       fullPath: "/study-library/live-session/"
       preLoaderRoute: typeof StudyLibraryLiveSessionIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/study-library/gamification/": {
+      id: "/study-library/gamification/"
+      path: "/study-library/gamification"
+      fullPath: "/study-library/gamification/"
+      preLoaderRoute: typeof StudyLibraryGamificationIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/study-library/doubt-management/": {
@@ -3925,6 +5609,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof MeetingsMyScheduleIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/meetings/dashboard/": {
+      id: "/meetings/dashboard/"
+      path: "/meetings/dashboard"
+      fullPath: "/meetings/dashboard/"
+      preLoaderRoute: typeof MeetingsDashboardIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/manage-students/students-list/": {
       id: "/manage-students/students-list/"
       path: "/manage-students/students-list"
@@ -3946,11 +5637,25 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof ManageStudentsEnrollRequestsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/manage-pages/site-assistant/": {
+      id: "/manage-pages/site-assistant/"
+      path: "/manage-pages/site-assistant"
+      fullPath: "/manage-pages/site-assistant/"
+      preLoaderRoute: typeof ManagePagesSiteAssistantIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/manage-pages/product-pages/": {
       id: "/manage-pages/product-pages/"
       path: "/manage-pages/product-pages"
       fullPath: "/manage-pages/product-pages/"
       preLoaderRoute: typeof ManagePagesProductPagesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/manage-pages/blog/": {
+      id: "/manage-pages/blog/"
+      path: "/manage-pages/blog"
+      fullPath: "/manage-pages/blog/"
+      preLoaderRoute: typeof ManagePagesBlogIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/manage-institute/teams/": {
@@ -3967,11 +5672,25 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof ManageInstituteSessionsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/manage-institute/overview/": {
+      id: "/manage-institute/overview/"
+      path: "/manage-institute/overview"
+      fullPath: "/manage-institute/overview/"
+      preLoaderRoute: typeof ManageInstituteOverviewIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/manage-institute/batches/": {
       id: "/manage-institute/batches/"
       path: "/manage-institute/batches"
       fullPath: "/manage-institute/batches/"
       preLoaderRoute: typeof ManageInstituteBatchesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/manage-contacts/dashboard/": {
+      id: "/manage-contacts/dashboard/"
+      path: "/manage-contacts/dashboard"
+      fullPath: "/manage-contacts/dashboard/"
+      preLoaderRoute: typeof ManageContactsDashboardIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/login/forgot-password/": {
@@ -4030,27 +5749,6 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof FinancialManagementAdjustmentApprovalsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    "/evaluator-ai/students/": {
-      id: "/evaluator-ai/students/"
-      path: "/evaluator-ai/students"
-      fullPath: "/evaluator-ai/students/"
-      preLoaderRoute: typeof EvaluatorAiStudentsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    "/evaluator-ai/evaluation/": {
-      id: "/evaluator-ai/evaluation/"
-      path: "/evaluator-ai/evaluation"
-      fullPath: "/evaluator-ai/evaluation/"
-      preLoaderRoute: typeof EvaluatorAiEvaluationIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    "/evaluator-ai/assessment/": {
-      id: "/evaluator-ai/assessment/"
-      path: "/evaluator-ai/assessment"
-      fullPath: "/evaluator-ai/assessment/"
-      preLoaderRoute: typeof EvaluatorAiAssessmentIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     "/evaluation/evaluations/": {
       id: "/evaluation/evaluations/"
       path: "/evaluation/evaluations"
@@ -4065,11 +5763,60 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof EvaluationEvaluationToolIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/erp/people/": {
+      id: "/erp/people/"
+      path: "/erp/people"
+      fullPath: "/erp/people/"
+      preLoaderRoute: typeof ErpPeopleIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/erp/payroll/": {
+      id: "/erp/payroll/"
+      path: "/erp/payroll"
+      fullPath: "/erp/payroll/"
+      preLoaderRoute: typeof ErpPayrollIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/erp/my-hr/": {
+      id: "/erp/my-hr/"
+      path: "/erp/my-hr"
+      fullPath: "/erp/my-hr/"
+      preLoaderRoute: typeof ErpMyHrIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/erp/leave/": {
+      id: "/erp/leave/"
+      path: "/erp/leave"
+      fullPath: "/erp/leave/"
+      preLoaderRoute: typeof ErpLeaveIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/erp/compliance/": {
+      id: "/erp/compliance/"
+      path: "/erp/compliance"
+      fullPath: "/erp/compliance/"
+      preLoaderRoute: typeof ErpComplianceIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/erp/attendance/": {
+      id: "/erp/attendance/"
+      path: "/erp/attendance"
+      fullPath: "/erp/attendance/"
+      preLoaderRoute: typeof ErpAttendanceIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/engagement-engines/inbox/": {
       id: "/engagement-engines/inbox/"
       path: "/engagement-engines/inbox"
       fullPath: "/engagement-engines/inbox/"
       preLoaderRoute: typeof EngagementEnginesInboxIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/engagement-engines/dashboard/": {
+      id: "/engagement-engines/dashboard/"
+      path: "/engagement-engines/dashboard"
+      fullPath: "/engagement-engines/dashboard/"
+      preLoaderRoute: typeof EngagementEnginesDashboardIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/engagement-engines/create/": {
@@ -4114,11 +5861,102 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof CommunicationInboxIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/communication/dashboard/": {
+      id: "/communication/dashboard/"
+      path: "/communication/dashboard"
+      fullPath: "/communication/dashboard/"
+      preLoaderRoute: typeof CommunicationDashboardIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/settings/": {
+      id: "/commerce/settings/"
+      path: "/commerce/settings"
+      fullPath: "/commerce/settings/"
+      preLoaderRoute: typeof CommerceSettingsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/reports/": {
+      id: "/commerce/reports/"
+      path: "/commerce/reports"
+      fullPath: "/commerce/reports/"
+      preLoaderRoute: typeof CommerceReportsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/products/": {
+      id: "/commerce/products/"
+      path: "/commerce/products"
+      fullPath: "/commerce/products/"
+      preLoaderRoute: typeof CommerceProductsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/pos/": {
+      id: "/commerce/pos/"
+      path: "/commerce/pos"
+      fullPath: "/commerce/pos/"
+      preLoaderRoute: typeof CommercePosIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/parallel-run/": {
+      id: "/commerce/parallel-run/"
+      path: "/commerce/parallel-run"
+      fullPath: "/commerce/parallel-run/"
+      preLoaderRoute: typeof CommerceParallelRunIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/orders/": {
+      id: "/commerce/orders/"
+      path: "/commerce/orders"
+      fullPath: "/commerce/orders/"
+      preLoaderRoute: typeof CommerceOrdersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/inventory/": {
+      id: "/commerce/inventory/"
+      path: "/commerce/inventory"
+      fullPath: "/commerce/inventory/"
+      preLoaderRoute: typeof CommerceInventoryIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/discounts/": {
+      id: "/commerce/discounts/"
+      path: "/commerce/discounts"
+      fullPath: "/commerce/discounts/"
+      preLoaderRoute: typeof CommerceDiscountsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/customers/": {
+      id: "/commerce/customers/"
+      path: "/commerce/customers"
+      fullPath: "/commerce/customers/"
+      preLoaderRoute: typeof CommerceCustomersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/collections/": {
+      id: "/commerce/collections/"
+      path: "/commerce/collections"
+      fullPath: "/commerce/collections/"
+      preLoaderRoute: typeof CommerceCollectionsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/certificate-generation/student-data/": {
       id: "/certificate-generation/student-data/"
       path: "/certificate-generation/student-data"
       fullPath: "/certificate-generation/student-data/"
       preLoaderRoute: typeof CertificateGenerationStudentDataIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/calling/dashboard/": {
+      id: "/calling/dashboard/"
+      path: "/calling/dashboard"
+      fullPath: "/calling/dashboard/"
+      preLoaderRoute: typeof CallingDashboardIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/calling/call-queue/": {
+      id: "/calling/call-queue/"
+      path: "/calling/call-queue"
+      fullPath: "/calling/call-queue/"
+      preLoaderRoute: typeof CallingCallQueueIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/calling/ai-agents/": {
@@ -4128,11 +5966,25 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof CallingAiAgentsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/automation/dashboard/": {
+      id: "/automation/dashboard/"
+      path: "/automation/dashboard"
+      fullPath: "/automation/dashboard/"
+      preLoaderRoute: typeof AutomationDashboardIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/automation/chatbot-flows/": {
       id: "/automation/chatbot-flows/"
       path: "/automation/chatbot-flows"
       fullPath: "/automation/chatbot-flows/"
       preLoaderRoute: typeof AutomationChatbotFlowsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/audience-manager/social-posts/": {
+      id: "/audience-manager/social-posts/"
+      path: "/audience-manager/social-posts"
+      fullPath: "/audience-manager/social-posts/"
+      preLoaderRoute: typeof AudienceManagerSocialPostsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/audience-manager/reports/": {
@@ -4163,11 +6015,25 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AudienceManagerListIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/audience-manager/lead-lookup/": {
+      id: "/audience-manager/lead-lookup/"
+      path: "/audience-manager/lead-lookup"
+      fullPath: "/audience-manager/lead-lookup/"
+      preLoaderRoute: typeof AudienceManagerLeadLookupIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/audience-manager/lead-board/": {
       id: "/audience-manager/lead-board/"
       path: "/audience-manager/lead-board"
       fullPath: "/audience-manager/lead-board/"
       preLoaderRoute: typeof AudienceManagerLeadBoardIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/audience-manager/lead-agent/": {
+      id: "/audience-manager/lead-agent/"
+      path: "/audience-manager/lead-agent"
+      fullPath: "/audience-manager/lead-agent/"
+      preLoaderRoute: typeof AudienceManagerLeadAgentIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/audience-manager/follow-ups/": {
@@ -4191,6 +6057,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AudienceManagerAiIntelligenceIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/audience-manager/ad-performance/": {
+      id: "/audience-manager/ad-performance/"
+      path: "/audience-manager/ad-performance"
+      fullPath: "/audience-manager/ad-performance/"
+      preLoaderRoute: typeof AudienceManagerAdPerformanceIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/assessment/question-papers/": {
       id: "/assessment/question-papers/"
       path: "/assessment/question-papers"
@@ -4198,11 +6071,25 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AssessmentQuestionPapersIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/assessment/question-library/": {
+      id: "/assessment/question-library/"
+      path: "/assessment/question-library"
+      fullPath: "/assessment/question-library/"
+      preLoaderRoute: typeof AssessmentQuestionLibraryIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/assessment/evaluation-ai/": {
       id: "/assessment/evaluation-ai/"
       path: "/assessment/evaluation-ai"
       fullPath: "/assessment/evaluation-ai/"
       preLoaderRoute: typeof AssessmentEvaluationAiIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/assessment/dashboard/": {
+      id: "/assessment/dashboard/"
+      path: "/assessment/dashboard"
+      fullPath: "/assessment/dashboard/"
+      preLoaderRoute: typeof AssessmentDashboardIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/assessment/assessment-list/": {
@@ -4471,6 +6358,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof StudyLibraryLiveSessionFeedbackIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/study-library/live-session/dashboard/": {
+      id: "/study-library/live-session/dashboard/"
+      path: "/study-library/live-session/dashboard"
+      fullPath: "/study-library/live-session/dashboard/"
+      preLoaderRoute: typeof StudyLibraryLiveSessionDashboardIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/study-library/courses/course-details/": {
       id: "/study-library/courses/course-details/"
       path: "/study-library/courses/course-details"
@@ -4506,18 +6400,256 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof MentorshipMentorsMentorIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    "/evaluator-ai/evaluation/student-summary/": {
-      id: "/evaluator-ai/evaluation/student-summary/"
-      path: "/evaluator-ai/evaluation/student-summary"
-      fullPath: "/evaluator-ai/evaluation/student-summary/"
-      preLoaderRoute: typeof EvaluatorAiEvaluationStudentSummaryIndexRouteImport
+    "/erp/people/staff-bridge/": {
+      id: "/erp/people/staff-bridge/"
+      path: "/erp/people/staff-bridge"
+      fullPath: "/erp/people/staff-bridge/"
+      preLoaderRoute: typeof ErpPeopleStaffBridgeIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    "/evaluator-ai/assessment/create-assessment/": {
-      id: "/evaluator-ai/assessment/create-assessment/"
-      path: "/evaluator-ai/assessment/create-assessment"
-      fullPath: "/evaluator-ai/assessment/create-assessment/"
-      preLoaderRoute: typeof EvaluatorAiAssessmentCreateAssessmentIndexRouteImport
+    "/erp/people/org/": {
+      id: "/erp/people/org/"
+      path: "/erp/people/org"
+      fullPath: "/erp/people/org/"
+      preLoaderRoute: typeof ErpPeopleOrgIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/erp/people/$employeeId/": {
+      id: "/erp/people/$employeeId/"
+      path: "/erp/people/$employeeId"
+      fullPath: "/erp/people/$employeeId/"
+      preLoaderRoute: typeof ErpPeopleEmployeeIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/erp/payroll/salary-setup/": {
+      id: "/erp/payroll/salary-setup/"
+      path: "/erp/payroll/salary-setup"
+      fullPath: "/erp/payroll/salary-setup/"
+      preLoaderRoute: typeof ErpPayrollSalarySetupIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/erp/payroll/adjustments/": {
+      id: "/erp/payroll/adjustments/"
+      path: "/erp/payroll/adjustments"
+      fullPath: "/erp/payroll/adjustments/"
+      preLoaderRoute: typeof ErpPayrollAdjustmentsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/erp/payroll/$runId/": {
+      id: "/erp/payroll/$runId/"
+      path: "/erp/payroll/$runId"
+      fullPath: "/erp/payroll/$runId/"
+      preLoaderRoute: typeof ErpPayrollRunIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/erp/my-hr/tax/": {
+      id: "/erp/my-hr/tax/"
+      path: "/erp/my-hr/tax"
+      fullPath: "/erp/my-hr/tax/"
+      preLoaderRoute: typeof ErpMyHrTaxIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/erp/my-hr/payslips/": {
+      id: "/erp/my-hr/payslips/"
+      path: "/erp/my-hr/payslips"
+      fullPath: "/erp/my-hr/payslips/"
+      preLoaderRoute: typeof ErpMyHrPayslipsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/erp/my-hr/leave/": {
+      id: "/erp/my-hr/leave/"
+      path: "/erp/my-hr/leave"
+      fullPath: "/erp/my-hr/leave/"
+      preLoaderRoute: typeof ErpMyHrLeaveIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/erp/my-hr/claims/": {
+      id: "/erp/my-hr/claims/"
+      path: "/erp/my-hr/claims"
+      fullPath: "/erp/my-hr/claims/"
+      preLoaderRoute: typeof ErpMyHrClaimsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/erp/leave/setup/": {
+      id: "/erp/leave/setup/"
+      path: "/erp/leave/setup"
+      fullPath: "/erp/leave/setup/"
+      preLoaderRoute: typeof ErpLeaveSetupIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/erp/leave/balances/": {
+      id: "/erp/leave/balances/"
+      path: "/erp/leave/balances"
+      fullPath: "/erp/leave/balances/"
+      preLoaderRoute: typeof ErpLeaveBalancesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/erp/finance/pnl/": {
+      id: "/erp/finance/pnl/"
+      path: "/erp/finance/pnl"
+      fullPath: "/erp/finance/pnl/"
+      preLoaderRoute: typeof ErpFinancePnlIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/erp/finance/journal/": {
+      id: "/erp/finance/journal/"
+      path: "/erp/finance/journal"
+      fullPath: "/erp/finance/journal/"
+      preLoaderRoute: typeof ErpFinanceJournalIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/erp/compliance/provisions/": {
+      id: "/erp/compliance/provisions/"
+      path: "/erp/compliance/provisions"
+      fullPath: "/erp/compliance/provisions/"
+      preLoaderRoute: typeof ErpComplianceProvisionsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/erp/compliance/challans/": {
+      id: "/erp/compliance/challans/"
+      path: "/erp/compliance/challans"
+      fullPath: "/erp/compliance/challans/"
+      preLoaderRoute: typeof ErpComplianceChallansIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/erp/attendance/setup/": {
+      id: "/erp/attendance/setup/"
+      path: "/erp/attendance/setup"
+      fullPath: "/erp/attendance/setup/"
+      preLoaderRoute: typeof ErpAttendanceSetupIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/erp/attendance/regularizations/": {
+      id: "/erp/attendance/regularizations/"
+      path: "/erp/attendance/regularizations"
+      fullPath: "/erp/attendance/regularizations/"
+      preLoaderRoute: typeof ErpAttendanceRegularizationsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/engagement-engines/dashboard/outcomes/": {
+      id: "/engagement-engines/dashboard/outcomes/"
+      path: "/engagement-engines/dashboard/outcomes"
+      fullPath: "/engagement-engines/dashboard/outcomes/"
+      preLoaderRoute: typeof EngagementEnginesDashboardOutcomesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/settings/tax-classes/": {
+      id: "/commerce/settings/tax-classes/"
+      path: "/commerce/settings/tax-classes"
+      fullPath: "/commerce/settings/tax-classes/"
+      preLoaderRoute: typeof CommerceSettingsTaxClassesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/settings/staff/": {
+      id: "/commerce/settings/staff/"
+      path: "/commerce/settings/staff"
+      fullPath: "/commerce/settings/staff/"
+      preLoaderRoute: typeof CommerceSettingsStaffIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/settings/registers/": {
+      id: "/commerce/settings/registers/"
+      path: "/commerce/settings/registers"
+      fullPath: "/commerce/settings/registers/"
+      preLoaderRoute: typeof CommerceSettingsRegistersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/settings/notifications/": {
+      id: "/commerce/settings/notifications/"
+      path: "/commerce/settings/notifications"
+      fullPath: "/commerce/settings/notifications/"
+      preLoaderRoute: typeof CommerceSettingsNotificationsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/settings/locations/": {
+      id: "/commerce/settings/locations/"
+      path: "/commerce/settings/locations"
+      fullPath: "/commerce/settings/locations/"
+      preLoaderRoute: typeof CommerceSettingsLocationsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/settings/business/": {
+      id: "/commerce/settings/business/"
+      path: "/commerce/settings/business"
+      fullPath: "/commerce/settings/business/"
+      preLoaderRoute: typeof CommerceSettingsBusinessIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/reports/audit/": {
+      id: "/commerce/reports/audit/"
+      path: "/commerce/reports/audit"
+      fullPath: "/commerce/reports/audit/"
+      preLoaderRoute: typeof CommerceReportsAuditIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/products/import/": {
+      id: "/commerce/products/import/"
+      path: "/commerce/products/import"
+      fullPath: "/commerce/products/import/"
+      preLoaderRoute: typeof CommerceProductsImportIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/products/$productId/": {
+      id: "/commerce/products/$productId/"
+      path: "/commerce/products/$productId"
+      fullPath: "/commerce/products/$productId/"
+      preLoaderRoute: typeof CommerceProductsProductIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/pos/sessions/": {
+      id: "/commerce/pos/sessions/"
+      path: "/commerce/pos/sessions"
+      fullPath: "/commerce/pos/sessions/"
+      preLoaderRoute: typeof CommercePosSessionsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/pos/$sessionId/": {
+      id: "/commerce/pos/$sessionId/"
+      path: "/commerce/pos/$sessionId"
+      fullPath: "/commerce/pos/$sessionId/"
+      preLoaderRoute: typeof CommercePosSessionIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/orders/remittances/": {
+      id: "/commerce/orders/remittances/"
+      path: "/commerce/orders/remittances"
+      fullPath: "/commerce/orders/remittances/"
+      preLoaderRoute: typeof CommerceOrdersRemittancesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/orders/print/": {
+      id: "/commerce/orders/print/"
+      path: "/commerce/orders/print"
+      fullPath: "/commerce/orders/print/"
+      preLoaderRoute: typeof CommerceOrdersPrintIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/orders/pack/": {
+      id: "/commerce/orders/pack/"
+      path: "/commerce/orders/pack"
+      fullPath: "/commerce/orders/pack/"
+      preLoaderRoute: typeof CommerceOrdersPackIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/orders/new/": {
+      id: "/commerce/orders/new/"
+      path: "/commerce/orders/new"
+      fullPath: "/commerce/orders/new/"
+      preLoaderRoute: typeof CommerceOrdersNewIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/orders/$orderId/": {
+      id: "/commerce/orders/$orderId/"
+      path: "/commerce/orders/$orderId"
+      fullPath: "/commerce/orders/$orderId/"
+      preLoaderRoute: typeof CommerceOrdersOrderIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/customers/$customerId/": {
+      id: "/commerce/customers/$customerId/"
+      path: "/commerce/customers/$customerId"
+      fullPath: "/commerce/customers/$customerId/"
+      preLoaderRoute: typeof CommerceCustomersCustomerIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/audience-manager/list/campaign-users/": {
@@ -4525,6 +6657,20 @@ declare module "@tanstack/react-router" {
       path: "/audience-manager/list/campaign-users"
       fullPath: "/audience-manager/list/campaign-users/"
       preLoaderRoute: typeof AudienceManagerListCampaignUsersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/audience-manager/lead-agent/$agentId/": {
+      id: "/audience-manager/lead-agent/$agentId/"
+      path: "/audience-manager/lead-agent/$agentId"
+      fullPath: "/audience-manager/lead-agent/$agentId/"
+      preLoaderRoute: typeof AudienceManagerLeadAgentAgentIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/assessment/submission/$attemptId/": {
+      id: "/assessment/submission/$attemptId/"
+      path: "/assessment/submission/$attemptId"
+      fullPath: "/assessment/submission/$attemptId/"
+      preLoaderRoute: typeof AssessmentSubmissionAttemptIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/assessment/export/$assessmentId/": {
@@ -4646,6 +6792,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof ManagePagesProductPagesEditorProductPageIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/manage-pages/blog/editor/$postId": {
+      id: "/manage-pages/blog/editor/$postId"
+      path: "/manage-pages/blog/editor/$postId"
+      fullPath: "/manage-pages/blog/editor/$postId"
+      preLoaderRoute: typeof ManagePagesBlogEditorPostIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/study-library/live-session/schedule/step2/": {
       id: "/study-library/live-session/schedule/step2/"
       path: "/study-library/live-session/schedule/step2"
@@ -4695,6 +6848,62 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof HomeworkCreationCreateAssessmentAssessmentIdExamtypeIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/commerce/pos/sessions/$sessionId/": {
+      id: "/commerce/pos/sessions/$sessionId/"
+      path: "/commerce/pos/sessions/$sessionId"
+      fullPath: "/commerce/pos/sessions/$sessionId/"
+      preLoaderRoute: typeof CommercePosSessionsSessionIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/pos/$sessionId/returns/": {
+      id: "/commerce/pos/$sessionId/returns/"
+      path: "/commerce/pos/$sessionId/returns"
+      fullPath: "/commerce/pos/$sessionId/returns/"
+      preLoaderRoute: typeof CommercePosSessionIdReturnsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/pos/$sessionId/close/": {
+      id: "/commerce/pos/$sessionId/close/"
+      path: "/commerce/pos/$sessionId/close"
+      fullPath: "/commerce/pos/$sessionId/close/"
+      preLoaderRoute: typeof CommercePosSessionIdCloseIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/pos/$sessionId/bills/": {
+      id: "/commerce/pos/$sessionId/bills/"
+      path: "/commerce/pos/$sessionId/bills"
+      fullPath: "/commerce/pos/$sessionId/bills/"
+      preLoaderRoute: typeof CommercePosSessionIdBillsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/pos/$sessionId/bill-book/": {
+      id: "/commerce/pos/$sessionId/bill-book/"
+      path: "/commerce/pos/$sessionId/bill-book"
+      fullPath: "/commerce/pos/$sessionId/bill-book/"
+      preLoaderRoute: typeof CommercePosSessionIdBillBookIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/inventory/transfers/$transferId/": {
+      id: "/commerce/inventory/transfers/$transferId/"
+      path: "/commerce/inventory/transfers/$transferId"
+      fullPath: "/commerce/inventory/transfers/$transferId/"
+      preLoaderRoute: typeof CommerceInventoryTransfersTransferIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/inventory/receipts/$receiptId/": {
+      id: "/commerce/inventory/receipts/$receiptId/"
+      path: "/commerce/inventory/receipts/$receiptId"
+      fullPath: "/commerce/inventory/receipts/$receiptId/"
+      preLoaderRoute: typeof CommerceInventoryReceiptsReceiptIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/inventory/counts/$countId/": {
+      id: "/commerce/inventory/counts/$countId/"
+      path: "/commerce/inventory/counts/$countId"
+      fullPath: "/commerce/inventory/counts/$countId/"
+      preLoaderRoute: typeof CommerceInventoryCountsCountIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/audience-manager/list/campaign-users/add/": {
       id: "/audience-manager/list/campaign-users/add/"
       path: "/audience-manager/list/campaign-users/add"
@@ -4714,6 +6923,13 @@ declare module "@tanstack/react-router" {
       path: "/assessment/create-assessment/$assessmentId/$examtype"
       fullPath: "/assessment/create-assessment/$assessmentId/$examtype/"
       preLoaderRoute: typeof AssessmentCreateAssessmentAssessmentIdExamtypeIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/assessment/assessment-list/scan-station/$assessmentId/": {
+      id: "/assessment/assessment-list/scan-station/$assessmentId/"
+      path: "/assessment/assessment-list/scan-station/$assessmentId"
+      fullPath: "/assessment/assessment-list/scan-station/$assessmentId/"
+      preLoaderRoute: typeof AssessmentAssessmentListScanStationAssessmentIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/assessment/assessment-list/offline-entry/$assessmentId/": {
@@ -4796,6 +7012,32 @@ declare module "@tanstack/react-router" {
   }
 }
 
+interface EvalezyRouteRouteChildren {
+  EvalezyAssessmentIdRoute: typeof EvalezyAssessmentIdRoute
+  EvalezyCreditsRoute: typeof EvalezyCreditsRoute
+  EvalezyHelpRoute: typeof EvalezyHelpRoute
+  EvalezyNewRoute: typeof EvalezyNewRoute
+  EvalezyPlanRoute: typeof EvalezyPlanRoute
+  EvalezyProfileRoute: typeof EvalezyProfileRoute
+  EvalezySettingsRoute: typeof EvalezySettingsRoute
+  EvalezyIndexRoute: typeof EvalezyIndexRoute
+}
+
+const EvalezyRouteRouteChildren: EvalezyRouteRouteChildren = {
+  EvalezyAssessmentIdRoute: EvalezyAssessmentIdRoute,
+  EvalezyCreditsRoute: EvalezyCreditsRoute,
+  EvalezyHelpRoute: EvalezyHelpRoute,
+  EvalezyNewRoute: EvalezyNewRoute,
+  EvalezyPlanRoute: EvalezyPlanRoute,
+  EvalezyProfileRoute: EvalezyProfileRoute,
+  EvalezySettingsRoute: EvalezySettingsRoute,
+  EvalezyIndexRoute: EvalezyIndexRoute,
+}
+
+const EvalezyRouteRouteWithChildren = EvalezyRouteRoute._addFileChildren(
+  EvalezyRouteRouteChildren,
+)
+
 interface LearnerInsightsLazyRouteChildren {
   LearnerInsightsIndexRoute: typeof LearnerInsightsIndexRoute
 }
@@ -4808,8 +7050,10 @@ const LearnerInsightsLazyRouteWithChildren =
   LearnerInsightsLazyRoute._addFileChildren(LearnerInsightsLazyRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
+  EvalezyRouteRoute: EvalezyRouteRouteWithChildren,
   AgentChatRoute: AgentChatRoute,
   ChatRoute: ChatRoute,
+  DemoRoute: DemoRoute,
   ErrorPageRoute: ErrorPageRoute,
   LockedFeatureRoute: LockedFeatureRoute,
   ExploreAiLazyRoute: ExploreAiLazyRoute,
@@ -4820,9 +7064,15 @@ const rootRouteChildren: RootRouteChildren = {
   EngagementEnginesEngineIdRoute: EngagementEnginesEngineIdRoute,
   KnowledgeBaseKbIdRoute: KnowledgeBaseKbIdRoute,
   KnowledgeBasePublishRoute: KnowledgeBasePublishRoute,
+  McpAuthorizeRoute: McpAuthorizeRoute,
+  SignupStartRoute: SignupStartRoute,
+  TelleoApiRoute: TelleoApiRoute,
+  TelleoPlanRoute: TelleoPlanRoute,
+  TelleoSetupRoute: TelleoSetupRoute,
   VimDashboardRoute: VimDashboardRoute,
   VimLoginRoute: VimLoginRoute,
   VimWaitlistRoute: VimWaitlistRoute,
+  AccessPassesIndexRoute: AccessPassesIndexRoute,
   AdminActivityLogsIndexRoute: AdminActivityLogsIndexRoute,
   AdminPackageManagementIndexRoute: AdminPackageManagementIndexRoute,
   AdmissionsIndexRoute: AdmissionsIndexRoute,
@@ -4831,16 +7081,20 @@ const rootRouteChildren: RootRouteChildren = {
   AuthTransferIndexRoute: AuthTransferIndexRoute,
   CenterManagementIndexRoute: CenterManagementIndexRoute,
   ChallengeAnalyticsIndexRoute: ChallengeAnalyticsIndexRoute,
+  CommerceIndexRoute: CommerceIndexRoute,
   CommunityIndexRoute: CommunityIndexRoute,
   ConnectorCenterDetailsIndexRoute: ConnectorCenterDetailsIndexRoute,
   CounsellorsIndexRoute: CounsellorsIndexRoute,
   DashboardIndexRoute: DashboardIndexRoute,
   EngagementEnginesIndexRoute: EngagementEnginesIndexRoute,
+  EngagementIndexRoute: EngagementIndexRoute,
   EvaluationIndexRoute: EvaluationIndexRoute,
-  EvaluatorAiIndexRoute: EvaluatorAiIndexRoute,
   InstitutePulseIndexRoute: InstitutePulseIndexRoute,
   InstructorCopilotIndexRoute: InstructorCopilotIndexRoute,
   KnowledgeBaseIndexRoute: KnowledgeBaseIndexRoute,
+  LearnerHomeIndexRoute: LearnerHomeIndexRoute,
+  LiveActivityIndexRoute: LiveActivityIndexRoute,
+  LmsDashboardIndexRoute: LmsDashboardIndexRoute,
   LoginIndexRoute: LoginIndexRoute,
   ManageBookingsIndexRoute: ManageBookingsIndexRoute,
   ManageContactsIndexRoute: ManageContactsIndexRoute,
@@ -4854,6 +7108,7 @@ const rootRouteChildren: RootRouteChildren = {
   MembershipExpiryIndexRoute: MembershipExpiryIndexRoute,
   MembershipStatsIndexRoute: MembershipStatsIndexRoute,
   PaymentDashboardIndexRoute: PaymentDashboardIndexRoute,
+  PlanWeekIndexRoute: PlanWeekIndexRoute,
   PlanningIndexRoute: PlanningIndexRoute,
   SalesDashboardIndexRoute: SalesDashboardIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
@@ -4894,21 +7149,42 @@ const rootRouteChildren: RootRouteChildren = {
   AnnouncementHistoryIndexRoute: AnnouncementHistoryIndexRoute,
   AnnouncementScheduleIndexRoute: AnnouncementScheduleIndexRoute,
   AssessmentAssessmentListIndexRoute: AssessmentAssessmentListIndexRoute,
+  AssessmentDashboardIndexRoute: AssessmentDashboardIndexRoute,
   AssessmentEvaluationAiIndexRoute: AssessmentEvaluationAiIndexRoute,
+  AssessmentQuestionLibraryIndexRoute: AssessmentQuestionLibraryIndexRoute,
   AssessmentQuestionPapersIndexRoute: AssessmentQuestionPapersIndexRoute,
+  AudienceManagerAdPerformanceIndexRoute:
+    AudienceManagerAdPerformanceIndexRoute,
   AudienceManagerAiIntelligenceIndexRoute:
     AudienceManagerAiIntelligenceIndexRoute,
   AudienceManagerCallLogIndexRoute: AudienceManagerCallLogIndexRoute,
   AudienceManagerFollowUpsIndexRoute: AudienceManagerFollowUpsIndexRoute,
+  AudienceManagerLeadAgentIndexRoute: AudienceManagerLeadAgentIndexRoute,
   AudienceManagerLeadBoardIndexRoute: AudienceManagerLeadBoardIndexRoute,
+  AudienceManagerLeadLookupIndexRoute: AudienceManagerLeadLookupIndexRoute,
   AudienceManagerListIndexRoute: AudienceManagerListIndexRoute,
   AudienceManagerOnboardingIndexRoute: AudienceManagerOnboardingIndexRoute,
   AudienceManagerRecentLeadsIndexRoute: AudienceManagerRecentLeadsIndexRoute,
   AudienceManagerReportsIndexRoute: AudienceManagerReportsIndexRoute,
+  AudienceManagerSocialPostsIndexRoute: AudienceManagerSocialPostsIndexRoute,
   AutomationChatbotFlowsIndexRoute: AutomationChatbotFlowsIndexRoute,
+  AutomationDashboardIndexRoute: AutomationDashboardIndexRoute,
   CallingAiAgentsIndexRoute: CallingAiAgentsIndexRoute,
+  CallingCallQueueIndexRoute: CallingCallQueueIndexRoute,
+  CallingDashboardIndexRoute: CallingDashboardIndexRoute,
   CertificateGenerationStudentDataIndexRoute:
     CertificateGenerationStudentDataIndexRoute,
+  CommerceCollectionsIndexRoute: CommerceCollectionsIndexRoute,
+  CommerceCustomersIndexRoute: CommerceCustomersIndexRoute,
+  CommerceDiscountsIndexRoute: CommerceDiscountsIndexRoute,
+  CommerceInventoryIndexRoute: CommerceInventoryIndexRoute,
+  CommerceOrdersIndexRoute: CommerceOrdersIndexRoute,
+  CommerceParallelRunIndexRoute: CommerceParallelRunIndexRoute,
+  CommercePosIndexRoute: CommercePosIndexRoute,
+  CommerceProductsIndexRoute: CommerceProductsIndexRoute,
+  CommerceReportsIndexRoute: CommerceReportsIndexRoute,
+  CommerceSettingsIndexRoute: CommerceSettingsIndexRoute,
+  CommunicationDashboardIndexRoute: CommunicationDashboardIndexRoute,
   CommunicationInboxIndexRoute: CommunicationInboxIndexRoute,
   CommunicationNotificationHubIndexRoute:
     CommunicationNotificationHubIndexRoute,
@@ -4917,12 +7193,16 @@ const rootRouteChildren: RootRouteChildren = {
   CommunityQuestionPaperIndexRoute: CommunityQuestionPaperIndexRoute,
   ContentContentIdIndexRoute: ContentContentIdIndexRoute,
   EngagementEnginesCreateIndexRoute: EngagementEnginesCreateIndexRoute,
+  EngagementEnginesDashboardIndexRoute: EngagementEnginesDashboardIndexRoute,
   EngagementEnginesInboxIndexRoute: EngagementEnginesInboxIndexRoute,
+  ErpAttendanceIndexRoute: ErpAttendanceIndexRoute,
+  ErpComplianceIndexRoute: ErpComplianceIndexRoute,
+  ErpLeaveIndexRoute: ErpLeaveIndexRoute,
+  ErpMyHrIndexRoute: ErpMyHrIndexRoute,
+  ErpPayrollIndexRoute: ErpPayrollIndexRoute,
+  ErpPeopleIndexRoute: ErpPeopleIndexRoute,
   EvaluationEvaluationToolIndexRoute: EvaluationEvaluationToolIndexRoute,
   EvaluationEvaluationsIndexRoute: EvaluationEvaluationsIndexRoute,
-  EvaluatorAiAssessmentIndexRoute: EvaluatorAiAssessmentIndexRoute,
-  EvaluatorAiEvaluationIndexRoute: EvaluatorAiEvaluationIndexRoute,
-  EvaluatorAiStudentsIndexRoute: EvaluatorAiStudentsIndexRoute,
   FinancialManagementAdjustmentApprovalsIndexRoute:
     FinancialManagementAdjustmentApprovalsIndexRoute,
   FinancialManagementCollectionDashboardIndexRoute:
@@ -4936,14 +7216,19 @@ const rootRouteChildren: RootRouteChildren = {
     HomeworkCreationAssessmentListIndexRoute,
   LoginKeyIndexRoute: LoginKeyIndexRoute,
   LoginForgotPasswordIndexRoute: LoginForgotPasswordIndexRoute,
+  ManageContactsDashboardIndexRoute: ManageContactsDashboardIndexRoute,
   ManageInstituteBatchesIndexRoute: ManageInstituteBatchesIndexRoute,
+  ManageInstituteOverviewIndexRoute: ManageInstituteOverviewIndexRoute,
   ManageInstituteSessionsIndexRoute: ManageInstituteSessionsIndexRoute,
   ManageInstituteTeamsIndexRoute: ManageInstituteTeamsIndexRoute,
+  ManagePagesBlogIndexRoute: ManagePagesBlogIndexRoute,
   ManagePagesProductPagesIndexRoute: ManagePagesProductPagesIndexRoute,
+  ManagePagesSiteAssistantIndexRoute: ManagePagesSiteAssistantIndexRoute,
   ManageStudentsEnrollRequestsIndexRoute:
     ManageStudentsEnrollRequestsIndexRoute,
   ManageStudentsInviteIndexRoute: ManageStudentsInviteIndexRoute,
   ManageStudentsStudentsListIndexRoute: ManageStudentsStudentsListIndexRoute,
+  MeetingsDashboardIndexRoute: MeetingsDashboardIndexRoute,
   MeetingsMyScheduleIndexRoute: MeetingsMyScheduleIndexRoute,
   MeetingsTeamIndexRoute: MeetingsTeamIndexRoute,
   MentorshipDashboardIndexRoute: MentorshipDashboardIndexRoute,
@@ -4963,6 +7248,7 @@ const rootRouteChildren: RootRouteChildren = {
     StudyLibraryBulkContentUploadingIndexRoute,
   StudyLibraryCoursesIndexRoute: StudyLibraryCoursesIndexRoute,
   StudyLibraryDoubtManagementIndexRoute: StudyLibraryDoubtManagementIndexRoute,
+  StudyLibraryGamificationIndexRoute: StudyLibraryGamificationIndexRoute,
   StudyLibraryLiveSessionIndexRoute: StudyLibraryLiveSessionIndexRoute,
   StudyLibraryReportsIndexRoute: StudyLibraryReportsIndexRoute,
   StudyLibraryStudentAiIndexRoute: StudyLibraryStudentAiIndexRoute,
@@ -4977,6 +7263,7 @@ const rootRouteChildren: RootRouteChildren = {
   WorkflowWorkflowIdIndexRoute: WorkflowWorkflowIdIndexRoute,
   WorkflowCreateIndexRoute: WorkflowCreateIndexRoute,
   WorkflowListIndexRoute: WorkflowListIndexRoute,
+  ManagePagesBlogEditorPostIdRoute: ManagePagesBlogEditorPostIdRoute,
   ManagePagesProductPagesEditorProductPageIdRoute:
     ManagePagesProductPagesEditorProductPageIdRoute,
   SettingsLeadsPoolsPoolIdRoute: SettingsLeadsPoolsPoolIdRoute,
@@ -5003,12 +7290,51 @@ const rootRouteChildren: RootRouteChildren = {
   AiCenterAiToolsVsmartUploadIndexRoute: AiCenterAiToolsVsmartUploadIndexRoute,
   AssessmentExportAssessmentIdIndexRoute:
     AssessmentExportAssessmentIdIndexRoute,
+  AssessmentSubmissionAttemptIdIndexRoute:
+    AssessmentSubmissionAttemptIdIndexRoute,
+  AudienceManagerLeadAgentAgentIdIndexRoute:
+    AudienceManagerLeadAgentAgentIdIndexRoute,
   AudienceManagerListCampaignUsersIndexRoute:
     AudienceManagerListCampaignUsersIndexRoute,
-  EvaluatorAiAssessmentCreateAssessmentIndexRoute:
-    EvaluatorAiAssessmentCreateAssessmentIndexRoute,
-  EvaluatorAiEvaluationStudentSummaryIndexRoute:
-    EvaluatorAiEvaluationStudentSummaryIndexRoute,
+  CommerceCustomersCustomerIdIndexRoute: CommerceCustomersCustomerIdIndexRoute,
+  CommerceOrdersOrderIdIndexRoute: CommerceOrdersOrderIdIndexRoute,
+  CommerceOrdersNewIndexRoute: CommerceOrdersNewIndexRoute,
+  CommerceOrdersPackIndexRoute: CommerceOrdersPackIndexRoute,
+  CommerceOrdersPrintIndexRoute: CommerceOrdersPrintIndexRoute,
+  CommerceOrdersRemittancesIndexRoute: CommerceOrdersRemittancesIndexRoute,
+  CommercePosSessionIdIndexRoute: CommercePosSessionIdIndexRoute,
+  CommercePosSessionsIndexRoute: CommercePosSessionsIndexRoute,
+  CommerceProductsProductIdIndexRoute: CommerceProductsProductIdIndexRoute,
+  CommerceProductsImportIndexRoute: CommerceProductsImportIndexRoute,
+  CommerceReportsAuditIndexRoute: CommerceReportsAuditIndexRoute,
+  CommerceSettingsBusinessIndexRoute: CommerceSettingsBusinessIndexRoute,
+  CommerceSettingsLocationsIndexRoute: CommerceSettingsLocationsIndexRoute,
+  CommerceSettingsNotificationsIndexRoute:
+    CommerceSettingsNotificationsIndexRoute,
+  CommerceSettingsRegistersIndexRoute: CommerceSettingsRegistersIndexRoute,
+  CommerceSettingsStaffIndexRoute: CommerceSettingsStaffIndexRoute,
+  CommerceSettingsTaxClassesIndexRoute: CommerceSettingsTaxClassesIndexRoute,
+  EngagementEnginesDashboardOutcomesIndexRoute:
+    EngagementEnginesDashboardOutcomesIndexRoute,
+  ErpAttendanceRegularizationsIndexRoute:
+    ErpAttendanceRegularizationsIndexRoute,
+  ErpAttendanceSetupIndexRoute: ErpAttendanceSetupIndexRoute,
+  ErpComplianceChallansIndexRoute: ErpComplianceChallansIndexRoute,
+  ErpComplianceProvisionsIndexRoute: ErpComplianceProvisionsIndexRoute,
+  ErpFinanceJournalIndexRoute: ErpFinanceJournalIndexRoute,
+  ErpFinancePnlIndexRoute: ErpFinancePnlIndexRoute,
+  ErpLeaveBalancesIndexRoute: ErpLeaveBalancesIndexRoute,
+  ErpLeaveSetupIndexRoute: ErpLeaveSetupIndexRoute,
+  ErpMyHrClaimsIndexRoute: ErpMyHrClaimsIndexRoute,
+  ErpMyHrLeaveIndexRoute: ErpMyHrLeaveIndexRoute,
+  ErpMyHrPayslipsIndexRoute: ErpMyHrPayslipsIndexRoute,
+  ErpMyHrTaxIndexRoute: ErpMyHrTaxIndexRoute,
+  ErpPayrollRunIdIndexRoute: ErpPayrollRunIdIndexRoute,
+  ErpPayrollAdjustmentsIndexRoute: ErpPayrollAdjustmentsIndexRoute,
+  ErpPayrollSalarySetupIndexRoute: ErpPayrollSalarySetupIndexRoute,
+  ErpPeopleEmployeeIdIndexRoute: ErpPeopleEmployeeIdIndexRoute,
+  ErpPeopleOrgIndexRoute: ErpPeopleOrgIndexRoute,
+  ErpPeopleStaffBridgeIndexRoute: ErpPeopleStaffBridgeIndexRoute,
   MentorshipMentorsMentorIdIndexRoute: MentorshipMentorsMentorIdIndexRoute,
   PlanningActivityLogsCreateIndexRoute: PlanningActivityLogsCreateIndexRoute,
   PlanningPlanningCreateIndexRoute: PlanningPlanningCreateIndexRoute,
@@ -5016,6 +7342,8 @@ const rootRouteChildren: RootRouteChildren = {
     StudyLibraryAiCopilotCourseOutlineIndexRoute,
   StudyLibraryCoursesCourseDetailsIndexRoute:
     StudyLibraryCoursesCourseDetailsIndexRoute,
+  StudyLibraryLiveSessionDashboardIndexRoute:
+    StudyLibraryLiveSessionDashboardIndexRoute,
   StudyLibraryLiveSessionFeedbackIndexRoute:
     StudyLibraryLiveSessionFeedbackIndexRoute,
   StudyLibraryLiveSessionScheduleIndexRoute:
@@ -5032,12 +7360,27 @@ const rootRouteChildren: RootRouteChildren = {
     StudyLibraryAiCopilotSharedComponentsYouTubePlayerSimpleRoute,
   AssessmentAssessmentListOfflineEntryAssessmentIdIndexRoute:
     AssessmentAssessmentListOfflineEntryAssessmentIdIndexRoute,
+  AssessmentAssessmentListScanStationAssessmentIdIndexRoute:
+    AssessmentAssessmentListScanStationAssessmentIdIndexRoute,
   AssessmentCreateAssessmentAssessmentIdExamtypeIndexRoute:
     AssessmentCreateAssessmentAssessmentIdExamtypeIndexRoute,
   AssessmentEvaluationAiAttemptIdProcessIdIndexRoute:
     AssessmentEvaluationAiAttemptIdProcessIdIndexRoute,
   AudienceManagerListCampaignUsersAddIndexRoute:
     AudienceManagerListCampaignUsersAddIndexRoute,
+  CommerceInventoryCountsCountIdIndexRoute:
+    CommerceInventoryCountsCountIdIndexRoute,
+  CommerceInventoryReceiptsReceiptIdIndexRoute:
+    CommerceInventoryReceiptsReceiptIdIndexRoute,
+  CommerceInventoryTransfersTransferIdIndexRoute:
+    CommerceInventoryTransfersTransferIdIndexRoute,
+  CommercePosSessionIdBillBookIndexRoute:
+    CommercePosSessionIdBillBookIndexRoute,
+  CommercePosSessionIdBillsIndexRoute: CommercePosSessionIdBillsIndexRoute,
+  CommercePosSessionIdCloseIndexRoute: CommercePosSessionIdCloseIndexRoute,
+  CommercePosSessionIdReturnsIndexRoute: CommercePosSessionIdReturnsIndexRoute,
+  CommercePosSessionsSessionIdIndexRoute:
+    CommercePosSessionsSessionIdIndexRoute,
   HomeworkCreationCreateAssessmentAssessmentIdExamtypeIndexRoute:
     HomeworkCreationCreateAssessmentAssessmentIdExamtypeIndexRoute,
   StudyLibraryAiCopilotCourseOutlineGeneratingIndexRoute:

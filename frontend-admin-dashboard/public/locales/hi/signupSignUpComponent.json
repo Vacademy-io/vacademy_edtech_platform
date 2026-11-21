@@ -1,0 +1,28 @@
+{
+    "instituteLogoAlt": "संस्थान लोगो",
+    "heading": "बेहतर मूल्यांकन, बेहतर सीखना",
+    "subheading": "स्मार्ट मूल्यांकन और बेहतर शिक्षण परिणामों के लिए सूझवान उपकरणों के साथ शिक्षा को नया रूप देना।",
+    "continueWithGoogle": "Google से जारी रखें",
+    "continueWithGithub": "GitHub से जारी रखें",
+    "orContinueWith": "या इसके साथ जारी रखें",
+    "createFreeAccount": "मुफ़्त खाता बनाएं",
+    "alreadyHaveAccount": "पहले से खाता है?",
+    "login": "लॉगिन करें",
+    "items": {
+        "assess": {
+            "description": "स्मार्ट मूल्यांकन और आकलन प्लेटफ़ॉर्म"
+        },
+        "lms": {
+            "description": "पूर्ण शिक्षण प्रबंधन प्रणाली"
+        },
+        "volt": {
+            "description": "इंटरैक्टिव लाइव क्लासरूम अनुभव"
+        },
+        "vsmart": {
+            "description": "AI-संचालित लर्निंग सहायक"
+        }
+    },
+    "validation": {
+        "selectAtLeastOne": "आपको कम से कम एक विकल्प चुनना होगा।"
+    }
+}

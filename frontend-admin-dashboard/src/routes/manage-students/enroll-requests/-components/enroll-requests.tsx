@@ -1,4 +1,5 @@
 import { MyTable } from '@/components/design-system/table';
+import { useTranslation } from 'react-i18next';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { StudentTable } from '@/types/student-table-types';
 import { useEffect, useRef, useState } from 'react';
@@ -52,6 +53,7 @@ export interface EnrollRequestsInterface {
 }
 
 export const EnrollRequests = () => {
+    const { t } = useTranslation('manageStudentsEnrollRequests');
     const instituteId = getInstituteId();
     const { page, handlePageChange } = usePaginationState({
         initialPage: 0,
@@ -292,7 +294,7 @@ export const EnrollRequests = () => {
                     </div>
                     <div className="flex flex-col">
                         <h1 className={cn('text-lg font-semibold text-neutral-700')}>
-                            Enroll Requests List
+                            {t('heading.title')}
                         </h1>
                         <div className="h-0.5 w-8 rounded-full bg-gradient-to-r from-primary-400 to-primary-500"></div>
                     </div>
@@ -303,17 +305,17 @@ export const EnrollRequests = () => {
                         searchText={searchText}
                         setSearchText={setSearchText}
                         clearSearch={clearSearch}
-                        placeholderText="Search by name, enroll..."
+                        placeholderText={t('search.placeholder')}
                     />
                     <div className="flex flex-wrap items-center gap-4">
                         <ScheduleTestFilters
-                            label="Gender"
+                            label={t('filters.gender')}
                             data={[]}
                             selectedItems={selectedFilter['gender'] || []}
                             onSelectionChange={(items) => handleFilterChange('gender', items)}
                         />
                         <ScheduleTestFilters
-                            label="Preferred Batch"
+                            label={t('filters.preferredBatch')}
                             data={[]}
                             selectedItems={selectedFilter['preferred_batch'] || []}
                             onSelectionChange={(items) =>
@@ -321,7 +323,7 @@ export const EnrollRequests = () => {
                             }
                         />
                         <ScheduleTestFilters
-                            label="Payment Status"
+                            label={t('filters.paymentStatus')}
                             data={[]}
                             selectedItems={convertToStringArray(
                                 selectedFilter['payment_statuses'] || []
@@ -331,7 +333,7 @@ export const EnrollRequests = () => {
                             }
                         />
                         <ScheduleTestFilters
-                            label="Approval Status"
+                            label={t('filters.approvalStatus')}
                             data={[]}
                             selectedItems={convertToStringArray(
                                 selectedFilter['approval_statuses'] || []
@@ -341,7 +343,7 @@ export const EnrollRequests = () => {
                             }
                         />
                         <ScheduleTestFilters
-                            label="Payment Option"
+                            label={t('filters.paymentOption')}
                             data={[]}
                             selectedItems={convertToStringArray(
                                 selectedFilter['payment_option'] || []

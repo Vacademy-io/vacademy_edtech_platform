@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { CalendarBlank, CalendarX, Clock, VideoCamera } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import { useMySchedule } from '../-hooks/use-mentorship';
 import { SessionActionDialog } from './SessionActionDialog';
@@ -72,6 +73,7 @@ interface MyScheduleCardProps {
 
 /** The mentor's own upcoming 1:1 sessions across all mentees (today + next 30 days). */
 export function MyScheduleCard({ instituteId }: MyScheduleCardProps) {
+    const { t } = useTranslation('mentorshipMyScheduleCard');
     const { startDate, endDate } = useMemo(() => {
         const now = new Date();
         const end = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
@@ -96,13 +98,13 @@ export function MyScheduleCard({ instituteId }: MyScheduleCardProps) {
     if (!isLoading && sessions.length === 0) return null;
 
     return (
-        <div className="rounded-lg border border-neutral-200 bg-white p-4">
+        <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
             <div className="mb-3 flex items-center gap-2">
                 <CalendarBlank size={18} weight="bold" className="text-primary-600" />
-                <span className="text-body font-semibold text-neutral-700">Upcoming sessions</span>
+                <span className="text-body font-semibold text-neutral-700">{t('heading')}</span>
             </div>
             {isLoading ? (
-                <div className="py-4 text-caption text-neutral-400">Loading…</div>
+                <div className="py-4 text-caption text-neutral-400">{t('loading')}</div>
             ) : (
                 <div className="flex flex-col divide-y divide-neutral-100">
                     {sessions.map((s) => (
@@ -110,11 +112,11 @@ export function MyScheduleCard({ instituteId }: MyScheduleCardProps) {
                             <div className="flex min-w-0 flex-col">
                                 <span className="flex items-center gap-2 text-body text-neutral-700">
                                     <span className="truncate font-medium">
-                                        {s.invitee_name || 'Learner'}
+                                        {s.invitee_name || t('learnerFallback')}
                                     </span>
                                     {isToday(s.scheduled_start_utc) && (
                                         <span className="rounded-full bg-primary-50 px-2 py-0.5 text-caption font-medium text-primary-600">
-                                            Today
+                                            {t('todayBadge')}
                                         </span>
                                     )}
                                 </span>
@@ -131,7 +133,7 @@ export function MyScheduleCard({ instituteId }: MyScheduleCardProps) {
                                         rel="noopener noreferrer"
                                         className="flex items-center gap-1 px-2 text-caption font-medium text-primary-500 hover:text-primary-600"
                                     >
-                                        <VideoCamera size={16} /> Join
+                                        <VideoCamera size={16} /> {t('joinButton')}
                                     </a>
                                 ) : (
                                     // Meet links are minted after the booking commits, so a
@@ -139,9 +141,9 @@ export function MyScheduleCard({ instituteId }: MyScheduleCardProps) {
                                     // row with no control at all reads as broken.
                                     <span
                                         className="px-2 text-caption text-neutral-400"
-                                        title="The meeting link is still being created. If it doesn't appear, ask your admin to check the Google connection."
+                                        title={t('linkPendingTitle')}
                                     >
-                                        Link pending
+                                        {t('linkPendingLabel')}
                                     </span>
                                 )}
                                 <MyButton
@@ -152,8 +154,10 @@ export function MyScheduleCard({ instituteId }: MyScheduleCardProps) {
                                     onClick={() =>
                                         setActing({ session: asSession(s), action: 'reschedule' })
                                     }
-                                    aria-label={`Reschedule the session with ${s.invitee_name || 'this learner'}`}
-                                    title="Move this session to another slot"
+                                    aria-label={t('rescheduleAriaLabel', {
+                                        name: s.invitee_name || t('thisLearnerFallback'),
+                                    })}
+                                    title={t('rescheduleTitle')}
                                 >
                                     <Clock size={16} />
                                 </MyButton>
@@ -165,8 +169,10 @@ export function MyScheduleCard({ instituteId }: MyScheduleCardProps) {
                                     onClick={() =>
                                         setActing({ session: asSession(s), action: 'cancel' })
                                     }
-                                    aria-label={`Cancel the session with ${s.invitee_name || 'this learner'}`}
-                                    title="Cancel this session"
+                                    aria-label={t('cancelAriaLabel', {
+                                        name: s.invitee_name || t('thisLearnerFallback'),
+                                    })}
+                                    title={t('cancelTitle')}
                                 >
                                     <CalendarX size={16} className="text-danger-500" />
                                 </MyButton>

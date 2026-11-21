@@ -1,0 +1,24 @@
+{
+    "heading": "Modifier le moteur d'engagement",
+    "currentBrief": "Brief actuel",
+    "amendLabel": "Ajouter au brief (facultatif)",
+    "amendHint": "Le brief ne fait que grandir : ce que vous écrivez ici est ajouté comme amendement, et les amendements récents priment.",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "editSettings": "Modifier les paramètres",
+    "deletePermanently": "Supprimer définitivement",
+    "deleteDialog": {
+        "title": "Supprimer définitivement ce moteur ?",
+        "description": "Le moteur, son brief, ses modèles et ses membres sont supprimés. Possible uniquement pour un moteur qui n'a jamais envoyé de message ; sinon, archivez-le.",
+        "cancel": "Annuler",
+        "confirm": "Supprimer définitivement"
+    },
+    "toast": {
+        "saved": "Moteur mis à jour.",
+        "saveFailed": "Impossible de mettre à jour le moteur.",
+        "deleted": "Moteur supprimé.",
+        "archived": "Moteur archivé.",
+        "deleteFailed": "Impossible de supprimer le moteur."
+    },
+    "subtitle": "Ouvrez une étape à gauche, modifiez ce qu’il faut, puis cliquez sur Enregistrer."
+}

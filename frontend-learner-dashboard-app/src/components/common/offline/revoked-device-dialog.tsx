@@ -6,11 +6,13 @@
  * left to undo, so the only action is acknowledging it.
  */
 
+import { useTranslation } from "react-i18next";
 import { MyDialog } from "@/components/design-system/dialog";
 import { MyButton } from "@/components/design-system/button";
 import { useOfflineStore } from "@/stores/offline/use-offline-store";
 
 export const RevokedDeviceDialog = () => {
+  const { t } = useTranslation("layoutCommonB");
   const revokedDialogOpen = useOfflineStore((s) => s.revokedDialogOpen);
   const setRevokedDialogOpen = useOfflineStore((s) => s.setRevokedDialogOpen);
 
@@ -20,17 +22,15 @@ export const RevokedDeviceDialog = () => {
     <MyDialog
       open={revokedDialogOpen}
       onOpenChange={setRevokedDialogOpen}
-      heading="Offline access removed"
+      heading={t("offline.revokedDeviceDialog.heading")}
       dialogWidth="w-96"
     >
       <div className="flex flex-col gap-4 p-2">
         <p className="text-body text-neutral-600">
-          Your institute revoked offline access for this device. All downloaded content on this device has
-          been removed. You can still access everything online, and register a different device for offline
-          use.
+          {t("offline.revokedDeviceDialog.body")}
         </p>
         <MyButton buttonType="primary" onClick={() => setRevokedDialogOpen(false)}>
-          Got it
+          {t("offline.revokedDeviceDialog.gotIt")}
         </MyButton>
       </div>
     </MyDialog>

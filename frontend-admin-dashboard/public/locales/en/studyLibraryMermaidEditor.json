@@ -1,0 +1,20 @@
+{
+    "zoomModal": {
+        "closeTitle": "Close (Esc)"
+    },
+    "block": {
+        "clickToZoom": "Click to zoom",
+        "header": "Mermaid Diagram",
+        "done": "Done",
+        "editCode": "Edit code",
+        "diagramCodeLabel": "Diagram code",
+        "diagramCodePlaceholder": "Type Mermaid code, e.g.",
+        "livePreviewHintPrefix": "Live preview below. Supports flowcharts",
+        "livePreviewHintSuffix": ", sequence, class, gantt, pie, etc.",
+        "insertExample": "Insert example",
+        "renderingDiagram": "Rendering diagram…",
+        "renderError": "Couldn't render this diagram — check the Mermaid syntax.",
+        "noDiagram": "No diagram",
+        "clickToAdd": "Click to add Mermaid diagram code"
+    }
+}

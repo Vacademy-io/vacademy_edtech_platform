@@ -68,6 +68,14 @@ services:
       cpuThreads: "2"
       numWorkers: "1"
       modelSize: ""  # blank = use code default (medium for non-English, base for English)
+    # MCP server (Model Context Protocol). On by default, matching the service's
+    # own default — the real access control is per-institute (each institute opts
+    # in from its own settings, learners never), so exposing the endpoint grants
+    # nobody anything. Set false only as an emergency kill switch. issuerUrl
+    # defaults to <env.aiServicePublicUrl>/ai-service/mcp.
+    mcp:
+      enabled: true
+      issuerUrl: ""
   # Vacademy AI Agent real-time voice bot (Plivo <Stream> ↔ Pipecat+Sarvam).
   # Env (PUBLIC_BASE, ADMIN_CORE_BASE, VOICE_BOT_CLIENT_NAME/SECRET, SARVAM_API_KEY)
   # is set by the docker-publish-voice-bot-service workflow, mirroring ai_service.
@@ -187,6 +195,9 @@ env:
   cdnPrivateKeyPairId: ""         # CDN_PRIVATE_KEY_PAIR_ID (CloudFront public-key ID)
   teacherPortalClientUrl: ""
   toolExecutorBaseUrl: ""
+  aiServicePublicUrl: "https://backend-stage.vacademy.io"
+  adminDashboardUrl: "https://dash.vacademy.io"
+  superAdminUserIds: ""           # SUPER_ADMIN_USER_IDS (ai-service + Java SuperAdminAuthUtil): auth user ids of the health-check portal's PORTAL_ALLOWED_USERS; blank = no platform staff
   schedulingTimeFrame: "30"
   s3:
     region: ap-south-1
@@ -217,6 +228,10 @@ secrets:
   # validate tokens auth-service signs. Do NOT randomize until the Java code is
   # changed to read it from config.
   jwtSecretKey: "357638792F423F4428472B4B6250655368566D597133743677397A2443264629"
+  # Optional. A second key accepted for VERIFYING tokens only (never signing), by the
+  # Java services and ai-service, so jwtSecretKey can change without signing anyone
+  # out. Leave empty (one key, the default); set it only while changing jwtSecretKey.
+  jwtSecretKeyPrevious: ""
   # Shared internal client secret used for BOTH the client_secret_key rows (seeded
   # into every service DB) AND ai-service's CLIENT_SECRET env. Java services read
   # their client secret from the DB; ai-service reads it from env — these must

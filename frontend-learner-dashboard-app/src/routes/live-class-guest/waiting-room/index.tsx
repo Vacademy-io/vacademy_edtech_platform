@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { convertSessionTimeToUserTimezone } from "@/utils/timezone";
 import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
+import { useTranslation } from "react-i18next";
 
 export const Route = createFileRoute("/live-class-guest/waiting-room/")({
   validateSearch: z.object({
@@ -26,6 +27,7 @@ export const Route = createFileRoute("/live-class-guest/waiting-room/")({
 });
 
 function GuestWaitingRoomComponent() {
+  const { t } = useTranslation("liveClassGuest");
   const [thumbnail, setThumbnail] = useState<string | null>(null);
   // Hero backdrop: the per-schedule waiting-room media wins, then the session
   // cover; without either the page keeps its plain theme background.
@@ -142,7 +144,7 @@ function GuestWaitingRoomComponent() {
               await proceedToJoin();
             } catch (error) {
               console.error("Failed to mark attendance:", error);
-              toast.error("Failed to mark attendance");
+              toast.error(t("common.markAttendanceFailed"));
               // Still proceed with redirection
               await proceedToJoin();
             }
@@ -152,8 +154,10 @@ function GuestWaitingRoomComponent() {
         }
         // Case 2: It's too early for the waiting room.
         else {
-          toast.info("The waiting room is not open yet.", {
-            description: `It will open ${sessionDetails.waitingRoomTime} minutes before the session starts.`,
+          toast.info(t("waitingRoom.toast.notOpenYetTitle"), {
+            description: t("waitingRoom.toast.notOpenYetDescription", {
+              minutes: sessionDetails.waitingRoomTime,
+            }),
           });
           navigate({
             to: "/register/live-class",
@@ -187,7 +191,7 @@ function GuestWaitingRoomComponent() {
   if (error) {
     return (
       <div className="p-4 border border-red-200 rounded-lg bg-red-50 text-red-700">
-        Error loading session details: {(error as Error).message}
+        {t("common.errorLoadingSession", { message: (error as Error).message })}
       </div>
     );
   }
@@ -213,7 +217,7 @@ function GuestWaitingRoomComponent() {
           {sessionDetails?.title || getTerminology(ContentTerms.LiveSession, SystemTerms.LiveSession)}
         </h1>
         <div className="text-gray-600">
-          Get ready! The session will begin in:
+          {t("waitingRoom.getReady")}
         </div>
         <div className="space-y-6">
           {sessionDetails && (
@@ -241,7 +245,7 @@ function GuestWaitingRoomComponent() {
                       await proceedToJoin();
                     } catch (error) {
                       console.error("Failed to mark attendance:", error);
-                      toast.error("Failed to mark attendance");
+                      toast.error(t("common.markAttendanceFailed"));
                       // Still proceed with redirection
                       await proceedToJoin();
                     }
@@ -255,7 +259,7 @@ function GuestWaitingRoomComponent() {
         {thumbnail && (
           <img
             src={thumbnail}
-            alt="Session Thumbnail"
+            alt={t("waitingRoom.thumbnailAlt")}
             className="w-full max-h-72 rounded-xl object-contain bg-gray-50"
           />
         )}

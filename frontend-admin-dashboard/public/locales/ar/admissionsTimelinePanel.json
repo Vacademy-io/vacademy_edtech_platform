@@ -1,0 +1,40 @@
+{
+    "header": {
+        "title": "الأنشطة والملاحظات"
+    },
+    "loading": "جارٍ تحميل النشاط…",
+    "error": "تعذّر تحميل الجدول الزمني للنشاط.",
+    "empty": {
+        "title": "لا يوجد نشاط بعد",
+        "description": "ستظهر هنا الملاحظات وتغييرات الحالة والأحداث الأخرى"
+    },
+    "pagination": {
+        "pageInfo": "صفحة {{current}} من {{total}}",
+        "previous": "السابق",
+        "next": "التالي"
+    },
+    "event": {
+        "actorPrefix": "بواسطة",
+        "viewMore": "عرض المزيد",
+        "viewLess": "عرض أقل"
+    },
+    "addNote": {
+        "collapsedPlaceholder": "أضف ملاحظة أو سجّل نشاطًا…",
+        "notePlaceholder": "اكتب ملاحظتك هنا…",
+        "submitHint": "اضغط Ctrl+Enter للإرسال",
+        "cancel": "إلغاء",
+        "submit": "إضافة ملاحظة",
+        "submitting": "جارٍ الحفظ…",
+        "actionTypes": {
+            "note": "ملاحظة",
+            "callLog": "سجل مكالمة",
+            "followUp": "متابعة",
+            "meeting": "اجتماع"
+        },
+        "toast": {
+            "success": "تمت إضافة الملاحظة بنجاح",
+            "error": "تعذّرت إضافة الملاحظة. يرجى المحاولة مرة أخرى.",
+            "emptyWarning": "يرجى إدخال ملاحظة أو إضافة تسجيل"
+        }
+    }
+}

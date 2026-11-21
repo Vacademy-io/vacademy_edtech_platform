@@ -1,407 +1,405 @@
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
-import { useState, useEffect } from 'react';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { LevelType } from '@/schemas/student/student-list/institute-schema';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { MyButton } from '@/components/design-system/button';
-import { SearchableSelect } from '@/components/design-system/searchable-select';
 import { fetchSubjectWiseProgress } from '../../-services/utils';
 import { resolveInstituteLogoUrl } from '../live/-utils/instituteLogo';
 import { exportSubjectProgressPdf } from '../../-utils/exportSubjectProgressPdf';
 import {
     SubjectProgressResponse,
     SubjectOverviewBatchColumns,
-    SUBJECT_OVERVIEW_BATCH_WIDTH,
     SubjectOverviewBatchColumnType,
 } from '../../-types/types';
-import { useMutation } from '@tanstack/react-query';
+import { useQueries } from '@tanstack/react-query';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { MyTable } from '@/components/design-system/table';
 import { usePacageDetails } from '../../-store/usePacageDetails';
 import { formatToTwoDecimalPlaces, convertMinutesToTimeFormat } from '../../-services/helper';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
-import { convertCapitalToTitleCase } from '@/lib/utils';
 import { toast } from 'sonner';
+import { Export, FileCsv, Warning } from '@phosphor-icons/react';
+import BatchMultiSelect, { useBatchLookup, type BatchOption } from '../batchMultiSelect';
+import { buildReportCsv, csvFileName, downloadCsv, num } from '../../-utils/reportCsv';
 
-const formSchema = z.object({
-    course: z.string().min(1, 'Course is required'),
-    session: z.string().min(1, 'Session is required'),
-    level: z.string().min(1, 'Level is required'),
-});
+const buildFormSchema = (t: TFunction) =>
+    z.object({
+        batches: z.array(z.string()).min(1, t('validation.batchRequired')),
+    });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.infer<ReturnType<typeof buildFormSchema>>;
+
+interface BatchResult {
+    batchId: string;
+    option: BatchOption | undefined;
+    /** `null` is what the service returns on a failed request. */
+    data: SubjectProgressResponse | null | undefined;
+    isError: boolean;
+}
 
 interface ProgressReportsProps {
     /**
      * When rendered inside a batch-scoped surface (e.g. Course Details → Reports),
-     * the batch is already known — the course/session/level picker is hidden and
-     * the report is generated for this package session directly.
+     * the batch is already known — the batch picker is hidden and the report is
+     * generated for this package session directly.
      */
     fixedPackageSessionId?: string;
     /** Course id backing `fixedPackageSessionId`, used only to title the report. */
     fixedCourseId?: string;
 }
 
+/** Rows for one batch; each carries its batch so "View details" queries the right one. */
+const transformToSubjectOverview = (
+    data: SubjectProgressResponse,
+    batchId: string,
+    option: BatchOption | undefined,
+    courseName: string
+): SubjectOverviewBatchColumnType[] =>
+    data.flatMap((subject) =>
+        subject.modules.map((module) => ({
+            subject: subject.subject_name, // Show subject name in every row
+            module: module.module_name,
+            module_id: module.module_id,
+            module_completed_by_batch: `${formatToTwoDecimalPlaces(
+                module.module_completion_percentage_by_batch
+            )}%`,
+            average_time_spent_by_batch: convertMinutesToTimeFormat(
+                module.avg_time_spent_minutes_by_batch ?? 0
+            ),
+            package_session_id: batchId,
+            course_name: courseName,
+            session_name: option?.sessionName ?? '',
+            level_name: option?.levelName ?? '',
+        }))
+    );
+
+// Courses shallower than the full Subject → Module structure come back with
+// the literal "DEFAULT" placeholder for the missing level(s). Hide any
+// structural column whose every row is that placeholder instead of showing
+// a whole column of "DEFAULT". Metric columns are never hidden this way.
+const isStructuralColumnAllDefault = (
+    rows: SubjectOverviewBatchColumnType[],
+    key: 'subject' | 'module'
+) =>
+    rows.length > 0 &&
+    rows.every((row) => (row[key] ?? '').toString().trim().toUpperCase() === 'DEFAULT');
+
 export default function ProgressReports({
     fixedPackageSessionId,
     fixedCourseId,
 }: ProgressReportsProps = {}) {
+    const { t } = useTranslation('studyLibraryBatchProgressReports');
     const isBatchFixed = Boolean(fixedPackageSessionId);
-    const {
-        getCourseFromPackage,
-        getSessionFromPackage,
-        getLevelsFromPackage2,
-        getPackageSessionId,
-    } = useInstituteDetailsStore();
+    const { getCourseFromPackage } = useInstituteDetailsStore();
     const instituteDetails = useInstituteDetailsStore((s) => s.instituteDetails);
-    const { setPacageSessionId, setCourse, setSession, setLevel, pacageSessionId } = usePacageDetails();
+    const { setPacageSessionId, setCourse, setSession, setLevel } = usePacageDetails();
     const courseList = getCourseFromPackage();
-    const [sessionList, setSessionList] = useState<{ id: string; name: string }[]>([]);
-    const [levelList, setLevelList] = useState<LevelType[]>([]);
-    const [subjectReportData, setSubjectReportData] = useState<SubjectProgressResponse>();
-    const { handleSubmit, setValue, watch, trigger } = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            course: '',
-            session: '',
-            level: '',
-        },
+    const batchLookup = useBatchLookup();
+    const batchTerm = getTerminology(ContentTerms.Batch, SystemTerms.Batch);
+    const courseTerm = getTerminology(ContentTerms.Course, SystemTerms.Course);
+    const subjectTerm = getTerminology(ContentTerms.Subjects, SystemTerms.Subjects);
+    const moduleTerm = getTerminology(ContentTerms.Modules, SystemTerms.Modules);
+
+    const [appliedBatchIds, setAppliedBatchIds] = useState<string[]>([]);
+    // Stamped per "Generate" so re-running the same batch always refetches.
+    const [runId, setRunId] = useState(0);
+    const [isExportingPdf, setIsExportingPdf] = useState<string | null>(null);
+    const [isExportingCsv, setIsExportingCsv] = useState(false);
+
+    const {
+        handleSubmit,
+        setValue,
+        watch,
+        clearErrors,
+        formState: { errors },
+    } = useForm<FormValues>({
+        resolver: zodResolver(buildFormSchema(t)),
+        defaultValues: { batches: fixedPackageSessionId ? [fixedPackageSessionId] : [] },
     });
-    const selectedCourse = watch('course');
-    const selectedSession = watch('session');
-    const selectedLevel = watch('level');
-    const transformToSubjectOverview = (
-        data: SubjectProgressResponse
-    ): SubjectOverviewBatchColumnType[] => {
-        return data.flatMap((subject) => {
-            return subject.modules.map((module, index) => ({
-                subject: subject.subject_name, // Show subject name in every row
-                module: module.module_name,
-                module_id: module.module_id,
-                module_completed_by_batch: `${formatToTwoDecimalPlaces(
-                    module.module_completion_percentage_by_batch
-                )}%`,
-                average_time_spent_by_batch: convertMinutesToTimeFormat(
-                    module.avg_time_spent_minutes_by_batch ?? 0
-                ),
-            }));
-        });
-    };
+    const selectedBatches = watch('batches');
 
-    const subjectWiseData = {
-        content: subjectReportData ? transformToSubjectOverview(subjectReportData) : [],
-        total_pages: 0,
-        page_no: 0,
-        page_size: 10,
-        total_elements: 0,
-        last: false,
-    };
-
-    // Courses shallower than the full Subject → Module structure come back with
-    // the literal "DEFAULT" placeholder for the missing level(s). Hide any
-    // structural column whose every row is that placeholder instead of showing
-    // a whole column of "DEFAULT". Metric columns are never hidden this way.
-    const isStructuralColumnAllDefault = (key: 'subject' | 'module') =>
-        subjectWiseData.content.length > 0 &&
-        subjectWiseData.content.every(
-            (row) => (row[key] ?? '').toString().trim().toUpperCase() === 'DEFAULT'
-        );
-    const tableState = {
-        columnVisibility: {
-            module_id: false,
-            user_id: false,
-            subject: !isStructuralColumnAllDefault('subject'),
-            module: !isStructuralColumnAllDefault('module'),
-        },
-    };
-
-    const SubjectWiseMutation = useMutation({
-        mutationFn: fetchSubjectWiseProgress,
+    const queries = useQueries({
+        queries: appliedBatchIds.map((batchId) => ({
+            queryKey: ['batchSubjectWiseProgress', batchId, runId],
+            queryFn: () =>
+                fetchSubjectWiseProgress({
+                    packageSessionId: batchId,
+                }) as Promise<SubjectProgressResponse | null>,
+            staleTime: 5 * 60 * 1000,
+        })),
     });
-    const { isPending, error } = SubjectWiseMutation;
+    const isPending = queries.some((q) => q.isLoading);
+    const resultsKey = queries.map((q) => `${q.status}:${q.dataUpdatedAt}`).join('|');
+    const results = useMemo<BatchResult[]>(
+        () =>
+            appliedBatchIds.map((batchId, index) => ({
+                batchId,
+                option: batchLookup.get(batchId),
+                data: queries[index]?.data,
+                isError: Boolean(queries[index]?.isError),
+            })),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [appliedBatchIds, batchLookup, resultsKey]
+    );
+    const isMulti = appliedBatchIds.length > 1;
+    const hasAnyData = results.some((r) => r.data?.length);
 
-    const [isExporting, setIsExporting] = useState(false);
-    const handleExportPDF = async () => {
-        if (!subjectReportData?.length) {
-            toast.error('No data to export yet');
+    const blockTitle = (result: BatchResult) =>
+        isBatchFixed
+            ? courseList.find((c) => c.id === fixedCourseId)?.name || result.option?.label || ''
+            : result.option?.label || result.option?.courseName || '';
+
+    const onSubmit = (data: FormValues) => {
+        setAppliedBatchIds(data.batches);
+        setRunId(Date.now());
+        // The chapter-wise "View details" dialog reads the batch + names from
+        // this store; keep the first selection there so it keeps working.
+        const first = batchLookup.get(data.batches[0] ?? '');
+        setPacageSessionId(data.batches[0] ?? '');
+        setCourse(first?.courseName || '');
+        setSession(first?.sessionName || '');
+        setLevel(first?.levelName || '');
+    };
+
+    // Batch is already known (Course Details → Reports): generate straight away.
+    useEffect(() => {
+        if (fixedPackageSessionId) {
+            setAppliedBatchIds([fixedPackageSessionId]);
+            setRunId(Date.now());
+            setPacageSessionId(fixedPackageSessionId);
+        }
+    }, [fixedPackageSessionId, setPacageSessionId]);
+
+    const handleExportPDF = async (result: BatchResult) => {
+        if (!result.data?.length) {
+            toast.error(t('toast.noDataToExport'));
             return;
         }
-        setIsExporting(true);
+        setIsExportingPdf(result.batchId);
         try {
             const logoUrl = await resolveInstituteLogoUrl(instituteDetails?.institute_logo_file_id);
             await exportSubjectProgressPdf(
                 {
                     instituteName: instituteDetails?.institute_name || 'Vacademy',
                     logoUrl,
-                    courseName:
-                        courseList.find((c) => c.id === (fixedCourseId || selectedCourse))?.name ||
-                        '',
-                    sessionName: sessionList.find((s) => s.id === selectedSession)?.name || '',
-                    levelName: levelList.find((l) => l.id === selectedLevel)?.level_name || '',
-                    courseTerm: getTerminology(ContentTerms.Course, SystemTerms.Course),
+                    courseName: isBatchFixed
+                        ? courseList.find((c) => c.id === fixedCourseId)?.name || ''
+                        : result.option?.courseName || '',
+                    sessionName: result.option?.sessionName || '',
+                    levelName: result.option?.levelName || '',
+                    courseTerm,
                     sessionTerm: getTerminology(ContentTerms.Session, SystemTerms.Session),
                     levelTerm: getTerminology(ContentTerms.Level, SystemTerms.Level),
-                    moduleTerm: getTerminology(ContentTerms.Modules, SystemTerms.Modules),
-                    subjectTerm: getTerminology(ContentTerms.Subjects, SystemTerms.Subjects),
-                    batchTerm: getTerminology(ContentTerms.Batch, SystemTerms.Batch),
+                    moduleTerm,
+                    subjectTerm,
+                    batchTerm,
                     variant: 'batch',
                 },
-                subjectReportData
+                result.data,
+                t
             );
-            toast.success('Report exported');
+            toast.success(t('toast.exportSuccess'));
         } catch {
-            toast.error('Failed to export PDF');
+            toast.error(t('toast.exportFailed'));
         } finally {
-            setIsExporting(false);
+            setIsExportingPdf(null);
         }
     };
 
-    useEffect(() => {
-        if (selectedCourse) {
-            const sessions = getSessionFromPackage({ courseId: selectedCourse });
-            setSessionList(sessions);
-            // Auto-select when the course has exactly one session.
-            setValue('session', sessions.length === 1 && sessions[0] ? sessions[0].id : '');
-        } else {
-            setSessionList([]);
+    const handleExportCsv = () => {
+        if (!hasAnyData) {
+            toast.error(t('toast.noDataToExport'));
+            return;
         }
-    }, [selectedCourse]);
-
-    useEffect(() => {
-        if (selectedSession === '') {
-            setValue('level', '');
-            setLevelList([]);
-        } else if (selectedCourse && selectedSession) {
-            const levels = getLevelsFromPackage2({
-                courseId: selectedCourse,
-                sessionId: selectedSession,
-            });
-            setLevelList(levels);
-            // Auto-select when the session exposes exactly one level.
-            if (levels.length === 1 && levels[0]) {
-                setValue('level', levels[0].id);
-            }
-        }
-    }, [selectedSession]);
-
-    // Fallbacks: auto-select the session/level as soon as its list resolves to a
-    // single option and nothing is chosen yet — so picking a course reliably
-    // fills the whole form even if the cascade above misses on the first resolve.
-    useEffect(() => {
-        if (!selectedSession && sessionList.length === 1 && sessionList[0]) {
-            setValue('session', sessionList[0].id);
-        }
-    }, [sessionList, selectedSession]);
-    useEffect(() => {
-        if (!selectedLevel && levelList.length === 1 && levelList[0]) {
-            setValue('level', levelList[0].id);
-        }
-    }, [levelList, selectedLevel]);
-
-    const runReport = (packageSessionId: string) => {
-        if (!packageSessionId) return;
-        SubjectWiseMutation.mutate(
-            { packageSessionId },
-            {
-                onSuccess: (data) => {
-                    setSubjectReportData(data);
+        setIsExportingCsv(true);
+        try {
+            const csv = buildReportCsv([
+                {
+                    title: t('csv.title', { term: subjectTerm }),
+                    headers: [
+                        batchTerm,
+                        courseTerm,
+                        subjectTerm,
+                        moduleTerm,
+                        t('csv.moduleCompletedByBatch', { module: moduleTerm, batch: batchTerm }),
+                        t('csv.dailyTimeByBatchMin', { batch: batchTerm }),
+                    ],
+                    rows: results.flatMap((r) =>
+                        (r.data ?? []).flatMap((subject) =>
+                            subject.modules.map((module) => [
+                                blockTitle(r),
+                                r.option?.courseName ?? '',
+                                subject.subject_name,
+                                module.module_name,
+                                num(module.module_completion_percentage_by_batch),
+                                num(module.avg_time_spent_minutes_by_batch),
+                            ])
+                        )
+                    ),
                 },
-                onError: (error) => {
-                    console.error('Error:', error);
-                },
-            }
-        );
-        setPacageSessionId(packageSessionId);
+            ]);
+            downloadCsv(
+                csvFileName(
+                    t('csv.fileStem'),
+                    isMulti ? `${results.length}-${batchTerm}` : blockTitle(results[0]!)
+                ),
+                csv
+            );
+            toast.success(t('toast.csvExportSuccess'));
+        } catch {
+            toast.error(t('toast.csvExportFailed'));
+        } finally {
+            setIsExportingCsv(false);
+        }
     };
 
-    const onSubmit = (data: FormValues) => {
-        runReport(
-            getPackageSessionId({
-                courseId: data.course,
-                sessionId: data.session,
-                levelId: data.level,
-            }) || ''
-        );
-        setCourse(courseList.find((course) => course.id === data.course)?.name || '');
-        setSession(sessionList.find((session) => session.id === data.session)?.name || '');
-        setLevel(levelList.find((level) => level.id === data.level)?.level_name || '');
-    };
-
-    // Batch is already known (Course Details → Reports): generate straight away.
-    useEffect(() => {
-        if (fixedPackageSessionId) runReport(fixedPackageSessionId);
-    }, [fixedPackageSessionId]);
+    const exportPdfButton = (result: BatchResult) => (
+        <MyButton
+            buttonType="secondary"
+            onClick={() => handleExportPDF(result)}
+            className="h-9 px-4 text-body"
+            disable={isExportingPdf === result.batchId}
+        >
+            <Export className="me-1.5 size-4" />
+            {isExportingPdf === result.batchId ? t('report.exporting') : t('report.exportPdf')}
+        </MyButton>
+    );
 
     return (
         <div className="space-y-6">
-            {/* Modern Filter Card — hidden when the batch is already scoped by the parent */}
+            {/* Filter card — hidden when the batch is already scoped by the parent */}
             {!isBatchFixed && (
-            <div className="bg-white rounded-lg border border-neutral-200 p-4 shadow-sm">
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                    {/* Course, Session, Level Row */}
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                        <div>
-                            <label className="text-xs font-medium text-neutral-700 mb-1 block">
-                                {getTerminology(ContentTerms.Course, SystemTerms.Course)}
-                                <span className="text-red-500 ml-1">*</span>
-                            </label>
-                            <SearchableSelect
-                                options={courseList.map((course) => ({
-                                    label: convertCapitalToTitleCase(course.name),
-                                    value: course.id,
-                                }))}
-                                value={selectedCourse}
-                                onChange={(value) => setValue('course', value)}
-                                placeholder={`Select a ${getTerminology(
-                                    ContentTerms.Course,
-                                    SystemTerms.Course
-                                )}`}
-                                searchPlaceholder={`Search ${getTerminology(
-                                    ContentTerms.Course,
-                                    SystemTerms.Course
-                                )}...`}
-                                triggerClassName="h-9 text-sm"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="text-xs font-medium text-neutral-700 mb-1 block">
-                                {getTerminology(ContentTerms.Session, SystemTerms.Session)}
-                                <span className="text-red-500 ml-1">*</span>
-                            </label>
-                            <Select
-                                onValueChange={(value) => setValue('session', value)}
-                                value={selectedSession}
-                                disabled={!sessionList.length}
+                <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                        <BatchMultiSelect
+                            selected={selectedBatches}
+                            onChange={(ids) => {
+                                setValue('batches', ids);
+                                if (ids.length) clearErrors('batches');
+                            }}
+                            error={errors.batches?.message}
+                        />
+                        <div className="flex justify-start">
+                            <MyButton
+                                type="submit"
+                                buttonType="primary"
+                                className="h-9 px-4 text-body font-medium"
                             >
-                                <SelectTrigger className="h-9 text-sm">
-                                    <SelectValue
-                                        placeholder={`Select a ${getTerminology(
-                                            ContentTerms.Session,
-                                            SystemTerms.Session
-                                        )}`}
-                                    />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {sessionList.map((session) => (
-                                        <SelectItem key={session.id} value={session.id}>
-                                            {convertCapitalToTitleCase(session.name)}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                {t('form.generateReport')}
+                            </MyButton>
                         </div>
-
-                        <div>
-                            <label className="text-xs font-medium text-neutral-700 mb-1 block">
-                                {getTerminology(ContentTerms.Level, SystemTerms.Level)}
-                                <span className="text-red-500 ml-1">*</span>
-                            </label>
-                            <Select
-                                onValueChange={(value) => {
-                                    setValue('level', value);
-                                    trigger('level');
-                                }}
-                                value={selectedLevel}
-                                disabled={!levelList.length}
-                            >
-                                <SelectTrigger className="h-9 text-sm">
-                                    <SelectValue
-                                        placeholder={`Select a ${getTerminology(
-                                            ContentTerms.Level,
-                                            SystemTerms.Level
-                                        )}`}
-                                    />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {levelList.map((level) => (
-                                        <SelectItem key={level.id} value={level.id}>
-                                            {convertCapitalToTitleCase(level.level_name)}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-
-                    {/* Generate Button Row */}
-                    <div className="flex justify-start">
-                        <MyButton 
-                            type="submit" 
-                            buttonType="primary" 
-                            className="h-9 px-4 text-sm font-medium focus:!bg-primary-600 focus:!border-primary-600 focus:!text-white active:!bg-primary-600 active:!border-primary-600 active:!text-white focus:!outline-none focus:!ring-0"
-                        >
-                            Generate Report
-                        </MyButton>
-                    </div>
-                </form>
-            </div>
+                    </form>
+                </div>
             )}
 
             {isPending && <DashboardLoader />}
-            
-            {subjectReportData && (
+
+            {appliedBatchIds.length > 0 && !isPending && (
                 <div className="space-y-6">
                     {/* Report Header */}
-                    <div className="bg-white rounded-lg border border-neutral-200 p-4 shadow-sm">
+                    <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="space-y-2">
-                                <h3 className="text-lg font-semibold text-primary-600">
-                                    {courseList.find(
-                                        (course) => course.id === (fixedCourseId || selectedCourse)
-                                    )?.name || ''}
-                                </h3>
+                            <h3 className="text-subtitle font-semibold text-primary-600">
+                                {isMulti
+                                    ? t('report.multiBatchTitle', {
+                                          count: results.length,
+                                          term: batchTerm,
+                                      })
+                                    : blockTitle(results[0]!)}
+                            </h3>
+                            <div className="flex flex-wrap items-center gap-2">
+                                {!isMulti && results[0] && exportPdfButton(results[0])}
+                                <MyButton
+                                    buttonType="secondary"
+                                    onClick={handleExportCsv}
+                                    className="h-9 px-4 text-body"
+                                    disable={isExportingCsv}
+                                >
+                                    <FileCsv className="me-1.5 size-4" />
+                                    {isExportingCsv ? t('report.exporting') : t('report.exportCsv')}
+                                </MyButton>
                             </div>
-                            <MyButton
-                                buttonType="secondary"
-                                onClick={handleExportPDF}
-                                className="h-9 px-4 text-sm"
-                                disabled={isExporting}
+                        </div>
+                    </div>
+
+                    {results.map((result) => {
+                        const rows = result.data
+                            ? transformToSubjectOverview(
+                                  result.data,
+                                  result.batchId,
+                                  result.option,
+                                  isBatchFixed
+                                      ? courseList.find((c) => c.id === fixedCourseId)?.name || ''
+                                      : result.option?.courseName || ''
+                              )
+                            : [];
+                        const tableState = {
+                            columnVisibility: {
+                                module_id: false,
+                                user_id: false,
+                                subject: !isStructuralColumnAllDefault(rows, 'subject'),
+                                module: !isStructuralColumnAllDefault(rows, 'module'),
+                            },
+                        };
+                        return (
+                            <div
+                                key={result.batchId}
+                                className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm"
                             >
-                                {isExporting ? (
-                                    <div className="flex items-center gap-2">
-                                        <div className="h-3 w-3 animate-spin rounded-full border border-neutral-300 border-t-primary-500"></div>
-                                        <span>Exporting...</span>
+                                <div className="space-y-4">
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            {isMulti && (
+                                                <span className="rounded-md bg-primary-50 px-2 py-1 text-caption font-semibold uppercase tracking-wide text-primary-500">
+                                                    {batchTerm}
+                                                </span>
+                                            )}
+                                            <h4 className="text-body font-semibold text-primary-600">
+                                                {isMulti
+                                                    ? blockTitle(result)
+                                                    : t('report.subjectWiseOverview', {
+                                                          term: subjectTerm,
+                                                      })}
+                                            </h4>
+                                        </div>
+                                        {isMulti && result.data?.length
+                                            ? exportPdfButton(result)
+                                            : null}
                                     </div>
-                                ) : (
-                                    <>
-                                        <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                        </svg>
-                                        Export PDF
-                                    </>
-                                )}
-                            </MyButton>
-                        </div>
-                    </div>
-                    
-                    {/* Report Content */}
-                    <div className="bg-white rounded-lg border border-neutral-200 p-4 shadow-sm">
-                        <div className="space-y-4">
-                            <h4 className="text-base font-semibold text-primary-600">
-                                {getTerminology(ContentTerms.Subjects, SystemTerms.Subjects)}-wise Overview
-                            </h4>
-                            <div className="!min-w-full overflow-x-auto [&_table]:!w-full [&_table]:!min-w-full [&_td]:!whitespace-nowrap [&_th]:!whitespace-nowrap">
-                                <MyTable
-                                    data={subjectWiseData}
-                                    columns={SubjectOverviewBatchColumns}
-                                    isLoading={isPending}
-                                    error={error}
-                                    currentPage={0}
-                                    tableState={tableState}
-                                />
+                                    {result.isError || result.data === null ? (
+                                        <div className="flex items-center gap-3 rounded-lg border border-danger-200 bg-danger-50 p-4 text-body text-danger-700">
+                                            <Warning className="size-5 shrink-0" />
+                                            {t('report.batchLoadFailed', {
+                                                name: blockTitle(result),
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <div className="!min-w-full overflow-x-auto [&_table]:!w-full [&_table]:!min-w-full [&_td]:!whitespace-nowrap [&_th]:!whitespace-nowrap">
+                                            <MyTable
+                                                data={{
+                                                    content: rows,
+                                                    total_pages: 0,
+                                                    page_no: 0,
+                                                    page_size: 10,
+                                                    total_elements: 0,
+                                                    last: false,
+                                                }}
+                                                columns={SubjectOverviewBatchColumns}
+                                                isLoading={false}
+                                                error={null}
+                                                currentPage={0}
+                                                tableState={tableState}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    </div>
+                        );
+                    })}
                 </div>
             )}
         </div>

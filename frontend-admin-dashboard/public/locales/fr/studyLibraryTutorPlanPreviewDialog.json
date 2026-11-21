@@ -1,0 +1,17 @@
+{
+    "playTitle": "Lire ce tableau comme le voit l'apprenant",
+    "play": "Lire",
+    "couldNotLoadPlan": "Impossible de charger le plan",
+    "teachingPlan": "Plan de cours",
+    "loadingPlan": "Chargement du plan…",
+    "objectives": "Objectifs",
+    "boardTitle": "Tableau {{order}} : {{title}}",
+    "estimatedMinutes_one": "~{{count}} min",
+    "estimatedMinutes_many": "~{{count}} min",
+    "estimatedMinutes_other": "~{{count}} min",
+    "boardAfterConcept": "Tableau après le concept {{order}} : {{title}}",
+    "teacherSays": "L'enseignant dit :",
+    "checkLabel": "Vérification · {{type}}",
+    "expectedLabel": "Attendu : {{expected}}",
+    "notesLabel": "Notes :"
+}

@@ -1,9 +1,11 @@
 import { Link } from '@tanstack/react-router';
 import { ArrowsClockwise, Gear, Wrench } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '../design-system/button';
 import { ErrorFeedbackDialog } from './error-feedback-dialog';
 
 export function NetworkErrorPage() {
+    const { t } = useTranslation('courseComponentsExtra');
     return (
         <div className="h-screen w-full bg-gray-50 overflow-y-auto flex flex-col justify-center items-center px-4 py-12 sm:px-6 lg:px-8">
             <div className="max-w-md mx-auto text-center w-full">
@@ -20,26 +22,26 @@ export function NetworkErrorPage() {
                     </div>
                 </div>
                 
-                <p className="text-sm font-semibold text-amber-600 uppercase tracking-wide">Under Maintenance</p>
-                <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">We'll be right back</h1>
+                <p className="text-sm font-semibold text-amber-600 uppercase tracking-wide">{t('networkErrorPage.underMaintenance')}</p>
+                <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">{t('networkErrorPage.title')}</h1>
                 <p className="mt-4 text-base text-gray-500 max-w-md mx-auto">
-                    Our team is currently upgrading the platform to bring you an even better experience. We apologize for the interruption.
+                    {t('networkErrorPage.description')}
                 </p>
 
-                <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+                <div className="mt-8 flex flex-col sm:flex-row gap-stack justify-center">
                     <MyButton
                         className="w-full sm:w-auto"
                         onClick={() => window.location.reload()}
                     >
                         <ArrowsClockwise className="me-2 h-4 w-4" />
-                        Try Again
+                        {t('common.tryAgain')}
                     </MyButton>
-                    <MyButton 
-                        buttonType="secondary" 
-                        asChild 
+                    <MyButton
+                        buttonType="secondary"
+                        asChild
                         className="w-full sm:w-auto"
                     >
-                        <Link to="/dashboard">Return Home</Link>
+                        <Link to="/dashboard">{t('common.returnHome')}</Link>
                     </MyButton>
                     <ErrorFeedbackDialog
                         trigger={
@@ -47,7 +49,7 @@ export function NetworkErrorPage() {
                                 buttonType="secondary"
                                 className="w-full sm:w-auto"
                             >
-                                Report Issue
+                                {t('common.reportIssue')}
                             </MyButton>
                         }
                     />

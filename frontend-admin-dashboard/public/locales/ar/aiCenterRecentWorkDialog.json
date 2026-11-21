@@ -1,0 +1,41 @@
+{
+    "dialog": {
+        "title": "أعمالك الأخيرة",
+        "close": "إغلاق",
+        "searchPlaceholder": "ابحث بالاسم أو اسم الملف…",
+        "clearSearch": "مسح البحث",
+        "itemCount_zero": "{{count}} عنصر عبر جميع الأدوات",
+        "itemCount_one": "{{count}} عنصر واحد عبر جميع الأدوات",
+        "itemCount_two": "{{count}} عنصران عبر جميع الأدوات",
+        "itemCount_few": "{{count}} عناصر عبر جميع الأدوات",
+        "itemCount_many": "{{count}} عنصرًا عبر جميع الأدوات",
+        "itemCount_other": "{{count}} عنصر عبر جميع الأدوات"
+    },
+    "sourceFilters": {
+        "all": "كل المصادر",
+        "pdf": "ملفات PDF",
+        "audio": "صوت",
+        "image": "صور",
+        "doc": "مستندات",
+        "none": "حسب الموضوع"
+    },
+    "dateBuckets": {
+        "today": "اليوم",
+        "yesterday": "أمس",
+        "earlierThisWeek": "في وقت سابق من هذا الأسبوع",
+        "older": "أقدم"
+    },
+    "emptyState": {
+        "nothingHereYet": "لا يوجد شيء هنا بعد",
+        "nothingHereYetDescription": "سيظهر هنا كل ما تنشئه.",
+        "noMatches": "لا توجد نتائج مطابقة",
+        "noMatchesDescription": "جرّب مصطلح بحث أو عامل تصفية مختلفًا.",
+        "clearFilters": "مسح عوامل التصفية"
+    },
+    "pagination": {
+        "showingRange": "عرض {{start}}–{{end}} من {{total}}",
+        "prev": "السابق",
+        "next": "التالي",
+        "pageOf": "صفحة {{current}} من {{total}}"
+    }
+}

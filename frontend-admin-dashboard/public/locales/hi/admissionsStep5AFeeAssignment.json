@@ -1,0 +1,84 @@
+{
+    "dash": "-",
+    "selectPrompt": "विवरण देखने के लिए एक फीस योजना चुनें।",
+    "emptyState": {
+        "selectPackage": "फीस योजनाएं देखने के लिए चरण 1 में एक पैकेज सत्र चुनें।"
+    },
+    "success": {
+        "title": "नामांकन पूर्ण",
+        "messageNamed": "{{name}} को चयनित फीस योजना के साथ नामांकित कर दिया गया है।",
+        "messageGeneric": "विद्यार्थी को चयनित फीस योजना के साथ नामांकित कर दिया गया है।",
+        "planLabel": "योजना: {{name}}",
+        "totalAssignedLabel": "कुल निर्धारित राशि: {{amount}}",
+        "paymentModeLabel": "भुगतान का तरीका: ऑफलाइन",
+        "goToAdmissions": "प्रवेश सूची पर जाएं"
+    },
+    "header": {
+        "title": "फीस योजना निर्धारित करें",
+        "subtitle": "चयनित पैकेज सत्र से जुड़े CPO से प्राप्त की गई।",
+        "refresh": "रीफ़्रेश करें"
+    },
+    "status": {
+        "loadingFeePlans": "फीस योजनाएं लोड हो रही हैं...",
+        "loadError": "CPO विकल्प लोड करने में विफल। कृपया पुनः प्रयास करें।",
+        "noFeePlans": "इस पैकेज सत्र के लिए कोई फीस योजना नहीं मिली।"
+    },
+    "cpoCard": {
+        "defaultPaymentOption": "डिफ़ॉल्ट भुगतान विकल्प:",
+        "available": "उपलब्ध",
+        "notSet": "सेट नहीं है"
+    },
+    "detailHeader": {
+        "linked": "वर्तमान पैकेज सत्र से जुड़ा हुआ",
+        "notLinked": "कोई सत्र लिंक नहीं मिला"
+    },
+    "feeTable": {
+        "feeType": "फीस प्रकार",
+        "amount": "राशि",
+        "installments": "किश्तें"
+    },
+    "installmentsTable": {
+        "title": "किश्तें",
+        "fee": "फीस",
+        "number": "#",
+        "amount": "राशि",
+        "due": "देय तिथि",
+        "start": "प्रारंभ",
+        "end": "समाप्ति",
+        "noneConfigured": "कोई किश्त कॉन्फ़िगर नहीं की गई है।"
+    },
+    "paymentForm": {
+        "recordTitle": "भुगतान दर्ज करें (वैकल्पिक)",
+        "recordSubtitle": "नामांकन से पहले ऑफलाइन भुगतान विवरण दर्ज करें।",
+        "hide": "छिपाएं",
+        "payNow": "अभी भुगतान करें",
+        "amountLabel": "प्राप्त राशि (वैकल्पिक)",
+        "transactionIdLabel": "लेन-देन आईडी",
+        "generate": "जनरेट करें",
+        "receiptLabel": "रसीद (वैकल्पिक)",
+        "receiptUploaded": "रसीद अपलोड हो गई",
+        "uploadReceipt": "रसीद अपलोड करें",
+        "uploading": "अपलोड हो रहा है..."
+    },
+    "footer": {
+        "totalLabel": "कुल: {{amount}}",
+        "enroll": "इस फीस योजना के साथ नामांकित करें",
+        "enrolling": "नामांकन किया जा रहा है..."
+    },
+    "installmentLabel": {
+        "oneTime": "एकमुश्त भुगतान",
+        "count_one": "{{count}} किश्त",
+        "count_other": "{{count}} किश्तें",
+        "startsSuffix": " • {{date}} से शुरू"
+    },
+    "toast": {
+        "packageSessionRequired": "नामांकन के लिए पैकेज सत्र आवश्यक है।",
+        "selectFeePlan": "जारी रखने के लिए एक फीस योजना चुनें।",
+        "childUserIdMissing": "प्रवेश प्रतिक्रिया में बच्चे की उपयोगकर्ता आईडी गायब है।",
+        "paymentOptionRequired": "भुगतान विकल्प आवश्यक है। डिफ़ॉल्ट सेट करें या CPO अपडेट करें।",
+        "enrollSuccess": "विद्यार्थी को नामांकित किया गया और फीस योजना निर्धारित की गई।",
+        "enrollFailed": "विद्यार्थी को नामांकित करने में विफल। कृपया पुनः प्रयास करें।",
+        "receiptUploaded": "रसीद अपलोड हो गई",
+        "receiptUploadFailed": "रसीद अपलोड करने में विफल"
+    }
+}

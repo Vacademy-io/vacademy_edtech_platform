@@ -1,8 +1,49 @@
 import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { extendTailwindMerge } from "tailwind-merge";
+
+/**
+ * tailwind-merge taught this app's design tokens. Stock tailwind-merge reads
+ * the custom type sizes (`text-caption`, `text-body`, ...) as text COLOURS, so
+ * `cn("text-caption text-muted-foreground")` silently dropped one of them —
+ * 42 class lists across the app rendered at the wrong size or colour (form
+ * hints and errors, chips, cards, chatbot chips). Same token list as the
+ * engagement module's `ecn()`, which hit this first.
+ */
+const mergeClasses = extendTailwindMerge({
+  extend: {
+    classGroups: {
+      "font-size": [
+        {
+          text: [
+            "h1",
+            "h2",
+            "h3",
+            "h1-semibold",
+            "h2-semibold",
+            "h3-semibold",
+            "title",
+            "subtitle",
+            "body",
+            "caption",
+            "display",
+            "display-sm",
+            "2xs",
+            "3xs",
+            "play-badge",
+          ],
+        },
+      ],
+      p: [{ p: ["card", "card-lg", "page"] }],
+      gap: [{ gap: ["stack", "section"] }],
+      h: [{ h: ["control"] }],
+      "min-h": [{ "min-h": ["control"] }],
+      rounded: [{ rounded: ["play-card", "play-card-sm", "play-btn"] }],
+    },
+  },
+});
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+  return mergeClasses(clsx(inputs));
 }
 
 export function isNullOrEmptyOrUndefined<T>(

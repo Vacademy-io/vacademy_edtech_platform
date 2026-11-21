@@ -8,13 +8,17 @@ import { InternalSideBar } from './internal-sidebar/internalSideBar';
 import { StudentSidebarProvider } from '@/routes/manage-students/students-list/-providers/student-sidebar-provider';
 import { InternalSidebarComponent } from './internal-sidebar/internalSidebarComponent';
 import { getDisplaySettingsFromCache } from '@/services/display-settings';
-import { ADMIN_DISPLAY_SETTINGS_KEY, TEACHER_DISPLAY_SETTINGS_KEY } from '@/types/display-settings';
-import { getTokenFromCookie, getUserRoles } from '@/lib/auth/sessionUtility';
-import { TokenKey } from '@/constants/auth/tokens';
+import { getActiveRoleDisplaySettingsKey } from '@/lib/auth/instituteUtils';
 import { useAssistDockVisible } from '@/components/assist-dock/visibility';
+import { useAssistDock } from '@/components/assist-dock/store';
 import { useIsMobile, useIsTablet } from '@/hooks/use-mobile';
 import { hasFacultyAssignedPermission } from '@/lib/auth/facultyAccessUtils';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
+import { RouteAccessGuard } from './route-access-guard';
+import { TrialBanner } from '@/components/common/trial-banner/TrialBanner';
+import { useNavSnapshotStore } from '@/lib/capabilities/use-entitlement';
+import { TELLEO_PLANS_PATH } from '@/services/ai-plans/storefront';
+import { isIOS } from '@/native/platform';
 
 /**
  * New sidebar dimensions (Gmail-style two-bar):
@@ -57,11 +61,9 @@ export const LayoutContainer = ({
     const { open, setOpen } = useSidebar();
     const isMobile = useIsMobile();
     const isTablet = useIsTablet();
-    const accessToken = getTokenFromCookie(TokenKey.accessToken);
-    const roles = getUserRoles(accessToken);
-    const isAdmin = roles.includes('ADMIN');
-    const roleKey = isAdmin ? ADMIN_DISPLAY_SETTINGS_KEY : TEACHER_DISPLAY_SETTINGS_KEY;
-    const roleDisplay = getDisplaySettingsFromCache(roleKey);
+    // Same key the sidebar and navbar read (admin / teacher / custom role, for the CURRENT
+    // institute), so `showSidebar` follows the role the user is actually signed in as.
+    const roleDisplay = getDisplaySettingsFromCache(getActiveRoleDisplaySettingsKey());
     const { instituteDetails } = useInstituteDetailsStore();
     const hasFacultyPermission = hasFacultyAssignedPermission(instituteDetails?.id);
     const showMainSidebar = roleDisplay?.ui?.showSidebar !== false;
@@ -70,6 +72,8 @@ export const LayoutContainer = ({
     // for this role — shares AssistDock's own resolution so the reserved right
     // gutter collapses exactly when the rail is hidden.
     const showAssistDock = useAssistDockVisible();
+    const assistantFabEnabled = useAssistDock((s) => s.assistantFabEnabled);
+    const allowListOnly = useNavSnapshotStore((s) => s.snapshot?.allowListOnly === true);
 
     // Track previous sidebar config to detect actual changes vs re-renders
     const prevConfigRef = useRef<string | null>(null);
@@ -152,17 +156,39 @@ export const LayoutContainer = ({
                 )}
             >
                 <Navbar showMobileBackButton={showMobileBackButton} />
+                {/* Product sign-ups shown the four-page dashboard (Telleo): the platform trial
+                    banner, asked only for them. Upgrade opens Telleo's plan page. */}
+                <TrialBanner
+                    ns="telleoSetup"
+                    enabled={allowListOnly}
+                    renderUpgrade={(label) =>
+                        // Apple Guideline 3.1.1: no purchase link in the iPhone app.
+                        isIOS() ? null : (
+                            <a
+                                href={TELLEO_PLANS_PATH}
+                                className="shrink-0 font-semibold underline"
+                            >
+                                {label}
+                            </a>
+                        )
+                    }
+                />
                 <StudentSidebarProvider>
                     <div
                         className={cn(
                             intrnalMargin
                                 ? 'flex flex-1 flex-col p-2 sm:p-3 md:p-4 lg:m-7'
                                 : 'm-0',
+                            // Below md the floating assistant button sits over the
+                            // bottom-right corner; extra bottom room lets the last
+                            // actions on the page scroll clear of it.
+                            intrnalMargin && assistantFabEnabled && 'pb-20 sm:pb-20',
                             'overflow-x-hidden',
                             className
                         )}
                     >
-                        {children}
+                        {/* Plan (MANAGED only) + locked-for-role guard for deep links. */}
+                        <RouteAccessGuard>{children}</RouteAccessGuard>
                     </div>
                 </StudentSidebarProvider>
             </div>

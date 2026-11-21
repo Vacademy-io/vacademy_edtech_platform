@@ -1,0 +1,66 @@
+{
+    "toast": {
+        "copiedToClipboard": "{{field}} copied to clipboard!",
+        "copyFailed": "Failed to copy {{field}}"
+    },
+    "password": {
+        "notFound": "password not found"
+    },
+    "empty": {
+        "noOverviewData": "No overview data available"
+    },
+    "errors": {
+        "fetchStudentDetails": "Error fetching student details"
+    },
+    "fallback": {
+        "notAvailable": "N/A"
+    },
+    "sections": {
+        "customFields": "Custom Fields",
+        "termsAndConditions": "Terms & Conditions",
+        "accountCredentials": "Account Credentials",
+        "generalDetails": "General Details",
+        "referralDetails": "Referral Details",
+        "contactInformation": "Contact Information",
+        "locationDetails": "Location Details",
+        "guardianDetails": "Parent/Guardian's Details"
+    },
+    "fields": {
+        "status": "Status",
+        "signedOn": "Signed on",
+        "signedPdf": "Signed PDF",
+        "enrollmentNo": "Enrollment No",
+        "gender": "Gender",
+        "school": "School",
+        "country": "Country",
+        "state": "State",
+        "city": "City",
+        "pincode": "Pincode",
+        "address": "Address",
+        "mobileNo": "Mobile No.",
+        "emailId": "Email Id",
+        "fatherName": "Father/Male Guardian's Name",
+        "fatherMobileNo": "Father/Male Guardian's Mobile No.",
+        "fatherEmailId": "Father/Male Guardian's Email Id",
+        "motherName": "Mother/Female Guardian's Name",
+        "motherMobileNo": "Mother/Female Guardian's Mobile No",
+        "motherEmailId": "Mother/Female Guardian's Email Id",
+        "username": "Username",
+        "password": "Password",
+        "attendance": "Attendance",
+        "count": "Count"
+    },
+    "status": {
+        "signed": "Signed",
+        "notSigned": "Not Signed"
+    },
+    "actions": {
+        "download": "Download"
+    },
+    "otherContacts": {
+        "heading": "Other contact details",
+        "hint": "Numbers and emails this person gave in other enquiries.",
+        "phone": "Phone",
+        "email": "Email"
+    }
+}

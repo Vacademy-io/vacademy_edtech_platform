@@ -1,0 +1,12 @@
+{
+    "header": {
+        "title": "Finance snapshot",
+        "description": "Money flow at a glance",
+        "openButton": "Open"
+    },
+    "tiles": {
+        "outstanding": "Outstanding",
+        "overdue": "Overdue",
+        "approvals": "Approvals"
+    }
+}

@@ -1,0 +1,49 @@
+{
+    "filters": {
+        "pending": "लंबित",
+        "approved": "स्वीकृत",
+        "rejected": "अस्वीकृत",
+        "all": "सभी"
+    },
+    "status": {
+        "approved": "स्वीकृत",
+        "rejected": "अस्वीकृत",
+        "pending": "लंबित"
+    },
+    "requestType": {
+        "timeIncrease": "समय वृद्धि",
+        "reattempt": "पुनः प्रयास"
+    },
+    "summary": {
+        "currentlyAllowed": "वर्तमान में स्वीकृत: {{value}}",
+        "used": "उपयोग किए गए: {{value}}",
+        "requested": "{{date}} को अनुरोध किया गया",
+        "reviewedOn": "{{date}} को",
+        "grantedCount_one": "{{count}} प्रयास स्वीकृत किया गया",
+        "grantedCount_other": "{{count}} प्रयास स्वीकृत किए गए"
+    },
+    "form": {
+        "attemptsToGrantLabel": "स्वीकृत किए जाने वाले प्रयास",
+        "attemptsRangeError": "1 से 20 तक"
+    },
+    "actions": {
+        "approve": "स्वीकृत करें",
+        "reject": "अस्वीकार करें"
+    },
+    "toasts": {
+        "granted_one": "{{name}} को {{count}} प्रयास दिया गया।",
+        "granted_other": "{{name}} को {{count}} प्रयास दिए गए।",
+        "theLearner": "इस शिक्षार्थी",
+        "rejected": "अनुरोध अस्वीकृत कर दिया गया।",
+        "updateFailed": "इस अनुरोध को अपडेट नहीं किया जा सका। कृपया फिर से प्रयास करें।"
+    },
+    "error": {
+        "title": "अनुरोध लोड नहीं हो सके",
+        "tryAgain": "फिर से प्रयास करें"
+    },
+    "empty": {
+        "titleAll": "कोई अनुरोध नहीं",
+        "titleFiltered": "कोई {{status}} अनुरोध नहीं",
+        "description": "शिक्षार्थी परीक्षा के भीतर से एक और प्रयास या अधिक समय माँग सकते हैं। उनके अनुरोध यहाँ दिखाई देंगे।"
+    }
+}

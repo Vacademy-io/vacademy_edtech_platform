@@ -1,0 +1,35 @@
+{
+    "addToBatches_one": "बैचों में जोड़ें ({{count}} चयनित)",
+    "addToBatches_other": "बैचों में जोड़ें ({{count}} चयनित)",
+    "applyToAllBatches": "सभी बैचों पर लागू करें",
+    "position": {
+        "label": "स्थिति",
+        "endOfChapter": "अध्याय के अंत में",
+        "beginningOfChapter": "अध्याय की शुरुआत में"
+    },
+    "status": {
+        "label": "स्थिति",
+        "published": "प्रकाशित",
+        "draft": "ड्राफ़्ट"
+    },
+    "notifyLearners": {
+        "label": "शिक्षार्थियों को सूचित करें",
+        "on": "चालू",
+        "off": "बंद"
+    },
+    "actions": {
+        "adding": "जोड़ा जा रहा है…",
+        "add": "जोड़ें"
+    },
+    "fields": {
+        "subject": "विषय",
+        "module": "मॉड्यूल",
+        "chapter": "अध्याय"
+    },
+    "fixedOrSelect": {
+        "loading": "{{label}} लोड हो रहे हैं…",
+        "select": "{{label}} चुनें",
+        "search": "{{label}} खोजें…",
+        "noMatches": "कोई मेल नहीं मिला"
+    }
+}

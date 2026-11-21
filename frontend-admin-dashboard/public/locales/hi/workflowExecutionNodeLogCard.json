@@ -1,0 +1,13 @@
+{
+    "status": {
+        "SUCCESS": "सफल",
+        "FAILED": "विफल",
+        "PARTIAL_SUCCESS": "आंशिक",
+        "SKIPPED": "छोड़ा गया",
+        "RUNNING": "चल रहा है"
+    },
+    "error": "त्रुटि: ",
+    "details": "विवरण",
+    "started": "शुरू हुआ: ",
+    "completed": "पूर्ण हुआ: "
+}

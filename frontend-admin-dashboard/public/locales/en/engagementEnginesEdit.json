@@ -1,0 +1,24 @@
+{
+    "heading": "Edit engagement engine",
+    "currentBrief": "Current brief",
+    "amendLabel": "Add to the brief (optional)",
+    "amendHint": "The brief only grows: what you write here is added as an amendment, and later amendments override earlier ones.",
+    "save": "Save changes",
+    "saving": "Saving…",
+    "editSettings": "Edit settings",
+    "deletePermanently": "Delete permanently",
+    "deleteDialog": {
+        "title": "Delete this engine permanently?",
+        "description": "The engine, its brief, templates and members are removed. This only works for an engine that never messaged anyone; otherwise archive it instead.",
+        "cancel": "Cancel",
+        "confirm": "Delete permanently"
+    },
+    "toast": {
+        "saved": "Engine updated.",
+        "saveFailed": "Could not update the engine.",
+        "deleted": "Engine deleted.",
+        "archived": "Engine archived.",
+        "deleteFailed": "Could not delete the engine."
+    },
+    "subtitle": "Open any step on the left, change what you need, then press Save changes."
+}

@@ -1,0 +1,67 @@
+{
+  "carousel": {
+    "roleCarousel": "कैरोसेल",
+    "roleSlide": "स्लाइड",
+    "label": "मुख्य",
+    "play": "स्लाइड चलाएँ",
+    "pause": "स्लाइड रोकें",
+    "slideOf": "{{count}} में से {{n}}",
+    "previous": "पिछली स्लाइड",
+    "next": "अगली स्लाइड",
+    "chooseSlide": "स्लाइड चुनें",
+    "showSlide": "{{count}} में से स्लाइड {{n}} दिखाएँ",
+    "openSlide": "{{count}} में से बैनर {{n}} खोलें"
+  },
+  "shortcuts": {
+    "label": "शॉर्टकट"
+  },
+  "shelf": {
+    "seeAll": "सभी देखें",
+    "enrolled": "नामांकित",
+    "free": "निःशुल्क"
+  },
+  "notice": {
+    "dismiss": "सूचना हटाएँ",
+    "readOn": "{{date}} को पढ़ा",
+    "read": "पढ़ा",
+    "ackDefault": "मैंने यह पढ़ लिया है",
+    "dismissFailed": "सूचना नहीं हटाई जा सकी। कृपया फिर से कोशिश करें।",
+    "ackFailed": "पढ़ने की पुष्टि सहेजी नहीं जा सकी। कृपया फिर से कोशिश करें।"
+  },
+  "event": {
+    "liveNow": "अभी लाइव",
+    "startsOn": "{{when}} को शुरू",
+    "startsInDays": "{{days}} दिन {{hours}} घंटे में शुरू",
+    "startsInHours": "{{hours}} घंटे {{minutes}} मिनट में शुरू",
+    "startsInMinutes": "{{minutes}} मिनट में शुरू",
+    "startsInSeconds": "{{seconds}} सेकंड में शुरू",
+    "register": "रजिस्टर करें",
+    "join": "जुड़ें"
+  },
+  "builtin": {
+    "HERO": "स्वागत और लाइव क्लास",
+    "PINS": "घोषणाएँ",
+    "NOTEBOOK_REVIEW": "नोटबुक समीक्षा",
+    "COMPANIONS": "अध्ययन साथी",
+    "TODAY_TASKS": "आज के कार्य",
+    "CONTINUE_LEARNING": "पढ़ाई जारी रखें",
+    "ENROLLED_COURSES": "मेरे कोर्स",
+    "STATS_ROW": "कोर्स, क्लास और टेस्ट की संख्या",
+    "LEARNING_ANALYTICS": "सीखने की प्रगति",
+    "MY_MEMBERSHIP": "मेरी सदस्यता",
+    "MY_BOOKS": "मेरी किताबें",
+    "MY_ORDERS": "मेरे ऑर्डर",
+    "UPCOMING_LIVE_CLASSES": "आने वाली लाइव क्लास",
+    "THIS_WEEK_ATTENDANCE": "इस सप्ताह की उपस्थिति",
+    "MY_MENTORS": "मेरे मेंटर",
+    "GET_APP": "ऐप डाउनलोड करें",
+    "GAMIFICATION": "पॉइंट और बैज",
+    "RAISE_QUERY": "प्रश्न पूछें",
+    "EXPLORE_BUTTONS": "एक्सप्लोर बटन",
+    "placeholderNote": "हर शिक्षार्थी की अपनी जानकारी दिखाता है"
+  },
+  "preview": {
+    "header": "अभिवादन और तारीख",
+    "waiting": "एडिटर से ड्राफ़्ट की प्रतीक्षा…"
+  }
+}

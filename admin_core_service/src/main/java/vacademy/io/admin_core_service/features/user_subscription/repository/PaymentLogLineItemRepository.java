@@ -29,4 +29,13 @@ public interface PaymentLogLineItemRepository extends JpaRepository<PaymentLogLi
     boolean existsByPaymentLog_UserPlan_IdAndSourceId(
             @org.springframework.data.repository.query.Param("userPlanId") String userPlanId,
             @org.springframework.data.repository.query.Param("sourceId") String sourceId);
+
+    /** Per-payment-log variant, for renewals where each charge carries its own discount line. */
+    @org.springframework.data.jpa.repository.Query(
+            "SELECT COUNT(li) > 0 FROM PaymentLogLineItem li " +
+                    "WHERE li.paymentLog.id = :paymentLogId " +
+                    "AND li.sourceId = :sourceId")
+    boolean existsByPaymentLogIdAndSourceId(
+            @org.springframework.data.repository.query.Param("paymentLogId") String paymentLogId,
+            @org.springframework.data.repository.query.Param("sourceId") String sourceId);
 }

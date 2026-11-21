@@ -1,0 +1,34 @@
+{
+    "page": {
+        "title": "Tableau de bord d'intégration",
+        "subtitle": "Chaque parcours d'intégration, tous prospects/étudiants confondus — voyez qui est en attente, sur quel parcours, et à quelle étape, sans ouvrir chaque profil."
+    },
+    "filters": {
+        "flow": "Parcours",
+        "status": "Statut",
+        "allFlows": "Tous les parcours",
+        "allStatuses": "Tous les statuts"
+    },
+    "columns": {
+        "person": "Personne",
+        "flow": "Parcours",
+        "currentStep": "Étape actuelle",
+        "status": "Statut",
+        "startedBy": "Démarré par",
+        "started": "Démarré le"
+    },
+    "statusLabels": {
+        "inProgress": "En cours",
+        "completed": "Terminé",
+        "abandoned": "Abandonné",
+        "cancelled": "Annulé"
+    },
+    "resolvedStudentPrefix": "→ étudiant : {{name}}",
+    "unknownStep": "Inconnue",
+    "states": {
+        "noInstitute": "Choisissez un institut pour afficher le tableau de bord d'intégration.",
+        "loadError": "Impossible de charger le tableau de bord d'intégration.",
+        "emptyTitle": "Aucun parcours d'intégration trouvé",
+        "emptyDescription": "Personne ne correspond à ces filtres pour l'instant — démarrez un parcours d'intégration depuis la vue latérale d'un étudiant ou d'un prospect pour le voir apparaître ici."
+    }
+}

@@ -133,6 +133,15 @@ export const submitStepInstance = async (
 export interface OnboardingResolvedFieldDTO {
   institute_custom_field_id: string;
   field_name: string | null;
+  /**
+   * The field's configured type — text | dropdown | number | email | url | date | phone |
+   * textarea | checkbox | radio | file | multi_select. Without it the form could only ever
+   * render a plain text box, so a dropdown, date or file field degraded to free text.
+   */
+  field_type: string | null;
+  /** custom_fields.config JSON verbatim — CustomFieldRenderer parses options / file limits out of it. */
+  config: string | null;
+  default_value: string | null;
   field_order: number | null;
   is_mandatory: boolean | null;
   can_edit: boolean | null;
@@ -145,6 +154,36 @@ export const getResolvedStepFields = async (
 ): Promise<OnboardingResolvedFieldDTO[]> => {
   const response = await authenticatedAxiosInstance.get<OnboardingResolvedFieldDTO[]>(
     `${ONBOARDING_BASE}/step-instances/${stepInstanceId}/fields`
+  );
+  return Array.isArray(response?.data) ? response.data : [];
+};
+
+/** One step of the onboarding, with whatever was recorded on it. */
+export interface OnboardingSubmittedStepDTO {
+  step_instance_id: string;
+  step_id: string;
+  step_name: string;
+  step_order: number | null;
+  status: OnboardingStepStatus;
+  completed_at: string | null;
+  skip_reason: string | null;
+  fields: OnboardingResolvedFieldDTO[];
+}
+
+/**
+ * The whole filled-in history of one onboarding instance in a single call — what backs the
+ * "my onboarding details" summary the learner can open long after the flow finished.
+ * Per-step `getResolvedStepFields` is still the right call for the live FORM (one step), but
+ * would turn this view into one request per step.
+ *
+ * Already filtered server-side to the fields this caller's role may VIEW, hidden fields
+ * excluded — the same rules the form itself applies.
+ */
+export const getSubmittedSteps = async (
+  instanceId: string
+): Promise<OnboardingSubmittedStepDTO[]> => {
+  const response = await authenticatedAxiosInstance.get<OnboardingSubmittedStepDTO[]>(
+    `${ONBOARDING_BASE}/instances/${instanceId}/submitted-steps`
   );
   return Array.isArray(response?.data) ? response.data : [];
 };

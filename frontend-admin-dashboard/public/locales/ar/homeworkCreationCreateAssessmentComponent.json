@@ -1,0 +1,15 @@
+{
+    "steps": {
+        "basicInfo": "المعلومات الأساسية",
+        "addQuestion": "إضافة سؤال",
+        "addParticipants": "إضافة مشاركين",
+        "accessControl": "التحكم بالوصول"
+    },
+    "page": {
+        "title": "إنشاء تقييم",
+        "metaDescription": "هذه الصفحة مخصصة لإنشاء تقييم للطلاب من قبل المسؤول."
+    },
+    "noCourseDialog": {
+        "type": "إنشاء تقييم"
+    }
+}

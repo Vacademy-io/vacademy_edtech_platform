@@ -1,0 +1,43 @@
+{
+    "validation": {
+        "batchRequired": "Sélectionnez au moins un groupe"
+    },
+    "toast": {
+        "noDataToExport": "Aucune donnée à exporter pour l'instant",
+        "exportSuccess": "Rapport exporté",
+        "exportFailed": "Échec de l'exportation du PDF",
+        "csvExportSuccess": "CSV exporté",
+        "csvExportFailed": "Échec de l'export CSV"
+    },
+    "form": {
+        "generateReport": "Générer le rapport"
+    },
+    "report": {
+        "exporting": "Exportation en cours...",
+        "exportPdf": "Exporter en PDF",
+        "subjectWiseOverview": "Aperçu par {{term}}",
+        "exportCsv": "Exporter en CSV",
+        "multiBatchTitle": "Rapport {{term}} · {{count}} sélectionné(s)",
+        "batchLoadFailed": "Impossible de charger le rapport pour {{name}}."
+    },
+    "pdf": {
+        "batchSubjectWiseProgress": "Progression par {{subjectTerm}} — {{batchTerm}}",
+        "learnerProgressReport": "Rapport de progression de l'apprenant",
+        "learnerLabel": "Apprenant",
+        "termCompleted": "{{term}} terminé(e)",
+        "termsTracked": "{{term}}s suivi(e)s",
+        "termWiseProgress": "Progression par {{term}}",
+        "termColonName": "{{term}} : {{name}}",
+        "completed": "Terminé",
+        "dailyTimeAvg": "Temps quotidien (moy.)",
+        "termDailyTimeAvg": "Temps quotidien (moy.) — {{term}}",
+        "termWiseProgressReport": "Rapport de progression par {{term}}",
+        "learningProgressReport": "Rapport de progression d'apprentissage"
+    },
+    "csv": {
+        "fileStem": "progression-apprentissage",
+        "title": "Progression par {{term}}",
+        "moduleCompletedByBatch": "{{module}} terminé par le {{batch}} (%)",
+        "dailyTimeByBatchMin": "Temps quotidien moyen du {{batch}} (min)"
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "labels": {
+        "createdOn": "أُنشئ في:",
+        "startDateAndTime": "تاريخ ووقت البدء:",
+        "endDateAndTime": "تاريخ ووقت الانتهاء:",
+        "duration": "المدة:",
+        "totalParticipants": "إجمالي المشاركين:"
+    },
+    "stats": {
+        "avgDuration": "متوسط المدة",
+        "avgMarks": "متوسط الدرجات",
+        "minutesValue": "{{value}} دقيقة"
+    },
+    "legend": {
+        "ongoing": "جارٍ",
+        "ongoingWithCount": "جارٍ ({{value}})",
+        "pending": "قيد الانتظار",
+        "pendingWithCount": "قيد الانتظار ({{value}})",
+        "attempted": "تمت المحاولة",
+        "attemptedWithCount": "تمت المحاولة ({{value}})"
+    }
+}

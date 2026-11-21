@@ -1,0 +1,22 @@
+{
+    "header": {
+        "title": "Referral Settings",
+        "description": "Configure referral programs for each payment plan in your invite link"
+    },
+    "card": {
+        "title": "Plan Referral Configuration",
+        "configuredBadge": "{{configured}}/{{total}} Configured",
+        "applyToAll": "Apply to all",
+        "configureReferrals": "Configure Referrals"
+    },
+    "emptyStates": {
+        "noPlanSelected": "Please select a payment plan first",
+        "noPaymentOptions": "No payment options available for configuration"
+    },
+    "planList": {
+        "heading": "Payment Plans:",
+        "referralLabel": "Referral: {{name}}",
+        "noReferralConfigured": "No referral configured",
+        "unknownReferral": "Unknown Referral"
+    }
+}

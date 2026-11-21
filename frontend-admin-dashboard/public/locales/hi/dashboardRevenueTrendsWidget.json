@@ -1,0 +1,32 @@
+{
+    "heading": "एकत्रित राशि",
+    "rangeGroup": "संग्रह की समय-सीमा",
+    "ranges": {
+        "3d": "3 दिन",
+        "7d": "7 दिन",
+        "24d": "24 दिन",
+        "all": "सभी"
+    },
+    "subtitle": "भुगतान किए गए भुगतान · पिछले {{range}}",
+    "totalCollected": "कुल एकत्रित राशि",
+    "payments_one": "{{formatted}} भुगतान",
+    "payments_other": "{{formatted}} भुगतान",
+    "emptyState": "इस अवधि में कोई संग्रह नहीं",
+    "tooltip": {
+        "collected": "एकत्रित"
+    },
+    "months": {
+        "jan": "जन",
+        "feb": "फ़र",
+        "mar": "मार्च",
+        "apr": "अप्रैल",
+        "may": "मई",
+        "jun": "जून",
+        "jul": "जुला",
+        "aug": "अग",
+        "sep": "सित",
+        "oct": "अक्टू",
+        "nov": "नव",
+        "dec": "दिस"
+    }
+}

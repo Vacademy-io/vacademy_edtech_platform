@@ -1,0 +1,35 @@
+{
+    "scopePicker": {
+        "noun": {
+            "batch": "बैच",
+            "subject": "विषय",
+            "faculty": "फैकल्टी"
+        },
+        "whichNoun": "कौन से {{noun}}?",
+        "clearCount": "{{count}} साफ़ करें",
+        "emptyWarning": {
+            "prefix": "कुछ भी न चुनने का मतलब है",
+            "every": "हर",
+            "suffix": "एक, जो प्रति-रन सीमा से अधिक हो सकता है। वे {{noun}} चुनें जो आप चाहते हैं।"
+        },
+        "searchPlaceholder": "{{noun}} खोजें…",
+        "loading": "लोड हो रहा है…",
+        "errorLoad": "{{noun}} लोड नहीं हो सके। अपना कनेक्शन जांचें और फिर से प्रयास करें।",
+        "emptyNoMatch": "कोई {{noun}} “{{query}}” से मेल नहीं खाता।",
+        "emptyNoneAtInstitute": "इस संस्थान में कोई {{noun}} नहीं है।",
+        "truncatedNotice": "{{total}} में से {{shown}} दिखाए जा रहे हैं — सीमित करने के लिए खोजें।"
+    },
+    "recipientPicker": {
+        "pickPeopleLabel": "या विशिष्ट लोगों को चुनें",
+        "clearCount": "{{count}} साफ़ करें",
+        "searchPlaceholder": "नाम या ईमेल से खोजें…",
+        "noEmailWarning_one": "चयनित {{count}} व्यक्ति के पास कोई ईमेल दर्ज नहीं है और उसे कुछ भी प्राप्त नहीं होगा।",
+        "noEmailWarning_other": "चयनित {{count}} लोगों के पास कोई ईमेल दर्ज नहीं है और उन्हें कुछ भी प्राप्त नहीं होगा।",
+        "loading": "लोड हो रहा है…",
+        "errorLoad": "लोगों को लोड नहीं किया जा सका।",
+        "emptyNoMatch": "कोई भी “{{query}}” से मेल नहीं खाता।",
+        "emptyNoneFound": "कोई योग्य प्राप्तकर्ता नहीं मिला।",
+        "unnamed": "(अनाम)",
+        "noEmail": "कोई ईमेल नहीं"
+    }
+}

@@ -1,0 +1,20 @@
+{
+    "untitledSlide": "Sans titre",
+    "previousChapterTitle": "Précédent : {{name}}",
+    "noPreviousChapter": "Aucun {{term}} précédent",
+    "nextChapterTitle": "Suivant : {{name}}",
+    "noNextChapter": "Aucun {{term}} suivant",
+    "selectChapter": "Sélectionner {{term}}",
+    "searchAllPlaceholder": "Rechercher dans tous les {{term}}...",
+    "loading": "Chargement…",
+    "couldNotLoadSubject": "Impossible de charger ce {{term}}",
+    "retry": "Réessayer",
+    "noChaptersFound": "Aucun {{term}} trouvé",
+    "showSlidesTitle": "Afficher les {{term}}",
+    "unsavedCount_one": "{{count}} non enregistré",
+    "unsavedCount_many": "{{count}} non enregistrés",
+    "unsavedCount_other": "{{count}} non enregistrés",
+    "unsavedChangesTitle": "Modifications non enregistrées",
+    "couldNotLoadRetry": "Échec du chargement — réessayer",
+    "noSlidesYet": "Aucun {{term}} pour l'instant"
+}

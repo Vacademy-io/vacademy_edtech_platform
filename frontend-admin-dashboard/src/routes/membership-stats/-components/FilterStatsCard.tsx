@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Users, UserPlus, ArrowsClockwise } from '@phosphor-icons/react';
@@ -11,6 +12,7 @@ interface FilterStatsCardProps {
 }
 
 export function FilterStatsCard({ requestFilters, onViewMembers }: FilterStatsCardProps) {
+    const { t, i18n } = useTranslation('membershipStatsFilterStatsCard');
     // Fetch total, NEW_USER, and RETAINER counts in parallel
     const results = useQueries({
         queries: [
@@ -42,10 +44,10 @@ export function FilterStatsCard({ requestFilters, onViewMembers }: FilterStatsCa
             <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <div className="space-y-1">
                     <CardTitle className="text-base font-semibold text-primary-900">
-                        Selected Range Statistics
+                        {t('title')}
                     </CardTitle>
                     <p className="text-sm text-primary-600/80">
-                        Based on your current filters
+                        {t('subtitle')}
                     </p>
                 </div>
                 <div className="rounded-full bg-primary-100 p-2 text-primary-600">
@@ -61,20 +63,22 @@ export function FilterStatsCard({ requestFilters, onViewMembers }: FilterStatsCa
                             <div>
                                 <div className="flex items-baseline gap-2">
                                     <span className="text-3xl font-bold text-primary-900">
-                                        {total.toLocaleString()}
+                                        {total.toLocaleString(i18n.language)}
                                     </span>
-                                    <span className="text-sm font-medium text-primary-600">users found</span>
+                                    <span className="text-sm font-medium text-primary-600">
+                                        {t('usersFound', { count: total })}
+                                    </span>
                                 </div>
                                 <div className="mt-2 flex items-center gap-4">
                                     <div className="flex items-center gap-1.5">
                                         <UserPlus size={14} className="text-indigo-500" />
-                                        <span className="text-sm font-semibold text-indigo-600">{newUsers.toLocaleString()}</span>
-                                        <span className="text-xs text-gray-500">New</span>
+                                        <span className="text-sm font-semibold text-indigo-600">{newUsers.toLocaleString(i18n.language)}</span>
+                                        <span className="text-xs text-gray-500">{t('new')}</span>
                                     </div>
                                     <div className="flex items-center gap-1.5">
                                         <ArrowsClockwise size={14} className="text-amber-500" />
-                                        <span className="text-sm font-semibold text-amber-600">{retainers.toLocaleString()}</span>
-                                        <span className="text-xs text-gray-500">Retainer</span>
+                                        <span className="text-sm font-semibold text-amber-600">{retainers.toLocaleString(i18n.language)}</span>
+                                        <span className="text-xs text-gray-500">{t('retainer')}</span>
                                     </div>
                                 </div>
                             </div>
@@ -85,7 +89,7 @@ export function FilterStatsCard({ requestFilters, onViewMembers }: FilterStatsCa
                         className="gap-2"
                         disabled={isLoading}
                     >
-                        View Members
+                        {t('viewMembers')}
                         <ArrowRight size={16} />
                     </Button>
                 </div>

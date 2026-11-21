@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { MyInput } from '@/components/design-system/input';
 import PhoneNumberInput from '@/components/design-system/phone-number-input';
 import {
@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { CalendarBlank, Spinner } from '@phosphor-icons/react';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { useFileUpload } from '@/hooks/use-file-upload';
 import { getTokenFromCookie, getTokenDecodedData } from '@/lib/auth/sessionUtility';
 import { TokenKey } from '@/constants/auth/tokens';
@@ -36,6 +37,11 @@ interface CustomFieldRendererProps {
         description?: string;
     };
     onFileUpload?: (file: File) => void;
+    /**
+     * Optional icon drawn inside the control, left of the value. Only text-like inputs and
+     * dropdowns show it; other types (phone already has its flag) ignore it.
+     */
+    leadingIcon?: ReactNode;
 }
 
 export const CustomFieldRenderer = ({
@@ -48,6 +54,7 @@ export const CustomFieldRenderer = ({
     disabled = false,
     config,
     onFileUpload,
+    leadingIcon,
 }: CustomFieldRendererProps) => {
     const [datePickerOpen, setDatePickerOpen] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
@@ -113,60 +120,83 @@ export const CustomFieldRenderer = ({
         }
     };
 
-    const effectiveType = type === 'textfield' ? 'text' : type;
+    // Lower-cased before matching: field_type is stored with whatever casing whichever screen
+    // created the field happened to use, and prod holds hundreds of upper-case rows (DROPDOWN,
+    // RADIO, MULTI_SELECT, CHECKBOX, DATE, FILE, PHONE, NUMBER, EMAIL, TEXT) alongside the
+    // lower-case ones. A case-sensitive match sent every one of those to the `default` branch,
+    // which is a plain text box -- so a DROPDOWN silently lost its options and a DATE its
+    // picker, with nothing to indicate the field had been configured at all. The learner app's
+    // renderer already normalises (it upper-cases); this matches that behaviour.
+    // 'textfield' is the legacy alias AddCustomFieldDialog still reports for 'text'.
+    const withLeadingIcon = (control: ReactNode) =>
+        leadingIcon ? (
+            // No z-index on the icon and it comes after the control: it paints over its own
+            // input but stays under any popup (e.g. the phone field's country list).
+            <div className="relative">
+                {control}
+                <span className="pointer-events-none absolute left-3 top-1/2 flex -translate-y-1/2 text-neutral-500">
+                    {leadingIcon}
+                </span>
+            </div>
+        ) : (
+            control
+        );
+
+    const rawType = String(type ?? '').trim().toLowerCase();
+    const effectiveType = rawType === 'textfield' ? 'text' : rawType;
 
     switch (effectiveType) {
         case 'text':
-            return (
+            return withLeadingIcon(
                 <MyInput
                     inputType="text"
                     inputPlaceholder={`Enter ${name}`}
                     input={value || ''}
                     onChangeFunction={(e) => handleChange(e.target.value)}
                     size="large"
-                    className="w-full"
+                    className={cn('w-full', leadingIcon && 'pl-10 sm:w-full')}
                     disabled={disabled}
                     required={required}
                 />
             );
 
         case 'number':
-            return (
+            return withLeadingIcon(
                 <MyInput
                     inputType="number"
                     inputPlaceholder={`Enter ${name}`}
                     input={value || ''}
                     onChangeFunction={(e) => handleChange(e.target.value)}
                     size="large"
-                    className="w-full"
+                    className={cn('w-full', leadingIcon && 'pl-10 sm:w-full')}
                     disabled={disabled}
                     required={required}
                 />
             );
 
         case 'email':
-            return (
+            return withLeadingIcon(
                 <MyInput
                     inputType="email"
                     inputPlaceholder={`Enter ${name}`}
                     input={value || ''}
                     onChangeFunction={(e) => handleChange(e.target.value)}
                     size="large"
-                    className="w-full"
+                    className={cn('w-full', leadingIcon && 'pl-10 sm:w-full')}
                     disabled={disabled}
                     required={required}
                 />
             );
 
         case 'url':
-            return (
+            return withLeadingIcon(
                 <MyInput
                     inputType="url"
                     inputPlaceholder={`Enter ${name}`}
                     input={value || ''}
                     onChangeFunction={(e) => handleChange(e.target.value)}
                     size="large"
-                    className="w-full"
+                    className={cn('w-full', leadingIcon && 'pl-10 sm:w-full')}
                     disabled={disabled}
                     required={required}
                 />
@@ -269,8 +299,24 @@ export const CustomFieldRenderer = ({
                     onValueChange={handleChange}
                     disabled={disabled}
                 >
-                    <SelectTrigger className="w-full">
-                        <SelectValue placeholder={`Select ${name}`} />
+                    <SelectTrigger
+                        className={cn(
+                            'w-full',
+                            leadingIcon && 'h-10 data-[placeholder]:text-neutral-400'
+                        )}
+                    >
+                        {leadingIcon ? (
+                            // A div, not a span: the trigger line-clamps its direct <span>
+                            // children, which would override this flex row.
+                            <div className="flex min-w-0 items-center gap-3">
+                                <span className="flex shrink-0 text-neutral-500">
+                                    {leadingIcon}
+                                </span>
+                                <SelectValue placeholder={`Select ${name}`} />
+                            </div>
+                        ) : (
+                            <SelectValue placeholder={`Select ${name}`} />
+                        )}
                     </SelectTrigger>
                     <SelectContent>
                         {options.map((opt, idx) => (

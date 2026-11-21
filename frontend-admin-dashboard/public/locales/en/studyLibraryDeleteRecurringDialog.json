@@ -1,0 +1,15 @@
+{
+    "heading": "Remove recurring event",
+    "scope": {
+        "single": "This event",
+        "following": "This and all following events",
+        "manual": "Manually select events"
+    },
+    "selectDatesToRemove": "Select dates to remove:",
+    "loadingSchedule": "Loading schedule...",
+    "manualDeletionNotImplemented": "Manual deletion API is not yet implemented. Check the console for selected dates.",
+    "notifyLearners": "Notify learners about the cancellation",
+    "notifyLearnersHint": "When unchecked, no cancellation email is sent to enrolled learners.",
+    "cancel": "Cancel",
+    "delete": "Delete"
+}

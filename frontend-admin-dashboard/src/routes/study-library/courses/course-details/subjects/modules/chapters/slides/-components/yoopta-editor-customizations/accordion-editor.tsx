@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { YooptaPlugin, useYooptaEditor, PluginElementRenderProps } from '@yoopta/editor';
+import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 import { commitBlockProps } from './commitBlockProps';
 import { RichTextField, RichTextHtml, isRichTextEmpty, ensureRichTextStyles } from './RichTextField';
 
@@ -42,6 +44,7 @@ const parseDetails = (d: Element): AccordionItem => {
 };
 
 export function AccordionBlock({ element, attributes, children, blockId }: PluginElementRenderProps) {
+    const { t } = useTranslation('studyLibraryAccordionEditor');
     const editor = useYooptaEditor();
     const [items, setItems] = useState<AccordionItem[]>(
         element?.props?.items?.length ? element.props.items : DEFAULT_ITEMS
@@ -114,7 +117,7 @@ export function AccordionBlock({ element, attributes, children, blockId }: Plugi
                     gap: '6px',
                 }}
             >
-                <span style={{ fontSize: '14px', fontWeight: 600, color: C.text }}>Accordion</span>
+                <span style={{ fontSize: '14px', fontWeight: 600, color: C.text }}>{t('heading')}</span>
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                     {isEditing && (
                         <button
@@ -129,7 +132,7 @@ export function AccordionBlock({ element, attributes, children, blockId }: Plugi
                                 cursor: 'pointer',
                             }}
                         >
-                            + Add Section
+                            + {t('addSection')}
                         </button>
                     )}
                     <button
@@ -144,7 +147,7 @@ export function AccordionBlock({ element, attributes, children, blockId }: Plugi
                             cursor: 'pointer',
                         }}
                     >
-                        {isEditing ? 'Preview' : 'Edit'}
+                        {isEditing ? t('tabs.preview') : t('tabs.edit')}
                     </button>
                 </div>
             </div>
@@ -165,14 +168,14 @@ export function AccordionBlock({ element, attributes, children, blockId }: Plugi
                           >
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                                   <span style={{ fontSize: '11px', fontWeight: 600, color: C.placeholder, flexShrink: 0 }}>
-                                      Section {index + 1}
+                                      {t('sectionNumber', { number: index + 1 })}
                                   </span>
                                   <input
                                       type="text"
                                       value={item.heading}
                                       onChange={(e) => updateHeading(index, e.target.value)}
                                       onKeyDown={handleInputKeyDown}
-                                      placeholder="Section title…"
+                                      placeholder={t('sectionTitlePlaceholder')}
                                       style={{
                                           flex: 1,
                                           minWidth: 0,
@@ -189,7 +192,7 @@ export function AccordionBlock({ element, attributes, children, blockId }: Plugi
                                   <button
                                       onClick={() => removeItem(index)}
                                       disabled={items.length <= 1}
-                                      title="Remove section"
+                                      title={t('removeSection')}
                                       style={{
                                           padding: '4px 8px',
                                           fontSize: '12px',
@@ -208,7 +211,7 @@ export function AccordionBlock({ element, attributes, children, blockId }: Plugi
                               <RichTextField
                                   value={item.content}
                                   onChange={(html) => updateContent(index, html)}
-                                  placeholder="Section content — add text and/or an image…"
+                                  placeholder={t('sectionContentPlaceholder')}
                                   minHeight={70}
                               />
                           </div>
@@ -236,12 +239,12 @@ export function AccordionBlock({ element, attributes, children, blockId }: Plugi
                                       backgroundColor: C.surface,
                                   }}
                               >
-                                  {item.heading || `Section ${index + 1}`}
+                                  {item.heading || t('sectionNumber', { number: index + 1 })}
                               </summary>
                               <div style={{ padding: '10px 14px' }}>
                                   {isRichTextEmpty(item.content) ? (
                                       <span style={{ color: C.placeholder, fontStyle: 'italic', fontSize: '14px' }}>
-                                          Empty section
+                                          {t('emptySection')}
                                       </span>
                                   ) : (
                                       <RichTextHtml
@@ -358,7 +361,12 @@ export const AccordionPlugin = new YooptaPlugin<{ accordion: any }>({
 
                 const sections = items
                     .map((item, i) => {
-                        const heading = escapeText(item?.heading || `Section ${i + 1}`);
+                        const heading = escapeText(
+                            item?.heading ||
+                                i18next.t('studyLibraryAccordionEditor:sectionNumber', {
+                                    number: i + 1,
+                                })
+                        );
                         const content = stripPaddingWrappers(String(item?.content || ''));
                         return `<details${i === 0 ? ' open' : ''}><summary>${heading}</summary><div style="padding: 4px 0;">${content}</div></details>`;
                     })

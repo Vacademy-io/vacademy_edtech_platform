@@ -1,0 +1,17 @@
+{
+    "validation": {
+        "startDateRequired": "La date de début est requise",
+        "endDateRequired": "La date de fin est requise",
+        "learnerRequired": "L'apprenant est requis",
+        "dateRangeWithinMonth": "La plage de dates doit être d'un mois maximum.",
+        "batchRequired": "Sélectionnez au moins un groupe"
+    },
+    "selectPlaceholder": "Sélectionner un(e) {{term}}",
+    "searchPlaceholder": "Rechercher {{term}}...",
+    "loading": "Chargement…",
+    "generateReport": "Générer le rapport",
+    "fixFollowing": "Veuillez corriger les points suivants :",
+    "learnerNotInBatches": "Cet apprenant n’est inscrit dans aucun des groupes sélectionnés.",
+    "learnerHint": "{{count}} disponible(s)",
+    "pickBatchFirst": "Choisissez d’abord un {{batch}}."
+}

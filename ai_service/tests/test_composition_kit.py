@@ -371,3 +371,93 @@ def test_text_rows_cannot_collapse_below_min_content():
     """min-width:0 is what lets a grid item shrink so long labels wrap; applied
     to a text-bearing flex row it is what produces the one-letter column."""
     assert "min-width: min-content" in ck.COMPOSITION_CSS
+
+
+def test_items_inside_a_text_column_keep_their_height():
+    """min-height:0 belongs to grid CELLS. On the heading and sub-line inside a
+    cell's flex column it let the heading collapse to a sliver while its lines
+    still painted, so the sub-line printed across them ("Recruiters prefer
+    short resumes" over "PAGE, TWO MAX.", ITRC lesson 2026-10-22)."""
+    css = ck.COMPOSITION_CSS
+    rule = '.comp > [class*="comp-"] > *,\n[class*="comp-"] > [class*="comp-"] > * { min-height: auto; }'
+    assert rule in css
+    # it must come after (and out-rank) the cell rule it narrows
+    assert css.index(rule) > css.index('[class*="comp-"] > * { min-width: min-content; min-height: 0; }')
+
+
+def test_image_clip_takes_the_whole_frame():
+    """IMAGE_CLIP embeds the user's screenshot full-frame in its own HTML.
+
+    It was absent from both default maps, so a screenshot-led video (the
+    `input_image_screenshot` domain, where IMAGE_CLIP is the PRIMARY shot type)
+    had almost every shot told to build a 5-of-12-column text layout on a flat
+    brand background — directly contradicting the mandatory full-frame <img>.
+    """
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "app", "ai-video-gen-main"))
+    import shot_planner as sp
+
+    assert ck.default_for("IMAGE_CLIP") == "full_bleed_overlay"
+    # media_hero is what earns the repeat exemption below; without it every
+    # second screenshot gets reflowed into a column by the no-repeat rule.
+    assert sp.SHOT_TYPE_BG_TREATMENT_DEFAULT["IMAGE_CLIP"] == "media_hero"
+
+
+def test_consecutive_screenshots_all_keep_the_full_frame():
+    """The no-repeat rule must not reflow a run of screenshots into columns."""
+    shots = [
+        {"shot_type": "IMAGE_CLIP", "background_treatment": "media_hero"}
+        for _ in range(5)
+    ]
+    ck.assign_compositions(shots)
+    assert [s["composition"] for s in shots] == ["full_bleed_overlay"] * 5
+
+
+def test_media_contract_cards_keep_their_own_exemplar():
+    """Two cards carry a contract in their html_template, not just a layout.
+
+    IMAGE_CLIP's template is the only place `{{IMAGE_URL}}` — the placeholder
+    the pipeline rewrites to the user's uploaded image — is taught. SOURCE_CLIP's
+    mandates a #000000 background because black is keyed out when the source
+    footage is composited behind it.
+
+    Swapping in a composition exemplar replaced both silently. The IMAGE_CLIP
+    shot then designed around empty space with no idea an image belonged in it,
+    and SOURCE_CLIP painted a background over the footage it was meant to reveal.
+    Both already ARE full-bleed compositions, so the exemplar added nothing.
+    """
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "app", "ai-video-gen-main"))
+    import shot_type_cards as stc
+
+    for shot_type, marker in (("IMAGE_CLIP", "{{IMAGE_URL}}"), ("SOURCE_CLIP", "#000000")):
+        assert ck.exemplar_for(ck.default_for(shot_type), shot_type) is None, shot_type
+        prompt = stc.build_per_shot_system_prompt(
+            shot_type, 1920, 1080, aspirational=True, composition="full_bleed_overlay"
+        )
+        assert marker in prompt, f"{shot_type} lost its contract: {marker}"
+
+
+def test_non_media_cards_still_get_the_composition_exemplar():
+    """The guard must not disable the composition system generally — that is the
+    whole mechanism that stopped every shot coming out centre-stacked."""
+    for shot_type in ("TEXT_DIAGRAM", "PROCESS_STEPS", "KINETIC_TITLE"):
+        assert ck.exemplar_for(ck.default_for(shot_type), shot_type) is not None, shot_type
+
+
+def test_text_children_cannot_collapse_to_one_character():
+    """`min-width: 0` on a .comp child is what permits a grid item to shrink
+    below its content width — all the way to one character per line.
+
+    It was added so long labels wrap instead of overflowing, with a min-content
+    floor only on `.comp-spine .spine > *`. A pipeline-authored frame with a
+    correct `comp comp-spine` container but no `.spine` child therefore had
+    nothing protecting it, and its parameter labels rendered vertically, one
+    letter each. Media keeps the 0 floor — an image can shrink without
+    becoming unreadable; a sentence cannot.
+    """
+    css = ck.COMPOSITION_CSS
+    assert '.comp > *, [class*="comp-"] > * { min-width: min-content; min-height: 0; }' in css
+    assert ".comp > * { min-width: 0;" not in css
+    for tag in ("img", "video", "svg", "canvas"):
+        assert f".comp {tag}" in css or f'[class*="comp-"] {tag}' in css

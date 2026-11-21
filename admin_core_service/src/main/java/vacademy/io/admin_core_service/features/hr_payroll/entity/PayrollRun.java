@@ -39,6 +39,14 @@ public class PayrollRun {
     @Column(name = "status", length = 20)
     private String status;
 
+    // REGULAR | OFF_CYCLE | FNF | BONUS (V480; only REGULAR runs are unique per month)
+    @Column(name = "run_type", length = 30)
+    private String runType;
+
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     @Column(name = "total_employees")
     private Integer totalEmployees;
 
@@ -71,6 +79,9 @@ public class PayrollRun {
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
+
+    @Column(name = "currency", length = 3)
+    private String currency;
 
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;

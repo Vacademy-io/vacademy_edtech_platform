@@ -1,0 +1,20 @@
+{
+    "header": {
+        "title_one": "Narration ({{count}} shot)",
+        "title_other": "Narration ({{count}} shots)",
+        "wordsEstimate_one": "{{count}} word · ≈ {{seconds}}s",
+        "wordsEstimate_other": "{{count}} words · ≈ {{seconds}}s"
+    },
+    "hooks": {
+        "pickLabel": "Opening line — pick a hook:",
+        "draft": "Draft"
+    },
+    "shot": {
+        "placeholder": "No narration for this shot"
+    },
+    "actions": {
+        "letAiDecide": "Let AI decide",
+        "saveAndContinue": "Save & continue",
+        "approveAndContinue": "Approve & continue"
+    }
+}

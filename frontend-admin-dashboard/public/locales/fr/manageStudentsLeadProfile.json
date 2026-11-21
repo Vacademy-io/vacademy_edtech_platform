@@ -1,0 +1,105 @@
+{
+    "status": {
+        "converted": "Converti",
+        "lost": "Perdu",
+        "lead": "Prospect"
+    },
+    "tier": {
+        "hot": "Chaud",
+        "warm": "Tiède",
+        "cold": "Froid"
+    },
+    "scoreFactors": {
+        "sourceQuality": "Qualité de la source",
+        "profileCompleteness": "Complétude du profil",
+        "recency": "Récence",
+        "engagement": "Engagement"
+    },
+    "noteActionTypes": {
+        "note": "Note",
+        "callLog": "Journal d'appel",
+        "followUp": "Relance",
+        "meeting": "Rendez-vous"
+    },
+    "scoreEditor": {
+        "manualScore": "Manuel : {{score}}",
+        "setManually": "Définir le score manuellement",
+        "clearOverrideTitle": "Supprimer la surcharge manuelle — restaure le score calculé",
+        "scoreUpdated": "Score mis à jour",
+        "updateFailed": "Échec de la mise à jour du score",
+        "enterValidNumber": "Entrez un nombre entre 0 et 100",
+        "placeholder": "0–100"
+    },
+    "scoreBreakdown": {
+        "hideBreakdown": "Masquer la répartition",
+        "showBreakdown": "Répartition du score",
+        "loading": "Chargement…",
+        "manualNotice": "Le score a été défini manuellement — la répartition est proportionnelle",
+        "initialBonus": "Bonus initial",
+        "total": "Total"
+    },
+    "timeline": {
+        "viewLess": "Voir moins",
+        "viewMore": "Voir plus",
+        "by": "par"
+    },
+    "addNote": {
+        "addPrompt": "Ajouter une note ou une activité…",
+        "scheduleTimeLabel": "Heure prévue",
+        "followUpPlaceholder": "Ajouter une note pour cette relance (facultatif)…",
+        "noResponseLinked": "Aucune réponse de campagne liée — impossible de planifier une relance.",
+        "notePlaceholder": "Saisissez votre note ici…",
+        "scheduleRequired": "L'heure prévue est requise",
+        "ctrlEnterSubmit": "Ctrl+Entrée pour envoyer",
+        "cancel": "Annuler",
+        "saving": "Enregistrement…",
+        "scheduleFollowUp": "Planifier la relance",
+        "addNote": "Ajouter la note",
+        "followUpScheduled": "Relance planifiée",
+        "followUpFailed": "Échec de la planification de la relance",
+        "noteAdded": "Note ajoutée",
+        "noteFailed": "Échec de l'ajout de la note",
+        "noteRequired": "Votre établissement exige une note sur chaque relance.",
+        "followUpPlaceholderRequired": "Ajoutez une note pour cette relance (obligatoire)…",
+        "fieldsRequired": "Renseignez tous les champs marqués * avant de programmer cette relance."
+    },
+    "audiences": {
+        "linkedCampaigns": "Campagnes liées",
+        "unnamedCampaign": "Campagne sans nom"
+    },
+    "crossStageTimeline": {
+        "activityAndNotes": "Activité et notes",
+        "loadingActivity": "Chargement de l'activité…",
+        "pageOf": "Page {{current}} sur {{total}}",
+        "previous": "Précédent",
+        "next": "Suivant",
+        "noActivityYet": "Aucune activité pour le moment",
+        "noActivityHint": "Les notes, changements de statut et autres événements apparaîtront ici"
+    },
+    "profile": {
+        "noProfileYet": "Aucun profil de prospect pour le moment",
+        "noProfileHint": "Un profil apparaîtra dès que cet utilisateur soumettra une demande ou sera noté.",
+        "leadInterestScore": "Score d'intérêt du prospect",
+        "lastCalculatedLabel": "Dernier calcul",
+        "setTier": "Définir : {{tier}}",
+        "campaigns": "Campagnes",
+        "timelineEvents": "Événements de la chronologie",
+        "demoAttendance": "Présence aux démos",
+        "bestSource": "Meilleure source",
+        "lastActivity": "Dernière activité",
+        "leadSince": "Prospect depuis",
+        "convertedOn": "Converti le",
+        "scoreUpdated": "Score mis à jour",
+        "leadStatus": "Statut du prospect",
+        "selectStatus": "Sélectionner un statut",
+        "scoreFrozenWhileConverted": "Les mises à jour du score sont gelées après conversion.",
+        "assignedCounselor": "Conseiller assigné",
+        "reassign": "Réassigner",
+        "assignCounselorPrompt": "+ Assigner un conseiller",
+        "callHistory": "Historique des appels",
+        "leadMarkedAs": "Prospect marqué comme {{status}}",
+        "statusUpdateFailed": "Échec de la mise à jour du statut du prospect",
+        "leadTierSetTo": "Niveau du prospect défini sur {{tier}}",
+        "tierUpdateFailed": "Échec de la mise à jour du niveau du prospect"
+    }
+}

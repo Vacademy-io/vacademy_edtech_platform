@@ -24,11 +24,13 @@ public class PayrollRunDTO {
     private Integer year;
     private LocalDate runDate;
     private String status;
+    private String runType;
     private Integer totalEmployees;
     private BigDecimal totalGross;
     private BigDecimal totalDeductions;
     private BigDecimal totalNetPay;
     private BigDecimal totalEmployerCost;
+    private String currency;
     private String processedBy;
     private LocalDateTime processedAt;
     private String approvedBy;

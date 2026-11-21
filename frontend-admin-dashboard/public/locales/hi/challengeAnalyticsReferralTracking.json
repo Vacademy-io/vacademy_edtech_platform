@@ -1,0 +1,37 @@
+{
+    "title": "रेफ़रल लीड्स",
+    "subtitle": "रेफ़रल अभियानों से प्राप्त लीड्स",
+    "referralUsers": "रेफ़रल उपयोगकर्ता",
+    "referralRate": "रेफ़रल दर",
+    "selectCampaign": "अभियान चुनें:",
+    "selectCampaignPlaceholder": "एक रेफ़रल अभियान चुनें",
+    "campaignUsers_one": "{{name}} ({{count}} उपयोगकर्ता)",
+    "campaignUsers_other": "{{name}} ({{count}} उपयोगकर्ता)",
+    "exportCsv": "CSV निर्यात करें",
+    "noCampaigns": "कोई रेफ़रल अभियान नहीं मिला",
+    "loadingLeads": "लीड्स लोड हो रहे हैं...",
+    "noLeads": "चयनित अभियान और तिथि सीमा के लिए कोई लीड नहीं मिली",
+    "table": {
+        "index": "#",
+        "user": "उपयोगकर्ता",
+        "contact": "संपर्क",
+        "source": "स्रोत",
+        "submitted": "प्रस्तुत",
+        "anonymous": "अज्ञात",
+        "idLabel": "आईडी: {{id}}..."
+    },
+    "csv": {
+        "name": "नाम",
+        "email": "ईमेल",
+        "phone": "फ़ोन",
+        "source": "स्रोत",
+        "submittedAt": "प्रस्तुत समय",
+        "notAvailable": "उपलब्ध नहीं"
+    },
+    "pagination": {
+        "showing_one": "{{count}} लीड में से {{from}} - {{to}} दिखाया जा रहा है",
+        "showing_other": "{{count}} लीड्स में से {{from}} - {{to}} दिखाया जा रहा है",
+        "previous": "पिछला",
+        "next": "अगला"
+    }
+}

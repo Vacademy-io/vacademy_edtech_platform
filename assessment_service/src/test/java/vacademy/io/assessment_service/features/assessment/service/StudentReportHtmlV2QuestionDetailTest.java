@@ -112,12 +112,32 @@ class StudentReportHtmlV2QuestionDetailTest {
 
     // ------------------------------------------------------------- fixtures
 
+    @Test
+    void reportOptionsLeaveOutTheHiddenPartsOfEveryQuestion() {
+        String html = builder.build(inputWith(true, false, true, mcqReview()));
+
+        assertThat(html).contains("QUESTION-WISE DETAIL").contains("Your Answer:").contains("Mitochondrion");
+        assertThat(html).doesNotContain("Correct Answer:").doesNotContain("Ribosome")
+                .doesNotContain("Explanation:").doesNotContain("Ribosomes synthesise protein");
+
+        String noOwnAnswer = builder.build(inputWith(false, true, false, mcqReview()));
+        assertThat(noOwnAnswer).doesNotContain("Your Answer:").contains("Correct Answer:");
+    }
+
     private StudentReportHtmlV2Builder.Input inputWith(StudentReportAnswerReviewDto... reviews) {
+        return inputWith(false, false, false, reviews);
+    }
+
+    private StudentReportHtmlV2Builder.Input inputWith(boolean hideCorrect, boolean hideYours, boolean hideExplanation,
+                                                       StudentReportAnswerReviewDto... reviews) {
         return StudentReportHtmlV2Builder.Input.builder()
                 .assessmentName("Unit Test 3")
                 .evaluationType("AUTO")
                 .reportDetail(reportDetail(reviews))
                 .sections(List.of(new SectionSnapshot("sec-1", "Biology", 20.0, null, 1)))
+                .hideCorrectAnswer(hideCorrect)
+                .hideYourAnswer(hideYours)
+                .hideExplanation(hideExplanation)
                 .build();
     }
 

@@ -1,0 +1,29 @@
+{
+    "emptyState": {
+        "message": "يرجى إضافة سؤال لعرض تفاصيل السؤال"
+    },
+    "header": {
+        "questionsSettings": "إعدادات الأسئلة",
+        "questionTypeLabel": "نوع السؤال",
+        "numericalTypeLabel": "النوع العددي"
+    },
+    "timeLimit": {
+        "title": "الحد الزمني",
+        "hrs": "ساعة",
+        "min": "دقيقة"
+    },
+    "comprehensionText": "نص الفهم",
+    "question": {
+        "label": "السؤال"
+    },
+    "answer": {
+        "label": "الإجابة:"
+    },
+    "explanation": {
+        "label": "الشرح:"
+    },
+    "editor": {
+        "showMore": "عرض المزيد",
+        "showLess": "عرض أقل"
+    }
+}

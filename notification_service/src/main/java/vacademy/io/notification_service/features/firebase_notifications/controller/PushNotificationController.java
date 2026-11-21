@@ -1,9 +1,14 @@
 package vacademy.io.notification_service.features.firebase_notifications.controller;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.common.auth.util.SuperAdminAuthUtil;
 import vacademy.io.notification_service.features.firebase_notifications.service.PushNotificationService;
 import vacademy.io.notification_service.features.firebase_notifications.repository.FcmTokenRepository;
 import vacademy.io.notification_service.features.firebase_notifications.entity.FcmToken;
@@ -23,6 +28,7 @@ import java.util.Optional;
 
 
 
+@Slf4j
 @RestController
 @RequestMapping("/notification-service/push-notifications")
 @CrossOrigin(origins = "*")
@@ -38,12 +44,25 @@ public class PushNotificationController {
     private AnnouncementEventService announcementEventService;
 
     /**
-     * Register FCM token for a user
+     * Register FCM token for a user.
+     *
+     * The learner app registers without a token, so a signed-out call is still accepted. When
+     * the caller is signed in, the token can only be registered for that same user.
      */
     @PostMapping("/register")
-    public ResponseEntity<Map<String, Object>> registerToken(@RequestBody FcmTokenRequest request) {
+    public ResponseEntity<Map<String, Object>> registerToken(@AuthenticationPrincipal CustomUserDetails user,
+                                                             @RequestBody FcmTokenRequest request) {
         Map<String, Object> response = new HashMap<>();
-        
+
+        if (user == null) {
+            log.info("push_register_anonymous platform={} institute={}",
+                    request.getPlatform(), request.getInstituteId());
+        } else if (user.getUserId() == null || !user.getUserId().equals(request.getUserId())) {
+            response.put("success", false);
+            response.put("message", "A signed-in user can only register a device for themselves");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        }
+
         try {
             // Check if token already exists for this user/device
             Optional<FcmToken> existingToken = fcmTokenRepository
@@ -90,7 +109,9 @@ public class PushNotificationController {
      * Send test notification
      */
     @PostMapping("/send-test")
-    public ResponseEntity<Map<String, Object>> sendTestNotification(@RequestBody FcmNotificationRequest request) {
+    public ResponseEntity<Map<String, Object>> sendTestNotification(@AuthenticationPrincipal CustomUserDetails user,
+                                                                    @RequestBody FcmNotificationRequest request) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
         Map<String, Object> response = new HashMap<>();
         
         try {

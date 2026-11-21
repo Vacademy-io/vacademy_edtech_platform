@@ -3,6 +3,7 @@
 import * as React from "react";
 import * as SheetPrimitive from "@radix-ui/react-dialog";
 import { cva, type VariantProps } from "class-variance-authority";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Cross2Icon } from "@radix-ui/react-icons";
 import { isIOSPlatform } from "@/hooks/useIsIOS";
@@ -60,6 +61,7 @@ const SheetContent = React.forwardRef<
     const isIOS = isIOSPlatform();
     // Hide close button on iOS, or if explicitly set via prop
     const shouldHideCloseButton = isIOS || hideCloseButton;
+    const { t } = useTranslation("uiAtomsB");
 
     return (
         <SheetPortal>
@@ -75,7 +77,7 @@ const SheetContent = React.forwardRef<
                         style={{ position: "absolute", right: "1rem", top: "1rem", left: "auto" }}
                     >
                         <Cross2Icon className="size-4" />
-                        <span className="sr-only">Close</span>
+                        <span className="sr-only">{t("common.close")}</span>
                     </SheetPrimitive.Close>
                 )}
                 {children}

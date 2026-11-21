@@ -9,6 +9,11 @@
     "moduleResolution": "node",
     "esModuleInterop": true,
     "typeRoots": ["./node_modules/@types"],
+    // Only "node" — do NOT let tsc auto-include every @types package it finds.
+    // With a hoisted node_modules, transitive stubs like @types/minimatch (which
+    // ships no .d.ts at all) surface at the top level and break the build with
+    // "Cannot find type definition file for 'minimatch'".
+    "types": ["node"],
     "allowJs": true,
     "rootDir": ".",
     "skipLibCheck": true,

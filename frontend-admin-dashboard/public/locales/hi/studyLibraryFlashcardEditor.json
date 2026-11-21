@@ -1,0 +1,17 @@
+{
+    "front": "आगे",
+    "back": "पीछे",
+    "noContent": "कोई सामग्री नहीं",
+    "clickToFlip": "पलटने के लिए क्लिक करें",
+    "clickToFlipBack": "वापस पलटने के लिए क्लिक करें",
+    "flashcard": "फ्लैशकार्ड",
+    "imageAspectRatioTitle": "छवि पहलू अनुपात",
+    "imageAspectRatioOriginal": "छवि: मूल",
+    "imageAspectRatioValue": "छवि: {{label}}",
+    "preview": "पूर्वावलोकन",
+    "edit": "संपादित करें",
+    "frontLabel": "आगे (प्रश्न / शब्द)",
+    "backLabel": "पीछे (उत्तर / परिभाषा)",
+    "frontPlaceholder": "आगे — टेक्स्ट और/या एक छवि जोड़ें…",
+    "backPlaceholder": "पीछे — टेक्स्ट और/या एक छवि जोड़ें…"
+}

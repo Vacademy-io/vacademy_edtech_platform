@@ -1,0 +1,46 @@
+{
+    "navHeading": "Personnel",
+    "heading": "Couverture du personnel",
+    "subheading": "Tous les membres de votre équipe, et s'ils disposent d'un profil RH. En créer un ici réutilise leur compte existant — pas de nouvel utilisateur, pas d'invitation.",
+    "allEmployees": "Tous les employés",
+    "stats": {
+        "teamMembers": "Membres de l'équipe",
+        "withHrProfile": "Avec un profil RH",
+        "coveredPercent": "{{percent}}% couverts",
+        "teachingNoProfile": "Enseignent, sans profil",
+        "paidButInvisible": "Ces personnes sont payées mais invisibles pour la paie",
+        "everyTeacherCovered": "Tous les enseignants sont couverts"
+    },
+    "searchPlaceholder": "Rechercher par nom ou e-mail",
+    "clearFilters": "Effacer les filtres",
+    "errors": {
+        "load": "Impossible de charger la couverture du personnel."
+    },
+    "empty": {
+        "noMatchTitle": "Personne ne correspond à cette recherche",
+        "noneTitle": "Aucun membre d'équipe trouvé",
+        "noMatchDescription": "Essayez un autre nom, ou effacez le filtre de rôle.",
+        "noneDescription": "Invitez des personnes dans votre établissement depuis Gérer l'établissement → Équipes, puis revenez leur créer un profil RH."
+    },
+    "table": {
+        "name": "Nom",
+        "email": "E-mail",
+        "roles": "Rôles",
+        "teaches": "Enseigne",
+        "hrProfile": "Profil RH",
+        "role": "Rôle"
+    },
+    "teamMember": "Membre de l'équipe",
+    "yes": "Oui",
+    "no": "Non",
+    "viewProfile": "Voir le profil",
+    "noneYet": "Aucun pour l'instant",
+    "createHrProfile": "Créer un profil RH",
+    "roles": {
+        "admin": "Administrateur",
+        "teacher": "Enseignant",
+        "evaluator": "Évaluateur",
+        "contentCreator": "Créateur de contenu",
+        "assessmentCreator": "Créateur d'évaluations"
+    }
+}

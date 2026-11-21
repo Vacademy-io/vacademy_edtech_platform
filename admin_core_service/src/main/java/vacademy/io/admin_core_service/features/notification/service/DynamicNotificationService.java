@@ -21,6 +21,7 @@ import vacademy.io.admin_core_service.features.notification_service.service.Send
 import vacademy.io.admin_core_service.features.institute.entity.Template;
 import vacademy.io.admin_core_service.features.institute.repository.TemplateRepository;
 import vacademy.io.admin_core_service.features.packages.repository.PackageSessionRepository;
+import vacademy.io.admin_core_service.features.student_analysis.service.aggregation.ThemeColorResolver;
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentOption;
 import vacademy.io.admin_core_service.features.user_subscription.service.CouponCodeService;
 import vacademy.io.admin_core_service.features.learner.service.LearnerInvitationLinkService;
@@ -54,6 +55,15 @@ public class DynamicNotificationService {
     private final vacademy.io.admin_core_service.features.shortlink.service.ShortUrlManagementService shortUrlManagementService;
     private final EnrollInviteRepository enrollInviteRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    /**
+     * Learner-portal fallback for credential mails when the institute row has no portal URL
+     * (sub-org portal, then the platform portal those learners actually sign in to). Optional
+     * and lazy so the generated constructor is unchanged and no bean cycle can form.
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @org.springframework.context.annotation.Lazy
+    private vacademy.io.admin_core_service.features.learner.service.LearnerPortalAccessService learnerPortalAccessService;
 
     /**
      * If the institute's setting JSON contains
@@ -132,7 +142,10 @@ public class DynamicNotificationService {
                     if (subOrgInstitute != null) {
                         templateVars.setInstituteName(subOrgInstitute.getInstituteName());
                         if (subOrgInstitute.getInstituteThemeCode() != null) {
-                            templateVars.setThemeColor(subOrgInstitute.getInstituteThemeCode().trim());
+                            // Presets ("primary", "blue") are not CSS colours; map them, keep anything else as-is.
+                            String subOrgHex = ThemeColorResolver.resolve(subOrgInstitute.getInstituteThemeCode());
+                            templateVars.setThemeColor(subOrgHex != null ? subOrgHex
+                                    : subOrgInstitute.getInstituteThemeCode().trim());
                         }
                     }
                 } catch (Exception e) {
@@ -280,6 +293,20 @@ public class DynamicNotificationService {
                 }
             }
 
+            // Alias: credential sends supply the password only as user_password/userPassword, but
+            // admins write {{password}} (and {{username}}) by hand — the template editor offers
+            // {{email}}, which notification-service aliases, yet nothing aliased the password, so
+            // it was scrubbed to blank. A send carrying a password is a credentials send, where
+            // userName is always the login handle, so {{username}} is safe to alias alongside it.
+            String password = variables.get("user_password");
+            if (org.springframework.util.StringUtils.hasText(password)) {
+                variables.putIfAbsent("password", password);
+                String loginName = variables.get("user_name");
+                if (org.springframework.util.StringUtils.hasText(loginName)) {
+                    variables.putIfAbsent("username", loginName);
+                }
+            }
+
             String channel;
             UnifiedSendRequest.SendOptions.SendOptionsBuilder optsBuilder = UnifiedSendRequest.SendOptions.builder()
                     .source("event:" + config.getEventName())
@@ -392,24 +419,10 @@ public class DynamicNotificationService {
     }
 
     private String getThemeColorFromInstitute(Institute institute) {
-        if (institute == null || institute.getInstituteThemeCode() == null ||
-                institute.getInstituteThemeCode().trim().isEmpty()) {
-            return "#FF9800"; // Default orange color
-        }
-
-        String themeCode = institute.getInstituteThemeCode().trim();
-
-        // If theme code is already a hex color, return it
-        if (themeCode.startsWith("#") && themeCode.length() == 7) {
-            return themeCode;
-        }
-
-        // If theme code is a hex color without #, add it
-        if (themeCode.matches("^[0-9A-Fa-f]{6}$")) {
-            return "#" + themeCode;
-        }
-
-        return "#FF9800"; // Default orange color
+        // Hex or a theme preset ("primary", "blue", ...) -> hex. Presets used to fall through to
+        // a fixed orange, so a blue institute got orange mails. Unknown/blank -> neutral.
+        String resolved = institute == null ? null : ThemeColorResolver.resolve(institute.getInstituteThemeCode());
+        return resolved != null ? resolved : "#333333";
     }
 
     public void sendReferralInvitationNotification(
@@ -752,11 +765,16 @@ public class DynamicNotificationService {
      * Guardian account created (link, link-new-guardian, or backfill) —
      * notifies whichever party the Guardian Setting is configured to notify
      * ("STUDENT" or "GUARDIAN") with the newly-created guardian's login
-     * credentials. Resolves the EMAIL template via the same
-     * institute-specific-config -> DEFAULT-config fallback used elsewhere
-     * (see {@link vacademy.io.admin_core_service.features.live_session.service.LiveClassTemplateService});
-     * a seed migration guarantees a DEFAULT config/template always exists, so
-     * this is a silent no-op only if that seed was somehow removed.
+     * credentials. Resolves the EMAIL template from the institute's own
+     * binding, then a platform {@code DEFAULT} binding if one exists.
+     *
+     * <p>No {@code DEFAULT} binding is seeded for this event, on purpose: the
+     * link / link-new-guardian / backfill paths send it automatically, gated
+     * only by {@code PARENT_SETTING.sendCredentialEmail}, which defaults to on.
+     * A platform default would start mailing plaintext credentials for every
+     * institute that never chose to. So an institute gets this mail once it
+     * binds a template (Guardian Setting template selector); until then this
+     * is a logged no-op.
      */
     public void sendGuardianAccountCreatedNotification(
             String instituteId,
@@ -923,7 +941,7 @@ public class DynamicNotificationService {
                     .name(learner.getFullName())
                     .userPassword(password)
                     // Credentials are for the LEARNER portal, never the admin one.
-                    .portalUrl(resolveLearnerPortalUrl(institute))
+                    .portalUrl(credentialPortalUrl(institute, instituteId, learner.getId()))
                     .instituteName(institute != null ? institute.getInstituteName() : null)
                     .instituteId(instituteId)
                     .themeColor(getThemeColorFromInstitute(institute))
@@ -935,6 +953,25 @@ public class DynamicNotificationService {
             log.error("Error sending learner credentials ({}) for institute {}: {}",
                     channel, instituteId, e.getMessage(), e);
             return false;
+        }
+    }
+
+    /**
+     * Portal link for a credentials mail. The institute's own portal URL first; when that is
+     * blank, the same resolver the password-reset link uses, so the "Sign in" button never
+     * renders as a bare "/login".
+     */
+    private String credentialPortalUrl(Institute institute, String instituteId, String learnerId) {
+        String url = resolveLearnerPortalUrl(institute);
+        if (org.springframework.util.StringUtils.hasText(url) || learnerPortalAccessService == null) {
+            return url;
+        }
+        try {
+            String resolved = learnerPortalAccessService.resolvePortalBaseUrl(instituteId, learnerId);
+            return org.springframework.util.StringUtils.hasText(resolved) ? resolved : url;
+        } catch (Exception e) {
+            log.warn("Learner portal lookup failed for institute {}: {}", instituteId, e.getMessage());
+            return url;
         }
     }
 
@@ -1040,7 +1077,9 @@ public class DynamicNotificationService {
      * Tries id-based lookup first so two configs sharing the same template_name can still
      * point at distinct rows (e.g. for session-specific dynamic_parameters while dispatching
      * to one shared WATI-approved template name). Falls back to name-based lookup when no
-     * templateId is set on the config or when the id no longer resolves to a row.
+     * templateId is set on the config or when the id no longer resolves to a row: the calling
+     * institute's templates first, then — only for a {@code DEFAULT} config — the
+     * {@code DEFAULT} institute's.
      */
     public Template resolveTemplate(NotificationEventConfig config, String instituteId) {
         if (config.getTemplateId() != null && !config.getTemplateId().isBlank()) {
@@ -1055,6 +1094,14 @@ public class DynamicNotificationService {
                     .findByInstituteIdAndNameAndType(instituteId, templateName, templateTypeStr)
                     .or(() -> templateRepository
                             .findByInstituteIdAndNameAndType(instituteId, templateName, templateTypeStr.toLowerCase()));
+            // A platform DEFAULT binding names a template owned by DEFAULT, not by the calling
+            // institute — scoping the lookup to the institute alone could never find it.
+            if (byName.isEmpty() && "DEFAULT".equals(config.getSourceId()) && !"DEFAULT".equals(instituteId)) {
+                byName = templateRepository
+                        .findByInstituteIdAndNameAndType("DEFAULT", templateName, templateTypeStr)
+                        .or(() -> templateRepository
+                                .findByInstituteIdAndNameAndType("DEFAULT", templateName, templateTypeStr.toLowerCase()));
+            }
             if (byName.isPresent()) return byName.get();
         }
 

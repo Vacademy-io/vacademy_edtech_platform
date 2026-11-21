@@ -1,0 +1,116 @@
+{
+    "otaUpdate": {
+        "version": "Version {{version}}",
+        "autoUpdating": {
+            "title": "Updating app…",
+            "pleaseWait": "Please wait a moment"
+        },
+        "forceUpdate": {
+            "title": "Update Required",
+            "downloading": "Downloading update...",
+            "updateNow": "Update Now"
+        },
+        "banner": {
+            "updateAvailable": "Update {{version}} available",
+            "releaseNotesSuffix": " — {{notes}}",
+            "downloading": "Downloading...",
+            "update": "Update",
+            "dismiss": "Dismiss"
+        }
+    },
+    "tutorialsHelpButton": {
+        "ariaLabel": "Help and tutorials",
+        "viewedAriaLabel": "Viewed",
+        "title": "Tutorials",
+        "description": "Quick guided walkthroughs of the app. Pick one to start.",
+        "pdfGuide": {
+            "preparing": "Preparing your guide...",
+            "label": "Complete how-to guide (PDF)",
+            "description": "Download a step-by-step handbook for all of the above."
+        },
+        "toast": {
+            "downloadFailed": "Could not download the guide. Please try again."
+        }
+    },
+    "notificationInitializer": {
+        "newNotification": "New notification"
+    },
+    "modernDesignShowcase": {
+        "header": {
+            "title": "Modern Design System",
+            "subtitle": "Experience our comprehensive design system with modern components, beautiful animations, and intuitive interactions."
+        },
+        "notification": {
+            "initiated": "{{action}} initiated...",
+            "completed": "{{action}} completed successfully!"
+        },
+        "actions": {
+            "play": "Play",
+            "download": "Download",
+            "formSubmit": "Form Submit"
+        },
+        "buttons": {
+            "buttonComponents": "Button Components",
+            "primaryActions": "Primary Actions",
+            "startLearning": "Start Learning",
+            "downloadResources": "Download Resources",
+            "quickAction": "Quick Action",
+            "secondaryActions": "Secondary Actions",
+            "settings": "Settings",
+            "share": "Share",
+            "like": "Like"
+        },
+        "cards": {
+            "progressTracker": "Progress Tracker",
+            "courseCompletionRate": "{{course}} completion rate",
+            "notificationsTitle": "Notifications",
+            "notificationsDescription": "Stay updated with your learning progress",
+            "enableNotifications": "Enable Notifications",
+            "quickStats": "Quick Stats",
+            "coursesLabel": "{{courses}}",
+            "completedLabel": "Completed"
+        },
+        "forms": {
+            "formComponents": "Form Components",
+            "standardInputs": "Standard Inputs",
+            "fullNameLabel": "Full Name",
+            "fullNamePlaceholder": "Enter your full name",
+            "emailLabel": "Email Address",
+            "emailPlaceholder": "Enter your email",
+            "emailHelper": "We'll never share your email",
+            "passwordLabel": "Password",
+            "passwordPlaceholder": "Enter your password",
+            "passwordError": "Password must be at least 8 characters",
+            "enhancedInputs": "Enhanced Inputs",
+            "searchLabel": "Search",
+            "searchPlaceholder": "Search {{courses}}...",
+            "usernameLabel": "Username",
+            "usernamePlaceholder": "Choose a username",
+            "usernameHelper": "This username is available!",
+            "loadingExampleLabel": "Loading Example",
+            "loadingExamplePlaceholder": "Checking availability...",
+            "submitForm": "Submit Form",
+            "reset": "Reset"
+        },
+        "animations": {
+            "title": "Animation Examples",
+            "hoverLift": {
+                "title": "Hover Lift",
+                "description": "Gentle lift on hover"
+            },
+            "scaleEffect": {
+                "title": "Scale Effect",
+                "description": "Gentle scale on hover"
+            },
+            "clickEffect": {
+                "title": "Click Effect",
+                "description": "Active state feedback"
+            }
+        },
+        "footer": {
+            "description": "This design system provides a solid foundation for building modern, accessible, and performant user interfaces.",
+            "viewDocumentation": "View Documentation",
+            "githubRepository": "GitHub Repository"
+        }
+    }
+}

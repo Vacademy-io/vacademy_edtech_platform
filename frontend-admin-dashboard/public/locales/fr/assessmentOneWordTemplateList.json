@@ -1,0 +1,16 @@
+{
+    "popover": {
+        "title": "Paramètres des questions",
+        "questionTypeLabel": "Type de question"
+    },
+    "comprehensionText": "Texte de compréhension",
+    "question": {
+        "labelWithNumber": "Question {{number}}"
+    },
+    "answer": {
+        "label": "Réponse"
+    },
+    "explanation": {
+        "label": "Explication :"
+    }
+}

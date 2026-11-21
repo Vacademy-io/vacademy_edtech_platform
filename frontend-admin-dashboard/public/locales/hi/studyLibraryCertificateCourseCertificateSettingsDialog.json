@@ -1,0 +1,27 @@
+{
+    "toast": {
+        "saveSuccess": "कोर्स प्रमाणपत्र सेटिंग्स सहेजी गईं",
+        "saveFailed": "कोर्स प्रमाणपत्र सेटिंग्स सहेजी नहीं जा सकीं"
+    },
+    "instituteState": {
+        "enabled": "सक्षम",
+        "disabled": "अक्षम"
+    },
+    "heading": "इस कोर्स के लिए प्रमाणपत्र सेटिंग्स",
+    "cancel": "रद्द करें",
+    "saving": "सहेजा जा रहा है…",
+    "save": "सहेजें",
+    "instituteDefaultSummary": "संस्थान डिफ़ॉल्ट: प्रमाणपत्र <strong>{{pct}}%</strong> पूर्णता पर <strong>{{state}}</strong> हैं। यहाँ आप जो भी सेट करते हैं वह केवल इस कोर्स पर लागू होता है।",
+    "certificatesForCourse": "इस कोर्स के लिए प्रमाणपत्र",
+    "choice": {
+        "inherit": "संस्थान डिफ़ॉल्ट का उपयोग करें",
+        "enabled": "सक्षम",
+        "disabled": "अक्षम"
+    },
+    "willReceiveCertificates": "इस कोर्स के शिक्षार्थियों को सीमा पार करने पर प्रमाणपत्र प्राप्त होंगे।",
+    "noCertificates": "इस कोर्स के लिए कोई प्रमाणपत्र उत्पन्न नहीं होंगे।",
+    "instituteDefaultOffException": "संस्थान डिफ़ॉल्ट बंद है — यह कोर्स एक अपवाद है।",
+    "overrideThresholdLabel": "इस कोर्स के लिए एक अलग पूर्णता सीमा का उपयोग करें",
+    "percentCompletion": "% पूर्णता",
+    "certificateDesign": "प्रमाणपत्र डिज़ाइन"
+}

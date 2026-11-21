@@ -56,6 +56,9 @@ public class InstituteAnnouncementSettingsService {
 
             // Convert request settings to Map for JSON storage
             Map<String, Object> settingsMap = convertRequestToMap(request.getSettings());
+            if (existingSettings.isPresent()) {
+                keepStoredFirebaseKey(settingsMap, existingSettings.get().getSettings());
+            }
             settings.setSettings(settingsMap);
             settings.setUpdatedAt(LocalDateTime.now());
 
@@ -387,6 +390,57 @@ public class InstituteAnnouncementSettingsService {
     }
 
     /**
+     * The Firebase service-account key never leaves the service: responses carry only whether one is
+     * stored. Nothing reads the key from a response — MultiTenantFirebaseManager reads the entity map.
+     */
+    private static void redactFirebaseKey(InstituteAnnouncementSettingsResponse.AnnouncementSettings settings) {
+        if (settings == null || settings.getFirebase() == null) {
+            return;
+        }
+        InstituteAnnouncementSettingsResponse.FirebaseSettings firebase = settings.getFirebase();
+        firebase.setConfigured(!isBlank(firebase.getServiceAccountJson()) || !isBlank(firebase.getServiceAccountJsonBase64()));
+        firebase.setServiceAccountJson(null);
+        firebase.setServiceAccountJsonBase64(null);
+    }
+
+    private static boolean isBlank(String s) {
+        return s == null || s.isBlank();
+    }
+
+    /**
+     * An admin saving any settings tab posts back what it loaded, and the loaded settings never contain
+     * the key (see redactFirebaseKey) — so a blank key in the request means "unchanged", not "remove".
+     * Keep the stored key unless a new one is supplied. {@code incoming} is the map about to be saved.
+     */
+    @SuppressWarnings("unchecked")
+    private static void keepStoredFirebaseKey(Map<String, Object> incoming, Map<String, Object> stored) {
+        if (incoming == null || stored == null || !(stored.get("firebase") instanceof Map<?, ?> storedFb)) {
+            return;
+        }
+        Object storedJson = storedFb.get("serviceAccountJson");
+        Object storedB64 = storedFb.get("serviceAccountJsonBase64");
+        boolean storedHasKey = (storedJson instanceof String s1 && !s1.isBlank()) || (storedB64 instanceof String s2 && !s2.isBlank());
+        if (!storedHasKey) {
+            return;
+        }
+        Map<String, Object> incomingFb = incoming.get("firebase") instanceof Map<?, ?> m
+                ? new java.util.LinkedHashMap<>((Map<String, Object>) m)
+                : new java.util.LinkedHashMap<>();
+        boolean incomingHasKey = !isBlank(incomingFb.get("serviceAccountJson") instanceof String s ? s : null)
+                || !isBlank(incomingFb.get("serviceAccountJsonBase64") instanceof String s ? s : null);
+        if (incomingHasKey) {
+            return; // a new key was pasted — replace
+        }
+        incomingFb.put("serviceAccountJson", storedJson);
+        incomingFb.put("serviceAccountJsonBase64", storedB64);
+        if (incomingFb.get("enabled") == null) {
+            incomingFb.put("enabled", storedFb.get("enabled"));
+        }
+        incomingFb.remove("configured");
+        incoming.put("firebase", incomingFb);
+    }
+
+    /**
      * Map entity to response DTO
      */
     private InstituteAnnouncementSettingsResponse mapToResponse(InstituteAnnouncementSettings entity) {
@@ -398,11 +452,12 @@ public class InstituteAnnouncementSettingsService {
             response.setUpdatedAt(entity.getUpdatedAt());
             
             // Convert Map to settings object
-            InstituteAnnouncementSettingsResponse.AnnouncementSettings settings = 
-                objectMapper.convertValue(entity.getSettings(), 
+            InstituteAnnouncementSettingsResponse.AnnouncementSettings settings =
+                objectMapper.convertValue(entity.getSettings(),
                     InstituteAnnouncementSettingsResponse.AnnouncementSettings.class);
+            redactFirebaseKey(settings);
             response.setSettings(settings);
-            
+
             return response;
         } catch (Exception e) {
             log.error("Error mapping entity to response", e);

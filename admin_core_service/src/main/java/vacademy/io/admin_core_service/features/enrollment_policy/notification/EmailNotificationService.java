@@ -8,6 +8,7 @@ import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.enrollment_policy.dto.EmailNotificationContentDTO;
 import vacademy.io.admin_core_service.features.enrollment_policy.dto.NotificationConfigDTO;
 import vacademy.io.admin_core_service.features.enrollment_policy.dto.NotificationPolicyDTO;
+import vacademy.io.admin_core_service.features.enrollment_policy.enums.NotificationTriggerType;
 import vacademy.io.admin_core_service.features.enrollment_policy.enums.NotificationType;
 import vacademy.io.admin_core_service.features.enrollment_policy.processor.EnrolmentContext;
 import vacademy.io.admin_core_service.features.enrollment_policy.service.EnrollmentTemplateService;
@@ -15,6 +16,7 @@ import vacademy.io.admin_core_service.features.institute.entity.Template;
 import vacademy.io.admin_core_service.features.notification.dto.NotificationDTO;
 import vacademy.io.admin_core_service.features.notification.dto.NotificationToUserDTO;
 import vacademy.io.admin_core_service.features.notification_service.service.NotificationService;
+import vacademy.io.admin_core_service.features.user_subscription.service.MembershipPlaceholderService;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.exceptions.VacademyException;
 
@@ -33,6 +35,13 @@ public class EmailNotificationService implements INotificationService {
     @Autowired
     private vacademy.io.admin_core_service.features.notification_service.service.BillingContactRecipientResolver billingContactRecipientResolver;
 
+    @Autowired
+    private MembershipPlaceholderService membershipPlaceholderService;
+
+    /** Learners on a break whose fee reminders are stopped (docs/ENROLMENT_BREAKS.md). */
+    @Autowired(required = false)
+    private vacademy.io.admin_core_service.features.enrolment_break.service.EnrolmentBreakGuard enrolmentBreakGuard;
+
     private final EnrollmentTemplateService enrollmentTemplateService;
 
     @Override
@@ -44,6 +53,13 @@ public class EmailNotificationService implements INotificationService {
             
         if (instituteId == null) {
             log.warn("No institute ID found in context, skipping EMAIL notification");
+            return;
+        }
+        if (enrolmentBreakGuard != null && context.getUserPlan() != null
+                && enrolmentBreakGuard.isFeeHeldForPlan(instituteId, context.getUserPlan().getUserId(),
+                        context.getUserPlan().getId())) {
+            log.info("Skipping {} email for plan {}: learner on a break with fee reminders stopped",
+                    policy.getTrigger(), context.getUserPlan().getId());
             return;
         }
 
@@ -63,15 +79,17 @@ public class EmailNotificationService implements INotificationService {
                 continue;
             }
 
-            sendEmailForChannel(context, instituteId, channelNotification);
+            sendEmailForChannel(context, instituteId, channelNotification, policy.getTrigger());
         }
     }
 
     private void sendEmailForChannel(EnrolmentContext context, String instituteId,
-            vacademy.io.admin_core_service.features.enrollment_policy.dto.ChannelNotificationDTO channelNotification) {
+            vacademy.io.admin_core_service.features.enrollment_policy.dto.ChannelNotificationDTO channelNotification,
+            NotificationTriggerType trigger) {
         String templateName = channelNotification.getTemplateName();
-        String subject;
-        String body;
+        String subject = null;
+        String body = null;
+        Map<String, String> placeholders = buildPlaceholders(context, instituteId);
 
         if (StringUtils.hasText(templateName)) {
             // Use template from Templates table
@@ -82,11 +100,13 @@ public class EmailNotificationService implements INotificationService {
                 body = template.getContent();
 
                 // Replace placeholders in template content
-                subject = replacePlaceholders(subject, context);
-                body = replacePlaceholders(body, context);
+                subject = replacePlaceholders(subject, placeholders);
+                body = replacePlaceholders(body, placeholders);
 
                 log.debug("Using template: {} for EMAIL channel notification", templateName);
             } else {
+                // Unchanged on purpose: an institute may stop these mails by deactivating the
+                // template, so a missing template sends nothing rather than a default mail.
                 throw new VacademyException(
                         "Template not found by name: " + templateName + " for institute: " + instituteId);
             }
@@ -99,12 +119,12 @@ public class EmailNotificationService implements INotificationService {
                 body = emailConfig.getContent().getBody();
 
                 // Replace placeholders in JSON content
-                subject = replacePlaceholders(subject, context);
-                body = replacePlaceholders(body, context);
+                subject = replacePlaceholders(subject, placeholders);
+                body = replacePlaceholders(body, placeholders);
             } else {
                 log.warn("No template name and no content in config, using default template");
-                subject = enrollmentTemplateService.getEmailSubject(instituteId, null, context);
-                body = enrollmentTemplateService.getEmailBody(instituteId, null, context);
+                subject = enrollmentTemplateService.getDefaultEmailSubject(trigger, placeholders);
+                body = enrollmentTemplateService.getDefaultEmailBody(trigger, placeholders);
             }
         }
 
@@ -116,11 +136,12 @@ public class EmailNotificationService implements INotificationService {
             return;
         }
 
-        sendEmailNotification(context, userDTO, recipientEmail, subject, body, instituteId);
+        sendEmailNotification(context, userDTO, recipientEmail, subject, body, instituteId, placeholders);
     }
 
     private void sendEmailNotification(EnrolmentContext context, UserDTO userDTO,
-            String recipientEmail, String subject, String body, String instituteId) {
+            String recipientEmail, String subject, String body, String instituteId,
+            Map<String, String> placeholders) {
         log.info("--- SENDING EMAIL ---");
         log.info("TO: {}", recipientEmail);
         log.info("SUBJECT: {}", subject);
@@ -141,19 +162,7 @@ public class EmailNotificationService implements INotificationService {
         notificationToUserDTO.setChannelId(recipientEmail);
         notificationToUserDTO.setUserId(userDTO.getId());
 
-        Map<String, String> dynamicParams = new HashMap<>();
-        dynamicParams.put("learner_name", userDTO.getFullName());
-        
-        // Get course name from first mapping (all belong to same UserPlan)
-        String courseName = context.getMappings() != null && !context.getMappings().isEmpty()
-            ? enrollmentTemplateService.formatCourseName(context.getMappings().get(0).getPackageSession())
-            : "Your Course";
-        dynamicParams.put("course_name", courseName);
-        
-        dynamicParams.put("expiry_date", context.getEndDate() != null
-                ? new java.text.SimpleDateFormat("yyyy-MM-dd").format(context.getEndDate())
-                : "N/A");
-        dynamicParams.put("renewal_link", "https://vacademy.io/renew");
+        Map<String, String> dynamicParams = new HashMap<>(placeholders);
         notificationToUserDTO.setPlaceholders(dynamicParams);
 
         java.util.List<NotificationToUserDTO> recipients = new java.util.ArrayList<>();
@@ -171,32 +180,52 @@ public class EmailNotificationService implements INotificationService {
     }
 
     /**
-     * Replaces placeholders in template string with values from context.
+     * Builds the placeholder values for one UserPlan. The same map is substituted into the
+     * template here and handed to the unified send as recipient variables, so the learner
+     * copy and the billing-contact copy always render identically. The membership keys come
+     * from MembershipPlaceholderService, which also serves side-view and campaign sends.
      */
-    private String replacePlaceholders(String template, EnrolmentContext context) {
-        if (template == null) {
-            return "";
-        }
+    private Map<String, String> buildPlaceholders(EnrolmentContext context, String instituteId) {
+        Map<String, String> placeholders = new HashMap<>(membershipPlaceholderService.forPlan(
+                context.getUserPlan(), context.getUser(), instituteId, context.getBillingZone()));
 
-        UserDTO userDTO = context.getUser();
-        String learnerName = userDTO != null && StringUtils.hasText(userDTO.getFullName())
-                ? userDTO.getFullName()
-                : "Learner";
-        
         // Get course name from first mapping (all belong to same UserPlan)
         String courseName = context.getMappings() != null && !context.getMappings().isEmpty()
             ? enrollmentTemplateService.formatCourseName(context.getMappings().get(0).getPackageSession())
             : "Your Course";
-        
-        String expiryDate = context.getEndDate() != null
-                ? new java.text.SimpleDateFormat("yyyy-MM-dd").format(context.getEndDate())
-                : "N/A";
-        String renewalLink = "https://vacademy.io/renew"; // Hardcoded for now
+        placeholders.put("course_name", courseName);
+        if (context.getEndDate() == null) {
+            placeholders.put("expiry_date", "N/A");
+        }
+        placeholders.put("institute_name", enrollmentTemplateService.resolveInstituteName(context));
+        placeholders.put("renewal_link", resolveRenewalLink(context, placeholders.get("subscription_link")));
+        return placeholders;
+    }
 
-        return template
-                .replace("{{learner_name}}", learnerName)
-                .replace("{{course_name}}", courseName)
-                .replace("{{expiry_date}}", expiryDate)
-                .replace("{{renewal_link}}", renewalLink);
+    /**
+     * Where "Renew" points: the learner's subscriptions page (it lists the plan with its renew
+     * action). That link is built on the portal this learner actually signs in to (sub-org
+     * portal, else the institute's, else the shared learner portal), so it is used whenever it
+     * exists. Otherwise the institute's learner portal; empty when neither exists, and the
+     * default email then omits the button.
+     */
+    private String resolveRenewalLink(EnrolmentContext context, String subscriptionLink) {
+        if (StringUtils.hasText(subscriptionLink)) {
+            return subscriptionLink;
+        }
+        String portalUrl = enrollmentTemplateService.resolveLearnerPortalUrl(context);
+        return portalUrl == null ? "" : portalUrl;
+    }
+
+    private String replacePlaceholders(String template, Map<String, String> placeholders) {
+        if (template == null) {
+            return "";
+        }
+        String result = template;
+        for (Map.Entry<String, String> entry : placeholders.entrySet()) {
+            result = result.replace("{{" + entry.getKey() + "}}",
+                    entry.getValue() != null ? entry.getValue() : "");
+        }
+        return result;
     }
 }

@@ -1,0 +1,8 @@
+{
+    "steps": {
+        "searchStudent": "البحث عن طالب",
+        "selectInstallments": "اختيار الأقساط",
+        "paymentDetails": "تفاصيل الدفع",
+        "done": "تم"
+    }
+}

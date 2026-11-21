@@ -25,10 +25,12 @@ principal — never from the model-supplied arguments.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
+import re
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable, Dict, List, Optional
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -57,7 +59,7 @@ class _StaticKeyResolver:
     def __init__(self, keys: tuple):
         self._keys = keys
 
-    def resolve_keys(self, institute_id=None, user_id=None, request_model=None):
+    def resolve_keys(self, institute_id=None, user_id=None, request_model=None, **_ignored):
         return self._keys
 
 
@@ -79,6 +81,39 @@ class ToolContext:
     # part of the tool result string — the model never sees the nonce, so it can
     # never fabricate a confirmation.
     pending_action: Optional[Dict[str, Any]] = None
+    # True when the caller shows a tool's base64 images to the model as images
+    # (the MCP adapter). The in-product assistant stores tool results as chat
+    # text, so tools leave large images out for it.
+    images_as_content: bool = False
+    # The tool settings this call was gated with (set by execute_tool), so a READ
+    # tool can word its advice for what the caller may also do — e.g. "bind it
+    # with website_edit" only to a caller who has website_edit. None = unknown,
+    # which a tool must treat as "not allowed".
+    gate_setting: Optional[Dict[str, Any]] = None
+    gate_checked: bool = False
+    # True only for calls that came in over the MCP server (set by the adapter).
+    # ``mcp_only`` tools refuse every other caller, whatever the settings say.
+    via_mcp: bool = False
+    # The MCP OAuth client this call came through (set by the adapter; None in
+    # product), so a confirm token can be bound to the connection that saw the preview.
+    client_id: Optional[str] = None
+    # The institute's module entitlements (app/services/entitlements.py), loaded
+    # once per call by ``context_entitlements`` — never shared across calls.
+    entitlements: Optional[Any] = None
+    # In-product assistant only (crm_cards): True only while the confirm endpoint
+    # runs a card the user approved, so crm_data.preview_or_apply reads the card's
+    # confirm token; a model's tool call never sets it. ``card_applied`` is set
+    # by preview_or_apply once the change itself ran.
+    card_confirm: bool = False
+    card_applied: bool = False
+
+    def may_use(self, tool_name: str) -> bool:
+        """True iff this caller may also call ``tool_name`` (same gates as execute_tool)."""
+        spec = ASSISTANT_TOOLS.get(tool_name)
+        if spec is not None and spec.mcp_only and not self.via_mcp:
+            return False
+        return self.gate_checked and is_tool_allowed(tool_name, self.principal, self.gate_setting,
+                                                     via_mcp=self.via_mcp)
 
 
 # Executor signature: async (args: dict, ctx: ToolContext) -> str
@@ -100,12 +135,178 @@ class ToolSpec:
     default_roles: Optional[List[str]] = None  # on for THESE roles when no setting (e.g. ["ADMIN"])
     phase: int = 1                             # roadmap phase (1=help, 2=read, 3=write)
     mode: str = "READ"                         # READ | WRITE
+    # Skips the Settings leg entirely: on for everyone who may use the
+    # assistant/MCP at all, and not offered as a toggle. Reserved for tools that
+    # reveal nothing beyond the caller's own identity (whoami).
+    always_allowed: bool = False
+    # Exposed only over MCP (an AI app with its own tools, e.g. Figma reads):
+    # never offered to the in-product assistant's model.
+    mcp_only: bool = False
+    # The institute's plan (module entitlements, V567) must include
+    # ``module_feature`` (e.g. "crm.leads") when set, and at least one of
+    # ``module_features_any`` when set; otherwise the tool is not listed and
+    # refuses calls with module_not_enabled. Both None = not tied to a module.
+    module_feature: Optional[str] = None
+    module_features_any: Optional[Tuple[str, ...]] = None
+    # In-product assistant only: a tool with a topic (a key of ASSISTANT_TOPICS)
+    # is offered to the model only while that topic is active in the
+    # conversation (see ASSISTANT_TOPICS). It changes which schemas are sent,
+    # never who may call the tool. MCP lists tools without it.
+    topic: Optional[str] = None
+    # The MCP door's settings group when it differs from the assistant's: the two
+    # doors keep separate settings, and a group added to MCP must start off there
+    # (e.g. send_announcement shares "announcements" with list_announcements in
+    # the assistant but is its own opt-in group over MCP). None = same as the
+    # assistant. ``mcp_setting_keys_any`` is the MCP form of ``setting_keys_any``.
+    mcp_setting_key: Optional[str] = None
+    mcp_setting_keys_any: Optional[List[str]] = None
+    # The schema an AI app connected over MCP sees, when the assistant's wording
+    # only makes sense in the dashboard (page context, the confirmation card).
+    # Same executor; None = the assistant's schema.
+    mcp_schema: Optional[Dict[str, Any]] = None
+    # In-product assistant: the group is turned on one by one in Settings → AI
+    # access, never by an area's Edit level or a role preset (the access catalogue
+    # reads it: app/mcp/adapter.py ``assistant_group_opt_in``). Set on every write
+    # whose change is an opt-in group over MCP (MCP_OPT_IN_GROUPS). A group that
+    # keeps the same key on both doors also has no default_enabled / default_roles,
+    # so it starts off in the assistant as it does over MCP (tests pin both).
+    opt_in: bool = False
+    # In-product assistant: a write whose executor runs crm_data's two-step
+    # (preview_or_apply). Its preview becomes the confirmation card and the
+    # card's Confirm runs the same executor with the preview's token (crm_cards).
+    card_bridge: bool = False
 
-    def key(self) -> str:
+    def key(self, via_mcp: bool = False) -> str:
+        if via_mcp and self.mcp_setting_key:
+            return self.mcp_setting_key
         return self.setting_key or self.name
 
-    def keys_any(self) -> List[str]:
+    def keys_any(self, via_mcp: bool = False) -> List[str]:
+        if via_mcp and (self.mcp_setting_key or self.mcp_setting_keys_any):
+            return list(self.mcp_setting_keys_any or [self.key(via_mcp=True)])
         return self.setting_keys_any or [self.key()]
+
+    def schema_for(self, via_mcp: bool = False) -> Dict[str, Any]:
+        """The schema shown on this door (MCP may word a tool for an app outside the dashboard)."""
+        return self.mcp_schema if (via_mcp and self.mcp_schema) else self.schema
+
+
+#: How the in-product assistant's schema tells the model a card-confirmed write works (ToolSpec.card_bridge).
+CARD_CONFIRM_TEXT = (
+    "Every change is shown to the user as a confirmation card first: call the action ONCE with the full request "
+    "(nothing changes then), tell the user what the card shows, and never say it is done — only their Confirm on "
+    "the card makes the change. There is no confirm_token here. A card is refused at Confirm when the data "
+    "changed in between: then propose it again."
+)
+
+
+def card_schema(
+    schema: Dict[str, Any],
+    description: str,
+    *,
+    drop_actions: Tuple[str, ...] = (),
+    drop_props: Tuple[str, ...] = (),
+) -> Dict[str, Any]:
+    """
+    The in-product assistant's wording of a two-step write (``ToolSpec.card_bridge``):
+    ``description``, no ``confirm_token`` (the card carries it) and without the
+    actions — and their parameters — the assistant does not offer.
+    """
+    import copy
+
+    out = copy.deepcopy(schema)
+    fn = out["function"]
+    fn["description"] = description
+    props = fn.setdefault("parameters", {"type": "object"}).setdefault("properties", {})
+    for name in ("confirm_token",) + tuple(drop_props):
+        props.pop(name, None)
+    action = props.get("action")
+    if drop_actions and isinstance(action, dict) and isinstance(action.get("enum"), list):
+        action["enum"] = [a for a in action["enum"] if a not in drop_actions]
+    return out
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# Topics: which tools the in-product assistant offers on which page.
+#
+# The assistant runs on the platform's model and every message is billed to the
+# institute, and some tool families have long schemas. A topic's tools are
+# offered only while the topic is active in the conversation:
+#   * the user's current page (the route the panel sends with each message)
+#     starts with one of ``route_prefixes`` — a hint for what to offer, never
+#     identity or scope;
+#   * or a tool of that topic was already called in this conversation;
+#   * or the model switched the topic on with ``load_tools`` (always offered
+#     while a topic the caller may use is not active; its schema is tiny).
+# The AND-gate and the module leg still decide whether the caller may use each
+# tool at all.
+# ──────────────────────────────────────────────────────────────────────────
+
+@dataclass(frozen=True)
+class AssistantTopic:
+    label: str
+    #: What the user is asking about when the topic is needed (shown to the model in load_tools).
+    summary: str
+    #: Dashboard routes (path prefixes) where the topic is active from the first message.
+    route_prefixes: Tuple[str, ...]
+
+
+CRM_TOPIC = "crm"
+
+ASSISTANT_TOPICS: Dict[str, AssistantTopic] = {
+    CRM_TOPIC: AssistantTopic(
+        label="CRM",
+        summary=("leads and enquiries, admissions, counsellors and their work, follow-ups, calls, meetings, "
+                 "lead messages, CRM reports, and fees owed or paid by leads"),
+        route_prefixes=(
+            "/audience-manager",            # lead lists, recent leads, lead board, follow-ups, call log, reports
+            "/counsellors",                 # counsellor workbench
+            "/sales-dashboard",
+            "/admissions",                  # admissions dashboard, admission list, enquiries, applications
+            "/calling",                     # calling dashboard, call queue, AI agents
+            "/meetings",                    # meetings dashboard, my schedule, team meetings
+            "/financial-management/collection-dashboard",
+            "/financial-management/pay-installments",
+            "/payment-dashboard",
+            "/manage-payments",
+        ),
+    ),
+}
+
+#: The always-small tool that switches a topic on for the rest of the conversation.
+LOAD_TOOLS_TOOL_NAME = "load_tools"
+
+
+def topics_for_route(route: Any) -> set:
+    """The topics whose pages include ``route`` (a dashboard pathname; query and hash ignored)."""
+    if not isinstance(route, str) or not route.startswith("/"):
+        return set()
+    path = route.split("?", 1)[0].split("#", 1)[0].rstrip("/") or "/"
+    return {
+        key for key, topic in ASSISTANT_TOPICS.items()
+        if any(path == p or path.startswith(p + "/") for p in topic.route_prefixes)
+    }
+
+
+def load_tools_schema(topics: List[str]) -> Dict[str, Any]:
+    """The ``load_tools`` schema for the topics the caller may use but has not loaded yet."""
+    lines = "; ".join(f"'{t}': {ASSISTANT_TOPICS[t].summary}" for t in topics)
+    return {
+        "type": "function",
+        "function": {
+            "name": LOAD_TOOLS_TOOL_NAME,
+            "description": (
+                "Loads more tools for the rest of this conversation. Call it FIRST when the user asks about one "
+                f"of these and you have no tool for it yet — {lines}. Never tell the user you cannot see that "
+                "data before trying this."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {"topic": {"type": "string", "enum": list(topics)}},
+                "required": ["topic"],
+            },
+        },
+    }
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -117,11 +318,16 @@ _SEARCH_HELP_KNOWLEDGE_SCHEMA: Dict[str, Any] = {
     "function": {
         "name": "search_help_knowledge",
         "description": (
-            "Search Vacademy's how-to knowledge base for step-by-step instructions on "
-            "how and where to perform a task in the admin portal (e.g. 'how do I create a "
-            "course', 'where do I add a learner to a batch'). Use this for any "
-            "how-to / where-to question before answering. Returns matching help articles "
-            "with their steps and the in-app route to navigate to."
+            "Search the product's how-to knowledge base for step-by-step instructions on "
+            "how and where to do a task in the admin portal (e.g. 'how do I create a "
+            "course', 'where do I add a learner to a batch', 'where do I find the payment "
+            "settings'). Use it for any how-to / where-to question, or to find where a "
+            "feature lives, before answering. Returns the matching documented articles: "
+            "each with its steps and the page to open (route_path); a result may also "
+            "carry url, a full link to that page on the institute's own admin portal, "
+            "which you should give the user when present. Answer only from what it returns. "
+            "When nothing matches, say there is no documented procedure for it and never "
+            "invent steps, menu names or links."
         ),
         "parameters": {
             "type": "object",
@@ -137,6 +343,36 @@ _SEARCH_HELP_KNOWLEDGE_SCHEMA: Dict[str, Any] = {
 }
 
 
+_HELP_UNAVAILABLE = {"results": [], "note": "Help search is temporarily unavailable."}
+
+
+def _help_embedding_keys(ctx: ToolContext) -> tuple:
+    """
+    The keys that embed the help query, always resolved on the server.
+
+    The in-product assistant hands its pre-resolved keys in ``ctx.keys``. A caller
+    without them (the MCP adapter) gets the same resolution here: the server's key
+    store for this institute and user, then the platform default. Tool arguments
+    never carry keys.
+    """
+    keys = tuple(ctx.keys or ())
+    if len(keys) == 3:
+        return keys
+    from .api_key_resolver import ApiKeyResolver
+
+    return tuple(ApiKeyResolver(ctx.db).resolve_keys(
+        institute_id=ctx.principal.institute_id, user_id=ctx.principal.user_id,
+    ))
+
+
+def _help_link(base: Optional[str], route_path: Any) -> Optional[str]:
+    """``base`` + an article's route, or None when either cannot make a working link."""
+    path = str(route_path or "").strip()
+    if not base or not path.startswith("/") or path.startswith("//") or "$" in path:
+        return None  # a "$videoId"-style placeholder needs a record the article cannot name
+    return base.rstrip("/") + path
+
+
 async def _execute_search_help_knowledge(args: Dict[str, Any], ctx: ToolContext) -> str:
     """Role-scoped retrieval over the 'help_knowledge' corpus in pgvector."""
     query = str((args or {}).get("query") or "").strip()
@@ -148,7 +384,16 @@ async def _execute_search_help_knowledge(args: Dict[str, Any], ctx: ToolContext)
     from .rag_service import RAGService
 
     try:
-        embedding_service = EmbeddingService(_StaticKeyResolver(ctx.keys))
+        keys = _help_embedding_keys(ctx)
+    except Exception as e:  # noqa: BLE001 — the reason is logged, never the keys
+        logger.warning("search_help_knowledge key lookup failed: %s", type(e).__name__)
+        return json.dumps(_HELP_UNAVAILABLE)
+    if len(keys) != 3 or not keys[0]:
+        logger.warning("search_help_knowledge has no embedding key for institute=%s", ctx.principal.institute_id)
+        return json.dumps(_HELP_UNAVAILABLE)
+
+    try:
+        embedding_service = EmbeddingService(_StaticKeyResolver(keys))
         rag = RAGService(ctx.db, embedding_service)
         # Search BOTH the product-wide global corpus and any institute-specific
         # help, then merge. This makes retrieval robust to which institute the
@@ -171,8 +416,8 @@ async def _execute_search_help_knowledge(args: Dict[str, Any], ctx: ToolContext)
                     merged[k] = r
         rows = sorted(merged.values(), key=lambda r: r.get("similarity_score") or 0, reverse=True)[:5]
     except Exception as e:  # never leak internals to the model
-        logger.warning("search_help_knowledge failed: %s", e)
-        return json.dumps({"results": [], "note": "Help search is temporarily unavailable."})
+        logger.warning("search_help_knowledge failed: %s", type(e).__name__)
+        return json.dumps(_HELP_UNAVAILABLE)
 
     if not rows:
         return json.dumps({
@@ -190,86 +435,48 @@ async def _execute_search_help_knowledge(args: Dict[str, Any], ctx: ToolContext)
             "steps": r.get("content_text"),
             "similarity": r.get("similarity_score"),
         })
-    return json.dumps({"results": results})
+    if not ctx.via_mcp:
+        # The dashboard turns route_path into an in-app link itself.
+        return json.dumps({"results": results})
+
+    # An AI app outside the dashboard needs a full link, on the institute's OWN
+    # admin portal (white-label domains included), else the platform dashboard,
+    # as the other MCP links do.
+    from ..config import get_settings
+    from ..mcp.institute_scope import admin_portal_base
+
+    try:
+        base = admin_portal_base(ctx.db, ctx.principal.institute_id, get_settings().admin_dashboard_url)
+    except Exception:  # noqa: BLE001
+        base = None
+    for item in results:
+        url = _help_link(base, item["route_path"])
+        if url:
+            item["url"] = url
+    out: Dict[str, Any] = {"results": results}
+    if base:
+        out["admin_portal_url"] = base
+        out["note"] = (
+            "Give the user the steps, then the result's url as a link. A result without url opens on a "
+            "specific record: tell the user which page to start from instead of inventing a link."
+        )
+    else:
+        out["note"] = (
+            "This institute's admin portal address is not on record, so results carry route_path only: "
+            "give the steps and tell the user to open that path on their admin portal. Do not invent a domain."
+        )
+    return json.dumps(out)
 
 
 # ──────────────────────────────────────────────────────────────────────────
-# Phase-2 tools: find_learner (resolver) + get_student_360 (data aggregate).
+# Phase-2 tools. Learners are found with `learners` (assistant_tools_learners)
+# and their progress read with `learner_report`; both are also offered to the
+# "learner_data" group (ToolSpec.setting_keys_any).
 # ──────────────────────────────────────────────────────────────────────────
 
-_FIND_LEARNER_SCHEMA: Dict[str, Any] = {
-    "type": "function",
-    "function": {
-        "name": "find_learner",
-        "description": (
-            "Find ENROLLED learners/students in this institute by ONE free-text query — "
-            "matches name, email, phone number, username, or enrollment number. Use this "
-            "FIRST whenever the user names a learner and the page context does not already "
-            "identify them. If more than one learner matches, list the matches and ask "
-            "the user which one they mean — never guess. NEVER use this for leads, "
-            "enquiries, or prospects — those are different records this tool cannot see."
-        ),
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "query": {
-                    "type": "string",
-                    "description": "The learner's name / email / phone / enrollment number.",
-                },
-                "statuses": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "Enrollment statuses to include. Default ['ACTIVE']; "
-                                   "widen to ['ACTIVE','INACTIVE','INVITED'] if nothing is found.",
-                },
-            },
-            "required": ["query"],
-        },
-    },
-}
-
-_STUDENT_360_MODULES = [
-    "attendance", "live_classes", "academics", "activity",
-    "progress", "certificates", "assignments", "doubts", "login",
-]
-
-_GET_STUDENT_360_SCHEMA: Dict[str, Any] = {
-    "type": "function",
-    "function": {
-        "name": "get_student_360",
-        "description": (
-            "Fetch a learner's data for SPECIFIC modules: attendance (live-class "
-            "presence %), live_classes (attended/missed), academics (assessment scores "
-            "vs batch — SLOW, request only when asked about tests/scores), activity "
-            "(study time & habits), progress (course completion), certificates, "
-            "assignments, doubts, login (last login & session time). Request ONLY the "
-            "modules the question needs. Requires the learner's user id — from the page "
-            "context's selected student or a prior find_learner result."
-        ),
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "target_user_id": {
-                    "type": "string",
-                    "description": "The learner's user_id (NOT their name).",
-                },
-                "modules": {
-                    "type": "array",
-                    "items": {"type": "string", "enum": _STUDENT_360_MODULES},
-                    "description": "Only the modules the question actually needs (1-3 usually).",
-                },
-                "batch_id": {
-                    "type": "string",
-                    "description": "Optional package_session_id to scope attendance/progress "
-                                   "(from page context or the find_learner result).",
-                },
-                "start_date": {"type": "string", "description": "YYYY-MM-DD. Default: 30 days ago."},
-                "end_date": {"type": "string", "description": "YYYY-MM-DD. Default: today."},
-            },
-            "required": ["target_user_id", "modules"],
-        },
-    },
-}
+#: How the in-product tools that take ``target_user_id`` are told where it comes from.
+_LEARNER_TARGET = ("The learner's user_id: the learner_id from learners(action='find'), or the selected "
+                   "student's user_id from the page context.")
 
 
 def _mask_mobile(mobile: Optional[str]) -> Optional[str]:
@@ -277,74 +484,6 @@ def _mask_mobile(mobile: Optional[str]) -> Optional[str]:
         return None
     digits = str(mobile)
     return ("*" * max(0, len(digits) - 4)) + digits[-4:]
-
-
-async def _execute_find_learner(args: Dict[str, Any], ctx: ToolContext) -> str:
-    """Search learners within the pinned institute via the students-list endpoint.
-
-    Calls the normal admin endpoint WITH THE CALLER'S OWN JWT — the caller can
-    only see what they could already see in the portal. institute_ids is forced
-    from the pinned principal; the response is reduced to a compact projection
-    (never the full row: no address, parent contacts, or custom fields).
-    """
-    import httpx
-    from ..config import get_settings
-
-    query = str((args or {}).get("query") or "").strip()
-    if not query:
-        return json.dumps({"matches": [], "note": "No search query was provided."})
-    if not ctx.bearer_token:
-        return json.dumps({"error": "no_auth", "message": "Learner search is unavailable right now."})
-
-    statuses = args.get("statuses") or ["ACTIVE"]
-    settings = get_settings()
-    url = (
-        f"{settings.admin_core_service_base_url}"
-        "/admin-core-service/institute/institute_learner/get/v2/all"
-    )
-    body = {
-        "name": query,
-        "institute_ids": [ctx.principal.institute_id],  # forced — never model-supplied
-        "statuses": [str(s) for s in statuses][:6],
-        "package_session_ids": [],
-        "group_ids": [],
-        "gender": [],
-        "sort_columns": {},
-    }
-    try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.post(
-                url,
-                params={"pageNo": 0, "pageSize": 10},
-                json=body,
-                headers=_jwt_headers(ctx),
-            )
-        if resp.status_code != 200:
-            logger.warning("find_learner: %s from students-list (%s)", resp.status_code, resp.text[:200])
-            return json.dumps({"error": "search_failed", "status": resp.status_code})
-        data = resp.json() or {}
-    except Exception as e:
-        logger.warning("find_learner failed: %s", e)
-        return json.dumps({"error": "search_failed"})
-
-    matches = []
-    for row in (data.get("content") or [])[:10]:
-        matches.append({
-            "user_id": row.get("user_id"),
-            "full_name": row.get("full_name"),
-            "email": row.get("email"),
-            "mobile": _mask_mobile(row.get("mobile_number")),
-            "enrollment_no": row.get("institute_enrollment_number"),
-            "status": row.get("status"),
-            "payment_status": row.get("payment_status"),
-            "package_session_id": row.get("package_session_id"),
-            "expiry_date": row.get("expiry_date"),
-        })
-    return json.dumps({
-        "matches": matches,
-        "total_matches": data.get("total_elements", len(matches)),
-        "note": "If more than one match, ask the user which learner they mean." if len(matches) > 1 else None,
-    })
 
 
 _FIND_BATCH_SCHEMA: Dict[str, Any] = {
@@ -450,58 +589,6 @@ def _prune_nulls(obj: Any) -> Any:
     return obj
 
 
-async def _execute_get_student_360(args: Dict[str, Any], ctx: ToolContext) -> str:
-    """Synchronous Layer-1 student report (selected modules) via the internal endpoint.
-
-    The internal endpoint verifies the target learner belongs to the pinned
-    institute (404 otherwise), so a session pinned to institute A can never read
-    institute B's learners even though the call carries service-level trust.
-    """
-    import httpx
-    from ..config import get_settings
-    from .internal_auth import internal_auth_headers
-
-    target_user_id = str((args or {}).get("target_user_id") or "").strip()
-    if not target_user_id:
-        return json.dumps({"error": "missing_target", "message": "target_user_id is required."})
-
-    modules = [m for m in (args.get("modules") or []) if m in _STUDENT_360_MODULES]
-    if not modules:
-        return json.dumps({"error": "missing_modules",
-                           "message": f"Pick 1-3 modules from: {', '.join(_STUDENT_360_MODULES)}."})
-
-    settings = get_settings()
-    params: Dict[str, Any] = {
-        "userId": target_user_id,
-        "instituteId": ctx.principal.institute_id,  # forced — never model-supplied
-        "modules": ",".join(modules),
-    }
-    if args.get("batch_id"):
-        params["batchId"] = str(args["batch_id"])
-    if args.get("start_date"):
-        params["startDate"] = str(args["start_date"])
-    if args.get("end_date"):
-        params["endDate"] = str(args["end_date"])
-
-    url = f"{settings.admin_core_service_base_url}/admin-core-service/internal/student-analysis/student-360"
-    try:
-        headers = await internal_auth_headers()
-        async with httpx.AsyncClient(timeout=65.0) as client:
-            resp = await client.get(url, params=params, headers=headers)
-        if resp.status_code == 404:
-            return json.dumps({"error": "not_found",
-                               "message": "This learner has no enrollment in your institute."})
-        if resp.status_code != 200:
-            logger.warning("get_student_360: %s (%s)", resp.status_code, resp.text[:200])
-            return json.dumps({"error": "fetch_failed", "status": resp.status_code})
-        report = resp.json() or {}
-    except Exception as e:
-        logger.warning("get_student_360 failed: %s", e)
-        return json.dumps({"error": "fetch_failed"})
-
-    return json.dumps(_prune_nulls(report))
-
-
 # ──────────────────────────────────────────────────────────────────────────
 # Phase-2b tools: payments, batch roster, schedule, institute overview,
 # trigger-full-report. All call EXISTING admin endpoints with the caller's own
@@ -548,8 +635,13 @@ async def _service_json(
     params: Optional[Dict[str, Any]] = None,
     body: Optional[Dict[str, Any]] = None,
     timeout: float = 20.0,
+    error_detail: bool = False,
 ) -> Any:
-    """One JWT-authenticated call to a backend service; returns parsed JSON or an error dict."""
+    """
+    One JWT-authenticated call to a backend service; returns parsed JSON or an error dict.
+    ``error_detail`` also puts the start of a non-200 answer's body in the error dict
+    (``detail``), for callers that tell one 409 from another.
+    """
     import httpx
 
     if not ctx.bearer_token:
@@ -562,8 +654,14 @@ async def _service_json(
             )
         if resp.status_code != 200:
             logger.warning("assistant %s %s -> %s (%s)", method, path, resp.status_code, resp.text[:150])
+            if error_detail:
+                return {"error": "fetch_failed", "status": resp.status_code, "detail": resp.text[:500]}
             return {"error": "fetch_failed", "status": resp.status_code}
-        return resp.json()
+        try:
+            return resp.json()
+        except ValueError:
+            # Some Java endpoints answer a bare string (an id, a URL) — hand it back as text.
+            return resp.text.strip()
     except Exception as e:
         logger.warning("assistant %s %s failed: %s", method, path, e)
         return {"error": "fetch_failed"}
@@ -577,6 +675,11 @@ async def _admin_core_json(ctx: ToolContext, method: str, path: str, **kw: Any) 
 async def _assessment_json(ctx: ToolContext, method: str, path: str, **kw: Any) -> Any:
     from ..config import get_settings
     return await _service_json(ctx, method, get_settings().assessment_service_base_url, path, **kw)
+
+
+async def _auth_json(ctx: ToolContext, method: str, path: str, **kw: Any) -> Any:
+    from ..config import get_settings
+    return await _service_json(ctx, method, get_settings().auth_service_base_url, path, **kw)
 
 
 async def _notification_json(ctx: ToolContext, method: str, path: str, **kw: Any) -> Any:
@@ -596,7 +699,7 @@ _GET_PAYMENT_HISTORY_SCHEMA: Dict[str, Any] = {
         "parameters": {
             "type": "object",
             "properties": {
-                "target_user_id": {"type": "string", "description": "The learner's user_id."},
+                "target_user_id": {"type": "string", "description": _LEARNER_TARGET},
                 "payment_statuses": {
                     "type": "array", "items": {"type": "string"},
                     "description": "Optional filter, e.g. ['PAID','FAILED','PENDING'].",
@@ -634,7 +737,7 @@ async def _execute_get_payment_history(args: Dict[str, Any], ctx: ToolContext) -
             "currency": log_.get("currency"),
             "status": log_.get("payment_status") or log_.get("status"),
             "vendor": log_.get("vendor"),
-            "transaction_id": log_.get("transaction_id"),
+            "transaction_id": _masked_reference(log_.get("transaction_id")),
             "plan": plan.get("name"),
         })
     total = data.get("totalElements", data.get("total_elements", len(items)))
@@ -653,7 +756,7 @@ _GET_FEE_DUES_SCHEMA: Dict[str, Any] = {
         "parameters": {
             "type": "object",
             "properties": {
-                "target_user_id": {"type": "string", "description": "The learner's user_id."},
+                "target_user_id": {"type": "string", "description": _LEARNER_TARGET},
                 "status": {
                     "type": "string",
                     "description": "Optional: 'OVERDUE' to list only overdue installments.",
@@ -709,7 +812,7 @@ _GET_SUBSCRIPTION_PLANS_SCHEMA: Dict[str, Any] = {
         "parameters": {
             "type": "object",
             "properties": {
-                "target_user_id": {"type": "string", "description": "The learner's user_id."},
+                "target_user_id": {"type": "string", "description": _LEARNER_TARGET},
             },
             "required": ["target_user_id"],
         },
@@ -752,7 +855,7 @@ _LIST_BATCH_LEARNERS_SCHEMA: Dict[str, Any] = {
         "description": (
             "The learners enrolled in one batch (roster + total count). Use for 'who is "
             "in batch X / how many active learners'. Needs the batch's "
-            "package_session_id (from page context or a find_learner result)."
+            "package_session_id (from page context or find_batch)."
         ),
         "parameters": {
             "type": "object",
@@ -841,9 +944,11 @@ _GET_INSTITUTE_OVERVIEW_SCHEMA: Dict[str, Any] = {
     "function": {
         "name": "get_institute_overview",
         "description": (
-            "Institute-level snapshot. sections: 'outstanding_fees' (total overdue "
-            "amount + count across the institute), 'live_now' (classes running right "
-            "now), 'enrollment_counts' (active learner count). Use for 'how much fees "
+            "Institute-level snapshot. sections: 'profile' (the institute's name, logo, theme, "
+            "contact details, portal URLs and its own terminology — e.g. what it calls a course), "
+            "'outstanding_fees' (total overdue amount + count across the institute), 'live_now' "
+            "(classes running right now), 'enrollment_counts' (active learner count). Use 'profile' "
+            "to address the institute by its own name and vocabulary; the others for 'how much fees "
             "is pending overall / how many active learners do we have'."
         ),
         "parameters": {
@@ -851,7 +956,7 @@ _GET_INSTITUTE_OVERVIEW_SCHEMA: Dict[str, Any] = {
             "properties": {
                 "sections": {
                     "type": "array",
-                    "items": {"type": "string", "enum": ["outstanding_fees", "live_now", "enrollment_counts"]},
+                    "items": {"type": "string", "enum": ["profile", "outstanding_fees", "live_now", "enrollment_counts"]},
                 },
             },
             "required": ["sections"],
@@ -860,9 +965,85 @@ _GET_INSTITUTE_OVERVIEW_SCHEMA: Dict[str, Any] = {
 }
 
 
+async def _media_public_url(ctx: ToolContext, file_id: Optional[str]) -> Optional[str]:
+    """A public URL for a media-service file id, or None. (The endpoint answers plain text.)"""
+    if not file_id or not ctx.bearer_token:
+        return None
+    import httpx
+    from ..config import get_settings
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(
+                f"{get_settings().media_server_base_url}/media-service/get-public-url",
+                params={"fileId": file_id}, headers=_jwt_headers(ctx),
+            )
+        url = resp.text.strip().strip('"') if resp.status_code == 200 else ""
+        return url if url.startswith("http") else None
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("media public url lookup failed for %s: %s", file_id, exc)
+        return None
+
+
+def _terminology_from_setting(setting_json: Any) -> Dict[str, str]:
+    """NAMING_SETTING → {"Course": "Program", …}: only the words the institute renamed."""
+    try:
+        blob = json.loads(setting_json) if isinstance(setting_json, str) else (setting_json or {})
+        rows = (((blob.get("setting") or {}).get("NAMING_SETTING") or {}).get("data") or {}).get("data") or []
+    except (ValueError, AttributeError):
+        return {}
+    out: Dict[str, str] = {}
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        key, custom, system = r.get("key"), r.get("customValue"), r.get("systemValue")
+        if key and custom and custom != (system or key):
+            out[str(key)] = str(custom)
+    return out
+
+
+async def load_institute_profile(ctx: ToolContext) -> Dict[str, Any]:
+    """
+    Who the institute is: name, logo, theme, contact, portals, terminology.
+
+    White-label institutes are their OWN brand to their staff; an assistant that
+    says "Vacademy" to a Shiksha Nation admin is wrong. This is what tools and
+    the MCP server hand the model so it speaks in the institute's name.
+    """
+    data = await _admin_core_json(
+        ctx, "GET", f"/admin-core-service/institute/v1/details-non-batches/{ctx.principal.institute_id}",
+        timeout=15.0,
+    )
+    if not isinstance(data, dict) or data.get("error"):
+        return {"id": ctx.principal.institute_id, "error": "profile_unavailable"}
+    logo_url = await _media_public_url(ctx, data.get("institute_logo_file_id"))
+    profile = {
+        "id": ctx.principal.institute_id,
+        "name": data.get("institute_name"),
+        "logo_url": logo_url,
+        "theme": data.get("institute_theme_code"),
+        "email": data.get("email"),
+        "address": data.get("address"),
+        "website_url": data.get("website_url"),
+        "learner_portal_url": data.get("learner_portal_url"),
+        "admin_portal_url": data.get("admin_portal_url"),
+        "terminology": _terminology_from_setting(data.get("setting")) or None,
+    }
+    return {k: v for k, v in profile.items() if v not in (None, "", {})}
+
+
+def _amount(value: Any) -> float:
+    """A money figure from a service response; anything unreadable counts as zero."""
+    try:
+        return float(value or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
 async def _execute_get_institute_overview(args: Dict[str, Any], ctx: ToolContext) -> str:
     sections = [s for s in (args.get("sections") or []) if isinstance(s, str)]
     out: Dict[str, Any] = {}
+    if "profile" in sections:
+        out["profile"] = await load_institute_profile(ctx)
     if "outstanding_fees" in sections:
         # Audit fix 2026-07-16: the earlier source (adjustment/pending) only
         # covered installments awaiting a concession/penalty decision, badly
@@ -872,12 +1053,18 @@ async def _execute_get_institute_overview(args: Dict[str, Any], ctx: ToolContext
             body={"instituteId": ctx.principal.institute_id}, timeout=30.0,
         )
         if isinstance(data, dict) and not data.get("error"):
-            out["outstanding_fees"] = {
+            fees = {
                 "overdue_total": data.get("totalOverdue"),
                 "collected_to_date": data.get("collectedToDate"),
                 "expected_to_date": data.get("expectedToDate"),
                 "note": "Use search_fee_records to list WHICH learners are overdue.",
             }
+            if not any(_amount(fees[k]) for k in ("overdue_total", "collected_to_date", "expected_to_date")):
+                fees["note"] = (
+                    "No fees are recorded in Vacademy for this institute (no fee plans, dues or "
+                    "payments). Say that fees are not tracked here, not that nothing is pending."
+                )
+            out["outstanding_fees"] = fees
         else:
             out["outstanding_fees"] = data  # error dict
     if "live_now" in sections:
@@ -915,7 +1102,7 @@ _TRIGGER_FULL_REPORT_SCHEMA: Dict[str, Any] = {
         "parameters": {
             "type": "object",
             "properties": {
-                "target_user_id": {"type": "string", "description": "The learner's user_id."},
+                "target_user_id": {"type": "string", "description": _LEARNER_TARGET},
                 "batch_id": {"type": "string", "description": "Optional package_session_id."},
                 "start_date": {"type": "string", "description": "YYYY-MM-DD. Default: 30 days ago."},
                 "end_date": {"type": "string", "description": "YYYY-MM-DD. Default: today."},
@@ -1260,7 +1447,10 @@ _GET_ASSESSMENT_RESULTS_SCHEMA: Dict[str, Any] = {
             "YET GRADED (never report it as 'didn't attempt'); attempt_state 'pending' "
             "= registered but not attempted. release_status shows whether the learner "
             "can see their result. Use find_assessment first to get assessment_id and "
-            "visibility."
+            "visibility. For 'which submissions are pending evaluation' with no test named, "
+            "list recent tests with find_assessment(window='past'), skip ones with 0 attempted, "
+            "and check at most the 3 most recent with evaluation_status=PENDING; say which "
+            "tests you checked."
         ),
         "parameters": {
             "type": "object",
@@ -1289,52 +1479,82 @@ _GET_ASSESSMENT_RESULTS_SCHEMA: Dict[str, Any] = {
 
 _ATTEMPT_STATE_MAP = {"attempted": "ENDED", "not_attempted": "PENDING", "live": "LIVE"}
 
+# Who took part comes in separate lists, one per way a learner was registered, exactly as the
+# Submissions tab asks for them: batch learners and individually added learners for a private
+# test; those two plus people who registered through the public link for a public test.
+_PRIVATE_SOURCES = ("BATCH_PREVIEW_REGISTRATION", "ADMIN_PRE_REGISTRATION")
+_PUBLIC_SOURCES = _PRIVATE_SOURCES + ("OPEN_REGISTRATION",)
+_RESULTS_PAGE_SIZE = 15
 
-async def _execute_get_assessment_results(args: Dict[str, Any], ctx: ToolContext) -> str:
-    assessment_id = str((args or {}).get("assessment_id") or "").strip()
-    if not assessment_id:
-        return json.dumps({"error": "missing_assessment_id"})
-    body: Dict[str, Any] = {
+
+def _participants_filter(args: Dict[str, Any], visibility: str, source: str) -> Dict[str, Any]:
+    """The filter body the Submissions tab sends: one attempt type, one source, no sort."""
+    state = args.get("attempt_state")
+    evaluation = str(args.get("evaluation_status") or "")
+    return {
         "name": str(args.get("name") or "").strip(),
-        "assessment_type": str(args.get("visibility") or "PRIVATE"),
-        "attempt_type": (
-            [_ATTEMPT_STATE_MAP[args["attempt_state"]]]
-            if args.get("attempt_state") in _ATTEMPT_STATE_MAP else []
-        ),
-        "evaluation_status": (
-            [str(args["evaluation_status"])]
-            if str(args.get("evaluation_status") or "") in ("PENDING", "COMPLETED") else []
-        ),
+        "assessment_type": visibility,
+        # The tab always asks for one attempt type; finished attempts is its default.
+        "attempt_type": [_ATTEMPT_STATE_MAP.get(state, "ENDED")],
+        "registration_source": source,
         "batches": [str(b) for b in (args.get("batch_ids") or [])][:10],
         "status": ["ACTIVE"],
-        "registration_source": [],
-        # NB: never sort by end_time — the WAF blocks it.
-        "sort_columns": {"attempt_date": "DESC"},
+        "evaluation_status": [evaluation] if evaluation in ("PENDING", "COMPLETED") else [],
+        "submission_status": [],
+        "sort_columns": {},
     }
-    data = await _assessment_json(
-        ctx, "POST", "/assessment-service/assessment/admin-participants/all/registered-participants",
-        params={"instituteId": ctx.principal.institute_id, "assessmentId": assessment_id,
-                "pageNo": max(0, int(args.get("page") or 0)), "pageSize": 15},
-        body=body, timeout=30.0,
-    )
-    if isinstance(data, dict) and data.get("error"):
-        return json.dumps(data)
-    rows = []
-    for r in (data.get("content") or [])[:15]:
-        rows.append({
-            "user_id": r.get("user_id"),
-            "name": r.get("student_name"),
-            "batch_id": r.get("batch_id"),
-            "attempt_date": r.get("attempt_date"),
-            "score": r.get("score"),
-            "evaluation_status": r.get("evaluation_status"),
-            "release_status": r.get("report_release_result_status"),
-        })
-    total = data.get("totalElements", data.get("total_elements", len(rows)))
-    return json.dumps({
-        "participants": rows, "total_matching": total,
+
+
+async def _execute_get_assessment_results(args: Dict[str, Any], ctx: ToolContext) -> str:
+    args = args or {}
+    assessment_id = str(args.get("assessment_id") or "").strip()
+    if not assessment_id:
+        return json.dumps({"error": "missing_assessment_id"})
+    visibility = "PUBLIC" if str(args.get("visibility") or "").upper() == "PUBLIC" else "PRIVATE"
+    sources = _PUBLIC_SOURCES if visibility == "PUBLIC" else _PRIVATE_SOURCES
+    page = max(0, int(args.get("page") or 0))
+
+    async def fetch(source: str) -> Any:
+        return await _assessment_json(
+            ctx, "POST", "/assessment-service/assessment/admin-participants/all/registered-participants",
+            params={"instituteId": ctx.principal.institute_id, "assessmentId": assessment_id,
+                    "pageNo": page, "pageSize": _RESULTS_PAGE_SIZE},
+            body=_participants_filter(args, visibility, source), timeout=30.0,
+        )
+
+    results = await asyncio.gather(*(fetch(source) for source in sources))
+    rows: List[Dict[str, Any]] = []
+    total = 0
+    has_more = False
+    failures = []
+    for data in results:
+        if not isinstance(data, dict) or data.get("error"):
+            failures.append(data)
+            continue
+        for r in (data.get("content") or [])[:_RESULTS_PAGE_SIZE]:
+            rows.append({
+                "user_id": r.get("user_id"),
+                "name": r.get("student_name"),
+                "batch_id": r.get("batch_id"),
+                "attempt_date": r.get("attempt_date"),
+                "score": r.get("score"),
+                "evaluation_status": r.get("evaluation_status"),
+                "release_status": r.get("report_release_result_status"),
+            })
+        count = data.get("totalElements", data.get("total_elements"))
+        count = int(count) if isinstance(count, (int, float)) else len(data.get("content") or [])
+        total += count
+        has_more = has_more or (page + 1) * _RESULTS_PAGE_SIZE < count
+    if len(failures) == len(results):
+        failed = failures[0]
+        return json.dumps(failed if isinstance(failed, dict) else {"error": "fetch_failed"})
+    out: Dict[str, Any] = {
+        "participants": rows, "total_matching": total, "page": page, "has_more": has_more,
         "note": "evaluation_status PENDING = attempted, awaiting grading (NOT a missed test).",
-    })
+    }
+    if failures:
+        out["partial"] = "Some participants could not be loaded; the list may be incomplete."
+    return json.dumps(out)
 
 
 _GET_ASSESSMENT_LEADERBOARD_SCHEMA: Dict[str, Any] = {
@@ -1460,13 +1680,55 @@ def _target_in_institute(ctx: ToolContext, target_user_id: str) -> bool:
         return False
 
 
+#: How each card-confirmed write is confirmed over MCP, where there is no card:
+#:   edit_token — preview, then the same call with an HMAC token over the exact
+#:                change and the target's current state (15 minutes; a change made
+#:                in between is refused);
+#:   single_use — preview, then a token that works once (10 minutes), with an
+#:                hourly cap per user; for writes that contact people.
+#: A write tool missing here refuses every MCP call (update_learner_profile:
+#: learner_edit does that job over MCP).
+MCP_WRITE_CONFIRM: Dict[str, str] = {
+    "manage_enrollment": "edit_token",
+    "send_announcement": "single_use",
+}
+
+
+def mcp_write_purpose(tool: str) -> str:
+    """The confirm-token purpose of a card-confirmed write over MCP (also its hourly-cap key)."""
+    return f"assistant.{tool}"
+
+
 async def _propose_action(
     ctx: ToolContext,
     tool: str,
     perform_args: Dict[str, Any],
     summary: str,
+    *,
+    args: Optional[Dict[str, Any]] = None,
+    state: Any = None,
+    preview: Optional[Dict[str, Any]] = None,
+    once_summary: Optional[Dict[str, Any]] = None,
+    card: Optional[Dict[str, Any]] = None,
+    expires_in_s: Optional[int] = None,
 ) -> str:
-    """Persist a pending action (nonce + TTL) and hand the card to the FE."""
+    """
+    One door-aware confirmation for a WRITE tool; nothing changes on the first call.
+
+    In the product: persist a pending action (nonce + TTL) and hand the card to the
+    FE; only the user's Confirm on the card runs the write (the model never sees the
+    nonce). Over MCP: the preview → confirm_token two-step (``_mcp_two_step``).
+    ``args`` are the call's arguments (MCP reads its confirm_token there; the
+    product door never does), ``state`` the target's current state an edit token
+    is bound to, ``preview`` extra facts shown in the MCP preview and
+    ``once_summary`` the ids and counts a single-use token records.
+    ``card`` adds ``details`` and ``warnings`` lines to the product card, and
+    ``expires_in_s`` shortens the card's life to that of what it carries.
+    """
+    if ctx.via_mcp:
+        return json.dumps(await _mcp_two_step(ctx, tool, perform_args, summary, args or {}, state=state,
+                                              preview=preview, once_summary=once_summary),
+                          ensure_ascii=False, default=str)
     import uuid
     from datetime import datetime, timedelta, timezone
     from ..repositories.chat_message_repository import ChatMessageRepository
@@ -1475,9 +1737,12 @@ async def _propose_action(
         return json.dumps({"error": "no_session"})
 
     nonce = str(uuid.uuid4())
-    expires_at = (
-        datetime.now(timezone.utc) + timedelta(minutes=PENDING_ACTION_TTL_MINUTES)
-    ).isoformat()
+    ttl_s = PENDING_ACTION_TTL_MINUTES * 60
+    if expires_in_s is not None:
+        ttl_s = max(0, min(ttl_s, int(expires_in_s) - 30))
+    expires_at = (datetime.now(timezone.utc) + timedelta(seconds=ttl_s)).isoformat()
+    shown = {k: [str(x) for x in (card or {}).get(k) or []] for k in ("details", "warnings")}
+    shown = {k: v for k, v in shown.items() if v}
     ChatMessageRepository(ctx.db).create_message(
         session_id=ctx.session_id,
         message_type=PENDING_ACTION_MESSAGE_TYPE,
@@ -1490,6 +1755,7 @@ async def _propose_action(
             "expires_at": expires_at,
             "proposed_by": ctx.principal.user_id,
             "institute_id": ctx.principal.institute_id,
+            **shown,
         },
     )
     ctx.pending_action = {
@@ -1497,15 +1763,68 @@ async def _propose_action(
         "tool": tool,
         "summary": summary,
         "expires_at": expires_at,
+        **shown,
     }
     return json.dumps({
         "status": "awaiting_user_confirmation",
         "summary": summary,
+        **shown,
         "note": (
             "A confirmation card has been shown to the user. The change has NOT been made. "
             "Tell the user to press Confirm on the card (or Cancel). Do not claim it is done."
         ),
-    })
+    }, ensure_ascii=False)
+
+
+async def _mcp_two_step(
+    ctx: ToolContext,
+    tool: str,
+    perform_args: Dict[str, Any],
+    summary: str,
+    args: Dict[str, Any],
+    *,
+    state: Any = None,
+    preview: Optional[Dict[str, Any]] = None,
+    once_summary: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """
+    The MCP form of the confirmation card: the same validated change, run by the
+    same performer as the card's Confirm.
+
+    Without ``confirm_token``: a preview (nothing changes) plus a token over the
+    exact change (``perform_args``) — and, for edit tokens, the target's current
+    state. With it: the token is checked (edit) or spent (single use), and only
+    then does the performer run. The execute_tool gate has already been checked
+    on this call, so a group switched off since the preview is refused before here.
+    """
+    from . import crm_data as cd
+
+    kind = MCP_WRITE_CONFIRM.get(tool)
+    performer = WRITE_PERFORMERS.get(tool)
+    if kind is None or performer is None:
+        return {"error": "tool_not_available", "tool": tool,
+                "message": "This change cannot be confirmed over MCP. Make it in the admin portal."}
+
+    async def show() -> Dict[str, Any]:
+        out: Dict[str, Any] = {"tool": tool, "summary": summary, **(preview or {})}
+        if kind == "single_use":
+            out["_summary"] = once_summary or {}
+        return out
+
+    async def run(_spent: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        result = await performer(perform_args, ctx)
+        if result.get("ok"):
+            return {"applied": True, "tool": tool, "summary": summary, "result": str(result.get("detail") or "done")}
+        detail = result.get("detail") if isinstance(result.get("detail"), dict) else {}
+        failed: Dict[str, Any] = {"error": "write_failed", "applied": False, "tool": tool,
+                                  "message": "The change was refused, so nothing was changed. Tell the user; "
+                                             "do not retry with the same token."}
+        if detail.get("status"):
+            failed["status"] = detail["status"]
+        return failed
+
+    return await cd.preview_or_apply(ctx, args, purpose=mcp_write_purpose(tool), confirm=kind,
+                                     request=perform_args, state=state, preview=show, apply=run)
 
 
 # Editable profile fields (schema-level whitelist). Deliberately EXCLUDES
@@ -1529,7 +1848,7 @@ _UPDATE_LEARNER_PROFILE_SCHEMA: Dict[str, Any] = {
         "parameters": {
             "type": "object",
             "properties": {
-                "target_user_id": {"type": "string", "description": "The learner's user_id."},
+                "target_user_id": {"type": "string", "description": _LEARNER_TARGET},
                 **{f: {"type": "string"} for f in _PROFILE_EDITABLE_FIELDS},
             },
             "required": ["target_user_id"],
@@ -1555,7 +1874,7 @@ async def _execute_update_learner_profile(args: Dict[str, Any], ctx: ToolContext
     pretty = ", ".join(f"{k.replace('_', ' ')} → “{v}”" for k, v in changes.items())
     summary = f"Update learner profile ({len(changes)} field{'s' if len(changes) > 1 else ''}): {pretty}"
     return await _propose_action(
-        ctx, "update_learner_profile", {"target_user_id": target, "changes": changes}, summary
+        ctx, "update_learner_profile", {"target_user_id": target, "changes": changes}, summary, args=args,
     )
 
 
@@ -1576,8 +1895,10 @@ _ENROLLMENT_OPERATIONS = {
     "UPDATE_BATCH": "move to another batch (new_state = target package_session_id)",
     "MAKE_INACTIVE": "deactivate the learner in the batch",
     "MAKE_ACTIVE": "re-activate the learner in the batch",
-    "UPDATE_STATUS": "set enrollment status (new_state = status value)",
+    "UPDATE_STATUS": "set enrollment status (new_state = ACTIVE or INACTIVE)",
 }
+#: The statuses UPDATE_STATUS may set; MAKE_INACTIVE / MAKE_ACTIVE always send their own.
+_ENROLLMENT_STATUSES = ("ACTIVE", "INACTIVE")
 
 _MANAGE_ENROLLMENT_SCHEMA: Dict[str, Any] = {
     "type": "function",
@@ -1593,7 +1914,7 @@ _MANAGE_ENROLLMENT_SCHEMA: Dict[str, Any] = {
         "parameters": {
             "type": "object",
             "properties": {
-                "target_user_id": {"type": "string", "description": "The learner's user_id."},
+                "target_user_id": {"type": "string", "description": _LEARNER_TARGET},
                 "operation": {"type": "string", "enum": sorted(_ENROLLMENT_OPERATIONS.keys())},
                 "new_state": {
                     "type": "string",
@@ -1601,13 +1922,21 @@ _MANAGE_ENROLLMENT_SCHEMA: Dict[str, Any] = {
                 },
                 "current_package_session_id": {
                     "type": "string",
-                    "description": "The learner's current batch id (from context or find_learner).",
+                    "description": ("The learner's current batch id: a batch_id from learners(action='find'), or the "
+                                    "selected student's package_session_id from the page context."),
                 },
             },
             "required": ["target_user_id", "operation", "current_package_session_id"],
         },
     },
 }
+
+
+def _masked_reference(value: Any) -> Optional[str]:
+    """A payment reference with only its last 4 characters, as crm_collections shows it."""
+    from .assistant_tools_crm_money import _mask_ref
+
+    return _mask_ref(value)
 
 
 async def _execute_manage_enrollment(args: Dict[str, Any], ctx: ToolContext) -> str:
@@ -1626,6 +1955,15 @@ async def _execute_manage_enrollment(args: Dict[str, Any], ctx: ToolContext) -> 
                            "message": "ADD_EXPIRY needs new_state as dd-MM-yyyy (e.g. 31-08-2026)."})
     if operation in ("ADD_EXPIRY", "UPDATE_BATCH", "UPDATE_STATUS") and not new_state:
         return json.dumps({"error": "missing_new_state"})
+    if operation == "MAKE_INACTIVE":
+        new_state = "INACTIVE"
+    elif operation == "MAKE_ACTIVE":
+        new_state = "ACTIVE"
+    elif operation == "UPDATE_STATUS":
+        new_state = new_state.upper()
+        if new_state not in _ENROLLMENT_STATUSES:
+            return json.dumps({"error": "bad_status",
+                               "message": f"UPDATE_STATUS sets one of: {', '.join(_ENROLLMENT_STATUSES)}."})
     if not _target_in_institute(ctx, target):
         return json.dumps({"error": "not_found",
                            "message": "This learner has no enrollment in your institute."})
@@ -1649,12 +1987,33 @@ async def _execute_manage_enrollment(args: Dict[str, Any], ctx: ToolContext) -> 
         "UPDATE_STATUS": f"Set enrollment status to {new_state} (in {current_batch_name})",
     }[operation]
     summary = f"Enrollment change: {nice}"
-    return await _propose_action(
-        ctx, "manage_enrollment",
-        {"target_user_id": target, "operation": operation, "new_state": new_state,
-         "current_package_session_id": batch},
-        summary,
-    )
+    perform_args = {"target_user_id": target, "operation": operation, "new_state": new_state,
+                    "current_package_session_id": batch}
+    if not ctx.via_mcp:
+        return await _propose_action(ctx, "manage_enrollment", perform_args, summary)
+
+    # Over MCP the preview shows the enrolment as it is now, and the confirm token
+    # is bound to it: a change made in between (in the dashboard or by another
+    # call) needs a fresh preview.
+    from . import learner_data as ld
+    current = next((e for e in ld.enrolments(ctx, [target]).get(target, []) if e.get("batch_id") == batch), None)
+    if current is None:
+        return json.dumps({"error": "not_enrolled_in_batch",
+                           "message": "This learner has no enrolment in that batch. Use learners(action='get') for "
+                                      "their batch_id values."})
+    if ld.org_associated_batches(ctx, [batch] + ([new_state] if operation == "UPDATE_BATCH" else [])):
+        return json.dumps({"error": "organisation_batch",
+                           "message": "Batches sold to organisations are managed from the admin portal."})
+    state = {"status": current.get("status"), "expires_on": current.get("expires_on")}
+    learner = ld.learner_profile(ctx, target) or {}
+    preview = {
+        "learner": {"learner_id": target, "full_name": learner.get("full_name")},
+        "enrolment_now": {"course": current.get("course"), "batch": current.get("batch"), **state},
+        "change": {"operation": operation, "new_state": new_state or None,
+                   **({"to_batch": target_batch_name} if target_batch_name else {})},
+    }
+    return await _propose_action(ctx, "manage_enrollment", perform_args, summary, args=args, state=state,
+                                 preview=preview)
 
 
 async def _perform_manage_enrollment(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
@@ -1705,7 +2064,7 @@ _SEND_ANNOUNCEMENT_SCHEMA: Dict[str, Any] = {
                 },
                 "target_user_ids": {
                     "type": "array", "items": {"type": "string"},
-                    "description": "Specific user_ids (from find_learner).",
+                    "description": "Specific learners: learner_id values from learners(action='find').",
                 },
                 "push": {"type": "boolean",
                          "description": "Also send a push notification. Default false."},
@@ -1753,8 +2112,14 @@ async def _execute_send_announcement(args: Dict[str, Any], ctx: ToolContext) -> 
         if not _target_in_institute(ctx, uid):
             return json.dumps({"error": "unknown_user",
                                "message": "A target user has no enrollment in your institute."})
+    named: List[Dict[str, Any]] = []
     if user_ids:
-        target_desc.append(f"{len(user_ids)} specific learner{'s' if len(user_ids) > 1 else ''}")
+        from . import learner_data as ld
+
+        found = ld.learners_by_ids(ctx, user_ids)
+        named = [{"learner_id": u, "full_name": (found.get(u) or {}).get("full_name")} for u in user_ids]
+        shown = ", ".join(n["full_name"] or n["learner_id"] for n in named)
+        target_desc.append(f"{len(user_ids)} specific learner{'s' if len(user_ids) > 1 else ''} ({shown})")
     target_desc.extend(f"all {r.lower()}s" for r in roles)
 
     channels = "in-app alert + push notification" if args.get("push") else "in-app alert"
@@ -1763,13 +2128,16 @@ async def _execute_send_announcement(args: Dict[str, Any], ctx: ToolContext) -> 
         f"Send announcement “{title}” to {', '.join(target_desc)} ({channels}). "
         f"Message: “{message[:180]}{'…' if len(message) > 180 else ''}”"
     )
-    return await _propose_action(
-        ctx, "send_announcement",
-        {"title": title, "message": message, "body_html": body_html,
-         "batch_ids": batch_ids, "roles": roles, "user_ids": user_ids,
-         "push": bool(args.get("push"))},
-        summary,
-    )
+    perform_args = {"title": title, "message": message, "body_html": body_html,
+                    "batch_ids": batch_ids, "roles": roles, "user_ids": user_ids,
+                    "push": bool(args.get("push"))}
+    if not ctx.via_mcp:
+        return await _propose_action(ctx, "send_announcement", perform_args, summary)
+    preview = {"title": title, "message": message, "recipients": target_desc, "channels": channels,
+               **({"learners": named} if named else {})}
+    once = {"batch_ids": batch_ids, "roles": roles, "learners": len(user_ids), "push": bool(args.get("push"))}
+    return await _propose_action(ctx, "send_announcement", perform_args, summary, args=args, preview=preview,
+                                 once_summary=once)
 
 
 async def _perform_send_announcement(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
@@ -1807,7 +2175,8 @@ async def _perform_send_announcement(args: Dict[str, Any], ctx: ToolContext) -> 
     return {"ok": True, "detail": "announcement created and delivery started"}
 
 
-#: perform-side dispatch used by the confirm endpoint (NOT reachable by the LLM).
+#: perform-side dispatch, run only by the card's confirm endpoint or, over MCP,
+#: after a matching confirm_token (``_mcp_two_step``) — never by a tool call alone.
 WRITE_PERFORMERS: Dict[str, Callable[[Dict[str, Any], ToolContext], Awaitable[Dict[str, Any]]]] = {
     "update_learner_profile": _perform_update_learner_profile,
     "manage_enrollment": _perform_manage_enrollment,
@@ -1815,11 +2184,191 @@ WRITE_PERFORMERS: Dict[str, Callable[[Dict[str, Any], ToolContext], Awaitable[Di
 }
 
 
+def performer_for(tool: str) -> Optional[Callable[[Dict[str, Any], ToolContext], Awaitable[Dict[str, Any]]]]:
+    """
+    What the card's Confirm runs for ``tool``: its WRITE_PERFORMERS entry, or —
+    for a ``card_bridge`` write — the tool's own executor again with the
+    preview's confirm token (crm_cards.perform). None = not confirmable.
+    """
+    spec = ASSISTANT_TOOLS.get(tool)
+    if spec is not None and spec.card_bridge:
+        from . import crm_cards
+
+        async def perform(perform_args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
+            return await crm_cards.perform(spec, perform_args, ctx)
+        return perform
+    return WRITE_PERFORMERS.get(tool)
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# The MCP wording of the tools above that both doors serve. Same executors;
+# only what an AI app outside the dashboard is told differs: it has no page
+# context and no confirmation card, and finds learners with the `learners` tool
+# (whose learner_id is the user_id these tools take).
+# ──────────────────────────────────────────────────────────────────────────
+
+_MCP_LEARNER_ID = "The learner's learner_id (from learners(action='find'))."
+_MCP_CONFIRM_TOKEN_PROP: Dict[str, Any] = {
+    "confirm_token": {
+        "type": "string",
+        "description": "The confirm_token from this tool's preview. Pass it only after the user clearly said yes.",
+    },
+}
+
+
+def _mcp_variant(
+    schema: Dict[str, Any],
+    *,
+    description: Optional[str] = None,
+    params: Optional[Dict[str, str]] = None,
+    extra_props: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """A copy of ``schema`` with the MCP description and parameter wording."""
+    import copy
+
+    out = copy.deepcopy(schema)
+    fn = out["function"]
+    if description:
+        fn["description"] = description
+    props = fn.setdefault("parameters", {"type": "object"}).setdefault("properties", {})
+    for name, text_ in (params or {}).items():
+        props[name]["description"] = text_
+    props.update(copy.deepcopy(extra_props or {}))
+    return out
+
+
+_MCP_ROWS_ARE_LEARNERS = " user_id in each row is the learner_id the learners tools take."
+
+_MCP_LIST_BATCH_LEARNERS_SCHEMA = _mcp_variant(
+    _LIST_BATCH_LEARNERS_SCHEMA,
+    description=(
+        "The learners enrolled in one batch (roster + total count, 20 per page). Use for 'who is in batch X / "
+        "how many active learners'. Needs the batch's package_session_id: from find_batch, or a batch_id from "
+        "learners(action='get')." + _MCP_ROWS_ARE_LEARNERS
+    ),
+    params={"package_session_id": "The batch id (package_session_id from find_batch)."},
+)
+_MCP_LIST_RECENT_ENROLLMENTS_SCHEMA = _mcp_variant(
+    _LIST_RECENT_ENROLLMENTS_SCHEMA,
+    description=_LIST_RECENT_ENROLLMENTS_SCHEMA["function"]["description"] + _MCP_ROWS_ARE_LEARNERS,
+)
+_MCP_SEARCH_FEE_RECORDS_SCHEMA = _mcp_variant(
+    _SEARCH_FEE_RECORDS_SCHEMA,
+    description=_SEARCH_FEE_RECORDS_SCHEMA["function"]["description"] + _MCP_ROWS_ARE_LEARNERS,
+)
+_MCP_GET_PAYMENT_HISTORY_SCHEMA = _mcp_variant(_GET_PAYMENT_HISTORY_SCHEMA,
+                                               params={"target_user_id": _MCP_LEARNER_ID})
+_MCP_GET_FEE_DUES_SCHEMA = _mcp_variant(_GET_FEE_DUES_SCHEMA, params={"target_user_id": _MCP_LEARNER_ID})
+_MCP_GET_SUBSCRIPTION_PLANS_SCHEMA = _mcp_variant(_GET_SUBSCRIPTION_PLANS_SCHEMA,
+                                                  params={"target_user_id": _MCP_LEARNER_ID})
+
+_MCP_MANAGE_ENROLLMENT_SCHEMA = _mcp_variant(
+    _MANAGE_ENROLLMENT_SCHEMA,
+    description=(
+        "Change one learner's enrolment in one batch: extend or set access expiry, move to another batch, mark "
+        "inactive or active, or set the enrolment status. Two steps: call WITHOUT confirm_token to get a preview "
+        "(nothing changes) showing the learner, the enrolment as it is now and the change; show it to the user, "
+        "and only after a clear yes call again with the SAME arguments plus the confirm_token (valid 15 minutes; "
+        "refused when the enrolment changed in between — preview again). Find the learner with "
+        "learners(action='find') — when several match, ask which one; never guess. current_package_session_id is "
+        "one of the learner's batch_id values from learners(action='get'); for UPDATE_BATCH resolve the new batch "
+        "with find_batch — never guess ids. Batches sold to organisations are managed in the admin portal. "
+        "Operations: " + "; ".join(f"{k} = {v}" for k, v in _ENROLLMENT_OPERATIONS.items())
+        + ". ADD_EXPIRY dates must be dd-MM-yyyy (e.g. 31-08-2026)."
+    ),
+    params={"target_user_id": _MCP_LEARNER_ID,
+            "current_package_session_id": "The learner's current batch_id (from learners(action='get'))."},
+    extra_props=_MCP_CONFIRM_TOKEN_PROP,
+)
+_MCP_SEND_ANNOUNCEMENT_SCHEMA = _mcp_variant(
+    _SEND_ANNOUNCEMENT_SCHEMA,
+    description=(
+        "Send an announcement to this institute's learners or staff: an in-app alert, optionally also a push "
+        "notification. Two steps: call WITHOUT confirm_token to get a preview (nothing is sent) showing exactly who "
+        "receives it and the text; show it to the user, and only after a clear yes call again with the SAME "
+        "arguments plus the confirm_token. A token works once and expires in 10 minutes; sends per hour are "
+        "capped. Target batches by package_session_id (resolve names with find_batch — never guess ids), whole "
+        "roles, or specific learners. Write the title and message with the user; never send text they have not "
+        "seen."
+    ),
+    params={"target_user_ids": "Specific learners: learner_id values from learners(action='find')."},
+    extra_props=_MCP_CONFIRM_TOKEN_PROP,
+)
+
+#: Plan features (module entitlements) the money reads need: the same as crm_collections.
+_FINANCE_FEATURES = ("finance.fees", "finance.memberships")
+
+
 # ──────────────────────────────────────────────────────────────────────────
 # The registry.
 # ──────────────────────────────────────────────────────────────────────────
 
+# ──────────────────────────────────────────────────────────────────────────
+# whoami — the caller's own identity and institute. Always allowed: it reveals
+# nothing the caller does not already know about themselves, and an assistant
+# that cannot say who it is talking to (name, institute, role) cannot address
+# them properly. Not a settings toggle.
+# ──────────────────────────────────────────────────────────────────────────
+_WHOAMI_SCHEMA: Dict[str, Any] = {
+    "type": "function",
+    "function": {
+        "name": "whoami",
+        "description": (
+            "Who is connected: the current user's name, username, email, mobile, roles, and the "
+            "institute this connection belongs to (name, logo, theme, portal URLs, terminology). "
+            "Call once at the start of a conversation to address the user and institute by name "
+            "and to use the institute's own vocabulary. Identity comes from the authorization, "
+            "never from arguments."
+        ),
+        "parameters": {"type": "object", "properties": {}},
+    },
+}
+
+
+async def _execute_whoami(args: Dict[str, Any], ctx: ToolContext) -> str:
+    p = ctx.principal
+    user: Dict[str, Any] = {
+        "user_id": p.user_id,
+        "username": p.username,
+        "full_name": p.full_name,
+        "roles": list(p.roles or []),
+        "is_root_user": bool(p.is_root_user),
+    }
+    details = await _auth_json(
+        ctx, "GET", "/auth-service/v1/user-details/get",
+        params={"userId": p.user_id, "instituteId": p.institute_id}, timeout=15.0,
+    )
+    if isinstance(details, dict) and not details.get("error"):
+        user.update({k: v for k, v in {
+            "full_name": details.get("full_name") or p.full_name,
+            "email": details.get("email"),
+            "mobile": details.get("mobile_number"),
+            "preferred_locale": details.get("preferred_locale"),
+            "profile_photo_url": await _media_public_url(ctx, details.get("profile_pic_file_id")),
+        }.items() if v})
+    institute = await load_institute_profile(ctx)
+    return json.dumps({
+        "user": {k: v for k, v in user.items() if v not in (None, "", [], False)},
+        "institute": institute,
+        "note": (
+            f"Address the user as {user.get('full_name') or p.username or 'the admin'} and the "
+            f"institute as {institute.get('name') or 'the institute'}; use its terminology where given."
+        ),
+    }, ensure_ascii=False, default=str)
+
+
 ASSISTANT_TOOLS: Dict[str, ToolSpec] = {
+    "whoami": ToolSpec(
+        name="whoami",
+        schema=_WHOAMI_SCHEMA,
+        executor=_execute_whoami,
+        required_permission=None,
+        setting_key="identity",
+        default_enabled=True,
+        always_allowed=True,
+        phase=1,
+        mode="READ",
+    ),
     "search_help_knowledge": ToolSpec(
         name="search_help_knowledge",
         schema=_SEARCH_HELP_KNOWLEDGE_SCHEMA,
@@ -1827,33 +2376,6 @@ ASSISTANT_TOOLS: Dict[str, ToolSpec] = {
         required_permission=None,   # Phase-1 help is available to all non-learner roles
         default_enabled=True,       # on out-of-the-box until an institute configures the setting
         phase=1,
-        mode="READ",
-    ),
-    # Phase 2a learner-data tools. One settings key ("learner_data") controls both —
-    # the resolver is useless without the data tool and vice versa. RBAC leg is None
-    # for now: the ASSISTANT_* permission catalog isn't seeded/grantable in the roles
-    # UI yet, so the per-role Settings leg (deny-by-default, ADMIN-only default) is
-    # the founder's grant mechanism; the permission backstop lands with the catalog.
-    "find_learner": ToolSpec(
-        name="find_learner",
-        schema=_FIND_LEARNER_SCHEMA,
-        executor=_execute_find_learner,
-        required_permission=None,
-        setting_key="learner_data",
-        default_enabled=False,
-        default_roles=["ADMIN"],    # founder decision 2026-07-02: reads on for ADMIN only
-        phase=2,
-        mode="READ",
-    ),
-    "get_student_360": ToolSpec(
-        name="get_student_360",
-        schema=_GET_STUDENT_360_SCHEMA,
-        executor=_execute_get_student_360,
-        required_permission=None,
-        setting_key="learner_data",
-        default_enabled=False,
-        default_roles=["ADMIN"],
-        phase=2,
         mode="READ",
     ),
     # Name→id resolver shared by several groups: available when ANY of them is on.
@@ -1869,6 +2391,10 @@ ASSISTANT_TOOLS: Dict[str, ToolSpec] = {
         default_roles=["ADMIN"],
         phase=2,
         mode="READ",
+        # Over MCP: the "Batches: view" group, and on with any MCP group whose tools take batch ids.
+        mcp_setting_key="batch_data",
+        mcp_setting_keys_any=["batch_data", "payments", "assessments", "announcements", "announcement_sends",
+                              "learner_enrolment_changes"],
     ),
     "trigger_full_report": ToolSpec(
         name="trigger_full_report",
@@ -1892,6 +2418,8 @@ ASSISTANT_TOOLS: Dict[str, ToolSpec] = {
         default_roles=["ADMIN"],
         phase=2,
         mode="READ",
+        module_features_any=_FINANCE_FEATURES,
+        mcp_schema=_MCP_GET_PAYMENT_HISTORY_SCHEMA,
     ),
     "get_fee_dues": ToolSpec(
         name="get_fee_dues",
@@ -1903,6 +2431,8 @@ ASSISTANT_TOOLS: Dict[str, ToolSpec] = {
         default_roles=["ADMIN"],
         phase=2,
         mode="READ",
+        module_features_any=_FINANCE_FEATURES,
+        mcp_schema=_MCP_GET_FEE_DUES_SCHEMA,
     ),
     "get_subscription_plans": ToolSpec(
         name="get_subscription_plans",
@@ -1914,6 +2444,8 @@ ASSISTANT_TOOLS: Dict[str, ToolSpec] = {
         default_roles=["ADMIN"],
         phase=2,
         mode="READ",
+        module_features_any=_FINANCE_FEATURES,
+        mcp_schema=_MCP_GET_SUBSCRIPTION_PLANS_SCHEMA,
     ),
     "list_batch_learners": ToolSpec(
         name="list_batch_learners",
@@ -1925,6 +2457,7 @@ ASSISTANT_TOOLS: Dict[str, ToolSpec] = {
         default_roles=["ADMIN"],
         phase=2,
         mode="READ",
+        mcp_schema=_MCP_LIST_BATCH_LEARNERS_SCHEMA,
     ),
     "get_class_schedule": ToolSpec(
         name="get_class_schedule",
@@ -1936,6 +2469,7 @@ ASSISTANT_TOOLS: Dict[str, ToolSpec] = {
         default_roles=["ADMIN"],
         phase=2,
         mode="READ",
+        module_feature="live_classes.sessions",
     ),
     "get_institute_overview": ToolSpec(
         name="get_institute_overview",
@@ -1976,6 +2510,11 @@ ASSISTANT_TOOLS: Dict[str, ToolSpec] = {
         default_roles=["ADMIN"],
         phase=3,
         mode="WRITE",
+        # Over MCP: an opt-in group of its own; learner_edit is the MCP tool for profile edits.
+        mcp_setting_key="learner_enrolment_changes",
+        # Turned on one by one in Settings → AI access (still on for admins by default here).
+        opt_in=True,
+        mcp_schema=_MCP_MANAGE_ENROLLMENT_SCHEMA,
     ),
     # Audit roadmap 4–6 (2026-07-16): institute-wide lists, assessments,
     # announcements. Reads default-ON for ADMIN like the rest of Phase 2; the
@@ -1990,6 +2529,8 @@ ASSISTANT_TOOLS: Dict[str, ToolSpec] = {
         default_roles=["ADMIN"],
         phase=2,
         mode="READ",
+        module_features_any=_FINANCE_FEATURES,
+        mcp_schema=_MCP_SEARCH_FEE_RECORDS_SCHEMA,
     ),
     "get_collections_summary": ToolSpec(
         name="get_collections_summary",
@@ -2001,6 +2542,7 @@ ASSISTANT_TOOLS: Dict[str, ToolSpec] = {
         default_roles=["ADMIN"],
         phase=2,
         mode="READ",
+        module_features_any=_FINANCE_FEATURES,
     ),
     "list_recent_enrollments": ToolSpec(
         name="list_recent_enrollments",
@@ -2012,6 +2554,8 @@ ASSISTANT_TOOLS: Dict[str, ToolSpec] = {
         default_roles=["ADMIN"],
         phase=2,
         mode="READ",
+        mcp_setting_key="batch_data",   # over MCP: with the batch rosters, not a group of its own
+        mcp_schema=_MCP_LIST_RECENT_ENROLLMENTS_SCHEMA,
     ),
     "find_assessment": ToolSpec(
         name="find_assessment",
@@ -2023,6 +2567,7 @@ ASSISTANT_TOOLS: Dict[str, ToolSpec] = {
         default_roles=["ADMIN"],
         phase=2,
         mode="READ",
+        module_feature="assessments.tests",
     ),
     "get_assessment_results": ToolSpec(
         name="get_assessment_results",
@@ -2034,6 +2579,7 @@ ASSISTANT_TOOLS: Dict[str, ToolSpec] = {
         default_roles=["ADMIN"],
         phase=2,
         mode="READ",
+        module_feature="assessments.tests",
     ),
     "get_assessment_leaderboard": ToolSpec(
         name="get_assessment_leaderboard",
@@ -2045,6 +2591,7 @@ ASSISTANT_TOOLS: Dict[str, ToolSpec] = {
         default_roles=["ADMIN"],
         phase=2,
         mode="READ",
+        module_feature="assessments.tests",
     ),
     "list_announcements": ToolSpec(
         name="list_announcements",
@@ -2056,6 +2603,7 @@ ASSISTANT_TOOLS: Dict[str, ToolSpec] = {
         default_roles=["ADMIN"],
         phase=2,
         mode="READ",
+        module_feature="communications.announcements",
     ),
     "send_announcement": ToolSpec(
         name="send_announcement",
@@ -2067,6 +2615,12 @@ ASSISTANT_TOOLS: Dict[str, ToolSpec] = {
         default_roles=["ADMIN"],
         phase=3,
         mode="WRITE",
+        module_feature="communications.announcements",
+        # Over MCP: an opt-in group of its own (it contacts people), never on with the view.
+        mcp_setting_key="announcement_sends",
+        # Turned on one by one in Settings → AI access (still on for admins by default here).
+        opt_in=True,
+        mcp_schema=_MCP_SEND_ANNOUNCEMENT_SCHEMA,
     ),
 }
 
@@ -2093,45 +2647,29 @@ def load_assistant_tools_setting(db: Session, institute_id: str) -> Optional[Dic
     """
     Read the institute's ASSISTANT_TOOLS_SETTING from the shared admin_core DB.
 
-    Institute settings are stored as a single JSON STRING in
-    ``institutes.setting_json`` (common_service Institute.java -> @Column
-    name="setting_json", a String). Keys map to per-feature blobs via the
-    generic settings strategy. Returns the parsed setting blob or None when the
-    institute has not configured it — in which case the Settings leg falls back
-    to ``default_enabled`` tools.
+    Delegates to the shared reader, which knows the envelope admin_core_service
+    actually writes (``setting_json["setting"][KEY]["data"]``) and keeps the
+    legacy top-level lookup as a fallback. Returns the parsed setting blob or
+    None when the institute has not configured it — in which case the Settings
+    leg falls back to ``default_enabled`` tools.
 
     Fails closed-to-default (returns None, never raises) so a settings read
     problem can never silently grant a tool.
     """
-    try:
-        row = db.execute(
-            text("SELECT setting_json FROM institutes WHERE id = :id"),
-            {"id": institute_id},
-        ).first()
-    except Exception as e:
-        logger.warning("Could not read institutes.setting_json for %s: %s", institute_id, e)
-        return None
+    from .institute_setting_reader import load_institute_setting_data
 
-    if not row or not row[0]:
-        return None
+    return load_institute_setting_data(db, institute_id, ASSISTANT_TOOLS_SETTING_KEY)
 
-    raw = row[0]
-    try:
-        settings_obj = json.loads(raw) if isinstance(raw, str) else raw
-    except (ValueError, TypeError) as e:
-        logger.warning("institutes.setting_json for %s is not valid JSON: %s", institute_id, e)
-        return None
 
-    if not isinstance(settings_obj, dict):
-        return None
-
-    node = settings_obj.get(ASSISTANT_TOOLS_SETTING_KEY)
-    if node is None:
-        return None
-    # The generic settings strategy may wrap the payload as {key, name, data:{...}}.
-    if isinstance(node, dict) and isinstance(node.get("data"), dict):
-        return node["data"]
-    return node if isinstance(node, dict) else None
+def role_match_key(role: Any) -> str:
+    """
+    How saved role names are matched to a person's roles: ignoring case, spaces,
+    underscores and hyphens, so "Counsellor", "COUNSELLOR" and "Content_Creator"
+    match "COUNSELLOR" and "CONTENT CREATOR". Not a string = matches nothing.
+    """
+    if not isinstance(role, str):
+        return ""
+    return re.sub(r"[\s_\-]+", "", role).upper()
 
 
 def _effective_enabled_tools(setting: Optional[Dict[str, Any]], roles: Optional[List[str]]) -> set:
@@ -2145,23 +2683,31 @@ def _effective_enabled_tools(setting: Optional[Dict[str, Any]], roles: Optional[
     - Setting configured     -> the institute-level ``enabled_tools`` UNION the
       ``enabled_tools`` of each of the caller's roles in ``role_overrides``
       (union across multiple roles — the broadest of the caller's roles wins).
+      A saved setting is the complete list: a group added to the registry later
+      stays off there until an admin switches it on.
+
+    ``default_roles`` and the roles named in ``role_overrides`` match the
+    caller's roles the same way (``role_match_key``: ignoring case, spaces and
+    underscores), as institutes save "COUNSELLOR" and "Counsellor" alike.
     """
+    caller_roles = {k for k in (role_match_key(r) for r in roles or []) if k}
     if not setting:
-        caller_roles = set(roles or [])
         return {
             spec.key()
             for spec in ASSISTANT_TOOLS.values()
             if spec.default_enabled
-            or (spec.default_roles and caller_roles.intersection(spec.default_roles))
+            or (spec.default_roles and caller_roles.intersection(role_match_key(r) for r in spec.default_roles))
         }
 
     enabled = set(setting.get("enabled_tools") or [])
     overrides = setting.get("role_overrides") or {}
     if isinstance(overrides, dict):
-        for role in roles or []:
-            ro = overrides.get(role)
-            if isinstance(ro, dict) and ro.get("enabled_tools") is not None:
-                enabled |= set(ro.get("enabled_tools") or [])
+        for role, ro in overrides.items():
+            if role_match_key(role) not in caller_roles or not isinstance(ro, dict):
+                continue
+            tools = ro.get("enabled_tools")
+            if isinstance(tools, list):
+                enabled |= {t for t in tools if isinstance(t, str)}
     return enabled
 
 
@@ -2173,8 +2719,15 @@ def is_tool_allowed(
     tool_name: str,
     principal: PinnedPrincipal,
     setting: Optional[Dict[str, Any]],
+    *,
+    via_mcp: bool = False,
 ) -> bool:
-    """True iff BOTH the RBAC leg and the Settings leg allow this tool. Deny-by-default."""
+    """
+    True iff BOTH the RBAC leg and the Settings leg allow this tool. Deny-by-default.
+
+    ``via_mcp`` reads the MCP door's settings groups (``ToolSpec.mcp_setting_key``)
+    in ``setting``, which is then the MCP setting.
+    """
     spec = ASSISTANT_TOOLS.get(tool_name)
     if spec is None:
         return False  # unknown tool -> never allowed
@@ -2184,21 +2737,121 @@ def is_tool_allowed(
         if not (principal.is_root_user or spec.required_permission in (principal.permissions or [])):
             return False
 
+    if spec.always_allowed:
+        return True
+
     # Settings leg — a multi-group resolver passes if ANY of its groups is enabled.
     enabled = _effective_enabled_tools(setting, principal.roles)
-    return any(k in enabled for k in spec.keys_any())
+    return any(k in enabled for k in spec.keys_any(via_mcp=via_mcp))
+
+
+def only_through_other_groups(ctx: ToolContext, tool_name: str) -> bool:
+    """
+    True when the in-product assistant offers ``tool_name`` to this caller only
+    through one of its other groups (``setting_keys_any``), not through its own
+    group: e.g. ``learners`` reached with "learner_data" alone. Such a tool then
+    does no more than that group allows (see the tool). Never on MCP, whose
+    groups are the tool's own, and only for a call execute_tool has gated.
+    """
+    spec = ASSISTANT_TOOLS.get(tool_name)
+    if spec is None or ctx.via_mcp or not ctx.gate_checked or spec.always_allowed:
+        return False
+    return spec.key() not in _effective_enabled_tools(ctx.gate_setting, ctx.principal.roles)
+
+
+def capability_groups(
+    principal: PinnedPrincipal,
+    setting: Optional[Dict[str, Any]],
+    usable_specs: List[ToolSpec],
+) -> Dict[str, List[str]]:
+    """
+    The caller's in-product groups, each with the tools it gives them (for the
+    panel's capabilities and the prompt's capability list). A group is listed
+    when one of its own tools is usable; a tool offered through several groups
+    (``setting_keys_any``) is also listed under each of those the caller has
+    listed, so e.g. ``learners`` shows under "learner_data".
+    """
+    enabled = _effective_enabled_tools(setting, principal.roles)
+    groups: Dict[str, List[str]] = {}
+    for spec in usable_specs:
+        if spec.always_allowed or spec.key() in enabled:
+            groups.setdefault(spec.key(), []).append(spec.name)
+    for spec in usable_specs:
+        for key in spec.keys_any():
+            if key in groups and spec.name not in groups[key]:
+                groups[key].append(spec.name)
+    return groups
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# The module leg: features the institute's plan includes (V567 entitlements).
+# Checked after the AND-gate, only for tools tied to a module, and only when a
+# DB session is at hand (unit tests and DB-less callers skip it).
+# ──────────────────────────────────────────────────────────────────────────
+
+def load_entitlements(db: Session, institute_id: str) -> Any:
+    """The institute's entitlements (``.on(key) -> bool``); never raises (LEGACY on a read error)."""
+    from .entitlements import entitlements
+
+    return entitlements(db, institute_id)
+
+
+def context_entitlements(ctx: ToolContext) -> Any:
+    """Entitlements for this call's institute, loaded once per ToolContext."""
+    if ctx.entitlements is None:
+        ctx.entitlements = load_entitlements(ctx.db, ctx.principal.institute_id)
+    return ctx.entitlements
+
+
+def missing_module_feature(spec: ToolSpec, ent: Any) -> Optional[str]:
+    """The feature key that keeps ``spec`` off for these entitlements, or None when it is on."""
+    if spec.module_feature and not ent.on(spec.module_feature):
+        return spec.module_feature
+    if spec.module_features_any and not any(ent.on(f) for f in spec.module_features_any):
+        return spec.module_features_any[0]
+    return None
+
+
+def in_product_specs(
+    principal: PinnedPrincipal,
+    setting: Optional[Dict[str, Any]],
+    entitlements: Optional[Any] = None,
+) -> List[ToolSpec]:
+    """
+    The tools this caller may use in the in-product assistant, on any page: not
+    ``mcp_only``, allowed by the AND-gate and, when ``entitlements`` is given,
+    included in the institute's plan. Without entitlements the module leg is
+    left to ``execute_tool`` (tests and DB-less callers).
+    """
+    specs = [
+        spec for spec in ASSISTANT_TOOLS.values()
+        if not spec.mcp_only and is_tool_allowed(spec.name, principal, setting)
+    ]
+    if entitlements is not None:
+        specs = [s for s in specs if missing_module_feature(s, entitlements) is None]
+    return specs
 
 
 def build_offered_tools(
     principal: PinnedPrincipal,
     setting: Optional[Dict[str, Any]],
+    *,
+    topics: Optional[Any] = None,
+    entitlements: Optional[Any] = None,
 ) -> List[Dict[str, Any]]:
-    """The LLM-facing function schemas for exactly the tools this caller may use."""
-    return [
-        spec.schema
-        for spec in ASSISTANT_TOOLS.values()
-        if is_tool_allowed(spec.name, principal, setting)
-    ]
+    """
+    The LLM-facing function schemas for the tools this caller may use, given the
+    conversation's active ``topics``: a tool with a topic is left out until its
+    topic is active, and ``load_tools`` is added while a topic the caller may
+    use is not (see ASSISTANT_TOPICS).
+    """
+    active = set(topics or ())
+    usable = in_product_specs(principal, setting, entitlements)
+    offered = [s.schema for s in usable if s.topic is None or s.topic in active]
+    loadable = sorted({s.topic for s in usable if s.topic and s.topic not in active and s.topic in ASSISTANT_TOPICS})
+    if loadable:
+        offered.append(load_tools_schema(loadable))
+    return offered
 
 
 async def execute_tool(
@@ -2206,33 +2859,86 @@ async def execute_tool(
     args: Optional[Dict[str, Any]],
     ctx: ToolContext,
     setting: Optional[Dict[str, Any]],
+    *,
+    in_product: bool = False,
 ) -> str:
     """
     Dispatch a tool call after re-checking the AND-gate and forcing identity.
+
+    ``mcp_only`` tools run only for MCP callers (``ctx.via_mcp``); ``in_product``
+    (the dashboard assistant) refuses them as well, whatever the context says.
 
     Returns a string tool-result in ALL cases (including denial/errors) — the
     agent loop feeds tool output back to the LLM as a string, so raising here
     would bypass the graceful contract.
     """
-    if not is_tool_allowed(tool_name, ctx.principal, setting):
+    spec_any = ASSISTANT_TOOLS.get(tool_name)
+    if spec_any is not None and spec_any.mcp_only and (in_product or not ctx.via_mcp):
+        # Never offered outside MCP; refuse a model that names it anyway (e.g. a
+        # settings row that enables the group for the in-product assistant).
+        # Checked before the settings leg so the answer never suggests enabling it.
+        logger.warning("Assistant refused MCP-only tool '%s' outside MCP for user=%s institute=%s",
+                       tool_name, ctx.principal.user_id, ctx.principal.institute_id)
+        return json.dumps({
+            "error": "tool_not_available",
+            "tool": tool_name,
+            "message": (
+                "This tool is only available to AI apps connected over the MCP server, not in this assistant. "
+                "Do not retry. Tell the user to make this change on the matching dashboard page."
+            ),
+        })
+    via_mcp = bool(ctx.via_mcp) and not in_product
+    if not is_tool_allowed(tool_name, ctx.principal, setting, via_mcp=via_mcp):
         logger.warning(
             "Assistant denied tool '%s' for user=%s institute=%s (roles=%s)",
             tool_name, ctx.principal.user_id, ctx.principal.institute_id, ctx.principal.roles,
         )
         spec_denied = ASSISTANT_TOOLS.get(tool_name)
-        group = GROUP_LABELS.get(spec_denied.key(), spec_denied.key()) if spec_denied else tool_name
+        if via_mcp:
+            from ..mcp.constants import AI_ACCESS_SETTINGS_NAME, MCP_SETTINGS_PATH, MCP_TOOL_GROUP_LABELS
+            key = spec_denied.key(via_mcp=True) if spec_denied else tool_name
+            group, where = MCP_TOOL_GROUP_LABELS.get(key, key), f"{AI_ACCESS_SETTINGS_NAME} ({MCP_SETTINGS_PATH})"
+        else:
+            group = GROUP_LABELS.get(spec_denied.key(), spec_denied.key()) if spec_denied else tool_name
+            where = "[AI access settings](/settings?selectedTab=aiAccess)"
         return json.dumps({
             "error": "tool_not_permitted",
             "tool": tool_name,
             "message": (
                 f"The '{group}' capability is not enabled for this user's role. Do not retry. "
-                "Tell the user an admin can enable it under "
-                "[Assistant settings](/settings?selectedTab=assistantTools)."
+                f"Tell the user an admin can enable it under {where}."
             ),
         })
 
     spec = ASSISTANT_TOOLS[tool_name]
+    if (spec.module_feature or spec.module_features_any) and ctx.db is not None:
+        try:
+            missing = missing_module_feature(spec, context_entitlements(ctx))
+        except Exception:  # noqa: BLE001 — a broken entitlement check never runs a gated tool
+            logger.exception("Assistant module check failed for tool '%s' (institute=%s)",
+                             tool_name, ctx.principal.institute_id)
+            missing = spec.module_feature or (spec.module_features_any or ("unknown",))[0]
+        if missing:
+            logger.info("Assistant refused tool '%s': module feature %s is off for institute=%s",
+                        tool_name, missing, ctx.principal.institute_id)
+            refusal: Dict[str, Any] = {
+                "error": "module_not_enabled",
+                "tool": tool_name,
+                "feature": missing,
+                "message": (
+                    f"This institute's plan does not include '{missing}', which this tool needs. Do not retry. "
+                    "Tell the user the feature has to be added to the institute's plan first."
+                ),
+            }
+            if spec.module_features_any:
+                refusal["features_any"] = list(spec.module_features_any)
+            return json.dumps(refusal)
+    ctx.gate_setting, ctx.gate_checked = setting, True
     safe_args: Dict[str, Any] = dict(args or {})
+    # What the model put in `user_id` survives only as data (e.g. a model with a stale tool schema
+    # naming a learner); it never becomes identity.
+    if (args or {}).get("user_id") not in (None, ""):
+        safe_args["requested_user_id"] = str(args["user_id"]).strip()
     # Identity is ALWAYS taken from the pinned principal, never from the model.
     safe_args["user_id"] = ctx.principal.user_id
     safe_args["institute_id"] = ctx.principal.institute_id
@@ -2240,7 +2946,12 @@ async def execute_tool(
     import time
     started = time.monotonic()
     try:
-        result = await spec.executor(safe_args, ctx)
+        if spec.card_bridge and not via_mcp:
+            # The in-product assistant: the preview becomes a confirmation card (crm_cards).
+            from . import crm_cards
+            result = await crm_cards.propose(spec, safe_args, ctx)
+        else:
+            result = await spec.executor(safe_args, ctx)
         logger.info(
             "assistant tool '%s' ok in %dms (institute=%s)",
             tool_name, int((time.monotonic() - started) * 1000), ctx.principal.institute_id,
@@ -2254,6 +2965,41 @@ async def execute_tool(
         return json.dumps({"error": "tool_failed", "tool": tool_name})
 
 
+# ──────────────────────────────────────────────────────────────────────────
+# Feature tools that live in their own modules (website builder, lead forms,
+# course builder, learners, CRM).
+# Each module self-registers into ASSISTANT_TOOLS / GROUP_LABELS when imported,
+# so importing it here is only to make sure that happens. The import is
+# tolerant of the cycle: a test that imports the feature module first will find
+# this module half-initialised, and the feature module registers itself once
+# this one finishes.
+# ──────────────────────────────────────────────────────────────────────────
+def _load_feature_tools() -> None:
+    for module in (
+        "assistant_tools_website", "assistant_tools_website_edit", "assistant_tools_design_import",
+        "assistant_tools_catalog_data_edit",
+        "assistant_tools_website_publish",
+        "assistant_tools_audience",
+        "assistant_tools_workflow", "assistant_tools_blog",
+        "assistant_tools_courses", "assistant_tools_course_edit", "assistant_tools_course_drip",
+        "assistant_tools_course_invites",
+        "assistant_tools_course_structure",
+        "assistant_tools_learners", "assistant_tools_learner_enroll", "assistant_tools_learner_edit",
+        "assistant_tools_learner_report",
+        "assistant_tools_sub_orgs", "assistant_tools_sub_org_edit", "assistant_tools_sub_org_enroll",
+        "assistant_tools_crm_leads", "assistant_tools_crm_lead_edit", "assistant_tools_crm_team",
+        "assistant_tools_crm_calls", "assistant_tools_crm_meetings", "assistant_tools_crm_messages",
+        "assistant_tools_crm_reports", "assistant_tools_crm_money",
+    ):
+        try:
+            __import__(f"{__package__}.{module}")
+        except ImportError as exc:  # partially initialised cycle; see above
+            logger.debug("deferred feature tool module %s: %s", module, exc)
+
+
+_load_feature_tools()
+
+
 __all__ = [
     "ASSISTANT_TOOLS",
     "ASSISTANT_TOOLS_SETTING_KEY",
@@ -2261,7 +3007,22 @@ __all__ = [
     "ToolSpec",
     "ToolContext",
     "is_tool_allowed",
+    "only_through_other_groups",
+    "capability_groups",
     "build_offered_tools",
+    "in_product_specs",
+    "ASSISTANT_TOPICS",
+    "AssistantTopic",
+    "CRM_TOPIC",
+    "LOAD_TOOLS_TOOL_NAME",
+    "load_tools_schema",
+    "topics_for_route",
     "execute_tool",
+    "performer_for",
+    "card_schema",
+    "CARD_CONFIRM_TEXT",
     "load_assistant_tools_setting",
+    "load_entitlements",
+    "context_entitlements",
+    "missing_module_feature",
 ]

@@ -1,0 +1,66 @@
+{
+    "notReady": {
+        "title": "Webhook Setup",
+        "description": "Configure and activate a WhatsApp provider above first, then set up webhooks here."
+    },
+    "header": {
+        "title": "Webhook Setup — {{provider}}",
+        "subtitle": "Connect your WhatsApp provider to receive incoming messages"
+    },
+    "status": {
+        "channelMapping": "Channel Mapping",
+        "channelMappingHint": "Routes incoming webhooks to your institute",
+        "connected": "Connected: {{channelId}}",
+        "notConnected": "Not Connected"
+    },
+    "setup": {
+        "oneClickTitle": "One-Click Setup",
+        "webhookUrlTitle": "Webhook URL",
+        "autoDescription": "Creates channel mapping and registers webhook with {{provider}} automatically.",
+        "manualDescription": "Creates channel mapping. Copy the webhook URL and paste it in your {{provider}} dashboard.",
+        "button": {
+            "settingUp": "Setting up...",
+            "reRegister": "Re-register Webhook with {{provider}}",
+            "setup": "Setup Webhook with {{provider}}",
+            "mappingAlreadyCreated": "Mapping Already Created",
+            "createMapping": "Create Channel Mapping"
+        }
+    },
+    "webhookUrl": {
+        "title": "Webhook URL",
+        "copyButtonTitle": "Copy webhook URL"
+    },
+    "combot": {
+        "manualSetupTitle": "Manual Webhook Setup",
+        "instructions": "Paste the URL above into Com.bot dashboard → Settings → Webhooks.",
+        "verifyTokenLabel": "Verify Token:"
+    },
+    "verify": {
+        "title": "Step 3: Verify Connection",
+        "description": "Test that the webhook endpoint is reachable",
+        "verifying": "Verifying...",
+        "verifyEndpoint": "Verify Endpoint"
+    },
+    "instructions": {
+        "title": "How it works:",
+        "channelMapping": "<0>Channel Mapping</0> links your WhatsApp Business number to this institute so incoming webhooks route correctly",
+        "webhookUrl": "<0>Webhook URL</0> is where your provider sends incoming messages and delivery status updates",
+        "verify": "<0>Verify</0> checks that the endpoint is publicly reachable and responds to the challenge correctly"
+    },
+    "toasts": {
+        "copiedUrl": "Webhook URL copied",
+        "configureCredentialsFirst": "Configure provider credentials first (Phone Number ID / WhatsApp Number needed)",
+        "mappingCreatedWithRouting": "Channel mapping created — webhooks will route to your institute",
+        "createMappingFailed": "Failed to create mapping",
+        "endpointReachable": "Webhook endpoint is reachable",
+        "credentialsNotConfigured": "Provider credentials not configured",
+        "phoneNumberIdNotFound": "Phone Number ID / WhatsApp Number not found in credentials",
+        "mappingCreated": "Channel mapping created",
+        "comBotMappingReady": "Channel mapping ready. Copy the webhook URL and set it in your COMBOT dashboard.",
+        "webhookRegistered": "Webhook registered with {{provider}}",
+        "setupFailed": "Setup failed"
+    },
+    "errors": {
+        "verificationRequestFailed": "Verification request failed"
+    }
+}

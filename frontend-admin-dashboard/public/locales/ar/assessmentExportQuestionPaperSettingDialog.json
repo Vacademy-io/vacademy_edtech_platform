@@ -1,0 +1,84 @@
+{
+    "dialog": {
+        "title": "إعدادات التصدير"
+    },
+    "sections": {
+        "layout": {
+            "title": "إعدادات التخطيط",
+            "columnsPerPage": "عدد الأعمدة في الصفحة",
+            "roughWork": {
+                "label": "مساحة للمسودة",
+                "none": "بدون",
+                "bottom": "أسفل"
+            },
+            "roughWorkSize": {
+                "label": "حجم مساحة المسودة",
+                "small": "صغير (50 مم)",
+                "medium": "متوسط (100 مم)",
+                "large": "كبير (150 مم)"
+            },
+            "pagePadding": {
+                "label": "هامش الصفحة",
+                "low": "منخفض (10 مم)",
+                "medium": "متوسط (20 مم)",
+                "high": "مرتفع (30 مم)"
+            },
+            "fontSize": {
+                "label": "حجم الخط",
+                "small": "صغير (10 نقطة)",
+                "medium": "متوسط (12 نقطة)",
+                "large": "كبير (14 نقطة)"
+            },
+            "imageSize": {
+                "label": "حجم الصورة",
+                "maintainAspectRatio": "الحفاظ على نسبة أبعاد الصورة"
+            }
+        },
+        "display": {
+            "title": "إعدادات العرض",
+            "options": {
+                "showInstitutionLetterhead": "إظهار ترويسة المؤسسة",
+                "showFirstPageInstructions": "إظهار التعليمات في الصفحة الأولى",
+                "showAdaptiveMarkingRules": "إظهار قواعد التصحيح التكيفي - التقييم بالكامل",
+                "showSectionInstructions": "إظهار تعليمات كل قسم",
+                "showSectionDuration": "إظهار مدة كل قسم",
+                "showMarksPerQuestion": "إظهار الدرجات لكل سؤال",
+                "showAdaptiveMarkingRulesSection": "إظهار قواعد التصحيح التكيفي - حسب القسم",
+                "showCheckboxesBeforeOptions": "إظهار مربعات الاختيار قبل الخيارات",
+                "showPageNumbers": "إظهار أرقام الصفحات"
+            }
+        },
+        "paper": {
+            "title": "إعدادات ورقة الأسئلة",
+            "questionPaperSets": "إنشاء مجموعات من أوراق الأسئلة",
+            "includeQuestionSetCode": "تضمين رمز مجموعة الأسئلة",
+            "randomizeQuestions": "ترتيب الأسئلة عشوائيًا",
+            "randomizeOptions": "ترتيب الخيارات عشوائيًا"
+        },
+        "customFields": {
+            "title": "إعدادات الحقول المخصصة",
+            "includeCustomInputFields": "تضمين حقول إدخال مخصصة",
+            "fieldTypePlaceholder": "اختر نوع الحقل",
+            "fieldTypes": {
+                "blank": "فارغ (افتراضي)",
+                "blocks": "كتل",
+                "input": "مربع إدخال",
+                "checkbox": "مربع اختيار"
+            },
+            "newFieldPlaceholder": "أدخل تسمية الحقل الجديد",
+            "addButton": "إضافة"
+        },
+        "advanced": {
+            "title": "الإعدادات المتقدمة",
+            "answerSpacing": {
+                "label": "تباعد الإجابات",
+                "customSpacingButton": "تباعد مخصص",
+                "description": "تكوين مساحة مخصصة للإجابات."
+            }
+        }
+    },
+    "footer": {
+        "cancel": "إلغاء",
+        "save": "حفظ"
+    }
+}

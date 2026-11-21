@@ -1,0 +1,28 @@
+{
+    "header": {
+        "questionOf": "السؤال {{current}} من {{total}}",
+        "typeAndMaxMarks": "{{type}} | أقصى الدرجات: {{maxMarks}}"
+    },
+    "question": {
+        "noContent": "لا يوجد نص للسؤال"
+    },
+    "options": {
+        "selectOne": "اختر خيارًا واحدًا:",
+        "selectAll": "اختر كل ما ينطبق:",
+        "optionFallback": "الخيار {{number}}"
+    },
+    "directMarks": {
+        "marksLabel": "الدرجات",
+        "statusLabel": "الحالة",
+        "statusSelect": "اختر",
+        "statusCorrect": "صحيح",
+        "statusIncorrect": "غير صحيح",
+        "statusPartialCorrect": "صحيح جزئيًا"
+    },
+    "navigation": {
+        "clearResponse": "مسح الإجابة",
+        "previous": "السابق",
+        "submit": "إرسال",
+        "next": "التالي"
+    }
+}

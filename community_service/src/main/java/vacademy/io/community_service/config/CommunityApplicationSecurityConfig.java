@@ -19,12 +19,16 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfigurationSource;
 import vacademy.io.common.auth.filter.InternalAuthFilter;
 import vacademy.io.common.auth.filter.JwtAuthFilter;
+import vacademy.io.common.auth.config.JsonAuthEntryPoint;
 
 @Configuration
 @EnableMethodSecurity
 public class CommunityApplicationSecurityConfig {
 
-    private static final String[] INTERNAL_PATHS = {};
+    private static final String[] INTERNAL_PATHS = {
+            // Service-to-service only (HMAC via InternalAuthFilter) — never exposed to browsers.
+            // admin_core_service's institute-facing app-status endpoint reads through this.
+            "/community-service/internal/**" };
 
     private static final String[] ALLOWED_PATHS = { "/community-service/engage/learner/**",
             "/community-service/engage/**", "/community-service/subject/**", "/community-service/chapter/**",
@@ -40,8 +44,9 @@ public class CommunityApplicationSecurityConfig {
             "/community-service/public/v1/onboarding/**",
             // Public plan builder (rate card + quote) - open for the pricing page
             "/community-service/public/v1/pricing/**",
-            // BBB server health check & management
-            "/community-service/bbb/**",
+            // /community-service/bbb/** (pool health check and start/stop) is NOT listed: it
+            // needs a signed-in platform super admin (Super Admin portal); the scheduled
+            // jobs run in-process and never call it over HTTP.
             // External uptime monitor for per-client deployments (Vet Education etc.).
             //
             // ONLY the read-only status view is open — it returns the cached result of
@@ -56,6 +61,11 @@ public class CommunityApplicationSecurityConfig {
 
     @Autowired
     JwtAuthFilter jwtAuthFilter;
+
+    // Replaces the default bodyless 403 (re-dispatched to a secured /error and
+    // returned empty) with a JSON body naming the actual reason.
+    @Autowired
+    private JsonAuthEntryPoint jsonAuthEntryPoint;
     @Autowired
     UserDetailsService userDetailsService;
 
@@ -85,7 +95,10 @@ public class CommunityApplicationSecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(internalAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(jsonAuthEntryPoint)
+                        .accessDeniedHandler(jsonAuthEntryPoint));
         return http.build();
     }
 

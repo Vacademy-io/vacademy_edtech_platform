@@ -1,6 +1,7 @@
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { fetchAnalyticsActivityToday } from '../../-services/dashboard-services';
 import { Users, Pulse, Database, Clock, ArrowUp, Globe, type Icon } from '@phosphor-icons/react';
 import { AnalyticsErrorDisplay } from './AnalyticsErrorDisplay';
@@ -19,6 +20,7 @@ interface StatTile {
 }
 
 export default function UserActivitySummaryWidget({ instituteId }: UserActivitySummaryWidgetProps) {
+    const { t } = useTranslation('dashboardUserActivitySummaryWidget');
     const { data, isLoading, error, refetch } = useQuery({
         queryKey: ['analytics-activity-today', instituteId],
         queryFn: () => fetchAnalyticsActivityToday(instituteId),
@@ -31,46 +33,46 @@ export default function UserActivitySummaryWidget({ instituteId }: UserActivityS
     const stats: StatTile[] = [
         {
             icon: Users,
-            label: 'Unique Users',
+            label: t('stats.uniqueUsers'),
             value: data?.unique_active_users || 0,
             iconColor: 'text-blue-600',
             iconBg: 'bg-blue-50',
         },
         {
             icon: Pulse,
-            label: 'Sessions',
+            label: t('stats.sessions'),
             value: data?.total_sessions || 0,
             iconColor: 'text-emerald-600',
             iconBg: 'bg-emerald-50',
         },
         {
             icon: Database,
-            label: 'API Calls',
+            label: t('stats.apiCalls'),
             value: data?.total_api_calls || 0,
             iconColor: 'text-violet-600',
             iconBg: 'bg-violet-50',
         },
         {
             icon: Clock,
-            label: 'Activity Time',
+            label: t('stats.activityTime'),
             value: Math.round((data?.total_activity_time_minutes || 0) / 60),
-            suffix: 'h',
+            suffix: t('suffix.hours'),
             iconColor: 'text-orange-600',
             iconBg: 'bg-orange-50',
         },
         {
             icon: ArrowUp,
-            label: 'Avg Session',
+            label: t('stats.avgSession'),
             value: Math.round(data?.average_session_duration_minutes || 0),
-            suffix: 'm',
+            suffix: t('suffix.minutes'),
             iconColor: 'text-primary-600',
             iconBg: 'bg-primary-50',
         },
         {
             icon: Globe,
-            label: 'Peak Hour',
+            label: t('stats.peakHour'),
             value: data?.peak_activity_hour || 0,
-            suffix: ':00',
+            suffix: t('suffix.oclock'),
             iconColor: 'text-indigo-600',
             iconBg: 'bg-indigo-50',
         },
@@ -85,10 +87,10 @@ export default function UserActivitySummaryWidget({ instituteId }: UserActivityS
                     </span>
                     <div className="min-w-0">
                         <CardTitle className="text-sm font-semibold">
-                            Today&apos;s Activity
+                            {t('header.title')}
                         </CardTitle>
-                        <CardDescription className="line-clamp-1 text-[11px] text-neutral-500 sm:text-xs">
-                            Real-time summary of user engagement
+                        <CardDescription className="line-clamp-1 text-2xs text-neutral-500 sm:text-xs">
+                            {t('header.subtitle')}
                         </CardDescription>
                     </div>
                 </div>
@@ -103,7 +105,7 @@ export default function UserActivitySummaryWidget({ instituteId }: UserActivityS
                 ) : error ? (
                     <AnalyticsErrorDisplay
                         error={error}
-                        widgetName="activity summary"
+                        widgetName={t('error.widgetName')}
                         onRetry={() => refetch()}
                         fallbackIcon={Pulse}
                     />
@@ -122,13 +124,13 @@ export default function UserActivitySummaryWidget({ instituteId }: UserActivityS
                                         <Icon size={14} weight="duotone" />
                                     </span>
                                     <div className="min-w-0">
-                                        <div className="line-clamp-1 text-[10px] uppercase tracking-wide text-neutral-500">
+                                        <div className="line-clamp-1 text-2xs uppercase tracking-wide text-neutral-500">
                                             {s.label}
                                         </div>
                                         <div className="text-sm font-semibold tabular-nums text-neutral-900">
                                             {s.value.toLocaleString('en-IN')}
                                             {s.suffix && (
-                                                <span className="ml-0.5 text-[10px] font-medium text-neutral-500">
+                                                <span className="ms-0.5 text-2xs font-medium text-neutral-500">
                                                     {s.suffix}
                                                 </span>
                                             )}

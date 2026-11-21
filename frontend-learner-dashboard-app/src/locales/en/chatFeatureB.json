@@ -1,0 +1,393 @@
+{
+    "common": {
+        "startNewChat": "Start new chat",
+        "closeSession": "Close session",
+        "aiGear": "AI Gear",
+        "closePanel": "Close panel",
+        "mathSymbols": "Math symbols",
+        "preview": "Preview:",
+        "retry": "Retry",
+        "newChat": "New chat",
+        "dropImageHere": "Drop image here",
+        "voiceChatLabel": "Voice Call",
+        "startVoiceConversation": "Start a voice call",
+        "creditsExhausted": "Your OpenRouter credits have been exhausted. Please recharge your credits to continue using the AI assistant.",
+        "attachmentAlt": "attachment",
+        "attachedImageAlt": "attached",
+        "copy": "Copy",
+        "popupView": "Open as popup",
+        "dockView": "Dock to the side",
+        "copied": "Copied"
+    },
+    "voiceModeLabels": {
+        "interview": "Mock Interview",
+        "doubt": "Doubt Discussion",
+        "oralTest": "Oral Test",
+        "sessionFallback": "Session"
+    },
+    "floatingButton": {
+        "nudgeMessages": {
+            "doubts": "Any doubts?",
+            "learnSomething": "Learn something new?",
+            "practice": "Practice questions?"
+        },
+        "tooltip": {
+            "draggable": "Tap to chat • Drag to move",
+            "tapOnly": "Tap to chat"
+        }
+    },
+    "panel": {
+        "offlineNotice": "You're offline. Messages will be sent when you reconnect.",
+        "initializing": "Initialising chat...",
+        "generatingQuiz": "Generating quiz...",
+        "errorTitle": "Something went wrong",
+        "sessionEnded": "This chat has ended",
+        "queuedTooltip": "Queued - will send when online",
+        "copyMessage": "Copy message",
+        "attachImageTitle": "Attach image (math photos auto-detected)",
+        "fullscreen": "Fullscreen",
+        "exitFullscreen": "Exit fullscreen",
+        "inputPlaceholder": "Type message... (use $ for math)"
+    },
+    "sidePanel": {
+        "initializing": "Initializing...",
+        "generating": "Generating...",
+        "creditsExhaustedShort": "Your OpenRouter credits have been exhausted. Please recharge your credits to continue.",
+        "errorTitle": "Something went wrong.",
+        "sessionEnded": "Session ended. Start a new chat.",
+        "attachImageTitle": "Attach image",
+        "inputPlaceholder": "Ask a question... ($ for math)"
+    },
+    "messageList": {
+        "ariaLabel": "Conversation",
+        "thinking": "Thinking...",
+        "emptyTitle": "Hi, I'm {{assistantName}}",
+        "emptySubtitle": "Ask me anything, or start with a suggestion below.",
+        "stopped": "Stopped",
+        "rateUp": "Good response",
+        "rateDown": "Bad response",
+        "followUpsLabel": "Suggested follow-up questions"
+    },
+    "composer": {
+        "send": "Send message",
+        "removeImage": "Remove image",
+        "uploading": "Uploading image...",
+        "stop": "Stop generating"
+    },
+    "cards": {
+        "opensInNewTab": "(opens in a new tab)",
+        "progressLabel": "{{title}}: {{percent}}% complete",
+        "steps": {
+            "title": "Step by step",
+            "progress": "{{shown}} of {{total}} steps shown",
+            "stepN": "Step {{n}}",
+            "next": "Show next step",
+            "showAll": "Show all"
+        },
+        "flashcards": {
+            "title": "Flashcards",
+            "front": "Question",
+            "back": "Answer",
+            "showFront": "Tap to see the question",
+            "showBack": "Tap to see the answer",
+            "counter": "{{n}} / {{total}}",
+            "tapToFlip": "Tap or press Space to flip",
+            "previous": "Previous card",
+            "next": "Next card",
+            "shuffle": "Shuffle"
+        }
+    },
+    "micButton": {
+        "transcribing": "Transcribing...",
+        "stopRecording": "Stop recording",
+        "voiceToText": "Voice to text"
+    },
+    "quickActions": {
+        "explainThis": {
+            "label": "Explain this",
+            "prompt": "Explain what's on this {{slide}} in simple terms"
+        },
+        "quizMe": {
+            "label": "Quiz me",
+            "prompt": "Quiz me on "
+        },
+        "quizMeOnThis": {
+            "prompt": "Quiz me on this {{slide}}"
+        },
+        "summarize": {
+            "label": "Summarize",
+            "prompt": "Give me a brief summary of this {{slide}}"
+        },
+        "courseOverview": {
+            "label": "{{course}} overview",
+            "prompt": "Give me an overview of this {{course}}"
+        },
+        "learningPath": {
+            "label": "Learning path",
+            "prompt": "What's the recommended learning path for this {{course}}?"
+        },
+        "prerequisites": {
+            "label": "Prerequisites",
+            "prompt": "What are the prerequisites for this {{course}}?"
+        },
+        "hint": {
+            "label": "Hint",
+            "prompt": "Give me a hint for this question without revealing the answer"
+        },
+        "explainConcept": {
+            "label": "Explain concept",
+            "prompt": "Explain the concept being tested in this question"
+        },
+        "helpMeLearn": {
+            "label": "Help me learn",
+            "prompt": "Help me learn about "
+        },
+        "askDoubt": {
+            "label": "Ask a doubt",
+            "prompt": "I have a question about "
+        },
+        "practice": {
+            "label": "Practice"
+        },
+        "studyNext": {
+            "label": "What to study next",
+            "prompt": "What should I study next?"
+        },
+        "quizRecent": {
+            "label": "Quiz me",
+            "prompt": "Quiz me on what I've been studying recently"
+        },
+        "myProgress": {
+            "label": "My progress",
+            "prompt": "How am I doing in my courses?"
+        }
+    },
+    "quiz": {
+        "questionLabel": "Q{{number}}",
+        "answeredCount": "{{answered}} of {{total}} answered",
+        "previous": "Previous",
+        "next": "Next",
+        "submitQuiz": "Submit Quiz",
+        "submitted": "Submitted"
+    },
+    "quizFeedback": {
+        "passed": "Quiz Passed! 🎉",
+        "keepPracticing": "Keep Practicing!",
+        "completedIn": "Completed in {{minutes}}m {{seconds}}s",
+        "recommendations": "Recommendations",
+        "hideDetails": "Hide Question Details",
+        "showDetails": "Show Question Details",
+        "questionNumber": "Question {{number}}",
+        "yourAnswer": "Your answer: ",
+        "notAnswered": "Not answered",
+        "correctAnswer": "Correct answer: ",
+        "explanation": "Explanation: ",
+        "pointsEarned": "+{{points}} points toward your streak"
+    },
+    "sessionScorecard": {
+        "summaryTitle": "{{mode}} Summary",
+        "score": "Score",
+        "strengths": "Strengths",
+        "areasToImprove": "Areas to Improve",
+        "feedback": "Feedback",
+        "close": "Close",
+        "startNewSession": "Start New Session"
+    },
+    "toolIndicator": {
+        "checkingProgress": "Checking your learning progress...",
+        "reviewingPerformance": "Reviewing your performance data...",
+        "searchingResources": "Searching for related content...",
+        "searchingCourseMaterials": "Searching your {{course}} materials...",
+        "workingOnIt": "Working on it...",
+        "preparingQuiz": "Preparing your quiz...",
+        "checkingCourses": "Checking your {{course}}s...",
+        "checkingLiveClasses": "Looking up your live classes...",
+        "checkingTests": "Checking your tests...",
+        "checkingResults": "Fetching your results...",
+        "askingTeacher": "Sending your question to your teacher...",
+        "makingFlashcards": "Making your flashcards...",
+        "writingSteps": "Writing it out step by step...",
+        "checkingDailyTasks": "Checking today's tasks..."
+    },
+    "voiceAvatar": {
+        "ready": "Ready",
+        "listening": "Listening...",
+        "thinking": "Thinking...",
+        "speaking": "Speaking..."
+    },
+    "voiceModePanel": {
+        "unmute": "Unmute microphone",
+        "mute": "Mute microphone",
+        "end": "End call",
+        "hintIdle": "Tap the mic when you're ready to talk",
+        "hintListening": "Listening… just pause when you're done",
+        "hintProcessing": "Thinking…",
+        "hintSpeaking": "Tap the mic to jump in",
+        "muted": "Microphone off — unmute to keep talking",
+        "talk": "Talk",
+        "connecting": "Connecting…",
+        "reconnecting": "Reconnecting…",
+        "noticeNoSpeech": "I didn't catch that — try again",
+        "noticeError": "Something went wrong. Tap the mic to try again.",
+        "noticeMic": "I can't reach your microphone. Check permissions and tap the mic.",
+        "topicPrefix": "On {{topic}}",
+        "captionsLabel": "Live captions",
+        "captionYou": "You",
+        "showTranscript": "Show full transcript",
+        "hideTranscript": "Hide transcript"
+    },
+    "voiceModeSelector": {
+        "title": "Voice Call",
+        "subtitle": "Pick how you'd like to talk",
+        "modeInterviewLabel": "Take my Interview",
+        "modeInterviewDescription": "Practice with a mock interview on your current topic",
+        "modeDoubtLabel": "Discuss your Doubt",
+        "modeDoubtDescription": "Talk through your doubts with voice interaction",
+        "modeOralTestLabel": "Take Oral Test",
+        "modeOralTestDescription": "Test your knowledge with verbal Q&A",
+        "topicLabelInterview": "Interview Topic",
+        "topicLabelOralTest": "Test Topic",
+        "topicLabelDoubt": "What's your doubt about?",
+        "topicPlaceholderInterview": "e.g., Data Structures, React, Machine Learning",
+        "topicPlaceholderOralTest": "e.g., Photosynthesis, Newton's Laws, Algebra",
+        "topicPlaceholderDoubt": "e.g., I'm confused about recursion",
+        "topicHelperOptional": "Optional — or just start talking",
+        "topicHelperRecommended": "Recommended — helps generate better questions",
+        "languageLabel": "Language",
+        "languageEn": "English",
+        "languageHi": "Hindi",
+        "languageBn": "Bengali",
+        "languageTa": "Tamil",
+        "languageTe": "Telugu",
+        "languageKn": "Kannada",
+        "languageMl": "Malayalam",
+        "languageMr": "Marathi",
+        "languageGu": "Gujarati",
+        "languagePa": "Punjabi",
+        "languageOr": "Odia",
+        "cancel": "Cancel",
+        "start": "Start call",
+        "topicHelperEditable": "From what you're studying — edit if you'd rather talk about something else"
+    },
+    "useChatbot": {
+        "initErrorNetwork": "Hi! I'm {{assistantName}}, your AI assistant. I'm having trouble connecting to the server. Please check your network connection.",
+        "initErrorNotFound": "Hi! I'm {{assistantName}}, your AI assistant. The AI service endpoint was not found. Please check the configuration.",
+        "initErrorAuth": "Hi! I'm {{assistantName}}, your AI assistant. Authentication failed. Please try logging in again.",
+        "initErrorGeneric": "Hi! I'm {{assistantName}}, your AI assistant. I'm having trouble connecting right now (Error: {{errorMessage}}). How can I help you?",
+        "initErrorFallback": "Hi! I'm {{assistantName}}, your AI assistant. I'm having trouble connecting right now. How can I help you?",
+        "processingFailed": "I'm sorry, I encountered an error while processing your request. Please try again.",
+        "quizSubmitFailed": "I'm sorry, I couldn't submit your quiz. Please try again.",
+        "sendingTooFast": "You're sending messages very quickly — please wait a few seconds and try again."
+    },
+    "history": {
+        "open": "Chat history",
+        "title": "Past chats",
+        "back": "Back to chat",
+        "loading": "Loading your chats...",
+        "loadError": "Couldn't load your past chats.",
+        "openError": "Couldn't open that chat. It may no longer be available.",
+        "empty": "No past chats yet",
+        "emptyHint": "Chats where you ask a question show up here.",
+        "listLabel": "Past chats",
+        "current": "Current",
+        "untitled": "Untitled chat",
+        "justNow": "Just now",
+        "minutesAgo": "{{n}}m ago",
+        "hoursAgo": "{{n}}h ago",
+        "yesterday": "Yesterday",
+        "daysAgo": "{{n}}d ago",
+        "questions_one": "{{count}} question",
+        "questions_other": "{{count}} questions"
+    },
+    "starters": {
+        "label": "Suggestions for you",
+        "loading": "Loading suggestions",
+        "trySaying": "Try saying:"
+    },
+    "toolbelt": {
+        "label": "Ask about this answer",
+        "simpler": {
+            "label": "Simpler",
+            "request": "Explain that more simply"
+        },
+        "example": {
+            "label": "Example",
+            "request": "Give me an example"
+        },
+        "examReady": {
+            "label": "Exam-ready",
+            "request": "Give me the exam-ready answer: the key points to write"
+        },
+        "hinglish": {
+            "label": "Hinglish",
+            "request": "Explain that in Hinglish"
+        },
+        "steps": {
+            "label": "Step by step",
+            "request": "Show me that step by step"
+        },
+        "flashcards": {
+            "label": "Flashcards",
+            "request": "Make flashcards from that"
+        },
+        "hindiLabel": "हिंदी में",
+        "readAloud": "Read aloud",
+        "stopReading": "Stop reading",
+        "save": "Save answer",
+        "unsave": "Remove from saved",
+        "more": "More ways to explain",
+        "aboutEarlier": "{{request}} (about your earlier answer: \"{{excerpt}}\")"
+    },
+    "saved": {
+        "tab": "Saved",
+        "untitled": "Saved answer",
+        "openChat": "Open chat",
+        "unsave": "Unsave",
+        "unsaveError": "Couldn't remove it. Please try again.",
+        "loading": "Loading saved answers...",
+        "loadError": "Couldn't load your saved answers.",
+        "empty": "No saved answers yet",
+        "emptyHint": "Tap the bookmark under an answer to keep it here.",
+        "listLabel": "Saved answers"
+    },
+    "peek": {
+        "dismiss": "Dismiss"
+    },
+    "moments": {
+        "selection": {
+            "toolbar": "Ask {{name}} about this text",
+            "explain": "Explain",
+            "simplify": "Simplify",
+            "quiz": "Quiz me",
+            "prompt": {
+                "explain": "Explain this: “{{text}}”",
+                "explainInLesson": "Explain this from my lesson \"{{lesson}}\": “{{text}}”",
+                "simplify": "Explain this in simpler words, with an everyday example: “{{text}}”",
+                "simplifyInLesson": "Explain this from my lesson \"{{lesson}}\" in simpler words, with an everyday example: “{{text}}”",
+                "quiz": "Quiz me on this: “{{text}}”",
+                "quizInLesson": "Quiz me on this from my lesson \"{{lesson}}\": “{{text}}”"
+            }
+        },
+        "whyWrong": {
+            "button": "Why was I wrong?",
+            "prompt": {
+                "intro": "I got this question wrong.",
+                "introFrom": "I got this question wrong in \"{{source}}\".",
+                "question": "Question: {{text}}",
+                "yours": "My answer: {{text}}",
+                "correct": "Correct answer: {{text}}",
+                "explanation": "Explanation shown: {{text}}",
+                "ask": "Please explain where my thinking went wrong, then give me one similar practice question to try."
+            }
+        },
+        "video": {
+            "chip": "Stuck at {{time}}? Ask {{name}}",
+            "prompt": "I'm stuck at {{time}} in the video \"{{lesson}}\". Can you help me understand this part?",
+            "promptNoLesson": "I'm stuck at {{time}} in this video. Can you help me understand this part?",
+            "dismiss": "Dismiss"
+        },
+        "buddy": {
+            "aria": "Ask {{name}}: {{label}}"
+        }
+    }
+}

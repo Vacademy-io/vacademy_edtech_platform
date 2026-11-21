@@ -1,0 +1,12 @@
+{
+    "header": {
+        "title": "لمحة مالية",
+        "description": "تدفق الأموال في لمحة",
+        "openButton": "فتح"
+    },
+    "tiles": {
+        "outstanding": "المستحق",
+        "overdue": "متأخر السداد",
+        "approvals": "الموافقات"
+    }
+}

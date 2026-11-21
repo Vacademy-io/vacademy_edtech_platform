@@ -1,0 +1,35 @@
+{
+    "weekday": {
+        "sun": "रवि",
+        "mon": "सोम",
+        "tue": "मंगल",
+        "wed": "बुध",
+        "thu": "गुरु",
+        "fri": "शुक्र",
+        "sat": "शनि"
+    },
+    "today": "आज",
+    "moreSessions_one": "+{{count}} और",
+    "moreSessions_other": "+{{count}} और",
+    "legend": {
+        "liveClass": "लाइव क्लास",
+        "upcomingClass": "आगामी क्लास",
+        "pastClass": "पिछली क्लास"
+    },
+    "sessionsFor": "{{date}} के सत्र",
+    "defaultClassInformation": "डिफ़ॉल्ट क्लास जानकारी",
+    "classNameLabel": "क्लास का नाम:",
+    "linkLabel": "लिंक:",
+    "customButtonLabel": "कस्टम बटन:",
+    "durationMinutes_one": "{{count}} मिनट",
+    "durationMinutes_other": "{{count}} मिनट",
+    "status": {
+        "live": "लाइव",
+        "upcoming": "आगामी",
+        "past": "समाप्त",
+        "scheduled": "निर्धारित"
+    },
+    "startAsHost": "होस्ट के रूप में शुरू करें",
+    "joinSession": "सत्र में शामिल हों",
+    "noSessionsFound": "कोई सत्र नहीं मिला।"
+}

@@ -7,6 +7,7 @@ import {
     type CopyMovePlacement,
 } from '@/components/common/study-library/copy-move/copy-move-destination-picker';
 import { Dispatch, SetStateAction, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useContentStore } from '../../-stores/chapter-sidebar-store';
 import { useCopySlide } from '../../-services/copySlides';
 import { toast } from 'sonner';
@@ -19,6 +20,7 @@ interface CopyTo {
 }
 
 export const CopyToDialog = ({ openDialog, setOpenDialog }: CopyTo) => {
+    const { t } = useTranslation('studyLibraryCopyDialog');
     const router = useRouter();
     const { chapterId, courseId, levelId, subjectId, moduleId, sessionId } =
         router.state.location.search;
@@ -70,17 +72,17 @@ export const CopyToDialog = ({ openDialog, setOpenDialog }: CopyTo) => {
         if (failed.length === 0) {
             toast.success(
                 succeeded === 1
-                    ? 'Slide copied successfully!'
-                    : `Slide copied to ${succeeded} locations`
+                    ? t('toast.copiedSuccess')
+                    : t('toast.copiedToLocations', { count: succeeded })
             );
             setOpenDialog(null);
             return;
         }
         if (succeeded === 0) {
-            toast.error('Failed to copy slide');
+            toast.error(t('toast.copyFailed'));
         } else {
             toast.warning(
-                `Copied to ${succeeded} of ${destinations.length} locations. Retry the rest below.`
+                t('toast.partialSuccess', { count: succeeded, total: destinations.length })
             );
         }
         // The source is untouched, so retrying just these is safe.
@@ -89,7 +91,7 @@ export const CopyToDialog = ({ openDialog, setOpenDialog }: CopyTo) => {
 
     return (
         <MyDialog
-            heading="Copy to"
+            heading={t('dialog.heading')}
             dialogWidth="max-w-2xl"
             open={openDialog == 'copy'}
             onOpenChange={() => setOpenDialog(null)}
@@ -97,8 +99,8 @@ export const CopyToDialog = ({ openDialog, setOpenDialog }: CopyTo) => {
             <CopyMoveDestinationPicker
                 leaf="chapter"
                 showPlacementOptions
-                submitLabel="Copy"
-                busyLabel="Copying…"
+                submitLabel={t('dialog.submitLabel')}
+                busyLabel={t('dialog.busyLabel')}
                 isSubmitting={isSubmitting}
                 onSubmit={handleCopySlide}
             />

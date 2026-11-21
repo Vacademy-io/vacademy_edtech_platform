@@ -1,0 +1,10 @@
+{
+    "menu": {
+        "sendReminder": "अनुस्मारक भेजें",
+        "removeParticipants": "प्रतिभागियों को हटाएं"
+    },
+    "actionInfo": {
+        "selectedStudents_one": "{{count}} विद्यार्थी",
+        "selectedStudents_other": "{{count}} विद्यार्थी"
+    }
+}

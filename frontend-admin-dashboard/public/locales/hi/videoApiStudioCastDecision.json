@@ -1,0 +1,29 @@
+{
+    "header": {
+        "title": "अपनी कास्ट से मिलें · {{count}}"
+    },
+    "voice": {
+        "autoOption": "स्वचालित आवाज़",
+        "ariaLabel": "{{name}} के लिए आवाज़"
+    },
+    "redo": {
+        "button": "फिर से करें",
+        "placeholder": "क्या बदलना चाहिए? जैसे उम्रदराज़, गर्मजोशी भरी मुस्कान, औपचारिक साड़ी…"
+    },
+    "upload": {
+        "uploading": "अपलोड हो रहा है…",
+        "replace": "बदलें",
+        "useMyImage": "मेरी छवि का उपयोग करें"
+    },
+    "footer": {
+        "changesSummary_one": "फ़िल्मांकन से पहले {{count}} बदलाव लागू किया जाएगा।",
+        "changesSummary_other": "फ़िल्मांकन से पहले {{count}} बदलाव लागू किए जाएंगे।",
+        "noChanges": "ये चेहरे हर दृश्य में दिखाई देंगे।",
+        "submitDefault": "कास्ट स्वीकृत करें और फ़िल्मांकन करें",
+        "submitWithChanges_one": "{{count}} बदलाव अपडेट करें और फ़िल्मांकन करें",
+        "submitWithChanges_other": "{{count}} बदलाव अपडेट करें और फ़िल्मांकन करें"
+    },
+    "toast": {
+        "uploadFailed": "अपलोड विफल रहा। छोटी छवि आज़माएँ।"
+    }
+}

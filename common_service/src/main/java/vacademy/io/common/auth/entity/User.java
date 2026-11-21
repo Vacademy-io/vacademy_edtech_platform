@@ -4,8 +4,10 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.Where;
 import vacademy.io.common.auth.dto.UserTopLevelDto;
+import vacademy.io.common.core.utils.TextSanitizer;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
@@ -36,6 +38,9 @@ public class User {
     private String fullName;
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Where(clause = "status IN ('ACTIVE', 'INVITED')")
+    // Load the roles of up to 100 users in one query when several users are read together
+    // (bulk user-details lookups read thousands), instead of one query per user.
+    @BatchSize(size = 100)
     private Set<UserRole> roles;
     @Column(name = "address_line")
     private String addressLine;
@@ -69,6 +74,14 @@ public class User {
     @Column(name = "preferred_locale")
     private String preferredLocale;
 
+    // Author metadata surfaced on course pages / catalogue (set from the
+    // Add Course → Add Authors flow). NULL = not an author / not set.
+    @Column(name = "author_subtitle")
+    private String authorSubtitle;
+
+    @Column(name = "author_description", columnDefinition = "TEXT")
+    private String authorDescription;
+
     @Column(name = "last_token_update_time")
     @Temporal(TemporalType.TIMESTAMP)
     private Date lastTokenUpdateTime;
@@ -96,6 +109,8 @@ public class User {
                 .email(this.email)
                 .pinCode(this.pinCode)
                 .profilePicFileId(this.profilePicFileId)
+                .authorSubtitle(this.authorSubtitle)
+                .authorDescription(this.authorDescription)
                 .preferredLocale(this.preferredLocale)
                 .roles(this.roles != null ? roles.stream().map(UserRole::getRoleDto).toList() : new ArrayList<>())
                 .build();
@@ -103,7 +118,20 @@ public class User {
 
     @PrePersist
     @PreUpdate
-    private void normalizeEmails() {
+    private void normalizeIdentifiers() {
+        // Strip invisible characters before anything is written. An email pasted
+        // from a spreadsheet or mail client can carry a leading ZERO WIDTH SPACE
+        // or BOM; it is invisible in every UI, survives trim(), and then makes the
+        // login lookup miss forever — the user simply cannot authenticate. This is
+        // the single chokepoint for every write path into `users`, so keep the
+        // repair here rather than in each caller. See TextSanitizer.
+        this.username = TextSanitizer.cleanIdentifier(this.username);
+        this.email = TextSanitizer.cleanIdentifier(this.email);
+        this.fullName = TextSanitizer.clean(this.fullName);
+        // clean() not cleanIdentifier(): stored numbers are formatted with spaces
+        // in places and collapsing them here would change existing values on every
+        // update, including the ones findLatestUserByMobileNumber matches on.
+        this.mobileNumber = TextSanitizer.clean(this.mobileNumber);
         if (this.email != null) {
             this.email = this.email.toLowerCase();
         }
@@ -244,6 +272,22 @@ public class User {
 
     public void setPreferredLocale(String preferredLocale) {
         this.preferredLocale = preferredLocale;
+    }
+
+    public String getAuthorSubtitle() {
+        return authorSubtitle;
+    }
+
+    public void setAuthorSubtitle(String authorSubtitle) {
+        this.authorSubtitle = authorSubtitle;
+    }
+
+    public String getAuthorDescription() {
+        return authorDescription;
+    }
+
+    public void setAuthorDescription(String authorDescription) {
+        this.authorDescription = authorDescription;
     }
 
     public Date getLastTokenUpdateTime() {

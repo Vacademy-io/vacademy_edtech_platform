@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # One-shot bootstrap for the Mumbai voice-bot anchor (fresh Ubuntu 24.04 LTS).
-# Usage (as root):  curl -fsSL https://raw.githubusercontent.com/Vacademy-io/vacademy_platform/main/voice_bot_service/deploy/linode-mumbai/bootstrap.sh | bash
+# Usage (as root):  curl -fsSL https://raw.githubusercontent.com/Vacademy-io/vacademy_edtech_platform/main/voice_bot_service/deploy/linode-mumbai/bootstrap.sh | bash
 set -euo pipefail
 
-RAW=https://raw.githubusercontent.com/Vacademy-io/vacademy_platform/main/voice_bot_service/deploy/linode-mumbai
+RAW=https://raw.githubusercontent.com/Vacademy-io/vacademy_edtech_platform/main/voice_bot_service/deploy/linode-mumbai
 DIR=/opt/voice-bot
 
 echo "== Docker =="

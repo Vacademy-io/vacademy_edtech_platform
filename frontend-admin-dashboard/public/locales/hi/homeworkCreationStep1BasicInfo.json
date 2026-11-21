@@ -1,0 +1,51 @@
+{
+    "heading": {
+        "createHomework": "होमवर्क बनाएं",
+        "updateHomework": "होमवर्क अपडेट करें"
+    },
+    "page": {
+        "title": "बुनियादी जानकारी",
+        "nextButton": "अगला",
+        "updateButton": "अपडेट करें"
+    },
+    "toast": {
+        "updateSuccess": "चरण 1 का डेटा सफलतापूर्वक अपडेट कर दिया गया है!",
+        "saveSuccess": "चरण 1 का डेटा सफलतापूर्वक सहेज लिया गया है!"
+    },
+    "errors": {
+        "saveFailed": "बुनियादी जानकारी सहेजने में विफल।"
+    },
+    "fields": {
+        "assessmentName": {
+            "label": "मूल्यांकन का नाम",
+            "placeholder": "शीर्षक जोड़ें"
+        },
+        "assessmentInstructions": {
+            "sectionTitle": "मूल्यांकन निर्देश",
+            "placeholder": "होमवर्क के निर्देश लिखें"
+        },
+        "liveDateRange": {
+            "sectionTitle": "लाइव तिथि सीमा",
+            "startDateLabel": "प्रारंभ तिथि और समय",
+            "endDateLabel": "समाप्ति तिथि और समय"
+        },
+        "attemptSettings": {
+            "sectionTitle": "प्रयास सेटिंग्स",
+            "reattemptCountLabel": "पुनः प्रयास की संख्या",
+            "reattemptCountPlaceholder": "पुनः प्रयास की संख्या"
+        },
+        "evaluationType": {
+            "label": "मूल्यांकन प्रकार"
+        },
+        "submissionType": {
+            "label": "सबमिशन प्रकार"
+        },
+        "assessmentPreview": {
+            "allowLabel": "मूल्यांकन पूर्वावलोकन की अनुमति दें",
+            "previewTimeLimitLabel": "पूर्वावलोकन समय सीमा"
+        },
+        "switchSections": {
+            "label": "{{term}} को सेक्शन के बीच स्विच करने की अनुमति दें"
+        }
+    }
+}

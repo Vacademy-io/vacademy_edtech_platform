@@ -1,0 +1,38 @@
+{
+    "uploadQuestions": "प्रश्न अपलोड करें",
+    "downloadTemplate": "टेम्पलेट डाउनलोड करें",
+    "supportedQuestionTypes": "MCQS, MCQM और TRUE_FALSE प्रश्न प्रकार समर्थित हैं",
+    "csv": "CSV",
+    "excel": "Excel",
+    "columnsLabel": "कॉलम:",
+    "columnsHelp": "आवश्यकतानुसार और विकल्प जोड़ें (option_e, option_f, ...) — correct_answer किसी विकल्प के अक्षर से मेल खाना चाहिए (A, B, C, ...)। TRUE_FALSE के लिए, A (सही) या B (गलत) का उपयोग करें।",
+    "multipleCorrectAnswersLabel": "कई सही उत्तर:",
+    "multipleCorrectAnswersHelpBefore": "correct_answer में हर सही अक्षर लिखें, उदाहरण के लिए",
+    "multipleCorrectAnswersHelpAfter": "— प्रश्न को MCQ (एकाधिक सही) के रूप में इम्पोर्ट किया जाता है। CSV में, इसे दोहरे उद्धरण चिह्नों में रखें ताकि कॉमा को नया कॉलम न समझा जाए। question_type खाली छोड़ा जा सकता है, इसे अपने आप पहचान लिया जाएगा।",
+    "clickToSelectFile": "फ़ाइल चुनने के लिए क्लिक करें",
+    "supportedFileTypes": ".csv, .xlsx, या .xls फ़ाइलें समर्थित हैं",
+    "parseSummary": {
+        "added_one": "{{count}} प्रश्न सफलतापूर्वक जोड़ा गया,",
+        "added_other": "{{count}} प्रश्न सफलतापूर्वक जोड़े गए,",
+        "skipped_one": "{{count}} row छोड़ी गई।",
+        "skipped_other": "{{count}} rows छोड़ी गईं।"
+    },
+    "parseErrorsHeading_one": "पार्स त्रुटि ({{count}}):",
+    "parseErrorsHeading_other": "पार्स त्रुटियाँ ({{count}}):",
+    "rowError": "Row {{row}}: {{message}}",
+    "noValidQuestionsFound": "कोई मान्य प्रश्न नहीं मिला। त्रुटियाँ ठीक करें और फिर से प्रयास करें।",
+    "cancel": "रद्द करें",
+    "parseAndPreview": "पार्स करें और प्रीव्यू करें",
+    "errors": {
+        "fileEmpty": "फ़ाइल खाली है।",
+        "missingColumns": "आवश्यक कॉलम गायब हैं: {{columns}}।",
+        "noOptionColumns": "कोई विकल्प कॉलम नहीं मिला। कम से कम option_a, option_b, ... जोड़ें।",
+        "questionTextEmpty": "question_text खाली है।",
+        "unsupportedQuestionType": "असमर्थित question_type \"{{type}}\"। केवल MCQS, MCQM और TRUE_FALSE की अनुमति है।",
+        "invalidCorrectAnswer": "अमान्य correct_answer \"{{value}}\"। {{letters}} का उपयोग करें (कई सही उत्तरों के लिए कॉमा से अलग करें)।",
+        "referencedOptionsEmpty_one": "correct_answer में {{letters}} बताया गया है लेकिन {{columns}} खाली है।",
+        "referencedOptionsEmpty_other": "correct_answer में {{letters}} बताया गया है लेकिन {{columns}} खाली हैं।",
+        "needsAtLeastTwoOptions": "{{questionType}} के लिए कम से कम 2 विकल्प आवश्यक हैं (option_a और option_b)।",
+        "invalidTrueFalseAnswer": "TRUE_FALSE के लिए अमान्य correct_answer \"{{value}}\"। A (सही) या B (गलत) का उपयोग करें।"
+    }
+}

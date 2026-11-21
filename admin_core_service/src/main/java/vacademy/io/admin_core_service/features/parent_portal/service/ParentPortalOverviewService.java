@@ -14,6 +14,7 @@ import vacademy.io.admin_core_service.features.live_session.dto.GroupedSessionsB
 import vacademy.io.admin_core_service.features.live_session.dto.StudentAttendanceReportDTO;
 import vacademy.io.admin_core_service.features.live_session.service.AttendanceReportService;
 import vacademy.io.admin_core_service.features.live_session.service.GetLiveSessionService;
+import vacademy.io.admin_core_service.features.live_session.service.LiveSessionAttendanceOnlyModeService;
 import vacademy.io.admin_core_service.features.parent_portal.dto.ChildOverviewDTO;
 import vacademy.io.admin_core_service.features.parent_portal.dto.ChildReportListItemDTO;
 import vacademy.io.admin_core_service.features.parent_portal.dto.ParentChildSummaryDTO;
@@ -51,6 +52,7 @@ public class ParentPortalOverviewService {
     private final StudentAnalysisProcessRepository processRepository;
     private final AttendanceReportService attendanceReportService;
     private final GetLiveSessionService getLiveSessionService;
+    private final LiveSessionAttendanceOnlyModeService attendanceOnlyModeService;
     private final AssessmentServiceClient assessmentServiceClient;
 
     public ChildOverviewDTO overview(CustomUserDetails caller, String childUserId) {
@@ -130,9 +132,10 @@ public class ParentPortalOverviewService {
         // fetches per-course progress on its own (lazily), so the home stays fast.
         if (available.contains("liveSessions") && primaryBatch != null) {
             try {
-                List<GroupedSessionsByDateDTO> groups = getLiveSessionService
-                        .getLiveAndUpcomingSessionsForUserAndBatch(
-                                primaryBatch, child.childUserId(), 0, null, null, null, caller);
+                // Attendance-only institute: only classes marked show_to_learners count.
+                List<GroupedSessionsByDateDTO> groups = getLiveSessionService.getLiveAndUpcomingSessionsForUserAndBatch(
+                        primaryBatch, child.childUserId(), child.instituteId(), 0, null, null, null, caller,
+                        attendanceOnlyModeService.isEnabled(child.instituteId()));
                 int count = groups == null ? 0 : groups.stream()
                         .mapToInt(g -> g.getSessions() == null ? 0 : g.getSessions().size())
                         .sum();

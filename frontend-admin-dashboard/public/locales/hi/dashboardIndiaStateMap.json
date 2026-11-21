@@ -1,0 +1,16 @@
+{
+    "legend": {
+        "title": "भारत में वितरण",
+        "hoverPrompt": "किसी राज्य पर होवर करें"
+    },
+    "actions": {
+        "enlargeMap": "मानचित्र बड़ा करें"
+    },
+    "map": {
+        "ariaLabel": "भारतीय राज्य के अनुसार {{subOrgPlural}}",
+        "tooltip": "{{name}}: {{count}}"
+    },
+    "dialog": {
+        "heading": "राज्य के अनुसार {{subOrgPlural}}"
+    }
+}

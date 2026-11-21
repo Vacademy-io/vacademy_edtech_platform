@@ -31,15 +31,37 @@ public class PaymentPlanService {
         return paymentPlanRepository.findByPaymentOption(paymentOption);
     }
     public List<PaymentPlan>editPaymentPlans(List<PaymentPlan>existingPaymentPlans, List<PaymentPlanDTO>paymentPlanDTOS, PaymentOption paymentOption){
+        return editPaymentPlans(existingPaymentPlans, paymentPlanDTOS, paymentOption, false);
+    }
+
+    /**
+     * @param fullPayload true when the caller sends every plan field (the Settings page
+     *                    save). A null {@code validityInDays} then means "no expiry" —
+     *                    the FREE "Unlimited" / ONE_TIME "Lifetime" choice — and is
+     *                    written. With a partial payload (the Edit Payment Option dialog)
+     *                    null only means "not sent" and the stored value is kept.
+     */
+    public List<PaymentPlan>editPaymentPlans(List<PaymentPlan>existingPaymentPlans, List<PaymentPlanDTO>paymentPlanDTOS, PaymentOption paymentOption, boolean fullPayload){
         Map<String,PaymentPlan>existingPaymentPlanMap = existingPaymentPlans.stream().
                 collect(Collectors.toMap(PaymentPlan::getId, Function.identity()));
         List<PaymentPlan>toSave = new ArrayList<>();
         Set<String> retainedIds = new HashSet<>();
+        if (paymentPlanDTOS == null) paymentPlanDTOS = List.of();
+        // Single-plan option types (FREE / DONATION, and older clients for ONE_TIME) are
+        // resent by the Settings page without a plan id. One stored plan edited into one
+        // resent plan is an update of that plan, not a replacement: matching them keeps
+        // the id, so user_plan.plan_id of everyone already on it still points at a live
+        // row instead of a retired one.
+        if (paymentPlanDTOS.size() == 1 && existingPaymentPlans.size() == 1
+                && !StringUtils.hasText(paymentPlanDTOS.get(0).getId())) {
+            paymentPlanDTOS.get(0).setId(existingPaymentPlans.get(0).getId());
+        }
         for (PaymentPlanDTO paymentPlanDTO : paymentPlanDTOS) {
             if (StringUtils.hasText(paymentPlanDTO.getId())){
                 PaymentPlan paymentPlan = existingPaymentPlanMap.get(paymentPlanDTO.getId());
                 if (paymentPlan != null){
                     updatePaymentPlan(paymentPlan,paymentPlanDTO);
+                    if (fullPayload) paymentPlan.setValidityInDays(paymentPlanDTO.getValidityInDays());
                 }else{
                     throw new VacademyException("Payment Plan with id " + paymentPlanDTO.getId() + " not found");
                 }
@@ -66,11 +88,15 @@ public class PaymentPlanService {
         if (paymentPlanDTO.getName() != null) paymentPlan.setName(paymentPlanDTO.getName());
         if (paymentPlanDTO.getStatus() != null) paymentPlan.setStatus(paymentPlanDTO.getStatus());
         if (paymentPlanDTO.getValidityInDays() != null) paymentPlan.setValidityInDays(paymentPlanDTO.getValidityInDays());
-        paymentPlan.setActualPrice(paymentPlanDTO.getActualPrice());
-        paymentPlan.setElevatedPrice(paymentPlanDTO.getElevatedPrice());
+        // Prices are null-guarded like every other field. They used to be assigned
+        // unconditionally off primitive doubles, so an edit payload that omitted them
+        // deserialized 0.0 and wiped the price off a paid plan.
+        if (paymentPlanDTO.getActualPrice() != null) paymentPlan.setActualPrice(paymentPlanDTO.getActualPrice());
+        if (paymentPlanDTO.getElevatedPrice() != null) paymentPlan.setElevatedPrice(paymentPlanDTO.getElevatedPrice());
         if (paymentPlanDTO.getCurrency() != null) paymentPlan.setCurrency(paymentPlanDTO.getCurrency());
         if (paymentPlanDTO.getDescription() != null) paymentPlan.setDescription(paymentPlanDTO.getDescription());
         if (paymentPlanDTO.getTag() != null) paymentPlan.setTag(paymentPlanDTO.getTag());
         if (paymentPlanDTO.getFeatureJson() != null) paymentPlan.setFeatureJson(paymentPlanDTO.getFeatureJson());
+        if (paymentPlanDTO.getPlanChangeAllowed() != null) paymentPlan.setPlanChangeAllowed(paymentPlanDTO.getPlanChangeAllowed());
     }
 }

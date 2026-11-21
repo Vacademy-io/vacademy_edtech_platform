@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { ZOOM_SDK_SIGNATURE_ENDPOINT } from '@/constants/urls';
@@ -154,6 +155,7 @@ export default function ZoomHostSdkPlayer({
     /** Where Zoom's "Leave" sends the browser. Defaults to the app origin. */
     leaveUrl?: string;
 }) {
+    const { t } = useTranslation('studyLibraryZoomHostSdkPlayer');
     const startedRef = useRef(false);
     const [phase, setPhase] = useState<Phase>('loading');
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -186,11 +188,11 @@ export default function ZoomHostSdkPlayer({
             ?.message;
         setErrorMsg(
             status === 409
-                ? serverMsg ?? 'This Zoom meeting is still being set up. Try again in a moment, or use "Provision now" on the session page.'
-                : 'Could not load the Zoom meeting. Check your connection and try again.'
+                ? serverMsg ?? t('stillProvisioning')
+                : t('loadFailed')
         );
         setPhase('error');
-    }, [error]);
+    }, [error, t]);
 
     useEffect(() => {
         if (!data) return;
@@ -201,9 +203,7 @@ export default function ZoomHostSdkPlayer({
         // response omits it) crashes with an opaque "reading 'toString'" TypeError. Surface a
         // clear message instead of booting the SDK with bad params.
         if (!data.meetingNumber || !data.signature || !data.sdkKey) {
-            setErrorMsg(
-                'This Zoom meeting is not ready to host yet — it may still be getting set up on Zoom. Refresh in a moment, or re-check the Zoom account if it persists.'
-            );
+            setErrorMsg(t('notReadyToHost'));
             setPhase('error');
             return;
         }
@@ -214,11 +214,7 @@ export default function ZoomHostSdkPlayer({
         // token lacks the ZAK scope (classic: user_zak:read, granular: user:read:zak).
         // Surface that as an actionable message instead of booting the SDK to crash.
         if (data.role === 1 && !data.zakToken) {
-            setErrorMsg(
-                'Cannot start this meeting as host: Zoom did not issue a host start-token (ZAK). ' +
-                    'Reconnect Zoom in Settings → Live Session — remove the app in your Zoom account first so the ' +
-                    'consent screen reappears, then approve the ZAK scope (user_zak:read / user:read:zak).'
-            );
+            setErrorMsg(t('missingZak'));
             setPhase('error');
             return;
         }
@@ -264,7 +260,9 @@ export default function ZoomHostSdkPlayer({
                                 console.error('[Zoom Host ClientView] join failed:', err);
                                 if (!cancelled) {
                                     hideZmmtgRoot(); // else the empty Zoom shell covers the error UI
-                                    setErrorMsg(`Could not start the Zoom meeting (${err?.errorCode ?? 'join error'}).`);
+                                    setErrorMsg(
+                                        t('joinFailed', { code: err?.errorCode ?? t('joinErrorFallback') })
+                                    );
                                     setPhase('error');
                                 }
                             },
@@ -279,7 +277,9 @@ export default function ZoomHostSdkPlayer({
                         console.error('[Zoom Host ClientView] init failed:', err);
                         if (!cancelled) {
                             hideZmmtgRoot();
-                            setErrorMsg(`Could not initialise the Zoom meeting (${err?.errorCode ?? 'init error'}).`);
+                            setErrorMsg(
+                                t('initFailed', { code: err?.errorCode ?? t('initErrorFallback') })
+                            );
                             setPhase('error');
                         }
                     },
@@ -288,7 +288,7 @@ export default function ZoomHostSdkPlayer({
                 if (cancelled) return;
                 console.error('[Zoom Host ClientView] load failed:', err);
                 hideZmmtgRoot();
-                setErrorMsg('Could not load the Zoom meeting. Check your connection and try again.');
+                setErrorMsg(t('loadFailed'));
                 setPhase('error');
             }
         })();
@@ -305,15 +305,15 @@ export default function ZoomHostSdkPlayer({
             hideZmmtgRoot();
             startedRef.current = false;
         };
-    }, [data, leaveUrl]);
+    }, [data, leaveUrl, t]);
 
     // Client View renders full-screen into #zmmtg-root (outside this tree). We only
     // render the pre-join loading / error overlay; once joined, Zoom's UI covers it.
     if (error || phase === 'error') {
         return (
             <div className="flex h-full w-full flex-col items-center justify-center gap-2 p-8 text-center">
-                <p className="text-red-600">{errorMsg ?? 'Failed to start the Zoom meeting.'}</p>
-                <p className="text-sm text-neutral-500">Please refresh the page or try again.</p>
+                <p className="text-red-600">{errorMsg ?? t('startFailed')}</p>
+                <p className="text-sm text-neutral-500">{t('refreshOrRetry')}</p>
             </div>
         );
     }
@@ -325,7 +325,7 @@ export default function ZoomHostSdkPlayer({
             <div className="flex flex-col items-center gap-3 text-white">
                 <div className="size-8 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 <span className="text-sm">
-                    {phase === 'loading' ? 'Preparing meeting…' : 'Starting meeting as host…'}
+                    {phase === 'loading' ? t('preparingMeeting') : t('startingAsHost')}
                 </span>
             </div>
         </div>

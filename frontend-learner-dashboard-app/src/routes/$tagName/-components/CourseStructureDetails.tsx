@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { BASE_URL } from "@/constants/urls";
 import {
   TreeStructure,
@@ -21,15 +22,20 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { getTerminology, getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 import { getAuthoredChapterDescription } from "@/constants/chapter-description";
+import { getPublicUrlWithoutLogin } from "@/services/upload_file";
+import { SubjectTileGrid, ContentDrillCrumb } from "./SubjectTileGrid";
 
 interface SubjectType {
   id: string;
   subject_name: string;
   subject_order: number;
   description: string;
+  /** Media id for the subject artwork. The open init-details endpoint has
+   *  always returned this; only the tile variant renders it. */
+  thumbnail_id?: string | null;
 }
 
 interface Chapter {
@@ -47,6 +53,9 @@ interface Module {
   module_order: number;
   description: string;
   chapters: Chapter[];
+  /** Media id for the module artwork, same as subjects. The raw API object is
+   *  passed straight through, so this is present at runtime. */
+  thumbnail_id?: string | null;
 }
 
 interface ModuleWithChapters {
@@ -84,6 +93,24 @@ interface CourseStructureDetailsProps {
   instituteId: string;
   packageSessionId: string;
   levelId?: string; // Add levelId parameter
+  /**
+   * How the top level reads.
+   *
+   * "tiles" draws the subjects as artwork cards — the same shape
+   * the admin dashboard and the enrolled learner's Content Structure use — and
+   * drills into one subject at a time beneath the grid. "outline" is the
+   * folder-row tree, and the default here so that callers which do not read
+   * the institute's learner settings keep what they always showed. The public
+   * course page passes the variant those settings imply.
+   *
+   * Tiles apply only where there is a top level to tile: a depth-5 course with
+   * at least one non-"default" subject. Everything shallower, and every course
+   * whose subject layer is a single "default" row, renders the outline no
+   * matter what is asked for.
+   */
+  variant?: "outline" | "tiles";
+  /** False: no "Course Content (Modules & Slides)" line above the structure. Default true. */
+  showContentHeading?: boolean;
 }
 
 export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
@@ -92,7 +119,18 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
   instituteId,
   packageSessionId,
   levelId,
+  variant = "outline",
+  showContentHeading = true,
 }) => {
+  const { t } = useTranslation("coursePlayerA");
+  const courseTerm = getTerminology(ContentTerms.Course, SystemTerms.Course);
+  const moduleTerm = getTerminology(ContentTerms.Modules, SystemTerms.Modules);
+  const chapterTerm = getTerminology(ContentTerms.Chapters, SystemTerms.Chapters);
+  const chaptersTerm = getTerminologyPlural(ContentTerms.Chapters, SystemTerms.Chapters);
+  const modulesTerm = getTerminologyPlural(ContentTerms.Modules, SystemTerms.Modules);
+  const slidesTerm = getTerminologyPlural(ContentTerms.Slides, SystemTerms.Slides);
+  const subjectTerm = getTerminology(ContentTerms.Subjects, SystemTerms.Subjects);
+  const subjectsTerm = getTerminologyPlural(ContentTerms.Subjects, SystemTerms.Subjects);
   const [isLoading, setIsLoading] = useState(true);
   const [studyLibraryData, setStudyLibraryData] = useState<SubjectType[]>([]);
   const [subjectModulesMap, setSubjectModulesMap] = useState<SubjectModulesMap>(
@@ -102,6 +140,17 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
   const [openSubjects, setOpenSubjects] = useState<Set<string>>(new Set());
   const [openModules, setOpenModules] = useState<Set<string>>(new Set());
   const [openChapters, setOpenChapters] = useState<Set<string>>(new Set());
+  // Subject artwork for the tile variant, resolved from thumbnail_id. Kept out
+  // of the outline path entirely: that variant shows no images, so it should
+  // not pay for a request per subject.
+  const [subjectThumbs, setSubjectThumbs] = useState<Record<string, string>>({});
+  // Which subject's contents the tile grid has drilled into. One at a time —
+  // the panel sits under the grid, so two open subjects would push the second
+  // one's content far from the card that opened it.
+  const [openTileSubject, setOpenTileSubject] = useState<string | null>(null);
+  // The module drilled into within the open subject, if any. Together these
+  // two say which level the grid is showing: none, a subject, or a module.
+  const [openTileModule, setOpenTileModule] = useState<string | null>(null);
 
   // Helper function to check if a name is "default"
   const isDefaultName = (name: string | undefined | null): boolean => {
@@ -112,12 +161,12 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
   const getSlideIcon = (slide: Slide) => {
     // Check for video slides first
     if (slide.video_slide) {
-      return { Icon: Play, color: "text-red-500", label: "Video" };
+      return { Icon: Play, color: "text-red-500", label: t("courseStructureDetails.slideType.video") };
     }
 
     // Check for question slides
     if (slide.question_slide) {
-      return { Icon: Question, color: "text-blue-500", label: "Question" };
+      return { Icon: Question, color: "text-blue-500", label: t("courseStructureDetails.slideType.question") };
     }
 
     // Check for assignment slides
@@ -125,22 +174,22 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
       return {
         Icon: ClipboardText,
         color: "text-orange-500",
-        label: "Assignment",
+        label: t("courseStructureDetails.slideType.assignment"),
       };
     }
 
     // Check for quiz slides
     if (slide.quiz_slide) {
-      return { Icon: Exam, color: "text-purple-500", label: "Quiz" };
+      return { Icon: Exam, color: "text-purple-500", label: t("courseStructureDetails.slideType.quiz") };
     }
 
     // Check for document slides
     if (slide.document_slide) {
       const docType = slide.document_slide.type;
       if (docType === "PDF") {
-        return { Icon: FilePdf, color: "text-red-600", label: "PDF" };
-      } else if (docType === "DOC" || docType === "DOCX") {
-        return { Icon: FileDoc, color: "text-blue-600", label: "Document" };
+        return { Icon: FilePdf, color: "text-red-600", label: t("courseStructureDetails.slideType.pdf") };
+      } else if (docType === "DOC" || docType === "DOCX" || docType === "HTML") {
+        return { Icon: FileDoc, color: "text-blue-600", label: t("courseStructureDetails.slideType.document") };
       }
     }
 
@@ -298,9 +347,15 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
             if (subject.id) {
               const transformedSubject: SubjectType = {
                 id: subject.id,
-                subject_name: subject.subject_name || `Subject ${index + 1}`,
+                subject_name:
+                  subject.subject_name ||
+                  t("courseStructureDetails.unnamedSubject", { subject: subjectTerm, index: index + 1 }),
                 subject_order: subject.subject_order || index,
                 description: subject.description || "",
+                // The API has always sent this; the transform used to drop it,
+                // which left every tile on the artwork fallback even though
+                // each subject has a real image.
+                thumbnail_id: subject.thumbnail_id ?? null,
               };
               subjects.push(transformedSubject);
             }
@@ -426,6 +481,45 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
     });
   };
 
+  // Resolve subject artwork once the subjects land. Each id costs one request,
+  // so this only runs for the tile variant, and a failure is silent: a card
+  // without artwork still reads fine, and a broken image would read worse.
+  useEffect(() => {
+    if (variant !== "tiles" || studyLibraryData.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const resolved: Record<string, string> = {};
+      // Subjects and the modules under them share one map keyed by id, so the
+      // nested grid needs no second lookup and no second round of requests.
+      const targets: Array<{ id: string; fileId?: string | null }> =
+        studyLibraryData.map((s) => ({ id: s.id, fileId: s.thumbnail_id }));
+      for (const m of Object.values(subjectModulesMap).flat()) {
+        const id = m.module?.id;
+        if (id) targets.push({ id, fileId: m.module?.thumbnail_id });
+      }
+      await Promise.all(
+        targets.map(async ({ id, fileId }) => {
+          if (!fileId || subjectThumbs[id]) return;
+          try {
+            const url = await getPublicUrlWithoutLogin(fileId);
+            if (url) resolved[id] = url;
+          } catch {
+            /* no artwork — the card falls back to a glyph */
+          }
+        }),
+      );
+      if (!cancelled && Object.keys(resolved).length > 0) {
+        setSubjectThumbs((prev) => ({ ...prev, ...resolved }));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // subjectThumbs is deliberately not a dep: it is what this effect writes,
+    // and including it would re-run the whole prefetch on every resolved image.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [variant, studyLibraryData, subjectModulesMap]);
+
   // Toggle functions with lazy loading (like /courses route)
   const toggleSubject = (subjectId: string) => {
     toggleOpenState(subjectId, setOpenSubjects);
@@ -491,7 +585,7 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
     if (filteredChapters.length === 0) {
       return (
         <div className="text-sm text-catalogue-text-muted italic">
-          No chapters available for this module.
+          {t("courseStructureDetails.noChaptersForModule", { chapters: chaptersTerm, module: moduleTerm })}
         </div>
       );
     }
@@ -507,14 +601,14 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
             <CollapsibleTrigger asChild>
               <Button
                 variant="ghost"
-                className="w-full justify-start p-2 h-auto text-start border border-catalogue-border rounded-lg overflow-hidden"
+                className="w-full justify-start p-2 h-auto text-start border border-catalogue-border rounded-catalogue-md overflow-hidden"
               >
                 <FileText
                   size={16}
                   className="me-2 text-green-500 flex-shrink-0"
                 />
                 <span className="text-sm font-medium text-catalogue-text-primary break-words truncate flex-1 min-w-0">
-                  {chapter.chapter_name || "Unnamed Chapter"}
+                  {chapter.chapter_name || t("courseStructureDetails.unnamedChapter", { chapter: chapterTerm })}
                 </span>
                 <div className="flex-shrink-0 ms-2">
                   {openChapters.has(chapter.id) ? (
@@ -556,7 +650,7 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
     if (!description) return null;
 
     return (
-      <div className="p-2 bg-catalogue-bg-subtle rounded text-sm text-catalogue-text-secondary mb-2 break-words">
+      <div className="p-2 bg-catalogue-bg-subtle rounded-catalogue-xs text-sm text-catalogue-text-secondary mb-2 break-words">
         {description}
       </div>
     );
@@ -568,14 +662,14 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
     // If slides haven't been fetched yet, show loading state
     if (!slidesMap[chapterId]) {
       return (
-        <div className="text-sm text-catalogue-text-muted italic">Loading slides...</div>
+        <div className="text-sm text-catalogue-text-muted italic">{t("courseStructureDetails.loadingSlides", { slides: slidesTerm })}</div>
       );
     }
 
     if (slides.length === 0) {
       return (
         <div className="text-sm text-catalogue-text-muted italic">
-          No slides available for this chapter.
+          {t("courseStructureDetails.noSlidesForChapter", { slides: slidesTerm, chapter: chapterTerm })}
         </div>
       );
     }
@@ -587,7 +681,7 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
           return (
             <div
               key={`${slide.id}-${index}`}
-              className="flex items-center gap-2 p-2 border border-catalogue-border rounded-lg hover:bg-catalogue-bg-subtle overflow-hidden"
+              className="flex items-center gap-2 p-2 border border-catalogue-border rounded-catalogue-md hover:bg-catalogue-bg-subtle overflow-hidden"
             >
               <Icon size={16} className={`flex-shrink-0 ${color}`} />
               <div className="flex-1 min-w-0 overflow-hidden">
@@ -627,6 +721,33 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
 
     if (filteredModules.length === 0) return null;
 
+    // Tiles carry down to modules. Chapters below stay as rows: they carry
+    // slide counts and run long, so a third grid would cost more scrolling
+    // than the pictures are worth.
+    if (variant === "tiles") {
+      const openModule = filteredModules.find(
+        (m) => m.module?.id === openTileModule,
+      );
+      if (openModule) return renderChapters(openModule);
+      return (
+        <SubjectTileGrid
+          dense
+          items={filteredModules.map((m) => ({
+            id: m.module.id,
+            name:
+              m.module?.module_name ||
+              t("courseStructureDetails.unnamedModule", { module: moduleTerm }),
+            description: m.module?.description,
+          }))}
+          thumbs={subjectThumbs}
+          onOpen={(moduleId) => {
+            setOpenTileModule(moduleId);
+            toggleOpenState(moduleId, setOpenModules);
+          }}
+        />
+      );
+    }
+
     return (
       <div className="space-y-2">
         {filteredModules.map((moduleWithChapters, index) => (
@@ -640,14 +761,14 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
             <CollapsibleTrigger asChild>
               <Button
                 variant="ghost"
-                className="w-full justify-start p-2 h-auto text-start border border-catalogue-border rounded-lg overflow-hidden"
+                className="w-full justify-start p-2 h-auto text-start border border-catalogue-border rounded-catalogue-md overflow-hidden"
               >
                 <Folder
                   size={16}
                   className="me-2 text-orange-500 flex-shrink-0"
                 />
                 <span className="text-sm font-medium text-catalogue-text-primary break-words truncate flex-1 min-w-0">
-                  {moduleWithChapters.module?.module_name || "Unnamed Module"}
+                  {moduleWithChapters.module?.module_name || t("courseStructureDetails.unnamedModule", { module: moduleTerm })}
                 </span>
                 <div className="flex-shrink-0 ms-2">
                   {openModules.has(moduleWithChapters.module?.id) ? (
@@ -661,7 +782,7 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
             <CollapsibleContent className="ms-4 mt-2">
               {moduleWithChapters.module?.description &&
                 moduleWithChapters.module.description.trim() !== "" && (
-                  <div className="p-2 bg-catalogue-bg-subtle rounded text-sm text-catalogue-text-secondary mb-2">
+                  <div className="p-2 bg-catalogue-bg-subtle rounded-catalogue-xs text-sm text-catalogue-text-secondary mb-2">
                     {moduleWithChapters.module.description}
                   </div>
                 )}
@@ -693,14 +814,14 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
                 <CollapsibleTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="w-full justify-start p-2 h-auto text-start border border-catalogue-border rounded-lg overflow-hidden"
+                    className="w-full justify-start p-2 h-auto text-start border border-catalogue-border rounded-catalogue-md overflow-hidden"
                   >
                     <FileText
                       size={16}
                       className="me-2 text-green-500 flex-shrink-0"
                     />
                     <span className="text-sm font-medium text-catalogue-text-primary break-words truncate flex-1 min-w-0">
-                      {chapter.chapter_name || "Unnamed Chapter"}
+                      {chapter.chapter_name || t("courseStructureDetails.unnamedChapter", { chapter: chapterTerm })}
                     </span>
                     <div className="flex-shrink-0 ms-2">
                       {openChapters.has(chapter.id) ? (
@@ -731,7 +852,7 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
               result.push(
                 <div
                   key={`${slide.id}-${slideIndex}`}
-                  className="flex items-center gap-2 p-2 border border-catalogue-border rounded-lg hover:bg-catalogue-bg-subtle overflow-hidden"
+                  className="flex items-center gap-2 p-2 border border-catalogue-border rounded-catalogue-md hover:bg-catalogue-bg-subtle overflow-hidden"
                 >
                   <Icon size={16} className={`flex-shrink-0 ${color}`} />
                   <div className="flex-1 min-w-0 overflow-hidden">
@@ -755,7 +876,7 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
     if (result.length === 0) {
       return (
         <div className="text-sm text-catalogue-text-muted italic">
-          Loading course content...
+          {t("courseStructureDetails.loadingCourseContent", { course: courseTerm })}
         </div>
       );
     }
@@ -785,14 +906,14 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
                 <CollapsibleTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="w-full justify-start p-2 h-auto text-start border border-catalogue-border rounded-lg overflow-hidden"
+                    className="w-full justify-start p-2 h-auto text-start border border-catalogue-border rounded-catalogue-md overflow-hidden"
                   >
                     <FileText
                       size={16}
                       className="me-2 text-green-500 flex-shrink-0"
                     />
                     <span className="text-sm font-medium text-catalogue-text-primary break-words truncate flex-1 min-w-0">
-                      {chapter.chapter_name || "Unnamed Chapter"}
+                      {chapter.chapter_name || t("courseStructureDetails.unnamedChapter", { chapter: chapterTerm })}
                     </span>
                     <div className="flex-shrink-0 ms-2">
                       {openChapters.has(chapter.id) ? (
@@ -817,7 +938,7 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
               result.push(
                 <div
                   key={`${slide.id}-${slideIndex}`}
-                  className="flex items-center gap-2 p-2 border border-catalogue-border rounded-lg hover:bg-catalogue-bg-subtle overflow-hidden"
+                  className="flex items-center gap-2 p-2 border border-catalogue-border rounded-catalogue-md hover:bg-catalogue-bg-subtle overflow-hidden"
                 >
                   <Icon size={16} className={`flex-shrink-0 ${color}`} />
                   <div className="flex-1 min-w-0 overflow-hidden">
@@ -841,7 +962,7 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
     if (result.length === 0) {
       return (
         <div className="text-sm text-catalogue-text-muted italic">
-          No content available for this course.
+          {t("courseStructureDetails.noContentForCourse", { course: courseTerm })}
         </div>
       );
     }
@@ -870,14 +991,14 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
               <CollapsibleTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="w-full justify-start p-2 h-auto text-start border border-catalogue-border rounded-lg overflow-hidden"
+                  className="w-full justify-start p-2 h-auto text-start border border-catalogue-border rounded-catalogue-md overflow-hidden"
                 >
                   <Folder
                     size={16}
                     className="me-2 text-blue-500 flex-shrink-0"
                   />
                   <span className="text-sm font-medium text-catalogue-text-primary break-words truncate flex-1 min-w-0">
-                    {moduleWithChapters.module?.module_name || "Unnamed Module"}
+                    {moduleWithChapters.module?.module_name || t("courseStructureDetails.unnamedModule", { module: moduleTerm })}
                   </span>
                   <div className="flex-shrink-0 ms-2">
                     {openModules.has(moduleWithChapters.module?.id) ? (
@@ -891,7 +1012,7 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
               <CollapsibleContent className="ms-4 mt-2">
                 {moduleWithChapters.module?.description &&
                   moduleWithChapters.module.description.trim() !== "" && (
-                    <div className="p-2 bg-catalogue-bg-subtle rounded text-sm text-catalogue-text-secondary mb-2">
+                    <div className="p-2 bg-catalogue-bg-subtle rounded-catalogue-xs text-sm text-catalogue-text-secondary mb-2">
                       {moduleWithChapters.module.description}
                     </div>
                   )}
@@ -903,7 +1024,7 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
                   if (filteredChapters.length === 0) {
                     return (
                       <div className="text-sm text-catalogue-text-muted italic">
-                        No chapters available for this module.
+                        {t("courseStructureDetails.noChaptersForModule", { chapters: chaptersTerm, module: moduleTerm })}
                       </div>
                     );
                   }
@@ -918,14 +1039,14 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
                           <CollapsibleTrigger asChild>
                             <Button
                               variant="ghost"
-                              className="w-full justify-start p-2 h-auto text-start border border-catalogue-border rounded-lg overflow-hidden"
+                              className="w-full justify-start p-2 h-auto text-start border border-catalogue-border rounded-catalogue-md overflow-hidden"
                             >
                               <FileText
                                 size={16}
                                 className="me-2 text-green-500 flex-shrink-0"
                               />
                               <span className="text-sm font-medium text-catalogue-text-primary break-words truncate flex-1 min-w-0">
-                                {chapter.chapter_name || "Unnamed Chapter"}
+                                {chapter.chapter_name || t("courseStructureDetails.unnamedChapter", { chapter: chapterTerm })}
                               </span>
                               <div className="flex-shrink-0 ms-2">
                                 {openChapters.has(chapter.id) ? (
@@ -964,14 +1085,14 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
                   <CollapsibleTrigger asChild>
                     <Button
                       variant="ghost"
-                      className="w-full justify-start p-2 h-auto text-start border border-catalogue-border rounded-lg overflow-hidden"
+                      className="w-full justify-start p-2 h-auto text-start border border-catalogue-border rounded-catalogue-md overflow-hidden"
                     >
                       <FileText
                         size={16}
                         className="me-2 text-green-500 flex-shrink-0"
                       />
                       <span className="text-sm font-medium text-catalogue-text-primary break-words truncate flex-1 min-w-0">
-                        {chapter.chapter_name || "Unnamed Chapter"}
+                        {chapter.chapter_name || t("courseStructureDetails.unnamedChapter", { chapter: chapterTerm })}
                       </span>
                       <div className="flex-shrink-0 ms-2">
                         {openChapters.has(chapter.id) ? (
@@ -996,7 +1117,7 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
                 result.push(
                   <div
                     key={`${slide.id}-${slideIndex}`}
-                    className="flex items-center gap-2 p-2 border border-catalogue-border rounded-lg hover:bg-catalogue-bg-subtle overflow-hidden"
+                    className="flex items-center gap-2 p-2 border border-catalogue-border rounded-catalogue-md hover:bg-catalogue-bg-subtle overflow-hidden"
                   >
                     <Icon size={16} className={`flex-shrink-0 ${color}`} />
                     <div className="flex-1 min-w-0 overflow-hidden">
@@ -1021,12 +1142,91 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
     if (result.length === 0) {
       return (
         <div className="text-sm text-catalogue-text-muted italic">
-          No content available for this course.
+          {t("courseStructureDetails.noContentForCourse", { course: courseTerm })}
         </div>
       );
     }
 
     return <div className="space-y-2">{result}</div>;
+  };
+
+  /**
+   * Subjects as artwork cards, matched to the admin dashboard and the enrolled
+   * learner's Content Structure so an author sees the same shape everywhere.
+   *
+   * Only the top level is tiled. Opening a card drills into that subject's
+   * modules below the grid, reusing the outline renderer — a tile grid all the
+   * way down would bury a three-slide chapter behind three clicks.
+   *
+   * Returns null when there is nothing to tile (every subject named "default",
+   * which is how a course with no real subject layer arrives), so the caller
+   * can fall back to the outline rather than render an empty grid.
+   */
+  const renderSubjectsAsTiles = () => {
+    const subjects = studyLibraryData.filter(
+      (subject) => !isDefaultName(subject.subject_name),
+    );
+    if (subjects.length === 0) return null;
+
+    const subject = subjects.find((s) => s.id === openTileSubject) ?? null;
+
+    // Top level: just the subject cards, nothing expanded.
+    if (!subject) {
+      return (
+        <SubjectTileGrid
+          items={subjects.map((s) => ({
+            id: s.id,
+            name: s.subject_name,
+            description: s.description,
+          }))}
+          thumbs={subjectThumbs}
+          onOpen={(subjectId) => {
+            setOpenTileSubject(subjectId);
+            setOpenTileModule(null);
+            // The outline renderer reads openSubjects to decide what to draw.
+            toggleOpenState(subjectId, setOpenSubjects);
+          }}
+        />
+      );
+    }
+
+    // Drilled in: the grid is replaced by the level below, headed by a trail
+    // back up. One level on screen at a time, so there is never a panel whose
+    // owner has to be guessed at.
+    const openModule = (subjectModulesMap[subject.id] || []).find(
+      (m) => m.module?.id === openTileModule,
+    );
+    const trail = [
+      { id: subject.id, name: subject.subject_name },
+      ...(openModule?.module
+        ? [
+            {
+              id: openModule.module.id,
+              name:
+                openModule.module.module_name ||
+                t("courseStructureDetails.unnamedModule", { module: moduleTerm }),
+            },
+          ]
+        : []),
+    ];
+
+    return (
+      <div>
+        <ContentDrillCrumb
+          trail={trail}
+          rootLabel={subjectsTerm}
+          onNavigate={(id) => {
+            if (id === null) {
+              setOpenTileSubject(null);
+              setOpenTileModule(null);
+            } else if (id === subject.id) {
+              setOpenTileModule(null);
+            }
+          }}
+        />
+        {renderModules(subject.id)}
+      </div>
+    );
   };
 
   // Render all subjects for depth 5 (skip "default" labels, show content directly)
@@ -1048,7 +1248,7 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
             <CollapsibleTrigger asChild>
               <Button
                 variant="ghost"
-                className="w-full justify-start p-3 h-auto text-start border border-catalogue-border rounded-lg overflow-hidden"
+                className="w-full justify-start p-3 h-auto text-start border border-catalogue-border rounded-catalogue-md overflow-hidden"
               >
                 <FolderOpen
                   size={18}
@@ -1096,7 +1296,7 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
                 <CollapsibleTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="w-full justify-start p-2 h-auto text-start border border-catalogue-border rounded-lg overflow-hidden"
+                    className="w-full justify-start p-2 h-auto text-start border border-catalogue-border rounded-catalogue-md overflow-hidden"
                   >
                     <Folder
                       size={16}
@@ -1104,7 +1304,7 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
                     />
                     <span className="text-sm font-medium text-catalogue-text-primary break-words truncate flex-1 min-w-0">
                       {moduleWithChapters.module?.module_name ||
-                        "Unnamed Module"}
+                        t("courseStructureDetails.unnamedModule", { module: moduleTerm })}
                     </span>
                     <div className="flex-shrink-0 ms-2">
                       {openModules.has(moduleWithChapters.module?.id) ? (
@@ -1118,7 +1318,7 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
                 <CollapsibleContent className="ms-4 mt-2">
                   {moduleWithChapters.module?.description &&
                     moduleWithChapters.module.description.trim() !== "" && (
-                      <div className="p-2 bg-catalogue-bg-subtle rounded text-sm text-catalogue-text-secondary mb-2">
+                      <div className="p-2 bg-catalogue-bg-subtle rounded-catalogue-xs text-sm text-catalogue-text-secondary mb-2">
                         {moduleWithChapters.module.description}
                       </div>
                     )}
@@ -1143,14 +1343,14 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
                     <CollapsibleTrigger asChild>
                       <Button
                         variant="ghost"
-                        className="w-full justify-start p-2 h-auto text-start border border-catalogue-border rounded-lg overflow-hidden"
+                        className="w-full justify-start p-2 h-auto text-start border border-catalogue-border rounded-catalogue-md overflow-hidden"
                       >
                         <FileText
                           size={16}
                           className="me-2 text-green-500 flex-shrink-0"
                         />
                         <span className="text-sm font-medium text-catalogue-text-primary break-words truncate flex-1 min-w-0">
-                          {chapter.chapter_name || "Unnamed Chapter"}
+                          {chapter.chapter_name || t("courseStructureDetails.unnamedChapter", { chapter: chapterTerm })}
                         </span>
                         <div className="flex-shrink-0 ms-2">
                           {openChapters.has(chapter.id) ? (
@@ -1175,7 +1375,7 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
                   result.push(
                     <div
                       key={`${slide.id}-${slideIndex}`}
-                      className="flex items-center gap-2 p-2 border border-catalogue-border rounded-lg hover:bg-catalogue-bg-subtle overflow-hidden"
+                      className="flex items-center gap-2 p-2 border border-catalogue-border rounded-catalogue-md hover:bg-catalogue-bg-subtle overflow-hidden"
                     >
                       <Icon size={16} className={`flex-shrink-0 ${color}`} />
                       <div className="flex-1 min-w-0 overflow-hidden">
@@ -1201,7 +1401,7 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
     if (result.length === 0) {
       return (
         <div className="text-sm text-catalogue-text-muted italic">
-          No content available for this course.
+          {t("courseStructureDetails.noContentForCourse", { course: courseTerm })}
         </div>
       );
     }
@@ -1211,13 +1411,13 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
 
   if (isLoading) {
     return (
-      <div className="bg-catalogue-bg-elevated rounded-lg shadow-sm border border-catalogue-border p-6">
-        <div className="animate-pulse">
-          <div className="h-4 bg-catalogue-bg-muted rounded w-1/4 mb-4"></div>
+      <div className="bg-catalogue-bg-elevated rounded-catalogue-md shadow-sm border border-catalogue-border p-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-4 bg-catalogue-bg-muted rounded-catalogue-xs w-1/4"></div>
           <div className="space-y-2">
-            <div className="h-3 bg-catalogue-bg-muted rounded"></div>
-            <div className="h-3 bg-catalogue-bg-muted rounded w-5/6"></div>
-            <div className="h-3 bg-catalogue-bg-muted rounded w-4/6"></div>
+            <div className="h-3 bg-catalogue-bg-muted rounded-catalogue-xs"></div>
+            <div className="h-3 bg-catalogue-bg-muted rounded-catalogue-xs w-5/6"></div>
+            <div className="h-3 bg-catalogue-bg-muted rounded-catalogue-xs w-4/6"></div>
           </div>
         </div>
       </div>
@@ -1226,13 +1426,13 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
 
   if (studyLibraryData.length === 0) {
     return (
-      <div className="bg-catalogue-bg-elevated rounded-lg shadow-sm border border-catalogue-border p-6">
+      <div className="bg-catalogue-bg-elevated rounded-catalogue-md shadow-sm border border-catalogue-border p-6">
         <div className="text-center">
           <h3 className="text-lg font-medium text-catalogue-text-primary mb-2">
-            Course Structure
+            {t("courseStructureDetails.courseStructure", { course: courseTerm })}
           </h3>
           <p className="text-catalogue-text-muted mb-4">
-            No course structure data available
+            {t("courseStructureDetails.noStructureData", { course: courseTerm })}
           </p>
         </div>
       </div>
@@ -1240,14 +1440,14 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
   }
 
   return (
-    <div className="bg-catalogue-bg-elevated rounded-lg shadow-sm border border-catalogue-border p-6">
+    <div className="bg-catalogue-bg-elevated rounded-catalogue-md shadow-sm border border-catalogue-border p-6">
       <div className="space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-catalogue-border pb-3">
           <div className="flex items-center gap-2">
             <TreeStructure size={18} className="text-primary-600" />
             <span className="text-sm font-medium text-catalogue-text-primary">
-              Course Structure
+              {t("courseStructureDetails.courseStructure", { course: courseTerm })}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -1260,7 +1460,7 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
               className="border-catalogue-border bg-catalogue-bg-elevated text-catalogue-text-primary hover:bg-catalogue-bg-subtle hover:text-catalogue-text-primary"
               onClick={isAllExpanded ? collapseAll : expandAll}
             >
-              {isAllExpanded ? "Collapse All" : "Expand All"}
+              {isAllExpanded ? t("courseStructureDetails.collapseAll") : t("courseStructureDetails.expandAll")}
             </Button>
           </div>
         </div>
@@ -1269,37 +1469,49 @@ export const CourseStructureDetails: React.FC<CourseStructureDetailsProps> = ({
         <div className="space-y-2">
           {courseDepth === 2 && (
             <div className="space-y-2">
-              <h3 className="text-lg font-medium text-catalogue-text-primary mb-4">
-                Course Content (Slides Only)
-              </h3>
+              {showContentHeading && (
+                <h3 className="text-lg font-medium text-catalogue-text-primary mb-4">
+                  {t("courseStructureDetails.contentHeading.slidesOnly", { course: courseTerm, slides: slidesTerm })}
+                </h3>
+              )}
               {renderSlidesForDepth2()}
             </div>
           )}
 
           {courseDepth === 3 && (
             <div className="space-y-2">
-              <h3 className="text-lg font-medium text-catalogue-text-primary mb-4">
-                Course Content (Chapters & Slides)
-              </h3>
+              {showContentHeading && (
+                <h3 className="text-lg font-medium text-catalogue-text-primary mb-4">
+                  {t("courseStructureDetails.contentHeading.chaptersAndSlides", { course: courseTerm, chapters: chaptersTerm, slides: slidesTerm })}
+                </h3>
+              )}
               {renderAllChaptersForDepth3()}
             </div>
           )}
 
           {courseDepth === 4 && (
             <div className="space-y-2">
-              <h3 className="text-lg font-medium text-catalogue-text-primary mb-4">
-                Course Content (Modules, Chapters & Slides)
-              </h3>
+              {showContentHeading && (
+                <h3 className="text-lg font-medium text-catalogue-text-primary mb-4">
+                  {t("courseStructureDetails.contentHeading.modulesChaptersSlides", { course: courseTerm, modules: modulesTerm, chapters: chaptersTerm, slides: slidesTerm })}
+                </h3>
+              )}
               {renderModulesForDepth4()}
             </div>
           )}
 
           {courseDepth === 5 && (
             <div className="space-y-2">
-              <h3 className="text-lg font-medium text-catalogue-text-primary mb-4">
-                Course Content (Full Structure)
-              </h3>
-              {renderSubjectsForDepth5()}
+              {showContentHeading && (
+                <h3 className="text-lg font-medium text-catalogue-text-primary mb-4">
+                  {t("courseStructureDetails.contentHeading.fullStructure", { course: courseTerm })}
+                </h3>
+              )}
+              {/* Tiles are a top-level treatment; a course whose subjects are
+                  all "default" has no top level to tile, so it keeps the
+                  outline rather than showing an empty grid. */}
+              {(variant === "tiles" && renderSubjectsAsTiles()) ||
+                renderSubjectsForDepth5()}
             </div>
           )}
         </div>

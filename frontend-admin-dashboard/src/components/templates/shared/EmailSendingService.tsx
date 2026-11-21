@@ -76,7 +76,12 @@ export const EmailSendingService: React.FC<EmailSendingServiceProps> = ({ childr
             });
 
             // Step 4: Handle result
-            if (result.success) {
+            if (result.inProgress) {
+                toast.info(`Sending to {result.totalStudents} students in the background`, {
+                    description: 'Large sends are paced. This continues even if you close this page, so do not send it again.',
+                    duration: 8000,
+                });
+            } else if (result.success) {
                 const successMessage = `Email sent successfully to ${result.processedStudents} student${result.processedStudents > 1 ? 's' : ''}`;
                 console.log('✅', successMessage);
                 toast.success(successMessage, {
@@ -138,7 +143,12 @@ export const EmailSendingService: React.FC<EmailSendingServiceProps> = ({ childr
                 sourceId: currentSendOptions.sourceId,
             });
 
-            if (result.success) {
+            if (result.inProgress) {
+                toast.info(`Sending to {result.totalStudents} students in the background`, {
+                    description: 'Large sends are paced. This continues even if you close this page, so do not send it again.',
+                    duration: 8000,
+                });
+            } else if (result.success) {
                 const successMessage = `Email sent successfully to ${result.processedStudents} student${result.processedStudents > 1 ? 's' : ''}`;
                 console.log('✅', successMessage);
                 toast.success(successMessage, {

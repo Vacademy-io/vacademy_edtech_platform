@@ -1,0 +1,18 @@
+{
+    "employmentType": {
+        "fullTime": "Temps plein",
+        "partTime": "Temps partiel",
+        "contract": "Contrat",
+        "intern": "Stagiaire"
+    },
+    "employmentStatus": {
+        "active": "Actif",
+        "probation": "Période d'essai",
+        "noticePeriod": "Préavis",
+        "onLeave": "En congé",
+        "terminated": "Licencié",
+        "relieved": "Libéré",
+        "absconding": "En fuite"
+    },
+    "unchangedPlaceholder": "inchangé"
+}

@@ -49,7 +49,7 @@ public class CourseCatalogueManager {
     }
 
     public ResponseEntity<CourseCatalogueResponse> getCatalogueByTag(CustomUserDetails userDetails, String instituteId, String tagName) {
-        return ResponseEntity.ok(service.getCatalogueByInstituteAndTag(instituteId, tagName));
+        return ResponseEntity.ok(service.getCatalogueByInstituteAndTagForEditor(instituteId, tagName));
     }
 
     // Public method without authentication

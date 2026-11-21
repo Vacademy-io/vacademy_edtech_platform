@@ -1,0 +1,19 @@
+{
+    "badge": {
+        "id": "ID: {{id}}",
+        "appliesTo": "→ इन पर लागू: {{target}}"
+    },
+    "rules": {
+        "title": "नियम ({{count}})"
+    },
+    "metadata": {
+        "created": "बनाया गया: {{date}}",
+        "updatedSuffix": " • अपडेट किया गया: {{date}}"
+    },
+    "actions": {
+        "enable": "शर्त सक्षम करें",
+        "disable": "शर्त अक्षम करें",
+        "edit": "शर्त संपादित करें",
+        "delete": "शर्त हटाएं"
+    }
+}

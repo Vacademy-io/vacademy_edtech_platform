@@ -1,0 +1,70 @@
+{
+    "actions": {
+        "previewRecipients": "Voir les destinataires",
+        "recipients": "Destinataires",
+        "sendTest": "Envoyer un test",
+        "edit": "Modifier",
+        "duplicate": "Dupliquer"
+    },
+    "recipientPreview": {
+        "heading": "Destinataires",
+        "count_one": "{{count}} personne recevra ce message",
+        "count_other": "{{count}} personnes recevront ce message",
+        "resolvedNow": "Calculé à partir de l'audience telle qu'elle est en ce moment.",
+        "table": {
+            "name": "Nom",
+            "email": "E-mail",
+            "phone": "Téléphone"
+        },
+        "unknownUser": "Utilisateur inconnu",
+        "noEmail": "Aucune adresse e-mail",
+        "noAudienceTitle": "Pas encore d'audience",
+        "noAudienceBody": "Ajoutez au moins une règle d'audience pour voir qui recevra ce message.",
+        "noMatchesTitle": "Personne ne correspond à cette audience",
+        "noMatchesBody": "Vérifiez les groupes, filtres et exclusions sélectionnés — en l'état, ce message n'atteindrait personne.",
+        "loadFailed": "Impossible de charger la liste des destinataires."
+    },
+    "testSend": {
+        "heading": "Envoyer un e-mail de test",
+        "description": "Envoie l'e-mail tel qu'il est maintenant, marqué [Test], uniquement aux adresses ci-dessous. Votre audience n'est pas contactée et rien n'est enregistré.",
+        "emailsLabel": "Envoyer à",
+        "emailsPlaceholder": "vous@exemple.com, collegue@exemple.com",
+        "emailsHint": "Jusqu'à {{max}} adresses, séparées par des virgules ou des retours à la ligne.",
+        "invalidEmails": "Adresse e-mail non valide : {{emails}}",
+        "tooMany": "Un test peut être envoyé à {{max}} adresses au maximum.",
+        "send": "Envoyer le test",
+        "sending": "Envoi…",
+        "close": "Fermer",
+        "failed": "L'e-mail de test n'a pas pu être envoyé.",
+        "sentMatched": "Envoyé — les variables ont été remplies avec les informations de cet utilisateur.",
+        "sentUnmatched": "Envoyé — aucun utilisateur n'a cette adresse, les variables de nom sont donc restées vides.",
+        "untitled": "Annonce sans titre",
+        "needContent": "Ajoutez du contenu à l'e-mail avant d'envoyer un test.",
+        "needEmailChannel": "Activez le canal E-mail pour envoyer un e-mail de test."
+    },
+    "duplicate": {
+        "heading": "Dupliquer la campagne",
+        "description": "Démarrer une nouvelle campagne à partir de « {{title}} ». Vous pouvez tout modifier avant de l'envoyer.",
+        "keepLegend": "Copier depuis l'original",
+        "parts": {
+            "recipients": {
+                "label": "Destinataires",
+                "hint": "Les mêmes règles d'audience, filtres et exclusions."
+            },
+            "content": {
+                "label": "Contenu et modèle",
+                "hint": "Objet, texte d'aperçu et corps de l'e-mail. Décochez pour choisir un nouveau modèle."
+            },
+            "settings": {
+                "label": "Expéditeur et paramètres",
+                "hint": "Expéditeur, priorité, type de planification et fuseau horaire. L'heure d'envoi n'est jamais copiée."
+            }
+        },
+        "note": "Rien n'est créé tant que vous n'envoyez ou ne planifiez pas la copie.",
+        "cancel": "Annuler",
+        "continue": "Dupliquer et modifier",
+        "pageTitle": "Dupliquer la campagne e-mail",
+        "banner": "Ceci est une copie de « {{title}} ». Vérifiez-la et choisissez une heure d'envoi — la campagne d'origine n'est pas modifiée.",
+        "copyTitle": "Copie de {{title}}"
+    }
+}

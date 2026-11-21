@@ -41,5 +41,7 @@ public class AdminBasicAssessmentListItemDto {
     private String subjectId;
     private String joinLink;
     private Long userAttemptCount;
+    /** {@code assessment.source}: "API" for exams created through the partner API, else null. */
+    private String source;
 
 }

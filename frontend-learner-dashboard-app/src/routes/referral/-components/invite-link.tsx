@@ -10,9 +10,12 @@ import {
 } from "@/components/ui/table";
 import { Copy, Share } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { useGetEnrollInvites } from "../-services/get-enroll-invites";
 import { isNullOrEmptyOrUndefined } from "@/lib/utils";
 import { getInstituteId } from "@/constants/helper";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 import { useEffect, useState } from "react";
 
 interface InviteLinksTableProps {
@@ -20,11 +23,14 @@ interface InviteLinksTableProps {
 }
 
 export function InviteLinksTable({ referralCode }: InviteLinksTableProps) {
+  const { t } = useTranslation("miscRoutesA");
   const { data: invites, isLoading } = useGetEnrollInvites();
   const [instituteId, setInstituteId] = useState<string | null>(null);
   useEffect(() => {
     getInstituteId().then((id) => setInstituteId(id ?? ""));
   }, []);
+
+  const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
 
   const generateInviteLink = (inviteCode: string) => {
     const base_url = window.location.origin;
@@ -33,28 +39,29 @@ export function InviteLinksTable({ referralCode }: InviteLinksTableProps) {
   };
 
   const getCourseNameFromJson = (jsonString: string | null): string => {
-    if (!jsonString) return "Unknown Course";
+    const unknownCourse = t("referral.inviteLinks.unknownCourse", { course });
+    if (!jsonString) return unknownCourse;
     try {
       const json = JSON.parse(jsonString);
-      return json.course || "Unknown Course";
+      return json.course || unknownCourse;
     } catch (error) {
       console.error("Error parsing JSON:", error);
-      return "Unknown Course";
+      return unknownCourse;
     }
   };
 
   const copyToClipboard = (code: string) => {
     const link = generateInviteLink(code);
     navigator.clipboard.writeText(link);
-    toast.success("Invite link copied to clipboard");
+    toast.success(t("referral.inviteLinks.linkCopied"));
   };
 
   const shareLink = (code: string) => {
     const link = generateInviteLink(code);
     if (navigator.share) {
       navigator.share({
-        title: "Join me on this learning journey!",
-        text: "I found this amazing course and thought you might be interested. Use my referral link to get started:",
+        title: t("referral.inviteLinks.shareTitle"),
+        text: t("referral.inviteLinks.shareText", { course }),
         url: link,
       });
     } else {
@@ -66,7 +73,7 @@ export function InviteLinksTable({ referralCode }: InviteLinksTableProps) {
     <Card className="">
       <CardHeader className="pb-4">
         <CardTitle className="text-xl font-semibold text-primary">
-          Your Referral Links
+          {t("referral.inviteLinks.title")}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -74,14 +81,12 @@ export function InviteLinksTable({ referralCode }: InviteLinksTableProps) {
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-50 border-b">
+                <TableHead className="text-gray-600 font-medium">{course}</TableHead>
                 <TableHead className="text-gray-600 font-medium">
-                  Course
-                </TableHead>
-                <TableHead className="text-gray-600 font-medium">
-                  Invite Link
+                  {t("referral.inviteLinks.inviteLinkColumn")}
                 </TableHead>
                 <TableHead className="text-gray-600 font-medium text-center">
-                  Share
+                  {t("referral.inviteLinks.shareColumn")}
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -101,7 +106,7 @@ export function InviteLinksTable({ referralCode }: InviteLinksTableProps) {
                   </TableRow>
                 ))
               ) : isNullOrEmptyOrUndefined(invites) ? (
-                <div>No Invites Available</div>
+                <div>{t("referral.inviteLinks.noInvites")}</div>
               ) : (
                 invites.map((item, index) => (
                   <TableRow
@@ -123,7 +128,7 @@ export function InviteLinksTable({ referralCode }: InviteLinksTableProps) {
                           size="icon"
                           onClick={() => copyToClipboard(item.invite_code)}
                           className="h-8 w-8"
-                          title="Copy link"
+                          title={t("referral.inviteLinks.copyLink")}
                         >
                           <Copy className="h-4 w-4" />
                         </Button>
@@ -132,7 +137,7 @@ export function InviteLinksTable({ referralCode }: InviteLinksTableProps) {
                           size="icon"
                           onClick={() => shareLink(item.invite_code)}
                           className="h-8 w-8"
-                          title="Share link"
+                          title={t("referral.inviteLinks.shareLink")}
                         >
                           <Share className="h-4 w-4" />
                         </Button>

@@ -1,6 +1,7 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { fetchAnalyticsMostActiveUsers } from '../../-services/dashboard-services';
 import { useTheme } from '@/providers/theme/theme-provider';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +22,7 @@ interface MostActiveUsersWidgetProps {
 }
 
 export default function MostActiveUsersWidget({ instituteId }: MostActiveUsersWidgetProps) {
+    const { t, i18n } = useTranslation('dashboardMostActiveUsersWidget');
     const { primaryColor } = useTheme();
 
     const { data, isLoading, error } = useQuery({
@@ -47,26 +49,39 @@ export default function MostActiveUsersWidget({ instituteId }: MostActiveUsersWi
         }
     };
 
+    const getDeviceLabel = (deviceType: string) => {
+        switch (deviceType?.toLowerCase()) {
+            case 'desktop':
+                return t('device.desktop');
+            case 'mobile':
+                return t('device.mobile');
+            case 'tablet':
+                return t('device.tablet');
+            default:
+                return deviceType;
+        }
+    };
+
     const getStatusBadge = (status: string, index: number) => {
         switch (status?.toUpperCase()) {
             case 'ONLINE':
-                return <Badge className="bg-green-500 text-xs text-white">Online</Badge>;
+                return <Badge className="bg-green-500 text-xs text-white">{t('status.online')}</Badge>;
             case 'RECENTLY_ACTIVE':
                 return (
                     <Badge variant="outline" className="border-yellow-500 text-xs text-yellow-700">
-                        Recent
+                        {t('status.recent')}
                     </Badge>
                 );
             case 'OFFLINE':
                 return (
                     <Badge variant="outline" className="border-gray-400 text-xs text-gray-600">
-                        Offline
+                        {t('status.offline')}
                     </Badge>
                 );
             default:
                 return (
                     <Badge variant="outline" className="text-xs">
-                        Unknown
+                        {t('status.unknown')}
                     </Badge>
                 );
         }
@@ -122,10 +137,10 @@ export default function MostActiveUsersWidget({ instituteId }: MostActiveUsersWi
                         </motion.div>
                         <div>
                             <CardTitle className="text-lg font-bold text-gray-800">
-                                Most Active Users
+                                {t('header.title')}
                             </CardTitle>
                             <CardDescription className="text-sm text-gray-600">
-                                Top performers by activity and engagement
+                                {t('header.subtitle')}
                             </CardDescription>
                         </div>
                     </div>
@@ -146,12 +161,12 @@ export default function MostActiveUsersWidget({ instituteId }: MostActiveUsersWi
                     ) : error ? (
                         <div className="py-8 text-center text-red-500">
                             <Trophy size={32} className="mx-auto mb-2 opacity-50" />
-                            <p className="text-sm">Failed to load active users</p>
+                            <p className="text-sm">{t('error.message')}</p>
                         </div>
                     ) : mostActiveUsers.length === 0 ? (
                         <div className="py-8 text-center text-gray-500">
                             <Trophy size={32} className="mx-auto mb-2 opacity-50" />
-                            <p className="text-sm">No user activity data available</p>
+                            <p className="text-sm">{t('empty.message')}</p>
                         </div>
                     ) : (
                         <div className="max-h-96 space-y-3 overflow-y-auto">
@@ -205,7 +220,9 @@ export default function MostActiveUsersWidget({ instituteId }: MostActiveUsersWi
                                                         <div className="flex items-center gap-1">
                                                             <DeviceIcon size={12} />
                                                             <span className="capitalize">
-                                                                {user.preferred_device_type}
+                                                                {getDeviceLabel(
+                                                                    user.preferred_device_type
+                                                                )}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -213,13 +230,17 @@ export default function MostActiveUsersWidget({ instituteId }: MostActiveUsersWi
                                                         <div className="flex items-center gap-1">
                                                             <Activity size={12} />
                                                             <span>
-                                                                {user.total_sessions} sessions
+                                                                {t('stats.sessions', {
+                                                                    count: user.total_sessions,
+                                                                })}
                                                             </span>
                                                         </div>
                                                         <div className="flex items-center gap-1">
                                                             <Database size={12} />
                                                             <span>
-                                                                {user.total_api_calls} calls
+                                                                {t('stats.calls', {
+                                                                    count: user.total_api_calls,
+                                                                })}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -235,13 +256,14 @@ export default function MostActiveUsersWidget({ instituteId }: MostActiveUsersWi
                                                 </div>
                                                 <div className="flex items-center gap-1 text-xs text-gray-500">
                                                     <Clock size={12} />
-                                                    <span>Total time</span>
+                                                    <span>{t('stats.totalTime')}</span>
                                                 </div>
                                                 <div className="mt-1 text-xs text-gray-600">
-                                                    Last:{' '}
-                                                    {new Date(
-                                                        user.last_activity
-                                                    ).toLocaleDateString()}
+                                                    {t('stats.last', {
+                                                        date: new Date(
+                                                            user.last_activity
+                                                        ).toLocaleDateString(i18n.language),
+                                                    })}
                                                 </div>
                                             </div>
                                         </div>

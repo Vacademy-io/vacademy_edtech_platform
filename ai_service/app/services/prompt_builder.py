@@ -29,8 +29,15 @@ class CourseOutlinePromptBuilder:
 
         # Extract generation options (with defaults for backward compatibility)
         gen_options = request.generation_options or {}
-        num_slides_spec = gen_options.num_slides if hasattr(gen_options, 'num_slides') and gen_options.num_slides else None
-        num_chapters_spec = gen_options.num_chapters if hasattr(gen_options, 'num_chapters') and gen_options.num_chapters else None
+        # A knowledge base decides the SHAPE of the course: its topic tree is the
+        # chapter list and its sections are the slides. "EXACTLY N chapters" on
+        # top of that made the model merge or pad sections to hit a number the
+        # teacher never chose (the UI used to copy the KB's own suggestion into
+        # these fields). Counts are therefore ignored whenever the request is
+        # KB-grounded, whatever the client sent.
+        kb_bound = bool(getattr(getattr(request, "kb_grounding", None), "knowledge_base_id", None))
+        num_slides_spec = gen_options.num_slides if not kb_bound and hasattr(gen_options, 'num_slides') and gen_options.num_slides else None
+        num_chapters_spec = gen_options.num_chapters if not kb_bound and hasattr(gen_options, 'num_chapters') and gen_options.num_chapters else None
         course_timing = gen_options.course_timing if hasattr(gen_options, 'course_timing') and gen_options.course_timing else None
         generate_images = gen_options.generate_images if hasattr(gen_options, 'generate_images') else False
         language = gen_options.language if hasattr(gen_options, 'language') and gen_options.language else "English"
@@ -43,6 +50,12 @@ class CourseOutlinePromptBuilder:
             generation_requirements += f"\n- Course timing specified: {course_timing} minutes total. YOU MUST determine optimal slide count based on content complexity, slide types (videos take more time), and institute AI settings context."
         if num_chapters_spec:
             generation_requirements += f"\n- User specifies exact chapter count: EXACTLY {num_chapters_spec} chapters"
+        if kb_bound:
+            generation_requirements += (
+                "\n- Structure follows the knowledge base: one chapter per selected topic and "
+                "at least one slide per selected section, in the material's order. Do NOT target "
+                "a fixed number of chapters or slides."
+            )
         if course_timing:
             generation_requirements += f"\n- TIMING CONSIDERATIONS: Factor in slide type duration - VIDEO/AI_VIDEO slides typically take 5-8 minutes, DOCUMENT slides take 3-5 minutes, ASSESSMENT slides take 10-15 minutes."
         if generate_images:
@@ -435,7 +448,6 @@ class CourseOutlinePromptBuilder:
                   "type": "DOCUMENT",
                   "path": "C1.SL1",
                   "keyword": "python variables data types tutorial",
-                  "model": "google/gemini-2.5-pro",
                   "actionType": "ADD",
                   "prompt": "Create comprehensive content about Python variables and data types...",
                   "order": 1,
@@ -449,7 +461,6 @@ class CourseOutlinePromptBuilder:
                   "type": "VIDEO",
                   "path": "C1.SL2",
                   "keyword": "python functions methods tutorial",
-                  "model": "google/gemini-2.5-flash-preview-05-20",
                   "actionType": "ADD",
                   "prompt": "Create video content about Python functions and methods...",
                   "order": 2,
@@ -463,7 +474,6 @@ class CourseOutlinePromptBuilder:
                   "type": "VIDEO",
                   "path": "C1.CH1.SL1",
                   "keyword": "python functions methods tutorial",
-                  "model": "google/gemini-2.5-flash-preview-05-20",
                   "actionType": "ADD",
                   "prompt": "Create video content about Python functions and methods...",
                   "order": 2,
@@ -477,7 +487,6 @@ class CourseOutlinePromptBuilder:
                   "type": "DOCUMENT",
                   "path": "C1.M1.CH1.SL1",
                   "keyword": "python oop classes tutorial",
-                  "model": "google/gemini-2.5-pro",
                   "actionType": "ADD",
                   "prompt": "Create content about OOP basics...",
                   "order": 4,
@@ -491,7 +500,6 @@ class CourseOutlinePromptBuilder:
                   "type": "DOCUMENT",
                   "path": "C1.S1.M1.CH1.SL1",
                   "keyword": "python variables data types tutorial",
-                  "model": "google/gemini-2.5-pro",
                   "actionType": "ADD",
                   "prompt": "Create content about variables...",
                   "order": 3,
@@ -628,16 +636,6 @@ class CourseOutlinePromptBuilder:
                 - Depth 3: "C1.CH3.SL9" (course.chapter.slide)
                 - Depth 4: "C1.M2.CH3.SL9" (course.module.chapter.slide)
                 - Depth 5: "C1.S1.M2.CH3.SL9" (course.subject.module.chapter.slide)
-              - `model`: Suggest which model should be used to generate the content
-                       - for `DOCUMENT' generation use `google/gemini-2.5-pro'
-                       - for 'VIDEO' generation use `google/gemini-2.5-flash-preview-05-20`
-                       - for 'VIDEO_CODE' generation use `google/gemini-2.5-pro` (for code generation)
-                       - for 'AI_VIDEO' generation use `google/gemini-2.5-pro` (for script generation)
-                       - for 'AI_VIDEO_CODE' generation use `google/gemini-2.5-pro` (for script and code generation)
-                       - for 'AI_SLIDES' generation use `google/gemini-2.5-pro` (for slide deck generation)
-                       - for 'AI_STORYBOOK' generation use `google/gemini-2.5-pro` (for storybook script generation)
-                       - for 'PDF' generation use 'google/gemini-2.5-pro'
-                       - for 'ASSESSMENT' generation use 'google/gemini-2.5-pro'
               - `actionType`: `ADD` if the slide is newly added and needs initial content, `UPDATE` if the slide already exists and its content needs to be re-generated or improved.
               - `prompt`: A **very clear and detailed prompt** for an AI to generate the specific content for this slide. This prompt should include:
                 - The slide's topic.

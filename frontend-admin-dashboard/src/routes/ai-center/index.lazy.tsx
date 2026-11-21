@@ -2,9 +2,10 @@ import { createLazyFileRoute } from '@tanstack/react-router';
 import { LayoutContainer } from '@/components/common/layout-container/layout-container';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AICenterProvider } from './-contexts/useAICenterContext';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { AIToolCardData } from './-constants/AICardsData';
+import { buildAIToolCardData } from './-constants/AICardsData';
 import { AIToolsCard } from './-components/AIToolsCard';
 import MyResources from './-components/My-Resources-List/MyResources';
 import UploadFileMyResourcesComponent from './-components/UploadFileMyResourcesComponent';
@@ -27,8 +28,12 @@ const slugify = (text: string): string => {
 };
 
 function RouteComponent() {
+    const { t } = useTranslation('aiCenterIndex');
+    const { t: tAiCards } = useTranslation('aiCenterAICardsData');
     const [selectedTab, setSelectedTab] = useState('myResources');
     const { setNavHeading } = useNavHeadingStore();
+
+    const AIToolCardData = buildAIToolCardData(tAiCards);
 
     const handleTabChange = (value: string) => {
         const element = document.getElementById(value);
@@ -45,8 +50,8 @@ function RouteComponent() {
     const sectionScrollMarginTopClass = 'scroll-mt-32';
 
     useEffect(() => {
-        setNavHeading('Teaching Assistant');
-    }, [setNavHeading]);
+        setNavHeading(t('navHeading'));
+    }, [setNavHeading, t]);
 
     return (
         <>
@@ -63,7 +68,7 @@ function RouteComponent() {
                             <span
                                 className={`${selectedTab === 'myResources' ? 'text-primary-500' : ''}`}
                             >
-                                My Resources
+                                {t('tabMyResources')}
                             </span>
                         </TabsTrigger>
                         <TabsTrigger
@@ -76,7 +81,7 @@ function RouteComponent() {
                             <span
                                 className={`${selectedTab === 'aiTaskList' ? 'text-primary-500' : ''}`}
                             >
-                                AI Tools
+                                {t('tabAiTools')}
                             </span>
                         </TabsTrigger>
                     </TabsList>
@@ -100,7 +105,7 @@ function RouteComponent() {
                                 <TabsTrigger
                                     key={slugify(category.title)}
                                     value={slugify(category.title)}
-                                    className="h-9 w-auto shrink-0 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium hover:cursor-pointer data-[state=active]:bg-primary-50 data-[state=active]:text-primary-500 sm:h-10 sm:w-[200px] sm:text-sm"
+                                    className="h-9 w-auto shrink-0 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium hover:cursor-pointer data-[state=active]:bg-primary-50 data-[state=active]:text-primary-500 sm:h-10 sm:w-52 sm:text-sm"
                                 >
                                     {category.title}
                                 </TabsTrigger>

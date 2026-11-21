@@ -1,0 +1,25 @@
+{
+    "title": "Prévision de revenus",
+    "calculationTitle": "Comment ce chiffre est calculé",
+    "empty": {
+        "noHistory": "Pas assez d'historique pour établir une prévision pour le moment."
+    },
+    "horizon": {
+        "label_one": "{{count}} jour à venir",
+        "label_many": "{{count}} de jours à venir",
+        "label_other": "{{count}} jours à venir",
+        "blendedEstimate": "Estimation combinée",
+        "runRate": "Taux de croissance actuel",
+        "pipelineWeighted": "Pondéré par le pipeline"
+    },
+    "assumptions": {
+        "revenueLastDays": "Revenu ({{days}} derniers jours)",
+        "avgDailyRevenue": "Revenu quotidien moyen",
+        "leadsLastDays": "Prospects ({{days}} derniers jours)",
+        "conversionsLastDays": "Conversions ({{days}} derniers jours)",
+        "historicalConvRate": "Taux de conversion historique",
+        "avgDealValue": "Valeur moyenne de la transaction",
+        "openPipelineLeads": "Prospects en pipeline ouvert",
+        "footnote": "Taux de croissance actuel = revenu quotidien moyen × horizon. Pondéré par le pipeline = prospects ouverts × taux de conversion historique × valeur moyenne de la transaction, appliqué progressivement selon l'horizon. L'estimation combinée est la moyenne des deux. La prévision utilise une fenêtre historique fixe, et non le filtre de date de la page."
+    }
+}

@@ -28,6 +28,14 @@ public class InvoiceDTO {
     private LocalDateTime dueDate;
     private BigDecimal subtotal;
     private BigDecimal discountAmount;
+    /**
+     * Admin who gave the discount on this invoice — the admin who created an admin invoice
+     * with a discount, or the admin who discounted the enrollment the invoice bills.
+     * Admin API only: {@link #withoutInternalDiscountNotes()} strips it for learners/parents.
+     */
+    private String discountGrantedByUserId;
+    /** The granting admin's internal reason. Admin API only — never shown to learners. */
+    private String discountReason;
     private BigDecimal taxAmount;
     private BigDecimal totalAmount;
     private String currency;
@@ -54,9 +62,27 @@ public class InvoiceDTO {
      * becomes a numbered invoice when it is paid.
      */
     private Boolean proforma;
+    /**
+     * Per-installment rows only: what has been paid on the installment so far. Set on an
+     * installment still owing money, whose row shows the balance as its amount.
+     */
+    private BigDecimal amountPaid;
+    /**
+     * Per-installment rows only: the latest receipt for money paid on an installment that
+     * still owes some. The row keeps its own (DUE/PARTIAL) label — under the receipt's number
+     * its balance read as if it were the receipt's amount.
+     */
+    private String receiptNumber;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<InvoiceLineItemDTO> lineItems;
+
+    /** Copy for learner/parent-facing responses: drops the admin-only discount notes. */
+    public InvoiceDTO withoutInternalDiscountNotes() {
+        this.discountGrantedByUserId = null;
+        this.discountReason = null;
+        return this;
+    }
 }
 
 

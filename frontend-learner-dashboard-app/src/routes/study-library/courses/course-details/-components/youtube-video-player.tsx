@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { isYouTubeUrl, convertToYouTubeEmbedUrl } from '../-utils/helper';
 
 interface YouTubeVideoPlayerProps {
@@ -6,10 +7,12 @@ interface YouTubeVideoPlayerProps {
   className?: string;
 }
 
-export const YouTubeVideoPlayer: React.FC<YouTubeVideoPlayerProps> = ({ 
-  url, 
-  className = "" 
+export const YouTubeVideoPlayer: React.FC<YouTubeVideoPlayerProps> = ({
+  url,
+  className = ""
 }) => {
+  const { t } = useTranslation("courseDetailsB");
+
   if (!url || !isYouTubeUrl(url)) {
     return null;
   }
@@ -21,7 +24,7 @@ export const YouTubeVideoPlayer: React.FC<YouTubeVideoPlayerProps> = ({
       <div className="relative aspect-video">
         <iframe
           src={embedUrl}
-          title="YouTube video player"
+          title={t("videoPlayer.youtubeTitle")}
           frameBorder="0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen

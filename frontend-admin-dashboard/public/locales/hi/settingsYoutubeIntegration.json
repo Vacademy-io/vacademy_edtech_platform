@@ -1,0 +1,150 @@
+{
+    "header": {
+        "title": "YouTube एकीकरण",
+        "subtitle": "रिकॉर्ड की गई लाइव सेशन अपने आप आपके YouTube चैनल पर अपलोड करें। एक बार कनेक्ट करें; इस इंस्टिट्यूट की हर रिकॉर्डिंग आपके चैनल पर पहुंच जाएगी।"
+    },
+    "toasts": {
+        "channelConnected": "YouTube चैनल कनेक्ट हो गया",
+        "connectFailed": "कनेक्ट करने में विफल: {{reason}}",
+        "unknownReason": "अज्ञात",
+        "featureEnabled": "YouTube एकीकरण सक्षम किया गया",
+        "featureDisabled": "YouTube एकीकरण बंद कर दिया गया",
+        "toggleFailed": "टॉगल अपडेट करने में विफल",
+        "oauthStartFailed": "YouTube OAuth शुरू करने में विफल — कंसोल देखें।",
+        "disconnected": "YouTube डिस्कनेक्ट हो गया",
+        "disconnectFailed": "डिस्कनेक्ट करने में विफल",
+        "defaultsSaved": "अपलोड डिफ़ॉल्ट सहेजे गए",
+        "defaultsSaveFailed": "डिफ़ॉल्ट सहेजने में विफल",
+        "requeued": "अपलोड के लिए फिर से कतार में डाल दिया गया",
+        "retryFailed": "पुनः प्रयास करने में विफल"
+    },
+    "featureGate": {
+        "title": "YouTube एकीकरण सक्षम करें",
+        "description": "यदि यह इंस्टिट्यूट रिकॉर्ड की गई लाइव सेशन YouTube पर प्रकाशित करना चाहता है तो इसे चालू करें। बंद होने पर, कोई रिकॉर्डिंग अपलोड नहीं होती और किसी भी सेशन पर \"YouTube पर अपलोड करें\" बटन दिखाई नहीं देता।",
+        "hint": "सक्षम करने के बाद, आप एक YouTube चैनल कनेक्ट कर सकेंगे, अपलोड डिफ़ॉल्ट (गोपनीयता, टाइटल टेम्प्लेट, श्रेणी) कॉन्फ़िगर कर सकेंगे, और हर रिकॉर्डिंग का अपलोड इतिहास देख सकेंगे।"
+    },
+    "connection": {
+        "title": "YouTube चैनल",
+        "description": "उस Google खाते से साइन इन करें जो उस चैनल का मालिक है जिस पर आप प्रकाशित करना चाहते हैं। आवश्यक: उस चैनल का एडिट एक्सेस।",
+        "loading": "लोड हो रहा है…",
+        "unnamedChannel": "(अनाम चैनल)",
+        "reconnect": "फिर से कनेक्ट करें",
+        "disconnect": "डिस्कनेक्ट करें",
+        "invalidTitle": "कनेक्शन अमान्य है",
+        "invalidDefaultReason": "Google ने रीफ्रेश टोकन को अस्वीकार कर दिया। आमतौर पर इसका मतलब है कि Google खाता सेटिंग्स में एक्सेस रद्द कर दिया गया था।",
+        "reconnectYoutube": "YouTube फिर से कनेक्ट करें",
+        "redirecting": "रीडायरेक्ट हो रहा है…",
+        "notConnected": "अभी तक कोई चैनल कनेक्ट नहीं है। कनेक्ट होने के बाद, हर BBB रिकॉर्डिंग उस चैनल पर अपने आप अपलोड हो जाएगी।",
+        "connectYoutube": "YouTube कनेक्ट करें"
+    },
+    "status": {
+        "active": "कनेक्टेड",
+        "invalid": "फिर से कनेक्ट करना आवश्यक है",
+        "notConnected": "कनेक्ट नहीं है"
+    },
+    "defaults": {
+        "title": "अपलोड डिफ़ॉल्ट",
+        "description": "हर उस रिकॉर्डिंग पर लागू होता है जो अपने आप अपलोड होती है। मैन्युअल अपलोड हर रिकॉर्डिंग के लिए गोपनीयता को बदल सकता है।",
+        "loading": "लोड हो रहा है…",
+        "reset": "रीसेट करें",
+        "save": "सहेजें",
+        "saving": "सहेजा जा रहा है…",
+        "autoUpload": {
+            "title": "रिकॉर्डिंग तैयार होते ही अपने आप अपलोड करें",
+            "description": "बंद होने पर, रिकॉर्डिंग अपने आप अपलोड नहीं होंगी। लाइव-सेशन व्यू से कोई भी मैन्युअल रूप से अपलोड शुरू कर सकता है।"
+        },
+        "privacyLabel": "गोपनीयता",
+        "categoryLabel": "श्रेणी",
+        "licenseLabel": "लाइसेंस",
+        "licenseStandard": "मानक YouTube लाइसेंस",
+        "licenseCreativeCommons": "क्रिएटिव कॉमन्स",
+        "defaultLanguageLabel": "डिफ़ॉल्ट भाषा",
+        "defaultLanguagePlaceholder": "en, hi, …",
+        "embeddable": {
+            "title": "एम्बेडिंग की अनुमति दें",
+            "description": "इन वीडियो को Vacademy के अंदर चलाने के लिए आवश्यक है। केवल डाउनलोड-प्रतिबंधित सामग्री के लिए इसे बंद करें।"
+        },
+        "publicStats": {
+            "title": "सार्वजनिक आँकड़े दिखाई दें",
+            "description": "क्या व्यू-काउंट / लाइक-काउंट वीडियो पेज पर दिखाई देते हैं।"
+        },
+        "madeForKids": {
+            "title": "बच्चों के लिए बनाया गया",
+            "description": "YouTube को यह घोषणा आवश्यक है। अधिकतर वयस्क-शिक्षार्थी लेक्चर के लिए यह बंद होना चाहिए।"
+        },
+        "notifySubscribers": {
+            "title": "चैनल सब्सक्राइबर्स को सूचित करें",
+            "description": "चालू होने पर, हर अपलोड की गई रिकॉर्डिंग के लिए YouTube एक सब्सक्राइबर नोटिफिकेशन भेजता है। सामान्य रिकॉर्डिंग के लिए आमतौर पर बंद रखा जाता है।"
+        },
+        "titleTemplateLabel": "टाइटल टेम्प्लेट",
+        "titleTemplateTokens": "टोकन: {session_title}, {subject}, {date}",
+        "titleTemplatePlaceholder": "{session_title} | {date}",
+        "descriptionTemplateLabel": "विवरण टेम्प्लेट",
+        "descriptionTemplateTokensHint": "टाइटल जैसे ही टोकन",
+        "descriptionTemplatePlaceholder": "{date} को {session_title} का रिकॉर्ड किया गया सेशन। © आपका इंस्टिट्यूट।",
+        "tagsLabel": "टैग (कॉमा से अलग)",
+        "tagsPlaceholder": "लेक्चर, कक्षा 12, jee",
+        "playlistLabel": "डिफ़ॉल्ट प्लेलिस्ट ID (वैकल्पिक)",
+        "playlistPlaceholder": "PLxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "playlistHint": "ऑटो-अपलोड से अपलोड की गई वीडियो इस प्लेलिस्ट में जोड़ी जाएंगी।"
+    },
+    "privacyOptions": {
+        "unlisted": {
+            "label": "अनलिस्टेड",
+            "help": "लिंक रखने वाला कोई भी व्यक्ति इसे देख सकता है। केवल एम्बेड के लिए अनुशंसित।"
+        },
+        "private": {
+            "label": "निजी",
+            "help": "केवल आप इसे देख सकते हैं। प्रकाशित करने से पहले समीक्षा के लिए उपयोग करें।"
+        },
+        "public": {
+            "label": "सार्वजनिक",
+            "help": "YouTube और आपके चैनल पर खोजा जा सकता है।"
+        }
+    },
+    "categoryOptions": {
+        "education": "शिक्षा",
+        "scienceAndTechnology": "विज्ञान और प्रौद्योगिकी",
+        "peopleAndBlogs": "लोग और ब्लॉग",
+        "newsAndPolitics": "समाचार और राजनीति",
+        "entertainment": "मनोरंजन",
+        "gaming": "गेमिंग",
+        "howToAndStyle": "हाउ-टू और स्टाइल"
+    },
+    "history": {
+        "title": "अपलोड इतिहास",
+        "description": "इस इंस्टिट्यूट के हाल के 50 अपलोड। विफलताओं को फिर से प्रयास किया जा सकता है; कोटा त्रुटियाँ दैनिक सीमा रीसेट होने के बाद अपने आप फिर से प्रयास करती हैं।",
+        "notConnected": "रिकॉर्डिंग अपलोड करना शुरू करने के लिए एक YouTube चैनल कनेक्ट करें।",
+        "loading": "लोड हो रहा है…",
+        "empty": "अभी तक कोई अपलोड नहीं है। प्रोसेसिंग पूरी होते ही रिकॉर्डिंग यहां दिखाई देंगी।",
+        "columns": {
+            "when": "कब",
+            "title": "टाइटल",
+            "status": "स्थिति",
+            "trigger": "ट्रिगर",
+            "video": "वीडियो"
+        },
+        "pendingFile": "(लंबित — फ़ाइल {{fileId}})",
+        "triggerAuto": "ऑटो",
+        "triggerManual": "मैन्युअल",
+        "open": "खोलें",
+        "retry": "फिर से प्रयास करें"
+    },
+    "jobStatus": {
+        "queued": "कतार में",
+        "queuedWithAttempt": "कतार में (प्रयास {{attempt}}/{{maxAttempts}})",
+        "uploading": "अपलोड हो रहा है…",
+        "done": "अपलोड हो गया",
+        "failed": "विफल",
+        "cancelled": "रद्द किया गया"
+    },
+    "time": {
+        "justNow": "अभी-अभी",
+        "minutesAgo_one": "{{count}} मिनट पहले",
+        "minutesAgo_other": "{{count}} मिनट पहले",
+        "hoursAgo_one": "{{count}} घंटे पहले",
+        "hoursAgo_other": "{{count}} घंटे पहले",
+        "unknown": "—"
+    },
+    "channelThumbnailAlt": "चैनल"
+}

@@ -1,0 +1,19 @@
+{
+    "classMaterials": "कक्षा सामग्री",
+    "uploadPdf": "PDF अपलोड करें",
+    "addVideo": "वीडियो जोड़ें",
+    "noMaterialsYet": "अभी तक कोई कक्षा सामग्री नहीं जोड़ी गई है। किसी अध्याय से जोड़ने के लिए PDF अपलोड करें या वीडियो जोड़ें।",
+    "titleLabel": "शीर्षक",
+    "uploadFile": "फ़ाइल अपलोड करें",
+    "youtubeUrl": "YouTube URL",
+    "invalidYoutubeUrl": "एक मान्य YouTube URL दर्ज करें",
+    "uploadingEllipsis": "अपलोड हो रहा है…",
+    "add": "जोड़ें",
+    "cancel": "रद्द करें",
+    "couldNotResolveInstitute": "आपके संस्थान की पहचान नहीं हो सकी।",
+    "couldNotUploadPdf": "PDF अपलोड नहीं हो सकी।",
+    "couldNotUploadVideo": "वीडियो अपलोड नहीं हो सका।",
+    "couldNotAddMaterial": "यह सामग्री जोड़ी नहीं जा सकी।",
+    "sessionFallback": "सत्र",
+    "defaultTitle": "{{label}} – नोट्स ({{formatted}})"
+}

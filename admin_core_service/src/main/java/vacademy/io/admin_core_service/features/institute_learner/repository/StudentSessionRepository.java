@@ -485,4 +485,28 @@ public interface StudentSessionRepository extends CrudRepository<StudentSessionI
           String userId,
           String packageSessionId,
           String status);
+
+  /**
+   * This learner's most recent row in ONE package session, whatever its status. Used by the
+   * enrollment repair to find a lapsed membership worth reviving: a revoked trial leaves an
+   * INACTIVE or DELETED row, and reviving that one keeps the learner's enrollment number,
+   * sub-org and roles instead of minting a parallel record.
+   *
+   * <p>Per session rather than across a list, because an invite can cover several package
+   * sessions and the learner is owed an enrollment in each -- picking one row for the whole
+   * invite would enroll them in one course and quietly skip the rest.
+   *
+   * <p>NULLS LAST is deliberate: Postgres orders DESC with nulls FIRST, so a legacy row with no
+   * created_at would outrank every real one and get revived instead of the newest.
+   */
+  @Query(value = """
+          SELECT m.* FROM student_session_institute_group_mapping m
+          WHERE m.user_id = :userId
+            AND m.package_session_id = :packageSessionId
+          ORDER BY m.created_at DESC NULLS LAST
+          LIMIT 1
+          """, nativeQuery = true)
+  Optional<StudentSessionInstituteGroupMapping> findLatestForUserInPackageSession(
+          @Param("userId") String userId,
+          @Param("packageSessionId") String packageSessionId);
 }

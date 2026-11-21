@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { X } from '@phosphor-icons/react';
@@ -17,6 +18,7 @@ const statusColor: Record<string, string> = {
 };
 
 export function NodeLogPopover({ log, onClose }: Props) {
+    const { t, i18n } = useTranslation('workflowNodeLogPopover');
     if (!log) return null;
 
     return (
@@ -36,7 +38,7 @@ export function NodeLogPopover({ log, onClose }: Props) {
             <div className="flex-1 overflow-y-auto p-3 space-y-3 text-xs">
                 {log.execution_time_ms != null && (
                     <div>
-                        <span className="text-muted-foreground">Duration: </span>
+                        <span className="text-muted-foreground">{t('duration')}</span>
                         <span className="font-medium">
                             {log.execution_time_ms < 1000
                                 ? `${Math.round(log.execution_time_ms)}ms`
@@ -47,21 +49,21 @@ export function NodeLogPopover({ log, onClose }: Props) {
 
                 {log.started_at && (
                     <div>
-                        <span className="text-muted-foreground">Started: </span>
-                        {new Date(log.started_at).toLocaleString()}
+                        <span className="text-muted-foreground">{t('started')}</span>
+                        {new Date(log.started_at).toLocaleString(i18n.language)}
                     </div>
                 )}
 
                 {log.completed_at && (
                     <div>
-                        <span className="text-muted-foreground">Completed: </span>
-                        {new Date(log.completed_at).toLocaleString()}
+                        <span className="text-muted-foreground">{t('completed')}</span>
+                        {new Date(log.completed_at).toLocaleString(i18n.language)}
                     </div>
                 )}
 
                 {log.error_message && (
                     <div className="bg-red-50 border border-red-200 rounded p-2 text-red-700">
-                        <div className="font-medium mb-1">Error:</div>
+                        <div className="font-medium mb-1">{t('error')}</div>
                         <div className="break-words">{log.error_message}</div>
                         {log.error_type && (
                             <Badge variant="outline" className="mt-1 text-[9px]">{log.error_type}</Badge>
@@ -71,7 +73,7 @@ export function NodeLogPopover({ log, onClose }: Props) {
 
                 {log.details && Object.keys(log.details).length > 0 && (
                     <div>
-                        <div className="text-muted-foreground font-medium mb-1">Details:</div>
+                        <div className="text-muted-foreground font-medium mb-1">{t('details')}</div>
                         <pre className="bg-muted rounded p-2 text-[10px] overflow-auto max-h-48 whitespace-pre-wrap break-words">
                             {JSON.stringify(log.details, null, 2)}
                         </pre>

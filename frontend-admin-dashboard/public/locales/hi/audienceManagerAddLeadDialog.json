@@ -1,0 +1,13 @@
+{
+    "heading": "नया लीड जोड़ें",
+    "description": "वह कैंपेन टाइप और {{audienceTerm}} चुनें जिसमें यह लीड जाएगा। इसके बाद उसका फ़ॉर्म खुलेगा।",
+    "selectPlaceholder": "{{term}} चुनें",
+    "pickTypeFirst": "पहले {{term}} चुनें",
+    "searchPlaceholder": "खोजें…",
+    "noResults": "कुछ नहीं मिला।",
+    "loading": "लोड हो रहा है…",
+    "noCampaignType": "कोई कैंपेन टाइप नहीं",
+    "emptyState": "लीड जोड़ने के लिए कोई सक्रिय {{audienceTerm}} नहीं है।",
+    "cancel": "रद्द करें",
+    "continue": "आगे बढ़ें"
+}

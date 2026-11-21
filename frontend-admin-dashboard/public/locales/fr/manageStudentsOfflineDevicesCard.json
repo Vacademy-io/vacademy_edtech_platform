@@ -1,0 +1,28 @@
+{
+    "heading": "Appareils hors ligne",
+    "loading": "Chargement des appareils…",
+    "emptyState": "Aucun appareil enregistré pour les téléchargements hors ligne.",
+    "device": {
+        "fallbackName": "Appareil",
+        "checkinInfo": "Dernière connexion {{checkinDate}} · accès hors ligne jusqu'au {{leaseDate}}"
+    },
+    "status": {
+        "active": "Actif",
+        "revoked": "Révoqué"
+    },
+    "actions": {
+        "revoke": "Révoquer",
+        "cancel": "Annuler",
+        "revokeDevice": "Révoquer l'appareil",
+        "revoking": "Révocation…"
+    },
+    "confirmDialog": {
+        "heading": "Révoquer cet appareil hors ligne ?",
+        "body": "Tout le contenu téléchargé sur <strong>{{deviceName}}</strong> sera supprimé lors de sa prochaine connexion, et il ne comptera plus dans la limite d'appareils de l'apprenant. Les droits d'accès aux cours ne sont pas affectés.",
+        "fallbackDeviceName": "cet appareil"
+    },
+    "toast": {
+        "revokeSuccess": "Appareil révoqué — le contenu sera purgé à sa prochaine connexion",
+        "revokeFailed": "Échec de la révocation de l'appareil"
+    }
+}

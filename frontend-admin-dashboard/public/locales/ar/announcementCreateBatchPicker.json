@@ -1,0 +1,19 @@
+{
+    "emptyState": "لا يوجد {{nounPlural}} لهذا المعهد بعد. أنشئ واحدًا أولًا، ثم عد إلى هنا.",
+    "selectNoun": "اختر {{noun}}",
+    "countSelected": "تم اختيار {{count}} {{noun}}",
+    "searchPlaceholder": "البحث في {{nounPlural}} أو المستويات أو الجلسات…",
+    "noMatch": "لا يوجد {{nounPlural}} يطابق ”{{query}}“.",
+    "selectAll": "تحديد الكل",
+    "clearGroup": "مسح",
+    "orgSuffix": " · منظمة فرعية",
+    "footerSelectedCount_zero": "لم يتم اختيار أي شيء",
+    "footerSelectedCount_one": "تم اختيار واحد",
+    "footerSelectedCount_two": "تم اختيار اثنين",
+    "footerSelectedCount_few": "تم اختيار {{count}}",
+    "footerSelectedCount_many": "تم اختيار {{count}}",
+    "footerSelectedCount_other": "تم اختيار {{count}}",
+    "clearAll": "مسح الكل",
+    "done": "تم",
+    "removeAria": "إزالة {{label}}"
+}

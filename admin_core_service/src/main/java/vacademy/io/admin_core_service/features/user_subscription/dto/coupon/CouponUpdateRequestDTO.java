@@ -29,6 +29,9 @@ public class CouponUpdateRequestDTO {
 
     private Date redeemEndDate;
 
+    /** true = remove the end date so the coupon never expires (a null redeemEndDate means "unchanged"). */
+    private Boolean clearRedeemEndDate;
+
     private Long usageLimit;
 
     private Boolean isEmailRestricted;

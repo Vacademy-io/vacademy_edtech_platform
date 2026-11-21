@@ -1,0 +1,364 @@
+---
+title: "Errors"
+description: "One error envelope for every failed request, a stable machine code to branch on, and a request id to quote when you need help."
+icon: "triangle-exclamation"
+---
+
+Evalezy uses standard HTTP status codes. `2xx` means the request worked, `4xx` means something in the request needs to change, and `5xx` means something went wrong on our side.
+
+Every error the API returns, whatever the status, has the same JSON shape.
+
+## The error envelope
+
+```json
+{
+  "error": {
+    "code": "submission_exists",
+    "message": "This candidate already has a submission on this exam; send replace: true to replace it.",
+    "request_id": "req_3f2a9c41d8b04e6f9a7c2d1e5b8f0a63",
+    "details": {
+      "submission_id": "6f1c2d9e-3b7a-4c58-9e21-0a4b7d3c8f15"
+    }
+  }
+}
+```
+
+<ResponseField name="error.code" type="string" required>
+  A stable machine code, such as `exam_not_found` or `insufficient_credits`. **Branch on this**, not on the message or the HTTP status alone. Codes never change once published.
+</ResponseField>
+<ResponseField name="error.message" type="string" required>
+  A human-readable explanation. Safe to log and show to your operators. The wording can improve over time, so do not parse it.
+</ResponseField>
+<ResponseField name="error.request_id" type="string" required>
+  The id of this request, such as `req_3f2a9c41d8b04e6f9a7c2d1e5b8f0a63`. The same value is returned in the `X-Request-Id` response header on every response, successful or not.
+</ResponseField>
+<ResponseField name="error.details" type="object">
+  Extra machine-readable context when there is some, for example the id of the existing resource on a `409`, or the list of invalid fields on a `422`. Left out when empty.
+</ResponseField>
+
+Error responses are sent with `Content-Type: application/json` and `Cache-Control: no-store`.
+
+### Validation errors
+
+`422 validation_failed` lists every field that failed in `details.errors`, so you can fix them all in one go:
+
+```json
+{
+  "error": {
+    "code": "validation_failed",
+    "message": "2 fields are not valid; see details.errors.",
+    "request_id": "req_9d0e7c5b3a1f4e2d8c6b4a2f0e9d7c5b",
+    "details": {
+      "errors": [
+        { "field": "questions[3].max_marks", "code": "required", "message": "max_marks is required." },
+        { "field": "title", "code": "invalid_characters", "message": "title cannot contain < or >." }
+      ]
+    }
+  }
+}
+```
+
+Field-level codes you will meet most often:
+
+| `details.errors[].code` | Meaning |
+|---|---|
+| `required` | The field is missing or empty. |
+| `invalid` | The value has the wrong format or is not one of the allowed values. |
+| `out_of_range` | A number or list size is outside the allowed range (for example `limit` above 200). |
+| `too_long` / `too_large` | Text or `metadata` is over its size limit. |
+| `invalid_characters` | The text contains a character that is not allowed: a NUL character (U+0000) anywhere, or `<` / `>` in short fields such as titles, labels, section names and candidate names. |
+| `not_editable` / `unknown_field` | A `PATCH` tried to change a field that cannot be changed, or a field that does not exist. |
+
+<Note>
+All text you send is treated as plain text. Long text such as question text, model answers and typed answers can contain `<` and `>` (for example `x < 5`); they are kept exactly as sent and never rendered as markup.
+</Note>
+
+## Error codes
+
+<Tip>
+Ids that belong to another institute always answer `404`, never `403`. You cannot tell whether a resource exists elsewhere.
+</Tip>
+
+### 400 Bad Request
+
+| Code | Meaning | What to do |
+|---|---|---|
+| `malformed_json` | The body is not valid JSON, or does not match the endpoint's shape (for example a string where an object is expected). | Fix the body. |
+| `invalid_cursor` | The `cursor` query parameter was not produced by this API. | Pass `next_cursor` from the previous page exactly as received. See [Pagination](/platform/pagination). |
+
+### 401 Unauthorized
+
+| Code | Meaning | What to do |
+|---|---|---|
+| `missing_api_key` | No `X-API-Key` header. | Send your key in the `X-API-Key` header. |
+| `invalid_api_key` | The key is malformed, unknown, revoked or expired. The same code covers all four. | Check the key, or ask your institute admin for a new one. Do not retry. |
+
+### 402 Payment Required
+
+| Code | Meaning | What to do |
+|---|---|---|
+| `insufficient_credits` | The submission's or re-evaluation's quote is more than your available credits. `details` has `required`, `available`, `balance`, `credit_limit` and `committed`. | Top up credits in the Vacademy dashboard and retry. See [Pricing](/platform/pricing#not-enough-credits-402). |
+
+### 403 Forbidden
+
+| Code | Meaning | What to do |
+|---|---|---|
+| `product_not_enabled` | The key is valid but the Evaluation API is not enabled for your institute. | Contact [hello@evalezy.com](mailto:hello@evalezy.com). |
+| `insufficient_scope` | The key lacks the scope this endpoint needs. `details.required_scope` names it, for example `evaluation:finalize`. | Ask your admin for a key with that scope. |
+
+### 404 Not Found
+
+| Code | Meaning |
+|---|---|
+| `exam_not_found` | No exam with this id for your institute, or the exam was deleted. Exams created in the dashboard are not visible to API keys. |
+| `question_not_found` | No question with this id in this exam. |
+| `candidate_not_found` | No candidate with this id, or the candidate is not registered on this exam. |
+| `submission_not_found` | No submission with this id for your institute. |
+| `upload_not_found` | One or more upload ids are unknown. |
+| `checked_copy_not_found` | No checked copy for this submission yet (not graded, or the copy could not be rendered). |
+| `endpoint_not_found` | No endpoint matches this method and path. Check it against the API reference. |
+| `not_found` | Generic: the resource was not found. |
+
+### 405, 413, 415
+
+| Status | Code | Meaning |
+|---|---|---|
+| 405 | `method_not_allowed` | Wrong HTTP method for this path. The `Allow` header lists the right ones. |
+| 413 | `payload_too_large` | The request body is too large. Send files through `POST /uploads`, never in a JSON body. |
+| 415 | `unsupported_media_type` | Send JSON with `Content-Type: application/json`. |
+
+### 409 Conflict
+
+A `409` means the request is valid but clashes with the current state. Most carry the id of the resource involved in `details`.
+
+| Code | Meaning |
+|---|---|
+| `exam_exists` | An exam with this `external_ref` already exists. `details.exam_id` is the existing exam: use it instead of creating another. |
+| `exam_open` | The exam is open, so this change is only possible while it is a draft (adding or removing questions, changing sections or mode). |
+| `exam_not_open` | The exam is still a draft. Open it with `POST /exams/{id}/open` before submitting or finalizing. |
+| `exam_finalized` | Every submission of the exam is finalized. Unfinalize a submission before changing the exam. |
+| `exam_has_submissions` | The exam has submissions, so it cannot be deleted (or its choice groups changed). |
+| `submission_exists` | This candidate already has a live submission on this exam. `details.submission_id` is the existing one. Send `replace: true` to replace it. |
+| `submission_finalized` | The submission is finalized. Unfinalize it before overriding marks, re-evaluating or replacing it. |
+| `submission_not_finalized` | You tried to unfinalize a submission that is not finalized. |
+| `evaluation_in_progress` | The submission or answer is still being graded. Wait until it is graded, or cancel it. |
+| `already_completed` | You tried to cancel an evaluation that has already finished. |
+| `upload_already_used` | This upload is already attached to another submission. Upload the file again for a new submission. |
+| `candidate_has_submission` | The candidate has a submission on this exam, so it cannot be unregistered. Delete the submission first. |
+| `rubric_locked` | The exam's rubric is locked, so rubrics and model answers cannot change. |
+| `request_in_progress` | A request with the same `Idempotency-Key` is still running. Retry after `Retry-After` (2 seconds). See [Idempotency](/platform/idempotency). |
+| `conflict` | Generic conflict with the current state. |
+
+### 412 Precondition Failed
+
+| Code | Meaning |
+|---|---|
+| `rubric_version_mismatch` | The `If-Match` rubric version you sent is not the current one, or earlier rubric changes are still being saved. `details.current` has the current version when known. Re-read the rubrics and retry. |
+
+### 422 Unprocessable Entity
+
+| Code | Meaning |
+|---|---|
+| `validation_failed` | One or more fields are invalid. See `details.errors` above. |
+| `idempotency_key_reused` | This `Idempotency-Key` was already used with a different request. Use a new key for a new request. |
+| `feature_not_available` | The feature exists in the API shape but is not available yet. See the list below. |
+| `language_not_supported` | The content is in a language Evalezy cannot grade yet: `answer_language` or `feedback_language` set to `hi`, or a typed answer (long answer or one-word) in which more than 20% of the letters are Devanagari. |
+| `mode_mismatch` | Handwritten exam sent `answers[]`, or typed exam sent `upload_id`. |
+| `no_gradable_questions` | The exam has no questions to grade, or a typed re-evaluate has no written answer for the AI. |
+| `too_many_pages` | The PDF has more than 80 pages. `details.pages` and `details.max_pages` give the numbers. |
+| `upload_rejected` | The upload cannot be used: not uploaded yet (`details.reason: "not_uploaded"` or `"not_ready"`) or rejected after checking (for example not a PDF, or too large). |
+| `exam_not_ready` | The exam cannot be opened yet. `details.problems` lists what to fix. |
+| `unknown_option_label` | An answer key or typed answer names an option label that the question does not have. |
+| `invalid_marks` | An override's `awarded` is below 0, above the question's maximum, or not a multiple of 0.5. `details` has `awarded` and `max`. |
+| `rubric_marks_mismatch` | A rubric's criteria do not add up to the question's maximum marks. `details` has `criteria_total` and `max_marks`. |
+| `rubric_duplicate_criterion` | Two criteria in one rubric have the same name. |
+| `rubric_guidance_has_marks` | A criterion's `guidance` text mentions marks. Put marks in `criteria[].marks` only. |
+
+`feature_not_available` is returned for:
+
+- Choice groups ("attempt any N of M"): beta, enabled on request.
+- `images[]` on a submission or image files on `POST /uploads` (phone photos).
+- `files[]` on a submission (booklet plus supplements).
+- `question_ids` on `POST /submissions/{id}/re-evaluate` (re-grading single questions).
+- `format=csv` on `GET /exams/{id}/results`.
+- `purge=true` on `DELETE /exams/{id}`.
+
+See the [Roadmap](/platform/roadmap).
+
+### 429 Too Many Requests
+
+| Code | Meaning |
+|---|---|
+| `rate_limited` | Too many requests per second or minute for this key or institute. `details.retry_after_seconds` and the `Retry-After` header say how long to wait. |
+| `daily_quota_exceeded` | Your institute (or this key) has used its daily copy quota. `details` has `quota`, `limit` and `resets_at`. |
+
+See [Rate limits and quotas](/platform/rate-limits).
+
+### 5xx
+
+| Status | Code | Meaning | What to do |
+|---|---|---|---|
+| 500 | `internal_error` | Something went wrong on our side. | Retry with backoff and the same `Idempotency-Key`. If it persists, report the `request_id`. |
+| 503 | `auth_unavailable` | Your key could not be checked right now. | Retry after `Retry-After` (5 seconds). |
+| 503 | `engine_unavailable` | The evaluation engine or the credit check could not be reached. | Retry after `Retry-After`. Nothing was created or charged. |
+| 502, 504, other `5xx` | none | A gateway error between you and the API. | Retry with backoff and the same `Idempotency-Key`. |
+
+<Note>
+Rarely, a gateway error (for example `502` or `504`) arrives without the JSON envelope, sometimes with an HTML body. Treat any `5xx` as retryable, and parse error bodies defensively.
+</Note>
+
+## Retry or fix?
+
+| Retry the same request | Fix the request first |
+|---|---|
+| `429` and any `5xx`, with backoff and the `Retry-After` header | All other `4xx` |
+| `409 request_in_progress` after 2 seconds | `409` state conflicts: read the resource, then decide |
+| `402` after topping up credits | |
+
+Send an [`Idempotency-Key`](/platform/idempotency) on every `POST` so that retries never create duplicates.
+
+<CodeGroup>
+
+```python Python
+import os
+import time
+import uuid
+import requests
+
+def error_of(resp):
+    # Gateway errors can arrive without the JSON envelope.
+    try:
+        return resp.json()["error"]
+    except (ValueError, KeyError, TypeError):
+        return {"code": f"http_{resp.status_code}", "message": resp.text[:200], "request_id": None}
+
+def post_with_retry(path, body, max_attempts=5):
+    idem_key = str(uuid.uuid4())  # one key for all attempts of this request
+    for attempt in range(max_attempts):
+        resp = requests.post(
+            f"https://api.evalezy.com/v1{path}",
+            headers={
+                "X-API-Key": os.environ["EVALEZY_API_KEY"],
+                "Idempotency-Key": idem_key,
+            },
+            json=body,
+            timeout=60,
+        )
+        retryable = resp.status_code == 429 or resp.status_code >= 500 or (
+            resp.status_code == 409
+            and error_of(resp)["code"] == "request_in_progress"
+        )
+        if not retryable:
+            break
+        wait = int(resp.headers.get("Retry-After", 2 ** attempt))
+        time.sleep(wait)
+    if resp.status_code >= 400:
+        err = error_of(resp)
+        raise RuntimeError(f"{err['code']}: {err['message']} (request_id {err['request_id']})")
+    return resp.json()
+```
+
+```javascript Node
+import { randomUUID } from "node:crypto";
+
+// Gateway errors can arrive without the JSON envelope.
+async function errorOf(resp) {
+  const text = await resp.clone().text();
+  try {
+    return JSON.parse(text).error ?? { code: `http_${resp.status}`, message: text.slice(0, 200) };
+  } catch {
+    return { code: `http_${resp.status}`, message: text.slice(0, 200), request_id: null };
+  }
+}
+
+export async function postWithRetry(path, body, maxAttempts = 5) {
+  const idemKey = randomUUID(); // one key for all attempts of this request
+  let resp;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    resp = await fetch(`https://api.evalezy.com/v1${path}`, {
+      method: "POST",
+      headers: {
+        "X-API-Key": process.env.EVALEZY_API_KEY,
+        "Idempotency-Key": idemKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+    let retryable = resp.status === 429 || resp.status >= 500;
+    if (resp.status === 409) {
+      retryable = (await errorOf(resp)).code === "request_in_progress";
+    }
+    if (!retryable) break;
+    const wait = Number(resp.headers.get("Retry-After") ?? 2 ** attempt);
+    await new Promise((r) => setTimeout(r, wait * 1000));
+  }
+  if (!resp.ok) {
+    const { code, message, request_id } = await errorOf(resp);
+    throw new Error(`${code}: ${message} (request_id ${request_id})`);
+  }
+  return resp.json();
+}
+```
+
+</CodeGroup>
+
+## Submission error codes
+
+Some problems only show up after a submission is accepted, while it is being graded. Those do not fail the HTTP request; instead the submission ends with `status: "failed"` and an `error` object:
+
+```json
+{
+  "id": "6f1c2d9e-3b7a-4c58-9e21-0a4b7d3c8f15",
+  "status": "failed",
+  "credits_charged": null,
+  "error": {
+    "code": "copy_unreadable",
+    "message": "The answer sheet could not be read reliably. Rescan it and submit again."
+  }
+}
+```
+
+**A failed submission is never charged.**
+
+| `error.code` | Meaning | What to do |
+|---|---|---|
+| `copy_unreadable` | The answer sheet could not be read reliably (blurred, too faint, cut off). | Rescan and submit again with `replace: true`. |
+| `language_not_supported` | The answers are in Hindi (Devanagari). Only English is supported for now. | Grade this copy by hand. |
+| `file_missing` | The submission has no answer sheet to grade. | Submit again with a valid upload. |
+| `file_unavailable` | The answer sheet could not be fetched from storage. | `POST /submissions/{id}/re-evaluate`. |
+| `no_gradable_questions` | The exam has no question the AI can grade. | Add questions the AI can grade (long answers, or objective questions with an answer key). |
+| `timed_out` | Grading took too long. | Re-evaluate. |
+| `cancelled` | Grading was cancelled. | Nothing, or re-evaluate if it was a mistake. |
+| `insufficient_credits` | Not enough credits when the copy reached the front of the queue. | Top up credits and re-evaluate. |
+| `engine_unavailable` | The evaluation engine failed on this copy. | Re-evaluate. |
+| `identify_failed` | Reserved for bulk batches with name matching, which are not available yet. | Not returned by v1 endpoints. |
+
+### Question errors
+
+When a copy finishes but the AI could not grade some answers, the submission's status is `partially_graded`. In the result, each affected question has `status: "failed"`, `needs_review: true` and its own `error` object with a `code` and the message "The AI could not grade this answer; review it by hand." Mark those questions with `PATCH /submissions/{id}/questions/{question_id}`. Treat the question-level `code` as informational.
+
+## Warnings
+
+A successful response can carry `warnings`: input that was accepted but deserves attention. Each warning has a `code`, a `message` and the `field` it is about.
+
+```json
+"warnings": [
+  {
+    "code": "pages_beyond_vision_limit",
+    "message": "Pages after 40 are read with plain OCR only; the copy is marked for human review.",
+    "field": "upload_id"
+  }
+]
+```
+
+Log warnings and surface them to your operators. They never block the request.
+
+## Reporting a problem
+
+Every response carries `X-Request-Id`, and every error body repeats it as `error.request_id`. **Log it with every failed call.** When you need help, email [hello@evalezy.com](mailto:hello@evalezy.com) with:
+
+- the `request_id` (or several, if the problem repeats),
+- the endpoint and the time of the call (with time zone),
+- the `error.code` you received and what you expected instead.
+
+With the request id we can find the exact call in our logs. Please never send your API key, and never include student answer sheets in email unless we ask for a specific one.

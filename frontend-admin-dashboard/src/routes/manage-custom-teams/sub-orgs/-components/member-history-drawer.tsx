@@ -22,6 +22,7 @@ import { CreateInvoiceDialog } from '@/routes/manage-students/students-list/-com
 import { MarkPaidDialog } from './mark-paid-dialog';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Bell, Copy, Plus } from '@phosphor-icons/react';
 import { BookOpen, CircleCheck, Download, ExternalLink, FileText, Lock } from 'lucide-react';
@@ -83,6 +84,7 @@ export function MemberHistoryDrawer({
     courses,
     readOnly = false,
 }: Props) {
+    const { t } = useTranslation('manageCustomTeamsMemberHistoryDrawer');
     // Institutes rename this concept via Settings → Naming (Channel Partner,
     // Branch, Franchise, VLE …); user-facing labels must follow that.
     const subOrgTerm = getTerminology(OtherTerms.SubOrg, SystemTerms.SubOrg);
@@ -94,7 +96,7 @@ export function MemberHistoryDrawer({
             >
                 <SheetHeader className="border-b px-6 py-4">
                     <SheetTitle className="text-lg">
-                        {userName || 'Member'}
+                        {userName || t('defaultMemberName')}
                     </SheetTitle>
                     {subtitle && (
                         <SheetDescription>{subtitle}</SheetDescription>
@@ -108,7 +110,7 @@ export function MemberHistoryDrawer({
                                 <section>
                                     <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-700">
                                         <BookOpen className="h-4 w-4" />
-                                        Enrolled Courses ({courses.length})
+                                        {t('enrolledCourses', { count: courses.length })}
                                     </h3>
                                     <ul className="space-y-1 rounded-md border">
                                         {courses.map((c) => (
@@ -127,12 +129,11 @@ export function MemberHistoryDrawer({
                                 <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
                                     <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                                     <div>
-                                        <p className="font-medium">Read-only ledger</p>
+                                        <p className="font-medium">{t('readOnlyLedger.title')}</p>
                                         <p>
-                                            Only the parent institute admin can edit
-                                            installments, apply CPO discounts, or record
-                                            offline payments on this {subOrgTerm.toLowerCase()} admin&apos;s
-                                            ledger.
+                                            {t('readOnlyLedger.body', {
+                                                org: subOrgTerm.toLowerCase(),
+                                            })}
                                         </p>
                                     </div>
                                 </div>
@@ -161,7 +162,7 @@ export function MemberHistoryDrawer({
                             <InvoicesSection userId={userId} userName={userName} />
                         </div>
                     ) : (
-                        <p className="text-sm text-muted-foreground">No member selected.</p>
+                        <p className="text-sm text-muted-foreground">{t('noMemberSelected')}</p>
                     )}
                 </div>
             </SheetContent>
@@ -170,6 +171,7 @@ export function MemberHistoryDrawer({
 }
 
 function InvoicesSection({ userId, userName }: { userId: string; userName?: string | null }) {
+    const { t } = useTranslation('manageCustomTeamsMemberHistoryDrawer');
     const queryClient = useQueryClient();
     const instituteId = getCurrentInstituteId() || '';
     const { data: invoices = [], isLoading } = useQuery<InvoiceSummary[]>({
@@ -190,12 +192,12 @@ function InvoicesSection({ userId, userName }: { userId: string; userName?: stri
         try {
             await navigator.clipboard.writeText(link);
             setCopiedLinkId(invoiceId);
-            toast.success('Payment link copied');
+            toast.success(t('toast.linkCopied'));
             window.setTimeout(() => {
                 setCopiedLinkId((prev) => (prev === invoiceId ? null : prev));
             }, 2000);
         } catch (_err) {
-            toast.error('Could not copy to clipboard');
+            toast.error(t('toast.copyFailed'));
         }
     };
     const remindMutation = useMutation({
@@ -205,13 +207,13 @@ function InvoicesSection({ userId, userName }: { userId: string; userName?: stri
         onSuccess: (data) => {
             toast.success(
                 data?.recipient_email
-                    ? `Reminder sent to ${data.recipient_email}`
-                    : 'Reminder fired'
+                    ? t('toast.reminderSentTo', { email: data.recipient_email })
+                    : t('toast.reminderFired')
             );
             queryClient.invalidateQueries({ queryKey: ['member-invoices', userId] });
         },
         onError: (err: any) => {
-            toast.error(err?.response?.data?.message || 'Failed to send reminder');
+            toast.error(err?.response?.data?.message || t('toast.reminderFailed'));
         },
     });
     // Separate mutation for admin-invoice reminders. Different endpoint + payload
@@ -222,18 +224,18 @@ function InvoicesSection({ userId, userName }: { userId: string; userName?: stri
         onSettled: () => setRemindingId(null),
         onSuccess: (data) => {
             const channels: string[] = [];
-            if (data.alert_sent) channels.push('in-app');
-            if (data.email_sent) channels.push('email');
-            const where = data.recipient_email ? ` to ${data.recipient_email}` : '';
+            if (data.alert_sent) channels.push(t('channels.inApp'));
+            if (data.email_sent) channels.push(t('channels.email'));
+            const where = data.recipient_email ? ` ${t('toast.toRecipient', { email: data.recipient_email })}` : '';
             toast.success(
                 channels.length > 0
-                    ? `Reminder sent${where} via ${channels.join(' + ')}`
-                    : `Reminder${where} — no channels delivered (check Invoice Settings)`
+                    ? t('toast.invoiceReminderSentVia', { where, channels: channels.join(' + ') })
+                    : t('toast.invoiceReminderNoChannels', { where })
             );
             queryClient.invalidateQueries({ queryKey: ['member-invoices', userId] });
         },
         onError: (err: any) => {
-            toast.error(err?.response?.data?.message || 'Failed to send invoice reminder');
+            toast.error(err?.response?.data?.message || t('toast.invoiceReminderFailed'));
         },
     });
 
@@ -242,9 +244,9 @@ function InvoicesSection({ userId, userName }: { userId: string; userName?: stri
             <section>
                 <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-700">
                     <FileText className="h-4 w-4" />
-                    Invoices
+                    {t('invoices.heading')}
                 </h3>
-                <p className="text-xs text-muted-foreground">Loading invoices...</p>
+                <p className="text-xs text-muted-foreground">{t('invoices.loading')}</p>
             </section>
         );
     }
@@ -257,7 +259,7 @@ function InvoicesSection({ userId, userName }: { userId: string; userName?: stri
             <div className="mb-2 flex items-center justify-between gap-2">
                 <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                     <FileText className="h-4 w-4" />
-                    Invoices ({invoices.length})
+                    {t('invoices.headingWithCount', { count: invoices.length })}
                 </h3>
                 {!!userId && !!instituteId && (
                     <button
@@ -266,13 +268,13 @@ function InvoicesSection({ userId, userName }: { userId: string; userName?: stri
                         className="inline-flex items-center gap-1 rounded border border-primary-300 bg-primary-50 px-2 py-1 text-[11px] font-medium text-primary-700 hover:bg-primary-100"
                     >
                         <Plus className="h-3 w-3" />
-                        Create Invoice
+                        {t('invoices.createInvoice')}
                     </button>
                 )}
             </div>
             {invoices.length === 0 && (
                 <p className="mb-2 text-xs text-muted-foreground">
-                    No invoices yet. Create one with the button above.
+                    {t('invoices.noInvoicesYet')}
                 </p>
             )}
             <ul className="space-y-1 rounded-md border">
@@ -317,10 +319,10 @@ function InvoicesSection({ userId, userName }: { userId: string; userName?: stri
                                     onClick={() => remindMutation.mutate(sfpId)}
                                     disabled={remindingId === sfpId}
                                     className="inline-flex shrink-0 items-center gap-1 rounded border px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
-                                    title="Send installment-due reminder"
+                                    title={t('invoices.sendInstallmentReminderTitle')}
                                 >
                                     <Bell className="size-3" />
-                                    {remindingId === sfpId ? 'Sending…' : 'Remind'}
+                                    {remindingId === sfpId ? t('invoices.sending') : t('invoices.remind')}
                                 </button>
                             )}
                             {isPendingAdminInvoice && (
@@ -329,10 +331,10 @@ function InvoicesSection({ userId, userName }: { userId: string; userName?: stri
                                     onClick={() => invoiceReminderMutation.mutate(inv.id)}
                                     disabled={remindingId === inv.id}
                                     className="inline-flex shrink-0 items-center gap-1 rounded border px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
-                                    title="Re-send the payment-due reminder (email + in-app alert)"
+                                    title={t('invoices.resendPaymentReminderTitle')}
                                 >
                                     <Bell className="size-3" />
-                                    {remindingId === inv.id ? 'Sending…' : 'Remind'}
+                                    {remindingId === inv.id ? t('invoices.sending') : t('invoices.remind')}
                                 </button>
                             )}
                             {isPendingAdminInvoice && paymentLink && (
@@ -340,17 +342,17 @@ function InvoicesSection({ userId, userName }: { userId: string; userName?: stri
                                     type="button"
                                     onClick={() => handleCopyLink(inv.id, paymentLink)}
                                     className="inline-flex shrink-0 items-center gap-1 rounded border px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground"
-                                    title="Copy learner payment link"
+                                    title={t('invoices.copyPaymentLinkTitle')}
                                 >
                                     {copiedLinkId === inv.id ? (
                                         <>
                                             <CircleCheck className="size-3" />
-                                            Copied
+                                            {t('invoices.copied')}
                                         </>
                                     ) : (
                                         <>
                                             <Copy className="size-3" />
-                                            Copy Link
+                                            {t('invoices.copyLink')}
                                         </>
                                     )}
                                 </button>
@@ -366,9 +368,9 @@ function InvoicesSection({ userId, userName }: { userId: string; userName?: stri
                                         })
                                     }
                                     className="inline-flex shrink-0 items-center gap-1 rounded border border-primary-300 bg-primary-50 px-2 py-1 text-[10px] uppercase tracking-wide text-primary-700 hover:bg-primary-100"
-                                    title="Record an offline / manual payment for this invoice"
+                                    title={t('invoices.markPaidTitle')}
                                 >
-                                    Mark Paid
+                                    {t('invoices.markPaid')}
                                 </button>
                             )}
                             {url ? (
@@ -378,10 +380,10 @@ function InvoicesSection({ userId, userName }: { userId: string; userName?: stri
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="inline-flex items-center gap-1 rounded border px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground"
-                                        title="View PDF in new tab"
+                                        title={t('invoices.viewPdfTitle')}
                                     >
                                         <ExternalLink className="h-3 w-3" />
-                                        View
+                                        {t('invoices.view')}
                                     </a>
                                     <button
                                         type="button"
@@ -389,15 +391,15 @@ function InvoicesSection({ userId, userName }: { userId: string; userName?: stri
                                             downloadInvoicePdf(url, buildInvoiceFilename(inv))
                                         }
                                         className="inline-flex items-center gap-1 rounded border px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground hover:bg-muted hover:text-foreground"
-                                        title="Download invoice PDF"
+                                        title={t('invoices.downloadPdfTitle')}
                                     >
                                         <Download className="h-3 w-3" />
-                                        Save
+                                        {t('invoices.save')}
                                     </button>
                                 </div>
                             ) : (
                                 <span className="shrink-0 text-[10px] text-muted-foreground">
-                                    No PDF
+                                    {t('invoices.noPdf')}
                                 </span>
                             )}
                         </li>
@@ -411,7 +413,7 @@ function InvoicesSection({ userId, userName }: { userId: string; userName?: stri
                 appears immediately. */}
             <CreateInvoiceDialog
                 userId={userId}
-                userName={userName || 'Member'}
+                userName={userName || t('defaultMemberName')}
                 instituteId={instituteId}
                 open={createInvoiceOpen}
                 onOpenChange={setCreateInvoiceOpen}

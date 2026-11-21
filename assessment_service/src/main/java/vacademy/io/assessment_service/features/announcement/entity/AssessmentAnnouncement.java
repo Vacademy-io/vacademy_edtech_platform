@@ -2,8 +2,10 @@ package vacademy.io.assessment_service.features.announcement.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
 import vacademy.io.assessment_service.features.assessment.entity.Assessment;
 import vacademy.io.assessment_service.features.assessment.entity.StudentAttempt;
@@ -15,6 +17,12 @@ import java.util.Date;
 @Table(name = "assessment_announcement")
 @Data
 @Builder
+// @Builder suppresses the no-arg constructor @Data would otherwise supply, and JPA
+// cannot materialise an entity without one. This entity is read on the learner
+// autosave path, so a single announcement row made every /status/update fail with
+// "No default constructor" — verified against production 2026-08-28.
+@NoArgsConstructor
+@AllArgsConstructor
 public class AssessmentAnnouncement {
 
     @Id

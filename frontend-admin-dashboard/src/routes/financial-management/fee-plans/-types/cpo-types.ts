@@ -49,6 +49,18 @@ export interface CPOPackage {
     approved_by?: string | null;
     fee_types: CPOFeeType[];
     package_session_links?: CPOPackageSessionLink[];
+    /** FIXED (default): installments are part of the plan. FLEXIBLE: chosen per learner at enrollment. */
+    schedule_mode?: CPOScheduleMode | null;
+    flexible_defaults?: CPOFlexibleDefaults | null;
+}
+
+export type CPOScheduleMode = 'FIXED' | 'FLEXIBLE';
+
+/** Defaults of a FLEXIBLE plan: prefill the Enroll wizard; used when no schedule is chosen. */
+export interface CPOFlexibleDefaults {
+    count?: number | null;
+    interval?: { unit: 'DAYS' | 'MONTHS'; value: number } | null;
+    max_count?: number | null;
 }
 
 // ─── Paginated list response ────────────────────────────────────────────────────
@@ -138,6 +150,9 @@ export interface CreateCPOPayload {
     approved_by: string | null;
     /** Mirrored onto payment_option.require_approval; gates enrollment behind admin approval. */
     require_approval?: boolean;
+    /** Omitted = FIXED. FLEXIBLE plans carry no installments. */
+    schedule_mode?: CPOScheduleMode;
+    flexible_defaults?: CPOFlexibleDefaults | null;
     fee_types: CPOFeeTypePayload[];
     package_session_links: CPOPackageSessionLink[];
 }

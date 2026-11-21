@@ -1,0 +1,16 @@
+{
+    "toggle": {
+        "isGuardianLabel": "क्या यह अभिभावक है?",
+        "addGuardianButton": "+ अभिभावक जोड़ें",
+        "removeGuardianButton": "अभिभावक हटाएँ"
+    },
+    "hints": {
+        "emailRequired": "अभिभावक लिंकिंग सक्षम करने के लिए इस रिकॉर्ड में एक ईमेल जोड़ें।",
+        "linkStudentPrompt": "उस छात्र को जोड़ें या लिंक करें जिसे यह अभिभावक नामांकित कर रहा है:",
+        "linkGuardianPrompt": "इस शिक्षार्थी के अभिभावक को जोड़ें या लिंक करें (वैकल्पिक):"
+    },
+    "personLabels": {
+        "student": "छात्र",
+        "guardian": "अभिभावक"
+    }
+}

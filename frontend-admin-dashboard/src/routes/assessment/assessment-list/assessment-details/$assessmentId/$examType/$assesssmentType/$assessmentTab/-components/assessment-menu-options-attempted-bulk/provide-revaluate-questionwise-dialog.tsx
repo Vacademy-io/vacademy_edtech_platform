@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { getInstituteId } from '@/constants/helper';
@@ -29,6 +30,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useSubmissionsBulkActionsDialogStoreAttempted } from '../bulk-actions-zustand-store/useSubmissionsBulkActionsDialogStoreAttempted';
 import { toast } from 'sonner';
+import { sanitizeRichHtml } from '@/lib/sanitize-html';
 
 interface ProvideDialogDialogProps {
     trigger: ReactNode;
@@ -37,6 +39,7 @@ interface ProvideDialogDialogProps {
 }
 
 export const ProvideRevaluateQuestionWiseDialogContent = () => {
+    const { t } = useTranslation('assessmentProvideRevaluateQuestionwiseDialog');
     const { selectedStudent, bulkActionInfo, isBulkAction, closeAllDialogs } =
         useSubmissionsBulkActionsDialogStoreAttempted();
 
@@ -117,13 +120,10 @@ export const ProvideRevaluateQuestionWiseDialogContent = () => {
             selectedFilter: SelectedFilterRevaluateInterface;
         }) => getRevaluateStudentResult(assessmentId, instituteId, methodType, selectedFilter),
         onSuccess: () => {
-            toast.success(
-                'Your attempt for this assessment has been revaluated for the selected students. Please check your email!',
-                {
-                    className: 'success-toast',
-                    duration: 4000,
-                }
-            );
+            toast.success(t('toasts.revaluateSuccess'), {
+                className: 'success-toast',
+                duration: 4000,
+            });
             closeAllDialogs();
         },
         onError: (error: unknown) => {
@@ -183,13 +183,13 @@ export const ProvideRevaluateQuestionWiseDialogContent = () => {
                 </div>
                 <TabsContent
                     value={selectedSection || ''}
-                    className="max-h-[calc(100vh-120px)] overflow-y-auto"
+                    className="max-h-dialog-tall overflow-y-auto"
                 >
                     <Table>
                         <TableHeader className="bg-primary-200">
                             <TableRow>
-                                <TableHead>Q.No.</TableHead>
-                                <TableHead>Question</TableHead>
+                                <TableHead>{t('table.questionNo')}</TableHead>
+                                <TableHead>{t('table.question')}</TableHead>
                                 <TableHead>
                                     <Checkbox
                                         checked={
@@ -213,9 +213,10 @@ export const ProvideRevaluateQuestionWiseDialogContent = () => {
                                     <TableCell>{index + 1}</TableCell>
                                     <TableCell
                                         dangerouslySetInnerHTML={{
-                                            __html:
+                                            __html: sanitizeRichHtml(
                                                 question.assessment_question_preview_dto
-                                                    .questionName || '',
+                                                    .questionName
+                                            ),
                                         }}
                                     />
                                     <TableCell>
@@ -248,7 +249,7 @@ export const ProvideRevaluateQuestionWiseDialogContent = () => {
                     layoutVariant="default"
                     onClick={handleSubmit}
                 >
-                    Revaluate
+                    {t('revaluateButton')}
                 </MyButton>
             </div>
         </>
@@ -260,11 +261,12 @@ export const ProvideRevaluateQuestionWiseDialog = ({
     open,
     onOpenChange,
 }: ProvideDialogDialogProps) => {
+    const { t } = useTranslation('assessmentProvideRevaluateQuestionwiseDialog');
     return (
         <MyDialog
             trigger={trigger}
-            heading="Question Wise Revaluation"
-            dialogWidth="no-scrollbar !m-0 h-[90vh] !w-full !max-w-[90vw] !gap-0 overflow-y-auto !p-0"
+            heading={t('dialog.heading')}
+            dialogWidth="no-scrollbar !m-0 h-[90vh] !w-full !max-w-[90vw] !gap-0 overflow-y-auto !p-0" // design-lint-ignore: vw/vh dialog sizing matches MyDialog primitive
             content={<ProvideRevaluateQuestionWiseDialogContent />}
             open={open}
             onOpenChange={onOpenChange}

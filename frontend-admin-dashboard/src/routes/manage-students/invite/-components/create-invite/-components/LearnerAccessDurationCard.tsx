@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UseFormReturn } from 'react-hook-form';
 import { InviteLinkFormValues } from '../GenerateInviteLinkSchema';
@@ -16,6 +17,7 @@ interface CustomInviteFormCardProps {
 const PLAN_CONTROLLED_TYPES = ['subscription', 'one_time'];
 
 const LearnerAccessDurationCard = ({ form }: CustomInviteFormCardProps) => {
+    const { t } = useTranslation('manageStudentsLearnerAccessDurationCard');
     const planType = form.watch('selectedPlan')?.type?.toLowerCase() ?? '';
     const planControlsAccess = PLAN_CONTROLLED_TYPES.includes(planType);
 
@@ -24,13 +26,13 @@ const LearnerAccessDurationCard = ({ form }: CustomInviteFormCardProps) => {
             <CardHeader>
                 <div className="flex items-center gap-2">
                     <Clock size={22} />
-                    <CardTitle className="text-2xl font-bold">Learner Access Duration</CardTitle>
+                    <CardTitle className="text-2xl font-bold">{t('title')}</CardTitle>
                 </div>
             </CardHeader>
             <CardContent>
                 <div className="flex flex-col gap-1">
                     <label htmlFor="access-duration-days" className="text-sm font-medium">
-                        Access Duration (Days)
+                        {t('durationLabel')}
                     </label>
                     <Input
                         id="access-duration-days"
@@ -38,13 +40,11 @@ const LearnerAccessDurationCard = ({ form }: CustomInviteFormCardProps) => {
                         min={1}
                         value={form.watch('accessDurationDays')}
                         onChange={(e) => form.setValue('accessDurationDays', e.target.value)}
-                        placeholder="Leave blank for unlimited access"
+                        placeholder={t('durationPlaceholder')}
                         className="w-48"
                     />
                     <p className="text-xs text-neutral-500">
-                        {planControlsAccess
-                            ? 'This plan sets its own access duration, which takes priority over this field. Change it on the payment plan instead.'
-                            : 'How long learners keep access after enrolling. Leave blank for unlimited. Admins can extend it later from the learner’s profile.'}
+                        {planControlsAccess ? t('planControlledHelpText') : t('freeFormHelpText')}
                     </p>
                 </div>
             </CardContent>

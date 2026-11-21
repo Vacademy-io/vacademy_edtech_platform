@@ -30,6 +30,16 @@ public class LeadReportSummaryDTO {
     private List<SourceBreakdown> bySource;
     private List<TierBreakdown> byTier;
     private List<DailyTrendPoint> trendByDay;
+    /**
+     * Counsellors a team filter resolved to (null without one), so a drill-through can carry the
+     * team into the leads list, which filters by counsellor and has no team filter of its own.
+     */
+    private List<String> scopeCounsellorIds;
+    /**
+     * True when the lead counts leave out converted leads (Lead Settings hides them in All
+     * Leads), so a drill-through opens the list without converted leads too.
+     */
+    private boolean excludesConverted;
 
     @Data
     @NoArgsConstructor
@@ -44,7 +54,8 @@ public class LeadReportSummaryDTO {
         private Double conversionRate;     // % (0–100) — null when totalLeads == 0
         private Long respondedLeads;       // leads with at least one counsellor action
         private Double avgResponseMinutes; // mean (first-action - submitted_at) for responded leads
-        private Long tatMetCount;          // first-action ≤ submitted_at + tat_hours (null when TAT disabled)
+        private Double medianResponseMinutes; // median of the same, unmoved by a few very late replies
+        private Long tatMetCount;          // first response ≤ submitted_at + TAT minutes (null when TAT disabled)
         private Double tatMetRate;         // % over responded leads (null when TAT disabled)
         private Long overdueLeads;         // leads currently TAT_OVERDUE or FOLLOW_UP_OVERDUE
     }
@@ -68,6 +79,7 @@ public class LeadReportSummaryDTO {
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public static class SourceBreakdown {
         private String sourceType;  // WEBSITE, GOOGLE_ADS, etc.
+        private String campaignType; // set when sourceType is the lead's campaign type (see ReportSourceSql)
         private long total;
         private long converted;
     }

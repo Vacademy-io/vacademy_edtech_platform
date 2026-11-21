@@ -1,0 +1,16 @@
+{
+    "heading": "Transactions récentes",
+    "viewAll": "Tout afficher",
+    "description": "Activité de paiement récente de votre établissement",
+    "emptyState": "Aucune transaction pour le moment.",
+    "status": {
+        "success": "Réussi",
+        "pending": "En attente",
+        "failed": "Échoué",
+        "cancelled": "Annulé"
+    },
+    "fallback": {
+        "unknownUser": "Inconnu",
+        "manualVendor": "Manuel"
+    }
+}

@@ -1,0 +1,16 @@
+{
+    "columns": {
+        "doubt": "الاستفسار",
+        "status": "الحالة",
+        "category": "الفئة",
+        "format": "الصيغة",
+        "assignedTo": "مُسند إلى",
+        "raised": "تاريخ الطرح",
+        "resolved": "تاريخ الحل",
+        "actions": "الإجراءات"
+    },
+    "learner": {
+        "unknown": "غير معروف",
+        "guest": "زائر"
+    }
+}

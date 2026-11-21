@@ -1,0 +1,13 @@
+{
+    "untitledField": "Untitled field",
+    "newFieldBadge": "(new)",
+    "mandatoryLabel": "Mandatory",
+    "hiddenLabel": "Hidden",
+    "accessButton": "Access",
+    "emptyState": "No fields attached yet. Attach an existing custom field or create a new one.",
+    "pickerPlaceholderEmpty": "No more fields to attach",
+    "pickerPlaceholderDefault": "Attach existing field(s)…",
+    "attachButton": "Attach",
+    "attachButtonWithCount": "Attach ({{count}})",
+    "createNewFieldButton": "Create New Field"
+}

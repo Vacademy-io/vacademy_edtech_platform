@@ -1,0 +1,22 @@
+{
+    "dropzoneHint": "اسحب مستندًا هنا وأفلته، أو انقر للاختيار",
+    "dropzoneFormats": "DOC أو DOCX، حتى 25 ميجابايت",
+    "invalidFileType": "يرجى تحميل ملفات مستندات فقط (DOC، DOCX)",
+    "fileTooLarge": "حجم الملف {{sizeMb}} ميجابايت. الحد الأقصى للحجم هو 25 ميجابايت.",
+    "fileSelected": "تم اختيار المستند بنجاح",
+    "selectFileFirst": "يرجى اختيار ملف أولاً",
+    "titleRequired": "يرجى إدخال عنوان للمستند",
+    "stageStarting": "جارٍ البدء…",
+    "stageConverting": "جارٍ تحويل المستند…",
+    "stageProcessingImages": "جارٍ معالجة الصور…",
+    "stageGeneratingPreview": "جارٍ إنشاء المعاينة…",
+    "stageSaving": "جارٍ حفظ الشريحة…",
+    "stageFinalizing": "جارٍ الإنهاء…",
+    "stageDone": "تم",
+    "uploadSuccess": "تم تحميل المستند بنجاح!",
+    "conversionFailed": "فشل التحويل. يرجى المحاولة مرة أخرى.",
+    "reorderFailed": "تم إنشاء الشريحة لكن إعادة الترتيب فشلت",
+    "processingHint": "قد يستغرق هذا بضع لحظات…",
+    "uploading": "جارٍ التحميل…",
+    "uploadDocument": "تحميل المستند"
+}

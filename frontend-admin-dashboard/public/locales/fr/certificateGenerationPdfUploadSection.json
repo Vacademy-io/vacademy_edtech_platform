@@ -1,0 +1,52 @@
+{
+    "readyCard": {
+        "title": "Modèle prêt",
+        "preview": "Aperçu",
+        "remove": "Supprimer",
+        "removing": "Suppression",
+        "imageAlt": "Aperçu du modèle de certificat",
+        "typeLabel": "Type",
+        "typePdf": "PDF → Image",
+        "typeImage": "Image",
+        "formatLabel": "Format",
+        "dimensionsLabel": "Dimensions",
+        "uploadedLabel": "Importé",
+        "confirmRemove": "Voulez-vous vraiment supprimer ce modèle ? Cela effacera également tous les mappages de champs."
+    },
+    "dropzone": {
+        "processingDefault": "Traitement du fichier...",
+        "fileTypeUnsupported": "Type de fichier non pris en charge",
+        "dropHere": "Déposez le fichier ici",
+        "uploadTitle": "Importer un modèle de certificat",
+        "processingSubtitle": "Veuillez patienter pendant le traitement de votre modèle",
+        "dragDropSubtitle": "Glissez-déposez votre fichier PDF ou image ici, ou cliquez pour parcourir",
+        "chooseFile": "Choisir le fichier du modèle"
+    },
+    "requirements": {
+        "title": "Formats pris en charge :",
+        "pdf": "Fichiers PDF (seront convertis en image)",
+        "png": "Images PNG",
+        "jpg": "Images JPG/JPEG",
+        "maxSize": "Taille de fichier maximale : 50 Mo",
+        "recommendation": "Recommandé : haute résolution pour une meilleure qualité"
+    },
+    "processingSteps": {
+        "readingPdf": "Lecture du fichier PDF...",
+        "loadingPdf": "Chargement du document PDF...",
+        "renderingPdf": "Rendu du PDF en image...",
+        "convertingImage": "Conversion au format image...",
+        "loadingImage": "Chargement de l'image...",
+        "processingImage": "Traitement de l'image..."
+    },
+    "errors": {
+        "title": "Erreur d'importation",
+        "processFailed": "Échec du traitement du fichier {{fileType}}. Veuillez vous assurer qu'il s'agit d'un fichier valide.",
+        "uploadFailed": "Échec de l'importation du fichier",
+        "loadImageFailed": "Échec du chargement de l'image",
+        "canvasContextFailed": "Échec de l'obtention du contexte du canevas"
+    },
+    "fileTypes": {
+        "pdf": "PDF",
+        "image": "image"
+    }
+}

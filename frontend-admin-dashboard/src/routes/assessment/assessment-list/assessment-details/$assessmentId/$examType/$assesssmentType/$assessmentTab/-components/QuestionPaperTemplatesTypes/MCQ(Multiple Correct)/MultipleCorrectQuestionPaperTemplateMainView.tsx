@@ -10,6 +10,7 @@ import { MainViewQuillEditor } from '@/components/quill/MainViewQuillEditor';
 import { QUESTION_TYPES } from '@/constants/dummy-data';
 import { SectionQuestionPaperFormProps } from '../../../-utils/assessment-question-paper';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface ImageDetail {
     imageId: string;
@@ -31,6 +32,7 @@ export const MultipleCorrectQuestionPaperTemplateMainView = ({
     className,
     selectedSectionIndex,
 }: SectionQuestionPaperFormProps) => {
+    const { t } = useTranslation('assessmentMultipleCorrectMainList');
     const { control, getValues, setValue } = form;
 
     const questions = form.watch(`sections.${selectedSectionIndex}.questions`);
@@ -75,7 +77,7 @@ export const MultipleCorrectQuestionPaperTemplateMainView = ({
     if (allQuestions.length === 0) {
         return (
             <div className="flex h-screen w-full items-center justify-center">
-                <h1>Please add a question to show question details</h1>
+                <h1>{t('emptyState')}</h1>
             </div>
         );
     }
@@ -92,13 +94,13 @@ export const MultipleCorrectQuestionPaperTemplateMainView = ({
                     <PopoverContent>
                         <div className="mb-2 flex flex-col gap-4">
                             <div className="flex w-full items-center justify-between">
-                                <h1 className="text-primary-500">Questions Settings</h1>
+                                <h1 className="text-primary-500">{t('popover.title')}</h1>
                                 <PopoverClose>
                                     <X size={16} />
                                 </PopoverClose>
                             </div>
                             <SelectField
-                                label="Question Type"
+                                label={t('popover.questionTypeLabel')}
                                 name={`sections.${selectedSectionIndex}.questions.${currentQuestionIndex}.questionType`}
                                 options={QUESTION_TYPES.map((option, index) => ({
                                     value: option.code,
@@ -117,7 +119,7 @@ export const MultipleCorrectQuestionPaperTemplateMainView = ({
                 `sections.${selectedSectionIndex}.questions.${currentQuestionIndex}.parentRichTextContent`
             ) && (
                 <div className="flex w-full flex-col !flex-nowrap items-start gap-1">
-                    <span>Comprehension Text</span>
+                    <span>{t('comprehensionText')}</span>
                     <FormField
                         control={control}
                         name={`sections.${selectedSectionIndex}.questions.${currentQuestionIndex}.parentRichTextContent`}
@@ -137,10 +139,7 @@ export const MultipleCorrectQuestionPaperTemplateMainView = ({
                 </div>
             )}
             <div className="flex w-full flex-col !flex-nowrap items-start gap-1">
-                <span>
-                    Question&nbsp;
-                    {currentQuestionIndex + 1}
-                </span>
+                <span>{t('questionLabel', { number: currentQuestionIndex + 1 })}</span>
                 <FormField
                     control={control}
                     name={`sections.${selectedSectionIndex}.questions.${currentQuestionIndex}.questionName`}
@@ -159,7 +158,7 @@ export const MultipleCorrectQuestionPaperTemplateMainView = ({
                 />
             </div>
             <div className="flex w-full grow flex-col gap-4">
-                <span className="-mb-3">Answer:</span>
+                <span className="-mb-3">{t('answerLabel')}</span>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     {options.map((opt, optionIndex) => {
                         const letter = String.fromCharCode(97 + optionIndex);
@@ -223,7 +222,7 @@ export const MultipleCorrectQuestionPaperTemplateMainView = ({
                                         type="button"
                                         className="shrink-0 text-gray-400 hover:text-red-500"
                                         onClick={() => handleRemoveOption(optionIndex)}
-                                        title="Remove option"
+                                        title={t('removeOptionTitle')}
                                     >
                                         <Trash size={16} />
                                     </button>
@@ -233,12 +232,12 @@ export const MultipleCorrectQuestionPaperTemplateMainView = ({
                     })}
                 </div>
                 <Button type="button" variant="outline" size="sm" className="w-fit" onClick={handleAddOption}>
-                    <Plus size={16} className="mr-1" /> Add Option
+                    <Plus size={16} className="mr-1" /> {t('addOptionButton')}
                 </Button>
             </div>
 
             <div className="flex w-full flex-col !flex-nowrap items-start gap-1">
-                <span>Explanation:</span>
+                <span>{t('explanationLabel')}</span>
                 <FormField
                     control={control}
                     name={`sections.${selectedSectionIndex}.questions.${currentQuestionIndex}.explanation`}

@@ -1,0 +1,214 @@
+/**
+ * One CSV shape for all four follow-up queues.
+ *
+ * The reporting team reads the export without the app next to them, so a row has
+ * to answer "who owns this lead, where is it in the pipeline, how warm is it, and
+ * what did the counsellor actually say" on its own. It used to carry six columns
+ * — name, email, phone, source, status, due date — and none of the four they
+ * asked for.
+ *
+ * The course column is NOT special-cased. Every custom field the institute has
+ * configured becomes a column, so the institute that calls its field "Courses"
+ * gets a Courses column and one that calls it something else gets that instead,
+ * with no institute id anywhere in this file.
+ *
+ * Activity & Notes and the lead journey are the same two columns the Recent Leads
+ * export carries: what the table's Activity column shows, and the full history of
+ * calls, notes and status changes behind it. Follow-up history is every follow-up
+ * on the lead with what the counsellor wrote — leads migrated from an old CRM have
+ * no timeline at all, so for them it is the only place their notes are.
+ */
+import {
+    fmtWhen,
+    formatJourneyForExport,
+    type JourneyEvent,
+} from '@/components/shared/leads/lead-journey-export';
+import { parseHtmlToString } from '@/lib/utils';
+import type { LatestNoteSummary } from '@/hooks/use-latest-notes-batch';
+import type { CustomFieldSetupItem } from '@/routes/audience-manager/list/-services/get-custom-field-setup';
+import type { RecentLeadDetail } from '@/routes/audience-manager/list/-services/get-recent-leads';
+import type { CompletedFollowUp } from '../-services/get-completed-follow-ups';
+import type { FollowUpHistoryItem } from '../-services/get-follow-up-history-batch';
+
+/**
+ * Fields that already have a dedicated column. Matched on field_key, which is
+ * stable; field_name is whatever the institute typed.
+ */
+const IDENTITY_FIELD_KEYS = new Set(['full_name', 'email', 'phone', 'phone_number']);
+
+export interface ExportCustomField {
+    id: string;
+    label: string;
+}
+
+/**
+ * The custom-field columns for this institute, in form order. Hidden fields and
+ * the identity fields are left out; duplicates by id are collapsed, because the
+ * setup lists one row per audience form and an institute with 26 lists repeats
+ * the same field 26 times.
+ */
+export const exportCustomFields = (
+    setup: CustomFieldSetupItem[] | undefined
+): ExportCustomField[] => {
+    const seen = new Set<string>();
+    const out: ExportCustomField[] = [];
+    for (const field of [...(setup ?? [])].sort(
+        (a, b) => (a.form_order ?? 0) - (b.form_order ?? 0)
+    )) {
+        if (!field.custom_field_id || seen.has(field.custom_field_id)) continue;
+        if (field.is_hidden) continue;
+        if (IDENTITY_FIELD_KEYS.has(field.field_key)) continue;
+        seen.add(field.custom_field_id);
+        out.push({ id: field.custom_field_id, label: field.field_name || field.field_key });
+    }
+    return out;
+};
+
+/** The fixed column titles, as the page's i18n namespace renders them. */
+export interface ExportColumnLabels {
+    name: string;
+    email: string;
+    phone: string;
+    source: string;
+    leadOwner: string;
+    status: string;
+    interestLevel: string;
+    dueAt: string;
+    followUpNote: string;
+    studentResponse: string;
+    followUpMode: string;
+    nextAction: string;
+    activityNotes: string;
+    leadJourney: string;
+    followUpHistory: string;
+}
+
+/** A lead's timeline, fetched per export page alongside the rows. */
+export interface ExportLeadActivity {
+    notes?: LatestNoteSummary;
+    journey?: JourneyEvent[];
+    followUps?: FollowUpHistoryItem[];
+}
+
+/** Column titles, in order: the fixed ones, then one per custom field. */
+export const buildExportHeader = (
+    labels: ExportColumnLabels,
+    customFields: ExportCustomField[]
+): string[] => [
+    labels.name,
+    labels.email,
+    labels.phone,
+    labels.source,
+    labels.leadOwner,
+    labels.status,
+    labels.interestLevel,
+    labels.dueAt,
+    labels.followUpNote,
+    labels.studentResponse,
+    labels.followUpMode,
+    labels.nextAction,
+    labels.activityNotes,
+    labels.leadJourney,
+    labels.followUpHistory,
+    ...customFields.map((f) => f.label),
+];
+
+const cell = (value: string | null | undefined): string => value ?? '';
+
+const plain = (raw: string | null | undefined): string => {
+    if (!raw) return '';
+    const text = /<\/?[a-z][^>]*>/i.test(raw) ? parseHtmlToString(raw) : raw;
+    return text.replace(/\s+/g, ' ').trim();
+};
+
+/** Old-CRM imports write 1970 for "no date"; a due date that old is no date. */
+const dueWhen = (iso: string | null | undefined): string =>
+    iso && new Date(iso).getFullYear() > 1971 ? fmtWhen(iso) : '';
+
+/**
+ * One line per follow-up, oldest first:
+ *   "2026-10-13 09:28 · due 2026-10-13 16:27 · COMPLETED: cnr | Response: CNR |
+ *    Mode: Telephonic Call | Next: Send Course Details | Closed: will let us know (Simran)"
+ */
+export const formatFollowUpHistory = (items: FollowUpHistoryItem[] | undefined): string =>
+    (items ?? [])
+        .map((f) => {
+            const body = [
+                plain(f.content),
+                f.student_response && `Response: ${f.student_response}`,
+                f.follow_up_mode && `Mode: ${f.follow_up_mode}`,
+                f.next_action && `Next: ${f.next_action}`,
+                f.closer_reason && `Closed: ${plain(f.closer_reason)}`,
+            ]
+                .filter(Boolean)
+                .join(' | ');
+            const due = dueWhen(f.schedule_time);
+            const who = f.created_by_name || f.closed_by_name;
+            return [
+                f.created_at ? fmtWhen(f.created_at) : '',
+                due && `due ${due}`,
+                `${f.status ?? ''}: ${body}${who ? ` (${who})` : ''}`,
+            ]
+                .filter(Boolean)
+                .join(' · ');
+        })
+        .join('\n');
+
+/** The Activity column's recent entries (latest first), the journey, the follow-ups. */
+const activityCells = (activity: ExportLeadActivity | undefined): string[] => [
+    formatJourneyForExport(activity?.notes?.recent),
+    formatJourneyForExport(activity?.journey),
+    formatFollowUpHistory(activity?.followUps),
+];
+
+/** A lead row from the pending / overdue / today queues. */
+export const leadToExportRow = (
+    lead: RecentLeadDetail,
+    name: string,
+    email: string,
+    phone: string,
+    source: string,
+    customFields: ExportCustomField[],
+    activity?: ExportLeadActivity
+): string[] => [
+    name,
+    email,
+    phone,
+    source,
+    cell(lead.assigned_counselor_name),
+    cell(lead.lead_status),
+    cell(lead.lead_tier),
+    cell(lead.follow_up_due_at ?? lead.tat_due_at),
+    cell(lead.follow_up_content),
+    cell(lead.follow_up_student_response),
+    cell(lead.follow_up_mode),
+    cell(lead.follow_up_next_action),
+    ...activityCells(activity),
+    ...customFields.map((f) => cell(lead.custom_field_values?.[f.id])),
+];
+
+/**
+ * A closed follow-up. Same columns; "due at" is the time the call was scheduled
+ * for, and the closing reason is appended to the note so nothing the counsellor
+ * typed is dropped.
+ */
+export const completedToExportRow = (
+    row: CompletedFollowUp,
+    customFields: ExportCustomField[],
+    activity?: ExportLeadActivity
+): string[] => [
+    cell(row.lead_name),
+    cell(row.lead_email),
+    cell(row.lead_mobile),
+    cell(row.lead_source),
+    cell(row.assigned_counselor_name),
+    cell(row.lead_status),
+    cell(row.lead_tier),
+    cell(row.schedule_time),
+    [row.content, row.closer_reason].filter(Boolean).join(' — '),
+    cell(row.student_response),
+    cell(row.follow_up_mode),
+    cell(row.next_action),
+    ...activityCells(activity),
+    ...customFields.map((f) => cell(row.custom_field_values?.[f.id])),
+];

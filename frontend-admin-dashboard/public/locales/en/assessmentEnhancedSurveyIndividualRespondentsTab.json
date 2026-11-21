@@ -1,0 +1,42 @@
+{
+    "questionType": {
+        "mcqs": "Single Choice",
+        "mcqm": "Multiple Choice",
+        "trueFalse": "True/False",
+        "numeric": "Numeric",
+        "oneWord": "One Word",
+        "longAnswer": "Long Answer"
+    },
+    "response": {
+        "noResponse": "No response",
+        "unknownAnswerFormat": "Unknown answer format",
+        "noCorrectAnswerAvailable": "No correct answer available",
+        "noCorrectOptionsAvailable": "No correct options available",
+        "unknownCorrectAnswerFormat": "Unknown correct answer format"
+    },
+    "states": {
+        "loading": "Loading enhanced survey data...",
+        "errorPrefix": "Error:",
+        "noRespondentsFound": "No respondents found.",
+        "noResponsesAvailable": "No responses available for this respondent."
+    },
+    "header": {
+        "batch": "Batch:",
+        "correctCount": "{{correct}}/{{total}} Correct",
+        "accuracy": "{{value}}% Accuracy"
+    },
+    "navigation": {
+        "previous": "Previous",
+        "of": "of {{total}}",
+        "next": "Next"
+    },
+    "question": {
+        "numberedTitle": "Q{{order}}. {{content}}",
+        "userAnswer": "User Answer:",
+        "markedForReview": "Marked for Review",
+        "correctAnswer": "Correct Answer:",
+        "allOptions": "All Options:",
+        "timeTakenSeconds": "{{count}}s",
+        "questionNumber": "Question #{{order}}"
+    }
+}

@@ -1,0 +1,61 @@
+{
+    "validation": {
+        "amountNonNegative": "Enter an amount of zero or more"
+    },
+    "oldRegimeFields": {
+        "section_80c": {
+            "label": "Life insurance, PPF, ELSS, home-loan principal",
+            "hint": "Section 80C · counted up to the statutory cap"
+        },
+        "section_80d": {
+            "label": "Health insurance premiums",
+            "hint": "Section 80D · for you and your dependents"
+        },
+        "section_80ccd1b": {
+            "label": "Extra NPS contribution",
+            "hint": "Section 80CCD(1B) · over and above 80C"
+        },
+        "section_80e": {
+            "label": "Interest paid on an education loan",
+            "hint": "Section 80E"
+        },
+        "hra_rent_paid": {
+            "label": "Rent paid this year",
+            "hint": "Total rent for the year, not per month"
+        }
+    },
+    "toast": {
+        "saved": "Your declaration is saved"
+    },
+    "errors": {
+        "saveFailed": "Could not save your declaration.",
+        "loadFailed": "Couldn't load your declaration."
+    },
+    "intro": "Tell payroll what you plan to claim this financial year, so the tax deducted from each month's salary is close to what you will actually owe. Declaring is a statement of intent — your HR team verifies the proofs separately.",
+    "financialYearLabel": "Financial year",
+    "lockedNotice": {
+        "verified": "Your HR team has verified this declaration, so it can no longer be changed here. If something needs correcting, ask them.",
+        "locked": "Your HR team has locked this declaration, so it can no longer be changed here. If something needs correcting, ask them."
+    },
+    "whichRegime": "Which regime do you want?",
+    "regimeCards": {
+        "new": {
+            "title": "New regime",
+            "blurb": "Lower tax rates, but almost no deductions — you claim nothing and pay a smaller percentage."
+        },
+        "old": {
+            "title": "Old regime",
+            "blurb": "Higher rates, but you can claim 80C, 80D and HRA against what you actually spent."
+        }
+    },
+    "newRegimeNote": "Nothing to declare under the new regime — its lower rates already assume you are claiming no deductions. Save this and payroll will use the new-regime slabs for the rest of the year.",
+    "metroCheckbox": {
+        "label": "I rent in a metro city",
+        "hint": "Delhi, Mumbai, Kolkata or Chennai. It changes how much of your rent counts."
+    },
+    "hraNote": "You don't claim an HRA figure directly — payroll works out the exempt part from the rent you paid, your HRA component and whether you are in a metro city.",
+    "saving": "Saving…",
+    "updateDeclaration": "Update my declaration",
+    "saveDeclaration": "Save my declaration",
+    "keepReceiptsNote": "You can change this until your HR team verifies it. Keep the receipts — they will ask for proof before the year closes."
+}

@@ -12,6 +12,7 @@ import {
     VideoCamera,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import { MyInput } from '@/components/design-system/input';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -27,10 +28,10 @@ import { MentorAvatar } from './MentorAvatar';
 import { ScheduleSessionDialog } from './ScheduleSessionDialog';
 import type { MenteeDTO, MentorDTO } from '../-types/mentorship-types';
 
-function fmt(v?: string | number | null): string {
+function fmt(v: string | number | null | undefined, locale: string): string {
     if (v == null) return '';
     const d = new Date(v);
-    return Number.isNaN(d.getTime()) ? '' : d.toLocaleString();
+    return Number.isNaN(d.getTime()) ? '' : d.toLocaleString(locale);
 }
 
 interface MenteeDetailSheetProps {
@@ -63,6 +64,7 @@ export function MenteeDetailSheet({
     asMentor = false,
     mentorSlug,
 }: MenteeDetailSheetProps) {
+    const { t, i18n } = useTranslation('mentorshipMenteeDetailSheet');
     const navigate = useNavigate();
     const [note, setNote] = useState('');
     const [saving, setSaving] = useState(false);
@@ -92,13 +94,13 @@ export function MenteeDetailSheet({
         try {
             await createNote.mutateAsync({ studentUserId, title: note.trim() });
             setNote('');
-            toast.success('Note added');
+            toast.success(t('toast.noteAdded'));
         } catch (error) {
             reportApiError(error, {
                 feature: 'mentorship',
                 tags: { 'mentorship.action': 'add-mentee-note' },
                 extra: { studentUserId },
-                fallbackMessage: 'Failed to add note',
+                fallbackMessage: t('toast.addNoteFailed'),
             });
         } finally {
             setSaving(false);
@@ -122,10 +124,7 @@ export function MenteeDetailSheet({
                 extra: { studentUserId },
                 // A 403 here is permanent (chat off, or a role pair the institute
                 // forbids) — "try again" would be a lie.
-                fallbackMessage: describeDirectChatError(
-                    error,
-                    "Couldn't open the chat. Please try again."
-                ),
+                fallbackMessage: describeDirectChatError(error, t('toast.chatOpenFailed')),
             });
         } finally {
             setMessaging(false);
@@ -174,9 +173,9 @@ export function MenteeDetailSheet({
                                         buttonType="primary"
                                         scale="small"
                                         onClick={() => setScheduleOpen(true)}
-                                        title="Book a 1:1 for this student — they don't have to do anything"
+                                        title={t('schedule.buttonTitle')}
                                     >
-                                        <CalendarPlus size={16} /> Schedule 1:1
+                                        <CalendarPlus size={16} /> {t('schedule.button')}
                                     </MyButton>
                                     <MyButton
                                         type="button"
@@ -186,19 +185,19 @@ export function MenteeDetailSheet({
                                         disable={!chat.enabled || messaging}
                                         title={messageActionTitle(chat.enabled)}
                                     >
-                                        <ChatCircle size={16} /> Message
+                                        <ChatCircle size={16} /> {t('message.button')}
                                     </MyButton>
                                 </div>
                                 {!chat.enabled && !chat.isLoading && (
                                     <p className="pt-2 text-caption text-neutral-500">
-                                        Messaging is off for this institute.{' '}
+                                        {t('message.off')}{' '}
                                         <Link
                                             {...CHAT_SETTINGS_LINK}
                                             className="font-medium text-primary-600 hover:text-primary-700"
                                         >
-                                            Turn on In-App Messages
+                                            {t('message.turnOn')}
                                         </Link>{' '}
-                                        to message students from here.
+                                        {t('message.offSuffix')}
                                     </p>
                                 )}
                             </SheetHeader>
@@ -208,14 +207,14 @@ export function MenteeDetailSheet({
                                     <div className="flex items-center gap-1.5">
                                         <BookOpenText size={16} className="text-neutral-400" />
                                         <span className="text-body font-semibold text-neutral-700">
-                                            Learning
+                                            {t('sections.learning')}
                                         </span>
                                     </div>
                                     {learning.isLoading ? (
                                         <Skeleton className="h-12 w-full rounded-md" />
                                     ) : (learning.data?.content?.length ?? 0) === 0 ? (
                                         <span className="text-caption text-neutral-400">
-                                            This student hasn&apos;t started any courses yet.
+                                            {t('learning.empty')}
                                         </span>
                                     ) : (
                                         <div className="flex flex-col gap-3">
@@ -254,14 +253,14 @@ export function MenteeDetailSheet({
                                     <div className="flex items-center gap-1.5">
                                         <CalendarCheck size={16} className="text-neutral-400" />
                                         <span className="text-body font-semibold text-neutral-700">
-                                            Scheduled calls
+                                            {t('sections.scheduledCalls')}
                                         </span>
                                     </div>
                                     {calls.isLoading ? (
                                         <Skeleton className="h-12 w-full rounded-md" />
                                     ) : (calls.data?.length ?? 0) === 0 ? (
                                         <span className="text-caption text-neutral-400">
-                                            No sessions booked with this student yet.
+                                            {t('calls.empty')}
                                         </span>
                                     ) : (
                                         <div className="flex flex-col gap-2">
@@ -272,10 +271,11 @@ export function MenteeDetailSheet({
                                                 >
                                                     <div className="flex min-w-0 flex-col">
                                                         <span className="truncate text-body text-neutral-700">
-                                                            {c.booking_page_title || 'Session'}
+                                                            {c.booking_page_title || t('calls.defaultTitle')}
                                                         </span>
                                                         <span className="text-caption text-neutral-400">
-                                                            {fmt(c.scheduled_start_utc)} · {c.status}
+                                                            {fmt(c.scheduled_start_utc, i18n.language)} ·{' '}
+                                                            {c.status}
                                                         </span>
                                                     </div>
                                                     {c.meet_link && (
@@ -285,7 +285,7 @@ export function MenteeDetailSheet({
                                                             rel="noreferrer"
                                                             className="flex shrink-0 items-center gap-1 text-caption text-primary-600 hover:text-primary-700"
                                                         >
-                                                            <VideoCamera size={14} /> Join
+                                                            <VideoCamera size={14} /> {t('calls.join')}
                                                         </a>
                                                     )}
                                                 </div>
@@ -298,12 +298,11 @@ export function MenteeDetailSheet({
                                     <div className="flex items-center gap-1.5">
                                         <NotePencil size={16} className="text-neutral-400" />
                                         <span className="text-body font-semibold text-neutral-700">
-                                            Notes
+                                            {t('sections.notes')}
                                         </span>
                                     </div>
                                     <p className="-mt-2 text-caption text-neutral-400">
-                                        Shared with your team&apos;s activity timeline for this
-                                        student.
+                                        {t('notes.sharedHint')}
                                     </p>
                                     <div className="flex items-end gap-2">
                                         <div className="flex-1">
@@ -313,8 +312,8 @@ export function MenteeDetailSheet({
                                                     e: React.ChangeEvent<HTMLInputElement>
                                                 ) => setNote(e.target.value)}
                                                 inputType="text"
-                                                inputPlaceholder="Add a note…"
-                                                label="Note"
+                                                inputPlaceholder={t('notes.addPlaceholder')}
+                                                label={t('notes.label')}
                                                 className="sm:w-full"
                                             />
                                         </div>
@@ -325,15 +324,14 @@ export function MenteeDetailSheet({
                                             onClick={addNote}
                                             disable={saving || !note.trim()}
                                         >
-                                            Add
+                                            {t('notes.add')}
                                         </MyButton>
                                     </div>
                                     {timeline.isLoading ? (
                                         <Skeleton className="h-12 w-full rounded-md" />
                                     ) : (timeline.data?.length ?? 0) === 0 ? (
                                         <span className="text-caption text-neutral-400">
-                                            No notes yet — add one above to keep track of this
-                                            student.
+                                            {t('notes.empty')}
                                         </span>
                                     ) : (
                                         <div className="flex flex-col gap-2">
@@ -361,7 +359,7 @@ export function MenteeDetailSheet({
                                                     )}
                                                     <span className="text-caption text-neutral-400">
                                                         {ev.actor_name ? `${ev.actor_name} · ` : ''}
-                                                        {fmt(ev.created_at)}
+                                                        {fmt(ev.created_at, i18n.language)}
                                                     </span>
                                                 </div>
                                             ))}

@@ -1,0 +1,98 @@
+{
+    "meta": {
+        "title": "Course Content Viewer",
+        "description": "View your generated course content"
+    },
+    "header": {
+        "backToLibrary": "Back to Course Library",
+        "create": "Create",
+        "heading": "Final Step: Confirm Your Course",
+        "subheading": "Review the complete course content carefully. Make any last edits before creating your course."
+    },
+    "empty": {
+        "noContent": "No course content available.",
+        "generateFirst": "Please generate course content first from the generating page."
+    },
+    "ordinal": {
+        "first": "first",
+        "second": "second"
+    },
+    "session": {
+        "untitled": "Untitled Session",
+        "edit": "Edit",
+        "delete": "Delete",
+        "save": "Save",
+        "cancel": "Cancel",
+        "pagesProgress_one": "{{completed}}/{{count}} page",
+        "pagesProgress_other": "{{completed}}/{{count}} pages",
+        "confirmDelete": "Are you sure you want to delete this session?"
+    },
+    "slide": {
+        "edit": "Edit",
+        "delete": "Delete",
+        "save": "Save",
+        "cancel": "Cancel",
+        "confirmDelete": "Are you sure you want to delete this {{term}}?",
+        "noContent": "No content available",
+        "regenerate": "Regenerate",
+        "regenerateCode": "Regenerate Code",
+        "regenerateVideo": "Regenerate Video",
+        "regenerateVideoScript": "Regenerate Video Script",
+        "regenerateQuiz": "Regenerate Quiz",
+        "regenerateSolution": "Regenerate Solution",
+        "regenerateAssignment": "Regenerate Assignment",
+        "codeEditor": "Code Editor",
+        "videoPlayer": "Video Player",
+        "videoWillBeDisplayed": "Video will be displayed here",
+        "uploadOrUrlHint": "Click the upload or URL icon to add a video",
+        "uploadVideoFromDevice": "Upload Video from Device",
+        "addVideoUrl": "Add Video URL",
+        "videoUrlLabel": "Video URL",
+        "videoUrlPlaceholder": "https://www.youtube.com/watch?v=...",
+        "selectVideoFileAlert": "Please select a video file",
+        "learningObjectives": "Learning Objectives",
+        "document": "Document",
+        "videoScript": "Video Script",
+        "solutionCode": "Solution Code",
+        "homework": "Homework",
+        "assignment": "Assignment"
+    },
+    "quiz": {
+        "content": "Quiz Content",
+        "addQuestion": "Add Question",
+        "noQuestions": "No questions yet. Click \"Add Question\" to get started.",
+        "questionLabel": "Question {{number}}",
+        "delete": "Delete",
+        "questionText": "Question Text",
+        "questionPlaceholder": "Enter your question here...",
+        "options": "Options",
+        "optionPlaceholder": "Option {{number}}",
+        "removeOption": "Remove Option",
+        "addOption": "+ Add Option"
+    },
+    "regenerateWarningDialog": {
+        "title": "Regeneration Limit Warning",
+        "description": "You can only regenerate this content twice. This is your {{ordinal}} regeneration.",
+        "body": "Please review your content carefully before proceeding. After two regenerations, you will not be able to regenerate this content again.",
+        "cancel": "Cancel",
+        "proceed": "Proceed"
+    },
+    "regenerateDialog": {
+        "title": "Regenerate Page",
+        "warningTitle": "Regeneration Limit Warning",
+        "warningBody": "You can regenerate this content only twice. This is your {{ordinal}} regeneration. After two regenerations, you will not be able to regenerate this content again.",
+        "promptPlaceholder": "Enter a prompt describing how you want this page to be regenerated... (Optional - leave empty for simple regeneration)",
+        "regenerate": "Regenerate"
+    },
+    "regenerationLimitAlert": {
+        "video": "You have already regenerated this video content twice. Further regeneration is not allowed.",
+        "generic": "You have already regenerated this content twice. Further regeneration is not allowed."
+    },
+    "backToLibraryDialog": {
+        "title": "Go Back to Course Library?",
+        "description": "Are you sure you want to go back to course library? You can either discard your current course or save it to drafts.",
+        "cancel": "Cancel",
+        "discard": "Discard Course",
+        "saveToDrafts": "Save to Drafts"
+    }
+}

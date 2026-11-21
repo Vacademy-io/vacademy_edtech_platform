@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
 import {
   GET_ADMISSION_PAYMENT_OPTIONS,
@@ -74,33 +75,34 @@ interface AdmissionPaymentSectionProps {
 // ── Status badge helper ────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation("parent");
   const map: Record<string, { label: string; className: string }> = {
     PENDING: {
-      label: "Pending",
+      label: t("admissionPortal.status.pending"),
       className:
         "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
     },
     PAYMENT_PENDING: {
-      label: "Payment Pending",
+      label: t("admissionPortal.status.paymentPending"),
       className:
         "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
     },
     PAYMENT_COMPLETED: {
-      label: "Paid",
+      label: t("admissionPortal.status.paid"),
       className:
         "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
     },
     APPROVED: {
-      label: "Approved",
+      label: t("admissionPortal.status.approved"),
       className:
         "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
     },
     REJECTED: {
-      label: "Rejected",
+      label: t("admissionPortal.status.rejected"),
       className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
     },
     ENROLLED: {
-      label: "Enrolled",
+      label: t("admissionPortal.status.enrolled"),
       className:
         "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
     },
@@ -122,6 +124,7 @@ function StatusBadge({ status }: { status: string }) {
 export function AdmissionPaymentSection({
   child,
 }: AdmissionPaymentSectionProps) {
+  const { t } = useTranslation("parent");
   const { data: instituteData } = useSuspenseQuery(
     handleFetchCompleteInstituteDetails(),
   );
@@ -188,7 +191,7 @@ export function AdmissionPaymentSection({
     const option =
       paymentOptions?.find((o) => o.status === "ACTIVE") ?? paymentOptions?.[0];
     if (!option || !option.payment_plans.length) {
-      toast.error("No payment plan configured. Please contact the institute.");
+      toast.error(t("admissionPortal.payment.toast.noPlan"));
       return;
     }
 
@@ -213,15 +216,13 @@ export function AdmissionPaymentSection({
       // If server returns a hosted link, just open it in a tab
       if (initiated?.payment_link) {
         window.open(initiated.payment_link, "_blank");
-        toast.success("Redirecting to payment page…");
+        toast.success(t("admissionPortal.payment.toast.redirecting"));
         return;
       }
 
       if (!razorpayKeyId || !razorpayOrderId) {
         console.error("Missing Razorpay keys in response:", initiated);
-        toast.error(
-          "Could not retrieve payment details from the server. Please try again.",
-        );
+        toast.error(t("admissionPortal.payment.toast.detailsFailed"));
         return;
       }
 
@@ -240,7 +241,9 @@ export function AdmissionPaymentSection({
           ?.response?.data?.ex ||
         (err as { response?: { data?: { message?: string } } })?.response?.data
           ?.message ||
-        (err instanceof Error ? err.message : "Failed to initiate payment");
+        (err instanceof Error
+          ? err.message
+          : t("admissionPortal.payment.toast.initiateFailed"));
       toast.error(msg);
     } finally {
       setIsPaying(false);
@@ -251,7 +254,7 @@ export function AdmissionPaymentSection({
   const handlePaymentSuccess = () => {
     // Backend webhook /payments/webhook/callback/razorpay handles verification.
     setPaymentDone(true);
-    toast.success("Payment submitted! Your status will update shortly.");
+    toast.success(t("admissionPortal.payment.toast.submitted"));
   };
 
   // ── Loading states ────────────────────────────────────────────
@@ -271,16 +274,22 @@ export function AdmissionPaymentSection({
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <GraduationCap className="w-5 h-5 text-primary" />
-          <h3 className="font-semibold text-base">Payments</h3>
+          <h3 className="font-semibold text-base">
+            {t("admissionPortal.payment.heading")}
+          </h3>
         </div>
         <Card className="shadow-sm">
           <CardContent className="py-10 flex flex-col items-center gap-2 text-center">
             <GraduationCap className="w-8 h-8 text-muted-foreground/40" />
             <p className="text-sm text-muted-foreground">
-              No admission application found for {child.full_name}.
+              {t("admissionPortal.payment.noApplication", {
+                name: child.full_name,
+              })}
             </p>
             <p className="text-xs text-muted-foreground">
-              Submit an admission from the <strong>Admission</strong> tab first.
+              {t("admissionPortal.payment.submitFirstPrefix")}
+              <strong>{t("admissionPortal.payment.submitFirstTab")}</strong>
+              {t("admissionPortal.payment.submitFirstSuffix")}
             </p>
           </CardContent>
         </Card>
@@ -300,7 +309,9 @@ export function AdmissionPaymentSection({
       {/* Section header */}
       <div className="flex items-center gap-2">
         <GraduationCap className="w-5 h-5 text-primary" />
-        <h3 className="font-semibold text-base">Payments</h3>
+        <h3 className="font-semibold text-base">
+          {t("admissionPortal.payment.heading")}
+        </h3>
       </div>
 
       <Card
@@ -319,7 +330,7 @@ export function AdmissionPaymentSection({
                 {child.full_name}
               </CardTitle>
               <CardDescription className="text-xs font-mono">
-                Applicant: {applicantId}
+                {t("admissionPortal.payment.applicant", { id: applicantId })}
               </CardDescription>
             </div>
             <StatusBadge status={paymentDone ? "PAYMENT_COMPLETED" : status} />
@@ -337,7 +348,7 @@ export function AdmissionPaymentSection({
               <Clock className="w-3.5 h-3.5" />
             )}
             <span>
-              Status:{" "}
+              {t("admissionPortal.payment.statusLabel")}{" "}
               <span className="font-medium text-foreground capitalize">
                 {(paymentDone ? "PAYMENT_COMPLETED" : status)
                   .replace(/_/g, " ")
@@ -360,7 +371,7 @@ export function AdmissionPaymentSection({
               return (
                 <div className="rounded-lg bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 px-3 py-2">
                   <p className="text-xs text-muted-foreground">
-                    {opt?.name ?? "Admission Fee"}
+                    {opt?.name ?? t("admissionPortal.payment.admissionFee")}
                   </p>
                   <p className="text-lg font-bold text-foreground mt-0.5">
                     {plan.currency === "INR" ? "₹" : plan.currency}
@@ -375,7 +386,7 @@ export function AdmissionPaymentSection({
             <div className="pt-1 border-t flex items-center justify-between gap-3">
               <p className="text-xs text-orange-600 dark:text-orange-400 flex items-center gap-1">
                 <WarningCircle className="w-3.5 h-3.5 shrink-0" />
-                Payment required to continue
+                {t("admissionPortal.payment.requiredToContinue")}
               </p>
               <Button
                 size="sm"
@@ -386,12 +397,12 @@ export function AdmissionPaymentSection({
                 {isPaying ? (
                   <>
                     <SpinnerGap className="w-3.5 h-3.5 animate-spin" />
-                    Processing…
+                    {t("admissionPortal.payment.processing")}
                   </>
                 ) : (
                   <>
                     <CurrencyInr className="w-3.5 h-3.5" />
-                    Pay Now
+                    {t("admissionPortal.payment.payNow")}
                   </>
                 )}
               </Button>
@@ -402,22 +413,21 @@ export function AdmissionPaymentSection({
           {(isPaid || paymentDone) && (
             <div className="pt-1 border-t flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
               <CheckCircle className="w-3.5 h-3.5" />
-              Payment complete — you&apos;re all set!
+              {t("admissionPortal.payment.complete")}
             </div>
           )}
 
           {/* Not yet at payment stage */}
           {!needsPayment && !isPaid && !paymentDone && !isRejected && (
             <p className="text-xs text-muted-foreground pt-1 border-t">
-              No payment is due at this stage. We'll notify you when it's time.
+              {t("admissionPortal.payment.notDueYet")}
             </p>
           )}
 
           {/* Rejected */}
           {isRejected && (
             <p className="text-xs text-destructive pt-1 border-t">
-              This application was rejected. Please contact the institute for
-              more information.
+              {t("admissionPortal.payment.rejectedNotice")}
             </p>
           )}
         </CardContent>
@@ -437,8 +447,8 @@ export function AdmissionPaymentSection({
               toast.error(err);
             }
           }}
-          courseName="Admission Fee"
-          courseDescription="Payment for school admission"
+          courseName={t("admissionPortal.payment.admissionFee")}
+          courseDescription={t("admissionPortal.payment.courseDescription")}
           userName={child.full_name}
         />
       </div>

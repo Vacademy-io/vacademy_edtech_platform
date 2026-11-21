@@ -1,0 +1,35 @@
+{
+    "tabs": {
+        "inApp": "داخل التطبيق",
+        "push": "إشعار فوري",
+        "email": "البريد الإلكتروني",
+        "whatsapp": "واتساب"
+    },
+    "device": {
+        "mobile": "الجوال",
+        "desktop": "سطح المكتب"
+    },
+    "inApp": {
+        "badge": "إعلان",
+        "pinned": "مثبّت",
+        "titlePlaceholder": "عنوان إعلانك",
+        "contentPlaceholder": "ستظهر رسالتك هنا كما سيقرؤها المتعلمون."
+    },
+    "push": {
+        "senderPlaceholder": "تطبيقك",
+        "titlePlaceholder": "عنوان الإشعار",
+        "bodyPlaceholder": "يظهر نص الإشعار هنا."
+    },
+    "whatsapp": {
+        "noTemplate": "اختر قالب واتساب معتمدًا في خطوة التسليم لمعاينته هنا.",
+        "titleFallback": "عنوان الإعلان",
+        "contentFallback": "محتوى الإعلان",
+        "senderFallback": "المُرسِل"
+    },
+    "email": {
+        "fromPrefix": "من: {{sender}}",
+        "senderPlaceholder": "معهدك",
+        "noSubject": "(بلا موضوع)",
+        "iframeTitle": "معاينة البريد الإلكتروني"
+    }
+}

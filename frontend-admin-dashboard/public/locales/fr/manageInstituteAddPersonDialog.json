@@ -1,0 +1,35 @@
+{
+    "dialog": {
+        "titleAddPersonTo": "Ajouter une personne à {{teamName}}",
+        "descriptionPicked": "Donnez à ce poste un intitulé comme « Responsable commercial » et choisissez à qui cette personne rend compte. Vous pourrez modifier les deux plus tard en cliquant sur le crayon de la carte.",
+        "descriptionUnpicked": "Choisissez quelqu'un dans votre établissement."
+    },
+    "search": {
+        "placeholder": "Rechercher par nom ou e-mail…",
+        "emptyAllInTeam": "Tout le monde dans l'établissement fait déjà partie de cette équipe.",
+        "emptyNoMatch": "Personne ne correspond à cette recherche."
+    },
+    "common": {
+        "unnamed": "Sans nom",
+        "change": "Changer",
+        "optionalSuffix": "(facultatif)",
+        "cancel": "Annuler",
+        "adding": "Ajout en cours…",
+        "addToTeam": "Ajouter à l'équipe"
+    },
+    "form": {
+        "positionLabel": "Intitulé du poste",
+        "positionLabelPlaceholder": "ex. Responsable commercial, Chef conseiller",
+        "positionLabelHelp": "Affiché sous leur nom dans l'organigramme. Vous pouvez le modifier à tout moment en cliquant sur l'icône crayon de la carte.",
+        "reportsToLabel": "Rend compte à",
+        "noManagerOption": "Aucun responsable — sommet de l'équipe",
+        "reportsToHelp": "Vous pouvez aussi tracer une flèche entre les cartes de l'organigramme pour définir cela plus tard."
+    },
+    "toast": {
+        "addedUnder": "{{name}} ajouté sous {{where}}",
+        "theirManager": "son responsable",
+        "topOfTeam": "le sommet de l'équipe",
+        "defaultMember": "membre",
+        "addFailed": "Impossible d'ajouter cette personne"
+    }
+}

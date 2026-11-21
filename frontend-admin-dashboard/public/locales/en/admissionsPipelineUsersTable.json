@@ -1,0 +1,23 @@
+{
+    "title": "Students by Stage",
+    "stages": {
+        "ENQUIRY": "Enquiry",
+        "APPLICATION": "Application",
+        "ADMITTED": "Admitted"
+    },
+    "emptyState": "No students at {{stage}} stage",
+    "columns": {
+        "index": "#",
+        "studentName": "Student Name",
+        "parentName": "Parent Name",
+        "source": "Source",
+        "date": "Date",
+        "stage": "Stage"
+    },
+    "pagination": {
+        "showing": "Showing {{from}}–{{to}} of {{total}}",
+        "pageOf": "Page {{current}} of {{total}}",
+        "previous": "Previous",
+        "next": "Next"
+    }
+}

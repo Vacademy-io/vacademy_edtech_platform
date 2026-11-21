@@ -1,0 +1,108 @@
+{
+  "common": {
+    "emailInvalid": "يرجى إدخال عنوان بريد إلكتروني صالح",
+    "fullNameMinLength": "يجب أن يتكون الاسم الكامل من حرفين على الأقل",
+    "usernameMinLength": "يجب أن يتكون اسم المستخدم من 3 أحرف على الأقل",
+    "passwordMinLength": "يجب أن تتكون كلمة المرور من 8 أحرف على الأقل",
+    "passwordsDontMatch": "كلمتا المرور غير متطابقتين",
+    "registerFailed": "فشل تسجيل المستخدم",
+    "creatingAccount": "جارٍ إنشاء الحساب...",
+    "createAccount": "إنشاء حساب",
+    "back": "رجوع",
+    "verifyContinue": "تحقق ومتابعة",
+    "completeYourProfileTitle": "أكمل ملفك الشخصي",
+    "fullNameLabel": "الاسم الكامل",
+    "fullNamePlaceholder": "اسمك الكامل",
+    "usernameLabel": "اسم المستخدم *",
+    "usernamePlaceholder": "اختر اسم مستخدم",
+    "passwordLabel": "كلمة المرور *",
+    "passwordPlaceholder": "أنشئ كلمة مرور",
+    "confirmPasswordLabel": "تأكيد كلمة المرور *",
+    "confirmPasswordPlaceholder": "أكّد كلمة المرور",
+    "resendSuccessToast": "تم إعادة إرسال رمز التحقق!",
+    "resendFailedToast": "تعذّرت إعادة إرسال رمز التحقق",
+    "invalidOtpToast": "رمز التحقق غير صحيح"
+  },
+  "validation": {
+    "usernameMaxLength": "يجب أن يتكون اسم المستخدم من أقل من 30 حرفًا",
+    "fullNameMaxLength": "يجب أن يتكون الاسم الكامل من أقل من 100 حرف",
+    "passwordComplexity": "يجب أن تحتوي كلمة المرور على حرف كبير وحرف صغير ورقم واحد على الأقل",
+    "instituteIdInvalid": "معرّف المؤسسة غير صالح",
+    "emailFormatError": "صيغة البريد الإلكتروني غير صالحة",
+    "usernameFormatError": "صيغة اسم المستخدم غير صالحة",
+    "fullNameFormatError": "صيغة الاسم الكامل غير صالحة",
+    "passwordFormatError": "صيغة كلمة المرور غير صالحة",
+    "instituteIdFormatError": "صيغة معرّف المؤسسة غير صالحة",
+    "generalFailed": "فشل التحقق من الصحة"
+  },
+  "emailOtpSignup": {
+    "toast": {
+      "alreadyEnrolled": "المستخدم مسجَّل بالفعل. يرجى تسجيل الدخول بدلاً من ذلك.",
+      "otpIncomplete": "يرجى إدخال الرمز المكوَّن من 6 أرقام كاملاً",
+      "emailVerified": "تم التحقق من البريد الإلكتروني بنجاح!",
+      "accountCreated": "تم إنشاء الحساب بنجاح!",
+      "accountCreateFailed": "فشل إنشاء الحساب"
+    },
+    "otpStep": {
+      "checkEmail": "تحقق من بريدك الإلكتروني",
+      "codeSentTo": "لقد أرسلنا رمزًا مكوَّنًا من 6 أرقام إلى",
+      "backToEmail": "العودة إلى البريد الإلكتروني",
+      "resendIn": "إعادة الإرسال خلال {{seconds}} ث",
+      "resendCode": "إعادة إرسال الرمز",
+      "verifying": "جارٍ التحقق...",
+      "verifyOtp": "تحقق من الرمز"
+    },
+    "finalStep": {
+      "subtitle": "يرجى تقديم بياناتك لإكمال التسجيل",
+      "fullNameLabelRequired": "الاسم الكامل *",
+      "fullNamePlaceholderEnter": "أدخل اسمك الكامل",
+      "showPassword": "إظهار كلمة المرور",
+      "hidePassword": "إخفاء كلمة المرور",
+      "showConfirmPassword": "إظهار تأكيد كلمة المرور",
+      "hideConfirmPassword": "إخفاء تأكيد كلمة المرور"
+    },
+    "successStep": {
+      "title": "تم إنشاء الحساب بنجاح!",
+      "subtitle": "مرحبًا بك في منصتنا"
+    }
+  },
+  "githubSignup": {
+    "otpLengthError": "يجب أن يتكون رمز التحقق من 6 أرقام",
+    "toast": {
+      "oauthFailed": "فشلت المصادقة عبر GitHub",
+      "otpSent": "تم إرسال رمز التحقق إلى بريدك الإلكتروني!",
+      "sendOtpFailed": "فشل إرسال رمز التحقق"
+    },
+    "processing": "جارٍ المعالجة...",
+    "otpVerification": {
+      "title": "تحقق من بريدك الإلكتروني",
+      "subtitleSentTo": "لقد أرسلنا رمز تحقق إلى",
+      "codeLabel": "رمز التحقق",
+      "codePlaceholder": "أدخل الرمز المكوَّن من 6 أرقام",
+      "resendIn": "إعادة إرسال الرمز خلال {{seconds}} ث",
+      "resendPrompt": "لم تستلم الرمز؟ إعادة الإرسال"
+    },
+    "credentialsStep": {
+      "subtitle": "لقد حصلنا على اسمك من GitHub. يرجى تحديد اسم المستخدم وكلمة المرور."
+    },
+    "emailOtpStep": {
+      "title": "التحقق من البريد الإلكتروني مطلوب",
+      "subtitle": "بريدك الإلكتروني على GitHub خاص. يرجى تقديم عنوان بريد إلكتروني للمتابعة.",
+      "emailLabel": "عنوان البريد الإلكتروني *",
+      "emailPlaceholder": "أدخل عنوان بريدك الإلكتروني"
+    },
+    "button": "المتابعة باستخدام GitHub"
+  },
+  "googleSignup": {
+    "toast": {
+      "oauthFailed": "فشلت المصادقة عبر Google"
+    },
+    "connecting": "جارٍ الاتصال بـ Google...",
+    "credentialsStep": {
+      "subtitle": "لقد حصلنا على اسمك من Google. يرجى تحديد اسم المستخدم وكلمة المرور."
+    },
+    "button": "المتابعة باستخدام Google",
+    "testButton": "🧪 اختبار التسجيل المباشر",
+    "backToOptions": "← العودة إلى الخيارات"
+  }
+}

@@ -1,0 +1,28 @@
+{
+    "session": {
+        "addButton": "Ajouter",
+        "addNewSession": "Ajouter une nouvelle session",
+        "addSessionShort": "Ajouter une session",
+        "createCourseFirst": "(Créez d'abord un cours)",
+        "selectPlaceholder": "Sélectionner une session",
+        "addedSuccess": " {{term}} ajouté avec succès",
+        "addError": "Échec de l'ajout de {{term}}"
+    },
+    "export": {
+        "exportingLoading": "Exportation...",
+        "accountDetails": {
+            "short": "Détails du compte",
+            "medium": "Compte",
+            "full": "Exporter les détails du compte"
+        },
+        "data": {
+            "short": "Exporter",
+            "medium": "Exporter",
+            "full": "Exporter les données"
+        }
+    },
+    "actions": {
+        "applyFilters": "Appliquer les filtres",
+        "resetAll": "Tout réinitialiser"
+    }
+}

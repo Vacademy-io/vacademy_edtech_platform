@@ -21,4 +21,6 @@ public class Subject {
     private String phone;
     private String email;
     private String name;
+    /** The address is on notification-service's bounce blocklist: known, but nothing sent to it arrives. */
+    private boolean emailUndeliverable;
 }

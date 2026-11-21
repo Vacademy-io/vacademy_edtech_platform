@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Preferences } from "@capacitor/preferences";
 import { fetchDataByIds } from "@/services/GetDataById";
 import { GET_TEXT_VIA_IDS } from "@/constants/urls";
 
 export function ExpandableParagraph() {
+  const { t } = useTranslation("questionTest");
   const [aboutData, setAboutData] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -67,7 +69,7 @@ export function ExpandableParagraph() {
           className="p-0 h-auto text-primary-500 mt-1"
           onClick={() => setExpanded(!expanded)}
         >
-          {expanded ? "Read less" : "Read more"}
+          {expanded ? t("paragraph.readLess") : t("paragraph.readMore")}
         </Button>
       )}
     </div>

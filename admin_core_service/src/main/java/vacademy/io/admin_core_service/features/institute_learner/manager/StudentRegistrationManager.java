@@ -14,6 +14,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.common.util.JsonUtil;
+import vacademy.io.admin_core_service.features.course_settings.service.LmsExistingUserEditPolicyService;
 import vacademy.io.admin_core_service.features.enroll_invite.entity.EnrollInvite;
 import vacademy.io.admin_core_service.features.enrollment_policy.dto.EnrollmentPolicySettingsDTO;
 import vacademy.io.admin_core_service.features.enrollment_policy.dto.ReenrollmentPolicyDTO;
@@ -41,6 +42,7 @@ import vacademy.io.admin_core_service.features.workflow.service.WorkflowTriggerS
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.core.internal_api_wrapper.InternalClientUtils;
+import vacademy.io.common.exceptions.EnrollmentConflictException;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.institute.entity.Institute;
 import vacademy.io.common.institute.entity.session.PackageSession;
@@ -68,6 +70,9 @@ public class StudentRegistrationManager {
     @Autowired
     private PackageSessionRepository packageSessionRepository;
 
+    @Autowired
+    private LmsExistingUserEditPolicyService lmsExistingUserEditPolicyService;
+
     @Value("${auth.server.baseurl}")
     private String authServerBaseUrl;
     @Value("${spring.application.name}")
@@ -92,7 +97,13 @@ public class StudentRegistrationManager {
     private vacademy.io.admin_core_service.features.audience.service.AudienceService audienceService;
 
     @Autowired
+    private vacademy.io.admin_core_service.features.audience.service.LeadDedupSettingService leadDedupSettingService;
+
+    @Autowired
     private vacademy.io.admin_core_service.features.learner_access.service.LearnerAccessService learnerAccessService;
+
+    @Autowired
+    private vacademy.io.admin_core_service.features.auth_service.service.AuthService authService;
 
     StudentRegistrationManager(InstituteCertificateController instituteCertificateController) {
         this.instituteCertificateController = instituteCertificateController;
@@ -135,7 +146,9 @@ public class StudentRegistrationManager {
         instituteStudentDTO
                 .setInstituteStudentDetails(InstituteStudentDetails.builder().instituteId(instituteId).build());
 
-        Student student = checkAndCreateStudent(instituteStudentDTO);
+        // The open assessment link signs the learner in with an email OTP, so a username +
+        // password email here is noise (and arrived before they had even verified the address).
+        Student student = checkAndCreateStudent(instituteStudentDTO, false);
         InstituteStudentDetails details = instituteStudentDTO.getInstituteStudentDetails();
         if (details != null && StringUtils.hasText(details.getPackageSessionId())) {
             linkStudentToInstitute(student, details);
@@ -145,7 +158,7 @@ public class StudentRegistrationManager {
                         instituteStudentDTO.getUserDetails(),
                         details.getPackageSessionId(), null);
             }
-        } else {
+        } else if (!selfSignupLeadBlocksTestLead(instituteId)) {
             // No package session means no student_session_institute_group_mapping row,
             // which makes this signup invisible in the admin's learner list (it requires
             // an enrollment row to show up at all). Surface it as a lead instead.
@@ -161,6 +174,36 @@ public class StudentRegistrationManager {
         return ResponseEntity.ok(new StudentDTO(student));
     }
 
+    /**
+     * True when this institute's lead de-duplication would reject the open assessment's own
+     * lead because of the Self Sign-ups lead made here a moment earlier.
+     *
+     * <p>The only caller of {@link #addOpenStudentToInstitute} is the open assessment register
+     * page, and the registration it makes next adds the person to that test's
+     * "&lt;title&gt; - Open Assessment" list, which later receives their marks. With institute-wide
+     * de-duplication set to reject, the Self Sign-ups lead (same email and phone) made that
+     * test-list lead fail, so the marks reached no list. Such an institute keeps one lead per
+     * person, and the test-list lead is the useful one, so the Self Sign-ups lead is skipped.
+     * Every other institute keeps both, exactly as before.
+     */
+    private boolean selfSignupLeadBlocksTestLead(String instituteId) {
+        try {
+            return blocksTestLead(leadDedupSettingService.get(instituteId));
+        } catch (Exception e) {
+            log.warn("Lead dedup settings unreadable for institute {} — keeping the self-signup lead: {}",
+                    instituteId, e.getMessage());
+            return false;
+        }
+    }
+
+    static boolean blocksTestLead(
+            vacademy.io.admin_core_service.features.audience.service.LeadDedupSettingService.DedupSettings settings) {
+        return settings != null
+                && settings.enabled()
+                && settings.scope() == vacademy.io.admin_core_service.features.audience.service.LeadDedupSettingService.DedupScope.INSTITUTE
+                && settings.action() == vacademy.io.admin_core_service.features.audience.service.LeadDedupSettingService.DedupAction.REJECT;
+    }
+
     public UserDTO createUserFromAuthService(UserDTO userDTO, String instituteId, boolean isNotify) {
         try {
             userDTO.setRootUser(true);
@@ -168,14 +211,81 @@ public class StudentRegistrationManager {
             ResponseEntity<String> response = internalClientUtils.makeHmacRequest(applicationName,
                     HttpMethod.POST.name(), authServerBaseUrl,
                     StudentConstants.addUserRoute + "?instituteId=" + instituteId + "&isNotify=" + isNotify, userDTO);
-            return objectMapper.readValue(response.getBody(), UserDTO.class);
+            return carryFirstTimePassword(objectMapper.readValue(response.getBody(), UserDTO.class), userDTO);
 
         } catch (Exception e) {
             throw new vacademy.io.common.exceptions.VacademyException(e.getMessage());
         }
     }
 
+    /**
+     * Enrolment workflows (welcome messages, LMS account set-up) read the learner from the
+     * workflow's user. That user is the account as auth-service holds it: its id, username,
+     * e-mail, mobile number and name, never contact details typed with the request. A password
+     * is passed on only when the enrolment already holds the account's own login (a new
+     * account's first-time password, or the login a staff flow read for this account itself);
+     * a stored password is never added here for an account that already existed. A copy is returned, so the
+     * caller's user, which may be returned in a response, is not changed.
+     */
+    private UserDTO workflowUser(UserDTO userDTO) {
+        if (userDTO == null || !StringUtils.hasText(userDTO.getId()) || authService == null) {
+            return userDTO;
+        }
+        UserDTO stored = null;
+        try {
+            stored = authService.getUsersFromAuthServiceWithPasswordByUserId(userDTO.getId());
+        } catch (Exception e) {
+            log.warn("Could not read the account of user {} for the enrollment workflow: {}",
+                    userDTO.getId(), e.getMessage());
+        }
+        return workflowUserFrom(userDTO, stored);
+    }
+
+    /** See {@link #workflowUser}; {@code stored} is null when the account could not be read. */
+    static UserDTO workflowUserFrom(UserDTO request, UserDTO stored) {
+        UserDTO copy = vacademy.io.admin_core_service.features.auth_service.util.UserDtoCopies.copyOf(request);
+        if (stored == null || !request.getId().equals(stored.getId())) {
+            copy.setPassword(null);
+            return copy;
+        }
+        copy.setUsername(stored.getUsername());
+        copy.setEmail(stored.getEmail());
+        copy.setMobileNumber(stored.getMobileNumber());
+        if (StringUtils.hasText(stored.getFullName())) {
+            copy.setFullName(stored.getFullName());
+        }
+        boolean holdsOwnLogin = StringUtils.hasText(request.getPassword())
+                && request.getPassword().equals(stored.getPassword());
+        copy.setPassword(holdsOwnLogin ? request.getPassword() : null);
+        return copy;
+    }
+
+    /**
+     * auth-service includes the password only for an account it created in that same call.
+     * Enrolment first resolves the learner (learner create-or-get, which creates a new account
+     * and answers with its first-time password) and then passes that resolved user, with its
+     * id, through this create-or-get again, which now finds the account. The first answer's
+     * password is carried on in that case so a new learner still sees their first-time
+     * credentials. Only a password the request already held for the same account id is used.
+     */
+    static UserDTO carryFirstTimePassword(UserDTO answer, UserDTO request) {
+        if (answer != null && !StringUtils.hasText(answer.getPassword())
+                && request != null && StringUtils.hasText(request.getPassword())
+                && StringUtils.hasText(request.getId()) && request.getId().equals(answer.getId())) {
+            answer.setPassword(request.getPassword());
+        }
+        return answer;
+    }
+
     private Student checkAndCreateStudent(InstituteStudentDTO instituteStudentDTO) {
+        return checkAndCreateStudent(instituteStudentDTO, true);
+    }
+
+    /**
+     * @param credentialEmailAllowed false for sign-ups that log in with an OTP and never use the
+     *                               generated password (the open assessment link).
+     */
+    private Student checkAndCreateStudent(InstituteStudentDTO instituteStudentDTO, boolean credentialEmailAllowed) {
         instituteStudentDTO.getUserDetails().setRoles(getStudentRoles());
         setRandomPasswordIfNull(instituteStudentDTO.getUserDetails());
         setRandomUserNameIfNull(instituteStudentDTO.getUserDetails());
@@ -194,8 +304,9 @@ public class StudentRegistrationManager {
         String instituteId = instituteStudentDTO.getInstituteStudentDetails().getInstituteId();
         boolean enrollmentWorkflowWillFire = LearnerSessionStatusEnum.ACTIVE.name()
                 .equalsIgnoreCase(instituteStudentDTO.getInstituteStudentDetails().getEnrollmentStatus());
-        boolean sendCredentials = !enrollmentWorkflowWillFire
-                || enrollmentCredentialPolicyService.shouldSendCredentialEmail(instituteId);
+        boolean sendCredentials = credentialEmailAllowed
+                && (!enrollmentWorkflowWillFire
+                || enrollmentCredentialPolicyService.shouldSendCredentialEmail(instituteId));
         UserDTO createdUser = createUserFromAuthService(instituteStudentDTO.getUserDetails(),
                 instituteId, sendCredentials);
         instituteStudentDTO.getUserDetails().setId(createdUser.getId());
@@ -462,7 +573,8 @@ public class StudentRegistrationManager {
                     log.info("Blocking enrollment for user {} - already active in package session {}",
                             student.getUserId(), packageSessionId);
 
-                    throw new VacademyException(message);
+                    throw new EnrollmentConflictException(
+                            EnrollmentConflictException.ConflictType.PAID_MEMBER_BLOCKED, message);
                 }
             } catch (VacademyException e) {
                 throw e; // Re-throw blocking exception
@@ -539,7 +651,8 @@ public class StudentRegistrationManager {
                                     allowedDateStr, gapDays);
                         }
 
-                        throw new VacademyException(message);
+                        throw new EnrollmentConflictException(
+                                EnrollmentConflictException.ConflictType.REENROLLMENT_BLOCKED, message);
                     }
                 }
             }
@@ -883,9 +996,7 @@ public class StudentRegistrationManager {
             activePackageSession.setCommaSeparatedOrgRoles(invitedPackageSession.getCommaSeparatedOrgRoles());
         }
         Date previousExpiry = activePackageSession.getExpiryDate();
-        Date baseDate = previousExpiry != null ? previousExpiry : new Date();
-        activePackageSession
-                .setExpiryDate(calculateNewExpiryDate(baseDate, effectiveUserPlanId, null));
+        activePackageSession.setExpiryDate(resolveMappingExpiry(previousExpiry, effectiveUserPlanId));
         return new MappingWithPriorAccess(activePackageSession, previousExpiry);
     }
 
@@ -983,6 +1094,62 @@ public class StudentRegistrationManager {
      * @param legacyAccessDays The V1 access days string.
      * @return A new Date, or null if access is unlimited.
      */
+    /**
+     * How long this mapping grants access: the PLAN'S OWN {@code end_date} whenever the
+     * mapping references a user plan, falling back to the validity arithmetic only when
+     * there is no plan to read (legacy / access-days enrolments).
+     *
+     * <p>Two bugs lived in the arithmetic this replaces, and both came from the mapping
+     * computing its own answer instead of reading the one the plan already holds.
+     *
+     * <p><b>1. A trial inherited the PAID window.</b> {@code calculateNewExpiryDate} resolves
+     * {@code paymentPlan.getValidityInDays()} and never looks at {@code is_trial}, so signing
+     * up for a 15-day trial on an "Annual" plan stamped the mapping with 360 days while
+     * {@code user_plan.end_date} correctly held the trial end. Nothing noticed, because a
+     * successful conversion overwrites the mapping expiry anyway
+     * ({@code RenewalPaymentService.handleSuccessfulRenewal}) and a failed one deactivates the
+     * mapping ({@code expirePlan}). Only a trial that CANCELLED — neither converted nor
+     * dunned — kept the wrong value, and it kept it silently: the class-reminder audience
+     * filters on {@code ssigm.expiry_date} and never consults {@code user_plan.status}, so a
+     * cancelled learner went on receiving daily class links.
+     *
+     * <p><b>2. A repeated enrolment STACKED it.</b> The old base date was
+     * {@code previousExpiry != null ? previousExpiry : new Date()}, so each pass added another
+     * full validity on top of whatever the row already had. An INVITED mapping already carries
+     * an expiry, and a learner who submits twice re-enters this path: one SuchBliss trial
+     * signed up twice seven minutes apart and came out with {@code enrolled + 720} days —
+     * exactly 2 x her 360-day plan — expiring in September 2028 off a 15-day trial.
+     *
+     * <p>{@code end_date} is computed once, by the code that owns the plan's window, and is
+     * the value every other site already writes here —
+     * {@code LearnerBatchEnrollService}, {@code AccessPassEntitlementService} and both arms of
+     * {@code handleSuccessfulRenewal}. Reading it makes trial-vs-paid and single-vs-repeated
+     * enrolment all resolve to the same answer, and makes stacking structurally impossible:
+     * extending access now means extending the plan, which is where it belongs.
+     *
+     * <p>Access is never SHORTENED by this: {@code previousExpiry} wins when it is already
+     * later than the plan's end, so a learner who genuinely holds a longer entitlement (a
+     * stacked term, an admin extension) keeps it.
+     */
+    private Date resolveMappingExpiry(Date previousExpiry, String userPlanId) {
+        Date planEnd = null;
+        if (StringUtils.hasText(userPlanId)) {
+            UserPlan userPlan = userPlanService.findById(userPlanId);
+            planEnd = userPlan != null ? userPlan.getEndDate() : null;
+        }
+        if (planEnd == null) {
+            // No plan to read -- keep the legacy arithmetic for access-days enrolments.
+            Date baseDate = previousExpiry != null ? previousExpiry : new Date();
+            return calculateNewExpiryDate(baseDate, userPlanId, null);
+        }
+        if (previousExpiry != null && previousExpiry.after(planEnd)) {
+            log.info("Mapping already grants access to {} which is beyond plan {} end {} -- keeping it",
+                    previousExpiry, userPlanId, planEnd);
+            return previousExpiry;
+        }
+        return planEnd;
+    }
+
     private Date calculateNewExpiryDate(Date baseDate, String userPlanId, String legacyAccessDays) {
         Integer validityDays = getValidityDaysFromUserPlan(userPlanId);
 
@@ -1159,7 +1326,10 @@ public class StudentRegistrationManager {
 
     private String generateUsername(String fullName) {
         // Ensure full name has at least 4 characters, else pad with "X"
-        String namePart = fullName.replaceAll("\\s+", "").substring(0, Math.min(fullName.length(), 4)).toLowerCase();
+        // Bound the cut by the stripped length: "A B C" strips to 3 characters while the
+        // raw length is 5, and cutting 4 threw StringIndexOutOfBoundsException.
+        String stripped = fullName == null ? "" : fullName.replaceAll("\\s+", "");
+        String namePart = stripped.substring(0, Math.min(stripped.length(), 4)).toLowerCase();
         if (namePart.length() < 4) {
             namePart = String.format("%-4s", namePart).replace(' ', 'X');
         }
@@ -1184,6 +1354,15 @@ public class StudentRegistrationManager {
 
     public void triggerEnrollmentWorkflow(String instituteId, UserDTO userDTO, String packageSessionId,
                                           Institute subOrg) {
+        triggerEnrollmentWorkflow(instituteId, userDTO, packageSessionId, subOrg, null);
+    }
+
+    /**
+     * Same, with the plan the enrollment belongs to, so the event can say whether this is a
+     * TRIAL or a PAID membership. Prefer this overload wherever a plan is known.
+     */
+    public void triggerEnrollmentWorkflow(String instituteId, UserDTO userDTO, String packageSessionId,
+                                          Institute subOrg, String userPlanId) {
         // Validate and gather context UP-FRONT while we still have references.
         // The actual workflow firing is deferred until after the parent transaction
         // commits (see below) — if it errored later, we still want the validation
@@ -1195,7 +1374,7 @@ public class StudentRegistrationManager {
         var pkg = packageSession.get().getPackageEntity();
 
         final Map<String, Object> contextData = new HashMap<>();
-        contextData.put("user", userDTO);
+        contextData.put("user", workflowUser(userDTO));
         contextData.put("packageSessionIds", packageSessionId);
         contextData.put("subOrg", subOrg);
         contextData.put("packageId", pkg.getId());
@@ -1203,6 +1382,49 @@ public class StudentRegistrationManager {
         // and HTTP_REQUEST webhook bodies can reference the course name directly
         // without needing a separate QUERY node to look it up.
         contextData.put("packageName", pkg.getPackageName());
+        // May a workflow overwrite an LMS account that already exists for this learner?
+        // Resolved here, once, rather than by a QUERY node in each graph: the setting is
+        // course-then-institute (see LmsExistingUserEditPolicyService) and the graph has no
+        // clean way to express that fallback in SpEL. Nodes gate on
+        // #ctx['lmsEditExistingUser'] == true. Best-effort — a failure to read it must not
+        // stop the enrolment, and false is the safe answer (leave the LMS account alone).
+        boolean mayEditExistingLmsUser = false;
+        try {
+            mayEditExistingLmsUser = lmsExistingUserEditPolicyService
+                    .mayEditExistingUser(instituteId, pkg.getId());
+        } catch (Exception e) {
+            log.warn("Could not resolve {} for institute {} / package {} — defaulting to false: {}",
+                    LmsExistingUserEditPolicyService.CONTEXT_KEY, instituteId, pkg.getId(), e.getMessage());
+        }
+        contextData.put(LmsExistingUserEditPolicyService.CONTEXT_KEY, mayEditExistingLmsUser);
+
+        // Trial or paid? This event carried no membership shape at all, so a workflow on it
+        // could not tell a trial joiner from a paying member — the same greeting, and the same
+        // 14-day trial drip, fired for both. Both of the happy flows end here: a first-time
+        // signup that lands on a trial, and a returning member (cancelled or renewal-failed)
+        // who pays to continue and must go straight to the regular classes. The shape has to
+        // travel with the event for those two to be addressable at all.
+        //
+        // Gate workflow conditions on membershipType ('TRIAL' / 'PAID'). UNKNOWN means no plan
+        // was resolvable (admin direct enrolment, bulk assignment, free courses) and must
+        // never be read as either one.
+        String membershipType = "UNKNOWN";
+        boolean isTrialMembership = false;
+        if (StringUtils.hasText(userPlanId)) {
+            try {
+                UserPlan plan = userPlanService.findById(userPlanId);
+                if (plan != null) {
+                    isTrialMembership = Boolean.TRUE.equals(plan.getIsTrial());
+                    membershipType = isTrialMembership ? "TRIAL" : "PAID";
+                }
+            } catch (Exception e) {
+                log.warn("Could not resolve the membership shape for plan {} — the enrollment "
+                        + "workflow context will say UNKNOWN: {}", userPlanId, e.getMessage());
+            }
+        }
+        contextData.put("userPlanId", userPlanId);
+        contextData.put("isTrial", isTrialMembership);
+        contextData.put("membershipType", membershipType);
 
         final String eventName = WorkflowTriggerEvent.LEARNER_BATCH_ENROLLMENT.name();
         final String finalInstituteId = instituteId;

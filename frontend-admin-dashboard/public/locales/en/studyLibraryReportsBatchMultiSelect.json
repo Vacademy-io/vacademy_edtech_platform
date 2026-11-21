@@ -1,0 +1,7 @@
+{
+    "label": "{{term}}",
+    "placeholder": "Select one or more {{term}}…",
+    "hint": "Pick one or more {{term}} — the report is generated for each.",
+    "selectedCount": "{{count}} selected",
+    "clear": "Clear"
+}

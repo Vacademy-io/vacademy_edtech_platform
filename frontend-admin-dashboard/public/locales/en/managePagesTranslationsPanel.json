@@ -1,0 +1,28 @@
+{
+    "tabs": {
+        "other": "Other entries"
+    },
+    "other": {
+        "hint": "Translations not found on the site's pages, settings, courses, folders or product pages — left behind after a text changed, or added by hand. Some may still be used somewhere else, so check before you Clear them.",
+        "empty": "Every translation belongs to a page text, course, folder or page.",
+        "waiting": "Other entries are listed only after courses, folders and product pages have loaded, so a translation still in use never looks unused.",
+        "confirmClear": "Delete this translation? “{{text}}” was not found on the site, but it may still be used somewhere the builder cannot see."
+    },
+    "location": {
+        "header": "Header",
+        "footer": "Footer",
+        "pageTitle": "Page title",
+        "seo": "Search engines (SEO)",
+        "settings": "Site settings",
+        "card": {
+            "formatLabel": "Format label",
+            "buttonLabel": "Button label",
+            "freeLabel": "Free label",
+            "courseDescription": "Course description",
+            "loadMore": "Load more button",
+            "courseCount": "Course count",
+            "gridHeading": "Grid heading",
+            "sortLabel": "Sort label"
+        }
+    }
+}

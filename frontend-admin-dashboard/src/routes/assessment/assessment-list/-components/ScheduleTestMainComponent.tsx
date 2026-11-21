@@ -1,9 +1,12 @@
 import { Helmet } from 'react-helmet';
 import { Tabs } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
 import { ScheduleTestFilters } from './ScheduleTestFilters';
+import { Info } from '@phosphor-icons/react';
 import {
     useFilterDataForAssesment,
     useFilterDataForAssesmentInitData,
@@ -34,6 +37,8 @@ import {
     getTerminology,
     getTerminologyPlural,
 } from '@/components/common/layout-container/sidebar/utils';
+import { ASSESSMENT_SOURCE_FILTERS } from '../-utils.ts/assessment-source';
+import type { FolderListFilter } from './folders/AssessmentFolderWorkspace';
 
 export interface SelectedQuestionPaperFilters {
     name: string | { id: string; name: string }[];
@@ -48,6 +53,9 @@ export interface SelectedQuestionPaperFilters {
     assessment_modes: MyFilterOption[];
     access_statuses: MyFilterOption[];
     evaluation_types: MyFilterOption[];
+    /** Folder scope (assessment folders); set from the route, not a filter chip. */
+    folder_id?: string;
+    unfiled_only?: boolean;
 }
 
 // Per-tab request flags/status — shared by the full-list fetch and the
@@ -89,12 +97,22 @@ export const ScheduleTestMainComponent = ({
     isCourseOutline = false,
     batchId,
     showBatchFilter = true,
+    folderFilter,
+    toolbar,
+    hideList = false,
 }: {
     isCourseOutline?: boolean;
     batchId?: string;
     showBatchFilter?: boolean;
+    /** Folder the list is scoped to; the workspace remounts this component when it changes. */
+    folderFilter?: FolderListFilter;
+    /** Rendered under the page header, above the tabs (assessment folder cards / breadcrumb). */
+    toolbar?: React.ReactNode;
+    /** Assessment folders: show only the header + toolbar (every test is in a folder). */
+    hideList?: boolean;
 }) => {
     const navigate = useNavigate();
+    const { t } = useTranslation('assessmentScheduleTestMainComponent');
 
     // Always call Route.useSearch() regardless of props
     const routeSearchParams = SafeRouteSearch();
@@ -133,12 +151,24 @@ export const ScheduleTestMainComponent = ({
             assessment_modes: [],
             access_statuses: [],
             evaluation_types: [],
+            ...folderFilter,
         });
+
+    // Whether the admin changed a filter since the last Apply — see hasUnappliedFilters.
+    const [filtersTouched, setFiltersTouched] = useState(false);
+
+    // Source (All / Dashboard / API). The list endpoint has no source parameter, so this
+    // filters the loaded page client-side and takes effect immediately (no Apply needed).
+    const [sourceFilter, setSourceFilter] = useState<MyFilterOption[]>([]);
+    const sourceFilterOptions: MyFilterOption[] = ASSESSMENT_SOURCE_FILTERS.map((value) => ({
+        id: value,
+        name: t(`filters.source.options.${value}`),
+    }));
 
     const [scheduleTestTabsData, setScheduleTestTabsData] = useState<ScheduleTestTab[]>([
         {
             value: 'liveTests',
-            message: 'No tests are currently live.',
+            message: t('tabs.liveTests.emptyMessage'),
             data: {
                 content: [],
                 last: false,
@@ -150,7 +180,7 @@ export const ScheduleTestMainComponent = ({
         },
         {
             value: 'upcomingTests',
-            message: 'No upcoming tests scheduled.',
+            message: t('tabs.upcomingTests.emptyMessage'),
             data: {
                 content: [],
                 last: false,
@@ -162,7 +192,7 @@ export const ScheduleTestMainComponent = ({
         },
         {
             value: 'previousTests',
-            message: 'No previous tests available.',
+            message: t('tabs.previousTests.emptyMessage'),
             data: {
                 content: [],
                 last: false,
@@ -174,7 +204,7 @@ export const ScheduleTestMainComponent = ({
         },
         {
             value: 'draftTests',
-            message: 'No draft tests available.',
+            message: t('tabs.draftTests.emptyMessage'),
             data: {
                 content: [],
                 last: false,
@@ -220,6 +250,7 @@ export const ScheduleTestMainComponent = ({
     };
 
     const handleFilterChange = (filterKey: string, selectedItems: MyFilterOption[]) => {
+        setFiltersTouched(true);
         setSelectedQuestionPaperFilters((prev) => {
             const updatedFilters = { ...prev, [filterKey]: selectedItems };
             return updatedFilters;
@@ -277,6 +308,8 @@ export const ScheduleTestMainComponent = ({
     };
 
     const handleResetFilters = () => {
+        setFiltersTouched(false);
+        setSourceFilter([]);
         setSelectedQuestionPaperFilters({
             name: '',
             // Keep the batch selection if in course outline mode
@@ -291,6 +324,7 @@ export const ScheduleTestMainComponent = ({
             assessment_modes: [],
             access_statuses: [],
             evaluation_types: [],
+            ...folderFilter,
         });
         setSearchText('');
         const resetBaseData: SelectedQuestionPaperFilters = {
@@ -306,6 +340,7 @@ export const ScheduleTestMainComponent = ({
             assessment_statuses: [],
             assessment_modes: [],
             access_statuses: [],
+            ...folderFilter,
         };
         getFilteredData.mutate({
             pageNo: pageNo,
@@ -373,7 +408,27 @@ export const ScheduleTestMainComponent = ({
         },
     });
 
+    // Counted per group, not per value, and only over groups that actually have a chip on
+    // screen: "2 filters" then matches the two highlighted chips. Counting values would
+    // read "5 filters" for two chips; counting assessment_statuses would never be zero
+    // because the tab sets it; tag_ids is out for the same reason — no chip here, so a
+    // preset would inflate a count whose cause the admin cannot see.
+    const activeFilterCount = [
+        selectedQuestionPaperFilters.batch_ids,
+        selectedQuestionPaperFilters.subjects_ids,
+        selectedQuestionPaperFilters.assessment_modes,
+        selectedQuestionPaperFilters.access_statuses,
+        selectedQuestionPaperFilters.evaluation_types,
+    ].filter((group) => (group?.length ?? 0) > 0).length;
+
+    // Gated on a real interaction, not merely on something being selected. In
+    // course-outline mode batch_ids arrives pre-selected (and its chip can be hidden), so
+    // counting alone would greet the admin with "1 filter selected — press Apply" before
+    // they touched anything, about a list that is already correctly scoped.
+    const hasUnappliedFilters = filtersTouched && activeFilterCount > 0;
+
     const handleSubmitFilters = () => {
+        setFiltersTouched(false);
         getFilteredData.mutate({
             pageNo: pageNo,
             pageSize: 10,
@@ -530,7 +585,8 @@ export const ScheduleTestMainComponent = ({
     }, [isCourseOutline, batchId]);
 
     useEffect(() => {
-        if (!isCourseOutline) setNavHeading(<h1 className="text-lg">Assessments List</h1>);
+        if (!isCourseOutline)
+            setNavHeading(<h1 className="text-lg">{t('header.navHeading')}</h1>);
     }, []);
 
     useEffect(() => {
@@ -544,9 +600,11 @@ export const ScheduleTestMainComponent = ({
         if (!isCourseOutline)
             navigate({
                 to: '/assessment/assessment-list',
-                search: {
+                // Keep ?folderId= so the folder (and a sidebar sub-tab pointing at it) stays selected.
+                search: (prev: Record<string, unknown>) => ({
+                    ...prev,
                     selectedTab: selectedTab,
-                },
+                }),
             });
     }, [selectedTab, isCourseOutline, navigate]);
 
@@ -559,93 +617,149 @@ export const ScheduleTestMainComponent = ({
     return (
         <>
             <Helmet>
-                <title>Schedule Tests</title>
-                <meta
-                    name="description"
-                    content="This page shows the list of all the schedules tests and also an assessment can be scheduled here."
-                />
+                <title>{t('meta.helmetTitle')}</title>
+                <meta name="description" content={t('meta.helmetDescription')} />
             </Helmet>
             <ScheduleTestHeaderDescription isCourseOutline />
-            <div className="flex flex-col gap-4">
+            {toolbar}
+            {/* hideList (assessment folders, every test in a folder): no empty tabs. */}
+            <div className={cn('flex flex-col gap-4', hideList && 'hidden')}>
                 <Tabs value={selectedTab} onValueChange={handleTabChange}>
                     <ScheduleTestTabList
                         selectedTab={selectedTab}
                         scheduleTestTabsData={scheduleTestTabsData}
                         tabCounts={tabCounts}
                     />
-                    <div className="my-4 flex flex-col gap-3 sm:my-6 sm:gap-4">
-                        {/* Filters Row - scrollable on mobile */}
-                        <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:gap-4 sm:overflow-visible sm:px-0">
-                            {/* Only show batch filter if not in course outline mode or explicitly enabled */}
-                            {(!isCourseOutline || showBatchFilter) && (
-                                <ScheduleTestFilters
-                                    label={getTerminologyPlural(
-                                        ContentTerms.Batch,
-                                        SystemTerms.Batch
+                    <div className="my-4 sm:my-6">
+                        {/* One bordered surface so the filters and the search read as a
+                            single control strip. Loose on white they looked like five
+                            unrelated "add" buttons floating above the results. */}
+                        <div className="rounded-xl border border-neutral-200 bg-neutral-50/60 p-3 sm:p-4">
+                            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-3">
+                                {/* One row from lg up (flex-nowrap + overflow-x-auto), wrapping
+                                    below it. Five chips on a phone are better stacked than
+                                    hidden behind a sideways scroll nobody discovers — at 440px
+                                    the desktop single-row version cut "Type" and "Evaluation"
+                                    off the edge. min-w-0 is what lets this shrink beside the
+                                    search box; without it the flex child refuses to go below
+                                    its content width and pushes the last chip onto a new line
+                                    even on a wide screen. */}
+                                <div className="no-scrollbar -mx-1 flex min-w-0 flex-1 flex-wrap items-center gap-2 px-1 lg:flex-nowrap lg:overflow-x-auto">
+                                    <span className="hidden shrink-0 pr-1 text-sm font-medium text-neutral-500 sm:inline">
+                                        {t('filters.filterBy')}
+                                    </span>
+                                    {/* Only show batch filter if not in course outline mode or explicitly enabled */}
+                                    {(!isCourseOutline || showBatchFilter) && (
+                                        <ScheduleTestFilters
+                                            label={getTerminologyPlural(
+                                                ContentTerms.Batch,
+                                                SystemTerms.Batch
+                                            )}
+                                            data={BatchesFilterData}
+                                            selectedItems={
+                                                selectedQuestionPaperFilters['batch_ids'] || []
+                                            }
+                                            onSelectionChange={(items) =>
+                                                handleFilterChange('batch_ids', items)
+                                            }
+                                        />
                                     )}
-                                    data={BatchesFilterData}
-                                    selectedItems={selectedQuestionPaperFilters['batch_ids'] || []}
-                                    onSelectionChange={(items) =>
-                                        handleFilterChange('batch_ids', items)
-                                    }
-                                />
+                                    <ScheduleTestFilters
+                                        label={getTerminology(
+                                            ContentTerms.Subjects,
+                                            SystemTerms.Subjects
+                                        )}
+                                        data={
+                                            isCourseOutline && batchId
+                                                ? getSubjectsByBatchId(batchId)
+                                                : SubjectFilterData
+                                        }
+                                        selectedItems={
+                                            selectedQuestionPaperFilters['subjects_ids'] || []
+                                        }
+                                        onSelectionChange={(items) =>
+                                            handleFilterChange('subjects_ids', items)
+                                        }
+                                    />
+                                    <ScheduleTestFilters
+                                        label={t('filters.mode')}
+                                        data={ModeData}
+                                        selectedItems={
+                                            selectedQuestionPaperFilters['assessment_modes'] || []
+                                        }
+                                        onSelectionChange={(items) =>
+                                            handleFilterChange('assessment_modes', items)
+                                        }
+                                    />
+                                    <ScheduleTestFilters
+                                        label={t('filters.type')}
+                                        data={AssessmentTypeData}
+                                        selectedItems={
+                                            selectedQuestionPaperFilters['access_statuses'] || []
+                                        }
+                                        onSelectionChange={(items) =>
+                                            handleFilterChange('access_statuses', items)
+                                        }
+                                    />
+                                    <ScheduleTestFilters
+                                        label={t('filters.evaluation')}
+                                        data={EvaluationTypeData}
+                                        selectedItems={
+                                            selectedQuestionPaperFilters['evaluation_types'] || []
+                                        }
+                                        onSelectionChange={(items) =>
+                                            handleFilterChange('evaluation_types', items)
+                                        }
+                                    />
+                                    <ScheduleTestFilters
+                                        label={t('filters.source.label')}
+                                        data={sourceFilterOptions}
+                                        selectedItems={sourceFilter}
+                                        onSelectionChange={setSourceFilter}
+                                    />
+                                </div>
+                                {/* Apply / Clear sit OUTSIDE the scrolling cluster. Inside it
+                                    they scrolled out of reach on a narrow window — the one
+                                    control the admin has to press to see any effect. */}
+                                <div className="shrink-0">
+                                    <ScheduleTestFilterButtons
+                                        selectedQuestionPaperFilters={selectedQuestionPaperFilters}
+                                        handleSubmitFilters={handleSubmitFilters}
+                                        handleResetFilters={handleResetFilters}
+                                    />
+                                </div>
+                                {/* Search sits in the same strip, on the right. w-72 not w-56:
+                                    the input itself carries pl-8 pr-12, so 80px of that width
+                                    is padding and a narrower box truncates its own
+                                    "Search Question Paper" placeholder. The chip cluster
+                                    scrolls rather than shrinking this. */}
+                                <div className="w-full lg:w-72 lg:shrink-0">
+                                    <ScheduleTestSearchComponent
+                                        onSearch={handleSearch}
+                                        searchText={searchText}
+                                        setSearchText={setSearchText}
+                                        clearSearch={clearSearch}
+                                    />
+                                </div>
+                            </div>
+                            {/* Picking a filter only stores it — the list is refetched by a
+                                mutation on Apply, not by a query keyed on filter state. Say
+                                so, because otherwise ticking boxes looks broken. */}
+                            {hasUnappliedFilters && (
+                                <p className="mt-3 flex items-center gap-1.5 border-t border-neutral-200 pt-3 text-xs text-neutral-500">
+                                    <Info className="size-3.5 shrink-0 text-primary-500" />
+                                    <span>
+                                        {t('filters.unapplied.countLabel', {
+                                            count: activeFilterCount,
+                                        })}{' '}
+                                        {t('filters.unapplied.instructionPrefix')}{' '}
+                                        <span className="font-medium text-neutral-700">
+                                            {t('filters.unapplied.applyLabel')}
+                                        </span>{' '}
+                                        {t('filters.unapplied.instructionSuffix')}
+                                    </span>
+                                </p>
                             )}
-                            <ScheduleTestFilters
-                                label={getTerminology(ContentTerms.Subjects, SystemTerms.Subjects)}
-                                data={
-                                    isCourseOutline && batchId
-                                        ? getSubjectsByBatchId(batchId)
-                                        : SubjectFilterData
-                                }
-                                selectedItems={selectedQuestionPaperFilters['subjects_ids'] || []}
-                                onSelectionChange={(items) =>
-                                    handleFilterChange('subjects_ids', items)
-                                }
-                            />
-                            <ScheduleTestFilters
-                                label="Mode"
-                                data={ModeData}
-                                selectedItems={
-                                    selectedQuestionPaperFilters['assessment_modes'] || []
-                                }
-                                onSelectionChange={(items) =>
-                                    handleFilterChange('assessment_modes', items)
-                                }
-                            />
-                            <ScheduleTestFilters
-                                label="Type"
-                                data={AssessmentTypeData}
-                                selectedItems={
-                                    selectedQuestionPaperFilters['access_statuses'] || []
-                                }
-                                onSelectionChange={(items) =>
-                                    handleFilterChange('access_statuses', items)
-                                }
-                            />
-                            <ScheduleTestFilters
-                                label="Evaluation"
-                                data={EvaluationTypeData}
-                                selectedItems={
-                                    selectedQuestionPaperFilters['evaluation_types'] || []
-                                }
-                                onSelectionChange={(items) =>
-                                    handleFilterChange('evaluation_types', items)
-                                }
-                            />
-                            <ScheduleTestFilterButtons
-                                selectedQuestionPaperFilters={selectedQuestionPaperFilters}
-                                handleSubmitFilters={handleSubmitFilters}
-                                handleResetFilters={handleResetFilters}
-                            />
-                        </div>
-                        {/* Search - full width on mobile */}
-                        <div className="w-full sm:max-w-xs sm:self-end">
-                            <ScheduleTestSearchComponent
-                                onSearch={handleSearch}
-                                searchText={searchText}
-                                setSearchText={setSearchText}
-                                clearSearch={clearSearch}
-                            />
                         </div>
                     </div>
                     {scheduleTestTabsData.map((tab, index) => (
@@ -656,11 +770,16 @@ export const ScheduleTestMainComponent = ({
                             handlePageChange={handlePageChange}
                             selectedTab={selectedTab}
                             handleRefetchData={handleRefetchData}
+                            sourceFilter={sourceFilter.map((option) => option.id)}
                         />
                     ))}
                 </Tabs>
             </div>
-            <NoCourseDialog type={'Creating assessment'} isOpen={isOpen} setIsOpen={setIsOpen} />
+            <NoCourseDialog
+                type={t('dialogs.noCourse.type')}
+                isOpen={isOpen}
+                setIsOpen={setIsOpen}
+            />
         </>
     );
 };

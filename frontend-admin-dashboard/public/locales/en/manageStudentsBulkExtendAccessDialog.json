@@ -1,0 +1,60 @@
+{
+    "dialogTitle": "Extend Course Access",
+    "unlimitedLabel": "Unlimited",
+    "modes": {
+        "extend": {
+            "label": "Extend by days",
+            "hint": "Each learner is extended from their own current expiry, so nobody loses time they already had. Already-expired learners are counted from today."
+        },
+        "setDate": {
+            "label": "Set the same expiry date for everyone",
+            "hint": "Every selected learner ends on this exact date, whatever they have now."
+        },
+        "unlimited": {
+            "label": "Give unlimited access",
+            "hint": "Removes the expiry entirely for every selected learner."
+        }
+    },
+    "config": {
+        "changePrompt_one": "Change course access for <strong>{{count}}</strong> selected learner.",
+        "changePrompt_other": "Change course access for <strong>{{count}}</strong> selected learners.",
+        "whatToChange": "What to change",
+        "daysToAdd": "Days to add",
+        "negativeHint": "Use a negative number to shorten access.",
+        "newExpiryDate": "New expiry date",
+        "applyToEveryCourse": "Apply to <strong>every course</strong> these learners are enrolled in",
+        "batchesHint_one": "Off by default — only the {{count}} batch shown in this list is changed.",
+        "batchesHint_other": "Off by default — only the {{count}} batches shown in this list are changed.",
+        "reasonLabel": "Reason (optional)",
+        "reasonPlaceholder": "e.g. Extending everyone after the schedule change",
+        "reasonHint": "Stored on every access-history row this change writes."
+    },
+    "resultList": {
+        "daysDelta_one": "({{sign}}{{count}} day)",
+        "daysDelta_other": "({{sign}}{{count}} days)"
+    },
+    "preview": {
+        "summaryLine_one": "{{count}} enrollment will change, {{skipped}} skipped, {{failed}} failed.",
+        "summaryLine_other": "{{count}} enrollments will change, {{skipped}} skipped, {{failed}} failed.",
+        "notSaved": "Nothing has been saved yet."
+    },
+    "results": {
+        "summaryLine_one": "{{count}} enrollment updated, {{skipped}} skipped, {{failed}} failed.",
+        "summaryLine_other": "{{count}} enrollments updated, {{skipped}} skipped, {{failed}} failed."
+    },
+    "footer": {
+        "checking": "Checking…",
+        "previewChanges": "Preview changes",
+        "back": "Back",
+        "applying": "Applying…",
+        "applyChanges": "Apply changes",
+        "done": "Done"
+    },
+    "toasts": {
+        "previewFailed": "Preview failed",
+        "accessChangeFailed": "Access change failed",
+        "accessUpdated_one": "Access updated for {{count}} enrollment",
+        "accessUpdated_other": "Access updated for {{count}} enrollments",
+        "noChanges": "No enrollments were changed."
+    }
+}

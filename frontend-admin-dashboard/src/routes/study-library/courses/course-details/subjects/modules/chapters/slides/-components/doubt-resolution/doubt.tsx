@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowSquareOut, Trash, Info } from '@phosphor-icons/react';
 import { useContentStore } from '../../-stores/chapter-sidebar-store';
 import { useMediaNavigationStore } from '../../-stores/media-navigation-store';
@@ -21,14 +22,15 @@ import { useInstituteAssignees } from '@/routes/dashboard/-hooks/useInstituteAss
 import { getInstituteId } from '@/constants/helper';
 
 const StatusIndicator = ({ status }: { status: 'RESOLVED' | 'ACTIVE' | 'DELETED' }) => {
+    const { t } = useTranslation('studyLibraryHandleAddReply');
     let color = 'bg-neutral-400';
-    let text = 'Unknown';
+    let text = t('doubt.status.unknown');
     if (status === 'RESOLVED') {
         color = 'bg-green-500';
-        text = 'Resolved';
+        text = t('doubt.status.resolved');
     } else if (status === 'ACTIVE') {
         color = 'bg-blue-500';
-        text = 'Unresolved';
+        text = t('doubt.status.unresolved');
     }
 
     return (
@@ -40,6 +42,7 @@ const StatusIndicator = ({ status }: { status: 'RESOLVED' | 'ACTIVE' | 'DELETED'
 };
 
 export const Doubt = ({ doubt, refetch }: { doubt: DoubtType; refetch: () => void }) => {
+    const { t } = useTranslation('studyLibraryHandleAddReply');
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const { activeItem } = useContentStore();
     const { navigateToTimestamp } = useMediaNavigationStore();
@@ -116,7 +119,7 @@ export const Doubt = ({ doubt, refetch }: { doubt: DoubtType; refetch: () => voi
                     </div>
                     <div>
                         <div className="text-sm font-semibold text-neutral-800">
-                            {userBasicDetails?.[0]?.name || 'Anonymous User'}
+                            {userBasicDetails?.[0]?.name || t('doubt.anonymousUser')}
                         </div>
                         <p className="text-xs text-neutral-500">
                             {formatISODateTimeReadable(doubt.raised_time)}
@@ -135,8 +138,14 @@ export const Doubt = ({ doubt, refetch }: { doubt: DoubtType; refetch: () => voi
                         >
                             <span>
                                 {activeItem?.source_type === 'VIDEO'
-                                    ? `Timestamp: ${formatTime(parseInt(doubt.content_position) / 1000)}`
-                                    : `Page: ${parseInt(doubt.content_position) + 1}`}
+                                    ? t('doubt.timestampLabel', {
+                                          time: formatTime(
+                                              parseInt(doubt.content_position) / 1000
+                                          ),
+                                      })
+                                    : t('doubt.pageLabel', {
+                                          page: parseInt(doubt.content_position) + 1,
+                                      })}
                             </span>
                             <ArrowSquareOut size={14} weight="bold" />
                         </div>

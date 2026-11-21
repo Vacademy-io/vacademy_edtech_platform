@@ -1,0 +1,23 @@
+{
+    "settingsPopover": {
+        "title": "إعدادات الأسئلة",
+        "questionTypeLabel": "نوع السؤال"
+    },
+    "questionHeader": {
+        "questionLabel": "سؤال"
+    },
+    "trueFalseOption": {
+        "markerFallback": "({{label}}.)",
+        "trueLabel": "صحيح",
+        "falseLabel": "خطأ"
+    },
+    "trueFalseOptions": {
+        "answerDefaultLabel": "الإجابة:"
+    },
+    "explanationSection": {
+        "defaultLabel": "الشرح:"
+    },
+    "emptyState": {
+        "message": "يرجى إضافة سؤال لعرض تفاصيل السؤال"
+    }
+}

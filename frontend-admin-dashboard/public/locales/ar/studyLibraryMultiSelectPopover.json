@@ -1,0 +1,15 @@
+{
+    "noOptions": "لا توجد خيارات",
+    "allLabel": "جميع {{label}}",
+    "selectedCount_zero": "لا شيء محدد ({{count}})",
+    "selectedCount_one": "عنصر واحد محدد",
+    "selectedCount_two": "عنصران محددان",
+    "selectedCount_few": "{{count}} عناصر محددة",
+    "selectedCount_many": "{{count}} عنصرًا محددًا",
+    "selectedCount_other": "{{count}} عنصر محدد",
+    "searchPlaceholder": "بحث في {{label}}…",
+    "allSelected": "الكل محدد",
+    "clear": "مسح",
+    "selectAll": "تحديد الكل",
+    "selectAllMatching": "تحديد كل النتائج"
+}

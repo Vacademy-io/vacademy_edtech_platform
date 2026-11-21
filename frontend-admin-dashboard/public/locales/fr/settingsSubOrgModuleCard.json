@@ -1,0 +1,54 @@
+{
+    "card": {
+        "description": "Contrôlez si {{roleLabel}} peut accéder aux {{term}} et, le cas échéant, quels {{many}} il peut voir. Les attributions faites ici s'ajoutent à tout {{one}} attribué directement à un membre de l'équipe."
+    },
+    "toggle": {
+        "title": "Activer les {{term}}",
+        "description": "Activez ceci pour donner à ce rôle l'accès au module {{term}} et à son entrée dans la barre latérale."
+    },
+    "assignment": {
+        "title": "{{term}} attribués",
+        "description": "Choisissez les partenaires que chaque titulaire de ce rôle peut voir. Laissez vide pour n'en accorder aucun.",
+        "emptyState": "Aucun {{many}} trouvé pour cet établissement pour le moment.",
+        "selectLabel": "{{many}}",
+        "searchPlaceholder": "Rechercher des {{many}}...",
+        "noneSelected": "Aucun {{many}} attribué pour le moment.",
+        "chipUnresolvedTitle": "Ce {{one}} (id : {{id}}) est introuvable — il a peut-être été supprimé.",
+        "unknownOne": "{{one}} inconnu",
+        "removeAriaLabel": "Retirer {{name}}",
+        "scopeNote": "Chaque requête portant sur les {{many}} — recherche, filtres, pagination et totaux — est limitée côté serveur à cette liste, ainsi qu'à tout {{one}} attribué directement à un membre de l'équipe."
+    },
+    "permissions": {
+        "title": "Autorisations",
+        "description": "Ajustez précisément ce que ce rôle peut faire avec les {{term}} qu'il peut voir.",
+        "screenOnlyTooltip": "Ceci masque uniquement l'action dans l'interface — le serveur ne l'applique pas séparément.",
+        "screenOnlyBadge": "Interface uniquement",
+        "items": {
+            "canCreate": {
+                "label": "Créer des {{many}}",
+                "hint": "Autoriser l'ajout d'un nouveau {{one}}."
+            },
+            "canEditConfig": {
+                "label": "Modifier la configuration du {{one}}",
+                "hint": "Autoriser la modification des paramètres d'un partenaire existant."
+            },
+            "canManageTeam": {
+                "label": "Gérer l'équipe",
+                "hint": "Autoriser l'ajout ou la suppression de membres de l'équipe d'un {{one}}."
+            },
+            "canViewFinance": {
+                "label": "Voir les finances",
+                "hint": "Autoriser la consultation des détails de paiement et de versement."
+            },
+            "canManageFinance": {
+                "label": "Gérer les finances",
+                "hint": "Autoriser l'enregistrement des paiements et versements."
+            },
+            "canExport": {
+                "label": "Exporter les données",
+                "hint": "Autoriser l'exportation des données d'un {{one}}."
+            }
+        }
+    },
+    "adminNote": "Les administrateurs voient toujours chaque {{one}} — l'accès de ce rôle ne peut pas être restreint en dessous de la visibilité complète."
+}

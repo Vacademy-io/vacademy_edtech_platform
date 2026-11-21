@@ -5,8 +5,10 @@ import { QuestionPaperData } from '@/types/community/filters/types';
 import { getTokenFromCookie, getTokenDecodedData } from '@/lib/auth/sessionUtility';
 import { TokenKey } from '@/constants/auth/tokens';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export function InternalSidebar({ id }: { id: string }) {
+    const { t } = useTranslation('communityInternalSidebar');
     const [data, setData] = useState<QuestionPaperData>();
     const fetch = async () => {
         const responseData = await getTageByQuestionPaperId(id);
@@ -22,8 +24,8 @@ export function InternalSidebar({ id }: { id: string }) {
         const INSTITUTE_ID = tokenData && Object.keys(tokenData.authorities)[0];
         let response;
         if (INSTITUTE_ID) response = await addPublicQuestionPaperToPrivate(INSTITUTE_ID, id);
-        if (response) toast.message('Question Paper added in your private collection');
-        else toast.error('Some error Occured');
+        if (response) toast.message(t('addedToPrivateCollection'));
+        else toast.error(t('errorOccurred'));
     };
     return (
         <div className="sticky top-[72px] flex max-h-[calc(100vh-72px)] w-[300px] flex-col justify-between border-r p-4">
@@ -45,9 +47,9 @@ export function InternalSidebar({ id }: { id: string }) {
                 </div>
             </div>
             <div className="flex flex-col gap-4">
-                <MyButton buttonType="secondary">Share</MyButton>
+                <MyButton buttonType="secondary">{t('share')}</MyButton>
                 <MyButton buttonType="primary" onClick={addToPrivateQuestionBank}>
-                    Add to Question Bank
+                    {t('addToQuestionBank')}
                 </MyButton>
             </div>
         </div>

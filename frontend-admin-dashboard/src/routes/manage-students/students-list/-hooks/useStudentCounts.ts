@@ -12,6 +12,8 @@ export interface StudentCounts {
     total: number;
     active: number;
     inactive: number;
+    /** Only when asked for (enhanced CRM pages): learners invited but not joined yet. */
+    invited?: number;
     isLoading: boolean;
 }
 
@@ -22,7 +24,8 @@ const fetchCount = (filters: StudentFilterRequest) =>
 export const useStudentCounts = (
     appliedFilters: StudentFilterRequest,
     enabled = true,
-    packageSessionIds?: string[] | null
+    packageSessionIds?: string[] | null,
+    withInvited = false
 ): StudentCounts => {
     // Strip the status filter so the badges always reflect the full breakdown.
     const baseFilters = useMemo(() => {
@@ -70,7 +73,17 @@ export const useStudentCounts = (
         ...queryOptions,
     });
 
+    const invitedQuery = useQuery({
+        // baseKey is baseFilters serialized, same as the three queries above.
+        // eslint-disable-next-line @tanstack/query/exhaustive-deps
+        queryKey: ['student-count', 'invited', baseKey],
+        queryFn: () => fetchCount({ ...baseFilters, statuses: ['INVITED'] }),
+        ...queryOptions,
+        enabled: enabled && withInvited,
+    });
+
     return {
+        invited: withInvited ? invitedQuery.data ?? 0 : undefined,
         total: totalQuery.data ?? 0,
         active: activeQuery.data ?? 0,
         inactive: inactiveQuery.data ?? 0,

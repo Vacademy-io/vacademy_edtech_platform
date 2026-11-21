@@ -55,6 +55,39 @@ class CopyCheckQuestionAnswerRepository:
         self.db.refresh(row)
         return row
 
+    def patch(
+        self,
+        assessment_id: str,
+        question_id: str,
+        fields: dict[str, Any],
+        commit: bool = True,
+    ) -> CopyCheckQuestionAnswer:
+        """PATCH semantics for the per-question override (spec 7.4.1): only
+        the keys present in `fields` ("model_answer", "step_rubric") change; a
+        key present with None clears that field. upsert() nulled step_rubric
+        whenever a caller sent just a model answer."""
+        existing = self.get(assessment_id, question_id)
+        now = datetime.utcnow()
+        if existing is None:
+            existing = CopyCheckQuestionAnswer(
+                id=str(uuid4()),
+                assessment_id=assessment_id,
+                question_id=question_id,
+                model_answer=None,
+                step_rubric_json=None,
+            )
+            self.db.add(existing)
+        if "model_answer" in fields:
+            existing.model_answer = fields["model_answer"]
+        if "step_rubric" in fields:
+            rubric = fields["step_rubric"]
+            existing.step_rubric_json = json.dumps(rubric) if rubric else None
+        existing.updated_at = now
+        if commit:
+            self.db.commit()
+            self.db.refresh(existing)
+        return existing
+
     def delete(self, assessment_id: str, question_id: str) -> bool:
         row = self.get(assessment_id, question_id)
         if not row:

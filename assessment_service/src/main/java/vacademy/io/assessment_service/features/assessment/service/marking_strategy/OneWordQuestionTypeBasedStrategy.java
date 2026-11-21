@@ -40,11 +40,14 @@ public class OneWordQuestionTypeBasedStrategy extends IQuestionTypeBasedStrategy
                 return 0.0;
             }
 
-            // Extracting correct option IDs
-            String correctAnswer = correctAnswerDto.getData().getAnswer().toLowerCase();
+            // Both sides are normalised the same way. Lower-casing alone left a
+            // trailing space marking a correct answer WRONG and then applying negative
+            // marking on top — a one-word box is exactly where stray whitespace comes
+            // from. Internal runs are collapsed so "carbon  dioxide" matches
+            // "carbon dioxide".
+            String correctAnswer = normalize(correctAnswerDto.getData().getAnswer());
 
-            // Extracting student response
-            String attemptedAnswer = responseDto.getResponseData().getAnswer().toLowerCase();
+            String attemptedAnswer = normalize(responseDto.getResponseData().getAnswer());
 
             // Extract marking scheme details safely
             OneWordMarkingDto.DataFields markingData = markingDto.getData();
@@ -78,6 +81,12 @@ public class OneWordQuestionTypeBasedStrategy extends IQuestionTypeBasedStrategy
         }
     }
 
+
+    /** Trim, collapse internal whitespace, lower-case. Null-safe. */
+    private static String normalize(String answer) {
+        if (answer == null) return "";
+        return answer.trim().replaceAll("\\s+", " ").toLowerCase();
+    }
 
     @Override
     public Object validateAndGetMarkingData(String markingJson) throws JsonProcessingException {

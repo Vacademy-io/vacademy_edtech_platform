@@ -22,6 +22,17 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- App Links: https://<DEEP_LINK_HOST>/... opens this app (host per flavor,
+                 from mobile-flavors.json). Verified against
+                 https://<host>/.well-known/assetlinks.json (public/.well-known/ of this repo);
+                 src/native/deepLinks.ts maps the URL path to the in-app route. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="${DEEP_LINK_HOST}" />
+            </intent-filter>
+
         </activity>
 
         <provider
@@ -38,4 +49,8 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Scanning answer copies with the in-app camera (Evalezy) and photo uploads.
+         The WebView asks for it at runtime the first time a page opens the camera. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 </manifest>

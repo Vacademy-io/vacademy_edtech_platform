@@ -1,6 +1,7 @@
 import { Sidebar, SidebarContent, SidebarHeader, useSidebar } from '@/components/ui/sidebar';
 import { X } from '@phosphor-icons/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useContentStore } from '../../-stores/chapter-sidebar-store';
 import { DoubtFilter } from '../../-types/get-doubts-type';
@@ -17,6 +18,7 @@ const TabsTriggerClass =
     'flex-1 rounded-md px-3 py-1.5 text-sm font-medium text-neutral-600 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-primary-50 data-[state=active]:text-primary-600 data-[state=active]:shadow-sm';
 
 const DoubtResolutionSidebar = () => {
+    const { t } = useTranslation('studyLibraryDoubtResolutionSidebar');
     const { open, setOpen } = useSidebar();
     const { activeItem } = useContentStore();
     const observer = useRef<IntersectionObserver | null>(null);
@@ -174,7 +176,7 @@ const DoubtResolutionSidebar = () => {
     );
 
     if (isLoading && !data) return <DashboardLoader />;
-    if (isError) return <p>Error fetching doubts</p>;
+    if (isError) return <p>{t('errorFetchingDoubts')}</p>;
 
     return (
         <Sidebar
@@ -186,7 +188,7 @@ const DoubtResolutionSidebar = () => {
         >
             <SidebarHeader className="flex w-full items-center justify-between border-b border-neutral-200 p-4">
                 <div className="flex w-full items-center justify-between">
-                    <h1 className="text-lg font-semibold text-neutral-800">Doubt Resolution</h1>
+                    <h1 className="text-lg font-semibold text-neutral-800">{t('doubtResolution')}</h1>
                     <X
                         size={20}
                         className="cursor-pointer text-neutral-500 hover:text-neutral-700"
@@ -198,13 +200,13 @@ const DoubtResolutionSidebar = () => {
                 <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                     <TabsList className="grid w-full grid-cols-3 gap-2 rounded-lg bg-neutral-100 p-1">
                         <TabsTrigger value="ALL" className={TabsTriggerClass}>
-                            All
+                            {t('tabs.all')}
                         </TabsTrigger>
                         <TabsTrigger value="RESOLVED" className={TabsTriggerClass}>
-                            Resolved
+                            {t('tabs.resolved')}
                         </TabsTrigger>
                         <TabsTrigger value="UNRESOLVED" className={TabsTriggerClass}>
-                            Unresolved
+                            {t('tabs.unresolved')}
                         </TabsTrigger>
                     </TabsList>
                     <TabsContent

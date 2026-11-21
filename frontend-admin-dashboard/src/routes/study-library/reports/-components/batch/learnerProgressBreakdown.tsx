@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CaretDown, CaretRight, Stack, VideoCamera, FileText } from '@phosphor-icons/react';
 
 import { MyDropdown } from '@/components/design-system/dropdown';
@@ -48,6 +49,7 @@ export const LearnerProgressBreakdown = ({
     subjects,
     isLoading,
 }: LearnerProgressBreakdownProps) => {
+    const { t } = useTranslation('studyLibraryLearnerProgressBreakdown');
     const subjectTerm = getTerminology(ContentTerms.Subject, SystemTerms.Subject);
     const moduleTerm = getTerminology(ContentTerms.Module, SystemTerms.Module);
 
@@ -74,8 +76,8 @@ export const LearnerProgressBreakdown = ({
             <div className="p-4">
                 <ProfileEmpty
                     icon={Stack}
-                    title="No course content yet"
-                    hint={`No ${subjectTerm.toLowerCase()} has been created for this batch.`}
+                    title={t('emptyTitle')}
+                    hint={t('emptyHint', { term: subjectTerm.toLowerCase() })}
                 />
             </div>
         );
@@ -92,7 +94,7 @@ export const LearnerProgressBreakdown = ({
         <div className="space-y-3 bg-neutral-50 p-4">
             {/* Subject strip — every subject with its rolled-up %, so the admin sees
                 where the learner stands before drilling into one. */}
-            <ProfileSectionCard icon={Stack} heading={`${subjectTerm} progress`}>
+            <ProfileSectionCard icon={Stack} heading={t('subjectProgressHeading', { term: subjectTerm })}>
                 <div className="flex flex-wrap gap-2">
                     {subjects.map((subject) => {
                         const pct = subjectPercentage(subject);
@@ -116,8 +118,10 @@ export const LearnerProgressBreakdown = ({
                                 </span>
                                 <ProfileMiniBar value={pct} />
                                 <span className="text-2xs text-neutral-500">
-                                    {(subject.modules ?? []).length} {moduleTerm.toLowerCase()}
-                                    {(subject.modules ?? []).length === 1 ? '' : 's'}
+                                    {t('moduleCount', {
+                                        count: (subject.modules ?? []).length,
+                                        term: moduleTerm.toLowerCase(),
+                                    })}
                                 </span>
                             </button>
                         );
@@ -129,13 +133,15 @@ export const LearnerProgressBreakdown = ({
                 side-view Progress panel one-for-one. */}
             <ProfileSectionCard
                 icon={Stack}
-                heading={`${moduleTerm} & chapter breakdown`}
+                heading={t('moduleChapterBreakdownHeading', { term: moduleTerm })}
                 action={
                     subjects.length > 1 ? (
                         <MyDropdown
                             currentValue={currentSubject?.subject_dto.subject_name ?? ''}
                             dropdownList={subjects.map((s) => s.subject_dto.subject_name)}
-                            placeholder={`Select ${subjectTerm.toLowerCase()}`}
+                            placeholder={t('selectSubjectPlaceholder', {
+                                term: subjectTerm.toLowerCase(),
+                            })}
                             handleChange={handleSubjectChange}
                         />
                     ) : null
@@ -143,7 +149,10 @@ export const LearnerProgressBreakdown = ({
             >
                 {currentSubject == null || currentSubject.modules.length === 0 ? (
                     <p className="px-1 py-2 text-caption italic text-muted-foreground">
-                        No {moduleTerm.toLowerCase()}s for this {subjectTerm.toLowerCase()}.
+                        {t('noModulesForSubject', {
+                            moduleTerm: moduleTerm.toLowerCase(),
+                            subjectTerm: subjectTerm.toLowerCase(),
+                        })}
                     </p>
                 ) : (
                     <div className="flex flex-col gap-2.5">
@@ -175,7 +184,10 @@ export const LearnerProgressBreakdown = ({
                                             )}
                                         </span>
                                         <span className="min-w-0 flex-1 truncate text-body font-semibold text-card-foreground">
-                                            {moduleTerm}: {mod.module.module_name}
+                                            {t('moduleLabel', {
+                                                term: moduleTerm,
+                                                name: mod.module.module_name,
+                                            })}
                                         </span>
                                         <div className="w-24 shrink-0">
                                             <ProfileMiniBar value={modPct} label="" />
@@ -189,7 +201,9 @@ export const LearnerProgressBreakdown = ({
                                         <div className="flex flex-col bg-card px-4 pb-3 pt-1.5">
                                             {mod.chapters.length === 0 ? (
                                                 <p className="py-2 text-caption italic text-muted-foreground">
-                                                    No chapters in this {moduleTerm.toLowerCase()}.
+                                                    {t('noChaptersInModule', {
+                                                        term: moduleTerm.toLowerCase(),
+                                                    })}
                                                 </p>
                                             ) : (
                                                 mod.chapters.map((chapter, idx) => {
@@ -229,7 +243,7 @@ export const LearnerProgressBreakdown = ({
                                                                 <StatusChip
                                                                     status="SUCCESS"
                                                                     textSize="text-caption"
-                                                                    text="Done"
+                                                                    text={t('done')}
                                                                 />
                                                             )}
                                                             <InlineProgress

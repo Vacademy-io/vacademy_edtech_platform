@@ -9,6 +9,7 @@ import {
   Clock,
 } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   getCurrentDomainInfo,
   getCachedInstituteBranding,
@@ -31,6 +32,7 @@ const SUPPORT_EMAIL = "support@vacademy.io";
  * permission-gated and bounces anonymous visitors to /dashboard.
  */
 function AccountDeletion() {
+  const { t } = useTranslation("miscRoutesB");
   const [appName, setAppName] = useState<string>("");
 
   // The learner app is multi-tenant, and Google Play requires this page to name
@@ -74,62 +76,64 @@ function AccountDeletion() {
   // Name the app in the tab title too — reviewers screenshot this.
   useEffect(() => {
     document.title = appName
-      ? `Delete your ${appName} account`
-      : "Delete your account";
-  }, [appName]);
+      ? t("accountDeletion.pageTitleWithApp", { appName })
+      : t("accountDeletion.pageTitle");
+  }, [appName, t]);
 
   const subject = encodeURIComponent("Account deletion request");
 
   const sections = [
     {
       id: "how-to-request",
-      title: "How to request deletion",
+      title: t("accountDeletion.sections.howToRequest.title"),
       icon: ListChecks,
       content: [
         {
-          subtitle: "From inside the app",
-          text: "Sign in, open the profile menu in the top navigation bar, and choose Delete Account. Confirm when prompted. Your account is closed immediately and you are signed out on every device.",
+          subtitle: t("accountDeletion.sections.howToRequest.fromApp.subtitle"),
+          text: t("accountDeletion.sections.howToRequest.fromApp.text"),
         },
         {
-          subtitle: "By email, if you cannot sign in",
-          text: `Email ${SUPPORT_EMAIL} from the email address registered on your account, with the subject "Account deletion request". Tell us the name of your institute so we can locate your record. We acknowledge every request within 7 days.`,
+          subtitle: t("accountDeletion.sections.howToRequest.byEmail.subtitle"),
+          text: t("accountDeletion.sections.howToRequest.byEmail.text", {
+            email: SUPPORT_EMAIL,
+          }),
         },
       ],
     },
     {
       id: "data-deleted",
-      title: "Data that is deleted",
+      title: t("accountDeletion.sections.dataDeleted.title"),
       icon: Database,
       content: [
         {
-          subtitle: "Deleted within 30 days of your request",
-          text: "Your profile information (name, email address, phone number and profile photo), the doubts and messages you posted, your enrolment records, your learning progress, and your assessment attempts and scores.",
+          subtitle: t("accountDeletion.sections.dataDeleted.within30Days.subtitle"),
+          text: t("accountDeletion.sections.dataDeleted.within30Days.text"),
         },
       ],
     },
     {
       id: "data-kept",
-      title: "Data that is kept, and for how long",
+      title: t("accountDeletion.sections.dataKept.title"),
       icon: Archive,
       content: [
         {
-          subtitle: "Payment and invoice records",
-          text: "Where you have made a payment, we are required to retain the invoice and transaction record under Indian tax and accounting law. These are kept for 8 years from the end of the relevant financial year and are not deleted on request.",
+          subtitle: t("accountDeletion.sections.dataKept.paymentRecords.subtitle"),
+          text: t("accountDeletion.sections.dataKept.paymentRecords.text"),
         },
         {
-          subtitle: "Anonymised usage statistics",
-          text: "Aggregate statistics that can no longer be linked back to you (for example, how many learners completed a course) are retained. These contain no personal information.",
+          subtitle: t("accountDeletion.sections.dataKept.anonymisedStats.subtitle"),
+          text: t("accountDeletion.sections.dataKept.anonymisedStats.text"),
         },
       ],
     },
     {
       id: "timeline",
-      title: "Timeline",
+      title: t("accountDeletion.sections.timeline.title"),
       icon: Clock,
       content: [
         {
-          subtitle: "What happens when",
-          text: "Access ends immediately once the request is made. Personal data is erased within 30 days. Records we are legally required to keep are retained for the periods described above and for no longer than necessary.",
+          subtitle: t("accountDeletion.sections.timeline.whatHappens.subtitle"),
+          text: t("accountDeletion.sections.timeline.whatHappens.text"),
         },
       ],
     },
@@ -142,18 +146,20 @@ function AccountDeletion() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
+          className="text-center mb-8 space-y-4"
         >
-          <div className="w-16 h-16 bg-gray-900 rounded-xl mx-auto flex items-center justify-center mb-4">
+          <div className="w-16 h-16 bg-gray-900 rounded-xl mx-auto flex items-center justify-center">
             <Trash className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-            {appName ? `Delete your ${appName} account` : "Delete your account"}
+          <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">
+            {appName
+              ? t("accountDeletion.pageTitleWithApp", { appName })
+              : t("accountDeletion.pageTitle")}
           </h1>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">
             {appName
-              ? `This page explains how to request deletion of your ${appName} account and the data associated with it.`
-              : "This page explains how to request deletion of your account and the data associated with it."}
+              ? t("accountDeletion.pageDescriptionWithApp", { appName })
+              : t("accountDeletion.pageDescription")}
           </p>
         </motion.div>
 
@@ -165,9 +171,9 @@ function AccountDeletion() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 + index * 0.1 }}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 lg:p-8"
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 lg:p-8 space-y-section"
             >
-              <div className="flex items-center space-x-3 mb-6">
+              <div className="flex items-center gap-x-3">
                 <div className="w-10 h-10 bg-gray-900 rounded-lg flex items-center justify-center">
                   <section.icon className="w-5 h-5 text-white" />
                 </div>
@@ -178,8 +184,8 @@ function AccountDeletion() {
 
               <div className="space-y-4">
                 {section.content.map((item) => (
-                  <div key={item.subtitle}>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                  <div className="space-y-2" key={item.subtitle}>
+                    <h3 className="text-lg font-semibold text-gray-800">
                       {item.subtitle}
                     </h3>
                     <p className="text-gray-700 leading-relaxed">{item.text}</p>
@@ -195,16 +201,18 @@ function AccountDeletion() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 lg:p-8 mt-6"
+          className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 lg:p-8 mt-6 space-y-4"
         >
-          <div className="flex items-center space-x-3 mb-4">
+          <div className="flex items-center gap-x-3">
             <div className="w-10 h-10 bg-gray-900 rounded-lg flex items-center justify-center">
               <Envelope className="w-5 h-5 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900">Contact</h2>
+            <h2 className="text-xl font-bold text-gray-900">
+              {t("accountDeletion.contact.title")}
+            </h2>
           </div>
           <p className="text-gray-700 leading-relaxed">
-            Deletion requests and questions about them are handled by{" "}
+            {t("accountDeletion.contact.text")}{" "}
             <a
               href={`mailto:${SUPPORT_EMAIL}?subject=${subject}`}
               className="font-medium text-gray-900 underline underline-offset-2"

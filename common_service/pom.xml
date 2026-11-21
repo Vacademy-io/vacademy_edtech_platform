@@ -72,6 +72,11 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-aop</artifactId>
     </dependency>
+    <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter</artifactId>
+        <scope>test</scope>
+    </dependency>
     </dependencies>
     <artifactId>common_service</artifactId>
 
@@ -84,7 +89,7 @@
         <repository>
             <id>github</id>
             <name>GitHub OWNER Apache Maven Packages</name>
-            <url>https://maven.pkg.github.com/Vacademy-io/vacademy_platform</url>
+            <url>https://maven.pkg.github.com/Vacademy-io/vacademy_edtech_platform</url>
         </repository>
     </distributionManagement>
 

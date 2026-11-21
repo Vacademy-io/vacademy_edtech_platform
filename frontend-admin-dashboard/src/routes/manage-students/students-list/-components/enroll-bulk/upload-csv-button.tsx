@@ -10,6 +10,7 @@ import { MyButton } from '@/components/design-system/button';
 import ImportFileImage from '@/assets/svgs/import-file.svg';
 import { useBulkUploadInit } from '@/routes/manage-students/students-list/-hooks/enroll-student-bulk/useBulkUploadInit';
 import { useState, useCallback, Dispatch, SetStateAction, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDropzone } from 'react-dropzone';
 import { validateCsvData, createAndDownloadCsv } from './utils/csv-utils';
 import { useBulkUploadStore } from '@/routes/manage-students/students-list/-stores/enroll-students-bulk/useBulkUploadStore';
@@ -58,6 +59,8 @@ export const UploadCSVButton = ({
     csvFormatDetails,
     setOpenDialog,
 }: UploadCSVButtonProps) => {
+    const { t } = useTranslation('manageStudentsUploadCsvButton');
+    const { t: tCsvUtils } = useTranslation('manageStudentsCsvUtils');
     const [isOpen, setIsOpen] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
     const [fileState, setFileState] = useState<FileState>({ file: null });
@@ -132,18 +135,18 @@ export const UploadCSVButton = ({
     const onDrop = useCallback(
         async (acceptedFiles: File[], rejectedFiles: unknown[]) => {
             if (rejectedFiles.length > 0) {
-                setFileState({ file: null, error: 'Please upload only CSV files' });
+                setFileState({ file: null, error: t('errors.csvOnly') });
                 return;
             }
 
             const file = acceptedFiles[0];
             if (file?.type !== 'text/csv' && !file?.name.endsWith('.csv')) {
-                setFileState({ file: null, error: 'Please upload only CSV files' });
+                setFileState({ file: null, error: t('errors.csvOnly') });
                 return;
             }
 
             if (!data?.headers) {
-                setFileState({ file: null, error: 'Headers configuration not available' });
+                setFileState({ file: null, error: t('errors.headersUnavailable') });
                 return;
             }
 
@@ -153,7 +156,7 @@ export const UploadCSVButton = ({
 
             try {
                 // Pass headers to the validation function
-                const result = await validateCsvData(file, data.headers);
+                const result = await validateCsvData(file, data.headers, tCsvUtils);
 
                 // Filter out completely empty rows
                 const nonEmptyRows = result.data.filter((row) => {
@@ -167,21 +170,21 @@ export const UploadCSVButton = ({
 
                 // Show error summary if any errors exist
                 if (result.errors.length > 0) {
-                    toast.error('Please fix validation errors before uploading!', {
+                    toast.error(t('errors.fixValidationErrors'), {
                         className: 'error-toast',
                         duration: 3000,
                     });
                 }
             } catch (err) {
-                const error = err instanceof Error ? err.message : 'Error parsing CSV';
+                const error = err instanceof Error ? err.message : t('errors.parseCsv');
                 setFileState({ file: null, error });
-                toast.error('Error parsing CSV', {
+                toast.error(t('errors.parseCsv'), {
                     className: 'error-toast',
                     duration: 3000,
                 });
             }
         },
-        [data?.headers, setCsvData, setCsvErrors]
+        [data?.headers, setCsvData, setCsvErrors, t]
     );
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -231,7 +234,7 @@ export const UploadCSVButton = ({
     const handleDoneClick = async () => {
         // Check if there are validation errors before proceeding with upload
         if (csvErrors && csvErrors.length > 0) {
-            toast.error('Please fix the errors', {
+            toast.error(t('errors.fixErrors'), {
                 className: 'error-toast',
                 duration: 3000,
             });
@@ -270,10 +273,13 @@ export const UploadCSVButton = ({
 
             // Show success message with upload stats
             const stats = getUploadStats(parsedResponse);
-            toast.success(`Upload completed! ${stats.success} successful, ${stats.failed} failed`, {
-                className: 'success-toast',
-                duration: 3000,
-            });
+            toast.success(
+                t('toast.uploadCompleted', { success: stats.success, failed: stats.failed }),
+                {
+                    className: 'success-toast',
+                    duration: 3000,
+                }
+            );
 
             // Invalidate queries to refresh data
             queryClient.invalidateQueries({ queryKey: ['students'] });
@@ -284,7 +290,7 @@ export const UploadCSVButton = ({
             setShowPreview(true);
         } catch (error) {
             console.error('Upload failed:', error);
-            toast.error('Failed to upload CSV', {
+            toast.error(t('errors.uploadFailed'), {
                 className: 'error-toast',
                 duration: 3000,
             });
@@ -324,11 +330,11 @@ export const UploadCSVButton = ({
                         disabled={disable || false}
                         type="submit"
                     >
-                        Upload CSV
+                        {t('button.uploadCsv')}
                     </MyButton>
                 </DialogTrigger>
 
-                <DialogContent className="overflow-y-scrolly max-h-[80vh] w-[800px] max-w-[800px] p-0 font-normal">
+                <DialogContent className="overflow-y-scrolly max-h-dialog-tall w-dialog-lg p-0 font-normal">
                     {isUploading ? (
                         <div className="flex items-center justify-center">
                             <DashboardLoader />
@@ -336,12 +342,12 @@ export const UploadCSVButton = ({
                     ) : (
                         <DialogHeader>
                             <div className="bg-primary-50 px-6 py-4 text-h3 font-semibold text-primary-500">
-                                Upload CSV
+                                {t('dialog.title')}
                             </div>
                             <DialogDescription className="flex flex-col items-center justify-center gap-6 p-6 text-neutral-600">
                                 <div
                                     {...getRootProps()}
-                                    className={`h-[270px] w-[720px] cursor-pointer rounded-lg border-[1.5px] border-dashed border-primary-500 p-6 ${isDragActive ? 'bg-primary-50' : 'bg-white'
+                                    className={`h-64 w-full cursor-pointer rounded-lg border-2 border-dashed border-primary-500 p-6 ${isDragActive ? 'bg-primary-50' : 'bg-white'
                                         } transition-colors duration-200 ease-in-out`}
                                 >
                                     <input {...getInputProps()} />
@@ -349,8 +355,7 @@ export const UploadCSVButton = ({
                                         <ImportFileImage />
                                         {!fileState.file && (
                                             <p className="text-center text-neutral-600">
-                                                Drag and drop a CSV file here, or click to select
-                                                one
+                                                {t('dropzone.instructions')}
                                             </p>
                                         )}
                                         {fileState.file && (
@@ -359,7 +364,11 @@ export const UploadCSVButton = ({
                                                     {fileState.file.name}
                                                 </p>
                                                 <p className="text-sm text-neutral-500">
-                                                    {(fileState.file.size / 1024).toFixed(2)} KB
+                                                    {t('dropzone.fileSizeKb', {
+                                                        size: (fileState.file.size / 1024).toFixed(
+                                                            2
+                                                        ),
+                                                    })}
                                                 </p>
                                             </div>
                                         )}
@@ -378,13 +387,13 @@ export const UploadCSVButton = ({
                                         ))}
                                     </div>
                                     <MyButton
-                                        className="cursor-pointer text-[18px] font-semibold text-primary-500"
+                                        className="cursor-pointer text-title font-semibold text-primary-500"
                                         buttonType="text"
                                         layoutVariant="default"
                                         scale="medium"
                                         onClick={handleDownloadTemplate}
                                     >
-                                        Download Template
+                                        {t('button.downloadTemplate')}
                                     </MyButton>
                                 </div>
                             </DialogDescription>
@@ -398,7 +407,9 @@ export const UploadCSVButton = ({
                                         onClick={() => setShowPreview(true)}
                                         disabled={!fileState.file || !data?.headers}
                                     >
-                                        {uploadCompleted ? 'Show Uploaded File' : 'Preview'}
+                                        {uploadCompleted
+                                            ? t('button.showUploadedFile')
+                                            : t('button.preview')}
                                     </MyButton>
                                     <MyButton
                                         buttonType="primary"
@@ -408,7 +419,7 @@ export const UploadCSVButton = ({
                                         onClick={handleDoneClick}
                                         disabled={!fileState.file}
                                     >
-                                        Upload
+                                        {t('button.upload')}
                                     </MyButton>
                                 </div>
                             </DialogFooter>
@@ -438,8 +449,8 @@ export const UploadCSVButton = ({
             <MyDialog
                 open={showNotificationDialog}
                 onOpenChange={setShowNotificationDialog}
-                heading="Notification Preference"
-                dialogWidth="w-[600px]"
+                heading={t('notification.heading')}
+                dialogWidth="w-dialog-md"
                 footer={
                     <div className="flex justify-end gap-4">
                         <MyButton
@@ -448,7 +459,7 @@ export const UploadCSVButton = ({
                             layoutVariant="default"
                             onClick={() => handleNotificationConfirm(false)}
                         >
-                            Don&apos;t Notify
+                            {t('notification.dontNotify')}
                         </MyButton>
                         <MyButton
                             buttonType="primary"
@@ -456,16 +467,22 @@ export const UploadCSVButton = ({
                             layoutVariant="default"
                             onClick={() => handleNotificationConfirm(true)}
                         >
-                            Notify {getTerminologyPlural(RoleTerms.Learner, SystemTerms.Learner)}
+                            {t('notification.notify', {
+                                term: getTerminologyPlural(RoleTerms.Learner, SystemTerms.Learner),
+                            })}
                         </MyButton>
                     </div>
                 }
             >
                 <div className="p-4">
                     <p className="text-neutral-600">
-                        Would you like to send notification emails to the{' '}
-                        {getTerminology(RoleTerms.Learner, SystemTerms.Learner).toLocaleLowerCase()}
-                        s about their enrollment?
+                        {t('notification.description', {
+                            term:
+                                getTerminology(
+                                    RoleTerms.Learner,
+                                    SystemTerms.Learner
+                                ).toLocaleLowerCase() + 's',
+                        })}
                     </p>
                 </div>
             </MyDialog>

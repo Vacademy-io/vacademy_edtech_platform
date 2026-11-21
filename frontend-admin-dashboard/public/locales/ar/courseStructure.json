@@ -1,0 +1,74 @@
+{
+    "chapterHeader": {
+        "updating": "جارٍ التحديث...",
+        "saveChanges": "حفظ التغييرات"
+    },
+    "thumbnailAlt": "صورة مصغّرة",
+    "importContent": {
+        "noBatchSelected": "لم يتم تحديد دفعة — اختر جلسة/مستوى أولاً.",
+        "sameBatch": "الدفعة المصدر والدفعة الهدف متطابقتان — اختر دفعة مختلفة.",
+        "targetHasContent": "تحتوي هذه الدفعة بالفعل على محتوى خاص بها. ربطها سيؤدي إلى مزج المحتوى المرتبط بالمحتوى الحالي. اختر \"إنشاء نسخة منفصلة\" بدلاً من ذلك.",
+        "summary": "{{subjects}} مادة، {{modules}} وحدة، {{chapters}} فصل، {{slides}} شريحة",
+        "modeLinked": "مرتبط بالمصدر",
+        "modeCopied": "تم نسخه",
+        "warningSuffix": "{{summary}}. {{count}} تحذير(ات) بشأن شرط النشر التدريجي.",
+        "successMessage": "المحتوى {{mode}} ({{summary}}).",
+        "failed": "فشل استيراد المحتوى إلى هذه الدفعة.",
+        "importing": "جارٍ الاستيراد…",
+        "importButton": "استيراد محتوى"
+    },
+    "dripConditions": {
+        "saveFailed": "فشل حفظ شروط النشر التدريجي. يرجى المحاولة مرة أخرى.",
+        "reorderSubjectsFailed": "فشل إعادة ترتيب المواد. تم التراجع عن التغييرات.",
+        "reorderModulesFailed": "فشل إعادة ترتيب الوحدات. تم التراجع عن التغييرات.",
+        "reorderChaptersFailed": "فشل إعادة ترتيب الفصول. تم التراجع عن التغييرات."
+    },
+    "untitledSlide": "شريحة بلا عنوان",
+    "courseStructureHeading": "هيكل الدورة",
+    "scheduleUnlock": "جدولة فتح القفل",
+    "collapseAll": "طي الكل",
+    "expandAll": "توسيع الكل",
+    "actions": {
+        "edit": "تعديل",
+        "delete": "حذف",
+        "unlockRule": "قاعدة فتح القفل",
+        "offlineAvailability": "التوفر دون اتصال"
+    },
+    "add": "إضافة",
+    "noSlidesInChapter": "لا توجد {{term}} في هذا الفصل.",
+    "manageTeachers": "إدارة {{teacher}}",
+    "viewAndManageTeachers": "عرض وإدارة {{teacher}} المعيّنين لهذه الدفعة.",
+    "selectBatchFor": {
+        "liveSessions": "اختر دفعة لعرض جلساتها المباشرة.",
+        "reports": "اختر دفعة لعرض تقاريرها.",
+        "offlineDownloads": "اختر دفعة لعرض تنزيلاتها دون اتصال.",
+        "discussion": "اختر دفعة لعرض نقاشها."
+    },
+    "contentStructureHeading": "هيكل المحتوى",
+    "navigateFolders": "تصفّح محتوى دورتك باستخدام المجلدات",
+    "numbering": {
+        "subject": "المادة {{number}}",
+        "module": "الوحدة {{number}}",
+        "chapter": "الفصل {{number}}",
+        "slide": "الشريحة {{number}}"
+    },
+    "restriction": {
+        "banner": "التعديل مقيّد: هذه الدورة {{status}}.",
+        "statusPublished": "منشورة",
+        "statusUnderReview": "قيد المراجعة",
+        "statusRestricted": "مقيّدة",
+        "publishedHint": "انتقل إلى دوراتي لإنشاء نسخة قابلة للتعديل.",
+        "reviewHint": "لا يمكنك تعديل المحتوى أثناء وجوده قيد المراجعة.",
+        "restrictedHint": "لا يمكنك تعديل هذا المحتوى."
+    },
+    "updatingStructure": "جارٍ تحديث هيكل الدورة...",
+    "editSubjectHeading": "تعديل المادة",
+    "editModuleHeading": "تعديل الوحدة",
+    "editChapterHeading": "تعديل الفصل",
+    "confirmDeletion": {
+        "title": "تأكيد الحذف",
+        "body": "هل أنت متأكد أنك تريد حذف \"{{name}}\"؟ لا يمكن التراجع عن هذا الإجراء.",
+        "cancel": "إلغاء"
+    },
+    "defaultNodeName": "هذا المحتوى"
+}

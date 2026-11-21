@@ -1,0 +1,9 @@
+{
+    "title": "Notification Hub",
+    "subtitle": "Stats, recent learner activity and inbox conversations",
+    "tabs": {
+        "overview": "Overview",
+        "whatsapp": "WhatsApp Inbox",
+        "email": "Email Inbox"
+    }
+}

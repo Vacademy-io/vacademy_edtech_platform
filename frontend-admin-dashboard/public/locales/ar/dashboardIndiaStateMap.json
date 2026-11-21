@@ -1,0 +1,16 @@
+{
+    "legend": {
+        "title": "التوزيع في الهند",
+        "hoverPrompt": "مرّر المؤشر فوق ولاية"
+    },
+    "actions": {
+        "enlargeMap": "تكبير الخريطة"
+    },
+    "map": {
+        "ariaLabel": "{{subOrgPlural}} حسب الولاية الهندية",
+        "tooltip": "{{name}}: {{count}}"
+    },
+    "dialog": {
+        "heading": "{{subOrgPlural}} حسب الولاية"
+    }
+}

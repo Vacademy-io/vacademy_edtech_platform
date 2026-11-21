@@ -1,0 +1,39 @@
+{
+    "emptyState": {
+        "title": "No {{term}} Associated",
+        "hint": "This learner is not linked to any {{term}}."
+    },
+    "picker": {
+        "label": "{{term}} for"
+    },
+    "error": {
+        "title": "Couldn't load {{term}} details",
+        "hint": "Something went wrong while fetching this {{term}}. Please try again.",
+        "toast": "Failed to fetch {{term}} details"
+    },
+    "role": {
+        "admin": "Admin",
+        "member": "Member"
+    },
+    "actions": {
+        "openManagementPortal": "Open Management Portal"
+    },
+    "credentials": {
+        "heading": "Admin Credentials",
+        "usernameLabel": "Username",
+        "passwordLabel": "Password",
+        "usernameCopied": "Username copied!",
+        "passwordCopied": "Password copied!"
+    },
+    "members": {
+        "heading_one": "Managed Member ({{count}})",
+        "heading_other": "Managed Members ({{count}})",
+        "emptyTitle": "No members found",
+        "emptyHint": "No learners are currently managed under this {{term}}."
+    },
+    "admins": {
+        "heading": "{{term}} Admins",
+        "emptyTitle": "No admins found",
+        "emptyHint": "No administrators are linked to this {{term}}."
+    }
+}

@@ -1,0 +1,85 @@
+{
+    "changeStudent": "छात्र बदलें",
+    "refresh": "रीफ्रेश करें",
+    "downloadReceiptTooltip": "रसीद डाउनलोड करें",
+    "filters": {
+        "all": "सभी",
+        "overdue": "अतिदेय",
+        "due": "देय",
+        "partial": "आंशिक",
+        "paid": "भुगतान किया गया",
+        "from": "से:",
+        "to": "तक:",
+        "clear": "साफ़ करें"
+    },
+    "emptyState": {
+        "noDues": "कोई देय राशि नहीं मिली।",
+        "noPendingInstallments": "इस छात्र की कोई लंबित किश्त नहीं है।"
+    },
+    "summaryCards": {
+        "totalFee": "कुल फीस",
+        "paid": "भुगतान किया गया",
+        "due": "देय"
+    },
+    "selectAllBanner": {
+        "allSelectedOnPage_one": "इस पृष्ठ पर चयन योग्य {{count}} पंक्ति चुनी गई।",
+        "allSelectedOnPage_other": "इस पृष्ठ पर सभी {{count}} चयन योग्य पंक्तियां चुनी गईं।",
+        "selecting": "चुना जा रहा है…",
+        "selectAllFiltered_one": "फ़िल्टर की गई {{count}} पंक्ति चुनें",
+        "selectAllFiltered_other": "फ़िल्टर की गई सभी {{count}} पंक्तियां चुनें"
+    },
+    "resultsRange": {
+        "showing": "दिखाया जा रहा है",
+        "of": "में से"
+    },
+    "table": {
+        "feeType": "फीस प्रकार",
+        "cpoPlan": "सीपीओ / योजना",
+        "expected": "अपेक्षित",
+        "adjustment": "समायोजन",
+        "paid": "भुगतान किया गया",
+        "due": "देय",
+        "dueOverdue": "देय / अतिदेय",
+        "dueDate": "देय तिथि",
+        "status": "स्थिति",
+        "noResults": "चयनित फ़िल्टर से कोई किश्त मेल नहीं खाती।"
+    },
+    "adjustment": {
+        "pending": "लंबित",
+        "adjustTooltip": "समायोजित करें"
+    },
+    "status": {
+        "overdue": "अतिदेय",
+        "due": "देय",
+        "daysOverdue_one": "({{count}}द)",
+        "daysOverdue_other": "({{count}}द)"
+    },
+    "pagination": {
+        "prev": "पिछला",
+        "next": "अगला",
+        "page": "पृष्ठ",
+        "of": "में से"
+    },
+    "bottomBar": {
+        "installmentsSelected_one": "किश्त चुनी गई",
+        "installmentsSelected_other": "किश्तें चुनी गईं",
+        "totalDue": "कुल देय:",
+        "generateInvoice": "इनवॉइस जनरेट करें",
+        "proceedToPay": "भुगतान के लिए आगे बढ़ें"
+    },
+    "errors": {
+        "unableToLoad": "किश्तें लोड नहीं हो सकीं",
+        "tryAgain": "कृपया पुनः प्रयास करें।"
+    },
+    "toast": {
+        "selectedInstallments_one": "{{count}} किश्त चुनी गई",
+        "selectedInstallments_other": "{{count}} किश्तें चुनी गईं",
+        "selectAllFailed": "सभी चुनने में विफल",
+        "noReceiptFound": "इस किश्त के लिए कोई रसीद नहीं मिली",
+        "invoiceDownloaded": "इनवॉइस सफलतापूर्वक डाउनलोड किया गया",
+        "invoiceDownloadUrlMissing": "इनवॉइस जनरेट हुआ लेकिन डाउनलोड URL उपलब्ध नहीं है",
+        "invoiceGenerateFailed": "इनवॉइस जनरेट करने में विफल",
+        "invoiceEmailed": "इनवॉइस ईमेल पर सफलतापूर्वक भेजा गया",
+        "invoiceEmailFailed": "इनवॉइस ईमेल भेजने में विफल"
+    }
+}

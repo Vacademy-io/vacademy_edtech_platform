@@ -1,0 +1,9 @@
+{
+    "retry": "Réessayer",
+    "issueSummary": {
+        "title_one": "Un point à corriger",
+        "title_many": "{{count}} points à corriger",
+        "title_other": "{{count}} points à corriger",
+        "worthChecking": "À vérifier"
+    }
+}

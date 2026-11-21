@@ -139,7 +139,7 @@ class OfflineSyncEventProcessorTest {
         event.setEventType("QUIZ");
         event.setSlideId("slide2");
         event.setPackageSessionId("ps1");
-        event.setPayload(mapper.readTree("{\"new_activity\":true,\"quiz_sides\":[]}"));
+        event.setPayload(mapper.readTree("{\"new_activity\":true,\"quiz_sides\":[{\"id\":\"r1\",\"question_id\":\"q1\"}]}"));
         when(offlineSyncEventRepository.insertIfAbsent(any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(1);
         when(offlineQuizRescoringService.rescoreQuiz(any())).thenReturn(
@@ -152,5 +152,21 @@ class OfflineSyncEventProcessorTest {
 
         assertEquals(OfflineSyncEventStatus.ACCEPTED, result.getStatus());
         verify(offlineSyncDiscrepancyRepository).save(any());
+    }
+
+    @Test
+    @DisplayName("a QUIZ event with no answers on it records nothing")
+    void emptyQuizEventRecordsNothing() throws Exception {
+        OfflineSyncEventRequestDTO event = new OfflineSyncEventRequestDTO();
+        event.setClientEventId("event-empty");
+        event.setEventType("QUIZ");
+        event.setSlideId("slide-1");
+        event.setPayload(mapper.readTree("{\"new_activity\":true,\"quiz_sides\":[]}"));
+        when(offlineSyncEventRepository.insertIfAbsent(any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(1);
+
+        processor.process(event, DEVICE, user);
+
+        verifyNoInteractions(quizSlideActivityLogService);
     }
 }

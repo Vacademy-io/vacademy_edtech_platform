@@ -1,0 +1,17 @@
+{
+    "tabsAriaLabel": "टैब",
+    "tabFatherDetails": "पिता का विवरण",
+    "tabMotherDetails": "माता का विवरण",
+    "tabGuardianDetails": "अभिभावक का विवरण",
+    "roleFather": "पिता",
+    "roleMother": "माता",
+    "roleGuardian": "अभिभावक",
+    "selectPlaceholder": "चुनें",
+    "fullNameLabel": "पूरा नाम",
+    "fullNamePlaceholder": "{{title}} का पूरा नाम",
+    "mobileNumberLabel": "मोबाइल नंबर",
+    "mobileNumberPlaceholder": "मोबाइल नंबर दर्ज करें",
+    "emailAddressLabel": "ईमेल पता",
+    "emailPlaceholderExample": "example@email.com",
+    "emailValidationError": "एक मान्य ईमेल पता दर्ज करें"
+}

@@ -1,0 +1,15 @@
+{
+    "categories": {
+        "crm": "CRM",
+        "lms": "LMS",
+        "ai": "IA",
+        "erp": "ERP",
+        "commerce": "Boutique"
+    },
+    "search": "Rechercher",
+    "recent": "Récent",
+    "status": "Statut",
+    "serviceStatus": "Statut du service",
+    "settings": "Paramètres",
+    "categoryFeatureLabel": "Catégorie {{category}}"
+}

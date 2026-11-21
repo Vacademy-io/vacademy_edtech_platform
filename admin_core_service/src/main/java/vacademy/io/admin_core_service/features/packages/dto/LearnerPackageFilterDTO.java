@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.packages.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.Data;
@@ -39,4 +40,7 @@ public class LearnerPackageFilterDTO {
     private List<String> sessionIds;
     /** When true, pagination is based on distinct packages instead of package sessions. */
     private Boolean packageView;
+    /** Set by the learner's own search: leaves out charge packages. Never read from the request. */
+    @JsonIgnore
+    private boolean excludeChargePackages;
 }

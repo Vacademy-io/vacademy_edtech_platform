@@ -1,0 +1,32 @@
+{
+    "navHeading": "Admission Dashboard",
+    "filterBar": {
+        "title": "Admission Pipeline",
+        "allClasses": "All Classes"
+    },
+    "kpi": {
+        "totalEnquiries": "Total Enquiries",
+        "totalApplications": "Total Applications",
+        "totalAdmissions": "Total Admissions"
+    },
+    "conversion": {
+        "enquiryToApplication": "Enquiry → Application",
+        "applicationToAdmission": "Application → Admission",
+        "overall": "Overall Conversion"
+    },
+    "breakdown": {
+        "title": "Admission Breakdown",
+        "fromEnquiry": {
+            "label": "From Enquiry",
+            "description": "Full funnel: Enquiry → Application → Admission"
+        },
+        "fromApplicationOnly": {
+            "label": "From Application Only",
+            "description": "Started at application stage"
+        },
+        "direct": {
+            "label": "Direct (Walk-in)",
+            "description": "No enquiry or application"
+        }
+    }
+}

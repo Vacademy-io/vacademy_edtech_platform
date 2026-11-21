@@ -1,0 +1,239 @@
+---
+title: "Rate limits and quotas"
+description: "Per-second and per-minute request limits per key and per institute, a daily copy quota per institute, and the headers that tell you where you stand."
+icon: "gauge-high"
+---
+
+Two separate controls protect the API and keep grading fair for every institute:
+
+- **Rate limits** cap how many requests you send per second and per minute.
+- **A daily copy quota** caps how many copies your institute sends for grading per day.
+
+Both answer `429 Too Many Requests` when you hit them, with a different `error.code` and a `Retry-After` header.
+
+## Rate limits
+
+Every request counts against your **key** and against your **institute** (all keys of the institute together), so adding more keys does not raise the institute's ceiling.
+
+Requests fall into three kinds:
+
+- **Reads:** every `GET`, plus the lookups that only read: `POST /exams/search`, `POST /candidates/search` and `POST /credits/quote`.
+- **Writes:** every other `POST`, `PUT`, `PATCH` and `DELETE`.
+- **Upload files:** `POST /uploads` is a write, and each file it presigns also counts against the upload limit (one call can presign up to 100 files).
+
+### Standard tier
+
+| Scope | Reads | Writes | Upload files |
+|---|---|---|---|
+| Per key | 20 per second, 600 per minute | 5 per second, 120 per minute | 3,000 per minute |
+| Per institute | 40 per second | 10 per second | 6,000 per minute |
+
+### High tier
+
+Available on request for high-volume integrations.
+
+| Scope | Reads | Writes | Upload files |
+|---|---|---|---|
+| Per key | 50 per second, 1,500 per minute | 20 per second, 480 per minute | 12,000 per minute |
+| Per institute | 100 per second | 40 per second | 24,000 per minute |
+
+Each key has a tier, `standard` by default. `GET /me` returns it as `rate_tier`. To move a key to the high tier, contact [hello@evalezy.com](mailto:hello@evalezy.com).
+
+<Note>
+Limits use fixed one-second and one-minute windows and are enforced across our servers, so treat them as approximate: a sharp burst can be throttled slightly before the exact figure. Pace your traffic evenly and always honour `429` and `Retry-After` instead of tuning to the exact number.
+</Note>
+
+### Rate limit headers
+
+Responses to authenticated requests carry three headers describing the tightest window this request counted against:
+
+| Header | Meaning |
+|---|---|
+| `RateLimit-Limit` | The limit of that window, for example `120`. |
+| `RateLimit-Remaining` | Requests left in that window. |
+| `RateLimit-Reset` | Seconds until that window resets. |
+
+```http
+HTTP/1.1 200 OK
+RateLimit-Limit: 600
+RateLimit-Remaining: 587
+RateLimit-Reset: 41
+X-Request-Id: req_5b2e8d1c9f0a4c7e8b3d6a1f2e9c0b47
+```
+
+### When you hit a rate limit
+
+```http
+HTTP/1.1 429 Too Many Requests
+Retry-After: 1
+```
+
+```json
+{
+  "error": {
+    "code": "rate_limited",
+    "message": "Too many requests for this API key or institute. Retry after 1 s.",
+    "request_id": "req_0e7d4c2b9a1f4e3d8c5b7a6f1e2d9c3b",
+    "details": { "retry_after_seconds": 1 }
+  }
+}
+```
+
+A refused request does not use up any of your budget. Wait `Retry-After` seconds and retry.
+
+## Daily copy quota
+
+Each institute has a **daily copy quota**: the number of copies it can send for grading per day, across all its keys. Evalezy sets it per institute; ask us if you need more. A key can also carry its own **daily copy cap**, so one integration cannot use the whole institute quota.
+
+What counts as one copy:
+
+- every accepted `POST /exams/{id}/submissions`, handwritten or typed (including typed submissions with only objective answers),
+- every accepted `POST /submissions/{id}/re-evaluate`.
+
+Requests that are refused (for example `402`, `409` or `422`) do not count. Quotas reset at **00:00 UTC** (05:30 IST).
+
+### Check your quota: `GET /me`
+
+`GET /me` works with any valid key, needs no scope, and is the quickest way to check a key before wiring anything else.
+
+<CodeGroup>
+
+```bash curl
+curl https://api.evalezy.com/v1/me \
+  -H "X-API-Key: $EVALEZY_API_KEY"
+```
+
+```python Python
+import os
+import requests
+
+me = requests.get(
+    "https://api.evalezy.com/v1/me",
+    headers={"X-API-Key": os.environ["EVALEZY_API_KEY"]},
+    timeout=30,
+).json()
+left = me["daily_copy_quota"] - me["quota_used_today"]
+print(f"{left} copies left today, resets at {me['quota_resets_at']}")
+```
+
+```javascript Node
+const me = await fetch("https://api.evalezy.com/v1/me", {
+  headers: { "X-API-Key": process.env.EVALEZY_API_KEY },
+}).then((r) => r.json());
+const left = me.daily_copy_quota - me.quota_used_today;
+console.log(`${left} copies left today, resets at ${me.quota_resets_at}`);
+```
+
+</CodeGroup>
+
+```json Response
+{
+  "key_id": "8b0f2c6e-4d1a-4f7b-9c3e-2a5d8e1f0b64",
+  "name": "ERP production",
+  "institute_id": "2f6a9d1c-7e3b-4c80-a5d2-9b1e4f7c0a38",
+  "institute_name": "Green Valley Public School",
+  "scopes": ["evaluation:read", "evaluation:write"],
+  "rate_tier": "standard",
+  "daily_copy_quota": 2000,
+  "daily_copy_cap": null,
+  "quota_used_today": 312,
+  "quota_resets_at": "2026-10-03T00:00:00Z"
+}
+```
+
+<ResponseField name="rate_tier" type="string">
+  The key's rate limit tier: `standard` unless a higher tier was agreed.
+</ResponseField>
+<ResponseField name="daily_copy_quota" type="integer">
+  Your institute's daily copy quota.
+</ResponseField>
+<ResponseField name="daily_copy_cap" type="integer | null">
+  This key's own daily cap, or `null` when the key has none.
+</ResponseField>
+<ResponseField name="quota_used_today" type="integer">
+  Copies your institute has sent today, across all keys.
+</ResponseField>
+<ResponseField name="quota_resets_at" type="string">
+  When the daily counters reset (next 00:00 UTC).
+</ResponseField>
+
+### When you hit the daily quota
+
+```http
+HTTP/1.1 429 Too Many Requests
+Retry-After: 20160
+```
+
+```json
+{
+  "error": {
+    "code": "daily_quota_exceeded",
+    "message": "This institute has used its daily copy quota. It resets at 2026-10-03T00:00:00Z.",
+    "request_id": "req_7a3c1e9d5b2f4a8c9e0d1b6f3a7c2e58",
+    "details": {
+      "quota": "daily_copy_quota",
+      "limit": 2000,
+      "resets_at": "2026-10-03T00:00:00Z"
+    }
+  }
+}
+```
+
+`details.quota` is `daily_copy_quota` when the institute quota is used up, or `daily_copy_cap` when this key's own cap is. `Retry-After` is the number of seconds until the reset.
+
+<Warning>
+Do not retry a `daily_quota_exceeded` in a tight loop: nothing changes until the reset. Queue the remaining copies on your side and resume after `resets_at`, or contact us before a large exam to raise the quota.
+</Warning>
+
+## Handling 429 well
+
+<Steps>
+  <Step title="Branch on the code">
+    `rate_limited` clears within seconds; `daily_quota_exceeded` clears at 00:00 UTC.
+  </Step>
+  <Step title="Wait for Retry-After">
+    The header is always present on a `429`. Use it instead of a fixed delay.
+  </Step>
+  <Step title="Retry with the same Idempotency-Key">
+    A `429` is never stored for [idempotent replay](/platform/idempotency), so the retry runs normally and can never create a duplicate.
+  </Step>
+</Steps>
+
+<CodeGroup>
+
+```python Python
+import time
+import requests
+
+def call(method, url, **kwargs):
+    while True:
+        resp = requests.request(method, url, timeout=60, **kwargs)
+        if resp.status_code != 429:
+            return resp
+        code = resp.json()["error"]["code"]
+        if code == "daily_quota_exceeded":
+            return resp  # stop and resume after details.resets_at
+        time.sleep(int(resp.headers.get("Retry-After", "1")))
+```
+
+```javascript Node
+export async function call(url, init) {
+  for (;;) {
+    const resp = await fetch(url, init);
+    if (resp.status !== 429) return resp;
+    const { error } = await resp.clone().json();
+    if (error.code === "daily_quota_exceeded") return resp; // resume after details.resets_at
+    const wait = Number(resp.headers.get("Retry-After") ?? 1);
+    await new Promise((r) => setTimeout(r, wait * 1000));
+  }
+}
+```
+
+</CodeGroup>
+
+## Practical tips
+
+- **Upload in batches.** One `POST /uploads` call can presign up to 100 PDFs. That is one write instead of 100.
+- **Poll gently.** To follow grading, read the [submission feed](/platform/pagination#keeping-in-sync) every 30 to 60 seconds instead of polling each submission.
+- **Read results in pages.** `GET /exams/{id}/results` returns up to 50 full results per call.
+- **Spread a large exam.** Writes are capped at 120 per minute per key on the standard tier: about 7,200 write calls an hour from one key. Plan large result days with that in mind, or ask for the high tier.

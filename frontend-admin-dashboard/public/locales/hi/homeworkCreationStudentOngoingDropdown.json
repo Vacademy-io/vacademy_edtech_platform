@@ -1,0 +1,22 @@
+{
+    "dropdown": {
+        "increaseSubmissionTime": "सबमिशन समय बढ़ाएं",
+        "closeSubmission": "सबमिशन बंद करें"
+    },
+    "dialogs": {
+        "attentionLabel": "ध्यान दें",
+        "closeButton": "बंद करें",
+        "closeSubmission": {
+            "title": "सबमिशन बंद करें",
+            "confirmMessagePrefix": "क्या आप वाकई निम्न के मूल्यांकन सबमिशन को बंद करना चाहते हैं"
+        },
+        "increaseAssessmentTime": {
+            "title": "मूल्यांकन समय बढ़ाएं",
+            "entireAssessment": "संपूर्ण मूल्यांकन",
+            "increaseBy": "इतना बढ़ाएं",
+            "selectSectionPlaceholder": "अनुभाग चुनें",
+            "sectionNumber": "अनुभाग {{number}}",
+            "questionNumber": "प्रश्न {{number}}"
+        }
+    }
+}

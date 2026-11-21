@@ -3,6 +3,8 @@ package vacademy.io.community_service.feature.bbb;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.common.auth.util.SuperAdminAuthUtil;
 
 import java.util.Map;
 
@@ -19,6 +21,8 @@ import java.util.Map;
  * Pool-aware actions:
  *   POST /community-service/bbb/pool/action
  *     ?action=start&serverSlug=all&serverCount=2
+ *
+ * Every route needs a signed-in platform super admin (the Super Admin portal).
  */
 @RestController
 @RequestMapping("/community-service/bbb")
@@ -28,7 +32,9 @@ public class BbbHealthCheckController {
     private final BbbHealthCheckService healthCheckService;
 
     @PostMapping("/health-check")
-    public ResponseEntity<Map<String, Object>> triggerHealthCheck() {
+    public ResponseEntity<Map<String, Object>> triggerHealthCheck(
+            @RequestAttribute("user") CustomUserDetails user) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
         return ResponseEntity.ok(healthCheckService.runHealthCheck());
     }
 
@@ -38,14 +44,18 @@ public class BbbHealthCheckController {
      */
     @PostMapping("/pool/health-check")
     public ResponseEntity<Map<String, Object>> triggerPoolHealthCheck(
+            @RequestAttribute("user") CustomUserDetails user,
             @RequestParam(defaultValue = "false") boolean notify) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
         return ResponseEntity.ok(healthCheckService.runPoolHealthCheck(notify));
     }
 
     /** Legacy endpoint — backward compatible */
     @PostMapping("/server")
     public ResponseEntity<Map<String, Object>> triggerServerAction(
+            @RequestAttribute("user") CustomUserDetails user,
             @RequestParam String action) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
         return ResponseEntity.ok(healthCheckService.triggerGitHubAction(action));
     }
 
@@ -59,9 +69,11 @@ public class BbbHealthCheckController {
      */
     @PostMapping("/pool/action")
     public ResponseEntity<Map<String, Object>> triggerPoolAction(
+            @RequestAttribute("user") CustomUserDetails user,
             @RequestParam String action,
             @RequestParam(defaultValue = "all") String serverSlug,
             @RequestParam(defaultValue = "1") int serverCount) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
         return ResponseEntity.ok(
                 healthCheckService.triggerPoolAction(action, serverSlug, serverCount));
     }

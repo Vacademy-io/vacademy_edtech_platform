@@ -1,0 +1,10 @@
+{
+    "courseSettings": "Paramètres du cours",
+    "passwordsWillBeReset": "Les mots de passe des utilisateurs LMS existants seront réinitialisés lors de l'inscription à ce cours.",
+    "existingUsersLeftUntouched": "Les utilisateurs LMS existants ne seront pas modifiés pour ce cours.",
+    "couldNotSaveSetting": "Impossible d'enregistrer le paramètre. Veuillez réessayer.",
+    "existingLmsUsers": "Utilisateurs LMS existants",
+    "resetPasswordOnEnrolment": "Réinitialiser leur mot de passe lors de l'inscription",
+    "resetPasswordDescription": "Lorsqu'une personne s'inscrit et possède déjà un compte sur le LMS connecté, remplacez le mot de passe de ce compte par celui défini ici. Laissez cette option désactivée pour l'inscrire au cours sans modifier son mot de passe existant — le choix sûr pour une migration, où les comptes existants ne doivent pas être perturbés.",
+    "emailUnchangedDescription": "Leur e-mail sert à retrouver le compte LMS, il n'est donc jamais modifié. Seul le mot de passe est remplacé — leur nom et les autres détails du profil restent inchangés."
+}

@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import {
     ChevronDown,
@@ -92,6 +93,7 @@ export const ContentHierarchyPanel: React.FC<ContentHierarchyPanelProps> = ({
     onChapterToggle,
     onSlideSelect,
 }) => {
+    const { t } = useTranslation('studyLibraryContentHierarchyPanel');
     const totalSlides = useMemo(() => {
         return sessionsWithProgress.reduce((acc, session) => acc + session.slides.filter(s => s.slideTitle !== '_placeholder_').length, 0);
     }, [sessionsWithProgress]);
@@ -120,24 +122,26 @@ export const ContentHierarchyPanel: React.FC<ContentHierarchyPanelProps> = ({
             <div className="flex-shrink-0 px-4 py-3 border-b border-neutral-200 bg-neutral-50">
                 <div className="flex items-center gap-2 mb-2">
                     <Layers className="h-5 w-5 text-indigo-600" />
-                    <h2 className="text-lg font-semibold text-neutral-900">Course Structure</h2>
+                    <h2 className="text-lg font-semibold text-neutral-900">
+                        {t('courseStructure')}
+                    </h2>
                 </div>
                 <div className="flex items-center gap-4 text-xs text-neutral-500">
                     <span className="flex items-center gap-1">
                         <CheckCircle className="h-3 w-3 text-green-500" />
-                        {completedSlides}/{totalSlides} completed
+                        {t('completedRatio', { completed: completedSlides, total: totalSlides })}
                     </span>
                     {generatingSlides > 0 && (
                         <span className="flex items-center gap-1">
                             <Loader2 className="h-3 w-3 text-indigo-500 animate-spin" />
-                            {generatingSlides} generating
+                            {t('generatingCount', { count: generatingSlides })}
                         </span>
                     )}
                 </div>
                 {hasAiVideo && (
                     <div className="mt-1 flex items-center gap-1 text-[10px] text-neutral-500">
                         <Clock className="h-3 w-3" />
-                        AI video will be available after few minutes
+                        {t('aiVideoDelay')}
                     </div>
                 )}
             </div>
@@ -179,7 +183,10 @@ export const ContentHierarchyPanel: React.FC<ContentHierarchyPanelProps> = ({
                                         <CheckCircle className="h-4 w-4 text-green-500" />
                                     ) : (
                                         <span className="text-[10px] text-neutral-400">
-                                            {sessionCompletedCount}/{visibleSlides.length}
+                                            {t('ratio', {
+                                                completed: sessionCompletedCount,
+                                                total: visibleSlides.length,
+                                            })}
                                         </span>
                                     )}
                                 </span>

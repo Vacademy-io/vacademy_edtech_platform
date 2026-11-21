@@ -1,0 +1,25 @@
+{
+    "emptyState": {
+        "title": "कोई {{term}} नहीं मिला",
+        "description": "आपके मौजूदा फ़िल्टर से मेल खाने वाला कोई {{termLower}} डेटा नहीं है। अपने खोज मानदंड समायोजित करें या शुरू करने के लिए नया {{termLower}} जोड़ें।",
+        "inviteButton": "{{term}} आमंत्रित करें",
+        "clearFiltersButton": "फ़िल्टर हटाएं"
+    },
+    "loadingData": "{{termLower}} डेटा लोड हो रहा है...",
+    "bulkActionsBar": {
+        "selecting": "चुना जा रहा है…",
+        "selectAllCount_one": "सभी {{count}} चुनें",
+        "selectAllCount_other": "सभी {{count}} चुनें",
+        "allMatchingFilters": "आपके फ़िल्टर से मेल खाने वाले सभी {{term}}",
+        "selectAllError": "सभी को चुना नहीं जा सका — फिर से प्रयास करें।"
+    },
+    "table": {
+        "counsellorHeader": "काउंसलर",
+        "assignButton": "असाइन करें",
+        "reassignTooltip": "फिर से असाइन करने के लिए क्लिक करें"
+    },
+    "noCourseDialog": {
+        "enrollStudentsLabel": "छात्र नामांकित करें",
+        "defaultContent": "इससे पहले आपको एक कोर्स बनाना होगा और उसमें एक विषय जोड़ना होगा"
+    }
+}

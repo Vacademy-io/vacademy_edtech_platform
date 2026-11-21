@@ -1,0 +1,5 @@
+{
+    "title": "Planification groupée",
+    "description": "Ajoutez plusieurs cours indépendants à la fois. Chaque ligne crée une session.",
+    "recurringNote": "Remarque : les cours récurrents ne peuvent pas être créés ici — utilisez le flux à cours unique pour les plannings récurrents."
+}

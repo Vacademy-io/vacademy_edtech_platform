@@ -1,0 +1,26 @@
+{
+    "emptyState": {
+        "title": "Aucun {{term}} trouvé",
+        "description": "Aucune donnée {{termLower}} ne correspond à vos filtres actuels. Essayez d'ajuster vos critères de recherche ou ajoutez un nouveau {{termLower}} pour commencer.",
+        "inviteButton": "Inviter {{term}}",
+        "clearFiltersButton": "Effacer les filtres"
+    },
+    "loadingData": "Chargement des données {{termLower}}...",
+    "bulkActionsBar": {
+        "selecting": "Sélection en cours…",
+        "selectAllCount_one": "Tout sélectionner ({{count}})",
+        "selectAllCount_many": "Tout sélectionner ({{count}})",
+        "selectAllCount_other": "Tout sélectionner ({{count}})",
+        "allMatchingFilters": "tous les {{term}} correspondant à vos filtres",
+        "selectAllError": "Impossible de tout sélectionner — réessayez."
+    },
+    "table": {
+        "counsellorHeader": "Conseiller",
+        "assignButton": "Attribuer",
+        "reassignTooltip": "Cliquer pour réattribuer"
+    },
+    "noCourseDialog": {
+        "enrollStudentsLabel": "Inscrire des étudiants",
+        "defaultContent": "Vous devez créer un cours et y ajouter une matière avant de"
+    }
+}

@@ -11,4 +11,7 @@ public class AddFacultyToCourseDTO {
     private boolean isNewUser;
     private UserDTO user;
     private String status;
+    // Per-course display role (Author / Instructor / Acharya ...). null = leave the
+    // stored label as is; blank = clear it.
+    private String roleLabel;
 }

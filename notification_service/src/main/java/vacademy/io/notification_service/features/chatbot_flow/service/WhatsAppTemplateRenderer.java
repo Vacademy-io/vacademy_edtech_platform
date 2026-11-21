@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import vacademy.io.notification_service.features.chatbot_flow.dto.InboxTemplateButtonDTO;
 import vacademy.io.notification_service.features.chatbot_flow.entity.NotificationTemplate;
 import vacademy.io.notification_service.features.chatbot_flow.repository.NotificationTemplateRepository;
 import vacademy.io.notification_service.features.notification_log.entity.NotificationLog;
@@ -36,6 +37,9 @@ public class WhatsAppTemplateRenderer {
     private final NotificationTemplateRepository notificationTemplateRepository;
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final String CHATBOT_FLOW_SOURCE = "CHATBOT_FLOW";
+    /** Body line ChatbotFlowEngine writes for a template send. */
+    private static final String CHATBOT_TEMPLATE_BODY_PREFIX = "Template: ";
     /** Matches {{1}} / {{ name }} placeholders (token filled in per-call). */
     private static final String PLACEHOLDER_FMT = "\\{\\{\\s*%s\\s*\\}\\}";
 
@@ -50,6 +54,8 @@ public class WhatsAppTemplateRenderer {
         /** Rebuilt message text, or {@code null} when the template is no longer on file. */
         public String body;
         public String templateName;
+        /** Meta's category for the template (MARKETING / UTILITY / AUTHENTICATION), when on file. */
+        public String category;
         public String provider;
         /** SUCCESS or FAILED — whether the provider accepted the send. */
         public String deliveryStatus;
@@ -59,6 +65,8 @@ public class WhatsAppTemplateRenderer {
         public String headerType;
         /** Actual media URL for an IMAGE/VIDEO/DOCUMENT header, so the UI can display it. */
         public String headerMediaUrl;
+        /** The template's buttons, as WhatsApp draws them under the message. Null when none. */
+        public List<InboxTemplateButtonDTO> buttons;
     }
 
     /** Create a fresh per-request template cache (institute id → its templates). */
@@ -68,8 +76,9 @@ public class WhatsAppTemplateRenderer {
 
     /**
      * Rebuilds the message body for an outgoing template send. Returns {@code null} for anything
-     * that isn't a structured template send (incoming messages, free-text replies, other payload
-     * shapes), and a {@link Rendered} whose {@code body} is {@code null} when the template can't be
+     * that isn't a structured template send or an older chatbot "Template: name" row (incoming
+     * messages, free-text replies, other payload shapes), and a {@link Rendered} whose
+     * {@code body} is {@code null} when the template can't be
      * found (caller then falls back to the stored summary body).
      *
      * @param fallbackInstituteId used when the log row itself has no institute stamped (legacy rows)
@@ -81,16 +90,18 @@ public class WhatsAppTemplateRenderer {
             return null;
         }
         String payloadJson = nl.getMessagePayload();
-        if (payloadJson == null || payloadJson.isBlank()) return null;
 
         try {
-            Map<String, Object> payload = objectMapper.readValue(payloadJson,
-                    new TypeReference<Map<String, Object>>() {});
+            Map<String, Object> payload = (payloadJson == null || payloadJson.isBlank())
+                    ? Map.of()
+                    : objectMapper.readValue(payloadJson, new TypeReference<Map<String, Object>>() {});
             Object templateNameObj = payload.get("templateName");
-            if (templateNameObj == null) return null;
+            String templateName = templateNameObj != null
+                    ? templateNameObj.toString() : legacyChatbotTemplateName(nl);
+            if (templateName == null) return null;
 
             Rendered rm = new Rendered();
-            rm.templateName = templateNameObj.toString();
+            rm.templateName = templateName;
             rm.provider = asString(payload.get("provider"));
             rm.error = asString(payload.get("error"));
             rm.deliveryStatus = rm.error != null ? "FAILED" : "SUCCESS";
@@ -119,13 +130,30 @@ public class WhatsAppTemplateRenderer {
             }
 
             if (tmpl != null) {
+                rm.category = blankToNull(tmpl.getCategory());
                 rm.body = composeMessage(tmpl, bodyParams, headerParams);
+                rm.buttons = parseButtons(tmpl.getButtonsConfig(), asStringMap(payload.get("buttonParams")));
             }
             return rm;
         } catch (Exception e) {
             log.debug("Failed to render template message {}: {}", nl.getId(), e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * Template name of a chatbot send logged before the bot kept its payload: those rows carry
+     * only the body line {@code "Template: <name>"} written by {@code ChatbotFlowEngine}. Their
+     * params were never stored, so a template with variables renders with its {{N}} left in.
+     */
+    static String legacyChatbotTemplateName(NotificationLog nl) {
+        String body = nl.getBody();
+        if (!CHATBOT_FLOW_SOURCE.equals(nl.getSource()) || body == null
+                || !body.startsWith(CHATBOT_TEMPLATE_BODY_PREFIX)) {
+            return null;
+        }
+        String name = body.substring(CHATBOT_TEMPLATE_BODY_PREFIX.length()).trim();
+        return name.isEmpty() ? null : name;
     }
 
     /** Convenience: rendered message text, or the stored body when it can't be rebuilt. */
@@ -188,6 +216,44 @@ public class WhatsAppTemplateRenderer {
         return result;
     }
 
+    /**
+     * The template's buttons from {@code buttons_config}. A URL button's link is only kept when it
+     * is a complete http(s) URL: a dynamic {{1}} suffix is filled from the send's
+     * {@code buttonParams} (keyed by button index), and one that cannot be filled is shown as a
+     * plain label rather than a broken link. Buttons with no text are skipped — WhatsApp would not
+     * have drawn them either.
+     */
+    private List<InboxTemplateButtonDTO> parseButtons(String buttonsJson, Map<String, String> buttonParams) {
+        if (buttonsJson == null || buttonsJson.isBlank()) return null;
+        List<Map<String, Object>> raw;
+        try {
+            raw = objectMapper.readValue(buttonsJson, new TypeReference<List<Map<String, Object>>>() {});
+        } catch (Exception e) {
+            return null;
+        }
+        List<InboxTemplateButtonDTO> buttons = new ArrayList<>();
+        for (int i = 0; i < raw.size(); i++) {
+            Map<String, Object> b = raw.get(i);
+            String text = asString(b.get("text"));
+            if (!isNotBlank(text)) continue;
+            String type = isNotBlank(asString(b.get("type"))) ? asString(b.get("type")).toUpperCase() : null;
+
+            String url = asString(b.get("url"));
+            if (url != null && buttonParams.containsKey(String.valueOf(i))) {
+                url = replacePlaceholder(url, "1", buttonParams.get(String.valueOf(i)));
+            }
+            if (url != null && (url.contains("{{") || !isUrl(url))) url = null;
+
+            buttons.add(InboxTemplateButtonDTO.builder()
+                    .type(type)
+                    .text(text.trim())
+                    .url(url != null ? url.trim() : null)
+                    .phoneNumber(asString(b.get("phoneNumber")))
+                    .build());
+        }
+        return buttons.isEmpty() ? null : buttons;
+    }
+
     private String replacePlaceholder(String text, String token, String value) {
         if (token == null || token.isEmpty()) return text;
         Pattern p = Pattern.compile(String.format(PLACEHOLDER_FMT, Pattern.quote(token)));
@@ -236,6 +302,10 @@ public class WhatsAppTemplateRenderer {
 
     private boolean isNotBlank(String s) {
         return s != null && !s.isBlank();
+    }
+
+    private String blankToNull(String s) {
+        return isNotBlank(s) ? s.trim().toUpperCase() : null;
     }
 
     private boolean isMediaHeader(String headerType) {

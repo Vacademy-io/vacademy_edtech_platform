@@ -1,0 +1,10 @@
+{
+    "label": {
+        "status": "स्थिति"
+    },
+    "options": {
+        "all": "सभी",
+        "resolved": "हल किया गया",
+        "unresolved": "अनसुलझा"
+    }
+}

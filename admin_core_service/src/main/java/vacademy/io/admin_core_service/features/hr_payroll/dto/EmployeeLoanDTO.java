@@ -31,4 +31,5 @@ public class EmployeeLoanDTO {
     private Integer startYear;
     private String status;
     private String notes;
+    private String currency;
 }

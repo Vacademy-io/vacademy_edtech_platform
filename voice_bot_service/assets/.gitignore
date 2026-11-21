@@ -1,0 +1,4 @@
+# Source recordings (44.1k stereo downloads) stay local — only the converted
+# 8 kHz mono asset the mixer can actually use is committed. See app/ambience.py.
+*.wav
+!*_8k_mono.wav

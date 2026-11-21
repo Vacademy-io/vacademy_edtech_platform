@@ -3,8 +3,8 @@ import { getInstituteId } from '@/constants/helper';
 import { hasFacultyAssignedPermission } from '@/lib/auth/facultyAccessUtils';
 import { SmartErrorPage } from '@/components/core/SmartErrorPage';
 import { QueryClient } from '@tanstack/react-query';
-import { createRootRouteWithContext, Outlet, redirect } from '@tanstack/react-router';
-import React, { Suspense } from 'react';
+import { createRootRouteWithContext, Outlet, redirect, useRouter } from '@tanstack/react-router';
+import React, { Suspense, useEffect } from 'react';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { usePageTitle } from '@/hooks/use-page-title';
 import {
@@ -22,8 +22,13 @@ import {
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { VacademyAssistant } from '@/components/vacademy-assistant/VacademyAssistant';
 import { AssistDock } from '@/components/assist-dock/AssistDock';
+import { AssistantFab } from '@/components/assist-dock/AssistantFab';
 import { FollowUpReminderDialog } from '@/components/shared/leads/followup-reminders';
 import { QuickSettingsDialog } from '@/components/settings/quick-access/QuickSettingsDialog';
+import { EVALEZY_HOME, evalezyPathFor, isEvalezyMode } from '@/lib/evalezy-mode';
+import { isNative, shouldForceVimShell } from '@/native';
+import { setDeepLinkListener } from '@/native/deepLinks';
+import { isDemoStage } from '@/lib/demo-stage/bridge';
 
 const TanStackRouterDevtools =
     process.env.NODE_ENV === 'production'
@@ -66,13 +71,21 @@ const publicRoutes = [
     '/login/forgot-password',
     '/login/oauth/redirect',
     '/signup',
-    '/evaluator-ai',
+    // Evalezy one-screen demo: name, email and phone, then straight into the app.
+    '/demo',
     '/landing',
     '/pricing',
     '/content',
     '/vim/onboarding',
     '/vim/login',
     '/vim/waitlist',
+    // MCP OAuth consent: the visitor arrives from an AI client and may not be
+    // signed in yet. The guard below forwards only a pathname, which would drop
+    // the ?txn= handle, so the page handles sign-in itself (it stashes the txn
+    // first). Nothing is granted without a verified session on the backend.
+    '/mcp/authorize',
+    // Weekly planning email link: a token that can only send this week's topics.
+    '/plan-week',
 ];
 
 const isVimotionHost = () =>
@@ -84,6 +97,9 @@ const handleRootPathRedirect = (location: any) => {
     if (location.pathname === '/') {
         if (isVimotionHost()) {
             throw redirect({ to: '/vim' });
+        }
+        if (isEvalezyMode()) {
+            throw redirect({ to: isAuthenticated() ? EVALEZY_HOME : '/login' });
         }
         const subdomain =
             typeof window !== 'undefined' ? window.location.hostname.split('.')[0] : '';
@@ -113,6 +129,15 @@ const handleAuthenticationChecks = (location: any) => {
             },
         });
     }
+};
+
+// Evalezy (app or evalezy.* host) is the copy-check shell only: a signed-in user
+// who lands anywhere else in the portal (post-login route, an old bookmark, the
+// "copies checked" email link) is taken to the matching /evalezy page.
+const handleEvalezyMode = (location: { pathname: string; searchStr?: string }) => {
+    if (!isEvalezyMode() || !isAuthenticated()) return;
+    const target = evalezyPathFor(location.pathname, location.searchStr ?? '');
+    if (target) throw redirect({ href: target });
 };
 
 const handleAuthenticatedUserLoginAccess = (location: any) => {
@@ -152,6 +177,23 @@ const handleAuthenticatedUserLoginAccess = (location: any) => {
     }
 };
 
+/**
+ * App/Universal Links on the native app's own host (dash.vacademy.io for Vacademy
+ * Admin, evalezy.vacademy.io for Evalezy) open the same path in the app. Vimotion
+ * keeps its own listener inside the /vim shell.
+ */
+const NativeDeepLinks = () => {
+    const router = useRouter();
+    useEffect(() => {
+        if (!isNative() || shouldForceVimShell()) return;
+        setDeepLinkListener(({ path, replace }) => {
+            void router.navigate({ href: path, replace });
+        });
+        return () => setDeepLinkListener(null);
+    }, [router]);
+    return null;
+};
+
 export const Route = createRootRouteWithContext<{
     queryClient: QueryClient;
 }>()({
@@ -174,6 +216,8 @@ export const Route = createRootRouteWithContext<{
 
         // Handle authenticated user accessing login page
         handleAuthenticatedUserLoginAccess(location);
+
+        handleEvalezyMode(location);
     },
 
     component: () => {
@@ -184,11 +228,25 @@ export const Route = createRootRouteWithContext<{
         // a button that calls the returned `ensurePermission` from this hook to prompt.
         usePushNotifications();
 
+        // The Evalezy shell is deliberately bare: no assistant, dock or popups.
+        // So is the public demo frame: the stage page brings its own guide.
+        if (isEvalezyMode() || isDemoStage()) {
+            return (
+                <>
+                    <NativeDeepLinks />
+                    <Outlet />
+                </>
+            );
+        }
+
         return (
             <>
+                <NativeDeepLinks />
                 <Outlet />
                 <AssistDock />
                 <VacademyAssistant />
+                {/* One-click assistant button, bottom right; hides while a panel is open. */}
+                <AssistantFab />
                 {/* Global centered follow-up reminder — pops when one is due. */}
                 <FollowUpReminderDialog />
                 {/* Quick-access settings popup — inert until a caller opens one. */}

@@ -1,0 +1,171 @@
+{
+ "analyser_version": "scan-1",
+ "load_no": 2,
+ "status": "REVIEW",
+ "layout": {
+  "fronts_pass": 1,
+  "fronts_rotation": 180,
+  "backs_order": "SAME",
+  "backs_rotation": 180,
+  "order_margin": 0.4,
+  "shift": null,
+  "blank_rule_suspect": false
+ },
+ "evidence": {
+  "first_front_label": false,
+  "last_front_label": false
+ },
+ "pages": [
+  {
+   "ref": "p1.0",
+   "pass_no": 1,
+   "file_id": "g-1-0",
+   "page_index": 0,
+   "kind": "PDF",
+   "dpi": 200,
+   "dpi_source": "PDF",
+   "width_px": 1654,
+   "height_px": 2339,
+   "ink_per_10k": 50.0,
+   "blank_class": "WRITTEN",
+   "error": null
+  },
+  {
+   "ref": "p1.1",
+   "pass_no": 1,
+   "file_id": "g-1-1",
+   "page_index": 1,
+   "kind": "PDF",
+   "dpi": 200,
+   "dpi_source": "PDF",
+   "width_px": 1654,
+   "height_px": 2339,
+   "ink_per_10k": 50.0,
+   "blank_class": "WRITTEN",
+   "error": null
+  },
+  {
+   "ref": "p1.2",
+   "pass_no": 1,
+   "file_id": "g-1-2",
+   "page_index": 2,
+   "kind": "PDF",
+   "dpi": 200,
+   "dpi_source": "PDF",
+   "width_px": 1654,
+   "height_px": 2339,
+   "ink_per_10k": 50.0,
+   "blank_class": "WRITTEN",
+   "error": null
+  },
+  {
+   "ref": "p2.0",
+   "pass_no": 2,
+   "file_id": "g-2-0",
+   "page_index": 0,
+   "kind": "PDF",
+   "dpi": 200,
+   "dpi_source": "PDF",
+   "width_px": 1654,
+   "height_px": 2339,
+   "ink_per_10k": 50.0,
+   "blank_class": "WRITTEN",
+   "error": null
+  },
+  {
+   "ref": "p2.1",
+   "pass_no": 2,
+   "file_id": "g-2-1",
+   "page_index": 1,
+   "kind": "PDF",
+   "dpi": 200,
+   "dpi_source": "PDF",
+   "width_px": 1654,
+   "height_px": 2339,
+   "ink_per_10k": 50.0,
+   "blank_class": "WRITTEN",
+   "error": null
+  },
+  {
+   "ref": "p2.2",
+   "pass_no": 2,
+   "file_id": "g-2-2",
+   "page_index": 2,
+   "kind": "PDF",
+   "dpi": 200,
+   "dpi_source": "PDF",
+   "width_px": 1654,
+   "height_px": 2339,
+   "ink_per_10k": 50.0,
+   "blank_class": "WRITTEN",
+   "error": null
+  }
+ ],
+ "sheets": [
+  {
+   "sheet_no": 0,
+   "front": "p1.0",
+   "back": "p2.0",
+   "pair_score": 0.5,
+   "pair_runner_up": 0.2,
+   "pair_is_row_max": true,
+   "label_kind": "NONE",
+   "label_present": false,
+   "name_text": null,
+   "name_readable": false,
+   "roll_text": null,
+   "label_template_sim": 0.1,
+   "back_label_like": false,
+   "front_blank_class": "WRITTEN",
+   "back_blank_class": "WRITTEN"
+  },
+  {
+   "sheet_no": 1,
+   "front": "p1.1",
+   "back": "p2.1",
+   "pair_score": 0.5,
+   "pair_runner_up": 0.2,
+   "pair_is_row_max": true,
+   "label_kind": "PRINTED_FIELD",
+   "label_present": true,
+   "name_text": "Kabir Singh",
+   "name_readable": true,
+   "roll_text": "12",
+   "label_template_sim": 0.8,
+   "back_label_like": false,
+   "front_blank_class": "WRITTEN",
+   "back_blank_class": "WRITTEN"
+  },
+  {
+   "sheet_no": 2,
+   "front": "p1.2",
+   "back": "p2.2",
+   "pair_score": 0.5,
+   "pair_runner_up": 0.2,
+   "pair_is_row_max": true,
+   "label_kind": "NONE",
+   "label_present": false,
+   "name_text": null,
+   "name_readable": false,
+   "roll_text": null,
+   "label_template_sim": 0.1,
+   "back_label_like": false,
+   "front_blank_class": "WRITTEN",
+   "back_blank_class": "WRITTEN"
+  }
+ ],
+ "flags": [
+  {
+   "code": "PAIR_NOT_ROW_MAX",
+   "severity": "REVIEW",
+   "sheet_no": 2,
+   "detail": "sheet 2's best back is not its row maximum"
+  }
+ ],
+ "usage": {
+  "model": "test-vision",
+  "model_calls": 3,
+  "prompt_tokens": 10,
+  "completion_tokens": 5
+ }
+}

@@ -10,14 +10,17 @@ pipeline behaves like it does today.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
+from .llm_router import post_chat
 
-from ..constants.models import DEFAULT_MODEL as _DEFAULT_MODEL
+from ..constants.model_defaults import NON_GLM_FALLBACK
+from ..constants.models import get_use_case_model_chain
 from ..schemas.routing import (
     RoutingConfig,
     RoutingPlan,
@@ -27,7 +30,18 @@ from ..schemas.routing import (
 logger = logging.getLogger(__name__)
 
 _OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+# The whole routing call, both legs. The primary (GLM) leg gets at most
+# _PRIMARY_TIMEOUT_S so a slow or failed answer still leaves the one retry on
+# NON_GLM_FALLBACK room to finish inside the budget.
 _HTTP_TIMEOUT_S = 20.0
+_PRIMARY_TIMEOUT_S = 13.0
+# GLM's reasoning tokens count against max_tokens: the JSON plan is ~400
+# tokens, the rest is thinking headroom at low effort. Only generated tokens
+# are paid for.
+_MAX_TOKENS = 2500
+# Sent explicitly: on the OpenRouter failover leg a payload with no reasoning
+# object runs GLM at its heavy default and ends at the length limit, empty.
+_REASONING = {"effort": "low"}
 
 _SYSTEM_PROMPT = """You are an Intent Router for an AI video generation pipeline.
 
@@ -134,8 +148,9 @@ Return ONLY the JSON object. No prose, no markdown fences.
 class IntentRouterService:
     """Single LLM call → structured RoutingPlan."""
 
-    def __init__(self, openrouter_key: str, model: str = _DEFAULT_MODEL):
+    def __init__(self, openrouter_key: str, model: Optional[str] = None):
         self._openrouter_key = openrouter_key
+        # None = the ai_model_defaults 'video' default, read per call.
         self._model = model
 
     async def route(
@@ -163,44 +178,48 @@ class IntentRouterService:
             f"  - orientation: {orientation}\n"
             f"  - content_type: {content_type}\n"
         )
+        messages = [
+            {"role": "system", "content": _SYSTEM_PROMPT},
+            {"role": "user", "content": user_msg},
+        ]
 
-        payload = {
-            "model": self._model,
-            "messages": [
-                {"role": "system", "content": _SYSTEM_PROMPT},
-                {"role": "user", "content": user_msg},
-            ],
-            "temperature": 0.1,
-            "max_tokens": 800,
-            "response_format": {"type": "json_object"},
-        }
-        headers = {
-            "Authorization": f"Bearer {self._openrouter_key}",
-            "Content-Type": "application/json",
-        }
+        # Primary model, then ONE retry on the non-GLM fallback when the first
+        # leg times out, errors, or returns content that is not a valid plan.
+        chain = get_use_case_model_chain("video", self._model)
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + _HTTP_TIMEOUT_S
+        plan: Optional[RoutingPlan] = None
+        for i, model in enumerate(chain):
+            budget = deadline - loop.time()
+            if i == 0 and len(chain) > 1:
+                budget = min(budget, _PRIMARY_TIMEOUT_S)
+            if budget <= 0:
+                break
+            payload = {
+                "model": model,
+                "messages": messages,
+                "temperature": 0.1,
+                "max_tokens": _MAX_TOKENS,
+                "response_format": {"type": "json_object"},
+            }
+            if model != NON_GLM_FALLBACK:
+                # The Gemini Flash fallback leg sends none, as before: an
+                # effort would turn its thinking on and slow the retry.
+                payload["reasoning"] = dict(_REASONING)
+            try:
+                content = await asyncio.wait_for(self._post(payload, budget), timeout=budget)
+            except Exception as e:
+                logger.warning(f"[IntentRouter] LLM call on {model} failed: {e!r}")
+                continue
+            plan = _parse_plan(content)
+            if plan is not None:
+                if i > 0:
+                    logger.info(f"[IntentRouter] Plan came from fallback model {model}")
+                break
+            logger.warning(f"[IntentRouter] Parse failed on {model}; raw={content[:300]!r}")
 
-        try:
-            async with httpx.AsyncClient(timeout=_HTTP_TIMEOUT_S) as client:
-                resp = await client.post(_OPENROUTER_URL, headers=headers, json=payload)
-                resp.raise_for_status()
-                data = resp.json()
-            content = data["choices"][0]["message"]["content"]
-        except Exception as e:
-            logger.warning(f"[IntentRouter] LLM call failed (using defaults): {e}")
-            return _default_plan(urls_in_prompt, input_video_count)
-
-        # Tolerate stray markdown fences just in case
-        content_clean = content.strip()
-        if content_clean.startswith("```"):
-            content_clean = content_clean.strip("`")
-            if content_clean.lower().startswith("json"):
-                content_clean = content_clean[4:].strip()
-
-        try:
-            raw = json.loads(content_clean)
-            plan = RoutingPlan.model_validate(raw)
-        except Exception as e:
-            logger.warning(f"[IntentRouter] Parse failed (using defaults): {e}; raw={content[:300]!r}")
+        if plan is None:
+            logger.warning("[IntentRouter] No usable plan from %s (using defaults)", chain)
             return _default_plan(urls_in_prompt, input_video_count)
 
         # Backstop: ensure both known tools are represented in the plan
@@ -209,10 +228,37 @@ class IntentRouterService:
         logger.info(f"[IntentRouter] Plan: {plan.explanation}")
         return plan
 
+    async def _post(self, payload: Dict[str, Any], timeout_s: float) -> str:
+        """One chat completion → the message content (raises on any failure)."""
+        async with httpx.AsyncClient(timeout=timeout_s) as client:
+            resp = await post_chat(client, payload, self._openrouter_key)
+            resp.raise_for_status()
+            data = resp.json()
+        content = data["choices"][0]["message"]["content"]
+        if not isinstance(content, str) or not content.strip():
+            raise ValueError(
+                f"empty content (finish={data['choices'][0].get('finish_reason')})"
+            )
+        return content
+
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def _parse_plan(content: str) -> Optional[RoutingPlan]:
+    """The model's JSON → RoutingPlan, or None when it does not parse."""
+    # Tolerate stray markdown fences just in case
+    content_clean = content.strip()
+    if content_clean.startswith("```"):
+        content_clean = content_clean.strip("`")
+        if content_clean.lower().startswith("json"):
+            content_clean = content_clean[4:].strip()
+    try:
+        return RoutingPlan.model_validate(json.loads(content_clean))
+    except Exception:
+        return None
 
 
 def _default_plan(urls_in_prompt: List[str], input_video_count: int) -> RoutingPlan:

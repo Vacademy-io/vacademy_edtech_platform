@@ -1,0 +1,28 @@
+{
+    "heading": "Regularizations",
+    "description": "Corrections employees have asked for on their own attendance — a missed check-in, a day marked absent that wasn't. Approving one rewrites the attendance record for that day, so the corrected day is what payroll pays against.",
+    "statusFilterLabel": "Status",
+    "requestsCount_one": "{{count}} request {{status}}",
+    "requestsCount_other": "{{count}} requests {{status}}",
+    "columns": {
+        "employee": "Employee",
+        "date": "Date",
+        "requestedChange": "Requested change",
+        "times": "Times",
+        "reason": "Reason",
+        "outcome": "Outcome",
+        "decision": "Decision"
+    },
+    "defaultEmployeeName": "Employee",
+    "timesWas": "was {{from}}–{{to}}",
+    "timesAsks": "asks {{from}}–{{to}}",
+    "defaultOutcome": "Pending",
+    "approve": "Approve",
+    "reject": "Reject",
+    "loadError": "Couldn't load regularization requests.",
+    "emptyPendingTitle": "Nothing waiting for a decision",
+    "emptyOtherTitle": "No {{status}} requests",
+    "emptyPendingDescription": "Requests appear here when an employee asks for a correction to their attendance.",
+    "emptyOtherDescription": "Switch the status filter to see the other requests.",
+    "reviewOnlyNote": "You can review requests but not decide them — approving or rejecting needs an HR Admin role in this institute."
+}

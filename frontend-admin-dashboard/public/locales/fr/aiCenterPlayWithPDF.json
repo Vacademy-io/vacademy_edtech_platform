@@ -1,0 +1,45 @@
+{
+    "header": {
+        "title": "Discuter avec un document",
+        "subtitle": "Déposez un PDF, puis posez n'importe quelle question à son sujet — résumés, questions ou explications."
+    },
+    "upload": {
+        "dropTitle": "Déposez votre document ici, ou cliquez pour le choisir",
+        "dropSubtitle": "PDF, Word ou PowerPoint — tout ce avec quoi vous voulez discuter.",
+        "fallbackFileName": "Discussion avec le document",
+        "statusUploading": "Envoi en cours…",
+        "statusProcessing": "Lecture en cours…",
+        "statusReady": "Prêt à discuter",
+        "workingUploading": "Lecture de votre fichier…",
+        "workingProcessing": "Préparation de votre document pour la discussion…",
+        "resetAriaLabel": "Recommencer avec un nouveau document"
+    },
+    "chat": {
+        "emptyTitle": "Posez n'importe quelle question sur ce document",
+        "emptySubtitle": "Utilisez les suggestions ci-dessous, ou tapez votre propre question.",
+        "suggestions": {
+            "mainIdea": "Quelle est l'idée principale de ce document ?",
+            "summarize": "Résumez les points clés.",
+            "generateQuestions": "Générez 5 questions sur les concepts principaux."
+        },
+        "pending": "Lecture du document en cours…",
+        "inputPlaceholder": "Posez n'importe quelle question sur ce document…",
+        "send": "Envoyer",
+        "historyTitle": "Historique de discussion"
+    },
+    "errors": {
+        "unsupportedFormat": "Nous ne pouvons pas lire les fichiers .{{ext}}. Essayez un PDF, Word ou PowerPoint.",
+        "uploadIncomplete": "L'envoi ne s'est pas terminé. Voulez-vous réessayer ?",
+        "readFailed": "Nous n'avons pas pu lire ce fichier. Essayer un autre fichier ?",
+        "genericFailure": "Un problème est survenu lors de la lecture de votre fichier. Réessayer ?",
+        "noResponse": "Aucune réponse pour l'instant. Voulez-vous reposer la question ?"
+    },
+    "recentFiles": {
+        "title": "Vos discussions récentes",
+        "fallbackLabel": "Discussion avec un document",
+        "emptyHint": "Vos sessions de discussion apparaîtront ici. Déposez un document ci-dessus pour en démarrer une."
+    },
+    "tasksList": {
+        "heading": "Vsmart Chat"
+    }
+}

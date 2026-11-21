@@ -1,0 +1,31 @@
+{
+    "heading": "Ajuster le solde de congés",
+    "cancel": "Annuler",
+    "applyAdjustment": "Appliquer l'ajustement",
+    "adjusting": "Ajustement…",
+    "leave": "Congé",
+    "closingBalance": "solde de clôture {{value}} jours",
+    "adjustmentExplainer": {
+        "before": "Un ajustement est une correction absolue ajoutée au solde — pas le solde final souhaité. Saisissez",
+        "middle": "pour accorder un jour et demi, ou",
+        "after": "pour retirer deux jours."
+    },
+    "fields": {
+        "adjustmentLabel": "Ajustement en jours",
+        "adjustmentHelpDefault": "Les décimales sont autorisées — 0,5 correspond à une demi-journée.",
+        "adjustmentHelpProjected": "Le solde de clôture devient {{value}} jours.",
+        "reasonLabel": "Motif",
+        "reasonPlaceholder": "Pourquoi le solde est corrigé",
+        "reasonHelp": "Conservé dans l'historique pour que le prochain administrateur voie pourquoi ce chiffre a changé."
+    },
+    "toasts": {
+        "adjusted": "Solde ajusté"
+    },
+    "errors": {
+        "correctionRequired": "Saisissez la correction, par ex. 1,5 ou -2",
+        "numbersOnly": "Chiffres uniquement — utilisez un signe moins en début pour retirer des jours",
+        "notZero": "Zéro ne changerait rien",
+        "reasonLength": "Limitez le motif à 500 caractères",
+        "adjustFailed": "Impossible d'ajuster ce solde."
+    }
+}

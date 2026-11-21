@@ -1,0 +1,30 @@
+{
+  "nodeLabels": {
+    "pitch": "Argument",
+    "research": "Recherche",
+    "beats": "Points d'intrigue",
+    "screenplay": "Scénario",
+    "narration": "Narration",
+    "storyboard": "Découpage",
+    "shotPlanner": "Planificateur de plans",
+    "narrationWriter": "Rédacteur de narration",
+    "filming": "Tournage",
+    "talent": "Interprète",
+    "score": "Musique",
+    "finalCut": "Montage final"
+  },
+  "activeSubStatus": {
+    "pitch": "Argument en main",
+    "research": "Recherche des sources en cours…",
+    "beats": "Élaboration des points d'intrigue…",
+    "screenplay": "L'auteur est au travail…",
+    "narration": "Enregistrement de la voix off…",
+    "storyboard": "Le réalisateur planifie les plans…",
+    "shotPlanner": "Planification des plans…",
+    "narrationWriter": "Rédaction de la narration par plan…",
+    "filming": "Sur le plateau, caméras en marche…",
+    "talent": "Enregistrement de la performance principale…",
+    "score": "Composition de la musique…",
+    "finalCut": "Assemblage du montage final…"
+  }
+}

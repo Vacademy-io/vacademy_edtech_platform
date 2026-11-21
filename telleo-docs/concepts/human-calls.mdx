@@ -1,0 +1,189 @@
+---
+title: "Human calls (click-to-call)"
+description: "Ring one of your counsellors and connect them to a contact, from your own systems."
+---
+
+A **human call** is a phone call between one of your **counsellors** and a contact, started by your system instead of a Call button. Telleo rings the counsellor's phone first; when they pick up, it dials the contact and joins the two. It is the API version of the Call button in the Telleo dashboard and uses the same calling provider, recordings, call log and dispositions.
+
+Human calls live under their own resource, `/v1/human-calls`, and need their own [scopes](/authentication#scopes): `human_calls:read` and `human_calls:write`. A key only has them when it was created with **Can ring counsellors (human calls)** ticked; your existing AI calling keys cannot ring your staff. AI calls (`/v1/calls`) are unchanged.
+
+| | AI call (`/v1/calls`) | Human call (`/v1/human-calls`) |
+|---|---|---|
+| Who talks | An AI agent | One of your counsellors |
+| When it dials | When a line is free and calling hours allow (it can wait in a queue) | **Now**, or the request is refused |
+| Outcome | The agent's outcome (`outcome`) | The counsellor's disposition, plus optional AI analysis |
+| Billed | AI minutes | Only talk time on Vacademy Voice (see [Billing](#billing)) |
+
+## Counsellors
+
+Only people already set up in your account can take human calls: **active users with a Counsellor or Admin role**. An API key never acts as a person, so it cannot invent one. List them with [`GET /v1/counsellors`](/api-reference/human-calls/list-counsellors):
+
+```json
+{
+  "object": "list",
+  "data": [
+    { "id": "5f0c…", "object": "counsellor", "name": "Priya Sharma", "email": "priya@school.in",
+      "roles": ["COUNSELLOR"], "can_call": true, "blocked_reason": null },
+    { "id": "a91e…", "object": "counsellor", "name": "Rahul Jain", "email": "rahul@school.in",
+      "roles": ["ADMIN"], "can_call": false,
+      "blocked_reason": "This counsellor has no mobile number on their profile. Their phone rings first, so add one to their profile." }
+  ],
+  "has_more": false
+}
+```
+
+`can_call` is `false` until the counsellor is ready for your calling provider:
+
+- **Vacademy Voice and Exotel** ring the counsellor's **mobile number**, so it must be on their profile, as a full number with the country code.
+- **Airtel** dials from the counsellor's **Airtel extension**, mapped under *Settings → Calling*.
+
+Phone numbers are never listed; `GET /v1/counsellors/{id}` shows one only to a key with `counsellors:manage`, and only for a login that belongs to your account alone. Name a counsellor in a call by `counsellor_id` or by `counsellor_email` (exactly one). To add, update or deactivate counsellors through the API, see [Counsellors](/concepts/counsellors).
+
+## Starting a call
+
+```bash
+curl https://api.telleo.ai/v1/human-calls \
+  -H "X-API-Key: $TELLEO_API_KEY" \
+  -H "Idempotency-Key: lead-8812-call-1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "counsellor_email": "priya@school.in",
+    "phone_number": "+919876543210",
+    "contact": { "name": "Asha Verma", "external_id": "lead-8812" },
+    "metadata": { "crm_owner": "u_42" },
+    "analyze": true
+  }'
+```
+
+The response is `201` with the [human call](#the-human-call-object), usually `queued` or `ringing_counsellor`. Within a few seconds the counsellor's phone rings.
+
+Because a human call happens now, every check runs **before** anything rings, and a call that cannot go out now is refused with a clear code instead of being queued. The checks run in this order, so the first one that fails is the error you get:
+
+| Check | Error |
+|---|---|
+| The body is valid (one counsellor selector, E.164 number, contact, metadata) | `400 invalid_request` |
+| Your account has a calling provider connected | `422 telephony_not_configured` |
+| The counsellor exists in your account and is active | `404 counsellor_not_found` |
+| The counsellor is ready for your provider (a valid mobile number / an extension) | `422 counsellor_cannot_call` (with `details.reason`) |
+| It is within calling hours (see below) | `422 outside_calling_hours` (with `details.next_allowed_at`) |
+| You have credits (Vacademy Voice only) | `402 insufficient_credits` |
+| The counsellor is not already on a call | `409 counsellor_busy` |
+| The number is not already being called | `409 call_in_progress` |
+| The number has not had too many calls today | `422 contact_daily_limit_reached` |
+| The number did not have a connected call in the last hour | `422 contact_called_recently` (with `Retry-After`) |
+| The provider can dial the number and accepts the call | `422 invalid_request` (the number), `422 counsellor_cannot_call` (the counsellor's number), `502 dial_failed`, `503 provider_unavailable` |
+
+The busy and already-being-called checks are made under a lock per counsellor and per number, so two requests a moment apart (a double click) cannot both ring.
+
+`Idempotency-Key` works exactly as for [AI calls](/platform/idempotency): a retry with the same key and body returns the first call (`200`, `idempotent_replay: true`) instead of ringing the counsellor again.
+
+### Calling hours and contact limits
+
+- **Calling hours.** Calls go out only inside your account's calling hours (the calling shifts in your AI calling settings, as for AI calls) **and** inside the India compliance window, **9 AM to 9 PM** in your account's timezone unless your plan changes it.
+- **Calls per number per day.** The same limit as AI calls (3 in 24 hours unless your settings say otherwise), counting every call to the number, AI and human.
+- **Gap after a conversation.** After a call to a number connects, the next call to it waits at least an hour. A missed call (no answer, busy) does **not** start this gap, so a counsellor can retry a missed call; it still counts toward the daily limit.
+
+Telleo does not scrub numbers against the national DND (NCPR) registry. Check your own consent records before calling.
+
+## Your CRM lead
+
+If exactly one lead in your Telleo account has this phone number, the call is filed on that lead: it shows on the lead's timeline, and a [disposition](#dispositions) that is mapped to a lead stage moves the lead. `crm_lead_linked` says whether this happened. If no lead, or more than one, has the number, the call is kept as an API contact (like an AI call) and no lead changes.
+
+## Status
+
+| `status` | Meaning |
+|---|---|
+| `queued` | Accepted; the provider has not reported progress yet. |
+| `ringing_counsellor` | The counsellor's phone is ringing. |
+| `connecting` | The counsellor answered; the contact's phone is ringing. |
+| `in_progress` | They are talking. |
+| `completed` | The call connected and ended. |
+| `no_answer` | Someone did not pick up. `no_answer_by` is `counsellor`, `contact`, or `null` when the provider does not say. |
+| `busy` | A line was busy (`no_answer_by` as above). |
+| `failed` | The call could not be made; `status_reason` says why. |
+| `canceled` | The call was canceled before it connected. |
+
+How quickly the status changes depends on your provider, reported in `status_updates`:
+
+| Provider | `status_updates` | What you see |
+|---|---|---|
+| Vacademy Voice | `realtime` | Every step, within a second or two. |
+| Exotel | `final_only` | `queued` until the call ends, then the final status. |
+| Airtel | `delayed` | `queued` until Airtel's call record is imported, minutes to a few hours after the call. |
+
+A call that never reports an end is marked `failed` (*No final status was received*) after 2 hours (24 hours on Airtel).
+
+## The human call object
+
+```json
+{
+  "id": "hcall_7d2e9b1c4a6f8e0d3b5c7a9e",
+  "object": "human_call",
+  "status": "completed",
+  "counsellor": { "id": "5f0c…", "name": "Priya Sharma", "email": "priya@school.in" },
+  "phone_number": "+919876543210",
+  "contact": { "name": "Asha Verma", "email": null, "external_id": "lead-8812" },
+  "crm_lead_linked": true,
+  "metadata": { "crm_owner": "u_42" },
+  "analyze": true,
+  "status_updates": "realtime",
+  "created_at": "2026-10-17T05:30:02Z",
+  "dialed_at": "2026-10-17T05:30:03Z",
+  "answered_at": "2026-10-17T05:30:21Z",
+  "ended_at": "2026-10-17T05:36:40Z",
+  "duration_seconds": 379,
+  "recording_url": "https://…",
+  "recording_expires_at": "2026-10-18T05:40:00Z",
+  "disposition": { "key": "INTERESTED", "label": "Interested", "notes": "Demo on Friday", "set_at": "2026-10-17T05:37:10Z", "set_by": "counsellor" },
+  "analysis": {
+    "status": "completed",
+    "summary": "Asha wants the NEET 2027 weekend batch; demo booked for Friday.",
+    "short_update": "Interested, demo Friday",
+    "call_type": "sales",
+    "inferred_goal": "Book a demo class",
+    "outcome": "interested",
+    "sentiment": "positive",
+    "conversion_likelihood": "high",
+    "counsellor_rating": 8.0,
+    "outcome_rating": 7.5,
+    "language": "hi",
+    "credits": 0.95,
+    "completed_at": "2026-10-17T05:39:02Z"
+  },
+  "cost": { "credits": 6.5, "billed": true }
+}
+```
+
+- **Times** are ISO-8601 UTC and never in the future. `answered_at` is when the contact picked up, when known.
+- **`recording_url`** is a temporary link (valid until `recording_expires_at`, 24 hours); fetch the call again for a fresh one. It is `null` when your provider or settings do not record.
+- **`disposition`** is what the counsellor (or your system) recorded; `null` until set.
+- **`analysis`** is `not_requested` unless you sent `analyze: true` (or your account analyses calls automatically); then `pending`, `completed` or `failed` with a `reason` (`not_connected`, `no_recording`, `insufficient_credits`…). An analysis that hits a temporary error is retried automatically (up to 4 attempts) and stays `pending` meanwhile.
+- **`cost`** is `null` while the call runs. See [Billing](#billing).
+
+List calls with [`GET /v1/human-calls`](/api-reference/human-calls/list-human-calls), filtered by `counsellor_id`, `status`, `phone_number`, `external_id`, `created_after` and `created_before`, newest first with [cursor pagination](/platform/pagination). `status` matches the `status` each call reports, including calls reported `failed` because they were never placed or never reported an end.
+
+## Dispositions
+
+The outcome of a human call is the **disposition** the counsellor picks in the dashboard. Your system can set it too:
+
+```bash
+curl https://api.telleo.ai/v1/human-calls/hcall_7d2e9b1c4a6f8e0d3b5c7a9e/disposition \
+  -H "X-API-Key: $TELLEO_API_KEY" -H "Content-Type: application/json" \
+  -d '{ "key": "CALLBACK", "notes": "Call after 6 pm" }'
+```
+
+Keys come from your account's list, [`GET /v1/dispositions`](/api-reference/human-calls/list-dispositions). `changes_lead_status` says whether a key moves a linked lead to a new stage.
+
+## AI analysis
+
+Send `analyze: true` to have the conversation transcribed and analysed once the recording is in: a summary, the contact's sentiment, how likely they are to convert, and ratings of the call. You get [`human_call.analysis_ready`](/webhooks/events#human_call-analysis_ready) when it is done (usually a few minutes after the call). Analysis needs a recording, so it is only possible when your calls are recorded.
+
+## Billing
+
+| Provider | What is charged to your Telleo credits |
+|---|---|
+| Vacademy Voice | Talk time, at your plan's per-minute voice rate in 30-second pulses. `cost.billed` is `false` for a few minutes after the call. |
+| Exotel, Airtel | Nothing: the call runs on your own carrier account, which bills you directly. `cost` is `{ "credits": 0, "billed": true, "note": "billed_by_provider" }`. |
+| AI analysis (`analyze: true`) | 0.15 credits per recorded minute, on every provider, shown as `analysis.credits`. |
+
+Human calls appear under `human_calls` in [`GET /v1/usage`](/platform/credits-and-usage): with `source=api` the calls placed through the API, with `source=all` every counsellor call placed on Vacademy Voice, Exotel or Airtel. Recordings of calls made elsewhere and uploaded to Telleo are not counted.

@@ -1,0 +1,19 @@
+{
+    "reportRecipients": "रिपोर्ट प्राप्तकर्ता",
+    "generateTypeReports": "{{type}} रिपोर्ट जनरेट करें",
+    "sendReportsToStudentViaMail": "छात्र को मेल के ज़रिए रिपोर्ट भेजें",
+    "sendReportsToStudentViaWhatsapp": "छात्र को व्हाट्सएप के ज़रिए रिपोर्ट भेजें",
+    "sendReportsToParentViaMail": "अभिभावक को मेल के ज़रिए रिपोर्ट भेजें",
+    "sendReportsToParentViaWhatsapp": "अभिभावक को व्हाट्सएप के ज़रिए रिपोर्ट भेजें",
+    "studentsEmail": "छात्र का ईमेल",
+    "learnerMobileNumberLabel": "{{term}} का मोबाइल नंबर",
+    "parentGuardianEmail": "अभिभावक का ईमेल",
+    "parentGuardianMobileNumber": "अभिभावक का मोबाइल नंबर",
+    "studentLearningProgressReport": "छात्र लर्निंग प्रगति रिपोर्ट",
+    "batchLearningProgressReport": "बैच लर्निंग प्रगति रिपोर्ट",
+    "saveChanges": "बदलाव सहेजें",
+    "toast": {
+        "settingsUpdated": "सेटिंग्स अपडेट हो गईं!",
+        "updateFailed": "अपडेट करने में विफल"
+    }
+}

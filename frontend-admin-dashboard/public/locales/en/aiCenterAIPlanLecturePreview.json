@@ -1,0 +1,10 @@
+{
+    "failedDialog": {
+        "title": "Failed to load questions",
+        "message": "Click <retryLink>here</retryLink> to retry"
+    },
+    "retryButton": "Retry",
+    "viewPlanButton": "View plan",
+    "loading": "Loading…",
+    "noDataToast": "No data exists!"
+}

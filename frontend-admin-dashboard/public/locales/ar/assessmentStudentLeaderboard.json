@@ -1,0 +1,14 @@
+{
+    "header": {
+        "title": "لوحة المتصدرين"
+    },
+    "toasts": {
+        "pdfExportSuccess": "تم تصدير بيانات لوحة المتصدرين بصيغة PDF بنجاح",
+        "csvExportSuccess": "تم تصدير بيانات لوحة المتصدرين بصيغة CSV بنجاح"
+    },
+    "studentCard": {
+        "duration": "{{minutes}} دقيقة {{seconds}} ثانية",
+        "percentile": "المئين",
+        "marks": "الدرجات"
+    }
+}

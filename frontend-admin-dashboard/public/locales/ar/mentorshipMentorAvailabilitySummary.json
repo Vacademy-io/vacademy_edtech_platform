@@ -1,0 +1,19 @@
+{
+    "noHoursSet": "لم يتم تحديد ساعات أسبوعية — لا تُعرض أي مواعيد على المتعلمين.",
+    "sessionDuration_zero": "جلسات بلا مدة محددة",
+    "sessionDuration_one": "جلسة مدتها دقيقة واحدة",
+    "sessionDuration_two": "جلسة مدتها دقيقتان",
+    "sessionDuration_few": "جلسات مدتها {{count}} دقائق",
+    "sessionDuration_many": "جلسات مدتها {{count}} دقيقة",
+    "sessionDuration_other": "جلسات مدتها {{count}} دقيقة",
+    "defaultLength": "المدة الافتراضية",
+    "days": {
+        "monday": "الاثنين",
+        "tuesday": "الثلاثاء",
+        "wednesday": "الأربعاء",
+        "thursday": "الخميس",
+        "friday": "الجمعة",
+        "saturday": "السبت",
+        "sunday": "الأحد"
+    }
+}

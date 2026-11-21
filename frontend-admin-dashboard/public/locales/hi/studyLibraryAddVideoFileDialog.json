@@ -1,0 +1,17 @@
+{
+    "validation": {
+        "fileNameRequired": "फ़ाइल का नाम आवश्यक है",
+        "videoFileRequired": "वीडियो फ़ाइल आवश्यक है"
+    },
+    "toast": {
+        "reorderFailed": "स्लाइड बन गई लेकिन क्रम बदलना विफल रहा",
+        "durationReadFailed": "वीडियो की अवधि पढ़ी नहीं जा सकी। कृपया कोई अन्य फ़ाइल आज़माएं या इसे फिर से एन्कोड करें।",
+        "uploadSuccess": "वीडियो सफलतापूर्वक अपलोड हुआ!",
+        "uploadFailed": "वीडियो अपलोड करने में विफल"
+    },
+    "importYourFile": "अपनी फ़ाइल आयात करें",
+    "dragOrClickToUpload": "अपलोड करने के लिए खींचें या क्लिक करें",
+    "selected": "चयनित: {{name}}",
+    "uploading": "अपलोड हो रहा है...",
+    "uploadVideo": "वीडियो अपलोड करें"
+}

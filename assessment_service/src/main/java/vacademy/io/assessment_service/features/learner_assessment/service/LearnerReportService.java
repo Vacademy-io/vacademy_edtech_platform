@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.cache.annotation.Cacheable;
@@ -14,6 +15,8 @@ import vacademy.io.assessment_service.features.assessment.dto.LeaderBoardDto;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.StudentReportFilter;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.*;
 import vacademy.io.assessment_service.features.assessment.entity.Assessment;
+import vacademy.io.assessment_service.features.assessment.enums.ReleaseResultStatusEnum;
+import vacademy.io.assessment_service.features.assessment.enums.ResultTypeEnum;
 import vacademy.io.assessment_service.features.assessment.entity.AssessmentUserRegistration;
 import vacademy.io.assessment_service.features.assessment.entity.QuestionAssessmentSectionMapping;
 import vacademy.io.assessment_service.features.assessment.entity.Section;
@@ -69,6 +72,13 @@ public class LearnerReportService {
 
     @Autowired
     private vacademy.io.assessment_service.features.assessment.service.AiReportHtmlBuilder aiReportHtmlBuilder;
+
+    /** The 2026-10 AI report; also answers "is there an AI report?" for the one-report rule. */
+    @Autowired
+    private vacademy.io.assessment_service.features.assessment.service.aireport.AiReportPdfService aiReportPdfService;
+
+    @Autowired
+    private vacademy.io.assessment_service.features.assessment.service.aireport.ReportProfileService reportProfileService;
 
     @Autowired
     private vacademy.io.common.media.service.FileService fileService;
@@ -145,19 +155,67 @@ public class LearnerReportService {
                 .findTopByUserIdAndAssessmentId(userId, assessmentId);
 
         if (registration.isEmpty()) {
-            throw new VacademyException("You are not registered for this assessment");
+            throw new VacademyException(HttpStatus.FORBIDDEN, "You are not registered for this assessment");
         }
 
         Optional<StudentAttempt> attempt = studentAttemptRepository.findById(attemptId);
         if (attempt.isEmpty()) {
-            throw new VacademyException("Attempt not found");
+            throw new VacademyException(HttpStatus.NOT_FOUND, "Attempt not found");
         }
 
         if (!attempt.get().getRegistration().getId().equals(registration.get().getId())) {
-            throw new VacademyException("You do not have access to this attempt");
+            throw new VacademyException(HttpStatus.FORBIDDEN, "You do not have access to this attempt");
+        }
+
+        // Same rule the learner UI applies (AssessmentCard, assessment-slide-viewer):
+        // on a MANUAL result type nothing is visible until the teacher releases.
+        // The list endpoint hands the learner their attempt id on the "Pending
+        // evaluation" row, so without this the detail, comparison, annotated-copy
+        // and PDF endpoints would serve the AI's (or an evaluator's) marks before
+        // release to anyone who calls them directly. AUTO result types are
+        // deliberately NOT gated here: the card offers "Show report" for them
+        // regardless of release status, and refusing would break that button -
+        // unless the attempt is explicitly held (PENDING) for a teacher, or the
+        // result type is AUTO_AFTER_ASSESSMENT_END and the end date is still ahead.
+        if (isHeldManualResult(registration.get().getAssessment(), attempt.get())) {
+            throw new VacademyException(HttpStatus.FORBIDDEN, "Result has not been released yet");
         }
 
         return registration.get();
+    }
+
+    static boolean isHeldManualResult(Assessment assessment, StudentAttempt attempt) {
+        if (ReleaseResultStatusEnum.PENDING.name().equals(attempt.getReportReleaseStatus())) {
+            // Explicitly held for a teacher on any result type: an uploaded copy, or
+            // an online attempt whose written answers the AI is grading.
+            return true;
+        }
+        // NO_AUTO_RELEASE is auto-marked but released by hand, so it is held like MANUAL.
+        boolean heldForRelease = assessment != null
+                && (ResultTypeEnum.MANUAL.name().equals(assessment.getResultType())
+                        || "NO_AUTO_RELEASE".equals(assessment.getResultType()))
+                && !ReleaseResultStatusEnum.RELEASED.name().equals(attempt.getReportReleaseStatus());
+        return heldForRelease || isHeldUntilAssessmentEnd(assessment, attempt, new Date());
+    }
+
+    /**
+     * AUTO_AFTER_ASSESSMENT_END: an attempt submitted before the end date keeps a NULL
+     * release status until the hourly job marks it RELEASED after the end, so the end
+     * date itself is the gate. Without it the report opened the moment the learner
+     * submitted. Mock and practice tests are released on submission (they never end),
+     * and a missing or 9999 end date holds nothing. Same rule as the learner card
+     * (survey-card-state.ts isHeldUntilAssessmentEnd).
+     */
+    static boolean isHeldUntilAssessmentEnd(Assessment assessment, StudentAttempt attempt, Date now) {
+        if (assessment == null || !ResultTypeEnum.AUTO_AFTER_ASSESSMENT_END.name().equals(assessment.getResultType())) {
+            return false;
+        }
+        if (ReleaseResultStatusEnum.RELEASED.name().equals(attempt.getReportReleaseStatus())) return false;
+        String playMode = assessment.getPlayMode() == null ? "" : assessment.getPlayMode().toUpperCase();
+        if (vacademy.io.assessment_service.features.assessment.service.StudentAttemptService.OPEN_ENDED_PLAY_MODES.contains(playMode)) return false;
+        Date end = assessment.getBoundEndTime();
+        if (end == null || end.toInstant().atZone(java.time.ZoneOffset.UTC).getYear() >= 9000) return false;
+        return !now.after(end);
     }
 
     /**
@@ -171,16 +229,31 @@ public class LearnerReportService {
         List<String> releaseStatus = filter.getReleaseResultStatus() != null ? filter.getReleaseResultStatus() : List.of("RELEASED");
         List<String> assessmentTypes = filter.getAssessmentType();
 
+        boolean oldestFirst = isOldestFirst(filter);
+
         Page<StudentReportDto> reports;
         if (StringUtils.hasText(filter.getName())) {
             reports = studentAttemptRepository.findAssessmentForUserWithFilterAndSearch(
-                    filter.getName(), user.getUserId(), instituteId, statusList, releaseStatus, assessmentTypes, pageable);
+                    true, filter.getName(), user.getUserId(), instituteId, statusList, releaseStatus, assessmentTypes,
+                    false, List.of(""), oldestFirst, pageable);
         } else {
             reports = studentAttemptRepository.findAssessmentForUserWithFilter(
-                    user.getUserId(), instituteId, statusList, releaseStatus, assessmentTypes, pageable);
+                    true, user.getUserId(), instituteId, statusList, releaseStatus, assessmentTypes,
+                    false, List.of(""), oldestFirst, pageable);
         }
 
         return ResponseEntity.ok(reports);
+    }
+
+    /**
+     * The learner list is newest first; {@code sort_columns: {"attempt_date": "ASC"}} asks for
+     * oldest first. Any other sort value keeps the default.
+     */
+    static boolean isOldestFirst(StudentReportFilter filter) {
+        Map<String, String> sort = filter == null ? null : filter.getSortColumns();
+        if (sort == null) return false;
+        String direction = sort.containsKey("attempt_date") ? sort.get("attempt_date") : sort.get("attemptDate");
+        return "ASC".equalsIgnoreCase(direction);
     }
 
     /**
@@ -192,6 +265,9 @@ public class LearnerReportService {
 
         StudentReportOverallDetailDto reportDetail = assessmentParticipantsManager
                 .createStudentReportDetailResponse(assessmentId, attemptId, instituteId);
+        // The assessment's report options decide what leaves the server, not just
+        // what the app draws: a hidden correct answer must not be in the payload.
+        reportProfileService.reportOptions(assessmentId, instituteId).stripFrom(reportDetail);
 
         return ResponseEntity.ok(reportDetail);
     }
@@ -203,6 +279,9 @@ public class LearnerReportService {
                                                                     String attemptId, String instituteId) {
         validateOwnershipAndAccess(user.getUserId(), assessmentId, attemptId);
         StudentComparisonDto comparison = self.buildComparisonData(user.getUserId(), assessmentId, attemptId, instituteId);
+        if (comparison != null) {
+            comparison.setQuestionWiseHidden(reportProfileService.hideQuestionWise(assessmentId, instituteId));
+        }
         return ResponseEntity.ok(comparison);
     }
 
@@ -464,21 +543,48 @@ public class LearnerReportService {
         Optional<Assessment> assessmentOptional = assessmentRepository.findById(assessmentId);
         if (assessmentOptional.isEmpty()) throw new VacademyException("Assessment Not Found");
 
-        StudentComparisonDto comparison = self.buildComparisonData(user.getUserId(), assessmentId, attemptId, instituteId);
-
-        // Render through the shared release-flow path (ReportPdfRenderService),
-        // not the legacy HtmlBuilderService template: the learner-initiated
-        // download must be the same v2 document the release email attaches —
-        // student name in the letterhead, band chart, insight tables — instead
-        // of the anonymous legacy layout. The class context also carries the
-        // branding, option distribution and full leaderboard the v2 builder
-        // needs, so the separate best-effort fetches above became redundant.
-        ReportClassContext ctx = loadClassContext(assessmentId, instituteId);
-        byte[] pdfBytes = reportPdfRenderService.render(reportDetail, comparison, ctx);
+        // One report per student: the AI report once it exists, else the normal report
+        // (rendered through the shared release-flow builder), wrapped in the assessment's
+        // report-profile pages if it has any.
+        byte[] pdfBytes;
+        try {
+            pdfBytes = aiReportPdfService.renderStudentReport(user.getUserId(), assessmentId, attemptId, instituteId,
+                    reportDetail, null, () -> reportPdfRenderService.render(reportDetail,
+                            comparisonOrNull(user.getUserId(), assessmentId, attemptId, instituteId),
+                            loadClassContext(assessmentId, instituteId)));
+        } catch (Exception e) {
+            log.error("Error generating student report PDF for attempt {}", attemptId, e);
+            throw new VacademyException("Failed to generate report PDF");
+        }
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=studentReport.pdf")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdfBytes);
+    }
+
+    /**
+     * Class comparison for the downloaded PDF, or null when it cannot be built. The admin
+     * download (AdminExportManager.getStudentReportPdf) already renders without it in that
+     * case; the learner download threw instead, so the student got "Failed to generate
+     * report PDF" for the same attempt the admin could download.
+     */
+    private StudentComparisonDto comparisonOrNull(String userId, String assessmentId, String attemptId, String instituteId) {
+        try {
+            return self.buildComparisonData(userId, assessmentId, attemptId, instituteId);
+        } catch (Exception e) {
+            log.warn("[report-pdf] class comparison unavailable for attempt {}: {}", attemptId, e.getMessage());
+            return null;
+        }
+    }
+
+    /** The normal report's per-question review, which the AI report also renders; null on failure. */
+    private StudentReportOverallDetailDto reviewDetailOrNull(String assessmentId, String attemptId, String instituteId) {
+        try {
+            return assessmentParticipantsManager.createStudentReportDetailResponse(assessmentId, attemptId, instituteId);
+        } catch (Exception e) {
+            log.warn("[ai-report] question review unavailable for attempt {}: {}", attemptId, e.getMessage());
+            return null;
+        }
     }
 
     /**
@@ -698,21 +804,25 @@ public class LearnerReportService {
             // Get comparison data (rank, percentile, class avg, leaderboard)
             // If attemptId not provided, resolve from registration
             StudentComparisonDto comparison = null;
-            String resolvedAttemptId = attemptId;
-            if (resolvedAttemptId == null || resolvedAttemptId.isEmpty()) {
+            String resolvedAttemptId = resolveAiReportAttempt(user.getUserId(), assessmentId, attemptId);
+
+            if (aiReportPdfService.isEnabled() && resolvedAttemptId != null && !resolvedAttemptId.isEmpty()) {
                 try {
-                    // Use a direct query instead of lazy-loaded collection to avoid LazyInitializationException
-                    var reg = registrationRepository.findTopByUserIdAndAssessmentId(user.getUserId(), assessmentId);
-                    if (reg.isPresent()) {
-                        var latestAttempt = studentAttemptRepository.findTopByRegistrationOrderByCreatedAtDesc(reg.get());
-                        if (latestAttempt.isPresent()) {
-                            resolvedAttemptId = latestAttempt.get().getId();
-                        }
-                    }
+                    byte[] pdf = aiReportPdfService.renderStudentReport(user.getUserId(), assessmentId, resolvedAttemptId,
+                            instituteId, reviewDetailOrNull(assessmentId, resolvedAttemptId, instituteId), processedJson, null);
+                    return ResponseEntity.ok()
+                            .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                                    "attachment; filename=ai-report-" + assessmentId + ".pdf")
+                            .contentType(org.springframework.http.MediaType.APPLICATION_PDF)
+                            .body(pdf);
+                } catch (VacademyException e) {
+                    throw e;
                 } catch (Exception e) {
-                    log.warn("Failed to resolve attemptId for AI report: {}", e.getMessage());
+                    // Never leave a learner without a report: fall back to the previous layout.
+                    log.error("[ai-report] v2 render failed for attempt {}, serving the previous layout", resolvedAttemptId, e);
                 }
             }
+
             if (resolvedAttemptId != null && !resolvedAttemptId.isEmpty()) {
                 try {
                     comparison = self.buildComparisonData(user.getUserId(), assessmentId, resolvedAttemptId, instituteId);
@@ -722,7 +832,9 @@ public class LearnerReportService {
             }
 
             // Build HTML and convert to PDF
-            String html = aiReportHtmlBuilder.generateAiReportHtml(assessmentName, processedJson, branding, comparison);
+            // The assessment's report options apply to this older layout too.
+            String html = aiReportHtmlBuilder.generateAiReportHtml(assessmentName, processedJson, branding, comparison,
+                    reportProfileService.reportOptions(assessmentId, instituteId));
 
             java.io.ByteArrayOutputStream pdfOutputStream = new java.io.ByteArrayOutputStream();
             com.itextpdf.html2pdf.ConverterProperties converterProperties = new com.itextpdf.html2pdf.ConverterProperties();
@@ -740,5 +852,84 @@ public class LearnerReportService {
             log.error("Error generating AI report PDF", e);
             throw new VacademyException("Failed to generate AI report PDF");
         }
+    }
+
+    /**
+     * The AI report as an HTML page for the learner app's screen. It is the same report as the
+     * {@link #getAiReportPdf} download (same data, report options and sections) laid out for a
+     * browser, so what a learner sees on screen is what they download.
+     */
+    public ResponseEntity<Map<String, String>> getAiReportWebHtml(CustomUserDetails user, String assessmentId,
+                                                                  String attemptId, String instituteId) {
+        String html = onScreenAiReport(user, assessmentId, attemptId, (resolvedAttemptId, processedJson) ->
+                aiReportPdfService.renderWebHtml(user.getUserId(), assessmentId, resolvedAttemptId, instituteId,
+                        reviewDetailOrNull(assessmentId, resolvedAttemptId, instituteId), processedJson));
+        return ResponseEntity.ok(Map.of("html", html));
+    }
+
+    /**
+     * The AI report as data for the learner app's screen, which lays it out as cards and charts.
+     * Same data and report options as the {@link #getAiReportPdf} download.
+     */
+    public ResponseEntity<vacademy.io.assessment_service.features.assessment.service.aireport.AiReportWebData> getAiReportWebData(CustomUserDetails user, String assessmentId,
+                                                              String attemptId, String instituteId) {
+        return ResponseEntity.ok(onScreenAiReport(user, assessmentId, attemptId, (resolvedAttemptId, processedJson) ->
+                aiReportPdfService.renderWebData(user.getUserId(), assessmentId, resolvedAttemptId, instituteId,
+                        reviewDetailOrNull(assessmentId, resolvedAttemptId, instituteId), processedJson)));
+    }
+
+    @FunctionalInterface
+    private interface OnScreenRender<T> {
+        T render(String resolvedAttemptId, String processedJson) throws Exception;
+    }
+
+    /** The checks every on-screen AI report goes through: report exists, attempt is the learner's own and released. */
+    private <T> T onScreenAiReport(CustomUserDetails user, String assessmentId, String attemptId, OnScreenRender<T> render) {
+        try {
+            String processedJson = adminCoreServiceClient.getProcessedAIReport(user.getUserId(), assessmentId);
+            if (processedJson == null || processedJson.isEmpty()) {
+                throw new VacademyException("AI report not yet available for this assessment");
+            }
+            String resolvedAttemptId = resolveAiReportAttempt(user.getUserId(), assessmentId, attemptId);
+            if (resolvedAttemptId == null || resolvedAttemptId.isEmpty()) {
+                throw new VacademyException("No attempt found for this assessment");
+            }
+            if (!aiReportPdfService.isEnabled()) {
+                throw new VacademyException("The on-screen AI report is not available");
+            }
+            return render.render(resolvedAttemptId, processedJson);
+        } catch (VacademyException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Error rendering the on-screen AI report", e);
+            throw new VacademyException("Failed to load the AI report");
+        }
+    }
+
+    /**
+     * The attempt an AI report is for: the given one, else the learner's latest (null when there
+     * is none). The attempt id comes from the client, so it must be this learner's own attempt,
+     * and a result still held for release must not be readable through the AI report.
+     */
+    private String resolveAiReportAttempt(String userId, String assessmentId, String attemptId) {
+        String resolvedAttemptId = attemptId;
+        if (resolvedAttemptId == null || resolvedAttemptId.isEmpty()) {
+            try {
+                // Use a direct query instead of lazy-loaded collection to avoid LazyInitializationException
+                var reg = registrationRepository.findTopByUserIdAndAssessmentId(userId, assessmentId);
+                if (reg.isPresent()) {
+                    var latestAttempt = studentAttemptRepository.findTopByRegistrationOrderByCreatedAtDesc(reg.get());
+                    if (latestAttempt.isPresent()) {
+                        resolvedAttemptId = latestAttempt.get().getId();
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Failed to resolve attemptId for AI report: {}", e.getMessage());
+            }
+        }
+        if (resolvedAttemptId != null && !resolvedAttemptId.isEmpty()) {
+            validateOwnershipAndAccess(userId, assessmentId, resolvedAttemptId);
+        }
+        return resolvedAttemptId;
     }
 }

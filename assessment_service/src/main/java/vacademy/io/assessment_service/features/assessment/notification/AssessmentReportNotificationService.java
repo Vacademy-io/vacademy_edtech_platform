@@ -1,30 +1,128 @@
 package vacademy.io.assessment_service.features.assessment.notification;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import vacademy.io.assessment_service.features.assessment.entity.StudentAttempt;
+import vacademy.io.assessment_service.features.assessment.service.aireport.AiReportPdfService;
 import vacademy.io.assessment_service.features.notification.service.NotificationService;
+import vacademy.io.assessment_service.features.open_evaluation.policy.ApiCandidatePolicy;
 import vacademy.io.common.notification.dto.AttachmentNotificationDTO;
 import vacademy.io.common.notification.dto.AttachmentUsersDTO;
 import vacademy.io.common.logging.SentryLogger;
 
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 public class AssessmentReportNotificationService {
 
     @Autowired
     private NotificationService notificationService;
 
+    // Optional so a bare instance (unit tests) still sends the built-in email.
+    @Autowired(required = false)
+    private ResultNotificationService resultNotificationService;
+
+    @Autowired(required = false)
+    private AiReportPdfService aiReportPdfService;
+
+    /**
+     * The result email of a release (manual-evaluation tests: the checked copy attached). Uses the
+     * institute's ASSESSMENT_RESULT_RELEASED email (assessment binding, else institute) with the
+     * same per-learner values as auto-evaluated tests. Not the DEFAULT one: its text describes the
+     * AI report, not a checked copy, so without a binding the built-in email goes out.
+     */
     public void sendAssessmentReportsToLearners(Map<StudentAttempt, byte[]> participantPdfReport, String assessmentId, String instituteId) {
+        if (resultNotificationService != null) {
+            sendWithResultTemplate(participantPdfReport, assessmentId, instituteId);
+            return;
+        }
+        sendAssessmentReportsToLearners(participantPdfReport, assessmentId, instituteId, "Assessment Report",
+                AssessmentNotificationEmailBody.getAssessmentReportBody());
+    }
+
+    private void sendWithResultTemplate(Map<StudentAttempt, byte[]> participantPdfReport, String assessmentId,
+                                        String instituteId) {
+        // Resolve once, first: only the institute's own template can use the full report values,
+        // so the per-learner report load is skipped when the built-in email goes out.
+        ResultNotificationService.Templates resolved = null;
+        try {
+            resolved = resultNotificationService.resolve(instituteId, assessmentId);
+        } catch (Exception e) {
+            log.warn("Result template lookup failed for assessment {}; sending the built-in email: {}",
+                    assessmentId, e.getMessage());
+        }
+        String level = resolved == null ? null : resolved.emailLevel();
+        boolean bound = "ASSESSMENT".equals(level) || "INSTITUTE".equals(level);
+
+        List<ResultNotificationService.Item> items = new ArrayList<>();
+        for (Map.Entry<StudentAttempt, byte[]> entry : participantPdfReport.entrySet()) {
+            StudentAttempt attempt = entry.getKey();
+            // Same skip as below: no API candidates, no blank addresses (and no values loaded for them).
+            if (attempt == null || !ApiCandidatePolicy.mayMessage(attempt.getRegistration()) || entry.getValue() == null) {
+                continue;
+            }
+            Map<String, String> variables = bound && aiReportPdfService != null
+                    ? aiReportPdfService.variables(attempt.getRegistration().getUserId(), assessmentId, attempt.getId(),
+                    instituteId, null, null, null)
+                    : Map.of();
+            items.add(new ResultNotificationService.Item(attempt, entry.getValue(), withAssessmentName(variables, attempt)));
+        }
+        if (items.isEmpty()) {
+            return;
+        }
+        try {
+            resultNotificationService.sendEmails(items, assessmentId, instituteId,
+                    bound ? resolved : new ResultNotificationService.Templates(null, null));
+        } catch (Exception e) {
+            SentryLogger.SentryEventBuilder.error(e)
+                    .withMessage("Failed to send assessment report notification")
+                    .withTag("notification.type", "EMAIL")
+                    .withTag("email.type", "ASSESSMENT_REPORT")
+                    .withTag("assessment.id", assessmentId != null ? assessmentId : "unknown")
+                    .withTag("user.count", String.valueOf(items.size()))
+                    .withTag("operation", "sendAssessmentReportEmail")
+                    .send();
+            throw e;
+        }
+    }
+
+    /** The subject and attachment name need {{assessment_name}} even when no report values were loaded. */
+    private static Map<String, String> withAssessmentName(Map<String, String> variables, StudentAttempt attempt) {
+        if (variables != null && StringUtils.hasText(variables.get("assessment_name"))) {
+            return variables;
+        }
+        Map<String, String> out = new HashMap<>(variables == null ? Map.of() : variables);
+        try {
+            var assessment = attempt.getRegistration().getAssessment();
+            if (assessment != null && StringUtils.hasText(assessment.getName())) {
+                out.put("assessment_name", assessment.getName());
+            }
+        } catch (Exception ignore) {
+            // name stays blank; the built-in subject still reads sensibly
+        }
+        return out;
+    }
+
+    /** The same email with another subject and body (the "your result was updated" message). */
+    public void sendAssessmentReportsToLearners(Map<StudentAttempt, byte[]> participantPdfReport, String assessmentId,
+                                                String instituteId, String subject, String body) {
         List<AttachmentUsersDTO> usersList = new ArrayList<>();
 
         for (Map.Entry<StudentAttempt, byte[]> entry : participantPdfReport.entrySet()) {
             StudentAttempt studentAttempt = entry.getKey();
             byte[] reportData = entry.getValue();
+            // API candidates (partner API) have no login and no email, and a blank address
+            // reaches nobody: skip both rather than hand the mailer an empty channel.
+            if (studentAttempt == null || !ApiCandidatePolicy.mayMessage(studentAttempt.getRegistration())) {
+                continue;
+            }
 
             AttachmentUsersDTO user = new AttachmentUsersDTO();
             user.setChannelId(studentAttempt.getRegistration().getUserEmail());
@@ -40,7 +138,12 @@ public class AssessmentReportNotificationService {
             usersList.add(user);
         }
 
+        if (usersList.isEmpty()) {
+            return;
+        }
         AttachmentNotificationDTO attachmentNotificationDTO = getAttachmentNotificationDTO(usersList, assessmentId);
+        attachmentNotificationDTO.setSubject(subject);
+        attachmentNotificationDTO.setBody(body);
         sendNotification(attachmentNotificationDTO, instituteId);
     }
 
@@ -93,6 +196,7 @@ public class AssessmentReportNotificationService {
 
         // 2. Collect user IDs for push and system alert
         List<String> userIds = participantPdfReport.keySet().stream()
+                .filter(attempt -> !ApiCandidatePolicy.isApi(attempt))
                 .map(attempt -> attempt.getRegistration().getUserId())
                 .filter(userId -> userId != null && !userId.isEmpty())
                 .toList();

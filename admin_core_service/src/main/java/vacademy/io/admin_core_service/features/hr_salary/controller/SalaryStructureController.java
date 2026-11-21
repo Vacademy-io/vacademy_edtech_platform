@@ -3,7 +3,8 @@ package vacademy.io.admin_core_service.features.hr_salary.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
+import vacademy.io.admin_core_service.core.security.HrAccessGuard;
+import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import vacademy.io.admin_core_service.features.hr_salary.dto.AssignSalaryDTO;
 import vacademy.io.admin_core_service.features.hr_salary.dto.EmployeeSalaryStructureDTO;
 import vacademy.io.admin_core_service.features.hr_salary.dto.SalaryRevisionDTO;
@@ -20,14 +21,19 @@ public class SalaryStructureController {
     private SalaryStructureService salaryStructureService;
 
     @Autowired
-    private InstituteAccessValidator instituteAccessValidator;
+    private HrAccessGuard hrAccessGuard;
 
     @PostMapping
+    @Auditable(
+            entityType = "HR_SALARY_STRUCTURE",
+            action = "ASSIGN",
+            entityIdExpr = "#result?.body",
+            descriptionExpr = "'assigned salary structure to employee ' + #dto?.employeeId")
     public ResponseEntity<String> assignSalary(
             @RequestBody AssignSalaryDTO dto,
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
+        hrAccessGuard.requireHrAdmin(user, instituteId);
         String structureId = salaryStructureService.assignSalary(dto, instituteId, user.getUserId());
         return ResponseEntity.ok(structureId);
     }
@@ -37,8 +43,9 @@ public class SalaryStructureController {
             @PathVariable("id") String id,
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
-        EmployeeSalaryStructureDTO structure = salaryStructureService.getStructure(id);
+        // Self-or-HR-staff check happens inside the service: the owning employee
+        // is only known after the structure is loaded by id.
+        EmployeeSalaryStructureDTO structure = salaryStructureService.getStructure(id, instituteId, user);
         return ResponseEntity.ok(structure);
     }
 
@@ -47,7 +54,7 @@ public class SalaryStructureController {
             @RequestParam("employeeId") String employeeId,
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
+        hrAccessGuard.requireSelfOrHrStaff(user, instituteId, employeeId);
         List<EmployeeSalaryStructureDTO> history = salaryStructureService.getEmployeeSalaryHistory(employeeId);
         return ResponseEntity.ok(history);
     }
@@ -57,7 +64,7 @@ public class SalaryStructureController {
             @RequestParam("employeeId") String employeeId,
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
+        hrAccessGuard.requireSelfOrHrStaff(user, instituteId, employeeId);
         List<SalaryRevisionDTO> revisions = salaryStructureService.getRevisionHistory(employeeId);
         return ResponseEntity.ok(revisions);
     }

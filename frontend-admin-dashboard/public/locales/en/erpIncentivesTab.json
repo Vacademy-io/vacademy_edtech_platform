@@ -1,0 +1,64 @@
+{
+    "enterRange": "Enter 0–{{max}}%",
+    "cannotBeNegative": "Cannot be negative",
+    "errors": {
+        "computeFailed": "Could not compute incentives for this month.",
+        "materializeFailed": "Could not create the incentive adjustments."
+    },
+    "toast": {
+        "previewReady": "{{count}} counsellor(s) in {{month}}",
+        "materialized_one": "{{count}} incentive adjustment created on {{month}} payroll",
+        "materialized_other": "{{count}} incentive adjustments created on {{month}} payroll",
+        "skipped_one": "{{count}} skipped",
+        "skipped_other": "{{count}} skipped"
+    },
+    "columns": {
+        "counsellor": "Counsellor",
+        "revenueCollected": "Revenue collected",
+        "payingLeads": "Paying leads",
+        "payments": "Payments",
+        "commission": "Commission",
+        "perConversion": "Per conversion",
+        "incentive": "Incentive"
+    },
+    "intro": "Sales incentive per counsellor, computed from revenue actually collected in a month — paid leads of converted enquiries, not pipeline. Set a commission percentage, a flat amount per conversion, or both; materializing writes a CRM_INCENTIVE adjustment that the payout month's regular payroll run pays.",
+    "earningMonthLabel": "Earning month (revenue collected)",
+    "commissionLabel": "Commission (%)",
+    "fixedPerConversionLabel": "Fixed per conversion (optional)",
+    "computing": "Computing…",
+    "recomputePreview": "Recompute preview",
+    "previewIncentives": "Preview incentives",
+    "commissionHint": "Commission runs 0–{{max}}% of collected revenue; the fixed amount is paid once per paying lead. At least one of the two must be set, or every counsellor computes to nothing.",
+    "emptyTerms": {
+        "title": "Set a commission or a per-conversion amount",
+        "description": "Incentives are revenue × commission, plus a flat amount per conversion. With neither set there is nothing to compute."
+    },
+    "nothingComputed": {
+        "title": "Nothing computed yet",
+        "description": "Preview reads every payment collected in {{month}} and attributes it to the counsellor who converted the lead. It is a heavy query, so it runs only when you ask for it."
+    },
+    "stats": {
+        "counsellors": "Counsellors",
+        "revenueCollected": "Revenue collected",
+        "payingLeads": "Paying leads",
+        "totalIncentive": "Total incentive",
+        "adjustmentsCreated": "Adjustments created",
+        "skipped": "Skipped",
+        "totalPaidOut": "Total paid out"
+    },
+    "noneToPay": {
+        "title": "No counsellor can be paid for this month",
+        "description": "Nothing was collected in {{month}}, or every counsellor who collected is missing an employee record."
+    },
+    "willBeSkipped_one": "{{count}} counsellor will be skipped",
+    "willBeSkipped_other": "{{count}} counsellors will be skipped",
+    "unlinkedHint": "These people collected revenue but are not linked to an employee record — there is nobody to raise a payroll adjustment against, so materializing leaves them out. Their incentive is included in the total above so the number is honest.",
+    "payThisIncentive": "Pay this incentive",
+    "payThisIncentiveHint": "One CRM_INCENTIVE adjustment per linked counsellor, on the payout month's regular payroll run. Running it twice for the same payout period is safe — the second run creates nothing.",
+    "earnedIn": "Earned in",
+    "paidOnPayrollFor": "Paid on payroll for",
+    "creating": "Creating…",
+    "materialize": "Materialize",
+    "payoutSummary": "{{earning}} incentive will be paid in the {{payout}} payroll run.",
+    "sameMonthWarning": "Both months are the same — check that is what you meant."
+}

@@ -1,0 +1,59 @@
+{
+    "dialog": {
+        "heading": "Conditions de diffusion - {{chapterName}}",
+        "defaultChapterName": "Chapitre",
+        "chapterDripConditions": "Conditions de diffusion du chapitre",
+        "emptyState": "Aucune condition de diffusion pour ce chapitre pour le moment."
+    },
+    "packageConflict": {
+        "title": "Conditions au niveau du cours actives",
+        "courseLevel": "Niveau du cours",
+        "explanation": "Ces conditions au niveau du cours s'appliquent à tous les chapitres. Les conditions spécifiques au chapitre sont désactivées lorsque les conditions du cours ciblent les chapitres."
+    },
+    "behavior": {
+        "lock": "verrouiller"
+    },
+    "behaviorOptions": {
+        "lock": "Verrouiller (afficher mais empêcher l'accès)",
+        "hide": "Masquer (complètement caché)"
+    },
+    "ruleTypes": {
+        "dateBased": "Basé sur la date",
+        "completionBased": "Basé sur l'achèvement",
+        "prerequisite": "Prérequis",
+        "sequential": "Séquentiel"
+    },
+    "form": {
+        "releaseDate": "Date de publication",
+        "metric": "Indicateur",
+        "averageOfAll": "Moyenne de tous",
+        "averageOfLastN": "Moyenne des N derniers",
+        "count": "Nombre",
+        "thresholdPercent": "Seuil %",
+        "requiredChapters": "Chapitres requis",
+        "selectChapters": "Sélectionner des chapitres",
+        "requiredChaptersHint": "Sélectionnez les chapitres qui doivent être terminés avant le déverrouillage",
+        "completionThresholdPercent": "Seuil d'achèvement %",
+        "prerequisiteThresholdHint": "Pourcentage d'achèvement requis pour les chapitres prérequis",
+        "requiresPreviousCompletion": "Nécessite l'achèvement du chapitre précédent",
+        "sequentialThresholdHint": "Pourcentage d'achèvement requis pour le chapitre précédent",
+        "behavior": "Comportement",
+        "unlockRule": "Règle de déverrouillage",
+        "noRuleConfigured": "Aucune règle configurée. Veuillez configurer une règle de déverrouillage ci-dessous.",
+        "enableConditionLabel": "Activer cette condition de chapitre",
+        "enableConditionHint": "Détermine si cette condition de diffusion est active"
+    },
+    "actions": {
+        "addCondition": "Ajouter une condition",
+        "edit": "Modifier",
+        "deleteConditionTitle": "Supprimer la condition",
+        "close": "Fermer",
+        "saving": "Enregistrement...",
+        "saveCondition": "Enregistrer la condition"
+    },
+    "alerts": {
+        "cannotDeleteEnabled": "Impossible de supprimer une condition activée. Veuillez d'abord désactiver la condition de diffusion du chapitre.",
+        "confirmDelete": "Êtes-vous sûr de vouloir supprimer cette condition de diffusion ?",
+        "fillRequiredFields": "Veuillez remplir tous les champs requis"
+    }
+}

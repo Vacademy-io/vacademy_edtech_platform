@@ -1,0 +1,39 @@
+{
+    "emptyState": {
+        "title": "कोई {{term}} संबद्ध नहीं है",
+        "hint": "यह शिक्षार्थी किसी भी {{term}} से जुड़ा नहीं है।"
+    },
+    "picker": {
+        "label": "{{term}} के लिए"
+    },
+    "error": {
+        "title": "{{term}} विवरण लोड नहीं हो सका",
+        "hint": "इस {{term}} को लाते समय कुछ गड़बड़ हो गई। कृपया पुनः प्रयास करें।",
+        "toast": "{{term}} विवरण प्राप्त करने में विफल"
+    },
+    "role": {
+        "admin": "एडमिन",
+        "member": "सदस्य"
+    },
+    "actions": {
+        "openManagementPortal": "प्रबंधन पोर्टल खोलें"
+    },
+    "credentials": {
+        "heading": "एडमिन क्रेडेंशियल",
+        "usernameLabel": "उपयोगकर्ता नाम",
+        "passwordLabel": "पासवर्ड",
+        "usernameCopied": "उपयोगकर्ता नाम कॉपी किया गया!",
+        "passwordCopied": "पासवर्ड कॉपी किया गया!"
+    },
+    "members": {
+        "heading_one": "प्रबंधित सदस्य ({{count}})",
+        "heading_other": "प्रबंधित सदस्य ({{count}})",
+        "emptyTitle": "कोई सदस्य नहीं मिला",
+        "emptyHint": "इस {{term}} के अंतर्गत वर्तमान में कोई शिक्षार्थी प्रबंधित नहीं है।"
+    },
+    "admins": {
+        "heading": "{{term}} एडमिन",
+        "emptyTitle": "कोई एडमिन नहीं मिला",
+        "emptyHint": "इस {{term}} से कोई प्रशासक संबद्ध नहीं है।"
+    }
+}

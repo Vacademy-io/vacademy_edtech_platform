@@ -52,6 +52,40 @@ export function clearLanguageSettingCache(): void {
 }
 
 /**
+ * Extract LANGUAGE_SETTING.data out of an institute's settings JSON (the
+ * `institute_settings_json` / public `setting` field, string or object) and
+ * refresh the cache from it. Clears the cache when the institute has no
+ * LANGUAGE_SETTING so a value from a previously used institute never lingers.
+ *
+ * fetchAndStoreInstituteDetails only runs at login, so without this a learner
+ * who was already signed in when the admin enabled more languages keeps an
+ * English-only cache until they log out and back in — and the pre-login page
+ * never gets one at all. Callers that already have the public institute
+ * details (navbar, language dropdown) pass the `setting` field through here.
+ */
+export function syncLanguageSettingFromSettingJson(
+  settingJson: unknown
+): LanguageSetting | null {
+  try {
+    const parsed =
+      typeof settingJson === "string"
+        ? settingJson
+          ? JSON.parse(settingJson)
+          : null
+        : settingJson;
+    const data = parsed?.setting?.LANGUAGE_SETTING?.data;
+    if (data && typeof data === "object" && !Array.isArray(data)) {
+      setLanguageSettingCache(data as LanguageSetting);
+      return data as LanguageSetting;
+    }
+    clearLanguageSettingCache();
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Locales the language picker should offer, in canonical SUPPORTED_LOCALES
  * order. Uses the institute's enabled_locales when configured; when the
  * institute has no LANGUAGE_SETTING (all existing institutes), defaults to

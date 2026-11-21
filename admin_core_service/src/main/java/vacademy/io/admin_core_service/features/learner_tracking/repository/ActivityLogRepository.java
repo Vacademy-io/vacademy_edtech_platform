@@ -14,6 +14,7 @@ import vacademy.io.admin_core_service.features.learner_reports.dto.ChapterSlideP
 import vacademy.io.admin_core_service.features.learner_reports.dto.LearnerActivityDataProjection;
 import vacademy.io.admin_core_service.features.learner_reports.dto.SubjectProgressProjection;
 import vacademy.io.admin_core_service.features.learner_tracking.dto.DailyTimeSpentProjection;
+import vacademy.io.admin_core_service.features.points_ledger.dto.DailyActivityProjection;
 import vacademy.io.admin_core_service.features.learner_tracking.dto.LearnerActivityProjection;
 import vacademy.io.admin_core_service.features.learner_tracking.entity.ActivityLog;
 import vacademy.io.admin_core_service.features.learner_tracking.repository.ActivityLogProcessingProjection;
@@ -26,6 +27,65 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ActivityLogRepository extends JpaRepository<ActivityLog, String> {
+
+    /**
+     * Learner-days with real activity for one institute, in the institute's own
+     * timezone — the input to ACTIVITY points accrual.
+     *
+     * Deliberately lean: the per-learner daily query above joins slide, module,
+     * subject and session to scope by content, which is far too heavy to run across
+     * a whole institute every night. Membership alone is enough here, and the
+     * GROUP BY is on (user, local date) so a learner in several batches still earns
+     * one day's points, not one per batch.
+     *
+     * <p>Two Postgres/Hibernate traps are designed around here, both of which only
+     * surface when the query actually RUNS — it compiles and the service boots clean
+     * either way:
+     * <ul>
+     *   <li>The cast is CAST(... AS bigint), never '::bigint'. Hibernate reads a
+     *       leading ':' as a named parameter and rewrites '::bigint' to ':bigint',
+     *       which reaches Postgres as a syntax error.</li>
+     *   <li>The local-date expression is computed ONCE in a subquery rather than
+     *       repeated in SELECT and GROUP BY. A named parameter used twice is rendered
+     *       as two separate placeholders, so Postgres cannot see the two expressions
+     *       as identical and rejects the GROUP BY.</li>
+     * </ul>
+     */
+    @Query(value = """
+            SELECT t.user_id AS userId,
+                   t.activity_date AS activityDate,
+                   CAST(SUM(t.ms) AS bigint) AS millis
+            FROM (
+                SELECT al.user_id,
+                       DATE(al.created_at AT TIME ZONE 'UTC' AT TIME ZONE :zone) AS activity_date,
+                       COALESCE(
+                           al.engaged_ms,
+                           CASE
+                               WHEN al.end_time IS NOT NULL AND al.start_time IS NOT NULL
+                                   THEN EXTRACT(EPOCH FROM (al.end_time - al.start_time)) * 1000
+                               ELSE 0
+                           END
+                       ) AS ms
+                FROM activity_log al
+                WHERE al.created_at >= :from
+                  AND al.created_at < :to
+                  AND al.user_id IN (
+                      SELECT DISTINCT ssigm.user_id
+                      FROM student_session_institute_group_mapping ssigm
+                      WHERE ssigm.institute_id = :instituteId
+                        AND ssigm.status IN (:learnerStatuses)
+                  )
+            ) t
+            GROUP BY t.user_id, t.activity_date
+            HAVING SUM(t.ms) > 0
+            """, nativeQuery = true)
+    List<DailyActivityProjection> findDailyActivityForInstitute(
+            @Param("instituteId") String instituteId,
+            @Param("zone") String zone,
+            @Param("from") Timestamp from,
+            @Param("to") Timestamp to,
+            @Param("learnerStatuses") List<String> learnerStatuses);
+
     // Merged-union coverage, matching the live write path
     // (LearnerTrackingAsyncService.getUniqueWatchedDurationMillis). The old
     // MAX(end)-MIN(start) span silently inflated the batch/trigger recompute:
@@ -2250,6 +2310,143 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, String
             @Param("endDate") java.sql.Timestamp endDate);
 
     /**
+     * As findAllProcessedLogsForInsights, limited to logs whose source is one of sourceIds
+     * (assessment ids and slide ids of one batch). Scopes the learner report to a picked batch.
+     */
+    @Query(value = "SELECT * FROM activity_log " +
+            "WHERE user_id = :userId " +
+            "AND status = 'processed' " +
+            "AND source_id IN (:sourceIds) " +
+            "AND created_at BETWEEN :startDate AND :endDate " +
+            "ORDER BY created_at DESC " +
+            "LIMIT 50", nativeQuery = true)
+    List<ActivityLog> findProcessedLogsForInsightsBySources(
+            @Param("userId") String userId,
+            @Param("sourceIds") java.util.Collection<String> sourceIds,
+            @Param("startDate") java.sql.Timestamp startDate,
+            @Param("endDate") java.sql.Timestamp endDate);
+
+    /**
+     * As findProcessedJsonForUsers, limited to logs whose source is one of sourceIds (the
+     * assessments picked in the batch report), as [user_id, processed_json] rows.
+     */
+    @Query(value = "SELECT user_id, processed_json FROM activity_log " +
+            "WHERE user_id IN (:userIds) " +
+            "AND status = 'processed' " +
+            "AND processed_json IS NOT NULL " +
+            "AND source_id IN (:sourceIds) " +
+            "AND created_at BETWEEN :startDate AND :endDate " +
+            "ORDER BY created_at DESC " +
+            "LIMIT :maxRows", nativeQuery = true)
+    List<Object[]> findProcessedJsonForUsersAndSources(
+            @Param("userIds") List<String> userIds,
+            @Param("sourceIds") java.util.Collection<String> sourceIds,
+            @Param("startDate") java.sql.Timestamp startDate,
+            @Param("endDate") java.sql.Timestamp endDate,
+            @Param("maxRows") int maxRows);
+
+    /**
+     * Learning time per day for every active learner of an institute, as
+     * [day, total_engaged_ms, active_learners] rows. Batch report daily time chart. READ-ONLY.
+     */
+    @Query(value = "SELECT CAST(al.created_at AS date) AS d, " +
+            "SUM(COALESCE(al.engaged_ms, 0)) AS total_ms, COUNT(DISTINCT al.user_id) AS learners " +
+            "FROM activity_log al " +
+            "WHERE al.user_id IN (SELECT DISTINCT m.user_id FROM student_session_institute_group_mapping m " +
+            "  WHERE m.institute_id = :instituteId AND m.status = 'ACTIVE') " +
+            "AND al.slide_id IS NOT NULL AND COALESCE(al.engaged_ms, 0) > 0 " +
+            "AND al.created_at BETWEEN :startDate AND :endDate " +
+            "GROUP BY CAST(al.created_at AS date) ORDER BY 1", nativeQuery = true)
+    List<Object[]> findDailyTimeForInstitute(
+            @Param("instituteId") String instituteId,
+            @Param("startDate") java.sql.Timestamp startDate,
+            @Param("endDate") java.sql.Timestamp endDate);
+
+    /**
+     * Learning per day, week or month for the active learners of some batches, as
+     * [period_start, total_engaged_ms, active_learners, slides_opened] rows. Batch report
+     * timeline. READ-ONLY.
+     */
+    @Query(value = "SELECT CAST(date_trunc(CAST(:unit AS text), al.created_at) AS date) AS p, " +
+            "SUM(COALESCE(al.engaged_ms, 0)) AS total_ms, COUNT(DISTINCT al.user_id) AS learners, " +
+            "COUNT(DISTINCT al.slide_id) AS slides " +
+            "FROM activity_log al " +
+            "WHERE al.user_id IN (SELECT DISTINCT m.user_id FROM student_session_institute_group_mapping m " +
+            "  WHERE m.package_session_id IN (:packageSessionIds) AND m.status = 'ACTIVE') " +
+            "AND al.slide_id IS NOT NULL AND COALESCE(al.engaged_ms, 0) > 0 " +
+            "AND al.created_at BETWEEN :startDate AND :endDate " +
+            "GROUP BY 1 ORDER BY 1", nativeQuery = true)
+    List<Object[]> findLearningByPeriodForBatches(
+            @Param("unit") String unit,
+            @Param("packageSessionIds") List<String> packageSessionIds,
+            @Param("startDate") java.sql.Timestamp startDate,
+            @Param("endDate") java.sql.Timestamp endDate);
+
+    /** As findDailyTimeForInstitute, for the active learners of some batches. READ-ONLY. */
+    @Query(value = "SELECT CAST(al.created_at AS date) AS d, " +
+            "SUM(COALESCE(al.engaged_ms, 0)) AS total_ms, COUNT(DISTINCT al.user_id) AS learners " +
+            "FROM activity_log al " +
+            "WHERE al.user_id IN (SELECT DISTINCT m.user_id FROM student_session_institute_group_mapping m " +
+            "  WHERE m.package_session_id IN (:packageSessionIds) AND m.status = 'ACTIVE') " +
+            "AND al.slide_id IS NOT NULL AND COALESCE(al.engaged_ms, 0) > 0 " +
+            "AND al.created_at BETWEEN :startDate AND :endDate " +
+            "GROUP BY CAST(al.created_at AS date) ORDER BY 1", nativeQuery = true)
+    List<Object[]> findDailyTimeForBatches(
+            @Param("packageSessionIds") List<String> packageSessionIds,
+            @Param("startDate") java.sql.Timestamp startDate,
+            @Param("endDate") java.sql.Timestamp endDate);
+
+    /**
+     * Processed analysis JSON for a whole cohort within a date range, newest first and capped by
+     * maxRows, as [user_id, processed_json] rows. Used by the batch report to roll topic mastery
+     * up across a batch and count the learners behind each topic. Only these two columns are
+     * read, so large cohorts stay cheap to load.
+     */
+    @Query(value = "SELECT user_id, processed_json FROM activity_log " +
+            "WHERE user_id IN (:userIds) " +
+            "AND status = 'processed' " +
+            "AND processed_json IS NOT NULL " +
+            "AND created_at BETWEEN :startDate AND :endDate " +
+            "ORDER BY created_at DESC " +
+            "LIMIT :maxRows", nativeQuery = true)
+    List<Object[]> findProcessedJsonForUsers(
+            @Param("userIds") List<String> userIds,
+            @Param("startDate") java.sql.Timestamp startDate,
+            @Param("endDate") java.sql.Timestamp endDate,
+            @Param("maxRows") int maxRows);
+
+    /**
+     * Student report raw detail: what the learner studied in a window, one row per slide —
+     * [slide_id, title, slide_type, visits, engaged_minutes, max_percentage_watched,
+     * first_seen, last_seen], most time first. The llm_* analytics rows are not study time
+     * and are left out. READ-ONLY.
+     */
+    @Query(value = """
+            SELECT a.slide_id,
+                   s.title,
+                   s.source_type,
+                   COUNT(*) AS visits,
+                   COALESCE(SUM(a.engaged_ms), 0) / 60000.0 AS engaged_minutes,
+                   MAX(a.percentage_watched) AS max_percentage_watched,
+                   MIN(a.created_at) AS first_seen,
+                   MAX(a.created_at) AS last_seen
+            FROM activity_log a
+            LEFT JOIN slide s ON s.id = a.slide_id
+            WHERE a.user_id = :userId
+              AND a.slide_id IS NOT NULL
+              AND a.created_at BETWEEN :startDate AND :endDate
+              AND (a.source_type IS NULL OR a.source_type NOT LIKE 'llm\\_%')
+            GROUP BY a.slide_id, s.title, s.source_type
+            ORDER BY engaged_minutes DESC, last_seen DESC
+            LIMIT :maxRows
+            """, nativeQuery = true)
+    List<Object[]> findSlideActivityForUserInRange(
+            @Param("userId") String userId,
+            @Param("startDate") java.sql.Timestamp startDate,
+            @Param("endDate") java.sql.Timestamp endDate,
+            @Param("maxRows") int maxRows);
+
+    /**
      * Find processed activity logs by user_id and slide_id
      * Used by LLM analytics API to fetch processed data for specific slide
      */
@@ -2259,6 +2456,29 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, String
             @Param("slideId") String slideId);
 
     /**
+     * Every learner's LATEST processed analysis for one source (an assessment).
+     *
+     * <p>Backs the class-level AI report: rather than spending a fresh LLM call
+     * per assessment, that report aggregates the per-learner analyses already
+     * generated here — topics, Bloom's levels and shared misconceptions — so it
+     * costs no additional AI credits.
+     *
+     * <p>DISTINCT ON keeps one row per learner: a re-attempted assessment leaves
+     * several processed rows behind, and counting them all would weight those
+     * learners twice in every class average.
+     */
+    @Query(value = """
+            SELECT DISTINCT ON (a.user_id) a.*
+            FROM activity_log a
+            WHERE a.source_id = :sourceId
+              AND a.source_type = 'llm_assessment'
+              AND a.status = 'processed'
+              AND a.processed_json IS NOT NULL
+            ORDER BY a.user_id, a.created_at DESC
+            """, nativeQuery = true)
+    List<ActivityLog> findProcessedBySourceId(@Param("sourceId") String sourceId);
+
+    /**
      * Find processed activity logs by user_id and source_id
      * Used by LLM analytics API to fetch processed data for specific source
      */
@@ -2266,6 +2486,71 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, String
     List<ActivityLog> findByUserIdAndSourceIdAndStatusProcessed(
             @Param("userId") String userId,
             @Param("sourceId") String sourceId);
+
+    /**
+     * How many of a learner's assessment analyses came from the learner's own submission
+     * (online submit or offline entry) rather than from a report pipeline. Rows written by
+     * a report pipeline carry an {@code analysis_trigger} key in their raw_json; the
+     * submit-time rows never do. A learner with such a row is analysed automatically, as
+     * every online submission is.
+     */
+    @Query(value = "SELECT COUNT(*) FROM activity_log " +
+            "WHERE user_id = :userId AND source_id = :sourceId AND source_type = 'llm_assessment' " +
+            "AND (raw_json IS NULL OR raw_json NOT LIKE '%\"analysis_trigger\"%')", nativeQuery = true)
+    long countSubmissionAssessmentLogs(@Param("userId") String userId, @Param("sourceId") String sourceId);
+
+    /**
+     * How many of a learner's assessment analyses were already made (and charged), or are
+     * being made right now. A copy check that lands after that is analysed again only when
+     * a report asks for it, never automatically: the attempt is not charged twice on its own.
+     */
+    @Query(value = "SELECT COUNT(*) FROM activity_log " +
+            "WHERE user_id = :userId AND source_id = :sourceId AND source_type = 'llm_assessment' " +
+            "AND status IN ('processed', 'processing')", nativeQuery = true)
+    long countProcessedAssessmentLogs(@Param("userId") String userId, @Param("sourceId") String sourceId);
+
+    /**
+     * Each learner's newest live assessment-analysis row status for an assessment
+     * ({@code [user_id, status]}): 'on_demand' means a copy check's marks wait to be
+     * analysed; a learner missing from the list has no row at all.
+     */
+    @Query(value = "SELECT DISTINCT ON (user_id) user_id, status FROM activity_log " +
+            "WHERE source_id = :sourceId AND source_type = 'llm_assessment' AND status <> 'superseded' " +
+            "ORDER BY user_id, created_at DESC", nativeQuery = true)
+    List<Object[]> findNewestAssessmentLogStatusPerUser(@Param("sourceId") String sourceId);
+
+    /** One learner's newest live assessment-analysis row, as {@code [id, status]} (empty: none). */
+    @Query(value = "SELECT id, status FROM activity_log " +
+            "WHERE user_id = :userId AND source_id = :sourceId AND source_type = 'llm_assessment' " +
+            "AND status <> 'superseded' ORDER BY created_at DESC LIMIT 1", nativeQuery = true)
+    List<Object[]> findNewestLiveAssessmentLog(@Param("userId") String userId, @Param("sourceId") String sourceId);
+
+    /**
+     * Takes one learner's analysis row for this caller, if it is still in one of the given
+     * states. Exactly one caller wins - this request, another pod, or the hourly scheduler -
+     * so an analysis is never made (and charged) twice.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE activity_log SET status = 'processing', processing_attempts = processing_attempts + 1, " +
+            "updated_at = CURRENT_TIMESTAMP WHERE id = :id AND status IN (:claimable)", nativeQuery = true)
+    int claimAssessmentLog(@Param("id") String id, @Param("claimable") List<String> claimable);
+
+    /**
+     * Retires a learner's older assessment analysis rows that were never made, once a copy
+     * check has produced newer marks: nobody should be charged for analysing marks that no
+     * longer hold. A made ('processed') analysis is kept - it stays readable until the newer
+     * one is made, and was already paid for - and rows in flight ('processing') finish.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE activity_log SET status = 'superseded', updated_at = CURRENT_TIMESTAMP " +
+            "WHERE user_id = :userId AND source_id = :sourceId AND source_type = 'llm_assessment' " +
+            "AND id <> :keepId " +
+            "AND status IN ('raw', 'failed', 'on_demand', 'skipped_no_credits', 'skipped_usage_limit')",
+            nativeQuery = true)
+    int supersedeOlderAssessmentLogs(@Param("userId") String userId, @Param("sourceId") String sourceId,
+                                     @Param("keepId") String keepId);
 
     /**
      * A learner's own AI insight reports, newest first, for the "Activity Insights" list

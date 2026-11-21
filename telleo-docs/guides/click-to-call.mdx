@@ -1,0 +1,100 @@
+---
+title: "Click-to-call from your CRM"
+description: "Add a Call button to your own CRM that rings your counsellor and connects them to the lead."
+---
+
+This guide adds a **Call** button to your own CRM or app. When a counsellor clicks it, their phone rings; when they answer, Telleo dials the lead and connects them. The call, its recording and its outcome come back to your CRM. Read [Human calls](/concepts/human-calls) for how it works.
+
+**You need:** an API key created with **Can ring counsellors (human calls)** ticked, which gives it `human_calls:read` and `human_calls:write` ([Authentication](/authentication#scopes)); a calling provider connected under *Settings → Calling*; and counsellors who can call (`can_call: true`).
+
+<Steps>
+  <Step title="Match your users to Telleo counsellors">
+    Fetch the list once and whenever your team changes:
+
+    ```bash
+    curl https://api.telleo.ai/v1/counsellors -H "X-API-Key: $TELLEO_API_KEY"
+    ```
+
+    Store each counsellor's `id` against your own user (matching by email is easiest), or simply send `counsellor_email` on every call. Show `blocked_reason` next to anyone with `can_call: false`, so they know what to fix (usually a mobile number on their Telleo profile).
+  </Step>
+
+  <Step title="Place the call when the button is clicked">
+    Call the API from your **server**, never from the browser (the key must stay secret):
+
+    ```javascript
+    app.post("/leads/:id/call", async (req, res) => {
+      const lead = await crm.getLead(req.params.id);
+      const r = await fetch("https://api.telleo.ai/v1/human-calls", {
+        method: "POST",
+        headers: {
+          "X-API-Key": process.env.TELLEO_API_KEY,
+          "Content-Type": "application/json",
+          // One key per click: a retried request never rings the counsellor twice.
+          "Idempotency-Key": `${lead.id}-${req.body.clickId}`,
+        },
+        body: JSON.stringify({
+          counsellor_email: req.user.email,
+          phone_number: lead.phone,               // E.164, e.g. +919876543210
+          contact: { name: lead.name, external_id: lead.id },
+          metadata: { crm_user: req.user.id },
+          analyze: true,                          // optional: AI summary after the call
+        }),
+      });
+      const body = await r.json();
+      if (!r.ok) return res.status(r.status).json({ message: body.error.message, code: body.error.code });
+      await crm.saveCall(lead.id, body.id);       // hcall_…
+      res.json({ status: body.status });
+    });
+    ```
+  </Step>
+
+  <Step title="Show why a call was refused">
+    Every refusal has a stable `code` and a readable `message`. Show the message to the counsellor; branch on the code where it helps:
+
+    | Code | Show the counsellor |
+    |---|---|
+    | `counsellor_cannot_call` | The `message` (e.g. add a mobile number to your profile). |
+    | `outside_calling_hours` | Calls are allowed again at `details.next_allowed_at`. |
+    | `counsellor_busy` | You are already on a call. |
+    | `call_in_progress` | This lead is already being called. |
+    | `contact_called_recently` / `contact_daily_limit_reached` | This lead was called recently; try later. |
+    | `insufficient_credits` | Ask an admin to top up. |
+  </Step>
+
+  <Step title="Update the lead when the call ends">
+    Subscribe to webhooks ([Webhooks overview](/webhooks/overview)) and handle the human-call events:
+
+    ```javascript
+    if (event.type === "human_call.completed") {
+      const call = event.data;
+      await crm.logCall(call.contact.external_id, {
+        talkSeconds: call.duration_seconds,
+        recording: call.recording_url,          // temporary link: copy the file if you keep it
+        outcome: call.disposition?.label,
+      });
+    } else if (event.type === "human_call.not_connected") {
+      await crm.logAttempt(event.data.contact.external_id, event.data.status, event.data.no_answer_by);
+    } else if (event.type === "human_call.analysis_ready") {
+      await crm.addNote(event.data.contact.external_id, event.data.analysis.summary);
+    }
+    ```
+
+    On Exotel and Airtel the call status only changes when the call ends (Airtel: when its call record arrives), so rely on the webhook rather than on polling for live progress.
+  </Step>
+
+  <Step title="Record the outcome (optional)">
+    If counsellors pick the outcome in your CRM rather than in Telleo, send it back so Telleo's reports and the linked lead stay in step:
+
+    ```bash
+    curl https://api.telleo.ai/v1/human-calls/hcall_7d2e9b1c4a6f8e0d3b5c7a9e/disposition \
+      -H "X-API-Key: $TELLEO_API_KEY" -H "Content-Type: application/json" \
+      -d '{ "key": "INTERESTED", "notes": "Demo on Friday" }'
+    ```
+
+    Valid keys: `GET /v1/dispositions`.
+  </Step>
+</Steps>
+
+## Testing
+
+There is no test mode for human calls: every call rings a real phone. Test with your own number as the contact and yourself as the counsellor, inside calling hours.

@@ -55,10 +55,10 @@ import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingS
 import { format } from 'date-fns';
 import { toZonedTime, format as formatTZ } from 'date-fns-tz';
 import {
-    TIMEZONE_OPTIONS,
-    STREAMING_OPTIONS,
-    WAITING_ROOM_OPTIONS,
-    WAITING_ROOM_TYPE_OPTIONS,
+    buildTimezoneOptions,
+    buildStreamingOptions,
+    buildWaitingRoomOptions,
+    buildWaitingRoomTypeOptions,
 } from '../-constants/options';
 import {
     normalizeTimezone,
@@ -87,17 +87,50 @@ import { cn } from '@/lib/utils';
 import { useLiveSessionSettings } from '@/hooks/useLiveSessionSettings';
 import type { PlatformKey } from '@/services/live-session-settings';
 import { SectionCard } from './SectionCard';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 // Default feedback questions configuration
-const DEFAULT_FEEDBACK_QUESTIONS = [
-    { id: 'rating', type: 'star_rating', label: 'How was the session?', enabled: true, mandatory: true, max_stars: 5, allow_half: true },
-    { id: 'learnings', type: 'free_text', label: 'What did you learn in the session?', enabled: true, mandatory: false },
-    { id: 'doubts', type: 'free_text', label: 'Any doubts or questions you have?', enabled: true, mandatory: false },
-    { id: 'feedback', type: 'free_text', label: 'Feedback for the session', enabled: true, mandatory: false },
+const buildDefaultFeedbackQuestions = (t: TFunction) => [
+    {
+        id: 'rating',
+        type: 'star_rating',
+        label: t('feedback.defaultQuestions.rating'),
+        enabled: true,
+        mandatory: true,
+        max_stars: 5,
+        allow_half: true,
+    },
+    {
+        id: 'learnings',
+        type: 'free_text',
+        label: t('feedback.defaultQuestions.learnings'),
+        enabled: true,
+        mandatory: false,
+    },
+    {
+        id: 'doubts',
+        type: 'free_text',
+        label: t('feedback.defaultQuestions.doubts'),
+        enabled: true,
+        mandatory: false,
+    },
+    {
+        id: 'feedback',
+        type: 'free_text',
+        label: t('feedback.defaultQuestions.feedback'),
+        enabled: true,
+        mandatory: false,
+    },
 ];
 
 export default function ScheduleStep1() {
     // Hooks and State
+    const { t } = useTranslation(['studyLibraryScheduleStep1', 'studyLibraryOptions']);
+    const TIMEZONE_OPTIONS = buildTimezoneOptions(t);
+    const STREAMING_OPTIONS = buildStreamingOptions(t);
+    const WAITING_ROOM_OPTIONS = buildWaitingRoomOptions(t);
+    const WAITING_ROOM_TYPE_OPTIONS = buildWaitingRoomTypeOptions(t);
     const navigate = useNavigate();
     const { setSessionId, step1Data, setStep1Data, sessionId, isEdit, clearBulkSessionIds } =
         useLiveSessionStore();
@@ -141,7 +174,7 @@ export default function ScheduleStep1() {
                 (opt) =>
                     liveSessionSettings.allowedPlatforms[opt.value as PlatformKey] !== false
             ),
-        [liveSessionSettings.allowedPlatforms]
+        [liveSessionSettings.allowedPlatforms, STREAMING_OPTIONS]
     );
     const { sessionDetails } = useSessionDetailsStore();
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -262,6 +295,7 @@ export default function ScheduleStep1() {
             streamingType: SessionPlatform.EMBED_IN_APP,
             allowRewind: false,
             allowPause: false,
+            showToLearners: false,
             enableWaitingRoom: liveSessionSettings.defaultWaitingRoomEnabled ?? false,
             // Pre-select the institute's default platform (falling back to
             // OTHER when it isn't set or has since been disallowed). Platform
@@ -281,7 +315,7 @@ export default function ScheduleStep1() {
                 (liveSessionSettings.feedbackEnabled ?? true) &&
                 (liveSessionSettings.defaultFeedbackEnabled ?? true),
             feedbackCompulsory: liveSessionSettings.defaultFeedbackCompulsory ?? false,
-            feedbackQuestions: DEFAULT_FEEDBACK_QUESTIONS,
+            feedbackQuestions: buildDefaultFeedbackQuestions(t),
             bbbRecord: liveSessionSettings.defaultBbbRecordEnabled ?? true,
             bbbAutoStartRecording: liveSessionSettings.defaultBbbAutoStartRecording ?? false,
             bbbMuteOnStart: liveSessionSettings.defaultBbbMuteOnStart ?? true,
@@ -295,6 +329,8 @@ export default function ScheduleStep1() {
             bbbDisableSharedNotes: liveSessionSettings.defaultBbbDisableSharedNotes ?? false,
             bbbHideUserList: liveSessionSettings.defaultBbbHideUserList ?? false,
             bbbEndWhenNoModerator: liveSessionSettings.defaultBbbEndWhenNoModerator ?? false,
+            // Per-session opt-in only — no institute default yet.
+            bbbActivenessScore: false,
             // Zoom meeting defaults (only used when platform = Zoom with an account).
             // Seeding them here means the Zoom settings panel and the step-2 DTO
             // builder both read the institute defaults without extra wiring.
@@ -899,6 +935,7 @@ export default function ScheduleStep1() {
             waitingRoomType: computedWaitingRoomType,
             allowRewind: schedule.allow_rewind ?? false,
             allowPause: schedule.allow_play_pause ?? false,
+            showToLearners: schedule.show_to_learners ?? false,
             events: '1',
             learner_button_config: topLevelLearnerButtonConfig,
             bbbRecord: schedule.bbb_config?.record ?? true,
@@ -913,9 +950,10 @@ export default function ScheduleStep1() {
             bbbDisableSharedNotes: schedule.bbb_config?.disable_shared_notes ?? false,
             bbbHideUserList: schedule.bbb_config?.hide_user_list ?? false,
             bbbEndWhenNoModerator: schedule.bbb_config?.end_when_no_moderator ?? false,
+            bbbActivenessScore: schedule.bbb_config?.activeness_score ?? false,
             feedbackEnabled: schedule.feedback_config?.enabled ?? false,
             feedbackCompulsory: schedule.feedback_config?.allow_skip === false,
-            feedbackQuestions: schedule.feedback_config?.questions ?? DEFAULT_FEEDBACK_QUESTIONS,
+            feedbackQuestions: schedule.feedback_config?.questions ?? buildDefaultFeedbackQuestions(t),
         });
 
         // Set existing file IDs for display
@@ -1015,6 +1053,10 @@ export default function ScheduleStep1() {
     // account, "Google Meet" stays a paste-a-link option.
     const googleMeetAccountIdWatch = useWatch({ control, name: 'googleMeetAccountId' });
     const isMeetWithAccount = isMeetPlatform && !!googleMeetAccountIdWatch;
+    // Platforms that create each occurrence's meeting themselves — a per-session link box
+    // there is meaningless (same condition that disables the top-level link field).
+    const isAutoLinkPlatform =
+        isZohoPlatform || isBbbPlatform || isZoomWithAccount || isMeetWithAccount;
 
     // In edit mode, if the existing session's platform was later disallowed in
     // settings, splice it back into the option list so the select doesn't
@@ -1105,7 +1147,7 @@ export default function ScheduleStep1() {
         if (file) {
             setSelectedFile(file);
         } else {
-            toast.error('Please upload a valid image file');
+            toast.error(t('toasts.uploadInvalidImage'));
         }
     };
 
@@ -1115,7 +1157,7 @@ export default function ScheduleStep1() {
 
     const handleRemoveExistingThumbnail = () => {
         setExistingThumbnailId(null);
-        toast.success('Thumbnail removed. Save to confirm changes.');
+        toast.success(t('toasts.thumbnailRemoved'));
     };
 
     const handleRemoveMusicFile = () => {
@@ -1124,7 +1166,7 @@ export default function ScheduleStep1() {
 
     const handleRemoveExistingMusic = () => {
         setExistingMusicId(null);
-        toast.success('Background music removed. Save to confirm changes.');
+        toast.success(t('toasts.musicRemoved'));
     };
 
     const handleUploadClick = () => {
@@ -1136,7 +1178,7 @@ export default function ScheduleStep1() {
         if (file) {
             setSelectedCoverFile(file);
         } else {
-            toast.error('Please upload a valid image file');
+            toast.error(t('toasts.uploadInvalidImage'));
         }
     };
 
@@ -1150,7 +1192,7 @@ export default function ScheduleStep1() {
 
     const handleRemoveExistingCover = () => {
         setExistingCoverId(null);
-        toast.success('Cover image removed. Save to confirm changes.');
+        toast.success(t('toasts.coverRemoved'));
     };
 
     const handleMusicFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1170,11 +1212,11 @@ export default function ScheduleStep1() {
             if (url) {
                 window.open(url, '_blank');
             } else {
-                toast.error(`Failed to get ${fileType} URL`);
+                toast.error(t('toasts.getUrlFailed', { fileType: fileType === 'thumbnail' ? t('waiting.thumbnail') : t('waiting.backgroundScore') }));
             }
         } catch (error) {
             console.error(`Error getting ${fileType} URL:`, error);
-            toast.error(`Failed to load ${fileType}`);
+            toast.error(t('toasts.loadFailed', { fileType: fileType === 'thumbnail' ? t('waiting.thumbnail') : t('waiting.backgroundScore') }));
         }
     };
 
@@ -1278,7 +1320,7 @@ export default function ScheduleStep1() {
                 musicFileId = await UploadFileInS3(selectedMusicFile, () => { }, 'your-user-id');
             } catch (error) {
                 console.error('Error uploading music file:', error);
-                toast.error('Failed to upload background music. Please try again.');
+                toast.error(t('toasts.uploadMusicFailed'));
                 return null;
             }
         }
@@ -1287,7 +1329,7 @@ export default function ScheduleStep1() {
                 thumbnailFileId = await UploadFileInS3(selectedFile, () => { }, 'your-user-id');
             } catch (error) {
                 console.error('Error uploading thumbnail:', error);
-                toast.error('Failed to upload thumbnail image. Please try again.');
+                toast.error(t('toasts.uploadThumbnailFailed'));
                 return null;
             }
         }
@@ -1296,7 +1338,7 @@ export default function ScheduleStep1() {
                 coverFileId = await UploadFileInS3(selectedCoverFile, () => { }, 'your-user-id');
             } catch (error) {
                 console.error('Error uploading cover image:', error);
-                toast.error('Failed to upload cover image. Please try again.');
+                toast.error(t('toasts.uploadCoverFailed'));
                 return null;
             }
         }
@@ -1359,7 +1401,10 @@ export default function ScheduleStep1() {
                         error
                     );
                     toast.error(
-                        `Failed to upload thumbnail for ${day.day} session ${sessionIndex + 1}`
+                        t('toasts.uploadThumbnailForSessionFailed', {
+                            day: day.day,
+                            sessionNumber: sessionIndex + 1,
+                        })
                     );
                     return false;
                 }
@@ -1404,6 +1449,11 @@ export default function ScheduleStep1() {
                 uploadedFiles.coverFileId ?? null,
                 updateRecurrenceScope
             );
+            // Only attendance-only institutes choose learner visibility; for
+            // everyone else the request stays exactly as before.
+            if (!liveSessionSettings.attendanceOnlyMode) {
+                delete body.show_to_learners;
+            }
 
             const response = await createLiveSessionStep1(body);
             setSessionId(response.id);
@@ -1411,7 +1461,7 @@ export default function ScheduleStep1() {
             navigate({ to: '/study-library/live-session/schedule/step2' });
         } catch (error) {
             console.error('Error saving session:', error);
-            toast.error('Failed to save session. Please try again.');
+            toast.error(t('toasts.saveSessionFailed'));
         } finally {
             setIsSubmitting(false);
         }
@@ -1496,7 +1546,7 @@ export default function ScheduleStep1() {
             }
         });
 
-        toast.success('Session copied successfully');
+        toast.success(t('toasts.sessionCopied'));
         setCopySourceSession(null);
         setSelectedDaysToCopy([]);
     };
@@ -1530,7 +1580,7 @@ export default function ScheduleStep1() {
             }
         });
 
-        toast.success('Default link copied successfully');
+        toast.success(t('toasts.defaultLinkCopied'));
         setCopySourceDefaultLink(null);
         setSelectedDaysToCopyDefaultLink([]);
         setIsCopyDefaultLinkDialogOpen(false);
@@ -1605,7 +1655,7 @@ export default function ScheduleStep1() {
 
         // Store the selected scope so it's included in the payload when Next is clicked
         setPendingRecurrenceScope(scope);
-        toast.success('Link updated successfully');
+        toast.success(t('toasts.linkUpdated'));
     };
 
     const onSubmit = (data: z.infer<typeof sessionFormSchema>) => {
@@ -1672,7 +1722,7 @@ export default function ScheduleStep1() {
         const uniqueErrors = Array.from(new Set(allErrors));
 
         if (uniqueErrors.length > 0) {
-            toast.error('Please fix the following errors:', {
+            toast.error(t('toasts.fixErrors'), {
                 description: (
                     <div className="mt-2 flex flex-col gap-1 text-slate-800">
                         {uniqueErrors.slice(0, 5).map((error, index) => (
@@ -1683,7 +1733,7 @@ export default function ScheduleStep1() {
                         ))}
                         {uniqueErrors.length > 5 && (
                             <div className="text-sm opacity-80">
-                                ...and {uniqueErrors.length - 5} more
+                                {t('toasts.moreErrors', { count: uniqueErrors.length - 5 })}
                             </div>
                         )}
                     </div>
@@ -1692,7 +1742,7 @@ export default function ScheduleStep1() {
                 duration: 5000,
             });
         } else {
-            toast.error('Please fill in all required fields.', {
+            toast.error(t('toasts.fillRequiredFields'), {
                 icon: <XCircle size={20} className="text-red-500" />,
             });
         }
@@ -2033,7 +2083,7 @@ export default function ScheduleStep1() {
         });
 
         toast.success(
-            `Session details copied to ${selectedDaysToCopy.length} day${selectedDaysToCopy.length !== 1 ? 's' : ''}`
+            t('toasts.sessionDetailsCopied', { count: selectedDaysToCopy.length })
         );
         setIsCopyDialogOpen(false);
         setCopySourceSession(null);
@@ -2059,14 +2109,14 @@ export default function ScheduleStep1() {
                             <FormControl>
                                 <MyInput
                                     inputType="text"
-                                    inputPlaceholder="Add Title"
+                                    inputPlaceholder={t('basicInfo.titlePlaceholder')}
                                     input={field.value}
                                     labelStyle="font-thin"
                                     onChangeFunction={field.onChange}
                                     error={form.formState.errors.title?.message}
                                     required
                                     size="large"
-                                    label="Title"
+                                    label={t('basicInfo.titleLabel')}
                                     {...field}
                                 />
                             </FormControl>
@@ -2078,7 +2128,13 @@ export default function ScheduleStep1() {
                     name="subject"
                     labelStyle="text-sm font-medium"
                     options={[
-                        { value: 'none', label: `Select ${getTerminology(ContentTerms.Subject, SystemTerms.Subject)}`, _id: -1 },
+                        {
+                            value: 'none',
+                            label: t('basicInfo.selectSubject', {
+                                subject: getTerminology(ContentTerms.Subject, SystemTerms.Subject),
+                            }),
+                            _id: -1,
+                        },
                         ...SubjectFilterData.map((option, index) => ({
                             value: option.name,
                             label: option.name,
@@ -2090,14 +2146,37 @@ export default function ScheduleStep1() {
                 />
             </div>
 
+            {liveSessionSettings.attendanceOnlyMode && (
+                <Controller
+                    control={control}
+                    name="showToLearners"
+                    render={({ field }) => (
+                        <label className="flex items-center justify-between gap-4 rounded-md border border-neutral-200 bg-neutral-50 p-3">
+                            <div>
+                                <div className="text-sm font-medium text-neutral-800">
+                                    {t('basicInfo.showToLearnersLabel')}
+                                </div>
+                                <div className="mt-0.5 text-xs text-neutral-500">
+                                    {field.value
+                                        ? t('basicInfo.showToLearnersOnHint')
+                                        : t('basicInfo.showToLearnersOffHint')}
+                                </div>
+                            </div>
+                            <Switch
+                                checked={field.value ?? false}
+                                onCheckedChange={field.onChange}
+                            />
+                        </label>
+                    )}
+                />
+            )}
+
             {liveSessionSettings.descriptionEnabled && (
             <div className="flex h-full flex-col gap-6">
                 <div className="-mb-5 flex flex-col gap-1">
-                    <h1 className="text-sm font-medium">Description</h1>
+                    <h1 className="text-sm font-medium">{t('basicInfo.descriptionLabel')}</h1>
                     <p className="text-xs font-normal text-neutral-500">
-                        (Provide a brief overview of your live class. You can include text, emojis,
-                        images, or posters to give participants a quick idea of what the session is
-                        about)
+                        {t('basicInfo.descriptionHint')}
                     </p>
                 </div>
                 <FormField
@@ -2128,9 +2207,9 @@ export default function ScheduleStep1() {
         // disappears. The setting only gates new sessions.
         const showWeeklyOption = liveSessionSettings.recurringEnabled || isEdit;
         const meetingTypeOptions = [
-            { label: 'One Time Class', value: RecurringType.ONCE },
+            { label: t('meetingType.oneTime'), value: RecurringType.ONCE },
             ...(showWeeklyOption
-                ? [{ label: 'Recurring Class', value: RecurringType.WEEKLY }]
+                ? [{ label: t('meetingType.recurring'), value: RecurringType.WEEKLY }]
                 : []),
         ];
         return (
@@ -2170,7 +2249,7 @@ export default function ScheduleStep1() {
             <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-2">
                     <SelectField
-                        label="Timezone"
+                        label={t('timezone.label')}
                         name="timeZone"
                         labelStyle="text-sm font-medium"
                         options={TIMEZONE_OPTIONS}
@@ -2180,7 +2259,7 @@ export default function ScheduleStep1() {
                     />
                     {currentTime && (
                         <span className="ml-1 text-xs font-medium">
-                            Current time: {currentTime}
+                            {t('timezone.currentTime', { time: currentTime })}
                         </span>
                     )}
                 </div>
@@ -2197,7 +2276,7 @@ export default function ScheduleStep1() {
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel className="text-sm font-medium">
-                                Start Date & Time
+                                {t('timing.startDateTime')}
                                 <span className="text-danger-600">*</span>
                             </FormLabel>
                             <FormControl>
@@ -2227,7 +2306,7 @@ export default function ScheduleStep1() {
                 {meetingType !== RecurringType.WEEKLY && (
                     <div>
                         <FormLabel className="text-sm font-medium">
-                            Duration<span className="text-danger-600">*</span>
+                            {t('timing.duration')}<span className="text-danger-600">*</span>
                         </FormLabel>
                         <div className="mt-2 flex flex-wrap items-center gap-2">
                             <FormField
@@ -2263,7 +2342,7 @@ export default function ScheduleStep1() {
                                     </FormItem>
                                 )}
                             />
-                            <div>hrs</div>
+                            <div>{t('timing.hrs')}</div>
                             <FormField
                                 control={control}
                                 name="durationMinutes"
@@ -2297,7 +2376,7 @@ export default function ScheduleStep1() {
                                     </FormItem>
                                 )}
                             />
-                            <div>mins</div>
+                            <div>{t('timing.mins')}</div>
                         </div>
                     </div>
                 )}
@@ -2324,7 +2403,7 @@ export default function ScheduleStep1() {
                             return (
                                 <FormItem>
                                     <FormLabel className="text-sm font-medium">
-                                        End Date
+                                        {t('timing.endDate')}
                                         <span className="text-danger-600">*</span>
                                     </FormLabel>
                                     <FormControl>
@@ -2354,13 +2433,13 @@ export default function ScheduleStep1() {
                 render={({ field }) => (
                     <FormItem>
                         <FormLabel className="text-sm font-medium">
-                            Live Class Link
+                            {t('link.liveClassLink')}
                             {!isZohoPlatform && !isBbbPlatform && !isZoomWithAccount && !isMeetWithAccount && <span className="text-danger-600">*</span>}
                         </FormLabel>
                         <FormControl>
                             <MyInput
                                 inputType="text"
-                                inputPlaceholder={isZohoPlatform ? "Auto-generated by Zoho" : isBbbPlatform ? "Auto-created by Vacademy Meet" : isZoomWithAccount ? "Auto-generated by Zoom" : isMeetWithAccount ? "Auto-generated by Google Meet" : "Add Link"}
+                                inputPlaceholder={isZohoPlatform ? t('link.placeholderZoho') : isBbbPlatform ? t('link.placeholderBbb') : isZoomWithAccount ? t('link.placeholderZoom') : isMeetWithAccount ? t('link.placeholderMeet') : t('link.placeholderDefault')}
                                 input={field.value}
                                 labelStyle="font-thin"
                                 onChangeFunction={field.onChange}
@@ -2403,7 +2482,7 @@ export default function ScheduleStep1() {
                 )}
             />
             <SelectField
-                label="Live Stream Platform"
+                label={t('link.platformLabel')}
                 name="sessionPlatform"
                 labelStyle="text-sm font-medium"
                 options={editAwareStreamingOptions}
@@ -2412,7 +2491,7 @@ export default function ScheduleStep1() {
                 onSelect={handleSessionPlatformChange}
             />
             <div className="flex h-full flex-col items-start justify-around gap-2">
-                <div className="text-sm font-medium">Type of Live Class</div>
+                <div className="text-sm font-medium">{t('link.typeOfLiveClass')}</div>
                 <FormField
                     control={control}
                     name="sessionType"
@@ -2422,8 +2501,8 @@ export default function ScheduleStep1() {
                             value={field.value ?? ''}
                             onChange={field.onChange}
                             options={[
-                                { label: 'Live', value: SessionType.LIVE },
-                                { label: 'Pre Recorded', value: SessionType.PRE_RECORDED },
+                                { label: t('link.live'), value: SessionType.LIVE },
+                                { label: t('link.preRecorded'), value: SessionType.PRE_RECORDED },
                             ]}
                             disabledOptions={disabledLiveClassOptions}
                             className="flex flex-col gap-4 sm:flex-row"
@@ -2437,10 +2516,9 @@ export default function ScheduleStep1() {
             {/* BBB Meeting Configuration */}
             {isBbbPlatform && (
                 <div className="rounded-lg border border-primary-200 bg-primary-50/30 p-4">
-                    <h4 className="text-sm font-semibold">Vacademy Meet Settings</h4>
+                    <h4 className="text-sm font-semibold">{t('bbb.settingsTitle')}</h4>
                     <p className="mb-3 mt-0.5 text-xs text-neutral-500">
-                        Restrictions apply to participants only — the host always keeps full
-                        access.
+                        {t('bbb.restrictionsHint')}
                     </p>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <FormField
@@ -2456,7 +2534,7 @@ export default function ScheduleStep1() {
                                             className="size-4 rounded border-gray-300"
                                         />
                                     </FormControl>
-                                    <FormLabel className="text-sm font-normal">Record this session</FormLabel>
+                                    <FormLabel className="text-sm font-normal">{t('bbb.recordSession')}</FormLabel>
                                 </FormItem>
                             )}
                         />
@@ -2473,7 +2551,7 @@ export default function ScheduleStep1() {
                                             className="size-4 rounded border-gray-300"
                                         />
                                     </FormControl>
-                                    <FormLabel className="text-sm font-normal">Auto-start recording</FormLabel>
+                                    <FormLabel className="text-sm font-normal">{t('bbb.autoStartRecording')}</FormLabel>
                                 </FormItem>
                             )}
                         />
@@ -2490,7 +2568,7 @@ export default function ScheduleStep1() {
                                             className="size-4 rounded border-gray-300"
                                         />
                                     </FormControl>
-                                    <FormLabel className="text-sm font-normal">Mute participants when they join</FormLabel>
+                                    <FormLabel className="text-sm font-normal">{t('bbb.muteOnJoin')}</FormLabel>
                                 </FormItem>
                             )}
                         />
@@ -2507,7 +2585,7 @@ export default function ScheduleStep1() {
                                             className="size-4 rounded border-gray-300"
                                         />
                                     </FormControl>
-                                    <FormLabel className="text-sm font-normal">Only host can share webcam</FormLabel>
+                                    <FormLabel className="text-sm font-normal">{t('bbb.onlyHostWebcam')}</FormLabel>
                                 </FormItem>
                             )}
                         />
@@ -2524,7 +2602,7 @@ export default function ScheduleStep1() {
                                             className="size-4 rounded border-gray-300"
                                         />
                                     </FormControl>
-                                    <FormLabel className="text-sm font-normal">Participants join in listen-only mode</FormLabel>
+                                    <FormLabel className="text-sm font-normal">{t('bbb.listenOnlyMode')}</FormLabel>
                                 </FormItem>
                             )}
                         />
@@ -2541,7 +2619,7 @@ export default function ScheduleStep1() {
                                             className="size-4 rounded border-gray-300"
                                         />
                                     </FormControl>
-                                    <FormLabel className="text-sm font-normal">Participants can&apos;t turn on their camera</FormLabel>
+                                    <FormLabel className="text-sm font-normal">{t('bbb.noCamera')}</FormLabel>
                                 </FormItem>
                             )}
                         />
@@ -2558,7 +2636,7 @@ export default function ScheduleStep1() {
                                             className="size-4 rounded border-gray-300"
                                         />
                                     </FormControl>
-                                    <FormLabel className="text-sm font-normal">Participants can&apos;t private message each other</FormLabel>
+                                    <FormLabel className="text-sm font-normal">{t('bbb.noPrivateChat')}</FormLabel>
                                 </FormItem>
                             )}
                         />
@@ -2575,7 +2653,7 @@ export default function ScheduleStep1() {
                                             className="size-4 rounded border-gray-300"
                                         />
                                     </FormControl>
-                                    <FormLabel className="text-sm font-normal">Participants can&apos;t send messages in class chat</FormLabel>
+                                    <FormLabel className="text-sm font-normal">{t('bbb.noPublicChat')}</FormLabel>
                                 </FormItem>
                             )}
                         />
@@ -2592,7 +2670,7 @@ export default function ScheduleStep1() {
                                             className="size-4 rounded border-gray-300"
                                         />
                                     </FormControl>
-                                    <FormLabel className="text-sm font-normal">Participants can&apos;t edit shared notes</FormLabel>
+                                    <FormLabel className="text-sm font-normal">{t('bbb.noSharedNotes')}</FormLabel>
                                 </FormItem>
                             )}
                         />
@@ -2609,7 +2687,7 @@ export default function ScheduleStep1() {
                                             className="size-4 rounded border-gray-300"
                                         />
                                     </FormControl>
-                                    <FormLabel className="text-sm font-normal">Participants can&apos;t see who else is in the class</FormLabel>
+                                    <FormLabel className="text-sm font-normal">{t('bbb.hideUserList')}</FormLabel>
                                 </FormItem>
                             )}
                         />
@@ -2626,20 +2704,41 @@ export default function ScheduleStep1() {
                                             className="size-4 rounded border-gray-300"
                                         />
                                     </FormControl>
-                                    <FormLabel className="text-sm font-normal">End class automatically after the host leaves</FormLabel>
+                                    <FormLabel className="text-sm font-normal">{t('bbb.endWhenNoModerator')}</FormLabel>
                                 </FormItem>
                             )}
                         />
                     </div>
+                    <FormField
+                        control={control}
+                        name="bbbActivenessScore"
+                        render={({ field }) => (
+                            <FormItem className="mt-3 flex items-start justify-between gap-3 space-y-0 rounded-md border border-neutral-200 bg-white px-3 py-2">
+                                <div>
+                                    <FormLabel className="text-sm font-normal">
+                                        {t('bbb.activenessScore')}
+                                    </FormLabel>
+                                    <p className="mt-0.5 text-xs text-neutral-500">
+                                        {t('bbb.activenessScoreHint')}
+                                    </p>
+                                </div>
+                                <FormControl>
+                                    <Switch
+                                        checked={field.value ?? false}
+                                        onCheckedChange={field.onChange}
+                                    />
+                                </FormControl>
+                            </FormItem>
+                        )}
+                    />
                     <p className="mt-3 text-xs text-neutral-500">
-                        Running a large lecture or webinar? Turn on{' '}
-                        <span className="font-medium">listen-only mode</span> and{' '}
+                        {t('bbb.lectureHintIntro')}{' '}
+                        <span className="font-medium">{t('bbb.listenOnlyModeShort')}</span>{' '}
+                        {t('bbb.lectureHintAnd')}{' '}
                         <span className="font-medium">
-                            participants can&apos;t turn on their camera
+                            {t('bbb.noCameraShort')}
                         </span>
-                        , and have the host share slides rather than their screen. A class set up
-                        this way puts far less load on the server than one where everyone can
-                        unmute and switch a camera on.
+                        {t('bbb.lectureHintOutro')}
                     </p>
                     <div className="mt-3">
                         <FormField
@@ -2647,16 +2746,16 @@ export default function ScheduleStep1() {
                             name="bbbGuestPolicy"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel className="text-sm font-normal">Guest admission policy</FormLabel>
+                                    <FormLabel className="text-sm font-normal">{t('bbb.guestPolicy')}</FormLabel>
                                     <FormControl>
                                         <select
                                             value={field.value ?? 'ALWAYS_ACCEPT'}
                                             onChange={field.onChange}
                                             className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 sm:w-64"
                                         >
-                                            <option value="ALWAYS_ACCEPT">Always accept</option>
-                                            <option value="ASK_MODERATOR">Ask host to approve</option>
-                                            <option value="ALWAYS_DENY">Always deny guests</option>
+                                            <option value="ALWAYS_ACCEPT">{t('bbb.alwaysAccept')}</option>
+                                            <option value="ASK_MODERATOR">{t('bbb.askApprove')}</option>
+                                            <option value="ALWAYS_DENY">{t('bbb.alwaysDeny')}</option>
                                         </select>
                                     </FormControl>
                                 </FormItem>
@@ -2683,9 +2782,9 @@ export default function ScheduleStep1() {
         <div className="rounded-lg border border-primary-200 bg-primary-50/30 p-4">
             <div className="flex items-center justify-between">
                 <div>
-                    <h4 className="text-sm font-semibold">📋 Learner Feedback Settings</h4>
+                    <h4 className="text-sm font-semibold">📋 {t('feedback.title')}</h4>
                     <p className="mt-0.5 text-xs text-neutral-500">
-                        When enabled, learners see a feedback form after the session ends.
+                        {t('feedback.hint')}
                     </p>
                 </div>
                 <FormField
@@ -2709,10 +2808,10 @@ export default function ScheduleStep1() {
                     <div className="flex items-center justify-between rounded-md border border-neutral-200 bg-white px-3 py-2">
                         <div>
                             <div className="text-xs font-medium text-neutral-700">
-                                Make feedback compulsory
+                                {t('feedback.compulsory')}
                             </div>
                             <div className="mt-0.5 text-[11px] text-neutral-500">
-                                Learners cannot skip the form — all required questions must be answered.
+                                {t('feedback.compulsoryHint')}
                             </div>
                         </div>
                         <FormField
@@ -2730,8 +2829,8 @@ export default function ScheduleStep1() {
                             )}
                         />
                     </div>
-                    <div className="text-xs font-medium text-neutral-600">Questions</div>
-                    {(form.watch('feedbackQuestions') ?? DEFAULT_FEEDBACK_QUESTIONS).map((q, idx) => (
+                    <div className="text-xs font-medium text-neutral-600">{t('feedback.questions')}</div>
+                    {(form.watch('feedbackQuestions') ?? buildDefaultFeedbackQuestions(t)).map((q, idx) => (
                         <div
                             key={q.id}
                             className="flex flex-col gap-2 rounded-md border border-neutral-200 bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
@@ -2750,7 +2849,7 @@ export default function ScheduleStep1() {
                                 <span className="text-sm">
                                     {q.label}
                                     <span className="ml-1 text-xs text-neutral-400">
-                                        ({q.type === 'star_rating' ? '⭐ rating' : 'text'})
+                                        ({q.type === 'star_rating' ? `⭐ ${t('feedback.ratingType')}` : t('feedback.textType')})
                                     </span>
                                 </span>
                             </div>
@@ -2767,7 +2866,7 @@ export default function ScheduleStep1() {
                                                 : 'bg-neutral-100 text-neutral-500'
                                         }`}
                                     >
-                                        {field.value ? 'Required' : 'Optional'}
+                                        {field.value ? t('feedback.required') : t('feedback.optional')}
                                     </button>
                                 )}
                             />
@@ -2783,10 +2882,9 @@ export default function ScheduleStep1() {
             <div className="flex flex-col items-start gap-4">
                 <div className="flex h-full flex-col items-start justify-around gap-2">
                     <div className="text-sm font-medium">
-                        Live Streaming Platform
+                        {t('streaming.platformLabel')}
                         <span className="ml-1 text-xs font-normal text-neutral-500">
-                            (Do you want the students to view the class in the learner app, or do
-                            you want to redirect them to the app that is hosting the live session?)
+                            {t('streaming.platformHint')}
                         </span>
                     </div>
                     <FormField
@@ -2799,18 +2897,18 @@ export default function ScheduleStep1() {
                                 onChange={field.onChange}
                                 options={[
                                     {
-                                        label: 'Embed in-app',
+                                        label: t('streaming.embedInApp'),
                                         value: SessionPlatform.EMBED_IN_APP,
                                     },
                                     {
                                         label:
                                             sessionPlatformWatch === StreamingPlatform.YOUTUBE
-                                                ? 'Redirect to YouTube'
+                                                ? t('streaming.redirectYoutube')
                                                 : sessionPlatformWatch === StreamingPlatform.MEET
-                                                    ? 'Redirect to Google Meet'
+                                                    ? t('streaming.redirectMeet')
                                                     : sessionPlatformWatch === StreamingPlatform.ZOOM
-                                                        ? 'Redirect to Zoom'
-                                                        : 'Redirect to other platform',
+                                                        ? t('streaming.redirectZoom')
+                                                        : t('streaming.redirectOther'),
                                         value: SessionPlatform.REDIRECT_TO_OTHER_PLATFORM,
                                     },
                                 ]}
@@ -2832,7 +2930,7 @@ export default function ScheduleStep1() {
                     {!isZohoPlatform && (
                         <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
                             <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                                Lock playback controls
+                                {t('waiting.lockPlayback')}
                             </div>
                             <div className="mt-2 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-6">
                                 <Controller
@@ -2840,7 +2938,7 @@ export default function ScheduleStep1() {
                                     name="allowRewind"
                                     render={({ field }) => (
                                         <label className="flex items-center gap-2">
-                                            <span className="text-sm">Allow rewind</span>
+                                            <span className="text-sm">{t('waiting.allowRewind')}</span>
                                             <Switch
                                                 disabled={
                                                     watch('streamingType') !==
@@ -2857,7 +2955,7 @@ export default function ScheduleStep1() {
                                     name="allowPause"
                                     render={({ field }) => (
                                         <label className="flex items-center gap-2">
-                                            <span className="text-sm">Allow play pause</span>
+                                            <span className="text-sm">{t('waiting.allowPlayPause')}</span>
                                             <Switch
                                                 disabled={
                                                     watch('streamingType') !==
@@ -2875,12 +2973,12 @@ export default function ScheduleStep1() {
                     <div className="flex items-center justify-between rounded-md border border-neutral-200 bg-neutral-50 p-3">
                         <div>
                             <div className="text-sm font-medium text-neutral-800">
-                                Enable Waiting Room or Pre-Joining
+                                {t('waiting.enableWaitingRoom')}
                             </div>
                             <div className="mt-0.5 text-xs text-neutral-500">
                                 {watch('waitingRoomType') === WaitingRoomType.PRE_JOINING
-                                    ? 'Let learners join the live class directly during the window before it starts.'
-                                    : 'Turn this on to give learners early access before the class starts — they either wait in a waiting room (with an optional thumbnail and background music) or join the live class directly (Pre-Joining), depending on the Waiting Room Type you choose.'}
+                                    ? t('waiting.preJoiningHint')
+                                    : t('waiting.waitingRoomHint')}
                             </div>
                         </div>
                         <Controller
@@ -2904,7 +3002,7 @@ export default function ScheduleStep1() {
         return (
                 <div className="flex flex-col items-start gap-4 sm:flex-row">
                     <SelectField
-                        label="Waiting Room Type"
+                        label={t('waiting.waitingRoomTypeLabel')}
                         name="waitingRoomType"
                         labelStyle="text-sm font-medium"
                         options={WAITING_ROOM_TYPE_OPTIONS}
@@ -2912,7 +3010,7 @@ export default function ScheduleStep1() {
                         className="mt-[8px] w-full font-thin sm:w-56"
                     />
                     <SelectField
-                        label="Open Waiting Room Before"
+                        label={t('waiting.openBeforeLabel')}
                         name="openWaitingRoomBefore"
                         labelStyle="text-sm font-medium"
                         options={WAITING_ROOM_OPTIONS}
@@ -2942,7 +3040,7 @@ export default function ScheduleStep1() {
                     />
                     <div className="flex flex-col items-start gap-2">
                         <div className="flex flex-col gap-2">
-                            <div>Cover Image</div>
+                            <div>{t('waiting.coverImage')}</div>
                             <MyButton
                                 type="button"
                                 buttonType="secondary"
@@ -2950,24 +3048,23 @@ export default function ScheduleStep1() {
                                 className="flex items-center gap-2"
                             >
                                 <UploadSimple size={20} />
-                                {existingCoverId || selectedCoverFile ? 'Replace' : 'Upload'}
+                                {existingCoverId || selectedCoverFile ? t('waiting.replace') : t('waiting.upload')}
                             </MyButton>
                             <p className="text-sm text-neutral-500">
-                                Hero background of the public registration page (and the
-                                waiting-room backdrop). A wide landscape image works best.
+                                {t('waiting.coverHint')}
                             </p>
                         </div>
                         {existingCoverId && !selectedCoverFile && (
                             <div className="mt-2 flex h-fit max-w-52 flex-row items-center justify-between gap-2 rounded-md border border-green-500 bg-green-50 p-2 text-sm">
                                 <span className="text-xs font-medium text-green-700">
-                                    Existing file
+                                    {t('waiting.existingFile')}
                                 </span>
                                 <div className="flex items-center gap-2">
                                     <button
                                         type="button"
                                         onClick={() => handleViewFile(existingCoverId, 'thumbnail')}
                                         className="text-green-600 hover:text-green-800"
-                                        title="View file"
+                                        title={t('waiting.viewFile')}
                                     >
                                         <Eye size={18} weight="bold" />
                                     </button>
@@ -2975,7 +3072,7 @@ export default function ScheduleStep1() {
                                         type="button"
                                         onClick={handleRemoveExistingCover}
                                         className="text-red-500 hover:text-red-700"
-                                        title="Remove file"
+                                        title={t('waiting.removeFile')}
                                     >
                                         <X size={18} weight="bold" />
                                     </button>
@@ -3000,7 +3097,7 @@ export default function ScheduleStep1() {
                     <>
                     <div className="flex flex-col items-start gap-2">
                         <div className="flex flex-col gap-2">
-                            <div>Thumbnail</div>
+                            <div>{t('waiting.thumbnail')}</div>
                             <MyButton
                                 type="button"
                                 buttonType="secondary"
@@ -3008,14 +3105,14 @@ export default function ScheduleStep1() {
                                 className="flex items-center gap-2"
                             >
                                 <UploadSimple size={20} />
-                                {existingThumbnailId || selectedFile ? 'Replace' : 'Upload'}
+                                {existingThumbnailId || selectedFile ? t('waiting.replace') : t('waiting.upload')}
                             </MyButton>
                         </div>
                         {/* Show existing thumbnail */}
                         {existingThumbnailId && !selectedFile && (
                             <div className="mt-2 flex h-fit max-w-[200px] flex-row items-center justify-between gap-2 rounded-md border border-green-500 bg-green-50 p-2 text-sm">
                                 <span className="text-xs font-medium text-green-700">
-                                    Existing file
+                                    {t('waiting.existingFile')}
                                 </span>
                                 <div className="flex items-center gap-2">
                                     <button
@@ -3024,7 +3121,7 @@ export default function ScheduleStep1() {
                                             handleViewFile(existingThumbnailId, 'thumbnail')
                                         }
                                         className="text-green-600 hover:text-green-800"
-                                        title="View file"
+                                        title={t('waiting.viewFile')}
                                     >
                                         <Eye size={18} weight="bold" />
                                     </button>
@@ -3032,7 +3129,7 @@ export default function ScheduleStep1() {
                                         type="button"
                                         onClick={handleRemoveExistingThumbnail}
                                         className="text-red-500 hover:text-red-700"
-                                        title="Remove file"
+                                        title={t('waiting.removeFile')}
                                     >
                                         <X size={18} weight="bold" />
                                     </button>
@@ -3056,7 +3153,7 @@ export default function ScheduleStep1() {
                     </div>
                     <div className="flex flex-col items-start gap-2">
                         <div className="flex flex-col gap-2">
-                            <div>Background Score</div>
+                            <div>{t('waiting.backgroundScore')}</div>
                             <MyButton
                                 type="button"
                                 buttonType="secondary"
@@ -3064,7 +3161,7 @@ export default function ScheduleStep1() {
                                 className="flex items-center gap-2"
                             >
                                 <UploadSimple size={20} />
-                                {existingMusicId || selectedMusicFile ? 'Replace' : 'Upload'}
+                                {existingMusicId || selectedMusicFile ? t('waiting.replace') : t('waiting.upload')}
                             </MyButton>
                         </div>
                         {/* Show existing music file */}
@@ -3073,7 +3170,7 @@ export default function ScheduleStep1() {
                                 <div className="flex items-center gap-2">
                                     <MusicNote size={16} weight="fill" className="text-green-600" />
                                     <span className="text-xs font-medium text-green-700">
-                                        Existing file
+                                        {t('waiting.existingFile')}
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -3081,7 +3178,7 @@ export default function ScheduleStep1() {
                                         type="button"
                                         onClick={() => handleViewFile(existingMusicId, 'music')}
                                         className="text-green-600 hover:text-green-800"
-                                        title="Play audio"
+                                        title={t('waiting.playAudio')}
                                     >
                                         <Eye size={18} weight="bold" />
                                     </button>
@@ -3089,7 +3186,7 @@ export default function ScheduleStep1() {
                                         type="button"
                                         onClick={handleRemoveExistingMusic}
                                         className="text-red-500 hover:text-red-700"
-                                        title="Remove file"
+                                        title={t('waiting.removeFile')}
                                     >
                                         <X size={18} weight="bold" />
                                     </button>
@@ -3122,7 +3219,7 @@ export default function ScheduleStep1() {
             <>
                 {/* Recurring Schedule header with days selector */}
                 <div className="mb-2 flex items-center justify-between">
-                    <h2 className="text-xl font-semibold">Recurring Schedule</h2>
+                    <h2 className="text-xl font-semibold">{t('recurring.title')}</h2>
                     <Select
                         value={scheduleType || ''}
                         onValueChange={(
@@ -3136,13 +3233,13 @@ export default function ScheduleStep1() {
                         }}
                     >
                         <SelectTrigger className="w-[120px]">
-                            <SelectValue placeholder="Select days" />
+                            <SelectValue placeholder={t('recurring.selectDaysPlaceholder')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="everyday">Every day</SelectItem>
-                            <SelectItem value="weekday">Mon-Fri</SelectItem>
-                            <SelectItem value="exceptSunday">Mon-Sat</SelectItem>
-                            <SelectItem value="custom">Custom</SelectItem>
+                            <SelectItem value="everyday">{t('recurring.everyDay')}</SelectItem>
+                            <SelectItem value="weekday">{t('recurring.monFri')}</SelectItem>
+                            <SelectItem value="exceptSunday">{t('recurring.monSat')}</SelectItem>
+                            <SelectItem value="custom">{t('recurring.custom')}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -3195,8 +3292,8 @@ export default function ScheduleStep1() {
                                                 </h3>
                                                 <p className="text-sm text-gray-500">
                                                     {isSelect
-                                                        ? `${dayField.sessions.length} session${dayField.sessions.length !== 1 ? 's' : ''} scheduled`
-                                                        : 'Click to schedule sessions'}
+                                                        ? t('recurring.sessionsScheduled', { count: dayField.sessions.length })
+                                                        : t('recurring.clickToSchedule')}
                                                 </p>
                                             </div>
                                         </button>
@@ -3209,7 +3306,7 @@ export default function ScheduleStep1() {
                                                 className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium"
                                             >
                                                 <Plus size={16} />
-                                                Add Session
+                                                {t('recurring.addSession')}
                                             </MyButton>
                                         )}
                                     </div>
@@ -3220,7 +3317,7 @@ export default function ScheduleStep1() {
                                             <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
                                                 <div>
                                                     <Label className="text-sm font-medium text-gray-900">
-                                                        Count attendance daily
+                                                        {t('recurring.countAttendanceDaily')}
                                                     </Label>
                                                 </div>
                                                 <Controller
@@ -3263,7 +3360,7 @@ export default function ScheduleStep1() {
                                                     >
                                                         <div className="mb-4 flex items-center justify-between">
                                                             <h4 className="text-sm font-semibold text-gray-900">
-                                                                Session {sessionIndex + 1}
+                                                                {t('recurring.session', { number: sessionIndex + 1 })}
                                                             </h4>
                                                             {sessionIndex > 0 && (
                                                                 <button
@@ -3282,11 +3379,18 @@ export default function ScheduleStep1() {
                                                         </div>
 
                                                         {/* Session Details Grid */}
-                                                        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+                                                        <div
+                                                            className={cn(
+                                                                'grid grid-cols-1 gap-3',
+                                                                isAutoLinkPlatform
+                                                                    ? 'lg:grid-cols-2'
+                                                                    : 'lg:grid-cols-3'
+                                                            )}
+                                                        >
                                                             {/* Start Time */}
                                                             <div className="space-y-2">
                                                                 <Label className="text-sm font-medium text-gray-700">
-                                                                    Start Time
+                                                                    {t('recurring.startTime')}
                                                                 </Label>
                                                                 <SelectField
                                                                     label=""
@@ -3307,7 +3411,7 @@ export default function ScheduleStep1() {
                                                             {/* Duration */}
                                                             <div className="space-y-2">
                                                                 <Label className="text-sm font-medium text-gray-700">
-                                                                    Duration
+                                                                    {t('timing.duration')}
                                                                 </Label>
                                                                 <div className="flex flex-wrap items-center gap-2">
                                                                     <FormField
@@ -3361,7 +3465,7 @@ export default function ScheduleStep1() {
                                                                         )}
                                                                     />
                                                                     <span className="text-sm text-gray-500">
-                                                                        hrs
+                                                                        {t('timing.hrs')}
                                                                     </span>
                                                                     <FormField
                                                                         control={control}
@@ -3414,60 +3518,65 @@ export default function ScheduleStep1() {
                                                                         )}
                                                                     />
                                                                     <span className="text-sm text-gray-500">
-                                                                        mins
+                                                                        {t('timing.mins')}
                                                                     </span>
                                                                 </div>
                                                             </div>
 
-                                                            {/* Live Class Link */}
-                                                            <div className="space-y-2">
-                                                                <Label className="text-sm font-medium text-gray-700">
-                                                                    Live Class Link
-                                                                </Label>
-                                                                <FormField
-                                                                    control={control}
-                                                                    name={`recurringSchedule.${dayIndex}.sessions.${sessionIndex}.link`}
-                                                                    render={({ field }) => (
-                                                                        <FormItem>
-                                                                            <FormControl>
-                                                                                <LiveClassLinkField
-                                                                                    value={
-                                                                                        field.value ||
-                                                                                        ''
-                                                                                    }
-                                                                                    onChange={
-                                                                                        field.onChange
-                                                                                    }
-                                                                                    onApplyWithScope={(
-                                                                                        scope
-                                                                                    ) => {
-                                                                                        applyLinkWithScope(
-                                                                                            scope,
-                                                                                            dayIndex,
-                                                                                            sessionIndex
-                                                                                        );
-                                                                                    }}
-                                                                                    isEdit={
-                                                                                        isEdit ||
-                                                                                        false
-                                                                                    }
-                                                                                    dayName={
-                                                                                        dayField.day
-                                                                                            .charAt(
-                                                                                                0
+                                                            {/* Live Class Link — hidden when the platform creates the
+                                                                meeting itself. The form value is left untouched so the
+                                                                saved payload is unchanged (clearing it would send "" and
+                                                                wipe the provisioned links on an edit). */}
+                                                            {!isAutoLinkPlatform && (
+                                                                <div className="space-y-2">
+                                                                    <Label className="text-sm font-medium text-gray-700">
+                                                                        {t('link.liveClassLink')}
+                                                                    </Label>
+                                                                    <FormField
+                                                                        control={control}
+                                                                        name={`recurringSchedule.${dayIndex}.sessions.${sessionIndex}.link`}
+                                                                        render={({ field }) => (
+                                                                            <FormItem>
+                                                                                <FormControl>
+                                                                                    <LiveClassLinkField
+                                                                                        value={
+                                                                                            field.value ||
+                                                                                            ''
+                                                                                        }
+                                                                                        onChange={
+                                                                                            field.onChange
+                                                                                        }
+                                                                                        onApplyWithScope={(
+                                                                                            scope
+                                                                                        ) => {
+                                                                                            applyLinkWithScope(
+                                                                                                scope,
+                                                                                                dayIndex,
+                                                                                                sessionIndex
+                                                                                            );
+                                                                                        }}
+                                                                                        isEdit={
+                                                                                            isEdit ||
+                                                                                            false
+                                                                                        }
+                                                                                        dayName={
+                                                                                            dayField.day
+                                                                                                .charAt(
+                                                                                                    0
+                                                                                                )
+                                                                                                .toUpperCase() +
+                                                                                            dayField.day.slice(
+                                                                                                1
                                                                                             )
-                                                                                            .toUpperCase() +
-                                                                                        dayField.day.slice(
-                                                                                            1
-                                                                                        )
-                                                                                    }
-                                                                                />
-                                                                            </FormControl>
-                                                                            <FormMessage className="text-sm text-red-500" />
-                                                                        </FormItem>
-                                                                    )}
-                                                                />
-                                                            </div>
+                                                                                        }
+                                                                                    />
+                                                                                </FormControl>
+                                                                                <FormMessage className="text-sm text-red-500" />
+                                                                            </FormItem>
+                                                                        )}
+                                                                    />
+                                                                </div>
+                                                            )}
                                                         </div>
                                                         {/* Session Options */}
                                                         <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 pt-4">
@@ -3475,7 +3584,7 @@ export default function ScheduleStep1() {
                                                                 {/* Thumbnail Upload */}
                                                                 <div className="flex flex-wrap items-center gap-3">
                                                                     <span className="text-sm font-medium text-gray-700">
-                                                                        Thumbnail:
+                                                                        {t('recurring.thumbnailLabel')}
                                                                     </span>
                                                                     <input
                                                                         type="file"
@@ -3533,7 +3642,7 @@ export default function ScheduleStep1() {
                                                                             <UploadSimple
                                                                                 size={16}
                                                                             />
-                                                                            Upload
+                                                                            {t('waiting.upload')}
                                                                         </MyButton>
                                                                     )}
                                                                 </div>
@@ -3553,7 +3662,7 @@ export default function ScheduleStep1() {
                                                                 className="flex items-center gap-2"
                                                             >
                                                                 <Copy size={16} />
-                                                                Copy to days
+                                                                {t('recurring.copyToDays')}
                                                             </MyButton>
                                                         </div>
                                                     </div>
@@ -3621,8 +3730,7 @@ export default function ScheduleStep1() {
                 )}
             />
             <p className="px-1 text-xs text-gray-500">
-                This button will be visible to learners on the Live Session screen and the Default
-                Session screen.
+                {t('recurring.customButtonHint')}
             </p>
         </div>
     );
@@ -3643,10 +3751,12 @@ export default function ScheduleStep1() {
                         <div className="sticky top-0 z-[9] -mx-4 flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200 bg-white px-4 py-3 sm:-mx-0 sm:px-0">
                             <div>
                                 <h1 className="text-lg font-semibold text-neutral-800">
-                                    {getTerminology(ContentTerms.LiveSession, SystemTerms.LiveSession)} Information
+                                    {t('header.title', {
+                                        term: getTerminology(ContentTerms.LiveSession, SystemTerms.LiveSession),
+                                    })}
                                 </h1>
                                 <p className="text-xs text-neutral-500">
-                                    Set up the class details, then continue to participants & access.
+                                    {t('header.subtitle')}
                                 </p>
                             </div>
                             <MyButton
@@ -3659,7 +3769,7 @@ export default function ScheduleStep1() {
                                 {isSubmitting ? (
                                     <Loader2 className="animate-spin text-white" />
                                 ) : (
-                                    'Next'
+                                    t('header.next')
                                 )}
                             </MyButton>
                         </div>
@@ -3667,16 +3777,16 @@ export default function ScheduleStep1() {
                         <div className="flex flex-col gap-5">
                             <SectionCard
                                 icon={<Info size={18} />}
-                                title="Basic Information"
-                                description="Title, subject and a short description of the class."
+                                title={t('sections.basicInfoTitle')}
+                                description={t('sections.basicInfoDesc')}
                             >
                                 {renderBasicInformation()}
                             </SectionCard>
 
                             <SectionCard
                                 icon={<CalendarBlank size={18} />}
-                                title="Schedule"
-                                description="Choose between a one-time class or a recurring weekly schedule."
+                                title={t('sections.scheduleTitle')}
+                                description={t('sections.scheduleDesc')}
                             >
                                 <div className="flex flex-col gap-6">
                                     {renderMeetingTypeSelection()}
@@ -3687,8 +3797,8 @@ export default function ScheduleStep1() {
 
                             <SectionCard
                                 icon={<VideoCamera size={18} />}
-                                title="Streaming & Link"
-                                description="Where learners join the class and which platform you stream from."
+                                title={t('sections.streamingTitle')}
+                                description={t('sections.streamingDesc')}
                             >
                                 <div className="flex flex-col gap-6">
                                     {renderLiveClassLink()}
@@ -3698,8 +3808,8 @@ export default function ScheduleStep1() {
 
                             <SectionCard
                                 icon={<UsersThree size={18} />}
-                                title="Waiting Room & Playback"
-                                description="Lock playback controls and configure the learner waiting room."
+                                title={t('sections.waitingTitle')}
+                                description={t('sections.waitingDesc')}
                             >
                                 {renderWaitingRoomAndUpload()}
                             </SectionCard>
@@ -3707,8 +3817,8 @@ export default function ScheduleStep1() {
                             {(liveSessionSettings.feedbackEnabled || isEdit) && (
                                 <SectionCard
                                     icon={<ChatTeardrop size={18} />}
-                                    title="Learner Feedback"
-                                    description="Collect ratings and comments after the session ends."
+                                    title={t('sections.feedbackTitle')}
+                                    description={t('sections.feedbackDesc')}
                                 >
                                     {renderFeedbackSettings()}
                                 </SectionCard>
@@ -3717,8 +3827,8 @@ export default function ScheduleStep1() {
                             {(liveSessionSettings.customActionButtonEnabled || isEdit) && (
                                 <SectionCard
                                     icon={<CursorClick size={18} />}
-                                    title="Custom Action Button"
-                                    description="Optional button shown on the learner's session screen."
+                                    title={t('sections.customButtonTitle')}
+                                    description={t('sections.customButtonDesc')}
                                 >
                                     {renderCustomButtonConfig()}
                                 </SectionCard>
@@ -3733,8 +3843,8 @@ export default function ScheduleStep1() {
                             {meetingType === RecurringType.WEEKLY && (
                                     <SectionCard
                                         icon={<ArrowsClockwise size={18} />}
-                                        title="Recurring Schedule"
-                                        description="Pick days and per-day session times for the recurring series."
+                                        title={t('sections.recurringTitle')}
+                                        description={t('sections.recurringDesc')}
                                     >
                                         {renderRecurringSchedule()}
                                     </SectionCard>
@@ -3748,12 +3858,12 @@ export default function ScheduleStep1() {
             <MyDialog
                 open={isDefaultLinkDialogOpen}
                 onOpenChange={setIsDefaultLinkDialogOpen}
-                heading="Apply Link to Other Days"
+                heading={t('dialogs.defaultLinkTitle')}
                 className="w-[400px]"
             >
                 <div className="space-y-4">
                     <p className="text-sm text-gray-600">
-                        Select the days you want to apply this default link to:
+                        {t('dialogs.defaultLinkHint')}
                     </p>
                     <div className="flex flex-wrap gap-2">
                         {form.getValues('recurringSchedule')?.map((day, index) => {
@@ -3787,7 +3897,7 @@ export default function ScheduleStep1() {
                             buttonType="secondary"
                             onClick={() => setIsDefaultLinkDialogOpen(false)}
                         >
-                            Cancel
+                            {t('dialogs.cancel')}
                         </MyButton>
                         <MyButton
                             buttonType="primary"
@@ -3797,7 +3907,7 @@ export default function ScheduleStep1() {
                             }}
                             disable={selectedDaysForLink.length === 0}
                         >
-                            Apply Link
+                            {t('dialogs.applyLink')}
                         </MyButton>
                     </div>
                 </div>
@@ -3807,12 +3917,12 @@ export default function ScheduleStep1() {
             <MyDialog
                 open={isCopyDialogOpen}
                 onOpenChange={setIsCopyDialogOpen}
-                heading="Copy Session to Other Days"
+                heading={t('dialogs.copySessionTitle')}
                 className="w-[400px]"
             >
                 <div className="space-y-4">
                     <p className="text-sm text-gray-600">
-                        Select the days you want to copy this session to:
+                        {t('dialogs.copySessionHint')}
                     </p>
                     <div className="flex flex-wrap gap-2">
                         {form.getValues('recurringSchedule')?.map((day, index) => {
@@ -3841,7 +3951,7 @@ export default function ScheduleStep1() {
                     </div>
                     <div className="flex justify-end gap-3 pt-4">
                         <MyButton buttonType="secondary" onClick={() => setIsCopyDialogOpen(false)}>
-                            Cancel
+                            {t('dialogs.cancel')}
                         </MyButton>
                         <MyButton
                             buttonType="primary"
@@ -3851,7 +3961,7 @@ export default function ScheduleStep1() {
                             }}
                             disable={selectedDaysToCopy.length === 0}
                         >
-                            Copy Session
+                            {t('dialogs.copySession')}
                         </MyButton>
                     </div>
                 </div>
@@ -3861,12 +3971,12 @@ export default function ScheduleStep1() {
             <MyDialog
                 open={isCopyDefaultLinkDialogOpen}
                 onOpenChange={setIsCopyDefaultLinkDialogOpen}
-                heading="Copy Default Link to Other Days"
+                heading={t('dialogs.copyDefaultLinkTitle')}
                 className="w-[400px]"
             >
                 <div className="space-y-4">
                     <p className="text-sm text-gray-600">
-                        Select the days you want to copy this default link to:
+                        {t('dialogs.copyDefaultLinkHint')}
                     </p>
                     <div className="flex flex-wrap gap-2">
                         {form.getValues('recurringSchedule')?.map((day, index) => {
@@ -3898,14 +4008,14 @@ export default function ScheduleStep1() {
                             buttonType="secondary"
                             onClick={() => setIsCopyDefaultLinkDialogOpen(false)}
                         >
-                            Cancel
+                            {t('dialogs.cancel')}
                         </MyButton>
                         <MyButton
                             buttonType="primary"
                             onClick={executeCopyDefaultLink}
                             disable={selectedDaysToCopyDefaultLink.length === 0}
                         >
-                            Copy Default Link
+                            {t('dialogs.copyDefaultLink')}
                         </MyButton>
                     </div>
                 </div>
@@ -3915,7 +4025,7 @@ export default function ScheduleStep1() {
             <MyDialog
                 open={isLinkUpdateDialogOpen}
                 onOpenChange={setIsLinkUpdateDialogOpen}
-                heading="You've changed the class link. Where do you want to apply this change?"
+                heading={t('dialogs.linkChangeTitle')}
                 className="w-[500px]"
             >
                 <div className="space-y-6">
@@ -3936,10 +4046,10 @@ export default function ScheduleStep1() {
                             </div>
                             <div>
                                 <h3 className="font-semibold text-gray-900 group-hover:text-primary-700">
-                                    Only This Session
+                                    {t('dialogs.onlyThisSessionTitle')}
                                 </h3>
                                 <p className="text-sm text-gray-500 group-hover:text-primary-600/80">
-                                    Apply the new link to only this one session on {changedDayLabel}.
+                                    {t('dialogs.onlyThisSessionDesc', { day: changedDayLabel })}
                                 </p>
                             </div>
                         </button>
@@ -3960,10 +4070,10 @@ export default function ScheduleStep1() {
                             </div>
                             <div>
                                 <h3 className="font-semibold text-gray-900 group-hover:text-primary-700">
-                                    All Sessions on This {changedDayLabel}
+                                    {t('dialogs.allSessionsThisDayTitle', { day: changedDayLabel })}
                                 </h3>
                                 <p className="text-sm text-gray-500 group-hover:text-primary-600/80">
-                                    Apply the new link for all sessions on this {changedDayLabel}.
+                                    {t('dialogs.allSessionsThisDayDesc', { day: changedDayLabel })}
                                 </p>
                             </div>
                         </button>
@@ -3984,10 +4094,10 @@ export default function ScheduleStep1() {
                             </div>
                             <div>
                                 <h3 className="font-semibold text-gray-900 group-hover:text-primary-700">
-                                    This Session on Upcoming {changedDayLabel}s
+                                    {t('dialogs.upcomingSessionsTitle', { day: changedDayLabel })}
                                 </h3>
                                 <p className="text-sm text-gray-500 group-hover:text-primary-600/80">
-                                    Apply the new link to this session on every upcoming {changedDayLabel}.
+                                    {t('dialogs.upcomingSessionsDesc', { day: changedDayLabel })}
                                 </p>
                             </div>
                         </button>
@@ -4011,12 +4121,12 @@ export default function ScheduleStep1() {
                             </div>
                             <div>
                                 <h3 className="font-semibold text-gray-900 group-hover:text-primary-700">
-                                    Upcoming {changedDayLabel}s All Sessions
+                                    {t('dialogs.upcomingAllSessionsTitle', { day: changedDayLabel })}
                                 </h3>
                                 <p className="text-sm text-gray-500 group-hover:text-primary-600/80">
-                                    Apply the new link for all sessions on all upcoming occurrences of this day.
+                                    {t('dialogs.upcomingAllSessionsDesc')}
                                     <br />
-                                    <span className="italic">Example: All 6 sessions on every future {changedDayLabel} will have the new link.</span>
+                                    <span className="italic">{t('dialogs.upcomingAllSessionsExample', { day: changedDayLabel })}</span>
                                 </p>
                             </div>
                         </button>
@@ -4027,7 +4137,7 @@ export default function ScheduleStep1() {
                             buttonType="secondary"
                             onClick={() => setIsLinkUpdateDialogOpen(false)}
                         >
-                            Cancel
+                            {t('dialogs.cancel')}
                         </MyButton>
                     </div>
                 </div>

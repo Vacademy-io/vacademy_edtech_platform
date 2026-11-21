@@ -1,0 +1,376 @@
+{
+    "myMentors": {
+        "page": {
+            "title": "موجهيّ",
+            "subtitle": "احجز الجلسات وراسل الموجهين المخصصين لك.",
+            "findMentor": "البحث عن موجه"
+        },
+        "tabs": {
+            "mine": "موجهيّ",
+            "sessions": "جلساتي",
+            "find": "البحث عن موجه",
+            "requests": "طلباتي"
+        },
+        "rateBanner": {
+            "question": "كيف كانت جلستك مع {{mentor}}؟",
+            "helper": "تقييم سريع يساعد مؤسستك على إبقاء التوجيه مفيدًا.",
+            "cta": "قيّم الجلسة"
+        },
+        "common": {
+            "yourMentor": "موجهك",
+            "yourSession": "جلستك",
+            "mentor": "موجه",
+            "thisMentor": "هذا الموجه",
+            "anyAvailableMentor": "أي موجه متاح",
+            "cancel": "إلغاء",
+            "retry": "إعادة المحاولة",
+            "tryAgain": "حاول مرة أخرى"
+        },
+        "find": {
+            "searchPlaceholder": "ابحث بالاسم أو الموضوع",
+            "askAnyTitle": "دع {{admin}} يختار لك موجهًا",
+            "askAnyCta": "غير متأكد؟ اطلب أي موجه",
+            "loadError": "تعذّر تحميل الموجهين.",
+            "empty": {
+                "searchTitle": "لا يوجد موجهون يطابقون بحثك",
+                "noneTitle": "لا يوجد موجهون مُدرَجون بعد",
+                "searchDescription": "جرّب موضوعًا مختلفًا، أو اطلب من {{admin}} مطابقتك مع أي موجه.",
+                "noneDescription": "لم تُدرِج مؤسستك أي موجهين للتصفح بعد.",
+                "clearSearch": "مسح البحث"
+            }
+        },
+        "mine": {
+            "loadError": "تعذّر تحميل موجهيك.",
+            "empty": {
+                "title": "لا يوجد موجهون بعد",
+                "descriptionCanFind": "تصفح الموجهين الذين تقدمهم مؤسستك واطلب من يناسبك.",
+                "descriptionNoFind": "بمجرد تعيين موجه لك، سيظهر هنا."
+            }
+        },
+        "requests": {
+            "loadError": "تعذّر تحميل طلباتك.",
+            "empty": {
+                "title": "لا توجد طلبات بعد",
+                "description": "اطلب موجهًا وستتمكن من متابعة الطلب هنا."
+            },
+            "requestedOn": "طُلب في {{date}}",
+            "withdraw": "سحب",
+            "toast": {
+                "withdrawn": "تم سحب الطلب",
+                "withdrawFailed": "تعذّر سحب الطلب."
+            },
+            "status": {
+                "pending": "بانتظار الموافقة",
+                "approved": "تمت الموافقة",
+                "declined": "لم تتم الموافقة",
+                "cancelled": "تم السحب"
+            }
+        },
+        "requestDialog": {
+            "toast": {
+                "sent": "تم إرسال الطلب — سيؤكده {{admin}} قريبًا",
+                "sendFailed": "تعذّر إرسال طلبك. حاول مرة أخرى."
+            },
+            "headingNamed": "طلب {{mentor}}",
+            "headingAny": "طلب موجه",
+            "sending": "جارٍ الإرسال…",
+            "sendRequest": "إرسال الطلب",
+            "anyMentorHelp": "سيقوم {{admin}} بمطابقتك مع موجه يناسب احتياجاتك.",
+            "messageLabel": "بماذا تحتاج إلى مساعدة؟",
+            "messagePlaceholder": "مثال: أواجه صعوبة في الحركة الدورانية وأحتاج خطة دراسية قبل اختباري القادم",
+            "messageHelper": "اختياري، لكنه يساعد {{admin}} على مطابقتك بشكل أفضل."
+        },
+        "rateDialog": {
+            "heading": "قيّم جلستك",
+            "notNow": "ليس الآن",
+            "pickStarFirst": "اختر تقييمًا بالنجوم أولاً",
+            "saving": "جارٍ الحفظ…",
+            "submit": "إرسال التقييم",
+            "question": "كيف كانت {{session}} مع {{mentor}}؟",
+            "starRatingAriaLabel": "تقييم بالنجوم",
+            "starAriaLabel_zero": "{{count}} نجمة",
+            "starAriaLabel_one": "{{count}} نجمة",
+            "starAriaLabel_two": "{{count}} نجمة",
+            "starAriaLabel_few": "{{count}} نجوم",
+            "starAriaLabel_many": "{{count}} نجمة",
+            "starAriaLabel_other": "{{count}} نجمة",
+            "tapToRate": "اضغط على نجمة للتقييم",
+            "commentLabel": "هل تريد إضافة شيء؟",
+            "commentPlaceholder": "ما الذي نجح، وما الذي قد يساعد في المرة القادمة؟",
+            "commentHelper": "اختياري. يُشارَك مع مؤسستك فقط، وليس مع المتعلمين الآخرين.",
+            "toast": {
+                "thanks": "شكرًا — ملاحظاتك تساعد موجهك",
+                "saveFailed": "تعذّر حفظ ملاحظاتك. حاول مرة أخرى."
+            },
+            "rating": {
+                "1": "غير مفيدة",
+                "2": "يمكن أن تكون أفضل",
+                "3": "مقبولة",
+                "4": "مفيدة",
+                "5": "ممتازة"
+            }
+        },
+        "manageDialog": {
+            "toast": {
+                "cancelled": "تم إلغاء الجلسة",
+                "moved": "تم نقل الجلسة",
+                "cancelFailed": "تعذّر إلغاء الجلسة.",
+                "moveFailed": "تعذّر نقل الجلسة."
+            },
+            "headingCancel": "إلغاء هذه الجلسة",
+            "headingMove": "نقل هذه الجلسة",
+            "keepAsIs": "الإبقاء كما هي",
+            "pickTimeFirst": "اختر وقتًا جديدًا أولاً",
+            "saving": "جارٍ الحفظ…",
+            "cancelSession": "إلغاء الجلسة",
+            "moveSession": "نقل الجلسة",
+            "cancelDescription": "سيُخطَر موجهك بإلغاء الجلسة، وستُحذف مدخلة التقويم والتذكيرات. يمكنك حجز موعد آخر في أي وقت.",
+            "reasonPlaceholder": "مثال: يتعارض مع حصة دراسية",
+            "reasonLabel": "السبب (يُشارَك مع موجهك)",
+            "noAvailability": "لا يمكننا عرض أوقات توفر هذا الموجه الآن — قد لا تكون لديه صفحة حجز مُعدّة. يمكنك إلغاء هذه الجلسة بدلاً من ذلك، أو مراسلته للاتفاق على وقت جديد.",
+            "loadingTimes": "جارٍ تحميل الأوقات المتاحة…",
+            "loadAvailabilityFailed": "تعذّر تحميل أوقات توفر موجهك."
+        },
+        "mentorCard": {
+            "chatOpenFailed": "تعذّر فتح المحادثة. حاول مرة أخرى.",
+            "bookSession": "حجز جلسة",
+            "message": "مراسلة",
+            "bookingNotSetUp": "الحجز غير مُعدّ بعد"
+        },
+        "directoryCard": {
+            "fullyBookedNow": "محجوز بالكامل الآن",
+            "fullyBooked": "محجوز بالكامل",
+            "placesLeft_zero": "{{count}} مكان متبقٍّ",
+            "placesLeft_one": "{{count}} مكان متبقٍّ",
+            "placesLeft_two": "{{count}} مكان متبقٍّ",
+            "placesLeft_few": "{{count}} أماكن متبقية",
+            "placesLeft_many": "{{count}} مكانًا متبقيًا",
+            "placesLeft_other": "{{count}} مكان متبقٍّ",
+            "alreadyYourMentor": "موجهك بالفعل",
+            "requestPending": "تم إرسال الطلب — بانتظار الموافقة",
+            "requestAsMentor": "اطلب كموجه"
+        },
+        "sessionsTab": {
+            "loadError": "تعذّر تحميل جلساتك.",
+            "empty": {
+                "title": "لا توجد جلسات بعد",
+                "description": "احجز جلسة فردية مع أحد موجهيك وستظهر هنا، مع خيارات لنقلها أو إلغائها."
+            },
+            "upcoming": "القادمة",
+            "past": "السابقة",
+            "nothingBooked": "لا يوجد شيء محجوز الآن.",
+            "durationMinutes": "{{count}} دقيقة",
+            "join": "انضمام",
+            "reschedule": "إعادة الجدولة",
+            "cancel": "إلغاء",
+            "youRated": "قيّمت هذه الجلسة {{rating}}/5",
+            "status": {
+                "upcoming": "قادمة",
+                "awaitingReview": "بانتظار موجهك",
+                "completed": "مكتملة",
+                "noShow": "مُسجّلة كغياب",
+                "cancelled": "ملغاة",
+                "rescheduled": "منقولة"
+            }
+        }
+    },
+    "leaderboard": {
+        "badgesDialog": {
+            "titleNamed": "شارات {{name}}",
+            "titleGeneric": "الشارات",
+            "none": "لا توجد شارات مكتسبة بعد."
+        },
+        "viewBadges": "عرض الشارات",
+        "pointsSuffix": "{{points}} نقطة",
+        "pts": "نقطة",
+        "title": "لوحة المتصدرين",
+        "error": {
+            "title": "تعذّر تحميل لوحة المتصدرين",
+            "description": "يرجى التحقق من الرابط أو المحاولة مرة أخرى بعد قليل."
+        },
+        "empty": {
+            "title": "لا توجد ترتيبات بعد",
+            "description": "يتقدم المتعلمون في الترتيب أثناء الدراسة وحضور الحصص المباشرة واكتساب الشارات."
+        },
+        "footerSummary": "متعلمًا · مُرتّبون حسب نشاط التعلم",
+        "namesAnonymized": "الأسماء مجهولة الهوية لحماية الخصوصية",
+        "poweredBy": "بدعم من {{instituteName}}",
+        "allCourses": "جميع {{courses}}"
+    },
+    "media": {
+        "notFound": "الوسائط غير موجودة",
+        "loadFailed": "تعذّر تحميل الوسائط المطلوبة.",
+        "video": "فيديو",
+        "invalidYoutubeUrl": "رابط يوتيوب غير صالح",
+        "pdfDocument": "مستند PDF",
+        "image": "صورة",
+        "videoNotSupported": "متصفحك لا يدعم عنصر الفيديو.",
+        "unknownFile": "ملف غير معروف",
+        "previewUnsupported": "معاينة هذا النوع من الملفات غير مدعومة",
+        "openFile": "فتح الملف"
+    },
+    "verify": {
+        "scan": {
+            "title": "تحقق من شهادة",
+            "description": "امسح الرمز الموجود على الشهادة بأي تطبيق ماسح والصق ما يعطيك إياه، أو اكتب رمز التحقق المطبوع بجانبه.",
+            "inputLabel": "الرمز الممسوح أو رابط التحقق",
+            "inputPlaceholder": "مثال: EDU2026001*A1B2C3D4E5",
+            "checking": "جارٍ التحقق…",
+            "verify": "تحقق",
+            "numberNotEnough": "رقم الشهادة وحده لا يكفي للتحقق — يجب أن يكون الرمز الممسوح أو رمز التحقق المطبوع معه. هذا ما يمنع أي شخص من تخمين طريقه عبر شهادات المؤسسة.",
+            "noRecordMatch": "لا يوجد لدينا سجل يطابق ما أدخلته."
+        },
+        "verifiedVia": {
+            "codeEntered": "الرمز الذي أدخلته",
+            "qrCode": "رمز الاستجابة السريعة"
+        },
+        "certificateVerificationTitle": "التحقق من الشهادة",
+        "enterCodeInstead": "أدخل الرمز من الشهادة بدلاً من ذلك",
+        "cards": {
+            "checkingAriaLabel": "جارٍ التحقق من الشهادة",
+            "checking": "جارٍ التحقق من هذه الشهادة…",
+            "invalidTitle": "تعذّر التحقق من هذه الشهادة",
+            "noRecordPrefix": "لا يوجد لدينا سجل للشهادة",
+            "noRecordSuffix": "بهذا رابط التحقق.",
+            "linksMustBeFull": "يجب مسح الروابط أو نسخها بالكامل — الرابط الجزئي لن يتحقق. إذا كتبته يدويًا، امسح الرمز الموجود على الشهادة بدلاً من ذلك.",
+            "errorTitle": "تعذّر الوصول إلى خدمة التحقق",
+            "errorDescription": "هذا لا يعني أن الشهادة غير صالحة. تحقق من اتصالك وحاول مرة أخرى."
+        },
+        "certificate": {
+            "theAwardingInstitute": "المؤسسة المانحة",
+            "verifiedBy": "تم التحقق بواسطة",
+            "genuine": "هذه الشهادة أصلية",
+            "confirmsIssued": "تؤكد {{instituteName}} أنها أصدرت الشهادة أدناه.",
+            "checkedUsing": "تم التحقق باستخدام {{verifiedVia}}.",
+            "issuedTo": "صادرة إلى",
+            "certificateNumber": "رقم الشهادة",
+            "issuedOn": "تاريخ الإصدار",
+            "completion": "نسبة الإنجاز",
+            "namePartial": "يُعرض اسم المستلم جزئيًا لحماية خصوصيته. وهو يطابق الاسم المطبوع على الشهادة."
+        }
+    },
+    "unsubscribe": {
+        "errors": {
+            "generic": "لم نتمكن من تحديث تفضيلاتك الآن. يرجى المحاولة مرة أخرى."
+        },
+        "generalUpdates": "التحديثات العامة",
+        "yourAccount": "حسابك",
+        "channel": {
+            "email": "البريد الإلكتروني",
+            "whatsapp": "واتساب",
+            "notification": "الإشعارات"
+        },
+        "messages": {
+            "resubscribed": "تم اشتراكك مجددًا في تحديثات {{channel}}.",
+            "unsubscribed": "تم إلغاء اشتراكك من تحديثات {{channel}}."
+        },
+        "header": {
+            "title": "تحديث إشعاراتك",
+            "descriptionPrefix": "نقوم بتحديث تفضيل رسائلك لـ"
+        },
+        "support": {
+            "title": "تحتاج إلى شيء آخر؟",
+            "description": "تواصل مع فريق الدعم لدينا وسنساعدك على تعديل أي من تفضيلات التواصل الخاصة بك.",
+            "emailPrefix": "راسلنا على",
+            "emailSuffix": "مع ذكر موضوع الرسالة التي تلقيتها.",
+            "retrying": "جارٍ إعادة المحاولة…",
+            "tryAgain": "حاول مرة أخرى"
+        },
+        "returnToVacademy": "العودة إلى Vacademy",
+        "invalidLink": {
+            "title": "الرابط غير متاح",
+            "description": "رابط إلغاء الاشتراك هذا ينقصه معلومات مطلوبة أو ربما انتهت صلاحيته. تواصل مع فريق الدعم لدينا وسنقوم بتحديث تفضيلاتك يدويًا."
+        },
+        "summary": {
+            "retrying": "جارٍ إعادة المحاولة…",
+            "tryAgain": "حاول مرة أخرى",
+            "pleaseWait": "يرجى الانتظار…",
+            "resubscribe": "إعادة الاشتراك",
+            "unsubscribe": "إلغاء الاشتراك"
+        },
+        "status": {
+            "updating": "جارٍ تحديث تفضيلك",
+            "hangTight": "يرجى الانتظار بينما نحدّث الإشعارات لـ {{recipient}}.",
+            "updated": "تم تحديث التفضيل",
+            "couldNotUpdate": "تعذّر تحديث هذا"
+        }
+    },
+    "referral": {
+        "navHeading": "إحالاتي",
+        "copiedToClipboard": "تم نسخ {{type}} إلى الحافظة",
+        "loading": "جارٍ التحميل...",
+        "loadError": "خطأ في تحميل القسائم",
+        "noDataTitle": "لا تتوفر بيانات إحالة",
+        "noDataDescription": "لم يتم العثور على بيانات قسائم أو إحالات. يرجى التواصل مع مسؤولك للمساعدة.",
+        "hero": {
+            "titlePrefix": "ادعُ أصدقاءك،",
+            "titleHighlight": "واحصل على مكافآت",
+            "description": "شارك هدية التعلّم مع أصدقائك واكسبا مكافآت لكما معًا.",
+            "shareNote": "شارك رمز الإحالة الخاص بك مع الأصدقاء، وستحصلان أنت وأصدقاؤك على مكافآت إحالة حصرية.",
+            "yourCodeTitle": "رمز الإحالة الخاص بك",
+            "codeHelper": "يمكن للأصدقاء إدخال هذا الرمز للانضمام عبر إحالتك",
+            "imageAlt": "رسم توضيحي للتأمل لشخص في وضعية اللوتس محاط بالنباتات"
+        },
+        "inviteCode": "رمز الدعوة",
+        "inviteLinks": {
+            "title": "روابط الإحالة الخاصة بك",
+            "inviteLinkColumn": "رابط الدعوة",
+            "shareColumn": "مشاركة",
+            "noInvites": "لا توجد دعوات متاحة",
+            "unknownCourse": "{{course}} غير معروف",
+            "linkCopied": "تم نسخ رابط الدعوة إلى الحافظة",
+            "shareTitle": "انضم إليّ في رحلة التعلّم هذه!",
+            "shareText": "وجدت هذا {{course}} الرائع واعتقدت أنك قد تكون مهتمًا. استخدم رابط الإحالة الخاص بي للبدء:",
+            "copyLink": "نسخ الرابط",
+            "shareLink": "مشاركة الرابط"
+        },
+        "table": {
+            "title": "إحالاتك",
+            "memberName": "اسم العضو",
+            "memberEmail": "البريد الإلكتروني للعضو",
+            "rewardStatus": "حالة المكافأة",
+            "viewDetails": "عرض التفاصيل",
+            "viewDetailsTitle": "عرض تفاصيل الإحالة",
+            "yourBenefits": "مكافآتك",
+            "noBenefitLogs": "لا توجد سجلات مكافآت متاحة",
+            "noneFound": "لم يتم العثور على إحالات بعد.",
+            "noneFoundHelper": "ابدأ بدعوة الأصدقاء لترى إحالاتك هنا!"
+        },
+        "status": {
+            "pending": "قيد الانتظار"
+        },
+        "benefit": {
+            "earnedPoints": "كسبت {{points}} نقطة",
+            "receivedDays": "حصلت على {{days}} يومًا من العضوية المجانية",
+            "percentageDiscountText": "احصل على خصم على مشترياتك القادمة",
+            "flatDiscountText": "احصل على خصم ثابت على مشترياتك القادمة",
+            "contentText": "سيتم تسليمك محتوى حصري",
+            "unknown": "مكافأة غير معروفة",
+            "percentageDiscount": "خصم بالنسبة المئوية",
+            "flatDiscount": "خصم ثابت",
+            "freeMembershipDays": "أيام عضوية مجانية",
+            "contentBenefit": "مكافأة محتوى",
+            "rewardPoints": "نقاط مكافآت"
+        }
+    },
+    "myReports": {
+        "detail": {
+            "loadError": "تعذّر تحميل هذا التقرير. يرجى المحاولة مرة أخرى.",
+            "couldNotLoad": "تعذّر تحميل التقرير",
+            "reportNotFound": "التقرير غير موجود.",
+            "backToReports": "العودة إلى التقارير",
+            "inProgress": "التقرير قيد الإعداد",
+            "generationFailed": "فشل إنشاء التقرير. يرجى التواصل مع مؤسستك.",
+            "stillGenerating": "لا يزال تقريرك قيد الإنشاء. يرجى المراجعة مرة أخرى قريبًا.",
+            "downloadPdf": "تنزيل PDF",
+            "contentUnavailable": "محتوى التقرير غير متاح",
+            "contentUnavailableDescription": "تعذّر تحميل محتوى التقرير. يرجى المحاولة مرة أخرى لاحقًا.",
+            "backToMyReports": "العودة إلى تقاريري"
+        },
+        "activity": {
+            "insightsUnavailable": "الرؤى غير متاحة",
+            "insightsUnavailableDescription": "تعذّر فتح هذا التقرير. قد يكون لا يزال قيد الإعداد.",
+            "typeInsights": "رؤى {{type}}"
+        }
+    }
+}

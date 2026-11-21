@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { DotsThree } from '@phosphor-icons/react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -34,6 +35,7 @@ export const ComprehensiveMultipleCorrectQuestionPaperTemplatePPTView = ({
     className,
     selectedSectionIndex,
 }: SectionQuestionPaperFormProps) => {
+    const { t } = useTranslation('assessmentComprehensiveMultipleCorrectPPTList');
     const { control, getValues, setValue } = form;
 
     const [isDropdownVisible, setIsDropdownVisible] = useState(false); // State to track dropdown visibility
@@ -105,7 +107,7 @@ export const ComprehensiveMultipleCorrectQuestionPaperTemplatePPTView = ({
                         <div className="flex w-full items-center gap-4">
                             <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
                                 <span className="!p-0 text-sm">
-                                    {optionsType ? formatStructure(optionsType, 'a') : '(a.)'}
+                                    {optionsType ? formatStructure(optionsType, 'a') : t('optionLabels.a')}
                                 </span>
                             </div>
                         </div>
@@ -140,7 +142,7 @@ export const ComprehensiveMultipleCorrectQuestionPaperTemplatePPTView = ({
                         <div className="flex w-full items-center gap-4">
                             <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
                                 <span className="!p-0 text-sm">
-                                    {optionsType ? formatStructure(optionsType, 'b') : '(b.)'}
+                                    {optionsType ? formatStructure(optionsType, 'b') : t('optionLabels.b')}
                                 </span>
                             </div>
                         </div>
@@ -177,7 +179,7 @@ export const ComprehensiveMultipleCorrectQuestionPaperTemplatePPTView = ({
                         <div className="flex w-full items-center gap-4">
                             <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
                                 <span className="!p-0 text-sm">
-                                    {optionsType ? formatStructure(optionsType, 'c') : '(c.)'}
+                                    {optionsType ? formatStructure(optionsType, 'c') : t('optionLabels.c')}
                                 </span>
                             </div>
                         </div>
@@ -212,7 +214,7 @@ export const ComprehensiveMultipleCorrectQuestionPaperTemplatePPTView = ({
                         <div className="flex w-full items-center gap-4">
                             <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
                                 <span className="!p-0 text-sm">
-                                    {optionsType ? formatStructure(optionsType, 'd') : '(d.)'}
+                                    {optionsType ? formatStructure(optionsType, 'd') : t('optionLabels.d')}
                                 </span>
                             </div>
                         </div>
@@ -261,10 +263,10 @@ export const ComprehensiveMultipleCorrectQuestionPaperTemplatePPTView = ({
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="mt-1">
                             <DropdownMenuItem onClick={handleDuplicateSlide}>
-                                Duplicate Slide
+                                {t('menu.duplicateSlide')}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={handleDeleteSlide}>
-                                Delete Slide
+                                {t('menu.deleteSlide')}
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>

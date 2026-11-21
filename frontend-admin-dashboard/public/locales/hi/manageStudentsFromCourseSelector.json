@@ -1,0 +1,30 @@
+{
+    "toasts": {
+        "selectLevelFirst": "कृपया पहले एक कोर्स स्तर चुनें",
+        "loadFailed": "कोर्स से छात्रों को लोड करने में विफल",
+        "alreadyInList": "चयनित सभी छात्र पहले से ही आपकी सूची में हैं",
+        "added_one": "{{count}} छात्र जोड़ा गया",
+        "added_other": "{{count}} छात्र जोड़े गए"
+    },
+    "labels": {
+        "sourceCourse": "स्रोत {{courseTerm}}",
+        "statusFilter": "स्थिति फ़िल्टर"
+    },
+    "placeholders": {
+        "select": "{{term}} चुनें"
+    },
+    "status": {
+        "active": "सक्रिय",
+        "inactive": "निष्क्रिय",
+        "invited": "आमंत्रित"
+    },
+    "actions": {
+        "loading": "लोड हो रहा है…",
+        "load": "{{learnersTerm}} लोड करें",
+        "add": "{{count}} {{term}} जोड़ें"
+    },
+    "list": {
+        "selectedCount": "{{checked}}/{{total}} चयनित",
+        "empty": "कोई {{learnersTerm}} नहीं मिला। खोजने के लिए \"{{loadLabel}}\" पर क्लिक करें।"
+    }
+}

@@ -47,22 +47,16 @@ export interface AudienceRule {
     /** TAG */
     tagIds: string[];
     tagScope: 'ALL' | 'DEFAULT' | 'INSTITUTE';
-    /** AUDIENCE (campaign) */
-    campaignId: string;
-    campaignName: string;
+    /** AUDIENCE (campaign) — multi-select, one recipient row per campaign. */
+    campaignIds: string[];
+    /** Names captured at pick/hydrate time, so rows stay labelled before the campaign list loads. */
+    campaignNames: Record<string, string>;
     fieldFilters: FieldFilter[];
     exclusions: RuleExclusion[];
 }
 
-export interface BatchOption {
-    id: string;
-    label: string;
-    packageName: string;
-    levelName: string;
-    sessionName: string;
-    status?: string;
-    isOrgAssociated: boolean;
-}
+/** Shared with other batch pickers; see lib/batch-options. */
+export type { BatchOption } from '@/lib/batch-options';
 
 export interface CustomFieldOption {
     id: string;
@@ -86,6 +80,8 @@ export interface EmailConfig {
     fromKey: string;
     /** Blank = reuse the announcement title. */
     subjectOverride: string;
+    /** Enroll invite that {{short_referral_link}} opens; '' = each member's own invite. */
+    referralInviteId: string;
 }
 
 /** Derived from WHATSAPP_VALUE_SOURCES so the two can never drift apart. */
@@ -101,6 +97,8 @@ export interface WhatsAppConfig {
     templateName: string;
     languageCode: string;
     headerUrl: string;
+    /** Enroll invite that referral-link variables open; '' = each member's own invite. */
+    referralInviteId: string;
     /** Keyed by the template's variable name. */
     variables: Record<string, WhatsAppVariableBinding>;
 }

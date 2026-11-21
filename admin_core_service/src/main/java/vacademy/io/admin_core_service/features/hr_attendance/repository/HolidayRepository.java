@@ -23,6 +23,8 @@ public interface HolidayRepository extends JpaRepository<Holiday, String> {
 
     boolean existsByInstituteIdAndDate(String instituteId, LocalDate date);
 
+    List<Holiday> findByInstituteIdAndDateIn(String instituteId, List<LocalDate> dates);
+
     @Query("SELECT COUNT(h) FROM Holiday h WHERE h.instituteId = :instituteId " +
             "AND h.date BETWEEN :startDate AND :endDate AND h.isOptional = false")
     long countMandatoryHolidays(@Param("instituteId") String instituteId,

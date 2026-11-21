@@ -3,22 +3,44 @@ package vacademy.io.admin_core_service.features.learner.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vacademy.io.admin_core_service.features.course.enums.CourseTypeEnum;
 import vacademy.io.admin_core_service.features.learner.dto.v2.LearnerPackageSessionEnrollmentItemDTO;
 import vacademy.io.admin_core_service.features.learner.dto.v2.MultiPackageLearnerEnrollRequestDTO;
+import vacademy.io.admin_core_service.features.packages.enums.ChargePackageType;
 import vacademy.io.admin_core_service.features.audience.service.UserLeadProfileService;
+import vacademy.io.admin_core_service.features.course_settings.service.LeadConversionPolicyService;
+import vacademy.io.admin_core_service.features.packages.repository.PackageSessionRepository;
+import vacademy.io.admin_core_service.features.enroll_invite.entity.EnrollInvite;
+import vacademy.io.admin_core_service.features.enroll_invite.repository.EnrollInviteRepository;
+import vacademy.io.admin_core_service.features.common.util.JsonUtil;
+import vacademy.io.admin_core_service.features.regional_pricing.dto.RegionalQuote;
+import vacademy.io.admin_core_service.features.regional_pricing.service.RegionalPriceResolver;
+import vacademy.io.admin_core_service.features.stock_hold.entity.StockHold;
+import vacademy.io.admin_core_service.features.stock_hold.enums.StockHoldKind;
+import vacademy.io.admin_core_service.features.stock_hold.service.StockHoldService;
+import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentLog;
+import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan;
+import vacademy.io.admin_core_service.features.user_subscription.enums.PaymentOptionType;
+import vacademy.io.admin_core_service.features.user_subscription.repository.PaymentLogRepository;
 import vacademy.io.admin_core_service.features.user_subscription.service.PaymentLogService;
 import vacademy.io.common.auth.dto.learner.LearnerEnrollRequestDTO;
 import vacademy.io.common.auth.dto.learner.LearnerEnrollResponseDTO;
 import vacademy.io.common.auth.dto.learner.LearnerPackageSessionsEnrollDTO;
 import vacademy.io.common.auth.dto.UserDTO;
+import vacademy.io.common.exceptions.InvalidRequestException;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.payment.dto.PaymentInitiationRequestDTO;
+import vacademy.io.common.payment.enums.PaymentStatusEnum;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
@@ -44,6 +66,52 @@ public class MultiPackageLearnerEnrollService {
     @Autowired
     private UserLeadProfileService userLeadProfileService;
 
+    @Autowired
+    private LeadConversionPolicyService leadConversionPolicyService;
+
+    @Autowired
+    private PackageSessionRepository packageSessionRepository;
+
+    @Autowired
+    private EnrollInviteRepository enrollInviteRepository;
+
+    @Autowired
+    private RegionalPriceResolver regionalPriceResolver;
+
+    @Autowired
+    private StockHoldService stockHoldService;
+
+    @Autowired
+    private AdditionalChargeValidator additionalChargeValidator;
+
+    @Autowired
+    private PaymentLogRepository paymentLogRepository;
+
+    /** Regional price of a whole order: its total and each item's unit price, keyed by package session. */
+    private record RegionalOrderPrice(double total, Map<String, Double> unitPriceByPackageSessionId) {
+    }
+
+    /**
+     * Courses (packages) behind the enrolled package sessions, for the conversion-policy lookup.
+     * A session whose package can't be resolved is simply left out — the policy service then
+     * falls back to the institute default, i.e. today's convert-on-enrollment behaviour.
+     */
+    private List<String> resolvePackageIds(List<LearnerPackageSessionEnrollmentItemDTO> items) {
+        List<String> packageSessionIds = items.stream()
+                .map(LearnerPackageSessionEnrollmentItemDTO::getPackageSessionId)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .toList();
+        if (packageSessionIds.isEmpty()) {
+            return List.of();
+        }
+        return packageSessionRepository.findAllById(packageSessionIds).stream()
+                .map(ps -> ps.getPackageEntity() != null ? ps.getPackageEntity().getId() : null)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .toList();
+    }
+
     @Transactional
     public LearnerEnrollResponseDTO enrollMultiPackage(MultiPackageLearnerEnrollRequestDTO request) {
 
@@ -54,7 +122,11 @@ public class MultiPackageLearnerEnrollService {
             if (users.isEmpty()) {
                 throw new VacademyException("User not found with ID: " + request.getUserId());
             }
-            request.setUser(users.get(0));
+            // The looked-up user lists the account's roles in every institute and is posted to
+            // auth-service for this institute further on: it enrols as a learner, nothing more.
+            UserDTO found = users.get(0);
+            request.setUser(PublicEnrollRoleGuard.copyWithRoles(found,
+                    PublicEnrollRoleGuard.askedRolesOnly(null, found.getRoles(), request.getInstituteId())));
         }
 
         if (request.getUser() == null) {
@@ -66,6 +138,17 @@ public class MultiPackageLearnerEnrollService {
         if (items == null || items.isEmpty()) {
             throw new VacademyException("No package sessions provided for enrollment");
         }
+        boolean isManual = "MANUAL".equalsIgnoreCase(request.getEnrollmentType());
+
+        // Package type of every line (MEMBERSHIP, DELIVERY_CHARGE, ...), read once for the whole
+        // order and passed to every check below: a membership (rent plan) is one plan whose
+        // max_seats means books per period, never copies or stock; a charge is never a copy.
+        Map<String, String> packageTypeByPackageSessionId = additionalChargeValidator.packageTypes(items);
+        // 0. One line per item, its copies in requested_quantity (null → 1).
+        validateQuantities(items, packageTypeByPackageSessionId);
+        rejectMembershipQuantities(items, packageTypeByPackageSessionId);
+        // Rent picks belong to a membership line only.
+        rejectRentPicksOffMembership(items, packageTypeByPackageSessionId);
 
         // 0. Initialize PaymentInitiationRequest if missing
         if (request.getPaymentInitiationRequest() == null) {
@@ -74,12 +157,23 @@ public class MultiPackageLearnerEnrollService {
         PaymentInitiationRequestDTO paymentInit = request.getPaymentInitiationRequest();
 
         // 0.1 Calculate Total Amount if missing
+        // A negative amount is never legitimate, and the "free" checks below key off
+        // amount <= 0 — so letting one through skipped payment entirely.
+        if (paymentInit.getAmount() != null && paymentInit.getAmount() < 0 && !isManual) {
+            throw new InvalidRequestException("Payment amount cannot be negative");
+        }
         if (paymentInit.getAmount() == null || paymentInit.getAmount() == 0.0) {
             double totalAmount = 0.0;
             for (LearnerPackageSessionEnrollmentItemDTO item : items) {
                 if (StringUtils.hasText(item.getPlanId())) {
                     vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan plan = paymentPlanService
                             .findById(item.getPlanId()).orElse(null);
+                    // This loop used to fetch the plan and never add its price, so an omitted
+                    // amount summed to 0 and the request was treated as FREE (skip payment +
+                    // force PAID) — a paid enrollment for nothing.
+                    if (plan != null) {
+                        totalAmount += lineTotal(plan.getActualPrice(), item.getRequestedQuantity());
+                    }
 
                 } else if (StringUtils.hasText(item.getPaymentOptionId())) {
                     // Fallback to auto-select active plan if planId is missing but paymentOption is
@@ -98,7 +192,16 @@ public class MultiPackageLearnerEnrollService {
                             vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan autoPlan = activePlans
                                     .get(0);
                             log.info("Auto-calculated price from single ACTIVE plan: {}", autoPlan.getId());
-
+                            totalAmount += lineTotal(autoPlan.getActualPrice(), item.getRequestedQuantity());
+                            // Pin the plan so the amount verification below checks the
+                            // same plan that was priced here.
+                            item.setPlanId(autoPlan.getId());
+                        } else if (!PaymentOptionType.FREE.name().equalsIgnoreCase(option.getType())
+                                && !isManual) {
+                            // A paid option whose plan can't be resolved can't be priced; summing
+                            // it as 0 would hand the course out for free.
+                            throw new InvalidRequestException(
+                                    "plan_id is required for payment option " + option.getId());
                         }
                     }
                 }
@@ -112,32 +215,61 @@ public class MultiPackageLearnerEnrollService {
             paymentInit.setEmail(request.getUser().getEmail());
         }
 
-        // 0.3 Verify the client-supplied amount equals the sum of plan prices for
-        // every enrollment item. Closes the trust gap where any caller could submit
-        // an arbitrary `amount` for the v2 multi-package endpoint. Skipped for
-        // free/manual enrollments — those paths bypass payment entirely.
+        // 0.3 Verify the client-supplied amount equals the sum of line totals (plan
+        // price × quantity) for every enrollment item. Closes the trust gap where any
+        // caller could submit an arbitrary `amount` for the v2 multi-package endpoint.
+        // Skipped for free/manual enrollments — those paths bypass payment entirely.
         boolean willSkipPaymentVerification =
-                "MANUAL".equalsIgnoreCase(request.getEnrollmentType())
-                        || (paymentInit.getAmount() != null && paymentInit.getAmount() <= 0);
+                isManual || (paymentInit.getAmount() != null && paymentInit.getAmount() <= 0);
+        // Regional pricing for the whole order (null = base prices). Resolved before the items
+        // fan out so every item enrolment sees the same decision.
+        RegionalOrderPrice regionalPrice = willSkipPaymentVerification ? null : resolveRegionalTotal(items, paymentInit);
         if (!willSkipPaymentVerification && paymentInit.getAmount() != null) {
             double expectedSum = 0.0;
             for (LearnerPackageSessionEnrollmentItemDTO item : items) {
                 if (!StringUtils.hasText(item.getPlanId())) {
-                    throw new VacademyException(
+                    throw new InvalidRequestException(
                             "Each enrollment item must include a plan_id so the amount can be verified");
                 }
                 vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan plan =
                         paymentPlanService.findById(item.getPlanId()).orElseThrow(
-                                () -> new VacademyException("PaymentPlan not found: " + item.getPlanId()));
-                expectedSum += plan.getActualPrice();
+                                () -> new InvalidRequestException("PaymentPlan not found: " + item.getPlanId()));
+                expectedSum += lineTotal(plan.getActualPrice(), item.getRequestedQuantity());
+            }
+            if (regionalPrice != null) {
+                expectedSum = regionalPrice.total();
             }
             double clientAmount = paymentInit.getAmount();
             if (Math.abs(clientAmount - expectedSum) > 0.01) {
                 log.warn("Amount mismatch on multi-package enroll: client sent {}, expected {} (from {} plans)",
                         clientAmount, expectedSum, items.size());
-                throw new VacademyException(String.format(
+                throw new InvalidRequestException(String.format(
                         "Payment amount mismatch: submitted %.2f, expected %.2f", clientAmount, expectedSum));
             }
+        }
+
+        // Each item's own amount is its line total (unit × quantity). It used to be the ORDER
+        // total on every item, so every item's ledger debit was the whole order.
+        Map<String, Double> lineAmountByPackageSessionId = lineAmounts(items, regionalPrice);
+        String orderInstituteId = resolveOrderInstituteId(request, items.get(0));
+
+        // 0.35 The order's rent picks: at most MAX_RENT_PICKS distinct books, each an ACTIVE
+        // package session of the order's institute (no query when nothing is picked).
+        additionalChargeValidator.validateRentPicks(orderInstituteId, rentPicks(items));
+
+        // 0.4 Shipping / additional charges must match the catalogue's tier for the number
+        // of copies, and must not be dropped. Storefront orders only.
+        if (!isManual && paymentInit.getAmount() != null && paymentInit.getAmount() > 0) {
+            additionalChargeValidator.validate(orderInstituteId, request.getCatalogueTag(), items,
+                    packageTypeByPackageSessionId);
+        }
+        // 0.5 A rent order (a membership line) carries the catalogue's rent charges, the
+        // once-per-user security deposit exactly when it is due. Checked whatever the amount, so
+        // a free membership cannot skip a due deposit; a no-op for every other order. Runs
+        // before anything is written, held or sent to a gateway, so a 400 leaves nothing.
+        if (!isManual) {
+            additionalChargeValidator.validateRentMode(orderInstituteId, request.getCatalogueTag(), items,
+                    packageTypeByPackageSessionId, request.getUser());
         }
 
         // 1. Ensure a consistent OrderId for the entire multi-package transaction
@@ -149,16 +281,28 @@ public class MultiPackageLearnerEnrollService {
             paymentInit.setOrderId(sharedOrderId);
         }
 
+        // 1.1 Hold stock for the whole order before the gateway is called, so two learners
+        // can't both pay for the last copy (409 "Only N left of ..." when short; the
+        // transaction rolls back every hold already taken). Admin MANUAL orders hold nothing:
+        // their plans activate at once and take stock then (StockHoldService.onPlanActivated).
+        // Keyed by the line's package session: a membership line's entry is its rent picks.
+        Map<String, List<StockHold>> holdsByPackageSessionId = isManual
+                ? Map.of()
+                : holdOrderStock(orderInstituteId, items, packageTypeByPackageSessionId);
+
         // 2. Process Main Package (First Item) - This initiates the Payment
         LearnerPackageSessionEnrollmentItemDTO mainItem = items.get(0);
+        double mainLineAmount = lineAmountByPackageSessionId.getOrDefault(mainItem.getPackageSessionId(), 0.0);
 
-        LearnerEnrollRequestDTO mainRequestDTO = mapToLegacyDTO(request, mainItem);
-        // Override amount to TOTAL amount for the main transaction
+        LearnerEnrollRequestDTO mainRequestDTO = mapToLegacyDTO(request, mainItem, mainLineAmount);
+        // Override amount to TOTAL amount for the main transaction's gateway charge; its own
+        // amount (ledger debit) stays the main item's line total.
 
         Map<String, Object> mainExtraData = new HashMap<>();
         if (request.getPaymentInitiationRequest() != null) {
             mainExtraData.put("OVERRIDE_TOTAL_AMOUNT", request.getPaymentInitiationRequest().getAmount());
         }
+        putLineExtraData(mainExtraData, mainItem, isManual, holdsByPackageSessionId);
 
         boolean isSkipPayment = false;
         // Check if amount is 0, if so, skip payment initiation automatically
@@ -170,9 +314,16 @@ public class MultiPackageLearnerEnrollService {
         }
 
         // Also skip payment if enrollment type is explicitly MANUAL
-        if ("MANUAL".equalsIgnoreCase(request.getEnrollmentType())) {
+        if (isManual) {
             log.info("Enrollment type is MANUAL, enabling SKIP_PAYMENT_INITIATION and immediate activation");
             isSkipPayment = true;
+        }
+
+        // Learner checkouts must not enroll through an expired / inactive link. Admin
+        // MANUAL enrollment is exempt (admins can place learners on closed invites).
+        boolean enforceAvailability = !isManual;
+        if (enforceAvailability) {
+            mainExtraData.put(LearnerEnrollRequestService.ENFORCE_INVITE_AVAILABILITY, true);
         }
 
         if (isSkipPayment) {
@@ -204,7 +355,12 @@ public class MultiPackageLearnerEnrollService {
         String mainPaymentLogId = mainResponse.getPaymentResponse().getOrderId();
         log.info("Main payment initiated. PaymentLogId/OrderId: {}. Total Amount: {}",
                 mainPaymentLogId, request.getPaymentInitiationRequest().getAmount());
-        UserDTO enrolledUser = mainResponse.getUser(); // Use the confirmed/created user ID for subsequent calls
+        // Use the confirmed/created user ID for subsequent calls. The response's user lists the
+        // account's roles in every institute, so the next lines get a copy that carries the
+        // first line's role list; the response itself is left as it is.
+        UserDTO enrolledUser = userForNextLines(mainResponse.getUser(), mainRequestDTO.getUser());
+        // Every hold of the order is released / confirmed by the one gateway log.
+        attachToOrder(holdsByPackageSessionId.get(mainItem.getPackageSessionId()), mainPaymentLogId);
 
         List<String> childPaymentLogIds = new ArrayList<>();
 
@@ -213,12 +369,17 @@ public class MultiPackageLearnerEnrollService {
             LearnerPackageSessionEnrollmentItemDTO item = items.get(i);
             log.info("Enrolling in child package session: {}", item.getPackageSessionId());
 
-            LearnerEnrollRequestDTO childRequestDTO = mapToLegacyDTO(request, item);
+            LearnerEnrollRequestDTO childRequestDTO = mapToLegacyDTO(request, item,
+                    lineAmountByPackageSessionId.getOrDefault(item.getPackageSessionId(), 0.0));
             childRequestDTO.setUser(enrolledUser); // Ensure same user
 
             Map<String, Object> childExtraData = new HashMap<>();
             childExtraData.put("SKIP_PAYMENT_INITIATION", true);
             childExtraData.put("PARENT_PAYMENT_LOG_ID", mainPaymentLogId);
+            if (enforceAvailability) {
+                childExtraData.put(LearnerEnrollRequestService.ENFORCE_INVITE_AVAILABILITY, true);
+            }
+            putLineExtraData(childExtraData, item, isManual, holdsByPackageSessionId);
 
             // Inherit Manual/Skip flags from main if applicable
             if (isSkipPayment) {
@@ -239,6 +400,7 @@ public class MultiPackageLearnerEnrollService {
             if (childResponse.getPaymentResponse() != null) {
                 childPaymentLogIds.add(childResponse.getPaymentResponse().getOrderId());
             }
+            attachToOrder(holdsByPackageSessionId.get(item.getPackageSessionId()), mainPaymentLogId);
         }
 
         // 3. Link Child Logs to Main Log
@@ -247,12 +409,32 @@ public class MultiPackageLearnerEnrollService {
             paymentLogService.addChildLogsToPayment(mainPaymentLogId, childPaymentLogIds);
         }
 
-        // 4. Auto-mark conversion if this user came in as a lead.
+        // 3.1 The gateway log records only the main item's own line from now on; the order
+        // total it charges moves to payment_specific_data.order_total.
+        if (items.size() > 1 && !isSkipPayment) {
+            recordGatewayLogShare(mainPaymentLogId, mainLineAmount, paymentInit.getAmount());
+        }
+
+        // 3.2 An admin who assigned books from a level the learner had rent picks in (e.g.
+        // "Rent Books") chose instead of those picks: release the picks they did not take.
+        if (isManual && enrolledUser != null && StringUtils.hasText(enrolledUser.getId())) {
+            List<String> assignedPackageSessionIds = items.stream()
+                    .map(LearnerPackageSessionEnrollmentItemDTO::getPackageSessionId)
+                    .toList();
+            stockHoldService.releaseUnclaimedRentPreferences(
+                    enrolledUser.getId(), orderInstituteId, assignedPackageSessionIds);
+        }
+
+        // 4. Auto-mark conversion if this user came in as a lead — unless every course in this
+        // enrollment opted out of counting as a conversion (a free course / trial / lead magnet
+        // keeps the lead open). See LeadConversionPolicyService; defaults to converting.
         // Best-effort: failures here must not roll back the enrollment.
         try {
             String enrolledUserId = enrolledUser != null ? enrolledUser.getId() : null;
             String instituteId = request.getInstituteId();
-            if (StringUtils.hasText(enrolledUserId) && StringUtils.hasText(instituteId)) {
+            if (StringUtils.hasText(enrolledUserId) && StringUtils.hasText(instituteId)
+                    && leadConversionPolicyService.anyCountsAsConversion(
+                            instituteId, resolvePackageIds(items))) {
                 boolean converted = userLeadProfileService.markConvertedIfExists(enrolledUserId, instituteId);
                 if (converted) {
                     log.info("Auto-marked lead as CONVERTED on enrollment: userId={}, instituteId={}",
@@ -266,8 +448,332 @@ public class MultiPackageLearnerEnrollService {
         return mainResponse;
     }
 
-    private LearnerEnrollRequestDTO mapToLegacyDTO(MultiPackageLearnerEnrollRequestDTO request,
-            LearnerPackageSessionEnrollmentItemDTO item) {
+    /**
+     * Regional price of the whole order, or null when it stays on base prices. All or
+     * nothing: every paid ONE_TIME / SUBSCRIPTION item must price regionally in one currency.
+     * A mix (some regional, some not, or two currencies) would make one gateway order carry
+     * two currencies, so regional pricing is switched off for this request instead and every
+     * item enrolment — including the ones LearnerEnrollRequestService resolves on its own —
+     * falls back to base prices. Each item counts unit price × its quantity.
+     */
+    private RegionalOrderPrice resolveRegionalTotal(List<LearnerPackageSessionEnrollmentItemDTO> items,
+                                                    PaymentInitiationRequestDTO paymentInit) {
+        try {
+            return resolveRegionalTotalOrThrow(items, paymentInit);
+        } catch (Exception e) {
+            // Never fail a checkout over regional pricing: the whole order (every item
+            // enrolment included) falls back to base prices, the pre-regional flow.
+            log.warn("Regional pricing skipped for multi-package order: {}", e.getMessage());
+            regionalPriceResolver.suppressForCurrentRequest();
+            return null;
+        }
+    }
+
+    private RegionalOrderPrice resolveRegionalTotalOrThrow(List<LearnerPackageSessionEnrollmentItemDTO> items,
+                                                           PaymentInitiationRequestDTO paymentInit) {
+        String currency = null;
+        double total = 0.0;
+        boolean anyRegional = false;
+        boolean mixed = false;
+        Map<String, Double> unitPriceByPackageSessionId = new HashMap<>();
+        for (LearnerPackageSessionEnrollmentItemDTO item : items) {
+            PaymentPlan plan = StringUtils.hasText(item.getPlanId())
+                    ? paymentPlanService.findById(item.getPlanId()).orElse(null) : null;
+            if (plan == null || plan.getActualPrice() <= 0) {
+                continue;
+            }
+            String type = plan.getPaymentOption() != null ? plan.getPaymentOption().getType() : null;
+            boolean eligible = (PaymentOptionType.ONE_TIME.name().equals(type)
+                    || PaymentOptionType.SUBSCRIPTION.name().equals(type))
+                    && Boolean.TRUE.equals(plan.getPaymentOption().getRegionalPricingEnabled());
+            String vendor = eligible && StringUtils.hasText(item.getEnrollInviteId())
+                    ? enrollInviteRepository.findById(item.getEnrollInviteId()).map(EnrollInvite::getVendor).orElse(null)
+                    : null;
+            Optional<RegionalQuote> quote = eligible ? regionalPriceResolver.quote(plan, vendor) : Optional.empty();
+            if (quote.isEmpty() || (currency != null && !currency.equals(quote.get().currency()))) {
+                mixed = true;
+                continue;
+            }
+            currency = quote.get().currency();
+            double unitPrice = quote.get().actualPrice().doubleValue();
+            total += lineTotal(unitPrice, item.getRequestedQuantity());
+            unitPriceByPackageSessionId.put(item.getPackageSessionId(), unitPrice);
+            anyRegional = true;
+        }
+        if (!anyRegional) {
+            return null;
+        }
+        if (mixed) {
+            log.info("Multi-package order mixes regional and base prices — using base prices for all items");
+            regionalPriceResolver.suppressForCurrentRequest();
+            return null;
+        }
+        paymentInit.setCurrency(currency);
+        return new RegionalOrderPrice(total, unitPriceByPackageSessionId);
+    }
+
+    /**
+     * Unit price × quantity, rounded to the paisa / cent. Quantity 1 (and null) returns the unit
+     * price untouched, so single-copy orders price exactly as before.
+     */
+    private static double lineTotal(double unitPrice, Integer quantity) {
+        int copies = quantity != null && quantity > 0 ? quantity : 1;
+        return copies == 1 ? unitPrice : Math.round(unitPrice * copies * 100.0) / 100.0;
+    }
+
+    /**
+     * Normalises and checks each item's quantity: null becomes 1; it must be at least 1; the same
+     * package session may appear only once (two lines would be two plans for one title — send a
+     * quantity); and above 1 only on a one-time item that is not a charge (shipping / deposit).
+     * A subscription is one membership, not copies.
+     */
+    private void validateQuantities(List<LearnerPackageSessionEnrollmentItemDTO> items,
+                                    Map<String, String> packageTypeByPackageSessionId) {
+        Set<String> seen = new HashSet<>();
+        for (LearnerPackageSessionEnrollmentItemDTO item : items) {
+            if (!StringUtils.hasText(item.getPackageSessionId())) {
+                throw new InvalidRequestException("Each enrollment item must include a package_session_id");
+            }
+            if (!seen.add(item.getPackageSessionId())) {
+                throw new InvalidRequestException("The same item appears more than once in this order. "
+                        + "Send it once with a requested_quantity instead.");
+            }
+            Integer quantity = item.getRequestedQuantity();
+            if (quantity == null) {
+                item.setRequestedQuantity(1);
+                continue;
+            }
+            if (quantity < 1) {
+                throw new InvalidRequestException("requested_quantity must be at least 1");
+            }
+            if (quantity > 1 && !allowsQuantity(item, packageTypeByPackageSessionId.get(item.getPackageSessionId()))) {
+                throw new InvalidRequestException(
+                        "Only one-time purchases can be bought in a quantity above 1");
+            }
+        }
+    }
+
+    private boolean allowsQuantity(LearnerPackageSessionEnrollmentItemDTO item, String packageType) {
+        String optionType = null;
+        if (StringUtils.hasText(item.getPaymentOptionId())) {
+            vacademy.io.admin_core_service.features.user_subscription.entity.PaymentOption option =
+                    paymentOptionService.findById(item.getPaymentOptionId());
+            optionType = option != null ? option.getType() : null;
+        } else if (StringUtils.hasText(item.getPlanId())) {
+            optionType = paymentPlanService.findById(item.getPlanId())
+                    .map(PaymentPlan::getPaymentOption)
+                    .map(vacademy.io.admin_core_service.features.user_subscription.entity.PaymentOption::getType)
+                    .orElse(null);
+        }
+        return PaymentOptionType.ONE_TIME.name().equals(optionType)
+                && !ChargePackageType.isCharge(packageType);
+    }
+
+    /**
+     * Each item's line total, keyed by package session (unique per order): the regional unit
+     * price when the order is regionally priced, else the plan's base price, × quantity. An
+     * item without a plan (free option) is 0.
+     */
+    private Map<String, Double> lineAmounts(List<LearnerPackageSessionEnrollmentItemDTO> items,
+                                            RegionalOrderPrice regionalPrice) {
+        Map<String, Double> lineAmounts = new HashMap<>();
+        for (LearnerPackageSessionEnrollmentItemDTO item : items) {
+            Double unitPrice = regionalPrice != null
+                    ? regionalPrice.unitPriceByPackageSessionId().get(item.getPackageSessionId())
+                    : null;
+            if (unitPrice == null) {
+                unitPrice = StringUtils.hasText(item.getPlanId())
+                        ? paymentPlanService.findById(item.getPlanId()).map(PaymentPlan::getActualPrice).orElse(0.0)
+                        : 0.0;
+            }
+            lineAmounts.put(item.getPackageSessionId(), lineTotal(unitPrice, item.getRequestedQuantity()));
+        }
+        return lineAmounts;
+    }
+
+    /**
+     * The institute the order belongs to: the main item's invite's (LearnerEnrollRequestService
+     * enrolls into that institute whatever the request says), else the request's.
+     */
+    private String resolveOrderInstituteId(MultiPackageLearnerEnrollRequestDTO request,
+                                           LearnerPackageSessionEnrollmentItemDTO mainItem) {
+        if (StringUtils.hasText(mainItem.getEnrollInviteId())) {
+            String inviteInstituteId = enrollInviteRepository.findById(mainItem.getEnrollInviteId())
+                    .map(EnrollInvite::getInstituteId)
+                    .orElse(null);
+            if (StringUtils.hasText(inviteInstituteId)) {
+                return inviteInstituteId;
+            }
+        }
+        return request.getInstituteId();
+    }
+
+    /**
+     * Holds the order's stock, grouped by the package session of the LINE each hold belongs to.
+     * <ul>
+     *   <li>One PURCHASE hold call for the copies of every line that is a stock item. Never for a
+     *       membership line (its max_seats is books per period, not stock — the v1 rent request
+     *       never held it either) nor for a charge line (shipping / deposit).</li>
+     *   <li>One RENT_PREFERENCE hold call for the books picked on a line
+     *       ({@code requested_book_package_session_ids}): 1 of each, exactly as the v1 rent request
+     *       holds them (LearnerEnrollRequestService.holdStockForRequest), filed under that line so
+     *       they link to its plan. A pick that is itself enrolled by the order is not held twice.</li>
+     * </ul>
+     * Unlimited sessions are skipped by StockHoldService; a short one throws 409.
+     */
+    Map<String, List<StockHold>> holdOrderStock(String instituteId,
+                                                List<LearnerPackageSessionEnrollmentItemDTO> items,
+                                                Map<String, String> packageTypeByPackageSessionId) {
+        Map<String, Integer> quantityByPackageSessionId = new LinkedHashMap<>();
+        Set<String> orderedPackageSessionIds = new HashSet<>();
+        for (LearnerPackageSessionEnrollmentItemDTO item : items) {
+            orderedPackageSessionIds.add(item.getPackageSessionId());
+            String packageType = packageTypeByPackageSessionId.get(item.getPackageSessionId());
+            if (CourseTypeEnum.isMembership(packageType) || ChargePackageType.isCharge(packageType)) {
+                continue;
+            }
+            quantityByPackageSessionId.merge(item.getPackageSessionId(), item.getRequestedQuantity(), Integer::sum);
+        }
+        Map<String, List<StockHold>> holdsByPackageSessionId = new HashMap<>();
+        if (!quantityByPackageSessionId.isEmpty()) {
+            for (StockHold hold : stockHoldService.hold(instituteId, quantityByPackageSessionId, StockHoldKind.PURCHASE)) {
+                holdsByPackageSessionId.computeIfAbsent(hold.getPackageSessionId(), k -> new ArrayList<>()).add(hold);
+            }
+        }
+
+        // The picked book → the line that picked it (the first, if two lines picked the same book).
+        Map<String, String> pickingLineByBook = new LinkedHashMap<>();
+        for (LearnerPackageSessionEnrollmentItemDTO item : items) {
+            if (item.getRequestedBookPackageSessionIds() == null) {
+                continue;
+            }
+            for (String book : item.getRequestedBookPackageSessionIds()) {
+                if (StringUtils.hasText(book) && !orderedPackageSessionIds.contains(book)) {
+                    pickingLineByBook.putIfAbsent(book, item.getPackageSessionId());
+                }
+            }
+        }
+        if (!pickingLineByBook.isEmpty()) {
+            Map<String, Integer> onePerBook = new LinkedHashMap<>();
+            pickingLineByBook.keySet().forEach(book -> onePerBook.put(book, 1));
+            for (StockHold hold : stockHoldService.hold(instituteId, onePerBook, StockHoldKind.RENT_PREFERENCE)) {
+                String line = pickingLineByBook.get(hold.getPackageSessionId());
+                if (line != null) {
+                    holdsByPackageSessionId.computeIfAbsent(line, k -> new ArrayList<>()).add(hold);
+                }
+            }
+        }
+        return holdsByPackageSessionId;
+    }
+
+    /**
+     * Rent picks ({@code requested_book_package_session_ids}) are the books a membership line
+     * asks for; on any other line they would hold stock nobody rents, so they are refused.
+     * An empty or blank-only list is the same as none.
+     */
+    static void rejectRentPicksOffMembership(List<LearnerPackageSessionEnrollmentItemDTO> items,
+                                             Map<String, String> packageTypeByPackageSessionId) {
+        for (LearnerPackageSessionEnrollmentItemDTO item : items) {
+            List<String> picks = item.getRequestedBookPackageSessionIds();
+            if (picks != null && picks.stream().anyMatch(StringUtils::hasText)
+                    && !CourseTypeEnum.isMembership(packageTypeByPackageSessionId.get(item.getPackageSessionId()))) {
+                throw new InvalidRequestException(
+                        "requested_book_package_session_ids is only accepted on a membership line");
+            }
+        }
+    }
+
+    /** Every line's rent picks, in order (blank entries included: the validator skips them). */
+    private static List<String> rentPicks(List<LearnerPackageSessionEnrollmentItemDTO> items) {
+        List<String> picks = new ArrayList<>();
+        for (LearnerPackageSessionEnrollmentItemDTO item : items) {
+            if (item.getRequestedBookPackageSessionIds() != null) {
+                picks.addAll(item.getRequestedBookPackageSessionIds());
+            }
+        }
+        return picks;
+    }
+
+    /** A membership is one plan, as on the v1 rent request: never bought in a quantity. */
+    private static void rejectMembershipQuantities(List<LearnerPackageSessionEnrollmentItemDTO> items,
+                                                   Map<String, String> packageTypeByPackageSessionId) {
+        for (LearnerPackageSessionEnrollmentItemDTO item : items) {
+            if (item.getRequestedQuantity() != null && item.getRequestedQuantity() > 1
+                    && CourseTypeEnum.isMembership(packageTypeByPackageSessionId.get(item.getPackageSessionId()))) {
+                throw new InvalidRequestException("A membership cannot be bought in a quantity above 1");
+            }
+        }
+    }
+
+    /**
+     * Per-line extraData for LearnerEnrollRequestService: the copies on the line, and — for a
+     * storefront order, which held stock for every item above — that the item must not hold
+     * again, plus its holds to link to its plan.
+     */
+    private static void putLineExtraData(Map<String, Object> extraData, LearnerPackageSessionEnrollmentItemDTO item,
+                                         boolean isManual, Map<String, List<StockHold>> holdsByPackageSessionId) {
+        extraData.put(LearnerEnrollRequestService.LINE_QUANTITY, item.getRequestedQuantity());
+        if (!isManual) {
+            extraData.put(LearnerEnrollRequestService.STOCK_HELD_BY_ORDER, true);
+            List<StockHold> holds = holdsByPackageSessionId.get(item.getPackageSessionId());
+            if (holds != null && !holds.isEmpty()) {
+                extraData.put(LearnerEnrollRequestService.STOCK_HOLDS, holds);
+            }
+        }
+    }
+
+    private void attachToOrder(List<StockHold> holds, String orderPaymentLogId) {
+        if (holds != null && !holds.isEmpty()) {
+            stockHoldService.attach(holds, null, null, orderPaymentLogId);
+        }
+    }
+
+    /**
+     * A multi-item order's gateway log charged the whole order but is one line of it: record
+     * its own line total as its amount (so the order's logs sum to what was paid, as the child
+     * logs already record theirs) and keep the charged total in
+     * {@code payment_specific_data.order_total}, which receipts and workflows read
+     * (PaymentLogService). Existing keys (childPaymentLogIds, the gateway's data) are kept.
+     *
+     * <p>A log that is already PAID — instant gateways settle and activate inside the main
+     * enrolment — is left exactly as today, and so is one whose payment_specific_data can't be
+     * read, rather than losing what it holds.
+     */
+    @SuppressWarnings("unchecked")
+    private void recordGatewayLogShare(String mainPaymentLogId, double mainLineAmount, Double orderTotal) {
+        PaymentLog mainLog = paymentLogRepository.findById(mainPaymentLogId).orElse(null);
+        if (mainLog == null || PaymentStatusEnum.PAID.name().equals(mainLog.getPaymentStatus())) {
+            return;
+        }
+        Map<String, Object> data = new HashMap<>();
+        if (StringUtils.hasText(mainLog.getPaymentSpecificData())) {
+            Map<String, Object> existing = JsonUtil.fromJson(mainLog.getPaymentSpecificData(), Map.class);
+            if (existing == null) {
+                log.warn("Payment log {} has unreadable payment_specific_data; keeping the order total as its amount",
+                        mainPaymentLogId);
+                return;
+            }
+            data.putAll(existing);
+        }
+        Double chargedTotal = mainLog.getPaymentAmount() != null ? mainLog.getPaymentAmount() : orderTotal;
+        if (chargedTotal == null) {
+            return;
+        }
+        data.put("order_total", chargedTotal);
+        mainLog.setPaymentSpecificData(JsonUtil.toJson(data));
+        mainLog.setPaymentAmount(mainLineAmount);
+        paymentLogRepository.save(mainLog);
+        log.info("Gateway log {} now records its own line {} of order total {}",
+                mainPaymentLogId, mainLineAmount, chargedTotal);
+    }
+
+    static UserDTO userForNextLines(UserDTO enrolledUser, UserDTO firstLineUser) {
+        return PublicEnrollRoleGuard.copyWithRoles(enrolledUser,
+                firstLineUser != null ? firstLineUser.getRoles() : null);
+    }
+
+    LearnerEnrollRequestDTO mapToLegacyDTO(MultiPackageLearnerEnrollRequestDTO request,
+            LearnerPackageSessionEnrollmentItemDTO item, double lineAmount) {
         LearnerEnrollRequestDTO dto = new LearnerEnrollRequestDTO();
         dto.setUser(request.getUser());
         dto.setInstituteId(request.getInstituteId());
@@ -280,12 +786,18 @@ public class MultiPackageLearnerEnrollService {
         enrollDTO.setEnrollInviteId(item.getEnrollInviteId());
         enrollDTO.setCustomFieldValues(item.getCustomFieldValues());
         enrollDTO.setReferRequest(item.getReferRequest());
+        // A rent line's picked books, as on the v1 rent request. The order already holds them
+        // (holdOrderStock, STOCK_HELD_BY_ORDER); passed on so the line reads like a v1 request.
+        enrollDTO.setRequestedBookPackageSessionIds(item.getRequestedBookPackageSessionIds());
 
         // Copy payment initiation request details if available
         if (request.getPaymentInitiationRequest() != null) {
             PaymentInitiationRequestDTO newInit = new PaymentInitiationRequestDTO();
             PaymentInitiationRequestDTO orig = request.getPaymentInitiationRequest();
-            newInit.setAmount(orig.getAmount()); // Will be overridden for Main, but good to have
+            // This item's own line total: its user_plan's ledger debit and, for a child, its
+            // payment log. The main item's gateway charge is overridden to the order total
+            // (OVERRIDE_TOTAL_AMOUNT).
+            newInit.setAmount(lineAmount);
             newInit.setCurrency(orig.getCurrency());
             newInit.setVendor(orig.getVendor());
             newInit.setVendorId(orig.getVendorId());

@@ -1,0 +1,14 @@
+{
+    "errors": {
+        "canvasContextFailed": "कैनवास 2D संदर्भ प्राप्त नहीं हो सका",
+        "imageLoadFailed": "छवि लोड नहीं हो सकी",
+        "certificateGenerationFailed": "{{name}} के लिए प्रमाणपत्र नहीं बनाया जा सका: {{message}}",
+        "previewGenerationFailed": "पूर्वावलोकन नहीं बनाया जा सका: {{message}}",
+        "unknownError": "अज्ञात त्रुटि"
+    },
+    "defaults": {
+        "instituteName": "यूनिवर्सिटी ऑफ टेक्नोलॉजी",
+        "sampleValue": "नमूना {{field}}",
+        "sampleText": "नमूना पाठ"
+    }
+}

@@ -8,13 +8,14 @@ import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.notification_service.features.notification_log.entity.EmailAddressMapping;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface EmailAddressMappingRepository extends JpaRepository<EmailAddressMapping, String> {
 
-    Optional<EmailAddressMapping> findByEmailAddressAndIsActiveTrue(String emailAddress);
-
-    Optional<EmailAddressMapping> findByEmailAddressIgnoreCaseAndIsActiveTrue(String emailAddress);
+    /**
+     * Every institute that has this address active. Several can: the unique key is (address, institute),
+     * so two institutes adding the same sender each get a row.
+     */
+    List<EmailAddressMapping> findAllByEmailAddressIgnoreCaseAndIsActiveTrue(String emailAddress);
 
     /** Active inbound-enabled addresses for an institute. Used to scope email inbox + stats. */
     List<EmailAddressMapping> findAllByInstituteIdAndIsActiveTrue(String instituteId);

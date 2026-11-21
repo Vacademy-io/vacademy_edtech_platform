@@ -1,0 +1,32 @@
+{
+    "heading": "التسويات",
+    "description": "تصحيحات طلبها الموظفون على حضورهم الخاص — تسجيل دخول فائت، يوم مُعلَّم غيابًا لم يكن كذلك. اعتماد أحدها يعيد كتابة سجل الحضور لذلك اليوم، لذا فإن اليوم المصحَّح هو ما تدفع عليه الرواتب.",
+    "statusFilterLabel": "الحالة",
+    "requestsCount_zero": "لا توجد طلبات {{status}}",
+    "requestsCount_one": "طلب واحد {{status}}",
+    "requestsCount_two": "طلبان {{status}}",
+    "requestsCount_few": "{{count}} طلبات {{status}}",
+    "requestsCount_many": "{{count}} طلبًا {{status}}",
+    "requestsCount_other": "{{count}} طلب {{status}}",
+    "columns": {
+        "employee": "الموظف",
+        "date": "التاريخ",
+        "requestedChange": "التغيير المطلوب",
+        "times": "الأوقات",
+        "reason": "السبب",
+        "outcome": "النتيجة",
+        "decision": "القرار"
+    },
+    "defaultEmployeeName": "موظف",
+    "timesWas": "كان {{from}}–{{to}}",
+    "timesAsks": "يطلب {{from}}–{{to}}",
+    "defaultOutcome": "قيد الانتظار",
+    "approve": "اعتماد",
+    "reject": "رفض",
+    "loadError": "تعذّر تحميل طلبات التسوية.",
+    "emptyPendingTitle": "لا يوجد شيء بانتظار قرار",
+    "emptyOtherTitle": "لا توجد طلبات {{status}}",
+    "emptyPendingDescription": "تظهر الطلبات هنا عندما يطلب موظف تصحيحًا لحضوره.",
+    "emptyOtherDescription": "غيّر مرشّح الحالة لرؤية الطلبات الأخرى.",
+    "reviewOnlyNote": "يمكنك مراجعة الطلبات دون البتّ فيها — الاعتماد أو الرفض يتطلب دور مسؤول موارد بشرية في هذا المعهد."
+}

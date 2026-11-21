@@ -1,0 +1,24 @@
+{
+    "heading": {
+        "title": "Détails de l'évaluation"
+    },
+    "helmet": {
+        "title": "Détails de l'évaluation",
+        "description": "Cette page affiche tous les détails relatifs à une évaluation."
+    },
+    "actions": {
+        "previewAssessment": "Aperçu de l'évaluation",
+        "exportOffline": "Exporter hors ligne",
+        "noSectionsError": "Aucune section n'a été ajoutée pour cette évaluation."
+    },
+    "tabs": {
+        "overview": "Aperçu",
+        "submissions": "Soumissions",
+        "individualRespondents": "Répondants individuels",
+        "basicInfo": "Informations de base",
+        "questions": "Questions",
+        "participants": "Participants",
+        "accessControl": "Contrôle d'accès",
+        "reattemptRequests": "Demandes de nouvelle tentative"
+    }
+}

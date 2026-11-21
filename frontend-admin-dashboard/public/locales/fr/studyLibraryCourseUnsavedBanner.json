@@ -1,0 +1,6 @@
+{
+    "unsavedInCourse_one": "{{count}} élément non enregistré dans ce {{course}}",
+    "unsavedInCourse_many": "{{count}} éléments non enregistrés dans ce {{course}}",
+    "unsavedInCourse_other": "{{count}} éléments non enregistrés dans ce {{course}}",
+    "review": "Revoir"
+}

@@ -1,0 +1,7 @@
+{
+    "generatingPdf": "PDF तैयार किया जा रहा है",
+    "mayTakeAMoment": "इसमें थोड़ा समय लग सकता है...",
+    "donePages": "पूर्ण ({{current}} में से {{total}})",
+    "savingFile": "फ़ाइल सहेजी जा रही है, इसमें थोड़ा समय लग सकता है",
+    "percentComplete": "{{percent}}% पूर्ण"
+}

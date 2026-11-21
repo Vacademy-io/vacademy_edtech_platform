@@ -1,7 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import type { TFunction } from 'i18next';
 import {
     AudienceCampaignPayload,
+    getCampaignSaveErrorMessage,
     updateAudienceCampaign,
 } from '../-services/create-audience-campaign';
 
@@ -10,7 +12,7 @@ interface UpdateAudienceCampaignParams {
     payload: AudienceCampaignPayload;
 }
 
-export function useUpdateAudienceCampaign() {
+export function useUpdateAudienceCampaign(t: TFunction) {
     const queryClient = useQueryClient();
 
     return useMutation({
@@ -18,12 +20,13 @@ export function useUpdateAudienceCampaign() {
             updateAudienceCampaign(audienceId, payload),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['campaignsList'] });
-            toast.success('Update successfully');
+            // Saved tags of the list + the institute's tag autocomplete.
+            queryClient.invalidateQueries({ queryKey: ['campaignTags'] });
+            queryClient.invalidateQueries({ queryKey: ['campaignTagSummary'] });
+            toast.success(t('success.updateCampaign'));
         },
-        onError: (error: any) => {
-            const message =
-                error?.response?.data?.message || error?.message || 'Failed to update campaign';
-            toast.error(message);
+        onError: (error: unknown) => {
+            toast.error(getCampaignSaveErrorMessage(error, t('errors.updateCampaign')));
             console.error('useUpdateAudienceCampaign error', error);
         },
     });

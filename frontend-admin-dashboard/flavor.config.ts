@@ -37,6 +37,19 @@ export interface AdminFlavor {
      */
     forceVimShell: boolean;
     /**
+     * When true the app is the Evalezy copy-check app: cold start, the root path and
+     * every portal route are kept inside the simple `/evalezy` shell (pick an
+     * assessment → scan/upload copies → AI check → download the checked zip).
+     * Same bundle, same login and APIs as the full portal; see src/lib/evalezy-mode.ts.
+     */
+    forceEvalezyShell?: boolean;
+    /**
+     * Host whose https links open this app (Android App Links / iOS Universal
+     * Links). Mirrors `deepLinkHost` in android/app/mobile-flavors.json; the JS
+     * deep-link handler maps `https://<host>/<path>` to the in-app route `<path>`.
+     */
+    deepLinkHost?: string;
+    /**
      * Fixed branding/theme source. A native WebView has no meaningful hostname,
      * so instead of host-based domain routing the app resolves branding via this
      * fixed (domain, subdomain) against the EXISTING public domain-routing
@@ -51,6 +64,26 @@ export interface AdminFlavor {
     instituteId?: string;
     /** OTA delivery mechanism for this flavor. */
     ota: OtaMode;
+    /**
+     * Capacitor `webDir` this flavor syncs into the native project. Defaults to
+     * `'dist'` (the main admin build) when omitted. The classroom panel app ships
+     * its own slim bundle from `dist-panel/`.
+     */
+    webDir?: string;
+    /**
+     * Whether the PrivacyScreen plugin is enabled (Android FLAG_SECURE + iOS
+     * app-switcher blur). Defaults to `true` when omitted. Classroom panels turn
+     * it off: FLAG_SECURE blocks screenshots, casting and OEM annotate overlays.
+     */
+    privacyScreen?: boolean;
+    /**
+     * Classroom interactive-panel / Android TV mode. Defaults to `false`. When
+     * true the native config appends `VacademyClassroom` to the WebView UA; the
+     * Android side keys its panel behaviour (WebView gate, immersive, keep-screen-on,
+     * PanelDevice plugin) off the per-flavor `panel_mode` resValue generated from
+     * android/app/mobile-flavors.json, not off this field.
+     */
+    panelMode?: boolean;
 }
 
 export const ADMIN_FLAVORS = {
@@ -64,6 +97,21 @@ export const ADMIN_FLAVORS = {
         brandingDomain: 'vacademy.io',
         brandingSubdomain: 'admin-app',
         instituteId: 'ca3c4734-7913-48a8-b116-f8f7e0c60eba',
+        deepLinkHost: 'dash.vacademy.io',
+        ota: 'self-hosted',
+    },
+    // Evalezy: the AI copy-check app. Same portal and login (any institute's admin
+    // can sign in); the bundle is held inside the /evalezy shell. Deliberately NO
+    // brandingDomain: no institute owns Evalezy, so like the web host
+    // evalezy.vacademy.io it resolves no domain-routing row and wears the Evalezy
+    // brand (index.tsx), and login never gets pinned to one institute.
+    evalezy: {
+        key: 'evalezy',
+        appId: 'io.evalezy.app',
+        appName: 'Evalezy',
+        forceVimShell: false,
+        forceEvalezyShell: true,
+        deepLinkHost: 'evalezy.vacademy.io',
         ota: 'self-hosted',
     },
     vimotion: {
@@ -72,6 +120,22 @@ export const ADMIN_FLAVORS = {
         appName: 'Vimotion',
         forceVimShell: true,
         ota: 'capgo',
+    },
+    // Teacher app for classroom interactive flat panels (Android 9-11, frozen
+    // system WebView) and Android TV. Ships the slim panel bundle (dist-panel/,
+    // built by scripts/panel/build-panel.mjs), not the admin portal. No
+    // brandingDomain: the panel bundle does its own branding.
+    // TODO(classroom OTA): ota 'none' until strict-target OTA ids exist for
+    // io.vacademy.classroom (publish-ota.sh only knows the admin app).
+    'vacademy-classroom': {
+        key: 'vacademy-classroom',
+        appId: 'io.vacademy.classroom',
+        appName: 'Vacademy Classroom',
+        forceVimShell: false,
+        ota: 'none',
+        webDir: 'dist-panel',
+        privacyScreen: false,
+        panelMode: true,
     },
     // Add a white-label admin app for another institute by appending an entry
     // here (key = kebab-case slug). The type below + isAdminFlavorKey pick it up

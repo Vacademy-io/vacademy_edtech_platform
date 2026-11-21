@@ -359,8 +359,8 @@ export const SubscriptionPaymentDialog: React.FC<PaymentDialogProps> = ({
           <DialogPrimitive.Content
             className="fixed start-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white p-6 shadow-xl focus:outline-none flex flex-col gap-4"
           >
-            <div className="text-center py-8">
-              <SpinnerGap className="w-8 h-8 animate-spin mx-auto mb-4 text-primary-600" />
+            <div className="text-center py-8 space-y-4">
+              <SpinnerGap className="w-8 h-8 animate-spin mx-auto text-primary-600" />
               <p className="text-gray-600">Loading subscription options...</p>
             </div>
           </DialogPrimitive.Content>
@@ -378,8 +378,8 @@ export const SubscriptionPaymentDialog: React.FC<PaymentDialogProps> = ({
           <DialogPrimitive.Content
             className="fixed start-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white p-6 shadow-xl focus:outline-none flex flex-col gap-4"
           >
-            <div className="text-center py-6">
-              <p className="text-red-600 mb-4">{error}</p>
+            <div className="text-center py-6 space-y-4">
+              <p className="text-red-600">{error}</p>
               <MyButton
                 buttonType="primary"
                 scale="medium"
@@ -421,7 +421,7 @@ export const SubscriptionPaymentDialog: React.FC<PaymentDialogProps> = ({
                   Subscription Payment
                 </h2>
                 <p className="text-gray-600 text-sm">
-                  Complete your subscription to access the course
+                  Complete your subscription to access the {getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}
                 </p>
               </div>
             </div>
@@ -434,8 +434,8 @@ export const SubscriptionPaymentDialog: React.FC<PaymentDialogProps> = ({
             <>
               {/* Plan Summary Card */}
               {selectedPaymentPlan && (
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-                  <div className="flex items-center justify-between mb-4">
+                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold text-gray-900">Subscription Summary</h3>
                   </div>
                   <div className="space-y-3">
@@ -573,7 +573,7 @@ export const SubscriptionPaymentDialog: React.FC<PaymentDialogProps> = ({
                 )}
                 
                 {/* Payment Buttons */}
-                <div className="flex flex-col gap-3 mt-6">
+                <div className="flex flex-col gap-stack mt-6">
                   <MyButton
                     buttonType="primary"
                     scale="large"

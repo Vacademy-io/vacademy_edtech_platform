@@ -21,6 +21,22 @@ public class EmailDomainBlocklistUtil {
     );
 
     /**
+     * True for an address under the reserved {@code .invalid} top-level domain (RFC 2606). Such
+     * an address can never be delivered: the platform uses it for accounts that have no mailbox
+     * (a shop buyer known only by phone). Mailing it would only bounce.
+     */
+    public static boolean isReservedUndeliverable(String email) {
+        if (email == null) {
+            return false;
+        }
+        String e = email.trim().toLowerCase();
+        if (e.endsWith(">")) {
+            e = e.substring(0, e.length() - 1).trim();
+        }
+        return e.endsWith(".invalid");
+    }
+
+    /**
      * Checks if an email address belongs to a blocked domain.
      * 
      * @param email The email address to check

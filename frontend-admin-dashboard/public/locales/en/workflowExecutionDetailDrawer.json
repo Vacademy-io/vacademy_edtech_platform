@@ -1,0 +1,12 @@
+{
+    "title": "Execution Details",
+    "started": "Started",
+    "completed": "Completed",
+    "duration": "Duration",
+    "idempotencyKey": "Idempotency Key",
+    "viewOnDiagram": "View on Diagram",
+    "nodeExecutionLogs": "Node Execution Logs",
+    "nodeExecutionLogsCount": "Node Execution Logs ({{count}})",
+    "loadingLogs": "Loading logs...",
+    "noNodeLogsFound": "No node logs found"
+}

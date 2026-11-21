@@ -1,0 +1,86 @@
+{
+    "tabs": {
+        "config": "Configuration",
+        "pools": "Viviers",
+        "forms": "Formulaires",
+        "workbench": "Espace de travail"
+    },
+    "loading": "Chargement des paramètres des leads…",
+    "toasts": {
+        "saved": "Paramètres des leads enregistrés",
+        "saveFailed": "Échec de l'enregistrement des paramètres des leads",
+        "weightsSumError": "La somme des pondérations de notation doit être égale à 100 (actuel : {{total}})"
+    },
+    "enableCard": {
+        "title": "Système de gestion des leads",
+        "description": "Détermine si le scoring des leads, les badges de niveau et l'onglet des leads dans la barre latérale sont visibles pour tout l'établissement. La désactivation masque toute l'interface des leads sans supprimer les données.",
+        "enabled": "Activé",
+        "disabled": "Désactivé"
+    },
+    "visibilityCard": {
+        "title": "Visibilité du badge de score",
+        "description": "Choisissez où apparaît le badge de score du lead.",
+        "options": {
+            "enquiryTable": "Tableau des demandes (Admissions → Demandes)",
+            "contactsTable": "Tableau des contacts (Gérer les contacts)",
+            "studentsTable": "Tableau des étudiants (Gérer les étudiants)"
+        }
+    },
+    "allLeadsCard": {
+        "title": "Vue « Tous les prospects »",
+        "description": "Choisissez si les prospects convertis apparaissent dans la vue non filtrée « Tous les prospects » des prospects récents et des listes. Vous pouvez toujours les voir en choisissant « Inscrits / Convertis » ou votre statut converti dans le filtre de statut, ou sur le tableau des prospects.",
+        "hideConverted": "Masquer les prospects convertis de « Tous les prospects »",
+        "showConvertedFilter": "Proposer « Enrolled / Converted » dans le filtre de statut",
+        "showConvertedFilterHint": "Option intégrée qui trouve les leads inscrits à un cours. Désactivez-la si votre propre statut converti la couvre déjà — la plupart des établissements en ont un, et les deux se ressemblent beaucoup."
+    },
+    "followUpsCard": {
+        "title": "Relances",
+        "description": "Choisissez quels prospects apparaissent dans la page Relances.",
+        "hideLost": "Masquer les prospects perdus dans les Relances",
+        "hideLostHint": "Les prospects perdus n'apparaissent dans aucun onglet des Relances : Aujourd'hui, À venir, En retard, Toutes et Terminées. Désactivez cette option pour les afficher."
+    },
+    "weightsCard": {
+        "title": "Pondérations de notation",
+        "description": "Chaque facteur contribue à hauteur de son pourcentage de pondération dans le score final (0–100). Les pondérations doivent totaliser exactement 100.",
+        "factors": {
+            "sourceQuality": {
+                "label": "Qualité de la source",
+                "description": "Score basé sur la façon dont le lead est arrivé (ex. Visite spontanée > Google Ads > Manuel)"
+            },
+            "profileCompleteness": {
+                "label": "Complétude du profil",
+                "description": "Pourcentage des champs clés renseignés (nom, e-mail, téléphone, classe, etc.)"
+            },
+            "recency": {
+                "label": "Récence",
+                "description": "Décroissance temporelle — les leads plus récents obtiennent un score plus élevé, les plus anciens diminuent"
+            },
+            "engagement": {
+                "label": "Engagement",
+                "description": "Nombre de notes chronologiques et d'interactions enregistrées"
+            }
+        },
+        "total": "Total",
+        "mustEqual100": "doit être égal à 100"
+    },
+    "recencyCard": {
+        "title": "Décroissance de récence",
+        "description": "Nombre de jours avant que le score de récence d'un lead ne commence à décroître vers 0. Un lead soumis aujourd'hui obtient un score de récence de 100 ; un lead soumis il y a {{days}} jours obtient environ 50.",
+        "unit": "jours"
+    },
+    "saveButton": {
+        "saving": "Enregistrement…",
+        "save": "Enregistrer les paramètres de notation"
+    },
+    "terminologyCard": {
+        "title": "Terminologie",
+        "description": "Nommez les attributs de lead intégrés comme votre équipe les appelle. Laissez vide pour garder les valeurs par défaut.",
+        "tierLabel": "Nom de « Tier »",
+        "tierPlaceholder": "p. ex. Niveau d'intérêt",
+        "leadStatusLabel": "Nom de « Statut du lead »",
+        "leadStatusPlaceholder": "p. ex. Action",
+        "campaignTypeLabel": "Nom pour « Type de campagne »",
+        "campaignTypePlaceholder": "ex. Source",
+        "hint": "Utilisé dans les en-têtes du tableau des leads, les filtres, la vue latérale et ces réglages. Enregistrez avec le bouton ci-dessous."
+    }
+}

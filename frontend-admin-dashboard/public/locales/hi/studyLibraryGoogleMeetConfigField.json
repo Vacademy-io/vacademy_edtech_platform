@@ -1,0 +1,35 @@
+{
+    "loadingGoogleAccounts": "Google खाते लोड हो रहे हैं…",
+    "notSetUpMessage": "इस संस्थान के लिए Google Meet एकीकरण सेट नहीं है। <strong>सेटिंग्स → लाइव सेशन → Google Meet एकीकरण</strong> के तहत एक Google Workspace खाता कनेक्ट करें, या नीचे लाइव क्लास लिंक फ़ील्ड में मीटिंग लिंक पेस्ट करें।",
+    "googleMeetSettings": "Google Meet सेटिंग्स",
+    "googleAccountOrganizer": "Google खाता (आयोजक)",
+    "defaultSuffix": "(डिफ़ॉल्ट)",
+    "linkCreatedOnAccount": "इस खाते पर एक Google Meet लिंक बनाया गया है।",
+    "anyoneWithLinkJoins": "लिंक वाला कोई भी सीधे जुड़ सकता है (नॉकिंग नहीं) — शिक्षार्थियों के लिए सबसे बेहतर।",
+    "guestsMustKnock": "अतिथियों को नॉक करना होगा और होस्ट प्रत्येक को स्वीकृति देगा।",
+    "settingsApplyToNewLinks": "नीचे की सेटिंग्स अभी बनने वाले Meet लिंक पर लागू होंगी; पहले से बने लिंक अपनी सेटिंग्स रखेंगे।",
+    "section": {
+        "joinAccess": "जॉइन एक्सेस",
+        "recordingAndNotes": "रिकॉर्डिंग और नोट्स",
+        "hostControls": "होस्ट कंट्रोल"
+    },
+    "field": {
+        "whoCanJoin": "कौन बिना knock किए जॉइन कर सकता है",
+        "autoRecord": "इस क्लास को अपने आप रिकॉर्ड करें",
+        "autoTranscript": "अपने आप ट्रांसक्रिप्ट बनाएं",
+        "geminiNotes": "Gemini नोट्स (\"Take notes for me\")",
+        "attendanceReport": "Google अटेंडेंस रिपोर्ट",
+        "hostManagement": "होस्ट कंट्रोल चालू करें",
+        "chatHostsOnly": "सिर्फ होस्ट चैट कर सकते हैं",
+        "reactionsHostsOnly": "सिर्फ होस्ट रिएक्शन भेज सकते हैं",
+        "presentHostsOnly": "सिर्फ होस्ट स्क्रीन शेयर कर सकते हैं",
+        "joinAsViewer": "लर्नर व्यूअर के रूप में जुड़ें (माइक या कैमरा नहीं)"
+    },
+    "access": {
+        "open": "लिंक वाला कोई भी",
+        "trusted": "सिर्फ आपका संगठन; बाकी knock करेंगे",
+        "restricted": "सिर्फ आमंत्रित लोग; बाकी knock करेंगे"
+    },
+    "planHint": "रिकॉर्डिंग, ट्रांसक्रिप्ट और नोट्स तब शुरू होते हैं जब ऑर्गनाइज़र या संस्थान के Google Workspace का कोई टीचर जॉइन करता है, और ऑर्गनाइज़र की Drive में सेव होते हैं। रिकॉर्डिंग और ट्रांसक्रिप्ट के लिए रिकॉर्डिंग वाला Workspace प्लान चाहिए (Business Standard या ऊपर, Education Plus); Gemini नोट्स के लिए Gemini लाइसेंस चाहिए। अगर प्लान में कोई फीचर नहीं है, तो क्लास उसके बिना बन जाएगी।",
+    "hostControlsWarning": "सिर्फ ऑर्गनाइज़र अकाउंट ({{email}}) होस्ट है। किसी दूसरे Google अकाउंट से जुड़ने वाला टीचर participant माना जाएगा, इसलिए अगर टीचर अपने अकाउंट से प्रेज़ेंट करते हैं तो स्क्रीन शेयरिंग खुली रखें।"
+}

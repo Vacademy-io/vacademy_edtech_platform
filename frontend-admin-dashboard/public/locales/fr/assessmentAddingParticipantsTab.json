@@ -1,0 +1,19 @@
+{
+    "header": {
+        "title": "Sélection des participants",
+        "description": "Choisissez des lots entiers ou sélectionnez des apprenants individuellement."
+    },
+    "tabs": {
+        "selectBatch": "Sélectionner un lot",
+        "selectIndividually": "Sélectionner individuellement"
+    },
+    "batchList": {
+        "sectionPlaceholder": "Sélectionner une section",
+        "searchPlaceholder": "Rechercher par cours ou niveau",
+        "clearSearchAriaLabel": "Effacer la recherche",
+        "emptyState": {
+            "message": "Aucun cours ou niveau ne correspond à \"{{query}}\"",
+            "clearSearch": "Effacer la recherche"
+        }
+    }
+}

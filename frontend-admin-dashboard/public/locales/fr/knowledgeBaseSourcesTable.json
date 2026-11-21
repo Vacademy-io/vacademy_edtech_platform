@@ -1,0 +1,49 @@
+{
+    "counts": {
+        "pages_one": "{{formatted}} page",
+        "pages_many": "{{formatted}} pages",
+        "pages_other": "{{formatted}} pages",
+        "passages_one": "{{formatted}} passage",
+        "passages_many": "{{formatted}} passages",
+        "passages_other": "{{formatted}} passages",
+        "figures_one": "{{formatted}} diagramme et tableau",
+        "figures_many": "{{formatted}} diagrammes et tableaux",
+        "figures_other": "{{formatted}} diagrammes et tableaux",
+        "credits_one": "{{formatted}} crédit",
+        "credits_many": "{{formatted}} crédits",
+        "credits_other": "{{formatted}} crédits",
+        "ocrPages_one": "{{formatted}} page scannée lue",
+        "ocrPages_many": "{{formatted}} pages scannées lues",
+        "ocrPages_other": "{{formatted}} pages scannées lues"
+    },
+    "aria": {
+        "stopUsing": "Arrêter d'utiliser {{title}}",
+        "startUsing": "Commencer à utiliser {{title}}",
+        "actionsFor": "Actions pour {{title}}"
+    },
+    "toast": {
+        "nowUsed": "Désormais utilisé pour les réponses",
+        "noLongerUsed": "N'est plus utilisé pour les réponses",
+        "updateFailed": "Impossible de mettre à jour ceci",
+        "reindexing": "Nouvelle lecture en cours — vous ne serez pas facturé deux fois.",
+        "reindexFailed": "Impossible de démarrer la relecture",
+        "removeSuccess": "Supprimé",
+        "removeFailed": "Impossible de supprimer cette source"
+    },
+    "readAgain": "Relire",
+    "remove": "Supprimer",
+    "stage": {
+        "working": "En cours",
+        "gettingStarted": "Démarrage"
+    },
+    "partialWarning": "{{lowConfidence}} pages sur {{total}} n'ont pas pu être lues de manière fiable. Le reste est utilisable — rechargez un scan plus net de ces pages si cela compte.",
+    "notActive": "N'est actuellement pas utilisé pour les réponses.",
+    "emptyState": "Rien n'a encore été ajouté. Ajoutez un manuel, un ensemble de notes ou un ancien sujet pour commencer.",
+    "deleteDialog": {
+        "title": "Supprimer cette source ?",
+        "description": "« {{title}} » et tout ce qui en a été lu seront supprimés. L'ajouter à nouveau plus tard coûtera à nouveau des crédits. Pour arrêter de l'utiliser sans perdre le travail, désactivez-la plutôt.",
+        "cancel": "Annuler",
+        "removing": "Suppression…",
+        "confirm": "Supprimer"
+    }
+}

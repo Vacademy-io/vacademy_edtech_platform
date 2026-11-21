@@ -1,0 +1,75 @@
+{
+    "kpi": {
+        "leadsCalled": {
+            "label": "Leads called",
+            "sub": "Unique leads with ≥1 dial"
+        },
+        "totalDials": {
+            "label": "Total dials",
+            "sub": "All call attempts in range"
+        },
+        "connected": {
+            "label": "Connected",
+            "sub": "Leads reached at least once"
+        },
+        "callbackAsked": {
+            "label": "Callback asked",
+            "sub": "Leads with a callback logged"
+        },
+        "neverConnected": {
+            "label": "Never connected",
+            "sub": "Tried but never got through"
+        },
+        "newLeadsNotCalled": {
+            "label": "New leads not called",
+            "sub": "Zero call attempts ever"
+        }
+    },
+    "section": {
+        "titleCalled": "Call attempts by lead",
+        "titleUncalled": "New leads never called"
+    },
+    "search": {
+        "placeholder": "Search name / phone",
+        "ariaLabel": "Search leads by name or phone"
+    },
+    "view": {
+        "called": "Called ({{count}})",
+        "uncalled": "Never called ({{count}})"
+    },
+    "empty": {
+        "noCalls": "No calls to leads in this range.",
+        "allCalled": "Every new lead in this range has been called at least once. 🎉"
+    },
+    "pager": {
+        "summary_one": "{{formattedCount}} lead · page {{page}} of {{pageCount}}",
+        "summary_other": "{{formattedCount}} leads · page {{page}} of {{pageCount}}",
+        "prev": "Prev",
+        "next": "Next"
+    },
+    "footnote": {
+        "called": "Connected / Callback / Didn’t pick up are counted per call and can overlap (a connected call may also log a callback), so they don’t sum to Attempts.",
+        "uncalled": "Leads submitted in this range that have never been dialled — not even once, at any time."
+    },
+    "field": {
+        "lead": "Lead",
+        "phone": "Phone",
+        "status": "Status",
+        "counsellor": "Counsellor",
+        "attempts": "Attempts",
+        "connected": "Connected",
+        "callback": "Callback",
+        "notPickedUp": "Didn’t pick up",
+        "failed": "Failed",
+        "lastCall": "Last call",
+        "lastOutcome": "Last outcome",
+        "nextCallback": "Next callback",
+        "source": "Source",
+        "assignedCounsellor": "Assigned counsellor",
+        "submitted": "Submitted"
+    },
+    "row": {
+        "unknownLead": "Unknown lead",
+        "unassigned": "Unassigned"
+    }
+}

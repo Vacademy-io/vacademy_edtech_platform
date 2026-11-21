@@ -33,6 +33,9 @@ public class AttendanceConfig {
     @Column(name = "mode", nullable = false, length = 20)
     private String mode;
 
+    @Column(name = "timezone", length = 60)
+    private String timezone;
+
     @Column(name = "auto_checkout_enabled")
     private Boolean autoCheckoutEnabled;
 

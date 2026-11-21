@@ -1,5 +1,6 @@
 import { WarningCircle, CheckCircle, SpinnerGap } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 interface StatusCardProps {
   state: "idle" | "pending" | "success" | "error";
@@ -16,6 +17,7 @@ export const StatusCard = ({
   errorMessage,
 
 }: StatusCardProps) => {
+  const { t } = useTranslation("miscRoutesA");
   if (state === "idle") {
     return null;
   }
@@ -27,10 +29,10 @@ export const StatusCard = ({
           <SpinnerGap className="h-5 w-5 animate-spin text-primary" />
           <div>
             <p className="text-sm font-medium text-slate-800">
-              Updating your preference
+              {t("unsubscribe.status.updating")}
             </p>
             <p className="mt-1 text-xs text-slate-500">
-              Hang tight while we update notifications for {recipient}.
+              {t("unsubscribe.status.hangTight", { recipient })}
             </p>
           </div>
         </div>
@@ -57,7 +59,9 @@ export const StatusCard = ({
             <CheckCircle className="h-5 w-5 text-emerald-600" />
           </motion.span>
           <div>
-            <p className="text-sm font-medium text-emerald-700">Preference updated</p>
+            <p className="text-sm font-medium text-emerald-700">
+              {t("unsubscribe.status.updated")}
+            </p>
             <motion.p
               key="success-text"
               initial={{ opacity: 0, y: 4 }}
@@ -79,7 +83,7 @@ export const StatusCard = ({
         <WarningCircle className="h-5 w-5 text-rose-600" />
         <div>
           <p className="text-sm font-medium text-rose-700">
-            We couldn&apos;t update this
+            {t("unsubscribe.status.couldNotUpdate")}
           </p>
           <p className="mt-1 text-xs text-rose-700">{errorMessage}</p>
 

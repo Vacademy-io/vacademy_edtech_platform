@@ -1,0 +1,17 @@
+{
+    "validation": {
+        "fileNameRequired": "File name is required",
+        "videoFileRequired": "Video file is required"
+    },
+    "toast": {
+        "reorderFailed": "Slide created but reordering failed",
+        "durationReadFailed": "Could not read video duration. Please try a different file or re-encode it.",
+        "uploadSuccess": "Video uploaded successfully!",
+        "uploadFailed": "Failed to upload video"
+    },
+    "importYourFile": "Import your file",
+    "dragOrClickToUpload": "Drag or click to upload",
+    "selected": "Selected: {{name}}",
+    "uploading": "Uploading...",
+    "uploadVideo": "Upload Video"
+}

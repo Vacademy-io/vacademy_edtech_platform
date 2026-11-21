@@ -10,6 +10,8 @@ import vacademy.io.admin_core_service.features.payments.service.PhonePeWebHookSe
 import vacademy.io.admin_core_service.features.payments.service.RazorpayWebHookService;
 import vacademy.io.admin_core_service.features.payments.service.StripeWebHookService;
 import vacademy.io.admin_core_service.features.payments.service.WebHookService;
+import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.common.auth.util.SuperAdminAuthUtil;
 import vacademy.io.common.payment.enums.PaymentGateway;
 
 import java.util.Optional;
@@ -64,9 +66,10 @@ public class WebHookController {
     public ResponseEntity<String> handleCashfreeWebhook(
             @RequestBody String payload,
             @RequestHeader(value = "x-webhook-signature", required = false) String signature,
+            @RequestHeader(value = "x-webhook-timestamp", required = false) String timestamp,
             @RequestParam(value = "instituteId", required = false) String instituteId) {
 
-        return cashfreeWebHookService.processWebHook(payload, signature, instituteId);
+        return cashfreeWebHookService.processWebHook(payload, signature, timestamp, instituteId);
     }
 
     /**
@@ -81,11 +84,14 @@ public class WebHookController {
      * (it was checked when the webhook was first received). On failure,
      * {@code web_hook.error_message} is updated with a descriptive root cause.
      *
-     * Authenticated admin endpoint — not in ALLOWED_PATHS, so it falls back to
-     * the standard JWT auth filter.
+     * Authenticated endpoint — not in ALLOWED_PATHS, so it falls back to the
+     * standard JWT auth filter — for platform super admins on the
+     * SUPER_ADMIN_USER_IDS allowlist only (operations use it from the command line).
      */
     @PostMapping("/webhook/reprocess/{webhookId}")
-    public ResponseEntity<String> reprocessWebhook(@PathVariable("webhookId") String webhookId) {
+    public ResponseEntity<String> reprocessWebhook(@PathVariable("webhookId") String webhookId,
+            @RequestAttribute("user") CustomUserDetails user) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
         Optional<WebHook> webhookOpt = webHookService.findById(webhookId);
         if (webhookOpt.isEmpty()) {
             return ResponseEntity.status(404).body("WebHook not found: " + webhookId);

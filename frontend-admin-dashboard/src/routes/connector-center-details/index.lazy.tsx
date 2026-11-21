@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, X, FloppyDisk, ArrowClockwise, Buildings } from '@phosphor-icons/react';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import {
+    connectorDisplayId,
     listConnectors,
     updateConnector,
     type ConnectorListItem,
@@ -244,7 +245,7 @@ function ConnectorCenterCard({
                 <CardDescription className="space-y-0.5 text-xs">
                     <div>
                         <span className="text-neutral-500">Form / Campaign:</span>{' '}
-                        <span className="font-mono">{connector.platformFormId ?? '—'}</span>
+                        <span className="font-mono">{connectorDisplayId(connector) ?? '—'}</span>
                     </div>
                     <div>
                         <span className="text-neutral-500">Audience:</span>{' '}
@@ -255,7 +256,7 @@ function ConnectorCenterCard({
             <CardContent className="space-y-3">
                 <div className="space-y-2">
                     <Label className="text-xs font-medium">Default values</Label>
-                    <div className="grid grid-cols-[1fr_1fr_28px] gap-2 text-[10px] font-medium uppercase tracking-wider text-neutral-400">
+                    <div className="grid grid-cols-[1fr_1fr_28px] gap-2 text-caption font-medium uppercase tracking-wider text-neutral-400">
                         <span>Key</span>
                         <span>Value</span>
                         <span />

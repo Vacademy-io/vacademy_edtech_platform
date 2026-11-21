@@ -1,0 +1,16 @@
+{
+    "untitledMeeting": "Meeting",
+    "hostedBy": "Hosted by",
+    "with": "with",
+    "join": "Join",
+    "errorTitle": "Couldn't load meetings",
+    "errorDescription": "Something went wrong fetching this calendar. Try again.",
+    "status": {
+        "confirmed": "Confirmed",
+        "pending": "Pending",
+        "completed": "Completed",
+        "noShow": "No-show",
+        "cancelled": "Cancelled",
+        "rescheduled": "Rescheduled"
+    }
+}

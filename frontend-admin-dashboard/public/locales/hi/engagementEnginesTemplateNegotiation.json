@@ -1,0 +1,59 @@
+{
+    "heading": "WhatsApp टेम्पलेट",
+    "subheading": "प्रोएक्टिव WhatsApp के लिए Meta-स्वीकृत टेम्पलेट चाहिए। AI उन्हें प्रस्तावित करता है; आप स्वीकृत कर सबमिट करते हैं; Meta समीक्षा करता है।",
+    "emptyState": "अभी कोई टेम्पलेट नहीं है। AI को इस इंजन के ब्रीफ़ के आधार पर कुछ प्रस्तावित करने दें।",
+    "actions": {
+        "checkMeta": "Meta जाँचें",
+        "moreOptions": "और विकल्प",
+        "thinking": "सोच रहे हैं…",
+        "proposeTemplates": "टेम्पलेट प्रस्तावित करें",
+        "edit": "संपादित करें",
+        "approve": "स्वीकृत करें",
+        "submitToMeta": "Meta को सबमिट करें",
+        "withdraw": "वापस लें",
+        "cancel": "रद्द करें"
+    },
+    "errors": {
+        "loadFailed": "टेम्पलेट लोड नहीं हो सके। कृपया फिर से प्रयास करें।"
+    },
+    "proposalCard": {
+        "round": "राउंड {{value}}",
+        "variables": "वेरिएबल: {{list}}",
+        "metaRejected": "Meta: {{reason}}",
+        "metaRecategorised": "Meta ने इसे स्वीकृत किया, लेकिन <b>{{metaCategory}}</b> श्रेणी में (आपने {{proposedCategory}} प्रस्तावित किया था)। यह उपयोग योग्य है; यदि श्रेणी महत्वपूर्ण है तो विकल्पों का अनुरोध करें।"
+    },
+    "editDialog": {
+        "heading": "टेम्पलेट संपादित करें",
+        "bodyLabel": "बॉडी (वेरिएबल के लिए {{p1}}, {{p2}} … का उपयोग करें)",
+        "categoryLabel": "श्रेणी",
+        "variablesLabel": "वेरिएबल (प्रत्येक {{n}} के लिए एक, क्रम में) + एक सैंपल वैल्यू जो Meta समीक्षक को दिखाता है",
+        "namePlaceholder": "नाम",
+        "samplePlaceholder": "उदा. आयशा",
+        "addVariable": "+ वेरिएबल जोड़ें",
+        "footerLabel": "फ़ुटर (वैकल्पिक, ≤60 अक्षर)",
+        "saving": "सहेजा जा रहा है…",
+        "saveChanges": "बदलाव सहेजें",
+        "errors": {
+            "bodyEmpty": "बॉडी खाली है।",
+            "bodyTooLong": "बॉडी WhatsApp की 1024-अक्षर सीमा से अधिक है।",
+            "placeholderZero": "प्लेसहोल्डर {{p1}} से शुरू होते हैं — {{p0}} की अनुमति नहीं है।",
+            "placeholderMissing": "प्लेसहोल्डर {{placeholder}} गायब है — इन्हें 1 से क्रमबद्ध होना चाहिए।",
+            "variableRowMismatch": "बॉडी में {{variables}} हैं लेकिन {{rows}}। इनका मेल होना चाहिए।",
+            "variableCount_one": "{{count}} वेरिएबल",
+            "variableCount_other": "{{count}} वेरिएबल",
+            "rowCount_one": "{{count}} पंक्ति",
+            "rowCount_other": "{{count}} पंक्तियाँ"
+        },
+        "charCount": "{{count}} / 1024 अक्षर",
+        "removeVariable": "वेरिएबल हटाएँ"
+    },
+    "proposalCount_one": "{{count}} प्रस्ताव",
+    "proposalCount_other": "{{count}} प्रस्ताव",
+    "flow": {
+        "propose": "AI सुझाता है",
+        "approve": "आप संपादित और स्वीकृत करते हैं",
+        "submit": "Meta को सबमिट",
+        "meta": "Meta स्वीकृत करता है",
+        "send": "इंजन भेज सकता है"
+    }
+}
