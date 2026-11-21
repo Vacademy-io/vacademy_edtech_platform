@@ -39,12 +39,15 @@ export interface ReportTarget {
   evaluationType?: string;
   /** Extra router state the normal report page reads (e.g. the list row). */
   state?: Record<string, unknown>;
+  /** Replace the current history entry (leaving the exam screen after submit). */
+  replace?: boolean;
 }
 
 type Navigate = (opts: {
   to: string;
   search?: Record<string, unknown>;
   state?: unknown;
+  replace?: boolean;
 }) => unknown;
 
 export async function openStudentReport(navigate: Navigate, target: ReportTarget): Promise<void> {
@@ -60,6 +63,15 @@ export async function openStudentReport(navigate: Navigate, target: ReportTarget
     });
     return;
   }
+  openAttemptReport(navigate, target);
+}
+
+/**
+ * The normal report of one attempt, without the AI-report check. Used right after
+ * submit: the AI report is generated later and, until then, would be an older
+ * attempt's.
+ */
+export function openAttemptReport(navigate: Navigate, target: ReportTarget): void {
   navigate({
     to: "/assessment/reports/comparison",
     search: { assessmentId: target.assessmentId, attemptId: target.attemptId ?? "" },
@@ -68,5 +80,6 @@ export async function openStudentReport(navigate: Navigate, target: ReportTarget
       assessmentName: target.assessmentName,
       evaluationType: target.evaluationType,
     },
+    ...(target.replace ? { replace: true } : {}),
   });
 }

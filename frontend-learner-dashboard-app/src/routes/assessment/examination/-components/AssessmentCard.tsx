@@ -38,7 +38,10 @@ import {
   HourglassMedium,
   XCircle,
 } from "@phosphor-icons/react";
-import { surveyCardState } from "../-utils/survey-card-state";
+import {
+  canShowLatestAttemptReport,
+  surveyCardState,
+} from "../-utils/survey-card-state";
 import { summarizeAttempts } from "../-utils/attempt-limit";
 import { hasNoExpiry, toUtcDate } from "@/utils/assessment-window";
 import { cn } from "@/lib/utils";
@@ -294,6 +297,26 @@ export const AssessmentCard = ({
   const notAttempted = isPast && usedAttempts === 0;
   const isManualEvaluation =
     (assessmentInfo.evaluation_type || "").toUpperCase() === "MANUAL";
+  // A live test that can be taken again keeps its start button; a finished
+  // attempt's report sits next to it.
+  const showLatestReport =
+    isLive && canShowLatestAttemptReport(assessmentInfo, usedAttempts);
+
+  const handleShowReport = async (e: { stopPropagation: () => void }) => {
+    e.stopPropagation();
+    // One report: the AI report once it exists, otherwise the normal one.
+    setOpeningReport(true);
+    try {
+      await openStudentReport(navigate as never, {
+        assessmentId: assessmentInfo.assessment_id,
+        assessmentName: assessmentInfo.name ?? "",
+        attemptId: assessmentInfo.last_attempt_id ?? "",
+        evaluationType: isManualEvaluation ? "MANUAL" : undefined,
+      });
+    } finally {
+      setOpeningReport(false);
+    }
+  };
 
   return (
     <>
@@ -333,21 +356,7 @@ export const AssessmentCard = ({
                   scale="medium"
                   className="min-h-11 w-full sm:min-h-9 sm:w-auto"
                   disable={openingReport}
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    // One report: the AI report once it exists, otherwise the normal one.
-                    setOpeningReport(true);
-                    try {
-                      await openStudentReport(navigate as never, {
-                        assessmentId: assessmentInfo.assessment_id,
-                        assessmentName: assessmentInfo.name ?? "",
-                        attemptId: assessmentInfo.last_attempt_id ?? "",
-                        evaluationType: isManualEvaluation ? "MANUAL" : undefined,
-                      });
-                    } finally {
-                      setOpeningReport(false);
-                    }
-                  }}
+                  onClick={handleShowReport}
                 >
                   {t("card.button.showReport")}
                 </MyButton>
@@ -440,6 +449,18 @@ export const AssessmentCard = ({
             </div>
 
             {isLive && (
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:self-end">
+              {showLatestReport && (
+                <MyButton
+                  buttonType="secondary"
+                  scale="medium"
+                  className="min-h-11 w-full sm:w-auto"
+                  disable={openingReport}
+                  onClick={handleShowReport}
+                >
+                  {t("card.button.showReport")}
+                </MyButton>
+              )}
               <MyButton
                 buttonType={isLoudLive ? "primary" : "secondary"}
                 scale="medium"
@@ -463,6 +484,7 @@ export const AssessmentCard = ({
               >
                 {buttonLabel}
               </MyButton>
+              </div>
             )}
           </div>
         )}

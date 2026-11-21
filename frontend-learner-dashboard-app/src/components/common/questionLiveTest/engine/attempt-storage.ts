@@ -29,6 +29,8 @@ export interface AttemptContext {
   assessmentId: string;
   /** Paper title for the header. */
   assessmentName: string;
+  /** When the result opens (e.g. AUTO_AFTER_SUBMISSION); "" when unknown. */
+  resultType: string;
   instituteId: string | null;
   userId: string | null;
 }
@@ -38,6 +40,7 @@ const EMPTY_CONTEXT: AttemptContext = {
   evaluationType: "",
   assessmentId: "",
   assessmentName: "",
+  resultType: "",
   instituteId: null,
   userId: null,
 };
@@ -63,6 +66,7 @@ export function useAttemptContext(): AttemptContext {
         evaluation_type?: string;
         assessment_id?: string;
         name?: string;
+        result_type?: string | null;
       } | null>(attempt.value, null);
       const studentDetails = safeParse<{ user_id?: string } | null>(
         student.value,
@@ -74,6 +78,7 @@ export function useAttemptContext(): AttemptContext {
         evaluationType: parsed?.evaluation_type ?? "",
         assessmentId: parsed?.assessment_id ?? "",
         assessmentName: parsed?.name ?? "",
+        resultType: parsed?.result_type ?? "",
         instituteId: institute.value || null,
         userId: studentDetails?.user_id || null,
       });

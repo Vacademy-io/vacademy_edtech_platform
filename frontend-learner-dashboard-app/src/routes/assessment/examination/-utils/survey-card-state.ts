@@ -50,6 +50,22 @@ export const isHeldUntilAssessmentEnd = (
   return now <= end.getTime();
 };
 
+/**
+ * Whether the learner's latest result is still hidden from them.
+ * PENDING = held for a teacher on any result type (an uploaded copy, or typed
+ * answers the AI is grading); MANUAL and NO_AUTO_RELEASE (auto-marked, but the
+ * admin releases by hand) wait for RELEASED; AUTO_AFTER_ASSESSMENT_END
+ * waits for the end date.
+ */
+export const isResultHeld = (
+  info: CardResultInput,
+  now: number = Date.now()
+): boolean =>
+  info.report_release_status === "PENDING" ||
+  (HELD_UNTIL_RELEASE_RESULT_TYPES.includes(info.result_type ?? "") &&
+    info.report_release_status !== "RELEASED") ||
+  isHeldUntilAssessmentEnd(info, now);
+
 export const surveyCardState = (
   info: CardResultInput,
   isPast: boolean,
@@ -58,15 +74,7 @@ export const surveyCardState = (
 ) => {
   const isSurvey = info.play_mode === "SURVEY";
   const attempted = isPast && usedAttempts > 0;
-  // PENDING = held for a teacher on any result type (an uploaded copy, or typed
-  // answers the AI is grading); MANUAL and NO_AUTO_RELEASE (auto-marked, but the
-  // admin releases by hand) wait for RELEASED; AUTO_AFTER_ASSESSMENT_END
-  // waits for the end date.
-  const held =
-    info.report_release_status === "PENDING" ||
-    (HELD_UNTIL_RELEASE_RESULT_TYPES.includes(info.result_type ?? "") &&
-      info.report_release_status !== "RELEASED") ||
-    isHeldUntilAssessmentEnd(info, now);
+  const held = isResultHeld(info, now);
 
   return {
     canShowReport: !isSurvey && attempted && !held,
@@ -74,3 +82,22 @@ export const surveyCardState = (
     surveySubmitted: isSurvey && attempted,
   };
 };
+
+/**
+ * A live test can be taken again (unlimited or remaining attempts), so its card
+ * keeps the start button. When the learner has already finished an attempt and
+ * the result is not held, the card also offers that attempt's report.
+ */
+export const canShowLatestAttemptReport = (
+  info: CardResultInput & {
+    recent_attempt_status?: string | null;
+    last_attempt_id?: string | null;
+  },
+  usedAttempts: number,
+  now: number = Date.now()
+): boolean =>
+  info.play_mode !== "SURVEY" &&
+  usedAttempts > 0 &&
+  info.recent_attempt_status === "ENDED" &&
+  Boolean(info.last_attempt_id) &&
+  !isResultHeld(info, now);
