@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { isHeldUntilAssessmentEnd, surveyCardState } from "./survey-card-state";
+import {
+  canShowLatestAttemptReport,
+  isHeldUntilAssessmentEnd,
+  surveyCardState,
+} from "./survey-card-state";
 
 const past = true;
 
@@ -161,5 +165,33 @@ describe("surveyCardState", () => {
         isHeldUntilAssessmentEnd({ ...exam, result_type: "AUTO_AFTER_SUBMISSION" }, endMs - 60_000)
       ).toBe(false);
     });
+  });
+});
+
+describe("canShowLatestAttemptReport (live card)", () => {
+  const finished = {
+    play_mode: "EXAM",
+    result_type: "AUTO_AFTER_SUBMISSION",
+    report_release_status: "RELEASED",
+    recent_attempt_status: "ENDED",
+    last_attempt_id: "att-1",
+  };
+
+  it("offers the report of a finished attempt on a test that can be taken again", () => {
+    expect(canShowLatestAttemptReport(finished, 1)).toBe(true);
+  });
+
+  it("offers nothing before the first attempt or while one is in progress", () => {
+    expect(canShowLatestAttemptReport(finished, 0)).toBe(false);
+    expect(canShowLatestAttemptReport({ ...finished, recent_attempt_status: "LIVE" }, 1)).toBe(false);
+    expect(canShowLatestAttemptReport({ ...finished, last_attempt_id: null }, 1)).toBe(false);
+  });
+
+  it("keeps a held result hidden, and never offers one on a survey", () => {
+    expect(
+      canShowLatestAttemptReport({ ...finished, result_type: "MANUAL", report_release_status: null }, 1)
+    ).toBe(false);
+    expect(canShowLatestAttemptReport({ ...finished, report_release_status: "PENDING" }, 1)).toBe(false);
+    expect(canShowLatestAttemptReport({ ...finished, play_mode: "SURVEY" }, 1)).toBe(false);
   });
 });
