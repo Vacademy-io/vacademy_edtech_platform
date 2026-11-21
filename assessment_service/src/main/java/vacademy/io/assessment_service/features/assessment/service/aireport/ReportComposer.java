@@ -141,9 +141,9 @@ public class ReportComposer {
         c.put("institute_name", m.getInstituteName() == null ? "" : m.getInstituteName());
 
         double pct = m.getMaxScore() > 0 ? 100.0 * m.getScore() / m.getMaxScore() : 0;
-        c.put("score", AiReportCharts.num(m.getScore()));
-        c.put("max_score", AiReportCharts.num(m.getMaxScore()));
-        c.put("percentage", AiReportCharts.num(pct));
+        c.put("score", AiReportCharts.oneDecimal(m.getScore()));
+        c.put("max_score", AiReportCharts.oneDecimal(m.getMaxScore()));
+        c.put("percentage", AiReportCharts.oneDecimal(pct));
         c.put("percentage_whole", String.valueOf((long) Math.floor(Math.max(0, pct))));
         boolean ranked = m.getParticipants() != null && m.getParticipants() >= 2 && m.getRank() != null;
         c.put("has_rank", ranked);
@@ -169,8 +169,8 @@ public class ReportComposer {
             row.put("attempted", String.valueOf(sq.size() - sSkipped));
             row.put("correct", String.valueOf(count(sq, Outcome.CORRECT) + count(sq, Outcome.PARTIAL)));
             row.put("wrong", String.valueOf(count(sq, Outcome.WRONG)));
-            row.put("marks", AiReportCharts.num(s.score()));
-            row.put("max", AiReportCharts.num(s.max()));
+            row.put("marks", AiReportCharts.oneDecimal(s.score()));
+            row.put("max", AiReportCharts.oneDecimal(s.max()));
             sections.add(row);
         }
         c.put("sections", sections);
@@ -199,7 +199,7 @@ public class ReportComposer {
             Map<String, Double> basis = Map.of("percentage", pct, "score", m.getScore());
             cfg.path("variables").fields().forEachRemaining(e -> {
                 Double v = evaluate(e.getValue(), basis);
-                c.put(e.getKey(), v == null ? "" : AiReportCharts.num(v));
+                c.put(e.getKey(), v == null ? "" : AiReportCharts.oneDecimal(v));
                 c.put("has_" + e.getKey(), v != null && v > 0);
             });
         }

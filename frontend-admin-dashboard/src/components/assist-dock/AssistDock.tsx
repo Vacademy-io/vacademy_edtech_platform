@@ -45,6 +45,7 @@ const PUBLIC_PREFIXES = [
     '/content',
     '/vim/onboarding',
     '/vim/login',
+    '/plan-week',
     '/vim/waitlist',
 ];
 
@@ -265,9 +266,10 @@ export function AssistDock() {
 
             <TrainingViewer open={panel === 'training'} onClose={() => setPanel('none')} />
 
-            {/* Tutorials panel (slides out left of the rail) */}
+            {/* Tutorials panel (slides out left of the rail). z-50 so z-50 sticky page
+                toolbars (slide editor) don't cover its header and close button. */}
             {panel === 'tutorials' && (
-                <div className="fixed bottom-4 right-16 top-20 z-40 flex w-72 flex-col overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-xl">
+                <div className="fixed bottom-4 right-16 top-20 z-50 flex w-72 flex-col overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-xl">
                     <div className="flex shrink-0 items-center justify-between border-b border-neutral-200 px-4 py-3">
                         <div className="flex items-center gap-2">
                             <GraduationCap size={18} className="text-primary-500" />

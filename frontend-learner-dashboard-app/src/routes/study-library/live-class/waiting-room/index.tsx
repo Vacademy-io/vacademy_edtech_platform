@@ -152,9 +152,13 @@ function WaitingRoomComponent() {
           // Do NOT route to the embed page — its session data can resolve linkType
           // to "other" and fail with "Unsupported session type". The backend
           // /meeting/join is authoritative. Then leave the waiting room.
-          await openBbbJoinForLearner(sessionId);
+          const joined = await openBbbJoinForLearner(sessionId, "VIEWER", {
+            navigate: navigate as any,
+            title: sessionDetails?.title,
+          });
           hasJoinedRef.current = true;
-          navigate({ to: "/study-library/live-class" });
+          // In-app: the class view is now open — navigating away would close it.
+          if (joined !== "IN_APP") navigate({ to: "/study-library/live-class" });
         } else if (
           sessionDetails.sessionStreamingServiceType ===
           SessionStreamingServiceType.EMBED

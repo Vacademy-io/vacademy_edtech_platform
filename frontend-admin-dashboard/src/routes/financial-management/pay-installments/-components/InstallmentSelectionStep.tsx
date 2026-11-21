@@ -705,7 +705,7 @@ export function InstallmentSelectionStep({
                     )}
 
                     {/* ── Fixed bottom action bar ── */}
-                    <div className="sticky bottom-0 z-10 rounded-xl border border-neutral-200 bg-white p-4 shadow-lg">
+                    <div data-assistant-fab="avoid-phone" className="sticky bottom-0 z-10 rounded-xl border border-neutral-200 bg-white p-4 shadow-lg">
                         <div className="flex flex-wrap items-center gap-4">
                             <div className="text-sm text-neutral-600">
                                 <span className="font-bold text-neutral-800">

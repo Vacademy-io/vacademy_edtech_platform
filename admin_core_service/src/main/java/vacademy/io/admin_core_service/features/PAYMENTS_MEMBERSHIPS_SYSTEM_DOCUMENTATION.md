@@ -682,14 +682,16 @@ Controls user's access to courses/batches.
 
 **Location:** `enrollment_policy/scheduler/PackageSessionScheduler.java`
 
-**Schedule:** Daily (configured to run at 1:00 AM)
+**Schedule:** Daily at 04:00, ShedLock-guarded
 
-**Purpose:** Processes all ACTIVE and CANCELED UserPlans for enrollment policy actions.
+**Purpose:** Processes ACTIVE and CANCELED UserPlans for enrollment policy actions, only for institutes that enabled `PAYMENT_SETTING.packageSessionRenewalSchedulerEnabled`.
 
 ```java
-@Scheduled(cron = "0 0 1 * * ?")  // 1:00 AM daily
-public void processPackageSessionExpiries() {
-    enrolmentService.processActiveEnrollments();
+@Scheduled(cron = "0 0 4 * * ?")
+@SchedulerLock(name = "PackageSessionRenewScheduler", lockAtMostFor = "PT55M", lockAtLeastFor = "PT1M")
+public void processPackageSessionRenewals() {
+    List<String> instituteIds = paymentSettingService.getInstituteIdsWithRenewalSchedulerEnabled();
+    enrolmentService.processActiveEnrollmentsForInstitutes(instituteIds);
 }
 ```
 

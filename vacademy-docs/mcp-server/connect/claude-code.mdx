@@ -12,7 +12,7 @@ Commands may change. These steps match Anthropic's Claude Code MCP documentation
 
 ## Add the server
 
-Copy the server URL from **Settings → MCP Server** in your admin portal, then run:
+Copy the server URL from **Settings → AI access** in your admin portal, then run:
 
 ```bash
 claude mcp add --transport http vacademy https://<your backend>/ai-service/mcp/i/<institute_id>
@@ -122,7 +122,7 @@ Claude Code reads the Figma file with its own Figma connection, so connect your 
 
 You only need this if your organisation requires every app to use a pre-registered client.
 
-1. An admin creates a client ID under **Settings → MCP Server → Client IDs for other apps**, with the redirect URL `http://localhost:<port>/callback`. Pick a free port, for example `8080`.
+1. An admin creates a client ID under **Settings → AI access → Client IDs for other apps**, with the redirect URL `http://localhost:<port>/callback`. Pick a free port, for example `8080`.
 2. Add the server with that client ID and port. There is no client secret.
 
 ```bash

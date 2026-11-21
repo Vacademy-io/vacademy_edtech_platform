@@ -554,7 +554,7 @@ function SlideNotice({ notice, t }: { notice: Notice; t: T }) {
   );
 }
 
-function ResultSummary({ attempt, t }: { attempt: CbeSlideAttempt | null; t: T }) {
+export function ResultSummary({ attempt, t }: { attempt: CbeSlideAttempt | null; t: T }) {
   const evaluation = attempt?.evaluation;
   if (!evaluation) return null;
   const marks = evaluation.marks_awarded ?? attempt?.marks ?? undefined;
@@ -581,7 +581,7 @@ function ResultSummary({ attempt, t }: { attempt: CbeSlideAttempt | null; t: T }
   );
 }
 
-function CriteriaTable({ attempt, t }: { attempt: CbeSlideAttempt | null; t: T }) {
+export function CriteriaTable({ attempt, t }: { attempt: CbeSlideAttempt | null; t: T }) {
   const rows = attempt?.evaluation?.criteria_breakdown ?? [];
   if (!rows.length) return null;
   return (
@@ -613,7 +613,7 @@ function CriteriaTable({ attempt, t }: { attempt: CbeSlideAttempt | null; t: T }
   );
 }
 
-function ModelSolution({
+export function ModelSolution({
   attempt,
   config,
   t,

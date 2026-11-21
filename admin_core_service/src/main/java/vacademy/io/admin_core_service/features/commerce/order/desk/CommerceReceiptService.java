@@ -34,7 +34,8 @@ import java.util.Set;
  * {@code POST /orders/{id}/receipts}: money received on a staff order that was left on credit
  * (cash at the counter, a bank transfer, a cheque). Store manager or accountant.
  *
- * <p>Under the order lock: the amount is at most what is due (409 RECEIPT_ABOVE_DUE); a RECEIVED
+ * <p>Under the order lock: the amount is at most what is due (409 RECEIPT_ABOVE_DUE): total less paid
+ * less the credit of goods returned before payment ({@link #amountDue}); a RECEIVED
  * tender is written, the CREDIT tender PENDING is voided and a new one carries what is still
  * due. When the order is paid in full its logs turn PAID and its plans ACTIVE in the same
  * transaction ({@link CommerceStaffOrderService#settlePaid}). A cash-on-delivery order is paid
@@ -104,17 +105,15 @@ public class CommerceReceiptService {
             throw new ConflictException("USE_COD_REMITTANCE: the cash of a COD order is recorded with the courier's "
                     + "remittance");
         }
-        CommerceOrderStatus status = CommerceOrderStatus.of(order.getStatus());
-        String paymentStatus = order.getPaymentStatus();
-        if (!CommerceOrderWriter.CHANNEL_ADMIN.equals(order.getChannel())
-                || status == CommerceOrderStatus.CANCELLED || status == CommerceOrderStatus.RTO
-                || !(CommerceOrderWriter.PAYMENT_UNPAID.equals(paymentStatus)
-                || CommerceOrderWriter.PAYMENT_PARTIALLY_PAID.equals(paymentStatus))) {
+        if (!onCredit(order)) {
             throw new ConflictException(CommerceOrderDeskService.ORDER_STATE_CHANGED
                     + ": this order has nothing due on a receipt");
         }
         BigDecimal paid = CommerceOrderDeskService.nz(order.getAmountPaid());
-        BigDecimal due = order.getTotal().subtract(paid);
+        // Goods returned before payment were credited without any money going back: that credit
+        // lowers what is still due. Read under the order lock, which a return's receive takes too.
+        BigDecimal returned = CommerceOrderDeskService.nz(orderRepository.sumReturnCreditNotRaised(order.getId()));
+        BigDecimal due = amountDue(order.getTotal(), paid, returned);
         if (amount.compareTo(due) > 0) {
             throw new ConflictException("RECEIPT_ABOVE_DUE: " + due.toPlainString() + " is due on this order");
         }
@@ -140,7 +139,7 @@ public class CommerceReceiptService {
             }
         }
         BigDecimal nowPaid = paid.add(amount);
-        BigDecimal rest = order.getTotal().subtract(nowPaid);
+        BigDecimal rest = amountDue(order.getTotal(), nowPaid, returned);
         if (rest.signum() > 0) {
             CommerceOrderTender credit = new CommerceOrderTender();
             credit.setInstituteId(order.getInstituteId());
@@ -171,6 +170,66 @@ public class CommerceReceiptService {
         String orderId = order.getId();
         String tenderId = receipt.getId();
         desk.afterCommitMoney(hook -> hook.tenderReceived(instituteId, orderId, tenderId, mode.name(), amount));
+    }
+
+    /**
+     * A staff order left on credit: channel ADMIN, not cash on delivery, UNPAID or PARTIALLY_PAID,
+     * not cancelled or returned to origin. "Record receipt" takes money on it, and (owner decision
+     * 11-19) a return on it first lowers what is still owed ({@link #lowerOwed}). Online orders
+     * paid by the shopper and counter bills are never on credit.
+     */
+    public static boolean onCredit(CommerceOrder order) {
+        CommerceOrderStatus status = CommerceOrderStatus.of(order.getStatus());
+        String paymentStatus = order.getPaymentStatus();
+        return CommerceOrderWriter.CHANNEL_ADMIN.equals(order.getChannel())
+                && !CartPriceRequest.COD.equals(order.getPaymentMethod())
+                && status != CommerceOrderStatus.CANCELLED && status != CommerceOrderStatus.RTO
+                && (CommerceOrderWriter.PAYMENT_UNPAID.equals(paymentStatus)
+                || CommerceOrderWriter.PAYMENT_PARTIALLY_PAID.equals(paymentStatus));
+    }
+
+    /**
+     * What the order owes now ({@link #amountDue} with the credit of its received returns that was
+     * not owed back). The caller holds the order lock.
+     */
+    public BigDecimal owed(CommerceOrder order) {
+        return amountDue(order.getTotal(), order.getAmountPaid(),
+                orderRepository.sumReturnCreditNotRaised(order.getId()));
+    }
+
+    /**
+     * A return credited goods of an order left on credit, under the order lock: it now owes
+     * {@code owedAfter}. The PENDING credit tender is replaced by one for that amount; at 0 nothing
+     * is left to collect and the order is settled the way a receipt that clears the due settles it
+     * (PAID, its logs paid and its plans active), with no refund. The order is saved here.
+     */
+    public void lowerOwed(CommerceOrder order, List<CommerceOrderLine> lines, BigDecimal owedAfter, String actor) {
+        desk.voidPendingTenders(order);
+        if (owedAfter.signum() > 0) {
+            CommerceOrderTender credit = new CommerceOrderTender();
+            credit.setInstituteId(order.getInstituteId());
+            credit.setOrderId(order.getId());
+            credit.setMode(CommerceOrderTender.MODE_CREDIT);
+            credit.setAmount(owedAfter);
+            credit.setStatus(CommerceOrderTender.STATUS_PENDING);
+            credit.setRecordedBy(actor);
+            tenderRepository.save(credit);
+        } else {
+            order.setPaymentStatus(CommerceOrderWriter.PAYMENT_PAID);
+            staffOrders.settlePaid(order, lines);
+        }
+        orderRepository.save(order);
+    }
+
+    /**
+     * What a staff order still owes: total less what was paid less the credit of goods returned
+     * that was not owed back as money ({@code credit_total - due_raised} of its received returns);
+     * never below 0. The order detail and "Record receipt" use this figure.
+     */
+    public static BigDecimal amountDue(BigDecimal total, BigDecimal paid, BigDecimal returnCreditNotRaised) {
+        BigDecimal due = CommerceOrderDeskService.nz(total).subtract(CommerceOrderDeskService.nz(paid))
+                .subtract(CommerceOrderDeskService.nz(returnCreditNotRaised));
+        return due.signum() < 0 ? BigDecimal.ZERO.setScale(2) : due;
     }
 
     /** A money amount: positive, at most two decimals. */

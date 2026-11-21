@@ -47,6 +47,15 @@ describe("headerOffsetClass", () => {
     expect(headerOffsetClass(undefined)).toBe("pt-16 md:pt-20");
     expect(headerOffsetClass({ barSize: "default" })).toBe("pt-16 md:pt-20");
     expect(headerOffsetClass({}, "pt-20")).toBe("pt-20");
+    // A shop's category bar adds a 48px row; without it nothing changes.
+    expect(headerOffsetClass({ barSize: "compact" }, undefined, { categoryBar: true })).toBe("pt-28");
+    expect(headerOffsetClass(undefined, undefined, { categoryBar: true })).toBe("pt-28 md:pt-32");
+    expect(headerOffsetClass({ barSize: "compact" }, undefined, { categoryBar: false })).toBe("pt-16");
+    // The "image" style's photo row: 96px under the logo row at the top of the page.
+    expect(headerOffsetClass({ barSize: "compact" }, undefined, { categoryBar: true, categoryPhotos: true })).toBe("pt-40");
+    expect(headerOffsetClass(undefined, undefined, { categoryBar: true, categoryPhotos: true })).toBe("pt-40 md:pt-44");
+    expect(headerOffsetClass(undefined, undefined, { categoryBar: false, categoryPhotos: true })).toBe("pt-16 md:pt-20");
+    expect(headerOffsetClass(undefined, "pt-20", {})).toBe("pt-20");
     expect(headerOffsetClass({ barSize: "compact" })).toBe("pt-16");
     expect(headerOffsetClass({ barSize: "compact" }, "pt-20")).toBe("pt-16");
   });

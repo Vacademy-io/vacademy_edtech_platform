@@ -311,7 +311,8 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
                     WHEN a.bound_end_time < (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') THEN 'ENDED'
                     ELSE 'LIVE'
                 END AS assessmentStatus,
-                sa.report_release_status AS reportReleaseStatus
+                sa.report_release_status AS reportReleaseStatus,
+                CASE WHEN sa.report_release_status = 'RELEASED' THEN sa.result_revised_at END AS resultRevisedAt
             FROM public.assessment a
             LEFT JOIN public.assessment_institute_mapping aim
                 ON a.id = aim.assessment_id
@@ -424,7 +425,8 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
                 END AS totalMarks,
                 aim.subject_id AS subjectId,
                 'ENDED' AS assessmentStatus,
-                sa.report_release_status AS reportReleaseStatus
+                sa.report_release_status AS reportReleaseStatus,
+                CASE WHEN sa.report_release_status = 'RELEASED' THEN sa.result_revised_at END AS resultRevisedAt
             FROM public.assessment a
             JOIN public.assessment_institute_mapping aim
                 ON a.id = aim.assessment_id AND aim.institute_id = :instituteId
@@ -478,7 +480,8 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
                     WHEN a.bound_end_time < (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') THEN 'ENDED'
                     ELSE 'LIVE'
                 END AS assessmentStatus,
-                sa.report_release_status AS reportReleaseStatus
+                sa.report_release_status AS reportReleaseStatus,
+                CASE WHEN sa.report_release_status = 'RELEASED' THEN sa.result_revised_at END AS resultRevisedAt
             FROM public.assessment a
             LEFT JOIN public.assessment_institute_mapping aim
                 ON a.id = aim.assessment_id
@@ -601,6 +604,48 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
                 FROM assessment_user_registration aur2
                 WHERE aur2.assessment_id = :assessmentId
             ),
+            AttemptMarks AS (
+                -- Same rule as AnswerStatus.readsByMarks and effective -- a positive mark the AI
+                -- or a person gave that still says PENDING (or nothing), or a status that is
+                -- none of the four (the PDF tool sent evaluated), reads by its marks; never a
+                -- row marked not answered. The max is the row max_marks, else the paper max as in
+                -- QuestionMaxResolver (newest mapping marking_json data.totalMark, else
+                -- marks_per_question). No apostrophes or colons in these comments.
+                SELECT
+                    qwm.attempt_id,
+                    qwm.marks,
+                    CASE
+                        WHEN qwm.mark_state IS DISTINCT FROM 'NOT_ANSWERED'
+                             AND (((qwm.status IS NULL OR qwm.status = 'PENDING')
+                                   AND qwm.marks > 0
+                                   AND qwm.marks_source IN ('AI', 'AI_REVIEWED', 'MANUAL', 'TEACHER'))
+                                  OR (qwm.status IS NOT NULL
+                                      AND qwm.status NOT IN ('CORRECT', 'INCORRECT', 'PARTIAL_CORRECT', 'PENDING')))
+                        THEN CASE
+                            WHEN qwm.marks <= 0 THEN 'INCORRECT'
+                            WHEN COALESCE(CASE WHEN qwm.max_marks > 0 THEN qwm.max_marks END,
+                                          NULLIF(CAST(pm.total_mark AS NUMERIC), 0),
+                                          CASE WHEN s.marks_per_question > 0 THEN s.marks_per_question END) > 0
+                                 AND qwm.marks < COALESCE(CASE WHEN qwm.max_marks > 0 THEN qwm.max_marks END,
+                                          NULLIF(CAST(pm.total_mark AS NUMERIC), 0),
+                                          CASE WHEN s.marks_per_question > 0 THEN s.marks_per_question END)
+                            THEN 'PARTIAL_CORRECT'
+                            ELSE 'CORRECT'
+                        END
+                        ELSE qwm.status
+                    END AS status
+                FROM question_wise_marks qwm
+                LEFT JOIN section s ON s.id = qwm.section_id
+                LEFT JOIN LATERAL (
+                    -- A regex, not a jsonb cast, so one malformed marking_json cannot fail the report.
+                    SELECT substring(m.marking_json FROM '"totalMark"\\s*:\\s*"?\\s*([0-9]+(?:\\.[0-9]+)?)') AS total_mark
+                    FROM question_assessment_section_mapping m
+                    WHERE m.question_id = qwm.question_id AND m.section_id = qwm.section_id
+                    ORDER BY m.created_at DESC NULLS LAST
+                    LIMIT 1
+                ) pm ON TRUE
+                WHERE qwm.attempt_id = :attemptId
+            ),
             AttemptInformation AS (
                 SELECT
                     attempt_id,
@@ -611,8 +656,7 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
                     COALESCE(SUM(marks) FILTER (WHERE status = 'CORRECT'), 0) AS totalCorrectMarks,
                     COALESCE(SUM(marks) FILTER (WHERE status = 'INCORRECT'), 0) AS totalIncorrectMarks,
                     COALESCE(SUM(marks) FILTER (WHERE status = 'PARTIAL_CORRECT'), 0) AS totalPartialMarks
-                FROM question_wise_marks
-                WHERE attempt_id = :attemptId
+                FROM AttemptMarks
                 GROUP BY attempt_id
             ),
             RankedWithTotal AS (
@@ -1018,7 +1062,104 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @Query(value = "UPDATE student_attempt SET result_notice_pending = NULL WHERE id IN (:attemptIds) AND result_notice_pending IS NOT NULL", nativeQuery = true)
     int clearResultNoticePending(@Param("attemptIds") Collection<String> attemptIds);
+
+    // ---- Submission review (phase 1a). The four V74 columns are read-only on the entity;
+    // these targeted UPDATEs are their only writers. No apostrophes or colons in comments
+    // inside the SQL strings (RepositoryQueryStringsTest).
+
+    /** Row lock on one attempt - every 1a path that writes marks or release state takes it first. */
+    @Query(value = "SELECT id FROM student_attempt WHERE id = :id FOR UPDATE", nativeQuery = true)
+    String lockById(@Param("id") String id);
+
+    /** Row locks on several attempts, in id order (the global lock order). */
+    @Query(value = "SELECT id FROM student_attempt WHERE id IN (:ids) ORDER BY id FOR UPDATE", nativeQuery = true)
+    List<String> lockByIdsOrdered(@Param("ids") Collection<String> ids);
+
+    /** MarkWriter - the recomputed total and result status, one marks_revision bump. */
+    @Modifying(flushAutomatically = true)
+    @Transactional
+    @Query(value = """
+            UPDATE student_attempt SET total_marks = :total, result_marks = :total, result_status = :resultStatus,
+                   marks_revision = marks_revision + 1,
+                   result_revised_at = CASE WHEN :released THEN CAST(:now AS TIMESTAMP) ELSE result_revised_at END
+            WHERE id = :id
+            """, nativeQuery = true)
+    int applyMarkTotals(@Param("id") String id, @Param("total") double total,
+                        @Param("resultStatus") String resultStatus, @Param("released") boolean released,
+                        @Param("now") Date now);
+
+    /** The dashboard release write (SubmissionReleaseService.markReleased). */
+    @Modifying(flushAutomatically = true)
+    @Transactional
+    @Query(value = """
+            UPDATE student_attempt SET report_release_status = 'RELEASED',
+                   report_last_release_date = CASE WHEN :keepDate AND report_last_release_date IS NOT NULL
+                                                   THEN report_last_release_date ELSE CAST(:now AS TIMESTAMP) END,
+                   report_pdf_file_id = COALESCE(CAST(:pdfId AS VARCHAR), report_pdf_file_id),
+                   notified_revision = marks_revision, release_when_marked = NULL, result_notice_pending = NULL,
+                   result_withheld_at = NULL,
+                   result_revised_at = CASE WHEN :firstRelease THEN NULL ELSE result_revised_at END
+            WHERE id = :id
+            """, nativeQuery = true)
+    int markReleasedState(@Param("id") String id, @Param("pdfId") String pdfId,
+                          @Param("keepDate") boolean keepDate, @Param("now") Date now,
+                          @Param("firstRelease") boolean firstRelease);
+
+    /** Release the rest automatically once marked. */
+    @Modifying(flushAutomatically = true)
+    @Transactional
+    @Query(value = "UPDATE student_attempt SET release_when_marked = TRUE WHERE id IN (:ids)", nativeQuery = true)
+    int markReleaseWhenMarked(@Param("ids") Collection<String> ids);
+
+    @Modifying(flushAutomatically = true)
+    @Transactional
+    @Query(value = "UPDATE student_attempt SET release_when_marked = NULL WHERE id IN (:ids)", nativeQuery = true)
+    int clearReleaseWhenMarked(@Param("ids") Collection<String> ids);
+
+    /** Hide a released result again (withdraw). The last release date is kept as history. */
+    @Modifying(flushAutomatically = true)
+    @Transactional
+    @Query(value = """
+            UPDATE student_attempt SET report_release_status = 'PENDING', release_when_marked = NULL,
+                   result_notice_pending = NULL, result_withheld_at = CAST(:now AS TIMESTAMP)
+            WHERE id = :id
+            """, nativeQuery = true)
+    int markWithdrawn(@Param("id") String id, @Param("now") Date now);
+
+    /** Send updated result - the learner now has the current marks. */
+    @Modifying(flushAutomatically = true)
+    @Transactional
+    @Query(value = "UPDATE student_attempt SET notified_revision = marks_revision WHERE id = :id", nativeQuery = true)
+    int markNotifiedToCurrent(@Param("id") String id);
+
+    /** Revaluate changed a released total - shows as Released, changed. */
+    @Modifying(flushAutomatically = true)
+    @Transactional
+    @Query(value = """
+            UPDATE student_attempt SET marks_revision = marks_revision + 1, result_revised_at = CAST(:now AS TIMESTAMP)
+            WHERE id = :id AND report_release_status = 'RELEASED'
+            """, nativeQuery = true)
+    int bumpRevisionAfterRevaluate(@Param("id") String id, @Param("now") Date now);
+
+    /** The given attempt ids that belong to the assessment (re-mark tenant check). */
+    @Query(value = """
+            SELECT sa.id FROM student_attempt sa
+            JOIN assessment_user_registration aur ON aur.id = sa.registration_id
+            WHERE aur.assessment_id = :assessmentId AND sa.id IN (:ids)
+            """, nativeQuery = true)
+    List<String> findIdsOnAssessment(@Param("assessmentId") String assessmentId, @Param("ids") Collection<String> ids);
+
+    /** The given attempt ids that belong to the institute (manual-evaluation tenant check). */
+    @Query(value = """
+            SELECT sa.id FROM student_attempt sa
+            JOIN assessment_user_registration aur ON aur.id = sa.registration_id
+            WHERE aur.institute_id = :instituteId AND sa.id IN (:ids)
+            """, nativeQuery = true)
+    List<String> findIdsInInstitute(@Param("instituteId") String instituteId, @Param("ids") Collection<String> ids);
+
+    /** Manual submit - the checked copy, without saving a stale entity. */
+    @Modifying(flushAutomatically = true)
+    @Transactional
+    @Query(value = "UPDATE student_attempt SET evaluated_file_id = :fileId WHERE id = :id", nativeQuery = true)
+    int setEvaluatedFileId(@Param("id") String id, @Param("fileId") String fileId);
 }
-
-
-

@@ -3,19 +3,20 @@
  * origin line, price with the MRP struck through, swatch dots, and quick add for a product
  * with a single variant. Plus the grid and the rail that lay cards out.
  */
-import React, { useState } from 'react';
-import { ShoppingBagOpen } from '@phosphor-icons/react';
+import React, { useContext, useState } from 'react';
+import { CheckCircle, ShoppingBagOpen } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { ProductCard } from '../api/types';
 import { sendCommerceEvent } from '../logic/events';
-import { formatUnits } from '../logic/format';
+import { quantityText } from '../logic/format';
 import { IMAGE_SIZES, mediaChip, ratioClass, thumbUrl } from '../logic/media';
 import { isMeasured, stockView } from '../logic/stock';
 import { hasMessage } from '../i18n';
 import { apiPathTo } from '../routes';
 import { useCommerceCart } from '../state/cart-store';
 import { PriceText, ProductImage } from './primitives';
+import { CardAddContext } from './card-add';
 import { QuickAddSheet } from './QuickAdd';
 import { ShopLink, useCommerceSite } from './site';
 
@@ -28,7 +29,7 @@ export const useCardBadge = (product: ProductCard): { text: string; muted: boole
     if (!code) return null;
     if (code === 'ONLY_N_LEFT') {
         return view.left !== null
-            ? { text: t('badge.ONLY_N_LEFT', { count: formatUnits(view.left, product.qty_scale) }), muted: false }
+            ? { text: t('badge.ONLY_N_LEFT', { count: quantityText(view.left, product.qty_scale, product.unit, t) }), muted: false }
             : { text: t('badge.LOW'), muted: false };
     }
     const key = `badge.${code}`;
@@ -51,6 +52,8 @@ export const ProductCardView: React.FC<{
     const [sheetOpen, setSheetOpen] = useState(false);
     const add = useCommerceCart((s) => s.add);
     const openDrawer = useCommerceCart((s) => s.openDrawer);
+    const addMode = useContext(CardAddContext);
+    const inCart = useCommerceCart((s) => !!addMode && s.cart.lines.some((line) => line.slug === product.slug));
     const badge = useCardBadge(product);
     const view = stockView(product.stock);
     const swatches = (product.swatches || []).filter((s) => !!s && !!s.swatch_hex);
@@ -84,7 +87,8 @@ export const ProductCardView: React.FC<{
             return;
         }
         sendCommerceEvent({ name: 'add_to_cart', item: { ...eventItem, quantity: Math.max(1, product.qty_step || 1) }, currency: product.price?.currency });
-        openDrawer();
+        if (addMode) addMode.onAdded(product.id);
+        else openDrawer();
     };
 
     return (
@@ -131,10 +135,19 @@ export const ProductCardView: React.FC<{
                                 type="button"
                                 className="cmx-btn cmx-btn--outline cmx-btn--block cmx-small"
                                 onClick={quickAdd}
-                                aria-label={t('card.quickAddOf', { name: product.name })}
+                                aria-label={inCart ? t('card.inCartOf', { name: product.name }) : t('card.quickAddOf', { name: product.name })}
                             >
-                                <ShoppingBagOpen size={18} aria-hidden="true" className="cmx-card__quick-icon" />
-                                {t('card.quickAdd')}
+                                {inCart ? (
+                                    <>
+                                        <CheckCircle size={18} weight="fill" aria-hidden="true" className="cmx-card__quick-icon cmx-ok" />
+                                        {t('card.inCart')}
+                                    </>
+                                ) : (
+                                    <>
+                                        <ShoppingBagOpen size={18} aria-hidden="true" className="cmx-card__quick-icon" />
+                                        {t('card.quickAdd')}
+                                    </>
+                                )}
                             </button>
                         ) : viaSheet ? (
                             <button

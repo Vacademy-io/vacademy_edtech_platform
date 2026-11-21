@@ -60,6 +60,10 @@ import vacademy.io.common.auth.dto.UserDTO;
 public class QueryServiceImpl implements QueryNodeHandler.QueryService {
 
     private final StudentSessionInstituteGroupMappingRepository ssigmRepo;
+
+    /** Learners on a break (docs/ENROLMENT_BREAKS.md). Optional: absent = nothing held. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vacademy.io.admin_core_service.features.enrolment_break.service.EnrolmentBreakGuard enrolmentBreakGuard;
     private final CustomFieldValuesRepository customFieldValuesRepository;
     private final SessionScheduleRepository sessionScheduleRepository;
     private final LiveSessionParticipantRepository liveSessionParticipantRepository;
@@ -282,6 +286,7 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
                 item.put("isTrial", isTrial);
                 autopayDueList.add(item);
             }
+            autopayDueList = withoutFeeHeld(autopayDueList, params.get("instituteId"));
             return Map.of("autopayDueList", autopayDueList, "autopayDueCount", autopayDueList.size());
         } catch (Exception e) {
             log.error("Error executing getUpcomingAutopayCharges", e);
@@ -293,7 +298,8 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
      * "Pay to continue" audience: plans ending within daysAhead days (or ended up
      * to graceDays ago) that autopay will NOT charge — autopay off, cancelled,
      * failed or dunning-expired. Pairs with the manual-renewal payment flow on
-     * the learner subscriptions page.
+     * the learner subscriptions page. exactDay=true keeps only plans ending exactly
+     * daysAhead days out. Items carry email (the member address).
      */
     private Map<String, Object> getManualRenewalDuePlans(Map<String, Object> params) {
         try {
@@ -303,6 +309,12 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
             }
             int daysAhead = readIntParam(params.get("daysAhead"), 1);
             int graceDays = readIntParam(params.get("graceDays"), 2);
+            // exactDay: only plans ending exactly daysAhead days from today (a "14 days before"
+            // reminder sent by a daily schedule reaches each member once). The window
+            // [today - graceDays, today + daysAhead] collapses to that one day.
+            if (Boolean.parseBoolean(String.valueOf(params.get("exactDay")))) {
+                graceDays = -daysAhead;
+            }
 
             List<Object[]> rows = ssigmRepo.findManualRenewalDuePlans(packageSessionIds, daysAhead, graceDays);
             List<Map<String, Object>> manualRenewalList = new ArrayList<>();
@@ -316,8 +328,12 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
                 item.put("planStatus", row[5] != null ? String.valueOf(row[5]) : "");
                 item.put("endDate", row[6]);
                 item.put("endDateLabel", row[7] != null ? String.valueOf(row[7]) : "");
+                // The member address. SEND_EMAIL reads 'email'; without it the node fell back to
+                // any email-shaped value, which is wrong (or missing) when username is not the email.
+                item.put("email", row.length > 8 && row[8] != null ? String.valueOf(row[8]) : "");
                 manualRenewalList.add(item);
             }
+            manualRenewalList = withoutFeeHeld(manualRenewalList, params.get("instituteId"));
             return Map.of("manualRenewalList", manualRenewalList,
                     "manualRenewalCount", manualRenewalList.size());
         } catch (Exception e) {
@@ -357,6 +373,7 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
                 item.put("lastError", extractLastError(row[8]));
                 renewalFailedList.add(item);
             }
+            renewalFailedList = withoutFeeHeld(renewalFailedList, params.get("instituteId"));
             return Map.of("renewalFailedList", renewalFailedList,
                     "renewalFailedCount", renewalFailedList.size());
         } catch (Exception e) {
@@ -468,11 +485,18 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
                 mapping.put("packageSessionId", String.valueOf(row[7]));
 
                 // --- ENROLLED DATE SELECTION ---
+                // Index 9 is the trial flag, never a date, so there is no second date to
+                // fall back to. The old fallback read past the end of the row and threw
+                // ArrayIndexOutOfBounds, which the catch below turned into an error map,
+                // dropping the whole roster for every learner in that run.
                 Date enrolledDate = (row[8] instanceof Date d) ? d : null;
-                if (enrolledDate == null) {
-                    enrolledDate = (row[9] instanceof Date d) ? d : null;
-                }
                 mapping.put("enrolledDate", enrolledDate);
+
+                // --- TRIAL FLAG ---
+                // Read from the plan this mapping was created under. Left null when the
+                // mapping carries no user_plan_id, so a condition testing isTrial == false
+                // is simply not satisfied and the workflow keeps the rule it used before.
+                mapping.put("isTrial", (row[9] instanceof Boolean b) ? b : null);
 
                 // --- EARNING DAY LOGIC ---
                 long learningDay = 0;
@@ -1497,10 +1521,12 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
                 item.put("reminderType",       reminderType);
                 item.put("userId",             payment.getUserId());
                 item.put("studentFeePaymentId", payment.getId());
+                item.put("userPlanId",         payment.getUserPlanId());
                 item.put("instituteId",        payment.getInstituteId() != null ? payment.getInstituteId() : "");
                 feePaymentList.add(item);
             }
 
+            feePaymentList = withoutFeeHeld(feePaymentList, null);
             log.info("[FeeReminder] {} eligible payments resolved for reminders.", feePaymentList.size());
             return Map.of("feePaymentList", feePaymentList);
 
@@ -1508,6 +1534,32 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
             log.error("[FeeReminder] Error in getUpcomingFeeInstallments", e);
             return Map.of("error", e.getMessage(), "feePaymentList", List.of());
         }
+    }
+
+    /**
+     * Drops learners on a break whose fee reminders are stopped, or whose membership is paused
+     * (docs/ENROLMENT_BREAKS.md). Returns the list unchanged when no break exists anywhere.
+     */
+    private List<Map<String, Object>> withoutFeeHeld(List<Map<String, Object>> items, Object instituteIdParam) {
+        if (enrolmentBreakGuard == null || items == null || items.isEmpty() || !enrolmentBreakGuard.anyLive()) {
+            return items;
+        }
+        List<Map<String, Object>> kept = new ArrayList<>(items.size());
+        for (Map<String, Object> item : items) {
+            Object inst = item.get("instituteId") != null && !String.valueOf(item.get("instituteId")).isBlank()
+                    ? item.get("instituteId") : instituteIdParam;
+            String uid = item.get("userId") == null ? null : String.valueOf(item.get("userId"));
+            String plan = item.get("userPlanId") == null ? null : String.valueOf(item.get("userPlanId"));
+            boolean held = enrolmentBreakGuard.isPlanFeeHeld(plan)
+                    || (inst != null && uid != null && enrolmentBreakGuard.isHeld(String.valueOf(inst), uid,
+                        vacademy.io.admin_core_service.features.enrolment_break.service.EnrolmentBreakGuard.Category.FEE,
+                        null, plan));
+            if (!held) kept.add(item);
+        }
+        if (kept.size() != items.size()) {
+            log.info("[enrolment-break] {} fee/renewal reminder(s) held", items.size() - kept.size());
+        }
+        return kept;
     }
 
     private String resolveReminderType(long daysDiff) {
@@ -2016,6 +2068,7 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
                     .filter(map -> map.get("email") != null && !((String) map.get("email")).isEmpty())
                     .collect(Collectors.toList());
 
+            expiringList = withoutFeeHeld(expiringList, instituteId);
             return Map.of("expiringMemberships", expiringList,
                     "daysUntilExpiry", daysUntilExpiry,
                     "expiringCount", expiringList.size(),

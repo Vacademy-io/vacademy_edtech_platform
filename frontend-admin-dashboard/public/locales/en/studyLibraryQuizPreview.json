@@ -8,6 +8,7 @@
         "questionUpdated": "Question updated successfully!",
         "updateQuestionFailed": "Failed to update question. Please try again.",
         "enterQuestionName": "Please enter a question name",
+        "cbeInvalid": "Every spreadsheet part needs marks greater than 0. Add at least one part.",
         "questionAdded": "Question added successfully!",
         "addQuestionFailed": "Failed to add question. Please try again.",
         "questionDeleted": "Question deleted successfully!",

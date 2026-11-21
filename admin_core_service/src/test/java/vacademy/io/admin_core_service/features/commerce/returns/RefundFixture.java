@@ -85,6 +85,8 @@ class RefundFixture {
     final AtomicInteger ids = new AtomicInteger();
     final LocalDate today = LocalDate.of(2026, 11, 16);
     final List<String> eventTypes = new ArrayList<>();
+    /** The third argument of each {@code desk.event} call: the shipment, return or refund it is about. */
+    final List<String> eventRefs = new ArrayList<>();
 
     RefundFixture() {
         this(mock(CommerceAccessGuard.class));
@@ -108,6 +110,7 @@ class RefundFixture {
         lenient().when(executorProvider.getIfAvailable()).thenReturn(executor);
         if (org.mockito.Mockito.mockingDetails(guard).isMock()) {
             lenient().when(guard.featureOn(anyString(), any())).thenReturn(true);
+            lenient().when(guard.featureState(anyString(), any())).thenReturn(CommerceAccessGuard.FeatureState.ON);
         }
         lenient().when(clock.today(anyString())).thenReturn(today);
         lenient().when(requestGuard.run(any(), any(), any())).thenAnswer(call -> new CommerceRequestGuard.Outcome<>(
@@ -130,7 +133,10 @@ class RefundFixture {
         lenient().when(desk.readOrder(INST, ORDER)).thenReturn(order);
         lenient().when(desk.event(anyString(), any(), any(), anyBoolean())).thenAnswer(call -> {
             eventTypes.add(call.getArgument(0));
-            return new CommerceOrderEvents.OrderEvent(call.getArgument(0), INST, ORDER, "ORD-000001", null, true);
+            eventRefs.add(call.getArgument(2));
+            // As the desk makes it: the ref is also the event's shipment id.
+            return new CommerceOrderEvents.OrderEvent(call.getArgument(0), INST, ORDER, "ORD-000001",
+                    call.getArgument(2), call.getArgument(3));
         });
         doAnswer(call -> {
             ((Consumer<CommerceSalesMoneyHook>) call.getArgument(0)).accept(moneyHook);

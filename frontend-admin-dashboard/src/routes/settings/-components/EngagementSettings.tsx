@@ -19,6 +19,7 @@ import {
     type EngagementNumericSetting,
     type EngagementSettings as Settings,
 } from '../-services/engagement-settings';
+import { PlanningEmailSettings } from './PlanningEmailSettings';
 
 /** Numbers are held as typed text so an empty or out-of-range box can be flagged. */
 type FormState = Record<EngagementNumericSetting, string> & {
@@ -273,6 +274,8 @@ export default function EngagementSettings() {
                             </div>
                         </CardContent>
                     </Card>
+
+                    <PlanningEmailSettings loaded={loaded} />
                 </>
             )}
         </div>

@@ -505,11 +505,59 @@ export const normalizeRedirectPath = (pathname: string, search = ''): string => 
     return `${path}${search && search !== '?' ? search : ''}`;
 };
 
+/**
+ * The `path` the edge asks the resolver for: the request in the stored normal form, with each `%`
+ * of the decoded path written as `%25`. The resolver decodes the path once more; without this, a
+ * path that holds a literal `%41` once decoded (the request `/%2541`) would be decoded twice and
+ * looked up as `/a`. A path the edge cannot decode (an escape that is not UTF-8, such as a Latin-1
+ * `/caf%E9`, or a `%` that starts no escape) is sent with its escapes as they are, so the resolver
+ * reads it as it always did and finds the row the import stored for it. The query string is
+ * passed as the browser sent it.
+ */
+export const redirectLookupPath = (pathname: string, search = ''): string => {
+    let decoded = true;
+    try {
+        decodeURIComponent(pathname);
+    } catch {
+        decoded = false;
+    }
+    const normal = normalizeRedirectPath(pathname);
+    return `${decoded ? normal.replace(/%/g, '%25') : normal}${search && search !== '?' ? search : ''}`;
+};
+
 export type RedirectDecision = { status: 301; location: string } | { status: 410 } | null;
+
+const UTF8 = new TextEncoder();
+
+/**
+ * A redirect target as a `Location` header can carry it: every character outside printable
+ * ASCII (a Devanagari slug, a space) is percent-encoded as UTF-8, so the header is always
+ * ASCII. What is already ASCII is left as it is: an existing `%XX` escape is not encoded again
+ * and the query string's `?`, `&` and `=` keep their meaning. A `%` that starts no escape
+ * becomes `%25`. A header value with a non-ASCII character is refused by the runtime, so
+ * without this the visitor would get no redirect at all.
+ */
+export const asciiLocation = (target: string): string => {
+    let out = '';
+    for (let i = 0; i < target.length; ) {
+        const code = target.codePointAt(i) ?? 0;
+        const char = String.fromCodePoint(code);
+        i += char.length;
+        if (code === 0x25) {
+            out += /^[0-9a-f]{2}$/i.test(target.slice(i, i + 2)) ? '%' : '%25';
+        } else if (code > 0x20 && code < 0x7f) {
+            out += char;
+        } else {
+            // A lone surrogate is encoded as U+FFFD, as TextEncoder does.
+            for (const byte of UTF8.encode(char)) out += `%${byte.toString(16).toUpperCase().padStart(2, '0')}`;
+        }
+    }
+    return out;
+};
 
 /**
  * The answer of GET /open/commerce/v1/redirects/resolve?path= turned into what the edge does.
- * Contract coded against (the endpoint is not built yet): 200 with
+ * The endpoint answers 200 with
  * {"status_code": 301, "to_path": "/p/x?lang=en"} or {"status_code": 410}; 404 when no row
  * matches. A target is followed only when it is a path on this site: an absolute URL, a
  * protocol-relative one or a target equal to the request would be an open redirect or a loop.
@@ -523,7 +571,7 @@ export const redirectDecision = (body: unknown, requestPath: string, basePath = 
     const raw = data.to_path ?? data.toPath;
     const target = typeof raw === 'string' ? raw.trim() : '';
     if (!target.startsWith('/') || target.startsWith('//') || target.includes('\\') || /[\r\n]/.test(target)) return null;
-    const location = `${basePath}${target}`;
-    if (normalizeRedirectPath(location.split('?')[0] || '/') === normalizeRedirectPath(requestPath)) return null;
+    const location = asciiLocation(`${basePath}${target}`);
+    if (normalizeRedirectPath(location.split(/[?#]/)[0] || '/') === normalizeRedirectPath(requestPath)) return null;
     return { status: 301, location };
 };

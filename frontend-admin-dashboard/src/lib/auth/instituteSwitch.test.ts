@@ -54,9 +54,16 @@ describe('getEligibleInstitutes', () => {
         });
     });
 
-    it('drops non-ADMIN institutes when the portal requires ADMIN for them', () => {
-        const result = getEligibleInstitutes(authorities, { requiresAdmin: () => true });
+    it('drops non-ADMIN institutes when the portal admits only ADMIN', () => {
+        const result = getEligibleInstitutes(authorities, { portalAllowedRoles: () => ['ADMIN'] });
         expect(result.map((i) => i.id)).toEqual(['inst-admin']);
+    });
+
+    it('keeps institutes where the user holds one of the roles the portal admits', () => {
+        const result = getEligibleInstitutes(authorities, {
+            portalAllowedRoles: () => ['ADMIN', 'COUNSELLOR'],
+        });
+        expect(result.map((i) => i.id)).toEqual(['inst-admin', 'inst-counsellor']);
     });
 
     it('tolerates a missing/malformed authorities map', () => {

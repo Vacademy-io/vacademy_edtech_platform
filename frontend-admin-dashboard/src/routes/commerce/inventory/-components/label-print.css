@@ -1,0 +1,160 @@
+/*
+ * Shop labels printed from the browser (owner decision 2026-11-18). Print
+ * sizing only: every rule is scoped to body.inv-label-printing, which
+ * printLabels() sets for the one print and removes after it, together with
+ * its own @page rule (50 x 25 mm sticker or A4, margin 0). Other prints (the
+ * counter bill, packing slips) are untouched.
+ *
+ * Sizes are millimetres so the print is exact: a sticker is 50 x 25 mm; an
+ * A4 sheet holds 5 x 13 labels of 38.1 x 21.2 mm, 4.7 mm from the left edge,
+ * 10.7 mm from the top, 40.6 mm apart across and 21.2 mm down.
+ *
+ * Hindi vowel marks below the letter (the u of दु, the stacked ट्ट, the nukta
+ * of ड़) and English descenders reach below the line box: the text lines clip
+ * only across (for the ellipsis), never up or down, and have line-height 1.3.
+ * Row budget (5 lines of text at most; the SKU sits on the code line):
+ *   sticker 23 mm inside the padding = text row 15.2 mm (32 pt x 1.3 = 14.7 mm)
+ *           + barcode 5 mm + code line 2.5 mm;
+ *   A4 cell 19.6 mm = text row 12.6 mm (26 pt x 1.3 = 11.9 mm)
+ *           + barcode 4 mm + code line 2.1 mm.
+ * Proof: cc_reports/inv/fix-frontend.md (headless Chrome render).
+ */
+.inv-label-print {
+    display: none;
+}
+
+@media print {
+    body.inv-label-printing > :not(.inv-label-print) {
+        display: none !important;
+    }
+    body.inv-label-printing .inv-label-print {
+        display: block;
+        margin: 0;
+        padding: 0;
+        color: black;
+        background: white;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    body.inv-label-printing .inv-sticker {
+        box-sizing: border-box;
+        width: 50mm;
+        height: 25mm;
+        padding: 1mm 1.5mm;
+        overflow: hidden;
+        break-after: page;
+        page-break-after: always;
+        display: grid;
+        grid-template-columns: 14mm 1fr;
+        grid-template-rows: 15.2mm 1fr;
+        column-gap: 1.5mm;
+    }
+    body.inv-label-printing .inv-sticker:last-child {
+        break-after: auto;
+        page-break-after: auto;
+    }
+    body.inv-label-printing .inv-sheet {
+        box-sizing: border-box;
+        width: 210mm;
+        height: 297mm;
+        padding: 10.7mm 0 0 4.7mm;
+        overflow: hidden;
+        display: grid;
+        grid-template-columns: repeat(5, 38.1mm);
+        grid-auto-rows: 21.2mm;
+        column-gap: 2.5mm;
+        row-gap: 0;
+        break-after: page;
+        page-break-after: always;
+    }
+    body.inv-label-printing .inv-sheet:last-child {
+        break-after: auto;
+        page-break-after: auto;
+    }
+    body.inv-label-printing .inv-cell {
+        box-sizing: border-box;
+        width: 38.1mm;
+        height: 21.2mm;
+        padding: 0.8mm 1mm;
+        overflow: hidden;
+        display: grid;
+        grid-template-columns: 10.5mm 1fr;
+        grid-template-rows: 12.6mm 1fr;
+        column-gap: 1mm;
+    }
+    body.inv-label-printing .inv-label-qr {
+        width: 100%;
+        height: auto;
+        align-self: start;
+    }
+    body.inv-label-printing .inv-label-text {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        line-height: 1.3;
+    }
+    /* A little room at both ends: a J's hook or a matra may reach past the line's start. */
+    body.inv-label-printing .inv-label-text > span {
+        padding-inline: 0.4mm;
+        margin-inline: -0.4mm;
+    }
+    body.inv-label-printing .inv-label-name {
+        font-size: 7.5pt;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow-x: clip;
+        overflow-y: visible;
+        text-overflow: ellipsis;
+    }
+    body.inv-label-printing .inv-label-small {
+        font-size: 5.5pt;
+        white-space: nowrap;
+        overflow-x: clip;
+        overflow-y: visible;
+        text-overflow: ellipsis;
+    }
+    body.inv-label-printing .inv-label-price {
+        font-size: 8pt;
+        font-weight: 500;
+    }
+    body.inv-label-printing .inv-cell .inv-label-name {
+        font-size: 6pt;
+    }
+    body.inv-label-printing .inv-cell .inv-label-price {
+        font-size: 6.5pt;
+    }
+    body.inv-label-printing .inv-cell .inv-label-small {
+        font-size: 4.5pt;
+    }
+    body.inv-label-printing .inv-label-bar {
+        grid-column: 1 / -1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        min-height: 0;
+    }
+    body.inv-label-printing .inv-label-bar svg {
+        width: 46mm;
+        height: 5mm;
+    }
+    body.inv-label-printing .inv-cell .inv-label-bar svg {
+        width: 34mm;
+        height: 4mm;
+    }
+    body.inv-label-printing .inv-label-code {
+        max-width: 100%;
+        font-size: 5.5pt;
+        line-height: 1.3;
+        letter-spacing: 0.3pt;
+        font-family: monospace;
+        white-space: nowrap;
+        overflow-x: clip;
+        overflow-y: visible;
+        text-overflow: ellipsis;
+    }
+    body.inv-label-printing .inv-cell .inv-label-code {
+        font-size: 4.5pt;
+    }
+}

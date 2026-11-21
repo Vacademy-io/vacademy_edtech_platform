@@ -11,7 +11,13 @@ import vacademy.io.admin_core_service.features.ota_update.dto.OtaRegisterRequest
 import vacademy.io.admin_core_service.features.ota_update.dto.OtaVersionDTO;
 import vacademy.io.admin_core_service.features.ota_update.service.OtaUpdateService;
 import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.common.auth.util.SuperAdminAuthUtil;
 
+/**
+ * Registers and toggles OTA bundles for the apps. Platform super-admins only
+ * (SUPER_ADMIN_USER_IDS); the apps themselves only read
+ * /admin-core-service/public/ota/v1/check.
+ */
 @RestController
 @RequestMapping("/admin-core-service/admin/ota/v1")
 @RequiredArgsConstructor
@@ -24,6 +30,7 @@ public class OtaUpdateAdminController {
     public ResponseEntity<OtaVersionDTO> register(
             @RequestAttribute("user") CustomUserDetails user,
             @Valid @RequestBody OtaRegisterRequest request) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
         OtaVersionDTO result = otaUpdateService.registerVersion(request, user.getUserId());
         log.info("OTA version {} registered by user {}", request.getVersion(), user.getUserId());
         return ResponseEntity.ok(result);
@@ -33,6 +40,7 @@ public class OtaUpdateAdminController {
     public ResponseEntity<Page<OtaVersionDTO>> listVersions(
             @RequestAttribute("user") CustomUserDetails user,
             Pageable pageable) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
         return ResponseEntity.ok(otaUpdateService.listVersions(pageable));
     }
 
@@ -40,6 +48,7 @@ public class OtaUpdateAdminController {
     public ResponseEntity<String> deactivate(
             @RequestAttribute("user") CustomUserDetails user,
             @PathVariable String versionId) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
         otaUpdateService.deactivateVersion(versionId);
         log.info("OTA version {} deactivated by user {}", versionId, user.getUserId());
         return ResponseEntity.ok("Version deactivated");
@@ -49,6 +58,7 @@ public class OtaUpdateAdminController {
     public ResponseEntity<String> activate(
             @RequestAttribute("user") CustomUserDetails user,
             @PathVariable String versionId) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
         otaUpdateService.activateVersion(versionId);
         log.info("OTA version {} activated by user {}", versionId, user.getUserId());
         return ResponseEntity.ok("Version activated");

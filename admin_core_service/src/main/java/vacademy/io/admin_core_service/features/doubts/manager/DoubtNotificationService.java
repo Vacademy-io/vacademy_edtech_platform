@@ -19,6 +19,7 @@ import vacademy.io.admin_core_service.features.domain_routing.entity.InstituteDo
 import vacademy.io.admin_core_service.features.domain_routing.repository.InstituteDomainRoutingRepository;
 import vacademy.io.admin_core_service.features.notification_service.service.NotificationService;
 import vacademy.io.admin_core_service.features.packages.repository.PackageSessionRepository;
+import vacademy.io.admin_core_service.features.student_analysis.service.aggregation.ThemeColorResolver;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.institute.entity.Institute;
 
@@ -57,8 +58,8 @@ public class DoubtNotificationService {
 
     /** Last-resort sender when an institute has no utility email configured. */
     private static final String FALLBACK_SUPPORT_EMAIL = "support@vacademy.io";
-    /** Matches the default in DynamicNotificationService's theme resolver. */
-    private static final String FALLBACK_THEME_COLOR = "#FF9800";
+    /** Neutral colour when the institute has no usable theme (never a platform brand colour). */
+    private static final String FALLBACK_THEME_COLOR = "#333333";
 
     /**
      * Sentinel {@code institute_id} for the single global default template row. V215 inserts
@@ -447,7 +448,7 @@ public class DoubtNotificationService {
         m.put("THEME_COLOR", ctx.themeColor);
         m.put("themeColor", ctx.themeColor);
         m.put("INSTITUTE_NAME", ctx.instituteName);
-        m.put("support_email", ctx.fromEmail);
+        m.put("support_email", ctx.supportEmail);
         return m;
     }
 
@@ -471,7 +472,7 @@ public class DoubtNotificationService {
         try {
             if (audience == Audience.ADMIN) {
                 Optional<InstituteDomainRouting> adminRouting =
-                        domainRoutingRepository.findByInstituteIdAndRole(ctx.instituteId, "ADMIN");
+                        domainRoutingRepository.findAdminPortalRow(ctx.instituteId);
                 if (adminRouting.isPresent()) {
                     return formatDoubtUrl(adminRouting.get().getSubdomain(),
                             adminRouting.get().getDomain(), ADMIN_DOUBT_PATH, doubt.getId());
@@ -570,6 +571,7 @@ public class DoubtNotificationService {
         String themeColor = FALLBACK_THEME_COLOR;
         String fromEmail = FALLBACK_SUPPORT_EMAIL;
         String fromName = null;
+        String supportEmail = null;
 
         try {
             Optional<Institute> opt = instituteRepository.findById(instituteId);
@@ -581,11 +583,15 @@ public class DoubtNotificationService {
                 }
                 themeColor = normalizeThemeColor(institute.getInstituteThemeCode());
                 fromEmail = resolveUtilityFromEmail(institute).orElse(FALLBACK_SUPPORT_EMAIL);
+                if (institute.getEmail() != null && !institute.getEmail().isBlank()) {
+                    supportEmail = institute.getEmail().trim();
+                }
             }
         } catch (Exception e) {
             log.warn("Failed to load institute context for {}: {}", instituteId, e.getMessage());
         }
-        return new InstituteContext(instituteId, instituteName, themeColor, fromEmail, fromName);
+        return new InstituteContext(instituteId, instituteName, themeColor, fromEmail, fromName,
+                supportEmail);
     }
 
     /**
@@ -634,10 +640,12 @@ public class DoubtNotificationService {
      * Only when the column is null/blank do we use the fallback.
      */
     private String normalizeThemeColor(String themeCode) {
+        // Hex (with/without '#') or a theme preset such as "primary"/"blue" -> hex. A preset
+        // name is not a CSS colour ("primary" rendered as no colour at all), so map it first.
+        String resolved = ThemeColorResolver.resolve(themeCode);
+        if (resolved != null) return resolved;
         if (themeCode == null || themeCode.trim().isEmpty()) return FALLBACK_THEME_COLOR;
-        String t = themeCode.trim();
-        if (t.matches("^[0-9A-Fa-f]{6}$")) return "#" + t;  // hex without '#' → normalize
-        return t;                                            // hex with '#', CSS keyword, or any valid CSS color → pass through
+        return themeCode.trim();                             // other CSS keyword → pass through
     }
 
     /** Strip HTML and truncate for push body / placeholder use. */
@@ -668,14 +676,17 @@ public class DoubtNotificationService {
         final String themeColor;
         final String fromEmail;
         final String fromName;
+        /** {{support_email}}: the institute's contact address, else the sender address. */
+        final String supportEmail;
 
         InstituteContext(String instituteId, String instituteName, String themeColor,
-                         String fromEmail, String fromName) {
+                         String fromEmail, String fromName, String supportEmail) {
             this.instituteId = instituteId == null ? "" : instituteId;
             this.instituteName = instituteName == null ? "" : instituteName;
             this.themeColor = themeColor == null ? FALLBACK_THEME_COLOR : themeColor;
             this.fromEmail = fromEmail == null ? FALLBACK_SUPPORT_EMAIL : fromEmail;
             this.fromName = fromName;
+            this.supportEmail = supportEmail == null || supportEmail.isBlank() ? this.fromEmail : supportEmail;
         }
     }
 

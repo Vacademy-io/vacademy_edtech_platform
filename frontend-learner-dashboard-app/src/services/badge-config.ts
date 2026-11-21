@@ -27,7 +27,8 @@ export type BadgeTriggerType =
   | "course_completion" // any course completion % >= threshold
   | "assessment_score" // best assessment score % >= threshold
   | "live_session_count" // total live classes attended >= threshold
-  | "live_session_streak"; // live classes attended in a row (no misses) >= threshold
+  | "live_session_streak" // live classes attended in a row (no misses) >= threshold
+  | "course_activity_count"; // course slides marked "Count as engagement" completed >= threshold
 
 export interface BadgeDefinitionConfig {
   id: string;

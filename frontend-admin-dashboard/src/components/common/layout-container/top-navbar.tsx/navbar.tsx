@@ -104,6 +104,7 @@ import { dueLabel, useDueFollowupReminders } from '@/components/shared/leads/fol
 import { useFollowUpFeatures } from '@/components/shared/leads/follow-up-fields';
 import { Alarm } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
+import { PageAskButton } from '@/components/vacademy-assistant/PageAskButton';
 
 export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolean }) {
     const queryClient = useQueryClient();
@@ -477,6 +478,8 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                 >
                     {navHeading}
                 </div>
+                {/* Questions about this page for the assistant (leads, learners, fees, tests) */}
+                <PageAskButton compact={isCompact} />
             </div>
 
             <div className="flex shrink-0 items-center gap-2 text-neutral-600 md:gap-6">

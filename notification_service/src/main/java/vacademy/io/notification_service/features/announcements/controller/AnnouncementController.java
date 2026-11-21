@@ -28,22 +28,27 @@ import java.util.Map;
 @RequestMapping("/notification-service/v1/announcements")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*") // For internal service communication
+@CrossOrigin(origins = "*")
 @Validated
 public class AnnouncementController {
 
     private final AnnouncementService announcementService;
     private final EmailConfigurationService emailConfigurationService;
     private final AnnouncementDeliveryService deliveryService;
-    // Everything except creation is an admin-dashboard call and checks its caller; creation
-    // stays open for the services that POST announcements without a user token.
+    // Every endpoint here is a signed-in staff call and checks its caller. Services create
+    // announcements through AnnouncementInternalController with service credentials.
     private final AnnouncementAccessGuard accessGuard;
 
     /**
-     * Create a new announcement - Main API for other services
+     * Create a new announcement as a staff member of the request's institute. The creator id and
+     * role are taken from the caller's token (see AnnouncementAccessGuard#prepareCreateRequest).
      */
     @PostMapping
-    public ResponseEntity<AnnouncementResponse> createAnnouncement(@Valid @RequestBody CreateAnnouncementRequest request) {
+    public ResponseEntity<AnnouncementResponse> createAnnouncement(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
+            @Valid @RequestBody CreateAnnouncementRequest request) {
+        accessGuard.prepareCreateRequest(user, clientId, request);
         log.info("Creating announcement: {} for institute: {}", request.getTitle(), request.getInstituteId());
 
         try {
@@ -724,7 +729,14 @@ public class AnnouncementController {
     }
 
     @PostMapping("/multiple")
-    public ResponseEntity<String> createAnnouncements(@Valid @RequestBody List<CreateAnnouncementRequest> requests) {
+    public ResponseEntity<String> createAnnouncements(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
+            @Valid @RequestBody List<CreateAnnouncementRequest> requests) {
+        // Check every item before creating any, so a refused item never leaves the others half-sent.
+        for (CreateAnnouncementRequest request : requests) {
+            accessGuard.prepareCreateRequest(user, clientId, request);
+        }
 
         for(CreateAnnouncementRequest request:requests){
             try {

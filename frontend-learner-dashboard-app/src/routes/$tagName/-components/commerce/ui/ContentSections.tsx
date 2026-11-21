@@ -5,7 +5,7 @@
  * links all come from the page JSON, in the site's base language, translated by the site
  * dictionary like every other section.
  */
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { CaretDown, EnvelopeSimple, MagnifyingGlass, MapPin, Phone, Play, Storefront, WhatsappLogo } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { isSpamSubmission, submitWebsiteLead } from '../../../-utils/website-lead';
@@ -36,37 +36,33 @@ import type { MessageKey } from '../i18n';
 import { ShopHead } from './Head';
 import { useCategoryTree } from './queries';
 import { ShopLink, useCommerceSite, useShopNavigate, whatsappLink } from './site';
+import { useText } from './text';
 
 type Section = React.FC<{ props: Props }>;
-
-/** Authored text in the visitor's language. */
-const useText = () => {
-    const { siteT } = useCommerceSite();
-    return (value: unknown, max?: number) => siteT(str(value, max));
-};
 
 const contact = (method: 'whatsapp' | 'call' | 'email' | 'directions', placement: string) => () =>
     sendCommerceEvent({ name: 'contact', method, placement });
 
 /** A link from page data: a page of this site, an anchor, or an outside address (new tab). */
-export const ActionLink: React.FC<{ to: string; className?: string; children: React.ReactNode; onClick?: () => void }> = ({
+export const ActionLink: React.FC<{ to: string; className?: string; children: React.ReactNode; onClick?: () => void; label?: string }> = ({
     to,
     className,
     children,
     onClick,
+    label,
 }) => {
     const kind = linkKind(to);
     if (kind === 'invalid') return null;
     if (kind === 'site') {
         return (
-            <ShopLink to={siteRoute(to)} className={className} onClick={onClick}>
+            <ShopLink to={siteRoute(to)} className={className} onClick={onClick} aria-label={label}>
                 {children}
             </ShopLink>
         );
     }
     const web = /^https?:/i.test(to);
     return (
-        <a href={to} className={className} onClick={onClick} {...(web ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
+        <a href={to} className={className} onClick={onClick} aria-label={label} {...(web ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
             {children}
         </a>
     );
@@ -83,7 +79,7 @@ const CtaButton: React.FC<{ value: Cta | null; primary?: boolean; className?: st
 };
 
 /** Eyebrow, heading, intro and a "see all" link, as every block opens. */
-const Intro: React.FC<{ props: Props; level?: 1 | 2; center?: boolean; link?: boolean }> = ({ props, level = 2, center, link = true }) => {
+export const Intro: React.FC<{ props: Props; level?: 1 | 2; center?: boolean; link?: boolean }> = ({ props, level = 2, center, link = true }) => {
     const tx = useText();
     const eyebrow = tx(props.eyebrow, 80);
     const title = tx(props.title, 200);
@@ -105,7 +101,10 @@ const Intro: React.FC<{ props: Props; level?: 1 | 2; center?: boolean; link?: bo
     );
 };
 
-const Img: React.FC<{ src: string; alt?: string; className?: string; eager?: boolean; width?: number; height?: number }> = ({
+/** An address the Img below will draw: an absolute http(s) URL or a site path. */
+const isPicture = (src: string): boolean => /^https?:\/\//i.test(src) || (src.startsWith('/') && !src.startsWith('//'));
+
+export const Img: React.FC<{ src: string; alt?: string; className?: string; eager?: boolean; width?: number; height?: number }> = ({
     src,
     alt = '',
     className,
@@ -113,7 +112,7 @@ const Img: React.FC<{ src: string; alt?: string; className?: string; eager?: boo
     width = 800,
     height = 1000,
 }) =>
-    /^https?:\/\//i.test(src) || (src.startsWith('/') && !src.startsWith('//')) ? (
+    isPicture(src) ? (
         <img
             src={src}
             alt={alt}
@@ -134,9 +133,18 @@ export const AnnouncementBar: React.FC<{ props: Props }> = ({ props }) => {
     const text = tx(props.text, 200);
     if (!text || !withinDates(Date.now(), str(props.startDate), str(props.endDate))) return null;
     const route = str(props.route, 300);
+    // At most two lines on a phone (ellipsis after); a short strip is one 44px line. With a link,
+    // the whole strip is the tap target.
+    const line = <span className="cmx-announce__text">{text}</span>;
     return (
         <div className="cmx-announce">
-            <p className="cmx-announce__in m-0">{route ? <ActionLink to={route}>{text}</ActionLink> : text}</p>
+            {route && linkKind(route) !== 'invalid' ? (
+                <ActionLink to={route} className="cmx-announce__in cmx-announce__link">
+                    {line}
+                </ActionLink>
+            ) : (
+                <p className="cmx-announce__in m-0">{line}</p>
+            )}
         </div>
     );
 };
@@ -145,7 +153,9 @@ export const AnnouncementBar: React.FC<{ props: Props }> = ({ props }) => {
 
 /**
  * commerceHero: { eyebrow, title, text, image, imageAlt, caption, primary {label, route},
- * secondary {label, route}, stats [{ value, label }] }. The page's one H1; the photo loads first.
+ * secondary {label, route}, stats [{ value, label }], compactOnPhone }. The page's one H1; the photo
+ * loads first. compactOnPhone (default off): on a phone a wide 16:9 photo and no figures row, so the
+ * first products follow on the first screen.
  */
 const Hero: Section = ({ props }) => {
     const tx = useText();
@@ -154,7 +164,7 @@ const Hero: Section = ({ props }) => {
     const image = str(props.image, 600);
     const stats = records(props.stats, 4).filter((s) => str(s.value) && str(s.label));
     return (
-        <div className="cmx-hero">
+        <div className={cn('cmx-hero', props.compactOnPhone === true && 'cmx-hero--compact')}>
             {image && (
                 <div className="cmx-hero__media">
                     <Img src={image} alt={tx(props.imageAlt, 200)} eager width={1200} height={900} />
@@ -494,24 +504,56 @@ const PartnerTracks: Section = ({ props }) => {
     );
 };
 
-/** commerceSteps: { eyebrow, title, text, items [{ title, text }] }. Numbered, in order. */
+/**
+ * commerceSteps: { eyebrow, title, text, items [{ title, text, image, imageAlt }] }. Numbered, in
+ * order. With a photo on any item the cards carry it on top (4:3, two cards a row on a phone);
+ * without photos the block is as it always was.
+ */
 const Steps: Section = ({ props }) => {
     const tx = useText();
     const items = records(props.items, 8).filter((item) => str(item.title));
     if (items.length === 0) return null;
+    const photos = items.some((item) => isPicture(str(item.image, 600)));
+    const columns = photos && items.length % 3 === 0 ? 'cmx-cards--3' : items.length >= 4 ? 'cmx-cards--4' : 'cmx-cards--3';
     return (
         <>
             <Intro props={props} />
-            <ol className={cn('cmx-cards', items.length >= 4 ? 'cmx-cards--4' : 'cmx-cards--3')}>
-                {items.map((item, i) => (
-                    <li key={i} className="cmx-panel">
+            <ol className={cn('cmx-cards', columns, photos && 'cmx-cards--photos')}>
+                {items.map((item, i) => {
+                    const number = (
                         <span className="cmx-step__num" aria-hidden="true">
                             {i + 1}
                         </span>
-                        <h3 className="cmx-h3">{tx(item.title, 120)}</h3>
-                        {str(item.text) && <p className="cmx-p cmx-small">{tx(item.text, 400)}</p>}
-                    </li>
-                ))}
+                    );
+                    const words = (
+                        <>
+                            <h3 className="cmx-h3">{tx(item.title, 120)}</h3>
+                            {str(item.text) && <p className="cmx-p cmx-small">{tx(item.text, 400)}</p>}
+                        </>
+                    );
+                    if (!photos) {
+                        return (
+                            <li key={i} className="cmx-panel">
+                                {number}
+                                {words}
+                            </li>
+                        );
+                    }
+                    const image = str(item.image, 600);
+                    return (
+                        <li key={i} className="cmx-panel cmx-panel--media">
+                            {isPicture(image) && (
+                                <div className="cmx-img cmx-step__img">
+                                    <Img src={image} alt={tx(item.imageAlt, 200)} width={800} height={600} />
+                                </div>
+                            )}
+                            <div className="cmx-panel__body">
+                                {number}
+                                {words}
+                            </div>
+                        </li>
+                    );
+                })}
             </ol>
         </>
     );
@@ -886,14 +928,87 @@ const LeadForm: Section = ({ props }) => {
 
 /* ── floating WhatsApp, not found ─────────────────────────────────── */
 
+/** What the floating button must never sit on: anything a shopper taps. */
+const TAPPABLE = 'button, select, input, textarea, .cmx-btn, .cmx-chip, [role="button"]';
+
+/**
+ * The floating button steps aside while the page scrolls down and whenever a button, a field or
+ * a chip is under it (a card's "Add to cart" in the right column); it comes back on scroll-up or
+ * at rest when nothing is beneath it.
+ */
+const useFabAway = (ref: React.RefObject<HTMLElement | null>, on: boolean): boolean => {
+    const [away, setAway] = useState(false);
+    useEffect(() => {
+        if (!on || typeof window === 'undefined' || typeof document.elementsFromPoint !== 'function') return;
+        let lastY = window.scrollY;
+        let frame = 0;
+        let rest = 0;
+        const covers = (): boolean => {
+            const fab = ref.current;
+            if (!fab) return false;
+            // Hidden, the button only fades: its box is where it shows.
+            const box = fab.getBoundingClientRect();
+            const size = box.width || 48;
+            const right = box.right;
+            const bottom = box.bottom;
+            const points: Array<[number, number]> = [
+                [right - size / 2, bottom - size / 2],
+                [right - 4, bottom - 4],
+                [right - size + 4, bottom - 4],
+                [right - 4, bottom - size + 4],
+                [right - size + 4, bottom - size + 4],
+            ];
+            return points.some(([x, y]) =>
+                document.elementsFromPoint(x, y).some((el) => !fab.contains(el) && (el as Element).matches?.(TAPPABLE))
+            );
+        };
+        const settle = () => setAway(covers());
+        const onScroll = () => {
+            if (frame) return;
+            frame = requestAnimationFrame(() => {
+                frame = 0;
+                const y = window.scrollY;
+                const down = y > lastY && y > 120;
+                lastY = y;
+                if (down) setAway(true);
+                else setAway(covers());
+                window.clearTimeout(rest);
+                rest = window.setTimeout(settle, 180);
+            });
+        };
+        settle();
+        window.addEventListener('scroll', onScroll, { passive: true });
+        window.addEventListener('resize', settle);
+        return () => {
+            if (frame) cancelAnimationFrame(frame);
+            window.clearTimeout(rest);
+            window.removeEventListener('scroll', onScroll);
+            window.removeEventListener('resize', settle);
+        };
+    }, [ref, on]);
+    return away;
+};
+
 /** commerceWhatsAppButton: { message }. A round button at the bottom corner; no section of its own. */
 export const WhatsAppButton: React.FC<{ props: Props }> = ({ props }) => {
     const { t, config } = useCommerceSite();
     const tx = useText();
     const href = whatsappLink(config.whatsappNumber, tx(props.message, 300) || 'Namaste');
+    const ref = useRef<HTMLAnchorElement>(null);
+    const away = useFabAway(ref, !!href);
     if (!href) return null;
     return (
-        <a href={href} target="_blank" rel="noopener noreferrer" className="cmx-fab" aria-label={t('content.chat')} onClick={contact('whatsapp', 'floating')}>
+        <a
+            ref={ref}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn('cmx-fab', away && 'cmx-fab--away')}
+            aria-label={t('content.chat')}
+            aria-hidden={away || undefined}
+            tabIndex={away ? -1 : undefined}
+            onClick={contact('whatsapp', 'floating')}
+        >
             <WhatsappLogo size={30} weight="fill" aria-hidden="true" />
         </a>
     );

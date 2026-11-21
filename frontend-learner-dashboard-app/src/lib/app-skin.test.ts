@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
-import { applyAppSkinClass, isAppSkinSuspended, suspendAppSkin } from "./app-skin";
+import { applyAppSkinClass, isAppSkinSuspended, suspendAppSkin, uiSkinClasses } from "./app-skin";
 
 const root = () => document.documentElement;
 
@@ -54,5 +54,27 @@ describe("app skin suspension", () => {
     const release = suspendAppSkin();
     release();
     expect(root().className).toBe("light");
+  });
+});
+
+describe("Neon City", () => {
+  it("rides on Fun: both classes go on and come off together", () => {
+    expect(uiSkinClasses("neonCity")).toEqual(["ui-fun", "ui-neon-city"]);
+    expect(uiSkinClasses("fun")).toEqual(["ui-fun"]);
+    expect(uiSkinClasses("default")).toEqual([]);
+    expect(uiSkinClasses("unknown")).toEqual([]);
+    applyAppSkinClass(uiSkinClasses("neonCity"));
+    expect(root().className).toBe("light ui-fun ui-neon-city");
+    applyAppSkinClass(uiSkinClasses("fun"));
+    expect(root().className).toBe("light ui-fun");
+  });
+
+  it("an exam hold takes both off and puts both back", () => {
+    applyAppSkinClass(uiSkinClasses("neonCity"));
+    const release = suspendAppSkin();
+    expect(root().className).toBe("light");
+    release();
+    expect(root().classList.contains("ui-fun")).toBe(true);
+    expect(root().classList.contains("ui-neon-city")).toBe(true);
   });
 });

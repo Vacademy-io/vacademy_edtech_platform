@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -23,10 +24,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * The admin-dashboard announcement endpoints sit under a permitAll path (other services create
- * announcements without a user token), so they check the caller themselves: staff of the owning
- * institute for history/stats/delete, ADMIN for approve/reject — the role from the token, never
- * from the request.
+ * The admin-dashboard announcement endpoints need a token and check the caller themselves: staff
+ * of the owning institute for create/history/stats/delete, ADMIN for approve/reject — the role
+ * from the token, never from the request. Services create through /admin/** with service
+ * credentials, and /user-messages/** only serves the caller's own messages.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -38,6 +39,9 @@ class AnnouncementAccessApiTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
+    // The email-stats summary in the create response is Postgres-only SQL; on H2 it fails inside
+    // the create transaction and rolls it back.
+    @MockBean private vacademy.io.notification_service.features.notification_log.repository.NotificationLogRepository notificationLogRepository;
 
     private static final ResultMatcher REFUSED =
             result -> assertThat(result.getResponse().getStatus()).isIn(401, 403);
@@ -53,7 +57,7 @@ class AnnouncementAccessApiTest {
         return new CustomUserDetails(dto);
     }
 
-    private String createAnnouncement() throws Exception {
+    private CreateAnnouncementRequest request(String createdByRole) {
         CreateAnnouncementRequest req = new CreateAnnouncementRequest();
         req.setTitle("Access");
         var content = new CreateAnnouncementRequest.RichTextDataRequest();
@@ -62,19 +66,89 @@ class AnnouncementAccessApiTest {
         req.setContent(content);
         req.setInstituteId(INSTITUTE);
         req.setCreatedBy("creator");
-        req.setCreatedByRole("ADMIN");
+        req.setCreatedByRole(createdByRole);
         req.setTimezone("UTC");
         var recipient = new CreateAnnouncementRequest.RecipientRequest();
         recipient.setRecipientType("ROLE");
         recipient.setRecipientId("STUDENT");
         req.setRecipients(List.of(recipient));
         req.setModes(List.of(new CreateAnnouncementRequest.ModeRequest("SYSTEM_ALERT", Map.of("priority", "MEDIUM"))));
-        // Creation stays open: services POST without a user token.
+        return req;
+    }
+
+    private String createAnnouncement() throws Exception {
         var res = mockMvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(request("ADMIN")))
+                        .with(AnnouncementTestAuth.admin(INSTITUTE)))
                 .andExpect(status().isOk())
                 .andReturn();
         return objectMapper.readTree(res.getResponse().getContentAsString()).get("id").asText();
+    }
+
+    @Test
+    @DisplayName("create needs a staff login of the request's institute")
+    void createNeedsStaff() throws Exception {
+        String body = objectMapper.writeValueAsString(request("ADMIN"));
+
+        mockMvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(REFUSED);
+        mockMvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON).content(body)
+                .with(AnnouncementTestAuth.as(INSTITUTE, "student-1", "STUDENT"))).andExpect(REFUSED);
+        mockMvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON).content(body)
+                .with(AnnouncementTestAuth.admin("OTHER_INSTITUTE"))).andExpect(REFUSED);
+        mockMvc.perform(post(BASE + "/multiple").contentType(MediaType.APPLICATION_JSON)
+                .content("[" + body + "]")).andExpect(REFUSED);
+    }
+
+    @Test
+    @DisplayName("create takes the creator from the token; a non-admin cannot claim ADMIN")
+    void createTakesCreatorFromToken() throws Exception {
+        var res = mockMvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request("ADMIN")))
+                        .with(AnnouncementTestAuth.as(INSTITUTE, "teacher-9", "TEACHER")))
+                .andExpect(status().isOk())
+                .andReturn();
+        var json = objectMapper.readTree(res.getResponse().getContentAsString());
+        assertThat(json.get("createdBy").asText()).isEqualTo("teacher-9");
+        assertThat(json.get("createdByRole").asText()).isEqualTo("TEACHER");
+    }
+
+    @Test
+    @DisplayName("service creation needs the service credentials headers")
+    void serviceCreateNeedsClientCredentials() throws Exception {
+        String body = "[" + objectMapper.writeValueAsString(request("ADMIN")) + "]";
+        mockMvc.perform(post(BASE + "/admin/multiple").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(post(BASE + "/admin/multiple").contentType(MediaType.APPLICATION_JSON).content(body)
+                        .header("clientName", "no_such_client").header("Signature", "wrong"))
+                .andExpect(status().isUnauthorized());
+        // A user token is not service credentials.
+        mockMvc.perform(post(BASE + "/admin/multiple").contentType(MediaType.APPLICATION_JSON).content(body)
+                        .with(AnnouncementTestAuth.admin(INSTITUTE)))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get(BASE + "/admin/some-id/recovery-status")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("user messages need a token and only serve the caller's own id")
+    void userMessagesAreOwnOnly() throws Exception {
+        String own = "/notification-service/v1/user-messages/user/learner-1/dashboard-pins";
+        mockMvc.perform(get(own)).andExpect(REFUSED);
+        mockMvc.perform(get(own).with(AnnouncementTestAuth.as(INSTITUTE, "learner-2", "STUDENT")))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get(own).with(AnnouncementTestAuth.as(INSTITUTE, "learner-1", "STUDENT")))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", org.hamcrest.Matchers.containsString("private")));
+
+        String read = "/notification-service/v1/user-messages/interactions/read";
+        String body = objectMapper.writeValueAsString(Map.of(
+                "recipientMessageId", "missing", "userId", "learner-1", "interactionType", "READ"));
+        mockMvc.perform(post(read).contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(REFUSED);
+        mockMvc.perform(post(read).contentType(MediaType.APPLICATION_JSON).content(body)
+                .with(AnnouncementTestAuth.as(INSTITUTE, "learner-2", "STUDENT"))).andExpect(status().isForbidden());
+        // Someone else's (or no such) message: not found, nothing recorded.
+        mockMvc.perform(post(read).contentType(MediaType.APPLICATION_JSON).content(body)
+                .with(AnnouncementTestAuth.as(INSTITUTE, "learner-1", "STUDENT"))).andExpect(status().isNotFound());
     }
 
     @Test

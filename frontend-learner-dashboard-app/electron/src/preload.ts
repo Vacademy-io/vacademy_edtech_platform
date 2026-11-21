@@ -46,6 +46,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
 contextBridge.exposeInMainWorld('vacademyShell', {
   macAppStore: process.mas === true,
   windowsStore: process.windowsStore === true,
+  /**
+   * In-app BBB live class (contract: src/lib/live-class/native-live-class.ts, handlers:
+   * electron/src/live-class.ts). The web code hosts classes inside the app ONLY when
+   * `liveClass.version >= 1` is present, so shells without this keep opening classes in
+   * the system browser. Bump `version` only for a change the web code must gate on.
+   *
+   * This preload runs in the main window's top frame only (no nodeIntegrationInSubFrames
+   * anywhere), so the BBB <iframe> never sees vacademyShell or ipcRenderer.
+   */
+  liveClass: {
+    version: 1,
+    enterClass: (title?: string): Promise<void> =>
+      ipcRenderer.invoke('live-class:enter', typeof title === 'string' ? title : undefined),
+    exitClass: (): Promise<void> => ipcRenderer.invoke('live-class:exit'),
+  },
 });
 
 require('./rt/electron-rt');

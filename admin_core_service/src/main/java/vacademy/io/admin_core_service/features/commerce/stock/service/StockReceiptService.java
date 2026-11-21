@@ -15,6 +15,9 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import vacademy.io.admin_core_service.features.capabilities.service.CapabilityResolver;
 import vacademy.io.admin_core_service.features.commerce.audit.CommerceAuditService;
+import vacademy.io.admin_core_service.features.commerce.label.service.LabelQueueService;
+import vacademy.io.admin_core_service.features.commerce.stock.repository.StockOpsReadRepository;
+import vacademy.io.admin_core_service.features.commerce.stock.repository.StockOpsReadRepository.ItemFacts;
 import vacademy.io.admin_core_service.features.commerce.catalogue.enums.ProductStatus;
 import vacademy.io.admin_core_service.features.commerce.catalogue.enums.StockMode;
 import vacademy.io.admin_core_service.features.commerce.catalogue.enums.StockPolicy;
@@ -119,6 +122,22 @@ public class StockReceiptService {
     /** Flags open orders a receipt reversal left short; absent in tests built by hand. */
     @Autowired(required = false)
     private CommerceStockShortFlagger stockShortFlagger;
+
+    /** The label print queue (WP-40); absent in tests built by hand. */
+    private ObjectProvider<LabelQueueService> labelQueue;
+
+    @Autowired(required = false)
+    public void setLabelQueue(ObjectProvider<LabelQueueService> labelQueue) {
+        this.labelQueue = labelQueue;
+    }
+
+    /** Item names and measure for the receipt view (WP-40); absent in tests built by hand. */
+    private StockOpsReadRepository opsReadRepository;
+
+    @Autowired(required = false)
+    public void setOpsReadRepository(StockOpsReadRepository opsReadRepository) {
+        this.opsReadRepository = opsReadRepository;
+    }
 
     public StockReceiptService(StockReceiptRepository receiptRepository,
                                StockReceiptLineRepository lineRepository,
@@ -305,12 +324,15 @@ public class StockReceiptService {
                     ledger.post(posting.pieceId(piece.getId()).quantityDelta(1)
                             .idempotencyKey(StockLedgerService.receiptKey(line.getId(), piece.getId())).build());
                 }
+                queueLabels(instituteId, draft.locationId, receipt.getId(), line, facts,
+                        created.stream().map(CommercePiece::getId).toList(), actorUserId);
             } else {
                 StockPostResult result = ledger.post(posting.quantityDelta(draftLine.quantity)
                         .idempotencyKey(StockLedgerService.receiptKey(line.getId(), null)).build());
                 if (knownCost == null && result.movement() != null) {
                     ledger.stampReceiptLineCost(instituteId, line.getId(), result.movement().getUnitCost());
                 }
+                queueLabels(instituteId, draft.locationId, receipt.getId(), line, facts, List.of(), actorUserId);
             }
             if (facts.getLabelCode() == null) {
                 variantRepository.setLabelCodeIfMissing(instituteId, draftLine.packageSessionId,
@@ -325,6 +347,15 @@ public class StockReceiptService {
         auditService.record(instituteId, actorUserId, draft.locationId, AUDIT_RECEIPT_POST, REFERENCE_RECEIPT,
                 receipt.getId(), null, json(audit), null);
         return receipt;
+    }
+
+    /** The labels of a receipt line, in the receipt's transaction (WP-40). */
+    private void queueLabels(String instituteId, String locationId, String receiptId, StockReceiptLine line,
+                             VariantFacts facts, List<String> pieceIds, String actorUserId) {
+        LabelQueueService queue = labelQueue == null ? null : labelQueue.getIfAvailable();
+        if (queue != null) {
+            queue.queueReceiptLine(instituteId, locationId, receiptId, line, facts, pieceIds, actorUserId);
+        }
     }
 
     private void requireSource(String instituteId, Draft draft) {
@@ -420,6 +451,11 @@ public class StockReceiptService {
             }
             if (receiptRepository.markReversed(instituteId, receiptId, actorUserId) != 1) {
                 throw new ConflictException("RECEIPT_REVERSED: this receipt was reversed a moment ago");
+            }
+            LabelQueueService queue = labelQueue == null ? null : labelQueue.getIfAvailable();
+            if (queue != null) {
+                // Labels of goods that are no longer here are not printed.
+                queue.cancelPendingOfSource(instituteId, LabelQueueService.SOURCE_RECEIPT, receiptId, actorUserId);
             }
             auditService.record(instituteId, actorUserId, receipt.getLocationId(), AUDIT_RECEIPT_REVERSE,
                     REFERENCE_RECEIPT, receiptId, null, null, reasonText.trim());
@@ -569,11 +605,22 @@ public class StockReceiptService {
             return out;
         }
         List<Map<String, Object>> lines = new ArrayList<>();
-        for (StockReceiptLine line : lineRepository
-                .findByInstituteIdAndReceiptIdOrderByPackageSessionIdAscIdAsc(instituteId, receipt.getId())) {
+        List<StockReceiptLine> receiptLines = lineRepository
+                .findByInstituteIdAndReceiptIdOrderByPackageSessionIdAscIdAsc(instituteId, receipt.getId());
+        Map<String, ItemFacts> items = opsReadRepository == null || receiptLines.isEmpty() ? Map.of()
+                : opsReadRepository.itemFacts(instituteId,
+                receiptLines.stream().map(StockReceiptLine::getPackageSessionId).toList());
+        for (StockReceiptLine line : receiptLines) {
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("id", line.getId());
             row.put("package_session_id", line.getPackageSessionId());
+            ItemFacts item = items.get(line.getPackageSessionId());
+            row.put("sku", item == null ? null : item.sku());
+            row.put("product_name", item == null ? null : item.productName());
+            row.put("variant_name", item == null ? null : item.variantName());
+            row.put("stock_mode", item == null ? null : item.stockMode());
+            row.put("unit", item == null ? null : item.unit());
+            row.put("qty_scale", item == null ? null : item.qtyScale());
             row.put("qty_received", line.getQtyReceived());
             row.put("qty_billed", line.getQtyBilled() == null ? 0 : line.getQtyBilled());
             row.put("note", line.getNote());
@@ -670,7 +717,8 @@ public class StockReceiptService {
             line.packageSessionId = requireId(requested.getPackageSessionId(), "package_session_id");
             if (requested.getQuantity() == null || requested.getQuantity() < 1
                     || requested.getQuantity() > MAX_QUANTITY) {
-                throw new InvalidRequestException("quantity must be a whole number between 1 and " + MAX_QUANTITY);
+                throw new InvalidRequestException("VALIDATION: quantity must be a whole number between 1 and "
+                        + MAX_QUANTITY + " (base units)");
             }
             line.quantity = requested.getQuantity();
             if (requested.getUnitCost() != null) {

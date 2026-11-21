@@ -404,6 +404,9 @@ public class LiveSessionProviderController {
             @RequestParam String scheduleId,
             @RequestParam(defaultValue = "VIEWER") String role,
             @RequestParam(defaultValue = "false") boolean recreate,
+            // Learner-app platform (web/android/ios/electron). Old apps don't send it
+            // and always get openMode=EXTERNAL, i.e. today's behaviour.
+            @RequestParam(required = false) String client,
             @RequestAttribute("user") CustomUserDetails user) {
 
         // NOTE: BBB join intentionally keeps its original (pre-Zoom) behaviour —
@@ -592,10 +595,16 @@ public class LiveSessionProviderController {
         // emissions in one place.
         markBbbAttendance(schedule.getSessionId(), scheduleId, user.getUserId(), fullName, role, providerMeetingId);
 
+        // Only spend the extra BBB lookup when the app asked (client given).
+        String openMode = client == null || client.isBlank()
+                ? "EXTERNAL"
+                : bbbMeetingManager.resolveOpenMode(instituteId, client, providerMeetingId, schedule.getBbbServerId());
+
         return ResponseEntity.ok(Map.of(
                 "joinUrl", joinUrl,
                 "meetingId", providerMeetingId,
-                "role", role));
+                "role", role,
+                "openMode", openMode));
     }
 
     // -----------------------------------------------------------------------

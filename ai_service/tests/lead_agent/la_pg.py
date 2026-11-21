@@ -87,6 +87,17 @@ CREATE TABLE IF NOT EXISTS credit_transactions (
     external_reference_id VARCHAR(255),
     created_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE IF NOT EXISTS audience_response (
+    id            VARCHAR(255) PRIMARY KEY,
+    parent_mobile VARCHAR(50)
+);
+CREATE TABLE IF NOT EXISTS ai_call_result (
+    id               VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    institute_id     VARCHAR(255),
+    phone_number     VARCHAR(50),
+    duration_seconds INT,
+    created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 CREATE UNIQUE INDEX IF NOT EXISTS uq_credit_transactions_external_reference_id
     ON credit_transactions (external_reference_id) WHERE external_reference_id IS NOT NULL;
 CREATE TABLE IF NOT EXISTS institute_credits (
@@ -102,8 +113,8 @@ CREATE TABLE IF NOT EXISTS institute_credits (
 """
 
 TRUNCATE = ("TRUNCATE lead_fetch_task, lead_org_page, lead_candidate, lead_agent_day, lead_agent, lead_org, "
-            "lead_agent_worker, lead_suppression, lead_search_cache, credit_transactions, institute_credits, audience, "
-            "institutes")
+            "lead_agent_worker, lead_suppression, lead_search_cache, lead_search_cell, lead_search_frontier, "
+            "credit_transactions, institute_credits, audience, audience_response, ai_call_result, institutes")
 
 _open: List = []
 _server = {"obj": None}
@@ -142,6 +153,13 @@ def migration_sql(prefix: str) -> str:
     return hits[0].read_text(encoding="utf-8")
 
 
+def named_migration_sql(name: str) -> str:
+    hits = sorted(MIGRATIONS.glob(f"V*__{name}.sql"))
+    if len(hits) != 1:
+        pytest.skip(f"exactly one {name} migration expected, found {len(hits)}")
+    return hits[0].read_text(encoding="utf-8")
+
+
 def pg_session_factory():
     base = _server_url()
     if not base:
@@ -159,6 +177,8 @@ def pg_session_factory():
         c.exec_driver_sql(STUBS)
     with engine.begin() as c:  # V612 exactly as Flyway runs it (one transaction, SET LOCAL holds)
         c.exec_driver_sql(migration_sql("V612"))
+    with engine.begin() as c:  # the search frontier's tables (named, not numbered: the number may move at push)
+        c.exec_driver_sql(named_migration_sql("Lead_search_frontier"))
     factory = sessionmaker(bind=engine, future=True, expire_on_commit=False)
     state = {"closed": False}
 

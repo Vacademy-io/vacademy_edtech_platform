@@ -147,6 +147,28 @@ export const placeLabel = (
   return title || subtitle;
 };
 
+/**
+ * The stream and category a course sits in: the first stream (folder order)
+ * it is tagged into, then that stream's first category — the same rule the
+ * catalogue's stream tabs and cards use. `tagSet` = its lower-case tags and
+ * level keys (see courseTagSet).
+ */
+export const coursePlaceOf = <S extends Pick<CatalogStream, "tags" | "categories">>(
+  tagSet: ReadonlySet<string>,
+  streams: readonly S[],
+): { stream: S | null; category: S["categories"][number] | null } => {
+  const stream = streams.find((s) => s.tags.some((t) => tagSet.has(t))) ?? null;
+  const category = stream?.categories.find((c) => c.tags.some((t) => tagSet.has(t))) ?? null;
+  return { stream, category };
+};
+
+/** A course's tags (lower-case, level keys dropped) plus its level's keys — what coursePlaceOf matches. */
+export const courseTagSet = (tags: readonly string[] | null | undefined, levelName: string | null | undefined): Set<string> =>
+  new Set([
+    ...(tags || []).map(lower).filter((t) => t && !t.startsWith(LEVEL_KEY_PREFIX)),
+    ...levelKeys(levelName),
+  ]);
+
 export const coursePageContext = (input: {
   tags: string[] | null | undefined;
   levelName?: string | null;
@@ -174,10 +196,7 @@ export const coursePageContext = (input: {
     .filter(Boolean)
     .slice(0, 2);
 
-  // The first stream (folder order) the course is tagged into, then its first
-  // category — the same rule the catalogue's stream tabs and cards use.
-  const stream = input.streams.find((s) => s.tags.some((t) => tagSet.has(t))) ?? null;
-  const category = stream?.categories.find((c) => c.tags.some((t) => tagSet.has(t))) ?? null;
+  const { stream, category } = coursePlaceOf(tagSet, input.streams);
   const streamLabel = stream ? placeLabel(stream, input.labelMode, input.locale) : "";
   const categoryLabel = category ? placeLabel(category, input.labelMode, input.locale) : "";
 

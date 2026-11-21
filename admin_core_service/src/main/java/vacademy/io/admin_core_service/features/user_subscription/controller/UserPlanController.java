@@ -172,7 +172,7 @@ public class UserPlanController {
             @RequestParam("instituteId") String instituteId,
             @RequestBody(required = false) VoidPaymentRequestDTO request,
             @RequestAttribute("user") CustomUserDetails userDetails) {
-        instituteAccessValidator.validateUserAccess(userDetails, instituteId);
+        instituteAccessValidator.guardStaff("userPlans.voidPayment", userDetails, instituteId);
         return ResponseEntity.ok(paymentVoidService.voidPayment(
                 paymentLogId,
                 instituteId,
@@ -200,7 +200,7 @@ public class UserPlanController {
     public ResponseEntity<java.util.Map<String, Object>> canDeletePayments(
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails userDetails) {
-        instituteAccessValidator.validateUserAccess(userDetails, instituteId);
+        instituteAccessValidator.guardStaff("userPlans.canDeletePayments", userDetails, instituteId);
         boolean allowed = paymentDeletionService.canDelete(
                 userDetails != null ? userDetails.getUserId() : null, instituteId);
         return ResponseEntity.ok(java.util.Map.of("allowed", allowed));
@@ -211,7 +211,7 @@ public class UserPlanController {
             @PathVariable String paymentLogId,
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails userDetails) {
-        instituteAccessValidator.validateUserAccess(userDetails, instituteId);
+        instituteAccessValidator.guardStaff("userPlans.deletePayment", userDetails, instituteId);
         return ResponseEntity.ok(paymentDeletionService.deletePayment(
                 paymentLogId, instituteId, userDetails != null ? userDetails.getUserId() : null));
     }
@@ -306,7 +306,7 @@ public class UserPlanController {
             @PathVariable String userPlanId,
             @RequestParam String instituteId,
             @RequestAttribute("user") CustomUserDetails userDetails) {
-        instituteAccessValidator.validateUserAccess(userDetails, instituteId);
+        instituteAccessValidator.guardStaff("userPlans.previewManualRenewal", userDetails, instituteId);
         return ResponseEntity.ok(adminManualRenewalService.preview(userPlanId, instituteId));
     }
 
@@ -325,7 +325,7 @@ public class UserPlanController {
             @RequestParam String instituteId,
             @RequestBody ManualRenewalRequestDTO request,
             @RequestAttribute("user") CustomUserDetails userDetails) {
-        instituteAccessValidator.validateUserAccess(userDetails, instituteId);
+        instituteAccessValidator.guardStaff("userPlans.recordManualRenewal", userDetails, instituteId);
         return ResponseEntity.ok(adminManualRenewalService.renew(userPlanId, instituteId, request, userDetails));
     }
 
@@ -345,7 +345,7 @@ public class UserPlanController {
             @RequestParam String instituteId,
             @RequestBody ChangePlanEndDateRequestDTO request,
             @RequestAttribute("user") CustomUserDetails userDetails) {
-        instituteAccessValidator.validateUserAccess(userDetails, instituteId);
+        instituteAccessValidator.guardStaff("userPlans.changePlanEndDate", userDetails, instituteId);
         return ResponseEntity.ok(adminManualRenewalService.changeEndDate(userPlanId, instituteId, request, userDetails));
     }
 

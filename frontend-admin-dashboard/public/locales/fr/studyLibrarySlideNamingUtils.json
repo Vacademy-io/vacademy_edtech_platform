@@ -12,6 +12,9 @@
         "assignment": "Devoir",
         "pdfDocument": "Document PDF",
         "slide": "Diapositive",
-        "quiz": "Quiz"
+        "quiz": "Quiz",
+        "flashcards": "Cartes mémoire",
+        "poll": "Sondage",
+        "game": "Jeu"
     }
 }

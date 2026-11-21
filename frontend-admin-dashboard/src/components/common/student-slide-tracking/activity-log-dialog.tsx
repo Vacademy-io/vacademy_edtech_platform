@@ -6,13 +6,20 @@ import { MyPagination } from '@/components/design-system/pagination';
 import {
     ACTIVITY_LOG_COLUMN_WIDTHS,
     ACTIVITY_RESPONSE_COLUMN_WIDTHS,
+    QUESTION_SLIDE_ACTIVITY_COLUMN_WIDTHS,
 } from '@/components/design-system/utils/constants/table-layout';
 import { usePaginationState } from '@/hooks/pagination';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     activityLogColumns,
     activityResponseTypeColumns,
+    questionSlideActivityColumns,
 } from '@/components/design-system/utils/constants/table-column-data';
+import {
+    questionSlideCorrectAnswer,
+    questionSlideQuestionName,
+    questionSlideResponseText,
+} from './question-slide-activity';
 import { useActivityStatsStore } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-stores/activity-stats-store';
 import { useContentStore } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-stores/chapter-sidebar-store';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -48,7 +55,7 @@ import { AssignmentAiEvaluator } from './assignment-ai-evaluator';
 import type { AssignmentAiEvaluation } from '@/services/study-library/slide-operations/assignment-ai-evaluation';
 import { getInstituteId } from '@/constants/helper';
 import { CbeSlideAttempts, type CbeSlideAttemptRow } from '@/components/common/cbe-review/cbe-slide-attempts';
-import { parseCbeConfig } from '@/components/cbe/types';
+import { htmlToPlainText, parseCbeConfig } from '@/components/cbe/types';
 import { parseCbeSlideResponse } from '@/routes/assessment/question-papers/-utils/cbe-question';
 
 interface AssignmentFileInfo {
@@ -575,6 +582,41 @@ const lookupOptionName = (q: QuizSlideQuestion | undefined, id: string): string 
     return id;
 };
 
+/**
+ * A Spreadsheet & Written Response answer inside a quiz attempt, as one line:
+ * "Spreadsheet: 14 cells · Document: IAS 38 prohibits…", then the AI feedback once marked.
+ */
+const cbeQuizAnswerSummary = (
+    row: NonNullable<ReturnType<typeof parseCbeSlideResponse>>,
+    cbeState: unknown
+): string => {
+    if (!row.answer) return '';
+    const parts = Object.values(row.answer.parts ?? {}).map((part) => {
+        if (part.kind === 'SPREADSHEET' && 'sheet' in part) {
+            const cells = (part.sheet?.sheets ?? []).reduce(
+                (sum, tab) => sum + Object.keys(tab.cells ?? {}).length,
+                0
+            );
+            return `Spreadsheet: ${cells} cells`;
+        }
+        const text = 'html' in part ? htmlToPlainText(part.html) : '';
+        return `Document: ${text.length > 120 ? `${text.slice(0, 120)}…` : text}`;
+    });
+    const status =
+        cbeState === 'EVALUATED'
+            ? row.evaluation?.feedback
+                ? `AI feedback: ${row.evaluation.feedback}`
+                : ''
+            : cbeState === 'FAILED'
+              ? 'AI check failed (learner can retry)'
+              : cbeState === 'NO_CHECKS_LEFT'
+                ? 'Not marked: AI checks used up'
+                : cbeState === 'UNATTEMPTED'
+                  ? 'Not marked: same as the starting template'
+                  : 'Waiting for AI check';
+    return [parts.join(' · '), status].filter(Boolean).join(' — ');
+};
+
 interface QuizQuestionRow {
     trackedId: string;
     questionId: string;
@@ -1089,6 +1131,7 @@ export const ActivityLogDialog = ({
             }));
         }
         if (activeItem?.source_type === 'QUESTION') {
+            const questionSlideAnswerKey = questionSlideCorrectAnswer(activeItem?.question_slide);
             transformedContent = activityLogs.content.map((item: ActivityContent) => {
                 // Spreadsheet & Written Response: {type, answer, evaluation} — shown as
                 // cards under the table, not as a selected-options string.
@@ -1114,6 +1157,7 @@ export const ActivityLogDialog = ({
                         cbeAttempt,
                     };
                 }
+                const responseJson = item.question_slides[0]?.response_json;
                 return {
                 activityDate: formatDateTime(item.start_time_in_millis).split(',')[0],
                 attemptNumber: item.question_slides[0]?.attempt_number,
@@ -1124,16 +1168,10 @@ export const ActivityLogDialog = ({
                     1000 /
                     60
                 ).toFixed(2)} mins`,
-                questionName: item.question_slides[0]?.response_json
-                    ? JSON.parse(item.question_slides[0]?.response_json || '')?.questionName
-                    : '',
-                response: item.question_slides[0]?.response_json
-                    ? JSON.parse(item.question_slides[0]?.response_json || '')
-                          ?.selectedOptions?.map(
-                              (option: { id: string; name: string }) => option.name
-                          )
-                          .join(',')
-                    : '',
+                questionName: questionSlideQuestionName(responseJson),
+                // Option labels are stored as editor HTML ("<p>9 J</p>").
+                response: questionSlideResponseText(responseJson),
+                correctAnswer: questionSlideAnswerKey,
                 responseStatus: item.question_slides[0]?.response_status,
                 };
             });
@@ -1197,7 +1235,13 @@ export const ActivityLogDialog = ({
                         // from the slide config.
                         let selectedAnswer = '';
                         let answerIds: string[] = [];
-                        if (
+                        // Spreadsheet & Written Response: a per-part summary of the answer and,
+                        // once the AI has marked it, its feedback. Never an option list.
+                        const cbeRow = parseCbeSlideResponse(qs.response_json);
+                        if (cbeRow) {
+                            selectedAnswer = cbeQuizAnswerSummary(cbeRow, parsed?.cbeState);
+                            answerIds = cbeRow.answer ? ['cbe-answer'] : [];
+                        } else if (
                             Array.isArray(parsed?.selectedOptions) &&
                             parsed.selectedOptions.length > 0
                         ) {
@@ -1655,10 +1699,10 @@ export const ActivityLogDialog = ({
                                 <div className="no-scrollbar mt-6 overflow-x-scroll px-4">
                                     <MyTable
                                         data={tableData}
-                                        columns={activityResponseTypeColumns}
+                                        columns={questionSlideActivityColumns}
                                         isLoading={isLoading}
                                         error={error}
-                                        columnWidths={ACTIVITY_RESPONSE_COLUMN_WIDTHS}
+                                        columnWidths={QUESTION_SLIDE_ACTIVITY_COLUMN_WIDTHS}
                                         currentPage={page}
                                     />
                                     {tableData.total_pages > 1 && (

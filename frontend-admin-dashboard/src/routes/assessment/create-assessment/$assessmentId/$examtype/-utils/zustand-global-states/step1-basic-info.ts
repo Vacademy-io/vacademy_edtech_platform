@@ -31,6 +31,12 @@ interface BasicInfoState {
         };
         subject?: string;
     };
+    /**
+     * The draft this wizard's step 1 created, and for which exam type. Saving step 1
+     * again (back from a later step) updates that draft instead of creating a second
+     * one. Cleared by reset() with the rest of the wizard's step 1 state.
+     */
+    savedDraft?: { assessmentId: string; examType?: string };
     setBasicInfo: (data: Partial<BasicInfoState>) => void;
     getBasicInfo: () => BasicInfoState;
     reset: () => void;
@@ -38,6 +44,7 @@ interface BasicInfoState {
 
 // ✅ Define the initial empty state
 const initialState: Omit<BasicInfoState, 'setBasicInfo' | 'getBasicInfo' | 'reset'> = {
+    savedDraft: undefined,
     assessmentPreview: undefined,
     reattemptCount: undefined,
     durationDistribution: undefined,

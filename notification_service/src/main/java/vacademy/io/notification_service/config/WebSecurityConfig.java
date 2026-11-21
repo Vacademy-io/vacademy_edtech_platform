@@ -52,9 +52,8 @@ public class WebSecurityConfig {
             "/notification-service/webjars/swagger-ui/**",
             "/notification-service/v1/**",
 
-            // Announcement system APIs - OPEN for internal service communication
-            "/notification-service/v1/announcements/**",
-            "/notification-service/v1/user-messages/**",
+            // Announcement system APIs. /v1/announcements/** and /v1/user-messages/** are NOT
+            // listed here: see the explicit rules in securityFilterChain.
             "/notification-service/v1/message-replies/**",
             "/notification-service/v1/institute-settings/**",
             // SSE streaming endpoints
@@ -88,7 +87,24 @@ public class WebSecurityConfig {
             "/notification-service/v1/email-sending/**",
             // Email inbox: every email the institute sent/received (attachments included) and
             // reply-as-the-institute. The controller further requires institute staff.
-            "/notification-service/v1/email-inbox/**"
+            "/notification-service/v1/email-inbox/**",
+            // Admin dashboard (and the admin assistant, which forwards the admin's token)
+            // screens: WhatsApp inbox, provider/channel setup, chatbot flows, WhatsApp and
+            // notification templates, sender verification, the communication timeline, email
+            // tracking and the notification hub. Every caller signs in; none of these is a
+            // provider webhook (those live under /v1/webhook/** and /webhook/v1/**).
+            "/notification-service/v1/inbox/**",
+            "/notification-service/v1/channel-mapping/**",
+            "/notification-service/v1/chatbot-flow/**",
+            "/notification-service/v1/whatsapp-templates/**",
+            "/notification-service/v1/templates/**",
+            "/notification-service/v1/email-verification/**",
+            "/notification-service/v1/communications/**",
+            "/notification-service/v1/email-tracking/**",
+            "/notification-service/v1/hub/**",
+            // Manual test push. The controller further requires a platform super admin.
+            // register and deactivate stay under the push-notifications permitAll.
+            "/notification-service/push-notifications/send-test"
     };
 
     @Autowired
@@ -130,6 +146,19 @@ public class WebSecurityConfig {
                     authz.requestMatchers(AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/notification-service/v1/institute-settings")).authenticated();
                     authz.requestMatchers(AntPathRequestMatcher.antMatcher(HttpMethod.DELETE, "/notification-service/v1/institute-settings/**")).authenticated();
                     authz.requestMatchers(AntPathRequestMatcher.antMatcher("/notification-service/v1/institute-settings/all")).authenticated();
+
+                    // Announcements. Service-to-service creation lives under /admin/** and is
+                    // checked by the controller against the clientName + Signature headers (the
+                    // same client table InternalAuthFilter uses). Every other announcement route is
+                    // a dashboard call and needs a JWT; the controllers then check the caller's role
+                    // in the institute. All registered ahead of the broad "/notification-service/v1/**"
+                    // permitAll below, which would otherwise swallow them.
+                    authz.requestMatchers(AntPathRequestMatcher.antMatcher("/notification-service/v1/announcements/admin/**")).permitAll();
+                    authz.requestMatchers(AntPathRequestMatcher.antMatcher("/notification-service/v1/announcements")).authenticated();
+                    authz.requestMatchers(AntPathRequestMatcher.antMatcher("/notification-service/v1/announcements/**")).authenticated();
+                    // A user's own messages and interactions: the controller takes the user id
+                    // from the token and refuses any other id.
+                    authz.requestMatchers(AntPathRequestMatcher.antMatcher("/notification-service/v1/user-messages/**")).authenticated();
 
                     // Use AntPathRequestMatcher for Ant-style pattern matching (compatible with
                     // Spring 6)

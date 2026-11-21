@@ -58,5 +58,31 @@
         "cancel": "Cancel",
         "deleting": "Deleting…",
         "delete": "Delete"
+    },
+    "builtIn": {
+        "name": "Built-in invoice layout",
+        "description": "Your invoices use this layout because you have no invoice PDF template of your own. Customize saves a copy you can edit; invoices look the same until you change it.",
+        "customize": "Customize",
+        "copyName": "Invoice (Standard Layout)",
+        "customized": "Copy saved, opening editor…",
+        "loadFailed": "Could not load the built-in layout. Please try again."
+    },
+    "htmlEditor": {
+        "back": "Back",
+        "namePlaceholder": "Template name",
+        "save": "Save",
+        "saving": "Saving…",
+        "tabs": {
+            "colours": "Colours",
+            "code": "HTML"
+        },
+        "coloursHint": "Every colour used in this template. Click one to change it everywhere it is used.",
+        "noColours": "No colours found in this template.",
+        "themeColour": "Institute theme colour",
+        "usedIn": "Used in: {{places}}",
+        "applyHint": "Applied when you close the picker.",
+        "codeHint": "Placeholders such as {{example}} are filled in when the invoice is generated.",
+        "previewHint": "Preview. Placeholders are shown as they are written.",
+        "previewTitle": "Invoice template preview"
     }
 }

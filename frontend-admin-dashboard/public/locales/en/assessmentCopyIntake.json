@@ -153,6 +153,7 @@
         "withCopy_other": "{{count}} students have submitted a copy",
         "noCopy_one": "{{count}} more attempt has no uploaded sheet and is left out",
         "noCopy_other": "{{count}} more attempts have no uploaded sheet and are left out",
+        "typedFromRowMenu": "This is an online test, so those attempts are typed answers, not uploaded copies. To mark one with AI, open that learner’s row menu (⋯) and choose Evaluate (Revaluate once marked) → Evaluate with AI.",
         "alreadyChecked_one": "{{count}} already checked by AI",
         "alreadyChecked_other": "{{count}} already checked by AI",
         "skipped": "Left as they are",

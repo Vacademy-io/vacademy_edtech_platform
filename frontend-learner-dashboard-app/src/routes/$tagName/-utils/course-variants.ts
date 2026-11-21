@@ -83,36 +83,52 @@ export interface VariantRow {
 }
 
 /**
- * The language a course's tags name: a tag that is EXACTLY a language's label,
- * code or match word ("Hindi", "हिन्दी", "en"), never a word inside a longer tag
- * ("English literature" is not English).
+ * Every language a course's tags name, in the site's order: a tag that is
+ * EXACTLY a language's label, code or match word ("Hindi", "हिन्दी", "en"),
+ * never a word inside a longer tag ("English literature" is not English). A
+ * course tagged "english,hindi" is in both.
  */
-export const languageOfTags = (
+export const languagesOfTags = (
   tags: string | null | undefined,
   languages: CourseLanguageOption[],
-): CourseLanguageOption | null => {
-  if (typeof tags !== "string" || !tags.trim()) return null;
+): CourseLanguageOption[] => {
+  if (typeof tags !== "string" || !tags.trim()) return [];
   const list = tags.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean);
-  if (!list.length) return null;
-  for (const lang of languages) {
+  if (!list.length) return [];
+  return languages.filter((lang) => {
     const tokens = [...(lang.match || []), lang.label, lang.code]
       .filter((t): t is string => typeof t === "string" && !!t.trim())
       .map((t) => t.toLowerCase().trim());
-    if (list.some((t) => tokens.includes(t))) return lang;
-  }
-  return null;
+    return list.some((t) => tokens.includes(t));
+  });
 };
 
-/**
- * The language a row is in: its level name ("Beginner Hindi") — or, for
- * institutes whose levels are formats (eBook, Short Film) and whose language
- * versions are separate courses, a course tag that is exactly a language.
- */
-export const languageOfRow = (
-  row: { level_name?: string | null; level?: string | null; comma_separeted_tags?: string | null },
+/** The first language (site order) a course's tags name — see languagesOfTags. */
+export const languageOfTags = (
+  tags: string | null | undefined,
   languages: CourseLanguageOption[],
-): CourseLanguageOption | null =>
-  languageOfLevel(row.level_name ?? row.level, languages) ?? languageOfTags(row.comma_separeted_tags, languages);
+): CourseLanguageOption | null => languagesOfTags(tags, languages)[0] ?? null;
+
+type LanguageRow = { level_name?: string | null; level?: string | null; comma_separeted_tags?: string | null };
+
+/**
+ * Every language a row is in: its level name's ("Beginner Hindi") — or, for
+ * institutes whose levels are formats (eBook, Short Film) and whose language
+ * versions are separate courses, each course tag that is exactly a language
+ * (a course taught in English and Hindi, tagged "english,hindi", is in both).
+ */
+export const languagesOfRow = (row: LanguageRow, languages: CourseLanguageOption[]): CourseLanguageOption[] => {
+  const level = languageOfLevel(row.level_name ?? row.level, languages);
+  return level ? [level] : languagesOfTags(row.comma_separeted_tags, languages);
+};
+
+/** The row's first language (see languagesOfRow): the one a single-language view names. */
+export const languageOfRow = (row: LanguageRow, languages: CourseLanguageOption[]): CourseLanguageOption | null =>
+  languagesOfRow(row, languages)[0] ?? null;
+
+/** Is the row in this language (one of its languages)? */
+export const rowInLanguage = (row: LanguageRow, code: string | null | undefined, languages: CourseLanguageOption[]): boolean =>
+  !!code && languagesOfRow(row, languages).some((l) => l.code === code);
 
 export interface CourseGroup<T extends VariantRow> {
   /** package_id — one card per course. */
@@ -177,26 +193,28 @@ export const groupCourseVariants = <T extends VariantRow>(
   for (const group of groups) {
     const present = new Set<string>();
     for (const v of group.variants) {
-      const lang = languageOfRow(v, opts.languages);
-      if (lang) present.add(lang.code);
+      for (const lang of languagesOfRow(v, opts.languages)) present.add(lang.code);
     }
     group.languages = opts.languages.filter((l) => present.has(l.code));
     if (opts.preferredLanguage) {
-      const preferred = group.variants.find(
-        (v) => languageOfRow(v, opts.languages)?.code === opts.preferredLanguage,
-      );
+      const preferred = variantForLanguage(group, opts.preferredLanguage, opts.languages);
       if (preferred) group.primary = preferred;
     }
   }
   return groups;
 };
 
-/** The course's row for a language, if it has one. */
+/**
+ * The course's row for a language, if it has one: a row in that language
+ * alone (or first) before a row that is in it among others.
+ */
 export const variantForLanguage = <T extends VariantRow>(
-  group: CourseGroup<T>,
+  group: Pick<CourseGroup<T>, "variants">,
   languageCode: string,
   languages: CourseLanguageOption[],
-): T | undefined => group.variants.find((v) => languageOfRow(v, languages)?.code === languageCode);
+): T | undefined =>
+  group.variants.find((v) => languageOfRow(v, languages)?.code === languageCode) ??
+  group.variants.find((v) => rowInLanguage(v, languageCode, languages));
 
 /** Does a row belong to any of the selected languages? An empty selection matches everything. */
 export const rowMatchesLanguages = (
@@ -205,8 +223,7 @@ export const rowMatchesLanguages = (
   languages: CourseLanguageOption[],
 ): boolean => {
   if (!selected.length) return true;
-  const lang = languageOfRow(row, languages);
-  return !!lang && selected.includes(lang.code);
+  return languagesOfRow(row, languages).some((l) => selected.includes(l.code));
 };
 
 /**

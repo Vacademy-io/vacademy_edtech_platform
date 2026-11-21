@@ -128,6 +128,8 @@
         "workflow": "أُرسلت بواسطة سير العمل «{{name}}»",
         "workflowUnnamed": "أُرسلت بواسطة سير عمل",
         "chatbotFlow": "أُرسلت بواسطة تدفق روبوت المحادثة «{{name}}»",
-        "chatbotFlowUnnamed": "أُرسلت بواسطة تدفق روبوت محادثة"
+        "chatbotFlowUnnamed": "أُرسلت بواسطة تدفق روبوت محادثة",
+        "adminResend": "أعاد إرسالها {{name}}",
+        "adminResendUnnamed": "أعاد إرسالها أحد المسؤولين"
     }
 }

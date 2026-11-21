@@ -25,11 +25,12 @@ import { readSearchParam, withSearchParams } from '../../../-utils/catalogue-url
 import type { Price, ProductDetail, Stock, Variant } from '../api/types';
 import { COMMERCE_STALE_MS } from '../api/client';
 import type { CommerceReassuranceItem } from '../config';
-import { formatMoney, formatUnits, lineAmount, perUnitAmount } from '../logic/format';
+import { formatMoney, formatUnits, lineAmount, perUnitAmount, quantityText, unitLabel } from '../logic/format';
 import { IMAGE_SIZES, orderGallery, ratioClass, thumbUrl } from '../logic/media';
 import { leadImageUrl, productHead } from '../edge/commerce-edge';
 import { sendCommerceEvent } from '../logic/events';
 import { activeVariant, initialSelection, selectValue, type Selection } from '../logic/options';
+import { checkLength } from '../logic/length';
 import { clampQuantity, isMeasured, lengthChoices, quantityRules, stockView, type QuantityRules } from '../logic/stock';
 import { hasMessage } from '../i18n';
 import { apiPathTo } from '../routes';
@@ -37,30 +38,34 @@ import { useCommerceCart } from '../state/cart-store';
 import { Gallery } from './Gallery';
 import { ShopHead, useEdgePage } from './Head';
 import { OptionPicker } from './Options';
-import { EmptyState, ErrorState, Layer, PriceText, ProductImage, QuantityStepper, isNotFound, shouldRetry, unitLabel } from './primitives';
+import { EmptyState, ErrorState, Layer, PriceText, ProductImage, QuantityStepper, isNotFound, shouldRetry } from './primitives';
 import { ProductRail } from './ProductCard';
 import { useProduct, useProductRail } from './queries';
 import { ShopLink, useCommerceSite, whatsappLink } from './site';
 
 /* ── stock line ───────────────────────────────────────────────────── */
 
-const StockLine: React.FC<{ stock: Stock | null | undefined; product: ProductDetail }> = ({ stock, product }) => {
+const StockLine: React.FC<{
+    stock: Stock | null | undefined;
+    product: ProductDetail;
+    /** Less is left than the smallest amount sold (0.4 m of a cloth cut in steps of 0.5 m). */
+    soldOut?: boolean;
+}> = ({ stock, product, soldOut }) => {
     const { t } = useCommerceSite();
     const view = stockView(stock);
     const measured = isMeasured(product.qty_scale);
     let text = '';
     let tone = 'cmx-ok';
-    if (view.kind === 'out') {
+    if (view.kind === 'out' || soldOut) {
         text = t('product.stock.out');
         tone = 'cmx-bad';
     } else if (view.kind === 'single') {
         text = t('product.stock.single');
         tone = '';
     } else if (view.kind === 'low' && view.left !== null) {
-        const count = formatUnits(view.left, product.qty_scale);
         text = measured
-            ? t('product.stock.lowMeasured', { count, unit: unitLabel(t, product.unit, true) })
-            : t('product.stock.low', { count });
+            ? t('product.stock.lowMeasured', { count: quantityText(view.left, product.qty_scale, product.unit, t) })
+            : t('product.stock.low', { count: formatUnits(view.left, product.qty_scale) });
         tone = '';
     } else if (view.kind === 'made_to_order') {
         text = view.leadTimeDays ? t('product.stock.mtoDays', { days: view.leadTimeDays }) : t('product.stock.mto');
@@ -83,24 +88,65 @@ const LengthPicker: React.FC<{
     price: Price | null | undefined;
     rules: QuantityRules;
     quantity: number;
+    /** A length that can be bought, in base units; 0 while the typed length cannot be bought. */
     onChange(quantity: number): void;
 }> = ({ product, price, rules, quantity, onChange }) => {
     const { t, config } = useCommerceSite();
     const scale = Math.max(1, product.qty_scale);
     const unitShort = unitLabel(t, product.unit, true);
     const presets = useMemo(() => lengthChoices(config.lengthPresets, scale, rules), [config.lengthPresets, scale, rules]);
+    const presetKey = presets.map((p) => p.quantity).join(',');
     const isPreset = presets.some((p) => p.quantity === quantity);
     const [custom, setCustom] = useState(!isPreset && presets.length > 0);
     const [text, setText] = useState(formatUnits(quantity, scale));
+    // The quantity the shopper's own typing produced: that change must not rewrite the box.
+    const typed = useRef<number | null>(null);
     const inputId = useId();
-    useEffect(() => setText(formatUnits(quantity, scale)), [quantity, scale]);
+    const problemId = `${inputId}-problem`;
+    // The box and the chips follow the quantity: a new variant that starts at a length no chip
+    // offers opens the box, a chip or a picked length shows in it. Keyed on the preset numbers,
+    // so a background refetch does not close a box the shopper just opened.
+    useEffect(() => {
+        if (typed.current !== null && typed.current === quantity) return;
+        typed.current = null;
+        setCustom(!isPreset && presets.length > 0);
+        setText(formatUnits(quantity, scale));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [quantity, presetKey, scale]);
     const perUnit = formatMoney(perUnitAmount(price?.amount, scale), price?.currency);
-    const commit = () => {
-        const wanted = Math.round(Number(text.replace(',', '.')) * scale);
-        const next = clampQuantity(Number.isFinite(wanted) && wanted > 0 ? wanted : rules.step, rules);
-        onChange(next);
-        setText(formatUnits(next, scale));
+    const lengthText = (base: number) => quantityText(base, scale, product.unit, t);
+    const check = checkLength(text, scale, rules);
+    // Every keystroke decides the button: a length that cannot be bought as typed buys nothing
+    // (never one step, never a rounded length).
+    const type = (value: string) => {
+        setText(value);
+        const next = checkLength(value, scale, rules);
+        const base = next.kind === 'ok' ? next.base : 0;
+        typed.current = base;
+        onChange(base);
     };
+    // Enter or leaving the box: a typed length a chip offers presses that chip.
+    const commit = () => {
+        if (check.kind !== 'ok') return;
+        setText(formatUnits(check.base, scale));
+        if (presets.some((p) => p.quantity === check.base)) setCustom(false);
+    };
+    const pick = (base: number) => {
+        typed.current = null;
+        onChange(base);
+    };
+    // The smallest whole-unit length that can be cut, as an example ("1 m", "1.2 m" at a 0.3 m step).
+    const example = lengthText(Math.ceil(scale / rules.step) * rules.step);
+    const choices = check.kind === 'step' ? check.choices : check.kind === 'max' && check.max > 0 ? [check.max] : [];
+    const problem =
+        check.kind === 'format'
+            ? t('product.length.format', { example })
+            : check.kind === 'step'
+              ? t('product.length.offStep', { step: lengthText(rules.step) })
+              : check.kind === 'max'
+                ? t('product.length.max', { max: lengthText(check.max) })
+                : null;
+    const pricedAmount = check.kind === 'ok' ? formatMoney(lineAmount(price?.amount, check.base), price?.currency) : null;
     return (
         <fieldset className="m-0 flex flex-col gap-3 border-0 p-0">
             <legend className="cmx-option__label">
@@ -119,7 +165,7 @@ const LengthPicker: React.FC<{
                                 aria-pressed={!custom && quantity === preset.quantity}
                                 onClick={() => {
                                     setCustom(false);
-                                    onChange(preset.quantity);
+                                    pick(preset.quantity);
                                 }}
                             >
                                 <span>
@@ -139,16 +185,18 @@ const LengthPicker: React.FC<{
                     <label htmlFor={inputId} className="cmx-sr">
                         {t('product.length.customLabel', { unit: unitLabel(t, product.unit) })}
                     </label>
+                    {/* Text, not a number box: a number box reads "2,5" and Hindi digits as empty. */}
                     <input
                         id={inputId}
                         className="cmx-input w-28"
-                        type="number"
+                        type="text"
                         inputMode="decimal"
-                        min={rules.step / scale}
-                        max={rules.max !== null ? rules.max / scale : undefined}
-                        step={rules.step / scale}
+                        autoComplete="off"
+                        enterKeyHint="done"
                         value={text}
-                        onChange={(e) => setText(e.target.value)}
+                        aria-invalid={problem ? true : undefined}
+                        aria-describedby={problem ? problemId : undefined}
+                        onChange={(e) => type(e.target.value)}
                         onBlur={commit}
                         onKeyDown={(e) => e.key === 'Enter' && commit()}
                     />
@@ -156,6 +204,23 @@ const LengthPicker: React.FC<{
                     <span className="cmx-small cmx-muted">
                         {t('product.length.step', { step: formatUnits(rules.step, scale), unit: unitShort })}
                     </span>
+                    {pricedAmount && (
+                        <p className="cmx-small m-0 basis-full tabular-nums" data-testid="cmx-length-total">
+                            {t('product.length.total', { length: lengthText(check.kind === 'ok' ? check.base : quantity), price: pricedAmount })}
+                        </p>
+                    )}
+                    {problem && (
+                        <div className="flex basis-full flex-wrap items-center gap-2">
+                            <p id={problemId} className="cmx-small cmx-bad m-0 font-medium" role="status">
+                                {problem}
+                            </p>
+                            {choices.map((base) => (
+                                <button key={base} type="button" className="cmx-chip" data-length-choice="" onClick={() => pick(base)}>
+                                    {lengthText(base)}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
         </fieldset>
@@ -452,7 +517,32 @@ const ProductSkeleton: React.FC = () => {
     );
 };
 
-export const ProductTemplate: React.FC<{ slug: string; sections: readonly string[] }> = ({ slug, sections }) => {
+/**
+ * The product's short description under the buy area: two lines and "Read more", so a long
+ * spec list never pushes the price and the button below the first screen.
+ */
+const ShortDescription: React.FC<{ text: string }> = ({ text }) => {
+    const { t } = useCommerceSite();
+    const [open, setOpen] = useState(false);
+    const long = text.length > 90 || text.includes('\n');
+    return (
+        <div className="cmx-pdp__summary">
+            <p className={cn('cmx-body m-0', long && !open && 'cmx-clamp cmx-clamp--2')}>{text}</p>
+            {long && (
+                <button type="button" className="cmx-link cmx-small" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+                    {open ? t('listing.readLess') : t('listing.readMore')}
+                </button>
+            )}
+        </div>
+    );
+};
+
+export const ProductTemplate: React.FC<{
+    slug: string;
+    sections: readonly string[];
+    /** The site's category bar is in the header: the back link is left to it on phones and tablets. */
+    categoryBar?: boolean;
+}> = ({ slug, sections, categoryBar = false }) => {
     const { t, config, absoluteUrl, siteT } = useCommerceSite();
     const query = useProduct(slug);
     const product = query.data;
@@ -477,15 +567,23 @@ export const ProductTemplate: React.FC<{ slug: string; sections: readonly string
     const view = stockView(stock);
     const scale = Math.max(1, product?.qty_scale || 1);
     const measured = isMeasured(scale);
-    const rules = useMemo(() => quantityRules(product?.qty_step || 1, stock), [product?.qty_step, stock]);
+    // Goods sold by length stop at the most one order may hold (25 m by default), in base units.
+    const lineMax = measured ? config.maxOrderQuantity * scale : null;
+    const rules = useMemo(() => quantityRules(product?.qty_step || 1, stock, lineMax), [product?.qty_step, stock, lineMax]);
     const piece = (product?.stock_mode || '').toUpperCase() === 'PIECE' || view.kind === 'single';
     const [quantity, setQuantity] = useState(1);
     // A new variant starts at the smallest quantity (one unit of length for cloth, when the step allows).
     // Keyed on the numbers, not on the rules object: a background refetch of the same product
     // must not throw away the quantity the shopper chose.
+    // Less left than one step: nothing can be bought, the quantity is 0 and the button is off.
+    const soldOut = view.kind === 'out' || rules.max === 0;
     useEffect(() => {
+        if (rules.max === 0) {
+            setQuantity(0);
+            return;
+        }
         const start = measured && scale % rules.step === 0 ? scale : rules.step;
-        setQuantity(clampQuantity(start, rules) || rules.step);
+        setQuantity(clampQuantity(start, rules));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [variant?.id, measured, scale, rules.step, rules.max]);
 
@@ -526,6 +624,7 @@ export const ProductTemplate: React.FC<{ slug: string; sections: readonly string
         unitPrice: p?.amount,
         quantity: base,
         qtyScale: scale,
+        unit: product?.unit,
         variant: v?.label,
         category: categoryRef?.name,
     });
@@ -564,8 +663,9 @@ export const ProductTemplate: React.FC<{ slug: string; sections: readonly string
 
     const has = (section: string) => sections.includes(section);
     const category = (product.collections || []).find((c) => (c.kind || '').toUpperCase() === 'CATEGORY');
-    const canBuy = !!variant && view.purchasable && quantity > 0 && typeof price?.amount === 'number';
-    const total = formatMoney(lineAmount(price?.amount, measured ? quantity : 1), price?.currency);
+    const canBuy = !!variant && view.purchasable && !soldOut && quantity > 0 && typeof price?.amount === 'number';
+    // Nothing to buy, no amount: a price is never drawn as zero.
+    const total = soldOut || quantity <= 0 ? null : formatMoney(lineAmount(price?.amount, measured ? quantity : 1), price?.currency);
     const whatsapp = whatsappLink(config.whatsappNumber, t('product.whatsappText', { name: product.name, url: absoluteUrl(`p/${product.slug}`) }));
     const badges = (product.badges || []).filter((code) => code !== 'ONLY_N_LEFT' && hasMessage(`badge.${code}`));
 
@@ -610,7 +710,7 @@ export const ProductTemplate: React.FC<{ slug: string; sections: readonly string
             disabled={!canBuy}
         >
             {/* The bar already shows the amount beside the button: no second copy inside it. */}
-            {view.kind === 'out' ? t('product.stock.out') : measured && total && !compact ? t('product.addToCartPrice', { price: total }) : t('product.addToCart')}
+            {soldOut ? t('product.stock.out') : measured && total && !compact ? t('product.addToCartPrice', { price: total }) : t('product.addToCart')}
         </button>
     );
 
@@ -622,13 +722,18 @@ export const ProductTemplate: React.FC<{ slug: string; sections: readonly string
                 canonical={absoluteUrl(`p/${product.slug}`)}
                 head={head}
             />
-            <article className="cmx-pdp">
+            {/* With the site's category bar on, a phone gets the compact layout: the price and the
+                button on the first screen (theme/commerce.css .cmx-pdp--compact). */}
+            <article className={cn('cmx-pdp', categoryBar && 'cmx-pdp--compact')}>
                 <div className="cmx-pdp__media">
                     {has('gallery') && <Gallery media={gallery} name={product.name} resetKey={`${product.id}:${options.length > 0 ? variant?.id || '' : ''}`} />}
                 </div>
                 <div className="cmx-pdp__info">
                     {has('backLink') && category && (
-                        <ShopLink to={apiPathTo(category.path) || `c/${category.slug}`} className="cmx-small cmx-muted cmx-tap inline-flex items-center gap-1 self-start">
+                        <ShopLink
+                            to={apiPathTo(category.path) || `c/${category.slug}`}
+                            className={cn('cmx-small cmx-muted cmx-tap items-center gap-1 self-start', categoryBar ? 'hidden lg:inline-flex' : 'inline-flex')}
+                        >
                             <CaretLeft size={14} aria-hidden="true" />
                             {category.name ? t('product.back', { name: category.name }) : t('common.back')}
                         </ShopLink>
@@ -636,16 +741,17 @@ export const ProductTemplate: React.FC<{ slug: string; sections: readonly string
                     {has('title') && (
                         <header className="flex flex-col gap-2">
                             <h1 className="cmx-h1">{product.name}</h1>
-                            {product.short_description && <p className="cmx-body">{product.short_description}</p>}
                             {/* Cloth is priced per metre here; the length picker below shows the amount for a length. */}
-                            <PriceText
-                                price={price ? { ...price, from: !variant && !!price.from } : price}
-                                scale={scale}
-                                unit={product.unit}
-                                large
-                                showOff
-                            />
-                            <p className="cmx-small cmx-muted">{t('price.inclTax')}</p>
+                            <div className="cmx-pdp__price flex flex-col gap-2">
+                                <PriceText
+                                    price={price ? { ...price, from: !variant && !!price.from } : price}
+                                    scale={scale}
+                                    unit={product.unit}
+                                    large
+                                    showOff
+                                />
+                                <p className="cmx-small cmx-muted">{t('price.inclTax')}</p>
+                            </div>
                         </header>
                     )}
                     {has('badges') && (badges.length > 0 || view.kind !== 'unknown') && (
@@ -655,7 +761,7 @@ export const ProductTemplate: React.FC<{ slug: string; sections: readonly string
                                     {hasMessage(`badge.${code}`) ? t(`badge.${code}` as 'badge.NEW') : code}
                                 </span>
                             ))}
-                            <StockLine stock={stock} product={product} />
+                            <StockLine stock={stock} product={product} soldOut={soldOut} />
                         </div>
                     )}
                     {has('provenance') && product.origin && (
@@ -665,12 +771,12 @@ export const ProductTemplate: React.FC<{ slug: string; sections: readonly string
                         </p>
                     )}
                     {has('options') && options.length > 0 && <OptionPicker options={options} variants={variants} selection={selection} onSelect={select} />}
-                    {has('length') && measured && view.purchasable && (
+                    {has('length') && measured && view.purchasable && !soldOut && (
                         <LengthPicker product={product} price={price} rules={rules} quantity={quantity} onChange={setQuantity} />
                     )}
                     {has('buyBox') && (
                         <div ref={buyRef} className="flex flex-col gap-3">
-                            {!measured && !piece && view.purchasable && (
+                            {!measured && !piece && view.purchasable && !soldOut && (
                                 <div className="flex items-center gap-3">
                                     <span className="cmx-option__label mb-0">{t('product.qty')}</span>
                                     <QuantityStepper
@@ -686,13 +792,15 @@ export const ProductTemplate: React.FC<{ slug: string; sections: readonly string
                             )}
                             {buyButton()}
                             {whatsapp && (
-                                <a href={whatsapp} target="_blank" rel="noopener noreferrer" className={cn('cmx-btn cmx-btn--lg cmx-btn--block', view.kind === 'out' ? 'cmx-btn--primary' : 'cmx-btn--outline')}>
+                                <a href={whatsapp} target="_blank" rel="noopener noreferrer" className={cn('cmx-btn cmx-btn--lg cmx-btn--block', soldOut ? 'cmx-btn--primary' : 'cmx-btn--outline')}>
                                     <WhatsappLogo size={20} aria-hidden="true" />
                                     {t('product.askWhatsapp')}
                                 </a>
                             )}
                         </div>
                     )}
+                    {/* After the buy area: the price and the button come first on a phone's first screen. */}
+                    {has('title') && product.short_description && <ShortDescription text={product.short_description} />}
                     {has('pincode') && <PincodeCheck />}
                     {has('reassurance') && (
                         <div>

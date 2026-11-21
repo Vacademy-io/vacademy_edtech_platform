@@ -1,11 +1,12 @@
 import { createLazyFileRoute } from '@tanstack/react-router';
 import { LayoutContainer } from '@/components/common/layout-container/layout-container';
-import { CommerceComingSoonPage } from '@/routes/commerce/-components/CommerceComingSoonPage';
+import { InventoryPage } from '@/routes/commerce/inventory/-components/InventoryPage';
 
+/** I1: stock, movements, receive, transfers, counts, low stock and labels. */
 export const Route = createLazyFileRoute('/commerce/inventory/')({
     component: () => (
         <LayoutContainer>
-            <CommerceComingSoonPage navId="commerce-inventory" />
+            <InventoryPage />
         </LayoutContainer>
     ),
 });

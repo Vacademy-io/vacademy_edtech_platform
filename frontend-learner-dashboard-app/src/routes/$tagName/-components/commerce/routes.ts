@@ -135,3 +135,33 @@ export const withQuery = (to: string, params: Record<string, string | null | und
     const rest = search.toString();
     return `${pathname}${rest ? `?${rest}` : ''}`;
 };
+
+/**
+ * The page key the category bar is switched on by: "home" for the site's root, the fixed
+ * route's kind ("collection", "product", "search", "cart", "scan", "checkout"…), else the
+ * authored page's route ("shop", "our-story").
+ */
+export const commercePageKey = (segments: readonly string[]): string => {
+    const parts = segments.filter((s) => s !== '');
+    if (parts.length === 0) return 'home';
+    const route = parseCommerceRoute(parts);
+    if (route) return route.kind;
+    const first = decode(parts[0] || '').toLowerCase();
+    return first === 'homepage' ? 'home' : first;
+};
+
+/**
+ * A browser path as the segments after the site's base ("/<tag>" on a shared host, "" on a
+ * root-mounted one). A root-mounted site still answers on its tagged address, so a leading
+ * tag segment is dropped as well.
+ */
+export const siteSegments = (pathname: string, basePath: string, tagName?: string | null): string[] => {
+    let parts = (pathname || '').split('/').filter(Boolean);
+    const base = (basePath || '').split('/').filter(Boolean);
+    if (base.length > 0 && base.every((segment, i) => (parts[i] || '').toLowerCase() === segment.toLowerCase())) {
+        parts = parts.slice(base.length);
+    } else if (base.length === 0 && tagName && (parts[0] || '').toLowerCase() === tagName.toLowerCase()) {
+        parts = parts.slice(1);
+    }
+    return parts;
+};

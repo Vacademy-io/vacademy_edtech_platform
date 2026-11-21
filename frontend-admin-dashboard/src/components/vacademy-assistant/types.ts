@@ -8,13 +8,28 @@ export interface AssistantCapabilities {
     groups: Array<{ key: string; mode: 'READ' | 'WRITE'; tools: string[] }>;
 }
 
-export type AssistantActionStatus = 'pending' | 'working' | 'executed' | 'cancelled' | 'failed';
+/**
+ * `applying`: another Confirm of the same card is already running it. `expired`: the card can no
+ * longer be confirmed (it timed out, or its chat was reopened from the history).
+ */
+export type AssistantActionStatus =
+    | 'pending'
+    | 'working'
+    | 'applying'
+    | 'executed'
+    | 'cancelled'
+    | 'failed'
+    | 'expired';
 
 /** A proposed write awaiting the user's Confirm/Cancel (nonce-backed card). */
 export interface AssistantAction {
     actionId: string;
     summary: string;
     status: AssistantActionStatus;
+    /** What changes, one line each (e.g. a lead and its status from → to). */
+    details?: string[];
+    /** What the user should know before confirming (shown highlighted). */
+    warnings?: string[];
 }
 
 export interface AssistantMessage {
@@ -25,6 +40,10 @@ export interface AssistantMessage {
     streaming?: boolean;
     /** Present when role === 'action'. */
     action?: AssistantAction;
+    /** ISO time the message was written (shown as a subtle timestamp). */
+    createdAt?: string;
+    /** Follow-up questions offered after an assistant answer (at most three). */
+    suggestions?: string[];
 }
 
 /** `event: action_request` — the backend proposed a write and wants confirmation. */
@@ -33,6 +52,8 @@ export interface AssistantActionRequestData {
     tool: string;
     summary: string;
     expires_at?: string;
+    details?: string[];
+    warnings?: string[];
 }
 
 export type AssistantStatus = 'idle' | 'connecting' | 'streaming' | 'error';
@@ -49,6 +70,51 @@ export interface AssistantMessageData {
     content: string;
     metadata?: Record<string, unknown> | null;
     created_at?: string;
+    /** Follow-up questions for an assistant answer (also in metadata.suggestions). */
+    suggestions?: string[];
+}
+
+/** GET /assistant/sessions — one of the caller's chats. */
+export interface AssistantChatSummary {
+    id: string;
+    title: string;
+    last_active: string | null;
+    message_count: number;
+    is_open: boolean;
+}
+
+export interface AssistantChatList {
+    items: AssistantChatSummary[];
+    page: number;
+    page_size: number;
+    has_more: boolean;
+}
+
+/** GET /assistant/sessions/{id} — one chat as the panel shows it. */
+export interface AssistantChatView {
+    id: string;
+    title: string;
+    is_open: boolean;
+    last_active: string | null;
+    messages: Array<{
+        id: string;
+        role: 'user' | 'assistant' | 'action';
+        content: string;
+        created_at?: string | null;
+        suggestions?: string[] | null;
+        action?: {
+            summary: string;
+            status: 'pending' | 'applying' | 'executed' | 'cancelled' | 'failed' | 'expired';
+            details?: string[] | null;
+            warnings?: string[] | null;
+        } | null;
+    }>;
+}
+
+/** A past chat open in the panel: read-only until it is continued. */
+export interface AssistantPastChat {
+    id: string;
+    title: string;
 }
 
 /** `event: error` — a recoverable error (e.g. code 402 = out of credits). */

@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
     buildTree,
+    collectMatchingIds,
     filterTree,
     flattenTree,
     nodePath,
@@ -115,5 +116,27 @@ describe('pageTotals', () => {
             pages: 2,
         });
         expect(pageTotals(undefined)).toEqual({ elements: 0, pages: 0 });
+    });
+});
+
+describe('collectMatchingIds', () => {
+    const page = (ids: string[]) => ({
+        content: ids.map((id) => ({ question: { id }, node_ids: [], assessment_count: 0 })),
+    });
+
+    it('reads pages until one comes back short', async () => {
+        const fetchPage = vi
+            .fn()
+            .mockResolvedValueOnce(page(['a', 'b']))
+            .mockResolvedValueOnce(page(['c']));
+        expect(await collectMatchingIds(fetchPage, 10, 2)).toEqual(['a', 'b', 'c']);
+        expect(fetchPage).toHaveBeenNthCalledWith(1, 0, 2);
+        expect(fetchPage).toHaveBeenNthCalledWith(2, 1, 2);
+    });
+
+    it('stops at the cap', async () => {
+        const fetchPage = vi.fn().mockResolvedValue(page(['a', 'b']));
+        expect(await collectMatchingIds(fetchPage, 3, 2)).toEqual(['a', 'b', 'a']);
+        expect(fetchPage).toHaveBeenCalledTimes(2);
     });
 });

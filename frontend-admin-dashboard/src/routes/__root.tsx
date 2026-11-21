@@ -22,11 +22,13 @@ import {
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { VacademyAssistant } from '@/components/vacademy-assistant/VacademyAssistant';
 import { AssistDock } from '@/components/assist-dock/AssistDock';
+import { AssistantFab } from '@/components/assist-dock/AssistantFab';
 import { FollowUpReminderDialog } from '@/components/shared/leads/followup-reminders';
 import { QuickSettingsDialog } from '@/components/settings/quick-access/QuickSettingsDialog';
 import { EVALEZY_HOME, evalezyPathFor, isEvalezyMode } from '@/lib/evalezy-mode';
 import { isNative, shouldForceVimShell } from '@/native';
 import { setDeepLinkListener } from '@/native/deepLinks';
+import { isDemoStage } from '@/lib/demo-stage/bridge';
 
 const TanStackRouterDevtools =
     process.env.NODE_ENV === 'production'
@@ -82,6 +84,8 @@ const publicRoutes = [
     // the ?txn= handle, so the page handles sign-in itself (it stashes the txn
     // first). Nothing is granted without a verified session on the backend.
     '/mcp/authorize',
+    // Weekly planning email link: a token that can only send this week's topics.
+    '/plan-week',
 ];
 
 const isVimotionHost = () =>
@@ -225,7 +229,8 @@ export const Route = createRootRouteWithContext<{
         usePushNotifications();
 
         // The Evalezy shell is deliberately bare: no assistant, dock or popups.
-        if (isEvalezyMode()) {
+        // So is the public demo frame: the stage page brings its own guide.
+        if (isEvalezyMode() || isDemoStage()) {
             return (
                 <>
                     <NativeDeepLinks />
@@ -240,6 +245,8 @@ export const Route = createRootRouteWithContext<{
                 <Outlet />
                 <AssistDock />
                 <VacademyAssistant />
+                {/* One-click assistant button, bottom right; hides while a panel is open. */}
+                <AssistantFab />
                 {/* Global centered follow-up reminder — pops when one is due. */}
                 <FollowUpReminderDialog />
                 {/* Quick-access settings popup — inert until a caller opens one. */}

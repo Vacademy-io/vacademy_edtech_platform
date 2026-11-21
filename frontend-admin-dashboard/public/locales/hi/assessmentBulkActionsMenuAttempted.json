@@ -6,7 +6,9 @@
         "entireAssessment": "संपूर्ण मूल्यांकन",
         "releaseResult": "परिणाम जारी करें",
         "checkWithAi": "AI से जाँचें / दोबारा जाँचें",
-        "exportReports": "रिपोर्ट निर्यात करें (ZIP)"
+        "exportReports": "रिपोर्ट निर्यात करें (ZIP)",
+        "remarkWithKey": "उत्तर कुंजी से फिर जाँचें",
+        "remarkByQuestion": "उत्तर कुंजी से फिर जाँचें (प्रश्नवार)"
     },
     "actionInfo": {
         "selectedStudents_one": "{{count}} विद्यार्थी",

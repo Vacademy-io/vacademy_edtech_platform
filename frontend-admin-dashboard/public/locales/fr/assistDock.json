@@ -10,5 +10,11 @@
     "adminApp": "Appli Admin",
     "tutorials": "Tutoriels",
     "closeTutorials": "Fermer les tutoriels",
-    "noTutorialsForThisPage": "Aucun tutoriel pour cette page pour le moment."
+    "noTutorialsForThisPage": "Aucun tutoriel pour cette page pour le moment.",
+    "assistantFab": {
+        "label": "Ouvrir le {{chatbotName}}",
+        "tooltip": "Demander au {{chatbotName}}",
+        "hint": "Demander à l’assistant",
+        "dismissHint": "Masquer l’astuce"
+    }
 }

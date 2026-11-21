@@ -75,7 +75,8 @@ export type StudentUiType =
     | 'play'
     | 'cleanerPlay'
     | 'corporate'
-    | 'fun';
+    | 'fun'
+    | 'neonCity';
 
 /** What each axis falls back to when the institute has saved nothing. */
 export const UI_AXIS_DEFAULTS = {

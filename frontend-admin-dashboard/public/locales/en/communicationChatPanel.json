@@ -39,7 +39,9 @@
         "workflow": "Sent by workflow “{{name}}”",
         "workflowUnnamed": "Sent by a workflow",
         "chatbotFlow": "Sent by chatbot flow “{{name}}”",
-        "chatbotFlowUnnamed": "Sent by a chatbot flow"
+        "chatbotFlowUnnamed": "Sent by a chatbot flow",
+        "adminResend": "Resent by {{name}}",
+        "adminResendUnnamed": "Resent by an admin"
     },
     "templateCategory": {
         "MARKETING": "Marketing",

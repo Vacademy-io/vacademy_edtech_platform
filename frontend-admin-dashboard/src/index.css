@@ -166,6 +166,24 @@ html {
 .h-screen-safe {
     height: calc(100vh - var(--safe-area-inset-top) - var(--safe-area-inset-bottom));
 }
+/* Floating assistant button (components/assist-dock/AssistantFab.tsx). Its
+ * wrapper keeps a 1rem gap above the home indicator / gesture bar and clear of
+ * a side notch: the native insets in the app, the browser's env() on the web.
+ * It also steps aside for UI that owns the bottom-right corner. Mark such an
+ * element with data-assistant-fab="avoid" (all widths) or "avoid-phone" (below
+ * md, for bottom bars that only reach the corner once the right rail is gone). */
+.assistant-fab {
+    padding-bottom: calc(max(var(--safe-area-inset-bottom), env(safe-area-inset-bottom, 0px)) + 1rem);
+    padding-right: max(var(--safe-area-inset-right), env(safe-area-inset-right, 0px));
+}
+body:has([data-assistant-fab='avoid']) .assistant-fab {
+    display: none;
+}
+@media (max-width: 767.98px) {
+    body:has([data-assistant-fab='avoid-phone']) .assistant-fab {
+        display: none;
+    }
+}
 /* Sticky bottom bars (composer Send row, dashboard nav) — sits above the
  * IME when open, otherwise above the home-indicator. The 0.5rem floor
  * preserves layouts that paired `pb-keyboard` with Tailwind padding utilities

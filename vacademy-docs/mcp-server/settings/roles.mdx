@@ -4,7 +4,7 @@ description: "Choose which staff roles may connect an AI app, and give some role
 icon: "users"
 ---
 
-The **Who can connect** list in **Settings → MCP Server** decides which roles may connect an AI app to your institute. Everyone else is refused, even if they have the server URL.
+The **Who can connect** list in **Settings → AI access** decides which roles may connect an AI app to your institute. Everyone else is refused, even if they have the server URL.
 
 ## The rules
 
@@ -19,7 +19,7 @@ The **Who can connect** list in **Settings → MCP Server** decides which roles 
 
 <Steps>
   <Step title="Open the list">
-    Go to **Settings → MCP Server → Who can connect**.
+    Go to **Settings → AI access → Who can connect**.
   </Step>
   <Step title="Add a role">
     Pick a role from **Add a role…**. The list offers the built-in staff roles (Admin, Teacher, Evaluator, Content Creator, Assessment Creator) and any custom roles your institute has created.
@@ -43,22 +43,26 @@ In the CRM areas, each person also sees only the leads their admin portal shows 
 
 ## Give some roles more access
 
-Under **Per-role access (advanced)**, every allowed role has a **Customize** switch.
+Above the area list in **What AI can do**, **Settings for** shows **Everyone** by default. Pick a role there to see everything that role has, and to change its extras.
 
-- Turning on **Customize** opens the same area list for that role. It starts as a copy of your main settings.
-- What you turn on there is **added** to the main settings for people with that role. It never takes anything away.
-- A person with several customized roles gets the main settings plus the extras of each of their roles.
+- With a role picked, the area list shows the settings for everyone plus the role's own extras. What is on for everyone is marked **On for everyone**. It can only be turned off with **Settings for** on **Everyone**.
+- A role that is not on the **Who can connect** list shows nothing for AI apps, because it can't connect.
+- For a role on the **Who can connect** list, turn on **Customize AI apps for this role** to give it extras. The area list then changes that role's own list, which starts empty.
+- What you turn on there is **added** to the settings for everyone, for people with that role. It never takes anything away.
+- A person with several customized roles gets the settings for everyone plus the extras of each of their roles.
+- Roles with extras show **(customized)** in **Settings for**. Turning **Customize AI apps for this role** off removes that role's extras.
+- The same picker has **Customize the assistant for this role** for the in-product assistant. The two are separate: customizing one does not change the other.
 
-Because extras only add, set the main list to what **everyone** may do, then add the rest per role.
+Because extras only add, set **Everyone** to what everyone may do, then add the rest per role.
 
-<Frame caption="Per-role access (advanced), with Customize switched on for one role.">
-  <img src="/mcp-server/images/screenshots/per-role-access.svg" alt="Placeholder for a screenshot of Per-role access with Customize on" />
+<Frame caption="Settings for, with one role picked and Customize AI apps for this role switched on.">
+  <img src="/mcp-server/images/screenshots/per-role-access.svg" alt="Placeholder for a screenshot of a role picked in Settings for, with Customize AI apps on" />
 </Frame>
 
 <Accordion title="Example: teachers view, admins edit">
-  1. In **What AI apps can do**, set **Courses**, **Learners** and **Progress reports** to **View**. Leave everything else **Off**.
+  1. In **What AI can do**, with **Settings for** on **Everyone**, set **Courses**, **Learners** and **Progress reports** to **View** in the **AI apps** column. Leave everything else **Off**.
   2. Under **Who can connect**, add **Teacher** next to **Admin**.
-  3. Under **Per-role access**, turn on **Customize** for **Admin**. Set **Website**, **Blog** and **Courses** to **Edit** there.
+  3. In **Settings for**, pick **Admin** and turn on **Customize AI apps for this role**. Set **Website**, **Blog** and **Courses** to **Edit** there.
   4. Save.
 
   Teachers can now look up courses, learners and progress-report data. Admins can do that too, and can also draft website pages, blog posts and course content.
@@ -68,7 +72,7 @@ Because extras only add, set the main list to what **everyone** may do, then add
 
 <Accordion title="Example: counsellors work their own leads">
   1. Add the role your institute uses for counsellors (a custom role, if you created one) under **Who can connect**.
-  2. Turn on **Customize** for that role. Set **CRM: Leads** to **View**. Open the row and switch on the lead activity edits (notes and follow-ups) if you want counsellors to log their work from the AI app.
+  2. Pick that role in **Settings for** and turn on **Customize AI apps for this role**. Set **CRM: Leads** to **View**. Open the row and switch on the lead activity edits (notes and follow-ups) if you want counsellors to log their work from the AI app.
   3. Leave calling and messaging off until you have tried them yourself. They contact real people. See [Risk levels](/mcp-server/settings/risk-levels).
 </Accordion>
 

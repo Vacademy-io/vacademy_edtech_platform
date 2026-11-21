@@ -113,6 +113,20 @@ public class CommerceRequestGuard {
         }
     }
 
+    /**
+     * The answer of a request whose key already finished, or null when the key is new: lets a
+     * caller answer a retry before checks that only a new change needs (an open session, a PIN).
+     *
+     * @throws ConflictException (409) IDEMPOTENCY_MISMATCH when the key was used for another body
+     */
+    public <T> Outcome<T> replayIfDone(Key key, Supplier<T> current) {
+        if (key == null || key.clientRequestId() == null || key.clientRequestId().isBlank()) {
+            return null;
+        }
+        CommerceRequest earlier = find(key);
+        return earlier == null ? null : replay(key, earlier, current);
+    }
+
     private CommerceRequest find(Key key) {
         return ownTransaction.execute(status -> repository
                 .findByInstituteIdAndClientRequestId(key.instituteId(), key.clientRequestId()).orElse(null));

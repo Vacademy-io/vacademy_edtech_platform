@@ -126,6 +126,18 @@ public enum WorkflowTriggerEvent {
     HR_PAYROLL_PROCESSED,
     HR_PAYROLL_APPROVED,
     HR_PAYROLL_PAID,
-    HR_EMPLOYEE_STATUS_CHANGED
+    HR_EMPLOYEE_STATUS_CHANGED,
+
+    // Commerce (shop orders). Fired by CommerceNotificationSender for the buyer's messages; an
+    // ACTIVE workflow on one of these replaces the shop's default messages for that trigger.
+    ORDER_CONFIRMED,
+    COD_CONFIRMATION_NEEDED,
+    ORDER_SHIPPED,
+    ORDER_DELIVERED,
+    ORDER_CANCELLED,
+    ORDER_RTO,
+    RETURN_APPROVED,
+    REFUND_PROCESSED,
+    POS_BILL_ISSUED
 }
 

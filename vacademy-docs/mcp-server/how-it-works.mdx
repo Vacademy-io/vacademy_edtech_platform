@@ -14,7 +14,7 @@ Each institute has its own server URL. It looks like this:
 https://<your backend>/ai-service/mcp/i/<institute_id>
 ```
 
-You never need to build it yourself. An admin copies it from **Settings → MCP Server → Connect your AI app** in your admin portal.
+You never need to build it yourself. An admin copies it from **Settings → AI access → Connect your AI app** in your admin portal.
 
 The URL carries your institute. That is why sign-in lands on your institute's own admin portal, with your brand, and why a connection made with it works only for that institute. See [Your institute's server URL](/mcp-server/oauth/institute-server-url).
 
@@ -92,7 +92,7 @@ Because the checks run on every request, a change in settings applies to the **n
 When you approve, the server keeps your own portal session, encrypted. Every tool call then runs **as you**, inside the one institute in the server URL.
 
 - The server fixes **who** and **which institute** on every call from the sign-in. Whatever the AI app writes in a request, it cannot act as another person or reach another institute.
-- What each role can view or change is set per area in **Settings → MCP Server**. See [Areas and access levels](/mcp-server/settings/areas-and-levels).
+- What each role can view or change is set per area in **Settings → AI access**. See [Areas and access levels](/mcp-server/settings/areas-and-levels).
 - In the CRM, each person sees only the leads their admin portal shows them. A counsellor sees their own leads, a manager their team's, and an admin the whole institute.
 
 ## Reads, drafts and confirmed changes

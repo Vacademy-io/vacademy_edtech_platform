@@ -53,6 +53,6 @@ public class CommunicationResendController {
                 user != null ? user.getUserId() : "unknown",
                 request.getInstituteId(), request.getChannel(), request.getRecipient());
 
-        return ResponseEntity.ok(communicationResendService.resend(request));
+        return ResponseEntity.ok(communicationResendService.resend(request, user));
     }
 }

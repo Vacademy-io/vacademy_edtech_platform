@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.commerce.stock.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -15,6 +16,9 @@ import vacademy.io.admin_core_service.features.commerce.stock.repository.Commerc
 import vacademy.io.admin_core_service.features.commerce.stock.repository.StockLevelRepository;
 import vacademy.io.admin_core_service.features.commerce.stock.repository.StockLevelRepository.LevelRow;
 import vacademy.io.admin_core_service.features.commerce.stock.repository.StockMovementRepository;
+import vacademy.io.admin_core_service.features.commerce.stock.repository.StockOpsReadRepository;
+import vacademy.io.admin_core_service.features.commerce.stock.repository.StockOpsReadRepository.ItemFacts;
+import vacademy.io.admin_core_service.features.commerce.stock.repository.StockOpsReadRepository.ReferenceLabel;
 import vacademy.io.admin_core_service.features.commerce.stock.repository.StockVariantRepository;
 import vacademy.io.admin_core_service.features.commerce.stock.repository.StockVariantRepository.VariantFacts;
 import vacademy.io.common.exceptions.InvalidRequestException;
@@ -23,11 +27,14 @@ import vacademy.io.common.exceptions.VacademyException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Stock reads for the admin screens: levels, the ledger, pieces and the scan lookup. Every
@@ -44,6 +51,14 @@ public class StockQueryService {
     private final StockMovementRepository movementRepository;
     private final CommercePieceRepository pieceRepository;
     private final StockVariantRepository variantRepository;
+
+    /** Movement enrichment (WP-40); absent in tests built by hand. */
+    private StockOpsReadRepository opsReadRepository;
+
+    @Autowired(required = false)
+    public void setOpsReadRepository(StockOpsReadRepository opsReadRepository) {
+        this.opsReadRepository = opsReadRepository;
+    }
 
     public StockQueryService(StockLevelRepository levelRepository, StockMovementRepository movementRepository,
                              CommercePieceRepository pieceRepository, StockVariantRepository variantRepository) {
@@ -97,15 +112,68 @@ public class StockQueryService {
                 throw new InvalidRequestException("type is not a stock movement type");
             }
         }
-        // Both ends are always given: a null timestamp parameter has no type for Postgres.
-        LocalDateTime fromTime = (from != null ? from : LocalDate.of(2000, 1, 1)).atStartOfDay();
-        LocalDateTime toTime = (to != null ? to.plusDays(1) : LocalDate.of(2200, 1, 1)).atStartOfDay();
+        // Both ends are always given: a null timestamp parameter has no type for Postgres. The dates
+        // are India days, as in the CSV export.
+        LocalDateTime fromTime = StockClock.storedStartOf(from != null ? from : LocalDate.of(2000, 1, 1));
+        LocalDateTime toTime = StockClock.storedStartOf(to != null ? to.plusDays(1) : LocalDate.of(2200, 1, 1));
         boolean all = locationIds == null;
         Page<StockMovement> rows = movementRepository.search(instituteId, all, all ? NO_FILTER : locationIds,
                 blankToNull(packageSessionId), typeName, fromTime, toTime,
                 PageRequest.of(Math.max(page, 0), pageSize(size),
                         Sort.by(Sort.Direction.DESC, "createdAt").and(Sort.by(Sort.Direction.DESC, "id"))));
-        return rows.map(movement -> movementView(movement, withCost));
+        return enrich(instituteId, rows.map(movement -> movementView(movement, withCost)));
+    }
+
+    /**
+     * Adds what the ledger rows do not carry, by two batch reads per page: the item ({@code sku},
+     * {@code product_name}, {@code variant_name}) and the piece code and reference
+     * ({@code reference {type, id, label, order_id?}}), and the item's {@code stock_mode},
+     * {@code unit} and {@code qty_scale}. The movement fields stay as they are.
+     */
+    private Page<Map<String, Object>> enrich(String instituteId, Page<Map<String, Object>> page) {
+        if (opsReadRepository == null || page.isEmpty()) {
+            return page;
+        }
+        Set<String> variants = new HashSet<>();
+        Set<String> pieces = new HashSet<>();
+        Map<String, Set<String>> references = new HashMap<>();
+        for (Map<String, Object> row : page.getContent()) {
+            variants.add((String) row.get("package_session_id"));
+            if (row.get("piece_id") != null) {
+                pieces.add((String) row.get("piece_id"));
+            }
+            if (row.get("reference_type") != null && row.get("reference_id") != null) {
+                references.computeIfAbsent((String) row.get("reference_type"), k -> new HashSet<>())
+                        .add((String) row.get("reference_id"));
+            }
+        }
+        Map<String, ItemFacts> facts = opsReadRepository.itemFacts(instituteId, variants);
+        Map<String, ReferenceLabel> labels = opsReadRepository.referenceLabels(instituteId, references, pieces);
+        for (Map<String, Object> row : page.getContent()) {
+            ItemFacts item = facts.get((String) row.get("package_session_id"));
+            row.put("sku", item == null ? null : item.sku());
+            row.put("product_name", item == null ? null : item.productName());
+            row.put("variant_name", item == null ? null : item.variantName());
+            row.put("stock_mode", item == null ? null : item.stockMode());
+            row.put("unit", item == null ? null : item.unit());
+            row.put("qty_scale", item == null ? null : item.qtyScale());
+            ReferenceLabel piece = row.get("piece_id") == null ? null : labels.get("PIECE:" + row.get("piece_id"));
+            row.put("piece_code", piece == null ? null : piece.label());
+            if (row.get("reference_type") != null) {
+                ReferenceLabel label = labels.get(row.get("reference_type") + ":" + row.get("reference_id"));
+                Map<String, Object> reference = new LinkedHashMap<>();
+                reference.put("type", row.get("reference_type"));
+                reference.put("id", row.get("reference_id"));
+                reference.put("label", label == null ? null : label.label());
+                if (label != null && label.orderId() != null) {
+                    reference.put("order_id", label.orderId());
+                }
+                row.put("reference", reference);
+            } else {
+                row.put("reference", null);
+            }
+        }
+        return page;
     }
 
     /** The JSON shape of a movement. Cost is left out for staff who must not see it. */

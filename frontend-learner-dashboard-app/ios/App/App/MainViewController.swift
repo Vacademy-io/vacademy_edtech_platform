@@ -7,9 +7,10 @@ import WebKit
 /// 1. Registers the `offline-media://` URL scheme handler on the WKWebViewConfiguration
 ///    *before* the WKWebView is constructed (must happen here — WKWebViewConfiguration's
 ///    scheme handlers are immutable once the web view exists).
-/// 2. Registers the `OfflineMediaPlugin` instance once the bridge is available. This plugin is
-///    a local, in-repo plugin (no npm package), so it is not present in `capacitor.config.json`'s
-///    auto-registration list and must be registered manually via `registerPluginInstance`.
+/// 2. Registers the local, in-repo plugins (`OfflineMediaPlugin`, `NativeAuthSessionPlugin`,
+///    `VacademyLiveClassPlugin`) once the bridge is available. They have no npm package, so they
+///    are not in `capacitor.config.json`'s auto-registration list and must be registered manually
+///    via `registerPluginInstance`.
 ///
 /// Main.storyboard's root view controller's custom class has been changed from
 /// `CAPBridgeViewController` (Capacitor module) to `MainViewController` (App module) to route
@@ -19,12 +20,17 @@ class MainViewController: CAPBridgeViewController {
     override func webViewConfiguration(for instanceConfiguration: InstanceConfiguration) -> WKWebViewConfiguration {
         let configuration = super.webViewConfiguration(for: instanceConfiguration)
         configuration.setURLSchemeHandler(OfflineMediaSchemeHandler(), forURLScheme: OfflineMediaPlugin.scheme)
+        // Live classes: the BBB frame's picture-in-picture is the page's own <video> calling
+        // requestPictureInPicture(). iOS defaults this to true; set it explicitly so it can't be lost.
+        configuration.allowsPictureInPictureMediaPlayback = true
         return configuration
     }
 
     override func capacitorDidLoad() {
         bridge?.registerPluginInstance(OfflineMediaPlugin())
         bridge?.registerPluginInstance(NativeAuthSessionPlugin())
+        // Its presence is what switches the JS from SFSafariViewController to in-app classes.
+        bridge?.registerPluginInstance(VacademyLiveClassPlugin())
     }
 }
 

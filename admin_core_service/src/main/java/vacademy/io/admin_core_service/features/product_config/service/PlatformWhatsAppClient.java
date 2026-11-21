@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.product_config.service;
 
+import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -50,7 +51,7 @@ public class PlatformWhatsAppClient {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(5_000);
         factory.setReadTimeout(15_000);
-        this.rest = new RestTemplate(factory);
+        this.rest = ExternalCallLog.attach(new RestTemplate(factory));
     }
 
     private static String withoutPlaceholder(String value) {

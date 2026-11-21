@@ -8,6 +8,7 @@ import vacademy.io.admin_core_service.features.common.entity.RichTextData;
 import vacademy.io.admin_core_service.features.common.service.RichTextDataService;
 import vacademy.io.admin_core_service.features.learner_quiz.answerkey.AnswerKeyAccess;
 import vacademy.io.admin_core_service.features.learner_quiz.answerkey.AnswerKeySurface;
+import vacademy.io.admin_core_service.features.slide.cbe.CbeConfigSecrets;
 import vacademy.io.admin_core_service.features.slide.dto.QuizSlideDTO;
 import vacademy.io.admin_core_service.features.slide.dto.QuizSlideQuestionDTO;
 import vacademy.io.admin_core_service.features.slide.dto.QuizSlideQuestionOptionDTO;
@@ -215,6 +216,8 @@ public class QuizSlideService {
             existingQuestion.setAccessLevel(dto.getAccessLevel());
         }
 
+        applyCbeSecretOnUpdate(dto, existingQuestion);
+
         // Once authoring reads can come back without answers, a save built from one must not
         // erase what is stored. Until then a save does what it always has.
         if (!answerKeyAccess.isOn(AnswerKeySurface.AUTHORING) || StringUtils.hasText(dto.getAutoEvaluationJson())) {
@@ -229,6 +232,28 @@ public class QuizSlideService {
 
         // Update options
         updateQuestionOptions(existingQuestion, dto.getOptions());
+    }
+
+    /**
+     * CBE_RESPONSE: the solution, marking scheme and grading notes never stay in
+     * auto_evaluation_json, which learners receive with the quiz; they move into
+     * evaluation_secret_json. A save that carries no secret (neither secret keys in the config
+     * nor a non-blank evaluation_secret_json, as when the editor could not load it) keeps the
+     * stored one. A question that stops being CBE drops its secret.
+     */
+    void applyCbeSecretOnUpdate(QuizSlideQuestionDTO dto, QuizSlideQuestion question) {
+        String type = dto.getQuestionType() != null ? dto.getQuestionType() : question.getQuestionType();
+        if (!CbeConfigSecrets.isCbe(type, dto.getAutoEvaluationJson())) {
+            question.setEvaluationSecretJson(null);
+            return;
+        }
+        CbeConfigSecrets.Split split = CbeConfigSecrets.split(dto.getAutoEvaluationJson(),
+                dto.getEvaluationSecretJson());
+        dto.setAutoEvaluationJson(split.redactedConfig());
+        String secret = split.resolve(question.getEvaluationSecretJson());
+        if (secret != null) {
+            question.setEvaluationSecretJson(secret);
+        }
     }
 
     private void updateQuestionOptions(QuizSlideQuestion question, List<QuizSlideQuestionOptionDTO> optionDTOs) {
@@ -346,6 +371,8 @@ public class QuizSlideService {
         newQuestion.setQuestionType(originalQuestion.getQuestionType());
         newQuestion.setAccessLevel(originalQuestion.getAccessLevel());
         newQuestion.setAutoEvaluationJson(originalQuestion.getAutoEvaluationJson());
+        // CBE_RESPONSE: the solution and marking scheme live apart from auto_evaluation_json.
+        newQuestion.setEvaluationSecretJson(originalQuestion.getEvaluationSecretJson());
         newQuestion.setEvaluationType(originalQuestion.getEvaluationType());
         newQuestion.setQuestionOrder(originalQuestion.getQuestionOrder());
         newQuestion.setCanSkip(originalQuestion.getCanSkip());

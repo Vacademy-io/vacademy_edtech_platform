@@ -791,26 +791,7 @@ public class LearnerReportService {
             // Get comparison data (rank, percentile, class avg, leaderboard)
             // If attemptId not provided, resolve from registration
             StudentComparisonDto comparison = null;
-            String resolvedAttemptId = attemptId;
-            if (resolvedAttemptId == null || resolvedAttemptId.isEmpty()) {
-                try {
-                    // Use a direct query instead of lazy-loaded collection to avoid LazyInitializationException
-                    var reg = registrationRepository.findTopByUserIdAndAssessmentId(user.getUserId(), assessmentId);
-                    if (reg.isPresent()) {
-                        var latestAttempt = studentAttemptRepository.findTopByRegistrationOrderByCreatedAtDesc(reg.get());
-                        if (latestAttempt.isPresent()) {
-                            resolvedAttemptId = latestAttempt.get().getId();
-                        }
-                    }
-                } catch (Exception e) {
-                    log.warn("Failed to resolve attemptId for AI report: {}", e.getMessage());
-                }
-            }
-            if (resolvedAttemptId != null && !resolvedAttemptId.isEmpty()) {
-                // The attempt id comes from the client: it must be this learner's own attempt,
-                // and a result still held for release must not be readable through this PDF.
-                validateOwnershipAndAccess(user.getUserId(), assessmentId, resolvedAttemptId);
-            }
+            String resolvedAttemptId = resolveAiReportAttempt(user.getUserId(), assessmentId, attemptId);
 
             if (aiReportPdfService.isEnabled() && resolvedAttemptId != null && !resolvedAttemptId.isEmpty()) {
                 try {
@@ -858,5 +839,84 @@ public class LearnerReportService {
             log.error("Error generating AI report PDF", e);
             throw new VacademyException("Failed to generate AI report PDF");
         }
+    }
+
+    /**
+     * The AI report as an HTML page for the learner app's screen. It is the same report as the
+     * {@link #getAiReportPdf} download (same data, report options and sections) laid out for a
+     * browser, so what a learner sees on screen is what they download.
+     */
+    public ResponseEntity<Map<String, String>> getAiReportWebHtml(CustomUserDetails user, String assessmentId,
+                                                                  String attemptId, String instituteId) {
+        String html = onScreenAiReport(user, assessmentId, attemptId, (resolvedAttemptId, processedJson) ->
+                aiReportPdfService.renderWebHtml(user.getUserId(), assessmentId, resolvedAttemptId, instituteId,
+                        reviewDetailOrNull(assessmentId, resolvedAttemptId, instituteId), processedJson));
+        return ResponseEntity.ok(Map.of("html", html));
+    }
+
+    /**
+     * The AI report as data for the learner app's screen, which lays it out as cards and charts.
+     * Same data and report options as the {@link #getAiReportPdf} download.
+     */
+    public ResponseEntity<vacademy.io.assessment_service.features.assessment.service.aireport.AiReportWebData> getAiReportWebData(CustomUserDetails user, String assessmentId,
+                                                              String attemptId, String instituteId) {
+        return ResponseEntity.ok(onScreenAiReport(user, assessmentId, attemptId, (resolvedAttemptId, processedJson) ->
+                aiReportPdfService.renderWebData(user.getUserId(), assessmentId, resolvedAttemptId, instituteId,
+                        reviewDetailOrNull(assessmentId, resolvedAttemptId, instituteId), processedJson)));
+    }
+
+    @FunctionalInterface
+    private interface OnScreenRender<T> {
+        T render(String resolvedAttemptId, String processedJson) throws Exception;
+    }
+
+    /** The checks every on-screen AI report goes through: report exists, attempt is the learner's own and released. */
+    private <T> T onScreenAiReport(CustomUserDetails user, String assessmentId, String attemptId, OnScreenRender<T> render) {
+        try {
+            String processedJson = adminCoreServiceClient.getProcessedAIReport(user.getUserId(), assessmentId);
+            if (processedJson == null || processedJson.isEmpty()) {
+                throw new VacademyException("AI report not yet available for this assessment");
+            }
+            String resolvedAttemptId = resolveAiReportAttempt(user.getUserId(), assessmentId, attemptId);
+            if (resolvedAttemptId == null || resolvedAttemptId.isEmpty()) {
+                throw new VacademyException("No attempt found for this assessment");
+            }
+            if (!aiReportPdfService.isEnabled()) {
+                throw new VacademyException("The on-screen AI report is not available");
+            }
+            return render.render(resolvedAttemptId, processedJson);
+        } catch (VacademyException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Error rendering the on-screen AI report", e);
+            throw new VacademyException("Failed to load the AI report");
+        }
+    }
+
+    /**
+     * The attempt an AI report is for: the given one, else the learner's latest (null when there
+     * is none). The attempt id comes from the client, so it must be this learner's own attempt,
+     * and a result still held for release must not be readable through the AI report.
+     */
+    private String resolveAiReportAttempt(String userId, String assessmentId, String attemptId) {
+        String resolvedAttemptId = attemptId;
+        if (resolvedAttemptId == null || resolvedAttemptId.isEmpty()) {
+            try {
+                // Use a direct query instead of lazy-loaded collection to avoid LazyInitializationException
+                var reg = registrationRepository.findTopByUserIdAndAssessmentId(userId, assessmentId);
+                if (reg.isPresent()) {
+                    var latestAttempt = studentAttemptRepository.findTopByRegistrationOrderByCreatedAtDesc(reg.get());
+                    if (latestAttempt.isPresent()) {
+                        resolvedAttemptId = latestAttempt.get().getId();
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Failed to resolve attemptId for AI report: {}", e.getMessage());
+            }
+        }
+        if (resolvedAttemptId != null && !resolvedAttemptId.isEmpty()) {
+            validateOwnershipAndAccess(userId, assessmentId, resolvedAttemptId);
+        }
+        return resolvedAttemptId;
     }
 }

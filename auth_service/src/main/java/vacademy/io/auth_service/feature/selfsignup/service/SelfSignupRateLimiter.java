@@ -33,6 +33,17 @@ public class SelfSignupRateLimiter {
         check("verify:" + email, 10, TEN_MINUTES, "Too many wrong codes. Request a new one in a few minutes.");
     }
 
+    /** WhatsApp codes: each one costs a message, so tighter than email. */
+    public void checkPhoneOtp(String phone, String ip) {
+        check("otp-phone:" + phone, 3, TEN_MINUTES, "Too many codes sent to this number. Try again in a few minutes.");
+        check("otp-phone-ip:" + ip, 15, TEN_MINUTES, "Too many attempts from this network. Try again in a few minutes.");
+    }
+
+    /** Wrong guesses at one number's code. */
+    public void checkPhoneVerify(String phone) {
+        check("verify-phone:" + phone, 10, TEN_MINUTES, "Too many wrong codes. Request a new one in a few minutes.");
+    }
+
     /** New workspaces from one network in a day. */
     public void checkSignup(String ip) {
         check("signup-ip:" + ip, 5, ONE_DAY, "Too many sign-ups from this network today. Please contact support.");

@@ -1,6 +1,7 @@
 package vacademy.io.admin_core_service.features.commerce.catalogue.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -37,9 +38,11 @@ import vacademy.io.admin_core_service.features.commerce.catalogue.repository.Com
 import vacademy.io.admin_core_service.features.commerce.catalogue.repository.CommerceVariantOptionValueRepository;
 import vacademy.io.admin_core_service.features.commerce.catalogue.repository.CommerceVariantRepository;
 import vacademy.io.admin_core_service.features.commerce.common.CommercePackageTypes;
+import vacademy.io.admin_core_service.features.commerce.common.CommerceUnits;
 import vacademy.io.admin_core_service.features.commerce.document.service.DocumentClock;
 import vacademy.io.admin_core_service.features.commerce.stock.entity.StockLocation;
 import vacademy.io.admin_core_service.features.commerce.stock.repository.StockLocationRepository;
+import vacademy.io.admin_core_service.features.commerce.stock.repository.StockMovementRepository;
 import vacademy.io.admin_core_service.features.commerce.tax.service.CommerceTaxClassService;
 import vacademy.io.admin_core_service.features.enroll_invite.entity.EnrollInvite;
 import vacademy.io.admin_core_service.features.enroll_invite.entity.PackageSessionLearnerInvitationToPaymentOption;
@@ -125,6 +128,8 @@ public class CommerceProductService {
     static final String PAYMENT_OPTION_TYPE = "ONE_TIME";
     static final String DEFAULT_CURRENCY = "INR";
     static final String DEFAULT_UNIT = "PCS";
+    /** A measured item (qty_scale above 1) whose unit is blank or a piece code (W2). */
+    public static final String MEASURED_UNIT_REQUIRED = "VALIDATION: a measured item needs its unit (MTR, KG, …)";
 
     private static final String ENTITY_PRODUCT = "PRODUCT";
     private static final String ENTITY_VARIANT = "VARIANT";
@@ -154,6 +159,14 @@ public class CommerceProductService {
     private final CommerceTaxClassService taxClassService;
     private final DocumentClock documentClock;
     private final StockLocationRepository locationRepository;
+
+    /** The stock ledger, to lock the measure of an item with stock (WP-40); absent in tests built by hand. */
+    private StockMovementRepository movementRepository;
+
+    @Autowired(required = false)
+    public void setMovementRepository(StockMovementRepository movementRepository) {
+        this.movementRepository = movementRepository;
+    }
 
     // ------------------------------------------------------------------ writes
 
@@ -577,6 +590,32 @@ public class CommerceProductService {
                 || (qtyScale != null && !qtyScale.equals(product.getQtyScale()));
         require(!measureChanges || product.getPublishedAt() == null,
                 "stock_mode, unit and qty_scale cannot change after the product has been published");
+        // Stock already counted in the old measure would mean something else (40 PCS read as 4 m), and a
+        // quantity item turned PIECE could never receive a transfer in transit. DRAFT or not.
+        if (measureChanges && !created && movementRepository != null
+                && movementRepository.existsForPackage(instituteId, product.getPackageId())) {
+            throw new ConflictException("STOCK_EXISTS: unit, qty_scale and stock mode cannot change once stock has "
+                    + "moved for this item");
+        }
+        // Lengths, weights and volumes print with log10(qty_scale) decimals, so the scale is a power
+        // of ten; a one-of-a-kind item is one piece. Checked only when the request touches either.
+        if (stockMode != null || qtyScale != null) {
+            String effectiveMode = stockMode != null ? stockMode : product.getStockMode();
+            int effectiveScale = qtyScale != null ? qtyScale
+                    : product.getQtyScale() == null ? 1 : product.getQtyScale();
+            require(CommerceUnits.allowedScale(effectiveScale), "VALIDATION: qty_scale is 1, 10, 100 or 1000");
+            require(!StockMode.PIECE.name().equals(effectiveMode) || effectiveScale == 1,
+                    "VALIDATION: a one-of-a-kind item is counted in pieces (qty_scale 1)");
+        }
+        // A measured item prints "2.5 m": its unit must be one with a sign, never blank or a piece
+        // code (the default PCS would print "2.5" on paper and "2.5 pc" in the shop).
+        if (stockMode != null || qtyScale != null || unit != null) {
+            int effectiveScale = qtyScale != null ? qtyScale
+                    : product.getQtyScale() == null ? 1 : product.getQtyScale();
+            String effectiveUnit = unit != null ? unit : product.getUnit();
+            require(!CommerceUnits.measured(effectiveScale) || CommerceUnits.measuredUnit(effectiveUnit),
+                    MEASURED_UNIT_REQUIRED);
+        }
         if (stockMode != null) {
             product.setStockMode(stockMode);
         }
@@ -1386,6 +1425,9 @@ public class CommerceProductService {
                 .variantCount(variants.size())
                 .minPrice(min)
                 .maxPrice(max)
+                .unit(product.getUnit())
+                .qtyScale(product.getQtyScale())
+                .qtyStep(product.getQtyStep())
                 .currency(currency)
                 .updatedAt(product.getUpdatedAt())
                 .build();

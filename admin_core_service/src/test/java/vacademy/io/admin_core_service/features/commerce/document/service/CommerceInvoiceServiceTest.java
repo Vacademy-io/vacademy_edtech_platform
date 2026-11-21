@@ -376,6 +376,30 @@ class CommerceInvoiceServiceTest {
         verify(invoices).saveAndFlush(any(Invoice.class));
     }
 
+    /**
+     * Round 2 (money MINOR-1): a part note capped at the bill's total (3.46 m of 3.47 m of a ribbon
+     * billed 121.00) leaves the last 1 cm without a note. The invoice is still the order's live
+     * document, so the last unit can come back; it is not "credited in full".
+     */
+    @Test
+    void anInvoiceWhoseTotalIsCreditedWithUnitsLeftIsStillLive() {
+        Invoice capped = new Invoice();
+        capped.setId("inv-capped");
+        capped.setInstituteId(INST);
+        capped.setDocumentType("TAX_INVOICE");
+        capped.setTotalAmount(new BigDecimal("121.00"));
+        when(mappings.findCommerceDocumentsByPaymentLogIds(anyCollection())).thenReturn(List.of(capped));
+        when(creditNotes.hasCreditNotes(INST, "inv-capped")).thenReturn(true);
+        when(creditNotes.creditedTotal(INST, "inv-capped")).thenReturn(new BigDecimal("121.00"));
+        when(creditNotes.hasUnitsLeft(INST, "inv-capped")).thenReturn(true);
+
+        CommerceInvoiceService.Issued issued = service.issue(INST, request(TaxMode.REGULAR));
+
+        assertTrue(issued.alreadyExisted());
+        assertEquals("inv-capped", issued.invoice().getId());
+        assertEquals("inv-capped", service.liveDocument(INST, List.of("log-1")).orElseThrow().getId());
+    }
+
     @Test
     void afterAB2bReissueTheOrderStillHasItsLiveInvoice() {
         Invoice credited = new Invoice();
@@ -492,6 +516,38 @@ class CommerceInvoiceServiceTest {
         assertTrue(assertThrows(ConflictException.class, () -> service.issue(INST, used))
                 .getMessage().startsWith("BILL_BOOK_NUMBER_USED"));
         verify(invoices, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void m7_aPaperBillGoesToTheBookOfItsDatesFinancialYear() {
+        // The 2025-26 book 1..200 is still ACTIVE next to the 2026-27 book 1..200, same location.
+        CommerceDocumentSeries old = book(1, 200);
+        old.setId("book-old");
+        old.setPrefix("BK0/");
+        old.setFinancialYear("2025-26");
+        CommerceDocumentSeries current = book(1, 200);
+        current.setId("book-new");
+        when(seriesRepository.findByInstituteIdAndDocumentTypeAndStatus(INST, "TAX_INVOICE", "ACTIVE"))
+                .thenReturn(List.of(old, current));
+        CommerceInvoiceRequest april = request(TaxMode.REGULAR);
+        april.setChannel("POS");
+        april.setExternalInvoiceNumber("57");
+        april.setDocumentDate(LocalDate.of(2026, 4, 2));
+        Invoice invoice = service.issue(INST, april).invoice();
+        assertEquals("book-new", invoice.getSeriesId(), "FY 2026-27 by the bill's date");
+        assertEquals("BK1/2627-00057", invoice.getInvoiceNumber());
+
+        CommerceInvoiceRequest march = request(TaxMode.REGULAR);
+        march.setChannel("POS");
+        march.setExternalInvoiceNumber("57");
+        march.setDocumentDate(LocalDate.of(2026, 3, 30));
+        assertEquals("book-old", service.issue(INST, march).invoice().getSeriesId(), "FY 2025-26");
+
+        // No book of the bill's year: refused, never filed in another year's book.
+        when(seriesRepository.findByInstituteIdAndDocumentTypeAndStatus(INST, "TAX_INVOICE", "ACTIVE"))
+                .thenReturn(List.of(old));
+        assertTrue(assertThrows(ConflictException.class, () -> service.issue(INST, april)).getMessage()
+                .startsWith("BILL_BOOK_NOT_REGISTERED"));
     }
 
     // ------------------------------------------------------------------ cancel, reissue

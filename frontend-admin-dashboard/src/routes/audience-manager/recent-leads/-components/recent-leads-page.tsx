@@ -173,6 +173,7 @@ import {
     DEFAULT_RANGE_DAYS,
     UTM_SEARCH_PARAM,
 } from './recent-leads-search';
+import { nudgeAssistant } from '@/components/vacademy-assistant/page-ask';
 
 type SlaFilter =
     | 'TAT_BEFORE'
@@ -1389,6 +1390,7 @@ const RecentLeadsContent = ({
             toast.info(t('export.noLeadsToExport'));
             return;
         }
+        nudgeAssistant('leads');
         const ids = Array.from(
             new Set(leads.map((l) => l.user?.id || l.user_id || '').filter(Boolean))
         ) as string[];

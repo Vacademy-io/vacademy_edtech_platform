@@ -22,6 +22,7 @@ export const LIBRARY_AVAILABILITY_KEY = 'QUESTION_LIBRARY_AVAILABILITY';
 export const LIBRARY_TAGS_KEY = 'QUESTION_LIBRARY_SUBJECT_TAGS';
 export const LIBRARY_LABELS_KEY = 'QUESTION_LIBRARY_TAGS';
 export const LIBRARY_ACCESS_KEY = 'QUESTION_LIBRARY_ACCESS';
+export const LIBRARY_FACETS_KEY = 'QUESTION_LIBRARY_FACETS';
 
 export interface LibraryNode {
     id: string;
@@ -131,6 +132,25 @@ export interface LibraryRandomPickResult {
 
 /** The bank filter; library_node_ids / unsorted_only live on it so the assessment picker can use them too. */
 export type LibraryFilters = QuestionBankFilters;
+
+/** How many questions one filter value gives (a topic, here). */
+export interface LibraryFacetCount {
+    id: string;
+    count: number;
+}
+
+/**
+ * The number next to each filter value. Each group is counted with the other filters set and
+ * its own left out, so a second ticked value shows what it adds. A value missing from a group
+ * matches nothing (zero).
+ */
+export interface LibraryFacets {
+    difficulties: Record<string, number>;
+    question_types: Record<string, number>;
+    /** Children of the open topic (the top level when none is open). */
+    topics: LibraryFacetCount[];
+    tags: LibraryTag[];
+}
 
 export interface LibrarySubjectTag {
     tag_id: string;
@@ -260,6 +280,38 @@ export const fetchLibraryQuestions = async (
         { params: { instituteId, pageNo, pageSize } }
     );
     return data;
+};
+
+/** Counts for the filter panel. Same body as the question list; scopeNodeId is the open topic. */
+export const fetchLibraryFacets = async (
+    instituteId: string,
+    filters: LibraryFilters,
+    scopeNodeId?: string | null
+): Promise<LibraryFacets> => {
+    const { data } = await authenticatedAxiosInstance.post<LibraryFacets>(
+        `${LIBRARY_BASE}/questions/facets`,
+        filters,
+        { params: { instituteId, scopeNodeId: scopeNodeId ?? undefined } }
+    );
+    return data;
+};
+
+/**
+ * Ids of every question a page reader returns, up to max, a page at a time: "select all"
+ * across pages. Pass (pageNo, size) => fetchLibraryQuestions(instituteId, filters, pageNo, size).
+ */
+export const collectMatchingIds = async (
+    fetchPage: (pageNo: number, pageSize: number) => Promise<LibraryQuestionPage>,
+    max: number,
+    pageSize = 100
+): Promise<string[]> => {
+    const ids: string[] = [];
+    for (let pageNo = 0; ids.length < max; pageNo += 1) {
+        const result = await fetchPage(pageNo, pageSize);
+        result.content.forEach((row) => ids.push(row.question.id));
+        if (result.content.length < pageSize) break;
+    }
+    return ids.slice(0, max);
 };
 
 const post = async <T>(path: string, instituteId: string, body: unknown): Promise<T> => {
@@ -405,6 +457,29 @@ export const removeLibraryTag = (
     body: { question_ids: string[]; tag_id: string }
 ) => post<LibraryActionResult>('/tags/remove', instituteId, body);
 
+/** Renames a library tag everywhere; a name another tag already has merges the two. */
+export const renameLibraryTag = (instituteId: string, body: { tag_id: string; name: string }) =>
+    post<LibraryActionResult>('/tags/rename', instituteId, body);
+
+/** Takes a library tag off every question. */
+export const deleteLibraryTag = (instituteId: string, body: { tag_id: string }) =>
+    post<LibraryActionResult>('/tags/delete', instituteId, body);
+
+export interface LibraryAutoTagResult {
+    /** Every question this batch looked at: send them all back as exclude_question_ids. */
+    attempted_ids: string[];
+    tagged: number;
+    /** Untagged questions left under the topic, not counting the ones tried. */
+    remaining: number;
+    tags: string[];
+}
+
+/** One batch of AI concept tags under a topic. limit 0 only counts what is left. Owner only. */
+export const autoTagLibrary = (
+    instituteId: string,
+    body: { node_id: string; exclude_question_ids?: string[]; limit?: number }
+) => post<LibraryAutoTagResult>('/tags/auto', instituteId, body);
+
 export interface LibraryImportResult {
     created: number;
     nodes_created: number;
@@ -492,6 +567,19 @@ export const useLibraryQuestions = (
         placeholderData: (previous) => previous,
     });
 
+export const useLibraryFacets = (
+    instituteId: string | undefined,
+    filters: LibraryFilters,
+    scopeNodeId?: string | null
+) =>
+    useQuery({
+        queryKey: [LIBRARY_FACETS_KEY, instituteId, filters, scopeNodeId ?? null],
+        queryFn: () => fetchLibraryFacets(instituteId as string, filters, scopeNodeId),
+        enabled: !!instituteId,
+        placeholderData: (previous) => previous,
+        staleTime: 30 * 1000,
+    });
+
 export const useLibraryPapers = (instituteId: string | undefined, nodeId?: string) =>
     useQuery({
         queryKey: [LIBRARY_PAPERS_KEY, instituteId, nodeId],
@@ -525,6 +613,7 @@ export const useLibraryMutation = <TArgs, TResult>(fn: (args: TArgs) => Promise<
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [LIBRARY_TREE_KEY] });
             queryClient.invalidateQueries({ queryKey: [LIBRARY_QUESTIONS_KEY] });
+            queryClient.invalidateQueries({ queryKey: [LIBRARY_FACETS_KEY] });
         },
     });
 };
@@ -535,6 +624,7 @@ export const useLibraryRefresh = () => {
     return () => {
         queryClient.invalidateQueries({ queryKey: [LIBRARY_TREE_KEY] });
         queryClient.invalidateQueries({ queryKey: [LIBRARY_QUESTIONS_KEY] });
+        queryClient.invalidateQueries({ queryKey: [LIBRARY_FACETS_KEY] });
         queryClient.invalidateQueries({ queryKey: [LIBRARY_PAPERS_KEY] });
         queryClient.invalidateQueries({ queryKey: [LIBRARY_LABELS_KEY] });
         queryClient.invalidateQueries({ queryKey: [LIBRARY_ACCESS_KEY] });

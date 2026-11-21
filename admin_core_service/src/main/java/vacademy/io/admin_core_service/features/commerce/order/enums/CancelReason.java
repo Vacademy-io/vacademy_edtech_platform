@@ -7,5 +7,7 @@ public enum CancelReason {
     /** Every item line was cancelled one by one. */
     LINES_CANCELLED,
     /** A cash-on-delivery order that nobody confirmed in time. */
-    COD_NOT_CONFIRMED
+    COD_NOT_CONFIRMED,
+    /** A counter sale voided while its session was open: stock back, the bill keeps its number. */
+    POS_VOID
 }

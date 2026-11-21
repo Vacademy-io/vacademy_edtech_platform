@@ -1,0 +1,24 @@
+/*
+ * 80 mm bill and day report. Print sizing only (no colours): every rule is
+ * scoped to body.pos-printing, which printReceipt() sets for the one print
+ * and removes after it, so other print pages (packing slips) are untouched.
+ *
+ * Everything under <body> except the receipt block is taken out of the
+ * layout (display, not visibility: a hidden full-height app shell would still
+ * feed blank paper on a roll printer). The receipt is portalled straight under
+ * <body>. The page size is left to the printer driver (a roll printer knows
+ * its 80 mm paper); printReceipt() adds only the page margin for the one print.
+ */
+@media print {
+    body.pos-printing > :not(.pos-receipt-print) {
+        display: none !important;
+    }
+    body.pos-printing .pos-receipt-print {
+        width: 72mm;
+        margin: 0;
+    }
+    body.pos-printing .pos-receipt-print .pos-receipt-qr {
+        width: 24mm;
+        height: 24mm;
+    }
+}

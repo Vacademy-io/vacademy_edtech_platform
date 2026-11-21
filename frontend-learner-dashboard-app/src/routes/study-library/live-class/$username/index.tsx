@@ -147,8 +147,9 @@ function RouteComponent() {
             // BBB: open the personalized join URL (real name + userId). Checked FIRST
             // so BBB never routes to the embed page (which can't resolve a BBB room →
             // "Unsupported session type") or the shared generic meeting_link.
-            await openBbbJoinForLearner(session.schedule_id);
-            navigate({ to: "/study-library/live-class" });
+            const joined = await openBbbJoinForLearner(session.schedule_id, "VIEWER", { navigate: navigate as any, title: session.title });
+            // In-app: the class view is now open — navigating away would close it.
+            if (joined !== "IN_APP") navigate({ to: "/study-library/live-class" });
           } else if (
             session.session_streaming_service_type ===
             SessionStreamingServiceType.EMBED
@@ -170,8 +171,9 @@ function RouteComponent() {
             // BBB: open the personalized join URL (real name + userId). Checked FIRST
             // so BBB never routes to the embed page (which can't resolve a BBB room →
             // "Unsupported session type") or the shared generic meeting_link.
-            await openBbbJoinForLearner(session.schedule_id);
-            navigate({ to: "/study-library/live-class" });
+            const joined = await openBbbJoinForLearner(session.schedule_id, "VIEWER", { navigate: navigate as any, title: session.title });
+            // In-app: the class view is now open — navigating away would close it.
+            if (joined !== "IN_APP") navigate({ to: "/study-library/live-class" });
           } else if (
             session.session_streaming_service_type ===
             SessionStreamingServiceType.EMBED

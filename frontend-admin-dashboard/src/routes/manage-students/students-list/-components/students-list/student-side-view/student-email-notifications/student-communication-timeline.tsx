@@ -746,6 +746,12 @@ function CommItemBody({ item, resend }: { item: CommunicationItem; resend: Resen
                     {!expanded && (
                         <OriginLine origin={item.origin} className="text-xs text-neutral-500" />
                     )}
+                    {/* An email's template is not in its preview (WhatsApp titles carry it) */}
+                    {!expanded && item.channel === 'EMAIL' && item.templateName && (
+                        <span className="truncate text-xs text-neutral-500">
+                            {t('expandedDetail.templateLabel')} {item.templateName}
+                        </span>
+                    )}
                 </div>
                 {item.channel === 'EMAIL' && !isInbound && (
                     <StatusMiniTimeline events={item.statusTimeline || []} status={item.status} />

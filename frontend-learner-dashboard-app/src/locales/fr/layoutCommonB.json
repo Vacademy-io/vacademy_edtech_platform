@@ -1,5 +1,138 @@
 {
   "aiReportDetails": {
+    "rich": {
+      "enrollment": "N° d'inscription {{value}}",
+      "hero": {
+        "skippedCount": "{{count}} passée(s)",
+        "kicker": "Votre résultat",
+        "rankOf": "Rang {{rank}} sur {{total}}",
+        "betterThan": "Mieux que {{value}} % des élèves ayant passé ce test",
+        "classLine": "Moyenne de la classe {{avg}} · Maximum {{high}}",
+        "correct": "Correctes",
+        "rightOrPartly": "Correctes ou partiellement",
+        "wrong": "Fausses",
+        "wrongEach": "Fausses ({{value}} chacune)",
+        "skipped": "Passées",
+        "pending": "En correction",
+        "timeUsed": "Temps utilisé",
+        "timeOf": "sur {{value}} min",
+        "classTime": "classe {{value}}",
+        "questions": "Questions"
+      },
+      "standing": {
+        "title": "📈 Votre position",
+        "caption": "Nombre d'élèves, sur {{total}}, ayant obtenu un score dans chaque tranche. Les autres élèves sont comptés, jamais nommés.",
+        "students": "Élèves",
+        "legend": "La barre foncée est la tranche de votre score."
+      },
+      "sections": {
+        "title": "📚 Notes par section",
+        "caption": "Votre score dans chaque section. Le trait foncé est la moyenne de la classe.",
+        "captionNoClass": "Votre score dans chaque section.",
+        "avg": "Moyenne classe {{value}}",
+        "top": "Max {{value}}",
+        "time": "Temps {{value}}"
+      },
+      "time": {
+        "captionNoClass": "Minutes passées dans chaque section.",
+        "title": "⏱️ Temps par section",
+        "caption": "Minutes passées dans chaque section, comparées à la moyenne de la classe.",
+        "allowed": "Le test durait {{value}} minutes.",
+        "you": "Vous",
+        "class": "Moyenne de la classe",
+        "minutes": "min"
+      },
+      "answers": {
+        "captionNoTime": "Chaque case est une question.",
+        "title": "🧾 Toutes les réponses",
+        "caption": "Chaque case est une question, avec les secondes que vous y avez passées.",
+        "fast": "Un contour jaune signifie une réponse donnée en moins de 10 secondes.",
+        "skip": "passée"
+      },
+      "outcome": {
+        "CORRECT": "Correcte",
+        "PARTIAL": "Partiellement correcte",
+        "WRONG": "Fausse",
+        "SKIPPED": "Passée",
+        "PENDING": "En correction"
+      },
+      "easy": {
+        "title": "🎯 Points faciles manqués",
+        "caption": "Questions manquées alors qu'au moins 3 camarades sur 5 ont répondu juste.",
+        "skipped": "Vous l'avez passée",
+        "took": "Vous avez mis {{value}} secondes",
+        "classRight": "{{value}} % de la classe a répondu juste"
+      },
+      "expertise": {
+        "title": "⭐ Votre expertise",
+        "caption": "Questions réussies par 30 % ou moins de vos camarades, et par vous.",
+        "gotIt": "Vous avez répondu juste",
+        "onlyClass": "seulement {{value}} % de la classe a répondu juste"
+      },
+      "potential": {
+        "title": "🚀 Votre potentiel",
+        "caption": "En répondant aux questions passées ({{count}}) aussi bien que la classe, vous auriez pu obtenir {{score}}.",
+        "score": "Score",
+        "rank": "Rang",
+        "betterThan": "Mieux que"
+      },
+      "speed": {
+        "title": "⚡ Vitesse et précision",
+        "caption": "Votre taux de réussite selon le temps passé sur une question.",
+        "under10": "Moins de 10 s",
+        "10to30": "10–30 s",
+        "31to60": "31–60 s",
+        "over60": "Plus de 60 s",
+        "right": "{{right}}/{{total}} justes"
+      },
+      "stamina": {
+        "title": "🔋 Endurance",
+        "caption": "Précision dans chaque quart de l'épreuve, du début à la fin."
+      },
+      "negative": {
+        "title": "➖ Points négatifs",
+        "caption": "Les mauvaises réponses ont coûté {{value}} points.",
+        "earned": "Points gagnés",
+        "lost": "Perdus sur les erreurs",
+        "net": "Votre score",
+        "withoutGuesses": "Sans les réponses données en moins de 10 secondes ({{count}}), votre score aurait été de {{value}}."
+      },
+      "quadrant": {
+        "title": "🧭 Confiance",
+        "captionClass": "Rapide signifie plus rapide que la moyenne de la classe sur cette question. Les réponses précipitées sont les points les plus faciles à regagner.",
+        "captionSelf": "Rapide signifie plus rapide que votre rythme habituel. Les réponses précipitées sont les points les plus faciles à regagner.",
+        "confident": "Confiant",
+        "confidentSub": "rapide et juste",
+        "worked": "Réfléchi",
+        "workedSub": "lent et juste",
+        "rushed": "Précipité",
+        "rushedSub": "rapide et faux",
+        "stuck": "Bloqué",
+        "stuckSub": "lent et faux"
+      },
+      "progress": {
+        "title": "📉 Progression",
+        "caption": "Votre score en pourcentage sur vos {{count}} derniers tests ici.",
+        "thisTest": "Ce test"
+      },
+      "qbq": {
+        "title": "📝 Question par question",
+        "caption": "Les {{count}} questions avec vos points, votre temps et les résultats de la classe.",
+        "yourAnswer": "Votre réponse",
+        "rightAnswer": "Bonne réponse",
+        "notAttempted": "Non tentée",
+        "feedback": "Commentaire :",
+        "howMarked": "Barème appliqué",
+        "criterionMarks": "{{marks}} points",
+        "explanation": "Explication :",
+        "marks": "{{marks}} sur {{max}} points",
+        "seconds": "{{value}} s",
+        "classRight": "{{value}} % de la classe a répondu juste",
+        "classAvgTime": "moyenne de la classe {{value}} s",
+        "showAll": "Afficher les {{count}} questions",
+        "showLess": "Afficher moins"
+      }
+    },
     "areasOfImprovement": {
       "title": "📝 Axes d'amélioration"
     },

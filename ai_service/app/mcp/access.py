@@ -68,7 +68,11 @@ def normalize_setting(raw: Optional[Dict[str, Any]]) -> Dict[str, Any]:
             if not norm or norm in LEARNER_ROLES or not isinstance(node, dict):
                 continue
             tools = node.get("enabled_tools")
-            overrides[norm] = {"enabled_tools": list(tools) if isinstance(tools, list) else []}
+            # Two spellings of one role ("TEACHER", "Teacher") add up, like the gate reads them.
+            merged = overrides.setdefault(norm, {"enabled_tools": []})["enabled_tools"]
+            for tool in tools if isinstance(tools, list) else []:
+                if tool not in merged:
+                    merged.append(tool)
 
     return {
         "enabled": bool(raw.get("enabled", False)),
@@ -92,18 +96,32 @@ def setting_for_tool_gate(setting: Dict[str, Any], principal: PinnedPrincipal) -
     """
     Project the MCP setting into the shape the registry tool gate consumes.
 
-    ``_effective_enabled_tools`` looks up ``role_overrides`` by EXACT role string,
-    so re-key the overrides under the principal's own spellings of its roles.
+    Only the caller's own roles' lists are passed on, re-keyed under the
+    caller's spellings of its roles and matched the way
+    ``_effective_enabled_tools`` matches them (``role_match_key``: ignoring case,
+    spaces and underscores), so both doors read a saved role list alike.
     """
+    from ..services.assistant_tool_registry import ASSISTANT_TOOLS, role_match_key
+    from .constants import MCP_ALWAYS_ON_TOOLS
+
     overrides = setting.get("role_overrides") or {}
     projected: Dict[str, Any] = {}
     for role in principal.roles or []:
-        node = overrides.get(normalize_role(role))
-        if node is not None:
-            projected[role] = node
+        key = role_match_key(role)
+        if not key:
+            continue
+        for stored, node in overrides.items():
+            if role_match_key(stored) != key or not isinstance(node, dict):
+                continue
+            merged = projected.setdefault(role, {"enabled_tools": []})["enabled_tools"]
+            for tool in node.get("enabled_tools") or []:
+                if tool not in merged:
+                    merged.append(tool)
 
+    always = [ASSISTANT_TOOLS[n].key(via_mcp=True) for n in sorted(MCP_ALWAYS_ON_TOOLS) if n in ASSISTANT_TOOLS]
+    enabled = list(setting.get("enabled_tools") or [])
     return {
-        "enabled_tools": list(setting.get("enabled_tools") or []),
+        "enabled_tools": enabled + [k for k in always if k not in enabled],
         "role_overrides": projected,
     }
 

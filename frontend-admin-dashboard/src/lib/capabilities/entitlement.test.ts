@@ -35,9 +35,9 @@ const allIds = (pick: (g: (typeof catalog.modules)[0]['features'][0]['governs'])
     Array.from(new Set(catalog.modules.flatMap((m) => m.features.flatMap((f) => pick(f.governs)))));
 
 describe('catalogue', () => {
-    it('normalizes the real catalogue (14 modules, 59 features)', () => {
-        expect(catalog.modules).toHaveLength(14);
-        expect(catalog.modules.flatMap((m) => m.features)).toHaveLength(59);
+    it('normalizes the real catalogue (15 modules, 61 features)', () => {
+        expect(catalog.modules).toHaveLength(15);
+        expect(catalog.modules.flatMap((m) => m.features)).toHaveLength(61);
     });
 
     it('rejects malformed bodies (fail open = no catalogue)', () => {
@@ -164,14 +164,14 @@ describe('LEGACY regression — nothing is ever gated', () => {
         // Even if a catalogue were applied, LEGACY's can() keeps everything entitled.
         // Opt-in modules are the one exception (next test): their tabs and routes
         // are left out here so this stays true once the catalogue governs them.
-        const optIn = (key: string) => key.startsWith('commerce');
+        const optIn = (key: string) => key.startsWith('commerce') || key === 'learner-home';
         const e = createEntitlement({ catalog, can, staticItems });
         navIds
             .filter(([tab]) => !optIn(tab))
             .forEach(([tab, sub]) => expect(e.isNavItemEntitled(tab, sub)).toBe(true));
         allIds((g) => g.widgets).forEach((id) => expect(e.isWidgetEntitled(id)).toBe(true));
         allIds((g) => g.routes)
-            .filter((r) => !r.startsWith('/commerce'))
+            .filter((r) => !r.startsWith('/commerce') && r !== '/learner-home')
             .forEach((r) => expect(e.isPathEntitled(r)).toBe(true));
     });
 
@@ -185,6 +185,7 @@ describe('LEGACY regression — nothing is ever gated', () => {
             'commerce.stock',
             'commerce.pos',
             'commerce.tax_reports',
+            'commerce.accounts',
         ]);
         const snapshot = (features: Record<string, boolean>) => ({
             instituteId: 'inst-1',
@@ -202,6 +203,36 @@ describe('LEGACY regression — nothing is ever gated', () => {
         commerceKeys.forEach((k) => expect(resolveCan(off, 'inst-1', k)).toBe(false));
         const on = snapshot(Object.fromEntries(commerceKeys.map((k) => [k, true])));
         commerceKeys.forEach((k) => expect(resolveCan(on, 'inst-1', k)).toBe(true));
+    });
+
+    it('the learner home builder is opt-in too, off until the server reports it on', () => {
+        const keys = catalog.modules
+            .filter((m) => m.key === 'learner_home')
+            .flatMap((m) => m.features.map((f) => f.key));
+        expect(keys).toEqual(['learner_home.builder']);
+        const snapshot = (on: boolean) => ({
+            instituteId: 'inst-1',
+            status: 'loaded' as const,
+            data: {
+                mode: 'LEGACY' as const,
+                catalog_version: 1,
+                modules: {},
+                features: { 'learner_home.builder': on },
+                // An older backend that omits learner_home here still reads as opt-in.
+                opt_in_modules: ['commerce'],
+                display_settings_version: null,
+            },
+        });
+        expect(resolveCan(snapshot(false), 'inst-1', 'learner_home.builder')).toBe(false);
+        expect(resolveCan(snapshot(true), 'inst-1', 'learner_home.builder')).toBe(true);
+        // Not loaded = off (fail closed), unlike ordinary features.
+        expect(
+            resolveCan(
+                { instituteId: null, status: 'idle', data: null },
+                'inst-1',
+                'learner_home.builder'
+            )
+        ).toBe(false);
     });
 
     it('the four commerce role names are the ones the backend seeds', () => {

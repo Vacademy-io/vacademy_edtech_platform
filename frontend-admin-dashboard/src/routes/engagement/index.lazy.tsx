@@ -19,6 +19,7 @@ import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore
 import { MyButton } from '@/components/design-system/button';
 import { MyPagination } from '@/components/design-system/pagination';
 import { listPlans } from './-services/engagement-service';
+import { isUserAdmin, isUserTeacher } from '@/utils/userDetails';
 import type { EngagementPlanRequest, PlanListSort } from './-types/types';
 import { AiPlanWizard } from '@/routes/engagement/-components/AiPlanWizard';
 import { PlanComposerDialog } from './-components/PlanComposerDialog';
@@ -67,9 +68,11 @@ function EngagementPlans() {
     const [search, setSearch] = useState('');
     const [q, setQ] = useState('');
     const [sort, setSort] = useState<PlanListSort>('CREATED');
+    // Teachers land on their own batches; admins see the whole institute. Either can flip it.
+    const [mine, setMine] = useState(() => !isUserAdmin() && isUserTeacher());
     // The page belongs to one set of filters: any filter change starts again at page 1,
     // without first fetching the old page number under the new filters.
-    const filterKey = JSON.stringify([packageSessionId ?? '', lifecycle, q, sort]);
+    const filterKey = JSON.stringify([packageSessionId ?? '', lifecycle, q, sort, mine]);
     const [paging, setPaging] = useState({ filterKey, page: 0 });
     const page = paging.filterKey === filterKey ? paging.page : 0;
     const setPage = useCallback(
@@ -87,7 +90,7 @@ function EngagementPlans() {
     }, [search]);
 
     const { data, isLoading, isError, isFetching, isPlaceholderData, refetch } = useQuery({
-        queryKey: ['engagement-plans', { packageSessionId, lifecycle, q, sort, page }],
+        queryKey: ['engagement-plans', { packageSessionId, lifecycle, q, sort, page, mine }],
         queryFn: () =>
             listPlans({
                 packageSessionId,
@@ -96,6 +99,7 @@ function EngagementPlans() {
                 sort,
                 page,
                 size: PAGE_SIZE,
+                mine,
             }),
         placeholderData: keepPreviousData,
     });
@@ -123,7 +127,7 @@ function EngagementPlans() {
         if (data && !isPlaceholderData && page > 0 && page >= totalPages) setPage(totalPages - 1);
     }, [data, isPlaceholderData, page, totalPages, setPage]);
     const totalRows = data?.totalRows ?? plans.length;
-    const filtered = lifecycle !== DEFAULT_LIFECYCLE_FILTER || Boolean(q);
+    const filtered = lifecycle !== DEFAULT_LIFECYCLE_FILTER || Boolean(q) || mine;
     const reload = () => void refetch();
 
     const setBatch = (next: string | undefined) =>
@@ -135,6 +139,7 @@ function EngagementPlans() {
     const clearFilters = () => {
         setLifecycle(DEFAULT_LIFECYCLE_FILTER);
         setSearch('');
+        setMine(false);
         setQ('');
     };
 
@@ -198,6 +203,8 @@ function EngagementPlans() {
                         onSearchChange={setSearch}
                         sort={sort}
                         onSortChange={setSort}
+                        mine={mine}
+                        onMineChange={setMine}
                     />
 
                     <TabsContent value={lifecycle} className="mt-0 space-y-4 focus-visible:ring-0">

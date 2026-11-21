@@ -23,12 +23,19 @@ import { sectionDomId } from '@/routes/commerce/-shared/product-errors';
 import {
     DEFAULT_MEASURE_SCALE,
     DEFAULT_MEASURE_UNIT,
+    measureScaleOf,
     type ProductFormValues,
     type SoldAs,
+    stepToBase,
+    taxUnitWarning,
 } from '@/routes/commerce/-shared/product-form';
+import { unitWord } from '@/routes/commerce/-shared/units';
+import { formatQuantity } from '@/routes/commerce/orders/-shared/order-format';
 
 const SOLD_AS: SoldAs[] = ['QUANTITY', 'PIECE', 'MEASURED'];
 const toWhole = (raw: string) => raw.replace(/\D/g, '').slice(0, 9);
+/** The smallest cut is typed in units ("0.5"): digits (Hindi too) and a point; a comma is kept to be refused. */
+const toLength = (raw: string) => raw.replace(/[^\d.,०-९]/g, '').slice(0, 10);
 
 /**
  * "How it is sold": stocked by quantity, a one-of-a-kind
@@ -42,8 +49,9 @@ export function ProductSellingSection({ locked }: { locked: boolean }) {
     const unit = useWatch({ control: form.control, name: 'unit' });
     const scale = useWatch({ control: form.control, name: 'qty_scale' });
     const step = useWatch({ control: form.control, name: 'qty_step' });
-    const smallest =
-        Number(step) > 0 ? Number(step) / (Number(scale) || Number(DEFAULT_MEASURE_SCALE)) : null;
+    // The smallest cut is typed in units and previewed as customers will see it ("0.5 m").
+    const stepBase = stepToBase(step ?? '', scale ?? '');
+    const smallest = stepBase !== null ? formatQuantity(stepBase, measureScaleOf(scale ?? ''), unit || DEFAULT_MEASURE_UNIT, t) : null;
 
     return (
         <SectionCard
@@ -119,17 +127,14 @@ export function ProductSellingSection({ locked }: { locked: boolean }) {
                             name="qty_step"
                             label={t('products.selling.step')}
                             description={t('products.selling.stepHint')}
-                            inputMode="numeric"
-                            transform={toWhole}
+                            inputMode="decimal"
+                            transform={toLength}
                             required
                         />
                     </div>
                     {smallest !== null && (
                         <p className="rounded-md bg-info-50 p-2 text-caption text-neutral-600">
-                            {t('products.selling.smallestCut', {
-                                amount: smallest,
-                                unit: unit || DEFAULT_MEASURE_UNIT,
-                            })}
+                            {t('products.selling.smallestCut', { amount: smallest })}
                         </p>
                     )}
                 </div>
@@ -158,6 +163,10 @@ export function ProductTaxSection({
     );
     const chosen = taxClasses.find((taxClass) => taxClass.id === value);
     const needed = taxMode === 'REGULAR';
+    const soldAs = useWatch({ control: form.control, name: 'sold_as' });
+    const unit = useWatch({ control: form.control, name: 'unit' }) ?? '';
+    const unitWarning = chosen ? taxUnitWarning({ sold_as: soldAs, unit }, chosen.unit) : null;
+    const itemUnit = unitWord(unit.trim() || DEFAULT_MEASURE_UNIT, t) ?? '';
 
     return (
         <SectionCard id={sectionDomId('tax')} title={t('products.tax.title')}>
@@ -205,6 +214,17 @@ export function ProductTaxSection({
                     className="rounded-md bg-warning-50 p-2 text-caption text-warning-600"
                 >
                     {t('products.tax.neededToPublish')}
+                </p>
+            )}
+            {unitWarning && (
+                <p
+                    role="status"
+                    data-testid="tax-unit-warning"
+                    className="rounded-md bg-warning-50 p-2 text-caption text-warning-600"
+                >
+                    {unitWarning === 'pieces'
+                        ? t('products.tax.unitPieces', { unit: itemUnit })
+                        : t('products.tax.unitMismatch', { taxUnit: unitWord(chosen?.unit, t) ?? '', unit: itemUnit })}
                 </p>
             )}
             {taxMode && !needed && (

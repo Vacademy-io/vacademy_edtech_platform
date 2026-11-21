@@ -11,5 +11,7 @@
     "readingSkills": "Reading Skills",
     "comprehensionMcqSingleCorrect": "Comprehension MCQ (Single correct)",
     "comprehensionMcqMultipleCorrect": "Comprehension MCQ (Multiple correct)",
-    "comprehensionNumeric": "Comprehension Numeric"
+    "comprehensionNumeric": "Comprehension Numeric",
+    "cbeSection": "Computer-based exam (CBE)",
+    "cbeResponse": "Spreadsheet & Written Response"
 }

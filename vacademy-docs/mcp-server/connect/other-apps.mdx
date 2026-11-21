@@ -19,7 +19,7 @@ Vacademy MCP follows the open MCP standard. Any app that can connect to a **remo
 | Scope | One scope, `vacademy.read`. See the note below. |
 | Client secret | None. All clients are public clients and use PKCE. |
 
-Use the server URL from **Settings → MCP Server**:
+Use the server URL from **Settings → AI access**:
 
 ```text
 https://<your backend>/ai-service/mcp/i/<institute_id>
@@ -39,7 +39,7 @@ Some apps want a client ID pasted into a form instead of registering themselves.
 
 ### Your institute's own client ID
 
-Every institute gets one client ID automatically. It shows as **Your client ID** under **Settings → MCP Server → Connect your AI app** once the server is on. It:
+Every institute gets one client ID automatically. It shows as **Your client ID** under **Settings → AI access → Connect your AI app** once the server is on. It:
 
 - already accepts the callback addresses of Claude (`claude.ai` and `claude.com`), ChatGPT's older callback address, and `cursor.com/connector/callback` (Cursor's documented desktop and web-agent callbacks are different; see [Cursor](/mcp-server/connect/cursor#using-a-fixed-client-id)),
 - cannot be removed, so your institute always has a working ID.
@@ -53,7 +53,7 @@ Try it first. If the app says its redirect URL is not allowed, create a separate
     The app's own documentation tells you its redirect (callback) URL. Desktop and command-line apps usually use something like `http://localhost:<port>/callback`.
   </Step>
   <Step title="Create the client ID (admin)">
-    In **Settings → MCP Server → Client IDs for other apps**, click **Add a client ID for another app**.
+    In **Settings → AI access → Client IDs for other apps**, click **Add a client ID for another app**.
 
     - **App name:** something you will recognise, for example *Marketing team's assistant*.
     - **Redirect URLs:** comma-separated, up to five. Each must be `https://`, or `http://` on localhost.
@@ -81,7 +81,7 @@ npx @modelcontextprotocol/inspector
 4. Open **Tools**, list them, and call `whoami`.
 
 <Tip>
-If the tool list is empty after a successful sign-in, the server is answering correctly but you have no tools: the server is off, the settings were not saved, or your role is not allowed. If you see only `whoami`, every area is Off for your role. Check **Settings → MCP Server**.
+If the tool list is empty after a successful sign-in, the server is answering correctly but you have no tools: the server is off, the settings were not saved, or your role is not allowed. If you see only `whoami`, every area is Off for your role. Check **Settings → AI access**.
 </Tip>
 
 ## Technical notes

@@ -106,4 +106,8 @@ public class CommerceReturn extends CommerceCatalogueEntity {
 
     @Column(name = "request_hash", nullable = false, updatable = false, length = 64)
     private String requestHash;
+
+    /** V724: the counter session a return was taken in at the billing counter; null for every other return. */
+    @Column(name = "pos_session_id", length = 36)
+    private String posSessionId;
 }

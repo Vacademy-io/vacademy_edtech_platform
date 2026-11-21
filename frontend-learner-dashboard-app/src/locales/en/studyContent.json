@@ -31,7 +31,10 @@
         "scormModule": "SCORM Module",
         "content": "Content",
         "discussion": "Discussion",
-        "spreadsheet": "Spreadsheet"
+        "spreadsheet": "Spreadsheet",
+        "flashcards": "Flashcards",
+        "poll": "Poll",
+        "game": "Game"
     },
     "spreadsheet": {
         "readOnly": "Read-only",
@@ -455,5 +458,34 @@
             "sentForReview": "Sent to your teacher for review",
             "reported": "Thanks for letting your teacher know"
         }
+    },
+    "activity": {
+        "unavailable": "This activity isn't ready yet.",
+        "loading": "Loading…",
+        "loadFailed": "Couldn't load. Check your connection and try again.",
+        "poll": {
+            "label": "Poll",
+            "pick": "Pick one. There's no right answer.",
+            "voteFailed": "Your vote didn't go through. Try again.",
+            "votes_one": "{{count}} vote from your class",
+            "votes_other": "{{count}} votes from your class",
+            "thanksHidden": "Thanks for voting. Your teacher will see the results.",
+            "canChange": "You can change your vote."
+        },
+        "game": {
+            "label": "Play the game. Your best score is saved.",
+            "best": "Best: {{best}}",
+            "bestOf": "Best: {{best}} / {{max}}",
+            "scored": "You scored {{score}}.",
+            "saving": "Saving your score…",
+            "saveFailed": "Your score couldn't be saved. Play again to retry."
+        }
+    },
+    "slideEngagement": {
+        "toEarn": "Activity · finish it to earn {{points}} points",
+        "earned": "You earned {{points}} points for this activity",
+        "markDone": "Mark as done",
+        "markFailed": "Could not mark this as done. Please try again.",
+        "toastEarned": "+{{points}} points! Activity complete"
     }
 }

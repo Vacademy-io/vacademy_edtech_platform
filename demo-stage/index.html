@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vacademy live demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FAF7F2; --ink:#14181F; --muted:#5B6472; --line:#E7E1D8; --card:#FFFFFF;
+  --accent:#ED7424; --accent-ink:#FFFFFF; --accent-soft:#FDEEE3; --stage:#10141B; --stage-ink:#E9EDF3;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{background:var(--paper);color:var(--ink);font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:15px;line-height:1.5}
+button{font:inherit;color:inherit;cursor:pointer}
+.shell{height:100%;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;padding:16px}
+
+/* Player */
+.player{min-width:0;display:flex;flex-direction:column;background:var(--stage);border-radius:18px;overflow:hidden;box-shadow:0 18px 48px rgba(20,24,31,.18)}
+.player-top{display:flex;align-items:center;gap:10px;padding:10px 14px;color:var(--stage-ink);font-size:13px}
+.brand{font-weight:700;letter-spacing:.01em}
+.brand b{color:var(--accent)}
+.live{margin-left:auto;display:inline-flex;align-items:center;gap:6px;color:#B9C2CF}
+.live i{width:8px;height:8px;border-radius:50%;background:#35C27A}
+.screen{position:relative;flex:1;min-height:0;background:#0B0E13;overflow:hidden}
+.screen iframe{position:absolute;left:0;top:0;border:0;background:#fff;transform-origin:0 0}
+.veil{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#0B0E13;color:#B9C2CF;font-size:14px;transition:opacity .4s}
+.veil.off{opacity:0;pointer-events:none}
+.caption{min-height:56px;padding:12px 16px;color:var(--stage-ink);font-size:15px;display:flex;align-items:center}
+.caption span{opacity:.92}
+.controls{display:flex;align-items:center;gap:10px;padding:0 14px 12px;color:var(--stage-ink)}
+.ctl{width:36px;height:36px;border-radius:50%;border:1px solid #2A3240;background:#1A202B;display:grid;place-items:center}
+.ctl:hover{border-color:#3B4657}
+.ctl:disabled{opacity:.4;cursor:default}
+.ctl svg{width:16px;height:16px;fill:currentColor}
+.bar{flex:1;height:4px;border-radius:2px;background:#2A3240;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+.now{font-size:13px;color:#B9C2CF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40%}
+
+/* Guide */
+.guide{display:flex;flex-direction:column;min-height:0;background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.guide-top{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-weight:700}
+.guide-top h1{font-size:15px;margin:0;font-weight:600}
+.guide-top p{margin:0;font-size:12px;color:var(--muted)}
+.guide-top select{margin-left:auto;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;font-size:13px;background:#fff;color:var(--ink)}
+.icon-btn{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:#fff;display:grid;place-items:center}
+.icon-btn svg{width:16px;height:16px;fill:var(--ink)}
+.icon-btn[aria-pressed="false"] svg{opacity:.35}
+.log{flex:1;min-height:0;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:88%;padding:10px 13px;border-radius:14px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.bot{background:#F4F1EB;border-top-left-radius:4px;align-self:flex-start}
+.msg.me{background:var(--accent);color:var(--accent-ink);border-top-right-radius:4px;align-self:flex-end}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--accent);color:#B4500F;background:var(--accent-soft);border-radius:999px;padding:7px 12px;font-size:13.5px;font-weight:500}
+.chip:hover{background:#FBDDC8}
+.form{align-self:stretch;border:1px solid var(--line);border-radius:14px;padding:12px;display:grid;gap:8px}
+.form label{font-size:12px;color:var(--muted);display:grid;gap:4px}
+.form input{font:inherit;padding:9px 10px;border:1px solid var(--line);border-radius:8px}
+.primary{background:var(--accent);color:var(--accent-ink);border:0;border-radius:10px;padding:10px 14px;font-weight:600}
+.composer{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
+.composer .mic{width:42px;height:auto;border-radius:10px}
+.composer .mic svg{opacity:1}
+.composer .mic[aria-pressed="true"]{background:var(--accent);border-color:var(--accent)}
+.composer .mic[aria-pressed="true"] svg{fill:#fff;opacity:1}
+.consent{margin:0;font-size:11.5px;color:var(--muted)}
+.composer input{flex:1;min-width:0;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px}
+.note{padding:0 14px 10px;font-size:11.5px;color:var(--muted)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* Film mode: the player alone, edge to edge, for the video recorder. */
+body.film .guide,body.film .controls{display:none}
+body.film .shell{grid-template-columns:1fr;padding:0;gap:0}
+body.film .player{border-radius:0;box-shadow:none}
+body.film .caption{min-height:84px;font-size:24px;padding:16px 28px;justify-content:center;text-align:center}
+body.film .player-top{font-size:16px;padding:12px 20px}
+
+@media (max-width:900px){
+  .shell{grid-template-columns:1fr;grid-template-rows:auto minmax(320px,1fr);height:auto;min-height:100%;padding:12px}
+  .screen{flex:none;aspect-ratio:16/10}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <section class="player" aria-label="Product screen">
+    <div class="player-top">
+      <span class="brand"><b>Vacademy</b> live demo</span>
+      <span class="live"><i></i><span id="live">Real product, demo account</span></span>
+    </div>
+    <div class="screen" id="screen">
+      <iframe id="app" name="vx-demo-stage" title="Vacademy admin, demo account" allow="clipboard-write"></iframe>
+      <div class="veil" id="veil">Opening the demo account…</div>
+    </div>
+    <div class="caption"><span id="caption">Pick a topic on the right, or just explore the product yourself.</span></div>
+    <div class="controls">
+      <button class="ctl" id="play" aria-label="Pause" disabled><svg viewBox="0 0 16 16"><path d="M4 2h3v12H4zM9 2h3v12H9z"/></svg></button>
+      <button class="ctl" id="skip" aria-label="Next step" disabled><svg viewBox="0 0 16 16"><path d="M2 2l8 6-8 6zM11 2h3v12h-3z"/></svg></button>
+      <div class="bar"><i id="progress"></i></div>
+      <span class="now" id="now"></span>
+    </div>
+  </section>
+
+  <aside class="guide" aria-label="Demo guide">
+    <div class="guide-top">
+      <div class="avatar">V</div>
+      <div><h1>Vacademy guide</h1><p>AI assistant</p></div>
+      <select id="lang" aria-label="Language">
+        <option value="en">English</option>
+        <option value="hi">हिन्दी</option>
+        <option value="kn">ಕನ್ನಡ</option>
+        <option value="fr">Français</option>
+      </select>
+      <button class="icon-btn" id="sound" aria-label="Voice" aria-pressed="true"><svg viewBox="0 0 16 16"><path d="M2 6h3l4-3v10L5 10H2zM11 5a4 4 0 010 6v-1.5a2.5 2.5 0 000-3z"/></svg></button>
+    </div>
+    <div class="log" id="log" aria-live="polite"></div>
+    <form class="composer" id="composer">
+      <input id="text" autocomplete="off" placeholder="Ask anything about Vacademy">
+      <button class="icon-btn mic" id="mic" type="button" aria-label="Speak" aria-pressed="false" hidden><svg viewBox="0 0 16 16"><path d="M8 1a2.5 2.5 0 00-2.5 2.5v4a2.5 2.5 0 005 0v-4A2.5 2.5 0 008 1zM3.5 7.5a4.5 4.5 0 009 0h-1.2a3.3 3.3 0 01-6.6 0zM7.4 12.4h1.2V15H7.4z"/></svg></button>
+      <button class="primary" id="send" type="submit">Send</button>
+    </form>
+    <div class="note" id="note">You are talking to an AI. The screen is a real Vacademy account with sample data; nothing you do there is saved.</div>
+  </aside>
+</div>
+<script type="module" src="stage.js"></script>
+</body>
+</html>

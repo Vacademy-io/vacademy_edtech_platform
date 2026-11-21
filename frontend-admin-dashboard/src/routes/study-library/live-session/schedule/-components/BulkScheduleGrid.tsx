@@ -2726,7 +2726,7 @@ export function BulkScheduleGrid() {
                 </div>
             </SectionCard>
 
-            <div className="sticky bottom-0 -mx-4 flex flex-wrap items-center justify-end gap-3 border-t border-neutral-200 bg-white/95 px-4 py-3 backdrop-blur sm:-mx-0 sm:rounded-lg sm:border sm:px-4">
+            <div data-assistant-fab="avoid-phone" className="sticky bottom-0 -mx-4 flex flex-wrap items-center justify-end gap-3 border-t border-neutral-200 bg-white/95 px-4 py-3 backdrop-blur sm:-mx-0 sm:rounded-lg sm:border sm:px-4">
                 <MyButton
                     type="button"
                     buttonType="primary"

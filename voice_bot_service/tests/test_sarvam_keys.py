@@ -94,6 +94,25 @@ def test_every_refusal_rests_a_key_for_a_minute_by_default(keys, monkeypatch):
     assert pool.refused(1, "credits") == 60
 
 
+def test_status_says_whether_a_key_works_now(keys):
+    pool = keys()
+    clock = iter([100.0, 100.1, 160.0, 160.1, 200.0])
+    pool._wall = lambda: next(clock)
+    assert [k["state"] for k in pool.status()] == ["unused", "unused"]
+    assert pool.pick() == 0                      # opens on key 1 at 100.0
+    pool.refused(0, "credits")                   # refused at 100.1: out of credit
+    first = pool.status()[0]
+    assert first["state"] == "credits" and first["lastRefusalAt"].endswith("Z")
+    pool._rest_until.clear()
+    assert pool.pick() == 0                      # opens again at 160.0 ...
+    pool.refused(0, "credits")                   # ... refused again at 160.1
+    assert pool.status()[0]["state"] == "credits"
+    pool._rest_until.clear()
+    assert pool.pick() == 0                      # 200.0, no refusal follows: topped up
+    assert pool.status()[0]["state"] == "ok"
+    assert pool.status()[1]["state"] == "unused"
+
+
 def test_status_never_carries_the_key_text(keys):
     pool = keys(k1="sk_secret_one", k2="sk_secret_two")
     assert "sk_secret" not in repr(pool.status())

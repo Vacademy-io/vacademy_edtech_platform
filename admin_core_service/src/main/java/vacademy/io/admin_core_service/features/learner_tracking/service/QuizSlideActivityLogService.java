@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.learner_tracking.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -15,6 +16,7 @@ import vacademy.io.admin_core_service.features.learner_quiz.repository.LearnerQu
 import vacademy.io.admin_core_service.features.learner_quiz.service.LearnerQuizAccessService;
 import vacademy.io.admin_core_service.features.learner_quiz.service.QuizGrader;
 import vacademy.io.admin_core_service.features.learner_quiz.service.QuizLoader;
+import vacademy.io.admin_core_service.features.learner_tracking.cbe.QuizCbeRows;
 import vacademy.io.admin_core_service.features.learner_tracking.dto.ActivityLogDTO;
 import vacademy.io.admin_core_service.features.learner_tracking.dto.QuizQuestionFeedbackDTO;
 import vacademy.io.admin_core_service.features.learner_tracking.dto.QuizSideActivityLogDTO;
@@ -23,6 +25,7 @@ import vacademy.io.admin_core_service.features.learner_tracking.entity.QuizSlide
 import vacademy.io.admin_core_service.features.learner_tracking.repository.ActivityLogRepository;
 import vacademy.io.admin_core_service.features.learner_tracking.repository.QuizSlideQuestionTrackedRepository;
 import vacademy.io.admin_core_service.features.learner_tracking.util.AutoEvaluationScorer;
+import vacademy.io.admin_core_service.features.slide.cbe.CbeConfigSecrets;
 import vacademy.io.admin_core_service.features.slide.entity.QuizSlideQuestion;
 import vacademy.io.admin_core_service.features.slide.entity.QuizSlideQuestionOption;
 import vacademy.io.admin_core_service.features.slide.repository.QuizSlideQuestionOptionRepository;
@@ -107,6 +110,7 @@ public class QuizSlideActivityLogService {
         // all see the same authoritative verdict.
         applyServerSideScoring(sides);
         reconcileRecordedMarks(slideId, sides);
+        normaliseCbeAnswers(slideId, sides);
         assignRowIds(activityLogDTO.getId(), sides);
 
         ActivityLog[] written = new ActivityLog[1];
@@ -313,6 +317,44 @@ public class QuizSlideActivityLogService {
                     QuizGrader.GRADED_BY_LEGACY);
             side.setResponseJson(graded.responseJson());
             side.setResponseStatus(graded.responseStatus());
+        }
+    }
+
+    /**
+     * Spreadsheet &amp; Written Response answers: whatever the client sent, the row keeps the
+     * learner's answer with 0 marks and waits for its AI check
+     * ({@code QuizCbeGradingService}, called by the learner app after the submit). A client
+     * never sets the marks of a CBE answer.
+     */
+    private void normaliseCbeAnswers(String slideId, List<QuizSideActivityLogDTO> quizSides) {
+        if (slideId == null || quizSides.isEmpty()) {
+            return;
+        }
+        try {
+            QuizLoader.LoadedQuiz quiz = quizLoader.load(slideId).orElse(null);
+            if (quiz == null) {
+                return;
+            }
+            Map<String, QuizGrader.Question> cbeQuestions = quiz.questions().stream()
+                    .filter(q -> CbeConfigSecrets.isCbe(q.questionType(), q.autoEvaluationJson()))
+                    .collect(Collectors.toMap(QuizGrader.Question::id, q -> q, (a, b) -> a));
+            if (cbeQuestions.isEmpty()) {
+                return;
+            }
+            for (QuizSideActivityLogDTO side : quizSides) {
+                QuizGrader.Question question = cbeQuestions.get(side.getQuestionId());
+                if (question == null) {
+                    continue;
+                }
+                JsonNode answer = QuizCbeRows.answerOf(side.getResponseJson());
+                double maxMarks = QuizCbeRows.questionMaxMarks(question.marks(), question.autoEvaluationJson(),
+                        quiz.rules().marksPerQuestion());
+                side.setResponseJson(QuizCbeRows.pending(side.getResponseJson(), answer, maxMarks).toString());
+                side.setResponseStatus(QuizCbeRows.pendingStatus(answer));
+            }
+        } catch (Exception e) {
+            // Marking must never cost a learner their submission.
+            log.error("Could not prepare spreadsheet answers for slide {}; keeping what the client recorded", slideId, e);
         }
     }
 

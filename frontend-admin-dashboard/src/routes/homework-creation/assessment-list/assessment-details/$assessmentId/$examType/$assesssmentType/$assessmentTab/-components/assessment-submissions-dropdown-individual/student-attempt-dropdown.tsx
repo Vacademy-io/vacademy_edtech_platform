@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from '@tanstack/react-router';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -230,6 +231,7 @@ const StudentRevaluateForEntireAssessmentComponent = ({
 
 const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStudentInterface }) => {
     const { t } = useTranslation('homeworkCreationStudentAttemptDropdown');
+    const navigate = useNavigate();
     const [openDialog, setOpenDialog] = useState(false);
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
 
@@ -252,6 +254,20 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                     </MyButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
+                    {student.attempt_id && (
+                        <DropdownMenuItem
+                            className="cursor-pointer font-semibold"
+                            onClick={() =>
+                                navigate({
+                                    to: '/assessment/submission/$attemptId',
+                                    params: { attemptId: student.attempt_id },
+                                    search: {},
+                                })
+                            }
+                        >
+                            {t('dropdown.openSubmission')}
+                        </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem
                         className="cursor-pointer"
                         onClick={() => handleProvideReattempt('Provide Reattempt')}

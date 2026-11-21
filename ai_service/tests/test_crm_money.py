@@ -112,7 +112,11 @@ def test_tools_are_registered_mcp_only_off_by_default_and_tied_to_crm_and_money_
                               ("crm_payment_reminders", "crm_payment_reminders", "WRITE")):
         spec = ASSISTANT_TOOLS[name]
         assert spec is money.CRM_MONEY_TOOLS[name]
-        assert spec.mcp_only and not spec.default_enabled and spec.default_roles is None
+        if mode == "READ":   # both doors; in the assistant on for admins and counsellors, on CRM pages
+            assert not spec.mcp_only and not spec.default_enabled and spec.topic == "crm"
+            assert spec.default_roles == ["ADMIN", "COUNSELLOR", "COUNSELOR"]
+        else:
+            assert spec.mcp_only and not spec.default_enabled and spec.default_roles is None
         assert spec.key() == group and spec.mode == mode
         assert spec.module_feature == "crm.leads"
         assert spec.module_features_any == ("finance.fees", "finance.memberships")

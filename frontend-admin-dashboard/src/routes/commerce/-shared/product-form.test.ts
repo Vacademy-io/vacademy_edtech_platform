@@ -14,10 +14,14 @@ import {
     productToValues,
     publishBlockers,
     soldAsOf,
+    stepToBase,
+    taxUnitWarning,
     translationHasText,
     translationIsComplete,
     valuesToProductRequest,
+    variantPriceLabels,
 } from './product-form';
+import { localeT } from './en-t';
 
 const t = ((key: string) => key) as unknown as TFunction;
 const schema = buildProductSchema(t);
@@ -155,7 +159,8 @@ describe('soldAsOf and measureFields', () => {
 
     it('goods sold by length default to metres in tenths', () => {
         expect(
-            measureFields({ sold_as: 'MEASURED', unit: '', qty_scale: '', qty_step: '5' })
+            // The smallest cut is typed in metres (WP-44 FA2): 0.5 m is 5 tenths.
+            measureFields({ sold_as: 'MEASURED', unit: '', qty_scale: '', qty_step: '0.5' })
         ).toEqual({
             stock_mode: 'QUANTITY',
             unit: 'MTR',
@@ -282,7 +287,7 @@ describe('valuesToProductRequest', () => {
             sold_as: 'MEASURED' as const,
             unit: 'mtr',
             qty_scale: '10',
-            qty_step: '5',
+            qty_step: '0.5',
         };
         expect(valuesToProductRequest(values, original)).toMatchObject({
             unit: 'MTR',
@@ -427,6 +432,74 @@ describe('product schema', () => {
         expect(paths(valid({ sold_as: 'MEASURED', qty_step: '5', qty_scale: '10' }))).toEqual([]);
     });
 
+    it('the smallest cut is typed in metres and refused, not rounded, past the scale (WP-44 FA2)', () => {
+        expect(stepToBase('0.5', '10')).toBe(5);
+        // W4: a comma is refused ("use a dot"), never read as a decimal point.
+        expect(stepToBase('0,5', '')).toBeNull();
+        expect(stepToBase('0.50', '')).toBe(5);
+        expect(stepToBase('0.05', '100')).toBe(5);
+        expect(stepToBase('0.55', '10')).toBeNull();
+        expect(paths(valid({ sold_as: 'MEASURED', qty_step: '0.55', qty_scale: '10' }))).toEqual(['qty_step']);
+        expect(paths(valid({ sold_as: 'MEASURED', qty_step: '0.5', qty_scale: '10' }))).toEqual([]);
+    });
+
+    it('sold by length needs 10, 100 or 1000 parts in a unit (D2)', () => {
+        expect(paths(valid({ sold_as: 'MEASURED', qty_step: '1', qty_scale: '1' }))).toEqual(['qty_scale']);
+        expect(paths(valid({ sold_as: 'MEASURED', qty_step: '1', qty_scale: '4' }))).toEqual(['qty_scale']);
+        expect(paths(valid({ sold_as: 'MEASURED', qty_step: '1', qty_scale: '100' }))).toEqual([]);
+        // 999 a unit does not split into 1000 paise parts: only the prices are refused, not the scale.
+        expect(paths(valid({ sold_as: 'MEASURED', qty_step: '1', qty_scale: '1000' }))).not.toContain('qty_scale');
+        expect(paths(valid({ sold_as: 'MEASURED', qty_step: '1', qty_scale: '' }))).toEqual([]);
+    });
+
+    it('W3: an old row with scale 4 stays editable; its cut reads with its real scale', () => {
+        const original = product({ stock_mode: 'QUANTITY', unit: 'MTR', qty_scale: 4, qty_step: 2 });
+        const values = productToValues(original);
+        expect(values.qty_step).toBe('0.5');
+        expect(stepToBase('0.5', '4')).toBe(2);
+        const stored = buildProductSchema(t, original);
+        const measureOf = (v: ProductFormValues) => ({ sold_as: v.sold_as, unit: v.unit, qty_scale: v.qty_scale, qty_step: v.qty_step });
+        const result = stored.safeParse(valid(measureOf(values)));
+        expect(result.success ? [] : result.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`)).toEqual([]);
+        // Nothing about the measure is sent, so the server lock is never asked.
+        const request = valuesToProductRequest(values, original);
+        expect(request).not.toHaveProperty('qty_scale');
+        expect(request).not.toHaveProperty('qty_step');
+        // Changing the scale to another odd one is still refused.
+        const changed = stored.safeParse(valid({ ...measureOf(values), qty_scale: '20' }));
+        expect(changed.success ? [] : changed.error.issues.map((i) => i.path.join('.'))).toEqual(['qty_scale']);
+    });
+
+    it('W2: a measured item needs a measuring unit, not a piece code', () => {
+        expect(paths(valid({ sold_as: 'MEASURED', qty_step: '0.5', qty_scale: '10', unit: 'PCS' }))).toEqual(['unit']);
+        expect(paths(valid({ sold_as: 'MEASURED', qty_step: '0.5', qty_scale: '10', unit: 'pieces' }))).toEqual(['unit']);
+        expect(paths(valid({ sold_as: 'MEASURED', qty_step: '0.5', qty_scale: '10', unit: 'KG' }))).toEqual([]);
+        // Blank is the default MTR.
+        expect(paths(valid({ sold_as: 'MEASURED', qty_step: '0.5', qty_scale: '10', unit: '' }))).toEqual([]);
+        // A stored old row with PCS (unit locked after publish) is not blocked from a name or price edit.
+        const legacy = product({ stock_mode: 'QUANTITY', unit: 'PCS', qty_scale: 10, qty_step: 5 });
+        const opened = productToValues(legacy);
+        const values = valid({ sold_as: opened.sold_as, unit: opened.unit, qty_scale: opened.qty_scale, qty_step: opened.qty_step });
+        const legacyResult = buildProductSchema(t, legacy).safeParse(values);
+        expect(legacyResult.success ? [] : legacyResult.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`)).toEqual([]);
+    });
+
+    it('W1: a tax class quoted in another unit is a warning for a measured item', () => {
+        expect(taxUnitWarning({ sold_as: 'MEASURED', unit: 'MTR' }, 'MTR')).toBeNull();
+        expect(taxUnitWarning({ sold_as: 'MEASURED', unit: '' }, 'M')).toBeNull();
+        expect(taxUnitWarning({ sold_as: 'MEASURED', unit: 'MTR' }, 'KGS')).toBe('mismatch');
+        expect(taxUnitWarning({ sold_as: 'MEASURED', unit: 'MTR' }, 'PCS')).toBe('pieces');
+        expect(taxUnitWarning({ sold_as: 'MEASURED', unit: 'MTR' }, null)).toBe('pieces');
+        expect(taxUnitWarning({ sold_as: 'QUANTITY', unit: 'PCS' }, 'KGS')).toBeNull();
+    });
+
+    it('a saved step of 5 tenths opens as "0.5" and saves back unchanged', () => {
+        const original = product({ stock_mode: 'QUANTITY', unit: 'MTR', qty_scale: 10, qty_step: 5 });
+        const values = productToValues(original);
+        expect(values.qty_step).toBe('0.5');
+        expect(valuesToProductRequest(values, original)).not.toHaveProperty('qty_step');
+    });
+
     it('content block codes are lower-case codes, once per language', () => {
         const values = valid();
         values.translations.hi.content_blocks = [
@@ -515,7 +588,7 @@ describe('goods sold by measure are priced per unit', () => {
 
     it('450 typed for a metre is sent as 45 for a tenth of a metre, not as 450', () => {
         const values = valid({ sold_as: 'MEASURED', unit: 'MTR', qty_scale: '10', qty_step: '5' });
-        values.variants = [{ ...emptyVariant(), sku: 'KHADI-THAN', price: '450', mrp: '500.5' }];
+        values.variants = [{ ...emptyVariant(), sku: 'CLOTH-ROLL', price: '450', mrp: '500.5' }];
         const request = valuesToProductRequest(values);
         expect(request.variants?.[0]).toMatchObject({ price: 45, mrp: 50.05 });
         // 2.5 m is 25 base units: 25 x 45 = 1,125, not 11,250.
@@ -538,7 +611,7 @@ describe('goods sold by measure are priced per unit', () => {
 
     it('a price per metre that has no price to the paisa for a base unit is refused', () => {
         const values = valid({ sold_as: 'MEASURED', unit: 'MTR', qty_scale: '10', qty_step: '5' });
-        values.variants = [{ ...emptyVariant(), sku: 'KHADI-THAN', price: '449.99', mrp: '500' }];
+        values.variants = [{ ...emptyVariant(), sku: 'CLOTH-ROLL', price: '449.99', mrp: '500' }];
         expect(paths(values)).toEqual(['variants.0.price']);
         expect(dividesToPaise('449.99', 10)).toBe(false);
         expect(dividesToPaise('450', 10)).toBe(true);
@@ -552,5 +625,34 @@ describe('goods sold by measure are priced per unit', () => {
         expect(baseToPerUnit(0.07, 100)).toBe(7);
         expect(baseToPerUnit(null, 10)).toBeNull();
         expect(perUnitToBase(450, 1)).toBe(450);
+    });
+});
+
+describe('round 2: the variant price labels name the unit, never the code', () => {
+    const en = localeT('en');
+    const hi = localeT('hi');
+
+    it('reads "per m" / "प्रति मीटर" for cloth, the sign for other measures, plain for pieces', () => {
+        expect(variantPriceLabels({ sold_as: 'MEASURED', unit: 'MTR' }, en)).toEqual({
+            price: 'Price per m (₹, with tax)',
+            mrp: 'MRP per m (₹)',
+        });
+        expect(variantPriceLabels({ sold_as: 'MEASURED', unit: '' }, en).price).toBe('Price per m (₹, with tax)');
+        const hindi = variantPriceLabels({ sold_as: 'MEASURED', unit: 'MTR' }, hi);
+        expect(hindi.price).toContain('प्रति मीटर');
+        expect(hindi.mrp).toContain('प्रति मीटर');
+        expect(variantPriceLabels({ sold_as: 'MEASURED', unit: 'KGS' }, en).price).toBe('Price per kg (₹, with tax)');
+        expect(variantPriceLabels({ sold_as: 'MEASURED', unit: 'LTR' }, en).mrp).toBe('MRP per l (₹)');
+        expect(variantPriceLabels({ sold_as: 'QUANTITY', unit: 'PCS' }, en)).toEqual({
+            price: en('products.variants.price'),
+            mrp: en('products.variants.mrp'),
+        });
+        for (const labels of [
+            variantPriceLabels({ sold_as: 'MEASURED', unit: 'MTR' }, en),
+            variantPriceLabels({ sold_as: 'MEASURED', unit: 'MTR' }, hi),
+        ]) {
+            expect(labels.price).not.toContain('MTR');
+            expect(labels.mrp).not.toContain('MTR');
+        }
     });
 });

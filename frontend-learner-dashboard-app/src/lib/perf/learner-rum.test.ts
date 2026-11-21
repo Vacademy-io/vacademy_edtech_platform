@@ -115,6 +115,9 @@ describe("allowlisted dimensions", () => {
     expect(skinClass(has("ui-corporate"))).toBe("corporate");
     expect(skinClass(has("ui-cleaner-play"))).toBe("cleanerPlay");
     expect(skinClass(has("ui-fun"))).toBe("fun");
+    // Neon City carries ui-fun too; it is reported as itself.
+    const neon = { contains: (c: string) => c === "ui-fun" || c === "ui-neon-city" };
+    expect(skinClass(neon)).toBe("neonCity");
     expect(skinClass(has("ui-play"))).toBe("play");
     expect(skinClass(has("ui-vibrant"))).toBe("vibrant");
     expect(skinClass(has("anything"))).toBe("default");

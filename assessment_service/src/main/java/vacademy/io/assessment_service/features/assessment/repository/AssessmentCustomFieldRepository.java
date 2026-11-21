@@ -20,6 +20,10 @@ public interface AssessmentCustomFieldRepository extends JpaRepository<Assessmen
 
     Optional<AssessmentCustomField> findByFieldKeyAndAssessment(String fieldKey, Assessment assessment);
 
+    // Every row of the assessment, soft-deleted ones included. field_key is UNIQUE per
+    // assessment across all of them, so a save of the registration form must see them all.
+    List<AssessmentCustomField> findAllByAssessment(Assessment assessment);
+
     // Fields still shown on the registration form, in the order the participant
     // saw them. Drives both the export-columns dialog and the CSV column order.
     // field_order ties are common (whole forms sit at 0), and nothing stops two

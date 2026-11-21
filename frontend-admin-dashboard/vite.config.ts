@@ -506,7 +506,9 @@ export default defineConfig(({ mode }) => {
                 'src/components/shared/whatsapp/**/*.test.{ts,tsx}',
                 'src/components/common/study-library/add-course/**/*.test.{ts,tsx}',
                 'src/components/common/payments/**/*.test.{ts,tsx}',
+                'src/components/common/assessment-folders/**/*.test.{ts,tsx}',
                 'src/components/cbe/**/*.test.{ts,tsx}',
+                'src/components/common/student-slide-tracking/**/*.test.{ts,tsx}',
             ],
         },
         server: {
@@ -518,7 +520,7 @@ export default defineConfig(({ mode }) => {
                 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
                 'Access-Control-Allow-Headers': 'X-Requested-With, content-type, Authorization',
                 'Content-Security-Policy':
-                    "default-src * 'unsafe-inline' 'unsafe-eval' data: blob: wasm:; worker-src * blob:; frame-src *; frame-ancestors 'self' https://www.youtube.com https://youtube.com https://*.youtube.com;",
+                    "default-src * 'unsafe-inline' 'unsafe-eval' data: blob: wasm:; worker-src * blob:; frame-src *; frame-ancestors 'self' http://localhost:* https://www.youtube.com https://youtube.com https://*.youtube.com;",
             },
             proxy: {
                 // --- Local backend microservices ---------------------------------

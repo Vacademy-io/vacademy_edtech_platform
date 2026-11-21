@@ -154,11 +154,25 @@ public class CommerceRefundService {
         this.ownTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
-    /** One refund to write; see {@link #insertInside}. */
+    /**
+     * One refund to write; see {@link #insertInside}. {@code posSessionId} names the counter
+     * session whose drawer the money left (a counter return, an exchange's remainder at the
+     * till); null everywhere else.
+     */
     public record NewRefund(RefundKind kind, RefundSource source, RefundMethod method, RefundStatus status,
                             BigDecimal amount, String returnId, String creditNoteId, String gatewayPaymentId,
                             String gatewayRefundId, String gatewayStatus, String reference, String appliedOrderId,
-                            LocalDate paidOn, String reason, String idempotencyKey, String actor) {
+                            LocalDate paidOn, String reason, String idempotencyKey, String actor,
+                            String posSessionId) {
+
+        /** A refund outside the counter: no session. */
+        public NewRefund(RefundKind kind, RefundSource source, RefundMethod method, RefundStatus status,
+                         BigDecimal amount, String returnId, String creditNoteId, String gatewayPaymentId,
+                         String gatewayRefundId, String gatewayStatus, String reference, String appliedOrderId,
+                         LocalDate paidOn, String reason, String idempotencyKey, String actor) {
+            this(kind, source, method, status, amount, returnId, creditNoteId, gatewayPaymentId, gatewayRefundId,
+                    gatewayStatus, reference, appliedOrderId, paidOn, reason, idempotencyKey, actor, null);
+        }
     }
 
     /** What an outcome brings: who, the payout or bank reference, the payout day, the gateway's word. */
@@ -190,8 +204,7 @@ public class CommerceRefundService {
             location = ret.getLocationId();
         }
         desk.authorize(user, instituteId, location, MANAGER);
-        CommercePaymentGateway.GatewayRefund adopted = clean.gatewayRefundId() == null ? null
-                : readAdopted(instituteId, seen, clean);
+        Adopted adopted = clean.gatewayRefundId() == null ? null : readAdopted(instituteId, seen, clean);
         String actor = user.getUserId();
         String key = "REQ:" + clean.clientRequestId();
         CommerceRequestGuard.Outcome<String> outcome = requestGuard.run(new CommerceRequestGuard.Key(instituteId,
@@ -205,8 +218,8 @@ public class CommerceRefundService {
         return view(instituteId, refundId, outcome.replayed());
     }
 
-    String createInside(String instituteId, Clean clean, CommercePaymentGateway.GatewayRefund adopted, String key,
-                        String actor) {
+    String createInside(String instituteId, Clean clean, Adopted adoption, String key, String actor) {
+        CommercePaymentGateway.GatewayRefund adopted = adoption == null ? null : adoption.refund();
         CommerceOrder order = desk.lockOrder(instituteId, clean.orderId());
         if (CommerceOrderStatus.PENDING_PAYMENT.name().equals(order.getStatus())) {
             throw new ConflictException(CommerceOrderDeskService.ORDER_STATE_CHANGED + ": an unpaid order has "
@@ -280,9 +293,14 @@ public class CommerceRefundService {
             periodGuard.ifAvailable(guard -> guard.assertOpen(instituteId, day));
         }
         CommerceReturn ret = clean.returnId() == null ? null : returnRepository.findById(clean.returnId()).orElse(null);
+        Map<String, Object> extra = null;
+        if (adopted != null && adoption.adoptsFailedRefundId() != null) {
+            extra = new LinkedHashMap<>();
+            extra.put("adopts_failed_refund", adoption.adoptsFailedRefundId());
+        }
         CommerceRefund refund = insertInside(order, new NewRefund(RefundKind.ORDER, RefundSource.STAFF, clean.method(),
                 status, amount, clean.returnId(), ret == null ? null : ret.getCreditNoteId(), paymentId,
-                gatewayRefundId, gatewayStatus, reference, null, paidOn, clean.reason(), key, actor));
+                gatewayRefundId, gatewayStatus, reference, null, paidOn, clean.reason(), key, actor), extra);
         return refund.getId();
     }
 
@@ -401,6 +419,11 @@ public class CommerceRefundService {
      * caps are the caller's. Saves the order.
      */
     public CommerceRefund insertInside(CommerceOrder order, NewRefund n) {
+        return insertInside(order, n, null);
+    }
+
+    /** As above; {@code extraDetail} is added to the audit row's detail. */
+    CommerceRefund insertInside(CommerceOrder order, NewRefund n, Map<String, Object> extraDetail) {
         Date now = new Date();
         CommerceRefund refund = new CommerceRefund();
         refund.setInstituteId(order.getInstituteId());
@@ -428,6 +451,7 @@ public class CommerceRefundService {
         }
         refund.setReference(n.reference());
         refund.setAppliedOrderId(n.appliedOrderId());
+        refund.setPosSessionId(n.posSessionId());
         refund.setPaidOn(n.paidOn());
         refund.setReason(n.reason());
         refund.setIdempotencyKey(n.idempotencyKey());
@@ -450,6 +474,9 @@ public class CommerceRefundService {
         detail.put("status", n.status().name());
         detail.put("source", n.source().name());
         detail.put("return_id", n.returnId());
+        if (extraDetail != null) {
+            detail.putAll(extraDetail);
+        }
         auditService.record(order.getInstituteId(), n.actor(), order.getFulfilmentLocationId(), "REFUND_CREATED",
                 "REFUND", refund.getId(), null, CommerceInputRules.json(detail), n.reason());
         if (n.status() == RefundStatus.PROCESSED) {
@@ -551,10 +578,17 @@ public class CommerceRefundService {
         Date now = new Date();
         dueService.closeReady(order);
         exceptions.resolveByRefund(refund.getId(), "Refunded by refund " + refund.getId(), now);
-        if (nz(order.getRefundDue()).compareTo(nz(order.getRefundCommitted())) == 0
-                && nz(order.getAmountRefunded()).compareTo(nz(order.getRefundDue())) == 0) {
+        boolean settled = nz(order.getRefundDue()).compareTo(nz(order.getRefundCommitted())) == 0
+                && nz(order.getAmountRefunded()).compareTo(nz(order.getRefundDue())) == 0;
+        if (settled) {
             exceptions.resolveRefundDue(order.getId(), now);
-            exceptions.resolveOversoldRefundedOtherwise(order.getId(), "Refunded by refund " + refund.getId(), now);
+            // An oversold row is settled only by the order's own refund of everything paid: an
+            // extra-payment refund, or a due never raised to what was paid, leaves it open.
+            if (RefundKind.ORDER.name().equals(refund.getKind())
+                    && nz(order.getRefundDue()).compareTo(nz(order.getAmountPaid())) >= 0) {
+                exceptions.resolveOversoldRefundedOtherwise(order.getId(), "Refunded by refund " + refund.getId(),
+                        now);
+            }
         }
         String instituteId = order.getInstituteId();
         String orderId = order.getId();
@@ -562,7 +596,7 @@ public class CommerceRefundService {
         String method = refund.getMethod();
         BigDecimal amount = refund.getAmount();
         desk.afterCommitMoney(hook -> hook.refundProcessed(instituteId, orderId, refundId, method, amount));
-        events.afterCommit(desk.event(CommerceOrderEvents.REFUND_PROCESSED, order, null, true));
+        events.afterCommit(desk.event(CommerceOrderEvents.REFUND_PROCESSED, order, refundId, true));
     }
 
     // ================================================================== automatic refunds
@@ -573,7 +607,13 @@ public class CommerceRefundService {
      * refund id, or null when there is no paying payment to refund. Idempotent by key.
      */
     public String autoOversold(String instituteId, String orderId) {
-        if (!accessGuard.featureOn(instituteId, CommerceFeature.ORDERS)) {
+        CommerceAccessGuard.FeatureState state = accessGuard.featureState(instituteId, CommerceFeature.ORDERS);
+        if (state == CommerceAccessGuard.FeatureState.UNKNOWN) {
+            log.warn("Commerce oversold order {} of institute {}: feature state unknown; retried later", orderId,
+                    instituteId);
+            return null;
+        }
+        if (state != CommerceAccessGuard.FeatureState.ON) {
             log.error("COMMERCE_ALERT oversold_paid_order_needs_refund institute={} order={} (commerce is off for "
                     + "the institute: no automatic refund)", instituteId, orderId);
             return null;
@@ -628,7 +668,13 @@ public class CommerceRefundService {
         if (!StringUtils.hasText(gatewayPaymentId) || amount == null || amount.signum() <= 0) {
             return null;
         }
-        if (!accessGuard.featureOn(instituteId, CommerceFeature.ORDERS)) {
+        CommerceAccessGuard.FeatureState state = accessGuard.featureState(instituteId, CommerceFeature.ORDERS);
+        if (state == CommerceAccessGuard.FeatureState.UNKNOWN) {
+            log.warn("Commerce duplicate payment {} of order {} (institute {}): feature state unknown; retried later",
+                    gatewayPaymentId, orderId, instituteId);
+            return null;
+        }
+        if (state != CommerceAccessGuard.FeatureState.ON) {
             log.error("COMMERCE_ALERT duplicate_payment_needs_refund institute={} order={} payment={} (commerce is "
                     + "off for the institute: no automatic refund)", instituteId, orderId, gatewayPaymentId);
             return null;
@@ -698,6 +744,14 @@ public class CommerceRefundService {
             return false;
         }
         String gateway = gatewayStatus.trim().toLowerCase(Locale.ROOT);
+        if (RefundStatus.FAILED.name().equals(refund.getStatus())
+                && CommerceRefundExecutor.GATEWAY_FAILED.equals(refund.getFailureCode())
+                && ("pending".equals(gateway) || "created".equals(gateway))) {
+            // The gateway's failure reached us first; an earlier state of the same refund comes
+            // after it. Nothing contradicts.
+            log.info("refund_outcome_stale refund={}", refund.getId());
+            return false;
+        }
         boolean conflict = (RefundStatus.FAILED.name().equals(refund.getStatus())
                 && ("processed".equals(gateway) || "pending".equals(gateway) || "created".equals(gateway)))
                 || (RefundStatus.PROCESSED.name().equals(refund.getStatus()) && "failed".equals(gateway));
@@ -825,7 +879,11 @@ public class CommerceRefundService {
         return paying;
     }
 
-    private CommercePaymentGateway.GatewayRefund readAdopted(String instituteId, CommerceOrder order, Clean clean) {
+    /** A gateway refund staff record, and the FAILED refund of ours it stands for (null when none). */
+    record Adopted(CommercePaymentGateway.GatewayRefund refund, String adoptsFailedRefundId) {
+    }
+
+    private Adopted readAdopted(String instituteId, CommerceOrder order, Clean clean) {
         CommerceGatewayOrder paying = ownTransaction.execute(status -> payingRow(order.getId()));
         CommercePaymentGateway.GatewayRefund found;
         try {
@@ -845,14 +903,24 @@ public class CommerceRefundService {
             throw new ConflictException(GATEWAY_REFUND_MISMATCH + ": the gateway refund is " + found.status());
         }
         String receipt = found.receipt();
-        if (StringUtils.hasText(receipt) && receipt.length() <= 36 && Boolean.TRUE.equals(ownTransaction.execute(
-                status -> refundRepository.findById(receipt.trim()).isPresent()))) {
-            // Its receipt names one of our refunds: the shop sent it, and that row records it
-            // (the poll or the webhook stores its id). Adopting it would count it twice.
+        CommerceRefund named = StringUtils.hasText(receipt) && receipt.length() <= 36
+                ? ownTransaction.execute(status -> refundRepository.findById(receipt.trim()).orElse(null)) : null;
+        if (named == null) {
+            return new Adopted(found, null);
+        }
+        // Its receipt names one of our refunds: the shop sent it. A row that records it (or still
+        // may: the poll or the webhook stores its id) is where it belongs; adopting it would count
+        // it twice. Only a refund of this order that we marked FAILED without ever learning its
+        // gateway id (the create's answer was lost) is recorded anew by adoption; the FAILED row
+        // stays as it is.
+        boolean adoptable = order.getId().equals(named.getOrderId())
+                && RefundStatus.FAILED.name().equals(named.getStatus())
+                && named.getGatewayRefundId() == null;
+        if (!adoptable) {
             throw new ConflictException(GATEWAY_REFUND_MISMATCH + ": the gateway refund is the shop's own refund "
                     + receipt.trim() + "; it is recorded there");
         }
-        return found;
+        return new Adopted(found, named.getId());
     }
 
     private CommerceRefund authorizeOn(CustomUserDetails user, String instituteId, String refundId,

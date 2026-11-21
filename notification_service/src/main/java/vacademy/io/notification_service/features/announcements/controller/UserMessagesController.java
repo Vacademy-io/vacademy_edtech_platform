@@ -7,9 +7,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.notification_service.features.announcements.dto.*;
 import vacademy.io.notification_service.features.announcements.enums.ModeType;
+import vacademy.io.notification_service.features.announcements.security.UserMessageAccessGuard;
 import vacademy.io.notification_service.features.announcements.service.UserMessageService;
 
 import jakarta.validation.Valid;
@@ -17,6 +20,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * A signed-in user's own announcement messages (bell, dashboard pins, overlays, ...). The security
+ * config requires a JWT here; every endpoint takes the user id from the token and refuses a
+ * different id in the path or body.
+ */
 @RestController
 @RequestMapping("/notification-service/v1/user-messages")
 @RequiredArgsConstructor
@@ -25,10 +33,12 @@ import java.util.concurrent.TimeUnit;
 public class UserMessagesController {
 
     private final UserMessageService userMessageService;
+    private final UserMessageAccessGuard accessGuard;
     private static final long CACHE_MAX_AGE_MINUTES = 3L;
 
+    // private: these are one user's messages, so a shared cache must never store them.
     private <T> ResponseEntity<T> cacheableOk(T body) {
-        CacheControl cacheControl = CacheControl.maxAge(CACHE_MAX_AGE_MINUTES, TimeUnit.MINUTES).cachePublic();
+        CacheControl cacheControl = CacheControl.maxAge(CACHE_MAX_AGE_MINUTES, TimeUnit.MINUTES).cachePrivate();
         return ResponseEntity.ok()
                 .cacheControl(cacheControl)
                 .body(body);
@@ -39,11 +49,13 @@ public class UserMessagesController {
      */
     @GetMapping("/user/{userId}")
     public ResponseEntity<Page<UserMessagesResponse>> getUserMessages(
+            @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable String userId,
             @RequestParam(required = false) String modeType,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         
+        userId = accessGuard.requireSelf(user, userId);
         try {
             Pageable pageable = PageRequest.of(page, size);
             Page<UserMessagesResponse> messages;
@@ -67,9 +79,11 @@ public class UserMessagesController {
      */
     @GetMapping("/user/{userId}/unread-count")
     public ResponseEntity<Map<String, Long>> getUnreadCount(
+            @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable String userId,
             @RequestParam(required = false) String modeType) {
         
+        userId = accessGuard.requireSelf(user, userId);
         try {
             Map<String, Long> counts;
             
@@ -92,7 +106,10 @@ public class UserMessagesController {
      * Mark message as read
      */
     @PostMapping("/interactions/read")
-    public ResponseEntity<Map<String, String>> markAsRead(@Valid @RequestBody MessageInteractionRequest request) {
+    public ResponseEntity<Map<String, String>> markAsRead(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @Valid @RequestBody MessageInteractionRequest request) {
+        accessGuard.requireOwnMessage(user, request);
         try {
             userMessageService.markAsRead(request.getRecipientMessageId(), request.getUserId());
             return ResponseEntity.ok(Map.of("message", "Message marked as read"));
@@ -107,7 +124,10 @@ public class UserMessagesController {
      * Dismiss message (for dismissible notifications)
      */
     @PostMapping("/interactions/dismiss")
-    public ResponseEntity<Map<String, String>> dismissMessage(@Valid @RequestBody MessageInteractionRequest request) {
+    public ResponseEntity<Map<String, String>> dismissMessage(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @Valid @RequestBody MessageInteractionRequest request) {
+        accessGuard.requireOwnMessage(user, request);
         try {
             userMessageService.dismissMessage(request.getRecipientMessageId(), request.getUserId());
             return ResponseEntity.ok(Map.of("message", "Message dismissed"));
@@ -122,7 +142,10 @@ public class UserMessagesController {
      * Record message interaction (click, like, share, etc.)
      */
     @PostMapping("/interactions")
-    public ResponseEntity<Map<String, String>> recordInteraction(@Valid @RequestBody MessageInteractionRequest request) {
+    public ResponseEntity<Map<String, String>> recordInteraction(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @Valid @RequestBody MessageInteractionRequest request) {
+        accessGuard.requireOwnMessage(user, request);
         try {
             userMessageService.recordInteraction(request);
             return ResponseEntity.ok(Map.of("message", "Interaction recorded"));
@@ -138,12 +161,14 @@ public class UserMessagesController {
      */
     @GetMapping("/user/{userId}/resources")
     public ResponseEntity<Page<UserMessagesResponse>> getResourceMessages(
+            @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable String userId,
             @RequestParam(required = false) String folderName,
             @RequestParam(required = false) String category,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         
+        userId = accessGuard.requireSelf(user, userId);
         try {
             Pageable pageable = PageRequest.of(page, size);
             Page<UserMessagesResponse> messages = userMessageService
@@ -160,12 +185,14 @@ public class UserMessagesController {
      */
     @GetMapping("/user/{userId}/community")
     public ResponseEntity<Page<UserMessagesResponse>> getCommunityMessages(
+            @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable String userId,
             @RequestParam(required = false) String communityType,
             @RequestParam(required = false) String tag,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         
+        userId = accessGuard.requireSelf(user, userId);
         try {
             Pageable pageable = PageRequest.of(page, size);
             Page<UserMessagesResponse> messages = userMessageService
@@ -181,7 +208,10 @@ public class UserMessagesController {
      * Get dashboard pins for user
      */
     @GetMapping("/user/{userId}/dashboard-pins")
-    public ResponseEntity<List<UserMessagesResponse>> getDashboardPins(@PathVariable String userId) {
+    public ResponseEntity<List<UserMessagesResponse>> getDashboardPins(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable String userId) {
+        userId = accessGuard.requireSelf(user, userId);
         try {
             List<UserMessagesResponse> pins = userMessageService.getActiveDashboardPins(userId);
             return cacheableOk(pins);
@@ -197,7 +227,10 @@ public class UserMessagesController {
      * an overlay the user already dismissed.
      */
     @GetMapping("/user/{userId}/app-overlays")
-    public ResponseEntity<List<UserMessagesResponse>> getAppOverlays(@PathVariable String userId) {
+    public ResponseEntity<List<UserMessagesResponse>> getAppOverlays(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable String userId) {
+        userId = accessGuard.requireSelf(user, userId);
         try {
             List<UserMessagesResponse> overlays = userMessageService.getActiveAppOverlays(userId);
             return ResponseEntity.ok()
@@ -214,12 +247,14 @@ public class UserMessagesController {
      */
     @GetMapping("/user/{userId}/streams/{packageSessionId}")
     public ResponseEntity<Page<UserMessagesResponse>> getStreamMessages(
+            @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable String userId,
             @PathVariable String packageSessionId,
             @RequestParam(required = false) String streamType,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         
+        userId = accessGuard.requireSelf(user, userId);
         try {
             Pageable pageable = PageRequest.of(page, size);
             Page<UserMessagesResponse> messages = userMessageService
@@ -237,11 +272,13 @@ public class UserMessagesController {
      */
     @GetMapping("/user/{userId}/system-alerts")
     public ResponseEntity<Page<UserMessagesResponse>> getSystemAlerts(
+            @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable String userId,
             @RequestParam(required = false) String priority,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         
+        userId = accessGuard.requireSelf(user, userId);
         try {
             Pageable pageable = PageRequest.of(page, size);
             Page<UserMessagesResponse> messages = userMessageService
@@ -260,10 +297,12 @@ public class UserMessagesController {
      */
     @GetMapping("/user/{userId}/direct-messages")
     public ResponseEntity<Page<UserMessagesResponse>> getDirectMessages(
+            @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable String userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         
+        userId = accessGuard.requireSelf(user, userId);
         try {
             Pageable pageable = PageRequest.of(page, size);
             Page<UserMessagesResponse> messages = userMessageService
@@ -280,11 +319,13 @@ public class UserMessagesController {
      */
     @GetMapping("/user/{userId}/streams")
     public ResponseEntity<Page<UserMessagesResponse>> getAllStreamMessages(
+            @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable String userId,
             @RequestParam(required = false) String streamType,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         
+        userId = accessGuard.requireSelf(user, userId);
         try {
             Pageable pageable = PageRequest.of(page, size);
             Page<UserMessagesResponse> messages = userMessageService

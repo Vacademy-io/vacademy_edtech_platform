@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as Sentry from '@sentry/react';
 import { RouterProvider, createRouter } from '@tanstack/react-router';
+import { installDemoBridge } from '@/lib/demo-stage/bridge';
 import { StrictMode } from 'react';
 import ReactDOM from 'react-dom/client';
 import { SmartErrorPage as RootErrorComponent } from './components/core/SmartErrorPage';
@@ -54,7 +55,7 @@ import { useInstituteDetailsStore } from '@/stores/students/students-list/useIns
 import { installChunkErrorHandler } from '@/lib/chunk-reload';
 import { rememberComponentStack } from '@/lib/error-component-stack';
 import { initNative, isNative, getPlatform, shouldForceVimShell, getFlavor } from '@/native';
-import { isEvalezyMode } from '@/lib/evalezy-mode';
+import { hostProduct } from '@/lib/product-host';
 
 // Recover stale tabs whose cached chunk URLs 404 after a new deploy.
 // Must run before React renders so failures during the first lazy import
@@ -113,6 +114,9 @@ const router = createRouter({
     // error pages show; it keeps the component stack for "Report Issue".
     defaultOnCatch: rememberComponentStack,
 });
+
+// Public product demo: obey the stage page when framed by it. No-op otherwise.
+installDemoBridge(router, import.meta.env.MODE === 'development');
 
 // Register the router instance for type safety
 declare module '@tanstack/react-router' {
@@ -298,16 +302,22 @@ if (!rootElement.innerHTML) {
                 ? await resolveInstituteForDomain(flavor.brandingDomain!, flavor.brandingSubdomain!)
                 : await resolveInstituteForCurrentHost();
             if (!data) {
-                // No institute owns evalezy.vacademy.io or the Evalezy app (any
-                // institute's admin signs in there), so it wears the Evalezy brand.
-                if (isEvalezyMode()) {
-                    titleStore.setGlobalTitle('Evalezy');
+                // No institute owns a product host (evalezy.vacademy.io, telleo.vacademy.io)
+                // or the Evalezy app (any institute's admin signs in there), so it wears
+                // the product's brand.
+                const product = hostProduct();
+                if (product) {
+                    titleStore.setGlobalTitle(product.name);
                     // Absolute: the title store's favicon observer compares it with
                     // link.href (always absolute) and would reset a relative one forever.
                     titleStore.setGlobalFavicon(
-                        new URL('/evalezy-favicon.svg', window.location.origin).href
+                        new URL(product.favicon, window.location.origin).href
                     );
-                    useInstituteLogoStore.getState().setInstituteLogo?.('/evalezy-logo.svg');
+                    useInstituteLogoStore.getState().setInstituteLogo?.(product.logo);
+                    // Read by the ThemeProvider on first render (below), as an institute's code is.
+                    if (product.theme) {
+                        localStorage.setItem('theme-code', product.theme);
+                    }
                     return;
                 }
                 // If no data from API, ensure we have a fallback title

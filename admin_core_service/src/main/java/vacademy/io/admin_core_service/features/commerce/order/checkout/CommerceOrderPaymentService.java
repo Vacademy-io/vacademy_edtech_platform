@@ -113,6 +113,22 @@ public class CommerceOrderPaymentService {
     @PersistenceContext
     private EntityManager entityManager;
 
+    /** The buyer's messages (WP-33); absent in tests that build this class by hand. */
+    private vacademy.io.admin_core_service.features.commerce.order.desk.CommerceOrderEvents events;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setEvents(vacademy.io.admin_core_service.features.commerce.order.desk.CommerceOrderEvents events) {
+        this.events = events;
+    }
+
+    /** An order event of this settle, written with its transaction (the outbox) and published after it. */
+    private void emit(String type, CommerceOrder order) {
+        if (events != null) {
+            events.afterCommit(new vacademy.io.admin_core_service.features.commerce.order.desk.CommerceOrderEvents
+                    .OrderEvent(type, order.getInstituteId(), order.getId(), order.getOrderNumber(), null, true));
+        }
+    }
+
     /**
      * The order row, locked, with the state the database has now. A web request keeps one
      * persistence context for all its transactions, so the order an earlier step of the same
@@ -342,6 +358,7 @@ public class CommerceOrderPaymentService {
             writer.history(order, from, CommerceOrderStatus.CONFIRMED, null, note);
             log.info("Commerce order {} ({}) confirmed{}", order.getOrderNumber(), order.getId(),
                     late ? " on a late payment" : "");
+            emit(vacademy.io.admin_core_service.features.commerce.order.desk.CommerceOrderEvents.ORDER_CONFIRMED, order);
             return Outcome.CONFIRMED;
         }
 
@@ -368,6 +385,7 @@ public class CommerceOrderPaymentService {
         String number = order.getOrderNumber();
         BigDecimal amount = order.getTotal();
         String currency = order.getCurrency();
+        emit(vacademy.io.admin_core_service.features.commerce.order.desk.CommerceOrderEvents.ORDER_CANCELLED, order);
         afterCommit.add(() -> {
             try {
                 refundHook.refundOversoldPaidOrder(instituteId, orderId, number, amount, currency);

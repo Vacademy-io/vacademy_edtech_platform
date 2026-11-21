@@ -1,6 +1,6 @@
 {
     "trigger": {
-        "questionWise": "Par question"
+        "questionWise": "Recorriger avec le corrigé (par question)"
     },
     "table": {
         "questionNumber": "N° Q.",

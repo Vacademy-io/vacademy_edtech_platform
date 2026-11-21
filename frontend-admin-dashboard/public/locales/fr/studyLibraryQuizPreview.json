@@ -9,6 +9,7 @@
         "questionUpdated": "Question mise à jour avec succès !",
         "updateQuestionFailed": "Échec de la mise à jour de la question. Veuillez réessayer.",
         "enterQuestionName": "Veuillez saisir un nom de question",
+        "cbeInvalid": "Chaque partie doit valoir plus de 0 point. Ajoutez au moins une partie.",
         "questionAdded": "Question ajoutée avec succès !",
         "addQuestionFailed": "Échec de l'ajout de la question. Veuillez réessayer.",
         "questionDeleted": "Question supprimée avec succès !",

@@ -88,6 +88,42 @@ public class BbbMeetingManager implements LiveSessionProviderStrategy {
     @Value("${bbb.plugins.activeness.enabled:true}")
     private boolean activenessPluginEnabled;
 
+    /**
+     * Lets a meeting run inside a frame on another site (the learner app on
+     * Android/iOS/desktop, white-label learner domains). bbb-web otherwise requires
+     * its JSESSIONID cookie on audio/video/chat/slides requests, and browsers drop
+     * that cookie (no SameSite=None) when the class sits in a cross-site frame, so
+     * the join fails. With this on, the client's sessionToken alone authorises those
+     * requests. Trade-off: a leaked /html5client/?sessionToken= link then works on
+     * any device until the class ends (without it, the link is useless outside the
+     * learner's own browser), so it is OFF by default and enabled per institute.
+     * Comma-separated institute ids, or "*" for all; empty = off. Applies only to
+     * meetings created after it is set (needs an admin_core restart to change). The
+     * meeting is tagged meta_vacademy-inapp=1 so the join path can tell
+     * frame-capable meetings from older ones. NOTE: BBB does not copy this flag to
+     * breakout rooms (it does copy meta_*), so never trust the tag for breakouts.
+     */
+    @Value("${bbb.inapp.institute-ids:}")
+    private String inAppInstituteIds;
+
+    /**
+     * Which learner-app clients may show a class in-app (comma list of
+     * web, android, ios, electron). Only "web" by default: Android needs a native
+     * release first (keep-awake, lock-screen audio, PiP), iOS/desktop follow after
+     * device tests. See resolveOpenMode.
+     */
+    @Value("${bbb.inapp.clients:web}")
+    private String inAppClients;
+
+    boolean isInAppEnabled(String instituteId) {
+        if (inAppInstituteIds == null || inAppInstituteIds.isBlank()) return false;
+        for (String id : inAppInstituteIds.split(",")) {
+            String t = id.trim();
+            if (t.equals("*") || (instituteId != null && t.equals(instituteId))) return true;
+        }
+        return false;
+    }
+
     /** Where the activeness plugin POSTs its per-learner report (no JWT; HMAC token in the body). */
     private static final String ACTIVENESS_REPORT_PATH =
             "/admin-core-service/live-sessions/provider/meeting/bbb-activeness";
@@ -297,13 +333,19 @@ public class BbbMeetingManager implements LiveSessionProviderStrategy {
 
         // Redirect students to the feedback page when meeting ends.
         // If feedback is disabled for this session, the page auto-redirects to the listing.
+        // In-app meetings add vxBbbExit=1: when the class runs inside the learner app's
+        // frame, that page tells the app (index.html) to close the class view instead of
+        // loading the whole portal inside the frame. In a normal tab the marker is ignored.
+        boolean inAppMeeting = isInAppEnabled(instituteId);
         if (learnerBaseUrl != null && request.getScheduleId() != null) {
-            String feedbackUrl = learnerBaseUrl + "/study-library/live-class/feedback?scheduleId=" + request.getScheduleId();
+            String feedbackUrl = learnerBaseUrl + "/study-library/live-class/feedback?scheduleId=" + request.getScheduleId()
+                    + (inAppMeeting ? "&vxBbbExit=1" : "");
             params.put("logoutURL", feedbackUrl);
             params.put("meetingEndedURL", feedbackUrl);
         } else if (learnerBaseUrl != null) {
-            params.put("logoutURL", learnerBaseUrl + "/study-library/live-class");
-            params.put("meetingEndedURL", learnerBaseUrl + "/study-library/live-class");
+            String listUrl = learnerBaseUrl + "/study-library/live-class" + (inAppMeeting ? "?vxBbbExit=1" : "");
+            params.put("logoutURL", listUrl);
+            params.put("meetingEndedURL", listUrl);
         }
 
         // BBB hard-stops a meeting after `duration` minutes (BBB shows "X minutes left"
@@ -339,6 +381,12 @@ public class BbbMeetingManager implements LiveSessionProviderStrategy {
         // Retain event data so BBB can send analytics callback after meeting ends
         params.put("keepEvents", "true");
 
+        // In-app classes: no session cookie needed inside a cross-site frame (see field doc).
+        if (isInAppEnabled(instituteId)) {
+            params.put("allowRequestsWithoutSession", "true");
+            params.put("meta_vacademy-inapp", "1");
+        }
+
         // HTML5 Picture-in-Picture plugin (webcams + screen-share in a floating window).
         // The bundle is self-hosted on the routed BBB server, so derive the manifest URL
         // from that server's apiUrl (strip "/bigbluebutton/api"). Relative entrypoints in
@@ -356,7 +404,12 @@ public class BbbMeetingManager implements LiveSessionProviderStrategy {
                     .replaceAll("/bigbluebutton/api/?$", "");
             List<String> manifestUrls = new ArrayList<>();
             if (pipPluginEnabled) {
-                manifestUrls.add(bbbBaseUrl + "/plugins/picture-in-picture/manifest.json");
+                // The stock plugin uses Document Picture-in-Picture, which only works in a
+                // top-level page; in-app classes run in a frame, so they get Vacademy's PiP
+                // (plugins-src/vacademy-pip: composited video PiP, or the Android app's PiP).
+                manifestUrls.add(bbbBaseUrl + (inAppMeeting
+                        ? "/plugins/vacademy-pip/manifest.json"
+                        : "/plugins/picture-in-picture/manifest.json"));
             }
             if (activenessScore) {
                 manifestUrls.add(bbbBaseUrl + "/plugins/vacademy-activeness/manifest.json");
@@ -884,6 +937,66 @@ public class BbbMeetingManager implements LiveSessionProviderStrategy {
         } catch (Exception e) {
             log.warn("[BBB] getMeetingLiveState failed for meetingId={}: {}", providerMeetingId, e.getMessage());
             return Optional.empty();
+        }
+    }
+
+    /**
+     * Where the learner app should show this class: "IN_APP" (inside the app, in a
+     * frame) or "EXTERNAL" (a new tab / Chrome / Safari — the behaviour every app
+     * had before in-app classes). IN_APP needs all of:
+     * <ul>
+     *   <li>the app said which client it is (old apps send nothing → EXTERNAL),</li>
+     *   <li>that client is allowed ({@code bbb.inapp.clients}, default "web"),</li>
+     *   <li>the institute is switched on ({@code bbb.inapp.institute-ids}),</li>
+     *   <li>the meeting itself was created frame-capable (meta vacademy-inapp=1) —
+     *       meetings created before the switch, or by an older backend, still need
+     *       bbb-web's cookie and would fail inside a frame.</li>
+     * </ul>
+     * Fails closed: any doubt or lookup error means EXTERNAL.
+     */
+    public String resolveOpenMode(String instituteId, String client, String providerMeetingId, String bbbServerId) {
+        if (client == null || client.isBlank() || !isInAppEnabled(instituteId)) {
+            return "EXTERNAL";
+        }
+        boolean clientAllowed = false;
+        for (String c : (inAppClients == null ? "" : inAppClients).split(",")) {
+            if (c.trim().equalsIgnoreCase(client.trim())) {
+                clientAllowed = true;
+                break;
+            }
+        }
+        if (!clientAllowed) {
+            return "EXTERNAL";
+        }
+        return isMeetingInAppCapable(providerMeetingId, bbbServerId) ? "IN_APP" : "EXTERNAL";
+    }
+
+    /** True only when BBB confirms the meeting carries meta vacademy-inapp=1. */
+    private boolean isMeetingInAppCapable(String providerMeetingId, String bbbServerId) {
+        if (providerMeetingId == null || providerMeetingId.isBlank()) {
+            return false;
+        }
+        try {
+            BbbServerPool server = serverRouter.getServer(bbbServerId);
+            Map<String, String> params = new LinkedHashMap<>();
+            params.put("meetingID", providerMeetingId);
+            String queryString = buildQueryString(params);
+            String checksum = sha256("getMeetingInfo" + queryString + server.getSecret());
+            String url = server.getApiUrl() + "/getMeetingInfo?" + queryString + "&checksum=" + checksum;
+            String xmlResponse = webClientBuilder.build()
+                    .get().uri(URI.create(url))
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+            Document doc = parseXml(xmlResponse);
+            if (!"SUCCESS".equals(getXmlText(doc, "returncode"))) {
+                return false;
+            }
+            String tag = getXmlText(doc, "vacademy-inapp");
+            return tag != null && "1".equals(tag.trim());
+        } catch (Exception e) {
+            log.warn("[BBB] in-app capability lookup failed for meetingId={}: {}", providerMeetingId, e.getMessage());
+            return false;
         }
     }
 

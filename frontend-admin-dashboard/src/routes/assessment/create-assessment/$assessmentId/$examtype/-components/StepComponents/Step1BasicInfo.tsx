@@ -740,6 +740,10 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
             } else {
                 setSavedAssessmentId(data.assessment_id);
                 syncStep1DataWithStore(form);
+                // Remember the draft, so saving step 1 again updates it (see onSubmit).
+                useBasicInfoStore.getState().setBasicInfo({
+                    savedDraft: { assessmentId: data.assessment_id, examType },
+                });
                 toast.success(t('toasts.saveSuccess'), {
                     className: 'success-toast',
                     duration: 2000,
@@ -771,9 +775,14 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                 subject: data.testCreation.subject === 'N/A' ? '' : data.testCreation.subject,
             },
         };
+        // Create flow, back on step 1 after it was saved: update the draft step 1
+        // created. Posting no id here created a second, full copy of the test each time.
+        const draft = useBasicInfoStore.getState().savedDraft;
+        const draftId =
+            draft?.assessmentId && draft.examType === examType ? draft.assessmentId : null;
         handleSubmitStep1Form.mutate({
             data: modifiedData,
-            assessmentId: assessmentId !== 'defaultId' ? assessmentId : null,
+            assessmentId: assessmentId !== 'defaultId' ? assessmentId : draftId,
             instituteId: instituteDetails?.id,
             type: examType,
         });

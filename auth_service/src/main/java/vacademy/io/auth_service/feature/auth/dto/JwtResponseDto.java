@@ -1,5 +1,6 @@
 package vacademy.io.auth_service.feature.auth.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,4 +25,10 @@ public class JwtResponseDto {
 
     @JsonProperty("active_sessions")
     private List<ActiveSessionDTO> activeSessions;
+
+    // Learner registration only: true when the e-mail or phone already belonged to an
+    // account that must sign in itself, so no tokens were issued. Omitted otherwise.
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonProperty("account_exists")
+    private Boolean accountExists;
 }

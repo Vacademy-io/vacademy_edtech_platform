@@ -2,6 +2,12 @@ import { create } from 'zustand';
 
 interface SectionDetailsState {
     status?: string;
+    /**
+     * The assessment whose step 2 save produced the section ids in `section`.
+     * The store outlives an abandoned wizard; ids from another assessment are
+     * dropped on load (see Step2AddingQuestions).
+     */
+    savedForAssessmentId?: string;
     testDuration?: {
         entireTestDuration: {
             checked: boolean;
@@ -63,6 +69,7 @@ interface SectionDetailsState {
 const initialState: Omit<SectionDetailsState, 'setSectionDetails' | 'getSectionDetails' | 'reset'> =
     {
         status: undefined,
+        savedForAssessmentId: undefined,
         testDuration: undefined,
         section: undefined,
     };

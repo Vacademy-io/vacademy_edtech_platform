@@ -1,6 +1,6 @@
 {
     "trigger": {
-        "questionWise": "प्रश्न-वार"
+        "questionWise": "उत्तर कुंजी से फिर जाँचें (प्रश्नवार)"
     },
     "table": {
         "questionNumber": "प्र.सं.",

@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.credits.client;
 
+import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -103,7 +104,7 @@ public class CreditClient {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(connectMs);
         factory.setReadTimeout(readMs);
-        return new RestTemplate(factory);
+        return ExternalCallLog.attach(new RestTemplate(factory));
     }
 
     /**
@@ -687,6 +688,27 @@ public class CreditClient {
             return null;
         } catch (Exception e) {
             log.error("Error getting balance for institute {}: {}", instituteId, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * The institute's self sign-up trial as ai_service sees it ({@code is_trial}, {@code expired},
+     * {@code days_left}, {@code ends_at}): the one rule that also counts purchases, grants and a
+     * live plan. Null when it cannot be read.
+     */
+    public Map<String, Object> getTrialStatus(String instituteId) {
+        try {
+            String url = aiServiceUrl + "/ai-service/credits/v1/institutes/" + instituteId + "/trial";
+            @SuppressWarnings("unchecked")
+            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    new HttpEntity<>(buildInternalHeaders()),
+                    (Class<Map<String, Object>>) (Class<?>) Map.class);
+            return response.getStatusCode().is2xxSuccessful() ? response.getBody() : null;
+        } catch (Exception e) {
+            log.warn("Error reading the trial of institute {}: {}", instituteId, e.getMessage());
             return null;
         }
     }

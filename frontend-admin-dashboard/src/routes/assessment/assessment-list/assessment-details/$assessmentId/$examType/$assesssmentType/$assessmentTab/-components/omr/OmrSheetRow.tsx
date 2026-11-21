@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { CircleNotch, Eye, FilePdf, UserCircle } from '@phosphor-icons/react';
+import { ArrowSquareOut, CircleNotch, Eye, FilePdf, UserCircle } from '@phosphor-icons/react';
+import { useNavigate } from '@tanstack/react-router';
 import { MyButton } from '@/components/design-system/button';
 import { StatusChip, type StatusType } from '@/components/design-system/status-chips';
 import { cn } from '@/lib/utils';
@@ -43,6 +44,7 @@ export const OmrSheetRow = ({
     onChanged: () => void;
 }) => {
     const { t } = useTranslation('assessmentOmr');
+    const navigate = useNavigate();
     const [assignOpen, setAssignOpen] = useState(false);
     const [fixOpen, setFixOpen] = useState(false);
     const flagged = isOmrSheetFlagged(sheet);
@@ -173,6 +175,24 @@ export const OmrSheetRow = ({
             )}
 
             <div className="flex flex-wrap gap-1.5 sm:max-w-72 sm:justify-end">
+                {sheet.attempt_id && (
+                    <MyButton
+                        type="button"
+                        buttonType="secondary"
+                        scale="small"
+                        onClick={() =>
+                            sheet.attempt_id &&
+                            navigate({
+                                to: '/assessment/submission/$attemptId',
+                                params: { attemptId: sheet.attempt_id },
+                                search: {},
+                            })
+                        }
+                    >
+                        <ArrowSquareOut size={14} />
+                        {t('review.openSubmission')}
+                    </MyButton>
+                )}
                 {sheet.sheet_file_id && (
                     <MyButton
                         type="button"

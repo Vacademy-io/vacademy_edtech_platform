@@ -16,6 +16,7 @@ import {
     type CourseRow,
 } from '../-utils/dashboardMath';
 import { SegmentBar } from './DashboardParts';
+import { nudgeAssistant } from '@/components/vacademy-assistant/page-ask';
 
 const money = (v: number, currency: string | null, tone?: string) => (
     <span className={cn('tabular-nums', v > 0 ? tone : 'text-neutral-400')}>
@@ -277,6 +278,7 @@ export function BatchesTable({
             toast.info('Nothing to export.');
             return;
         }
+        nudgeAssistant('fees');
         const header = [
             courseTerm,
             batchTerm,

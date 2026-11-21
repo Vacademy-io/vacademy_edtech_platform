@@ -121,3 +121,14 @@ export function joinPlace(...parts: (string | null | undefined)[]): string {
     .map((p) => (p as string).trim())
     .join(" · ");
 }
+
+/**
+ * Neon City's stars, 1 to 3 from the score: 90% and up three, 75% two, any
+ * other scored result one, and none for a quiz not passed.
+ */
+export function neonStars(percent: number, verdict: Verdict): number {
+  if (verdict === "notPassed") return 0;
+  if (percent >= 90) return 3;
+  if (percent >= 75) return 2;
+  return 1;
+}

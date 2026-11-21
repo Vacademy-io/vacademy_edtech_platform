@@ -37,7 +37,7 @@ Every request passes three gates. If any gate is shut, the request stops there.
     The request carries a token issued to one person, for the institute in the server URL. A token used on another URL is refused.
   </Step>
   <Step title="Gate 2: server on and role allowed">
-    The MCP server is **off** until an admin turns it on in **Settings → MCP Server** in your admin portal. While it is off, nobody can connect and existing connections stop working. Your admin also picks which roles may connect. By default only **Admin** can. Learners and parents can **never** connect, whatever is selected.
+    The MCP server is **off** until an admin turns it on in **Settings → AI access** in your admin portal. While it is off, nobody can connect and existing connections stop working. Your admin also picks which roles may connect. By default only **Admin** can. Learners and parents can **never** connect, whatever is selected.
   </Step>
   <Step title="Gate 3: the area or edit is on for your role">
     Each area (Website, Courses, Learners, Lead forms, the CRM areas and so on) is set to **Off**, **View** or **Edit**, for everyone or per role. An AI app only sees the tools for areas that are on. Edits that change live data or contact people, such as publishing a website, enrolling learners, or calling and messaging leads, are **turned on separately** (opt-in). Setting an area to Edit, or pressing **Turn everything on**, never switches them on.
@@ -89,7 +89,7 @@ See [Guardrails](/mcp-server/security/guardrails) for the details.
 
 ## Who manages it
 
-The MCP settings live in **Settings → MCP Server** in your admin portal. Only **institute admins** can create client IDs for other apps or revoke connections, and they can do so even while the server is switched off.
+The MCP settings live in **Settings → AI access** in your admin portal. Only **institute admins** can create client IDs for other apps or revoke connections, and they can do so even while the server is switched off.
 
 <Warning>
 Data the AI app reads is sent to that AI app's provider (for example Anthropic, OpenAI or Cursor) and handled under that provider's terms. Read [Data and privacy](/mcp-server/security/data-and-pii) before turning on areas with personal data, such as Learners or the CRM.

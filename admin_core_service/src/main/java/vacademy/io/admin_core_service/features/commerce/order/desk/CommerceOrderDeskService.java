@@ -914,9 +914,13 @@ public class CommerceOrderDeskService {
         return detail;
     }
 
-    public CommerceOrderEvents.OrderEvent event(String type, CommerceOrder order, String shipmentId, boolean notify) {
+    /**
+     * An order event. {@code refId}: the shipment, return or refund it is about (null for the
+     * order itself); it is also the event's {@code shipmentId}, as before.
+     */
+    public CommerceOrderEvents.OrderEvent event(String type, CommerceOrder order, String refId, boolean notify) {
         return new CommerceOrderEvents.OrderEvent(type, order.getInstituteId(), order.getId(), order.getOrderNumber(),
-                shipmentId, notify);
+                refId, notify);
     }
 
     // ================================================================== helpers

@@ -1728,11 +1728,13 @@ public class AudienceService {
                     // respondentEmailRequests / adminEmailRequests have content to send.
                     // Workflows that build their own emails from #user / #customFields
                     // will simply ignore these — same contract as the Zoho path.
+                    String mailInstituteName = instituteNameForMail(instituteId);
                     String respondentEmailBody = buildDefaultEmailBody(
                             audience.getCampaignName(),
                             userForNotification.getFullName(),
                             userForNotification.getEmail(),
-                            customFieldsForEmail);
+                            customFieldsForEmail,
+                            mailInstituteName);
                     String respondentEmailSubject = "Thank You for Submitting Your Response for Campaign - "
                             + audience.getCampaignName();
 
@@ -1740,7 +1742,8 @@ public class AudienceService {
                             audience.getCampaignName(),
                             userForNotification.getFullName(),
                             userForNotification.getEmail(),
-                            customFieldsForEmail);
+                            customFieldsForEmail,
+                            mailInstituteName);
                     String adminEmailSubject = "New Lead Submitted - " + audience.getCampaignName();
 
                     // Parse admin notification recipients (toNotify)
@@ -1890,7 +1893,8 @@ public class AudienceService {
                                 audience.getCampaignName(),
                                 userForNotification.getFullName(),
                                 userForNotification.getEmail(),
-                                customFieldsForEmail);
+                                customFieldsForEmail,
+                                instituteNameForMail(instituteIdForNotification));
 
                         logger.info("No template found, sending default email to: {}", userForNotification.getEmail());
                         logger.info("Default email body: {}", defaultEmailBody);
@@ -1899,7 +1903,7 @@ public class AudienceService {
                         GenericEmailRequest emailRequest = new GenericEmailRequest();
                         emailRequest.setTo(userForNotification.getEmail());
                         emailRequest.setSubject(
-                                "Thank You for Submitting Your Response for Campaign -" + audience.getCampaignName());
+                                "Thank You for Submitting Your Response for Campaign - " + audience.getCampaignName());
                         emailRequest.setBody(defaultEmailBody);
 
                         try {
@@ -1928,7 +1932,8 @@ public class AudienceService {
                                 audience.getCampaignName(),
                                 userForNotification.getFullName(),
                                 userForNotification.getEmail(),
-                                customFieldsForEmail);
+                                customFieldsForEmail,
+                                instituteNameForMail(instituteIdForNotification));
 
                         logger.info("No template found, sending default admin notification to: {}", trimmedEmail);
                         logger.info("Default admin email body: {}", adminEmailBody);
@@ -3054,11 +3059,13 @@ public class AudienceService {
 
                 // 5. Generate complete email content (SIMPLIFIED APPROACH)
                 // Build default respondent email body
+                String mailInstituteName = instituteNameForMail(instituteId);
                 String respondentEmailBody = buildDefaultEmailBody(
                         audience.getCampaignName(),
                         createdUser.getFullName(),
                         createdUser.getEmail(),
-                        customFieldsForEmail);
+                        customFieldsForEmail,
+                        mailInstituteName);
                 String respondentEmailSubject = "Thank You for Submitting Your Response for Campaign - "
                         + audience.getCampaignName();
 
@@ -3067,7 +3074,8 @@ public class AudienceService {
                         audience.getCampaignName(),
                         createdUser.getFullName(),
                         createdUser.getEmail(),
-                        customFieldsForEmail);
+                        customFieldsForEmail,
+                        mailInstituteName);
                 String adminEmailSubject = "New Lead Submitted - " + audience.getCampaignName();
 
                 logger.info("[V2] Generated default email bodies for workflow");
@@ -3637,7 +3645,8 @@ public class AudienceService {
                         audience.getCampaignName(),
                         userForNotification.getFullName(),
                         userForNotification.getEmail(),
-                        customFieldsForEmail);
+                        customFieldsForEmail,
+                        instituteNameForMail(instituteIdForNotification));
 
                 GenericEmailRequest adminEmailRequest = new GenericEmailRequest();
                 adminEmailRequest.setTo(trimmedEmail);
@@ -5857,7 +5866,7 @@ public class AudienceService {
      * Build default email body with custom fields - HTML formatted
      */
     private String buildDefaultEmailBody(String campaignName, String userName, String userEmail,
-            Map<String, String> customFields) {
+            Map<String, String> customFields, String instituteName) {
         StringBuilder emailBody = new StringBuilder();
 
         // Get current time with timezone
@@ -5952,7 +5961,7 @@ public class AudienceService {
         // Footer
         emailBody.append("<div class='footer'>");
         emailBody.append("<p>This is an automated message. Please do not reply to this email.</p>");
-        emailBody.append("<p>&copy; 2025 All rights reserved.</p>");
+        emailBody.append(copyrightFooterLine(instituteName));
         emailBody.append("</div>");
 
         emailBody.append("</div>");
@@ -6018,7 +6027,8 @@ public class AudienceService {
                 continue;
             }
             String adminEmailBody = buildAdminNotificationBody(
-                    audience.getCampaignName(), respondentFullName, respondentEmail, customFields);
+                    audience.getCampaignName(), respondentFullName, respondentEmail, customFields,
+                    instituteNameForMail(instituteIdForNotification));
 
             GenericEmailRequest adminEmailRequest = new GenericEmailRequest();
             adminEmailRequest.setTo(trimmedEmail);
@@ -6039,7 +6049,7 @@ public class AudienceService {
      * formatted
      */
     private String buildAdminNotificationBody(String campaignName, String userName, String userEmail,
-            Map<String, String> customFields) {
+            Map<String, String> customFields, String instituteName) {
         StringBuilder emailBody = new StringBuilder();
 
         // Get current time with timezone
@@ -6146,7 +6156,7 @@ public class AudienceService {
         // Footer
         emailBody.append("<div class='footer'>");
         emailBody.append("<p>This is an automated notification from your lead management system.</p>");
-        emailBody.append("<p>&copy; 2025 All rights reserved.</p>");
+        emailBody.append(copyrightFooterLine(instituteName));
         emailBody.append("</div>");
 
         emailBody.append("</div>");
@@ -6154,6 +6164,26 @@ public class AudienceService {
         emailBody.append("</html>");
 
         return emailBody.toString();
+    }
+
+    /** The institute's name for a lead mail; "" when it cannot be read (never blocks the mail). */
+    private String instituteNameForMail(String instituteId) {
+        if (!StringUtils.hasText(instituteId)) {
+            return "";
+        }
+        try {
+            return instituteRepository.findById(instituteId).map(Institute::getInstituteName).orElse("");
+        } catch (Exception e) {
+            logger.warn("Could not read institute {} for a lead mail: {}", instituteId, e.getMessage());
+            return "";
+        }
+    }
+
+    /** "© <current year> <institute>. All rights reserved." — the year was frozen at 2025. */
+    private String copyrightFooterLine(String instituteName) {
+        return "<p>&copy; " + java.time.Year.now().getValue()
+                + (StringUtils.hasText(instituteName) ? " " + instituteName + "." : "")
+                + " All rights reserved.</p>";
     }
 
     /**
@@ -6557,11 +6587,13 @@ public class AudienceService {
         String submissionTime = now.format(formatter);
 
         // 5. Generate email content
+        String mailInstituteName = instituteNameForMail(instituteId);
         String respondentEmailBody = buildDefaultEmailBody(
                 audience.getCampaignName(),
                 createdUser.getFullName(),
                 createdUser.getEmail(),
-                customFieldsForEmail);
+                customFieldsForEmail,
+                mailInstituteName);
         String respondentEmailSubject = "Thank You for Submitting Your Response for Campaign - "
                 + audience.getCampaignName();
 
@@ -6569,7 +6601,8 @@ public class AudienceService {
                 audience.getCampaignName(),
                 createdUser.getFullName(),
                 createdUser.getEmail(),
-                customFieldsForEmail);
+                customFieldsForEmail,
+                mailInstituteName);
         String adminEmailSubject = "New Lead Submitted - " + audience.getCampaignName();
 
         logger.info("Generated email bodies for workflow trigger");
@@ -7465,6 +7498,50 @@ public class AudienceService {
         }
     }
 
+    /**
+     * The shared learner portal (default.learner.portal.url). Institutes without a portal of their
+     * own have their learners sign in there, so their links fall back to it rather than vanish.
+     */
+    @org.springframework.beans.factory.annotation.Value("${default.learner.portal.url:}")
+    private String defaultLearnerPortalUrl;
+
+    private String defaultPortalOrNull() {
+        if (defaultLearnerPortalUrl == null || defaultLearnerPortalUrl.isBlank()) {
+            return null;
+        }
+        String base = defaultLearnerPortalUrl.trim();
+        while (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        return base;
+    }
+
+    /**
+     * The institute's own learner-portal origin ({@code https://host}, no trailing slash), else
+     * the shared learner portal its learners sign in to; null only when neither is configured.
+     */
+    private String resolveInstitutePortalUrl(String instituteId) {
+        Institute institute = null;
+        try {
+            institute = StringUtils.hasText(instituteId)
+                    ? instituteRepository.findById(instituteId).orElse(null)
+                    : null;
+        } catch (Exception e) {
+            logger.warn("Could not read institute {} for the portal link: {}", instituteId, e.getMessage());
+        }
+        if (institute == null || !StringUtils.hasText(institute.getLearnerPortalBaseUrl())) {
+            return defaultPortalOrNull();
+        }
+        String base = institute.getLearnerPortalBaseUrl().trim();
+        if (!base.startsWith("http://") && !base.startsWith("https://")) {
+            base = "https://" + base;
+        }
+        while (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        return base;
+    }
+
     private void sendEnquiryConfirmationEmail(UserDTO parentUser, UserDTO childUser, Audience audience, Enquiry enquiry,
             PackageSession packageSession) {
 
@@ -7489,8 +7566,9 @@ public class AudienceService {
             }
         }
 
-        // Build portal URL (hardcoded for now)
-        String portalUrl = "https://learner-portal.vacademy.io";
+        // The institute's own learner portal; null when it has none, and the default mail
+        // then leaves the login button out.
+        String portalUrl = resolveInstitutePortalUrl(instituteId);
 
         // Format submission time
         java.time.ZonedDateTime now = java.time.ZonedDateTime.now();
@@ -7561,7 +7639,8 @@ public class AudienceService {
                     username,
                     password,
                     portalUrl,
-                    campaignName);
+                    campaignName,
+                    instituteNameForMail(instituteId));
 
             GenericEmailRequest emailRequest = new GenericEmailRequest();
             emailRequest.setTo(parentUser.getEmail());
@@ -8309,7 +8388,7 @@ public class AudienceService {
 
     private String buildDefaultEnquiryEmailBody(String parentName, String studentName, String sessionName,
             String trackingId, String submissionTime, String username, String password, String portalUrl,
-            String campaignName) {
+            String campaignName, String instituteName) {
 
         StringBuilder credentialSection = new StringBuilder();
         if (StringUtils.hasText(password)) {
@@ -8326,6 +8405,10 @@ public class AudienceService {
                 "<div style='max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;'>"
                 +
                 "<h2 style='color: #2c3e50; text-align: center;'>Enquiry Received Successfully</h2>" +
+                (StringUtils.hasText(instituteName)
+                        ? "<p style='text-align: center; color: #777; margin-top: -10px;'>" + instituteName + "</p>"
+                        : "")
+                +
                 "<p>Dear " + parentName + ",</p>" +
                 "<p>Thank you for your interest in <strong>" + campaignName + "</strong> (" + sessionName
                 + ") for <strong>" + studentName + "</strong>.</p>" +
@@ -8335,11 +8418,14 @@ public class AudienceService {
                 "<p>We have created an account for you on our learner portal where you can track the status of your enquiry.</p>"
                 +
                 credentialSection.toString() +
-                "<div style='text-align: center; margin-top: 25px;'>" +
-                "<a href='" + portalUrl
-                + "' style='background-color: #3498db; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;'>Login to Portal</a>"
+                (portalUrl != null
+                        ? "<div style='text-align: center; margin-top: 25px;'>" +
+                                "<a href='" + portalUrl
+                                + "' style='background-color: #3498db; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;'>Login to Portal</a>"
+                                +
+                                "</div>"
+                        : "")
                 +
-                "</div>" +
                 "<p style='margin-top: 30px; font-size: 12px; color: #777; text-align: center;'>Submitted on: "
                 + submissionTime + "</p>" +
                 "</div>" +

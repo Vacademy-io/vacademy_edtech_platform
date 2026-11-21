@@ -30,6 +30,23 @@ describe('message files', () => {
     });
 });
 
+describe('order links and update notice (WP-33)', () => {
+    it('carries the new keys in both languages, Hindi as given', () => {
+        expect(hi['order.linkOpening']).toBe('आपका ऑर्डर खुल रहा है…');
+        expect(hi['order.linkExpired.title']).toBe('यह लिंक पुराना हो गया है');
+        expect(hi['order.linkExpired.body']).toBe(
+            'आपकी सुरक्षा के लिए ऑर्डर के लिंक कुछ समय बाद काम करना बंद कर देते हैं। अपने फ़ोन नंबर से अपना ऑर्डर देखें।'
+        );
+        expect(hi['checkout.updatesNotice']).toBe('ऑर्डर की जानकारी हम WhatsApp और ईमेल पर भेजते हैं।');
+        expect(en['order.linkOpening']).toBe('Opening your order…');
+        expect(en['order.linkExpired.title']).toBe('This link has expired');
+        expect(en['order.linkExpired.body']).toBe(
+            'For your safety, order links stop working after a while. Find your order with your phone number instead.'
+        );
+        expect(en['checkout.updatesNotice']).toBe('We send order updates on WhatsApp and email.');
+    });
+});
+
 describe('translate', () => {
     it('fills placeholders and leaves unknown ones visible', () => {
         expect(interpolate('Only {count} left', { count: 2 })).toBe('Only 2 left');

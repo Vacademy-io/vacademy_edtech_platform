@@ -10,6 +10,12 @@ Actions
 
 Everything is scoped to the pinned institute; a user with no enrolment in it
 is invisible here.
+
+In the in-product assistant the tool is also offered to the "learner_data"
+group (the learner lookups). A caller who has that group but not "Learners:
+view" gets ``find`` only, run as the dashboard's learner search with the
+caller's own token (so the dashboard's scope for their role applies) and with
+masked phone numbers; the other actions need "Learners: view".
 """
 from __future__ import annotations
 
@@ -25,6 +31,11 @@ logger = logging.getLogger(__name__)
 
 LEARNERS_TOOL_NAME = "learners"
 LEARNERS_GROUP_KEY = "learners"
+#: The in-product group of the learner lookups, which also offers ``find`` (see the module docstring).
+LOOKUP_GROUP_KEY = "learner_data"
+#: The dashboard's learner list (the search a "learner_data"-only caller gets).
+DASHBOARD_SEARCH_PATH = "/admin-core-service/institute/institute_learner/get/v2/all"
+DASHBOARD_SEARCH_STATUSES = ("ACTIVE", "INACTIVE", "INVITED")
 LEARNERS_ACTIONS = ("find", "get", "enroll_options", "enroll_template")
 
 _MAX_COURSES = 10
@@ -61,8 +72,9 @@ LEARNERS_SCHEMA: Dict[str, Any] = {
         "description": (
             "Look up the institute's learners, and what is needed to enrol or edit them. Read-only. Pick an "
             "`action`:\n"
-            "- find (query): learners whose name, email, phone or username matches, with their courses. When "
-            "several match, list them (name, email, phone, courses) and ask the admin which one — never guess.\n"
+            "- find (query): learners whose name, email, phone, username or enrolment number matches, with their "
+            "courses and batches. When several match, list them (name, email, phone, courses) and ask the admin "
+            "which one — never guess.\n"
             "- get (learner_id): one learner's full profile and enrolments — the fields learner_edit can change.\n"
             "- enroll_options (course_ids: [..], max 10): each course's batches and the invites a learner can be "
             "enrolled through (name, price / payment type, default or not). Ask the admin which invite to use "
@@ -77,7 +89,8 @@ LEARNERS_SCHEMA: Dict[str, Any] = {
             "type": "object",
             "properties": {
                 "action": {"type": "string", "enum": list(LEARNERS_ACTIONS)},
-                "query": {"type": "string", "description": "find: name, email, phone or username (part is fine)."},
+                "query": {"type": "string",
+                          "description": "find: name, email, phone, username or enrolment number (part is fine)."},
                 # NOT `user_id`: the tool runner overwrites a top-level user_id with the CALLER's id.
                 "learner_id": {"type": "string", "description": "get: the learner's learner_id (from find)."},
                 "course_ids": {"type": "array", "items": {"type": "string"},
@@ -94,15 +107,68 @@ def _err(code: str, **extra: Any) -> Dict[str, Any]:
 
 
 def _brief(p: Dict[str, Any], enrolments: List[Dict[str, Any]]) -> Dict[str, Any]:
-    return {"learner_id": p["user_id"], "full_name": p.get("full_name"), "email": p.get("email"),
-            "mobile_number": p.get("mobile_number"), "username": p.get("username"),
-            "courses": [{"course": e["course"], "batch": e["batch"], "status": e["status"]} for e in enrolments[:8]]}
+    out = {"learner_id": p["user_id"], "full_name": p.get("full_name"), "email": p.get("email"),
+           "mobile_number": p.get("mobile_number"), "username": p.get("username"),
+           "courses": [{"course": e["course"], "batch": e["batch"], "batch_id": e.get("batch_id"),
+                        "status": e["status"], "expires_on": e.get("expires_on")} for e in enrolments[:8]]}
+    enrolment_no = next((e["enrolment_no"] for e in enrolments if e.get("enrolment_no")), None)
+    if enrolment_no:
+        out["enrolment_no"] = enrolment_no
+    return out
+
+
+def _lookups_only(ctx: ToolContext) -> bool:
+    """In the assistant, the caller has this tool through the learner lookups group only (module docstring)."""
+    from .assistant_tool_registry import only_through_other_groups
+
+    return only_through_other_groups(ctx, LEARNERS_TOOL_NAME)
+
+
+async def _dashboard_find(ctx: ToolContext, query: str) -> Dict[str, Any]:
+    """``find`` for a lookups-only caller: the dashboard's learner list, with the caller's own token."""
+    from . import assistant_tool_registry as reg
+
+    body = {
+        "name": query,
+        "institute_ids": [ctx.principal.institute_id],  # forced — never model-supplied
+        "statuses": list(DASHBOARD_SEARCH_STATUSES),
+        "package_session_ids": [], "group_ids": [], "gender": [], "sort_columns": {},
+    }
+    data = await reg._admin_core_json(ctx, "POST", DASHBOARD_SEARCH_PATH, params={"pageNo": 0, "pageSize": 10},
+                                      body=body, timeout=15.0)
+    if not isinstance(data, dict) or data.get("error"):
+        return _err("search_failed", message="The learner search did not answer. Try again in a moment.")
+    rows = (data.get("content") or [])[:10]
+    out = [{"learner_id": r.get("user_id"), "full_name": r.get("full_name"), "email": r.get("email"),
+            "mobile_number": reg._mask_mobile(r.get("mobile_number")),
+            "enrolment_no": r.get("institute_enrollment_number"), "batch_id": r.get("package_session_id"),
+            "status": r.get("status"), "payment_status": r.get("payment_status"),
+            "expires_on": r.get("expiry_date")} for r in rows]
+    total = data.get("total_elements", data.get("totalElements", len(out)))
+    note = None
+    if len({m["learner_id"] for m in out}) > 1:
+        note = "Several learners match — show them to the admin and ask which one they mean."
+    elif not out:
+        note = "No learner of this institute matches. Try part of the name, the email or the phone number."
+    return {"matches": out, "count": len(out), "total_matches": total, "note": note}
+
+
+def _needs_learners_view(action: str) -> Dict[str, Any]:
+    from .assistant_tool_registry import GROUP_LABELS
+
+    return _err("tool_not_permitted", action=action, message=(
+        f"This user's role has '{GROUP_LABELS.get(LOOKUP_GROUP_KEY, LOOKUP_GROUP_KEY)}', which covers "
+        f"learners(action='find') only; action '{action}' needs "
+        f"'{GROUP_LABELS.get(LEARNERS_GROUP_KEY, LEARNERS_GROUP_KEY)}'. Do not retry. Tell the user an admin can "
+        "enable it under [AI access settings](/settings?selectedTab=aiAccess)."))
 
 
 async def _action_find(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
     query = str(args.get("query") or "").strip()
     if len(query) < 2:
         return _err("missing_argument", action="find", needs=["query (at least 2 characters)"])
+    if _lookups_only(ctx):
+        return await _dashboard_find(ctx, query)
     matches = ld.search_learners(ctx, query, limit=10)
     enrolled = ld.enrolments(ctx, [m["user_id"] for m in matches])
     out = [_brief(m, enrolled.get(m["user_id"], [])) for m in matches]
@@ -235,6 +301,8 @@ async def execute_learners(args: Dict[str, Any], ctx: ToolContext) -> str:
     handler = _ACTIONS.get(action)
     if handler is None:
         return json.dumps(_err("unknown_action", action=action, available=list(LEARNERS_ACTIONS)))
+    if action != "find" and _lookups_only(ctx):
+        return json.dumps(_needs_learners_view(action), ensure_ascii=False)
     result = await handler(args or {}, ctx)
     if isinstance(result, dict) and "action" not in result:
         result = {"action": action, **result}
@@ -248,6 +316,10 @@ LEARNERS_TOOLS: Dict[str, ToolSpec] = {
         executor=execute_learners,
         required_permission=None,
         setting_key=LEARNERS_GROUP_KEY,
+        # In the assistant also offered to the learner lookups group, for its search (``find`` only, see
+        # the module docstring). Over MCP only its own group.
+        setting_keys_any=[LEARNERS_GROUP_KEY, LOOKUP_GROUP_KEY],
+        mcp_setting_key=LEARNERS_GROUP_KEY,
         default_enabled=False,
         default_roles=["ADMIN"],
         phase=2,
@@ -264,5 +336,5 @@ def _register() -> None:
 
 _register()
 
-__all__ = ["LEARNERS_TOOLS", "LEARNERS_TOOL_NAME", "LEARNERS_GROUP_KEY", "LEARNERS_ACTIONS", "LEARNERS_SCHEMA",
-           "TEMPLATE_COLUMNS", "execute_learners", "enrollable_invites", "invite_view"]
+__all__ = ["LEARNERS_TOOLS", "LEARNERS_TOOL_NAME", "LEARNERS_GROUP_KEY", "LOOKUP_GROUP_KEY", "LEARNERS_ACTIONS",
+           "LEARNERS_SCHEMA", "TEMPLATE_COLUMNS", "execute_learners", "enrollable_invites", "invite_view"]

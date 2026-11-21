@@ -33,4 +33,10 @@ public class SelfSignupRequest {
     private String plan;
     private String source;
     private String campaign;
+    /** The visit's utm tags from the product's website, passed on to the lead. */
+    private String utmSource;
+    private String utmMedium;
+    private String utmCampaign;
+    private String utmContent;
+    private String utmTerm;
 }

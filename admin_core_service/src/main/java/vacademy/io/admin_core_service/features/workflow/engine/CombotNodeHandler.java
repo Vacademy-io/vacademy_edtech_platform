@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.workflow.engine;
 
+import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +25,7 @@ public class CombotNodeHandler implements NodeHandler {
 
     private final ObjectMapper objectMapper;
     private final SpelEvaluator spelEvaluator;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate = ExternalCallLog.attach(new RestTemplate());
 
     @Value("${notification.server.baseurl:http://localhost:8076}")
     private String notificationServiceUrl;

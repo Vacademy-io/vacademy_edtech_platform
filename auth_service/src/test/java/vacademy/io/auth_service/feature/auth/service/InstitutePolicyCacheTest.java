@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -111,5 +112,24 @@ class InstitutePolicyCacheTest {
     void theUncachedLookupStillAnswersNullWhenAdminCoreIsDown() {
         adminCoreIsDown();
         assertNull(service.fetchSignupPolicy("inst-1"));
+    }
+
+    @Test
+    void theAnswerSaysWhetherAdminCoreAnswered() {
+        adminCoreIsDown();
+        assertFalse(service.fetchSignupPolicyAnswerCached("inst-1").answered());
+        now.addAndGet(5_000);
+        assertFalse(service.fetchSignupPolicyAnswerCached("inst-1").answered());
+
+        adminCoreAnswers(NO_SETTINGS);
+        now.addAndGet(6_000);
+        InstitutePolicyService.SignupPolicyAnswer noSettings = service.fetchSignupPolicyAnswerCached("inst-1");
+        assertTrue(noSettings.answered());
+        assertNull(noSettings.policy());
+
+        // A later outage keeps the last real answer, and says so.
+        adminCoreIsDown();
+        now.addAndGet(6 * 60 * 1000L);
+        assertTrue(service.fetchSignupPolicyAnswerCached("inst-1").answered());
     }
 }

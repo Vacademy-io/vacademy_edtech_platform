@@ -9,6 +9,7 @@ import vacademy.io.admin_core_service.features.notification.dto.UnifiedSendReque
 import vacademy.io.admin_core_service.features.notification.dto.UnifiedSendResponse;
 import vacademy.io.admin_core_service.features.notification.service.CommunicationResendService;
 import vacademy.io.admin_core_service.features.notification_service.service.NotificationService;
+import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.util.Map;
@@ -138,6 +139,38 @@ class CommunicationResendServiceTest {
         // Left unset on purpose: the original send's type is not stored, and guessing it would
         // change which unsubscribe list the resend is checked against.
         assertThat(sent.getOptions().getEmailType()).isNull();
+    }
+
+    @Test
+    @DisplayName("email carries its template name as a log label only, never as a template to look up")
+    void emailCarriesTemplateLabel() {
+        service.resend(email().templateName("VTC welcome email").build());
+
+        UnifiedSendRequest sent = captureSend();
+        assertThat(sent.getTemplateName()).isNull();
+        assertThat(sent.getOptions().getLogTemplateName()).isEqualTo("VTC welcome email");
+    }
+
+    @Test
+    @DisplayName("the resending admin rides on the send as an ADMIN_RESEND origin")
+    void resendNamesTheAdmin() {
+        CustomUserDetails admin = mock(CustomUserDetails.class);
+        when(admin.getUserId()).thenReturn("admin-7");
+        when(admin.getFullName()).thenReturn("Sarita R");
+
+        service.resend(email().build(), admin);
+
+        UnifiedSendRequest.SendOptions options = captureSend().getOptions();
+        assertThat(options.getOriginType()).isEqualTo("ADMIN_RESEND");
+        assertThat(options.getOriginId()).isEqualTo("admin-7");
+        assertThat(options.getOriginName()).isEqualTo("Sarita R");
+    }
+
+    @Test
+    @DisplayName("an email resend is described by its subject even when it names a template")
+    void emailDescribedBySubject() {
+        assertThat(service.describe(email().templateName("VTC welcome email").build()))
+                .isEqualTo("resent email \"Welcome to Shiksha Nation\" to Shristy");
     }
 
     @Test

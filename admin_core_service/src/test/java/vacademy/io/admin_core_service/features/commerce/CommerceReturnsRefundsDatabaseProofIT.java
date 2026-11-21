@@ -42,6 +42,7 @@ import vacademy.io.admin_core_service.features.commerce.order.cod.CommerceCodRem
 import vacademy.io.admin_core_service.features.commerce.order.cod.dto.CodRemittanceDtos;
 import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceOrderDeskService;
 import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceStaffOrderService;
+import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceReceiptService;
 import vacademy.io.admin_core_service.features.commerce.order.desk.dto.OrderDeskDtos;
 import vacademy.io.admin_core_service.features.commerce.order.desk.dto.StaffOrderRequest;
 import vacademy.io.admin_core_service.features.commerce.order.dto.CartPriceRequest;
@@ -181,6 +182,7 @@ class CommerceReturnsRefundsDatabaseProofIT {
     @Autowired private CommerceStaffOrderService staffOrders;
     @Autowired private CommerceCodRemittanceService remittances;
     @Autowired private CommerceReturnService returns;
+    @Autowired private CommerceReceiptService receipts;
     @Autowired private CommerceRefundService refunds;
     @Autowired private CommerceRefundExecutor executor;
     @Autowired private CommerceRefundPollJob pollJob;
@@ -1591,5 +1593,539 @@ class CommerceReturnsRefundsDatabaseProofIT {
         } finally {
             db.update("DELETE FROM commerce_payment_exception WHERE id IN (?, ?)", zero, newer);
         }
+    }
+    // ------------------------------------------------------------------ WP-33 Part B (m1, m2, m3)
+
+    /** A signed refund event naming any gateway refund id and receipt, for a payment of the order. */
+    private int refundEventFor(String event, String orderId, String paymentId, String gatewayRefundId,
+                               String receipt, long amountMinor) {
+        String gatewayOrderId = text("SELECT gateway_order_id FROM commerce_gateway_order WHERE gateway_payment_id = ?",
+                paymentId);
+        Map<String, Object> entity = new LinkedHashMap<>();
+        entity.put("id", gatewayRefundId);
+        entity.put("entity", "refund");
+        entity.put("payment_id", paymentId);
+        entity.put("amount", amountMinor);
+        entity.put("currency", "INR");
+        entity.put("receipt", receipt);
+        entity.put("status", event.endsWith("processed") ? "processed" : "failed");
+        entity.put("acquirer_data", Map.of("arn", "ARN" + run));
+        Map<String, Object> root = new LinkedHashMap<>();
+        root.put("entity", "event");
+        root.put("event", event);
+        root.put("payload", Map.of(
+                "payment", Map.of("entity", paymentEntity(gatewayOrderId, paymentId, amountMinor, orderId)),
+                "refund", Map.of("entity", entity)));
+        return post(root);
+    }
+
+    /**
+     * m1. A refund whose create answer was lost, marked FAILED as never created after 15 minutes,
+     * that the gateway then shows processed: staff record (adopt) it once; the FAILED row stays;
+     * a second adoption and a replayed event change nothing.
+     */
+    @Test
+    @Order(17)
+    void proof16_ourRefundFailedAsNeverCreatedIsAdoptedOnceWhenTheGatewayShowsItProcessed() {
+        clientIp = "127.0.0.17";
+        String orderId = paidOrder(Map.of(qtyA, 1));
+        move(orderId, "CONFIRMED", "CANCELLED");
+        BigDecimal amount = paid(orderId);
+        long minor = amount.movePointRight(2).longValueExact();
+        createMode = "throw";
+        RefundDtos.RefundView lost;
+        try {
+            lost = refund(orderId, null, amount, "GATEWAY", null, key());
+        } finally {
+            createMode = "pending";
+        }
+        assertEquals("IN_PROGRESS", lost.getStatus());
+        Date claimed = db.queryForObject("SELECT claimed_at FROM commerce_refund WHERE id = ?", Date.class,
+                lost.getId());
+        pollJob.runOnce(new Date(claimed.getTime() + 15 * 60_000L + 1000));
+        assertEquals("FAILED", refundStatus(lost.getId()));
+        assertEquals("GATEWAY_NOT_CREATED", text("SELECT failure_code FROM commerce_refund WHERE id = ?",
+                lost.getId()));
+        assertTrue(inQueue("REFUND_DUE", orderId), "the due is open again");
+        ledger(orderId);
+
+        // The gateway did make it after all, with our refund id as its receipt.
+        String paymentId = text("SELECT gateway_payment_id FROM commerce_refund WHERE id = ?", lost.getId());
+        String gatewayId = "rfnd_" + run + "adopt";
+        Map<String, Object> shown = new HashMap<>();
+        shown.put("id", gatewayId);
+        shown.put("payment_id", paymentId);
+        shown.put("amount", minor);
+        shown.put("currency", "INR");
+        shown.put("status", "processed");
+        shown.put("receipt", lost.getId());
+        shown.put("acquirer_data", Map.of("arn", "ARN" + run));
+        doAnswer(call -> {
+            remoteReads.incrementAndGet();
+            if (gatewayId.equals(call.getArgument(1))) {
+                return shown;
+            }
+            Map<String, Object> other = new HashMap<>();
+            other.put("id", call.getArgument(1));
+            other.put("payment_id", call.getArgument(0));
+            other.put("status", refundStatus.getOrDefault((String) call.getArgument(1), "pending"));
+            other.put("amount", db.queryForObject("SELECT (amount * 100)::bigint FROM commerce_refund WHERE "
+                    + "gateway_refund_id = ?", Long.class, (String) call.getArgument(1)));
+            return other;
+        }).when(razorpay).fetchPaymentRefund(any(), any(), any());
+        List<String> logged = refundServiceLog(() -> assertEquals(200, refundEventFor("refund.processed", orderId,
+                paymentId, gatewayId, lost.getId(), minor)));
+        assertTrue(logged.stream().anyMatch(line -> line.contains("refund_outcome_conflict")
+                && line.contains(lost.getId())), "the late outcome is an alert: " + logged);
+        assertEquals("FAILED", refundStatus(lost.getId()));
+
+        RefundDtos.RefundView adopted = refunds.create(admin, inst, RefundDtos.CreateRefundRequest.builder()
+                .clientRequestId(key()).orderId(orderId).amount(amount).method("GATEWAY").gatewayRefundId(gatewayId)
+                .reason("proof adopt").build());
+        assertEquals("PROCESSED", adopted.getStatus());
+        assertEquals(gatewayId, text("SELECT gateway_refund_id FROM commerce_refund WHERE id = ?", adopted.getId()));
+        assertEquals(1, count("SELECT count(*) FROM commerce_refund WHERE order_id = ? AND status = 'PROCESSED'",
+                orderId));
+        assertEquals("FAILED", refundStatus(lost.getId()));
+        assertNull(text("SELECT gateway_refund_id FROM commerce_refund WHERE id = ?", lost.getId()),
+                "the FAILED row is not changed");
+        assertEquals(0, amount.compareTo(money("SELECT amount_refunded FROM commerce_order WHERE id = ?", orderId)));
+        assertFalse(inQueue("REFUND_DUE", orderId), "the order leaves the refund queue");
+        assertEquals(1, count("SELECT count(*) FROM commerce_audit WHERE kind = 'REFUND_CREATED' AND reference_id = ? "
+                + "AND new_value_json ->> 'adopts_failed_refund' = ?", adopted.getId(), lost.getId()));
+        ledger(orderId);
+
+        long rows = count("SELECT count(*) FROM commerce_refund WHERE order_id = ?", orderId);
+        assertThrows(ConflictException.class, () -> refunds.create(admin, inst, RefundDtos.CreateRefundRequest
+                .builder().clientRequestId(key()).orderId(orderId).amount(amount).method("GATEWAY")
+                .gatewayRefundId(gatewayId).reason("proof adopt again").build()));
+        assertEquals(200, refundEventFor("refund.processed", orderId, paymentId, gatewayId, lost.getId(), minor));
+        assertEquals(rows, count("SELECT count(*) FROM commerce_refund WHERE order_id = ?", orderId));
+        assertEquals("PROCESSED", refundStatus(adopted.getId()));
+        assertEquals(0, amount.compareTo(money("SELECT amount_refunded FROM commerce_order WHERE id = ?", orderId)),
+                "raised once");
+        ledger(orderId);
+    }
+
+    /**
+     * m2. An oversold order paid twice whose automatic refund failed once (its transaction ended
+     * by an error while it waited for a lock): the extra-payment refund is paid out, the oversold
+     * row stays OPEN and is read again, and the next poll raises the due and refunds it.
+     */
+    @Test
+    @Order(18)
+    void proof17_anExtraPaymentRefundLeavesTheOversoldRowOpenUntilItsOwnRefund() throws Exception {
+        clientIp = "127.0.0.18";
+        String scarce2 = variant("scarce-m2", "SCM2", "300.00", false);
+        receive(scarce2, 1);
+        snapshotLoader.evict(inst);
+        CheckoutDtos.Placed late = place(List.of(CartPriceRequest.Line.builder().variantId(scarce2).quantity(1)
+                .build()));
+        Map<String, Object> first = db.queryForMap("SELECT * FROM commerce_gateway_order WHERE commerce_order_id = ?",
+                late.getOrderId());
+        long amount = ((Number) first.get("amount_minor")).longValue();
+        String secondGatewayOrder = "order_" + run + "m2dup";
+        db.update("INSERT INTO commerce_gateway_order (id, institute_id, commerce_order_id, vendor, gateway_order_id, "
+                + "key_id, amount_minor, currency, receipt, status, status_at) VALUES (?, ?, ?, 'RAZORPAY', ?, ?, ?, "
+                + "'INR', ?, 'CREATED', now())", UUID.randomUUID().toString(), inst, late.getOrderId(),
+                secondGatewayOrder, KEY_ID, amount, late.getOrderId());
+        assertTrue(paymentService.onHoldExpired(late.getOrderId()));
+        snapshotLoader.evict(inst);
+        assertEquals("CONFIRMED", status(paidOrder(Map.of(scarce2, 1))), "the stock went to another buyer");
+
+        // First payment: oversold. Its automatic refund waits on the refund table, held by a side
+        // connection, and that wait ends in an error (as a lock timeout would): rolled back whole.
+        ExecutorService pool = Executors.newSingleThreadExecutor();
+        Future<String> firstPayment;
+        try (java.sql.Connection side = db.getDataSource().getConnection()) {
+            side.setAutoCommit(false);
+            try (java.sql.Statement st = side.createStatement()) {
+                st.execute("LOCK TABLE commerce_refund IN ACCESS EXCLUSIVE MODE");
+            }
+            firstPayment = pool.submit(() -> payByWebhook(late.getOrderId(),
+                    String.valueOf(first.get("gateway_order_id")), amount));
+            awaitWaiting(1);
+            try (java.sql.Statement st = side.createStatement()) {
+                st.execute("SELECT pg_cancel_backend(pid) FROM pg_stat_activity WHERE datname = current_database() "
+                        + "AND wait_event_type = 'Lock' AND pid <> pg_backend_pid()");
+            }
+            side.rollback();
+        }
+        firstPayment.get(120, TimeUnit.SECONDS);
+        pool.shutdownNow();
+        String orderId = late.getOrderId();
+        assertEquals(1, count("SELECT count(*) FROM commerce_order WHERE id = ? AND status = 'CANCELLED' AND "
+                + "cancel_reason = 'OVERSOLD_PAID'", orderId));
+        assertEquals(0, BigDecimal.ZERO.compareTo(money("SELECT refund_due FROM commerce_order WHERE id = ?", orderId)),
+                "the automatic refund failed before its due was kept");
+        assertEquals(1, count("SELECT count(*) FROM commerce_payment_exception WHERE commerce_order_id = ? AND kind = "
+                + "'OVERSOLD_PAID' AND status = 'OPEN' AND refund_id IS NULL", orderId));
+        assertEquals(0, count("SELECT count(*) FROM commerce_refund WHERE order_id = ?", orderId));
+
+        // Second payment: its extra-payment refund is made and paid out.
+        String secondPayment = payByWebhook(orderId, secondGatewayOrder, amount);
+        Map<String, Object> extra = db.queryForMap("SELECT * FROM commerce_refund WHERE order_id = ?", orderId);
+        assertEquals("EXTRA_PAYMENT", extra.get("kind"));
+        assertEquals(secondPayment, extra.get("gateway_payment_id"));
+        String oversoldRow = text("SELECT id FROM commerce_payment_exception WHERE commerce_order_id = ? AND kind = "
+                + "'OVERSOLD_PAID'", orderId);
+        createMode = "processed";
+        try {
+            // This run sends refunds only: the oversold row is dated after it (the database and the
+            // JVM may keep wall clocks of different zones, so the proof sets the dates).
+            db.update("UPDATE commerce_payment_exception SET created_at = now() + interval '1 day' WHERE id = ?",
+                    oversoldRow);
+            pollJob.runOnce(new Date(System.currentTimeMillis() + 60_000L));
+            assertEquals("PROCESSED", refundStatus(String.valueOf(extra.get("id"))));
+            assertEquals("OPEN", text("SELECT status FROM commerce_payment_exception WHERE commerce_order_id = ? AND "
+                    + "kind = 'OVERSOLD_PAID'", orderId), "an extra-payment refund does not settle the oversold row");
+            db.update("UPDATE commerce_payment_exception SET created_at = now() - interval '1 day' WHERE id = ?",
+                    oversoldRow);
+            Date later = new Date(System.currentTimeMillis() + 4 * 60_000L);
+            List<String> read = new TransactionTemplate(transactionManager).execute(tx -> exceptionRepository
+                    .findUnrefunded(new Date(later.getTime() - 120_000L), 100).stream().map(e -> e.getId()).toList());
+            assertTrue(read.contains(oversoldRow), "the poll reads it again: " + read);
+
+            pollJob.runOnce(later);
+            assertEquals(0, paid(orderId).compareTo(money("SELECT refund_due FROM commerce_order WHERE id = ?",
+                    orderId)), "the next poll raises the due");
+            String own = text("SELECT id FROM commerce_refund WHERE order_id = ? AND kind = 'ORDER'", orderId);
+            pollJob.runOnce(new Date(System.currentTimeMillis() + 6 * 60_000L));
+            assertEquals("PROCESSED", refundStatus(own));
+            assertEquals("RESOLVED", text("SELECT status FROM commerce_payment_exception WHERE id = ?", oversoldRow));
+            assertEquals(0, paid(orderId).compareTo(money("SELECT amount_refunded FROM commerce_order WHERE id = ?",
+                    orderId)));
+        } finally {
+            createMode = "pending";
+        }
+        ledger(orderId);
+    }
+
+    /**
+     * m3. 120 older exception rows of an institute without commerce come before one row of this
+     * shop: the poll reads on in keyset pages and retries this shop's row; one line says a whole
+     * page was skipped, naming no other institute.
+     */
+    @Test
+    @Order(19)
+    void proof18_rowsOfAnInstituteWithoutCommerceDoNotHideANewerRow() {
+        clientIp = "127.0.0.19";
+        String orderId = paidOrder(Map.of(credit, 1));
+        String offShop = UUID.randomUUID().toString();
+        List<String> inserted = new ArrayList<>();
+        for (int i = 0; i < 120; i++) {
+            String id = UUID.randomUUID().toString();
+            inserted.add(id);
+            db.update("INSERT INTO commerce_payment_exception (id, institute_id, commerce_order_id, order_number, kind, "
+                    + "gateway_payment_id, amount, currency, status, detail, created_at) VALUES (?, ?, ?, 'OFF', "
+                    + "'DUPLICATE_PAYMENT', ?, 1.00, 'INR', 'OPEN', 'proof', now() - interval '2 days' + ? * "
+                    + "interval '1 second')", id, offShop, orderId, "pay_off" + run + i, i);
+        }
+        String mine = UUID.randomUUID().toString();
+        String myPayment = "pay_m3" + run;
+        db.update("INSERT INTO commerce_payment_exception (id, institute_id, commerce_order_id, order_number, kind, "
+                + "gateway_payment_id, amount, currency, status, detail, created_at) VALUES (?, ?, ?, 'MINE', "
+                + "'DUPLICATE_PAYMENT', ?, 1.00, 'INR', 'OPEN', 'proof', now() - interval '1 day')", mine, inst,
+                orderId, myPayment);
+        ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(
+                CommerceRefundPollJob.class);
+        ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent> appender =
+                new ch.qos.logback.core.read.ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        Map<String, Integer> counts;
+        try {
+            counts = pollJob.runOnce(new Date());
+        } finally {
+            logger.detachAppender(appender);
+        }
+        assertEquals(120, counts.get("skipped_commerce_off"), String.valueOf(counts));
+        assertTrue(counts.getOrDefault("hook_retried", 0) >= 1, String.valueOf(counts));
+        String made = text("SELECT refund_id FROM commerce_payment_exception WHERE id = ?", mine);
+        assertNotNull(made, "this shop's row got its refund");
+        assertEquals("AUTO:DUP:" + myPayment, text("SELECT idempotency_key FROM commerce_refund WHERE id = ?", made));
+        assertEquals(120, count("SELECT count(*) FROM commerce_payment_exception WHERE institute_id = ? AND status = "
+                + "'OPEN' AND refund_id IS NULL", offShop), "the other institute's rows are untouched");
+        List<String> lines;
+        synchronized (appender.list) {
+            lines = appender.list.stream().map(ch.qos.logback.classic.spi.ILoggingEvent::getFormattedMessage).toList();
+        }
+        assertEquals(1, lines.stream().filter(l -> l.equals("COMMERCE_REFUND_POLL exception_page_all_skipped rows=100"))
+                .count(), String.valueOf(lines));
+        assertTrue(lines.stream().noneMatch(l -> l.contains("exception_page") && l.contains(offShop)));
+        db.update("DELETE FROM commerce_payment_exception WHERE institute_id = ?", offShop);
+    }
+
+    // ------------------------------------------------------------------ returns before payment (owner 11-19)
+
+    /**
+     * A staff order of 1,000.00 left on credit (one unit at 300.00 and one at 700.00, typed
+     * prices, no delivery charge), packed, shipped and delivered.
+     */
+    private String creditOrder() {
+        String orderId = staffOrders.create(admin, inst, staffOrder(credit, 1).chargeShipping(false)
+                .lines(List.of(StaffOrderRequest.Line.builder().variantId(credit).quantity(1)
+                                .unitPriceOverride(new BigDecimal("300.00")).build(),
+                        StaffOrderRequest.Line.builder().variantId(qtyA).quantity(1)
+                                .unitPriceOverride(new BigDecimal("700.00")).build()))
+                .restOnCredit(true).build()).detail().getOrder().getId();
+        deliver(orderId);
+        assertEquals(0, new BigDecimal("1000.00").compareTo(money("SELECT total FROM commerce_order WHERE id = ?",
+                orderId)));
+        assertEquals("UNPAID", paymentStatus(orderId));
+        assertEquals("ADMIN", text("SELECT channel FROM commerce_order WHERE id = ?", orderId));
+        return orderId;
+    }
+
+    /** More stock for the credit cases (its own receipt key: the seed's would replay). */
+    private void restock(String packageSessionId, int quantity) {
+        ReceiptRequest request = new ReceiptRequest();
+        request.setLocationId(wh);
+        request.setSourceKind("OTHER");
+        request.setNote("proof stock for the credit cases");
+        request.setClientRequestId("rc-credit-" + packageSessionId);
+        ReceiptRequest.Line line = new ReceiptRequest.Line();
+        line.setPackageSessionId(packageSessionId);
+        line.setQuantity(quantity);
+        line.setUnitCost(new BigDecimal("100.00"));
+        request.setLines(List.of(line));
+        receiptService.create(inst, actor, true, request);
+    }
+
+    private String paymentStatus(String orderId) {
+        return text("SELECT payment_status FROM commerce_order WHERE id = ?", orderId);
+    }
+
+    private BigDecimal pendingCredit(String orderId) {
+        return money("SELECT COALESCE(SUM(amount), 0) FROM commerce_order_tender WHERE order_id = ? AND status = "
+                + "'PENDING'", orderId);
+    }
+
+    private StaffOrderDtos.StaffOrderDetail receipt(String orderId, String amount, String mode) {
+        return receipts.record(admin, inst, orderId, OrderDeskDtos.ReceiptRequest.builder().clientRequestId(key())
+                .mode(mode).amount(new BigDecimal(amount)).reference(mode + "-" + keys.get()).build());
+    }
+
+    private BigDecimal amountDue(String orderId) {
+        return desk.detail(inst, orderId, admin, false).getAmountDue();
+    }
+
+    /**
+     * What a credit order owes, from the rows: total less paid less the credit of its received
+     * returns not owed back; the PENDING tender carries exactly that, received tenders = paid.
+     */
+    private BigDecimal owedInvariants(String orderId) {
+        BigDecimal total = money("SELECT total FROM commerce_order WHERE id = ?", orderId);
+        BigDecimal notRaised = money("SELECT COALESCE(SUM(credit_total - due_raised), 0) FROM commerce_return WHERE "
+                + "order_id = ? AND status IN ('RECEIVED', 'CLOSED')", orderId);
+        BigDecimal owed = total.subtract(paid(orderId)).subtract(notRaised).max(BigDecimal.ZERO);
+        // Nothing over-collected or over-credited: what is owed plus the money kept (paid less due
+        // back) is exactly what the goods the buyer kept are worth.
+        BigDecimal credited = money("SELECT COALESCE(SUM(credit_total), 0) FROM commerce_return WHERE order_id = ? "
+                + "AND status IN ('RECEIVED', 'CLOSED')", orderId);
+        BigDecimal kept = paid(orderId).subtract(money("SELECT refund_due FROM commerce_order WHERE id = ?", orderId));
+        assertEquals(0, owed.add(kept).compareTo(total.subtract(credited)), "owed + kept = goods kept: owed " + owed
+                + ", kept " + kept + ", credited " + credited);
+        assertEquals(0, owed.compareTo(pendingCredit(orderId)), "pending credit = what is owed");
+        assertEquals(0, paid(orderId).compareTo(money("SELECT COALESCE(SUM(amount), 0) FROM commerce_order_tender "
+                + "WHERE order_id = ? AND status = 'RECEIVED'", orderId)), "received tenders = amount paid");
+        assertEquals(0, owed.compareTo(amountDue(orderId)), "the detail's amount_due");
+        assertEquals(owed.signum() > 0, inQueue("DUES", orderId), "in the dues queue only while something is owed");
+        if (owed.signum() > 0) {
+            StaffOrderDtos.StaffOrderRow row = queryService.staffList(inst, new CommerceOrderQueryService
+                    .StaffListFilter(null, null, null, null, "DUES", null, null, null), 0, 50).getOrders().stream()
+                    .filter(o -> o.getId().equals(orderId)).findFirst().orElseThrow();
+            assertEquals(0, owed.compareTo(row.getAmountDue()), "the list row's amount_due (DUES column)");
+        }
+        assertEquals(owed.signum() == 0 ? "PAID" : paid(orderId).signum() == 0 ? "UNPAID" : "PARTIALLY_PAID",
+                paymentStatus(orderId));
+        ledger(orderId);
+        return owed;
+    }
+
+    @Test
+    @Order(20)
+    void credit_aReturnBeforePaymentLowersWhatIsOwedThenAReceiptOfTheRestSettles() {
+        restock(credit, 20);
+        restock(qtyA, 20);
+        String orderId = creditOrder();
+        assertTrue(desk.detail(inst, orderId, admin, false).getNextActions().contains("CREATE_RETURN"),
+                "a manager may return an order on credit");
+        assertEquals(0, new BigDecimal("1000.00").compareTo(owedInvariants(orderId)));
+        String line300 = lineOf(orderId, credit);
+        int shelf = slots(credit);
+        ReturnDtos.ReturnPreview preview = returns.preview(admin, inst, ReturnDtos.CreateReturnRequest.builder()
+                .orderId(orderId).reason("DEFECTIVE").lines(List.of(ReturnDtos.LineRequest.builder()
+                        .orderLineId(line300).quantity(1).build())).build());
+        assertEquals(0, new BigDecimal("300.00").compareTo(preview.getCreditToDue()), "all of it off what is owed");
+        assertEquals(0, BigDecimal.ZERO.compareTo(preview.getRefundAmount()));
+
+        ReturnDtos.ReturnView ret = returnReceived(orderId, null, "DEFECTIVE", List.of(named(line300, "RESALEABLE",
+                1)));
+        assertEquals(0, new BigDecimal("300.00").compareTo(ret.getCreditTotal()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(ret.getDueRaised()), "nothing was paid, nothing goes back");
+        assertEquals("CLOSED", ret.getStatus(), "nothing to pay back: closed at once");
+        assertNotNull(ret.getCreditNote(), "a credit note as for any return");
+        assertEquals(0, new BigDecimal("300.00").compareTo(ret.getCreditNote().getTotal()));
+        assertEquals(1, count("SELECT count(*) FROM stock_movement WHERE reference_type = 'RETURN_LINE' AND "
+                + "type = 'RETURN' AND reference_id IN (SELECT id FROM commerce_return_line WHERE return_id = ?)",
+                ret.getId()), "the unit is back on the shelf");
+        assertEquals(shelf + 1, slots(credit));
+        assertEquals(0, BigDecimal.ZERO.compareTo(money("SELECT refund_due FROM commerce_order WHERE id = ?",
+                orderId)));
+        assertEquals(0, new BigDecimal("700.00").compareTo(owedInvariants(orderId)));
+        assertEquals("300.00|700.00", text("SELECT (new_value_json::jsonb ->> 'credit_on_due') || '|' || "
+                + "(new_value_json::jsonb ->> 'amount_due') FROM commerce_audit WHERE reference_id = ? AND kind = "
+                + "'RETURN_RECEIVED'", ret.getId()), "the audit row says what came off the due and what is owed");
+
+        ConflictException above = assertThrows(ConflictException.class, () -> receipt(orderId, "1000.00", "CASH"));
+        assertTrue(above.getMessage().startsWith("RECEIPT_ABOVE_DUE: 700.00"), above.getMessage());
+        assertEquals(0, BigDecimal.ZERO.compareTo(paid(orderId)), "the refused receipt wrote nothing");
+        receipt(orderId, "700.00", "CASH");
+        assertEquals("PAID", paymentStatus(orderId));
+        assertEquals(0, new BigDecimal("700.00").compareTo(paid(orderId)));
+        assertEquals(0, BigDecimal.ZERO.compareTo(owedInvariants(orderId)));
+        assertEquals(0, count("SELECT count(*) FROM commerce_refund WHERE order_id = ?", orderId), "no refund");
+        noDrift("return before payment, then the rest received");
+    }
+
+    @Test
+    @Order(21)
+    void credit_partPaidThenAReturnAboveWhatIsOwedSettlesAndOnlyTheRestIsRefunded() {
+        String orderId = creditOrder();
+        receipt(orderId, "400.00", "UPI");
+        assertEquals("PARTIALLY_PAID", paymentStatus(orderId));
+        assertEquals(0, new BigDecimal("600.00").compareTo(owedInvariants(orderId)));
+        ReturnDtos.ReturnPreview preview = returns.preview(admin, inst, ReturnDtos.CreateReturnRequest.builder()
+                .orderId(orderId).reason("DEFECTIVE").lines(List.of(ReturnDtos.LineRequest.builder()
+                        .orderLineId(lineOf(orderId, qtyA)).quantity(1).build())).build());
+        assertEquals(0, new BigDecimal("600.00").compareTo(preview.getCreditToDue()));
+        assertEquals(0, new BigDecimal("100.00").compareTo(preview.getRefundAmount()));
+
+        ReturnDtos.ReturnView ret = returnReceived(orderId, null, "DEFECTIVE", List.of(named(lineOf(orderId, qtyA),
+                "RESALEABLE", 1)));
+        assertEquals(0, new BigDecimal("700.00").compareTo(ret.getCreditTotal()));
+        assertEquals(0, new BigDecimal("100.00").compareTo(ret.getDueRaised()), "700 credit - 600 owed");
+        assertEquals("RECEIVED", ret.getStatus(), "it waits for its refund");
+        assertEquals(0, new BigDecimal("100.00").compareTo(money("SELECT refund_due FROM commerce_order WHERE id = ?",
+                orderId)));
+        assertEquals(0, BigDecimal.ZERO.compareTo(owedInvariants(orderId)), "due 600 -> 0, settled");
+        assertTrue(assertThrows(ConflictException.class, () -> receipt(orderId, "1.00", "CASH")).getMessage()
+                .startsWith("ORDER_STATE_CHANGED"), "nothing to collect");
+
+        // Only the 100.00 above the due goes back, by the normal refund rules.
+        assertTrue(assertThrows(ConflictException.class, () -> refund(orderId, ret.getId(), new BigDecimal("100.01"),
+                "CASH", null, key())).getMessage().startsWith("REFUND_ABOVE_RETURN"));
+        RefundDtos.RefundView cash = refund(orderId, ret.getId(), new BigDecimal("100.00"), "CASH", null, key());
+        assertEquals("PROCESSED", cash.getStatus());
+        assertEquals("CLOSED", text("SELECT status FROM commerce_return WHERE id = ?", ret.getId()));
+        assertEquals(0, new BigDecimal("100.00").compareTo(money("SELECT amount_refunded FROM commerce_order WHERE "
+                + "id = ?", orderId)));
+        owedInvariants(orderId);
+        noDrift("part paid, then a return above the due");
+    }
+
+    @Test
+    @Order(22)
+    void credit_aFullReturnOfAnUnpaidOrderSettlesItWithACreditNoteAndNoRefund() {
+        String orderId = creditOrder();
+        int a = slots(credit);
+        int b = slots(qtyA);
+        ReturnDtos.ReturnView ret = returnReceived(orderId, null, "DEFECTIVE", List.of(
+                named(lineOf(orderId, credit), "RESALEABLE", 1), named(lineOf(orderId, qtyA), "RESALEABLE", 1)));
+        assertEquals(0, new BigDecimal("1000.00").compareTo(ret.getCreditTotal()));
+        assertEquals(0, new BigDecimal("1000.00").compareTo(ret.getCreditNote().getTotal()), "credit note issued");
+        assertEquals(0, BigDecimal.ZERO.compareTo(ret.getDueRaised()));
+        assertEquals("CLOSED", ret.getStatus());
+        assertEquals(a + 1, slots(credit));
+        assertEquals(b + 1, slots(qtyA));
+        assertEquals(0, BigDecimal.ZERO.compareTo(owedInvariants(orderId)), "settled, nothing to collect");
+        assertEquals(0, BigDecimal.ZERO.compareTo(money("SELECT refund_due FROM commerce_order WHERE id = ?",
+                orderId)), "no refund");
+        assertEquals(0, count("SELECT count(*) FROM commerce_refund WHERE order_id = ?", orderId));
+        assertEquals("DELIVERED", status(orderId), "a return never moves the order");
+        assertTrue(assertThrows(ConflictException.class, () -> receipt(orderId, "1.00", "CASH")).getMessage()
+                .startsWith("ORDER_STATE_CHANGED"));
+        assertFalse(desk.detail(inst, orderId, admin, false).getNextActions().contains("REFUND"));
+        noDrift("full return of an unpaid order");
+    }
+
+    @Test
+    @Order(23)
+    void credit_aReceiptAndAReturnRacingOnOneOrderNeverOverCollectOrOverCredit() {
+        int returnFirst = 0;
+        for (int round = 0; round < 4; round++) {
+            String orderId = creditOrder();
+            ReturnDtos.ReturnView approved = returns.create(admin, inst, ReturnDtos.CreateReturnRequest.builder()
+                    .clientRequestId(key()).orderId(orderId).reason("DEFECTIVE").approveNow(true)
+                    .lines(List.of(ReturnDtos.LineRequest.builder().orderLineId(lineOf(orderId, credit)).quantity(1)
+                            .build())).build());
+            String receiveKey = key();
+            String receiptKey = key();
+            String line = lineOf(orderId, credit);
+            Callable<Object> receipt = () -> receipts.record(admin, inst, orderId, OrderDeskDtos.ReceiptRequest
+                    .builder().clientRequestId(receiptKey).mode("CASH").amount(new BigDecimal("1000.00")).build());
+            Callable<Object> receive = () -> returns.receive(admin, inst, approved.getId(), ReturnDtos.ReceiveRequest
+                    .builder().clientRequestId(receiveKey).fromStatus("APPROVED")
+                    .lines(List.of(named(line, "RESALEABLE", 1))).build());
+            // The queue at the row lock follows who asked first: odd rounds start the return first.
+            boolean swap = round % 2 == 1;
+            List<Object> raw = behindRowLock("commerce_order", orderId, swap ? List.of(receive, receipt)
+                    : List.of(receipt, receive));
+            List<Object> results = swap ? List.of(raw.get(1), raw.get(0)) : raw;
+            assertTrue(results.get(1) instanceof ReturnDtos.ReturnView, "the return is always received: " + results);
+            BigDecimal raised = money("SELECT due_raised FROM commerce_return WHERE id = ?", approved.getId());
+            if (results.get(0) instanceof Exception e) {
+                // The return went first: 700.00 was owed, the receipt of 1,000.00 is refused.
+                assertTrue(e.getMessage().startsWith("RECEIPT_ABOVE_DUE: 700.00"), e.getMessage());
+                returnFirst++;
+                assertEquals(0, BigDecimal.ZERO.compareTo(paid(orderId)));
+                assertEquals(0, BigDecimal.ZERO.compareTo(raised));
+                assertEquals(0, new BigDecimal("700.00").compareTo(owedInvariants(orderId)));
+            } else {
+                // The receipt went first: the order was paid, the whole credit is due back.
+                assertEquals(0, new BigDecimal("1000.00").compareTo(paid(orderId)));
+                assertEquals(0, new BigDecimal("300.00").compareTo(raised));
+                assertEquals(0, BigDecimal.ZERO.compareTo(owedInvariants(orderId)));
+            }
+            assertTrue(paid(orderId).subtract(money("SELECT refund_due FROM commerce_order WHERE id = ?", orderId))
+                    .compareTo(new BigDecimal("700.00")) <= 0, "kept money <= the goods kept: " + results);
+        }
+        System.out.println("CREDIT_RACE rounds=4 return_first=" + returnFirst + " receipt_first=" + (4 - returnFirst));
+        noDrift("receipt and return races");
+    }
+
+    @Test
+    @Order(24)
+    void credit_onlineOrdersAndTheCounterKeepTheirRules() {
+        // A paid online order: the whole credit is due back (as before).
+        clientIp = "127.0.0.24";
+        String online = paidOrder(Map.of(qtyA, 1));
+        deliver(online);
+        // A shopper's online order that is not paid is never returned (the state is set by hand: a
+        // delivered online order is always paid through the services).
+        db.update("UPDATE commerce_order SET payment_status = 'PARTIALLY_PAID' WHERE id = ?", online);
+        assertTrue(assertThrows(ConflictException.class, () -> returns.create(admin, inst,
+                ReturnDtos.CreateReturnRequest.builder().clientRequestId(key()).orderId(online).reason("DEFECTIVE")
+                        .lines(List.of(ReturnDtos.LineRequest.builder().orderLineId(lineOf(online, qtyA)).quantity(1)
+                                .build())).build())).getMessage().startsWith("ORDER_NOT_PAID"));
+        db.update("UPDATE commerce_order SET payment_status = 'PAID' WHERE id = ?", online);
+        ReturnDtos.ReturnView paidBack = returnReceived(online, null, "DEFECTIVE", List.of(named(lineOf(online, qtyA),
+                "RESALEABLE", 1)));
+        assertEquals(0, paidBack.getCreditTotal().compareTo(paidBack.getDueRaised()), "all of it due back");
+        assertEquals("PAID", paymentStatus(online));
+        ledger(online);
+
+        // The billing counter takes back a bill once it is paid: a staff order on credit is refused there.
+        String orderId = creditOrder();
+        ReturnDtos.CreateReturnRequest body = ReturnDtos.CreateReturnRequest.builder().clientRequestId(key())
+                .orderId(orderId).reason("DEFECTIVE").lines(List.of(ReturnDtos.LineRequest.builder()
+                        .orderLineId(lineOf(orderId, credit)).quantity(1).build())).build();
+        ConflictException counter = assertThrows(ConflictException.class, () -> new TransactionTemplate(
+                transactionManager).execute(tx -> returns.counterReturnInside(inst, body, store, "RET-X-" + run,
+                "hash-" + run, actor, List.of(named(lineOf(orderId, credit), "RESALEABLE", 1)))));
+        assertTrue(counter.getMessage().startsWith("ORDER_NOT_PAID"), counter.getMessage());
+        assertEquals(0, count("SELECT count(*) FROM commerce_return WHERE order_id = ?", orderId), "nothing written");
+        assertEquals(0, new BigDecimal("1000.00").compareTo(owedInvariants(orderId)));
     }
 }

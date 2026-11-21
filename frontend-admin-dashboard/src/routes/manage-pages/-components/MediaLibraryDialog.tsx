@@ -36,7 +36,8 @@ export const MediaLibraryDialog = ({
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onPick: (url: string) => void;
+    /** The picked file's public URL, and its media file id. */
+    onPick: (url: string, fileId: string) => void;
 }) => {
     const [search, setSearch] = useState('');
     const [resolving, setResolving] = useState<string | null>(null);
@@ -73,7 +74,7 @@ export const MediaLibraryDialog = ({
             setResolving(fileId);
             const url = await getPublicUrl(fileId);
             if (url) {
-                onPick(url);
+                onPick(url, fileId);
                 onOpenChange(false);
             }
         } finally {

@@ -48,6 +48,7 @@ import { requireListPage, type RequestStatus } from "@/lib/list-status";
 import { CustomTabProductPages } from "./CustomTabProductPages";
 import { useFunTheme } from "@/hooks/use-fun-theme";
 import { FunLearnHeader, FunLearnSearch, FunLearnSort } from "../-components/fun/FunLearn";
+import { tabForInitialTag } from "./initial-tag";
 
 // Only the "Live sessions" custom tab needs the live-class list; keep it out
 // of the Courses page chunk until then.
@@ -108,7 +109,10 @@ function mergeInstructorsFromCourses(
   return Array.from(byId.values());
 }
 
-const CourseCatalougePage: React.FC = () => {
+const CourseCatalougePage: React.FC<{
+  /** A course tag to open on (`?tag=` from a learner-home link): its own tag tab, else All filtered by it. */
+  initialTag?: string;
+}> = ({ initialTag }) => {
   const { t } = useTranslation("study");
   const isFun = useFunTheme();
   const [allowLeanersToCreateCourses, setAllowLeanersToCreateCourses] =
@@ -116,7 +120,9 @@ const CourseCatalougePage: React.FC = () => {
 
   // Use selectors to prevent re-renders when store state changes
   const setInstituteData = useCatalogStore((state) => state.setInstituteData);
-  const instituteData = useCatalogStore((state) => state.instituteData);
+  // Subscribed (not read) so the page re-renders when the institute data lands,
+  // as it did when this was an unused variable.
+  useCatalogStore((state) => state.instituteData);
   const setInstructors = useCatalogStore((state) => state.setInstructors);
 
   const setDripCondition = useDripConditionStore(
@@ -824,9 +830,13 @@ const CourseCatalougePage: React.FC = () => {
       const isDefaultVisible = ordered.some((t) => t.value === defaultVal);
       const firstVisible = ordered[0]?.value || "PROGRESS";
       const toSet = isDefaultVisible ? defaultVal : firstVisible;
-      setSelectedTab(toSet);
+      const tagStart = initialTag
+        ? tabForInitialTag(initialTag, ordered, customTabsByValue)
+        : null;
+      if (tagStart?.tags) setSelectedTags(tagStart.tags);
+      setSelectedTab(tagStart?.tab ?? toSet);
     });
-  }, []);
+  }, [initialTag]);
 
   // ✅ Fetch institute details
   useEffect(() => {

@@ -62,9 +62,19 @@ interface AiPlanBillingProps {
     onBuyHandled?: () => void;
     /** The host page shows its own title (the Evalezy credits page). */
     hideHeading?: boolean;
+    /**
+     * The host page lists the plans itself (Telleo's plan page shows only the workspace's own
+     * kind of plan), so no catalog until a plan is live; "Compare plans" still opens it then.
+     */
+    hideCatalog?: boolean;
 }
 
-export function AiPlanBilling({ buyPlanKey, onBuyHandled, hideHeading }: AiPlanBillingProps = {}) {
+export function AiPlanBilling({
+    buyPlanKey,
+    onBuyHandled,
+    hideHeading,
+    hideCatalog,
+}: AiPlanBillingProps = {}) {
     const { t } = useTranslation('aiPlans');
     const instituteId = getInstituteId() ?? '';
     const brand = usePlatformBrand(instituteId);
@@ -120,7 +130,7 @@ export function AiPlanBilling({ buyPlanKey, onBuyHandled, hideHeading }: AiPlanB
 
     const sub = sf.subscription;
     const hasPlan = !!sub && ['PENDING', 'TRIAL', 'ACTIVE', 'GRACE'].includes(sub.status);
-    const showCatalog = !hasPlan || compare;
+    const showCatalog = hasPlan ? compare : !hideCatalog;
     // Never show a platform-branded address on a neutral (white-labelled) screen.
     const supportEmail =
         sf.supplier.support_email &&

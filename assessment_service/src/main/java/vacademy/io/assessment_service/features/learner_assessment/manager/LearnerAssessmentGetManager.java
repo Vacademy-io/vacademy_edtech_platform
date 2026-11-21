@@ -50,21 +50,40 @@ public class LearnerAssessmentGetManager {
         }
 
         log.info("size: " + studentAssessmentFilter.getAssessmentTypes().size());
-        assessmentsPage = assessmentRepository.studentAssessments(studentAssessmentFilter.getName(),
-                studentAssessmentFilter.getBatchIds().isEmpty() ? null : true,
-                studentAssessmentFilter.getBatchIds(),
-                List.of(AssessmentStatus.PUBLISHED.name()),
-                studentAssessmentFilter.getGetLiveAssessments(),
-                studentAssessmentFilter.getGetPassedAssessments(),
-                studentAssessmentFilter.getGetUpcomingAssessments(),
-                Arrays.stream(AssessmentModeEnum.values()).map(AssessmentModeEnum::name).toList(),
-                studentAssessmentFilter.getInstituteIds(), true,
-                studentAssessmentFilter.getUserIds(),
-                studentAssessmentFilter.getAssessmentTypes(),
-                studentAssessmentFilter.getFolderId() == null || studentAssessmentFilter.getFolderId().isBlank()
-                        ? null : studentAssessmentFilter.getFolderId(),
-                Boolean.TRUE.equals(studentAssessmentFilter.getUnfiledOnly()) ? true : null,
-                pageable);
+        String folderId = studentAssessmentFilter.getFolderId() == null || studentAssessmentFilter.getFolderId().isBlank()
+                ? null : studentAssessmentFilter.getFolderId();
+        if (folderId != null) {
+            // Inside a folder: the folder's test order (by name, or arranged by an admin).
+            assessmentsPage = assessmentRepository.studentAssessmentsInFolder(studentAssessmentFilter.getName(),
+                    studentAssessmentFilter.getBatchIds().isEmpty() ? null : true,
+                    studentAssessmentFilter.getBatchIds(),
+                    List.of(AssessmentStatus.PUBLISHED.name()),
+                    studentAssessmentFilter.getGetLiveAssessments(),
+                    studentAssessmentFilter.getGetPassedAssessments(),
+                    studentAssessmentFilter.getGetUpcomingAssessments(),
+                    Arrays.stream(AssessmentModeEnum.values()).map(AssessmentModeEnum::name).toList(),
+                    studentAssessmentFilter.getInstituteIds(), true,
+                    studentAssessmentFilter.getUserIds(),
+                    studentAssessmentFilter.getAssessmentTypes(),
+                    folderId,
+                    Boolean.TRUE.equals(studentAssessmentFilter.getUnfiledOnly()) ? true : null,
+                    pageable);
+        } else {
+            assessmentsPage = assessmentRepository.studentAssessments(studentAssessmentFilter.getName(),
+                    studentAssessmentFilter.getBatchIds().isEmpty() ? null : true,
+                    studentAssessmentFilter.getBatchIds(),
+                    List.of(AssessmentStatus.PUBLISHED.name()),
+                    studentAssessmentFilter.getGetLiveAssessments(),
+                    studentAssessmentFilter.getGetPassedAssessments(),
+                    studentAssessmentFilter.getGetUpcomingAssessments(),
+                    Arrays.stream(AssessmentModeEnum.values()).map(AssessmentModeEnum::name).toList(),
+                    studentAssessmentFilter.getInstituteIds(), true,
+                    studentAssessmentFilter.getUserIds(),
+                    studentAssessmentFilter.getAssessmentTypes(),
+                    null,
+                    Boolean.TRUE.equals(studentAssessmentFilter.getUnfiledOnly()) ? true : null,
+                    pageable);
+        }
 
         List<StudentBasicAssessmentListItemDto> content = assessmentsPage.stream().map(StudentAssessmentMapper::toDto).collect(Collectors.toList());
         int queryPageNo = assessmentsPage.getNumber();

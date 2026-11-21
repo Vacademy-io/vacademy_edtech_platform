@@ -1,5 +1,6 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { useFunTheme } from "@/hooks/use-fun-theme";
+import { useNeonCity } from "@/hooks/use-neon-city";
 import { hslChannelsToHex } from "@/lib/colour/contrast";
 import { funBrandColours } from "./brand-colours";
 
@@ -40,9 +41,13 @@ export function applyFunBrandVars(root: HTMLElement, primaryChannels: string | n
 
 export function useFunSkinRuntime(): boolean {
   const on = useFunTheme();
-  const primary = useSyncExternalStore(on ? subscribeToRootStyle : nothing, on ? readPrimary : noBrand, noBrand);
+  // Neon City keeps its own action colour (neon pink with dark text), so the
+  // institute brand is not written over it.
+  const neon = useNeonCity();
+  const branded = on && !neon;
+  const primary = useSyncExternalStore(branded ? subscribeToRootStyle : nothing, branded ? readPrimary : noBrand, noBrand);
   useEffect(() => {
-    applyFunBrandVars(document.documentElement, on ? primary : null);
-  }, [on, primary]);
+    applyFunBrandVars(document.documentElement, branded ? primary : null);
+  }, [branded, primary]);
   return on;
 }

@@ -22,6 +22,9 @@ export type ImageSlotId =
     | 'social'
     | 'logo'
     | 'avatar'
+    | 'bannerPhone'
+    | 'bannerDesktop'
+    | 'tileIcon'
     | 'free';
 
 export interface ImageSlot {
@@ -53,6 +56,11 @@ export const IMAGE_SLOTS: Record<ImageSlotId, ImageSlot> = {
     social: { id: 'social', aspect: 1200 / 630, aspectLabel: '1.91:1', recommended: { width: 1200, height: 630 }, minWidth: 600, maxEdge: 1200 },
     logo: { id: 'logo', aspect: null, recommended: { width: 400 }, minWidth: 120, maxEdge: 800, logo: true },
     avatar: { id: 'avatar', aspect: 1, aspectLabel: '1:1', recommended: { width: 400, height: 400 }, minWidth: 120, maxEdge: 600 },
+    // Learner home banner slides: the phone/default image (2:1) and the optional
+    // wide desktop image (4:1), and a shortcut tile's square picture.
+    bannerPhone: { id: 'bannerPhone', aspect: 2, aspectLabel: '2:1', recommended: { width: 1600, height: 800 }, minWidth: 800, maxEdge: 1600 },
+    bannerDesktop: { id: 'bannerDesktop', aspect: 4, aspectLabel: '4:1', recommended: { width: 2400, height: 600 }, minWidth: 1600, maxEdge: 2400 },
+    tileIcon: { id: 'tileIcon', aspect: 1, aspectLabel: '1:1', recommended: { width: 256, height: 256 }, minWidth: 128, maxEdge: 512 },
     free: { id: 'free', aspect: null, recommended: { width: 1600 }, minWidth: 600, maxEdge: 2400 },
 };
 

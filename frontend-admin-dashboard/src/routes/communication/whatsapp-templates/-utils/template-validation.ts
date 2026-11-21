@@ -38,6 +38,29 @@ const SIGNED_URL_PARAMS =
 
 export const looksLikeSignedUrl = (url: string): boolean => SIGNED_URL_PARAMS.test(url.trim());
 
+/**
+ * Name to upload a header sample under. The media service percent-encodes anything outside a
+ * URL-safe set when it builds the public link, so "image (19).png" came back as
+ * "…image_%2819%29.png" — a link submit once fetched double-encoded and reported as "not publicly
+ * reachable". Keeping the name to [a-z0-9._-] means the link never carries an escape at all.
+ */
+export const safeSampleFileName = (name: string): string => {
+    const dot = name.lastIndexOf('.');
+    const base = dot > 0 ? name.slice(0, dot) : name;
+    const ext =
+        dot > 0
+            ? name
+                  .slice(dot)
+                  .toLowerCase()
+                  .replace(/[^a-z0-9.]/g, '')
+            : '';
+    const cleanBase = base
+        .toLowerCase()
+        .replace(/[^a-z0-9._-]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+    return `${cleanBase || 'sample'}${ext}`;
+};
+
 /** Meta allows lowercase letters, digits and underscores, up to 512 characters. */
 export const normalizeTemplateName = (raw: string): string =>
     raw.toLowerCase().replace(/[^a-z0-9_]/g, '_');

@@ -125,6 +125,8 @@
         "workflow": "Envoyé par le flux de travail « {{name}} »",
         "workflowUnnamed": "Envoyé par un flux de travail",
         "chatbotFlow": "Envoyé par le flux de chatbot « {{name}} »",
-        "chatbotFlowUnnamed": "Envoyé par un flux de chatbot"
+        "chatbotFlowUnnamed": "Envoyé par un flux de chatbot",
+        "adminResend": "Renvoyé par {{name}}",
+        "adminResendUnnamed": "Renvoyé par un administrateur"
     }
 }

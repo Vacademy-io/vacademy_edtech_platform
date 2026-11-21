@@ -30,6 +30,12 @@ public interface PointsLedgerRepository extends JpaRepository<PointsLedger, Stri
                          @Param("userId") String userId,
                          @Param("since") Timestamp since);
 
+    /** Distinct course slides this learner earned "Count as engagement" points for. */
+    @Query(value = "SELECT COUNT(DISTINCT pl.source_id) FROM points_ledger pl "
+            + "WHERE pl.institute_id = :instituteId AND pl.user_id = :userId "
+            + "AND pl.source_type = 'COURSE_ACTIVITY' AND pl.points > 0", nativeQuery = true)
+    long countCourseActivities(@Param("instituteId") String instituteId, @Param("userId") String userId);
+
     /** Rows: [sourceType, sum] — the learner-facing "where did my points come from" breakdown. */
     @Query("SELECT p.sourceType, COALESCE(SUM(p.points), 0) FROM PointsLedger p " +
             "WHERE p.instituteId = :instituteId AND p.userId = :userId GROUP BY p.sourceType")

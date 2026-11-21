@@ -1,4 +1,7 @@
 {
+  "revisedTag": "Revised {{date}}",
+  "revisedTagShort": "Revised",
+  "revisedTagHint": "Your teacher changed this result after it was released. The marks shown are the latest.",
   "common": {
     "correct": "Correct",
     "incorrect": "Incorrect",

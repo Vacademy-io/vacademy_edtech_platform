@@ -360,6 +360,7 @@ public class AnnouncementDeliveryService {
                     // email medium config (populated from the template at announcement creation time).
                     // We do NOT pass templateName here because admin_core_service templates
                     // are in a different table than notification_service's notification_template.
+                    // logTemplateName only labels the log row, so the timeline can show it.
                     UnifiedSendResponse sendResult = unifiedSendService.routeSync(UnifiedSendRequest.builder()
                             .instituteId(instituteId)
                             .channel("EMAIL")
@@ -375,6 +376,7 @@ public class AnnouncementDeliveryService {
                                     .source("announcement-service")
                                     .sourceId(announcement.getId())
                                     .billingClass(billingClass.name())
+                                    .logTemplateName(templateName)
                                     .build())
                             .build());
 

@@ -52,4 +52,8 @@ public class CommerceOrderTender extends CommerceCatalogueEntity {
 
     @Column(name = "money_account_id", length = 36)
     private String moneyAccountId;
+
+    /** Cash the buyer handed over for a CASH tender at the counter; the change is this less the amount. */
+    @Column(name = "cash_tendered", precision = 12, scale = 2)
+    private BigDecimal cashTendered;
 }

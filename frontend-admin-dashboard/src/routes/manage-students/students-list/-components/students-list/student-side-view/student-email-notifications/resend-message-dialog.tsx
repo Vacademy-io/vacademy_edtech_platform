@@ -288,7 +288,12 @@ export function ResendMessageDialog({
                               ? { headerType: headerKind, headerUrl: item.headerMediaUrl }
                               : {}),
                       }
-                    : { emailSubject, emailBody: item.fullBody ?? '' }),
+                    : {
+                          emailSubject,
+                          emailBody: item.fullBody ?? '',
+                          // Labels the resent row with the same template as the original.
+                          ...(item.templateName ? { templateName: item.templateName } : {}),
+                      }),
             });
 
             // A refused recipient rides back inside a 200 with failed: 1, so the counts are the

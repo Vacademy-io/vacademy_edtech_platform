@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { getAssessmentListWithFilters } from '@/routes/assessment/assessment-list/-services/assessment-services';
 import type { TestContent } from '@/types/assessments/schedule-test-list';
 import { TutorialCard } from './-components/Tutorials';
+import { HOME_TUTORIALS_MAX_TESTS } from './-lib/tutorials';
 
 export const Route = createFileRoute('/evalezy/')({
     component: EvalezyHome,
@@ -71,6 +72,16 @@ function EvalezyHome() {
     });
     const assessments = query.data?.content ?? [];
     const totalPages = query.data?.total_pages ?? 0;
+    // How many tests the institute has, from the last unsearched load: a search narrowing the
+    // list must not bring the tutorials back, nor hide them, on every keystroke.
+    const [testCount, setTestCount] = useState<number>();
+    const loadedTotal = query.data?.total_elements;
+    useEffect(() => {
+        if (!term && !query.isPlaceholderData && loadedTotal !== undefined)
+            setTestCount(loadedTotal);
+    }, [term, query.isPlaceholderData, loadedTotal]);
+    // A short list leaves the screen half empty: the tutorials fill it until there are enough tests.
+    const showTutorials = testCount !== undefined && testCount < HOME_TUTORIALS_MAX_TESTS;
 
     // The list can shrink under an open page (a test deleted elsewhere).
     useEffect(() => {
@@ -100,8 +111,6 @@ function EvalezyHome() {
                     {t('home.new')}
                 </MyButton>
             </div>
-
-            <TutorialCard />
 
             <MyInput
                 inputType="search"
@@ -199,6 +208,8 @@ function EvalezyHome() {
                     compactOnPhone
                 />
             )}
+
+            {showTutorials && <TutorialCard />}
         </div>
     );
 }

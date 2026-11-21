@@ -219,4 +219,10 @@ public class CommerceOrder extends CommerceCatalogueEntity {
     /** Sum of the order's ORDER-kind refunds that were paid out (PROCESSED). */
     @Column(name = "amount_refunded", nullable = false, precision = 12, scale = 2)
     private BigDecimal amountRefunded = BigDecimal.ZERO.setScale(2);
+
+    // -- Buyer messages (V721) --
+
+    /** In every signed order link; raised by the revoke query only, which ends every link not yet opened. */
+    @Column(name = "link_epoch", nullable = false, insertable = false, updatable = false)
+    private Short linkEpoch;
 }

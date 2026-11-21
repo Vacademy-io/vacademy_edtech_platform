@@ -156,6 +156,26 @@ class EventInput:
 _INPUT_FIELDS = frozenset(f.name for f in dc_fields(EventInput))
 
 
+# Speech vendors (TTS/STT) are not routed like LLMs, so their callers never pass `provider`:
+# the vendor is only in the model id ("sarvam:bulbul-v3", "sarvam-bulbul-v3", "sarvam:priya",
+# "sarvam") or the metadata's tts_provider. Without this every Sarvam row had no vendor, and
+# the platform portal filed Sarvam's cost under "vendor not tracked".
+SPEECH_VENDORS = frozenset({"sarvam", "smallest", "navana", "google", "edge", "elevenlabs", "rumik", "deepgram"})
+
+
+def speech_vendor(model_id: Any, tts_provider: Any = None) -> Optional[str]:
+    """The speech vendor a usage row names, or None. LLM ids ("google/gemini-...") carry a
+    slash and are left to the router logic."""
+    for candidate in (tts_provider, model_id):
+        text = str(candidate or "").strip().lower()
+        if not text or "/" in text:
+            continue
+        head = re.split(r"[:\-]", text, maxsplit=1)[0]
+        if head in SPEECH_VENDORS:
+            return head
+    return None
+
+
 def _route_of(inp: EventInput, meta: Dict[str, Any], *models: Optional[str]) -> Optional[str]:
     """Which gateway served this call: what the caller said, else the live route map for an
     LLM call. A failover to OpenRouter is only visible when the caller reports it. Never raises."""
@@ -556,7 +576,8 @@ def build_row(
         "context": context,
         "model_id": _s(model_id, W_MODEL),
         "model_wire_id": _s(wire, W_MODEL),
-        "provider": _s(inp.provider or meta.get("provider"), W_PROVIDER),
+        "provider": _s(inp.provider or meta.get("provider")
+                       or speech_vendor(model_id, meta.get("tts_provider_resolved") or meta.get("tts_provider")), W_PROVIDER),
         "router": _s(_route_of(inp, meta, model_id, raw_model), W_ROUTER),
         "gateway_key_id": _s(inp.gateway_key_id, W_GATEWAY_KEY),
         "byo_key": bool(inp.byo_key) if inp.byo_key is not None else False,

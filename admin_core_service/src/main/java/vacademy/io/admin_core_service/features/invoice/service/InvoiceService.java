@@ -1293,6 +1293,20 @@ public class InvoiceService {
         return PostalAddressFormatter.compose(street, city, state, pinCode, country);
     }
 
+    /**
+     * {@code {{institute_postal_address}}}: the institute's address as escaped HTML lines. The
+     * country is left off when the street text already names it, because institutes often type
+     * the whole address, country included, into the one street field. Empty when nothing is set,
+     * so a template can wrap it in {@code {{#if institute_postal_address}}}.
+     */
+    static String instituteAddressHtml(String street, String city, String state, String pinCode,
+            String country) {
+        boolean countryInStreet = StringUtils.hasText(street) && StringUtils.hasText(country)
+                && street.toLowerCase(Locale.ROOT).contains(country.trim().toLowerCase(Locale.ROOT));
+        String postal = composePostalAddress(street, city, state, pinCode, countryInStreet ? null : country);
+        return escapeHtml(postal).replace("\n", "<br/>");
+    }
+
     /** See {@link PostalAddressFormatter#dedupeSegments}. */
     static String dedupeAddressSegments(String street) {
         return PostalAddressFormatter.dedupeSegments(street);
@@ -2592,6 +2606,11 @@ public class InvoiceService {
                 + "<td style=\"text-align:right;white-space:nowrap;" + cell + "\">" + value + "</td></tr>";
     }
 
+    /** The built-in invoice PDF layout, unfilled, for Settings &gt; Invoice to show and copy. */
+    public String getBuiltInInvoiceTemplateHtml() {
+        return loadDefaultInvoiceTemplateFromResources();
+    }
+
     /**
      * Load default invoice PDF layout template from
      * resources/templates/invoice/default_invoice.html (same style as institute INVOICE templates).
@@ -2700,6 +2719,13 @@ public class InvoiceService {
                 ov.apply("institute_name", institute.getInstituteName()));
         filled = filled.replace("{{institute_address}}",
                 ovMulti.apply("institute_address", institute.getAddress()));
+        // The full postal address (street, city/state/pincode, country) for templates that want
+        // the whole thing rather than the bare street line {{institute_address}} carries. An
+        // admin's Institute Address edit replaces the street part, so both tokens move together.
+        filled = filled.replace("{{institute_postal_address}}", instituteAddressHtml(
+                overrides.containsKey("institute_address") ? overrides.get("institute_address")
+                        : institute.getAddress(),
+                institute.getCity(), institute.getState(), institute.getPinCode(), institute.getCountry()));
         // The line an institute prints under its name on letterheads. Held in the institute
         // description so a receipt reads from settings rather than being baked into a template.
         filled = filled.replace("{{institute_tagline}}",
@@ -4504,6 +4530,16 @@ public class InvoiceService {
     /**
      * Get invoice by ID
      */
+    /**
+     * The institute an invoice was issued under, for access checks before acting on it by id.
+     * Any document type, as the actions it guards accept any.
+     */
+    public String getInvoiceInstituteId(String invoiceId) {
+        return invoiceRepository.findById(invoiceId)
+                .map(Invoice::getInstituteId)
+                .orElseThrow(() -> new VacademyException("Invoice not found: " + invoiceId));
+    }
+
     public InvoiceDTO getInvoiceById(String invoiceId) {
         Invoice invoice = invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new VacademyException("Invoice not found: " + invoiceId));
@@ -6778,6 +6814,9 @@ public class InvoiceService {
         Set<String> present = new HashSet<>();
         java.util.regex.Matcher m = PLACEHOLDER_PATTERN.matcher(templateHtml != null ? templateHtml : "");
         while (m.find()) present.add(m.group(1));
+        // The full postal address is built from the Institute Address field, so a template that
+        // prints only the full form still gets that field to edit.
+        if (present.contains("institute_postal_address")) present.add("institute_address");
 
         Map<String, String> defaults = computeDefaultTextValues(invoiceData, invoiceSettings, templateHtml);
         Map<String, String> overrides = invoiceData.getOverrides() != null

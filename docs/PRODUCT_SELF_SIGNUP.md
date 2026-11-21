@@ -286,6 +286,7 @@ One JSON row, edited on the health dashboard. Services read it through `ProductC
 | `signup_alert_whatsapp` | Alert WhatsApp with country code, up to 20 | Set on the page |
 | `signup_alert_template`, `signup_alert_language` | Empty means `product_signup_alert`, `en` | Set |
 | `whatsapp_waba_id` | Account the template lives on | Set |
+| `plans[]` | Plans sold in the app and on the website: `key`, `name`, `price_inr`, `credits`, `users`; optional `access_mode` (`PLATFORM` or `API`, a product sold two ways) and `validity_months` (when it differs from `plan_validity_months`). A save that leaves the optional two out keeps the stored values | Set on the page |
 
 Values are the V643 seed and later notes, except the live `/config` fields in step 2. The dashboard is the source of truth.
 
@@ -472,3 +473,39 @@ Extend these for a new product:
 | Products page | `vacademy-health-check/src/pages/ProductsPage.tsx`, `src/components/products/` |
 | Website | `evalezy_landing/src/lib/site.ts`, PR #5 |
 | App launch steps | `frontend-admin-dashboard/EVALEZY_APP.md` |
+
+---
+
+## 10. VoomSales
+
+VoomSales uses the Evalezy flow at level A, plus a product host. It has no shell of its own: a new workspace is the normal dashboard with only the CRM category on.
+
+| Piece | Value |
+|---|---|
+| Settings row | `product.voomsales`, migration `V719__VoomSales_self_signup.sql`, created **closed** |
+| Sender | `hello@voomsales.com` (OTP and welcome mail). `voomsales.com` must be verified in SES with SPF and DKIM before sign-up opens |
+| Host | `voomsales.vacademy.io`: a Cloudflare Pages custom domain, no routing row (`product-host.ts`, blue theme, VoomSales logo) |
+| Not the host | `app.voomsales.com` stays routed to the VoomSales team institute. A routing row pins web logins to one institute, so customers cannot sign in there |
+| Theme | Preset `blue` on the institute; `theme_color` `#2558D9` in the OTP and welcome mail |
+| Sidebar | `VoomSalesDisplaySettings`: CRM category only (LMS, AI, ERP, Commerce hidden). Not an allow-list: CRM tabs come from the defaults |
+| Lands on | `/audience-manager/list` (app_path and post-login route) |
+| Trial | 7 days, 50 credits, 1 user (`ProductPlanAccessService.TRIAL_SEATS`) |
+| Plans | Starter ₹32,000 / 10 users, Growth ₹62,000 / 25, Pro ₹1,12,000 / 50, 12 months, 0 bundled credits (AI calls are per minute). Same as `voom-sales-landing/lib/pricing.ts` |
+| Form | Business types as Telleo's, teachers not asked, phone typed (no WhatsApp code) |
+| Website | `voom-sales-landing/lib/site.ts`: `signupHref()` points at the host; `SELF_SIGNUP_OPEN` turns the buttons on |
+
+Go live: verify `voomsales.com` in SES, add the Cloudflare domain, run the section 6 test on `voomsales.vacademy.io`, open sign-up on the Products page, then set `SELF_SIGNUP_OPEN = true` on the website.
+
+## 11. Telleo plans: dashboard and API
+
+Telleo is sold two ways, chosen on the first setup step (`telleo_onboarding.access_mode`, V718): the
+dashboard (`PLATFORM`) or the API. Each has its own plans, tagged `access_mode` in `product.telleo`
+(set in the database on the `product.telleo` row, not by a migration).
+
+| Piece | Value |
+|---|---|
+| Dashboard plans | Evalezy's plan, as V713 copied it (its Starter: price, credits, users, length). Prices live in the database; the website reads them from the public offer |
+| API plans | The telleo.ai/pricing plans: `api-starter` ₹3,499 / month (4,375 credits, about 875 minutes), `api-pro` ₹6,999 / month (8,750 credits), `api-annual` ₹29,999 / year (no bundled minutes). Same as `telleo.ai/src/content/pricing.ts` |
+| Website choice | `telleo.ai/pricing` has a Dashboard / API toggle. Trial links add `mode=api` or `mode=dashboard`; Buy links add `buy=<key>`. The sign-up page remembers the choice (`product-access-intent.ts`) and setup saves it, so the visitor is not asked again. An `api-` plan key means API |
+| Plan page | `/telleo/plan`: trial or plan (`plan-access`), the plans of the workspace's kind with a toggle to the other, and the AI plans checkout. The trial banner, setup's "Pay now" and the product mails link here |
+| Storefront | Checkout charges the storefront plan `telleo_<key>`. Each plan may have its own length (`period_months` per plan on the product plans form), so monthly and yearly plans sit side by side; a form that sends one period falls back to each plan's `validity_months`. After changing the plans, re-save Telleo's pricing on the health dashboard so the storefront matches |

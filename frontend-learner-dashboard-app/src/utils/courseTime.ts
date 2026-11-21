@@ -38,6 +38,9 @@ const DEFAULT_MINUTES_PER_SLIDE: Record<string, number> = {
   SCRATCH: 15,
   // Reading the question and writing a short reflection.
   DISCUSSION: 10,
+  FLASHCARDS: 10,
+  POLL: 2,
+  GAME: 10,
   VIDEO: 15,
   DOCUMENT: 30,
   DOC: 30,

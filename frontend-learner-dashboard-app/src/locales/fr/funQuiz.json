@@ -80,6 +80,9 @@
     "notes_other": "{{count}} notes",
     "viewingPast": "Vous consultez une tentative précédente.",
     "noRecorded": "Cette tentative n'a aucune réponse enregistrée : chaque question apparaît sans réponse.",
-    "backToLatest": "Revenir à la dernière"
+    "backToLatest": "Revenir à la dernière",
+    "neonCleared": "Quiz réussi",
+    "neonNotYet": "Pas encore",
+    "neonStars": "{{count}} étoiles sur 3"
   }
 }

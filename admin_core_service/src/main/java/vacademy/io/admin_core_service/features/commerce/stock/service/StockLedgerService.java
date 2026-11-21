@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.admin_core_service.features.commerce.catalogue.enums.StockMode;
 import vacademy.io.admin_core_service.features.commerce.catalogue.enums.StockPolicy;
+import vacademy.io.admin_core_service.features.commerce.common.CommerceUnits;
 import vacademy.io.admin_core_service.features.commerce.stock.entity.StockCostAdjustment;
 import vacademy.io.admin_core_service.features.commerce.stock.entity.StockMovement;
 import vacademy.io.admin_core_service.features.commerce.stock.enums.CostAdjustmentReason;
@@ -285,6 +286,10 @@ public class StockLedgerService {
         if (reorderLevel != null && reorderLevel < 0) {
             throw new InvalidRequestException("reorder_level cannot be negative");
         }
+        if (reorderLevel != null && reorderLevel > CommerceUnits.MAX_BASE_UNITS) {
+            throw new InvalidRequestException("VALIDATION: reorder_level is at most " + CommerceUnits.MAX_BASE_UNITS
+                    + " base units");
+        }
         variantRepository.findFacts(instituteId, packageSessionId)
                 .orElseThrow(() -> new InvalidRequestException("This item is not a shop product of this institute"));
         locationRepository.findByInstituteIdAndId(instituteId, locationId)
@@ -319,28 +324,43 @@ public class StockLedgerService {
                     sellableIn(packageSessionId, quantity);
                     return 0;
                 }
-                if (packageSessionRepository.commerceStockSoldAtCounter(packageSessionId, quantity) != 1) {
+                if (packageSessionRepository.commerceStockSoldAtCounter(packageSessionId, quantity) == 1) {
+                    return 0;
+                }
+                if (!posting.isAllowShortfall()) {
                     throw new ConflictException("SOLD_ONLINE: these units are sold online and await "
                             + "dispatch, or are in an online checkout");
                 }
-                return 0;
+                // A paper bill keyed later: the sale happened, so the units leave as any other
+                // outflow does (floored, the deficit remembered) and the shortfall is answered.
+                return outFloored(packageSessionId, quantity, before);
             }
             default -> {
                 if (delta > 0) {
                     sellableIn(packageSessionId, quantity);
                     return 0;
                 }
-                packageSessionRepository.commerceStockOutFloored(packageSessionId, quantity);
-                int unpromised = before.getAvailableSlots() == null ? 0 : Math.max(before.getAvailableSlots(), 0);
-                int shortfall = Math.max(quantity - unpromised, 0);
-                if (shortfall > 0) {
-                    // available_slots stopped at 0. The rest is remembered, so that a later
-                    // inflow or a released hold does not put promised units back on sale.
-                    packageSessionRepository.commerceAddSellableDeficit(packageSessionId, shortfall);
-                }
-                return shortfall;
+                return outFloored(packageSessionId, quantity, before);
             }
         }
+    }
+
+    /**
+     * Units leave an online location whatever was promised: both counters are taken down, never
+     * below zero, and the units that were already promised are remembered as a deficit.
+     *
+     * @return the units that left although promised online
+     */
+    private int outFloored(String packageSessionId, int quantity, CommerceStockCounters before) {
+        packageSessionRepository.commerceStockOutFloored(packageSessionId, quantity);
+        int unpromised = before.getAvailableSlots() == null ? 0 : Math.max(before.getAvailableSlots(), 0);
+        int shortfall = Math.max(quantity - unpromised, 0);
+        if (shortfall > 0) {
+            // available_slots stopped at 0. The rest is remembered, so that a later
+            // inflow or a released hold does not put promised units back on sale.
+            packageSessionRepository.commerceAddSellableDeficit(packageSessionId, shortfall);
+        }
+        return shortfall;
     }
 
     /**

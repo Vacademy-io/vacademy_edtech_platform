@@ -667,7 +667,7 @@ function EmailCampaigningPage({
             </div>
 
             {/* Sticky action bar */}
-            <div className="sticky bottom-0 z-20 border-t bg-background/95 px-4 py-3 backdrop-blur sm:px-6">
+            <div data-assistant-fab="avoid-phone" className="sticky bottom-0 z-20 border-t bg-background/95 px-4 py-3 backdrop-blur sm:px-6">
                 <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-3">
                     <p className="hidden items-center gap-2 text-caption text-muted-foreground sm:flex">
                         {attempted && blockers.length > 0 ? (

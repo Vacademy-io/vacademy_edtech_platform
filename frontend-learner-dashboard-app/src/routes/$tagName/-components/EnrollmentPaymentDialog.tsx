@@ -42,6 +42,14 @@ import { useCouponsEnabled } from "@/components/common/coupon/use-coupons-enable
 import { useCheckoutCoupon } from "@/components/common/coupon/use-checkout-coupon";
 import { CouponInput } from "@/components/common/coupon/CouponInput";
 import { invitePaymentEntryFor } from "../-services/course-levels-service";
+import {
+  isExistingAccountWithoutSession,
+  sendExistingAccountToSignIn,
+} from "@/lib/auth/existing-account-sign-in";
+
+// Where a signed-in enrollment lands (CourseDetailsPage onSuccess); an account that has to
+// sign in itself is sent back here after signing in.
+const AFTER_ENROLLMENT_ROUTE = "/study-library/courses";
 
 interface EnrollmentPaymentDialogProps {
   open: boolean;
@@ -520,7 +528,7 @@ export const EnrollmentPaymentDialog: React.FC<
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/60" />
-        <DialogPrimitive.Content className="fixed start-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-catalogue-md bg-white p-6 shadow-xl focus:outline-none">
+        <DialogPrimitive.Content className="fixed start-1/2 top-1/2 z-50 max-h-screen-90 w-full max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-catalogue-md bg-white p-6 shadow-xl focus:outline-none">
           <button
             className="absolute end-2 top-2 text-gray-400 hover:text-gray-700 focus:outline-none"
             onClick={handleClose}
@@ -1516,6 +1524,12 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
         throw new Error(paymentResponse.message || paymentResponse.ex || t("enrollmentPaymentDialog.completeEnrollmentFailed"));
       }
 
+      // Enrolled, but the account already existed and signs in itself.
+      if (isExistingAccountWithoutSession(paymentResponse)) {
+        await sendExistingAccountToSignIn({ email, phone, redirect: AFTER_ENROLLMENT_ROUTE });
+        return;
+      }
+
       // Try to get credentials from register response and login
       const username = paymentResponse?.user?.username || paymentResponse?.user_details?.username || paymentResponse?.username;
       const password = paymentResponse?.user?.password || paymentResponse?.user_details?.password || paymentResponse?.password;
@@ -1649,6 +1663,12 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
             custom_field_values: [],
           },
         });
+
+        // Enrolled, but the account already existed and signs in itself.
+        if (isExistingAccountWithoutSession(result)) {
+          await sendExistingAccountToSignIn({ email, phone, redirect: AFTER_ENROLLMENT_ROUTE });
+          return;
+        }
 
         if (result.accessToken && result.refreshToken) {
           onSuccess({
@@ -1899,6 +1919,12 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
           custom_field_values: [],
         },
       });
+
+      // Enrolled, but the account already existed and signs in itself.
+      if (isExistingAccountWithoutSession(result)) {
+        await sendExistingAccountToSignIn({ email, phone, redirect: AFTER_ENROLLMENT_ROUTE });
+        return;
+      }
 
       // Check for successful payment
       if (result.accessToken && result.refreshToken) {

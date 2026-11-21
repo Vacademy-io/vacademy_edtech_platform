@@ -1,6 +1,5 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import axios from "axios";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { useLocation } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
@@ -14,12 +13,12 @@ import {
   SquaresFour,
   X,
 } from "@phosphor-icons/react";
-import { urlCourseDetails } from "@/constants/urls";
 import { cn } from "@/lib/utils";
 import { useCatalogueLocale, useSiteT } from "../../-utils/catalogue-locale";
 import { resolveCoursePageRoute } from "../../-utils/course-page-routing";
 import { courseLanguagesOf, preferredCourseLanguage } from "../../-utils/course-variants";
 import { fetchPublicFolderTree, type PublicFolderNode } from "../../-services/folder-library-service";
+import { catalogueCourseRowsKey, fetchCatalogueCourseRows } from "../../-services/catalogue-course-rows-service";
 import { folderBrowserSections } from "../../$courseId/-utils/folder-trail";
 import type { CourseCatalogueData, GlobalSettings, HeaderMegaMenuConfig } from "../../-types/course-catalogue-types";
 import { buildMegaMenuModel } from "./mega-menu-model";
@@ -68,27 +67,8 @@ export interface HeaderSearchProps {
   variant?: "default" | "editorial";
 }
 
-const fetchSearchCourses = async (instituteId: string, name = "", size = 1000): Promise<CourseSearchRow[]> => {
-  const res = await axios.post(
-    urlCourseDetails,
-    {
-      status: [],
-      level_ids: [],
-      faculty_ids: [],
-      search_by_name: name,
-      tag: [],
-      min_percentage_completed: 0,
-      max_percentage_completed: 0,
-    },
-    {
-      // Same request as the catalogue grid, so search spans every course it lists.
-      params: { instituteId, page: 0, size, sort: "createdAt,desc" },
-      headers: { "Content-Type": "application/json" },
-    },
-  );
-  const raw = res.data?.content || res.data || [];
-  return Array.isArray(raw) ? raw : [];
-};
+const fetchSearchCourses = (instituteId: string, name = "", size = 1000): Promise<CourseSearchRow[]> =>
+  fetchCatalogueCourseRows<CourseSearchRow>(instituteId, name, size);
 
 const SUGGESTION_LIMIT = 6;
 /** The full list stops at 1000 courses; past that, courses are also searched by name on the server. */
@@ -152,7 +132,7 @@ export const HeaderSearch: React.FC<HeaderSearchProps> = ({
   const configs = useMemo(() => megaConfigs.filter((c) => (c.libraryId || "").trim()), [configsKey]);
 
   const coursesQuery = useQuery({
-    queryKey: ["CATALOGUE_SITE_SEARCH_COURSES", instituteId],
+    queryKey: catalogueCourseRowsKey(instituteId),
     queryFn: () => fetchSearchCourses(instituteId!),
     enabled: open && !!instituteId,
     staleTime: 5 * 60_000,

@@ -52,6 +52,91 @@ function mergeArrayById<T extends { id: string }>(
     return Array.from(byId.values());
 }
 
+/**
+ * Custom dashboard widgets (institute-authored cards). Older settings stored every
+ * one of them under the same id "custom"; newer ones get "custom:<shortid>".
+ * Either form, or an entry flagged isCustom, counts as custom.
+ */
+export function isCustomWidget(
+    w: { id?: string | null; isCustom?: boolean } | null | undefined
+): boolean {
+    if (!w) return false;
+    return w.isCustom === true || (typeof w.id === 'string' && w.id.startsWith('custom'));
+}
+
+/** A fresh id for a new custom widget, unique among `existingIds`. */
+export function newCustomWidgetId(existingIds: Iterable<string>): StudentDashboardWidgetId {
+    const taken = new Set(existingIds);
+    // Older learner app builds only render the widget whose id is exactly "custom",
+    // so the first custom widget keeps that id.
+    if (!taken.has('custom')) return 'custom';
+    for (;;) {
+        const id = `custom:${Math.random().toString(36).slice(2, 10)}` as const;
+        if (!taken.has(id)) return id;
+    }
+}
+
+/**
+ * Dashboard widgets merged with the defaults. Built-in widgets merge by id as
+ * before. Custom widgets are never merged by id: every stored one is kept, in
+ * stored order. One whose id is the shared legacy "custom", a duplicate, or not a
+ * custom-style id gets `custom:legacy-<index>` (index in the stored list), so
+ * every load of the same stored list gives the same ids.
+ */
+function mergeDashboardWidgets(
+    incoming: Array<Partial<StudentDashboardWidgetConfig>> | undefined,
+    defaults: StudentDashboardWidgetConfig[]
+): StudentDashboardWidgetConfig[] {
+    const list = Array.isArray(incoming) ? incoming : [];
+    const builtIns = mergeArrayById<StudentDashboardWidgetConfig>(
+        list.filter((w) => !isCustomWidget(w)),
+        defaults
+    ).map((w) => ({
+        id: w.id,
+        order: w.order ?? defaults.find((x) => x.id === w.id)?.order ?? 0,
+        visible: w.visible ?? defaults.find((x) => x.id === w.id)?.visible ?? true,
+        isCustom: w.isCustom ?? false,
+        title: w.title ?? defaults.find((x) => x.id === w.id)?.title,
+        subTitle: w.subTitle ?? defaults.find((x) => x.id === w.id)?.subTitle,
+        link: w.link ?? defaults.find((x) => x.id === w.id)?.link,
+    }));
+
+    const customs = list.map((w, index) => ({ w, index })).filter(({ w }) => isCustomWidget(w));
+    const taken = new Set<string>(builtIns.map((w) => w.id));
+    // Pass 1: keep every distinct custom-style id as stored. The first plain
+    // "custom" keeps that id, so app builds that only know "custom" still show it.
+    const kept = customs.map(({ w }) => {
+        const id = w.id;
+        if (typeof id === 'string' && id.startsWith('custom') && !taken.has(id)) {
+            taken.add(id);
+            return id;
+        }
+        return null;
+    });
+    // Pass 2: give the rest a stable id from their stored position.
+    const ids = customs.map(({ index }, i) => {
+        const keptId = kept[i];
+        if (keptId) return keptId;
+        let id = `custom:legacy-${index}`;
+        for (let n = 2; taken.has(id); n++) id = `custom:legacy-${index}-${n}`;
+        taken.add(id);
+        return id;
+    });
+
+    return [
+        ...builtIns,
+        ...customs.map(({ w }, i) => ({
+            id: ids[i] as StudentDashboardWidgetId,
+            order: w.order ?? 0,
+            visible: w.visible ?? true,
+            isCustom: true,
+            title: w.title,
+            subTitle: w.subTitle,
+            link: w.link,
+        })),
+    ];
+}
+
 const CUSTOM_COURSE_TAB_TYPES: ReadonlyArray<StudentAllCoursesCustomTabType> = [
     'TAG',
     'COURSES',
@@ -180,19 +265,7 @@ function mergeWithDefaults(
             })),
         },
         dashboard: {
-            widgets: mergeArrayById<StudentDashboardWidgetConfig>(
-                incoming?.dashboard?.widgets,
-                d.dashboard.widgets
-            ).map((w) => ({
-                id: w.id,
-                order: w.order ?? d.dashboard.widgets.find((x) => x.id === w.id)?.order ?? 0,
-                visible:
-                    w.visible ?? d.dashboard.widgets.find((x) => x.id === w.id)?.visible ?? true,
-                isCustom: w.isCustom ?? false,
-                title: w.title ?? d.dashboard.widgets.find((x) => x.id === w.id)?.title,
-                subTitle: w.subTitle ?? d.dashboard.widgets.find((x) => x.id === w.id)?.subTitle,
-                link: w.link ?? d.dashboard.widgets.find((x) => x.id === w.id)?.link,
-            })),
+            widgets: mergeDashboardWidgets(incoming?.dashboard?.widgets, d.dashboard.widgets),
         },
         ui: {
             type: incoming?.ui?.type ?? d.ui.type,

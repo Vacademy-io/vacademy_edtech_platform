@@ -1,6 +1,6 @@
 {
     "trigger": {
-        "entireAssessment": "Entire Assessment"
+        "entireAssessment": "Re-mark with answer key (whole test)"
     },
     "dialog": {
         "title": "Revaluate All {{learnerPlural}}",

@@ -48,6 +48,7 @@ export type DashboardWidgetId =
     | 'roleTypeUsers'
     | 'myCourses'
     | 'unresolvedDoubts'
+    | 'engagementPlanning'
     | 'liveClasses'
     | 'aiFeaturesCard'
     | 'instituteOverview'
@@ -92,6 +93,7 @@ export type CourseDetailsTabId =
     | 'LIVE_SESSION'
     | 'PLANNING'
     | 'ACTIVITY'
+    | 'ENGAGEMENT'
     | 'PULSE'
     | 'REPORTS'
     | 'CERTIFICATES'
@@ -586,13 +588,26 @@ export type ListUtmFilterControls = Partial<
 // The filters a list surface ships with, as opposed to custom fields and UTM
 // dimensions. Admins turn these off when a column means nothing to their
 // institute (no counsellors assigned, one audience, …).
-export type ListBuiltInFilter = 'counsellor' | 'campaignType' | 'audience';
+export type ListBuiltInFilter = 'counsellor' | 'campaignType' | 'audience' | 'city' | 'region';
 
 export const LIST_BUILT_IN_FILTERS: readonly ListBuiltInFilter[] = [
     'counsellor',
     'campaignType',
     'audience',
 ] as const;
+
+// City and region exist only on the learner list, so only the STUDENTS surface
+// offers their switches. Every other surface keeps exactly LIST_BUILT_IN_FILTERS.
+const SURFACE_ONLY_BUILT_IN_FILTERS: Partial<
+    Record<ListCustomFieldSurface, readonly ListBuiltInFilter[]>
+> = {
+    STUDENTS: ['city', 'region'],
+};
+
+/** The built-in filters a surface's "Manage filters" popup offers switches for. */
+export function listBuiltInFiltersFor(surface: ListCustomFieldSurface): ListBuiltInFilter[] {
+    return [...LIST_BUILT_IN_FILTERS, ...(SURFACE_ONLY_BUILT_IN_FILTERS[surface] ?? [])];
+}
 
 export interface ListBuiltInFilterSurfaceControls {
     // Filters hidden on this surface. ABSENT or empty = all of them show, which
@@ -651,6 +666,11 @@ export interface DisplaySettingsData {
         // role and HIDDEN for teacher/custom roles; admins can opt a specific
         // role in from that role's Display Settings.
         showAssistDock?: boolean;
+        // Allow-list mode, opt-in (set for Telleo self sign-ups). On: sidebar entries this
+        // blob does not list are hidden rather than filled in from the defaults, and a page
+        // not under a visible sidebar entry goes to the locked page. Off/absent: hidden
+        // entries stay reachable by deep link, as for every other institute.
+        sidebarAllowList?: boolean;
     };
 
     // 7) Course content types (slides) visibility

@@ -1470,16 +1470,43 @@
     scroll-behavior: auto !important;
   }
 
-  /* Skip link — off-screen until focused, then a real, visible control.
-     Uses primary-500 (not --catalogue-interactive-focus-ring, which is
-     near-black in light mode). */
+  /* Skip link — clipped to nothing until focused, then a real, visible
+     control pinned above the header. It is clipped (outline and shadow
+     included), not parked above the page with a transform: browsers paint
+     content above the page top during a top overscroll bounce (macOS
+     trackpads, iOS), which showed the parked link's outlined box over the
+     fixed header's logo. Uses primary-500 (not
+     --catalogue-interactive-focus-ring, which is near-black in light mode). */
   .catalogue-skip-link {
     position: absolute;
-    left: var(--space-4);
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    border: 0;
+    outline: none;
+    box-shadow: none;
+  }
+
+  .catalogue-skip-link:focus-visible,
+  .catalogue-skip-link:focus {
+    position: fixed;
     top: var(--space-4);
+    left: var(--space-4);
     z-index: 100;
-    transform: translateY(-200%);
+    width: auto;
+    height: auto;
+    margin: 0;
     padding: var(--space-3) var(--space-4);
+    overflow: visible;
+    clip: auto;
+    clip-path: none;
     border-radius: var(--catalogue-radius-md);
     background-color: hsl(var(--catalogue-bg));
     color: hsl(var(--catalogue-text-primary));
@@ -1488,12 +1515,6 @@
     box-shadow: var(--catalogue-elevation-3);
     outline: 2px solid hsl(var(--primary-500));
     outline-offset: 2px;
-    transition: transform var(--catalogue-transition-fast);
-  }
-
-  .catalogue-skip-link:focus-visible,
-  .catalogue-skip-link:focus {
-    transform: translateY(0);
   }
 
   /* Full-bleed ticker viewport: fades the first/last ~4rem so items dissolve

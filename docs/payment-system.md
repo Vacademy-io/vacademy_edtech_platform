@@ -593,6 +593,14 @@ One row per institute per gateway. `vendor` (STRIPE, RAZORPAY, PHONEPE, CASHFREE
 webhookSecret, saltKey, ...), `status`. Managed from **Settings → Payment Gateways**
 (`/v1/institute/payment-gateways`); secrets are returned masked.
 
+The trash icon does not delete the row: it sets `status = INACTIVE`, and every checkout looks up
+only ACTIVE mappings, so all invite links on that vendor stop taking payment. The confirm dialog
+shows how many live (and paid) invite links use the gateway (`GET .../{id}/usage`). An inactive
+gateway is switched back on from its card (`PUT .../{id}/activate`, same row and id, so invites keep
+working); adding the same vendor again also revives that row with the new keys. Writes need the
+institute ADMIN role and are recorded in the admin activity log (`entity_type = PAYMENT_GATEWAY`:
+CREATE / UPDATE / DEACTIVATE / MAKE_ACTIVE, credentials masked).
+
 **Which gateway is used:** the newest ACTIVE mapping is the institute's default (falls back to
 STRIPE). It is stamped onto each `enroll_invite.vendor` when the invite is created, and the
 payment uses the invite's vendor. Admin invoices and live sessions use the institute default.
@@ -1187,7 +1195,9 @@ Base `/v1/admin/student-fee`: `/{userId}/dues`, `/{userId}/allocate`, `/{userId}
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET / POST / PUT / DELETE | `/v1/institute/payment-gateways` | Institute gateway credentials |
+| GET / POST / PUT / DELETE | `/v1/institute/payment-gateways` | Institute gateway credentials (DELETE = deactivate) |
+| PUT | `/v1/institute/payment-gateways/{id}/activate` | Switch a deactivated gateway back on |
+| GET | `/v1/institute/payment-gateways/{id}/usage` | Live / paid invite links on the gateway |
 | POST | `/payments/webhook/callback/{stripe,razorpay,phonepe,cashfree}` | Gateway webhooks |
 | POST | `/payments/webhook/reprocess/{id}` | Replay a stored webhook |
 

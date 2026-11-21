@@ -32,9 +32,6 @@ public class GetQuestionBankManager {
     @Autowired
     private QuestionLibraryTreeResolver libraryTreeResolver;
 
-    /** Questions with no explicit status filter are ACTIVE ones. */
-    private static final List<String> DEFAULT_STATUSES = List.of("ACTIVE");
-
     public Page<QuestionDTO> getQuestions(CustomUserDetails user, QuestionBankFilter filter,
                                           String instituteId, int pageNo, int pageSize) {
         return getQuestions(user, filter, instituteId, pageNo, pageSize, true);
@@ -64,50 +61,29 @@ public class GetQuestionBankManager {
                     ? libraryTreeResolver.withDescendants(instituteId, safeFilter.getLibraryNodeIds())
                     : safeFilter.getLibraryNodeIds();
             if (expanded.isEmpty()) return Page.empty(pageable);
-            libraryNodeIdsCsv = toCsv(expanded);
+            libraryNodeIdsCsv = QuestionFilterParams.toCsv(expanded);
         }
-        String unsortedFlag = Boolean.TRUE.equals(safeFilter.getUnsortedOnly()) ? "Y" : null;
+        QuestionFilterParams p = QuestionFilterParams.of(instituteId, safeFilter, libraryNodeIdsCsv);
 
         Page<Question> questions = questionRepository.findQuestionsByFilters(
-                instituteId,
-                blankToNull(safeFilter.getName()),
-                // Every multi-value filter goes over as CSV -- see the repository comment.
-                // Statuses default to ACTIVE rather than "no constraint": a deleted
-                // question must never be offered for reuse.
-                toCsv(safeFilter.getStatuses() == null || safeFilter.getStatuses().isEmpty()
-                        ? DEFAULT_STATUSES
-                        : safeFilter.getStatuses()),
-                toCsv(safeFilter.getQuestionTypes()),
-                toCsv(safeFilter.getDifficulties()),
-                toCsv(safeFilter.getSourceTypes()),
-                toCsv(safeFilter.getExcludeQuestionIds()),
-                toCsv(safeFilter.getKbIds()),
-                toCsv(safeFilter.getKbNodeIds()),
-                toCsv(safeFilter.getTagIds()),
-                libraryNodeIdsCsv,
-                unsortedFlag,
+                p.instituteId(),
+                p.name(),
+                p.statusesCsv(),
+                p.questionTypesCsv(),
+                p.difficultiesCsv(),
+                p.sourceTypesCsv(),
+                p.excludeQuestionIdsCsv(),
+                p.kbIdsCsv(),
+                p.kbNodeIdsCsv(),
+                p.tagIdsCsv(),
+                p.tagGroupsCsv(),
+                p.libraryNodeIdsCsv(),
+                p.unsortedFlag(),
                 pageable
         );
 
         // provideSolution = true: this feeds a picker where the admin is deciding
         // whether a question is worth adding, and that judgement needs the answer.
         return questions.map(question -> new QuestionDTO(question, true));
-    }
-
-    private String blankToNull(String value) {
-        return (value == null || value.isBlank()) ? null : value;
-    }
-
-    /**
-     * The query unnests these in Postgres rather than binding a list, so an id
-     * containing a comma would split into two. Ids here are UUIDs, but drop any that
-     * are not comma-free rather than silently widening the filter.
-     */
-    private String toCsv(List<String> values) {
-        if (values == null || values.isEmpty()) return null;
-        List<String> clean = values.stream()
-                .filter(v -> v != null && !v.isBlank() && !v.contains(","))
-                .toList();
-        return clean.isEmpty() ? null : String.join(",", clean);
     }
 }

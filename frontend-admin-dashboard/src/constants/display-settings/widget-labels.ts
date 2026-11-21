@@ -24,6 +24,7 @@ export const DASHBOARD_WIDGET_LABELS: Record<DashboardWidgetId, string> = {
     roleTypeUsers: 'Role type users',
     myCourses: 'My courses (non-admin)',
     unresolvedDoubts: 'Unresolved doubts',
+    engagementPlanning: 'Daily engagement: batches with no tasks',
     liveClasses: 'Live classes',
     aiFeaturesCard: 'AI features card',
     instituteOverview: 'Institute overview',

@@ -49,6 +49,10 @@ import java.util.Map;
 public class RenewalChargeService {
 
     private final UserPlanRepository userPlanRepository;
+
+    /** Paused memberships (docs/ENROLMENT_BREAKS.md) are skipped. Optional: absent = nothing skipped. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vacademy.io.admin_core_service.features.enrolment_break.service.EnrolmentBreakGuard enrolmentBreakGuard;
     private final PaymentService paymentService;
     private final UserInstitutePaymentGatewayMappingService mandateService;
     private final RenewalPaymentService renewalPaymentService;
@@ -107,6 +111,12 @@ public class RenewalChargeService {
         log.info("[RenewalCharge] {} autopay plan(s) due", due.size());
         int charged = 0, failed = 0, skipped = 0;
         for (UserPlan plan : due) {
+            if (enrolmentBreakGuard != null && enrolmentBreakGuard.isPlanPaused(plan.getId())) {
+                // Paused: no charge, no grace expiry. The resume moves next_charge_at forward.
+                log.info("[RenewalCharge] plan {} is paused (enrolment break), skipping", plan.getId());
+                skipped++;
+                continue;
+            }
             try {
                 // A plan still unpaid after its grace window is closed here, on the sweep,
                 // not left to whenever the gateway's next failure webhook happens to
@@ -131,33 +141,6 @@ public class RenewalChargeService {
             }
         }
         log.info("[RenewalCharge] Done — charged={} failed={} skipped={}", charged, failed, skipped);
-    }
-
-    /**
-     * TEST-ONLY: force a renewal charge for a single plan NOW, bypassing the
-     * next_charge_at date filter, so autopay can be verified on demand instead of
-     * waiting for the trial/cycle to elapse. Runs the exact same processOne path
-     * the scheduler uses. Remove/secure the calling endpoint before prod.
-     */
-    public String chargeNow(String userPlanId) {
-        java.util.List<UserPlan> plans = userPlanRepository.findByIdsWithoutPaymentLogs(java.util.List.of(userPlanId));
-        if (plans.isEmpty()) {
-            return "PLAN_NOT_FOUND: " + userPlanId;
-        }
-        UserPlan plan = plans.get(0);
-        // processOne's atomic claim needs next_charge_at to be set; arm it to now
-        // if the caller is testing a plan whose charge date hasn't arrived yet.
-        if (plan.getNextChargeAt() == null) {
-            plan.setNextChargeAt(new Date());
-            userPlanRepository.save(plan);
-        }
-        try {
-            Outcome o = processOne(plan, new Date());
-            return "userPlan=" + userPlanId + " outcome=" + o;
-        } catch (Exception e) {
-            log.error("[RenewalCharge] chargeNow failed for {}: {}", userPlanId, e.getMessage(), e);
-            return "ERROR: " + e.getMessage();
-        }
     }
 
     /**

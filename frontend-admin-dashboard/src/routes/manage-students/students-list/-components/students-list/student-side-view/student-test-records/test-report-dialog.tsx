@@ -26,13 +26,18 @@ import { toast } from 'sonner';
 import { handleGetStudentReportExportPDF } from '@/routes/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab/-services/assessment-details-services';
 import { Steps } from '@/types/assessments/assessment-data-type';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from '@tanstack/react-router';
+import { ArrowSquareOut } from '@phosphor-icons/react';
+import { MyButton } from '@/components/design-system/button';
+import { formatMark } from '@/services/submission-review/marks';
 
 interface TestReportDialogProps {
     isOpen: boolean;
     onClose: () => void;
     testReport: AssessmentTestReport;
     studentReport: AssessmentReportStudentInterface;
-    assessmentDetails: Steps;
+    /** Null while loading, or when the details request failed. */
+    assessmentDetails: Steps | null;
 }
 
 export const TestReportDialog = ({
@@ -43,13 +48,29 @@ export const TestReportDialog = ({
     assessmentDetails,
 }: TestReportDialogProps) => {
     const { t } = useTranslation('manageStudentsTestReportDialog');
+    const navigate = useNavigate();
     const { data: instituteDetails } = useQuery(useInstituteQuery());
-    const sectionsInfo = assessmentDetails[1]?.saved_data.sections?.map((section) => ({
+    const openSubmission = () => {
+        if (!studentReport.attempt_id) return;
+        onClose();
+        navigate({
+            to: '/assessment/submission/$attemptId',
+            params: { attemptId: studentReport.attempt_id },
+            search: {},
+        });
+    };
+    const sectionsInfo = assessmentDetails?.[1]?.saved_data.sections?.map((section) => ({
         name: section.name,
         id: section.id,
     }));
 
     const [selectedSection, setSelectedSection] = useState(sectionsInfo ? sectionsInfo[0]?.id : '');
+    // Out of = the paper's section totals (was a hardcoded "/20"); the same sum the
+    // total-marks endpoint returns, from the paper already loaded here. Hidden when unknown.
+    const paperTotalMarks = (assessmentDetails?.[1]?.saved_data.sections ?? []).reduce(
+        (sum, section) => sum + (Number(section.total_marks) || 0),
+        0
+    );
 
     const currentSectionAllQuestions = testReport.all_sections[selectedSection!];
 
@@ -112,7 +133,8 @@ export const TestReportDialog = ({
         getExportStudentReportDataPDF.mutate({
             assessmentId: studentReport.assessment_id,
             instituteId: instituteDetails?.id,
-            attemptId: studentReport.assessment_id,
+            // The attempt, not the test: this used to send the assessment id here.
+            attemptId: studentReport.attempt_id,
         });
     };
     // The institute list keeps one subject per distinct name and drops subjects whose
@@ -143,14 +165,28 @@ export const TestReportDialog = ({
                                 {studentReport.assessment_name}
                             </div>
                         </div>
-                        <ExportDialogPDFCSV
-                            handleExportPDF={handleExportPDF}
-                            isPDFLoading={
-                                getExportStudentReportDataPDF.status === 'pending' ? true : false
-                            }
-                            isEnablePDF={true}
-                            isEnableCSV={false}
-                        />
+                        <div className="flex flex-wrap items-start gap-2">
+                            {studentReport.attempt_id && (
+                                <MyButton
+                                    type="button"
+                                    buttonType="secondary"
+                                    scale="medium"
+                                    className="gap-1.5"
+                                    onClick={openSubmission}
+                                >
+                                    <ArrowSquareOut size={16} />
+                                    {t('openSubmission')}
+                                </MyButton>
+                            )}
+                            <ExportDialogPDFCSV
+                                handleExportPDF={handleExportPDF}
+                                isPDFLoading={
+                                    getExportStudentReportDataPDF.status === 'pending' ? true : false
+                                }
+                                isEnablePDF={true}
+                                isEnableCSV={false}
+                            />
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-1 text-body sm:grid-cols-3">
@@ -236,7 +272,8 @@ export const TestReportDialog = ({
                         <div>
                             <h1>{t('score.marks')}</h1>
                             <p className="text-neutral-500">
-                                {studentReport.total_marks.toFixed(2)}/20
+                                {formatMark(studentReport.total_marks)}
+                                {paperTotalMarks > 0 && ` / ${formatMark(paperTotalMarks)}`}
                             </p>
                         </div>
                     </div>

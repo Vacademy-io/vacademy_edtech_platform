@@ -93,6 +93,27 @@ public class StudentAttempt {
     @Column(name = "report_pdf_file_id")
     private String reportPdfFileId;
 
+    // Submission review (V74). Read-only here: many paths save an attempt entity loaded
+    // long before (async revaluate, the release render loop, autosave) and would reset
+    // these. They are written only by targeted UPDATEs (submission_review MarkWriter /
+    // SubmissionReleaseService).
+    @Column(name = "marks_revision", insertable = false, updatable = false)
+    private Integer marksRevision;
+
+    @Column(name = "notified_revision", insertable = false, updatable = false)
+    private Integer notifiedRevision;
+
+    @Column(name = "result_revised_at", insertable = false, updatable = false)
+    private Date resultRevisedAt;
+
+    @Column(name = "release_when_marked", insertable = false, updatable = false)
+    private Boolean releaseWhenMarked;
+
+    // "Hide result again": set by the withdraw, cleared by a teacher's release. Automatic
+    // releases (cron, submit-time, re-mark, release-when-marked on submit) skip it.
+    @Column(name = "result_withheld_at", insertable = false, updatable = false)
+    private Date resultWithheldAt;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private Date createdAt;
 

@@ -34,6 +34,32 @@ interface ImageUploadFieldProps {
      * shape ("free").
      */
     slot?: ImageSlotId | ImageSlot;
+    /** Media-service source of new uploads. Default 'CATALOGUE_IMAGES'. */
+    uploadSource?: string;
+    /** Media-service source id of new uploads. Default 'ADMIN'. */
+    uploadSourceId?: string;
+    /**
+     * Called with the file id (and the size, when known) after an upload or a
+     * library pick, besides onChange with the URL. Callers that store a file
+     * reference rather than a URL use this.
+     */
+    onUploaded?: (meta: UploadedImageMeta) => void;
+    /** Hide the paste-a-URL box (for fields that must hold an uploaded file). */
+    hideUrlInput?: boolean;
+    /**
+     * Hide the media Library. For fields whose files must come from
+     * `uploadSource`: library files were uploaded under other sources.
+     */
+    hideLibrary?: boolean;
+    /** Accepted MIME types, e.g. 'image/jpeg,image/png,image/webp'. Default any image. */
+    accept?: string;
+}
+
+export interface UploadedImageMeta {
+    fileId: string;
+    url: string;
+    width?: number;
+    height?: number;
 }
 
 /** A picked file waiting in the cropper. */
@@ -43,7 +69,20 @@ interface PendingImage {
     size: Size | null;
 }
 
-export const ImageUploadField = ({ label, value, onChange, placeholder, aiKind, slot: slotProp }: ImageUploadFieldProps) => {
+export const ImageUploadField = ({
+    label,
+    value,
+    onChange,
+    placeholder,
+    aiKind,
+    slot: slotProp,
+    uploadSource = 'CATALOGUE_IMAGES',
+    uploadSourceId = 'ADMIN',
+    onUploaded,
+    hideUrlInput = false,
+    hideLibrary = false,
+    accept,
+}: ImageUploadFieldProps) => {
     const slot = slotOf(slotProp);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -99,14 +138,22 @@ export const ImageUploadField = ({ label, value, onChange, placeholder, aiKind, 
                 file,
                 setIsUploading,
                 userId,
-                source: 'CATALOGUE_IMAGES',
-                sourceId: 'ADMIN',
+                source: uploadSource,
+                sourceId: uploadSourceId,
                 publicUrl: true,
             });
             if (fileId) {
                 // uploadFile returns a file ID, not a URL — resolve it
                 const resolvedUrl = await getPublicUrl(fileId);
                 onChange(resolvedUrl || fileId);
+                if (onUploaded && resolvedUrl) {
+                    const size = await readImageSize(file);
+                    onUploaded({
+                        fileId,
+                        url: resolvedUrl,
+                        ...(size ? { width: size.width, height: size.height } : {}),
+                    });
+                }
             }
         } catch (err) {
             console.error('[ImageUploadField] Upload failed:', err);
@@ -121,6 +168,10 @@ export const ImageUploadField = ({ label, value, onChange, placeholder, aiKind, 
         const file = e.target.files?.[0];
         resetInput();
         if (!file) return;
+        if (accept && !accept.split(',').map((t) => t.trim()).includes(file.type)) {
+            toast({ title: 'This file type is not accepted here', description: accept, variant: 'destructive' });
+            return;
+        }
         if (!canCrop(file.type)) {
             await upload(file);
             return;
@@ -214,18 +265,20 @@ export const ImageUploadField = ({ label, value, onChange, placeholder, aiKind, 
             )}
 
             {/* URL input */}
-            <Input
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                placeholder={placeholder || 'https://example.com/image.png'}
-                className="text-sm"
-            />
+            {!hideUrlInput && (
+                <Input
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                    placeholder={placeholder || 'https://example.com/image.png'}
+                    className="text-sm"
+                />
+            )}
 
             {/* Upload button */}
             <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept={accept || 'image/*'}
                 className="hidden"
                 onChange={handleFileChange}
             />
@@ -250,6 +303,7 @@ export const ImageUploadField = ({ label, value, onChange, placeholder, aiKind, 
                         </>
                     )}
                 </Button>
+                {!hideLibrary && (
                 <Button
                     type="button"
                     variant="outline"
@@ -261,6 +315,7 @@ export const ImageUploadField = ({ label, value, onChange, placeholder, aiKind, 
                     <ImageIcon className="mr-2 size-4" />
                     Library
                 </Button>
+                )}
                 {aiKind && (
                     <Button
                         type="button"
@@ -275,7 +330,14 @@ export const ImageUploadField = ({ label, value, onChange, placeholder, aiKind, 
                 )}
             </div>
 
-            <MediaLibraryDialog open={libraryOpen} onOpenChange={setLibraryOpen} onPick={onChange} />
+            <MediaLibraryDialog
+                open={libraryOpen}
+                onOpenChange={setLibraryOpen}
+                onPick={(url, fileId) => {
+                    onChange(url);
+                    onUploaded?.({ fileId, url });
+                }}
+            />
 
             {pending && (
                 <ImageCropperDialog

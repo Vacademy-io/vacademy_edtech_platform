@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.commerce.document.pdf;
 
+import vacademy.io.admin_core_service.features.commerce.common.CommerceUnits;
 import vacademy.io.admin_core_service.features.commerce.document.enums.DocumentType;
 import vacademy.io.admin_core_service.features.commerce.document.service.AmountInWords;
 import vacademy.io.admin_core_service.features.commerce.tax.calc.TaxRateRow;
@@ -159,10 +160,10 @@ public final class CommerceDocumentHtml {
         int index = 1;
         for (DocumentView.Line line : lines) {
             int scale = Math.max(1, line.getQtyScale());
-            BigDecimal quantity = BigDecimal.valueOf(line.getQuantity())
-                    .divide(BigDecimal.valueOf(scale), 3, RoundingMode.HALF_UP).stripTrailingZeros();
-            BigDecimal price = line.getUnitPrice() == null ? null
-                    : line.getUnitPrice().multiply(BigDecimal.valueOf(scale));
+            // A measured line prints in its display unit ("2.5 m") with the rate per unit ("/ m").
+            String quantity = CommerceUnits.quantity(line.getQuantity(), scale, line.getUnit());
+            BigDecimal price = printedRate(line, scale);
+            String rateSuffix = price == null ? "" : CommerceUnits.rateSuffix(scale, line.getUnit());
             out.append("<tr><td>").append(index++).append("</td><td>").append(esc(line.getDescription()));
             if (line.getSku() != null) {
                 out.append("<div class=\"small\">SKU ").append(esc(line.getSku())).append("</div>");
@@ -171,9 +172,8 @@ public final class CommerceDocumentHtml {
             if (tax) {
                 out.append("<td>").append(esc(line.getHsnCode())).append("</td>");
             }
-            out.append("<td class=\"num\">").append(quantity.toPlainString())
-                    .append(line.getUnit() == null ? "" : " " + esc(line.getUnit())).append("</td>")
-                    .append("<td class=\"num\">").append(amount(price, money)).append("</td>")
+            out.append("<td class=\"num\">").append(esc(quantity)).append("</td>")
+                    .append("<td class=\"num\">").append(amount(price, money)).append(esc(rateSuffix)).append("</td>")
                     .append("<td class=\"num\">").append(amountOrDash(line.getDiscount(), money)).append("</td>");
             if (tax) {
                 out.append("<td class=\"num\">").append(amount(line.getTaxableValue(), money)).append("</td>")
@@ -182,6 +182,29 @@ public final class CommerceDocumentHtml {
             out.append("<td class=\"num\">").append(amount(line.getAmount(), money)).append("</td></tr>\n");
         }
         return out.toString();
+    }
+
+    /**
+     * The Price cell: the stored rate per base unit x scale. A measured part of a set stores a
+     * per-base-unit rate rounded from its share, and x scale that rounding grows (7.40 x 10 =
+     * 74.00 / m against 251.74 for 3.4 m); there the rate per display unit is worked from the
+     * row itself, (amount + discount) x scale / quantity, so the printed row adds up.
+     */
+    static BigDecimal printedRate(DocumentView.Line line, int scale) {
+        BigDecimal unitPrice = line.getUnitPrice();
+        if (unitPrice == null) {
+            return null;
+        }
+        BigDecimal perUnit = unitPrice.multiply(BigDecimal.valueOf(scale));
+        if (scale <= 1 || line.getAmount() == null || line.getQuantity() <= 0) {
+            return perUnit;
+        }
+        BigDecimal gross = line.getAmount().add(line.getDiscount() == null ? BigDecimal.ZERO : line.getDiscount());
+        BigDecimal quantity = BigDecimal.valueOf(line.getQuantity());
+        if (unitPrice.multiply(quantity).compareTo(gross) == 0) {
+            return perUnit;
+        }
+        return gross.multiply(BigDecimal.valueOf(scale)).divide(quantity, 2, RoundingMode.HALF_UP);
     }
 
     /** The tax rows, one per rate, and the HSN summary. */
@@ -304,7 +327,7 @@ public final class CommerceDocumentHtml {
     }
 
     /** XML text escape. Control characters that XML 1.0 forbids are dropped. */
-    static String esc(String value) {
+    public static String esc(String value) {
         if (value == null) {
             return "";
         }

@@ -34,6 +34,8 @@
     "builtIn": {
         "title": "Built-in filters",
         "description": "Turn off the filters this institute doesn't use. They disappear from the list's filter bar.",
-        "counsellor": "Counsellor"
+        "counsellor": "Counsellor",
+        "city": "City",
+        "region": "Region"
     }
 }

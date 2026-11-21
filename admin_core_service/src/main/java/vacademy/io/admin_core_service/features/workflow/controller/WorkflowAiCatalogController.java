@@ -259,20 +259,28 @@ public class WorkflowAiCatalogController {
                         + "upcoming charge is its FIRST charge and a member's is a RENEWAL, so one wording "
                         + "cannot serve both; split the workflow rather than reword one template."));
         q.add(query("getManualRenewalDuePlans",
-                List.of("packageSessionIds"), List.of("daysAhead", "graceDays"),
+                List.of("packageSessionIds"), List.of("daysAhead", "graceDays", "exactDay"),
                 PrebuiltQueryOutputs.keysOf("getManualRenewalDuePlans").orElseThrow(),
-                "manualRenewalList[]: userPlanId, userId, name, mobileNumber, username, planStatus, "
+                "manualRenewalList[]: userPlanId, userId, name, email, mobileNumber, username, planStatus, "
                         + "endDate, endDateLabel ('11 Aug 2026'). THE audience for 'pay to continue your "
                         + "membership' messages: plans ending within daysAhead days (default 1) or ended up "
                         + "to graceDays ago (default 2) that autopay will NOT charge (autopay off / "
-                        + "CANCELED / PAYMENT_FAILED / EXPIRED). Message link: manage-page base + username."));
+                        + "CANCELED / PAYMENT_FAILED / EXPIRED). Message link: manage-page base + username. "
+                        + "For 'N days before renewal' reminders on a DAILY schedule pass exactDay=true with "
+                        + "daysAhead=N, so each plan matches on one day only, and FILTER planStatus == 'ACTIVE' "
+                        + "(cancelled members are in this audience too)."));
         q.add(query("getSSIGMByStatusAndPackageSessionIds",
                 List.of("instituteId", "packageSessionIds", "statusList"), List.of(),
                 PrebuiltQueryOutputs.keysOf("getSSIGMByStatusAndPackageSessionIds").orElseThrow(),
                 "ssigmList[]: ssigmId, userId, name, mobileNumber, email, username, packageSessionId, "
-                        + "enrolledDate, expiryDate, remainingDays, daysPastExpiry (camelCase). THE roster for "
+                        + "enrolledDate, expiryDate, isTrial, remainingDays, daysPastExpiry (camelCase). THE roster for "
                         + "per-day sequences: enrolledDate drives day-in-program filters, expiryDate drives "
-                        + "'trial ends tomorrow' filters. packageSessionIds/statusList are SpEL list params, "
+                        + "'trial ends tomorrow' filters. isTrial comes from the learner's plan and is the ONLY "
+                        + "reliable trial test: enrolledDate resets whenever a returning learner enrols again, so a "
+                        + "paid renewal looks like a brand new trial. Gate trial drips on isTrial != false and "
+                        + "member-only messages on isTrial == false. isTrial is null when the mapping carries no "
+                        + "plan, so always compare it explicitly rather than relying on truthiness. "
+                        + "packageSessionIds/statusList are SpEL list params, "
                         + "e.g. \"#ctx['psIds']\" from a trigger settings row."));
         q.add(query("fetch_institute_admin_emails",
                 List.of("instituteId"), List.of("roles"),

@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.core.config;
 
+import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,7 +33,7 @@ public class ApplicationSecurityConfig {
 
     private static final String[] INTERNAL_PATHS = { "/admin-core-service/internal/**" };
 
-    private static final String[] ALLOWED_PATHS = {
+    static final String[] ALLOWED_PATHS = {
             "/admin-core-service/open/**",
             "/admin-core-service/batch/v1/search",
             "/admin-core-service/public/**",
@@ -101,6 +102,9 @@ public class ApplicationSecurityConfig {
             "/admin-core-service/api/v1/webhook/google/**",
             // Meta OAuth callback (Meta redirects without Vacademy JWT)
             "/admin-core-service/v1/oauth/meta/callback",
+            // Marketing (ad spend + social posting) OAuth callbacks; the oauth_connect_state id is the CSRF guard
+            "/admin-core-service/v1/marketing/oauth/meta/callback",
+            "/admin-core-service/v1/marketing/oauth/google/callback",
             // YouTube OAuth callback (Google redirects without Vacademy JWT; state token is the CSRF guard)
             "/admin-core-service/youtube/oauth/callback",
             "/admin-core-service/health/**",
@@ -109,13 +113,15 @@ public class ApplicationSecurityConfig {
             // token, so an anonymous call does no server work and its round trip is
             // almost pure network. Does no DB access. See PerfPingController.
             "/admin-core-service/v1/perf/ping",
-            // Invoice test endpoints (for testing only)
-            "/admin-core-service/v1/invoices/test/**",
-            // Applicant public APIs for application form
-            "/admin-core-service/applicant/v1/enquiry/**",
-            "/admin-core-service/v1/applicant/**",
+            // Applicant APIs for the application form. Only these stay open; the rest of
+            // /v1/applicant/** (list, move-stage, onboard, parent/{id}, {id}/stages),
+            // /applicant/v1/enquiry/** and /v1/admission/submit require sign-in — every
+            // caller (admin dashboard, parent portal) already sends a JWT. Anonymous
+            // public forms use /admin-core-service/open/**.
+            "/admin-core-service/v1/applicant/apply",
+            "/admin-core-service/v1/applicant/*/payment/initiate",
+            "/admin-core-service/v1/applicant/bulk-apply",
             "/admin-core-service/enrollment-policy/**",
-            "/admin-core-service/v1/admission/submit",
             "/admin-core-service/v1/admission/bulk-submit-with-admission",
             // BBB server-to-server callback (no JWT — called by BigBlueButton when meeting ends)
             "/admin-core-service/live-sessions/provider/meeting/bbb-callback",
@@ -229,7 +235,7 @@ public class ApplicationSecurityConfig {
 
     @Bean
     public RestTemplate restTemplate() {
-        return new RestTemplate();
+        return ExternalCallLog.attach(new RestTemplate());
     }
 
     @Bean

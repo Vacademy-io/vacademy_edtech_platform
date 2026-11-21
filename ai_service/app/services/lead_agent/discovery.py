@@ -52,6 +52,11 @@ the job posts behind hiring signals are opened once a website is found (_PostRea
 a post naming another employer or another place drops that signal, and the post is
 remembered (cursor_json["ruled_out_posts"]) so later rounds skip it like a used one.
 
+The search frontier (frontier.py, 2026-11-17): once the plan's Maps lane is past its first results page, a round
+the plan's lanes leave short is filled by the frontier's Maps searches: the brief's kinds in more cities (rings
+beyond the major ones), new kinds inside the brief's industries, each chosen by how its leads did. The plan's
+lanes run exactly as before and are counted dry on what they found themselves.
+
 Routing: organisation searches and website lookups -> Serper (Google); buying-signal
 and keyword searches -> Parallel (falls back to Serper when Parallel has no key).
 The engine's pure discover() runs on a worker thread; its search / ask callables
@@ -67,7 +72,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, Iterable, List, Optional, Set
 
 from . import db as ladb
-from . import effort, engine_api, fetcher, llm, pacing, places as places_mod, planner, store
+from . import effort, engine_api, fetcher, frontier, llm, pacing, places as places_mod, planner, store
 from . import search as search_mod
 from .search import SearchCounter, SearchFailed, SearchUnavailable
 
@@ -328,7 +333,9 @@ async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> D
               "sig": any(s != "organisation_search" for s in sources)}
     done: Dict[str, str] = cursor["lane_done"]
     alive = {lane for lane in LANES if chosen[lane] and lane not in done}
-    if not alive:
+    # The search frontier (frontier.py): cities and business kinds beyond the plan's lists, once they run thin.
+    frontier_on = bool(combos) and await asyncio.to_thread(frontier.has_ready, agent["id"])
+    if not alive and not frontier_on:
         # Every lane has run out of new organisations today: no search, no AI selection.
         return {"skipped": "every search lane is used up for today", "lanes_done": dict(done)}
 
@@ -427,6 +434,21 @@ async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> D
         created += ids
         made["maps"], ran["maps"] = len(ids), searched > 0
 
+    # Whether the plan's lanes filled the round, before the frontier fills the rest: a plan lane that found
+    # nothing while the frontier filled the round is still dry.
+    filled = len(created) >= need
+    made_frontier = 0
+    if frontier_on and not filled:
+        try:
+            ids, _searched = await frontier.run(agent, room=need - len(created), gl=gl, counter=counter, skip=skip,
+                                                exclude=exclude, industries=industries, market=first,
+                                                known_orgs=known_orgs)
+        except Exception:  # noqa: BLE001 - the round keeps what the plan's lanes found
+            logger.exception("lead agent: frontier search of %s failed", agent["id"])
+            ids = []
+        created += ids
+        made_frontier = len(ids)
+
     # advance the cursor
     if org_slice:
         cursor["org_idx"] = (int(cursor["org_idx"]) + len(org_slice)) % max(1, len(org_all))
@@ -437,7 +459,7 @@ async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> D
                 done["org"] = "wrapped"
             else:
                 cursor["org_page"] = int(cursor["org_page"]) + 1
-    _count_dry(cursor, ran, made, filled=len(created) >= need)
+    _count_dry(cursor, ran, made, filled=filled)
     cursor["rounds"] = int(cursor.get("rounds") or 0) + 1
     cursor["sig_turn"] = turn + 1
     await asyncio.to_thread(_finish_round, agent, cursor, day, len(created))
@@ -448,6 +470,8 @@ async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> D
         out["signal_boost"] = SIGNAL_BOOST
     if unfit:
         out["maps_other_kind"] = unfit
+    if frontier_on:
+        out["frontier"] = made_frontier
     return out
 
 
@@ -498,46 +522,62 @@ async def _maps_lane(agent, cursor, combos, gl, counter, skip, exclude, industri
             cursor["maps_page"] = 1 if used_up else page + 1
         if used_up:
             cursor["lane_done"]["maps"] = "wrapped"
-        for p in places_found:
-            if len(out) >= room:
-                break
-            website = p.get("website")
-            if not website:
-                continue
-            domain = engine_api.registered_domain(website)
-            if not domain or domain in skip or engine_api.is_excluded(domain):
-                continue
-            name = (p.get("title") or domain)[:300]
-            category = str(p.get("type") or "").strip()
-            if engine_api.left_out(f"{name} {category}".strip(), exclude):
-                continue
-            if engine_api.maps_kind(category, name, industries) is None \
-                    and engine_api.maps_other_kind(category, name, industries):
-                # "Furniture store" for a garment brief: rejected as "not the kind" after a page fetch and
-                # an AI extraction (prod 2026-10-30). Only a kind no industry of the brief covers.
-                unfit += 1
-                skip.add(domain)  # listed again by the round's next search: judged once
-                continue
-            here = _here(p.get("address")) or _here(place)  # a search in one city also lists its neighbours
-            if _same_org_known(known_orgs, name, here):
-                # One organisation, two websites, both on Maps in one city: "Centurion Defence Academy" at
-                # centurionacademy.in and centuriondefenceacademy.com, "Quantum Coaching Institute" at two
-                # domains, both Lucknow (2026-10-29).
-                continue
-            _remember(known_orgs, name, here)
-            skip.add(domain)
-            cid = await asyncio.to_thread(
-                _create, agent, domain=domain, name=name, website=engine_api.homepage(website) or website,
-                source="maps",
-                discovery={"query": f"{term} {place}", "url": website, "title": name,
-                           "maps": {"phone": p.get("phone"), "rating": p.get("rating"), "reviews": p.get("reviews"),
-                                    "address": p.get("address"), "type": p.get("type")}},
-                market={**(market or {}), "city": place if place != (market or {}).get("country") else None})
-            if cid:
-                out.append(cid)
+        ids, other_kind = await take_listings(agent, places_found, query=f"{term} {place}", place=place,
+                                              skip=skip, exclude=exclude, industries=industries, market=market,
+                                              room=room - len(out), known_orgs=known_orgs)
+        out += ids
+        unfit += other_kind
         if used_up:
             break
     return out, searched, unfit
+
+
+async def take_listings(agent, places_found, *, query: str, place: str, skip, exclude, industries, market, room: int,
+                        known_orgs: Dict[str, List[Set[str]]], extra: Optional[Dict[str, Any]] = None) -> tuple:
+    """The new organisations among one Maps search's listings, as candidates (at most `room`). Returns (their ids,
+    listings skipped as another kind). `extra` goes into each candidate's discovery_json (the frontier's cell)."""
+    out: List[str] = []
+    unfit = 0
+    for p in places_found:
+        if len(out) >= room:
+            break
+        website = p.get("website")
+        if not website:
+            continue
+        domain = engine_api.registered_domain(website)
+        if not domain or domain in skip or engine_api.is_excluded(domain):
+            continue
+        name = (p.get("title") or domain)[:300]
+        category = str(p.get("type") or "").strip()
+        if engine_api.left_out(f"{name} {category}".strip(), exclude):
+            continue
+        if engine_api.maps_kind(category, name, industries) is None \
+                and engine_api.maps_other_kind(category, name, industries):
+            # "Furniture store" for a garment brief: rejected as "not the kind" after a page fetch and
+            # an AI extraction (prod 2026-10-30). Only a kind no industry of the brief covers.
+            unfit += 1
+            skip.add(domain)  # listed again by the round's next search: judged once
+            continue
+        here = _here(p.get("address")) or _here(place)  # a search in one city also lists its neighbours
+        if _same_org_known(known_orgs, name, here):
+            # One organisation, two websites, both on Maps in one city: "Centurion Defence Academy" at
+            # centurionacademy.in and centuriondefenceacademy.com, "Quantum Coaching Institute" at two
+            # domains, both Lucknow (2026-10-29).
+            continue
+        _remember(known_orgs, name, here)
+        skip.add(domain)
+        discovery = {"query": query, "url": website, "title": name,
+                     "maps": {"phone": p.get("phone"), "rating": p.get("rating"), "reviews": p.get("reviews"),
+                              "address": p.get("address"), "type": p.get("type")}}
+        if extra:
+            discovery.update(extra)
+        cid = await asyncio.to_thread(
+            _create, agent, domain=domain, name=name, website=engine_api.homepage(website) or website,
+            source="maps", discovery=discovery,
+            market={**(market or {}), "city": place if place != (market or {}).get("country") else None})
+        if cid:
+            out.append(cid)
+    return out, unfit
 
 
 def _signal_query_set(sources, industries, places, plan, offer=None, turn: int = 0,

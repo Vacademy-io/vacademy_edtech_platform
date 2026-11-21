@@ -78,8 +78,12 @@ public class DashboardChoiceGroups {
 
     /** What the paper is out of under its groups; null when it has none. */
     public Double paperMax(String assessmentId) {
-        List<ChoiceGroupStore.ChoiceGroupRow> rows = groups(assessmentId);
-        if (rows.isEmpty()) return null;
+        return paperMax(assessmentId, groups(assessmentId));
+    }
+
+    /** As {@link #paperMax(String)} with the groups already read. */
+    public Double paperMax(String assessmentId, List<ChoiceGroupStore.ChoiceGroupRow> rows) {
+        if (rows == null || rows.isEmpty()) return null;
         return paperMax(rows, maxMarksByQuestion(assessmentId));
     }
 
@@ -209,8 +213,12 @@ public class DashboardChoiceGroups {
      * {@code first} keeps the first answered ones in paper order. Empty without groups.
      */
     public Set<String> notCountedByMarks(String assessmentId, Map<String, Double> marksByQuestion) {
-        List<ChoiceGroupStore.ChoiceGroupRow> groups = groups(assessmentId);
-        if (groups.isEmpty() || marksByQuestion == null || marksByQuestion.isEmpty()) return Set.of();
+        return notCountedByMarks(groups(assessmentId), marksByQuestion);
+    }
+
+    /** As {@link #notCountedByMarks(String, Map)} with the groups already read (one read per request). */
+    public Set<String> notCountedByMarks(List<ChoiceGroupStore.ChoiceGroupRow> groups, Map<String, Double> marksByQuestion) {
+        if (groups == null || groups.isEmpty() || marksByQuestion == null || marksByQuestion.isEmpty()) return Set.of();
         Set<String> out = new HashSet<>();
         for (ChoiceGroupStore.ChoiceGroupRow g : groups) {
             List<String> members = g.questionIds().stream().filter(marksByQuestion::containsKey).toList();

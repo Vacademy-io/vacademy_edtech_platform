@@ -83,6 +83,13 @@ export interface ProductSummary {
     tax_class_id?: string | null;
     /** Not sent by the server yet; the list reads it when it arrives. */
     stock_state?: 'OUT_OF_STOCK' | 'LOW_STOCK' | 'IN_STOCK' | string | null;
+    /**
+     * WP-44 B8: the unit and parts per unit, so a measured product's per-base-unit
+     * `min_price`/`max_price` read per metre ("₹123.40 / m"). Absent on older servers.
+     */
+    unit?: string | null;
+    qty_scale?: number | null;
+    qty_step?: number | null;
 }
 
 export interface CommerceCollection {

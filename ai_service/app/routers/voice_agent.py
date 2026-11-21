@@ -241,6 +241,9 @@ async def voice_session(websocket: WebSocket, session_id: str):
                     voice=spoken_voice,
                     provider=tts_provider,
                 )
+                if not segment_audio:
+                    continue
+                # Only audio that came back is spend: a failed segment cost nothing.
                 voice_service.record_voice_media_usage(
                     kind="tts",
                     institute_id=institute_id,
@@ -251,8 +254,6 @@ async def voice_session(websocket: WebSocket, session_id: str):
                     detail=spoken_voice,
                     provider=provider_used,
                 )
-                if not segment_audio:
-                    continue
                 for i in range(0, len(segment_audio), TTS_CHUNK_SIZE):
                     chunk = segment_audio[i : i + TTS_CHUNK_SIZE]
                     await _send({
@@ -338,6 +339,8 @@ async def voice_session(websocket: WebSocket, session_id: str):
                     language=language,
                     characters=len(transcript),
                     detail=f"{len(audio)}B {mime}",
+                    # 16 kHz mono 16-bit WAV is 32,000 bytes a second; other formats are not priced.
+                    seconds=len(audio) / 32000 if mime == "audio/wav" else None,
                 )
 
                 if not transcript.strip():

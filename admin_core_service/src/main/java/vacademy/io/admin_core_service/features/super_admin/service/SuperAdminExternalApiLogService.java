@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vacademy.io.admin_core_service.core.external.IntegratedVendors;
 import vacademy.io.admin_core_service.features.super_admin.dto.ExternalApiLogDTOs.LogDetail;
 import vacademy.io.admin_core_service.features.super_admin.dto.ExternalApiLogDTOs.LogRow;
 import vacademy.io.admin_core_service.features.super_admin.dto.SuperAdminPageResponse;
@@ -39,30 +40,30 @@ public class SuperAdminExternalApiLogService {
     /** What one table contributes. Every value is a constant here; request input is only ever bound. */
     private record Source(String from, String id, String time, String vendor, String operation, String status,
             String error, String instituteId, String instituteName, String amount, String currency,
-            String durationMs, String creditsBilled, String payload, String response) {
+            String durationMs, String creditsBilled, String payload, String response, String httpStatus) {
     }
 
     private static final Map<String, Source> SOURCES = Map.of(
             "telephony", new Source(
                     "telephony_call_log t LEFT JOIN institutes i ON i.id = t.institute_id",
                     "t.id", "t.created_at", "t.provider_type", "t.direction", "t.status", "t.termination_reason",
-                    "t.institute_id", "i.name", "t.price", "NULL", "t.duration_seconds * 1000",
-                    "t.credits_billed_at IS NOT NULL", "t.raw_payload_json", "NULL"),
+                    "t.institute_id", "i.name", "t.price", "CASE WHEN t.provider_type = 'EXOTEL' THEN 'INR' END", "t.duration_seconds * 1000",
+                    "t.credits_billed_at IS NOT NULL", "t.raw_payload_json", "NULL", "NULL"),
             "payments", new Source(
                     "payment_log p",
                     "p.id", "p.created_at", "p.vendor", "p.order_status", "p.payment_status", "NULL",
                     "NULL", "NULL", "p.payment_amount", "p.currency", "NULL",
-                    "NULL", "p.payment_specific_data", "NULL"),
+                    "NULL", "p.payment_specific_data", "NULL", "NULL"),
             "webhooks", new Source(
                     "web_hook w",
                     "w.id", "w.created_at", "w.vendor", "w.event_type", "w.status", "w.error_message",
                     "NULL", "NULL", "NULL", "NULL", "NULL",
-                    "NULL", "w.payload", "NULL"),
+                    "NULL", "w.payload", "NULL", "NULL"),
             "calls", new Source(
                     "external_api_call_log e LEFT JOIN institutes i ON i.id = e.institute_id",
                     "CAST(e.id AS text)", "e.occurred_at", "e.vendor", "e.operation", "e.status", "e.error_message",
                     "e.institute_id", "i.name", "e.cost_amount", "e.cost_currency", "e.duration_ms",
-                    "NULL", "CAST(e.request_summary AS text)", "CAST(e.response_summary AS text)"));
+                    "NULL", "CAST(e.request_summary AS text)", "CAST(e.response_summary AS text)", "e.http_status"));
 
     /** Recipients and payer details in vendor payloads, on top of the default credential names. */
     private static final PayloadRedactor REDACTOR = new PayloadRedactor(List.of(
@@ -80,6 +81,13 @@ public class SuperAdminExternalApiLogService {
             int size) {
         Source source = source(sourceKey);
         StringBuilder where = new StringBuilder(" WHERE ").append(source.time()).append(" >= :from");
+        if ("calls".equals(sourceKey)) {
+            // Integrated vendors only. The AI service's automatic recording used to log every host an
+            // HTTP client reached (institutes' websites fetched for lead research); those rows are not
+            // third-party APIs. Rows from the voice bot and admin_core are vetted where they are written.
+            where.append(" AND (COALESCE(e.source_service, 'ai') <> 'ai' OR ")
+                    .append(IntegratedVendors.sqlCondition("e.vendor")).append(")");
+        }
         Map<String, Object> params = new HashMap<>();
         params.put("from", Timestamp.from(Instant.now().minusSeconds(hours * 3600L)));
         if (vendor != null && !vendor.isBlank()) {
@@ -134,12 +142,14 @@ public class SuperAdminExternalApiLogService {
     private static String rowSelect(Source s) {
         return "SELECT " + s.id() + ", " + s.time() + ", " + s.vendor() + ", " + s.operation() + ", " + s.status()
                 + ", " + s.error() + ", " + s.instituteId() + ", " + s.instituteName() + ", " + s.amount()
-                + ", " + s.currency() + ", " + s.durationMs() + ", " + s.creditsBilled() + " FROM " + s.from();
+                + ", " + s.currency() + ", " + s.durationMs() + ", " + s.creditsBilled() + ", " + s.httpStatus()
+                + " FROM " + s.from();
     }
 
     private static LogRow toRow(Object[] r) {
         return new LogRow((String) r[0], instant(r[1]), (String) r[2], (String) r[3], (String) r[4], (String) r[5],
-                (String) r[6], (String) r[7], number(r[8]), (String) r[9], number(r[10]), (Boolean) r[11]);
+                (String) r[6], (String) r[7], number(r[8]), (String) r[9], number(r[10]), (Boolean) r[11],
+                r[12] == null ? null : ((Number) r[12]).intValue());
     }
 
     private static BigDecimal number(Object value) {

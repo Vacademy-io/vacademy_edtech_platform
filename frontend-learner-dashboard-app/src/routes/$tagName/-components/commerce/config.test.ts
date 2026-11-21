@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isCommerceEnabled, parseCommerceConfig, resolveCommerceLocale, templateSections } from './config';
+import { categoryBarOn, categoryBarPhotosOn, isCommerceEnabled, parseCommerceConfig, resolveCommerceLocale, stickyListingToolbar, templateSections } from './config';
 
 const KEY = `vak_pub_${'a1'.repeat(24)}`;
 
@@ -26,6 +26,15 @@ describe('parseCommerceConfig', () => {
         expect(config.checkout).toBe(false);
         expect(config.redirects).toBe(false);
         expect(config.reassurance).toEqual([]);
+        // The server's default per-order maximum.
+        expect(config.maxOrderQuantity).toBe(25);
+    });
+
+    it('reads the per-order maximum within the server bounds', () => {
+        const read = (maxOrderQuantity: unknown) => parseCommerceConfig({ commerce: { enabled: true, publishableKey: KEY, maxOrderQuantity } }).maxOrderQuantity;
+        expect(read(40)).toBe(40);
+        expect(read(10000)).toBe(10000);
+        for (const bad of [0, -3, 2.5, 10001, 'many', null]) expect(read(bad), String(bad)).toBe(25);
     });
 
     it('reads what a seller sets and drops what is malformed', () => {
@@ -132,5 +141,87 @@ describe('theme preset, announcement and floating WhatsApp', () => {
         expect(shop({ floatingWhatsApp: true }).floatingWhatsApp).toBe(true);
         expect(shop({ floatingWhatsApp: 'yes' }).floatingWhatsApp).toBe(false);
         expect(parseCommerceConfig({}).floatingWhatsApp).toBe(false);
+    });
+});
+
+describe('the category bar setting (commerce.categoryBar)', () => {
+    const shop = (categoryBar: unknown, extra: Record<string, unknown> = {}) =>
+        parseCommerceConfig({ commerce: { enabled: true, publishableKey: KEY, categoryBar, ...extra } });
+
+    it('is off by default, and off unless enabled is exactly true', () => {
+        expect(parseCommerceConfig({ commerce: { enabled: true, publishableKey: KEY } }).categoryBar).toBeNull();
+        for (const value of [undefined, null, true, 'yes', [], {}, { enabled: 'true' }, { enabled: 1 }]) {
+            expect(shop(value).categoryBar).toBeNull();
+        }
+        expect(categoryBarOn(shop(undefined), 'home')).toBe(false);
+    });
+
+    it('takes the pages, style, items, All chip and fold, and defaults the rest', () => {
+        const bar = shop({ enabled: true }).categoryBar!;
+        expect(bar).toEqual({
+            pages: ['home', 'shop', 'collection', 'search', 'product'],
+            style: 'tabs',
+            imagePages: null,
+            items: 'auto',
+            showAll: false,
+            collapseHeaderOnScroll: false,
+        });
+        const custom = shop({
+            enabled: true,
+            pages: ['Collection', 'our-story', 'bad page', 7, 'collection'],
+            style: 'chips',
+            items: [{ label: 'सब', route: '/shop' }, { label: '₹999 तक', route: 'c/gifts-under-999' }, { label: 'x', route: 'javascript:alert(1)' }, { label: '', route: 'c/a' }],
+            showAll: true,
+            collapseHeaderOnScroll: true,
+        }).categoryBar!;
+        expect(custom.pages).toEqual(['collection', 'our-story']);
+        expect(custom.style).toBe('chips');
+        expect(custom.items).toEqual([{ label: 'सब', route: 'shop' }, { label: '₹999 तक', route: 'c/gifts-under-999' }]);
+        expect(custom.showAll).toBe(true);
+        expect(custom.collapseHeaderOnScroll).toBe(true);
+    });
+
+    it('takes the "image" style; anything else unknown is the text default', () => {
+        expect(shop({ enabled: true, style: 'image' }).categoryBar!.style).toBe('image');
+        expect(shop({ enabled: true, style: 'photos' }).categoryBar!.style).toBe('tabs');
+        expect(shop({ enabled: true, style: 'IMAGE' }).categoryBar!.style).toBe('tabs');
+    });
+
+    it('takes imagePages: the pages that open the photo row (all of the bar by default)', () => {
+        const bar = shop({ enabled: true, style: 'image', imagePages: ['Home', 'collection', 'bad page', 'home'] });
+        expect(bar.categoryBar!.imagePages).toEqual(['home', 'collection']);
+        expect(categoryBarPhotosOn(bar, 'home')).toBe(true);
+        expect(categoryBarPhotosOn(bar, 'collection')).toBe(true);
+        expect(categoryBarPhotosOn(bar, 'product')).toBe(false);
+        expect(categoryBarPhotosOn(bar, 'checkout')).toBe(false);
+        const all = shop({ enabled: true, style: 'image' });
+        expect(all.categoryBar!.imagePages).toBeNull();
+        expect(categoryBarPhotosOn(all, 'product')).toBe(true);
+        expect(categoryBarPhotosOn(shop({ enabled: true, style: 'chips', imagePages: ['home'] }), 'home')).toBe(false);
+        expect(categoryBarPhotosOn(shop(undefined), 'home')).toBe(false);
+    });
+
+    it('shows only on the listed pages and never on the buying pages, nor on a shop that is off', () => {
+        const config = shop({ enabled: true, pages: ['home', 'collection', 'product', 'checkout', 'order', 'track', 'account', 'cart'] });
+        expect(categoryBarOn(config, 'home')).toBe(true);
+        expect(categoryBarOn(config, 'collection')).toBe(true);
+        expect(categoryBarOn(config, 'PRODUCT')).toBe(true);
+        expect(categoryBarOn(config, 'cart')).toBe(true);
+        expect(categoryBarOn(config, 'shop')).toBe(false);
+        expect(categoryBarOn(config, 'our-story')).toBe(false);
+        for (const buying of ['checkout', 'order', 'track', 'track-order', 'account']) expect(categoryBarOn(config, buying)).toBe(false);
+        expect(categoryBarOn(config, '')).toBe(false);
+        expect(categoryBarOn(config, null)).toBe(false);
+        const off = parseCommerceConfig({ commerce: { enabled: false, publishableKey: KEY, categoryBar: { enabled: true } } });
+        expect(categoryBarOn(off, 'home')).toBe(false);
+    });
+
+    it('pins the listing toolbar only when templates.collection.stickyToolbar is true', () => {
+        expect(stickyListingToolbar(shop(undefined))).toBe(false);
+        expect(stickyListingToolbar(shop(undefined, { templates: { collection: { stickyToolbar: 'yes' } } }))).toBe(false);
+        expect(stickyListingToolbar(shop(undefined, { templates: { collection: { stickyToolbar: true } } }))).toBe(true);
+        // The switch is not a section: the collection template keeps all its sections.
+        const config = shop(undefined, { templates: { collection: { stickyToolbar: true } } });
+        expect(templateSections(config, 'collection', ['header', 'grid'])).toEqual(['header', 'grid']);
     });
 });

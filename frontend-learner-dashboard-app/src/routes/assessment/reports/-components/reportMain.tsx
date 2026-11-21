@@ -24,6 +24,7 @@ import { EvaluatedReportDialog } from "@/components/common/student-test-records/
 import { useTranslation } from "react-i18next";
 import { isReportableAttempt } from "../-utils/reportable-attempt";
 import { openStudentReport } from "@/services/student-report-routing";
+import { RevisedTag } from "@/components/common/student-test-records/revised-tag";
 
 interface EvaluatedPreview {
   url: string;
@@ -359,6 +360,11 @@ const AssessmentReportList = ({
                         ? t("reportList.status.released")
                         : t("reportList.status.pendingEvaluation")}
                     </span>
+                    {/* A teacher changed a mark after release: the score above
+                        is already the new one; the tag says so (spec W11). */}
+                    {released && report.result_revised_at && (
+                      <RevisedTag at={report.result_revised_at} />
+                    )}
                     {assessment_types !== "HOMEWORK" && (
                       <span className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-2xs font-medium text-muted-foreground">
                         {PLAY_MODE_KEYS[report.play_mode]

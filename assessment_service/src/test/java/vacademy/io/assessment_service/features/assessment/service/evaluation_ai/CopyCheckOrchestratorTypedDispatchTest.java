@@ -59,6 +59,9 @@ class CopyCheckOrchestratorTypedDispatchTest {
 
                 Assessment assessment = new Assessment();
                 assessment.setId("assessment-1");
+                // An automatic run on an online attempt comes from a test that opted in
+                // to AI evaluation (with the switch off it grades CBE answers only).
+                assessment.setAiEvaluationEnabled(true);
                 StudentAttempt attempt = new StudentAttempt();
                 attempt.setId("attempt-1");
                 attempt.setAttemptData("{\"sections\":[]}");

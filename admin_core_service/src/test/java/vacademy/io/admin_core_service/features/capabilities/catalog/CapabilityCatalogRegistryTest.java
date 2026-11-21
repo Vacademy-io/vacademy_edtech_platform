@@ -102,10 +102,15 @@ public class CapabilityCatalogRegistryTest {
         assertFalse(commerce.core());
         assertTrue(commerce.optIn());
         assertEquals(java.util.List.of("commerce.catalogue", "commerce.orders", "commerce.stock",
-                        "commerce.pos", "commerce.tax_reports"),
+                        "commerce.pos", "commerce.tax_reports", "commerce.accounts"),
                 commerce.features().stream().map(CapabilityCatalog.Feature::key).toList());
         for (CapabilityCatalog.Feature feature : commerce.features()) {
-            assertTrue(feature.defaultOn(), feature.key() + " must be default_on");
+            if ("commerce.accounts".equals(feature.key())) {
+                // Off for every institute until it is given the feature row.
+                assertFalse(feature.defaultOn(), "commerce.accounts must not be default_on");
+            } else {
+                assertTrue(feature.defaultOn(), feature.key() + " must be default_on");
+            }
         }
         // The sidebar tabs of the admin shell (WP-06). Home, Settings and Reports open on any
         // one of several features, so no single feature governs them.
@@ -117,11 +122,19 @@ public class CapabilityCatalogRegistryTest {
         assertEquals(java.util.List.of("commerce-inventory"), nav.get("commerce.stock"));
         assertEquals(java.util.List.of("commerce-pos"), nav.get("commerce.pos"));
         assertTrue(nav.get("commerce.tax_reports").isEmpty());
+        assertTrue(nav.get("commerce.accounts").isEmpty());
         for (String ungoverned : java.util.List.of("commerce-home", "commerce-settings", "commerce-reports")) {
             assertTrue(nav.values().stream().noneMatch(list -> list.contains(ungoverned)), ungoverned);
         }
-        // No other shipped module is opt-in: LEGACY institutes keep everything they had.
-        assertEquals(1, registry.modules().stream().filter(CapabilityCatalog.Module::optIn).count());
+        // Commerce is the only opt-in module. The learner home builder is on for LEGACY
+        // institutes (learners keep the classic home until an admin publishes a layout).
+        assertEquals(java.util.List.of("commerce"), registry.modules().stream()
+                .filter(CapabilityCatalog.Module::optIn).map(CapabilityCatalog.Module::key).sorted().toList());
+        CapabilityCatalog.Module home = registry.modulesByKey().get("learner_home");
+        assertFalse(home.optIn());
+        assertEquals("LMS", home.rail());
+        assertEquals(java.util.List.of("learner-home"), home.features().get(0).governs().nav());
+        assertTrue(home.features().get(0).defaultOn());
     }
 
     @Test

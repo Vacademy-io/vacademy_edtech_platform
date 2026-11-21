@@ -12,10 +12,12 @@ import vacademy.io.admin_core_service.features.domain_routing.entity.InstituteDo
 import vacademy.io.admin_core_service.features.domain_routing.repository.InstituteDomainRoutingRepository;
 import vacademy.io.admin_core_service.features.domain_routing.service.DomainRoutingAdminService;
 import vacademy.io.admin_core_service.features.institute.repository.InstituteRepository;
+import vacademy.io.admin_core_service.features.white_label.dto.PortalRoutingConfig;
 import vacademy.io.admin_core_service.features.white_label.dto.WhiteLabelSetupRequest;
 import vacademy.io.admin_core_service.features.white_label.dto.WhiteLabelSetupResponse;
 import vacademy.io.admin_core_service.features.white_label.dto.WhiteLabelStatusResponse;
 import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.admin_core_service.features.live_session.client.InstituteRoleUserClient;
 import vacademy.io.common.institute.entity.Institute;
 
@@ -26,11 +28,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -100,8 +105,15 @@ class WhiteLabelServiceTest {
 
         routingRepository = Mockito.mock(InstituteDomainRoutingRepository.class);
         when(routingRepository.findByInstituteId(INSTITUTE_ID)).thenAnswer(inv -> storedRows);
-        when(routingRepository.findByInstituteIdAndDomainAndSubdomainAndRole(any(), any(), any(), any()))
-                .thenReturn(Optional.empty());
+        when(routingRepository.findByDomain(any()))
+                .thenAnswer(inv -> storedRows.stream()
+                        .filter(r -> inv.getArgument(0, String.class).equalsIgnoreCase(r.getDomain()))
+                        .toList());
+        when(routingRepository.findByInstituteIdAndDomainAndSubdomain(any(), any(), any()))
+                .thenAnswer(inv -> storedRows.stream()
+                        .filter(r -> inv.getArgument(1, String.class).equals(r.getDomain())
+                                && inv.getArgument(2, String.class).equals(r.getSubdomain()))
+                        .toList());
 
         domainRoutingAdminService = Mockito.mock(DomainRoutingAdminService.class);
         when(domainRoutingAdminService.create(any())).thenAnswer(inv -> {
@@ -161,6 +173,20 @@ class WhiteLabelServiceTest {
         entry.setPrimary(primary);
         WhiteLabelSetupRequest request = new WhiteLabelSetupRequest();
         request.setEntries(List.of(entry));
+        return request;
+    }
+
+    private static WhiteLabelSetupRequest.DomainEntry entry(String host, String role, boolean primary) {
+        WhiteLabelSetupRequest.DomainEntry entry = new WhiteLabelSetupRequest.DomainEntry();
+        entry.setDomain(host);
+        entry.setRole(role);
+        entry.setPrimary(primary);
+        return entry;
+    }
+
+    private static WhiteLabelSetupRequest setupRequest(WhiteLabelSetupRequest.DomainEntry... entries) {
+        WhiteLabelSetupRequest request = new WhiteLabelSetupRequest();
+        request.setEntries(List.of(entries));
         return request;
     }
 
@@ -268,6 +294,323 @@ class WhiteLabelServiceTest {
             assertTrue(response.getWarnings().stream()
                     .anyMatch(w -> w.contains("portal.myschool.com") && w.contains("TEACHER")),
                     "expected a collateral warning, got: " + response.getWarnings());
+        }
+    }
+
+    // ── Roles allowed to log in ──────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("setup() with several roles on one domain")
+    class AllowedRoles {
+
+        @Test
+        @DisplayName("Seeded role names with a space are accepted and stored canonically")
+        void rolesWithSpacesAreAccepted() {
+            service.setup(admin(), INSTITUTE_ID,
+                    setupRequest("admin.myschool.com", "ADMIN, course  creator,Counsellor", true));
+
+            ArgumentCaptor<DomainRoutingUpsertRequest> captor =
+                    ArgumentCaptor.forClass(DomainRoutingUpsertRequest.class);
+            verify(domainRoutingAdminService).create(captor.capture());
+            assertEquals("ADMIN,COUNSELLOR,COURSE CREATOR", captor.getValue().getRole());
+        }
+
+        @Test
+        @DisplayName("A role name carrying a control character is rejected")
+        void malformedRoleIsRejected() {
+            assertThrows(VacademyException.class, () -> service.setup(admin(), INSTITUTE_ID,
+                    setupRequest("admin.myschool.com", "ADMIN,BAD\u0000ROLE", true)));
+        }
+
+        @Test
+        @DisplayName("Changing the roles of a saved domain updates its row instead of adding a second one")
+        void changingRolesUpdatesTheSameRow() {
+            givenStoredRow("admin.myschool.com", "ADMIN,EVALUATOR,COURSE CREATOR,TEACHER", true);
+
+            service.setup(admin(), INSTITUTE_ID,
+                    setupRequest("admin.myschool.com", "ADMIN,COUNSELLOR,TEACHER", true));
+
+            ArgumentCaptor<DomainRoutingUpsertRequest> captor =
+                    ArgumentCaptor.forClass(DomainRoutingUpsertRequest.class);
+            verify(domainRoutingAdminService).update(eq("row-0"), captor.capture());
+            verify(domainRoutingAdminService, never()).create(any());
+            assertEquals("ADMIN,COUNSELLOR,TEACHER", captor.getValue().getRole());
+        }
+
+        @Test
+        @DisplayName("The same domain twice in one request is refused, not silently merged")
+        void duplicateHostIsRejected() {
+            assertThrows(VacademyException.class, () -> service.setup(admin(), INSTITUTE_ID, setupRequest(
+                    entry("admin.myschool.com", "ADMIN", true),
+                    entry("Admin.MySchool.com", "TEACHER", false))));
+        }
+
+        @Test
+        @DisplayName("An admin portal that lets teachers in and the teacher portal can both be primary")
+        void adminPortalWithTeacherDoesNotCollideWithTeacherPortal() {
+            cloudflareStatus.put("admin.myschool.com", "active");
+            cloudflareStatus.put("teach.myschool.com", "active");
+
+            service.setup(admin(), INSTITUTE_ID, setupRequest(
+                    entry("admin.myschool.com", "ADMIN,TEACHER", true),
+                    entry("teach.myschool.com", "TEACHER", true)));
+
+            assertEquals("https://admin.myschool.com", institute.getAdminPortalBaseUrl());
+            assertEquals("https://teach.myschool.com", institute.getTeacherPortalBaseUrl());
+        }
+
+        @Test
+        @DisplayName("Two primaries for the same portal are still refused")
+        void twoPrimaryAdminPortalsAreRejected() {
+            assertThrows(VacademyException.class, () -> service.setup(admin(), INSTITUTE_ID, setupRequest(
+                    entry("admin.myschool.com", "ADMIN,TEACHER", true),
+                    entry("staff.myschool.com", "ADMIN,COUNSELLOR", true))));
+        }
+
+        @Test
+        @DisplayName("Starring a teacher portal leaves the admin portal that lets teachers in starred")
+        void teacherPrimaryDoesNotDemoteAdminPortal() {
+            givenStoredRow("admin.myschool.com", "ADMIN,TEACHER", true);
+
+            service.setup(admin(), INSTITUTE_ID, setupRequest("teach.myschool.com", "TEACHER", true));
+
+            InstituteDomainRouting adminRow = storedRows.stream()
+                    .filter(r -> "admin".equals(r.getSubdomain())).findFirst().orElseThrow();
+            assertTrue(adminRow.isPrimary());
+        }
+    }
+
+    // ── Apex domains, extra settings, removal ────────────────────────────────
+
+    @Nested
+    @DisplayName("Settings that used to need a database edit")
+    class FormerlyDatabaseOnly {
+
+        @Test
+        @DisplayName("A bare two-label domain is stored as the apex row the portals look up")
+        void apexDomainIsStoredAsWildcard() {
+            // The portals resolve myschool.com as domain=myschool.com,
+            // subdomain=* — the old split stored domain=com, subdomain=myschool.
+            assertArrayEquals(new String[] { "myschool.com", "*" },
+                    WhiteLabelService.splitDomain("myschool.com"));
+            assertArrayEquals(new String[] { "myschool.com", "learn" },
+                    WhiteLabelService.splitDomain("https://learn.myschool.com/path"));
+            assertArrayEquals(new String[] { "myschool.com", "*" },
+                    WhiteLabelService.splitDomain("*.myschool.com"));
+            assertArrayEquals(new String[] { "localhost", "learn" },
+                    WhiteLabelService.splitDomain("learn.localhost"));
+        }
+
+        @Test
+        @DisplayName("The apex and its wildcard spelling in one request are the same host")
+        void apexAndWildcardAreOneHost() {
+            assertThrows(VacademyException.class, () -> service.setup(admin(), INSTITUTE_ID, setupRequest(
+                    entry("myschool.com", "LEARNER", true),
+                    entry("*.myschool.com", "LEARNER", false))));
+        }
+
+        @Test
+        @DisplayName("Login-page terminology and the root website are written from the wizard")
+        void namingAndRootCatalogueAreSaved() {
+            WhiteLabelSetupRequest request = setupRequest("myschool.com", "LEARNER", true);
+            PortalRoutingConfig cfg = new PortalRoutingConfig();
+            cfg.setApplyNamingSetting(true);
+            cfg.setRootCatalogueTag("new-website");
+            request.getEntries().get(0).setRoutingConfig(cfg);
+
+            service.setup(admin(), INSTITUTE_ID, request);
+
+            ArgumentCaptor<DomainRoutingUpsertRequest> captor =
+                    ArgumentCaptor.forClass(DomainRoutingUpsertRequest.class);
+            verify(domainRoutingAdminService).create(captor.capture());
+            assertEquals(Boolean.TRUE, captor.getValue().getApplyNamingSetting());
+            assertEquals("new-website", captor.getValue().getRootCatalogueTag());
+            assertEquals("myschool.com", captor.getValue().getDomain());
+            assertEquals("*", captor.getValue().getSubdomain());
+        }
+
+        @Test
+        @DisplayName("Two saved rows showing the same host each update their own row")
+        void routingIdKeepsLookalikeRowsApart() {
+            // Seen in prod: a "*" row on school.co.in and an exact row
+            // school @ co.in. Both display as school.co.in, so the form posts that
+            // host twice; only the row id says which row each entry is.
+            InstituteDomainRouting wildcard = new InstituteDomainRouting();
+            wildcard.setId("row-star");
+            wildcard.setInstituteId(INSTITUTE_ID);
+            wildcard.setDomain("school.co.in");
+            wildcard.setSubdomain("*");
+            wildcard.setRole("LEARNER");
+            givenStoredRow("school.co.in", "LEARNER", false);
+            storedRows.add(wildcard);
+            when(routingRepository.findById("row-0")).thenReturn(Optional.of(storedRows.get(0)));
+            when(routingRepository.findById("row-star")).thenReturn(Optional.of(wildcard));
+
+            WhiteLabelSetupRequest.DomainEntry exact = entry("school.co.in", "LEARNER", false);
+            exact.setRoutingId("row-0");
+            WhiteLabelSetupRequest.DomainEntry star = entry("school.co.in", "LEARNER", false);
+            star.setRoutingId("row-star");
+
+            service.setup(admin(), INSTITUTE_ID, setupRequest(exact, star));
+
+            ArgumentCaptor<DomainRoutingUpsertRequest> captor =
+                    ArgumentCaptor.forClass(DomainRoutingUpsertRequest.class);
+            verify(domainRoutingAdminService).update(eq("row-0"), any());
+            verify(domainRoutingAdminService).update(eq("row-star"), captor.capture());
+            verify(domainRoutingAdminService, never()).create(any());
+            // The "*" row keeps its shape rather than being rewritten as school @ co.in.
+            assertEquals("school.co.in", captor.getValue().getDomain());
+            assertEquals("*", captor.getValue().getSubdomain());
+        }
+
+        @Test
+        @DisplayName("Saving a row the old apex split broke moves it to the shape portals look up")
+        void brokenApexRowIsHealedOnSave() {
+            // Seen in prod: stored as subdomain=myschool, domain=com.
+            InstituteDomainRouting broken = new InstituteDomainRouting();
+            broken.setId("row-broken");
+            broken.setInstituteId(INSTITUTE_ID);
+            broken.setDomain("com");
+            broken.setSubdomain("myschool");
+            broken.setRole("LEARNER");
+            when(routingRepository.findById("row-broken")).thenReturn(Optional.of(broken));
+
+            WhiteLabelSetupRequest.DomainEntry e = entry("myschool.com", "LEARNER", false);
+            e.setRoutingId("row-broken");
+            service.setup(admin(), INSTITUTE_ID, setupRequest(e));
+
+            ArgumentCaptor<DomainRoutingUpsertRequest> captor =
+                    ArgumentCaptor.forClass(DomainRoutingUpsertRequest.class);
+            verify(domainRoutingAdminService).update(eq("row-broken"), captor.capture());
+            assertEquals("myschool.com", captor.getValue().getDomain());
+            assertEquals("*", captor.getValue().getSubdomain());
+        }
+
+        @Test
+        @DisplayName("An apex domain that would override the domain's other portals is refused")
+        void apexOverOtherHostsIsRefused() {
+            givenStoredRow("learn.myschool.com", "LEARNER", true);
+
+            VacademyException e = assertThrows(VacademyException.class, () -> service.setup(admin(),
+                    INSTITUTE_ID, setupRequest("myschool.com", "LEARNER", false)));
+
+            assertTrue(e.getMessage().contains("learn.myschool.com"), e.getMessage());
+            verify(domainRoutingAdminService, never()).create(any());
+        }
+
+        @Test
+        @DisplayName("Saving the existing apex row of a shared domain is still allowed")
+        void existingApexRowStillSaves() {
+            // Seen in prod: a "*" row next to www. and other subdomain rows.
+            InstituteDomainRouting star = new InstituteDomainRouting();
+            star.setId("row-star");
+            star.setInstituteId(INSTITUTE_ID);
+            star.setDomain("myschool.com");
+            star.setSubdomain("*");
+            star.setRole("LEARNER");
+            storedRows.add(star);
+            givenStoredRow("www.myschool.com", "LEARNER", false);
+
+            service.setup(admin(), INSTITUTE_ID, setupRequest("myschool.com", "LEARNER", false));
+
+            verify(domainRoutingAdminService).update(eq("row-star"), any());
+        }
+
+        @Test
+        @DisplayName("Free-text custom role names are accepted; an over-long list is refused with a reason")
+        void roleNameRules() {
+            service.setup(admin(), INSTITUTE_ID,
+                    setupRequest("admin.myschool.com", "ADMIN,Sales-Team,HOD's", true));
+            ArgumentCaptor<DomainRoutingUpsertRequest> captor =
+                    ArgumentCaptor.forClass(DomainRoutingUpsertRequest.class);
+            verify(domainRoutingAdminService).create(captor.capture());
+            assertEquals("ADMIN,HOD'S,SALES-TEAM", captor.getValue().getRole());
+
+            String tooMany = "ADMIN,ASSESSMENT CREATOR,COUNSELLOR,COURSE CREATOR,CRM_ACCESS,EVALUATOR,"
+                    + "MANAGE_LEAD,TEACHER,SOCIAL MEDIA TEAM";
+            VacademyException e = assertThrows(VacademyException.class, () -> service.setup(admin(),
+                    INSTITUTE_ID, setupRequest("staff.myschool.com", tooMany, false)));
+            assertTrue(e.getMessage().contains("Too many roles"), e.getMessage());
+        }
+
+        @Test
+        @DisplayName("A staff member who is not an admin cannot remove a domain")
+        void nonAdminStaffCannotDelete() {
+            givenStoredRow("old.myschool.com", "LEARNER", false);
+            when(routingRepository.findById("row-0")).thenReturn(Optional.of(storedRows.get(0)));
+            when(instituteRoleUserClient.findRolesOfUser(INSTITUTE_ID, USER_ID))
+                    .thenReturn(Optional.of(Set.of("TEACHER")));
+
+            assertThrows(VacademyException.class,
+                    () -> service.deleteDomain(admin(), INSTITUTE_ID, "row-0"));
+            verify(routingRepository, never()).delete(any());
+        }
+
+        @Test
+        @DisplayName("A row id from another institute is ignored, not written through")
+        void foreignRoutingIdIsIgnored() {
+            InstituteDomainRouting foreign = new InstituteDomainRouting();
+            foreign.setId("row-x");
+            foreign.setInstituteId("someone-else");
+            foreign.setDomain("myschool.com");
+            foreign.setSubdomain("learn");
+            foreign.setRole("LEARNER");
+            when(routingRepository.findById("row-x")).thenReturn(Optional.of(foreign));
+
+            WhiteLabelSetupRequest.DomainEntry e = entry("learn.myschool.com", "LEARNER", false);
+            e.setRoutingId("row-x");
+            service.setup(admin(), INSTITUTE_ID, setupRequest(e));
+
+            verify(domainRoutingAdminService, never()).update(eq("row-x"), any());
+            verify(domainRoutingAdminService).create(any());
+        }
+
+        @Test
+        @DisplayName("An unused domain can be removed")
+        void deletesAnUnusedDomain() {
+            givenStoredRow("old.myschool.com", "LEARNER", false);
+            InstituteDomainRouting row = storedRows.get(0);
+            when(routingRepository.findById("row-0")).thenReturn(Optional.of(row));
+
+            service.deleteDomain(admin(), INSTITUTE_ID, "row-0");
+
+            verify(routingRepository).delete(row);
+        }
+
+        @Test
+        @DisplayName("The domain outbound links use cannot be removed")
+        void refusesToDeleteThePortalUrl() {
+            givenStoredRow("learn.myschool.com", "LEARNER", true);
+            institute.setLearnerPortalBaseUrl("https://learn.myschool.com");
+            when(routingRepository.findById("row-0")).thenReturn(Optional.of(storedRows.get(0)));
+
+            assertThrows(VacademyException.class,
+                    () -> service.deleteDomain(admin(), INSTITUTE_ID, "row-0"));
+            verify(routingRepository, never()).delete(any());
+        }
+
+        @Test
+        @DisplayName("Another institute's domain cannot be removed")
+        void refusesAnotherInstitutesDomain() {
+            InstituteDomainRouting foreign = new InstituteDomainRouting();
+            foreign.setId("row-x");
+            foreign.setInstituteId("someone-else");
+            foreign.setDomain("other.com");
+            foreign.setSubdomain("learn");
+            foreign.setRole("LEARNER");
+            when(routingRepository.findById("row-x")).thenReturn(Optional.of(foreign));
+
+            assertThrows(VacademyException.class,
+                    () -> service.deleteDomain(admin(), INSTITUTE_ID, "row-x"));
+            verify(routingRepository, never()).delete(any());
+        }
+
+        @Test
+        @DisplayName("A non-member cannot remove anything")
+        void refusesAnOutsider() {
+            assertThrows(VacademyException.class,
+                    () -> service.deleteDomain(outsider(), INSTITUTE_ID, "row-0"));
+            verify(routingRepository, never()).delete(any());
         }
     }
 

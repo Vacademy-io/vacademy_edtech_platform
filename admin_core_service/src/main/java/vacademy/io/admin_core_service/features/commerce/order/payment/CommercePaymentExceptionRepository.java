@@ -84,7 +84,8 @@ public interface CommercePaymentExceptionRepository extends JpaRepository<Commer
 
     /**
      * The OPEN oversold row of an order with nothing left owing (staff refunded it another way
-     * before the automatic refund was made) is resolved.
+     * before the automatic refund was made) is resolved: only when the order's due reached what
+     * was paid and all of it is refunded.
      */
     @Modifying
     @Query(value = """
@@ -92,6 +93,8 @@ public interface CommercePaymentExceptionRepository extends JpaRepository<Commer
             SET status = 'RESOLVED', resolved_at = :now, resolved_by = NULL, resolution_note = :note,
                 updated_at = CURRENT_TIMESTAMP
             WHERE commerce_order_id = :orderId AND kind = 'OVERSOLD_PAID' AND status = 'OPEN' AND refund_id IS NULL
+              AND EXISTS (SELECT 1 FROM commerce_order o WHERE o.id = :orderId
+                            AND o.refund_due >= o.amount_paid AND o.amount_refunded >= o.refund_due)
             """, nativeQuery = true)
     int resolveOversoldRefundedOtherwise(@Param("orderId") String orderId, @Param("note") String note,
                                          @Param("now") Date now);
@@ -102,21 +105,30 @@ public interface CommercePaymentExceptionRepository extends JpaRepository<Commer
      * only when its order has a paying gateway payment (the refund needs one) and something is
      * still to do (the due is not raised to what was paid yet, or part of it is not committed to
      * a refund): an order staff refunded another way is never retried. A duplicate row is read
-     * only when it names the payment and an amount above zero.
+     * only when it names the payment and an amount above zero. Keyset paging on
+     * {@code (created_at, id)}: the next page starts after the last row of the one before.
      */
     @Query(value = """
             SELECT e.* FROM commerce_payment_exception e
             WHERE e.status = 'OPEN' AND e.refund_id IS NULL AND e.kind IN ('OVERSOLD_PAID', 'DUPLICATE_PAYMENT')
               AND e.created_at <= :createdBefore
+              AND (e.created_at, e.id) > (CAST(:afterCreatedAt AS TIMESTAMP), CAST(:afterId AS VARCHAR))
               AND ((e.kind = 'DUPLICATE_PAYMENT' AND e.gateway_payment_id <> '' AND e.amount > 0)
                    OR (e.kind = 'OVERSOLD_PAID'
                        AND EXISTS (SELECT 1 FROM commerce_gateway_order g WHERE g.commerce_order_id = e.commerce_order_id
                                      AND g.paying AND g.gateway_payment_id IS NOT NULL)
                        AND EXISTS (SELECT 1 FROM commerce_order o WHERE o.id = e.commerce_order_id
                                      AND (o.refund_due < o.amount_paid OR o.refund_due > o.refund_committed))))
-            ORDER BY e.created_at ASC
+            ORDER BY e.created_at ASC, e.id ASC
             LIMIT :maxRows
             """, nativeQuery = true)
     java.util.List<CommercePaymentException> findUnrefunded(@Param("createdBefore") Date createdBefore,
+                                                            @Param("afterCreatedAt") Date afterCreatedAt,
+                                                            @Param("afterId") String afterId,
                                                             @Param("maxRows") int maxRows);
+
+    /** The first page of {@link #findUnrefunded(Date, Date, String, int)}. */
+    default java.util.List<CommercePaymentException> findUnrefunded(Date createdBefore, int maxRows) {
+        return findUnrefunded(createdBefore, new Date(0L), "", maxRows);
+    }
 }

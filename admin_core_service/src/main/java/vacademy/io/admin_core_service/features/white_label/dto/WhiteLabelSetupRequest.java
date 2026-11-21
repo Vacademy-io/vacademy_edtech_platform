@@ -43,6 +43,15 @@ public class WhiteLabelSetupRequest {
         @JsonProperty("is_primary")
         private boolean isPrimary;
 
+        /**
+         * Id of the saved routing row this entry edits, as the status endpoint
+         * returned it. Lets an entry update its own row even when two rows show
+         * the same host (a "*" row and an exact row). Ignored when the domain was
+         * changed or the row is not the institute's; absent for a new domain.
+         */
+        @JsonProperty("routing_id")
+        private String routingId;
+
         /** Optional per-domain routing config (theme, auth, tabs, etc.) */
         @JsonProperty("routing_config")
         private PortalRoutingConfig routingConfig;

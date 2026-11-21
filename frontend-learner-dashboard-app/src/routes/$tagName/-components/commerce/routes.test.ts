@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
     COMMERCE_RESERVED_SEGMENTS,
+    commercePageKey,
+    siteSegments,
     apiPathTo,
     commerceRouteTo,
     isCommerceReservedSegment,
@@ -103,5 +105,29 @@ describe('addresses', () => {
         expect(withQuery('search', { q: 'saree' })).toBe('search?q=saree');
         expect(withQuery('search?q=old', { q: 'साड़ी' })).toBe(`search?q=${encodeURIComponent('साड़ी')}`);
         expect(withQuery('p/x?v=1', { v: null })).toBe('p/x');
+    });
+});
+
+describe('commercePageKey and siteSegments (where the category bar asks "which page is this?")', () => {
+    it('names the root home, a fixed route by its kind and an authored page by its route', () => {
+        expect(commercePageKey([])).toBe('home');
+        expect(commercePageKey(['homepage'])).toBe('home');
+        expect(commercePageKey(['c', 'sarees'])).toBe('collection');
+        expect(commercePageKey(['p', 'red-saree'])).toBe('product');
+        expect(commercePageKey(['search'])).toBe('search');
+        expect(commercePageKey(['cart'])).toBe('cart');
+        expect(commercePageKey(['checkout'])).toBe('checkout');
+        expect(commercePageKey(['track-order'])).toBe('track');
+        expect(commercePageKey(['shop'])).toBe('shop');
+        expect(commercePageKey(['Our-Story'])).toBe('our-story');
+    });
+
+    it('drops the site base (and a root-mounted site\'s own tag) from a browser path', () => {
+        expect(siteSegments('/', '')).toEqual([]);
+        expect(siteSegments('/c/sarees', '')).toEqual(['c', 'sarees']);
+        expect(siteSegments('/myshop/c/sarees', '/myshop', 'myshop')).toEqual(['c', 'sarees']);
+        expect(siteSegments('/myshop', '/myshop', 'myshop')).toEqual([]);
+        expect(siteSegments('/myshop/c/sarees', '', 'myshop')).toEqual(['c', 'sarees']);
+        expect(siteSegments('/other/c/sarees', '/myshop', 'myshop')).toEqual(['other', 'c', 'sarees']);
     });
 });

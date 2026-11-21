@@ -1,0 +1,75 @@
+/* =====================================================================
+   Neon City: quiz questions and the result.
+   Fun lifts the course tint toward white for the quiz head and ring track;
+   at night they sit on the card colours instead. The latest result's
+   headline is a slanted ribbon (gold when cleared, night with a coral edge
+   when not yet), with 1 to 3 stars above it (FunQuizResult, neonStars).
+   ===================================================================== */
+
+html.ui-neon-city .fun-quiz {
+  --fun-quiz-head: var(--fc-tint, var(--neon-raised));
+  --fun-quiz-ring-track: var(--neon-raised);
+}
+
+html.ui-neon-city .fun-quiz-result__card {
+  background: radial-gradient(120% 90% at 50% 40%, #3A1660 0%, var(--neon-card) 70%);
+  border: 1.5px solid var(--neon-line);
+}
+html.ui-neon-city .fun-quiz-result__card[data-verdict="passed"] {
+  background:
+    repeating-conic-gradient(from 0deg at 50% 46%, rgb(255 201 74 / 0.09) 0deg 8deg, transparent 8deg 20deg),
+    radial-gradient(120% 90% at 50% 40%, #6A1E6E 0%, var(--neon-card) 72%);
+}
+html.ui-neon-city .fun-quiz-result__card[data-verdict="notPassed"] { background: var(--neon-card); }
+html.ui-neon-city .fun-quiz-result__sprinkles { display: none; }
+html.ui-neon-city .fun-quiz-ring__disc { fill: var(--neon-night); }
+html.ui-neon-city .fun-quiz-result__card[data-verdict="passed"] .fun-quiz-ring__track { stroke: var(--neon-raised); }
+html.ui-neon-city .fun-quiz-result__card[data-verdict="passed"] .fun-quiz-ring__arc { stroke: var(--neon-gold); }
+html.ui-neon-city .fun-quiz-result__card[data-verdict="passed"] .fun-quiz-result__marks { color: var(--neon-text-soft); }
+
+/* Stars */
+html.ui-neon-city .neon-stars {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 10px;
+  margin: 0 0 12px;
+}
+html.ui-neon-city .neon-stars__star { width: 40px; height: 40px; }
+html.ui-neon-city .neon-stars__star--mid { width: 52px; height: 52px; }
+html.ui-neon-city .neon-stars__star path { fill: none; stroke: #6E5BA8; stroke-width: 1.6; }
+html.ui-neon-city .neon-stars__star[data-on="true"] path { fill: var(--neon-gold); stroke: var(--neon-gold-lip); stroke-width: 1; }
+
+/* The headline ribbon */
+html.ui-neon-city .neon-ribbon {
+  position: relative;
+  display: inline-block;
+  margin-top: 14px;
+  padding: 6px 22px 2px;
+  background: var(--neon-gold);
+  box-shadow: 6px 6px 0 var(--neon-pink);
+  transform: skewX(var(--neon-slant));
+}
+html.ui-neon-city .neon-ribbon[data-verdict="notPassed"] {
+  background: var(--neon-raised);
+  box-shadow: 6px 6px 0 var(--neon-coral);
+}
+html.ui-neon-city .fun-quiz-result__card .neon-ribbon__text {
+  margin: 0;
+  font-family: var(--neon-display);
+  font-weight: 400;
+  font-size: 2.5rem;
+  line-height: calc(2.75rem * var(--fun-leading));
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--neon-night);
+}
+html.ui-neon-city .neon-ribbon[data-verdict="notPassed"] .neon-ribbon__text { color: var(--neon-text); }
+html.ui-neon-city:is([lang="hi"], [lang="mr"]) .fun-quiz-result__card .neon-ribbon__text { font-family: 'Teko', var(--neon-display); font-weight: 600; text-transform: none; letter-spacing: 0; }
+html.ui-neon-city[dir="rtl"] .neon-ribbon { transform: skewX(calc(var(--neon-slant) * -1)); box-shadow: -6px 6px 0 var(--neon-pink); }
+html.ui-neon-city[dir="rtl"] .neon-ribbon[data-verdict="notPassed"] { box-shadow: -6px 6px 0 var(--neon-coral); }
+
+/* The result's main button reads like every other main action. */
+html.ui-neon-city .fun-quiz-result__primary { font-family: var(--neon-display); font-weight: 400; letter-spacing: 0.06em; text-transform: uppercase; }
+html.ui-neon-city:is([lang="hi"], [lang="mr"]) .fun-quiz-result__primary { font-family: var(--fun-font-family); font-weight: 800; letter-spacing: 0; text-transform: none; }

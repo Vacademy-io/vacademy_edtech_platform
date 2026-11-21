@@ -54,6 +54,10 @@ import { InviteFormProvider } from '@/routes/manage-students/invite/-context/use
 import { Users, FileMagnifyingGlass } from '@phosphor-icons/react';
 import { getTerminology, getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
 import { useListCustomFieldControls } from '@/components/shared/leads/use-list-custom-field-controls';
+import {
+    useLearnerLocationFilters,
+    withLocationFiltersAfterGender,
+} from '@/routes/manage-students/students-list/-hooks/useLearnerLocationFilters';
 import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 // Row statuses that mean the user actually holds (or held) an enrolment, as opposed to
@@ -236,6 +240,8 @@ export const StudentsListSection = () => {
         session_expiry_days: ['expiry_date'],
         payment_statuses: ['plan_type', 'amount_paid'],
         enroll_invite_ids: ['enroll_invite_name'],
+        cities: ['city'],
+        regions: ['region'],
     };
 
     const customFieldIdByKey = useMemo(() => {
@@ -261,7 +267,16 @@ export const StudentsListSection = () => {
     // run: it starts false and flips once the first page arrives, which re-renders the bar.
     const [membershipTypesAvailable, setMembershipTypesAvailable] = useState(false);
 
-    const allFilters = GetFilterData(
+    // City / Region chips (Manage filters → Built-in filters → Students), shared with the
+    // course learners tab.
+    const locationFilters = useLearnerLocationFilters({
+        instituteId: audienceInstituteId || undefined,
+        appliedFilters,
+        setColumnFilters,
+        setAppliedFilters,
+    });
+
+    const baseFilters = GetFilterData(
         tAllFilters,
         instituteDetails,
         currentSession.id,
@@ -272,6 +287,7 @@ export const StudentsListSection = () => {
         gatedRangeCustomFields,
         membershipTypesAvailable
     );
+    const allFilters = withLocationFiltersAfterGender(baseFilters, locationFilters);
     const filters = allFilters.filter((f) => {
         const fixed = FILTER_TO_COLUMNS[f.id];
         if (fixed) return fixed.some((accessor) => !roleHiddenColumns.has(accessor));

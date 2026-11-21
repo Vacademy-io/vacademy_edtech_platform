@@ -22,6 +22,18 @@ public interface EnrollInviteRepository extends JpaRepository<EnrollInvite, Stri
     Optional<EnrollInvite> findByInviteCode(String inviteCode);
 
     /**
+     * Invite links of an institute whose checkout goes through the given gateway
+     * (enroll_invite.vendor). Shown before an admin deactivates that gateway.
+     */
+    @Query("SELECT COUNT(ei) FROM EnrollInvite ei "
+            + "WHERE ei.instituteId = :instituteId "
+            + "AND UPPER(ei.vendor) = :vendor "
+            + "AND ei.status IN :statuses")
+    long countByInstituteIdAndVendorAndStatusIn(@Param("instituteId") String instituteId,
+            @Param("vendor") String vendor,
+            @Param("statuses") List<String> statuses);
+
+    /**
      * setting_json of the institute's live invites that mention a trial at all. A cheap LIKE
      * prefilter; the JSON is parsed in Java because a jsonb cast inside a native query trips
      * over Hibernate's ":" parameter parsing, and one malformed invite must not fail the query.

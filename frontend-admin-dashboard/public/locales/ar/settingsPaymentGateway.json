@@ -29,7 +29,9 @@
         "webhookUrlCopied": "تم نسخ رابط الويب هوك",
         "loadFailed": "فشل تحميل بوابات الدفع",
         "gatewayDeactivated": "تم تعطيل {{vendor}}",
-        "deactivateFailed": "فشل تعطيل البوابة"
+        "deactivateFailed": "فشل تعطيل البوابة",
+        "gatewayActivated": "تم تفعيل {{vendor}}",
+        "activateFailed": "فشل تفعيل البوابة"
     },
     "dialog": {
         "createTitle": "إضافة بوابة دفع",
@@ -53,7 +55,9 @@
         "cancel": "إلغاء",
         "saving": "جارٍ الحفظ…",
         "addGatewayButton": "إضافة بوابة",
-        "saveChanges": "حفظ التغييرات"
+        "saveChanges": "حفظ التغييرات",
+        "saveAndActivate": "حفظ وتفعيل",
+        "inactiveNotice": "{{vendor}} غير نشطة، لذلك لا يمكن للمتعلمين الدفع من خلالها. سيؤدي الحفظ إلى إعادة تفعيلها."
     },
     "mappingCard": {
         "editCredentials": "تعديل بيانات الاعتماد",
@@ -61,14 +65,20 @@
         "unknownVendor": "مزوّد غير معروف — لا يوجد نموذج بيانات متاح.",
         "notSet": "غير محدد",
         "webhookUrlLabel": "رابط الويب هوك",
-        "copyWebhookUrl": "نسخ رابط الويب هوك"
+        "copyWebhookUrl": "نسخ رابط الويب هوك",
+        "activateGateway": "تفعيل",
+        "activating": "جارٍ التفعيل…",
+        "inactiveNotice": "لا يمكن للمتعلمين الدفع من خلال هذه البوابة ما دامت غير نشطة. انقر على تفعيل لإعادة تشغيلها بالمفاتيح المحفوظة."
     },
     "deleteDialog": {
         "title": "هل تريد تعطيل البوابة؟",
-        "description": "سيتم تمييز {{vendor}} كغير نشطة ولن يتمكن المتعلمون من الدفع من خلالها. يمكنك إضافتها مرة أخرى لاحقًا.",
+        "description": "سيتم تمييز {{vendor}} كغير نشطة ولن يتمكن المتعلمون من الدفع من خلالها. يمكنك إعادة تفعيلها من هذه الصفحة في أي وقت.",
         "cancel": "إلغاء",
         "deactivating": "جارٍ التعطيل…",
-        "deactivate": "تعطيل"
+        "deactivate": "تعطيل",
+        "usageLoading": "جارٍ التحقق من روابط الدعوة التي تستخدمها…",
+        "usageSummary": "روابط الدعوة النشطة على {{vendor}}: {{active}} ({{paid}} مدفوعة). لن يتمكن المتعلمون من الدفع عبر الروابط المدفوعة حتى تعيد تفعيلها.",
+        "usageNone": "لا يوجد حاليًا أي رابط دعوة نشط يتم الدفع فيه عبر {{vendor}}."
     },
     "vendors": {
         "stripe": {

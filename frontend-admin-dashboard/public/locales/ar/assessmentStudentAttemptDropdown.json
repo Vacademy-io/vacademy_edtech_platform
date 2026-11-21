@@ -16,9 +16,20 @@
         "evaluateWithAI": {
             "recheckTitle": "هل تريد إعادة تصحيح هذه الورقة بالذكاء الاصطناعي؟",
             "recheckMessage": "ورقة {{name}} مصححة بالفعل أو قيد التقييم. سيحل التصحيح الجديد محل درجاتها الحالية، بما في ذلك أي تغييرات أجراها المعلم، وستظهر بحالة «قيد التقييم» حتى تصبح النتيجة الجديدة جاهزة.",
+            "recheckTitleTyped": "هل تريد إعادة تصحيح هذه الإجابات بالذكاء الاصطناعي؟",
+            "recheckMessageTyped": "إجابات {{name}} المكتوبة مصححة بالفعل أو قيد التصحيح. سيحل التصحيح الجديد بالذكاء الاصطناعي محل درجاتها، بما في ذلك أي تغييرات أجراها المعلم، وستظهر المحاولة بحالة «قيد التقييم» حتى تصبح النتيجة الجديدة جاهزة.",
+            "checkTitleTyped": "تصحيح هذه الإجابات بالذكاء الاصطناعي؟",
+            "checkMessageTyped": "يصحح الذكاء الاصطناعي إجابات {{name}} المكتوبة (الإجابات الطويلة وأسئلة جداول البيانات والإجابات المكتوبة). يستخدم ذلك أرصدة الذكاء الاصطناعي لمؤسستك. يراجع المعلم الدرجات قبل إعلان النتيجة.",
+            "checkConfirm": "التصحيح بالذكاء الاصطناعي",
             "estimatedCostLabel": "التكلفة المقدّرة:",
             "creditsPerPage_one": "{{count}} رصيد لكل صفحة",
             "creditsPerPage_other": "{{count}} رصيد لكل صفحة",
+            "creditsPerAnswer_zero": "{{count}} رصيد لكل إجابة",
+            "creditsPerAnswer_one": "{{count}} رصيد لكل إجابة",
+            "creditsPerAnswer_two": "{{count}} رصيد لكل إجابة",
+            "creditsPerAnswer_few": "{{count}} رصيد لكل إجابة",
+            "creditsPerAnswer_many": "{{count}} رصيد لكل إجابة",
+            "creditsPerAnswer_other": "{{count}} رصيد لكل إجابة",
             "creditsCount_zero": "{{count}} رصيد",
             "creditsCount_one": "{{count}} رصيد واحد",
             "creditsCount_two": "{{count}} رصيدان",
@@ -36,7 +47,7 @@
             "recheckConfirm": "إعادة التصحيح"
         },
         "revaluateEntireAssessment": {
-            "title": "إعادة تقييم الاختبار بالكامل",
+            "title": "إعادة التصحيح بمفتاح الإجابة",
             "confirmMessagePrefix": "هل أنت متأكد أنك تريد إعادة التقييم لـ",
             "confirmMessageSuffix": "بالنسبة للاختبار بالكامل؟"
         },
@@ -61,6 +72,7 @@
     "dropdown": {
         "checkingSubmission": "جارٍ التحقق من المشاركة...",
         "viewSubmission": "عرض المشاركة",
+        "viewAnswerSheet": "عرض ورقة الإجابة",
         "loadingSubmission": "جارٍ تحميل المشاركة...",
         "uploadSubmission": "رفع المشاركة",
         "provideReattempt": "منح محاولة إعادة",
@@ -77,7 +89,12 @@
         "downloadReport": "تنزيل التقرير",
         "releaseResult": "نشر النتيجة",
         "downloadAiReport": "تنزيل تقرير الذكاء الاصطناعي",
-        "proctoring": "المراقبة"
+        "proctoring": "المراقبة",
+        "openSubmission": "فتح الإجابة",
+        "remarkWithKey": "إعادة التصحيح بمفتاح الإجابة",
+        "markOnSheet": "التصحيح على ورقة الإجابة",
+        "sendUpdatedResult": "إرسال النتيجة المحدّثة",
+        "hideResultAgain": "إخفاء النتيجة مجددًا"
     },
     "toasts": {
         "reattemptProvided": "تم منح {{name}} فرصة إعادة المحاولة.",
@@ -87,6 +104,7 @@
         "revaluateSuccess": "تمت إعادة تقييم محاولتك لهذا الاختبار. يرجى التحقق من بريدك الإلكتروني!",
         "evaluationStarted": "بدأ التقييم بالذكاء الاصطناعي بنجاح!",
         "evaluationError": "فشل بدء التقييم بالذكاء الاصطناعي. يرجى المحاولة مرة أخرى.",
+        "alreadyReleased": "تم إصدار هذه النتيجة بالفعل، لذا لا يمكن للتقييم بالذكاء الاصطناعي تغيير درجاتها. عدّل الدرجات يدويًا بدلًا من ذلك.",
         "noEvaluatedCopy": "لم يتم العثور على نسخة مقيَّمة لهذه المحاولة.",
         "evaluatedCopyLoadError": "فشل تحميل النسخة المقيَّمة. يرجى المحاولة مرة أخرى.",
         "noSubmissionFile": "لم يتم العثور على ملف مشاركة لهذه المحاولة.",

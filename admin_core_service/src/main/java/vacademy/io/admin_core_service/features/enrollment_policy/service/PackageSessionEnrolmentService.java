@@ -32,24 +32,15 @@ import java.util.stream.Collectors;
 public class PackageSessionEnrolmentService {
 
     private final UserPlanRepository userPlanRepository;
+
+    /** Paused memberships (docs/ENROLMENT_BREAKS.md) are skipped. Optional: absent = nothing skipped. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vacademy.io.admin_core_service.features.enrolment_break.service.EnrolmentBreakGuard enrolmentBreakGuard;
     private final StudentSessionInstituteGroupMappingRepository mappingRepository;
     private final EnrolmentProcessorFactory processorFactory;
     private final ObjectMapper objectMapper;
     private final AuthService authService;
     private final SubOrgAdminService subOrgAdminService;
-
-    /**
-     * Scheduled function to process all ACTIVE UserPlans.
-     * Operates on UserPlan entities first, then finds associated mappings.
-     */
-    @Transactional
-    public void processActiveEnrollments() {
-        log.info("Starting processing of ACTIVE UserPlans");
-
-        // Find all ACTIVE UserPlans
-        List<UserPlan> activeUserPlans = userPlanRepository.findAllByStatusIn(List.of(UserPlanStatusEnum.ACTIVE.name(),UserPlanStatusEnum.CANCELED.name()));
-        processPlans(activeUserPlans);
-    }
 
     /**
      * Institute-gated variant used by the daily renewal scheduler: loads only
@@ -134,6 +125,12 @@ public class PackageSessionEnrolmentService {
      */
     private void processUserPlan(UserPlan userPlan) {
         log.info("Processing UserPlan: {} (source: {})", userPlan.getId(), userPlan.getSource());
+
+        // A paused membership neither expires nor renews nor gets expiry reminders while paused.
+        if (enrolmentBreakGuard != null && enrolmentBreakGuard.isPlanPaused(userPlan.getId())) {
+            log.info("UserPlan {} is paused (enrolment break), skipping the enrolment-policy sweep", userPlan.getId());
+            return;
+        }
 
         // Skip UserPlans without endDate (they need to be initialized first)
         if (userPlan.getEndDate() == null) {

@@ -72,6 +72,10 @@ public class AccessPassEntitlementService {
     @Autowired
     private LearnerTerminationWorkflowHelper terminationWorkflowHelper;
 
+    /** Paused learners (docs/ENROLMENT_BREAKS.md) are not re-granted access. Optional. */
+    @Autowired(required = false)
+    private vacademy.io.admin_core_service.features.enrolment_break.service.EnrolmentBreakGuard enrolmentBreakGuard;
+
     /** What one reconcile did, for the sync report. */
     public record PlanResult(int granted, int covered, int recorded, int revoked) {
         static final PlanResult NOTHING = new PlanResult(0, 0, 0, 0);
@@ -84,6 +88,9 @@ public class AccessPassEntitlementService {
             return PlanResult.NOTHING;
         }
         String userId = plan.getUserId();
+        if (enrolmentBreakGuard != null && enrolmentBreakGuard.isPlanPaused(plan.getId())) {
+            return PlanResult.NOTHING; // paused: the resume turns access back on, not the sync
+        }
 
         Map<String, AccessPassGrant> grantsByCourse = new HashMap<>();
         for (AccessPassGrant g : grantRepository.findByUserPlanId(plan.getId())) {
@@ -108,6 +115,9 @@ public class AccessPassEntitlementService {
         int revoked = 0;
 
         for (String courseId : includedPackageSessionIds) {
+            if (enrolmentBreakGuard != null && enrolmentBreakGuard.isCourseAccessPaused(userId, courseId)) {
+                continue; // a pause switched this course off on purpose; leave it until the resume
+            }
             AccessPassGrant existing = grantsByCourse.get(courseId);
             List<StudentSessionInstituteGroupMapping> live = liveByCourse.getOrDefault(courseId, List.of());
 

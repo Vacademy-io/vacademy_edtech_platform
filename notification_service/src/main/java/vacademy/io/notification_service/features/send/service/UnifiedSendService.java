@@ -1,5 +1,7 @@
 package vacademy.io.notification_service.features.send.service;
 
+import vacademy.io.notification_service.util.LogMask;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -218,6 +220,27 @@ public class UnifiedSendService implements SendChannelRouter {
         return INBOX_REPLY_SOURCE.equals(optsSource) ? INBOX_REPLY_SOURCE : PLAIN_LOG_SOURCE;
     }
 
+    /**
+     * Keys an EMAIL log row stores beside its subject: the template it was built from (the
+     * display-only logTemplateName, else the template this request looked up) and who sent it
+     * (originType / originId / originName, e.g. an admin resending from the student timeline).
+     */
+    static Map<String, String> emailLogMeta(UnifiedSendRequest request, UnifiedSendRequest.SendOptions opts) {
+        Map<String, String> meta = new HashMap<>();
+        String template = opts != null && opts.getLogTemplateName() != null && !opts.getLogTemplateName().isBlank()
+                ? opts.getLogTemplateName()
+                : request.getTemplateName();
+        if (template != null && !template.isBlank()) {
+            meta.put(EmailService.TEMPLATE_NAME_PAYLOAD_KEY, template);
+        }
+        if (opts != null && opts.getOriginType() != null && !opts.getOriginType().isBlank()) {
+            meta.put(MessageOriginPayload.TYPE_KEY, opts.getOriginType());
+            if (opts.getOriginId() != null) meta.put(MessageOriginPayload.ID_KEY, opts.getOriginId());
+            if (opts.getOriginName() != null) meta.put(MessageOriginPayload.NAME_KEY, opts.getOriginName());
+        }
+        return meta;
+    }
+
     private boolean isEngagementEngineSend(UnifiedSendRequest request) {
         return request.getOptions() != null
                 && ENGAGEMENT_ENGINE_SOURCE.equals(request.getOptions().getSource());
@@ -267,7 +290,7 @@ public class UnifiedSendService implements SendChannelRouter {
                                 "template.name", request.getTemplateName() != null ? request.getTemplateName() : "unknown",
                                 "institute.id", request.getInstituteId() != null ? request.getInstituteId() : "unknown",
                                 "user.id", r.getUserId() != null ? r.getUserId() : "unknown",
-                                "raw.phone", r.getPhone() != null ? r.getPhone() : "null",
+                                "raw.phone", LogMask.phone(r.getPhone()),
                                 "layer", "4-unified-send"
                         ));
                 continue;
@@ -278,7 +301,7 @@ public class UnifiedSendService implements SendChannelRouter {
                 try {
                     if (userAnnouncementPreferenceService.isWhatsAppUnsubscribed(
                             r.getUserId(), request.getInstituteId(), phone)) {
-                        log.info("Skipping WhatsApp to user {} ({}): unsubscribed", r.getUserId(), phone);
+                        log.info("Skipping WhatsApp to user {} ({}): unsubscribed", r.getUserId(), LogMask.phone(phone));
                         results.add(UnifiedSendResponse.RecipientResult.builder()
                                 .phone(phone).success(false)
                                 .status("SKIPPED_UNSUBSCRIBED")
@@ -575,6 +598,9 @@ public class UnifiedSendService implements SendChannelRouter {
         // through would double-count campaigns there. Only inbox replies need to be told apart.
         final String plainLogSource = plainLogSource(opts.getSource());
 
+        // Template name and sender for the log row, so the student timeline can show them.
+        final Map<String, String> emailLogMeta = emailLogMeta(request, opts);
+
         // Membership merge tags ({{practice_name}}, {{expiry_date_long}}, {{subscription_link}}, ...)
         // live in admin-core. Fetch them once for the whole batch, and only when the message
         // uses one, so ordinary sends never make the call.
@@ -643,7 +669,7 @@ public class UnifiedSendService implements SendChannelRouter {
                         if (userAnnouncementPreferenceService.isEmailSenderUnsubscribed(
                                 userId, request.getInstituteId(), emailType, fromForUnsubCheck)) {
                             log.info("Skipping email to user {} ({}): unsubscribed from {} ({})",
-                                    userId, email, fromForUnsubCheck, emailType);
+                                    userId, LogMask.email(email), fromForUnsubCheck, emailType);
                             results.add(UnifiedSendResponse.RecipientResult.builder()
                                     .email(email).success(false)
                                     .status("SKIPPED_UNSUBSCRIBED")
@@ -691,7 +717,7 @@ public class UnifiedSendService implements SendChannelRouter {
                     String logUserId = announcementSend && userId != null && !userId.contains("@") ? userId : null;
                     outcome = emailService.sendHtmlEmail(email, subject, plainLogSource, body,
                             request.getInstituteId(), opts.getFromEmail(), opts.getFromName(), emailType,
-                            correlationId, logUserId, finalCopyRecipients, finalCopyMode, billingClass);
+                            correlationId, logUserId, finalCopyRecipients, finalCopyMode, billingClass, emailLogMeta);
                 }
 
                 // Sending controls decide the final status: an over-cap send is queued (still a
@@ -717,12 +743,12 @@ public class UnifiedSendService implements SendChannelRouter {
 
                 // Retry-friendly: detect SES throttling errors
                 if (errorMsg.contains("Throttling") || errorMsg.contains("Rate") || errorMsg.contains("limit")) {
-                    log.warn("Email rate limit hit for {}: {} — marking as QUEUED for retry", email, errorMsg);
+                    log.warn("Email rate limit hit for {}: {} — marking as QUEUED for retry", LogMask.email(email), errorMsg);
                     results.add(UnifiedSendResponse.RecipientResult.builder()
                             .email(email).success(false)
                             .status("QUEUED").error("Rate limited - retry later").build());
                 } else {
-                    log.error("Email send failed for {}: {}", email, errorMsg);
+                    log.error("Email send failed for {}: {}", LogMask.email(email), errorMsg);
                     results.add(UnifiedSendResponse.RecipientResult.builder()
                             .email(email).success(false)
                             .status("FAILED").error(errorMsg).build());

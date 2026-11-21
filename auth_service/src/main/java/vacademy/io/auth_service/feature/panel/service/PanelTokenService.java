@@ -2,8 +2,6 @@ package vacademy.io.auth_service.feature.panel.service;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.io.Decoders;
-import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Service;
 import vacademy.io.common.auth.entity.User;
 import vacademy.io.common.auth.entity.UserPermission;
@@ -14,7 +12,6 @@ import vacademy.io.common.auth.service.JwtService;
 import vacademy.io.common.auth.service.UserRoleService;
 import vacademy.io.common.core.i18n.LocaleRegistry;
 
-import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -68,11 +65,7 @@ public class PanelTokenService {
                 .setSubject(user.getUsername())
                 .setIssuedAt(new Date(nowMs))
                 .setExpiration(new Date(nowMs + ACCESS_TOKEN_TTL_SECONDS * 1000L))
-                .signWith(signingKey(), SignatureAlgorithm.HS256)
+                .signWith(JwtService.signingKey(), SignatureAlgorithm.HS256)
                 .compact();
-    }
-
-    private static Key signingKey() {
-        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(JwtService.secretKey));
     }
 }

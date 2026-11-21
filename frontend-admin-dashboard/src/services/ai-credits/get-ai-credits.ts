@@ -380,6 +380,17 @@ export const perPageCredits = (row: ToolPricingRow | null | undefined): number |
     row?.unit_field === 'pages' ? Number(row.per_unit_credits) || 0 : null;
 
 /**
+ * Credits per typed answer on a copy-check row (params.typed_per_answer), or null when
+ * the row has no typed rate. An online attempt is billed per written answer, not per page.
+ */
+export const typedPerAnswerCredits = (row: ToolPricingRow | null | undefined): number | null => {
+    const rate = row?.params?.typed_per_answer;
+    if (rate == null || rate === '') return null;
+    const n = Number(rate);
+    return Number.isFinite(n) ? n : null;
+};
+
+/**
  * What a credit history row says. A charge's description ends with the tool and rate it used,
  * kept for reconciliation; a copy check from before descriptions named the copy reads as one.
  */
@@ -393,6 +404,12 @@ export const computeToolCredits = (
     params: ToolParams
 ): number | null => {
     if (!row) return null;
+    // A typed (online) attempt has no pages: written answers x typed_per_answer and
+    // nothing else, as ai_service's estimator prices answer_mode TYPED.
+    const typedRate = typedPerAnswerCredits(row);
+    if (String(params.answer_mode ?? '').toUpperCase() === 'TYPED' && typedRate != null) {
+        return Math.ceil(Math.max(0, Number(params.num_answers) || 0) * typedRate);
+    }
     const flatBase = Number(row.flat_base_credits) || 0;
     const perUnit = Number(row.per_unit_credits) || 0;
     const extra = row.params || {};

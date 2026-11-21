@@ -36,6 +36,7 @@ import { Route as LiveClassGuestIndexRouteImport } from './routes/live-class-gue
 import { Route as LearnerInvitationResponseIndexRouteImport } from './routes/learner-invitation-response/index'
 import { Route as KycCompleteIndexRouteImport } from './routes/kyc-complete/index'
 import { Route as InstituteSelectionIndexRouteImport } from './routes/institute-selection/index'
+import { Route as HomePreviewIndexRouteImport } from './routes/home-preview/index'
 import { Route as EnquiryResponseIndexRouteImport } from './routes/enquiry-response/index'
 import { Route as EngagementIndexRouteImport } from './routes/engagement/index'
 import { Route as DownloadsIndexRouteImport } from './routes/downloads/index'
@@ -104,6 +105,7 @@ import { Route as SubscriptionsUsernameCancelIndexRouteImport } from './routes/s
 import { Route as StudyLibraryLiveClassWaitingRoomIndexRouteImport } from './routes/study-library/live-class/waiting-room/index'
 import { Route as StudyLibraryLiveClassFeedbackIndexRouteImport } from './routes/study-library/live-class/feedback/index'
 import { Route as StudyLibraryLiveClassEmbedIndexRouteImport } from './routes/study-library/live-class/embed/index'
+import { Route as StudyLibraryLiveClassClassroomIndexRouteImport } from './routes/study-library/live-class/classroom/index'
 import { Route as StudyLibraryLiveClassUsernameIndexRouteImport } from './routes/study-library/live-class/$username/index'
 import { Route as StudyLibraryCoursesCourseDetailsIndexRouteImport } from './routes/study-library/courses/course-details/index'
 import { Route as PayInvoiceInvoiceIdIndexRouteImport } from './routes/pay/invoice/$invoiceId/index'
@@ -266,6 +268,11 @@ const KycCompleteIndexRoute = KycCompleteIndexRouteImport.update({
 const InstituteSelectionIndexRoute = InstituteSelectionIndexRouteImport.update({
   id: '/institute-selection/',
   path: '/institute-selection/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomePreviewIndexRoute = HomePreviewIndexRouteImport.update({
+  id: '/home-preview/',
+  path: '/home-preview/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EnquiryResponseIndexRoute = EnquiryResponseIndexRouteImport.update({
@@ -632,6 +639,12 @@ const StudyLibraryLiveClassEmbedIndexRoute =
     path: '/study-library/live-class/embed/',
     getParentRoute: () => rootRouteImport,
   } as any)
+const StudyLibraryLiveClassClassroomIndexRoute =
+  StudyLibraryLiveClassClassroomIndexRouteImport.update({
+    id: '/study-library/live-class/classroom/',
+    path: '/study-library/live-class/classroom/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const StudyLibraryLiveClassUsernameIndexRoute =
   StudyLibraryLiveClassUsernameIndexRouteImport.update({
     id: '/study-library/live-class/$username/',
@@ -820,6 +833,7 @@ export interface FileRoutesByFullPath {
   '/downloads': typeof DownloadsIndexRoute
   '/engagement': typeof EngagementIndexRoute
   '/enquiry-response': typeof EnquiryResponseIndexRoute
+  '/home-preview': typeof HomePreviewIndexRoute
   '/institute-selection': typeof InstituteSelectionIndexRoute
   '/kyc-complete': typeof KycCompleteIndexRoute
   '/learner-invitation-response': typeof LearnerInvitationResponseIndexRoute
@@ -902,6 +916,7 @@ export interface FileRoutesByFullPath {
   '/pay/invoice/$invoiceId': typeof PayInvoiceInvoiceIdIndexRoute
   '/study-library/courses/course-details': typeof StudyLibraryCoursesCourseDetailsIndexRoute
   '/study-library/live-class/$username': typeof StudyLibraryLiveClassUsernameIndexRoute
+  '/study-library/live-class/classroom': typeof StudyLibraryLiveClassClassroomIndexRoute
   '/study-library/live-class/embed': typeof StudyLibraryLiveClassEmbedIndexRoute
   '/study-library/live-class/feedback': typeof StudyLibraryLiveClassFeedbackIndexRoute
   '/study-library/live-class/waiting-room': typeof StudyLibraryLiveClassWaitingRoomIndexRoute
@@ -943,6 +958,7 @@ export interface FileRoutesByTo {
   '/downloads': typeof DownloadsIndexRoute
   '/engagement': typeof EngagementIndexRoute
   '/enquiry-response': typeof EnquiryResponseIndexRoute
+  '/home-preview': typeof HomePreviewIndexRoute
   '/institute-selection': typeof InstituteSelectionIndexRoute
   '/kyc-complete': typeof KycCompleteIndexRoute
   '/learner-invitation-response': typeof LearnerInvitationResponseIndexRoute
@@ -1024,6 +1040,7 @@ export interface FileRoutesByTo {
   '/pay/invoice/$invoiceId': typeof PayInvoiceInvoiceIdIndexRoute
   '/study-library/courses/course-details': typeof StudyLibraryCoursesCourseDetailsIndexRoute
   '/study-library/live-class/$username': typeof StudyLibraryLiveClassUsernameIndexRoute
+  '/study-library/live-class/classroom': typeof StudyLibraryLiveClassClassroomIndexRoute
   '/study-library/live-class/embed': typeof StudyLibraryLiveClassEmbedIndexRoute
   '/study-library/live-class/feedback': typeof StudyLibraryLiveClassFeedbackIndexRoute
   '/study-library/live-class/waiting-room': typeof StudyLibraryLiveClassWaitingRoomIndexRoute
@@ -1067,6 +1084,7 @@ export interface FileRoutesById {
   '/downloads/': typeof DownloadsIndexRoute
   '/engagement/': typeof EngagementIndexRoute
   '/enquiry-response/': typeof EnquiryResponseIndexRoute
+  '/home-preview/': typeof HomePreviewIndexRoute
   '/institute-selection/': typeof InstituteSelectionIndexRoute
   '/kyc-complete/': typeof KycCompleteIndexRoute
   '/learner-invitation-response/': typeof LearnerInvitationResponseIndexRoute
@@ -1149,6 +1167,7 @@ export interface FileRoutesById {
   '/pay/invoice/$invoiceId/': typeof PayInvoiceInvoiceIdIndexRoute
   '/study-library/courses/course-details/': typeof StudyLibraryCoursesCourseDetailsIndexRoute
   '/study-library/live-class/$username/': typeof StudyLibraryLiveClassUsernameIndexRoute
+  '/study-library/live-class/classroom/': typeof StudyLibraryLiveClassClassroomIndexRoute
   '/study-library/live-class/embed/': typeof StudyLibraryLiveClassEmbedIndexRoute
   '/study-library/live-class/feedback/': typeof StudyLibraryLiveClassFeedbackIndexRoute
   '/study-library/live-class/waiting-room/': typeof StudyLibraryLiveClassWaitingRoomIndexRoute
@@ -1193,6 +1212,7 @@ export interface FileRouteTypes {
     | '/downloads'
     | '/engagement'
     | '/enquiry-response'
+    | '/home-preview'
     | '/institute-selection'
     | '/kyc-complete'
     | '/learner-invitation-response'
@@ -1275,6 +1295,7 @@ export interface FileRouteTypes {
     | '/pay/invoice/$invoiceId'
     | '/study-library/courses/course-details'
     | '/study-library/live-class/$username'
+    | '/study-library/live-class/classroom'
     | '/study-library/live-class/embed'
     | '/study-library/live-class/feedback'
     | '/study-library/live-class/waiting-room'
@@ -1316,6 +1337,7 @@ export interface FileRouteTypes {
     | '/downloads'
     | '/engagement'
     | '/enquiry-response'
+    | '/home-preview'
     | '/institute-selection'
     | '/kyc-complete'
     | '/learner-invitation-response'
@@ -1397,6 +1419,7 @@ export interface FileRouteTypes {
     | '/pay/invoice/$invoiceId'
     | '/study-library/courses/course-details'
     | '/study-library/live-class/$username'
+    | '/study-library/live-class/classroom'
     | '/study-library/live-class/embed'
     | '/study-library/live-class/feedback'
     | '/study-library/live-class/waiting-room'
@@ -1439,6 +1462,7 @@ export interface FileRouteTypes {
     | '/downloads/'
     | '/engagement/'
     | '/enquiry-response/'
+    | '/home-preview/'
     | '/institute-selection/'
     | '/kyc-complete/'
     | '/learner-invitation-response/'
@@ -1521,6 +1545,7 @@ export interface FileRouteTypes {
     | '/pay/invoice/$invoiceId/'
     | '/study-library/courses/course-details/'
     | '/study-library/live-class/$username/'
+    | '/study-library/live-class/classroom/'
     | '/study-library/live-class/embed/'
     | '/study-library/live-class/feedback/'
     | '/study-library/live-class/waiting-room/'
@@ -1564,6 +1589,7 @@ export interface RootRouteChildren {
   DownloadsIndexRoute: typeof DownloadsIndexRoute
   EngagementIndexRoute: typeof EngagementIndexRoute
   EnquiryResponseIndexRoute: typeof EnquiryResponseIndexRoute
+  HomePreviewIndexRoute: typeof HomePreviewIndexRoute
   InstituteSelectionIndexRoute: typeof InstituteSelectionIndexRoute
   KycCompleteIndexRoute: typeof KycCompleteIndexRoute
   LearnerInvitationResponseIndexRoute: typeof LearnerInvitationResponseIndexRoute
@@ -1644,6 +1670,7 @@ export interface RootRouteChildren {
   PayInvoiceInvoiceIdIndexRoute: typeof PayInvoiceInvoiceIdIndexRoute
   StudyLibraryCoursesCourseDetailsIndexRoute: typeof StudyLibraryCoursesCourseDetailsIndexRoute
   StudyLibraryLiveClassUsernameIndexRoute: typeof StudyLibraryLiveClassUsernameIndexRoute
+  StudyLibraryLiveClassClassroomIndexRoute: typeof StudyLibraryLiveClassClassroomIndexRoute
   StudyLibraryLiveClassEmbedIndexRoute: typeof StudyLibraryLiveClassEmbedIndexRoute
   StudyLibraryLiveClassFeedbackIndexRoute: typeof StudyLibraryLiveClassFeedbackIndexRoute
   StudyLibraryLiveClassWaitingRoomIndexRoute: typeof StudyLibraryLiveClassWaitingRoomIndexRoute
@@ -1847,6 +1874,13 @@ declare module '@tanstack/react-router' {
       path: '/institute-selection'
       fullPath: '/institute-selection'
       preLoaderRoute: typeof InstituteSelectionIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home-preview/': {
+      id: '/home-preview/'
+      path: '/home-preview'
+      fullPath: '/home-preview'
+      preLoaderRoute: typeof HomePreviewIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/enquiry-response/': {
@@ -2325,6 +2359,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudyLibraryLiveClassEmbedIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/study-library/live-class/classroom/': {
+      id: '/study-library/live-class/classroom/'
+      path: '/study-library/live-class/classroom'
+      fullPath: '/study-library/live-class/classroom'
+      preLoaderRoute: typeof StudyLibraryLiveClassClassroomIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/study-library/live-class/$username/': {
       id: '/study-library/live-class/$username/'
       path: '/study-library/live-class/$username'
@@ -2580,6 +2621,7 @@ const rootRouteChildren: RootRouteChildren = {
   DownloadsIndexRoute: DownloadsIndexRoute,
   EngagementIndexRoute: EngagementIndexRoute,
   EnquiryResponseIndexRoute: EnquiryResponseIndexRoute,
+  HomePreviewIndexRoute: HomePreviewIndexRoute,
   InstituteSelectionIndexRoute: InstituteSelectionIndexRoute,
   KycCompleteIndexRoute: KycCompleteIndexRoute,
   LearnerInvitationResponseIndexRoute: LearnerInvitationResponseIndexRoute,
@@ -2667,6 +2709,8 @@ const rootRouteChildren: RootRouteChildren = {
     StudyLibraryCoursesCourseDetailsIndexRoute,
   StudyLibraryLiveClassUsernameIndexRoute:
     StudyLibraryLiveClassUsernameIndexRoute,
+  StudyLibraryLiveClassClassroomIndexRoute:
+    StudyLibraryLiveClassClassroomIndexRoute,
   StudyLibraryLiveClassEmbedIndexRoute: StudyLibraryLiveClassEmbedIndexRoute,
   StudyLibraryLiveClassFeedbackIndexRoute:
     StudyLibraryLiveClassFeedbackIndexRoute,

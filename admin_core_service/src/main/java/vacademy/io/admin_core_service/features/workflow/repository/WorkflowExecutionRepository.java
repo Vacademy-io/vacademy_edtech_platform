@@ -20,6 +20,10 @@ public interface WorkflowExecutionRepository extends JpaRepository<WorkflowExecu
 
         Optional<WorkflowExecution> findByIdempotencyKey(String idempotencyKey);
 
+        /** Institute of the workflow an execution belongs to (access checks on run logs). */
+        @Query("SELECT we.workflow.instituteId FROM WorkflowExecution we WHERE we.id = :executionId")
+        Optional<String> findInstituteIdByExecutionId(@Param("executionId") String executionId);
+
         boolean existsByIdempotencyKey(String idempotencyKey);
 
         /**

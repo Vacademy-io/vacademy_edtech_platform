@@ -86,17 +86,8 @@ public class AiReportPdfService {
         byte[] core = null;
         if (enabled && processed != null && !processed.isBlank()) {
             try {
-                model = dataService.load(userId, assessmentId, attemptId, instituteId,
-                        objectMapper.readTree(processed), branding(instituteId), detail);
-                // The profile this render uses (resolved, or chosen for a preview); the
-                // assessment's own report_options win over it.
-                ReportOptions opts = profileService.reportOptions(assessmentId, profile);
-                model = model.toBuilder()
-                        .hideQuestionWise(!opts.showQuestionWise())
-                        .hideYourAnswer(!opts.showYourAnswer())
-                        .hideCorrectAnswer(!opts.showCorrectAnswer())
-                        .hideExplanation(!opts.showExplanation())
-                        .build();
+                model = withReportOptions(dataService.load(userId, assessmentId, attemptId, instituteId,
+                        objectMapper.readTree(processed), branding(instituteId), detail), assessmentId, profile);
                 core = toPdf(builder.build(model));
             } catch (Exception e) {
                 if (normal == null) throw e;
@@ -122,6 +113,44 @@ public class AiReportPdfService {
                     profile.id(), attemptId, e);
             return core;
         }
+    }
+
+    /**
+     * The profile this render uses (resolved, or chosen for a preview); the assessment's own
+     * report_options win over it.
+     */
+    private AiReportModel withReportOptions(AiReportModel model, String assessmentId, ReportProfileService.Profile profile) {
+        ReportOptions opts = profileService.reportOptions(assessmentId, profile);
+        return model.toBuilder()
+                .hideQuestionWise(!opts.showQuestionWise())
+                .hideYourAnswer(!opts.showYourAnswer())
+                .hideCorrectAnswer(!opts.showCorrectAnswer())
+                .hideExplanation(!opts.showExplanation())
+                .build();
+    }
+
+    /**
+     * The AI report as an HTML page for the learner app's screen. It uses the same model, report
+     * options and builder sections as the PDF download, so the two always show the same thing.
+     * Profile pages (cover, certificate) stay PDF-only. Throws when it cannot render; the
+     * caller decides the fallback.
+     */
+    public String renderWebHtml(String userId, String assessmentId, String attemptId, String instituteId,
+                                StudentReportOverallDetailDto detail, String processedJson) throws Exception {
+        AiReportModel model = dataService.load(userId, assessmentId, attemptId, instituteId,
+                objectMapper.readTree(processedJson), branding(instituteId), detail);
+        return builder.buildWeb(withReportOptions(model, assessmentId, profileService.resolve(assessmentId, instituteId)));
+    }
+
+    /**
+     * The AI report as data for the learner app's on-screen report: the same model and report
+     * options as the PDF download, so the numbers on screen and in the file always agree.
+     */
+    public AiReportWebData renderWebData(String userId, String assessmentId, String attemptId, String instituteId,
+                                         StudentReportOverallDetailDto detail, String processedJson) throws Exception {
+        AiReportModel model = dataService.load(userId, assessmentId, attemptId, instituteId,
+                objectMapper.readTree(processedJson), branding(instituteId), detail);
+        return AiReportWebData.from(withReportOptions(model, assessmentId, profileService.resolve(assessmentId, instituteId)), builder);
     }
 
     // The model and profile of the last render on this thread, so notification variables can be

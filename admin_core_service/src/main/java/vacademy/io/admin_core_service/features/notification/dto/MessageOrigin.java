@@ -8,8 +8,14 @@ package vacademy.io.admin_core_service.features.notification.dto;
 public record MessageOrigin(String type, String id, String name) {
 
     public static final String WORKFLOW = "WORKFLOW";
+    /** An admin resent the message from the student's Communication tab. */
+    public static final String ADMIN_RESEND = "ADMIN_RESEND";
 
     public static MessageOrigin workflow(String workflowId, String workflowName) {
         return new MessageOrigin(WORKFLOW, workflowId, workflowName);
+    }
+
+    public static MessageOrigin adminResend(String adminUserId, String adminName) {
+        return new MessageOrigin(ADMIN_RESEND, adminUserId, adminName);
     }
 }

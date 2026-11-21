@@ -59,6 +59,44 @@ public class EvaluationAccessValidator {
         assertCallerOwnsAttempt(user, instituteId, process.getStudentAttempt());
     }
 
+    /** As {@link #requireProcessAccess}, returning the run's attempt (may be null for a bulk copy). */
+    public StudentAttempt requireProcessAttempt(CustomUserDetails user, String instituteId, String processId) {
+        AiEvaluationProcess process = aiEvaluationProcessRepository.findById(processId)
+                .orElseThrow(() -> new ResourceNotFoundException("Evaluation process not found: " + processId));
+        assertCallerOwnsAttempt(user, instituteId, process.getStudentAttempt());
+        return process.getStudentAttempt();
+    }
+
+    /**
+     * Every id is an attempt of this assessment (re-mark by participants): an assessment the
+     * caller owns must not be a door to another institute's attempts.
+     */
+    public void requireAttemptsOnAssessment(String assessmentId, java.util.Collection<String> attemptIds) {
+        if (attemptIds == null || attemptIds.isEmpty()) return;
+        java.util.List<String> wanted = new java.util.ArrayList<>(new HashSet<>(attemptIds));
+        Set<String> found = new HashSet<>();
+        for (int from = 0; from < wanted.size(); from += 1000) {
+            found.addAll(studentAttemptRepository.findIdsOnAssessment(assessmentId,
+                    wanted.subList(from, Math.min(wanted.size(), from + 1000))));
+        }
+        if (!found.containsAll(wanted)) {
+            log.warn("Blocked re-mark of attempts outside assessment {}", assessmentId);
+            throw new ForbiddenException("Some of these submissions do not belong to this assessment");
+        }
+    }
+
+    /** The ids (of those given) whose attempt belongs to the institute; others are dropped. */
+    public java.util.List<String> attemptsInInstitute(String instituteId, java.util.Collection<String> attemptIds) {
+        if (instituteId == null || attemptIds == null || attemptIds.isEmpty()) return java.util.List.of();
+        java.util.List<String> wanted = new java.util.ArrayList<>(new HashSet<>(attemptIds));
+        java.util.List<String> out = new java.util.ArrayList<>();
+        for (int from = 0; from < wanted.size(); from += 1000) {
+            out.addAll(studentAttemptRepository.findIdsInInstitute(instituteId,
+                    wanted.subList(from, Math.min(wanted.size(), from + 1000))));
+        }
+        return out;
+    }
+
     /**
      * Assert the caller is an authenticated member of {@code instituteId}. Used
      * for list endpoints where the resource is scoped by an institute filter in
@@ -135,13 +173,36 @@ public class EvaluationAccessValidator {
                 }
             }
         }
-        authorities.removeAll(COMMERCE_ROLE_NAMES);
-        boolean learner = authorities.stream().anyMatch(LEARNER_ROLE_NAMES::contains);
-        if (authorities.isEmpty()
-                || (learner && !authorities.contains("ADMIN") && !authorities.contains("EVALUATOR"))) {
+        if (!isStaff(authorities)) {
             log.warn("Blocked non-staff AI-evaluation mutation: user={}", user.getUserId());
             throw new ForbiddenException("Only institute staff can do this");
         }
+    }
+
+    /**
+     * The {@link #requireStaffRole} rule on an already upper-cased authority set: true for
+     * institute staff (any non-empty set other than commerce-only, or a learner role
+     * without ADMIN / EVALUATOR).
+     */
+    public static boolean isStaff(Set<String> upperCaseAuthorities) {
+        Set<String> authorities = new HashSet<>(upperCaseAuthorities);
+        authorities.removeAll(COMMERCE_ROLE_NAMES);
+        boolean learner = authorities.stream().anyMatch(LEARNER_ROLE_NAMES::contains);
+        return !authorities.isEmpty()
+                && !(learner && !authorities.contains("ADMIN") && !authorities.contains("EVALUATOR"));
+    }
+
+    /**
+     * Whether EVALUATOR is the caller's only staff role: nothing else in the set once the
+     * learner and commerce names (which never make a person course staff) are taken out.
+     */
+    public static boolean evaluatorOnly(Set<String> upperCaseAuthorities) {
+        if (!upperCaseAuthorities.contains("EVALUATOR")) return false;
+        Set<String> rest = new HashSet<>(upperCaseAuthorities);
+        rest.remove("EVALUATOR");
+        rest.removeAll(COMMERCE_ROLE_NAMES);
+        rest.removeAll(LEARNER_ROLE_NAMES);
+        return rest.isEmpty();
     }
 
     private void assertCallerOwnsAttempt(CustomUserDetails user, String instituteId, StudentAttempt attempt) {

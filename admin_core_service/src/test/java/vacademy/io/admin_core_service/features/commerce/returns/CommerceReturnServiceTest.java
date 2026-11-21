@@ -12,6 +12,10 @@ import vacademy.io.admin_core_service.features.commerce.document.dto.CreditNoteR
 import vacademy.io.admin_core_service.features.commerce.document.repository.CommerceCreditNoteRepository;
 import vacademy.io.admin_core_service.features.commerce.document.service.CommerceCreditNoteService;
 import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceOrderEvents;
+import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceReceiptService;
+import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceStaffOrderService;
+import vacademy.io.admin_core_service.features.commerce.order.entity.CommerceOrderTender;
+import vacademy.io.admin_core_service.features.commerce.order.repository.CommerceOrderTenderRepository;
 import vacademy.io.admin_core_service.features.commerce.order.entity.CommerceOrderLine;
 import vacademy.io.admin_core_service.features.commerce.order.repository.CommerceOrderLineRepository;
 import vacademy.io.admin_core_service.features.commerce.returns.dto.ReturnDtos;
@@ -55,6 +59,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -95,6 +100,9 @@ class CommerceReturnServiceTest {
     private final CommerceReturnSettings settings = mock(CommerceReturnSettings.class);
     private final CommerceShipmentService shipmentService = mock(CommerceShipmentService.class);
     private CommerceReturnDueService dueService;
+    private final CommerceOrderTenderRepository tenders = mock(CommerceOrderTenderRepository.class);
+    private final CommerceStaffOrderService staffOrders = mock(CommerceStaffOrderService.class);
+    private final List<CommerceOrderTender> savedTenders = new ArrayList<>();
     private CommerceReturnService service;
 
     private final List<CommerceOrderLine> lines = new ArrayList<>();
@@ -111,7 +119,18 @@ class CommerceReturnServiceTest {
         dueService = new CommerceReturnDueService(f.returnRepository, f.refundRepository, f.orderRepository, f.desk);
         ObjectProvider<CommerceShipmentService> shipmentProvider = mock(ObjectProvider.class);
         when(shipmentProvider.getObject()).thenReturn(shipmentService);
-        service = new CommerceReturnService(f.desk, f.service, dueService, f.returnRepository, lineRepository,
+        CommerceReceiptService receipts = new CommerceReceiptService(f.desk, f.orderRepository, tenders, staffOrders,
+                f.auditService, f.requestGuard, f.clock);
+        lenient().when(tenders.save(any(CommerceOrderTender.class))).thenAnswer(call -> {
+            savedTenders.add(call.getArgument(0));
+            return call.getArgument(0);
+        });
+        // Credit of received (or closed) returns not owed back, as the repository's SUM reads it.
+        lenient().when(f.orderRepository.sumReturnCreditNotRaised(ORDER)).thenAnswer(call -> f.returns.stream()
+                .filter(r -> List.of("RECEIVED", "CLOSED").contains(r.getStatus()))
+                .map(r -> r.getCreditTotal().subtract(r.getDueRaised()))
+                .reduce(BigDecimal.ZERO.setScale(2), BigDecimal::add));
+        service = new CommerceReturnService(f.desk, f.service, dueService, receipts, f.returnRepository, lineRepository,
                 f.refundRepository, f.orderRepository, orderLineRepository, locations, shipments, shipmentLines,
                 pieces, variants, ledger, creditNotes, creditNoteRepository, counter, settings, f.requestGuard,
                 f.accessGuard, f.auditService, f.events, shipmentProvider, f.clock, new ObjectMapper(),
@@ -278,20 +297,26 @@ class CommerceReturnServiceTest {
     }
 
     @Test
-    void r1_onlyADeliveredPaidOrderNotSoldAtTheCounterIsReturned() {
-        line("l1", 2, "1050.00");
+    void r1_onlyADeliveredPaidOrderIsReturnedACounterBillToo() {
+        line("l1", 3, "1050.00");
         f.order.setStatus("SHIPPED");
         assertTrue(assertThrows(ConflictException.class, () -> created(create("l1", 1))).getMessage()
                 .startsWith("ORDER_NOT_RETURNABLE"));
         f.order.setStatus("DELIVERED");
+        // WP-42: a bill of the billing counter is returned like any delivered order.
         f.order.setChannel("POS");
+        assertEquals("REQUESTED", created(create("l1", 1)).getStatus());
+        // A shopper's online order not paid yet is never returned.
+        f.order.setChannel("ONLINE");
+        f.order.setPaymentStatus("UNPAID");
+        f.order.setPaymentMethod("PREPAID");
         assertTrue(assertThrows(ConflictException.class, () -> created(create("l1", 1))).getMessage()
-                .startsWith("ORDER_NOT_RETURNABLE"));
+                .startsWith("ORDER_NOT_PAID"));
+        // A staff order left on credit is returned before it is paid (owner decision 11-19).
         f.order.setChannel("ADMIN");
         f.order.setPaymentStatus("PARTIALLY_PAID");
         f.order.setPaymentMethod("OFFLINE");
-        assertTrue(assertThrows(ConflictException.class, () -> created(create("l1", 1))).getMessage()
-                .startsWith("ORDER_NOT_PAID"));
+        assertEquals("REQUESTED", created(create("l1", 1)).getStatus());
         // A COD order waiting for its remittance may be returned.
         f.order.setPaymentMethod("COD");
         f.order.setPaymentStatus("UNPAID");
@@ -560,6 +585,140 @@ class CommerceReturnServiceTest {
         verify(f.desk).authorize(any(), eq(INST), eq("loc-2"), any());
     }
 
+    // ------------------------------------------------------------------ returns before payment (owner 11-19)
+
+    /** A staff order of 1,000.00 left on credit (300.00 + 700.00), {@code paid} received so far. */
+    private void creditOrder(String paid) {
+        line("a", 1, "300.00");
+        line("b", 1, "700.00");
+        f.order.setChannel("ADMIN");
+        f.order.setPaymentMethod("OFFLINE");
+        f.order.setTotal(new BigDecimal("1000.00"));
+        f.order.setAmountPaid(new BigDecimal(paid));
+        f.order.setPaymentStatus(new BigDecimal(paid).signum() == 0 ? "UNPAID" : "PARTIALLY_PAID");
+    }
+
+    private ReturnDtos.ReturnView returned(String... lineIds) {
+        List<ReturnDtos.LineRequest> asked = new ArrayList<>();
+        List<ReturnDtos.ReceiveLine> named = new ArrayList<>();
+        for (String id : lineIds) {
+            asked.add(ReturnDtos.LineRequest.builder().orderLineId(id).quantity(1).build());
+            named.add(named(id, "RESALEABLE", 1));
+        }
+        String id = created(ReturnDtos.CreateReturnRequest.builder().clientRequestId("return-key-" + (f.returns.size()
+                + 1)).orderId(ORDER).reason("DEFECTIVE").lines(asked).approveNow(true)).getId();
+        return service.receive(RefundFixture.manager(), INST, id, ReturnDtos.ReceiveRequest.builder()
+                .clientRequestId("receive-key-" + id).fromStatus("APPROVED").lines(named).build());
+    }
+
+    private BigDecimal pendingSaved() {
+        return savedTenders.stream().filter(t -> "PENDING".equals(t.getStatus()) && "CREDIT".equals(t.getMode()))
+                .map(CommerceOrderTender::getAmount).reduce(BigDecimal.ZERO.setScale(2), BigDecimal::add);
+    }
+
+    @Test
+    void credit_aReturnBeforePaymentLowersWhatIsOwedAndNothingIsDueBack() {
+        creditOrder("0.00");
+        ReturnDtos.ReturnView view = returned("a");
+
+        assertEquals(0, new BigDecimal("300.00").compareTo(view.getCreditTotal()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(view.getDueRaised()), "no money was paid, none goes back");
+        assertEquals(0, BigDecimal.ZERO.compareTo(f.order.getRefundDue()));
+        assertEquals("CLOSED", view.getStatus(), "nothing to pay back: closed at once");
+        verify(f.desk).voidPendingTenders(f.order);
+        assertEquals(1, savedTenders.size());
+        assertEquals(0, new BigDecimal("700.00").compareTo(pendingSaved()), "the credit left = what is owed");
+        assertEquals("UNPAID", f.order.getPaymentStatus());
+        verify(staffOrders, never()).settlePaid(any(), any());
+        assertEquals(0, new BigDecimal("700.00").compareTo(CommerceReceiptService.amountDue(f.order.getTotal(), f.order.getAmountPaid(),
+                f.orderRepository.sumReturnCreditNotRaised(ORDER))), "Record receipt asks 700.00");
+        // The stock and the credit note are as for any return.
+        assertEquals(1, posted.size());
+        verify(creditNotes).issue(eq(INST), any(), any());
+        ArgumentCaptor<String> detail = ArgumentCaptor.forClass(String.class);
+        verify(f.auditService).record(eq(INST), any(), any(), eq("RETURN_RECEIVED"), eq("RETURN"), any(), any(),
+                detail.capture(), any());
+        assertTrue(detail.getValue().contains("\"credit_on_due\":\"300.00\""), detail.getValue());
+        assertTrue(detail.getValue().contains("\"amount_due\":\"700.00\""), detail.getValue());
+    }
+
+    @Test
+    void credit_aReturnAboveWhatIsOwedSettlesTheOrderAndOnlyTheRestIsDueBack() {
+        creditOrder("400.00");
+        ReturnDtos.ReturnView view = returned("b");
+
+        assertEquals(0, new BigDecimal("700.00").compareTo(view.getCreditTotal()));
+        assertEquals(0, new BigDecimal("100.00").compareTo(view.getDueRaised()), "700 - the 600 owed");
+        assertEquals(0, new BigDecimal("100.00").compareTo(f.order.getRefundDue()));
+        assertEquals("RECEIVED", view.getStatus(), "it waits for its refund of 100.00");
+        assertEquals("PAID", f.order.getPaymentStatus(), "nothing is left to collect");
+        verify(staffOrders).settlePaid(eq(f.order), anyList());
+        assertTrue(savedTenders.isEmpty(), "no credit left");
+        verify(f.desk).voidPendingTenders(f.order);
+    }
+
+    @Test
+    void credit_thePreviewSplitsTheEstimateIntoWhatComesOffTheDueAndWhatGoesBack() {
+        creditOrder("400.00");
+        ReturnDtos.ReturnPreview part = service.preview(RefundFixture.manager(), INST, create("b", 1).build());
+        assertEquals(0, new BigDecimal("700.00").compareTo(part.getCreditEstimate()));
+        assertEquals(0, new BigDecimal("600.00").compareTo(part.getCreditToDue()), "600 still owed");
+        assertEquals(0, new BigDecimal("100.00").compareTo(part.getRefundAmount()));
+        ReturnDtos.ReturnPreview small = service.preview(RefundFixture.manager(), INST, create("a", 1).build());
+        assertEquals(0, new BigDecimal("300.00").compareTo(small.getCreditToDue()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(small.getRefundAmount()));
+        // A paid order: all of it goes back.
+        f.order.setAmountPaid(new BigDecimal("1000.00"));
+        f.order.setPaymentStatus("PAID");
+        ReturnDtos.ReturnPreview paid = service.preview(RefundFixture.manager(), INST, create("b", 1).build());
+        assertEquals(0, BigDecimal.ZERO.compareTo(paid.getCreditToDue()));
+        assertEquals(0, new BigDecimal("700.00").compareTo(paid.getRefundAmount()));
+    }
+
+    @Test
+    void credit_aFullReturnOfAnUnpaidOrderSettlesItWithNothingDueBack() {
+        creditOrder("0.00");
+        ReturnDtos.ReturnView view = returned("a", "b");
+
+        assertEquals(0, new BigDecimal("1000.00").compareTo(view.getCreditTotal()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(view.getDueRaised()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(f.order.getRefundDue()), "no refund");
+        assertEquals("CLOSED", view.getStatus());
+        assertEquals("PAID", f.order.getPaymentStatus(), "settled: out of the dues queue");
+        assertTrue(savedTenders.isEmpty());
+        verify(staffOrders).settlePaid(eq(f.order), anyList());
+        verify(creditNotes).issue(eq(INST), any(), any());
+    }
+
+    @Test
+    void credit_aSecondReturnCountsTheCreditTheFirstAlreadyTookOffTheDue() {
+        creditOrder("0.00");
+        returned("a");
+        assertEquals("UNPAID", f.order.getPaymentStatus());
+        returned("b");
+        assertEquals("PAID", f.order.getPaymentStatus(), "300 + 700 returned: nothing owed");
+        assertEquals(0, BigDecimal.ZERO.compareTo(f.order.getRefundDue()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(f.returns.get(1).getDueRaised()));
+    }
+
+    @Test
+    void credit_theCounterAndOnlineOrdersKeepTheirRules() {
+        creditOrder("0.00");
+        // The billing counter takes back a bill once it is paid, whatever the order.
+        ConflictException counter = assertThrows(ConflictException.class, () -> service.counterReturnInside(INST,
+                counterBody("a", 1), LOC, "RET-000011", "hash-4", "cashier-1", List.of(named("a", "RESALEABLE", 1))));
+        assertTrue(counter.getMessage().startsWith("ORDER_NOT_PAID"), counter.getMessage());
+        assertTrue(assertThrows(ConflictException.class, () -> service.previewForCounter(INST, counterBody("a", 1)))
+                .getMessage().startsWith("ORDER_NOT_PAID"));
+        // A paid staff order: the whole credit is due back, nothing about the due changes.
+        f.order.setAmountPaid(new BigDecimal("1000.00"));
+        f.order.setPaymentStatus("PAID");
+        ReturnDtos.ReturnView paid = returned("a");
+        assertEquals(0, new BigDecimal("300.00").compareTo(paid.getDueRaised()));
+        verify(f.desk, never()).voidPendingTenders(any());
+        verify(staffOrders, never()).settlePaid(any(), any());
+    }
+
     // ------------------------------------------------------------------ money and R5
 
     @Test
@@ -628,5 +787,163 @@ class CommerceReturnServiceTest {
         lenient().when(row.getStatus()).thenReturn(status);
         lenient().when(row.getCode()).thenReturn("CODE-" + id);
         return row;
+    }
+
+    // ------------------------------------------------------------------ buyer messages (WP-33)
+
+    private java.util.List<String> refsOf(String type) {
+        java.util.List<String> refs = new java.util.ArrayList<>();
+        for (int i = 0; i < f.eventTypes.size(); i++) {
+            if (type.equals(f.eventTypes.get(i))) {
+                refs.add(f.eventRefs.get(i));
+            }
+        }
+        return refs;
+    }
+
+    @Test
+    void anApprovedReturnTellsTheBuyerWithTheReturnIdAsTheRef() {
+        line("l1", 2, "1050.00");
+        ReturnDtos.ReturnView now = created(create("l1", 1).approveNow(true));
+        assertEquals(java.util.List.of(now.getId()), refsOf(CommerceOrderEvents.RETURN_APPROVED));
+
+        String later = created(create("l1", 1)).getId();
+        assertEquals(1, refsOf(CommerceOrderEvents.RETURN_APPROVED).size(), "a requested return tells nothing yet");
+        service.approve(RefundFixture.manager(), INST, later, ReturnDtos.ApproveRequest.builder()
+                .clientRequestId("approve-key-9").fromStatus("REQUESTED").build());
+        assertEquals(java.util.List.of(now.getId(), later), refsOf(CommerceOrderEvents.RETURN_APPROVED));
+
+        org.mockito.ArgumentCaptor<CommerceOrderEvents.OrderEvent> published = org.mockito.ArgumentCaptor.forClass(
+                CommerceOrderEvents.OrderEvent.class);
+        verify(f.events, org.mockito.Mockito.atLeast(0)).afterCommit(published.capture());
+        java.util.List<String> publishedRefs = published.getAllValues().stream()
+                .filter(e -> CommerceOrderEvents.RETURN_APPROVED.equals(e.type()))
+                .map(CommerceOrderEvents.OrderEvent::refId).toList();
+        assertEquals(java.util.List.of(now.getId(), later), publishedRefs);
+    }
+
+    // ------------------------------------------------------------------ WP-42: counter bills and counter returns
+
+    /** A counter bill: channel POS, delivered at the counter, no parcel. */
+    private void counterBill() {
+        f.order.setChannel("POS");
+        lenient().when(shipments.findByOrderIdOrderByCreatedAtAsc(ORDER)).thenReturn(List.of());
+    }
+
+    private ReturnDtos.CreateReturnRequest counterBody(String lineId, int quantity) {
+        return ReturnDtos.CreateReturnRequest.builder().clientRequestId("pos-return-key-1").orderId(ORDER)
+                .reason("DEFECTIVE").requestedVia("PHONE").approveNow(false)
+                .lines(List.of(ReturnDtos.LineRequest.builder().orderLineId(lineId).quantity(quantity).build()))
+                .build();
+    }
+
+    @Test
+    void pos_aCounterReturnIsCreatedApprovedAndReceivedInOneCallAtTheCounter() {
+        counterBill();
+        line("l1", 3, "1500.00");
+        CommerceReturnService.CounterReturn made = service.counterReturnInside(INST, counterBody("l1", 2), "loc-2",
+                "RET-000007", "hash-1", "cashier-1",
+                List.of(named("l1", "RESALEABLE", 1), named("l1", "DAMAGED", 1)));
+
+        CommerceReturn ret = f.returns.get(0);
+        assertEquals(ret.getId(), made.returnId());
+        assertEquals("RET-000007", made.returnNumber());
+        assertEquals("cn-1", made.creditNoteId());
+        assertEquals(0, new BigDecimal("1000.00").compareTo(made.credit()));
+        assertEquals("RECEIVED", ret.getStatus());
+        assertEquals("COUNTER", ret.getRequestedVia(), "requested_via is the counter whatever the body said");
+        assertEquals("loc-2", ret.getLocationId(), "the goods come back at the counter's location");
+        assertEquals("cashier-1", ret.getApprovedBy());
+        assertEquals("cashier-1", ret.getReceivedBy());
+        assertEquals("hash-1", ret.getRequestHash());
+        assertEquals("pos-return-key-1", ret.getClientRequestId());
+        assertEquals(2, lines.get(0).getQtyReturned());
+        assertEquals(0, new BigDecimal("1000.00").compareTo(f.order.getRefundDue()));
+        verify(f.requestGuard, never()).run(any(), any(), any());
+        verify(f.desk, never()).authorize(any(), anyString(), any(), any());
+        // G4: the buyer stands at the counter: no "return approved" message.
+        assertFalse(f.eventTypes.contains(CommerceOrderEvents.RETURN_APPROVED), f.eventTypes.toString());
+        assertNull(ret.getPosSessionId(), "no session given, none stamped");
+        assertEquals(2, posted.size());
+        assertEquals("loc-2", posted.get(0).getLocationId());
+    }
+
+    @Test
+    void pos_aCounterReturnIsStampedWithItsSessionAndSendsNoApprovedMessage() {
+        counterBill();
+        line("l1", 3, "1500.00");
+        service.counterReturnInside(INST, counterBody("l1", 1), "loc-2", "RET-000010", "hash-9", "cashier-1",
+                List.of(named("l1", "RESALEABLE", 1)), "session-7");
+        CommerceReturn ret = f.returns.get(0);
+        assertEquals("session-7", ret.getPosSessionId(), "the till knows the return was taken in this session");
+        assertEquals("RECEIVED", ret.getStatus());
+        assertFalse(f.eventTypes.contains(CommerceOrderEvents.RETURN_APPROVED), f.eventTypes.toString());
+    }
+
+    @Test
+    void pos_theReturnOfACounterBillCostsItsLinesCostPerUnit() {
+        counterBill();
+        CommerceOrderLine l1 = line("l1", 3, "1500.00");
+        l1.setCostTotal(new BigDecimal("100.00"));
+        service.counterReturnInside(INST, counterBody("l1", 1), LOC, "RET-000008", "hash-2", "cashier-1",
+                List.of(named("l1", "RESALEABLE", 1)));
+        StockPosting back = posted.get(0);
+        assertEquals("RETURN", back.getType().name());
+        assertEquals(1, back.getQuantityDelta());
+        assertEquals(new BigDecimal("33.3333"), back.getUnitCost(), "cost_total / quantity, 4 decimals");
+        assertEquals(StockPosting.CostTreatment.KNOWN, back.getCostTreatment());
+    }
+
+    @Test
+    void pos_aCounterBillWithoutACostLetsTheLedgerTakeItsAverage() {
+        counterBill();
+        CommerceOrderLine l1 = line("l1", 2, "1000.00");
+        l1.setCostTotal(null);
+        service.counterReturnInside(INST, counterBody("l1", 1), LOC, "RET-000009", "hash-3", "cashier-1",
+                List.of(named("l1", "RESALEABLE", 1)));
+        assertNull(posted.get(0).getUnitCost());
+        assertNull(posted.get(0).getCostTreatment());
+    }
+
+    @Test
+    void pos_theCounterPreviewIsTheDeskPreviewWithoutTheAccessCheck() {
+        counterBill();
+        line("l1", 2, "1050.00");
+        ReturnDtos.ReturnPreview preview = service.previewForCounter(INST, counterBody("l1", 1));
+        assertEquals(1, preview.getLines().size());
+        assertEquals(2, preview.getLines().get(0).getReturnableQuantity());
+        assertEquals(0, new BigDecimal("525.00").compareTo(preview.getCreditEstimate()));
+        verify(f.desk, never()).authorize(any(), anyString(), any(), any());
+    }
+
+    /** A measured line counts as one item in a return's summary (2.5 m of cloth + 2 bottles = 3). */
+    @Test
+    void aMeasuredLineCountsAsOneItemInTheReturnSummary() {
+        CommerceReturn ret = new CommerceReturn();
+        ret.setId("ret-9");
+        ret.setOrderId(ORDER);
+        CommerceReturnLine cloth = new CommerceReturnLine();
+        cloth.setReturnId("ret-9");
+        cloth.setOrderLineId("ol-cloth");
+        cloth.setQuantity(25);
+        CommerceReturnLine bottles = new CommerceReturnLine();
+        bottles.setReturnId("ret-9");
+        bottles.setOrderLineId("ol-bottle");
+        bottles.setQuantity(2);
+        when(lineRepository.findByReturnIdIn(anyList())).thenReturn(List.of(cloth, bottles));
+        CommerceOrderLine clothLine = new CommerceOrderLine();
+        clothLine.setId("ol-cloth");
+        clothLine.setQtyScale(10);
+        CommerceOrderLine bottleLine = new CommerceOrderLine();
+        bottleLine.setId("ol-bottle");
+        bottleLine.setQtyScale(1);
+        when(orderLineRepository.findAllById(any())).thenReturn(List.of(clothLine, bottleLine));
+
+        List<ReturnDtos.ReturnSummary> summaries = service.summaries(List.of(ret));
+
+        assertEquals(3, summaries.get(0).getUnits());
+        // An order line that cannot be read counts as before (its quantity).
+        when(orderLineRepository.findAllById(any())).thenReturn(List.of());
+        assertEquals(27, service.summaries(List.of(ret)).get(0).getUnits());
     }
 }

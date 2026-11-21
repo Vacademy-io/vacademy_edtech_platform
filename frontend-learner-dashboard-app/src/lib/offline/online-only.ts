@@ -44,7 +44,10 @@ export function isOnlineOnlySlide(slide: Pick<Slide, "source_type" | "video_slid
       docType === "CODE" ||
       docType === "JUPYTER" ||
       docType === "SCRATCH" ||
-      docType === "DISCUSSION"
+      docType === "DISCUSSION" ||
+      // Votes and scores are kept on the server.
+      docType === "POLL" ||
+      docType === "GAME"
     );
   }
 

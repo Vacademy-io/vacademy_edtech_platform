@@ -13,6 +13,7 @@ import json
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -122,8 +123,12 @@ THREE = [lead_row("r-1", "u-1", owner_id=None), lead_row("r-2", "u-2", owner_id=
 def test_spec_and_action_spec():
     spec = ASSISTANT_TOOLS["crm_team_edit"]
     assert spec is team.TEAM_TOOLS["crm_team_edit"]
-    assert spec.mcp_only and spec.mode == "WRITE" and spec.setting_key == "crm_team_edits"
+    assert not spec.mcp_only and spec.card_bridge and spec.opt_in and spec.topic == "crm"
+    assert spec.mode == "WRITE" and spec.setting_key == "crm_team_edits"
     assert spec.module_feature == "crm.leads" and spec.default_enabled is False and spec.default_roles is None
+    assert set(spec.schema["function"]["parameters"]["properties"]["action"]["enum"]) == set(team.ACTIONS)
+    assert "confirm_token" not in spec.schema["function"]["parameters"]["properties"]
+    spec = SimpleNamespace(schema=spec.schema_for(via_mcp=True))   # the MCP wording from here on
     params = spec.schema["function"]["parameters"]
     assert set(team.ACTION_SPEC) == set(params["properties"]["action"]["enum"]) == set(team.ACTIONS)
     assert "user_id" not in params["properties"] and "institute_id" not in params["properties"]

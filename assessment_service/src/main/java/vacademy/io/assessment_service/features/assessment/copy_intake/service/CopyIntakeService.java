@@ -141,6 +141,19 @@ public class CopyIntakeService {
     @Transactional
     public AiCopyIntakeBatch start(CustomUserDetails user, String assessmentId, String instituteId,
                                    CopyIntakeDtos.StartRequest request) {
+        return start(user, assessmentId, instituteId, request, AiCopyIntakeBatch.SOURCE_UPLOAD);
+    }
+
+    /**
+     * Start a batch from copies that came from {@code source} (UPLOAD from the
+     * dashboard, SCAN from the scan station). A batch whose copies are not mapped
+     * to students is CHECK_ONLY whatever its source, so check-only behaviour stays
+     * keyed on map_students alone. Carries its own transaction: the scan station
+     * calls it through the proxy, and the 4-arg overload above calls it on itself.
+     */
+    @Transactional
+    public AiCopyIntakeBatch start(CustomUserDetails user, String assessmentId, String instituteId,
+                                   CopyIntakeDtos.StartRequest request, String source) {
         if (request == null || request.getFiles() == null || request.getFiles().isEmpty()) {
             throw new VacademyException("Upload at least one copy");
         }
@@ -190,7 +203,8 @@ public class CopyIntakeService {
                 .createdByEmail(creatorEmail(user))
                 .preferredModel(request.getPreferredModel())
                 .status(AiCopyIntakeBatch.RUNNING)
-                .source(checkOnly ? AiCopyIntakeBatch.SOURCE_CHECK_ONLY : AiCopyIntakeBatch.SOURCE_UPLOAD)
+                .source(checkOnly ? AiCopyIntakeBatch.SOURCE_CHECK_ONLY
+                        : (StringUtils.hasText(source) ? source : AiCopyIntakeBatch.SOURCE_UPLOAD))
                 .totalItems(usable.size())
                 .notifyEmail(request.getNotifyEmail() == null || request.getNotifyEmail())
                 .build());

@@ -302,6 +302,28 @@ class ImageRenditionServiceTest {
     }
 
     @Test
+    void aLearnerHomeImageOfTheInstituteIsTaken() throws Exception {
+        file("inst-1/LEARNER_HOME_MEDIA/banner.jpg", ImageRenditionService.LEARNER_HOME_MEDIA_SOURCE, "inst-1", PUBLIC,
+                TestImages.jpeg(800, 400));
+
+        assertEquals(3, service.generate(FILE_ID, List.of("inst-1")).getRenditions().size());
+    }
+
+    @Test
+    void aLearnerHomeImageOfAnotherInstituteIsRefused() {
+        file("inst-2/LEARNER_HOME_MEDIA/banner.jpg", ImageRenditionService.LEARNER_HOME_MEDIA_SOURCE, "inst-2", MAIN,
+                TestImages.jpeg(800, 400));
+        assertEquals(RenditionError.NOT_PUBLIC,
+                assertThrows(RenditionException.class, () -> service.generate(FILE_ID, List.of("inst-1"))).getError());
+
+        // Sources outside the allow-list stay refused even for the right owner.
+        file("inst-1/CATALOGUE_IMAGES/hero.jpg", "CATALOGUE_IMAGES", "inst-1", MAIN, TestImages.jpeg(800, 400));
+        assertEquals(RenditionError.NOT_PUBLIC,
+                assertThrows(RenditionException.class, () -> service.generate(FILE_ID, List.of("inst-1"))).getError());
+        verify(s3, never()).getObject(anyString(), anyString());
+    }
+
+    @Test
     void aFileUploadedForTheProductOfTheGalleryRowIsTaken() throws Exception {
         file(SOURCE_KEY, ImageRenditionService.PRODUCT_MEDIA_SOURCE, "product-1", PUBLIC, TestImages.jpeg(640, 640));
 

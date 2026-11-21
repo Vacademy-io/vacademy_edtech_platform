@@ -329,7 +329,13 @@ public class SlideService {
         slideRepository.save(slide);
 
         if (SlideStatus.PUBLISHED.name().equals(status)) {
-            slideNotificationService.sendNotificationForAddingSlide(instituteId, chapterToSlides.getChapter(), slide);
+            // Same guard as notifyIfPublished: an email failure must not fail (or roll back) the status change.
+            try {
+                slideNotificationService.sendNotificationForAddingSlide(instituteId, chapterToSlides.getChapter(), slide);
+            } catch (Exception e) {
+                log.error("Slide status set to PUBLISHED but 'notify learners' email failed for slide {} in chapter {}: {}",
+                        slideId, chapterId, e.getMessage(), e);
+            }
         }
 
         // Offline plan Part A2 bump hook: PUBLISHED/DELETED transitions change
@@ -1120,6 +1126,7 @@ public class SlideService {
             newQuestionSlide.setSourceType(questionSlide.getSourceType());
             // CBE_RESPONSE: the solution and marking scheme live apart from auto_evaluation_json.
             newQuestionSlide.setEvaluationSecretJson(questionSlide.getEvaluationSecretJson());
+            newQuestionSlide.setShowAnswerAfterSubmit(questionSlide.getShowAnswerAfterSubmit());
             // The question text and its options used to be dropped, so a copied
             // QUESTION slide opened blank with no answers to pick from. Same
             // treatment the QUIZ path already gives its questions.
@@ -1260,6 +1267,8 @@ public class SlideService {
                     newQ.setQuestionType(oldQ.getQuestionType());
                     newQ.setAccessLevel(oldQ.getAccessLevel());
                     newQ.setAutoEvaluationJson(oldQ.getAutoEvaluationJson());
+                    // CBE_RESPONSE: the solution and marking scheme live apart from auto_evaluation_json.
+                    newQ.setEvaluationSecretJson(oldQ.getEvaluationSecretJson());
                     newQ.setEvaluationType(oldQ.getEvaluationType());
                     newQ.setQuestionOrder(oldQ.getQuestionOrder());
                     newQ.setCanSkip(oldQ.getCanSkip());

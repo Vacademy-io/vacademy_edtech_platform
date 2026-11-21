@@ -8,7 +8,7 @@ icon: "triangle-exclamation"
 
 **Most common, in plain words**
 
-- **`tool_not_permitted`**: that area or edit is off for your role. An admin must turn it on in **Settings → MCP Server**.
+- **`tool_not_permitted`**: that area or edit is off for your role. An admin must turn it on in **Settings → AI access**.
 - **`confirm_token_expired`**: the preview is too old. Ask for a new preview.
 - **`out_of_scope`**: not your lead. It is outside the leads your admin portal shows you.
 - **`rate_limited`**: you reached an hourly limit for calls or messages, or too many calls from your institute are running at once. Wait the time it gives, then try again.
@@ -42,7 +42,7 @@ Temporary trouble is different: the codes marked **Retry** below mean the server
 
 | Message or code | What it means | What to do |
 |---|---|---|
-| "The MCP server is not enabled for this institute." | The server is switched off. | An admin turns it on in **Settings → MCP Server**. |
+| "The MCP server is not enabled for this institute." | The server is switched off. | An admin turns it on in **Settings → AI access**. |
 | `settings_unavailable` **Retry** | The server could not read your institute's MCP settings just now. Your access has not been switched off. | Wait the time it gives, then repeat the call. No admin action is needed. |
 | `auth_unavailable` **Retry** | The server could not check your connection's session just now. | Wait the time it gives, then repeat the call. Don't reconnect. |
 | `server_busy` **Retry** | The server is at capacity right now. This isn't caused by your usage, and it can happen at any level of use. | Wait the time it gives, then repeat the call. |
@@ -50,8 +50,8 @@ Temporary trouble is different: the codes marked **Retry** below mean the server
 | "This user's role is not allowed to connect to the MCP server." | None of your roles is in **Who can connect**. | An admin adds your role. See [Roles](/mcp-server/settings/roles). |
 | "The MCP server is available to institute staff only." | The account only has learner or parent roles. | Use a staff account. Learners and parents can never connect. |
 | "This connection's session has expired." / "rejected this connection's session" | Your admin portal sign-in behind the connection could not be renewed. | Reconnect in your AI app and approve again. |
-| "This token was issued for a different server URL." | The connection was made with another server URL. | Remove the connector and add it again with the URL from **Settings → MCP Server**. |
-| `tool_not_permitted` | The tool's area or edit is off for your role. | An admin turns it on in **Settings → MCP Server**. Don't retry until then. The message may mention Assistant settings; for AI apps, the switch is in **Settings → MCP Server**. |
+| "This token was issued for a different server URL." | The connection was made with another server URL. | Remove the connector and add it again with the URL from **Settings → AI access**. |
+| `tool_not_permitted` | The tool's area or edit is off for your role. | An admin turns it on in **Settings → AI access**. Don't retry until then. For AI apps, the switch is in the **AI apps** column of **Settings → AI access**. |
 | `tool_not_available` | This tool isn't offered over the MCP server. | Nothing to fix. Ask for something else, or use your admin portal. |
 | `module_not_enabled` **CRM** | Your institute's plan doesn't include the CRM, or this part of it. | Ask your institute's owner, or your provider, about adding it. |
 | `admin_only` **CRM** | Only an institute admin can do this, for example start an AI calling campaign. | Ask an admin. |
@@ -93,7 +93,7 @@ See [Confirmations](/mcp-server/usage/confirmations) for how these work.
 | `rate_limited`, `limit_type: concurrent_calls` | Too many calls from your institute are running at once. That can include colleagues' calls and calls your AI app stopped waiting for. The call did not run. | Wait `retry_after_s` seconds, then repeat the same call. Ask your AI app to run fewer tools at a time. |
 | `rate_limited`, `limit_type: report_running` **CRM** | This institute's admissions report is already running. The call did not run. | Wait `retry_after_s` seconds, then try again. |
 | HTTP 429 with `Retry-After` | The server is at capacity, so it refused the request before reading it. The body is a JSON-RPC error with `error: server_busy`. It is not a sign-in problem. | Wait the time it gives, then repeat the request. Don't reconnect. |
-| HTTP 503 with `Retry-After`, `error: temporarily_unavailable` | The server couldn't complete a sign-in, token or revocation request just now. It says nothing about your connection. Loading or saving **Settings → MCP Server** can also get HTTP 503 with `Retry-After`, and nothing was changed. | Wait the time it gives, then repeat the same request. Don't reconnect. |
+| HTTP 503 with `Retry-After`, `error: temporarily_unavailable` | The server couldn't complete a sign-in, token or revocation request just now. It says nothing about your connection. Loading or saving **Settings → AI access** can also get HTTP 503 with `Retry-After`, and nothing was changed. | Wait the time it gives, then repeat the same request. Don't reconnect. |
 | `too_large` | Files or images sent to the tool are too big. | Send fewer or smaller files. |
 | `too_many_courses`, `too_many_learners`, `too_many_items`, `too_many_nodes`, `too_many_slides` | Too many items in one request. The message says the limit. | Split the request into smaller batches. |
 | `too_long`, `window_too_long` | A text or a date range is longer than allowed. | Shorten it. |

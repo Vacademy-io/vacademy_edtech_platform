@@ -26,7 +26,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { BookOpen, ChatsCircle, Code, FileXls, GameController } from "@phosphor-icons/react";
+import { BookOpen, Cards, ChartBar, ChatsCircle, Code, FileXls, GameController } from "@phosphor-icons/react";
 import { useDoubtSidebarStore } from "@/stores/study-library/doubt-sidebar-store";
 import { useEffect, useMemo, useState } from "react";
 import { getStudentDisplaySettings } from "@/services/student-display-settings";
@@ -174,6 +174,12 @@ export const getIcon = (slide: Slide, size?: string): React.ReactNode => {
               weight="duotone"
             />
           );
+        case "FLASHCARDS":
+          return <Cards className={`${iconClass} text-primary-500`} weight="duotone" />;
+        case "POLL":
+          return <ChartBar className={`${iconClass} text-primary-500`} weight="duotone" />;
+        case "GAME":
+          return <GameController className={`${iconClass} text-primary-500`} weight="duotone" />;
         case "SPREADSHEET":
           return (
             <FileXls
@@ -260,6 +266,15 @@ export const getSlideTypeDisplay = (slide: Slide): string => {
             break;
           case "SPREADSHEET":
             baseType = i18n.t("studyContent:slideType.spreadsheet");
+            break;
+          case "FLASHCARDS":
+            baseType = i18n.t("studyContent:slideType.flashcards");
+            break;
+          case "POLL":
+            baseType = i18n.t("studyContent:slideType.poll");
+            break;
+          case "GAME":
+            baseType = i18n.t("studyContent:slideType.game");
             break;
           default:
             baseType = i18n.t("studyContent:slideType.document");

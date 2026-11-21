@@ -85,7 +85,8 @@ public class StockAdjustmentService {
         }
         Integer raw = request.getQuantityDelta();
         if (raw == null || raw == 0 || Math.abs((long) raw) > MAX_QUANTITY) {
-            throw new InvalidRequestException("quantity_delta must be a whole number other than zero");
+            throw new InvalidRequestException("VALIDATION: quantity_delta is a whole number other than zero, at most "
+                    + MAX_QUANTITY + " base units either way");
         }
         // Damage is always a loss, however the number was typed.
         int delta = type == StockMovementType.DAMAGE ? -Math.abs(raw) : raw;

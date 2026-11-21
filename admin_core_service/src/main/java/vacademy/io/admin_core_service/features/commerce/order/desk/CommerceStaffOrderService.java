@@ -306,7 +306,10 @@ public class CommerceStaffOrderService {
         if (clean.handOverNow()) {
             shipmentService.getObject().handOverInside(order, lines, clean.handOverPieces(), actor);
         }
-        events.afterCommit(desk.event(CommerceOrderEvents.ORDER_CONFIRMED, order, null, true));
+        // A sale handed over at the counter is a bill (the counter sale); anything else is an order
+        // to be delivered later.
+        events.afterCommit(desk.event(clean.handOverNow() ? CommerceOrderEvents.POS_BILL_ISSUED
+                : CommerceOrderEvents.ORDER_CONFIRMED, order, null, true));
         log.info("Commerce staff order {} ({}) created for institute {}: {} line(s), total {} {}, {}",
                 order.getOrderNumber(), order.getId(), order.getInstituteId(), lines.size(), order.getTotal(),
                 order.getCurrency(), order.getPaymentStatus());
@@ -391,6 +394,10 @@ public class CommerceStaffOrderService {
             }
             throw new ConflictException(CheckoutException.NOT_PRICEABLE + ": " + e.getMessage());
         }
+        // A line off its sale step is the staff's to fix (2.3 m of a cloth cut in 0.5 m): a 400
+        // naming the line and the step, before the general "cannot be sold as asked".
+        CommerceOrderService.requireOnStep(priced,
+                line -> orderService.cartVariant(instituteId, line.getVariantId(), line.getSku()));
         if (priced.view().getUnavailable() != null && !priced.view().getUnavailable().isEmpty()) {
             List<String> refs = new ArrayList<>();
             priced.view().getUnavailable().forEach(u -> refs.add(u.getLineRef() + " (" + u.getReason() + ")"));

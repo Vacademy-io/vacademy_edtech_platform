@@ -271,6 +271,49 @@
         "tagsImported_one": "{{topics}} new topics, {{count}} question filed",
         "tagsImported_other": "{{topics}} new topics, {{count}} questions filed"
     },
+    "facets": {
+        "title": "Filters",
+        "clearAll": "Clear all",
+        "clearGroup": "Clear",
+        "searchIn": "Search {{name}}",
+        "openTopic": "Open {{name}}",
+        "noMatch": "Nothing matches",
+        "showAll": "Show all {{total}}",
+        "showLess": "Show less",
+        "remove": "Remove filter {{name}}",
+        "inside": "In {{name}}",
+        "countsFailed": "Counts could not load. Filters still work."
+    },
+    "autoTag": {
+        "button": "Tag with AI",
+        "title": "Tag with AI: {{name}}",
+        "hint": "AI reads each question here that has no concept tag and adds 1 to 3, reusing the concept tags already used here. Tags already on questions are not changed.",
+        "nothingToDo": "Every question here already has a concept tag.",
+        "untagged": "{{total}} questions without a concept tag",
+        "progress": "{{tried}} of {{total}} read, {{tagged}} tagged",
+        "start": "Start tagging",
+        "resume": "Continue",
+        "stop": "Stop",
+        "done": "Done. {{tagged}} questions tagged.",
+        "stopped": "Stopped. {{tagged}} questions tagged so far.",
+        "tagsUsed": "Tags used"
+    },
+    "manageTags": {
+        "button": "Manage tags",
+        "title": "Library tags",
+        "titleIn": "Tags in {{name}}",
+        "hint": "Renaming a tag to a name another tag already has merges them. Deleting takes the tag off every question; the questions stay.",
+        "search": "Search tags",
+        "empty": "No tags here yet",
+        "loadFailed": "Could not load tags.",
+        "save": "Save",
+        "rename": "Rename {{name}}",
+        "delete": "Delete {{name}}",
+        "confirmDelete": "Remove from {{total}} questions?",
+        "yesDelete": "Remove",
+        "renamed": "“{{from}}” is now “{{to}}”",
+        "deleted": "“{{name}}” removed from every question"
+    },
     "tabs": {
         "questions": "Questions"
     },
@@ -295,7 +338,8 @@
         "unsortedHint_one": "{{count}} question to file",
         "unsortedHint_other": "{{count}} questions to file",
         "addCourse": "Add course",
-        "addTopic": "Add topic"
+        "addTopic": "Add topic",
+        "subtopicCards": "Sub-topics ({{total}})"
     },
     "tags": {
         "kind": {

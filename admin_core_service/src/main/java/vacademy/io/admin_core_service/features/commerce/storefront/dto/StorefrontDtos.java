@@ -211,6 +211,13 @@ public final class StorefrontDtos {
         String unit;
         int qtyScale;
         int qtyStep;
+        /**
+         * The shop's per-order maximum ({@code maxOrderQuantity}, default 25) in display units:
+         * pieces for counted goods, metres (or kg) for measured goods. The cart refuses more than
+         * this × {@code qty_scale} base units of one variant across its lines
+         * ({@code QUANTITY_ABOVE_MAX}); a length picker floors it to the step.
+         */
+        int maxOrderQuantity;
         String stockMode;
         String origin;
         Price price;

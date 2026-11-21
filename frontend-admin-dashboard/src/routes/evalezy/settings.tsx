@@ -165,7 +165,7 @@ function EvalezySettings() {
                     onChange={(evalezy) => setDraft({ ...draft, evalezy })}
                 />
             </Section>
-            <div className="pb-safe-3 sticky bottom-0 -mx-4 border-t border-neutral-200 bg-white px-4 py-3 sm:static sm:mx-0 sm:rounded-lg sm:border">
+            <div data-assistant-fab="avoid-phone" className="pb-safe-3 sticky bottom-0 -mx-4 border-t border-neutral-200 bg-white px-4 py-3 sm:static sm:mx-0 sm:rounded-lg sm:border">
                 <MyButton
                     type="button"
                     buttonType="primary"

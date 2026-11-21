@@ -1165,3 +1165,117 @@ history and the daily cap.
 **Known limits.**
 - Item tracking's NOT_DONE list includes students whose day hasn't come yet.
 - The AI planner creates calendar plans only.
+
+## 21. Teachers' way in: discoverability and the weekly planning email (2026-11-18)
+
+Feedback: teachers do not reach the planning screen. Two changes.
+
+**Discoverability.**
+- The course page's Engagement tab is a real `CourseDetailsTabId` (`ENGAGEMENT`, order 8.5, after
+  Activity), so admins can move or hide it per role in Display Settings. Before, it was always last.
+- "Assign as task" on a published slide is shown to teachers too. It no longer depends on
+  `hidePublishButtons`, which is on for teachers by default.
+- The plan list takes `mine=true` ("My batches"): plans on batches the caller teaches
+  (`faculty_subject_package_session_mapping`, sub-org rows excluded) plus plans they created.
+  It is on by default for teachers who are not admins.
+- Dashboard widget `engagementPlanning` (both dashboards): active batches with learners and no
+  PUBLISHED plan running on any of the next 7 days. Teachers see only their batches.
+  `GET /engagement/admin/v1/planning/coverage?mine=`.
+
+**Weekly planning email** (`features/engagement/planning`, table `engagement_planning_request`, V728).
+- Settings: `ENGAGEMENT_SETTING.data.planningNudge` = `{enabled, sendDay (ISO, default 5), sendHour
+  (16), reminderHours (24, 0 = none), autoPublish (false), runDays (MON_FRI | MON_SAT | ALL),
+  tasksPerDay (2), packageSessionIds ([] = all)}`. **Off unless an admin turns it on.**
+- Hourly tick (ShedLock): on the send day, at or after the send hour in the institute's timezone,
+  every teacher of every target batch gets one email about the week starting the coming Monday
+  (today, if today is Monday). Unique per (batch, teacher, week), so late or repeated ticks email
+  nobody twice. Skipped: teachers who already have a plan they created running on that batch that week.
+- The link is `/<admin portal>/plan-week?t=<token>`: 32 random bytes; only the SHA-256 is stored.
+  The page posts the token in the body to `/admin-core-service/open/engagement/planning/v1/{view,submit}`.
+  It can read only that request's context (no learner data) and submit a topic. It never signs in
+  and never publishes. The reminder carries a second token; both work until the end of the week.
+- A submitted topic is drafted by the AI planner through ai_service's new service-to-service
+  routes `POST/GET /engagement/plan/internal/draft/jobs` (`X-Internal-Service-Token`, acting as the
+  teacher, role TEACHER). Same brief checks, credit pre-flight and billing as the wizard.
+  Draft tick every minute: SUBMITTED → DRAFTING → a DRAFT plan created by the teacher (or
+  PUBLISHED with autoPublish), then a "ready to review" email. Two attempts, then FAILED with a
+  message the teacher sees on the link page and can resubmit. Out of credits = FAILED, not retried.
+- Admin: Settings → Daily Engagement → Weekly planning email (settings, "Send now", this week's
+  rows). `POST /planning/send-now`, `GET /planning/requests` are admin-only.
+
+Known limits: the email is English only; reading pictures are not generated for emailed drafts
+(placeholders are stripped); one email per teacher per batch, so a batch with five subject
+teachers gets five drafts (the daily cap still applies to learners).
+
+## 22. Flashcards, Poll and Game as course slides (2026-11-18)
+
+Feedback: teachers want the engagement formats inside the course. The formats are reused; the
+engines stay separate (slides are about the course path and completion, daily engagement is about
+time). Slides earn no per-item points; completing them counts like any other slide.
+
+All three are DOCUMENT slides with JSON in `document_slide.data` / `published_data`, like
+Discussion and Spreadsheet, so drafts, publish, copy, move and drip need nothing new. A new slide
+is always created as a DRAFT (an empty deck or poll must never go live by itself).
+
+- **FLASHCARDS**: the same `flashcards/v1` payload as an engagement Flashcards task. Admin reuses
+  the engagement deck editor (`FlashcardsEditor`, hosted in a one-item form) and preview. Learner
+  reuses the engagement flip card, round reducer and progress bar, without the submit path;
+  finishing the first pass completes the slide (`markSlideCompletion`), practice rounds are local.
+- **POLL**: `{question, options[{id,text}], settings{results: AFTER_VOTE|ALWAYS|TEACHER_ONLY,
+  allowChange}}`. Votes in `slide_activity_response` (V729), one per (slide, learner); results per
+  batch. The first vote completes the slide on the server. Learner access uses the quiz/discussion
+  membership check (`LearnerQuizAccessService`).
+- **GAME**: `{html, maxScore, instructions}`. The page runs in the sandboxed slide frame
+  (`HtmlSlideIframe`) and posts `vacademy:complete {score, maxScore}`; the server clamps to the
+  slide's maxScore (or the page's, capped at 1000) and keeps the best. The first result completes
+  the slide. Scores are self-reported by the page, so they are never used for points.
+- Endpoints: learner `/admin-core-service/slide-activity/learner/v1/{poll, poll/vote, game,
+  game/score}`; staff `/admin-core-service/slide-activity/admin/v1/{poll/results, game/scores}`
+  (institute staff, slide must belong to one of the institute's courses).
+- POLL and GAME are online-only (votes and scores live on the server); the AI tutor gets the
+  cards, the poll question or the game instructions, never the raw JSON.
+
+Not done: per-role content-type toggles for the three types (they always show in the add menu);
+"Save to course as a slide" from a daily task, and the reverse for flashcards/poll slides.
+
+## 23. "Count as engagement" on course slides (2026-11-19)
+
+Feedback (The 7cs, parents as learners): daily tasks live in a time window and vanish
+after it, and parents cannot keep a schedule. They want the activity inside the course
+flow ("after a couple of videos, an activity"), still earning points and badges. §22 made
+the formats available as slides but deliberately gave them no points; this adds a
+per-slide switch that does.
+
+- **Which slides:** Question, Quiz, and DOCUMENT slides of type HTML, FLASHCARDS, POLL,
+  GAME (`SlideEngagementService.isEligible`, mirrored by `isEngagementEligibleSlide` in
+  admin and `isEngagementSlideType` in learner).
+- **Setting:** `slide_engagement` (V731) — one row per slide: `enabled`, `points` (1–100
+  from the UI, default 10). Staff only, slide must belong to the institute.
+  `GET|PUT /admin-core-service/slide-activity/admin/v1/engagement?instituteId=`.
+  Admin: "Count as engagement" button in the slide header (popover: switch, points,
+  how many learners earned it, warning when Badges & Rewards is off).
+- **Earning:** `POST /admin-core-service/slide-activity/learner/v1/engagement/claim
+  {slideId, packageSessionId}`. Pays the slide's points ONCE into points_ledger
+  (`COURSE_ACTIVITY`, key `COURSE_ACTIVITY:{slideId}:{userId}`) when ALL hold: setting
+  enabled, slide PUBLISHED/UNSYNC, learner has a live membership on the slide (same rule
+  as quiz access), institute has Badges & Rewards on, and the server sees the slide
+  complete — learner_operation `MARKED_AS_WATCHED=true` or a `PERCENTAGE_{DOCUMENT,
+  QUESTION,QUIZ}_COMPLETED` ≥ 80. The client's word is never enough.
+- **When the app claims:** on opening the slide (pays learners who finished before the
+  teacher switched it on) and after every completion, via the window event
+  `vacademy:slide-completed` (`announceSlideCompleted`): Mark complete, question submit,
+  quiz finish, flashcards first pass, poll vote, game result, and an HTML page posting
+  `vacademy:complete`. Claims retry at 0.3/1.5/4/9 s because question/quiz completion is
+  rolled up in the background. An HTML engagement slide also gets "Mark as done" in the
+  banner (works even when the institute hides the manual completion button), and a page
+  that posts `vacademy:complete` marks itself done.
+- **Learner UI:** strip under the slide header — "Activity · finish it to earn N points",
+  then "You earned N points". The award moves the points pill (`applyResultToPointsCache`,
+  `applyEngagementResult`), shows confetti and a toast. Breakdown label "Course activities".
+- **Badges:** new trigger `course_activity_count` ("Course activities completed"), fed by
+  `PointsSummaryDTO.courseActivitiesCompleted`. Points badges (`xp_total`) now unlock on the
+  higher of the browser XP estimate and the server total — before this, server points
+  (daily tasks too) never counted toward them; max() so no earned badge re-locks.
+- **Never:** game scores (self-reported) do not change points; switching off or changing
+  points never takes back or re-prices earned points; copying a slide does not copy the
+  setting (the copy starts off).

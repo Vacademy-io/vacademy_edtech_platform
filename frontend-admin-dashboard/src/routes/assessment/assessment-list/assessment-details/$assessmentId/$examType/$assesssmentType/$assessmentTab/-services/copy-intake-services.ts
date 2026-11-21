@@ -12,9 +12,10 @@ export type CopyIntakeBatchStatus = 'RUNNING' | 'NEEDS_REVIEW' | 'COMPLETED' | '
 /**
  * UPLOAD = PDFs the admin uploaded, matched to students; SUBMITTED = the learners'
  * own uploads (nothing to match); CHECK_ONLY = uploaded only to be checked and
- * downloaded, never matched to a student or shown as a submission.
+ * downloaded, never matched to a student or shown as a submission; SCAN = copies
+ * the scan station built from a scanned pile, matched to students like UPLOAD.
  */
-export type CopyIntakeSource = 'UPLOAD' | 'SUBMITTED' | 'CHECK_ONLY';
+export type CopyIntakeSource = 'UPLOAD' | 'SUBMITTED' | 'CHECK_ONLY' | 'SCAN';
 export type CopyIntakeItemStatus =
     | 'PENDING'
     | 'IDENTIFYING'

@@ -123,6 +123,8 @@ export const LEARNER_PLAN_CHANGE = (userPlanId: string) =>
 
 export const EXPORT_ASSESSMENT_REPORT = `${BASE_URL}/assessment-service/assessment/learner/report/pdf`;
 export const EXPORT_AI_REPORT = `${BASE_URL}/assessment-service/assessment/learner/report/ai-pdf`;
+/** The same AI report as EXPORT_AI_REPORT, as data, for the on-screen cards and charts. */
+export const AI_REPORT_WEB_DATA = `${BASE_URL}/assessment-service/assessment/learner/report/ai-data`;
 export const ASSESSMENT_SUBMIT_MANUAL = `${BASE_URL}/assessment-service/assessment/learner/manual-status/submit`;
 
 export const ADD_UPDATE_VIDEO_ACTIVITY = `${BASE_URL}/admin-core-service/learner-tracking/v1/add-or-update-video-activity`;
@@ -154,6 +156,8 @@ export const GET_ASSIGNMENT_ACTIVITY_LOGS = `${BASE_URL}/admin-core-service/lear
 export const SUBMIT_QUESTION_SLIDE_ANSWERS = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/question-slide/add-or-update-question-slide-activity-log`;
 export const PRESENCE_HEARTBEAT = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/v1/presence-heartbeat`;
 export const GET_QUESTION_SLIDE_ACTIVITY_LOGS = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/question-slide/question-slide-activity-logs`;
+// Choice / text question slide: right or wrong + the correct answer after a submit, when the author left it on.
+export const QUESTION_SLIDE_MY_RESULT = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/question-slide/my-result`;
 // Spreadsheet & Written Response (CBE_RESPONSE) question slide: instant AI check (docs/CBE_RESPONSE_QUESTION.md §5.2).
 export const CBE_QUESTION_SLIDE_SUBMIT = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/question-slide/cbe/submit`;
 export const CBE_QUESTION_SLIDE_MY_ATTEMPTS = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/question-slide/cbe/my-attempts`;
@@ -276,6 +280,9 @@ export const FEEDBACK_URL = `${BASE_URL}/admin-core-service/rating`;
 export const SUBMIT_QUIZ_SLIDE_ACTIVITY_LOG = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/quiz-slide/add-or-update-quiz-slide-activity-log`;
 // One quiz answer checked without recording anything (study-mode quizzes return the key and explanation).
 export const QUIZ_CHECK_ANSWER = `${BASE_URL}/admin-core-service/learner-tracking/quiz-attempt/v1/check-answer`;
+// Spreadsheet & Written Response questions in a quiz: AI check of a submitted attempt, and its read-back.
+export const QUIZ_CBE_GRADE = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/quiz-slide/cbe/grade`;
+export const QUIZ_CBE_RESULTS = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/quiz-slide/cbe/results`;
 export const GET_QUIZ_SLIDE_ACTIVITY_LOGS = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/quiz-slide/quiz-slide-activity-logs`;
 export const SUBMIT_ASSESSMENT_SLIDE_ACTIVITY_LOG = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/assessment-slide/add-or-update-assessment-slide-activity-log`;
 export const CODING_SUBMISSIONS = `${BASE_URL}/admin-core-service/coding/submissions`;

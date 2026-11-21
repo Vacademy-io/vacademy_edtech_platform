@@ -6,10 +6,16 @@ import type { StudentDisplaySettingsData } from '@/types/student-display-setting
 import type { StudentUiType } from '@/types/theme-role-settings';
 
 /**
- * What a Fun choice leaves in ui.type for learner apps that predate it: Cleaner
- * Play, the clean, rounded look closest to Fun that every such app knows.
+ * What a Fun or Neon City choice leaves in ui.type for learner apps that
+ * predate it: Cleaner Play, the clean, rounded look closest to Fun that every
+ * such app knows.
  */
 const FUN_FALLBACK: StudentUiType = 'cleanerPlay';
+
+/** Skins that older learner apps do not know; each leaves FUN_FALLBACK in ui.type. */
+const NEWER_SKINS: ReadonlyArray<StudentUiType> = ['fun', 'neonCity'];
+export const isNewerSkin = (skin: StudentUiType | null | undefined): boolean =>
+    !!skin && NEWER_SKINS.includes(skin);
 
 /**
  * The value a learner app that predates the Fun skin should find in the
@@ -21,9 +27,9 @@ export function legacySkinFor(
     skin: StudentUiType,
     previouslySaved: StudentUiType | null | undefined
 ): StudentUiType | null {
-    if (skin === 'fun') return FUN_FALLBACK;
-    // Leaving Fun: the fallback written for it would outlive it.
-    if (previouslySaved === 'fun') return skin;
+    if (isNewerSkin(skin)) return FUN_FALLBACK;
+    // Leaving Fun or Neon City: the fallback written for it would outlive it.
+    if (isNewerSkin(previouslySaved)) return skin;
     return null;
 }
 
@@ -67,7 +73,7 @@ export async function keepLegacySkinReadable(
     const wanted = legacySkinFor(skin, previouslySaved);
     if (!wanted) return null;
     const saved = await fetchSavedStudentDisplaySettings();
-    const next = legacySkinPatch(saved, wanted, skin !== 'fun');
+    const next = legacySkinPatch(saved, wanted, !isNewerSkin(skin));
     if (!next) return null;
     // Partial on purpose: the server stores what it is given, and the readers
     // fill in their own defaults for every field left out.

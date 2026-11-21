@@ -39,6 +39,6 @@
     "cbeAiNotice": {
         "title_one": "{{count}} question tableur et rédigée est notée par l’IA",
         "title_other": "{{count}} questions tableur et rédigées sont notées par l’IA",
-        "body": "Les réponses tableur et rédigées sont notées par l’IA. Activez « Évaluer les soumissions avec l’IA » dans Infos de base, ou lancez « Évaluer avec l’IA » sur chaque soumission."
+        "body": "Ces réponses sont envoyées à la notation par l’IA dès que l’apprenant soumet, même si « Évaluer les soumissions avec l’IA » est désactivé dans Infos de base, et utilisent les crédits IA de votre établissement. Un enseignant vérifie les notes et publie le résultat. « Évaluer avec l’IA » dans le menu de la ligne d’un élève relance la notation."
     }
 }

@@ -31,7 +31,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Set
 
-from . import billing, delivery, discovery, engine_api, fetcher, flags, llm, pacing, planner, research, store
+from . import billing, delivery, discovery, engine_api, fetcher, flags, frontier, llm, pacing, planner, research, store
 from . import db as ladb
 
 logger = logging.getLogger(__name__)
@@ -237,6 +237,16 @@ async def tick_agent(agent: dict) -> dict:
     except (llm.LLMUnavailable, llm.InvalidOutput) as exc:
         await report(f"Planning failed: {exc}")
         plan = None
+    if plan:
+        # The search frontier: the day's supply check and revisits, outcome stats, more cities or business kinds
+        # when the plan's lists run thin (frontier.py). Never in the way of discovery and delivery.
+        try:
+            summary["frontier"] = await frontier.maintain(agent, plan, ctx=ctx)
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("lead agent: frontier step of %s failed", agent["id"])
+            summary["frontier"] = {"error": f"{type(exc).__name__}: {str(exc)[:200]}"}
+        if (summary["frontier"] or {}).get("warning"):
+            await report(summary["frontier"]["warning"])
     await asyncio.to_thread(discovery.schedule_discovered, agent)
     await _keep_lease(agent["id"])
     if not needs_approval(agent):

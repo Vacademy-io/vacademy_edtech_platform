@@ -457,7 +457,9 @@ public class AssessmentDataEnrichmentService {
             if (!lost.isEmpty()) {
                 eq.put("marks_lost", lost);
             }
-            eq.put("checked_by", "AI_REVIEWED".equals(qwm.getMarksSource()) ? "AI, reviewed by teacher" : "AI");
+            eq.put("checked_by", vacademy.io.assessment_service.features.submission_review.model.MarksSource
+                    .isHandMarked(qwm.getMarksSource()) ? "teacher"
+                    : "AI_REVIEWED".equals(qwm.getMarksSource()) ? "AI, reviewed by teacher" : "AI");
         } catch (Exception e) {
             log.warn("[DataEnrichment] Could not read the copy-check verdict of {}: {}", qwm.getId(), e.getMessage());
         }

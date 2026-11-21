@@ -18,8 +18,16 @@ from typing import Any, Dict, Tuple
 #:     }
 MCP_SERVER_SETTING_KEY = "MCP_SERVER_SETTING"
 
+#: Deep link to Settings → AI access, where admins configure both the in-product
+#: assistant and AI apps connected over MCP. The dashboard still opens the older
+#: tab ids (assistantTools, mcpServer) on this screen.
+AI_ACCESS_SETTINGS_PATH = "/settings?selectedTab=aiAccess"
+
 #: Deep link the denial messages point admins at.
-MCP_SETTINGS_PATH = "/settings?selectedTab=mcpServer"
+MCP_SETTINGS_PATH = AI_ACCESS_SETTINGS_PATH
+
+#: How texts name that screen.
+AI_ACCESS_SETTINGS_NAME = "Settings → AI access"
 
 #: The ONLY registry tools this server exposes. Everything else in
 #: ASSISTANT_TOOLS stays invisible and uncallable over MCP regardless of any
@@ -30,6 +38,7 @@ MCP_SETTINGS_PATH = "/settings?selectedTab=mcpServer"
 #: settings tab has one toggle per feature to manage per role.
 MCP_EXPOSED_TOOLS: Tuple[str, ...] = (
     "whoami",               # READ:  the caller's own identity + institute profile; always on, no toggle
+    "search_help_knowledge",  # READ:  product how-to articles (steps + a link on the institute's admin portal)
     "get_institute_overview",
     "website",              # READ:  sites, pages, courses/campaigns to link, analytics, audit
     "website_edit",         # WRITE: draft-only — every change lands as a draft the admin publishes
@@ -51,11 +60,30 @@ MCP_EXPOSED_TOOLS: Tuple[str, ...] = (
     "learner_report",       # READ:  a learner's progress-report data (facts + discarded detail) for the AI app to write the report
     "learner_enroll",       # WRITE: additive — enrols learners into courses via an invite; preview + confirm token
     "learner_edit",         # WRITE: live — edits a learner's details (never email / username); preview + confirm token
+    "manage_enrollment",    # WRITE: live — one learner's enrolment in one batch (expiry, move, active); preview + confirm token
     "sub_orgs",             # READ:  sub-organisations, their courses / seats / admins / members, set-up options, CSV template
     "sub_org_edit",         # WRITE: live — create a sub-org, add courses / change seats / roles, add its admin; preview + confirm token
     "sub_org_enroll",       # WRITE: additive — adds LEARNERS to a sub-org's courses (CSV / list); preview + confirm token
-    # CRM (docs/crm/CRM_MCP.md): every CRM tool is mcp_only, verifies each id against the institute and the
-    # caller's dashboard lead scope, and needs its plan feature (ToolSpec.module_feature). Writes are opt-in.
+    # Tools the in-product assistant had first, served from the same registry specs (MCP wording via
+    # ToolSpec.mcp_schema, MCP settings groups via ToolSpec.mcp_setting_key). All start off.
+    "find_batch",           # READ:  a batch name → its id + enrolled count
+    "list_batch_learners",  # READ:  who is enrolled in one batch
+    "list_recent_enrollments",  # READ:  who enrolled in a date range
+    "find_assessment",      # READ:  tests by name / window with registration and attempt counts
+    "get_assessment_results",  # READ:  one test's participants: attempt, score, grading and release status
+    "get_assessment_leaderboard",  # READ:  one test's ranked leaderboard
+    "get_class_schedule",   # READ:  live classes now / upcoming / the caller's own
+    "get_fee_dues",         # READ:  one learner's dues and installments
+    "get_payment_history",  # READ:  one learner's payment transactions
+    "get_subscription_plans",  # READ:  one learner's plans and validity
+    "search_fee_records",   # READ:  fee records across the institute (who is overdue / unpaid)
+    "get_collections_summary",  # READ:  collections overview, or paid totals for a date range
+    "list_announcements",   # READ:  scheduled and sent announcements
+    "send_announcement",    # WRITE: outbound — an announcement to batches / roles / learners; single-use confirm token
+    # CRM (docs/crm/CRM_MCP.md): every CRM tool verifies each id against the institute and the caller's
+    # dashboard lead scope, and needs its plan feature (ToolSpec.module_feature). Writes are opt-in. The reads
+    # and the writes that contact nobody also serve the in-product assistant (on CRM pages, see ASSISTANT_TOPICS;
+    # the writes confirmed on its card, app/services/crm_cards.py); the outbound writes are mcp_only.
     "crm_leads",            # READ:  find / list / one lead, timeline, my day, the CRM catalog, export
     "crm_lead_activity",    # WRITE: live additive — log interactions and notes, schedule / move / complete follow-ups
     "crm_lead_edit",        # WRITE: live — status, tier, details, tags; preview + confirm token
@@ -77,8 +105,8 @@ MCP_EXPOSED_TOOLS: Tuple[str, ...] = (
 #: WRITE tools this server may expose, with the property that makes each safe
 #: without a confirm card (MCP has none). A write tool is allowed here only
 #: when nothing it does can destroy or publish anything: it writes DRAFTS the
-#: admin publishes from the dashboard, or it only ADDS records. Live edits that
-#: change or remove existing data (update_learner_profile, announcements) stay off.
+#: admin publishes from the dashboard, or it only ADDS records. A live write that
+#: is not listed here (update_learner_profile: learner_edit does that job) stays off.
 #: The exceptions are live writes that carry their own confirm and whose groups
 #: are opt-in only (MCP_OPT_IN_GROUPS):
 #:   * website_publish (product decision 2026-10-10): it publishes, with a
@@ -99,6 +127,10 @@ MCP_EXPOSED_TOOLS: Tuple[str, ...] = (
 #:     lead go through a preview the user is shown → a confirm_token (signed over
 #:     the resolved leads and their current state, or single-use for outbound and
 #:     bulk actions, bound to the exact resolved target list) → the write.
+#:   * manage_enrollment / send_announcement (product decision 2026-11-17): the
+#:     assistant's confirmation-card writes; over MCP the same executor returns a
+#:     preview and a confirm_token (assistant_tool_registry.MCP_WRITE_CONFIRM) and
+#:     the card's performer runs only with it.
 MCP_ALLOWED_WRITE_TOOLS: Dict[str, str] = {
     "website_edit": (
         "draft-only: every action saves a draft revision; discard_draft undoes it; request_publish only reads "
@@ -231,6 +263,20 @@ MCP_ALLOWED_WRITE_TOOLS: Dict[str, str] = {
         "institute's email unsubscribe list; needs a single-use confirm_token from a preview of that exact message "
         "and counts toward an hourly cap per user (WhatsApp and email counted separately)"
     ),
+    "manage_enrollment": (
+        "confirm-gated live edit, the admin's explicit choice: changes ONE learner's enrolment in ONE batch of this "
+        "institute (access expiry, move to another batch of this institute, inactive / active, status ACTIVE or "
+        "INACTIVE only); never "
+        "removes a learner from the institute or deletes an enrolment; refuses a learner not enrolled in that batch "
+        "and batches sold to organisations; every write needs the confirm_token of a preview, signed over the exact "
+        "change and the enrolment's current status and expiry, so a change made in between is refused"
+    ),
+    "send_announcement": (
+        "outbound, single-use confirmed: sends one announcement (in-app alert, optionally a push notification) to "
+        "batches and learners verified to belong to this institute, or to a whole role here; the institute and "
+        "sender are always the connected user, never arguments; needs a single-use confirm_token from a preview "
+        "of that exact title, text and recipient list, and counts toward an hourly cap per user"
+    ),
     "crm_payment_reminders": (
         "outbound, admins only, single-use confirmed: reminds at most 50 unpaid installments or pending invoices "
         "verified to belong to this institute through admin-core's own reminder endpoints (the institute's "
@@ -244,6 +290,7 @@ MCP_ALLOWED_WRITE_TOOLS: Dict[str, str] = {
 #: the settings UI so the FE never hardcodes a catalogue that can drift.
 MCP_TOOL_GROUP_LABELS: Dict[str, str] = {
     "identity": "Who is connected",
+    "search_help_knowledge": "How-to help",
     "institute_overview": "Institute stats",
     "website_builder": "Website: view",
     "website_builder_edits": "Website: edit drafts",
@@ -268,6 +315,13 @@ MCP_TOOL_GROUP_LABELS: Dict[str, str] = {
     "sub_orgs": "Sub-organisations: view",
     "sub_org_edits": "Sub-organisations: create and change",
     "sub_org_enrollments": "Sub-organisations: add learners",
+    "learner_enrolment_changes": "Learners: change enrolments",
+    "batch_data": "Batches: view",
+    "assessments": "Assessments: view",
+    "schedule": "Live classes: view",
+    "payments": "Fees and payments: view",
+    "announcements": "Announcements: view",
+    "announcement_sends": "Announcements: send",
     "crm_leads": "CRM leads: view",
     "crm_lead_activity": "CRM leads: log activity and follow-ups",
     "crm_lead_edits": "CRM leads: edit status, tier, details and tags",
@@ -291,6 +345,10 @@ MCP_TOOL_GROUP_LABELS: Dict[str, str] = {
 #: a wall of text next to a toggle.
 MCP_TOOL_GROUP_SUMMARIES: Dict[str, str] = {
     "identity": "The connected user's name and contact details, and the institute's name, logo and theme. Always on.",
+    "search_help_knowledge": (
+        "Step-by-step instructions for how and where to do things in the admin portal, with a link to the right "
+        "page on your admin portal. Product help only: it reads none of your institute's data."
+    ),
     "institute_overview": "The institute's profile (name, logo, theme, terminology), outstanding fees, classes live now and active learner counts.",
     "website_builder": (
         "See the institute's websites: pages and what each section shows, traffic, lead-capture "
@@ -414,6 +472,33 @@ MCP_TOOL_GROUP_SUMMARIES: Dict[str, str] = {
         "anyone. It asks whether you want a CSV of the learners' usernames and passwords (a private download link "
         "that expires after 30 minutes, never shown in the chat)."
     ),
+    "learner_enrolment_changes": (
+        "Let the connected AI app change a learner's enrolment in a batch — extend or set their access expiry, move "
+        "them to another batch, or mark them inactive or active again. It always shows you the enrolment as it is "
+        "now and the change first, and makes it only after you confirm. Changes apply right away: a learner marked "
+        "inactive loses access to that batch. Batches sold to organisations stay in the admin portal. Turned on "
+        "separately."
+    ),
+    "batch_data": (
+        "Find batches by name, see who is enrolled in a batch, and list who enrolled in a date range (name, email, "
+        "batch and status)."
+    ),
+    "assessments": (
+        "Find tests (live, upcoming or past) with registration and attempt counts, see each participant's attempt, "
+        "score, grading status and whether their result is released, and the ranked leaderboard."
+    ),
+    "schedule": "The live-class schedule: classes running now, upcoming classes by date, and the connected user's own classes.",
+    "payments": (
+        "One learner's fee dues and installments, payments and plans; fee records across the institute (who is "
+        "overdue or has not paid); and money collected — the collections overview, or paid totals for a date range. "
+        "Phone numbers in lists are masked."
+    ),
+    "announcements": "See the institute's announcements: the scheduled ones and those already sent.",
+    "announcement_sends": (
+        "Let the connected AI app send an announcement to batches, roles or chosen learners as an in-app alert, "
+        "optionally with a push notification. It always shows you who receives it and the text first and sends only "
+        "after you confirm; each confirmation works once and sends per hour are capped. Turned on separately."
+    ),
     "learner_profile_edits": (
         "Let the connected AI app change a learner's details — name, phone, password, address, parents and custom "
         "fields — after showing you the before and after and getting your confirmation. Changes apply right away. "
@@ -510,16 +595,24 @@ MCP_TOOL_GROUP_SUMMARIES: Dict[str, str] = {
 #: one row per area (Off / View / Edit) instead of one toggle per tool.
 MCP_TOOL_AREAS: Dict[str, Dict[str, str]] = {
     "identity": {"label": "Who is connected", "summary": "Name, contact details and the institute's branding."},
+    "help": {"label": "How-to help", "summary": "Step-by-step how-tos for the admin portal, with links."},
     "institute": {"label": "Institute stats", "summary": "Profile, outstanding fees, live classes, learner counts."},
     "website": {"label": "Website", "summary": "Pages, sections, theme, SEO and site traffic."},
     "lead_forms": {"label": "Lead forms", "summary": "Lead campaigns, their form fields and leads received."},
     "automations": {"label": "Automations", "summary": "Workflows, their runs, and email / WhatsApp templates."},
     "blog": {"label": "Blog", "summary": "Blog posts and the pages that show them."},
     "courses": {"label": "Courses", "summary": "Course content, drip rules, invite links and pricing."},
-    "learners": {"label": "Learners", "summary": "Find learners, enrol them into courses and edit their details."},
+    "learners": {"label": "Learners",
+                 "summary": "Find learners, enrol them into courses, edit their details and change enrolments."},
+    "batches": {"label": "Batches", "summary": "Find batches, see who is in one and who enrolled recently."},
     "learner_reports": {"label": "Progress reports",
                         "summary": "A learner's attendance, scores, study time and progress, for the AI app to write "
                                    "their report."},
+    "assessments": {"label": "Assessments", "summary": "Tests, each participant's result and the leaderboard."},
+    "live_classes": {"label": "Live classes", "summary": "Classes live now, upcoming classes and your own."},
+    "fees": {"label": "Fees and payments",
+             "summary": "Learners' dues, payments and plans, fee records and collections."},
+    "announcements": {"label": "Announcements", "summary": "Scheduled and sent announcements; sending one."},
     "sub_orgs": {"label": "Sub-organisations",
                  "summary": "Partner organisations / centres: their courses, seats, admins and learners."},
     "crm_leads": {"label": "CRM: Leads",
@@ -546,6 +639,7 @@ MCP_TOOL_AREAS: Dict[str, Dict[str, str]] = {
 #:   sub_label: the edit's own name, shown when an area has several edits
 MCP_TOOL_PLACEMENT: Dict[str, Dict[str, str]] = {
     "identity": {"area": "identity", "level": "view"},
+    "search_help_knowledge": {"area": "help", "level": "view"},
     "institute_overview": {"area": "institute", "level": "view"},
     "website_builder": {"area": "website", "level": "view"},
     "website_builder_edits": {"area": "website", "level": "edit", "risk": "drafts", "sub_label": "Build and edit pages"},
@@ -570,7 +664,16 @@ MCP_TOOL_PLACEMENT: Dict[str, Dict[str, str]] = {
     "learners": {"area": "learners", "level": "view"},
     "learner_enrollments": {"area": "learners", "level": "edit", "risk": "live", "sub_label": "Enrol into courses"},
     "learner_profile_edits": {"area": "learners", "level": "edit", "risk": "live", "sub_label": "Edit learner details"},
+    "learner_enrolment_changes": {"area": "learners", "level": "edit", "risk": "live",
+                                  "sub_label": "Change enrolments (expiry, batch, active)"},
+    "batch_data": {"area": "batches", "level": "view"},
     "learner_reports": {"area": "learner_reports", "level": "view"},
+    "assessments": {"area": "assessments", "level": "view"},
+    "schedule": {"area": "live_classes", "level": "view"},
+    "payments": {"area": "fees", "level": "view"},
+    "announcements": {"area": "announcements", "level": "view"},
+    "announcement_sends": {"area": "announcements", "level": "edit", "risk": "outbound",
+                           "sub_label": "Send announcements"},
     "sub_orgs": {"area": "sub_orgs", "level": "view"},
     "sub_org_edits": {"area": "sub_orgs", "level": "edit", "risk": "live",
                       "sub_label": "Create and change sub-organisations"},
@@ -603,13 +706,74 @@ MCP_TOOL_PLACEMENT: Dict[str, Dict[str, str]] = {
 #: catalogue marks them ``opt_in``). Off for every existing institute. Every
 #: CRM edit is opt-in, so the area's Edit level never turns on a write that
 #: changes leads or contacts them.
+#: Tools on for everyone who may connect, with no toggle: they read none of the
+#: institute's data (product how-tos). The in-product assistant keeps its own
+#: setting for them.
+MCP_ALWAYS_ON_TOOLS = frozenset({"search_help_knowledge"})
+
 MCP_OPT_IN_GROUPS = frozenset({"website_data_edits", "website_publish",
-                               "learner_enrollments", "learner_profile_edits", "course_structure_edits",
+                               "learner_enrollments", "learner_profile_edits", "learner_enrolment_changes",
+                               "course_structure_edits", "announcement_sends",
                                "sub_org_edits", "sub_org_enrollments",
                                "crm_lead_activity", "crm_lead_edits", "crm_lead_merges", "crm_team_edits",
                                "crm_lead_intake",
                                "crm_calling_outbound", "crm_ai_campaigns", "crm_meeting_edits",
                                "crm_messaging_outbound", "crm_payment_reminders"})
+
+#: Where each in-product assistant settings group sits on the same settings page,
+#: so Settings → AI access shows one row per area with the assistant and AI apps
+#: side by side. Keys are ASSISTANT_TOOLS_SETTING groups (``ToolSpec.key()``);
+#: the order here is the order within an area. Only these groups are offered as
+#: assistant switches; any other saved group is left as it is. Every in-product
+#: group with a label in the registry's GROUP_LABELS must be placed here.
+#:   level: "view" reads; "edit" proposes changes the user confirms in the assistant
+#: Which edits are turned on one by one (never by an area's Edit level or a
+#: preset) comes from the registry's ToolSpec.opt_in (adapter.py
+#: ``assistant_group_opt_in``), set for every change that is opt-in over MCP.
+ASSISTANT_GROUP_PLACEMENT: Dict[str, Dict[str, str]] = {
+    "identity": {"area": "identity", "level": "view"},
+    "search_help_knowledge": {"area": "help", "level": "view"},
+    "institute_overview": {"area": "institute", "level": "view"},
+    "website_builder": {"area": "website", "level": "view"},
+    "website_builder_edits": {"area": "website", "level": "edit"},
+    "audience_forms": {"area": "lead_forms", "level": "view"},
+    "audience_forms_edits": {"area": "lead_forms", "level": "edit"},
+    "workflows": {"area": "automations", "level": "view"},
+    "workflows_edits": {"area": "automations", "level": "edit"},
+    "blog": {"area": "blog", "level": "view"},
+    "blog_edits": {"area": "blog", "level": "edit"},
+    "courses": {"area": "courses", "level": "view"},
+    "course_edits": {"area": "courses", "level": "edit"},
+    "course_drip_edits": {"area": "courses", "level": "edit"},
+    "course_invite_edits": {"area": "courses", "level": "edit"},
+    "course_structure_edits": {"area": "courses", "level": "edit"},
+    "learners": {"area": "learners", "level": "view"},
+    "learner_data": {"area": "learners", "level": "view"},
+    "learner_edits": {"area": "learners", "level": "edit"},
+    "learner_enrollments": {"area": "learners", "level": "edit"},
+    "learner_profile_edits": {"area": "learners", "level": "edit"},
+    "learner_reports": {"area": "learner_reports", "level": "view"},
+    "batch_data": {"area": "batches", "level": "view"},
+    "assessments": {"area": "assessments", "level": "view"},
+    "schedule": {"area": "live_classes", "level": "view"},
+    "payments": {"area": "fees", "level": "view"},
+    "announcements": {"area": "announcements", "level": "edit"},
+    "sub_orgs": {"area": "sub_orgs", "level": "view"},
+    "sub_org_edits": {"area": "sub_orgs", "level": "edit"},
+    "sub_org_enrollments": {"area": "sub_orgs", "level": "edit"},
+    "crm_leads": {"area": "crm_leads", "level": "view"},
+    "crm_lead_activity": {"area": "crm_leads", "level": "edit"},
+    "crm_lead_edits": {"area": "crm_leads", "level": "edit"},
+    "crm_team_edits": {"area": "crm_leads", "level": "edit"},
+    "crm_lead_intake": {"area": "crm_leads", "level": "edit"},
+    "crm_lead_merges": {"area": "crm_leads", "level": "edit"},
+    "crm_calls": {"area": "crm_calls", "level": "view"},
+    "crm_meetings": {"area": "crm_meetings", "level": "view"},
+    "crm_meeting_edits": {"area": "crm_meetings", "level": "edit"},
+    "crm_messages": {"area": "crm_messages", "level": "view"},
+    "crm_reports": {"area": "crm_reports", "level": "view"},
+    "crm_collections": {"area": "crm_payments", "level": "view"},
+}
 
 #: Roles that must NEVER reach this server, even if an admin lists them. The MCP
 #: surface is staff-only by product decision.
@@ -661,12 +825,12 @@ DENY_ROLE = "role_not_allowed"
 DENIAL_MESSAGES = {
     DENY_DISABLED: (
         "The MCP server is not enabled for this institute. An admin can turn it on "
-        f"under MCP settings ({MCP_SETTINGS_PATH})."
+        f"under {AI_ACCESS_SETTINGS_NAME} ({MCP_SETTINGS_PATH})."
     ),
     DENY_LEARNER: "The MCP server is available to institute staff only.",
     DENY_ROLE: (
         "This user's role is not allowed to connect to the MCP server. An admin can "
-        f"grant the role under MCP settings ({MCP_SETTINGS_PATH})."
+        f"grant the role under {AI_ACCESS_SETTINGS_NAME} ({MCP_SETTINGS_PATH})."
     ),
 }
 
@@ -762,6 +926,9 @@ def tool_timeout_payload(limit_s: int = TOOL_LANE_DEADLINE_S) -> Dict[str, Any]:
 
 __all__ = [
     "MCP_SERVER_SETTING_KEY",
+    "AI_ACCESS_SETTINGS_PATH",
+    "AI_ACCESS_SETTINGS_NAME",
+    "ASSISTANT_GROUP_PLACEMENT",
     "MCP_SETTINGS_PATH",
     "MCP_EXPOSED_TOOLS",
     "MCP_ALLOWED_WRITE_TOOLS",

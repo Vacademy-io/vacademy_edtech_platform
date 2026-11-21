@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -27,6 +28,8 @@ class AnnouncementApiTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
+    // Postgres-only email-stats SQL in the create response rolls the create back on H2.
+    @MockBean private vacademy.io.notification_service.features.notification_log.repository.NotificationLogRepository notificationLogRepository;
 
     private static CustomUserDetails principal(String userId, String role) {
         UserServiceDTO dto = new UserServiceDTO();
@@ -83,7 +86,7 @@ class AnnouncementApiTest {
     void createAndFetchAnnouncement() throws Exception {
         var body = objectMapper.writeValueAsString(sampleRequest());
 
-        var postResult = mockMvc.perform(post("/notification-service/v1/announcements")
+        var postResult = mockMvc.perform(post("/notification-service/v1/announcements").with(AnnouncementTestAuth.admin("INST_TEST"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isOk())

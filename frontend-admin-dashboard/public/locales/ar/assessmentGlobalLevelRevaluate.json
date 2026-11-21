@@ -1,6 +1,6 @@
 {
     "trigger": {
-        "entireAssessment": "التقييم بالكامل"
+        "entireAssessment": "إعادة التصحيح بمفتاح الإجابة (الاختبار كاملًا)"
     },
     "dialog": {
         "title": "إعادة تقييم جميع {{learnerPlural}}",

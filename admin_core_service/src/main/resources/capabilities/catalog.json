@@ -514,7 +514,19 @@
             ],
             "widgets": [],
             "quick_actions": [],
-            "assistant_groups": [],
+            "assistant_groups": [
+              "crm_leads",
+              "crm_meetings",
+              "crm_messages",
+              "crm_reports",
+              "crm_collections",
+              "crm_lead_activity",
+              "crm_lead_edits",
+              "crm_lead_merges",
+              "crm_team_edits",
+              "crm_lead_intake",
+              "crm_meeting_edits"
+            ],
             "setup_steps": [],
             "routes": [
               "/audience-manager/list",
@@ -569,7 +581,9 @@
             ],
             "widgets": [],
             "quick_actions": [],
-            "assistant_groups": [],
+            "assistant_groups": [
+              "crm_calls"
+            ],
             "setup_steps": [],
             "routes": [
               "/audience-manager/call-log",
@@ -1156,6 +1170,49 @@
             "routes": [
               "/commerce/settings/business",
               "/commerce/settings/tax-classes"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "commerce.accounts",
+          "label": "Purchases and accounts",
+          "description": "Suppliers, purchase bills, payments, expenses, cash and bank, period lock.",
+          "default_on": false,
+          "governs": {
+            "nav": [],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": []
+          },
+          "setting_keys": []
+        }
+      ]
+    },
+    {
+      "key": "learner_home",
+      "label": "Learner home builder",
+      "description": "Design the learner home: banners, shortcuts, course shelves, notices and events, with targeting and results.",
+      "rail": "LMS",
+      "core": false,
+      "features": [
+        {
+          "key": "learner_home.builder",
+          "label": "Learner home",
+          "description": "Build, preview and publish the learner home, and read its results.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "learner-home"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/learner-home"
             ]
           },
           "setting_keys": []

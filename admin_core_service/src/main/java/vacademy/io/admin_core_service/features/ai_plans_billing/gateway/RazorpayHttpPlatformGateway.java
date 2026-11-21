@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.ai_plans_billing.gateway;
 
+import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -66,7 +67,7 @@ public class RazorpayHttpPlatformGateway implements PlatformRazorpayGateway {
         HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
         JdkClientHttpRequestFactory f = new JdkClientHttpRequestFactory(http);
         f.setReadTimeout(Duration.ofSeconds(30));
-        return new RestTemplate(f);
+        return ExternalCallLog.attach(new RestTemplate(f));
     }
 
     // ── Payment Links ────────────────────────────────────────────────────

@@ -175,7 +175,8 @@ class EmailBillingPostgresTest {
         info.setInstituteName("School");
         when(institutes.getInstituteByInstituteId(INST)).thenReturn(info);
         EmailService email = mock(EmailService.class);
-        EmailBillingNotifier notifier = new EmailBillingNotifier(jdbc, settings(), institutes, email);
+        EmailBillingNotifier notifier = new EmailBillingNotifier(jdbc, settings(), institutes, email,
+                mock(vacademy.io.notification_service.features.announcements.client.AuthServiceClient.class));
         org.springframework.test.util.ReflectionTestUtils.setField(notifier, "defaultDashboardUrl", "https://dash.vacademy.io");
 
         notifier.onEmailBlocked(new BlockedEmailStore.EmailBlockedEvent(INST));

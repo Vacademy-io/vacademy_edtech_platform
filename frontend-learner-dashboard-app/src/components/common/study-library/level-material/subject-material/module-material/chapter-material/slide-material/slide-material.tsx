@@ -39,6 +39,11 @@ import { JupyterNotebookSlide } from "./jupyter-notebook-slide";
 import { ScratchProjectSlide } from "./scratch-project-slide";
 import { DiscussionSlide } from "./discussion/discussion-slide";
 import { SpreadsheetSlide } from "./spreadsheet/spreadsheet-slide";
+import { FlashcardsSlide } from "./activity/flashcards-slide";
+import { PollSlide } from "./activity/poll-slide";
+import { GameSlide } from "./activity/game-slide";
+import { EngagementBanner } from "./activity/engagement-banner";
+import { announceSlideCompleted } from "@/services/slide-engagement";
 import { SplitScreenVideoSlide } from "./split-screen-video-slide";
 import { DocumentQuizSlide } from "./document-quiz-slide";
 import { parseDocumentQuizRef } from "./document-quiz-ref";
@@ -1098,7 +1103,8 @@ export const SlideMaterial = ({
                 await handleQuestionSubmit(String(selectedOptionId));
               }}
               onComplete={() => {
-                // Optionally handle quiz completion
+                // Collects "Count as engagement" points once the server sees it done.
+                announceSlideCompleted(activeItem.id);
               }}
             />
           );
@@ -1170,7 +1176,8 @@ export const SlideMaterial = ({
                   await handleQuestionSubmit(String(selectedOptionId));
                 }}
                 onComplete={() => {
-                  // Optionally handle quiz completion
+                  // Collects "Count as engagement" points once the server sees it done.
+                  announceSlideCompleted(activeItem.id);
                 }}
               />
             );
@@ -1396,6 +1403,31 @@ export const SlideMaterial = ({
             setContent(
               <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
                 <DiscussionSlide key={activeItem.id} slide={activeItem} />
+              </div>
+            );
+          } else if (activeItem.document_slide?.type === "FLASHCARDS") {
+            // A course deck: flip, Got it / Still learning; the first pass completes it.
+            setContent(
+              <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
+                <FlashcardsSlide
+                  key={activeItem.id}
+                  slide={activeItem}
+                  completionContext={completionContext}
+                />
+              </div>
+            );
+          } else if (activeItem.document_slide?.type === "POLL") {
+            // Voting completes it (on the server); results per the teacher's setting.
+            setContent(
+              <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
+                <PollSlide key={activeItem.id} slide={activeItem} />
+              </div>
+            );
+          } else if (activeItem.document_slide?.type === "GAME") {
+            // The teacher's HTML game; the first reported result completes it.
+            setContent(
+              <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
+                <GameSlide key={activeItem.id} slide={activeItem} />
               </div>
             );
           } else if (activeItem.document_slide?.type === "SPREADSHEET") {
@@ -1659,8 +1691,9 @@ export const SlideMaterial = ({
                 MANUALLY_COMPLETABLE_SLIDE_TYPES.has(
                   activeItem.source_type || ""
                 ) &&
-                // A discussion completes by posting a reply, not by hand.
-                activeItem.document_slide?.type !== "DISCUSSION" && (
+                // A discussion completes by posting a reply, a poll by voting: not by hand.
+                activeItem.document_slide?.type !== "DISCUSSION" &&
+                activeItem.document_slide?.type !== "POLL" && (
                   <MarkCompleteButton
                     slideId={activeItem.id}
                     slideType={activeItem.source_type as string}
@@ -1719,8 +1752,9 @@ export const SlideMaterial = ({
             MANUALLY_COMPLETABLE_SLIDE_TYPES.has(
               activeItem.source_type || ""
             ) &&
-            // A discussion completes by posting a reply, not by hand.
-            activeItem.document_slide?.type !== "DISCUSSION" && (
+            // A discussion completes by posting a reply, a poll by voting: not by hand.
+            activeItem.document_slide?.type !== "DISCUSSION" &&
+            activeItem.document_slide?.type !== "POLL" && (
               <MarkCompleteButton
                 slideId={activeItem.id}
                 slideType={activeItem.source_type as string}
@@ -1733,6 +1767,17 @@ export const SlideMaterial = ({
           <AskDoubtButton />
         </div>
       </div>
+      )}
+
+      {/* "Count as engagement": what this activity is worth, and that it was earned. */}
+      {activeItem && (
+        <EngagementBanner
+          key={activeItem.id}
+          slideId={activeItem.id}
+          sourceType={activeItem.source_type}
+          documentType={activeItem.document_slide?.type}
+          context={completionContext ?? {}}
+        />
       )}
 
       {/* Play themes on mobile: inline slide nav right below the compact header.

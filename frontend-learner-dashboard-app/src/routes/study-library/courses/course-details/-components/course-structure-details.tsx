@@ -6,6 +6,8 @@ import { useDripConditions } from "@/hooks/use-drip-conditions";
 import { LockedBadge, LockNotice } from "@/components/drip-conditions";
 import { useDripConditionStore } from "@/stores/study-library/drip-conditions-store";
 import { useCourseDripSchedule } from "@/hooks/use-course-drip-schedule";
+import { useShowContentDescriptions } from "@/hooks/use-content-descriptions";
+import { getAuthoredChapterDescription } from "@/constants/chapter-description";
 import type { ContentCardImageFit } from "@/types/student-display-settings";
 import { evaluateDripCondition } from "@/utils/drip-conditions";
 import type {
@@ -198,6 +200,29 @@ const ContentCardThumb = ({
   </div>
 );
 
+/**
+ * Description line on a Content Structure module / chapter card — the same
+ * text the admin shows under the title on its folder cards. Clamped to two
+ * lines so a long description never stretches the card; renders nothing when
+ * the author never entered one.
+ */
+const ContentCardDescription = ({
+  description,
+}: {
+  description?: string | null;
+}) => {
+  const text = (description ?? "").trim();
+  if (!text) return null;
+  return (
+    <p
+      className="line-clamp-2 break-words text-caption text-neutral-500"
+      title={text}
+    >
+      {text}
+    </p>
+  );
+};
+
 export const CourseStructureDetails = ({
   selectedSession,
   selectedLevel,
@@ -259,6 +284,9 @@ export const CourseStructureDetails = ({
 
   const [studyLibraryData, setStudyLibraryData] = useState<SubjectType[]>([]);
   const [showContentPrefixes, setShowContentPrefixes] = useState<boolean>(true);
+  // Module / chapter descriptions on the Content Structure cards. Follows the
+  // admin's Settings → Courses → "Show Module & Chapter Descriptions" toggle.
+  const showContentDescriptions = useShowContentDescriptions();
   // Helper: format video duration from millis to h:mm:ss or m:ss
   // Outline meta shows rounded minutes ("48 min", "1h 22m") — second
   // precision is noise in a course outline and the old "47:36 mins" read as
@@ -3740,6 +3768,11 @@ export const CourseStructureDetails = ({
                         {idx + 1}
                       </p>
                     )}
+                    {showContentDescriptions && (
+                      <ContentCardDescription
+                        description={m.module.description}
+                      />
+                    )}
                     {isModuleLocked && (
                       <LockNotice message={moduleEval?.unlockMessage} />
                     )}
@@ -3854,6 +3887,13 @@ export const CourseStructureDetails = ({
                               )}{" "}
                               {idx + 1}
                             </p>
+                          )}
+                          {showContentDescriptions && (
+                            <ContentCardDescription
+                              description={getAuthoredChapterDescription(
+                                ch.description,
+                              )}
+                            />
                           )}
                           {isChapterLocked ? (
                             <LockNotice message={evaluation?.unlockMessage} />

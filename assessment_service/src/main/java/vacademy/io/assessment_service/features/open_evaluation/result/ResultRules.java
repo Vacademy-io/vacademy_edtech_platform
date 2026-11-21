@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import vacademy.io.assessment_service.features.open_evaluation.exam.OpenQuestionService;
 import vacademy.io.assessment_service.features.open_evaluation.exam.QuestionMapper;
+import vacademy.io.assessment_service.features.submission_review.model.MarksSource;
 import vacademy.io.common.core.utils.PlainText;
 
 import java.math.BigDecimal;
@@ -87,7 +88,8 @@ public final class ResultRules {
             if (row.maxMarks() != null && max == null) {
                 max = row.maxMarks();
             }
-            boolean reviewedByHuman = row.edited() || (marks != null && "AI_REVIEWED".equals(marks.marksSource()));
+            boolean reviewedByHuman = row.edited() || (marks != null && ("AI_REVIEWED".equals(marks.marksSource())
+                    || MarksSource.isHandMarked(marks.marksSource())));
             source = reviewedByHuman ? "ai_reviewed" : "ai";
             if (Q_GRADED.equals(status)) {
                 awarded = row.marksAwarded() != null ? row.marksAwarded()
@@ -133,7 +135,7 @@ public final class ResultRules {
         } else if (marks != null) {
             status = Q_GRADED;
             awarded = BigDecimal.valueOf(marks.marks());
-            source = "AI_REVIEWED".equals(marks.marksSource()) ? "ai_reviewed"
+            source = "AI_REVIEWED".equals(marks.marksSource()) || MarksSource.isHandMarked(marks.marksSource()) ? "ai_reviewed"
                     : "AI".equals(marks.marksSource()) ? "ai" : "auto";
         } else {
             status = runActive ? Q_PENDING : Q_NOT_ANSWERED;

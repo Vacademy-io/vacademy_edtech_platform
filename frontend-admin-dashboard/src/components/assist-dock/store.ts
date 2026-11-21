@@ -43,6 +43,19 @@ interface AssistDockState {
      *  stay in lockstep with the rail itself. */
     dockVisible: boolean | null;
     setDockVisible: (dockVisible: boolean) => void;
+    /** Whether the floating assistant button is offered on this page (set by
+     *  AssistantFab). Ignores the moments it steps aside while a panel is open,
+     *  so layouts that leave room for it don't shift on open/close. */
+    assistantFabEnabled: boolean;
+    setAssistantFabEnabled: (enabled: boolean) => void;
+    /** Page topic of the assistant tip on show (null = none); see vacademy-assistant/page-ask. */
+    tipTopic: string | null;
+    showTip: (topic: string) => void;
+    clearTip: () => void;
+    /** The panel was opened as a first-visit welcome: its empty state offers setup questions. */
+    welcome: boolean;
+    openWelcome: () => void;
+    clearWelcome: () => void;
 }
 
 export const useAssistDock = create<AssistDockState>((set) => ({
@@ -57,6 +70,14 @@ export const useAssistDock = create<AssistDockState>((set) => ({
     closeTutorial: () => set({ activeTutorial: null }),
     dockVisible: null,
     setDockVisible: (dockVisible) => set({ dockVisible }),
+    assistantFabEnabled: false,
+    setAssistantFabEnabled: (assistantFabEnabled) => set({ assistantFabEnabled }),
+    tipTopic: null,
+    showTip: (tipTopic) => set({ tipTopic }),
+    clearTip: () => set({ tipTopic: null }),
+    welcome: false,
+    openWelcome: () => set({ panel: 'assistant', welcome: true, tipTopic: null }),
+    clearWelcome: () => set({ welcome: false }),
     minimized: readMinimized(),
     setMinimized: (minimized) => {
         try {

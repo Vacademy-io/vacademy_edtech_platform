@@ -29,4 +29,7 @@ public class StudentReportOverallDetailDto {
     // Set on the learner endpoint only, where hidden fields are also stripped;
     // null on admin responses, which always carry everything.
     private com.fasterxml.jackson.databind.JsonNode reportOptions;
+    // When a released result's marks last changed (the learner "Revised" tag). Null
+    // unless the result is released.
+    private java.util.Date resultRevisedAt;
 }

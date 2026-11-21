@@ -33,6 +33,7 @@ export function BottomTabBar({ activeTab, onTabChange, onMoreClick }: BottomTabB
         // text input gets the screen), and the parent shell's pb-safe already
         // lifts the bar above the home indicator.
         <nav
+            data-assistant-fab="avoid-phone"
             className="relative z-30 flex shrink-0 items-stretch justify-around border-t border-neutral-200 bg-white md:hidden"
             aria-label="Primary"
         >

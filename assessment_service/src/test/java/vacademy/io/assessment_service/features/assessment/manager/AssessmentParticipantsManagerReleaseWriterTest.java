@@ -139,4 +139,86 @@ class AssessmentParticipantsManagerReleaseWriterTest {
         manager.releaseAutomatically(List.of(), exam(null, "AUTO"), "inst-1", true);
         verifyNoInteractions(writer, reports, events);
     }
+
+    // ---------------------------------------------------------------- pre-ship review R7
+
+    private vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService
+            releaseFailingFor(String failingId) {
+        var release = mock(vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService.class);
+        var ok = new vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService
+                .ReleaseOutcome(false, 0, List.of(), true);
+        when(release.markReleased(anyString(), any(), any())).thenAnswer(i -> {
+            if (failingId.equals(i.getArgument(0))) throw new IllegalStateException("lock wait timeout");
+            return ok;
+        });
+        ReflectionTestUtils.setField(manager, "submissionReleaseService", release);
+        return release;
+    }
+
+    /** One attempt's release throws: the others are released, and their emails still go out. */
+    @Test
+    @SuppressWarnings("unchecked")
+    void manual_release_continues_after_one_attempt_fails() {
+        vacademy.io.common.media.service.FileService files = mock(vacademy.io.common.media.service.FileService.class);
+        when(files.getFileFromFileId(anyString())).thenReturn(new byte[] {1});
+        ReflectionTestUtils.setField(manager, "fileService", files);
+        var release = releaseFailingFor("m2");
+        Assessment dashboard = exam(null, "MANUAL");
+        StudentAttempt a1 = checkedCopyAttempt("m1", dashboard);
+        StudentAttempt a2 = checkedCopyAttempt("m2", dashboard);
+        StudentAttempt a3 = checkedCopyAttempt("m3", dashboard);
+
+        manager.releaseAutomatically(List.of(a1, a2, a3), dashboard, "inst-1", true);
+
+        verify(release, times(3)).markReleased(anyString(), any(), any());
+        org.mockito.ArgumentCaptor<java.util.Map<StudentAttempt, byte[]>> emailed =
+                org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
+        verify(reports).sendAssessmentReportsToLearners(emailed.capture(), any(), any());
+        org.assertj.core.api.Assertions.assertThat(emailed.getValue().keySet()).containsExactlyInAnyOrder(a1, a3);
+        verify(events).publishResultReleased(anyList());
+    }
+
+    /** The same for the report loop (AUTO tests): the batch emails go out for the others. */
+    @Test
+    @SuppressWarnings("unchecked")
+    void report_release_continues_after_one_attempt_fails() throws Exception {
+        AssessmentParticipantsManager spy = org.mockito.Mockito.spy(manager);
+        var learnerReports = mock(vacademy.io.assessment_service.features.learner_assessment.service.LearnerReportService.class);
+        var aiPdf = mock(vacademy.io.assessment_service.features.assessment.service.aireport.AiReportPdfService.class);
+        var upload = mock(vacademy.io.assessment_service.features.assessment.service.ReportPdfUploadService.class);
+        var notify = mock(vacademy.io.assessment_service.features.assessment.notification.ResultNotificationService.class);
+        ReflectionTestUtils.setField(spy, "learnerReportService", learnerReports);
+        ReflectionTestUtils.setField(spy, "aiReportPdfService", aiPdf);
+        ReflectionTestUtils.setField(spy, "reportPdfUploadService", upload);
+        ReflectionTestUtils.setField(spy, "resultNotificationService", notify);
+        ReflectionTestUtils.setField(spy, "reportPdfRenderService",
+                mock(vacademy.io.assessment_service.features.assessment.service.ReportPdfRenderService.class));
+        manager = spy;
+        var release = releaseFailingFor("r2");
+        org.mockito.Mockito.doReturn(new vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response
+                .StudentReportOverallDetailDto()).when(spy).createStudentReportDetailResponse(
+                org.mockito.ArgumentMatchers.nullable(
+                        vacademy.io.assessment_service.features.learner_assessment.dto.ReportClassContext.class),
+                anyString(), anyString());
+        when(aiPdf.renderWithVariables(any(), any(), any(), any(), any(), any())).thenReturn(
+                new vacademy.io.assessment_service.features.assessment.service.aireport.AiReportPdfService.Rendered(
+                        new byte[] {1}, java.util.Map.of()));
+        when(upload.upload(any(), anyString(), anyString(), anyString())).thenReturn("pdf-id");
+
+        Assessment auto = exam(null, "AUTO");
+        StudentAttempt r1 = attempt("r1", auto);
+        StudentAttempt r2 = attempt("r2", auto);
+        StudentAttempt r3 = attempt("r3", auto);
+        spy.releaseAutomatically(List.of(r1, r2, r3), auto, "inst-1", true);
+
+        // r2 failed (logged, recorded); the others are released once each.
+        verify(release, times(1)).markReleased(org.mockito.ArgumentMatchers.eq("r1"), any(), any());
+        verify(release, times(1)).markReleased(org.mockito.ArgumentMatchers.eq("r3"), any(), any());
+        org.mockito.ArgumentCaptor<List<vacademy.io.assessment_service.features.assessment.notification
+                .ResultNotificationService.Item>> items = org.mockito.ArgumentCaptor.forClass(List.class);
+        verify(notify).sendEmails(items.capture(), any(), any(), any());
+        org.assertj.core.api.Assertions.assertThat(items.getValue()).extracting(i -> i.attempt().getId())
+                .containsExactlyInAnyOrder("r1", "r3");
+        verify(events).publishResultReleased(anyList());
+    }
 }

@@ -34,5 +34,7 @@ public class UnifiedSendResponse {
         private boolean success;
         private String status;
         private String error;
+        /** The provider's message id of an accepted send (notification-service sends it; null when none). */
+        private String messageId;
     }
 }

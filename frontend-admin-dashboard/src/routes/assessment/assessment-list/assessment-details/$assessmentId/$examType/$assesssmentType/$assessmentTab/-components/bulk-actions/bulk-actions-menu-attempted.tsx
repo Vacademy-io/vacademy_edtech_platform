@@ -1,5 +1,5 @@
 import { AssessmentSubmissionsBulkActionInfo } from '@/routes/manage-students/students-list/-types/bulk-actions-types';
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { SubmissionStudentData } from '@/types/assessments/assessment-overview';
 import {
     DropdownMenu,
@@ -13,6 +13,8 @@ import {
 import { MyButton } from '@/components/design-system/button';
 import { useSubmissionsBulkActionsDialogStoreAttempted } from '../bulk-actions-zustand-store/useSubmissionsBulkActionsDialogStoreAttempted';
 import { useTranslation } from 'react-i18next';
+import { ReleaseResultDialog } from '../submission-review/ReleaseResultDialog';
+import { Route } from '../..';
 
 interface BulkActionsMenuProps {
     selectedCount: number;
@@ -39,11 +41,13 @@ export const BulkActionsMenuAttempted = ({
     onCheckWithAi,
 }: BulkActionsMenuProps) => {
     const { t } = useTranslation('assessmentBulkActionsMenuAttempted');
+    const { assessmentId } = Route.useParams();
+    // Release goes through W9 (counts + warnings) for the selected attempts.
+    const [releaseIds, setReleaseIds] = useState<string[] | null>(null);
     const {
         openBulkProvideReattemptDialog,
         openBulkProvideRevaluateAssessmentDialog,
         openBulkProvideRevaluateQuestionWiseDialog,
-        openBulkProvideReleaseDialog,
     } = useSubmissionsBulkActionsDialogStoreAttempted();
 
     const handleMenuOptionsChange = (value: string) => {
@@ -71,7 +75,11 @@ export const BulkActionsMenuAttempted = ({
                 openBulkProvideRevaluateAssessmentDialog(bulkActionInfo);
                 break;
             case MENU_ACTION.RELEASE_RESULT:
-                openBulkProvideReleaseDialog(bulkActionInfo);
+                setReleaseIds(
+                    validStudents
+                        .map((student) => (student as { attempt_id?: string }).attempt_id)
+                        .filter((id): id is string => !!id)
+                );
                 break;
         }
     };
@@ -112,7 +120,7 @@ export const BulkActionsMenuAttempted = ({
                                     handleMenuOptionsChange(MENU_ACTION.REVALUATE_QUESTION_WISE)
                                 }
                             >
-                                {t('menu.questionWise')}
+                                {t('menu.remarkByQuestion')}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                                 className="cursor-pointer"
@@ -122,7 +130,7 @@ export const BulkActionsMenuAttempted = ({
                                     )
                                 }
                             >
-                                {t('menu.entireAssessment')}
+                                {t('menu.remarkWithKey')}
                             </DropdownMenuItem>
                         </DropdownMenuSubContent>
                     </DropdownMenuSub>
@@ -142,6 +150,16 @@ export const BulkActionsMenuAttempted = ({
                     )}
                 </DropdownMenuContent>
             </DropdownMenu>
+            {releaseIds && (
+                <ReleaseResultDialog
+                    assessmentId={assessmentId}
+                    attemptIds={releaseIds}
+                    open={!!releaseIds}
+                    onOpenChange={(open) => {
+                        if (!open) setReleaseIds(null);
+                    }}
+                />
+            )}
         </>
     );
 };

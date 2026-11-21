@@ -4,6 +4,24 @@
         "adminPortal": "Admin Portal",
         "teacherPortal": "Teacher Portal"
     },
+    "allowedRoles": {
+        "label": "Who can sign in",
+        "placeholderAdmin": "Only admins",
+        "placeholderTeacher": "Only teachers and admins",
+        "hintAdmin": "Admins can always sign in. Anyone without one of the ticked roles is refused on this domain.",
+        "hintTeacher": "Teachers and admins can always sign in. Anyone without one of the ticked roles is refused on this domain.",
+        "summary": "+ {{roles}}"
+    },
+    "deleteDomain": {
+        "tooltip": "Remove this domain",
+        "portalUrlTooltip": "This domain is the portal URL your emails link to. Make another domain primary first.",
+        "title": "Remove domain?",
+        "description": "{{domain}} will stop opening your portal, and its branding and login settings are deleted. This can't be undone.",
+        "cancel": "Cancel",
+        "confirm": "Remove",
+        "success": "{{domain}} removed",
+        "failed": "Could not remove the domain"
+    },
     "status": {
         "configured": "Configured",
         "notConfigured": "Not Configured"
@@ -37,6 +55,8 @@
             "hideNameHint": "Enable if your logo already contains the institute name. Hides the name in the sidebar and login page.",
             "stackNameLabel": "Stack name below logo",
             "stackNameHint": "Render the institute name centered underneath the logo instead of beside it, in the sidebar header.",
+            "applyNamingLabel": "Use custom names on login & sign-up pages",
+            "applyNamingHint": "Shows the terms set in Naming Settings (e.g. Course → Program) before anyone signs in, not only after.",
             "logoWidthLabel": "Logo width (px)",
             "logoWidthHint": "Leave blank to use default. Set 250+ AND clear the height to make the sidebar logo span the full width, edge to edge.",
             "logoHeightLabel": "Logo height (px)",
@@ -83,7 +103,12 @@
             "afterLogoutLabel": "After Logout Route",
             "afterLogoutPlaceholder": "/login",
             "homeClickLabel": "Home Icon Click Route",
-            "homeClickPlaceholder": "/"
+            "homeClickPlaceholder": "/",
+            "rootCatalogueLabel": "Website on the home page (/)",
+            "rootCatalogueNone": "None — / goes to the redirect route",
+            "rootCatalogueLoading": "Loading sites…",
+            "rootCatalogueDraft": "{{tag}} (draft)",
+            "rootCatalogueHint": "The chosen Manage Pages site opens at this domain's root and its pages at /<page>. Old /<site>/… links keep working."
         },
         "links": {
             "heading": "Links",

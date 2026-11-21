@@ -13,7 +13,85 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { COMMERCE_NAV } from '@/lib/commerce/commerce-access';
+import { RETURN_WARNINGS } from '../orders/-components/dialogs/ReturnCreateDialog';
+import { BULK_SHIP_CSV_ERRORS } from '../orders/-shared/bulk-ship-csv';
+import { NEW_ORDER_PROBLEM_KEYS } from '../orders/-shared/new-order';
+import { CLIENT_ACTION_IDS } from '../orders/-shared/order-actions';
+import { ORDER_ERROR_CODES, ORDER_ERROR_FALLBACK_KEYS } from '../orders/-shared/order-errors';
+import { QUEUE_DEFINITIONS } from '../orders/-shared/order-queues';
+import {
+    CONDITIONS,
+    ORDER_ACTION_CODES,
+    ORDER_CHANNELS,
+    ORDER_QUEUES,
+    PAYMENT_METHODS,
+    REFUND_METHODS,
+    RETURN_REASONS,
+    RETURN_VIA,
+    RTO_REASONS,
+    TENDER_MODES,
+} from '../orders/-shared/order-types';
+import { PACK_REFUSALS } from '../orders/-shared/pack-session';
+import { CART_REFUSALS } from '../pos/-shared/pos-cart';
+import { POS_ERROR_CODES } from '../pos/-shared/pos-errors';
+import { RECEIPT_DOCUMENT_TYPES } from '../pos/-shared/pos-receipt';
+import * as catalogue from '../reports/-shared/report-catalogue';
+import { REPORT_ERROR_CODES, REPORT_ERROR_FALLBACKS } from '../reports/-shared/report-errors';
+import { RANGE_PROBLEMS } from '../reports/-shared/report-search';
+import {
+    APPROVAL_ACTION_LABELS,
+    AUDIT_CHANGE_KEYS,
+    AUDIT_KIND_LABELS,
+    AUDIT_TABS,
+    CHECK_FIGURES,
+    CHECK_RULE_REPORTS,
+    COUNT_TOTALS,
+    GSTR1_TABS,
+    MONEY_TOTALS,
+    REPORT_VALUE_CODES,
+    REPORT_WARNING_CODES,
+    VALIDATION_REASONS,
+} from '../reports/-shared/report-keys';
+import { TENDER_PROBLEMS } from '../pos/-shared/pos-tenders';
+import {
+    POS_APPROVAL_ACTIONS,
+    POS_RETURN_REASONS,
+    POS_RETURN_SETTLE,
+    REGISTER_SETUP_WARNINGS,
+    TENDER_MODES_POS,
+} from '../pos/-shared/pos-types';
+import { COUNT_REFUSALS } from '../inventory/-shared/count-sheet';
+import { INVENTORY_ERROR_CODES } from '../inventory/-shared/inventory-errors';
+import {
+    ADJUSTMENT_REASONS,
+    COUNT_KINDS,
+    DAMAGE_REASONS,
+    INVENTORY_TABS,
+    LABEL_LANGUAGES,
+    LABEL_REASONS,
+    LABEL_SOURCES,
+    LABEL_TEMPLATES,
+    MOVEMENT_REASONS,
+    MOVEMENT_TYPES,
+    QUICK_ADD_KINDS,
+    REPRINT_REASONS,
+    REVIEW_PIECE_GROUPS,
+    SHORTFALL_REASONS,
+    TRANSFER_DIRECTIONS,
+    TRANSFER_STATUSES,
+    TRANSFER_WARNINGS,
+    UNCOUNTED_CHOICES,
+} from '../inventory/-shared/inventory-types';
+import { RECEIVE_REFUSALS } from '../inventory/-shared/receive-lines';
+import { TRANSFER_REFUSALS } from '../inventory/-shared/transfer-lines';
 import { NAMED_MEDIA_TAGS } from '../products/-components/media-tags';
+import {
+    DELIVERY_CODES,
+    NOTIFICATION_LOCALES,
+    NOTIFICATION_TRIGGERS,
+    TEMPLATE_SUBMIT_CODES,
+    TEST_SEND_CODES,
+} from '../settings/-components/notifications-logic';
 import { PRODUCT_LOCALES } from './catalogue-types';
 import { GST_STATE_CODES } from './gstin';
 import { PRODUCT_SERVER_ERROR_KEYS } from './product-errors';
@@ -47,7 +125,7 @@ const sidebar = { en: flatten(load('en', 'sidebar')), hi: flatten(load('hi', 'si
 const placeholders = (text: string) => (text.match(/{{\s*[\w.]+\s*}}/g) ?? []).sort();
 const DEVANAGARI = /[ऀ-ॿ]/;
 /** Values that are the same in both languages on purpose: names of things. */
-const SAME_IN_BOTH = new Set(['GSTIN', 'PIN', 'HSN']);
+const SAME_IN_BOTH = new Set(['GSTIN', 'PIN', 'HSN', 'GSTR-1']);
 
 const sourceFiles = (dir: string): string[] =>
     fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -234,6 +312,118 @@ describe('commerce strings: every key the code asks for exists', () => {
         expect(need.filter((key) => !en[key] || !hi[key])).toEqual([]);
     });
 
+    it('order desk keys built at run time exist for every value', () => {
+        const need: string[] = [];
+        const each = (prefix: string, values: readonly string[]) =>
+            values.forEach((value) => need.push(`${prefix}.${value}`));
+        each('orders.queues', ORDER_QUEUES);
+        each('orders.empty', ORDER_QUEUES);
+        each('orders.actions', [...ORDER_ACTION_CODES, ...CLIENT_ACTION_IDS]);
+        each('orders.rto.reasons', RTO_REASONS);
+        each('orders.condition', CONDITIONS);
+        each('orders.tender', TENDER_MODES);
+        each('orders.channel', ORDER_CHANNELS);
+        each('orders.paymentMethod', PAYMENT_METHODS);
+        each('orders.errors', [...ORDER_ERROR_CODES, ...ORDER_ERROR_FALLBACK_KEYS]);
+        each('orders.pack.scan', PACK_REFUSALS);
+        each('orders.bulkShip.csvErrors', BULK_SHIP_CSV_ERRORS);
+        each(
+            'orders.list.columns',
+            QUEUE_DEFINITIONS.flatMap((queue) => (queue.extraColumn ? [queue.extraColumn] : []))
+        );
+        expect(need.length).toBeGreaterThan(120);
+        expect(need.filter((key) => !en[key] || !hi[key])).toEqual([]);
+    });
+
+    it('returns, refunds, new order and notification keys built at run time exist', () => {
+        const need: string[] = [];
+        const each = (prefix: string, values: readonly string[]) =>
+            values.forEach((value) => need.push(`${prefix}.${value}`));
+        each('orders.refund.methods', [...REFUND_METHODS, 'EXCHANGE_CREDIT']);
+        each('orders.returns.reasons', RETURN_REASONS);
+        each('orders.returns.via', RETURN_VIA);
+        each('orders.returns.warnings', RETURN_WARNINGS);
+        each('orders.new.problems', NEW_ORDER_PROBLEM_KEYS);
+        NOTIFICATION_TRIGGERS.forEach((code) =>
+            need.push(`notifications.triggers.${code}.title`, `notifications.triggers.${code}.description`)
+        );
+        each('notifications.testCodes', TEST_SEND_CODES);
+        each('notifications.deliveryCodes', DELIVERY_CODES);
+        each('notifications.templates.codes', TEMPLATE_SUBMIT_CODES);
+        each('notifications.languages', NOTIFICATION_LOCALES);
+        each('notifications.shop.shopName', NOTIFICATION_LOCALES);
+        expect(NOTIFICATION_TRIGGERS).toHaveLength(9);
+        expect(need.length).toBeGreaterThan(90);
+        expect(need.filter((key) => !en[key] || !hi[key])).toEqual([]);
+    });
+
+    it('billing counter keys built at run time exist for every value', () => {
+        const need: string[] = [];
+        const each = (prefix: string, values: readonly string[]) =>
+            values.forEach((value) => need.push(`${prefix}.${value}`));
+        each('pos.errors', POS_ERROR_CODES);
+        // Tender labels reuse the order desk's; "Other" and the exchange credit are the counter's.
+        each('orders.tender', TENDER_MODES_POS);
+        each('pos.tender', ['OTHER', 'CREDIT_NOTE']);
+        each('pos.approval', [...POS_APPROVAL_ACTIONS, 'title', 'generic', 'managersFailed']);
+        each('pos.cart', CART_REFUSALS);
+        each('pos.pay.problems', TENDER_PROBLEMS);
+        each('pos.registers.warnings', REGISTER_SETUP_WARNINGS);
+        each('pos.receipt.types', RECEIPT_DOCUMENT_TYPES);
+        each('pos.returns.settleOptions', POS_RETURN_SETTLE);
+        each('orders.returns.reasons', POS_RETURN_REASONS);
+        each('pos.discount.kinds', ['AMOUNT', 'PERCENT']);
+        each('pos.length.problems', ['format', 'quantityStep', 'quantityRange']);
+        each('pos.registers.problems', ['location', 'code', 'name', 'prefix', 'nextValue']);
+        each('pos.billBooks.problems', ['prefix', 'financial_year', 'from', 'to']);
+        each('pos.lineMarks', ['PRICE_CHANGED', 'UNAVAILABLE']);
+        // Z-report labels.
+        each('pos.z', [
+            'title', 'opened', 'closed', 'stillOpen', 'sales', 'bills', 'voided', 'billBook', 'discounts',
+            'numbers', 'byMode', 'none', 'tax', 'taxRate', 'returns', 'returnCount', 'refund', 'cash', 'openingCash',
+        ]);
+        expect(need.length).toBeGreaterThan(90);
+        expect(need.filter((key) => !en[key] || !hi[key])).toEqual([]);
+    });
+
+    it('inventory keys built at run time exist for every value', () => {
+        const need: string[] = [];
+        const each = (prefix: string, values: readonly string[]) =>
+            values.forEach((value) => need.push(`${prefix}.${value}`));
+        each('inventory.tabs', INVENTORY_TABS);
+        each('inventory.errors', [...INVENTORY_ERROR_CODES, 'uncertain']);
+        each('inventory.shortfall', SHORTFALL_REASONS);
+        each('inventory.labels.reprintReason', REPRINT_REASONS);
+        LABEL_TEMPLATES.forEach((value) => need.push(`inventory.labels.template${value}`));
+        each('inventory.labels.languages', LABEL_LANGUAGES);
+        each('inventory.labels.reasons', LABEL_REASONS);
+        each('inventory.labels.sources', LABEL_SOURCES);
+        each('inventory.labels.problems', ['nothing', 'startPosition']);
+        UNCOUNTED_CHOICES.forEach((value) => need.push(`inventory.counts.uncounted${value}`));
+        each('inventory.reasons', [...ADJUSTMENT_REASONS, ...DAMAGE_REASONS, ...MOVEMENT_REASONS]);
+        each('status.movementType', MOVEMENT_TYPES);
+        each('status.transfer', TRANSFER_STATUSES);
+        each('inventory.transfers.warnings', TRANSFER_WARNINGS);
+        each('inventory.transfers.directions', TRANSFER_DIRECTIONS);
+        each('inventory.transferLines', TRANSFER_REFUSALS);
+        each('inventory.countSheet', COUNT_REFUSALS);
+        each('inventory.receive.refusals', RECEIVE_REFUSALS);
+        each('inventory.receive.problems', ['source', 'sourcePlace', 'note', 'lines', 'quantities']);
+        each('inventory.reprint.problems', ['lines', 'reason', 'note']);
+        each('inventory.counts.kinds', COUNT_KINDS);
+        each('inventory.review.groups', ['differences', 'agreeing', 'uncounted', ...REVIEW_PIECE_GROUPS]);
+        each('inventory.counts.summaryKeys', [
+            'lines', 'lines_with_difference', 'units_up', 'units_down', 'missing', 'found', 'misplaced', 'uncounted',
+        ]);
+        each('inventory.stock.filter', ['ALL', 'LOW', 'OUT']);
+        each('inventory.receipt.sources', ['OWN_SOURCE', 'SUPPLIER', 'OPENING', 'OTHER']);
+        QUICK_ADD_KINDS.forEach((value) =>
+            need.push(`products.selling.options.${value}.title`, `products.selling.options.${value}.description`)
+        );
+        expect(need.length).toBeGreaterThan(150);
+        expect(need.filter((key) => !en[key] || !hi[key])).toEqual([]);
+    });
+
     it('the settings cards in the code are the ones with strings', async () => {
         const { SETTINGS_CARDS } = await import('../settings/-components/settings-cards');
         SETTINGS_CARDS.forEach((card) => {
@@ -245,16 +435,49 @@ describe('commerce strings: every key the code asks for exists', () => {
             'taxClasses',
             'locations',
             'staff',
+            'notifications',
+            'registers',
         ]);
         expect(SETTINGS_CARDS.filter((card) => !card.to).map((card) => card.id)).toEqual([
-            'registers',
             'shipping',
             'payments',
             'documents',
             'returns',
             'labels',
-            'notifications',
             'storefront',
         ]);
+    });
+    it('report and audit log keys built at run time exist for every value (WP-51)', () => {
+        const need: string[] = [];
+        const each = (prefix: string, values: readonly string[]) =>
+            values.forEach((value) => need.push(`${prefix}.${value}`));
+        catalogue.REPORT_IDS.forEach((id) =>
+            need.push(catalogue.reportTitleKey(id), catalogue.reportHelpKey(id))
+        );
+        each('reports.groups', catalogue.REPORT_GROUPS);
+        each('reports.groupBy', [...catalogue.SALES_GROUP_BY, ...catalogue.PRODUCT_GROUP_BY]);
+        each('reports.errors', [...REPORT_ERROR_CODES, ...REPORT_ERROR_FALLBACKS]);
+        each('reports.warnings', REPORT_WARNING_CODES);
+        each('reports.gstr1.tabs', GSTR1_TABS);
+        // Totals beyond the columns: the server's own keys (section headings and column labels are the server's).
+        each('reports.totals', [...MONEY_TOTALS, ...COUNT_TOTALS]);
+        each('reports.filters.problems', ['order', 'tooLong', 'future', 'futureMonth']);
+        each('reports.audit.kinds', AUDIT_KIND_LABELS);
+        each('reports.audit.actions', APPROVAL_ACTION_LABELS);
+        each('reports.audit.tabs', AUDIT_TABS);
+        each('orders.channel', catalogue.REPORT_CHANNELS);
+        // Reports fix round: codes in the admin's words, check rules and figures, change keys,
+        // the refused-filter sentences, the bill status filter and every filter problem.
+        each('reports.values', [...REPORT_VALUE_CODES, ...catalogue.REPORT_STATUSES]);
+        each('reports.check.rules', CHECK_RULE_REPORTS);
+        each('reports.check.figures', CHECK_FIGURES);
+        each('reports.audit.changeKeys', AUDIT_CHANGE_KEYS);
+        each('reports.errors.validation', VALIDATION_REASONS);
+        each('reports.filters.problems', RANGE_PROBLEMS);
+        expect(need.length).toBeGreaterThan(150);
+        expect(need.filter((key) => !en[key] || !hi[key])).toEqual([]);
+        // Report names as the contract words them (§7.2), Hindi first.
+        expect(hi['reports.catalogue.dayBook.title']).toBe('रोज़नामचा');
+        expect(en['reports.errors.REPORT_BUSY']).toBe('Another download is running. Try again in a minute.');
     });
 });

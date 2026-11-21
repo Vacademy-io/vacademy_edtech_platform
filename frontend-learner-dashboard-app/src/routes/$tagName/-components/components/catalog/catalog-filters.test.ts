@@ -285,3 +285,27 @@ describe("buildAppliedChips", () => {
     expect(buildAppliedChips(EMPTY_CRITERIA, {} as never)).toEqual([]);
   });
 });
+
+describe("a course in two languages (tagged english,hindi)", () => {
+  // Levels are formats here, so each course's language comes from its tags.
+  const BILINGUAL = [
+    row({ id: "rp", title: "Rajaswala Paricharya", level: "Swasthavritta", level_name: "Swasthavritta", comma_separeted_tags: "english,hindi,e-learning" }),
+    row({ id: "yp", title: "Your Period", level: "Swasthavritta", level_name: "Swasthavritta", comma_separeted_tags: "hindi,live sessions" }),
+    row({ id: "pw", title: "Principles of Wellness", level: "Swasthavritta", level_name: "Swasthavritta", comma_separeted_tags: "english,ebook" }),
+  ];
+  const cards = buildCatalogCards(BILINGUAL, { grouping: true, languages: LANGS });
+
+  it("shows under the Hindi filter and the English filter", () => {
+    expect(ids(run({ languages: ["hi"] }, cards))).toEqual(["rp", "yp"]);
+    expect(ids(run({ languages: ["en"] }, cards))).toEqual(["rp", "pw"]);
+    expect(ids(run({ languages: ["en", "hi"] }, cards))).toEqual(["rp", "yp", "pw"]);
+  });
+
+  it("counts in both languages and names both on its card", () => {
+    const groups = buildFacetGroups(criteria({}), ctx());
+    expect(countFacetOptions(cards, groups, GROUP_IDS.language, languageOptions(["en", "hi"], LANGS))).toEqual({ en: 2, hi: 2 });
+    expect(cards.find((c) => c.courseId === "rp")?.languages.map((l) => l.code)).toEqual(["en", "hi"]);
+    expect(cards.find((c) => c.courseId === "yp")?.languages.map((l) => l.code)).toEqual(["hi"]);
+    expect(presentLanguageCodes([BILINGUAL[0]!], LANGS)).toEqual(["en", "hi"]);
+  });
+});

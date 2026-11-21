@@ -315,4 +315,11 @@ export const flavorConfig: FlavorConfigs = {
     domain: "mecademy.in",
     subdomain: "student",
   },
+
+  // COACH UP IAS Android app (student.coachupias.com)
+  "com.coachupias.app": {
+    appName: "COACH UP IAS",
+    domain: "coachupias.com",
+    subdomain: "student",
+  },
 };

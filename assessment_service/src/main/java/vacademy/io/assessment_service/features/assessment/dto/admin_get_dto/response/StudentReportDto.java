@@ -36,4 +36,7 @@ public interface StudentReportDto {
 
     String getReportReleaseStatus();
 
+    /** When a released result's marks last changed (submission review "Revised" tag); null unless released. */
+    Date getResultRevisedAt();
+
 }

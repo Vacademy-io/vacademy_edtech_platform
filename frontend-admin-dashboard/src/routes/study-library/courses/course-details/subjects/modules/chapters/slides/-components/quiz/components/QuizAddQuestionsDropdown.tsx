@@ -5,7 +5,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { FileCsv, FileDoc, Plus, StarFour } from '@phosphor-icons/react';
+import { FileCsv, FileDoc, FolderOpen, Plus, StarFour } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 
 interface QuizAddQuestionsDropdownProps {
@@ -13,6 +13,7 @@ interface QuizAddQuestionsDropdownProps {
     onDocument: () => void;
     onAI: () => void;
     onCSV: () => void;
+    onQuestionPaper: () => void;
 }
 
 const QuizAddQuestionsDropdown = ({
@@ -20,6 +21,7 @@ const QuizAddQuestionsDropdown = ({
     onDocument,
     onAI,
     onCSV,
+    onQuestionPaper,
 }: QuizAddQuestionsDropdownProps) => {
     const { t } = useTranslation('studyLibraryQuizAddQuestionsDropdown');
 
@@ -31,7 +33,7 @@ const QuizAddQuestionsDropdown = ({
                     {t('addQuestion')}
                 </MyButton>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuContent align="end" className="w-60">
                 <DropdownMenuItem
                     className="flex cursor-pointer items-center gap-2 py-2"
                     onClick={onManual}
@@ -59,6 +61,13 @@ const QuizAddQuestionsDropdown = ({
                 >
                     <FileCsv size={16} className="text-primary-500" />
                     <span>{t('uploadCsvExcel')}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                    className="flex cursor-pointer items-center gap-2 py-2"
+                    onClick={onQuestionPaper}
+                >
+                    <FolderOpen size={16} className="text-primary-500" />
+                    <span>{t('fromQuestionBank')}</span>
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>

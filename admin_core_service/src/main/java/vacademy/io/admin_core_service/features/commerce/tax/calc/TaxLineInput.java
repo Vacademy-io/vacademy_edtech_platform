@@ -31,6 +31,12 @@ public class TaxLineInput {
     private BigDecimal unitPrice;
     private int quantity;
     private Integer qtyScale;
+    /**
+     * The item's own unit code (the product's, as the order line keeps it). For a measured line
+     * ({@code qtyScale > 1}) it is the unit printed on the invoice and the credit note, whatever
+     * the tax class says; a counted line keeps the tax class unit. Null for delivery and COD.
+     */
+    private String unit;
     /** Discount given on this line alone; for a SHIPPING line, the free-shipping rule. */
     private BigDecimal lineDiscount;
     private TaxClassRef taxClass;

@@ -46,6 +46,20 @@ public class WhiteLabelController {
     }
 
     /**
+     * Removes one of the institute's domains (a routing row). Refused for the
+     * domain that is currently the institute's portal URL.
+     */
+    @DeleteMapping("/domain")
+    public ResponseEntity<Void> deleteDomain(
+            @RequestAttribute("user") CustomUserDetails user,
+            @RequestParam("instituteId") String instituteId,
+            @RequestParam("routingId") String routingId) {
+
+        whiteLabelService.deleteDomain(user, instituteId, routingId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
      * Returns current white-label configuration for the institute.
      * Safe read-only endpoint.
      */

@@ -144,6 +144,7 @@ export const enum SettingsTabs {
     WhatsApp = 'whatsapp',
     LeadSettings = 'leadSettings',
     GuardianSettings = 'guardianSettings',
+    EnrolmentBreaks = 'enrolmentBreaks',
     LearnerCredentials = 'learnerCredentials',
     GtmSettings = 'gtmSettings',
     UtmSettings = 'utmSettings',
@@ -160,8 +161,8 @@ export const enum SettingsTabs {
     Lms = 'lms',
     AiCalling = 'aiCalling',
     CrmIntelligence = 'crmIntelligence',
-    AssistantTools = 'assistantTools',
-    McpServer = 'mcpServer',
+    /** The in-product assistant and AI apps (MCP) in one screen. */
+    AiAccess = 'aiAccess',
     BadgesRewards = 'badgesRewards',
     Engagement = 'engagement',
     Language = 'language',

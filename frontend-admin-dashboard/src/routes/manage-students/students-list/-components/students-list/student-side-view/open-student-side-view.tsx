@@ -5,6 +5,7 @@ import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
     X,
+    CaretLeft,
     EnvelopeSimple,
     Phone,
     Clock,
@@ -64,7 +65,12 @@ const SectionHeader = ({ icon, title }: { icon: React.ReactNode; title: string }
     </div>
 );
 
-export const OpenStudentSidebar = () => {
+export const OpenStudentSidebar = ({
+    back,
+}: {
+    /** A way back to the panel this one was opened from (Submissions: "Back to submission"). */
+    back?: { label: string; onClick: () => void };
+} = {}) => {
     const { t } = useTranslation('manageStudentsOpenSideView');
     const { state, toggleSidebar } = useSidebar();
     const { isCompact } = useCompactMode();
@@ -114,6 +120,17 @@ export const OpenStudentSidebar = () => {
                 <SidebarHeader className="shrink-0 border-b border-slate-200 bg-white px-5 py-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
+                            {back && (
+                                <button
+                                    type="button"
+                                    onClick={back.onClick}
+                                    className="flex size-8 shrink-0 items-center justify-center rounded-md text-neutral-500 transition-colors hover:bg-primary-50 hover:text-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
+                                    aria-label={back.label}
+                                    title={back.label}
+                                >
+                                    <CaretLeft className="size-5 rtl:rotate-180" />
+                                </button>
+                            )}
                             <Avatar className="h-10 w-10 border border-slate-200">
                                 <AvatarFallback className="bg-primary-100 text-sm font-semibold text-primary-600">
                                     {initials}

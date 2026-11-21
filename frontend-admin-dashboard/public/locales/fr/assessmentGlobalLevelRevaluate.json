@@ -1,6 +1,6 @@
 {
     "trigger": {
-        "entireAssessment": "Évaluation entière"
+        "entireAssessment": "Recorriger avec le corrigé (tout le test)"
     },
     "dialog": {
         "title": "Réévaluer tous les {{learnerPlural}}",

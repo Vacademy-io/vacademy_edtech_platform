@@ -83,6 +83,9 @@ class CopyCheckOrchestratorBillingTest {
 
                 Assessment assessment = new Assessment();
                 assessment.setId("assessment-1");
+                // An automatic run on an online attempt comes from a test that opted in
+                // to AI evaluation (with the switch off it grades CBE answers only).
+                assessment.setAiEvaluationEnabled(true);
                 attempt = new StudentAttempt();
                 attempt.setId("attempt-1");
                 attempt.setAttemptData("{\"sections\":[]}");
@@ -117,7 +120,7 @@ class CopyCheckOrchestratorBillingTest {
         }
 
         private void verdict(DispatchVerdict verdict, Reservation newQuote) {
-                when(credits.checkAtDispatch(any(), any(), any(), any(), anyBoolean()))
+                when(credits.checkAtDispatch(any(), any(), any(), any(), anyBoolean(), anyBoolean()))
                                 .thenReturn(new DispatchCheck(verdict, BigDecimal.valueOf(3), BigDecimal.ONE, BigDecimal.ZERO,
                                                 newQuote));
         }
@@ -138,7 +141,7 @@ class CopyCheckOrchestratorBillingTest {
                                 contains("not billed"), any());
                 verify(processes, never()).beginDispatch(any(), any(), any());
                 verify(client, never()).submitGrade(any());
-                verify(credits, never()).checkAtDispatch(any(), any(), any(), any(), anyBoolean());
+                verify(credits, never()).checkAtDispatch(any(), any(), any(), any(), anyBoolean(), anyBoolean());
         }
 
         @Test
@@ -172,7 +175,7 @@ class CopyCheckOrchestratorBillingTest {
 
                 // Online attempt (no sheet): only the written answer is graded, so priced as one.
                 verify(credits).checkAtDispatch(eq("inst-1"), isNull(), isNull(), eq(AiEvaluationCharge.dashboardTyped(1)),
-                                eq(false));
+                                eq(false), eq(false));
                 verify(processes).recordQuote(eq("process-1"), eq(BigDecimal.valueOf(2)), anyString(), any());
                 verify(client).submitGrade(any());
         }
@@ -211,7 +214,7 @@ class CopyCheckOrchestratorBillingTest {
                 service.dispatch("process-1", "attempt-1", null, "pod-a");
 
                 verify(credits).checkAtDispatch(eq("inst-1"), eq(BigDecimal.valueOf(12)),
-                                eq("{\"tool_key\":\"copy_check_evaluation_api\"}"), isNull(), eq(true));
+                                eq("{\"tool_key\":\"copy_check_evaluation_api\"}"), isNull(), eq(true), eq(false));
                 CopyCheckGradeRequestDto request = sent();
                 assertThat(request.getBillingActor()).isEqualTo("apikey:key-1");
                 assertThat(request.getRateSnapshot()).isEqualTo(rate);

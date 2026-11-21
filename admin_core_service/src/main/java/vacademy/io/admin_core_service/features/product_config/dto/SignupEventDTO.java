@@ -24,4 +24,10 @@ public class SignupEventDTO {
     private String method;
     private String trialEnds;
     private String source;
+    /** The visit's utm tags from the product's website, when it had any. */
+    private String utmSource;
+    private String utmMedium;
+    private String utmCampaign;
+    private String utmContent;
+    private String utmTerm;
 }

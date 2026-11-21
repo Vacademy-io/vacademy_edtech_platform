@@ -70,6 +70,12 @@
     "verifyUpdateCodeSignature": false
   },
   "mac": {
+    "entitlements": "entitlements.mac.plist",
+    "entitlementsInherit": "entitlements.mac.plist",
+    "extendInfo": {
+      "NSCameraUsageDescription": "Used to show your video in live classes when you turn your camera on.",
+      "NSMicrophoneUsageDescription": "Used to speak in live classes and to ask the AI assistant questions by voice."
+    },
     "category": "public.app-category.education",
     "target": "dmg",
     "icon": "assets/ssdc_horizon.icns"

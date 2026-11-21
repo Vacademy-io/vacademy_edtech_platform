@@ -15,6 +15,7 @@ import { withLocaleParam } from '../../../-utils/catalogue-site-language';
 import { createCommerceClient, type CommerceClient } from '../api/client';
 import { parseCommerceConfig, resolveCommerceLocale, type CommerceConfig } from '../config';
 import { createTranslate, type Translate } from '../i18n';
+import { carriedHash } from '../logic/checkout';
 import type { CommerceRoute } from '../routes';
 import { followOtherTabs, useCommerceCart } from '../state/cart-store';
 
@@ -107,7 +108,9 @@ export const CommerceSiteProvider: React.FC<{
             setStored(code);
             const location = router.history.location;
             const next = withSearchParams(location.search || '', { [LOCALE_PARAM]: code === baseLocale ? null : code });
-            router.history.replace(`${location.pathname}${next}${location.hash || ''}`);
+            // The router may still remember a fragment the order page already took out of the
+            // address; an order or link token in it is never put back.
+            router.history.replace(`${location.pathname}${next}${carriedHash(location.hash)}`);
         },
         [siteLocale, tagName, baseLocale, router]
     );

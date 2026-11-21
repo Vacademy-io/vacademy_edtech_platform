@@ -82,7 +82,7 @@ public class AnnouncementService {
             }
             
             // 5. Save modes with specific settings
-            saveModes(announcement.getId(), request.getModes());
+            saveModes(announcement.getId(), request.getModes(), announcement.getTimezone());
             
             // 6. Save mediums
             saveMediums(announcement.getId(), request.getMediums());
@@ -294,7 +294,7 @@ public class AnnouncementService {
             }
 
             deleteModeEntities(announcementId);
-            saveModes(announcementId, request.getModes());
+            saveModes(announcementId, request.getModes(), announcement.getTimezone());
 
             mediumRepository.deleteByAnnouncementId(announcementId);
             saveMediums(announcementId, request.getMediums());
@@ -346,6 +346,12 @@ public class AnnouncementService {
         announcement.setStatus(status);
         announcement.setUpdatedAt(LocalDateTime.now());
         announcementRepository.save(announcement);
+
+        // A switched-off announcement must not go out later: drop its pending schedule. Its pins
+        // and overlays stop showing because the learner queries skip INACTIVE / EXPIRED.
+        if (status == AnnouncementStatus.INACTIVE || status == AnnouncementStatus.EXPIRED) {
+            schedulingService.cancelScheduledAnnouncement(announcementId);
+        }
         
         log.info("Updated announcement {} status to {}", announcementId, status);
         return mapToAnnouncementResponse(announcement);
@@ -390,6 +396,11 @@ public class AnnouncementService {
 
         // After approval, deliver immediately or schedule
         if (scheduledMessageRepository.findByAnnouncementIdAndIsActive(announcementId, true).isEmpty()) {
+            // Leave PENDING_APPROVAL first: delivery skips announcements still awaiting approval,
+            // so an approved "send now" announcement was never delivered.
+            announcement.setStatus(AnnouncementStatus.DRAFT);
+            announcement.setUpdatedAt(LocalDateTime.now());
+            announcementRepository.save(announcement);
             processingService.processAnnouncementDelivery(announcementId);
         } else {
             // If schedule exists, mark status to SCHEDULED and let scheduler fire later
@@ -537,16 +548,20 @@ public class AnnouncementService {
         return recipientEntities;
     }
 
-    private void saveModes(String announcementId, List<CreateAnnouncementRequest.ModeRequest> modes) {
+    /**
+     * @param timezone the announcement's timezone; date-times in the settings without an offset
+     *                 (the dashboard's date pickers) are read in it and stored in UTC.
+     */
+    private void saveModes(String announcementId, List<CreateAnnouncementRequest.ModeRequest> modes, String timezone) {
         if (modes != null && !modes.isEmpty()) {
             for (CreateAnnouncementRequest.ModeRequest modeRequest : modes) {
                 ModeType modeType = ModeType.valueOf(modeRequest.getModeType());
-                saveModeSpecificEntity(announcementId, modeType, modeRequest.getSettings());
+                saveModeSpecificEntity(announcementId, modeType, modeRequest.getSettings(), timezone);
             }
         }
     }
 
-    private void saveModeSpecificEntity(String announcementId, ModeType modeType, Object settings) {
+    private void saveModeSpecificEntity(String announcementId, ModeType modeType, Object settings, String timezone) {
         log.debug("Creating mode-specific entity for announcement: {}, mode: {}", announcementId, modeType);
         
         @SuppressWarnings("unchecked")
@@ -558,7 +573,7 @@ public class AnnouncementService {
                     createSystemAlertEntity(announcementId, settingsMap);
                     break;
                 case DASHBOARD_PIN:
-                    createDashboardPinEntity(announcementId, settingsMap);
+                    createDashboardPinEntity(announcementId, settingsMap, timezone);
                     break;
                 case DM:
                     createDMEntity(announcementId, settingsMap);
@@ -576,7 +591,7 @@ public class AnnouncementService {
                     createTaskEntity(announcementId, settingsMap);
                     break;
                 case APP_OVERLAY:
-                    createAppOverlayEntity(announcementId, settingsMap);
+                    createAppOverlayEntity(announcementId, settingsMap, timezone);
                     break;
                 default:
                     log.warn("Unknown mode type: {}", modeType);
@@ -1236,6 +1251,7 @@ public class AnnouncementService {
         map.put("backgroundColor", pin.getBackgroundColor());
         map.put("isDismissible", pin.getIsDismissible());
         map.put("pinStartTime", pin.getPinStartTime());
+        map.put("pinEndTime", pin.getPinEndTime());
         return map;
     }
 
@@ -1317,7 +1333,7 @@ public class AnnouncementService {
         alert.setAnnouncementId(announcementId);
         
         // Map settings with validation and defaults
-        alert.setPriority(getIntegerSetting(settings, "priority", 1, 1, 3));
+        alert.setPriority(systemAlertPriority(settings));
         alert.setIsDismissible(getBooleanSetting(settings, "isDismissible", true));
         alert.setAutoDismissAfterHours(getIntegerSetting(settings, "autoDismissAfterHours", null, 1, 168)); // Max 1 week
         alert.setShowBadge(getBooleanSetting(settings, "showBadge", true));
@@ -1327,7 +1343,7 @@ public class AnnouncementService {
         log.debug("Created system alert entity for announcement: {}", announcementId);
     }
     
-    private void createDashboardPinEntity(String announcementId, Map<String, Object> settings) {
+    private void createDashboardPinEntity(String announcementId, Map<String, Object> settings, String timezone) {
         AnnouncementDashboardPin pin = new AnnouncementDashboardPin();
         pin.setAnnouncementId(announcementId);
         
@@ -1337,7 +1353,7 @@ public class AnnouncementService {
         pin.setPosition(getStringSetting(settings, "position", "top", List.of("top", "middle", "bottom")));
         pin.setBackgroundColor(getStringSetting(settings, "backgroundColor", null, null));
         pin.setIsDismissible(getBooleanSetting(settings, "isDismissible", true));
-        pin.setPinStartTime(LocalDateTime.now());
+        applyPinWindow(pin, settings, timezone, LocalDateTime.now());
         pin.setIsActive(true);
         
         dashboardPinRepository.save(pin);
@@ -1500,7 +1516,7 @@ public class AnnouncementService {
         log.debug("Created task entity for announcement: {} with {} slides", announcementId, slideIds.size());
     }
 
-    private void createAppOverlayEntity(String announcementId, Map<String, Object> settings) {
+    private void createAppOverlayEntity(String announcementId, Map<String, Object> settings, String timezone) {
         AnnouncementAppOverlay overlay = new AnnouncementAppOverlay();
         overlay.setAnnouncementId(announcementId);
 
@@ -1508,20 +1524,107 @@ public class AnnouncementService {
         overlay.setIsDismissible(getBooleanSetting(settings, "isDismissible", true));
 
         // Optional expiry after which the overlay stops appearing even if never dismissed
-        Object showUntilObj = settings != null ? settings.get("showUntil") : null;
-        if (showUntilObj instanceof LocalDateTime showUntil) {
-            overlay.setShowUntil(showUntil);
-        } else if (showUntilObj instanceof String showUntilStr && !showUntilStr.isBlank()) {
-            try {
-                overlay.setShowUntil(LocalDateTime.parse(showUntilStr));
-            } catch (Exception e) {
-                throw new IllegalArgumentException("Invalid showUntil format. Expected ISO LocalDateTime format.");
-            }
-        }
+        overlay.setShowUntil(toUtcDateTime(settings != null ? settings.get("showUntil") : null, timezone, "showUntil"));
         overlay.setIsActive(true);
 
         appOverlayRepository.save(overlay);
         log.debug("Created app overlay entity for announcement: {}", announcementId);
+    }
+
+    /**
+     * When a dashboard pin shows: pinStartTime / pinEndTime from the settings (the dashboard's
+     * pickers), else from now for pinDurationHours. Times are stored in UTC.
+     */
+    static void applyPinWindow(AnnouncementDashboardPin pin, Map<String, Object> settings, String timezone,
+                               LocalDateTime nowUtc) {
+        LocalDateTime start = toUtcDateTime(settings != null ? settings.get("pinStartTime") : null, timezone, "pinStartTime");
+        LocalDateTime end = toUtcDateTime(settings != null ? settings.get("pinEndTime") : null, timezone, "pinEndTime");
+        if (start == null) {
+            start = nowUtc;
+        }
+        if (end != null && !end.isAfter(start)) {
+            throw new IllegalArgumentException("pinEndTime must be after pinStartTime");
+        }
+        if (end == null) {
+            int hours = pin.getPinDurationHours() != null ? pin.getPinDurationHours() : 24;
+            end = start.plusHours(hours);
+        } else {
+            // Keep the stored duration in line with the window (column is required, 1..720 hours).
+            long hours = java.time.Duration.between(start, end).toHours();
+            pin.setPinDurationHours((int) Math.max(1, Math.min(720, hours)));
+        }
+        pin.setPinStartTime(start);
+        pin.setPinEndTime(end);
+    }
+
+    /**
+     * Reads a date-time setting as UTC. Values with an offset or "Z" are converted; values without
+     * one (e.g. "2026-11-20T18:30" from a datetime-local input) are read in {@code timezone}.
+     * Null or blank gives null.
+     */
+    static LocalDateTime toUtcDateTime(Object value, String timezone, String fieldName) {
+        if (value == null || (value instanceof String str && str.isBlank())) {
+            return null;
+        }
+        java.time.ZoneId zone;
+        try {
+            zone = java.time.ZoneId.of(timezone == null || timezone.isBlank() ? "UTC" : timezone);
+        } catch (Exception e) {
+            zone = java.time.ZoneOffset.UTC;
+        }
+        if (value instanceof LocalDateTime local) {
+            return local.atZone(zone).withZoneSameInstant(java.time.ZoneOffset.UTC).toLocalDateTime();
+        }
+        if (value instanceof String str) {
+            String text = str.trim();
+            try {
+                return java.time.OffsetDateTime.parse(text)
+                        .atZoneSameInstant(java.time.ZoneOffset.UTC).toLocalDateTime();
+            } catch (java.time.format.DateTimeParseException ignored) {
+                // no offset: a wall-clock time in the announcement's timezone
+            }
+            try {
+                return LocalDateTime.parse(text).atZone(zone)
+                        .withZoneSameInstant(java.time.ZoneOffset.UTC).toLocalDateTime();
+            } catch (java.time.format.DateTimeParseException e) {
+                throw new IllegalArgumentException("Invalid " + fieldName + " format. Expected ISO date-time.");
+            }
+        }
+        throw new IllegalArgumentException("Invalid " + fieldName + " type. Expected an ISO date-time string.");
+    }
+
+    /**
+     * System alert priority, 1 (low) to 3 (high); higher sorts first in the bell. The dashboard
+     * sends LOW / MEDIUM / HIGH, services send the number.
+     */
+    static int systemAlertPriority(Map<String, Object> settings) {
+        Object value = settings != null ? settings.get("priority") : null;
+        if (value instanceof String str) {
+            switch (str.trim().toUpperCase()) {
+                case "LOW":
+                    return 1;
+                case "MEDIUM":
+                case "NORMAL":
+                    return 2;
+                case "HIGH":
+                case "URGENT":
+                case "CRITICAL":
+                    return 3;
+                default:
+                    break;
+            }
+        }
+        if (value instanceof Number number) {
+            return Math.max(1, Math.min(3, number.intValue()));
+        }
+        if (value instanceof String str) {
+            try {
+                return Math.max(1, Math.min(3, Integer.parseInt(str.trim())));
+            } catch (NumberFormatException ignored) {
+                // fall through to the default
+            }
+        }
+        return 1;
     }
 
     // Helper methods for settings validation and defaults
@@ -1573,14 +1676,20 @@ public class AnnouncementService {
         return defaultValue;
     }
     
-    private String getStringSetting(Map<String, Object> settings, String key, String defaultValue, List<String> allowedValues) {
+    static String getStringSetting(Map<String, Object> settings, String key, String defaultValue, List<String> allowedValues) {
         if (settings == null || !settings.containsKey(key)) {
             return defaultValue;
         }
         Object value = settings.get(key);
         if (value instanceof String) {
             String stringValue = (String) value;
-            if (allowedValues != null && !allowedValues.contains(stringValue)) {
+            if (allowedValues != null) {
+                // Case-insensitive: the dashboard sends "TOP", the stored value is "top".
+                for (String allowed : allowedValues) {
+                    if (allowed.equalsIgnoreCase(stringValue.trim())) {
+                        return allowed;
+                    }
+                }
                 log.warn("Invalid value {} for {}, using default: {}", stringValue, key, defaultValue);
                 return defaultValue;
             }

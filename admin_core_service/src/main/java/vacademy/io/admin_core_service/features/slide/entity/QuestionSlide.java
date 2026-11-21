@@ -86,6 +86,14 @@ public class QuestionSlide {
     @Column(name = "evaluation_secret_json", columnDefinition = "TEXT")
     private String evaluationSecretJson;
 
+    /**
+     * Whether the learner sees right after submitting if the answer was correct, and the
+     * correct answer. Null (rows written before the column, or by a client that never sent
+     * it) means on. Not used by CBE_RESPONSE slides.
+     */
+    @Column(name = "show_answer_after_submit")
+    private Boolean showAnswerAfterSubmit = Boolean.TRUE;
+
     public QuestionSlide(QuestionSlideDTO dto) {
         this.id = dto.getId();
 
@@ -112,12 +120,20 @@ public class QuestionSlide {
         this.points = dto.getPoints();
         this.sourceType = dto.getSourceType();
         this.evaluationSecretJson = dto.getEvaluationSecretJson();
+        this.showAnswerAfterSubmit = dto.getShowAnswerAfterSubmit() == null
+                ? Boolean.TRUE
+                : dto.getShowAnswerAfterSubmit();
 
         if (dto.getOptions() != null) {
             this.options = dto.getOptions().stream()
                     .map(optionDTO -> new Option(optionDTO, this))
                     .collect(Collectors.toList());
         }
+    }
+
+    /** {@link #showAnswerAfterSubmit} with null read as on. */
+    public boolean showsAnswerAfterSubmit() {
+        return !Boolean.FALSE.equals(showAnswerAfterSubmit);
     }
 
 }

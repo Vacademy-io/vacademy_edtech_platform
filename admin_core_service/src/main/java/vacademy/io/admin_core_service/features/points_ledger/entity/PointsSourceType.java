@@ -13,5 +13,7 @@ public enum PointsSourceType {
     /** Admin-granted, with a reason. */
     MANUAL,
     /** Passed a practice quiz set by the learner AI tutor (small, capped per day). */
-    AI_TUTOR_QUIZ
+    AI_TUTOR_QUIZ,
+    /** Completed a course slide the teacher marked "Count as engagement" (once per slide). */
+    COURSE_ACTIVITY
 }

@@ -3,5 +3,6 @@
     "addManually": "إضافة يدويًا",
     "uploadDocument": "رفع مستند",
     "createWithAi": "إنشاء بالذكاء الاصطناعي",
-    "uploadCsvExcel": "رفع CSV/Excel"
+    "uploadCsvExcel": "رفع CSV/Excel",
+    "fromQuestionBank": "من بنك الأسئلة / ورقة الأسئلة"
 }

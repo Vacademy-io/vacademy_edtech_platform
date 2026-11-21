@@ -25,4 +25,14 @@ public class ProductPlanDTO {
     private Integer credits;
     /** How many users (teachers) can use it. */
     private Integer users;
+    /**
+     * Who the plan is for, on a product sold two ways: PLATFORM (the dashboard) or API (calls from the
+     * customer's own software). Null = every workspace of the product (Evalezy, VoomSales).
+     */
+    private String accessMode;
+    /**
+     * Months one plan period lasts, when it differs from the product's plan_validity_months (a monthly
+     * and a yearly plan side by side). The storefront's period wins when the plan is on sale there.
+     */
+    private Integer validityMonths;
 }

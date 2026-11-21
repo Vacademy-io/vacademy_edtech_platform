@@ -13,6 +13,9 @@
 /* Fun Theme - a colour per course, lip buttons, Nunito; every rule is scoped
    to html.ui-fun, which only that skin puts on <html> */
 @import './styles/fun/index.css';
+/* Neon City - Fun's screens at night, plus a night layer for the rest of the
+   app; rides on ui-fun and must come after it */
+@import './styles/neon-city/index.css';
 /* Institute UI axes - corners / density / gradient (data-ui-* on <html>).
    Imported last of the skin sheets so its --play-radius-* definitions,
    which express the Play radii against --radius, win over the literals
@@ -1715,4 +1718,13 @@ html, body {
 [dir="rtl"] .start-1\/2.-translate-x-1\/2,
 [dir="rtl"] .start-1\/2.translate-x-\[-50\%\] {
   --tw-translate-x: 50%;
+}
+
+/* Razorpay Checkout appends its window (.razorpay-container) to <body>. When it
+   opens over a Radix modal dialog (the catalogue enrol dialog, the course
+   payment dialogs), Radix has put pointer-events: none on <body> and the
+   container inherits it, so the gateway window can't be scrolled or clicked:
+   the wheel and clicks fall through to the dialog overlay underneath. */
+.razorpay-container {
+  pointer-events: auto;
 }

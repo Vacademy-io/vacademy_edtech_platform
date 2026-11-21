@@ -34,6 +34,12 @@ import java.util.Map;
  * GET /products/{slug}   locale
  * GET /categories        locale, kind, min_in_stock
  * </pre>
+ *
+ * <p>Prices of goods sold by length or weight ({@code qty_scale} above 1): {@code price_min},
+ * {@code price_max}, {@code sort=price_asc|price_desc} and the price facet's min, max and bands
+ * are per display unit (per metre of cloth, per kg), while a card's {@code price.amount} stays
+ * per base unit (10 cm at {@code qty_scale} 10): a client shows {@code amount × qty_scale}.
+ * Counted goods ({@code qty_scale} 1) are the same in both.
  */
 @RestController
 @RequestMapping("/admin-core-service/open/catalog/v1")

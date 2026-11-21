@@ -110,7 +110,11 @@ def test_tools_are_registered_mcp_only_off_by_default_and_tied_to_the_crm_module
     for name, group, mode in (("crm_messages", "crm_messages", "READ"),
                               ("crm_send", "crm_messaging_outbound", "WRITE")):
         spec = ASSISTANT_TOOLS[name]
-        assert spec.mcp_only and not spec.default_enabled and spec.default_roles is None
+        if mode == "READ":   # both doors; in the assistant on for admins and counsellors, on CRM pages
+            assert not spec.mcp_only and not spec.default_enabled and spec.topic == "crm"
+            assert spec.default_roles == ["ADMIN", "COUNSELLOR", "COUNSELOR"]
+        else:
+            assert spec.mcp_only and not spec.default_enabled and spec.default_roles is None
         assert spec.key() == group and spec.mode == mode and spec.module_feature == "crm.leads"
         props = spec.schema["function"]["parameters"]["properties"]
         assert "user_id" not in props and "institute_id" not in props

@@ -150,7 +150,7 @@ export function SettingsTab({ agent }: { agent: LeadAgent }) {
                         <PacingSection form={form} />
                     </Panel>
                     <AutomationWarning />
-                    <div className="sticky bottom-0 flex justify-end gap-3 border-t border-neutral-200 bg-background py-3">
+                    <div data-assistant-fab="avoid-phone" className="sticky bottom-0 flex justify-end gap-3 border-t border-neutral-200 bg-background py-3">
                         <MyButton
                             type="button"
                             buttonType="secondary"

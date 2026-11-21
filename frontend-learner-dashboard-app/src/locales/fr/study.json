@@ -434,7 +434,15 @@
             "refreshOrRejoin": "Veuillez actualiser la page ou réessayer de rejoindre.",
             "stillSettingUp": "Ce {{liveClass}} est encore en cours de configuration. Veuillez actualiser dans un instant."
         },
-        "zoomSettingUpTooltip": "La réunion Zoom est encore en cours de configuration. Revenez d'ici peu."
+        "zoomSettingUpTooltip": "La réunion Zoom est encore en cours de configuration. Revenez d'ici peu.",
+        "classroom": {
+            "title": "Cours en direct",
+            "leave": "Quitter",
+            "leaveConfirm": "Quitter le cours ?",
+            "loading": "Connexion à votre cours…",
+            "error": "Impossible d'ouvrir votre cours.",
+            "retry": "Réessayer"
+        }
     },
     "supportersSection": {
         "headingPrefix": "Nos",

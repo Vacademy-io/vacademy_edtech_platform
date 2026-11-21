@@ -1,0 +1,252 @@
+{
+ "_about": "Proven truth of the 2026-11-18 live scan test (owner's Brother DCP-T830DW, one-sided ADF, macOS Image Capture, 300 DPI colour JPEG). 3 printed test copies (scantest/tools/make_copies.py: handwriting fonts, blue/black ink, one 'pencil' side printed in grey #9a9a9a), printed two-sided, scanned in two passes. Truth checked against the print manifest and the Swift prototype's assembly. The images are NOT in git: see README.md.",
+ "pass_dirs": {
+  "1": "1-fronts",
+  "2": "2-backs"
+ },
+ "_pass_dirs_note": "The Desktop folder names are the owner's guesses at scan time and are swapped: '1-fronts' holds pass 1 = the BACKS (last sheet first); '2-backs' holds pass 2 = the FRONTS in forward order.",
+ "order": "IMAGE_CAPTURE_SUFFIX (Scan.jpeg, Scan 1.jpeg ... Scan 5.jpeg)",
+ "files": {
+  "1": [
+   {
+    "name": "Scan.jpeg",
+    "sha256": "b1f342c2a98a29621714f49af8ac4a0c27c2bf860e56d3cf382d724c11c3234f"
+   },
+   {
+    "name": "Scan 1.jpeg",
+    "sha256": "e07e1405d33cee41ff950273dfdf2ce66748ec6ada78d4cf85aee17bf5c91b38"
+   },
+   {
+    "name": "Scan 2.jpeg",
+    "sha256": "69b71e33303bbdeef1d8f1eeaafb9db6ccf555c85035d433878ac7b6eddac2d3"
+   },
+   {
+    "name": "Scan 3.jpeg",
+    "sha256": "acb1d9f185aa3eb28999962a3d96f9df40867aca750e6eb129ed46739360310b"
+   },
+   {
+    "name": "Scan 4.jpeg",
+    "sha256": "790f4dba0718f1f0e6b6c8945df6bd9c552c60e9ace52517f89e0bb7f389a68a"
+   },
+   {
+    "name": "Scan 5.jpeg",
+    "sha256": "a9828c579ff5dfc4a9007b9c38ff16369517656129e83270ad91b1dba1ecd191"
+   }
+  ],
+  "2": [
+   {
+    "name": "Scan.jpeg",
+    "sha256": "b7020ac147eab8e2d0002913ed3d4e2a6f200a8c3ab007ff25f6b4c8ea791891"
+   },
+   {
+    "name": "Scan 1.jpeg",
+    "sha256": "68ca8614c69d0ba1136cc71d0ed82e4ed3119372047ded1876a05f5b9e11ea9e"
+   },
+   {
+    "name": "Scan 2.jpeg",
+    "sha256": "97949940df1a10e73b4cbff2e631dc1497f586973cb3129803d73c4573e179fd"
+   },
+   {
+    "name": "Scan 3.jpeg",
+    "sha256": "2a56dcec21c6e2e8bcbee4197660ea4d983cb86b607cafe7fcf3580d1c06d3b3"
+   },
+   {
+    "name": "Scan 4.jpeg",
+    "sha256": "0e2c98f5f7849fb6e9a0cd8ff8e2ee642ba39ecf593f4243f2093c9e2049d10a"
+   },
+   {
+    "name": "Scan 5.jpeg",
+    "sha256": "612412b11d03df2458d088be0824d900766cff84b44b5e6583dcc304fb0e545b"
+   }
+  ]
+ },
+ "dpi": 300,
+ "layout": {
+  "fronts_pass": 2,
+  "fronts_rotation": 0,
+  "backs_order": "REVERSED",
+  "backs_rotation": 0
+ },
+ "pairs": {
+  "0": "p1.5",
+  "1": "p1.4",
+  "2": "p1.3",
+  "3": "p1.2",
+  "4": "p1.1",
+  "5": "p1.0"
+ },
+ "labels": {
+  "0": "Aarav Sharma",
+  "2": "Priya Verma",
+  "5": "Rohan Gupta"
+ },
+ "blank_pages": [
+  "p1.1",
+  "p1.2"
+ ],
+ "faint_pages": [
+  "p1.3"
+ ],
+ "page_classes": {
+  "p1.0": "WRITTEN",
+  "p1.1": "BLANK",
+  "p1.2": "BLANK",
+  "p1.3": "WRITTEN",
+  "p1.4": "WRITTEN",
+  "p1.5": "WRITTEN",
+  "p2.0": "WRITTEN",
+  "p2.1": "WRITTEN",
+  "p2.2": "WRITTEN",
+  "p2.3": "WRITTEN",
+  "p2.4": "WRITTEN",
+  "p2.5": "WRITTEN"
+ },
+ "copies": [
+  {
+   "name": "Aarav Sharma",
+   "pages": [
+    "p2.0",
+    "p1.5",
+    "p2.1",
+    "p1.4"
+   ],
+   "left_out": []
+  },
+  {
+   "name": "Priya Verma",
+   "pages": [
+    "p2.2",
+    "p1.3",
+    "p2.3",
+    "p2.4"
+   ],
+   "left_out": [
+    "p1.2",
+    "p1.1"
+   ]
+  },
+  {
+   "name": "Rohan Gupta",
+   "pages": [
+    "p2.5",
+    "p1.0"
+   ],
+   "left_out": []
+  }
+ ],
+ "flags_absent": [
+  "COUNT_MISMATCH",
+  "FILE_UNREADABLE",
+  "NO_NAME_BOX_FOUND",
+  "PAIR_SHIFT_DETECTED",
+  "BACK_HAS_LABEL",
+  "PAIR_NOT_ROW_MAX",
+  "ORDER_UNCERTAIN",
+  "LABEL_UNUSUAL",
+  "LABEL_NO_VALUE",
+  "FRONT_BLANK",
+  "DPI_LOW",
+  "DPI_ASSUMED",
+  "BLANK_RULE_SUSPECT",
+  "UNSURE_KEPT"
+ ],
+ "status_any_of": [
+  "OK"
+ ],
+ "planner": {
+  "direction": "FORWARD",
+  "direction_source": "DEFAULT",
+  "session_flags": [
+   "FRONT_ORDER_UNCERTAIN"
+  ],
+  "_note": "Both the first front (Aarav) and the last front (Rohan, a one-sheet copy) carry a label, so load 1 gives no direction evidence: the planner defaults to FORWARD (right here) and asks the clerk (FRONT_ORDER_UNCERTAIN)."
+ },
+ "working_scales": {
+  "ink_max_dpi": 300,
+  "work_dpi": 100,
+  "gray_dpi": 75,
+  "_note": "ink is measured at the scan's own DPI capped at 300 (pages.INK_MAX_DPI); show-through maps at 75 DPI and header maps at 100 DPI. Changing any of these means re-measuring this fixture."
+ },
+ "measured_2026_11_18": {
+  "_note": "Measured by tools/scan_replay.py on the integration branch (vac-ai-test image, Python 3.11). Reference only; the test asserts the floors below, not these exact numbers.",
+  "ink_per_10k": {
+   "p1.0": 29.832,
+   "p1.1": 0.147,
+   "p1.2": 0.146,
+   "p1.3": 10.844,
+   "p1.4": 100.697,
+   "p1.5": 178.983,
+   "p2.0": 280.71,
+   "p2.1": 116.254,
+   "p2.2": 196.111,
+   "p2.3": 72.668,
+   "p2.4": 107.81,
+   "p2.5": 118.653
+  },
+  "largest_blob_mm2": {
+   "p1.1": 0.832,
+   "p1.2": 1.104,
+   "p1.3": 19.849
+  },
+  "order_margin": 0.3135,
+  "hypotheses": {
+   "rot0_SAME": 0.3293,
+   "rot0_REVERSED": 0.4797,
+   "rot180_SAME": 0.2032,
+   "rot180_REVERSED": 0.2118
+  },
+  "pair_score": [
+   0.445,
+   0.525,
+   0.457,
+   0.422,
+   0.54,
+   0.489
+  ],
+  "band_runner_up": [
+   0.323,
+   0.413,
+   0.432,
+   0.38,
+   0.353,
+   0.377
+  ],
+  "full_matrix_row_lead": [
+   0.0985,
+   0.1119,
+   0.0243,
+   0.0418,
+   0.1755,
+   0.112
+  ],
+  "full_matrix_col_lead": [
+   0.0322,
+   0.1886,
+   0.0855,
+   0.0643,
+   0.1073,
+   0.0689
+  ],
+  "label_front_sim": {
+   "0": 0.7371,
+   "2": 0.9041,
+   "5": 0.8644
+  },
+  "label_front_sim_leave_one_out": {
+   "0": 0.6675,
+   "2": 0.7519,
+   "5": 0.7307
+  },
+  "back_sim_best_of_both_ways_max": 0.3733
+ },
+ "floors": {
+  "_note": "What the test asserts: the 11-18 scans keep at least this much room under the CURRENT defaults. A failure means a code change moved the numbers; re-measure before changing a floor.",
+  "blank_ink_headroom_x": 4.0,
+  "blob_headroom_x": 2.5,
+  "written_over_unsure_x": 3.0,
+  "order_margin": 0.25,
+  "min_band_margin": 0.03,
+  "label_front_sim_min": 0.6,
+  "back_sim_max": 0.45
+ }
+}

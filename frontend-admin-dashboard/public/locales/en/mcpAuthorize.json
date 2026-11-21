@@ -10,7 +10,7 @@
         "title": "If you approve, this app can:",
         "readOnly": "Use only what your institute's MCP settings allow. Any website changes are saved as drafts that you publish yourself.",
         "sameAsYou": "See exactly what you can see, and nothing more.",
-        "revocable": "Be disconnected at any time from Settings → MCP Server."
+        "revocable": "Be disconnected at any time from Settings → AI access."
     },
     "approve": "Approve",
     "approving": "Approving…",

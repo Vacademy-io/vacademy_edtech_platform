@@ -123,7 +123,18 @@ function ProductEditorForm({
     const saveMutation = useSaveProduct();
     const statusMutation = useChangeProductStatus();
 
-    const schema = useMemo(() => buildProductSchema(t), [t]);
+    // The measure rules read what is stored, so an old row stays editable (WP-44 W3).
+    const storedScale = product?.qty_scale;
+    const storedUnit = product?.unit;
+    const storedMode = product?.stock_mode;
+    const schema = useMemo(
+        () =>
+            buildProductSchema(
+                t,
+                storedMode === undefined ? null : { qty_scale: storedScale ?? 1, unit: storedUnit ?? null, stock_mode: storedMode }
+            ),
+        [t, storedScale, storedUnit, storedMode]
+    );
     const form = useForm<ProductFormValues>({
         resolver: zodResolver(schema),
         defaultValues: product ? productToValues(product) : emptyProductValues(),
@@ -381,7 +392,7 @@ function ProductEditorForm({
                     </div>
                 </div>
 
-                <div className="sticky bottom-0 z-10 -mx-4 flex flex-col gap-2 border-t border-border bg-background p-3 sm:flex-row sm:items-center sm:justify-between">
+                <div data-assistant-fab="avoid-phone" className="sticky bottom-0 z-10 -mx-4 flex flex-col gap-2 border-t border-border bg-background p-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex min-w-0 items-start gap-2" aria-live="polite">
                         {formError ? (
                             <>

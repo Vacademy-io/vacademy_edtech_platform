@@ -52,6 +52,13 @@ import {
 } from "./quiz-instant-feedback";
 import { QuizInstantFeedbackPanel } from "./quiz-instant-feedback-panel";
 import { checkQuizAnswer } from "@/services/study-library/tracking-api/check-quiz-answer";
+import {
+  getQuizCbeResults,
+  gradeQuizCbe,
+  type QuizCbeResults,
+} from "@/services/study-library/tracking-api/quiz-cbe-grading";
+import { cbeQuizResponseJson, cbeStateWantsGrading, isCbeQuizQuestion, parseCbeRow } from "./quiz-cbe";
+import { QuizCbeQuestion, type QuizCbeQuestionHandle } from "./quiz-cbe-question";
 
 interface Option {
   id: string;
@@ -96,6 +103,8 @@ export interface ScoreCard {
   partial?: number;
   wrong: number;
   skipped: number;
+  /** Spreadsheet & Written Response answers still waiting for their AI check (0 marks so far). */
+  pending?: number;
 }
 
 interface QuizViewerProps {
@@ -130,6 +139,7 @@ const getBaseQuestionTypeDescriptions = (t: TFunction): Record<string, string> =
   TRUE_FALSE: t("quizViewer.questionTypeDescriptions.trueFalse"),
   MATCH: t("quizViewer.questionTypeDescriptions.match"),
   FILL_IN_THE_BLANK: t("quizViewer.questionTypeDescriptions.fillInTheBlank"),
+  CBE_RESPONSE: t("cbeSlide.typeLabel"),
 });
 
 const formatQuestionTypeLabel = (type: string | undefined, t: TFunction) => {
@@ -246,7 +256,10 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
 }) => {
   const { t } = useTranslation("libraryCommonB");
   // The Fun skin draws its own question screen and result; every other skin is unchanged.
-  const isFun = useFunTheme();
+  // A quiz with a spreadsheet question keeps the standard screen, which has room for the grid.
+  const funTheme = useFunTheme();
+  const hasCbe = useMemo(() => (questions ?? []).some(isCbeQuizQuestion), [questions]);
+  const isFun = funTheme && !hasCbe;
   const timeLimitSeconds = timeLimitMinutes && timeLimitMinutes > 0 ? timeLimitMinutes * 60 : 0;
   const needsStart = quizNeedsStart(timeLimitMinutes, reAttemptCount);
   // Already submitted on this device. Read before the first paint so a finished
@@ -313,6 +326,15 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
   const answersRef = useRef(answers);
   useEffect(() => { answersRef.current = answers; }, [answers]);
   const [scoreCard, setScoreCard] = useState<ScoreCard | null>(null);
+  // Spreadsheet & Written Response: marked by AI after the submit (POST .../quiz-slide/cbe/grade).
+  const [cbeResults, setCbeResults] = useState<QuizCbeResults | null>(null);
+  const [cbeChecking, setCbeChecking] = useState(false);
+  /** The attempt whose CBE answers this viewer is grading or showing. */
+  const cbeAttemptRef = useRef<string | null>(null);
+  /** The attempt whose CBE results were already asked for on opening the review. */
+  const cbeLoadedForRef = useRef<string | null>(null);
+  const cbePollRef = useRef<number | null>(null);
+  const cbeQuestionRef = useRef<QuizCbeQuestionHandle>(null);
 
   const submitQuizMutation = useSubmitQuizSlideActivityLog();
   const queryClient = useQueryClient();
@@ -636,6 +658,21 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
           typeof q.text === "string"
             ? q.text
             : q.text_data?.content ?? q.text?.content ?? "";
+        if (isCbeQuizQuestion(q)) {
+          // Marked by AI on the server after the submit: no key here, and no marks claimed.
+          const answered = typeof answer === "string" && answer.trim() !== "";
+          return {
+            id: session ? uuidv5(q.id, session.attemptId) : uuidv4(),
+            response_json: cbeQuizResponseJson(
+              questionName,
+              answer,
+              q.marks != null ? q.marks : marksPerQuestion,
+            ),
+            response_status: answered ? "SUBMITTED" : "SKIPPED",
+            activity_id: slideId,
+            question_id: q.id,
+          };
+        }
         const selectedOptions = buildSelectedOptions(q, answer);
         const correctIds = getCorrectOptionIds(q);
         const correctOptions = correctIds.map((id) => ({
@@ -779,6 +816,153 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
     };
   }, [showAnswerAfterEachQuestion, currentQuestion, checkedIds, feedbackById, resolveFeedback]);
 
+  // --- Spreadsheet & Written Response: the AI check after the submit -------------------
+  const stopCbePolling = useCallback(() => {
+    if (cbePollRef.current !== null) {
+      window.clearTimeout(cbePollRef.current);
+      cbePollRef.current = null;
+    }
+  }, []);
+  useEffect(() => stopCbePolling, [stopCbePolling]);
+
+  /** Another call is still grading (another tab, or a check started before a reload): read back until it lands. */
+  const pollCbeResults = useCallback(
+    (attemptId: string, round = 0) => {
+      stopCbePolling();
+      if (round >= 15) return;
+      cbePollRef.current = window.setTimeout(async () => {
+        cbePollRef.current = null;
+        if (cbeAttemptRef.current !== attemptId) return;
+        try {
+          const result = await getQuizCbeResults(slideId, attemptId);
+          if (cbeAttemptRef.current !== attemptId) return;
+          setCbeResults(result);
+          if (result.questions.some((q) => q.state === "EVALUATING" || q.state === "PENDING")) {
+            pollCbeResults(attemptId, round + 1);
+          } else {
+            queryClient.invalidateQueries({ queryKey: ["quiz-slide-activity-logs", currentUserId, slideId] });
+          }
+        } catch {
+          pollCbeResults(attemptId, round + 1);
+        }
+      }, 8000);
+    },
+    [slideId, queryClient, currentUserId, stopCbePolling],
+  );
+
+  /** Grades the attempt's CBE answers that are not marked yet; the review shows each one's progress. */
+  const runCbeGrading = useCallback(
+    async (attemptId: string) => {
+      cbeAttemptRef.current = attemptId;
+      cbeLoadedForRef.current = attemptId;
+      stopCbePolling();
+      setCbeChecking(true);
+      try {
+        const { chapterId, packageSessionId } = getUrlParams();
+        const result = await gradeQuizCbe({
+          slide_id: slideId,
+          attempt_id: attemptId,
+          chapter_id: chapterId || undefined,
+          package_session_id: packageSessionId || undefined,
+        });
+        if (cbeAttemptRef.current !== attemptId) return;
+        setCbeResults(result);
+        // The marks are on the attempt now: the review's score reads them from the attempt logs.
+        queryClient.invalidateQueries({ queryKey: ["quiz-slide-activity-logs", currentUserId, slideId] });
+        if (result.questions.some((q) => q.state === "EVALUATING")) pollCbeResults(attemptId);
+      } catch {
+        // The answers are recorded; show where they stand and let the learner ask again.
+        try {
+          const result = await getQuizCbeResults(slideId, attemptId);
+          if (cbeAttemptRef.current === attemptId) setCbeResults(result);
+        } catch {
+          // The review falls back to the recorded rows.
+        }
+      } finally {
+        if (cbeAttemptRef.current === attemptId) setCbeChecking(false);
+      }
+    },
+    // getUrlParams reads the URL and the session store, never stale state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [slideId, queryClient, currentUserId, stopCbePolling, pollCbeResults],
+  );
+
+  /**
+   * After a submit: the review now belongs to this attempt. When it reached the server,
+   * grade the CBE answers the learner wrote; one queued offline is graded when the review
+   * is next opened online.
+   */
+  const afterSubmitCbe = (attemptId: string, finalAnswers: typeof answers, reachedServer: boolean) => {
+    if (!hasCbe) return;
+    stopCbePolling();
+    cbeAttemptRef.current = attemptId;
+    cbeLoadedForRef.current = null;
+    setCbeResults(null);
+    setCbeChecking(false);
+    const anyWritten = (questions ?? []).some(
+      (q) => isCbeQuizQuestion(q) && typeof finalAnswers[q.id] === "string" && String(finalAnswers[q.id]).trim() !== "",
+    );
+    if (!anyWritten) return;
+    if (reachedServer) {
+      void runCbeGrading(attemptId);
+    } else {
+      // Not on the server yet: nothing to read back until the queued submit syncs.
+      cbeLoadedForRef.current = attemptId;
+      toast.info(t("quizCbe.savedOffline"));
+    }
+  };
+
+  /** Saves the spreadsheet cell still being typed in on the question on screen. */
+  const withCommittedCbe = (base: typeof answers): typeof answers => {
+    const question = questions?.[current];
+    if (!question || !isCbeQuizQuestion(question)) return base;
+    // Not on screen (e.g. the time-up card replaced it): what the answers map holds stands.
+    const handle = cbeQuestionRef.current;
+    if (!handle) return base;
+    const committed = handle.commit();
+    if (committed === null || (committed === undefined && base[question.id] === undefined)) return base;
+    if (committed !== undefined && base[question.id] === committed) return base;
+    const next = { ...base };
+    if (committed === undefined) delete next[question.id];
+    else next[question.id] = committed;
+    answersRef.current = next;
+    setAnswers(next);
+    return next;
+  };
+
+  // The latest recorded attempt, as the review picks it.
+  const latestAttemptId = useMemo(() => {
+    type LogLite = { id: string; end_time?: string | null; start_time?: string | null; quiz_sides?: unknown[] };
+    const logs = (attemptLogsQuery.data ?? []) as LogLite[];
+    const ts = (l: LogLite) => new Date(l.end_time ?? l.start_time ?? 0).getTime();
+    const sorted = [...logs].sort((a, b) => ts(b) - ts(a));
+    return (sorted.find((l) => (l.quiz_sides?.length ?? 0) > 0) ?? sorted[0])?.id ?? null;
+  }, [attemptLogsQuery.data]);
+
+  // Opening the review of a quiz with CBE questions: read where their AI checks stand,
+  // and run a check that never ran (offline submit, closed tab) or failed (no credits then).
+  useEffect(() => {
+    if (!hasCbe || !showReview) return;
+    const attemptId = cbeAttemptRef.current ?? latestAttemptId;
+    if (!attemptId || cbeLoadedForRef.current === attemptId) return;
+    cbeLoadedForRef.current = attemptId;
+    cbeAttemptRef.current = attemptId;
+    (async () => {
+      try {
+        const result = await getQuizCbeResults(slideId, attemptId);
+        if (cbeAttemptRef.current !== attemptId) return;
+        setCbeResults(result);
+        if (result.questions.some((q) => cbeStateWantsGrading(q.state))) {
+          void runCbeGrading(attemptId);
+        } else if (result.questions.some((q) => q.state === "EVALUATING")) {
+          pollCbeResults(attemptId);
+        }
+      } catch {
+        // No results: the review shows what the attempt recorded.
+      }
+    })();
+  }, [hasCbe, showReview, latestAttemptId, slideId, runCbeGrading, pollCbeResults]);
+
   if (!questions || questions.length === 0) {
     if (isFun) return <FunQuizEmpty />;
     return (
@@ -801,6 +985,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
     let partial = 0;
     let wrong = 0;
     let skipped = 0;
+    let pending = 0;
 
     const checkAnswerCorrect = (q: Question, userAns: string | number | string[] | undefined): boolean => {
       if (userAns == null || (typeof userAns === "string" && userAns.trim() === "")) return false;
@@ -828,6 +1013,14 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       const qMarks = q.marks != null ? q.marks : marksPerQuestion;
       const qNeg = q.negative_marking != null ? q.negative_marking : defaultNegativeMarking;
       totalMarks += qMarks;
+      if (isCbeQuizQuestion(q)) {
+        // Marked by AI after the submit: no marks yet and never a wrong answer here. The
+        // review reads the marks from the attempt once they are recorded.
+        const written = typeof finalAnswers[q.id] === "string" && String(finalAnswers[q.id]).trim() !== "";
+        if (written) pending++;
+        else skipped++;
+        return;
+      }
       const isAnswered = finalAnswers[q.id] != null;
       const isCorrect = isAnswered && checkAnswerCorrect(q, finalAnswers[q.id]);
       const partialShare =
@@ -848,7 +1041,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       }
     });
 
-    return { earned: Math.max(0, earned), totalMarks, correct, partial, wrong, skipped };
+    return { earned: Math.max(0, earned), totalMarks, correct, partial, wrong, skipped, pending };
   };
 
   // Show review whenever we have answers OR the user has exhausted attempts
@@ -901,7 +1094,11 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
         if (!s.question_id || !s.response_json) return;
         try {
           const parsed = JSON.parse(s.response_json);
-          if (
+          const cbeRow = parseCbeRow(s.response_json);
+          if (cbeRow) {
+            // A spreadsheet answer: kept as JSON text, as the answers map holds it.
+            if (cbeRow.answer) result[s.question_id] = JSON.stringify(cbeRow.answer);
+          } else if (
             Array.isArray(parsed.selectedOptions) &&
             parsed.selectedOptions.length > 0
           ) {
@@ -947,11 +1144,23 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       maxAttempts={reAttemptCount}
       canReattempt={canReattempt}
       attemptLogs={displayedAttemptLogs}
+      cbeResults={cbeResults}
+      cbeChecking={cbeChecking}
+      onRetryCbe={() => {
+        const attemptId = cbeResults?.attempt_id ?? cbeAttemptRef.current;
+        if (attemptId && !cbeChecking) void runCbeGrading(attemptId);
+      }}
       onRestart={() => {
         if (attemptsExhausted) {
           toast.error(t("quizViewer.toast.noAttemptsRemaining"));
           return;
         }
+        // A new attempt: the last one's AI checks are no longer on screen.
+        stopCbePolling();
+        cbeAttemptRef.current = null;
+        cbeLoadedForRef.current = null;
+        setCbeResults(null);
+        setCbeChecking(false);
         const { chapterId } = getUrlParams();
         const storageKey = `quiz_answers_${slideId}_${chapterId}`;
         localStorage.removeItem(storageKey);
@@ -1057,12 +1266,14 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       setScoreCard(card);
       if (passPercentage != null && card.totalMarks > 0) {
         const pct = (card.earned / card.totalMarks) * 100;
-        setPassed(pct >= passPercentage);
+        // Spreadsheet answers still to be marked could lift a fail: wait for them.
+        setPassed(pct >= passPercentage ? true : (card.pending ?? 0) > 0 ? null : false);
       } else {
         setPassed(null);
       }
       setAnswers(finalAnswers);
       setShowReview(true);
+      afterSubmitCbe(payload.id, finalAnswers, !offlineQueued);
       if (onComplete) onComplete();
       return true;
     } catch {
@@ -1075,7 +1286,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
   submitTimeUpRef.current = () => {
     timerExpiredRef.current = true;
     // Use ref to avoid stale closure — answersRef always holds the latest answers
-    void handleQuizSubmit(answersRef.current).then((sent) => {
+    void handleQuizSubmit(withCommittedCbe(answersRef.current)).then((sent) => {
       timeUpSendingRef.current = false;
       setTimeUp(sent ? null : "failed");
     });
@@ -1138,6 +1349,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
   };
 
   const handlePrev = () => {
+    withCommittedCbe(answers);
     if (current > 0) setCurrent(current - 1);
   };
 
@@ -1159,6 +1371,8 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
   };
 
   const handleNext = async () => {
+    // A spreadsheet answer: keep the cell still being typed in before moving or submitting.
+    const latestAnswers = withCommittedCbe(answers);
     // When showReportAndCorrectAnswers is on, don't block on wrong answers —
     // correct answers will be shown in the final report after the quiz.
     // Study mode never blocks either: the learner has seen the answer and cannot
@@ -1197,7 +1411,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
           return;
         }
 
-        const payload = await buildQuizPayload(answers);
+        const payload = await buildQuizPayload(latestAnswers);
 
         console.group("📤 [QuizViewer] Submitting quiz activity log");
         console.log("Params:", { slideId, chapterId, moduleId, subjectId, packageSessionId, userId });
@@ -1252,7 +1466,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
         // ✅ STEP 1: Save answers to localStorage for persistence across refreshes
         // Answers before the session: another tab reads these in this order.
         const storageKey = `quiz_answers_${slideId}_${chapterId}`;
-        localStorage.setItem(storageKey, JSON.stringify(answers));
+        localStorage.setItem(storageKey, JSON.stringify(latestAnswers));
         console.log("💾 [QuizViewer] Saved answers to localStorage:", storageKey);
         clearQuizSession(slideId);
         setSession(null);
@@ -1277,7 +1491,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
           isFun &&
           passPercentage != null &&
           (() => {
-            const card = computeScore(answers);
+            const card = computeScore(latestAnswers);
             return card.totalMarks > 0 && (card.earned / card.totalMarks) * 100 < passPercentage;
           })();
         if (celebrateOnQuizComplete && !funMissedPassMark) {
@@ -1366,15 +1580,17 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
             // ignore celebration errors
           }
         }
-        const card = computeScore(answers);
+        const card = computeScore(latestAnswers);
         setScoreCard(card);
         if (passPercentage != null && card.totalMarks > 0) {
           const pct = (card.earned / card.totalMarks) * 100;
-          setPassed(pct >= passPercentage);
+          // Spreadsheet answers still to be marked could lift a fail: wait for them.
+          setPassed(pct >= passPercentage ? true : (card.pending ?? 0) > 0 ? null : false);
         } else {
           setPassed(null);
         }
         setShowReview(true); // <-- Show review page
+        afterSubmitCbe(payload.id, latestAnswers, !offlineQueued);
         if (onComplete) onComplete();
       } catch (err) {
         console.error("❌ [QuizViewer] Quiz submission failed", err);
@@ -1667,8 +1883,10 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
     }
   };
 
-  // Study mode: the primary button checks the answer first, then moves on.
-  const needsCheck = showAnswerAfterEachQuestion && !currentLocked;
+  // Study mode: the primary button checks the answer first, then moves on. A spreadsheet
+  // answer has no key to check against: it is marked by AI after the submit.
+  const isCbeCurrent = isCbeQuizQuestion(currentQuestion);
+  const needsCheck = showAnswerAfterEachQuestion && !currentLocked && !isCbeCurrent;
   const primaryAction = needsCheck ? handleCheckAnswer : handleNext;
   const checkLabel = checking
     ? t("quizViewer.instantFeedback.checking")
@@ -1784,6 +2002,30 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       </div>
 
       {/* Question Content */}
+      {isCbeCurrent ? (
+        <div className="mb-8">
+          <QuizCbeQuestion
+            key={currentQuestion.id}
+            ref={cbeQuestionRef}
+            scenarioHtml={passageHtml}
+            requirementHtml={getQuestionText()}
+            autoEvaluationJson={currentQuestion.auto_evaluation_json}
+            value={answers[currentQuestion.id]}
+            onChange={(value) => {
+              const id = currentQuestion.id;
+              setAnswers((prev) => {
+                if (prev[id] === value) return prev;
+                const next = { ...prev };
+                if (value === undefined) delete next[id];
+                else next[id] = value;
+                return next;
+              });
+              setShowIncorrectNotice(false);
+            }}
+            renderHtml={renderHtmlWithMath}
+          />
+        </div>
+      ) : (
       <div className="mb-8">
         {/* Render passage and question together if passage exists */}
         {hasPassage ? (
@@ -1825,6 +2067,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
         {renderInput()}
         {feedbackPanel}
       </div>
+      )}
 
       {/* Navigation */}
       <div className="flex justify-between items-center pt-6 border-t border-gray-200">

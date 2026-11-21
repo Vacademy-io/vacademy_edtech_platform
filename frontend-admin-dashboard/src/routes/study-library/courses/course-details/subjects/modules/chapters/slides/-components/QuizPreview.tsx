@@ -31,9 +31,20 @@ import QuizAddQuestionsDropdown from './quiz/components/QuizAddQuestionsDropdown
 import QuizAddViaAIDialog from './quiz/components/QuizAddViaAIDialog';
 import QuizAddViaDocumentDialog from './quiz/components/QuizAddViaDocumentDialog';
 import QuizAddViaCSVDialog from './quiz/components/QuizAddViaCSVDialog';
+import QuizAddViaQuestionPaperDialog from './quiz/components/QuizAddViaQuestionPaperDialog';
 import QuizQuestionsPreviewDialog from './quiz/components/QuizQuestionsPreviewDialog';
 import QuizSettingsPanel, { QuizSettings } from './quiz/components/QuizSettingsPanel';
 import { useTranslation } from 'react-i18next';
+import { mergeCbeSecret } from '@/components/cbe/types';
+import {
+    cbeQuestionMark,
+    ensureCbeConfig,
+    isCbeQuestionType,
+    makeDefaultCbeConfig,
+    validateCbeConfig,
+} from '@/routes/assessment/question-papers/-utils/cbe-question';
+import { CbeSlideSecretContext } from '@/routes/assessment/question-papers/-components/QuestionPaperTemplatesTypes/CbeResponse/cbe-slide-secret-context';
+import { fetchQuizQuestionCbeSecret } from '../-services/cbe-evaluation-secret';
 
 const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
     const { t } = useTranslation('studyLibraryQuizPreview');
@@ -103,10 +114,11 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
     });
     const [isSavingSettings, setIsSavingSettings] = useState(false);
 
-    // External question adding (document / AI / CSV)
+    // External question adding (document / AI / CSV / saved question paper)
     const [isDocDialogOpen, setIsDocDialogOpen] = useState(false);
     const [isAIDialogOpen, setIsAIDialogOpen] = useState(false);
     const [isCSVDialogOpen, setIsCSVDialogOpen] = useState(false);
+    const [isQuestionPaperDialogOpen, setIsQuestionPaperDialogOpen] = useState(false);
     const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
     const [pendingQuestions, setPendingQuestions] = useState<UploadQuestionPaperFormType['questions']>([]);
     const [isAddingExternal, setIsAddingExternal] = useState(false);
@@ -416,10 +428,54 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
 
         editForm.reset({ ...form.getValues(), questions: [initializedQuestion] });
         setEditIndex(index);
+
+        // Spreadsheet & Written Response: the slide JSON carries the redacted config only.
+        // Load this question's solution half before it can be shown or edited.
+        if (
+            isCbeQuestionType(initializedQuestion.questionType) &&
+            initializedQuestion.cbeSecretStatus !== 'owned'
+        ) {
+            void loadCbeSecret();
+        }
+    };
+
+    /** Loads the solution, marking scheme and grading notes of the CBE question being edited. */
+    const loadCbeSecret = async () => {
+        const questionId = editForm.getValues('questions.0.id');
+        if (!activeItem.id || !questionId) {
+            editForm.setValue('questions.0.cbeSecretStatus', 'failed', { shouldDirty: false });
+            return;
+        }
+        editForm.setValue('questions.0.cbeSecretStatus', 'loading', { shouldDirty: false });
+        try {
+            const secret = await fetchQuizQuestionCbeSecret(activeItem.id, questionId);
+            // Another question may have been opened meanwhile.
+            if (editForm.getValues('questions.0.id') !== questionId) return;
+            const merged = mergeCbeSecret(
+                ensureCbeConfig(editForm.getValues('questions.0.cbeConfig')),
+                secret
+            );
+            editForm.setValue('questions.0.cbeConfig', merged, { shouldDirty: false });
+            editForm.setValue('questions.0.cbeSecretStatus', 'owned', { shouldDirty: false });
+        } catch (error) {
+            console.error('[cbe] could not load the quiz question solution', error);
+            if (editForm.getValues('questions.0.id') !== questionId) return;
+            editForm.setValue('questions.0.cbeSecretStatus', 'failed', { shouldDirty: false });
+        }
+    };
+
+    /** A CBE question needs at least one part and marks on every part before it is saved. */
+    const cbeQuestionBlocked = (question: { questionType?: string; cbeConfig?: unknown }) => {
+        if (!isCbeQuestionType(question.questionType)) return false;
+        const { errors } = validateCbeConfig(ensureCbeConfig(question.cbeConfig));
+        if (errors.length === 0) return false;
+        toast.error(t('studyLibraryQuizPreview:toast.cbeInvalid'));
+        return true;
     };
 
     const handleEditConfirm = async () => {
         const updated = editForm.getValues(`questions.0`);
+        if (cbeQuestionBlocked(updated)) return;
 
         if (editIndex !== null) {
             try {
@@ -512,6 +568,16 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
             case 'ONE_WORD':
                 questionOptions.subjectiveAnswerText = '';
                 break;
+            case QuestionType.CBE_RESPONSE: {
+                // Spreadsheet & Written Response: one spreadsheet part (a), 10 marks. The
+                // editor owns this (empty) solution half, so it is saved with the question.
+                const cbeConfig = makeDefaultCbeConfig();
+                questionOptions.cbeConfig = cbeConfig;
+                questionOptions.cbeSecretStatus = 'owned';
+                questionOptions.questionMark = cbeQuestionMark(cbeConfig);
+                questionOptions.validAnswers = undefined;
+                break;
+            }
             default:
                 // For any other question type, ensure basic options are available
                 questionOptions.singleChoiceOptions = Array(4).fill({
@@ -540,6 +606,7 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
 
     const handleAddQuestionConfirm = async () => {
         const newQuestion = editForm.getValues(`questions.0`);
+        if (cbeQuestionBlocked(newQuestion)) return;
         if (newQuestion.questionName.trim()) {
             try {
                 // Assign stable IDs to both the question and its options so every
@@ -671,6 +738,7 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
                         onDocument={() => setIsDocDialogOpen(true)}
                         onAI={() => setIsAIDialogOpen(true)}
                         onCSV={() => setIsCSVDialogOpen(true)}
+                        onQuestionPaper={() => setIsQuestionPaperDialogOpen(true)}
                     />
                 </div>
 
@@ -785,21 +853,32 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
                         </h1>
 
                         <FormProvider {...editForm}>
-                            <MainViewComponentFactory
-                                type={
-                                    editForm.getValues('questions.0.questionType') as QuestionType
+                            {/* A CBE question's solution half is loaded apart from the quiz
+                                (see loadCbeSecret); the editor locks it until it is here. */}
+                            <CbeSlideSecretContext.Provider
+                                value={
+                                    editIndex !== null &&
+                                    isCbeQuestionType(editForm.getValues('questions.0.questionType'))
+                                        ? { retry: () => void loadCbeSecret() }
+                                        : null
                                 }
-                                props={{
-                                    form: editForm,
-                                    currentQuestionIndex: 0,
-                                    setCurrentQuestionIndex: () => {},
-                                    className:
-                                        'dialog-height overflow-auto ml-6 flex w-full flex-col gap-6 pr-6 pt-4',
-                                    showQuestionNumber: false,
-                                    // Quiz options get the full rich-text editor on demand (expand-to-modal)
-                                    enableOptionModalCompose: true,
-                                }}
-                            />
+                            >
+                                <MainViewComponentFactory
+                                    type={
+                                        editForm.getValues('questions.0.questionType') as QuestionType
+                                    }
+                                    props={{
+                                        form: editForm,
+                                        currentQuestionIndex: 0,
+                                        setCurrentQuestionIndex: () => {},
+                                        className:
+                                            'dialog-height overflow-auto ml-6 flex w-full flex-col gap-6 pr-6 pt-4',
+                                        showQuestionNumber: false,
+                                        // Quiz options get the full rich-text editor on demand (expand-to-modal)
+                                        enableOptionModalCompose: true,
+                                    }}
+                                />
+                            </CbeSlideSecretContext.Provider>
                         </FormProvider>
 
                         <div className="flex justify-end gap-3 px-6 pb-4 pt-2">
@@ -847,6 +926,11 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
                 <QuizAddViaCSVDialog
                     open={isCSVDialogOpen}
                     onOpenChange={setIsCSVDialogOpen}
+                    onQuestionsReady={handleQuestionsReady}
+                />
+                <QuizAddViaQuestionPaperDialog
+                    open={isQuestionPaperDialogOpen}
+                    onOpenChange={setIsQuestionPaperDialogOpen}
                     onQuestionsReady={handleQuestionsReady}
                 />
                 <QuizQuestionsPreviewDialog

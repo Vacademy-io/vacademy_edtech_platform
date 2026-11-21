@@ -1,6 +1,6 @@
 {
     "trigger": {
-        "entireAssessment": "संपूर्ण मूल्यांकन"
+        "entireAssessment": "उत्तर कुंजी से फिर जाँचें (पूरा टेस्ट)"
     },
     "dialog": {
         "title": "सभी {{learnerPlural}} का पुनर्मूल्यांकन करें",

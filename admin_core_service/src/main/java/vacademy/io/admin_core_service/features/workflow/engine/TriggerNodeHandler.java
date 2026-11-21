@@ -34,7 +34,9 @@ public class TriggerNodeHandler implements NodeHandler {
     @Override
     public Map<String, Object> handle(Map<String, Object> context, String nodeConfigJson,
             Map<String, NodeTemplate> nodeTemplates, int countProcessed) {
-        log.info("TriggerNodeHandler.handle() invoked with context: {}, configJson: {}", context, nodeConfigJson);
+        // Keys only: the context can carry a person's contact details or a link meant for them.
+        log.info("TriggerNodeHandler.handle() invoked with context keys: {}, configJson: {}", context.keySet(),
+                nodeConfigJson);
 
         String workflowExecutionId = (String) context.get("executionId");
         String nodeId = (String) context.get("currentNodeId");
@@ -62,11 +64,11 @@ public class TriggerNodeHandler implements NodeHandler {
                     if (output.getCompute() != null && !output.getCompute().isBlank()) {
                         Object value = spelEvaluator.evaluate(output.getCompute(), context);
                         changes.put(fieldName, value);
-                        log.debug("Field '{}' computed via SpEL to value: {}", fieldName, value);
+                        log.debug("Field '{}' computed via SpEL", fieldName);
                         dataPointsCount++;
                     } else if (output.getValue() != null) {
                         changes.put(fieldName, output.getValue());
-                        log.debug("Field '{}' set to static value: {}", fieldName, output.getValue());
+                        log.debug("Field '{}' set to a static value", fieldName);
                         dataPointsCount++;
                     }
                 }
@@ -95,7 +97,7 @@ public class TriggerNodeHandler implements NodeHandler {
             throw new RuntimeException("Trigger node execution failed", e);
         }
 
-        log.info("Changes map prepared: {}", changes);
+        log.info("Changes map prepared with keys: {}", changes.keySet());
         return changes;
     }
 }

@@ -44,8 +44,8 @@ class QuestionSlideLegacyCbeGuardTest {
     private final AutoEvaluationScorer scorer = new AutoEvaluationScorer(new ObjectMapper());
 
     private final QuestionSlideActivityLogService service = new QuestionSlideActivityLogService(tracked,
-            mock(ActivityLogRepository.class), activityLogService, async, slides, questions, scorer,
-            new AnswerKeyAccess(false, false, false, false));
+            mock(ActivityLogRepository.class), activityLogService, async, slides, questions,
+            new AnswerKeyAccess(false, false, false, false), new QuestionSlideGrader(scorer));
 
     private QuestionSlide question;
 

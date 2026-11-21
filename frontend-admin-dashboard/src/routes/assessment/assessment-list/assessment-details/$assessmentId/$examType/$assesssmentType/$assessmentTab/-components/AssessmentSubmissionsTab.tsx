@@ -47,6 +47,7 @@ import {
     Clock,
     Play,
     NotePencil,
+    Scan,
     User,
     UsersThree,
 } from '@phosphor-icons/react';
@@ -64,13 +65,22 @@ import { ControlledStudentSidebarProvider } from '@/routes/manage-students/stude
 import { BulkActions } from './bulk-actions/bulk-actions';
 import { AssessmentSubmissionsStudentTable } from './AssessmentSubmissionsStudentTable';
 import { SubmissionsSummaryStrip } from './SubmissionsSummaryStrip';
+import { MarkingStatusLine } from './submission-review/MarkingStatusLine';
+import { seedPageMarkings } from './submission-review/use-attempt-marking';
+import { SubmissionSideView } from './submission-review/SubmissionSideView';
+import { useSubmissionsSidePanel } from './submission-review/side-view-store';
 import { AssessmentReportZipExportDialog } from './AssessmentReportZipExportDialog';
 import { AiAssessmentReportDialog } from './AiAssessmentReportDialog';
 import { AssessmentExportCsvDialog } from './AssessmentExportCsvDialog';
 import { BulkAiCheckDialog } from './copy-intake/BulkAiCheckDialog';
 import { CheckSubmittedCopiesDialog } from './copy-intake/CheckSubmittedCopiesDialog';
+import { useAiGradableQuestionCount } from '../-utils/ai-gradable-questions';
 import { EnableAiChecking } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-components/enable-ai-checking';
 import { CopyIntakeBatchPanel } from './copy-intake/CopyIntakeBatchPanel';
+import {
+    getScanConfig,
+    SCAN_CONFIG_KEY,
+} from '@/routes/assessment/assessment-list/scan-station/$assessmentId/-services/scan-station-services';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import AssessmentGlobalLevelRevaluateAssessment from './assessment-global-level-revaluate/assessment-global-level-revaluate-assessment';
 import { AssessmentGlobalLevelRevaluateQuestionWise } from './assessment-global-level-revaluate/assessment-global-level-revaluate-question-wise';
@@ -95,6 +105,7 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { toast } from 'sonner';
 import type { SubmissionStudentData } from '@/types/assessments/assessment-overview';
+import { placeToRestore, useSubmissionsListReturnStore } from './submission-review/list-return-store';
 import { SendMessageDialog } from '@/routes/manage-students/students-list/-components/students-list/student-list-section/bulk-actions/send-message-dialog';
 import { SendEmailDialog } from '@/routes/manage-students/students-list/-components/students-list/student-list-section/bulk-actions/send-email-dialog';
 
@@ -179,7 +190,8 @@ const ATTEMPTED_COLUMN_WIDTH_TRIM: Record<string, string> = {
     duration: 'min-w-[110px]', // design-lint-ignore: pixel column widths, matching table-layout.tsx
     score: 'min-w-[110px]', // design-lint-ignore: pixel column widths, matching table-layout.tsx
     evaluation_status: 'min-w-[150px]', // design-lint-ignore: pixel column widths, matching table-layout.tsx
-    result_status: 'min-w-[140px]', // design-lint-ignore: pixel column widths, matching table-layout.tsx
+    result_status: 'min-w-[170px]', // design-lint-ignore: pixel column widths, matching table-layout.tsx
+    open: 'min-w-[96px]', // design-lint-ignore: pixel column widths, matching table-layout.tsx
 };
 
 /** Popover labels. Most headers are render functions (sort dropdowns, chips), so they
@@ -194,8 +206,8 @@ const COLUMN_LABELS: Record<string, string> = {
     duration: 'Duration',
     score: 'Score',
     submission_file: 'Submission',
-    evaluation_status: 'Evaluation Status',
-    result_status: 'Result Status',
+    evaluation_status: 'Marking',
+    result_status: 'Result',
     email: 'Email',
     mobile_number: 'Phone Number',
     username: 'Username',
@@ -221,6 +233,16 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
         staleTime: 5 * 60 * 1000,
     });
     const isOfflineEntryEnabled = assessmentSettings.offlineEntry.enabled;
+    // Scan station is switched on by the server only (property + institute allow-list);
+    // /scan/config always answers 200, with enabled:false while it is off.
+    const { data: scanConfig } = useQuery({
+        queryKey: [SCAN_CONFIG_KEY, instituteId],
+        queryFn: () => getScanConfig(instituteId ?? ''),
+        staleTime: 10 * 60 * 1000,
+        enabled: !!instituteId,
+        retry: false,
+    });
+    const isScanStationEnabled = scanConfig?.enabled === true && examType !== 'SURVEY';
     const queryClient = useQueryClient();
     // MANUAL evaluation assessments get an extra "Submission" column showing
     // whether each attempt has a submitted answer-sheet file. Same cached query
@@ -229,6 +251,13 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
         getAssessmentDetails({ assessmentId, instituteId, type: 'EXAM' })
     );
     const isManualEvaluation = assessmentDetailsData?.[0]?.saved_data?.evaluation_type === 'MANUAL';
+    // Online test with CBE / long-answer questions: its typed answers are AI-checked from
+    // each student's row menu, which the copy-check dialog points to.
+    const aiGradableQuestionCount = useAiGradableQuestionCount({
+        assessmentId,
+        instituteId,
+        enabled: !isManualEvaluation,
+    });
     // For the "Enable AI checking" card on a placeholder-only offline test: the paper
     // PDF sits in the saved instructions, and the placeholder's marks are the section total.
     const savedInstructionsHtml: string | undefined =
@@ -257,27 +286,39 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
     const { data: totalMarks } = useSuspenseQuery(
         handleGetAssessmentTotalMarksData({ assessmentId })
     );
-    const [selectedParticipantsTab, setSelectedParticipantsTab] = useState('internal');
-    const [selectedTab, setSelectedTab] = useState('Attempted');
+    // Coming back from the Submission page: the page, rows per page, tabs, filters and
+    // search the teacher left (list-return-store). null on any other visit.
+    const [restoredPlace] = useState(() =>
+        placeToRestore<SelectedSubmissionsFilterInterface>(assessmentId)
+    );
+    const [selectedParticipantsTab, setSelectedParticipantsTab] = useState(
+        restoredPlace?.selectedParticipantsTab ?? 'internal'
+    );
+    const [selectedTab, setSelectedTab] = useState(restoredPlace?.selectedTab ?? 'Attempted');
     // Start on the mode that has learners (see initialSelectionMode): correcting it after
     // mount raced the mount fetch below.
     const [initialMode] = useState(() =>
         initialSelectionMode(hasBatchRegistrations, hasIndividualRegistrations)
     );
-    const [batchSelectionTab, setBatchSelectionTab] = useState<string>(initialMode);
-    const [page, setPage] = useState(0);
+    const [batchSelectionTab, setBatchSelectionTab] = useState<string>(
+        restoredPlace?.batchSelectionTab ?? initialMode
+    );
+    const [page, setPage] = useState(restoredPlace?.page ?? 0);
     const [selectedStudent, setSelectedStudent] = useState<StudentTable | null>(null);
-    const [selectedFilter, setSelectedFilter] = useState<SelectedSubmissionsFilterInterface>({
-        name: '',
-        assessment_type: assesssmentType,
-        attempt_type: ['ENDED'],
-        registration_source: registrationSourceForMode(initialMode),
-        batches: [],
-        status: ['ACTIVE'],
-        evaluation_status: [],
-        submission_status: [],
-        sort_columns: {},
-    });
+    const [selectedFilter, setSelectedFilter] = useState<SelectedSubmissionsFilterInterface>(
+        () =>
+            restoredPlace?.selectedFilter ?? {
+                name: '',
+                assessment_type: assesssmentType,
+                attempt_type: ['ENDED'],
+                registration_source: registrationSourceForMode(initialMode),
+                batches: [],
+                status: ['ACTIVE'],
+                evaluation_status: [],
+                submission_status: [],
+                sort_columns: {},
+            }
+    );
 
     // The exact filter behind the rows on screen: tab (attempt type), participant source,
     // and only the search / batch / status filters that were actually applied.
@@ -285,10 +326,10 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
     // type on the request only, and batch picks land there before Apply. The report-card
     // ZIP resolves its selection from this, so it exports what the table lists.
     const [listedFilter, setListedFilter] = useState<SelectedSubmissionsFilterInterface>(
-        () => selectedFilter
+        () => restoredPlace?.listedFilter ?? selectedFilter
     );
 
-    const [searchText, setSearchText] = useState('');
+    const [searchText, setSearchText] = useState(restoredPlace?.searchText ?? '');
     const [participantsData, setParticipantsData] = useState({
         content: [],
         total_pages: 0,
@@ -302,7 +343,38 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
     const [participantsRequestGuard] = useState(createLatestRequestGuard);
     // Rows per page. Every fetch in this file used to hard-code 10; the value now flows
     // from here so the footer selector actually changes the request.
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize, setPageSize] = useState(restoredPlace?.pageSize ?? 10);
+
+    // Remember the place on every change, so Back from the Submission page returns here.
+    // The "coming back" mark is spent by this mount, whether or not it matched.
+    const saveListPlace = useSubmissionsListReturnStore((s) => s.save);
+    const clearListReturning = useSubmissionsListReturnStore((s) => s.clearReturning);
+    useEffect(() => {
+        clearListReturning();
+    }, [clearListReturning]);
+    useEffect(() => {
+        saveListPlace(assessmentId, {
+            page,
+            pageSize,
+            selectedFilter,
+            listedFilter,
+            searchText,
+            selectedTab,
+            selectedParticipantsTab,
+            batchSelectionTab,
+        });
+    }, [
+        saveListPlace,
+        assessmentId,
+        page,
+        pageSize,
+        selectedFilter,
+        listedFilter,
+        searchText,
+        selectedTab,
+        selectedParticipantsTab,
+        batchSelectionTab,
+    ]);
     // Only the very first load blanks the whole tab. Later fetches — page change, filter,
     // sub-tab switch — keep the toolbar, stat strip and column headers on screen and show
     // their loading state as skeleton rows inside the table body instead.
@@ -393,6 +465,16 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
               ? 'ADMIN_PRE_REGISTRATION'
               : 'BATCH_PREVIEW_REGISTRATION';
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    // Name cell → the learner; any other cell of an Attempted row → that submission.
+    const sidePanel = useSubmissionsSidePanel((s) => s.panel);
+    const setSidePanel = useSubmissionsSidePanel((s) => s.setPanel);
+    const sideFromSubmission = useSubmissionsSidePanel((s) => s.fromSubmission);
+    const { t: tSide } = useTranslation('assessmentSubmissionReviewList');
+    useEffect(() => () => setSidePanel('student'), [setSidePanel]);
+    const backToSubmission =
+        sideFromSubmission && selectedTab === 'Attempted' && selectedStudent?.attempt_id
+            ? { label: tSide('sideView.back'), onClick: () => setSidePanel('submission') }
+            : undefined;
     // Bumped to force the summary strip to refetch its aggregate stats.
     const [summaryRefreshKey, setSummaryRefreshKey] = useState(0);
 
@@ -441,6 +523,14 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                 }
             }
             if (context && !participantsRequestGuard.isLatest(context.requestToken)) return;
+            // Marking / Result columns: one marking-summary call for the whole page,
+            // seeded into each row's cache (contract §9.3, acceptance 12). Not awaited:
+            // the rows render at once and the two columns fill in when it lands.
+            void seedPageMarkings(
+                queryClient,
+                assessmentId,
+                (data?.content ?? []).map((student) => student.attempt_id).filter(Boolean)
+            );
             setParticipantsData(data);
         },
         onError: (error: unknown) => {
@@ -1272,17 +1362,35 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
         const timer = setTimeout(() => {
             const fetchInitialParticipants = async () => {
                 setIsParticipantsLoading(true);
+                // Back from the Submission page: the exact request behind the rows the
+                // teacher left (tab source and attempt type included), not the default.
+                const mountFilter = restoredPlace?.listedFilter ?? selectedFilter;
                 try {
                     const attemptedData = await getAdminParticipants(
                         assessmentId,
                         instituteId,
                         page,
                         pageSize,
-                        selectedFilter
+                        mountFilter
                     );
                     if (participantsRequestGuard.isLatest(requestToken)) {
-                        setListedFilter(selectedFilter);
-                        setParticipantsData(attemptedData);
+                        // Marking / Result columns: one call for the page, before the rows
+                        // mount (a row without data would fetch on its own). Also what brings
+                        // them up to date when the admin comes back from the Submission page:
+                        // the row caches never refetch on mount, so edits made there would
+                        // otherwise show the old marking state. Never throws.
+                        await seedPageMarkings(
+                            queryClient,
+                            assessmentId,
+                            (attemptedData?.content ?? [])
+                                .map((student: SubmissionStudentData) => student.attempt_id)
+                                .filter(Boolean)
+                        );
+                        // Still the newest request after that wait?
+                        if (participantsRequestGuard.isLatest(requestToken)) {
+                            setListedFilter(mountFilter);
+                            setParticipantsData(attemptedData);
+                        }
                     }
                 } catch (error) {
                     console.log(error);
@@ -1472,6 +1580,9 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                         instituteId={instituteId}
                         attemptIds={submittedCheckScope}
                         defaultIncludeChecked={submittedCheckRecheck}
+                        typedAnswersCheckedFromRow={
+                            !isManualEvaluation && (aiGradableQuestionCount ?? 0) > 0
+                        }
                         onStarted={(batch) => {
                             setIntakeBatchId(batch.id);
                             setIntakePanelOpen(true);
@@ -1591,7 +1702,10 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                                     </div>
                                 </DialogContent>
                             </Dialog>
-                            <AssessmentGlobalLevelReleaseResultAssessment triggerClassName="!h-9 px-3" />
+                            <AssessmentGlobalLevelReleaseResultAssessment
+                                triggerClassName="!h-9 px-3"
+                                onReleased={handleRefreshLeaderboard}
+                            />
                         </>
                     )}
                     {isOfflineEntryEnabled && (
@@ -1609,6 +1723,28 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                         >
                             <NotePencil size={16} />
                             {t('buttons.offlineEntry')}
+                        </MyButton>
+                    )}
+                    {isScanStationEnabled && (
+                        <MyButton
+                            type="button"
+                            scale="small"
+                            buttonType="secondary"
+                            className="!h-9 gap-1.5 px-3 font-medium"
+                            onClick={() =>
+                                navigate({
+                                    to: '/assessment/assessment-list/scan-station/$assessmentId',
+                                    params: { assessmentId },
+                                    search: {
+                                        examType,
+                                        assessmentType: assesssmentType,
+                                        tab: assessmentTab,
+                                    },
+                                })
+                            }
+                        >
+                            <Scan size={16} />
+                            {t('buttons.scanStation')}
                         </MyButton>
                     )}
                     <div className="ml-auto flex items-center gap-2">
@@ -1816,6 +1952,12 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                             isManualEvaluation={isManualEvaluation}
                         />
                     )}
+                    {selectedTab === 'Attempted' && (
+                        <MarkingStatusLine
+                            assessmentId={assessmentId}
+                            refreshKey={summaryRefreshKey}
+                        />
+                    )}
                     <TabsContent value={selectedTab} ref={tableRef}>
                         <SidebarProvider
                             style={
@@ -1854,10 +1996,23 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                                 currentPage={page}
                                 isLoading={isParticipantsLoading}
                             />
-                            {selectedParticipantsTab === 'external' ? (
+                            {sidePanel === 'submission' &&
+                            selectedTab === 'Attempted' &&
+                            selectedStudent?.attempt_id ? (
+                                <SubmissionSideView
+                                    student={selectedStudent}
+                                    assessmentId={assessmentId}
+                                    pageAttemptIds={() =>
+                                        (participantsData.content ?? [])
+                                            .map((student: StudentTable) => student.attempt_id)
+                                            .filter((id): id is string => !!id)
+                                    }
+                                    onChanged={handleRefreshLeaderboard}
+                                />
+                            ) : selectedParticipantsTab === 'external' ? (
                                 // External participants registered via the public form
                                 // — show the form answers and custom-field responses.
-                                <OpenStudentSidebar />
+                                <OpenStudentSidebar back={backToSubmission} />
                             ) : (
                                 // Internal participants (whether the assessment is
                                 // PRIVATE or PUBLIC) get the full student profile
@@ -1867,6 +2022,7 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                                     examType={examType}
                                     selectedStudent={selectedStudent}
                                     isSubmissionTab={true}
+                                    back={backToSubmission}
                                 />
                             )}
                         </SidebarProvider>

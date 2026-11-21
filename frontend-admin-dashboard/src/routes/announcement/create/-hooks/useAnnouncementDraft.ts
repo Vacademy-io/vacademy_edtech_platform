@@ -30,6 +30,7 @@ import { useCampaignsList } from '@/routes/audience-manager/list/-hooks/useCampa
 import type { CampaignItem } from '@/routes/audience-manager/list/-services/get-campaigns-list';
 import { getPrimaryRole, getRolesForCurrentInstitute } from '@/lib/auth/instituteUtils';
 import useLocalStorage from '@/hooks/use-local-storage';
+import { buildBatchOptions } from '@/lib/batch-options';
 import { defaultModeSettings } from '../-utils/constants';
 import type {
     AudienceRule,
@@ -216,22 +217,10 @@ export function useAnnouncementDraft() {
     const { isLoading: instituteLoading } = useQuery(useInstituteQuery());
     const { instituteDetails } = useInstituteDetailsStore();
 
-    const batches = useMemo<BatchOption[]>(() => {
-        const rows = instituteDetails?.batches_for_sessions ?? [];
-        return rows
-            .filter((batch) => !!batch.id)
-            .map((batch) => ({
-                id: batch.id,
-                label: `${batch.package_dto.package_name} - ${batch.level.level_name} - ${batch.session.session_name}`,
-                packageName: batch.package_dto.package_name,
-                levelName: batch.level.level_name,
-                sessionName: batch.session.session_name,
-                status: batch.status,
-                isOrgAssociated: Boolean(
-                    (batch as { is_org_associated?: boolean }).is_org_associated
-                ),
-            }));
-    }, [instituteDetails]);
+    const batches = useMemo<BatchOption[]>(
+        () => buildBatchOptions(instituteDetails),
+        [instituteDetails]
+    );
 
     const batchById = useMemo(() => {
         const map: Record<string, BatchOption> = {};

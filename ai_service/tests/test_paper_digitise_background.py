@@ -175,3 +175,85 @@ def test_notice_email_escapes_and_links_only_to_https():
     assert "Hi," in _notice_email_html(None, "T", "t", None)
     assert _caller_contact(None) == {"email": None, "name": None}
     assert _caller_contact("Bearer not-a-jwt") == {"email": None, "name": None}
+
+
+class _FakeSession:
+    """Just enough of a Session for the product lookup: a savepoint and two scalar reads."""
+
+    def __init__(self, has_table=True, product=None, fail=False):
+        self.answers = [has_table, product]
+        self.fail = fail
+
+    def begin_nested(self):
+        import contextlib
+        return contextlib.nullcontext()
+
+    def execute(self, *_a, **_k):
+        if self.fail:
+            raise RuntimeError("db down")
+        value = self.answers.pop(0)
+
+        class _R:
+            def scalar(self_inner):
+                return value
+        return _R()
+
+
+def test_only_product_workspaces_get_the_designed_paper_read_email():
+    from app.routers.paper_digitise import _is_product_institute
+    assert _is_product_institute(_FakeSession(product="evalezy"), "i1") is True
+    assert _is_product_institute(_FakeSession(product=" Telleo "), "i1") is True
+    # Every other institute keeps the plain note.
+    assert _is_product_institute(_FakeSession(product="vacademy"), "i1") is False
+    assert _is_product_institute(_FakeSession(product=None), "i1") is False
+    assert _is_product_institute(_FakeSession(product=""), "i1") is False
+    assert _is_product_institute(_FakeSession(has_table=False), "i1") is False
+    assert _is_product_institute(_FakeSession(fail=True), "i1") is False
+
+
+def test_paper_read_email_escapes_and_links_only_to_https():
+    from app.routers.paper_digitise import _paper_read_email_html, _caller_contact
+    html = _paper_read_email_html("A<b>", "T & <i>", ok=True, stats={"questions": 3},
+                                  return_url="https://dash.example/x?y=1")
+    assert "A&lt;b&gt;" in html and "T &amp; &lt;i&gt;" in html
+    assert 'href="https://dash.example/x?y=1"' in html and "Review the questions" in html
+    assert "href" not in _paper_read_email_html(None, "T", ok=True, stats={}, return_url="/relative")
+    assert "Hi," in _paper_read_email_html(None, "T", ok=True, stats={})
+    assert _caller_contact(None) == {"email": None, "name": None}
+    assert _caller_contact("Bearer not-a-jwt") == {"email": None, "name": None}
+
+
+def test_paper_read_email_shows_the_numbers_and_what_to_check():
+    from app.routers.paper_digitise import _paper_read_email_html, _paper_stats
+    result = json.dumps({"digitised": {
+        "questions": [{}] * 27, "paper_total": 80.0, "total_marks": 80, "sections": [{}, {}], "pages": 4,
+        "warnings": ["2 question(s) had no marks printed and were set to 1 mark. Check them."],
+    }})
+    stats = _paper_stats(result)
+    assert stats == {"questions": 27, "total_marks": 80.0, "sections": 2, "pages": 4,
+                     "warnings": ["2 question(s) had no marks printed and were set to 1 mark. Check them."]}
+    html = _paper_read_email_html("Asha", "Class 10 Science", ok=True, stats=stats,
+                                  return_url="https://dash.example/t")
+    assert "Question paper read" in html and "<b>Class 10 Science</b>" in html
+    for label, value in (("Questions read", "27"), ("Total marks", "80"), ("Sections", "2"), ("Pages", "4")):
+        assert label in html and f">{value}</td>" in html
+    assert "Check before you go on" in html and "no marks printed" in html
+    assert "Learners see nothing until you review and release" in html
+
+
+def test_paper_read_email_leaves_out_what_the_read_did_not_find():
+    from app.routers.paper_digitise import _paper_read_email_html, _paper_stats
+    stats = _paper_stats(json.dumps({"digitised": {"questions": [{}], "sections": [{}]}}))
+    html = _paper_read_email_html("Asha", "T", ok=True, stats=stats)
+    assert "Total marks" not in html and "Sections" not in html and "Pages" not in html
+    assert "Check before you go on" not in html
+    assert _paper_stats(None)["questions"] == 0 and _paper_stats("not json")["questions"] == 0
+
+
+def test_could_not_read_email_says_why_and_that_nothing_was_charged():
+    from app.routers.paper_digitise import _paper_read_email_html
+    html = _paper_read_email_html("Asha", "T", ok=False, message="No questions <found>.",
+                                  return_url="https://dash.example/t")
+    assert "Could not read the question paper" in html
+    assert "No questions &lt;found&gt;." in html and "Nothing was charged." in html
+    assert "Open the test" in html and "Questions read" not in html

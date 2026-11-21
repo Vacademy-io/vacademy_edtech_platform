@@ -558,6 +558,15 @@ public interface QuestionLibraryNodeRepository extends JpaRepository<QuestionLib
             """, nativeQuery = true)
     String findTagIdByName(@Param("instituteId") String instituteId, @Param("tagName") String tagName);
 
+    /** The institute tag spelled exactly so (the unique key), if any. */
+    @Query(value = """
+            SELECT t.tag_id
+              FROM tags t
+             WHERE t.institute_id = :instituteId AND t.tag_name = :tagName
+             LIMIT 1
+            """, nativeQuery = true)
+    String findTagIdByExactName(@Param("instituteId") String instituteId, @Param("tagName") String tagName);
+
     /** Links a tag to the given questions. Only ACTIVE questions of this institute are written. */
     @Modifying
     @Query(value = """
@@ -597,4 +606,86 @@ public interface QuestionLibraryNodeRepository extends JpaRepository<QuestionLib
     int setDifficulty(@Param("instituteId") String instituteId,
                       @Param("questionIdsCsv") String questionIdsCsv,
                       @Param("difficulty") String difficulty);
+
+    // ---------------------------------------------------------------- AI tagging and tag upkeep
+
+    /**
+     * Live questions on the given topics that carry no CONCEPT tag yet, oldest first, for
+     * AI tagging a batch at a time. excludeIdsCsv holds the ones already tried this run.
+     */
+    @Query(value = """
+            SELECT q.id
+              FROM question q
+             WHERE q.institute_id = :instituteId AND q.status = 'ACTIVE'
+               AND q.source_type IS DISTINCT FROM 'LIBRARY_COPY'
+               AND NOT EXISTS (SELECT 1 FROM question_library_version v WHERE v.old_question_id = q.id)
+               AND EXISTS (SELECT 1 FROM question_library_mapping m
+                            WHERE m.question_id = q.id AND m.node_id = ANY(string_to_array(:nodeIdsCsv, ',')))
+               AND NOT EXISTS (SELECT 1 FROM entity_tags et
+                                WHERE et.entity_id = q.id AND et.entity_name = 'QUESTION' AND et.tag_source = 'CONCEPT')
+               AND (CAST(:excludeIdsCsv AS text) IS NULL OR NOT (q.id = ANY(string_to_array(CAST(:excludeIdsCsv AS text), ','))))
+             ORDER BY q.created_at, q.id
+             LIMIT :limit
+            """, nativeQuery = true)
+    List<String> findQuestionsWithoutConcept(@Param("instituteId") String instituteId,
+                                             @Param("nodeIdsCsv") String nodeIdsCsv,
+                                             @Param("excludeIdsCsv") String excludeIdsCsv,
+                                             @Param("limit") int limit);
+
+    /** How many questions findQuestionsWithoutConcept could still return. */
+    @Query(value = """
+            SELECT COUNT(q.id)
+              FROM question q
+             WHERE q.institute_id = :instituteId AND q.status = 'ACTIVE'
+               AND q.source_type IS DISTINCT FROM 'LIBRARY_COPY'
+               AND NOT EXISTS (SELECT 1 FROM question_library_version v WHERE v.old_question_id = q.id)
+               AND EXISTS (SELECT 1 FROM question_library_mapping m
+                            WHERE m.question_id = q.id AND m.node_id = ANY(string_to_array(:nodeIdsCsv, ',')))
+               AND NOT EXISTS (SELECT 1 FROM entity_tags et
+                                WHERE et.entity_id = q.id AND et.entity_name = 'QUESTION' AND et.tag_source = 'CONCEPT')
+               AND (CAST(:excludeIdsCsv AS text) IS NULL OR NOT (q.id = ANY(string_to_array(CAST(:excludeIdsCsv AS text), ','))))
+            """, nativeQuery = true)
+    long countQuestionsWithoutConcept(@Param("instituteId") String instituteId,
+                                      @Param("nodeIdsCsv") String nodeIdsCsv,
+                                      @Param("excludeIdsCsv") String excludeIdsCsv);
+
+    /**
+     * Puts toTagId wherever fromTagId sits as a library tag on this institute questions,
+     * keeping the kind. A question that already has toTagId keeps its row. Pair with
+     * deleteLibraryTagLinks to rename or merge.
+     */
+    @Modifying
+    @Query(value = """
+            INSERT INTO entity_tags (entity_id, entity_name, tag_id, tag_source, created_at, updated_at)
+            SELECT et.entity_id, et.entity_name, CAST(:toTagId AS varchar), et.tag_source, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+              FROM entity_tags et
+              JOIN question q ON q.id = et.entity_id
+             WHERE et.entity_name = 'QUESTION' AND et.tag_id = :fromTagId
+               AND et.tag_source IN ('CONCEPT', 'PYQ', 'SOURCE')
+               AND q.institute_id = :instituteId
+            ON CONFLICT DO NOTHING
+            """, nativeQuery = true)
+    int copyLibraryTagLinks(@Param("instituteId") String instituteId,
+                            @Param("fromTagId") String fromTagId,
+                            @Param("toTagId") String toTagId);
+
+    /** Takes a library tag off every question of this institute. SUBJECT and AI tags are never touched. */
+    @Modifying
+    @Query(value = """
+            DELETE FROM entity_tags et
+             WHERE et.entity_name = 'QUESTION' AND et.tag_id = :tagId
+               AND et.tag_source IN ('CONCEPT', 'PYQ', 'SOURCE')
+               AND EXISTS (SELECT 1 FROM question q WHERE q.id = et.entity_id AND q.institute_id = :instituteId)
+            """, nativeQuery = true)
+    int deleteLibraryTagLinks(@Param("instituteId") String instituteId, @Param("tagId") String tagId);
+
+    /** Renames one of the institute tags in place (a change of case, where no other tag can take its place). */
+    @Modifying
+    @Query(value = """
+            UPDATE tags SET tag_name = :tagName, updated_at = CURRENT_TIMESTAMP
+             WHERE tag_id = :tagId AND institute_id = :instituteId
+            """, nativeQuery = true)
+    int renameTagRow(@Param("instituteId") String instituteId,
+                     @Param("tagId") String tagId,
+                     @Param("tagName") String tagName);
 }

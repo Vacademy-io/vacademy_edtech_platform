@@ -99,6 +99,13 @@ public class EngagementSettingsService {
         }
     }
 
+    /** The weekly planning email's settings (off unless an admin turned it on). */
+    public vacademy.io.admin_core_service.features.engagement.planning.PlanningNudgeSettings planningNudge(
+            String instituteId) {
+        return vacademy.io.admin_core_service.features.engagement.planning.PlanningNudgeSettings
+                .from(settingData(instituteId));
+    }
+
     private int intSetting(String instituteId, String key, int fallback, int min, int max) {
         return intFrom(settingData(instituteId), key, fallback, min, max);
     }

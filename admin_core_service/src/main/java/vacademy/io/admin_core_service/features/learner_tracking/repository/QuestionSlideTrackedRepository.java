@@ -127,6 +127,43 @@ public interface QuestionSlideTrackedRepository extends JpaRepository<QuestionSl
     Optional<QuestionSlideTracked> findLatestEvaluatedCbeSubmission(@Param("userId") String userId,
             @Param("slideId") String slideId);
 
+    // ---- Choice / text question slides (QuestionSlideActivityLogService) ----
+
+    /** The learner's submissions on this slide, other than those of the given activity. */
+    @Query(value = """
+            SELECT COUNT(*)
+            FROM question_slide_tracked t
+            JOIN activity_log al ON al.id = t.activity_id
+            WHERE al.user_id = :userId
+              AND al.slide_id = :slideId
+              AND t.activity_id <> :activityId
+            """, nativeQuery = true)
+    long countSubmissionsOutsideActivity(@Param("userId") String userId, @Param("slideId") String slideId,
+            @Param("activityId") String activityId);
+
+    /** Every submission the learner made on this slide. */
+    @Query(value = """
+            SELECT COUNT(*)
+            FROM question_slide_tracked t
+            JOIN activity_log al ON al.id = t.activity_id
+            WHERE al.user_id = :userId
+              AND al.slide_id = :slideId
+            """, nativeQuery = true)
+    long countSubmissions(@Param("userId") String userId, @Param("slideId") String slideId);
+
+    /** The learner's latest submission on this slide. */
+    @Query(value = """
+            SELECT t.*
+            FROM question_slide_tracked t
+            JOIN activity_log al ON al.id = t.activity_id
+            WHERE al.user_id = :userId
+              AND al.slide_id = :slideId
+            ORDER BY t.created_at DESC, t.attempt_number DESC NULLS LAST
+            LIMIT 1
+            """, nativeQuery = true)
+    Optional<QuestionSlideTracked> findLatestSubmission(@Param("userId") String userId,
+            @Param("slideId") String slideId);
+
     /**
      * The row's created_at as the database stored it. A scalar query, so it reads the column
      * even when the entity is already cached in the persistence context (open-in-view shares

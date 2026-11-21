@@ -57,6 +57,14 @@ public final class StaffOrderDtos {
         private String refundState;
         /** NONE, IN_PROGRESS, PART or FULL. */
         private String returnState;
+        // Order desk screens (WP-34)
+        /** What the courier collects on a cash-on-delivery order; null for other orders. */
+        private BigDecimal codAmount;
+        /**
+         * What the order still owes, as the detail's {@code amount_due} counts it: total less paid
+         * less the credit of goods returned that was not owed back as money; never below 0.
+         */
+        private BigDecimal amountDue;
     }
 
     @Data
@@ -126,6 +134,15 @@ public final class StaffOrderDtos {
         private List<ReturnDtos.ReturnSummary> returns;
         private List<RefundDtos.RefundSummary> refunds;
         private String exchangeOfOrderId;
+        /**
+         * What the order still owes: total less paid less the credit of goods returned that was not
+         * owed back as money (a return on an order left on credit lowers the due). The most
+         * "Record receipt" accepts.
+         */
+        private BigDecimal amountDue;
+        // Buyer messages (WP-33): newest first, at most 100; addresses masked.
+        private List<vacademy.io.admin_core_service.features.commerce.notify.dto.NotificationSettingsDtos.DeliveryView>
+                notifications;
     }
 
     @Data
@@ -166,6 +183,8 @@ public final class StaffOrderDtos {
         private String orderLineId;
         private int quantity;
         private List<String> pieceCodes;
+        /** The ids of the same pieces, in the order of {@code pieceCodes} (WP-34); null when the codes are. */
+        private List<String> pieceIds;
     }
 
     @Data
@@ -206,6 +225,12 @@ public final class StaffOrderDtos {
         private String priceOverrideBy;
         private BigDecimal cancelledValue;
         private BigDecimal costTotal;
+        // Order desk screens (WP-34): the variant's stock facts, so the pack station knows which
+        // lines need a piece scan. Null for a shipping or COD line, or a variant no longer in the shop.
+        /** PIECE or QUANTITY. */
+        private String stockMode;
+        /** TRACKED or UNTRACKED. */
+        private String stockPolicy;
     }
 
     @Data

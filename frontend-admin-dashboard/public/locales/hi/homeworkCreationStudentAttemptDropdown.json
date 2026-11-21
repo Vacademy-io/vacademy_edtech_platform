@@ -21,7 +21,8 @@
         "revaluate": "पुनर्मूल्यांकन करें",
         "questionWise": "प्रश्न के अनुसार",
         "entireAssessment": "संपूर्ण मूल्यांकन",
-        "releaseResult": "परिणाम जारी करें"
+        "releaseResult": "परिणाम जारी करें",
+        "openSubmission": "सबमिशन खोलें"
     },
     "toasts": {
         "releaseResultSuccess": "इस मूल्यांकन के लिए आपके प्रयास का पुनर्मूल्यांकन कर दिया गया है। कृपया अपना ईमेल जांचें!",

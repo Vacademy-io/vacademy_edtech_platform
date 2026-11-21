@@ -20,7 +20,7 @@ import java.util.Set;
 
 /**
  * Internal (service-to-service) synchronous access to the Layer-1 comprehensive
- * student report — used by the Vacademy Assistant's get_student_360 tool.
+ * student report — used by the Vacademy Assistant's learner_report tool.
  *
  * <p>Runs {@link ComprehensiveReportAggregator#collect} directly (deterministic
  * facts only, NO Layer-2 LLM narrative) with the caller's module selection, so an

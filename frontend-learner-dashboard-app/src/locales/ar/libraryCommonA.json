@@ -51,6 +51,7 @@
         "wrongLabel": "خطأ: {{count}}",
         "partialLabel": "جزئي: {{count}}",
         "partiallyCorrect": "صحيح جزئيًا · {{percent}}% من الدرجة",
+        "checkingLabel": "قيد التدقيق: {{count}}",
         "skippedLabel": "متخطى: {{count}}",
         "attemptPassed": "اجتازت المحاولة",
         "youPassed": "لقد نجحت!",

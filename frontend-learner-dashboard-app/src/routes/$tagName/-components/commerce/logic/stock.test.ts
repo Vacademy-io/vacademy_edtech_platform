@@ -45,6 +45,20 @@ describe('quantity rules', () => {
         expect(quantityRules(5, stock({ state: 'LOW', left: 3 }))).toEqual({ step: 5, max: 0 });
     });
 
+    it('caps at the most one order line may hold, floored to the step', () => {
+        // 25 m an order at scale 10 is 250 base units.
+        expect(quantityRules(1, stock({}), 250)).toEqual({ step: 1, max: 250 });
+        // In steps of 3 m: 24 m.
+        expect(quantityRules(30, stock({}), 250)).toEqual({ step: 30, max: 240 });
+        // The lower of the two ceilings.
+        expect(quantityRules(5, stock({ state: 'LOW', left: 27 }), 250)).toEqual({ step: 5, max: 25 });
+        expect(quantityRules(5, stock({ state: 'LOW', left: 300 }), 250)).toEqual({ step: 5, max: 250 });
+        // Only stock makes a product sold out; a line maximum under one step is left to the cart.
+        expect(quantityRules(5, stock({ state: 'LOW', left: 3 }), 250)).toEqual({ step: 5, max: 0 });
+        expect(quantityRules(30, stock({}), 25)).toEqual({ step: 30, max: null });
+        expect(quantityRules(1, stock({}), null)).toEqual({ step: 1, max: null });
+    });
+
     it('clamps a wanted quantity onto the grid and inside the limits', () => {
         const rules = { step: 5, max: 25 };
         expect(clampQuantity(12, rules)).toBe(10);

@@ -5,6 +5,12 @@
     "gender": {
         "title": "Genre"
     },
+    "city": {
+        "title": "Ville"
+    },
+    "region": {
+        "title": "Région"
+    },
     "sessionExpiry": {
         "titleSuffix": "Expiration",
         "optionLabel": "Expire dans {{days}} jours"

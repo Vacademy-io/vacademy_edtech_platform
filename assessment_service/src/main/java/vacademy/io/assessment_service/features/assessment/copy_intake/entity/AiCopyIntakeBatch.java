@@ -33,6 +33,12 @@ public class AiCopyIntakeBatch {
      * {@code CopyIntakeService#placeCheckOnly}) and comes back in the zip.
      */
     public static final String SOURCE_CHECK_ONLY = "CHECK_ONLY";
+    /**
+     * Copies built by the scan station from a scanned pile, one PDF per student,
+     * then read and matched exactly like an upload (no migration: source is a free
+     * VARCHAR(32)).
+     */
+    public static final String SOURCE_SCAN = "SCAN";
 
     @Id
     @UuidGenerator
@@ -60,7 +66,7 @@ public class AiCopyIntakeBatch {
     @Column(name = "status", nullable = false)
     private String status;
 
-    /** {@link #SOURCE_UPLOAD}, {@link #SOURCE_SUBMITTED} or {@link #SOURCE_CHECK_ONLY}. See V49. */
+    /** {@link #SOURCE_UPLOAD}, {@link #SOURCE_SUBMITTED}, {@link #SOURCE_CHECK_ONLY} or {@link #SOURCE_SCAN}. See V49. */
     @Builder.Default
     @Column(name = "source", nullable = false)
     private String source = SOURCE_UPLOAD;

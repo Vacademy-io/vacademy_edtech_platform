@@ -8103,3 +8103,103 @@ def test_a_staged_race_that_did_not_happen_is_a_shape_note_not_a_failure():
     f = chk_pieces_one_reply_superseded(stale_played)
     assert any(not x.startswith("SHAPE:") for x in f), f
     assert any("first piece alone" in x for x in f), f
+
+
+# ── asides, honesty, and the nudge's language (call review 2026-11-20) ───────
+
+async def _aside_reply(chunks):
+    from pipecat.frames.frames import (LLMFullResponseStartFrame, LLMFullResponseEndFrame,
+                                       LLMTextFrame)
+    sg, o, _sent, _d = _sentinel_for_markers()
+    out = []
+
+    async def _push(frame, direction=None):
+        if isinstance(frame, LLMTextFrame):
+            out.append(frame.text)
+    sg.push_frame = _push
+    D = b.FrameDirection.DOWNSTREAM
+    await sg.process_frame(LLMFullResponseStartFrame(), D)
+    for ch in chunks:
+        await sg.process_frame(LLMTextFrame(ch), D)
+    await sg.process_frame(LLMFullResponseEndFrame(), D)
+    return "".join(out), sg, o
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("chunks,spoken", [
+    # Whole replies gemma4 gave to phone menus and hold messages, 2026-11-19.
+    (["(silence)"], ""),
+    (["(Stay silent)"], ""),
+    (["(Wait for a live person to speak)"], ""),
+    (["(Stay silent and wait for a live person)"], ""),
+    # Token by token: nothing of an aside may leave before its close arrives.
+    (["(", "Wait", " for", " a live", " person", " to speak", ")"], ""),
+    (["(silence)", " We help counselling teams call back every new enquiry."],
+     "We help counselling teams call back every new enquiry."),
+    (["Sure. I will wait. ", "(Stay silent and wait for the person to be connected)",
+      " जी, बोलिए।"], "Sure. I will wait.  जी, बोलिए।"),
+    (["(Wait for live person) मैं Vaani बोल रही हूँ Telleo से। क्या आप enquiries देखते हैं?"],
+     "मैं Vaani बोल रही हूँ Telleo से। क्या आप enquiries देखते हैं?"),
+    (["[pause] ठीक है।"], "ठीक है।"),
+    # Ordinary replies are untouched.
+    (["जी, बिल्कुल। ", "आप कब free हैं?"], "जी, बिल्कुल। आप कब free हैं?"),
+])
+async def test_the_models_asides_are_never_spoken(chunks, spoken):
+    said, sg, o = await _aside_reply(chunks)
+    assert said.strip() == spoken.strip(), said
+    assert "(" not in said and ")" not in said
+    assert o.end_requested is False, "an aside closed the call"
+
+
+@pytest.mark.asyncio
+async def test_an_aside_cut_off_by_the_token_limit_is_dropped_not_spoken():
+    said, sg, _o = await _aside_reply(["ठीक है। ", "(Wait for a live per"])
+    assert said.strip() == "ठीक है।", said
+    assert sg._buffer == ""
+
+
+@pytest.mark.asyncio
+async def test_an_aside_only_reply_leaves_nothing_in_the_transcript():
+    _said, _sg, o = await _aside_reply(["(silence)"])
+    assert not [t for t in o.transcript if t.get("role") == "assistant"], o.transcript
+
+
+@pytest.mark.asyncio
+async def test_markers_still_fire_next_to_an_aside():
+    said, _sg, o = await _aside_reply(["(caller hung up) ", "धन्यवाद। <<END_CALL>>"])
+    assert said.strip() == "धन्यवाद।", said
+    assert o.end_requested is True
+
+
+def test_a_long_bracket_is_ordinary_text_not_held_forever():
+    long = "(" + "शब्द " * 60
+    emit, held = b.SentinelGate._split_safe("जी। " + long)
+    assert held == "" and emit.endswith("शब्द ")
+
+
+@pytest.mark.parametrize("english", [True, False])
+def test_every_prompt_shape_forbids_claiming_to_be_human(english):
+    for prompt in ("", "You call leads for Acme. " * 80):
+        ctx = {"agent": {"name": "Aarushi", "prompt": prompt,
+                         "language": "en-IN" if english else "hi-IN"},
+               "instituteName": "Acme"}
+        p = b.build_system_prompt(ctx)
+        assert "NEVER say or imply that you are a human" in p
+        assert "You are an AI assistant on a phone call" in p
+
+
+@pytest.mark.parametrize("last,line", [
+    ("When a new enquiry comes in at your end, how quickly does someone call back?",
+     b.NUDGE_ENGLISH),
+    ("आपका business क्या करता है?", "हेलो? क्या आप मुझे सुन पा रहे हैं?"),
+    ("Telleo के AI agents आपके business की calls खुद करते हैं।",
+     "हेलो? क्या आप मुझे सुन पा रहे हैं?"),
+    ("Okay.", "हेलो? क्या आप मुझे सुन पा रहे हैं?"),
+    ("", "हेलो? क्या आप मुझे सुन पा रहे हैं?"),
+])
+def test_the_nudge_is_in_the_language_being_spoken(last, line):
+    assert b.nudge_line("हेलो? क्या आप मुझे सुन पा रहे हैं?", last) == line
+
+
+def test_an_english_agent_keeps_its_english_nudge():
+    assert b.nudge_line(b.NUDGE_ENGLISH, "नमस्ते जी।") == b.NUDGE_ENGLISH

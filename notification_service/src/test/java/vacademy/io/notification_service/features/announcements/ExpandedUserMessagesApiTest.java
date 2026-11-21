@@ -32,6 +32,8 @@ class ExpandedUserMessagesApiTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
+    // Postgres-only email-stats SQL in the create response rolls the create back on H2.
+    @MockBean private vacademy.io.notification_service.features.notification_log.repository.NotificationLogRepository notificationLogRepository;
 
     @MockBean private RecipientResolutionService recipientResolutionService;
     @MockBean private AnnouncementDeliveryService announcementDeliveryService;
@@ -65,7 +67,7 @@ class ExpandedUserMessagesApiTest {
         medium.setConfig(Map.of("title","t","body","b"));
         req.setMediums(List.of(medium));
 
-        var res = mockMvc.perform(post("/notification-service/v1/announcements")
+        var res = mockMvc.perform(post("/notification-service/v1/announcements").with(AnnouncementTestAuth.admin("INST_U"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
@@ -82,7 +84,7 @@ class ExpandedUserMessagesApiTest {
         mockMvc.perform(post("/notification-service/v1/announcements/" + announcementId + "/deliver").header("clientId", "INST_U").with(user(principal("admin-1", "ADMIN"))))
                 .andExpect(status().isOk());
 
-        var listRes = mockMvc.perform(get("/notification-service/v1/user-messages/user/" + userId + "?page=0&size=5"))
+        var listRes = mockMvc.perform(get("/notification-service/v1/user-messages/user/" + userId + "?page=0&size=5").with(AnnouncementTestAuth.as("INST_U", userId, "STUDENT")))
                 .andExpect(status().isOk())
                 .andReturn();
         JsonNode page = objectMapper.readTree(listRes.getResponse().getContentAsString());
@@ -97,44 +99,44 @@ class ExpandedUserMessagesApiTest {
         String messageId = deliverAndGetFirstMessageId(announcementId, userId);
 
         // Unread counts overall and by mode
-        mockMvc.perform(get("/notification-service/v1/user-messages/user/" + userId + "/unread-count"))
+        mockMvc.perform(get("/notification-service/v1/user-messages/user/" + userId + "/unread-count").with(AnnouncementTestAuth.as("INST_U", userId, "STUDENT")))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/notification-service/v1/user-messages/user/" + userId + "/unread-count")
+        mockMvc.perform(get("/notification-service/v1/user-messages/user/" + userId + "/unread-count").with(AnnouncementTestAuth.as("INST_U", userId, "STUDENT"))
                         .param("modeType", "SYSTEM_ALERT"))
                 .andExpect(status().isOk());
 
         // Mark as read
         var readReq = Map.of("recipientMessageId", messageId, "userId", userId, "interactionType", "READ");
-        mockMvc.perform(post("/notification-service/v1/user-messages/interactions/read")
+        mockMvc.perform(post("/notification-service/v1/user-messages/interactions/read").with(AnnouncementTestAuth.as("INST_U", userId, "STUDENT"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(readReq)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").exists());
 
         // Dismiss
-        mockMvc.perform(post("/notification-service/v1/user-messages/interactions/dismiss")
+        mockMvc.perform(post("/notification-service/v1/user-messages/interactions/dismiss").with(AnnouncementTestAuth.as("INST_U", userId, "STUDENT"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("recipientMessageId", messageId, "userId", userId, "interactionType", "DISMISSED"))))
                 .andExpect(status().isOk());
 
         // Record generic interaction
-        mockMvc.perform(post("/notification-service/v1/user-messages/interactions")
+        mockMvc.perform(post("/notification-service/v1/user-messages/interactions").with(AnnouncementTestAuth.as("INST_U", userId, "STUDENT"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("recipientMessageId", messageId, "userId", userId, "interactionType", "CLICKED"))))
                 .andExpect(status().isOk());
 
         // Mode-specific fetches that should respond OK
-        mockMvc.perform(get("/notification-service/v1/user-messages/user/" + userId + "/system-alerts"))
+        mockMvc.perform(get("/notification-service/v1/user-messages/user/" + userId + "/system-alerts").with(AnnouncementTestAuth.as("INST_U", userId, "STUDENT")))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/notification-service/v1/user-messages/user/" + userId + "/dashboard-pins"))
+        mockMvc.perform(get("/notification-service/v1/user-messages/user/" + userId + "/dashboard-pins").with(AnnouncementTestAuth.as("INST_U", userId, "STUDENT")))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/notification-service/v1/user-messages/user/" + userId + "/direct-messages"))
+        mockMvc.perform(get("/notification-service/v1/user-messages/user/" + userId + "/direct-messages").with(AnnouncementTestAuth.as("INST_U", userId, "STUDENT")))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/notification-service/v1/user-messages/user/" + userId + "/streams"))
+        mockMvc.perform(get("/notification-service/v1/user-messages/user/" + userId + "/streams").with(AnnouncementTestAuth.as("INST_U", userId, "STUDENT")))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/notification-service/v1/user-messages/user/" + userId + "/resources"))
+        mockMvc.perform(get("/notification-service/v1/user-messages/user/" + userId + "/resources").with(AnnouncementTestAuth.as("INST_U", userId, "STUDENT")))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/notification-service/v1/user-messages/user/" + userId + "/community"))
+        mockMvc.perform(get("/notification-service/v1/user-messages/user/" + userId + "/community").with(AnnouncementTestAuth.as("INST_U", userId, "STUDENT")))
                 .andExpect(status().isOk());
     }
 }

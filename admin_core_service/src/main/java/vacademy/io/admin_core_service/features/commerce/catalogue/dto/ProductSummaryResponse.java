@@ -31,8 +31,16 @@ public class ProductSummaryResponse {
     /** Names by locale. */
     private Map<String, String> names;
     private Integer variantCount;
+    /** Per base unit (10 cm at qty_scale 10); the price of one unit is this × qty_scale. */
     private BigDecimal minPrice;
+    /** Per base unit, as {@code minPrice}. */
     private BigDecimal maxPrice;
+    /** The unit code (MTR, PCS); null when not set. */
+    private String unit;
+    /** Base units in one unit: 1 for counted goods, 10/100/1000 for measured goods. */
+    private Integer qtyScale;
+    /** The sale step in base units. */
+    private Integer qtyStep;
     private String currency;
     private LocalDateTime updatedAt;
 }

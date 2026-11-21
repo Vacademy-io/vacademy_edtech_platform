@@ -97,4 +97,24 @@ class StorefrontViewsTest {
         assertEquals("/c/a%20b", StorefrontViews.collectionPath("a b", "hi", "hi"));
         assertEquals("/p/%E0%A4%B8%E0%A4%BE%E0%A4%A1%E0%A4%BC%E0%A5%80", StorefrontViews.productPath("साड़ी", "hi", "hi"));
     }
+
+    /**
+     * W9 follow-up: the product page reads the shop's per-order maximum from the detail, in
+     * display units (pieces, or metres for cloth), to cap a typed length as the cart will.
+     */
+    @Test
+    void theDetailCarriesTheShopsPerOrderMaximumInDisplayUnits() throws Exception {
+        StorefrontSnapshot shop = StorefrontTestData.shop();
+        StorefrontSnapshot.Product product = StorefrontTestData.product("p-z", "z", false, 1, null, "Z",
+                List.of(StorefrontTestData.variant("ps-z", "S-Z", true, 9, "100.00", null, Map.of())), Set.of(),
+                Map.of(), null);
+
+        StorefrontDtos.ProductDetail detail = StorefrontViews.detail(shop, product, EN, StorefrontViews.noMedia(),
+                StorefrontTestData.DAY_0);
+
+        assertEquals(25, shop.settings().maxOrderQuantity());
+        assertEquals(25, detail.getMaxOrderQuantity());
+        assertEquals(250L, shop.settings().maxLineBaseUnits(10), "the cart's limit at scale 10, in base units");
+        assertTrue(new ObjectMapper().writeValueAsString(detail).contains("\"max_order_quantity\":25"));
+    }
 }

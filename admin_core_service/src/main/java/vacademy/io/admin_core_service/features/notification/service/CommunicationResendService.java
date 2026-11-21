@@ -4,10 +4,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import vacademy.io.admin_core_service.features.notification.dto.MessageOrigin;
 import vacademy.io.admin_core_service.features.notification.dto.ResendCommunicationRequest;
 import vacademy.io.admin_core_service.features.notification.dto.UnifiedSendRequest;
 import vacademy.io.admin_core_service.features.notification.dto.UnifiedSendResponse;
 import vacademy.io.admin_core_service.features.notification_service.service.NotificationService;
+import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.util.List;
@@ -35,6 +37,14 @@ public class CommunicationResendService {
     private final NotificationService notificationService;
 
     public UnifiedSendResponse resend(ResendCommunicationRequest request) {
+        return resend(request, null);
+    }
+
+    /**
+     * @param resentBy the admin doing it, recorded on the new log row as an ADMIN_RESEND origin so
+     *                 the timeline shows who resent the message. Null leaves the row unattributed.
+     */
+    public UnifiedSendResponse resend(ResendCommunicationRequest request, CustomUserDetails resentBy) {
         String channel = normaliseChannel(request.getChannel());
 
         if (!StringUtils.hasText(request.getInstituteId())) {
@@ -62,6 +72,11 @@ public class CommunicationResendService {
                 // Correlates the audit row with the notification_log row this send writes.
                 .sourceId(UUID.randomUUID().toString());
 
+        if (resentBy != null && StringUtils.hasText(resentBy.getUserId())) {
+            MessageOrigin origin = MessageOrigin.adminResend(resentBy.getUserId(), adminName(resentBy));
+            options.originType(origin.type()).originId(origin.id()).originName(origin.name());
+        }
+
         if (WHATSAPP.equals(channel)) {
             recipient.phone(request.getRecipient());
             // Meta rejects a media-header template that arrives without its header component
@@ -74,6 +89,8 @@ public class CommunicationResendService {
             recipient.email(request.getRecipient());
             options.emailSubject(request.getEmailSubject());
             options.emailBody(request.getEmailBody());
+            // The original email template, carried over so the resent row names it too.
+            options.logTemplateName(request.getTemplateName());
             // emailType is deliberately left unset: the original send's type is not stored on the
             // log row, and notification-service defaults to UTILITY_EMAIL. Guessing PROMOTIONAL
             // here would change which unsubscribe list the resend is checked against.
@@ -109,8 +126,10 @@ public class CommunicationResendService {
 
     /** Sentence for the activity-log row, e.g. "resent WhatsApp template welcome_v2 to Shristy". */
     public String describe(ResendCommunicationRequest request) {
-        String channel = WHATSAPP.equals(normaliseChannel(request.getChannel())) ? "WhatsApp" : "email";
-        String what = StringUtils.hasText(request.getTemplateName())
+        boolean whatsapp = WHATSAPP.equals(normaliseChannel(request.getChannel()));
+        String channel = whatsapp ? "WhatsApp" : "email";
+        // An email names its subject: its template name only labels the log row.
+        String what = whatsapp && StringUtils.hasText(request.getTemplateName())
                 ? " template " + request.getTemplateName()
                 : StringUtils.hasText(request.getEmailSubject()) ? " \"" + request.getEmailSubject() + "\"" : "";
         String who = StringUtils.hasText(request.getRecipientName())
@@ -118,6 +137,12 @@ public class CommunicationResendService {
                 : request.getRecipient();
         String edited = request.isVariablesChanged() ? " with edited variables" : "";
         return "resent " + channel + what + " to " + who + edited;
+    }
+
+    /** Full name, else the login name, else null. */
+    private static String adminName(CustomUserDetails user) {
+        if (StringUtils.hasText(user.getFullName())) return user.getFullName();
+        return StringUtils.hasText(user.getUsername()) ? user.getUsername() : null;
     }
 
     private static String normaliseChannel(String channel) {

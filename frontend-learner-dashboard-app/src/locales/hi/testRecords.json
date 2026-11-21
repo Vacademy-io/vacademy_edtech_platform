@@ -1,4 +1,7 @@
 {
+  "revisedTag": "संशोधित {{date}}",
+  "revisedTagShort": "संशोधित",
+  "revisedTagHint": "आपके शिक्षक ने यह परिणाम जारी होने के बाद बदला है। दिखाए गए अंक नवीनतम हैं।",
   "common": {
     "correct": "सही",
     "incorrect": "गलत",

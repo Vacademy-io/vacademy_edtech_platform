@@ -21,7 +21,8 @@
         "revaluate": "إعادة التقييم",
         "questionWise": "حسب السؤال",
         "entireAssessment": "التقييم بالكامل",
-        "releaseResult": "إصدار النتيجة"
+        "releaseResult": "إصدار النتيجة",
+        "openSubmission": "فتح الإجابة"
     },
     "toasts": {
         "releaseResultSuccess": "تم إعادة تقييم محاولتك لهذا التقييم. يرجى التحقق من بريدك الإلكتروني!",

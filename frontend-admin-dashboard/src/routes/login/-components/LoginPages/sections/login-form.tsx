@@ -1,4 +1,4 @@
-import { isEvalezyMode, loginLogo } from '@/lib/evalezy-mode';
+import { hostProduct, loginLogo } from '@/lib/product-host';
 import { fetchSignupConfig, startGoogleSignup } from '@/routes/signup/-services/self-signup';
 import { getActiveRoleDisplaySettingsKey } from '@/lib/auth/instituteUtils';
 import { getInstituteId } from '@/constants/helper';
@@ -41,6 +41,7 @@ import {
     resolveInstituteForDomain,
     type DomainResolveResponse,
 } from '@/services/domain-routing';
+import { getPortalType } from '@/lib/auth/portal-roles';
 import { getFlavor, isNative } from '@/native';
 import useInstituteLogoStore from '@/components/common/layout-container/sidebar/institutelogo-global-zustand';
 import {
@@ -71,7 +72,7 @@ function resolveAuthProviderFlags(branding: Partial<DomainResolveResponse> | nul
     return {
         allowGoogleAuth: branding?.allowGoogleAuth !== false,
         // Evalezy signs in with Google, email or a username only.
-        allowGithubAuth: !isEvalezyMode() && branding?.allowGithubAuth !== false,
+        allowGithubAuth: !hostProduct() && branding?.allowGithubAuth !== false,
         allowEmailOtpAuth: branding?.allowEmailOtpAuth !== false,
         allowUsernamePasswordAuth: branding?.allowUsernamePasswordAuth !== false,
         allowPhoneAuth: branding?.allowPhoneAuth === true,
@@ -94,7 +95,7 @@ export function LoginForm() {
         ReturnType<typeof getCachedInstituteBranding>
     >(() => getCachedInstituteBranding());
     const instituteName = cachedBranding?.instituteName;
-    const portalRoleLabel = cachedBranding?.role === 'TEACHER' ? 'Teacher' : 'Admin';
+    const portalRoleLabel = getPortalType(cachedBranding?.role) === 'TEACHER' ? 'Teacher' : 'Admin';
     const portalInstitute = instituteName || 'Vacademy';
     const [authMethod, setAuthMethod] = useState<'EMAIL' | 'USERNAME' | 'PHONE'>('USERNAME');
     // Seed from cached branding so the first paint already reflects the institute's
@@ -508,12 +509,13 @@ export function LoginForm() {
     }, []);
 
     const continueWithGoogle = async () => {
-        // On Evalezy the same button serves a new teacher too: Google comes back to the sign-up
-        // screen, which signs an existing account in and asks a new one for the rest. An app's
-        // WebView has no way back from there, and neither does a closed sign-up.
-        if (isEvalezyMode() && !isNative()) {
+        // On a product's host (Evalezy, Telleo) the same button serves a new client too: Google
+        // comes back to the sign-up screen, which signs an existing account in and asks a new one
+        // for the rest. An app's WebView has no way back from there, and neither does a closed sign-up.
+        const ownProduct = hostProduct();
+        if (ownProduct && !isNative()) {
             try {
-                const { product } = await fetchSignupConfig('evalezy');
+                const { product } = await fetchSignupConfig(ownProduct.key);
                 startGoogleSignup({ product, source: 'login' });
                 return;
             } catch {
@@ -524,8 +526,9 @@ export function LoginForm() {
     };
 
     const handleNavigateSignup = () => {
-        if (isEvalezyMode()) {
-            navigate({ to: '/signup/start', search: { product: 'evalezy' } });
+        const ownProduct = hostProduct();
+        if (ownProduct) {
+            navigate({ to: '/signup/start', search: { product: ownProduct.key } });
             return;
         }
         navigate({ to: '/signup' });
@@ -829,7 +832,7 @@ export function LoginForm() {
                                                         >
                                                             {mutation.isPending ? t('loggingIn') : t('login')}
                                                         </MyButton>
-                                                        {(allowSignup || isEvalezyMode()) && (
+                                                        {(allowSignup || !!hostProduct()) && (
                                                             <p className="text-xs text-neutral-700">
                                                                 {t('noAccount')}&nbsp;&nbsp;
                                                                 <span

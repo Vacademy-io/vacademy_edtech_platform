@@ -107,6 +107,7 @@ import { dateRangeFileSuffix, dueDateWindow } from './due-range';
 import { FollowUpsCalendarView } from './follow-ups-calendar-view';
 import { useFollowUpsViewState } from './use-follow-ups-view-state';
 import { parseLockedParams } from '../../recent-leads/-components/pinned-filters';
+import { nudgeAssistant } from '@/components/vacademy-assistant/page-ask';
 
 /**
  * Follow-ups — at-a-glance task list of leads needing counsellor action.
@@ -847,6 +848,7 @@ const FollowUpsContent = () => {
         exportFields
     );
     const handleExport = () => {
+        nudgeAssistant('leads');
         // The file says which slice it is: bucket plus the date range it was cut to, so
         // five downloads side by side in a folder don't need opening to tell apart.
         const completedDates =

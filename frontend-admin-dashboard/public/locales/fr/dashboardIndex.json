@@ -89,16 +89,16 @@
                 "prompt": "Quel est le montant total des frais en attente dans l’établissement ?"
             },
             "learner": {
-                "label": "Trouver un apprenant",
-                "prompt": "Aidez-moi à trouver un apprenant par son nom."
+                "label": "Nouveaux apprenants",
+                "prompt": "Quels apprenants se sont inscrits ces 7 derniers jours ?"
             },
             "assessments": {
                 "label": "Évaluations en attente",
                 "prompt": "Quels travaux soumis sont encore en attente d’évaluation ?"
             },
             "announcement": {
-                "label": "Rédiger une annonce",
-                "prompt": "Aidez-moi à rédiger une annonce pour un groupe."
+                "label": "Annonces récentes",
+                "prompt": "Affichez les 5 dernières annonces envoyées."
             },
             "schedule": {
                 "label": "Cours du jour",
@@ -109,17 +109,219 @@
                 "prompt": "Aidez-moi à vérifier les frais en retard d’un apprenant."
             },
             "batch": {
-                "label": "Liste d’un groupe",
-                "prompt": "Aidez-moi à trouver les apprenants d’un groupe."
+                "label": "Inscriptions par groupe",
+                "prompt": "Combien d’apprenants ont rejoint chaque groupe ces 30 derniers jours ?"
             },
             "help": {
                 "label": "Aide pour une tâche",
                 "prompt": "Comment créer un cours ?",
                 "promptGeneral": "Comment ajouter un membre à l'équipe ?"
+            },
+            "crmNewLeads": {
+                "label": "Nouveaux prospects de la semaine",
+                "prompt": "Combien de prospects sont arrivés cette semaine ?"
+            },
+            "crmFirstContact": {
+                "label": "En attente d’un premier contact",
+                "prompt": "Quels prospects attendent le plus longtemps un premier contact ?"
+            },
+            "crmFeesDue": {
+                "label": "Frais dus cette semaine",
+                "prompt": "Qui doit des frais cette semaine ?"
             }
         },
         "instituteName": "Chatbot de l’établissement {{instituteName}}",
-        "helpDescription": "Demandez-moi comment ou où effectuer une tâche dans votre espace d’administration."
+        "helpDescription": "Demandez-moi comment ou où effectuer une tâche dans votre espace d’administration.",
+        "crmCopy": {
+            "crm_leads": "Prospects et demandes",
+            "crm_calls": "Appels et rappels",
+            "crm_meetings": "Rendez-vous et pages de réservation",
+            "crm_messages": "Messages des prospects",
+            "crm_reports": "Rapports CRM",
+            "crm_collections": "Admissions, sommes dues et encaissements",
+            "admissionsNoFeePlan": "Admissions du mois sans plan de frais",
+            "crm_lead_activity": "Noter les appels, les notes et les relances des prospects — vous confirmez chaque changement sur une carte",
+            "crm_lead_edits": "Changer le statut, le niveau, les détails et les tags d’un prospect — vous confirmez sur une carte",
+            "crm_team_edits": "Attribuer des prospects et suspendre ou reprendre la répartition — vous confirmez sur une carte",
+            "crm_lead_intake": "Ajouter ou importer des prospects — vous confirmez sur une carte",
+            "crm_lead_merges": "Fusionner les prospects en double — vous confirmez sur une carte",
+            "crm_meeting_edits": "Noter l’issue des rendez-vous — vous confirmez sur une carte",
+            "examples": {
+                "leadFollowUp": "Ajoutez une relance sur le prospect d’Asha demain à 11 h",
+                "leadStatus": "Passez le prospect d’Asha à Intéressé",
+                "assignLeads": "Attribuez les nouveaux prospects Meta à Ravi",
+                "pauseRouting": "Suspendez la répartition des prospects pour Ravi cette semaine",
+                "addLead": "Ajoutez Priya Shah comme nouveau prospect du séminaire d’aujourd’hui",
+                "mergeLeads": "Fusionnez les deux prospects d’Asha Verma",
+                "meetingOutcome": "Marquez le rendez-vous d’aujourd’hui avec Asha comme terminé et notez qu’elle veut le groupe du week-end"
+            }
+        },
+        "voice": {
+            "start": "Poser votre question à voix haute",
+            "starting": "Démarrage du micro…",
+            "stop": "Arrêter et transcrire",
+            "cancel": "Annuler l’enregistrement",
+            "recording": "Enregistrement",
+            "elapsed": "{{elapsed}} sur {{limit}}",
+            "transcribing": "Transcription de votre message…",
+            "dismiss": "Fermer",
+            "announce": {
+                "started": "Enregistrement en cours. Appuyez sur Arrêter quand vous avez terminé.",
+                "done": "Votre texte est dans la zone de message. Vérifiez-le, puis envoyez-le.",
+                "cancelled": "Enregistrement annulé.",
+                "limit": "Enregistrement arrêté à la limite de {{minutes}} minutes."
+            },
+            "errors": {
+                "permission": "L’accès au micro est bloqué. Autorisez-le dans les paramètres du site de votre navigateur, puis réessayez.",
+                "noMic": "Aucun micro détecté, ou il est utilisé par une autre application.",
+                "noSpeech": "Nous n’avons rien entendu. Réessayez un peu plus près du micro.",
+                "tooLong": "Cet enregistrement est trop long. Limitez vos questions à {{minutes}} minutes.",
+                "rateLimited": "Trop d’enregistrements en peu de temps. Patientez un instant, puis réessayez.",
+                "server": "La saisie vocale n’est pas disponible pour le moment. Veuillez taper votre question."
+            }
+        },
+        "capabilityCopy": {
+            "search_help_knowledge": "Guides pratiques",
+            "learner_data": "Recherche d’apprenants — présence, notes, activité, connexions",
+            "payments": "Frais et paiements",
+            "batch_data": "Listes des groupes",
+            "schedule": "Emplois du temps des cours",
+            "institute_overview": "Statistiques de l’établissement",
+            "learner_edits": "Faire des modifications (avec votre confirmation)",
+            "assessments": "Résultats d’évaluations et corrections en attente",
+            "announcements": "Envoyer des annonces (avec votre confirmation)",
+            "examples": {
+                "createCourse": "Comment créer un cours ?",
+                "inviteMember": "Comment inviter un membre de l’équipe ?",
+                "addToBatch": "Où ajouter un apprenant à un groupe ?",
+                "findLearner": "Quels apprenants se sont inscrits ces 7 derniers jours ?",
+                "studentAttendance": "Quelle est la présence de cet élève ce mois-ci ?",
+                "overdueFees": "Cet apprenant a-t-il des frais en retard ?",
+                "liveNow": "Quels cours sont en direct en ce moment ?",
+                "pendingFees": "Combien de frais restent impayés dans l’établissement ?",
+                "extendAccess": "Prolonger l’accès d’un apprenant",
+                "pendingEvaluation": "Quelles copies attendent encore une correction ?",
+                "sendAnnouncement": "Affichez les 5 dernières annonces envoyées"
+            }
+        },
+        "panel": {
+            "label": "Discussion avec {{chatbotName}}",
+            "status": {
+                "ready": "À votre service",
+                "thinking": "Réflexion…",
+                "pastChat": "Discussion passée"
+            },
+            "greeting": "Bonjour {{name}}, comment puis-je vous aider ?",
+            "greetingNoName": "Bonjour ! Comment puis-je vous aider ?",
+            "greetingHint": "Posez une question sur votre établissement, ou commencez par l’une de celles-ci.",
+            "canHelpWith": "Ce que je peux faire pour vous",
+            "showAllCapabilities": "Tout afficher ({{count}})",
+            "showFewerCapabilities": "Afficher moins",
+            "tryAsking": "Essayez de demander",
+            "recentChats": "Discussions récentes",
+            "viewAll": "Tout voir",
+            "actions": {
+                "history": "Discussions récentes",
+                "newChat": "Nouvelle discussion",
+                "expand": "Agrandir le panneau",
+                "shrink": "Réduire le panneau",
+                "close": "Fermer l’assistant",
+                "back": "Revenir à la discussion",
+                "send": "Envoyer le message",
+                "copy": "Copier la réponse",
+                "copied": "Copié",
+                "continue": "Reprendre cette discussion",
+                "clearStudent": "Ne plus poser de questions sur cet élève"
+            },
+            "history": {
+                "search": "Rechercher dans les discussions",
+                "today": "Aujourd’hui",
+                "earlier": "Plus tôt",
+                "empty": "Aucune discussion pour l’instant. Vos conversations apparaîtront ici.",
+                "noMatches": "Aucune discussion ne correspond à « {{query}} ».",
+                "error": "Impossible de charger vos discussions.",
+                "retry": "Réessayer",
+                "loading": "Chargement de vos discussions",
+                "loadMore": "Afficher plus",
+                "current": "En cours",
+                "untitled": "Discussion sans titre",
+                "open": "Ouvrir la discussion : {{title}}",
+                "delete": "Supprimer la discussion : {{title}}",
+                "deletePrompt": "Supprimer cette discussion ?",
+                "confirmDelete": "Supprimer",
+                "keep": "Conserver"
+            },
+            "pastChat": {
+                "notice": "Vous consultez une discussion passée. Envoyer un message la reprend.",
+                "loading": "Ouverture de la discussion…"
+            },
+            "followUps": "Questions suggérées",
+            "activity": {
+                "thinking": "Réflexion…",
+                "working": "Traitement en cours…"
+            },
+            "composer": {
+                "label": "Message à {{chatbotName}}",
+                "placeholder": "Posez votre question à l’assistant…"
+            },
+            "askingAbout": "Question sur :",
+            "tableLabel": "Tableau",
+            "card": {
+                "title": "Confirmer cette modification",
+                "beforeConfirm": "Avant de confirmer",
+                "confirm": "Confirmer",
+                "cancel": "Annuler",
+                "working": "En cours…",
+                "executed": "Confirmé et appliqué",
+                "cancelled": "Annulé",
+                "applying": "Déjà en cours d’application",
+                "failed": "Non appliqué",
+                "expired": "Expiré. Redemandez pour faire cette modification."
+            },
+            "errors": {
+                "loadChat": "Impossible d’ouvrir cette discussion. Veuillez réessayer.",
+                "continue": "Impossible de reprendre cette discussion. Veuillez réessayer.",
+                "delete": "Impossible de supprimer cette discussion. Veuillez réessayer."
+            }
+        },
+        "pageAsk": {
+            "button": "Demander",
+            "buttonLabel": "Demander à {{chatbotName}} à propos de cette page",
+            "menuTitle": "Demander à {{chatbotName}} à propos de cette page",
+            "somethingElse": "Poser une autre question",
+            "questions": {
+                "leadsNotContacted": "Quels nouveaux prospects n’ont pas encore été contactés ?",
+                "leadsBySource": "Combien de prospects sont arrivés cette semaine, par source ?",
+                "leadsOverdueFollowUps": "Quels suivis sont en retard, et pour quel conseiller ?",
+                "leadsNoActivity": "Quels prospects ouverts n’ont eu aucune activité depuis 7 jours ?",
+                "learnersRecent": "Qui s’est inscrit ces 7 derniers jours ?",
+                "learnersOverdueFees": "Quels apprenants ont les plus gros impayés ?",
+                "learnersInBatch": "Lister les apprenants d’un groupe",
+                "feesOverdue30": "Qui a des frais en retard de plus de 30 jours ?",
+                "feesCollectedMonth": "Combien avons-nous encaissé ce mois-ci ?",
+                "feesWhoOwesWeek": "Qui doit des frais cette semaine ?",
+                "feesOutstanding": "Quel est le total des frais impayés ?",
+                "assessmentsPending": "Quelles copies attendent encore d’être corrigées ?",
+                "assessmentsToppers": "Qui est arrivé en tête au dernier test ?",
+                "assessmentsNotAttempted": "Qui n’a pas encore passé le dernier test ?"
+            },
+            "tip": {
+                "lead": "La prochaine fois, demandez simplement :",
+                "ask": "Demander",
+                "stop": "Ne plus afficher les astuces",
+                "dismiss": "Fermer l’astuce"
+            },
+            "welcome": {
+                "hint": "Bienvenue ! Je peux vous aider à configurer votre établissement. Commencez par l’une de ces questions, ou demandez ce que vous voulez.",
+                "startHere": "Commencer ici",
+                "questions": {
+                    "firstSteps": "Que dois-je configurer en premier ?",
+                    "createCourse": "Comment créer un cours ?",
+                    "addLearners": "Comment ajouter des apprenants à un groupe ?",
+                    "inviteTeam": "Comment inviter mon équipe ?"
+                }
+            }
+        }
     },
     "quickActions": {
         "title": "Actions rapides"

@@ -11,7 +11,7 @@ Each institute has its own server URL. It looks like this:
 https://<your backend>/ai-service/mcp/i/<institute_id>
 ```
 
-Do not type it by hand. Copy it from **Settings → MCP Server → Connect your AI app → Server URL** in your admin portal. The page shows it once the server is switched on.
+Do not type it by hand. Copy it from **Settings → AI access → Connect your AI app → Server URL** in your admin portal. The page shows it once the server is switched on.
 
 ## Why the URL names your institute
 
@@ -34,13 +34,13 @@ https://<your backend>/ai-service/mcp
 
 It exists so that older connections keep working. With it, the approval page opens on the default admin portal and asks the person to pick an institute. Use your institute's URL for every new connection.
 
-Tokens are not shared between the two. An app connected through one URL is refused on the other with *"This token was issued for a different server URL. Reconnect using the URL shown in your institute's MCP settings."* To switch, remove the server from the app and add it again with the institute URL.
+Tokens are not shared between the two. An app connected through one URL is refused on the other with *"This token was issued for a different server URL. Reconnect using the URL shown in your institute's Settings → AI access."* To switch, remove the server from the app and add it again with the institute URL.
 
 ## More than one institute
 
 One connection works with one institute. If you work for several institutes:
 
-1. Copy the server URL from each institute's **Settings → MCP Server**.
+1. Copy the server URL from each institute's **Settings → AI access**.
 2. Add each one to your AI app as a separate server, with a name that tells them apart, for example `north-campus` and `south-campus`.
 3. Sign in to each one with your account for that institute.
 

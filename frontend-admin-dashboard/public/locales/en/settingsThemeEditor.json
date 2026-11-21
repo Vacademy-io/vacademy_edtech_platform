@@ -127,7 +127,8 @@
                 "play": "Bold and game-like: a mascot, a big green Continue button and chunky shapes. Great for young learners.",
                 "cleanerPlay": "Like Play, but calmer: the mascot, your brand colour with warm accents, and round pill buttons. Suits school learners of any age.",
                 "corporate": "Calm and professional: white cards raised on a light grey page. Suits working adults and staff training.",
-                "fun": "Bright and playful: every course gets its own colour, with big friendly buttons. Made for school learners."
+                "fun": "Bright and playful: every course gets its own colour, with big friendly buttons. Made for school learners.",
+                "neonCity": "Night-time and game-like: a sunset city on the home screen, slanted bold headings, neon pink buttons and stars on quiz results. Every course gets its own bright colour. Uses its own colours instead of your brand colour."
             },
             "cue": {
                 "default": "Clean and white",
@@ -135,9 +136,11 @@
                 "play": "Mascot, lime button",
                 "cleanerPlay": "Mascot, pill buttons",
                 "corporate": "Grey page, raised cards",
-                "fun": "A colour per course"
+                "fun": "A colour per course",
+                "neonCity": "Sunset city at night"
             },
-            "funFallback": "Older app versions show Cleaner Play until learners update."
+            "funFallback": "Older app versions show Cleaner Play until learners update.",
+            "neonCity": "Neon City"
         }
     }
 }

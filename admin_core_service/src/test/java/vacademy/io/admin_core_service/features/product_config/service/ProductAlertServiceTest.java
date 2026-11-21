@@ -54,6 +54,21 @@ class ProductAlertServiceTest {
     }
 
     @Test
+    void theMailShowsTheVisitsUtmOnlyWhenItHadSome() {
+        product.setSignupAlertWhatsapp(null);
+        SignupEventDTO tagged = SignupEventDTO.builder().fullName("A Teacher").email("a@s.in").method("Email OTP")
+                .source("website").utmSource("instagram").utmMedium(" ").utmCampaign("launch").build();
+        assertEquals("instagram / launch", ProductAlertService.utmLine(tagged));
+        assertNull(ProductAlertService.utmLine(event));
+        service.signupCompleted("evalezy", tagged);
+        ArgumentCaptor<UnifiedSendRequest> mail = ArgumentCaptor.forClass(UnifiedSendRequest.class);
+        verify(notifications, times(2)).sendUnified(mail.capture());
+        String body = mail.getValue().getOptions().getEmailBody();
+        assertTrue(body.contains(">UTM</td><td>instagram / launch<"), body);
+        assertTrue(body.contains(">Came from</td><td>website<"), body);
+    }
+
+    @Test
     void theMailEscapesWhatThePublicFormTyped() {
         product.setSignupAlertWhatsapp(null);
         service.signupCompleted("evalezy", event);

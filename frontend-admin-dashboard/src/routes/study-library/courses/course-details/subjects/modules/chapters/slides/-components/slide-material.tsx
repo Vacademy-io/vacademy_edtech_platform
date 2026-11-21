@@ -79,6 +79,17 @@ import { DiscussionSlideEditor } from './discussion/discussion-slide-editor';
 import { DISCUSSION_DOC_TYPE } from './discussion/discussion-types';
 import { SpreadsheetSlideEditor } from './spreadsheet/spreadsheet-slide-editor';
 import { SPREADSHEET_DOC_TYPE } from './spreadsheet/spreadsheet-slide-data';
+import {
+    FLASHCARDS_DOC_TYPE,
+    POLL_DOC_TYPE,
+    activityTypeName,
+    isActivityDocType,
+    isEngagementEligibleSlide,
+} from './activity/activity-types';
+import { EngagementToggle } from './activity/engagement-toggle';
+import { FlashcardsSlideEditor } from './activity/flashcards-slide-editor';
+import { PollSlideEditor } from './activity/poll-slide-editor';
+import { GameSlideEditor } from './activity/game-slide-editor';
 import { CodeEditorSlide } from './code-editor-slide';
 import { SplitScreenSlide } from './split-screen-slide';
 import { getTokenFromCookie, getTokenDecodedData, getUserRoles } from '@/lib/auth/sessionUtility';
@@ -2694,6 +2705,25 @@ export const SlideMaterial = ({
                 return;
             }
 
+            if (isActivityDocType(documentType)) {
+                // Flashcards / Poll / Game: JSON in document_slide.data, edited in place;
+                // the header Save Draft / Publish persist it (same contract as Discussion).
+                const Editor =
+                    documentType === FLASHCARDS_DOC_TYPE
+                        ? FlashcardsSlideEditor
+                        : documentType === POLL_DOC_TYPE
+                          ? PollSlideEditor
+                          : GameSlideEditor;
+                setContent(
+                    <Editor
+                        key={`activity-${activeItem.id}-${historyRestoreNonce}`}
+                        slide={activeItem}
+                        isEditable={!isLearnerView}
+                    />
+                );
+                return;
+            }
+
             if (documentType === 'SCRATCH') {
                 try {
                     // Fallback: first check data field, then published_data for published slides
@@ -3675,6 +3705,7 @@ export const SlideMaterial = ({
                     activeItem?.document_slide?.type == 'SCRATCH' ||
                     activeItem?.document_slide?.type == DISCUSSION_DOC_TYPE ||
                     activeItem?.document_slide?.type == SPREADSHEET_DOC_TYPE ||
+                    (!!activeItem?.document_slide && isActivityDocType(activeItem.document_slide.type)) ||
                     activeItem?.document_slide?.type?.startsWith('SPLIT_'))
             ) {
                 try {
@@ -3702,6 +3733,8 @@ export const SlideMaterial = ({
                                       ? 'Discussion'
                                     : activeItem.document_slide.type === SPREADSHEET_DOC_TYPE
                                       ? 'Spreadsheet'
+                                    : isActivityDocType(activeItem.document_slide.type)
+                                      ? activityTypeName(activeItem.document_slide.type)
                                     : activeItem.document_slide.type?.startsWith('SPLIT_')
                                       ? `Split Screen ${activeItem.document_slide.type.replace('SPLIT_', '')}`
                                       : 'Interactive Slide';
@@ -3742,6 +3775,8 @@ export const SlideMaterial = ({
                                   ? 'Discussion'
                                 : activeItem.document_slide.type === SPREADSHEET_DOC_TYPE
                                   ? 'Spreadsheet'
+                                : isActivityDocType(activeItem.document_slide.type)
+                                  ? activityTypeName(activeItem.document_slide.type)
                                 : activeItem.document_slide.type?.startsWith('SPLIT_')
                                   ? `Split Screen ${activeItem.document_slide.type.replace('SPLIT_', '')}`
                                   : 'Interactive Slide';
@@ -4076,6 +4111,7 @@ export const SlideMaterial = ({
                     activeItem?.document_slide?.type === 'SCRATCH' ||
                     activeItem?.document_slide?.type === DISCUSSION_DOC_TYPE ||
                     activeItem?.document_slide?.type === SPREADSHEET_DOC_TYPE ||
+                    (!!activeItem?.document_slide && isActivityDocType(activeItem.document_slide.type)) ||
                     activeItem?.document_slide?.type?.startsWith('SPLIT_'))
             ) {
                 // For interactive slides, check if we have valid data
@@ -4098,6 +4134,8 @@ export const SlideMaterial = ({
                                   ? 'Discussion'
                                 : activeItem.document_slide.type === SPREADSHEET_DOC_TYPE
                                   ? 'Spreadsheet'
+                                : isActivityDocType(activeItem.document_slide.type)
+                                  ? activityTypeName(activeItem.document_slide.type)
                                 : activeItem.document_slide.type?.startsWith('SPLIT_')
                                   ? `Split Screen ${activeItem.document_slide.type.replace('SPLIT_', '')}`
                                   : 'Interactive Slide';
@@ -4670,6 +4708,7 @@ export const SlideMaterial = ({
                                             activeItem?.document_slide?.type === 'SCRATCH' ||
                                             activeItem?.document_slide?.type === DISCUSSION_DOC_TYPE ||
                                             activeItem?.document_slide?.type === SPREADSHEET_DOC_TYPE ||
+                                            (!!activeItem?.document_slide && isActivityDocType(activeItem.document_slide.type)) ||
                                             activeItem?.source_type === 'QUESTION' ||
                                             activeItem?.source_type === 'ASSIGNMENT' ||
                                             activeItem?.source_type === 'QUIZ' ||
@@ -4705,8 +4744,10 @@ export const SlideMaterial = ({
 
                                 {/* Assign this slide as a daily-engagement task. Offered only for a
                                     PUBLISHED slide: a draft is invisible to learners, so scheduling
-                                    one would create a task nobody could open. */}
-                                {!hidePublishButtons && activeItem.status === 'PUBLISHED' && (
+                                    one would create a task nobody could open. Shown to teachers
+                                    too (not tied to hidePublishButtons): scheduling a task does
+                                    not edit the course, and this is the teacher's main way in. */}
+                                {!isLearnerView && activeItem.status === 'PUBLISHED' && (
                                     <MyButton
                                         buttonType="secondary"
                                         scale="medium"
@@ -4727,6 +4768,21 @@ export const SlideMaterial = ({
                                         </span>
                                     </MyButton>
                                 )}
+
+                                {/* "Count as engagement": learners earn points once for finishing
+                                    this slide, with no time window (the course-flow alternative
+                                    to a daily task). Same audience as "Assign as task". */}
+                                {!isLearnerView &&
+                                    isEngagementEligibleSlide(
+                                        activeItem.source_type,
+                                        activeItem.document_slide?.type
+                                    ) && (
+                                        <EngagementToggle
+                                            key={activeItem.id}
+                                            slideId={activeItem.id}
+                                            documentType={activeItem.document_slide?.type}
+                                        />
+                                    )}
 
                                 {/* Publish/Unpublish — shown to ALL roles (no auto-publish anymore).
                                     The confirm step is a compact popover anchored to this button
@@ -4971,6 +5027,7 @@ export const SlideMaterial = ({
                 prevent accidental destructive clicks. */}
             {!isLearnerView && activeSlideHasRealChanges && (
                 <div
+                    data-assistant-fab="avoid-phone"
                     role="region"
                     aria-label={t('ui.unsavedChanges')}
                     className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 rounded-full border border-warning-300 bg-white/95 py-1.5 pl-4 pr-2 shadow-xl backdrop-blur animate-in fade-in slide-in-from-bottom-2"
@@ -5034,6 +5091,7 @@ export const SlideMaterial = ({
                               activeItem?.document_slide?.type === DISCUSSION_DOC_TYPE ||
                               // SPREADSHEET: toolbar + tall grid; page-scroll reveals it.
                               activeItem?.document_slide?.type === SPREADSHEET_DOC_TYPE ||
+                              (!!activeItem?.document_slide && isActivityDocType(activeItem.document_slide.type)) ||
                               activeItem?.source_type === 'ASSIGNMENT' ||
                               // VIDEO / HTML_VIDEO stack the player on top of a
                               // timeline, add-question form and questions list

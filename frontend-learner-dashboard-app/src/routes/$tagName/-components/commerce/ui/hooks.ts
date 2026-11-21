@@ -9,6 +9,7 @@ import {
     type NavigationKind,
     type ScrollPositions,
 } from '../logic/scroll';
+import { holdZoomableViewport } from '../logic/viewport';
 import { useCommerceSite } from './site';
 
 const FONT_LINK_ID = 'commerce-fonts';
@@ -181,4 +182,273 @@ export const useOnline = (): boolean => {
         };
     }, []);
     return online;
+};
+
+/** True when the visitor asked for less motion; read at the first render, followed after. */
+export const useReducedMotion = (): boolean => useMediaQuery('(prefers-reduced-motion: reduce)');
+
+/** True while the media query matches (false where there is no matchMedia). */
+export const useMediaQuery = (query: string): boolean => {
+    const [matches, setMatches] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.(query).matches);
+    useEffect(() => {
+        const list = typeof window !== 'undefined' ? window.matchMedia?.(query) : undefined;
+        if (!list) return;
+        const update = () => setMatches(list.matches);
+        update();
+        list.addEventListener?.('change', update);
+        return () => list.removeEventListener?.('change', update);
+    }, [query]);
+    return matches;
+};
+
+/** True while the tab is in the background (another tab, a locked phone). */
+export const usePageHidden = (): boolean => {
+    const [hidden, setHidden] = useState(() => typeof document !== 'undefined' && document.visibilityState === 'hidden');
+    useEffect(() => {
+        const update = () => setHidden(document.visibilityState === 'hidden');
+        document.addEventListener('visibilitychange', update);
+        return () => document.removeEventListener('visibilitychange', update);
+    }, []);
+    return hidden;
+};
+
+/** Pinch-zoom allowed while a shop root is on screen (logic/viewport.ts). */
+export const useZoomableViewport = (): void => {
+    useEffect(() => holdZoomableViewport(), []);
+};
+
+/* ── the fixed site header: where it ends, the fold, the photo row ── */
+
+/** The vertical translate of an element's computed transform (0 when none). */
+export const translateYOf = (el: Element): number => {
+    const value = typeof getComputedStyle === 'function' ? getComputedStyle(el).transform : '';
+    if (!value || value === 'none') return 0;
+    const numbers = value.slice(value.indexOf('(') + 1, -1).split(',').map((n) => parseFloat(n));
+    const y = value.startsWith('matrix3d') ? numbers[13] : numbers[5];
+    return typeof y === 'number' && Number.isFinite(y) ? y : 0;
+};
+
+/**
+ * Keeps --cmx-head-bottom on <html> at the bottom of the fixed site header as laid out (a fold's
+ * transform left out): where a pinned row (the sticky Filter·Sort bar) sits. Measured, so the
+ * full bar from 768px, a compact bar and the app's taller header all fit. Every shop header.
+ */
+export const useHeaderBottom = (ref: React.RefObject<HTMLElement | null>): void => {
+    useEffect(() => {
+        const header = ref.current?.closest('header');
+        if (!header || typeof window === 'undefined') return;
+        const root = document.documentElement;
+        let frame = 0;
+        const measure = () => {
+            frame = 0;
+            const bottom = header.getBoundingClientRect().bottom - translateYOf(header);
+            if (bottom > 0) root.style.setProperty('--cmx-head-bottom', `${Math.round(bottom)}px`);
+        };
+        const schedule = () => {
+            if (!frame) frame = requestAnimationFrame(measure);
+        };
+        measure();
+        const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(schedule) : null;
+        observer?.observe(header);
+        window.addEventListener('resize', schedule);
+        return () => {
+            if (frame) cancelAnimationFrame(frame);
+            observer?.disconnect();
+            window.removeEventListener('resize', schedule);
+            root.style.removeProperty('--cmx-head-bottom');
+        };
+    }, [ref]);
+};
+
+/** Below this scroll offset the logo row is always shown. */
+const FOLD_MIN_Y = 160;
+/** Downward travel since the last turn that folds the logo row. */
+const FOLD_DOWN = 12;
+/** Upward travel since the last turn that brings it back. */
+const FOLD_UP = 24;
+/** Photo row ("image" style): it folds into the chip row once the page has scrolled past the 48px it adds… */
+export const PHOTO_ROW_COLLAPSE_Y = 48;
+/** …and opens again near the top. */
+export const PHOTO_ROW_EXPAND_Y = 16;
+/** Rows pinned under the header that move with the fold. */
+const PINNED_ROWS = '.cmx-toolbar--sticky';
+/** How long a pinned row animates after a fold or unfold (the header's own 200ms). */
+const PIN_ANIMATION_MS = 240;
+
+/**
+ * Where a row would sit if it were not sticky: under its previous sibling (plus the parent's
+ * gap), or at the top of its parent's content.
+ */
+const staticTopOf = (el: HTMLElement): number => {
+    const parent = el.parentElement;
+    if (!parent) return el.getBoundingClientRect().top;
+    const margin = parseFloat(getComputedStyle(el).marginTop) || 0;
+    const prev = el.previousElementSibling as HTMLElement | null;
+    const style = getComputedStyle(parent);
+    if (prev) return prev.getBoundingClientRect().bottom + (parseFloat(style.rowGap) || 0) + margin;
+    return parent.getBoundingClientRect().top + (parseFloat(style.paddingTop) || 0) + (parseFloat(style.borderTopWidth) || 0) + margin;
+};
+
+/**
+ * The fixed site header with the category bar (`navRef` is the bar):
+ * - keeps --cmx-pin-top on <html> at the header's visible bottom (the desktop product photo);
+ * - with `collapse`, folds the logo row away on scroll-down on phones and tablets. The fold is a
+ *   transform on the fixed header, so nothing in the page moves; the bar itself never hides.
+ *   A pinned row (the sticky Filter·Sort bar) keeps its `top` and follows with a transform
+ *   (--cmx-pin-shift): with the logo row folded it rides up under the bar;
+ * - with `photos` ("image" style), opens the photo row (data-cmx-expanded) at the top of the page
+ *   and folds it into the chip row past PHOTO_ROW_COLLAPSE_Y (opacity and transform only).
+ * Listeners are passive and run once per frame.
+ */
+export const useHeaderFold = (
+    navRef: React.RefObject<HTMLElement | null>,
+    collapse: boolean,
+    paused: boolean,
+    photos = false
+): void => {
+    const pausedRef = useRef(paused);
+    const unfoldRef = useRef<(() => void) | null>(null);
+    pausedRef.current = paused;
+
+    useEffect(() => {
+        const nav = navRef.current;
+        const header = nav?.closest('header');
+        if (!nav || !header || typeof window === 'undefined') return;
+        const root = document.documentElement;
+        const narrow = window.matchMedia ? window.matchMedia('(max-width: 1023.98px)') : null;
+        let folded = false;
+        let foldBy = 0;
+        let lastY = window.scrollY;
+        let anchorY = lastY;
+        let direction = 0;
+        let frame = 0;
+        let animTimer = 0;
+        const shifts = new Map<HTMLElement, number>();
+
+        // The pinned rows: no shift with the logo row shown; folded, they follow the bar up as
+        // far as their own place in the page allows (a row still below its pin line stays put).
+        const placePinned = (animate: boolean) => {
+            const rows = Array.from(document.querySelectorAll<HTMLElement>(PINNED_ROWS));
+            const next = rows.map((row) => {
+                if (!folded) return 0;
+                const rest = parseFloat(getComputedStyle(row).top) || 0;
+                return Math.max(-foldBy, Math.min(0, Math.round(staticTopOf(row) - rest)));
+            });
+            rows.forEach((row, i) => {
+                const shift = next[i]!;
+                if ((shifts.get(row) ?? 0) === shift && !animate) return;
+                shifts.set(row, shift);
+                if (animate) {
+                    row.classList.add('cmx-pin--anim');
+                    window.clearTimeout(animTimer);
+                    animTimer = window.setTimeout(() => {
+                        document.querySelectorAll('.cmx-pin--anim').forEach((el) => el.classList.remove('cmx-pin--anim'));
+                    }, PIN_ANIMATION_MS);
+                }
+                if (shift === 0) row.style.removeProperty('--cmx-pin-shift');
+                else row.style.setProperty('--cmx-pin-shift', `${shift}px`);
+            });
+        };
+
+        const apply = (next: boolean) => {
+            const changed = next !== folded;
+            folded = next;
+            const height = header.getBoundingClientRect().height;
+            const bar = nav.getBoundingClientRect().height;
+            foldBy = Math.max(0, Math.round(height - bar));
+            header.style.setProperty('--cmx-fold', `${foldBy}px`);
+            header.toggleAttribute('data-cmx-folded', next);
+            root.style.setProperty('--cmx-pin-top', `${Math.round(next ? bar : height)}px`);
+            placePinned(changed);
+        };
+        const unfold = () => {
+            if (folded) apply(false);
+        };
+        unfoldRef.current = unfold;
+        header.setAttribute('data-cmx-bar', '');
+
+        // The photo row and the header's own colour, for the part of it that hangs below the header.
+        const panel = photos ? nav.querySelector<HTMLElement>('.cmx-hbar__panel') : null;
+        let expanded = false;
+        const setExpanded = (next: boolean) => {
+            expanded = next;
+            nav.toggleAttribute('data-cmx-expanded', next);
+        };
+        if (panel) {
+            const background = getComputedStyle(header).backgroundColor;
+            // An opaque colour only: a see-through header would show the page through the photos.
+            if (/^rgb\(/.test(background)) nav.style.setProperty('--cmx-hbar-bg', background);
+            setExpanded(window.scrollY < PHOTO_ROW_COLLAPSE_Y);
+        }
+        apply(false);
+
+        const canFold = () =>
+            collapse &&
+            !!narrow?.matches &&
+            !pausedRef.current &&
+            // A drawer, sheet or search overlay is open (Radix locks the page scroll).
+            !document.body.hasAttribute('data-scroll-locked') &&
+            // A short page never folds.
+            root.scrollHeight >= window.innerHeight * 2;
+
+        const onScroll = () => {
+            if (frame) return;
+            frame = requestAnimationFrame(() => {
+                frame = 0;
+                const y = window.scrollY;
+                const dy = y - lastY;
+                lastY = y;
+                if (panel) {
+                    // Never fold the photos away from under a keyboard user.
+                    if (expanded && y >= PHOTO_ROW_COLLAPSE_Y && !panel.contains(document.activeElement)) setExpanded(false);
+                    else if (!expanded && y <= PHOTO_ROW_EXPAND_Y) setExpanded(true);
+                }
+                if (!canFold() || y < FOLD_MIN_Y) {
+                    unfold();
+                    anchorY = y;
+                    return;
+                }
+                if (dy !== 0) {
+                    const turn = dy > 0 ? 1 : -1;
+                    if (turn !== direction) {
+                        direction = turn;
+                        anchorY = y - dy;
+                    }
+                    if (turn > 0 && !folded && y - anchorY >= FOLD_DOWN) return apply(true);
+                    if (turn < 0 && folded && anchorY - y >= FOLD_UP) return apply(false);
+                }
+                // Folded, a pinned row on its way up keeps pace with the page until it meets the bar.
+                if (folded) placePinned(false);
+            });
+        };
+        const onResize = () => apply(folded && canFold());
+        window.addEventListener('scroll', onScroll, { passive: true });
+        window.addEventListener('resize', onResize);
+        header.addEventListener('focusin', unfold);
+        narrow?.addEventListener?.('change', onResize);
+        return () => {
+            if (frame) cancelAnimationFrame(frame);
+            window.clearTimeout(animTimer);
+            window.removeEventListener('scroll', onScroll);
+            window.removeEventListener('resize', onResize);
+            header.removeEventListener('focusin', unfold);
+            narrow?.removeEventListener?.('change', onResize);
+            header.removeAttribute('data-cmx-folded');
+            header.removeAttribute('data-cmx-bar');
+            header.style.removeProperty('--cmx-fold');
+            nav.removeAttribute('data-cmx-expanded');
+            nav.style.removeProperty('--cmx-hbar-bg');
+            root.style.removeProperty('--cmx-pin-top');
+            shifts.forEach((_, row) => {
+                row.style.removeProperty('--cmx-pin-shift');
+                row.classList.remove('cmx-pin--anim');
+            });
+            unfoldRef.current = null;
+        };
+    }, [navRef, collapse, photos]);
+
+    // The menu opening brings the logo row back (its toggle lives there).
+    useEffect(() => {
+        if (paused) unfoldRef.current?.();
+    }, [paused]);
 };
