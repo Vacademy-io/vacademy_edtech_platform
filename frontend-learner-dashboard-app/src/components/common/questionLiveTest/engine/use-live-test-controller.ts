@@ -20,12 +20,14 @@ import {
   buildSlideReturnUrl,
 } from "../../study-library/level-material/subject-material/module-material/chapter-material/slide-material/assessment-slide-return";
 import { useLiveTestUi } from "../live-test-ui-context";
+import { openAttemptReport } from "@/services/student-report-routing";
 import { buildAttemptPayload } from "./attempt-payload";
 import { getServerStartMs, readStoredAssessmentId } from "./attempt-storage";
 import {
   shouldAutoSubmitOnTimeUp,
   shouldAutoSubmitOnViolation,
 } from "./clock-logic";
+import { opensResultOnSubmit, waitForReleasedResult } from "./instant-result";
 
 const SUBMIT_MAX_ATTEMPTS = 3;
 const SUBMIT_RETRY_STEP_MS = 3000;
@@ -73,10 +75,16 @@ export function useLiveTestController({
   playMode,
   evaluationType,
   instituteId,
+  assessmentName = "",
+  resultType = "",
 }: {
   playMode: string;
   evaluationType: string;
   instituteId: string | null;
+  /** For the report heading when the result opens right after submit. */
+  assessmentName?: string;
+  /** AUTO_AFTER_SUBMISSION opens the result right after submit. */
+  resultType?: string;
 }): LiveTestController {
   const { t } = useTranslation("questionTest");
   const navigate = useNavigate();
@@ -170,6 +178,7 @@ export function useLiveTestController({
     commitCbeEditors();
     const state = useAssessmentStore.getState();
     const attemptId = state.assessment?.attempt_id;
+    const submittedAssessmentId = await readStoredAssessmentId();
 
     if (!attemptId) {
       console.error("Attempt ID is missing. Cannot proceed with submission.");
@@ -229,6 +238,20 @@ export function useLiveTestController({
           // TanStack's typed route table. A hard navigation is what we want
           // after leaving the fullscreen proctoring shell.
           window.location.assign(buildSlideReturnUrl(returnContext));
+        } else if (
+          submittedAssessmentId &&
+          instituteId &&
+          opensResultOnSubmit({ evaluationType, playMode, resultType }) &&
+          (await waitForReleasedResult({ attemptId, instituteId }))
+        ) {
+          // Result is released on submission: show it now instead of the list.
+          openAttemptReport(navigate as never, {
+            assessmentId: submittedAssessmentId,
+            assessmentName,
+            attemptId,
+            evaluationType,
+            replace: true,
+          });
         } else {
           navigate({
             to: "/assessment/examination",
