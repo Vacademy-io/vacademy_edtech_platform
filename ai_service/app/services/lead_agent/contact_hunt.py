@@ -131,6 +131,12 @@ def reachable(lead: Dict[str, Any]) -> bool:
     return any(engine_api.reachable(c) for c in lead.get("contacts") or [])
 
 
+def _before_contacts(gate_cfg: Dict[str, Any]) -> Dict[str, Any]:
+    """The gate as these guards read it: without org_email_only, since the search they guard is what may
+    find the business email that rule asks for (a lead with only a Gmail is worth searching)."""
+    return {**(gate_cfg or {}), "org_email_only": False}
+
+
 def worth_searching(lead: Dict[str, Any], scored: Dict[str, Any], gate_cfg: Dict[str, Any],
                     score: Callable[[Dict[str, Any]], Dict[str, Any]]) -> bool:
     """Whether more searching may be spent on this lead: the gate would not reject it once it has the
@@ -144,7 +150,7 @@ def worth_searching(lead: Dict[str, Any], scored: Dict[str, Any], gate_cfg: Dict
     if assumed and _LEVEL_ORDER.get(level, 0) < _LEVEL_ORDER[assumed]:
         lead = {**lead, "contact_quality": {**quality, "level": assumed}}
         scored = score(lead)
-    decision, _reasons = engine_api.gate(scored, lead, gate_cfg)
+    decision, _reasons = engine_api.gate(scored, lead, _before_contacts(gate_cfg))
     return decision != "REJECT"
 
 
@@ -162,7 +168,8 @@ def worth_a_lookup(lead: Dict[str, Any], scored: Dict[str, Any], gate_cfg: Dict[
     flags = [f for f in scored.get("flags") or [] if str(f).split(":", 1)[0] != "no_contact"]
     quality = lead.get("contact_quality") or {}
     decision, _reasons = engine_api.gate({**scored, "flags": flags},
-                                         {**lead, "contact_quality": {**quality, "level": "direct"}}, gate_cfg)
+                                         {**lead, "contact_quality": {**quality, "level": "direct"}},
+                                         _before_contacts(gate_cfg))
     return decision != "REJECT"
 
 

@@ -309,10 +309,13 @@ async def list_candidates(agent_id: str, status_: Optional[str] = Query(None, al
                           page: int = Query(0, ge=0, le=10000), size: int = Query(25, ge=1, le=100),
                           s: Staff = Depends(staff)):
     def q(db):
-        if store.get_agent(db, agent_id, s.institute_id) is None:
+        agent = store.get_agent(db, agent_id, s.institute_id)
+        if agent is None:
             raise _err(status.HTTP_404_NOT_FOUND, "not_found", "No such agent.")
         rows, total = store.list_candidates(db, agent_id, status=status_, page=page, size=size)
-        return {"items": [models.candidate_summary(r) for r in rows], "total": total, "page": page, "size": size}
+        gate_cfg = agent.get("gate_json")
+        return {"items": [models.candidate_summary(r, gate_cfg) for r in rows], "total": total, "page": page,
+                "size": size}
     return await asyncio.to_thread(_q, q)
 
 
@@ -330,12 +333,20 @@ async def agent_stats(agent_id: str, days: int = Query(14, ge=1, le=90), s: Staf
 # ==========================================================================
 # candidates
 # ==========================================================================
+def _candidate_gate(db, row: dict, institute_id: str) -> Optional[dict]:
+    """The gate_json of the candidate's agent: the card shows the email delivery sends under it."""
+    agent = store.get_agent(db, row["agent_id"], institute_id) if row.get("agent_id") else None
+    return (agent or {}).get("gate_json")
+
+
 @router.get("/candidates/{candidate_id}")
 async def get_candidate(candidate_id: str, s: Staff = Depends(staff)):
-    row = await run(store.get_candidate, candidate_id, s.institute_id)
-    if row is None:
-        raise _err(status.HTTP_404_NOT_FOUND, "not_found", "No such candidate.")
-    return models.candidate_detail(row)
+    def q(db):
+        row = store.get_candidate(db, candidate_id, s.institute_id)
+        if row is None:
+            raise _err(status.HTTP_404_NOT_FOUND, "not_found", "No such candidate.")
+        return models.candidate_detail(row, _candidate_gate(db, row, s.institute_id))
+    return await asyncio.to_thread(_q, q)
 
 
 @router.post("/candidates/{candidate_id}/decision")
@@ -350,7 +361,8 @@ async def decide(candidate_id: str, body: models.DecisionIn, s: Staff = Depends(
             raise _err(status.HTTP_409_CONFLICT, "wrong_status",
                        f"A {current['status'].lower()} candidate cannot be "
                        f"{'approved' if body.action == 'APPROVE' else 'rejected'}.")
-        return models.candidate_detail(store.get_candidate(db, candidate_id, s.institute_id))
+        row = store.get_candidate(db, candidate_id, s.institute_id)
+        return models.candidate_detail(row, _candidate_gate(db, row, s.institute_id))
     return await asyncio.to_thread(_q, q)
 
 

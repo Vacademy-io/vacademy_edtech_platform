@@ -158,11 +158,43 @@ _PHONE_LIKE = re.compile(r"\+?\d[\d\s\-().]{5,}\d")
 # A number printed with its trunk 0 and area code ("0744-3510300", "0731 4058393") is a landline.
 _STD_PRINTED = re.compile(r"(?<![\d+])0\d{2,4}[\s-]+\d{6,8}(?!\d)")
 
+# Personal (free or ISP) mailbox domains: the one list (is_free_mail reads it). An address on one is a
+# person's or a sole trader's, not a business's; UK/EU-style rules do not allow cold marketing email to
+# individuals (Gate.org_email_only, 2026-11-21).
 FREE_MAIL = {
     "gmail.com", "googlemail.com", "yahoo.com", "yahoo.co.in", "yahoo.in", "rediffmail.com", "hotmail.com",
     "outlook.com", "live.com", "icloud.com", "me.com", "ymail.com", "aol.com", "protonmail.com", "proton.me",
     "zoho.com", "zohomail.in", "msn.com", "hotmail.co.uk", "yahoo.co.uk",
+    # more free webmail
+    "mac.com", "pm.me", "protonmail.ch", "tutanota.com", "tutanota.de", "tuta.io", "tuta.com", "fastmail.com",
+    "fastmail.fm", "hey.com", "hushmail.com", "mail.com", "email.com", "gmx.com", "gmx.net", "gmx.de", "gmx.co.uk",
+    "gmx.at", "gmx.ch", "gmx.fr", "web.de", "yandex.com", "yandex.ru", "mail.ru", "inbox.ru", "list.ru", "bk.ru",
+    "qq.com", "163.com", "126.com", "sina.com", "rocketmail.com", "zohomail.com", "inbox.com", "aim.com",
+    "seznam.cz", "wp.pl", "o2.pl", "onet.pl", "interia.pl", "libero.it", "virgilio.it", "tiscali.it", "laposte.net",
+    "naver.com", "daum.net", "hanmail.net", "rediff.com",
+    # internet providers' mailboxes (UK, Ireland, US, Canada, Australia, New Zealand, Europe, India)
+    "btinternet.com", "btopenworld.com", "sky.com", "virginmedia.com", "ntlworld.com", "blueyonder.co.uk",
+    "talktalk.net", "tiscali.co.uk", "plus.com", "plusnet.com", "aol.co.uk", "eircom.net", "comcast.net",
+    "verizon.net", "att.net", "sbcglobal.net", "bellsouth.net", "cox.net", "charter.net", "earthlink.net",
+    "optonline.net", "frontier.com", "windstream.net", "shaw.ca", "rogers.com", "sympatico.ca", "telus.net",
+    "videotron.ca", "bigpond.com", "bigpond.net.au", "optusnet.com.au", "iinet.net.au", "tpg.com.au",
+    "internode.on.net", "dodo.com.au", "xtra.co.nz", "orange.fr", "wanadoo.fr", "free.fr", "sfr.fr", "neuf.fr",
+    "bbox.fr", "t-online.de", "freenet.de", "arcor.de", "orange.es", "telefonica.net", "ziggo.nl", "kpnmail.nl",
+    "planet.nl", "home.nl", "hetnet.nl", "telenet.be", "skynet.be", "bluewin.ch", "chello.at", "sify.com",
+    "vsnl.com", "vsnl.net", "bsnl.in", "airtelmail.in",
 }
+# The big webmail brands under any country ending (yahoo.fr, hotmail.de, outlook.com.au, live.co.uk).
+_FREE_MAIL_BRAND = re.compile(
+    r"(?:gmail|googlemail|yahoo|ymail|hotmail|outlook|live|msn|aol|icloud|gmx|protonmail)\.(?:(?:co|com|net)\.)?[a-z]{2,3}")
+
+
+def is_free_mail(domain: str | None) -> bool:
+    """A personal (free webmail or internet provider) mailbox domain: FREE_MAIL, or a big webmail brand
+    under a country ending."""
+    domain = (domain or "").lower().strip().strip(".")
+    return bool(domain) and (domain in FREE_MAIL or bool(_FREE_MAIL_BRAND.fullmatch(domain)))
+
+
 # Mailbox words (split from the part before @) that never reach a buyer.
 _AVOID_TOKENS = {
     "support", "care", "customercare", "helpdesk", "help", "hr", "career", "careers", "job", "jobs", "recruit",
@@ -747,7 +779,7 @@ def email_owner(email: str, *, site_domain: str | None, organisation: str,
     local, _, domain = email.lower().partition("@")
     if site_domain and (domain == site_domain or domain.endswith("." + site_domain)):
         return "own"
-    if domain in FREE_MAIL:
+    if is_free_mail(domain):
         # Rated the institute's own Gmail (_has_org_word) is owned as one too (2026-10-29 replay:
         # tcsacademylko@gmail.com, named with "TCS", lost to another Gmail once "academy" stopped counting).
         if carries_org_name(local, organisation) or _has_org_word(local, organisation):
@@ -828,6 +860,62 @@ def reachable(c: dict[str, Any]) -> bool:
     return c.get("kind") == "published_email" and (c.get("owner") in ORG_OWNED or c.get("quality") == "direct")
 
 
+# Mailbox words that never reach a buyer, for the business-email rule (Gate.org_email_only): the words a
+# rated "avoid" inbox has (_AVOID_TOKENS) and the inboxes a person reviewing leads abroad turned down
+# (2026-11-21: membership@, records@ ...).
+IRRELEVANT_INBOX_TOKENS = _AVOID_TOKENS | {
+    "membership", "memberships", "member", "members", "records", "record", "registry", "dpo", "gdpr",
+    "dataprotection", "foi", "unsubscribe", "bounce", "bounces", "postmaster", "mailer", "daemon", "notification",
+    "notifications", "alerts", "newsletter", "newsletters", "safeguarding", "volunteer", "volunteers", "vacancies",
+    "vacancy", "talent", "recruiting", "employment", "humanresources", "noreply", "donotreply", "nospam",
+}
+
+
+def irrelevant_inbox(email: str) -> bool:
+    """careers@, hr@, membership@, records@, privacy@, no-reply@ ...: an inbox nobody who buys reads."""
+    local = (email or "").lower().partition("@")[0]
+    tokens = set(_local_tokens(local)) | {re.sub(r"[._+-]", "", local)}
+    return bool(tokens & IRRELEVANT_INBOX_TOKENS)
+
+
+def business_email(c: dict[str, Any]) -> bool:
+    """An email contact that is a business's mailbox (Gate.org_email_only): usable (not rated avoid, not a
+    form), on a domain that is not a personal / free-mail one (the organisation's own or any other
+    company domain), and not an inbox nobody who buys reads (irrelevant_inbox)."""
+    if c.get("kind") != "published_email" or c.get("quality") == "avoid":
+        return False
+    value = (c.get("value") or "").strip().lower()
+    local, at, domain = value.partition("@")
+    if not (local and at and domain):
+        return False
+    return not is_free_mail(domain) and not irrelevant_inbox(value)
+
+
+ORG_EMAIL_NONE = "No business email found: the lead has no email address"
+ORG_EMAIL_PERSONAL = "Only a personal email address (Gmail, Outlook etc.): a sole trader's mailbox, not a business's"
+ORG_EMAIL_IRRELEVANT = "Only careers/membership-type inboxes (careers@, hr@, membership@ ...): nobody who buys"
+ORG_EMAIL_UNUSABLE = "No business email found: no usable email on a business domain"
+
+
+def org_email_problem(contacts: list[dict[str, Any]] | None) -> str | None:
+    """Why a lead cannot be emailed under Gate.org_email_only, in plain words, or None: it has at least one
+    business email (business_email). A personal mailbox comes first among the reasons (the case a person
+    turned down most), then an inbox nobody who buys reads, then no email at all."""
+    emails = [c for c in contacts or [] if c.get("kind") == "published_email" and c.get("value")]
+    if any(business_email(c) for c in emails):
+        return None
+    if not emails:
+        return ORG_EMAIL_NONE
+    usable = [c for c in emails if c.get("quality") != "avoid"]
+    if any(is_free_mail(str(c["value"]).lower().partition("@")[2]) for c in usable):
+        return ORG_EMAIL_PERSONAL
+    if any(irrelevant_inbox(str(c["value"])) for c in emails):
+        return ORG_EMAIL_IRRELEVANT
+    if any(is_free_mail(str(c["value"]).lower().partition("@")[2]) for c in emails):
+        return ORG_EMAIL_PERSONAL
+    return ORG_EMAIL_UNUSABLE
+
+
 def rate_contact(c: dict[str, Any], *, site_domain: str | None, organisation: str, leaders: set[str],
                  large_chain: bool, region: str | None = None) -> tuple[str, str]:
     """(tier, reason) for one contact route. leaders: names of people whose role can buy.
@@ -890,7 +978,7 @@ def rate_contact(c: dict[str, Any], *, site_domain: str | None, organisation: st
                 return "general", f"General inbox / {ask.replace('this number', 'this address')}"
             return "general", "General inbox: read by the front office"
         own = bool(site_domain) and (domain == site_domain or domain.endswith("." + site_domain))
-        if domain in FREE_MAIL:
+        if is_free_mail(domain):
             if _has_org_word(local, organisation):
                 return "general", "The institute's own Gmail-type inbox: general, often read by the owner"
             if _hidden(c):
@@ -978,7 +1066,7 @@ def mail_domain_ok(domain: str, lookup: MxLookup | None = None) -> bool | None:
     None if unknown. A mailbox itself is never checked: that needs the mail server's cooperation
     and is unreliable. Free-mail domains are known to take mail."""
     domain = domain.lower().strip(".")
-    if domain in FREE_MAIL:
+    if is_free_mail(domain):
         return True
     if lookup is None:
         return None
@@ -1011,7 +1099,7 @@ def email_kind(email: str, organisation: str) -> str:
         return "Leader's inbox"
     if tokens & _GENERAL_TOKENS or local in GENERIC_LOCAL_PARTS:
         return "Organisation inbox"
-    if domain in FREE_MAIL:
+    if is_free_mail(domain):
         return "Institute's Gmail" if _has_org_word(local, organisation) else "Personal mailbox"
     return "Named mailbox"
 
@@ -1022,7 +1110,7 @@ def _list_worthy(email: str, site_domain: str | None, organisation: str) -> bool
     organisation's own domain, a sister domain carrying its name, a mailbox named after it, or a named
     free mailbox."""
     local, _, domain = email.lower().partition("@")
-    if domain in FREE_MAIL:
+    if is_free_mail(domain):
         return local not in GENERIC_LOCAL_PARTS and local not in _GENERAL_TOKENS
     if site_domain and (domain == site_domain or domain.endswith("." + site_domain)):
         return True

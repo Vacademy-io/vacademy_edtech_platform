@@ -177,6 +177,10 @@ class Gate(BaseModel):
     min_contact: ContactLevel = "likely"
     require_intent: bool = False
     auto_competitor_users: bool = False
+    # Lists that send by email abroad (2026-11-21): a lead goes out only with a business email (the
+    # organisation's own domain or another company domain, not careers@ / membership@ ...); only a Gmail-type
+    # address, only such inboxes, or no email at all -> REJECT, and delivery sends that business email.
+    org_email_only: bool = False
     effort: EffortLevel = "STANDARD"  # how much extra checking each lead gets (effort.py)
 
     @model_validator(mode="after")
@@ -343,7 +347,8 @@ def agent_out(row: Dict[str, Any], *, audience_name: Optional[str] = None, today
     return out
 
 
-def _what_is_sent(row: Dict[str, Any]) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
+def _what_is_sent(row: Dict[str, Any],
+                  gate_cfg: Optional[Dict[str, Any]] = None) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
     """(best_contact, send) for the dashboard, from what delivery WILL send (delivery.send_plan): the
     card must show the phone, email and name that go out, not the first usable contact on the lead.
 
@@ -351,7 +356,7 @@ def _what_is_sent(row: Dict[str, Any]) -> Tuple[Optional[Dict[str, Any]], Option
     label}. send: {phone: {value, quality, quality_note, maps_confirmed, from_maps} | None,
     email: {value, quality, quality_note, owner} | None, name, role, ask_for} (name: who the lead is
     delivered as; role and ask_for None when there are none). Both None when nothing can be sent."""
-    plan = delivery.send_plan(row)
+    plan = delivery.send_plan(row, gate_cfg)
     if plan is None:
         return None, None
     phone, email = plan["phone"], plan["email"]
@@ -370,13 +375,13 @@ def _what_is_sent(row: Dict[str, Any]) -> Tuple[Optional[Dict[str, Any]], Option
     return best, send
 
 
-def candidate_summary(row: Dict[str, Any]) -> Dict[str, Any]:
+def candidate_summary(row: Dict[str, Any], gate_cfg: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     lead = row.get("lead_json") or {}
     score = row.get("score_json") or {}
     org = lead.get("organisation") or {}
     reasons = score.get("reasons") or score.get("gate_reasons") or []
     flags = [str(f) for f in score.get("flags") or []]
-    best_contact, send = _what_is_sent(row)
+    best_contact, send = _what_is_sent(row, gate_cfg)
     return {
         "id": row["id"], "status": row["status"], "decision": row.get("decision"), "score": row.get("score"),
         "stage": row.get("stage"), "source": row.get("source"),
@@ -395,9 +400,9 @@ def candidate_summary(row: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def candidate_detail(row: Dict[str, Any]) -> Dict[str, Any]:
+def candidate_detail(row: Dict[str, Any], gate_cfg: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     out = {k: _plain(v) for k, v in row.items()}
-    out.update(candidate_summary(row))
+    out.update(candidate_summary(row, gate_cfg))
     out["evidence"] = (row.get("lead_json") or {}).get("evidence") or []
     return out
 

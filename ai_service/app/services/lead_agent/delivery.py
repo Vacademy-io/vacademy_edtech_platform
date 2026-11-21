@@ -90,18 +90,24 @@ def _email_key(c: dict, org_domain: str) -> Tuple[int, int, int]:
     return (0 if c.get("quality") == "direct" else 1), _email_rank(c, org_domain), _TIER_RANK.get(c.get("quality"), 3)
 
 
-def best_contacts(lead: dict) -> Tuple[Optional[dict], Optional[dict], List[dict]]:
+def best_contacts(lead: dict, gate_cfg: Optional[dict] = None) -> Tuple[Optional[dict], Optional[dict], List[dict]]:
     """(phone contact, email contact, the other usable contacts) to send.
 
     The email: a decision maker's own mailbox first, then by whose it is: the organisation's own
     domain, a sister domain or a Gmail carrying its name, one tied to a named person, an unnamed Gmail
     last (2026-10-29: aadharinstitute.com was sent iguruji.in@gmail.com while aadharinstitute@gmail.com
-    was on the lead). The phone by _phone_rank. Ties keep the rated order (best first)."""
+    was on the lead). The phone by _phone_rank. Ties keep the rated order (best first).
+
+    gate_cfg with org_email_only (models.Gate): only a business email is sent (engine_api.business_email:
+    not a Gmail-type address, not careers@ / membership@ ...), never a personal one, even a leader's own
+    Gmail; none -> no email (the gate rejects such a lead before it gets here)."""
     usable = _usable(lead.get("contacts") or [])
     region = lead.get("phone_region")
     org_domain = _org_domain(lead)
     phones = [c for c in usable if c.get("kind") in ("institute_phone", "whatsapp")]
     emails = [c for c in usable if c.get("kind") == "published_email"]
+    if (gate_cfg or {}).get("org_email_only"):
+        emails = [c for c in emails if engine_api.business_email(c)]
     phone = min(phones, key=lambda c: _phone_rank(c, region), default=None)
     email = min(emails, key=lambda c: _email_key(c, org_domain), default=None)
     # The Maps listing and the website can both carry the number sent: list it once.
@@ -160,14 +166,14 @@ def _contact_line(c: dict) -> str:
     return " ".join(b for b in bits if b)
 
 
-def send_plan(cand: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+def send_plan(cand: Dict[str, Any], gate_cfg: Optional[dict] = None) -> Optional[Dict[str, Any]]:
     """What delivery sends for a candidate (None when it has no phone or email): {phone, email, others}
     (contacts, best_contacts), full_name and role (who the lead is named after), ask_for ("Name (Role)",
     "" when nobody else) and how_to_reach. build_row and the dashboard (models.candidate_summary) both
-    read it, so the card shows exactly what goes out."""
+    read it, so the card shows exactly what goes out. gate_cfg: the agent's gate_json (best_contacts)."""
     lead = cand.get("lead_json") or {}
     org = lead.get("organisation") or {}
-    phone, email, others = best_contacts(lead)
+    phone, email, others = best_contacts(lead, gate_cfg)
     if phone is None and email is None:
         return None
     # Named after the person the phone sent belongs to (outreach calls first and greets the full name);
@@ -190,9 +196,10 @@ def send_plan(cand: Dict[str, Any]) -> Optional[Dict[str, Any]]:
             "ask_for": ask_for, "how_to_reach": _how_to_reach(lead, phone, email)}
 
 
-def build_row(cand: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """The bulk-intake row for a candidate (None when it has no phone or email)."""
-    plan = send_plan(cand)
+def build_row(cand: Dict[str, Any], gate_cfg: Optional[dict] = None) -> Optional[Dict[str, Any]]:
+    """The bulk-intake row for a candidate (None when it has no phone or email). gate_cfg: the agent's
+    gate_json (with org_email_only only a business email is sent)."""
+    plan = send_plan(cand, gate_cfg)
     if plan is None:
         return None
     lead = cand.get("lead_json") or {}
@@ -355,7 +362,7 @@ async def deliver(agent: Dict[str, Any], *, now=None, ignore_window: bool = Fals
         retry_rows: List[Dict[str, Any]] = []
         fresh_rows: List[Dict[str, Any]] = []
         for cand in prep["picked"]:
-            row = build_row(cand)
+            row = build_row(cand, agent.get("gate_json"))
             if row is None:
                 await asyncio.to_thread(_skip, cand["id"], "No phone or email to deliver")
                 out["skipped"] += 1

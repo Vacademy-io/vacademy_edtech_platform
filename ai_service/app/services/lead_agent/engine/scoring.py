@@ -41,7 +41,7 @@ from .discovery.pipeline import _words as _place_words
 from .fingerprint import VENDORS_BY_KEY
 from .offer import LEGACY_FIT_POINTS, as_offer
 from .research.catalogue import SIGNALS
-from .research.contacts import country_region, domain_region, number_region, phone_region, region_name
+from .research.contacts import country_region, domain_region, number_region, org_email_problem, phone_region, region_name
 from .research.lead import is_national_brand
 from .research.maps_listing import _STATES
 
@@ -95,7 +95,7 @@ RISK_FLAGS = ("competitor_platform", "enterprise", "micro")
 # has none and gets this default. auto_score / review_score (the two bars before it) may still be in an
 # agent's gate_json; the gate ignores them.
 DEFAULT_GATE = {"send_score": 50, "require_approval": False, "min_contact": "likely", "require_intent": False,
-                "auto_competitor_users": False}
+                "auto_competitor_users": False, "org_email_only": False}
 # gate()'s own rules, part of gate_fingerprint: bumped when gate() decides differently from the same stored
 # score and settings, so the REVIEW queue is judged again once (scheduler.rejudge_waiting skips a row
 # already judged under the current fingerprint). 2: the list's own rules (min_contact, require_intent)
@@ -605,7 +605,8 @@ def _settings(gate_cfg: dict | None) -> dict:
     min_contact = cfg["min_contact"] if cfg["min_contact"] in CONTACT_ORDER else DEFAULT_GATE["min_contact"]
     return {"send_score": send_bar(cfg), "require_approval": bool(cfg.get("require_approval")),
             "min_contact": min_contact, "require_intent": bool(cfg.get("require_intent")),
-            "auto_competitor_users": bool(cfg.get("auto_competitor_users"))}
+            "auto_competitor_users": bool(cfg.get("auto_competitor_users")),
+            "org_email_only": bool(cfg.get("org_email_only"))}
 
 
 def gate_fingerprint(gate_cfg: dict | None) -> str:
@@ -613,8 +614,10 @@ def gate_fingerprint(gate_cfg: dict | None) -> str:
     intent=0:competitors=0:approval=0"): the settings as gate() reads them and GATE_RULES. A lead kept in
     REVIEW is stamped with it (score_json.rejudged_for) and not judged again until it changes."""
     cfg = _settings(gate_cfg)
-    return (f"v{GATE_RULES}:send={cfg['send_score']}:contact={cfg['min_contact']}:intent={int(cfg['require_intent'])}"
-            f":competitors={int(cfg['auto_competitor_users'])}:approval={int(cfg['require_approval'])}")
+    out = (f"v{GATE_RULES}:send={cfg['send_score']}:contact={cfg['min_contact']}:intent={int(cfg['require_intent'])}"
+           f":competitors={int(cfg['auto_competitor_users'])}:approval={int(cfg['require_approval'])}")
+    # Only when on: an agent without it keeps the fingerprint its REVIEW rows were stamped with.
+    return out + ":orgmail=1" if cfg["org_email_only"] else out
 
 
 def gate(scored: dict, lead: dict, gate_cfg: dict) -> tuple[str, list[str]]:
@@ -625,6 +628,10 @@ def gate(scored: dict, lead: dict, gate_cfg: dict) -> tuple[str, list[str]]:
          large organisation is ranked lower, never held back). A Maps-only lead or a possible duplicate too
          ("Judged from its Google Maps listing only: score X is below the send bar (Y)" for a Maps-only
          lead): nobody reviews in this funnel, so REVIEW holds only leads worth a person's look;
+      2b. org_email_only and no business email (engine research.contacts.org_email_problem: only a
+         personal / free-mail address, only careers- or membership-type inboxes, or no email at all) ->
+         REJECT, whether or not the list needs approval: the reasons a person reviewing such leads gave
+         (2026-11-21, lists that send by email abroad);
       3. the best contact below min_contact, or require_intent and no buying signal -> REVIEW when
          require_approval, else REJECT. Before the held flags (2026-10-31): a lead that fails the list's
          own rules must not wait in REVIEW on a list that needs no approval, where approving it sends it;
@@ -657,6 +664,11 @@ def gate(scored: dict, lead: dict, gate_cfg: dict) -> tuple[str, list[str]]:
         first = (f"Judged from its Google Maps listing only: score {score} is below the send bar ({bar})" if maps_only
                  else f"Score {score} is below the send bar ({bar})")
         return "REJECT", [first, *risks]
+
+    if cfg["org_email_only"]:
+        problem = org_email_problem(lead.get("contacts"))
+        if problem:
+            return "REJECT", [problem]
 
     level = (lead.get("contact_quality") or {}).get("level") or scored.get("reach_level") or "none"
     blockers: list[str] = []
