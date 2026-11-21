@@ -787,7 +787,7 @@ _REFUSAL_RE = re.compile(
 # Busy / later: not a refusal and not interest. Removed before the interest search
 # ("class mein hoon" is not a question about classes) and from the thin count.
 _BUSY_RE = re.compile(
-    r"\bbusy\b|\bbaad\s+m(?:e|ein|ein)\b|\blater\b|\babhi\s+nah(?:i|in)\b|\bdriving\b|"
+    r"\bbusy\b|\bbaad\s+m(?:e|ein)\b|\blater\b|\babhi\s+nah(?:i|in)\b|\bdriving\b|"
     r"\b(?:meeting|class|office|kaam)\s+m(?:e|ein)\b|बाद\s*में|अभी\s*नहीं|बिज़?ी",
     re.IGNORECASE)
 # Asking who is calling is not interest in what they are calling about.
@@ -806,7 +806,7 @@ _FILLER_WORDS = frozenset({
     "rahi", "kar", "karo", "karna", "karenge", "karunga", "call", "phone", "abhi", "toh",
     "to", "na", "kya", "thank", "thanks", "you", "i", "am", "is", "it", "this", "that",
     "the", "a", "no", "bye", "sorry", "wait", "ek", "minute", "second", "bhai", "are",
-    "aap", "ap", "baat", "me", "my", "please", "and", "what", "huh", "nahi", "nahin",
+    "aap", "ap", "baat", "my", "please", "and", "what", "huh", "nahi", "nahin",
     "है", "हैं", "हो", "हूँ", "हूं", "मैं", "में", "रहा", "रहे", "रही", "बोल", "कर", "करो",
     "करना", "अभी", "तो", "क्या", "कॉल", "फोन", "धन्यवाद", "आप", "बात", "नहीं",
 })
