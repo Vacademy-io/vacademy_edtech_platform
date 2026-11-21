@@ -915,11 +915,20 @@ public class AnnouncementService {
         
         try {
             // 1. Find all EMAIL logs for this announcement
-            // Failed and pre-correlation sends are tracking rows keyed by source_id; current real
-            // sends carry the announcement id in correlation_id. The two sets never overlap.
-            List<NotificationLog> emailLogs = new ArrayList<>(
-                    notificationLogRepository.findBySourceIdAndNotificationType(announcementId, "EMAIL"));
-            emailLogs.addAll(notificationLogRepository.findByCorrelationIdAndNotificationType(announcementId, "EMAIL"));
+            // Real sends carry the announcement id in correlation_id. Tracking rows (source_id) are
+            // kept only when FAILED or when no stamped send went to that address (older sends), so
+            // each email is counted once.
+            List<NotificationLog> stamped =
+                    notificationLogRepository.findByCorrelationIdAndNotificationType(announcementId, "EMAIL");
+            java.util.Set<String> stampedAddresses = new java.util.HashSet<>();
+            stamped.forEach(l -> { if (l.getChannelId() != null) stampedAddresses.add(l.getChannelId()); });
+            List<NotificationLog> emailLogs = new ArrayList<>();
+            for (NotificationLog t : notificationLogRepository.findBySourceIdAndNotificationType(announcementId, "EMAIL")) {
+                if ("FAILED".equals(t.getDeliveryStatus()) || !stampedAddresses.contains(t.getChannelId())) {
+                    emailLogs.add(t);
+                }
+            }
+            emailLogs.addAll(stamped);
             debug.put("totalEmailsSent", emailLogs.size());
             
             // Sample email logs

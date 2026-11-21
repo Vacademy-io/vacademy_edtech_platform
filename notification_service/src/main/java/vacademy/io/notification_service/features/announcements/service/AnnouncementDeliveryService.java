@@ -396,12 +396,14 @@ public class AnnouncementDeliveryService {
                     message.setSentAt(LocalDateTime.now());
                     message.setDeliveredAt(LocalDateTime.now());
 
-                    // No log row here: the send's own EMAIL row (written by EmailService, with the
-                    // HTML, the subject and the SES events) is stamped with this announcement and
-                    // user, so it is the one row for this email. A second title-only row here
-                    // showed up as a separate, empty email on the learner's timeline, and Resend
-                    // on it mailed the bare campaign title. Failures below still get a row, since
-                    // no send exists to carry the reason.
+                    // The campaign's own record of this send. It holds only the campaign title;
+                    // the email itself (HTML, subject, SES events) is the send's EMAIL row, stamped
+                    // with this announcement in correlation_id. The learner timeline hides this
+                    // record and campaign reports count the stamped row instead, so it never shows
+                    // as a second email.
+                    log.trace("Creating EMAIL notification log for announcement: {}, user: {}",
+                            announcement.getId(), message.getUserId());
+                    createEmailNotificationLog(announcement, message, userEmail, "SUCCESS", null, resolvedFromAddress);
 
                         batchSuccess++;
 

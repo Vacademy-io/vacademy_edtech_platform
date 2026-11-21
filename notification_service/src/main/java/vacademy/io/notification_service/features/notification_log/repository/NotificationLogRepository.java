@@ -505,7 +505,8 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
     // ==================== COMMUNICATION TIMELINE METHODS ====================
 
     // Every timeline query below hides the campaign tracking row: the EMAIL row an announcement
-    // used to write beside the real send, holding only the campaign title. The real send is the
+    // writes beside the real send, holding only the campaign title. It stays in the table for the
+    // campaign record. The real send is the
     // row with the content and the SES events. A tracking row that records a FAILED send stays,
     // because no real send exists for it and it carries the reason.
 
@@ -1575,9 +1576,10 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
     //
     // A campaign email is found by either of two links. The real send carries the announcement id
     // in correlation_id (stamped by UnifiedSendService), and that row is the one SES events attach
-    // to. A failed send, and every send from before that stamping, is the tracking row written by
-    // AnnouncementDeliveryService with the announcement id in source_id. The two sets never
-    // overlap, so UNION ALL counts each email once, and each half is an index probe
+    // to. AnnouncementDeliveryService also writes a tracking row per recipient with the announcement
+    // id in source_id. A tracking row is counted only when it records a FAILED send (no real send
+    // exists) or has no stamped real send to the same address (every send from before the
+    // stamping). So UNION ALL counts each email once, and each probe is indexed
     // (idx_nl_source_id_type, idx_nl_correlation_type).
 
     interface AnnouncementEmailFunnelRow {
@@ -1610,8 +1612,12 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
                        ev.accepted, ev.delivered, ev.opened, ev.clicked,
                        ev.bounced, ev.rejected, ev.complained
                 FROM (
-                    SELECT * FROM notification_log
-                    WHERE source_id = :announcementId AND notification_type = 'EMAIL'
+                    SELECT t.* FROM notification_log t
+                    WHERE t.source_id = :announcementId AND t.notification_type = 'EMAIL'
+                      AND (t.delivery_status = 'FAILED' OR NOT EXISTS (
+                          SELECT 1 FROM notification_log c
+                          WHERE c.correlation_id = :announcementId AND c.notification_type = 'EMAIL'
+                            AND c.channel_id = t.channel_id))
                     UNION ALL
                     SELECT * FROM notification_log
                     WHERE correlation_id = :announcementId AND notification_type = 'EMAIL'
@@ -1664,8 +1670,12 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
                    ev.rejected AS "rejected",
                    ev.complained AS "complained"
             FROM (
-                SELECT * FROM notification_log
-                WHERE source_id = :announcementId AND notification_type = 'EMAIL'
+                SELECT t.* FROM notification_log t
+                WHERE t.source_id = :announcementId AND t.notification_type = 'EMAIL'
+                  AND (t.delivery_status = 'FAILED' OR NOT EXISTS (
+                      SELECT 1 FROM notification_log c
+                      WHERE c.correlation_id = :announcementId AND c.notification_type = 'EMAIL'
+                        AND c.channel_id = t.channel_id))
                 UNION ALL
                 SELECT * FROM notification_log
                 WHERE correlation_id = :announcementId AND notification_type = 'EMAIL'

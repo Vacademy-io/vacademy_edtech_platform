@@ -198,8 +198,9 @@ public class UnifiedSendService implements SendChannelRouter {
      * SendOptions.source of an announcement's email send. Its real SMTP row is the ONE row for that
      * email: it is stamped with correlation_id = announcement id (options.sourceId) and the
      * recipient's userId, so the campaign report and the learner's timeline both find it and its
-     * SES events. AnnouncementDeliveryService no longer writes a second title-only row for a
-     * successful send. The row's source stays 'unified-send' and its source_id stays the SMTP
+     * SES events. AnnouncementDeliveryService still writes its title-only tracking row as the
+     * campaign record; the timeline hides it and reports skip it when this stamped row exists.
+     * The row's source stays 'unified-send' and its source_id stays the SMTP
      * Message-ID (reply threading and SES matching rely on it).
      */
     public static final String ANNOUNCEMENT_SOURCE = "announcement-service";

@@ -1,12 +1,12 @@
 -- V41: index for notification_log lookups by correlation_id.
 --
--- A campaign (announcement) email used to be logged twice: the real send, holding the HTML and
--- the SES events, and a tracking row holding only the campaign title, which carried the
--- announcement id in source_id. The tracking row is no longer written for a successful send;
--- the real send now carries the announcement id in correlation_id instead. The campaign report
--- (summarizeAnnouncementEmails, findAnnouncementEmailsForUsers) therefore looks emails up by
--- correlation_id, and the engagement ledger already did. No index led with that column, so
--- each lookup would seq-scan the table.
+-- A campaign (announcement) email is logged twice: the real send, holding the HTML and the SES
+-- events, and a tracking row holding only the campaign title, which carries the announcement id
+-- in source_id. The real send now also carries the announcement id in correlation_id, and the
+-- campaign report (summarizeAnnouncementEmails, findAnnouncementEmailsForUsers) looks emails up
+-- by it, counting a tracking row only when no stamped send exists for that address. The
+-- engagement ledger already used correlation_id. No index led with that column, so each lookup
+-- would seq-scan the table.
 --
 -- Partial: almost every row has no correlation_id, and an equality lookup implies NOT NULL.
 --
