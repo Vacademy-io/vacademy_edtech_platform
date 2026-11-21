@@ -154,3 +154,20 @@ describe("Reports list: Revised tag (W11, acceptance 3)", () => {
     expect(rowOf(host, "HW 3")!.querySelector('[data-testid="revised-tag"]')).not.toBeNull();
   });
 });
+
+describe("Reports list: sort order", () => {
+  it("asks for the server's default order (newest first) and offers the sort control", async () => {
+    listContent = [{ ...baseRow, attempt_id: "s-1", report_release_status: "RELEASED" }];
+    const host = await mount();
+    expect(posts).toHaveLength(1);
+    const [, body] = posts[0] as [string, { sort_columns: Record<string, string> }];
+    expect(body.sort_columns).toEqual({});
+    expect(host.textContent).toContain("reportList.sort.label");
+  });
+
+  it("shows no sort control when there is nothing to sort", async () => {
+    listContent = [];
+    const host = await mount();
+    expect(host.textContent).not.toContain("reportList.sort.label");
+  });
+});

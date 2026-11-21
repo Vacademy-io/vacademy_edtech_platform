@@ -118,6 +118,11 @@
     }
   },
   "reportList": {
+    "sort": {
+      "label": "Trier par",
+      "latest": "Plus récents d'abord",
+      "oldest": "Plus anciens d'abord"
+    },
     "navHeading": "Rapports",
     "toast": {
       "evaluatedNotAvailable": "La copie corrigée n'est pas encore disponible.",
