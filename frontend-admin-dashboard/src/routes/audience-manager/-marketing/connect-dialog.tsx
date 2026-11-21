@@ -67,13 +67,17 @@ export function ConnectAccountsDialog({
     const options = useMemo(() => data?.options ?? [], [data]);
     const selectable = useMemo(() => options.filter((o) => o.selectable), [options]);
 
-    // Pre-tick everything selectable once the options arrive, including accounts that are
-    // already connected: select re-binds them to this sign-in, stores a fresh Page token
-    // and clears a RECONNECT_NEEDED / ERROR status (it is idempotent). The Reconnect
-    // buttons land here, so leaving them unticked would make reconnect a no-op.
+    // Pre-tick only accounts already connected to this institute: select re-binds them to this
+    // sign-in, stores a fresh Page token and clears RECONNECT_NEEDED / ERROR (it is idempotent),
+    // so the Reconnect buttons that land here still work. Never pre-tick the rest: one sign-in
+    // often reaches many businesses' Pages and ad accounts (agencies, clients), and one careless
+    // click must not attach them all. A lone selectable account is ticked for convenience.
     useEffect(() => {
         if (!data) return;
-        setSelected(new Set(data.options.filter((o) => o.selectable).map((o) => o.external_id)));
+        const usable = data.options.filter((o) => o.selectable);
+        const connected = usable.filter((o) => o.already_connected);
+        const initial = connected.length > 0 ? connected : usable.length === 1 ? usable : [];
+        setSelected(new Set(initial.map((o) => o.external_id)));
     }, [data]);
 
     const toggle = (externalId: string, checked: boolean) =>
