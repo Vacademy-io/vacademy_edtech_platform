@@ -587,14 +587,27 @@ public class EngagementReplyResponder {
      */
     public boolean handleEmailReply(String instituteId, String email, String subject, String text,
                                     String messageId, String repliedToActionId, String mailbox) {
+        return handleEmailReply(instituteId, email, subject, text, messageId, repliedToActionId, mailbox, false);
+    }
+
+    /**
+     * @param autoSubmitted the email carried an auto-reply header (Auto-Submitted, X-Autoreply,
+     *                      Precedence: auto_reply), as notification-service recorded it
+     */
+    public boolean handleEmailReply(String instituteId, String email, String subject, String text,
+                                    String messageId, String repliedToActionId, String mailbox,
+                                    boolean autoSubmitted) {
         if (messageId == null || messageId.isBlank() || replyMemberQueries == null) return false;
         String from = email != null ? email.trim().toLowerCase(Locale.ROOT) : "";
         if (from.isEmpty() || !from.contains("@")) return false;
         String topic = subject != null ? subject.replaceAll("(?i)^\\s*((re|fwd?|aw)\\s*:\\s*)+", "").trim() : "";
         String body = text != null && !text.isBlank() ? text.trim() : topic;
         if (body.isEmpty()) return false;
-        if (EngagementAutomatedReply.isAutomatedEmail(from, subject, body)) {
-            ignoreAutomatedEmail(instituteId, from, messageId);
+        // A bounce, an out-of-office, a helpdesk notice or a spam filter's challenge: nobody to answer,
+        // and never an opt-out (a challenge says "spam" but no person asked anything).
+        String automatedKind = EngagementAutomatedReply.automatedEmailKind(from, subject, body, autoSubmitted);
+        if (automatedKind != null) {
+            ignoreAutomatedEmail(instituteId, from, messageId, automatedKind, body, repliedToActionId, mailbox);
             return false;
         }
 
@@ -676,18 +689,36 @@ public class EngagementReplyResponder {
 
     /**
      * An out-of-office or a delivery notice: no task and no alert. The members are marked handled, or the
-     * sweep would read the ledger's new email reply as someone waiting for an answer.
+     * sweep would read the ledger's new email reply as someone waiting for an answer. A closed NO_OP row
+     * on the person's engine history says what came in, so nobody wonders why it was not answered.
      */
-    private void ignoreAutomatedEmail(String instituteId, String from, String messageId) {
+    private void ignoreAutomatedEmail(String instituteId, String from, String messageId, String kind, String body,
+                                      String repliedToActionId, String mailbox) {
         List<EngagementReplyMemberQueries.LiveMember> live = replyMemberQueries.findLiveMembersByEmail(instituteId, from);
         if (live.isEmpty()) return;
         Instant now = Instant.now();
         if (memberRepository.claimHandledReply(instituteId, replyKey(messageId), now) == 0) return;
+        try {
+            EngagementReplyMemberQueries.LiveMember target = emailReplyTarget(instituteId, live, repliedToActionId, mailbox);
+            EngagementAction note = new EngagementAction();
+            note.setEngineId(target.getEngineId());
+            note.setMemberId(target.getMemberId());
+            note.setInstituteId(instituteId);
+            note.setKind("NO_OP");
+            note.setStatus("DONE");
+            note.setChannel("EMAIL");
+            String said = body == null ? "" : body.replaceAll("\\s+", " ").trim();
+            note.setRationale(cap("Automated email (" + kind + "), not a reply from the person: no task, nothing "
+                    + "sent, the engine carries on. It said: " + (said.length() > 300 ? said.substring(0, 300) + "…" : said)));
+            actionRepository.save(note);
+        } catch (RuntimeException e) {
+            log.warn("Automated email note not saved in institute {}: {}", instituteId, e.getMessage());
+        }
         for (EngagementReplyMemberQueries.LiveMember m : live) {
             long cadence = m.getCadenceHours() != null ? Math.max(m.getCadenceHours(), 1) : 72;
             memberRepository.markReplyHandled(m.getMemberId(), now, now.plus(Duration.ofHours(cadence)));
         }
-        log.info("Automated email ignored for {} member(s) in institute {}", live.size(), instituteId);
+        log.info("Automated email ({}) ignored for {} member(s) in institute {}", kind, live.size(), instituteId);
     }
 
     /** The handled-reply key of a message: Message-IDs can outgrow the 255-char key column. */

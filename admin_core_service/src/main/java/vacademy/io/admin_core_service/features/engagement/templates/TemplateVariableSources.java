@@ -165,6 +165,85 @@ public final class TemplateVariableSources {
         return null;
     }
 
+    /** Variables that mean the person's full name, and their first name (normalised: lower case, letters/digits only). */
+    private static final java.util.Set<String> NAME_VARS = java.util.Set.of(
+            "name", "fullname", "leadname", "studentname", "parentname", "contactname", "customername");
+    private static final java.util.Set<String> FIRST_NAME_VARS = java.util.Set.of("firstname", "fname");
+
+    /**
+     * Variables and lead fields that mean the lead's own organisation. Only used for a researched
+     * organisation (the Lead Agent's leads): for a student lead, "institute_name" in a template is the
+     * sender, and a form field like "Institute" is the student's old school.
+     */
+    private static final java.util.Set<String> ORG_KEYS = java.util.Set.of(
+            "institutename", "institute", "institutionname", "institution", "organisationname", "organizationname",
+            "organisation", "organization", "orgname", "laorgname", "companyname", "company");
+
+    /** A name field holding a placeholder rather than a name. */
+    private static final java.util.Set<String> NOT_A_NAME = java.util.Set.of(
+            "unknown", "na", "none", "null", "nil", "test", "lead", "user", "customer", "student", "noname");
+
+    private static final int MAX_FILLED_CHARS = 100;
+
+    /**
+     * A value for a variable the brain left out, taken only from the person's own data; null when
+     * there is none (the caller must then not send, never send a blank or a made-up value). In order:
+     * the template's declared source (unless that is "ai"); for an institute/organisation variable,
+     * a researched organisation's own organisation field (nothing else); a lead field with the
+     * variable's exact name ("city" fills from a "City" answer); the person's name for name variables.
+     */
+    public static String fromLeadData(String var, Map<String, String> sources, Map<String, JsonNode> payloads,
+                                      List<String> briefLinks) {
+        if (var == null) return null;
+        JsonNode profile = payloads == null ? null : payloads.get("profile");
+        String src = sources == null ? null : sources.get(var);
+        if (src != null && !src.isBlank() && !src.trim().equals("ai")) {
+            String v = clean(valueFor(var, src.trim(), profile, briefLinks, null), isLinkVariable(var));
+            if (v != null) return v;
+        }
+        if (isLinkVariable(var) || profile == null) return null;
+        String key = normalise(var);
+        boolean prospect = "ORGANISATION_PROSPECT".equals(text(profile, "subjectType"));
+        if (ORG_KEYS.contains(key)) {
+            return prospect ? clean(fieldNamed(profile, ORG_KEYS), false) : null;
+        }
+        String exact = clean(fieldNamed(profile, java.util.Set.of(key)), false);
+        if (exact != null) return exact;
+        if (NAME_VARS.contains(key) || FIRST_NAME_VARS.contains(key)) {
+            String name = clean(text(profile, "name"), false);
+            if (name == null || name.contains("@") || NOT_A_NAME.contains(normalise(name))) return null;
+            return FIRST_NAME_VARS.contains(key) ? name.split(" ")[0] : name;
+        }
+        return null;
+    }
+
+    /** The first form answer or research note whose normalised field name is one of these. */
+    private static String fieldNamed(JsonNode profile, java.util.Set<String> keys) {
+        for (String group : List.of("formAnswers", "researchNotes")) {
+            JsonNode fields = profile.get(group);
+            if (fields == null || !fields.isObject()) continue;
+            var it = fields.fields();
+            while (it.hasNext()) {
+                var e = it.next();
+                if (keys.contains(normalise(e.getKey())) && !e.getValue().isNull()) return e.getValue().asText();
+            }
+        }
+        return null;
+    }
+
+    private static String normalise(String s) {
+        return s == null ? "" : s.toLowerCase(Locale.ROOT).replaceAll("[^\\p{L}\\p{N}]", "");
+    }
+
+    /** One line, trimmed, with a letter in it, short, and no link unless the variable is one. */
+    private static String clean(String v, boolean linkAllowed) {
+        if (v == null) return null;
+        String one = v.replaceAll("\\s+", " ").trim();
+        if (one.isEmpty() || one.length() > MAX_FILLED_CHARS || !one.matches(".*\\p{L}.*")) return null;
+        if (!linkAllowed && URL.matcher(one).find()) return null;
+        return one;
+    }
+
     private static String text(JsonNode node, String field) {
         if (node == null || field == null) return null;
         JsonNode v = node.get(field);
