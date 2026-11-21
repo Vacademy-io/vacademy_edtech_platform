@@ -233,4 +233,25 @@ class EmailThreadMergerTest {
         assertThat(EmailThreadMerger.merge(null)).isEmpty();
         assertThat(EmailThreadMerger.merge(List.of())).isEmpty();
     }
+
+    @Test
+    @DisplayName("a lone send stamped with its announcement id is a campaign card")
+    void correlatedSendWithoutTwinIsCampaign() {
+        NotificationLog send = unified("u1", T0);
+        send.setCorrelationId("announcement-1");
+
+        List<MergedRow> out = EmailThreadMerger.merge(List.of(send));
+
+        assertThat(out).hasSize(1);
+        assertThat(out.get(0).row().getId()).isEqualTo("u1");
+        assertThat(out.get(0).campaign()).isTrue();
+    }
+
+    @Test
+    void plainSendWithoutCorrelationIsNotCampaign() {
+        List<MergedRow> out = EmailThreadMerger.merge(List.of(unified("u1", T0)));
+
+        assertThat(out).hasSize(1);
+        assertThat(out.get(0).campaign()).isFalse();
+    }
 }

@@ -192,11 +192,20 @@ public class UnifiedSendService implements SendChannelRouter {
     /**
      * The correlation/attribution contract (options.source → notification_log.source,
      * options.sourceId → correlation_id, per-recipient userId on email rows) is live for
-     * Engagement Engine sends only. Other callers (announcements, campaigns) already write
-     * their own per-recipient log rows keyed on the legacy source values — threading their
-     * options through would change those rows' values and double-attribute per-user views.
+     * Engagement Engine sends. Announcement email sends get the id half of it (see
+     * {@link #ANNOUNCEMENT_SOURCE}); every other caller is logged without attribution.
      */
     public static final String ENGAGEMENT_ENGINE_SOURCE = "ENGAGEMENT_ENGINE";
+    /**
+     * SendOptions.source of an announcement's email send. Its real SMTP row is the ONE row for that
+     * email: it is stamped with correlation_id = announcement id (options.sourceId) and the
+     * recipient's userId, so the campaign report and the learner's timeline both find it and its
+     * SES events. AnnouncementDeliveryService still writes its title-only tracking row as the
+     * campaign record; the timeline hides it and reports skip it when this stamped row exists.
+     * The row's source stays 'unified-send' and its source_id stays the SMTP
+     * Message-ID (reply threading and SES matching rely on it).
+     */
+    public static final String ANNOUNCEMENT_SOURCE = "announcement-service";
     /** SendOptions.source set by EmailInboxService.sendReply; logged as-is so replies are distinguishable from campaigns. */
     public static final String INBOX_REPLY_SOURCE = "EMAIL_INBOX";
     /**
@@ -701,9 +710,14 @@ public class UnifiedSendService implements SendChannelRouter {
                                     request.getInstituteId(), opts.getFromEmail(), opts.getFromName(), emailType,
                                     opts.getSourceId(), engineUserId, finalCopyRecipients, finalCopyMode);
                 } else {
+                    // An announcement's send is linked to its campaign and recipient on the row
+                    // itself; see ANNOUNCEMENT_SOURCE. Nothing else is attributed.
+                    boolean announcementSend = ANNOUNCEMENT_SOURCE.equals(opts.getSource());
+                    String correlationId = announcementSend ? opts.getSourceId() : null;
+                    String logUserId = announcementSend && userId != null && !userId.contains("@") ? userId : null;
                     outcome = emailService.sendHtmlEmail(email, subject, plainLogSource, body,
                             request.getInstituteId(), opts.getFromEmail(), opts.getFromName(), emailType,
-                            null, null, finalCopyRecipients, finalCopyMode, billingClass, emailLogMeta);
+                            correlationId, logUserId, finalCopyRecipients, finalCopyMode, billingClass, emailLogMeta);
                 }
 
                 // Sending controls decide the final status: an over-cap send is queued (still a

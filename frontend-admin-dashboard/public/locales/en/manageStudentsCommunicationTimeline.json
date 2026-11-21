@@ -61,6 +61,7 @@
         "blocked": {
             "noTemplate": "Only template messages can be resent — this one was typed in the Inbox",
             "noBody": "The original message body was not stored, so there is nothing to resend",
+            "campaignRecord": "This row only records the campaign, not the email that went out, so there is nothing to resend",
             "unsupportedChannel": "This channel cannot be resent from here"
         },
         "title": "Resend this {{channel}} message?",

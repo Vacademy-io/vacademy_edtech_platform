@@ -397,9 +397,13 @@ public class AnnouncementDeliveryService {
                     message.setStatus(MessageStatus.DELIVERED);
                     message.setSentAt(LocalDateTime.now());
                     message.setDeliveredAt(LocalDateTime.now());
-                    
-                    // Create email-specific notification log entry
-                        log.trace("Creating EMAIL notification log for announcement: {}, user: {}", 
+
+                    // The campaign's own record of this send. It holds only the campaign title;
+                    // the email itself (HTML, subject, SES events) is the send's EMAIL row, stamped
+                    // with this announcement in correlation_id. The learner timeline hides this
+                    // record and campaign reports count the stamped row instead, so it never shows
+                    // as a second email.
+                    log.trace("Creating EMAIL notification log for announcement: {}, user: {}",
                             announcement.getId(), message.getUserId());
                     createEmailNotificationLog(announcement, message, userEmail, "SUCCESS", null, resolvedFromAddress);
 
