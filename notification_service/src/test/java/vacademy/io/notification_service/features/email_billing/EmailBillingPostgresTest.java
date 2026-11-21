@@ -46,7 +46,7 @@ class EmailBillingPostgresTest {
         jdbc = new JdbcTemplate(ds);
         tx = new TransactionTemplate(new DataSourceTransactionManager(ds));
         jdbc.execute("TRUNCATE email_usage_daily, email_billing_month, email_billing_charge, email_blocked, "
-                + "email_billing_exemption");
+                + "email_billing_exemption, email_billing_override");
         jdbc.update("UPDATE email_billing_settings SET enforce_enabled = TRUE, charge_enabled = TRUE, "
                 + "notify_enabled = FALSE, free_units_per_month = 1000, credits_per_unit = 0.04 WHERE id = 1");
         ledger = mock(CreditLedgerClient.class);
@@ -64,6 +64,13 @@ class EmailBillingPostgresTest {
 
     private EmailBillingChargeJob job() {
         return new EmailBillingChargeJob(jdbc, tx, settings(), ledger, mock(EmailBillingNotifier.class));
+    }
+
+    private EmailBillingNotifier newNotifier(InstituteInternalService institutes, EmailService email) {
+        EmailBillingNotifier notifier = new EmailBillingNotifier(jdbc, settings(), institutes, email,
+                mock(vacademy.io.notification_service.features.announcements.client.AuthServiceClient.class));
+        org.springframework.test.util.ReflectionTestUtils.setField(notifier, "defaultDashboardUrl", "https://dash.vacademy.io");
+        return notifier;
     }
 
     private void send(String institute, EmailBillingClass cls, int units, int times) {
@@ -192,5 +199,56 @@ class EmailBillingPostgresTest {
                 any(), any(), any(), any(), any());
         verify(email, never()).sendHtmlEmail(any(), contains("used up"), any(), any(), any(), any(), any(), any(),
                 any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void aCustomDealUsesItsOwnAllowanceAndRate() {
+        jdbc.update("INSERT INTO email_billing_override (institute_id, free_units_per_month, credits_per_unit) "
+                + "VALUES (?, 5000, 0.0269)", INST);
+        when(ledger.balance(INST)).thenReturn(Optional.of(BigDecimal.ZERO));
+        when(ledger.charge(eq(INST), any(), anyLong(), anyString(), anyString())).thenReturn(true);
+
+        send(INST, EmailBillingClass.BILLABLE, 1, 4999);
+        assertTrue(gate().allows(INST, EmailBillingClass.BILLABLE, 1)); // inside 5,000 with an empty wallet
+        job().run();
+        verify(ledger, never()).charge(any(), any(), anyLong(), any(), any());
+
+        send(INST, EmailBillingClass.BILLABLE, 1, 101); // 100 beyond 5,000
+        assertFalse(gate().allows(INST, EmailBillingClass.BILLABLE, 1));
+        job().run();
+        verify(ledger).charge(INST, new BigDecimal("2.69"), 100L, month, "email:" + INST + ":" + month + ":0-100");
+
+        // Another institute still gets the default 1,000 and 0.04.
+        send("inst-default", EmailBillingClass.BILLABLE, 1, 1010);
+        job().run();
+        verify(ledger).charge("inst-default", new BigDecimal("0.40"), 10L, month, "email:inst-default:" + month + ":0-10");
+
+        // Raising the allowance after a charge neither refunds nor goes negative.
+        jdbc.update("UPDATE email_billing_override SET free_units_per_month = 9000 WHERE institute_id = ?", INST);
+        job().run();
+        assertEquals(100L, store.monthTotals(INST, month).chargedUnits());
+    }
+
+    @Test
+    void customDealNoticesUseTheInstitutesOwnNumbers() {
+        jdbc.update("UPDATE email_billing_settings SET notify_enabled = TRUE");
+        jdbc.update("INSERT INTO email_billing_override (institute_id, free_units_per_month, credits_per_unit) "
+                + "VALUES (?, 5000, 0.0269)", INST);
+        InstituteInternalService institutes = mock(InstituteInternalService.class);
+        InstituteInfoDTO info = new InstituteInfoDTO();
+        info.setEmail("office@school.in");
+        when(institutes.getInstituteByInstituteId(INST)).thenReturn(info);
+        EmailService email = mock(EmailService.class);
+        EmailBillingNotifier notifier = newNotifier(institutes, email);
+
+        send(INST, EmailBillingClass.BILLABLE, 1, 3999);
+        notifier.sendAllowanceNotices(settings().get());
+        verifyNoInteractions(email); // 80% of 5,000 is 4,000
+
+        send(INST, EmailBillingClass.BILLABLE, 1, 1);
+        notifier.sendAllowanceNotices(settings().get());
+        notifier.sendAllowanceNotices(settings().get());
+        verify(email, times(1)).sendHtmlEmail(any(), contains("80%"), any(), contains("1 credit per 37"), any(), any(),
+                any(), any(), any(), any(), any(), any(), any());
     }
 }

@@ -83,28 +83,47 @@ public class EmailBillingNotifier {
         }
     }
 
-    /** Called by the hourly billing job: 80% and 100% of the free allowance, once each per month. */
+    /**
+     * Called by the hourly billing job: 80% and 100% of the free allowance, once each per month.
+     * The allowance and price are the institute's own (custom deals differ from the default).
+     */
     public void sendAllowanceNotices(EmailBillingSettings.Snapshot s) {
         String month = EmailBillingSettings.currentMonth();
-        long free = s.freeUnitsPerMonth();
-        notice(month, "notified_free_80", (long) Math.ceil(free * 0.8),
-                "You have used 80% of this month's free emails",
-                "Your institute has used 80% of its " + free + " free emails for this month.",
-                "After that, emails cost 1 credit per 25. Keep enough credits so they don't pause.");
-        notice(month, "notified_free_100", free,
-                "This month's free emails are used up",
-                "Your institute has used all " + free + " free emails for this month.",
-                "Further emails cost 1 credit per 25. If credits run out, emails pause until you add more.");
+        List<java.util.Map<String, Object>> rows = jdbc.queryForList("""
+                SELECT institute_id, chargeable_units, notified_free_80, notified_free_100
+                FROM email_billing_month WHERE period_month = ? AND (notified_free_80 = FALSE OR notified_free_100 = FALSE)
+                """, month);
+        for (java.util.Map<String, Object> r : rows) {
+            String instituteId = (String) r.get("institute_id");
+            long used = ((Number) r.get("chargeable_units")).longValue();
+            long free = s.freeUnits(instituteId);
+            String perCredit = emailsPerCredit(s.rate(instituteId));
+            if (!Boolean.TRUE.equals(r.get("notified_free_80")) && used >= (long) Math.ceil(free * 0.8)) {
+                notice(instituteId, month, "notified_free_80", s,
+                        "You have used 80% of this month's free emails",
+                        "Your institute has used 80% of its " + free + " free emails for this month.",
+                        "After that, emails cost 1 credit per " + perCredit + ". Keep enough credits so they don't pause.");
+            }
+            if (!Boolean.TRUE.equals(r.get("notified_free_100")) && used >= free) {
+                notice(instituteId, month, "notified_free_100", s,
+                        "This month's free emails are used up",
+                        "Your institute has used all " + free + " free emails for this month.",
+                        "Further emails cost 1 credit per " + perCredit + ". If credits run out, emails pause until you add more.");
+            }
+        }
     }
 
-    private void notice(String month, String flag, long threshold, String subject, String line1, String line2) {
-        List<String> institutes = jdbc.queryForList("UPDATE email_billing_month SET " + flag + " = TRUE "
-                + "WHERE period_month = ? AND " + flag + " = FALSE AND chargeable_units >= ? RETURNING institute_id",
-                String.class, month, threshold);
-        for (String instituteId : institutes) {
-            if (settings.get().isExempt(instituteId)) {
-                continue;
-            }
+    /** "25" for 0.04 credit an email, "37" for 0.0269. */
+    static String emailsPerCredit(java.math.BigDecimal rate) {
+        return String.valueOf(java.math.BigDecimal.ONE.divide(rate, 0, java.math.RoundingMode.DOWN).max(java.math.BigDecimal.ONE));
+    }
+
+    /** Claims the flag atomically (one pod, once a month) and sends. */
+    private void notice(String instituteId, String month, String flag, EmailBillingSettings.Snapshot s,
+            String subject, String line1, String line2) {
+        int claimed = jdbc.update("UPDATE email_billing_month SET " + flag + " = TRUE "
+                + "WHERE institute_id = ? AND period_month = ? AND " + flag + " = FALSE", instituteId, month);
+        if (claimed == 1 && !s.isExempt(instituteId)) {
             send(instituteId, subject, line1, line2);
         }
     }

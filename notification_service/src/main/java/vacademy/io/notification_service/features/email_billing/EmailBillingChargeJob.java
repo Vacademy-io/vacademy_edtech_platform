@@ -68,23 +68,26 @@ public class EmailBillingChargeJob {
     private List<ChargeRow> createCharges(EmailBillingSettings.Snapshot s) {
         String current = EmailBillingSettings.currentMonth();
         String previous = EmailBillingSettings.month(EmailBillingSettings.today().minusMonths(1));
-        long free = s.freeUnitsPerMonth();
+        // The free allowance can differ per institute, so it is applied per row below.
         List<MonthRow> due = jdbc.query("""
                 SELECT institute_id, period_month, chargeable_units, charged_units FROM email_billing_month
-                WHERE period_month IN (?, ?) AND chargeable_units - ? > charged_units
+                WHERE period_month IN (?, ?) AND chargeable_units > charged_units
                 FOR UPDATE
                 """, (rs, i) -> new MonthRow(rs.getString(1), rs.getString(2), rs.getLong(3), rs.getLong(4)),
-                current, previous, free);
+                current, previous);
         List<ChargeRow> created = new java.util.ArrayList<>();
         for (MonthRow m : due) {
-            long to = m.chargeable() - free;
+            long to = m.chargeable() - s.freeUnits(m.instituteId());
             long from = m.charged();
+            if (to <= from) {
+                continue; // still inside its free allowance, or the allowance was raised after a charge
+            }
             if (s.isExempt(m.instituteId())) {
                 jdbc.update("UPDATE email_billing_month SET charged_units = ?, updated_at = CURRENT_TIMESTAMP "
                         + "WHERE institute_id = ? AND period_month = ?", to, m.instituteId(), m.month());
                 continue;
             }
-            BigDecimal credits = EmailBillingGate.credits(to - from, s.creditsPerUnit());
+            BigDecimal credits = EmailBillingGate.credits(to - from, s.rate(m.instituteId()));
             if (credits.signum() <= 0) {
                 continue;
             }

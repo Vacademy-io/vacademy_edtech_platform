@@ -56,6 +56,18 @@ UPDATE email_billing_settings SET enforce_enabled = true, charge_enabled = true,
 INSERT INTO email_billing_exemption (institute_id, reason, until_date) VALUES ('<id>', 'deal', NULL);
 ```
 
+Custom deal for one institute (its own free allowance and/or rate; NULL = default):
+
+```sql
+INSERT INTO email_billing_override (institute_id, free_units_per_month, credits_per_unit, reason)
+VALUES ('<id>', 5000, 0.0269, 'deal: 5,000 free, Rs 1 = 40 emails')
+ON CONFLICT (institute_id) DO UPDATE SET free_units_per_month = EXCLUDED.free_units_per_month,
+  credits_per_unit = EXCLUDED.credits_per_unit, reason = EXCLUDED.reason, updated_at = now();
+```
+
+A rate in rupees converts at 1 credit = Rs 0.93: Rs 1 for N emails = 1 / (0.93 x N) credit per email
+(40 emails per rupee = 0.0269). Raising an allowance mid-month never refunds what was already charged.
+
 Changing the free allowance or rate: update `email_billing_settings` AND the `email` row of
 admin-core `credit_pricing` (record only) together.
 

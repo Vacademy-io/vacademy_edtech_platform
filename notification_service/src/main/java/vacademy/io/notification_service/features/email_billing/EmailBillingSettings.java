@@ -9,7 +9,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -30,13 +32,36 @@ public class EmailBillingSettings {
     private static final DateTimeFormatter MONTH = DateTimeFormatter.ofPattern("yyyy-MM");
     private static final long CACHE_MILLIS = 60_000;
 
+    /**
+     * {@code freeUnitsPerMonth} and {@code creditsPerUnit} are the defaults; an institute with a
+     * custom deal (table email_billing_override) gets its own — use {@link #freeUnits} and {@link #rate}.
+     */
     public record Snapshot(boolean enforce, boolean charge, boolean notifyEnabled, int freeUnitsPerMonth,
-            BigDecimal creditsPerUnit, Set<String> exempt) {
+            BigDecimal creditsPerUnit, Set<String> exempt, Map<String, Integer> freeOverride,
+            Map<String, BigDecimal> rateOverride) {
 
-        static final Snapshot OFF = new Snapshot(false, false, false, 1000, new BigDecimal("0.04"), Set.of());
+        static final Snapshot OFF = new Snapshot(false, false, false, 1000, new BigDecimal("0.04"), Set.of(),
+                Map.of(), Map.of());
+
+        public Snapshot(boolean enforce, boolean charge, boolean notifyEnabled, int freeUnitsPerMonth,
+                BigDecimal creditsPerUnit, Set<String> exempt) {
+            this(enforce, charge, notifyEnabled, freeUnitsPerMonth, creditsPerUnit, exempt, Map.of(), Map.of());
+        }
 
         public boolean isExempt(String instituteId) {
             return instituteId != null && exempt.contains(instituteId);
+        }
+
+        /** Free emails a month for this institute. */
+        public int freeUnits(String instituteId) {
+            Integer own = instituteId == null ? null : freeOverride.get(instituteId);
+            return own != null ? own : freeUnitsPerMonth;
+        }
+
+        /** Credits per email beyond the free allowance for this institute. */
+        public BigDecimal rate(String instituteId) {
+            BigDecimal own = instituteId == null ? null : rateOverride.get(instituteId);
+            return own != null ? own : creditsPerUnit;
         }
     }
 
@@ -61,9 +86,18 @@ public class EmailBillingSettings {
                     SELECT institute_id FROM email_billing_exemption
                     WHERE until_date IS NULL OR until_date >= ?
                     """, String.class, java.sql.Date.valueOf(today())));
+            Map<String, Integer> freeOverride = new HashMap<>();
+            Map<String, BigDecimal> rateOverride = new HashMap<>();
+            jdbc.query("SELECT institute_id, free_units_per_month, credits_per_unit FROM email_billing_override",
+                    rs -> {
+                        int free = rs.getInt(2);
+                        if (!rs.wasNull()) freeOverride.put(rs.getString(1), free);
+                        BigDecimal rate = rs.getBigDecimal(3);
+                        if (rate != null) rateOverride.put(rs.getString(1), rate);
+                    });
             Snapshot base = rows.isEmpty() ? Snapshot.OFF : rows.get(0);
             s = new Snapshot(base.enforce(), base.charge(), base.notifyEnabled(), base.freeUnitsPerMonth(),
-                    base.creditsPerUnit(), Set.copyOf(exempt));
+                    base.creditsPerUnit(), Set.copyOf(exempt), Map.copyOf(freeOverride), Map.copyOf(rateOverride));
         } catch (Exception e) {
             log.warn("Email billing settings unreadable, treating billing as off: {}", e.getMessage());
             s = Snapshot.OFF;
