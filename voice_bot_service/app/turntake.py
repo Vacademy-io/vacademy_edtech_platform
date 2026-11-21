@@ -485,6 +485,49 @@ def hold_absorbs(text: str, secs_since_hold_line: float) -> bool:
     return False
 
 
+# ── the company's own recorded greeting ──────────────────────────────────────
+# _CARRIER_PHRASES is the NETWORK's recordings. A company that answers with its
+# own IVR was read as the person (2026-11-18): AlmaBetter's "Welcome to Alma
+# Better, a one-stop desti…" cut our opening as a "real barge-in" and the model
+# answered the recording; Learnbay's "This call will be recorded for monitoring
+# and training purposes" fired "callee spoke first — skipping our open", so the
+# human who came on later never heard who was calling.
+#
+# Only ever consulted inside the machine window, and never on a line that
+# sounds like a person (sounds_like_person: a hello, a question, "I", "boliye")
+# — so a receptionist's "Hello, welcome to Sunrise School, how may I help?"
+# stays the person it is.
+_COMPANY_IVR_PHRASES = (
+    "welcome to", "thank you for calling", "thanks for calling",
+    "call will be recorded", "call may be recorded", "call is being recorded",
+    "calls are recorded", "calls may be recorded", "call is recorded",
+    "monitoring and training", "training and monitoring", "quality and training",
+    "training and quality", "for training purposes", "for quality purposes",
+    "monitoring purposes", "your call is important", "all our executives",
+    "all our agents", "all our representatives", "all our lines are",
+    "you are in a queue", "you are in queue", "your call is in queue",
+    "में आपका स्वागत है", "कॉल करने के लिए धन्यवाद", "रिकॉर्ड की जा सकती",
+    "रिकॉर्ड की जाएगी", "रिकॉर्ड किया जा",
+)
+
+
+def is_company_ivr(text: str) -> bool:
+    """A company's recorded greeting or menu — never a person (PURE)."""
+    t = " ".join((text or "").casefold().split())
+    if not t or t.startswith("["):
+        return False
+    hits = [p for p in _COMPANY_IVR_PHRASES if p in t]
+    if not hits and not ivr_menu_key(t):
+        return False
+    # The person test runs on what is left once the recording's own words are
+    # out: "thank" in "thank you for calling" is not a person thanking us, but
+    # "boliye" or a question after it is.
+    rest = t
+    for p in hits:
+        rest = rest.replace(p, " ")
+    return not sounds_like_person(rest)
+
+
 def is_screener_hold(text: str) -> bool:
     t = (text or "").casefold()
     return any(p in t for p in _SCREENER_HOLD_PHRASES)
