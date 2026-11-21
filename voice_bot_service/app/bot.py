@@ -108,7 +108,8 @@ from .turntake import (mid_reply_action, is_carrier_announcement,
                        is_screener_hold, spoken_key, takes_over_opening, is_question,
                        is_hold_announcement, hold_absorbs, caller_is_busy,
                        opening_expected_secs, ends_on_question, ivr_menu_key,
-                       IVR_LOOP_REPEATS, recording_loop_key, RECORDING_LOOP_REPEATS)
+                       IVR_LOOP_REPEATS, recording_loop_key, RECORDING_LOOP_REPEATS,
+                       is_company_ivr, sounds_like_person)
 
 from .sarvam_v4_voices import (SARVAM_V4_DEFAULT_VOICE, SARVAM_V4_MALE,  # noqa: E402
                                SARVAM_V4_VOICES)
@@ -531,6 +532,10 @@ class TranscriptCollector(FrameProcessor):
         # longer waits for it, because the fragment that does the damage is the
         # FIRST one and it is never the recognisable one.
         self._carrier_seen = False
+        # A company's own recorded greeting/menu played at the start of the call
+        # (turntake.is_company_ivr). Its hold music's one-word finals are scraps.
+        self._company_ivr_seen = False
+        self._hold_from_ivr = False      # the current hold began at a company IVR line
         self._human_turns = 0          # finals that reached the model as the callee's
         # …of which turned out to be the operator's recording: a short turn that
         # another carrier line followed within RECORDING_PIECE_SECS (a number, a
@@ -815,7 +820,10 @@ class TranscriptCollector(FrameProcessor):
                 self._on_transcript(backchannel=True)
                 await self._release_user_turn(frame, direction)
                 return
-            if self._in_machine_window() and (is_carrier_announcement(text) or joined_carrier):
+            company_ivr = (self._in_machine_window() and self._human_turns == 0
+                           and not is_carrier_announcement(text) and is_company_ivr(text))
+            if self._in_machine_window() and (is_carrier_announcement(text) or joined_carrier
+                                              or company_ivr):
                 self._outcome.transcript.append({"role": "user", "text": text})
                 if self._diag is not None:
                     self._diag.bump("carrier_announcements")
@@ -849,6 +857,31 @@ class TranscriptCollector(FrameProcessor):
                     self.screener_seen = True
                     self._screened = True
                     self._heard_since_screen = False
+                if company_ivr:
+                    # The company's recording answered, not the person (2026-11-18
+                    # AlmaBetter 0c236052, Learnbay dcd7c32d). That is the hold
+                    # the network's queue recordings already put us in (call
+                    # 9519f8c6): quiet until a person speaks, and that person —
+                    # who heard nothing of ours — gets the opening again
+                    # (back-from-hold, _hold_unheard). Same machinery, so the
+                    # same tested exits: a hello, a question, busy, a refusal.
+                    self._company_ivr_seen = True
+                    if not self._hold_since:
+                        if not (self._hold_episode_since and self.hold_ended_t
+                                and now - self.hold_ended_t <= HOLD_REENTRY_SECS):
+                            self._hold_episode_since = now
+                        self._hold_since = now
+                        self._hold_from_ivr = True
+                        self._hold_unheard = (not self._bot_spoke_once()
+                                              or self._opening_owed())
+                        if self._diag is not None:
+                            self._diag.bump("holds")
+                        logger.info("turn-gate: company IVR %r — on hold until a person "
+                                    "speaks%s", text[:48],
+                                    " (they have not heard us)" if self._hold_unheard else "")
+                        if self._is_bot_speaking() or self._reply_in_flight():
+                            await self.broadcast_interruption()
+                        self._cancel_resume_check(stale=True)
                 if self._hold_since:
                     # "…has put your call on hold." is a carrier phrase too; it is
                     # still a piece of the hold recording for the scrap timing.
@@ -880,8 +913,22 @@ class TranscriptCollector(FrameProcessor):
                 if hold_absorbs(text, now - self._hold_line_t):
                     await self._absorb_hold_line(frame, direction, text)
                     return
+                # Hold music behind a company IVR: the STT hears "जी।", "हाँ।" in
+                # it, and each read as the person — the bot pitched into the hold
+                # at 11.9 s (AlmaBetter 0c236052) and 12.1 s (Learnbay dcd7c32d).
+                # On an IVR hold only, a 1-2 word final with nothing a person
+                # says (no hello, no "boliye", no question) stays the recording;
+                # "Hello." / "जी बोलिए" end the hold as before.
+                if (self._hold_from_ivr and len(text.split()) <= 2
+                        and not sounds_like_person(text)
+                        and not caller_checking_presence(text) and not is_audio_check(text)):
+                    logger.info("turn-gate: %r on a company-IVR hold — the recording, not "
+                                "the person", text[:32])
+                    await self._absorb_hold_line(frame, direction, text)
+                    return
                 held = now - self._hold_since
                 self._hold_since = 0.0
+                self._hold_from_ivr = False
                 self.hold_ended_t = now
                 back_from_hold = True
                 logger.info("turn-gate: back from hold after %.0fs — %r", held, text[:30])
@@ -2473,6 +2520,72 @@ class TtfbObserver:
             self._diag.bump("llm_completion_tokens", out)
 
 
+# STAGE DIRECTIONS IN THE MODEL'S OWN REPLY. The agent script says "stay silent
+# and wait for a human" on a phone menu, the model has no way to output silence,
+# so it writes the instruction itself — "(silence)", "(Stay silent)", "(Wait
+# silently for a human)", "Wait for a human." — and every character reached the
+# TTS: 33 of 99 answered calls on 2026-11-19, the caller hearing the bot read its
+# own notes. _clean_opening only ever cleaned the authored opening line, never a
+# reply. A rule in the prompt alone did not stop it.
+#
+# Deliberately narrow, so no real sentence is lost:
+#   * a bracketed segment goes only when its words are a self-instruction; a
+#     sentence that is NOTHING but a bracket goes whatever it says (nothing in
+#     brackets is ever meant to be heard, and a bracket read aloud is noise);
+#   * an unbracketed sentence goes only when the WHOLE sentence is a silence
+#     instruction — "Wait, let me check." and "One moment please." stay, since
+#     the pattern needs "wait silently / wait for a human", not a bare "wait".
+_DIRECTION_WORDS_RE = re.compile(
+    r"\b(silen(?:ce|t|tly)|stays?\s+quiet|remains?\s+quiet|wait(?:s|ing)?|pauses?|"
+    r"say(?:s)?\s+nothing|no\s+response|listen(?:s|ing)?|laugh(?:s|ing)?|smil(?:es|ing)|"
+    r"sigh(?:s)?|ivr|hold\s+music|on\s+hold|beep|ring(?:s|ing)?|human|live\s+person|"
+    r"to\s+be\s+connected|end\s+call|hangs?\s+up)\b",
+    re.IGNORECASE)
+_BRACKET_SEG_RE = re.compile(r"\([^()]*\)|\[[^\[\]]*\]")
+_BARE_DIRECTION_RE = re.compile(
+    r"^\W*(?:"
+    r"(?:stay|stays|remain|remains|keep|keeps)\s+(?:silent|quiet)\b.*"
+    r"|(?:say|says)\s+nothing\b.*"
+    r"|silence|silently|pause|pauses|no\s+response"
+    r"|wait(?:s|ing)?\s+(?:silently|quietly|in\s+silence)\b.*"
+    r"|wait(?:s|ing)?\s+(?:for|until)\s+(?:a|the)\s+(?:human|live\s+person|person|"
+    r"real\s+person|someone|agent|call|line|ivr|menu|recording)\b.*"
+    r")\W*$",
+    re.IGNORECASE)
+
+
+def drop_spoken_directions(sentence: str) -> str:
+    """The speakable part of one reply sentence: "" when it is all direction.
+
+    Never touches a sentence with no bracket and no direction shape, so the
+    normal path is byte-identical. Whitespace around a removed bracket is
+    collapsed; anything left with no letter or digit counts as nothing.
+    """
+    if not sentence:
+        return sentence
+    text = sentence
+    if "(" in text or "[" in text:
+        def _seg(m: "re.Match") -> str:
+            inner = m.group(0)[1:-1]
+            return " " if _DIRECTION_WORDS_RE.search(inner) else m.group(0)
+        stripped = _BRACKET_SEG_RE.sub(_seg, text)
+        # The whole sentence is one bracket (whatever it says): never speech.
+        if not any(ch.isalnum() for ch in _BRACKET_SEG_RE.sub(" ", text)):
+            stripped = ""
+        if stripped != text:
+            text = re.sub(r"\s{2,}", " ", stripped).strip()
+            if text and not any(ch.isalnum() for ch in text):
+                text = ""
+            if not text:
+                return ""
+            # Keep the sentence's own trailing space so the TTS joins it as before.
+            if sentence[-1:].isspace():
+                text += " "
+    if _BARE_DIRECTION_RE.match(text.strip()):
+        return ""
+    return text
+
+
 class NoRepeatGate(FrameProcessor):
     """Between the LLM and the TTS: never say the same sentence twice in a call.
 
@@ -2632,6 +2745,9 @@ class NoRepeatGate(FrameProcessor):
         self._escalated_for = None
         self._killed = False           # an interruption ended the current response
         self._text_seen = True         # any text in the current response (False = an empty reply)
+        # Inside a bracketed stage direction that a sentence break split in two
+        # ("(Stay silent. Wait for the person.)"): drop until its bracket closes.
+        self._in_direction = False
         self._last_reply_statement = False  # last reply said something but asked nothing
         self._ending = ending or (lambda: False)
         self._asked_this_reply = False    # a question reached the caller in THIS reply
@@ -3042,6 +3158,39 @@ class NoRepeatGate(FrameProcessor):
                 return True
         return False
 
+    def _drop_directions(self, sentence: str) -> str:
+        """drop_spoken_directions, plus a bracket left open across a sentence
+        break. Never reaches _emit, so a dropped direction is never recorded as
+        said, never resumed by take_unplayed_tail, and never enters the history
+        or the saved transcript (both are built from what PLAYED). Text was
+        still seen, so the empty-reply recovery does not ask for another line:
+        a reply that was only "(silence)" now means what it meant — say nothing.
+        """
+        original = sentence
+        if self._in_direction:
+            close = max(sentence.rfind(")"), sentence.rfind("]"))
+            if close == -1:
+                logger.warning("no-repeat: dropping stage direction %r", sentence.strip()[:80])
+                return ""
+            self._in_direction = False
+            sentence = sentence[close + 1:]
+        else:
+            s = sentence.lstrip()
+            if s[:1] in "([" and ")" not in s and "]" not in s:
+                # An opening bracket whose close is in a later sentence: only a
+                # direction-shaped one, so "(including GST." is never swallowed.
+                if _DIRECTION_WORDS_RE.search(s):
+                    self._in_direction = True
+                    logger.warning("no-repeat: dropping stage direction %r", s.strip()[:80])
+                    return ""
+        cleaned = drop_spoken_directions(sentence)
+        if cleaned != original:
+            logger.warning("no-repeat: dropping stage direction from %r -> %r",
+                           original.strip()[:80], (cleaned or "").strip()[:80])
+            if self._diag is not None:
+                self._diag.bump("stage_directions_dropped")
+        return cleaned
+
     async def _emit(self, text: str, direction, past_cap: bool = False):
         cap = self._max_sentences()
         if cap and not past_cap and self._emitted >= cap:
@@ -3137,6 +3286,7 @@ class NoRepeatGate(FrameProcessor):
         if isinstance(frame, LLMFullResponseStartFrame):
             self._killed = False
             self._text_seen = False
+            self._in_direction = False
             self._responses_started += 1
             self._last_start_t = time.time()
             if self._responses_started > self._runs_passed:
@@ -3263,6 +3413,7 @@ class NoRepeatGate(FrameProcessor):
                 self._unplayed_entries = []
             self._pending = []
             self._buf, self._held_tail, self._cf_held = "", "", ""
+            self._in_direction = False
             self._echo_held = ""
             # Text of the response this interruption killed can still arrive
             # (the LLM streams until its cancel lands, then ends). Without this
@@ -3302,6 +3453,9 @@ class NoRepeatGate(FrameProcessor):
                 if not any(ch.isalnum() for ch in sentence):
                     logger.info("no-repeat: dropping letterless chunk %r",
                                 sentence.strip()[:16])
+                    continue
+                sentence = self._drop_directions(sentence)
+                if not sentence:
                     continue
                 if self._emitted == 0:
                     sentence = self._trim_echo(sentence)
@@ -3377,6 +3531,10 @@ class NoRepeatGate(FrameProcessor):
             if tail and not any(ch.isalnum() for ch in tail):
                 logger.info("no-repeat: dropping letterless tail %r", tail[:16])
                 tail = ""
+            if tail:
+                # "(silence)" has no sentence-ending mark, so it always arrives here.
+                tail = self._drop_directions(tail).strip()
+            self._in_direction = False
             if (tail and self._is_filler(tail)
                     and self._cf_key(tail) in self._cf_this_reply):
                 logger.info("no-repeat: dropping repeated filler tail %r", tail[:24])

@@ -63,14 +63,19 @@ def _now_stamp(now: dt.datetime) -> str:
             f"{now.hour % 12 or 12}:{now.strftime('%M')} {now.strftime('%p')}")
 
 
-def _llm_target(s):
+def _llm_target(s, provider: Optional[str] = None):
     """Mirror providers.build_llm's provider switch — the analysis call must run on
     the same backend as the conversation (a Sarvam-only analysis 401s forever on an
     OpenRouter-fallback deployment, degrading every call to disposition=Incomplete
-    → the classifier retries leads who just completed a full conversation)."""
-    if s.llm_provider == "google":
+    → the classifier retries leads who just completed a full conversation).
+
+    `provider` picks another backend with the same rules — the analysis fallback
+    passes LLM_FALLBACK_PROVIDER, the second LLM the conversation itself already
+    trusts. None = the primary, exactly as before."""
+    provider = s.llm_provider if provider is None else provider
+    if provider == "google":
         return s.google_llm_base_url, s.gemini_api_key, s.google_llm_model
-    if s.llm_provider == "openrouter":
+    if provider == "openrouter":
         return s.openrouter_base_url, s.openrouter_api_key, s.openrouter_model
     # "vertex" conversation → analyse on Sarvam. The analysis is a one-shot HTTP
     # OpenAI-style call with a static bearer key; Vertex needs a refreshing OAuth
@@ -258,10 +263,27 @@ async def _analyze(outcome: CallOutcome) -> Dict[str, Any]:
         "time the caller did not actually say. In extractedQa use null for every "
         "question the caller did not answer; do not fill one in from what a business "
         "like theirs would probably say.\n"
-        "4. A booking/demo/meeting/callback label requires BOTH that the caller agreed "
+        "4. A booking/demo/meeting label requires BOTH that the CALLER agreed "
         "AND that a specific day or time was spoken on the call. If no time was agreed, "
         "the label is not a booking, meetingRequested is false and meetingDatetimeIso "
-        "is null.\n"
+        "is null. A time the ASSISTANT proposed is not agreed until a later CALLER turn "
+        "accepts it — if the call ends on the assistant's proposal, nothing was booked.\n"
+        # 2026-11-18 call e5371fdd: "is it okay if I call you back at some time?" /
+        # "I'll give you a call." was saved callback=false, Incomplete — rule 4 used
+        # to demand a time for a CALLBACK too, so a caller who asked to talk later
+        # with no time given fell through to a failed call.
+        "5. A call-back needs no time: callbackRequested is true whenever the CALLER "
+        "asked to be called later or said they will call back, with or without a time. "
+        "An answering machine or recorded message asking to call later is not a "
+        "callback.\n"
+        # The bare label list never said what interest IS, so a caller who only
+        # listened, asked who was calling, or said they were busy came back
+        # "Interested" — and admin_core turns that label into a hot-lead alert.
+        "6. An interested-type label needs the CALLER's own words showing interest: they "
+        "asked about the offering (price, timing, how it works, details), asked for "
+        "something to be sent, agreed to a next step, or said they want it. Listening to "
+        "the pitch, 'ok'/'haan'/'hmm', asking who is calling or where from, saying they are "
+        "busy or will talk later, or hanging up after the pitch is NOT interest.\n"
         f"RIGHT NOW it is {now_stamp} ({tzname}, UTC offset {now_offset}). Use this to resolve any "
         "relative day the caller mentioned into an exact date.\n"
         f"Return STRICT JSON with keys: disposition (exactly one of {dispositions} — "
@@ -269,7 +291,8 @@ async def _analyze(outcome: CallOutcome) -> Dict[str, Any]:
         "summary (2-3 sentences), leadRating (integer 1-10 interest score or null), "
         "extractedQa (object: question -> answer, only what was actually said"
         + (f"; questions of interest: {questions}" if questions else "")
-        + "), callbackRequested (boolean), callbackTimeText (string or null), "
+        + "), callbackRequested (boolean, see rule 5), callbackTimeText (the caller's own "
+        "words for when to call back, e.g. 'tomorrow evening', or null if they gave no time), "
         "meetingRequested (boolean: true ONLY if the caller AGREED to a scheduled meeting, demo, "
         "visit or callback at a specific day/time — not vague 'maybe later'), "
         "meetingDatetimeIso (ISO 8601 with offset for the agreed meeting time resolved from RIGHT "
@@ -297,7 +320,83 @@ async def _analyze(outcome: CallOutcome) -> Dict[str, Any]:
         + artefact_spec + condition_spec +
         f"\nTranscript:\n{transcript}\n\nJSON:"
     )
-    base_url, api_key, model = _llm_target(s)
+    # 2026-11-19: 12 analyses failed in one 15-minute window (11:47-12:02 IST),
+    # nothing before or after — the one analysis model was rate-limited or slow
+    # for a while, and every call in that window lost its callback and its label
+    # with no record of why. Now: one retry on a TRANSIENT error, then the
+    # conversation's own fallback LLM, and the reason rides on the report.
+    targets = [_llm_target(s)]
+    fb = (getattr(s, "llm_fallback_provider", "") or "").strip()
+    if fb:
+        fb_target = _llm_target(s, fb)
+        # Only a DIFFERENT, keyed backend: a "vertex" fallback resolves to Sarvam,
+        # the same target a Sarvam primary already failed on.
+        same = (fb_target[0], fb_target[2]) == (targets[0][0], targets[0][2])
+        if fb_target[1] and not same:
+            targets.append(fb_target)
+    errors: List[str] = []
+    started = time.monotonic()
+    for i, (base_url, api_key, model) in enumerate(targets):
+        if i > 0 and time.monotonic() - started > _FALLBACK_BUDGET_SECS:
+            # The report waits on this; a pod restart meanwhile loses it outright,
+            # which is worse than the heuristic. Keep the worst case near the old one.
+            errors.append(f"{model}: skipped, analysis already took "
+                          f"{time.monotonic() - started:.0f}s")
+            break
+        try:
+            parsed = await _analysis_request(s, base_url, api_key, model, prompt, outcome.corr)
+        except Exception as e:
+            reason = _analysis_error_reason(e)
+            errors.append(f"{model}: {reason}")
+            more = i + 1 < len(targets)
+            logger.warning("analysis failed on %s (%s) corr=%s%s", model, reason, outcome.corr,
+                           " — trying the fallback model" if more else "")
+            continue
+        _coerce_disposition(parsed, dispositions, outcome.corr)
+        if errors:
+            # Answered by the fallback: keep what the primary did, for the next burst.
+            parsed["analysisError"] = "; ".join(errors)[:300]
+        return parsed
+    _note_analysis_failure(outcome.corr, errors)
+    return {"disposition": _INSUFFICIENT,
+            "summary": "Automatic analysis unavailable; see transcript.",
+            "leadRating": None, "extractedQa": {}, "callbackRequested": False,
+            "callbackTimeText": None, **_NO_SENDS, **_NO_FOLLOW_UP,
+            # Not a recommendation (followUp stays NULL = not assessed): the plain
+            # fact, so the list does not show an engaged lead as nothing at all.
+            "followUpGist": "Automatic analysis failed — read the transcript before deciding.",
+            "analysisError": "; ".join(errors)[:300] or "unknown"}
+
+
+# Transient = worth one more try on the SAME model after a short pause. A 4xx other
+# than 429 (bad key, bad request) will fail identically, and a timeout means the
+# model is slow right now — both go straight to the fallback instead of doubling
+# the wait.
+_ANALYSIS_RETRY_BACKOFF_SECS = 2.0
+# The fallback model is tried only while the primary used less than this: a primary
+# timeout (20 s) still falls back, a primary that timed out AND retried does not.
+_FALLBACK_BUDGET_SECS = 25.0
+
+
+def _is_transient(e: BaseException) -> bool:
+    if isinstance(e, httpx.HTTPStatusError):
+        code = e.response.status_code if e.response is not None else 0
+        return code == 429 or code >= 500
+    return isinstance(e, (httpx.ConnectError, httpx.RemoteProtocolError, httpx.ReadError))
+
+
+def _analysis_error_reason(e: BaseException) -> str:
+    if isinstance(e, httpx.HTTPStatusError) and e.response is not None:
+        return f"HTTP {e.response.status_code}"
+    if isinstance(e, httpx.TimeoutException):
+        return "timeout"
+    return f"{type(e).__name__}: {str(e)[:120]}"
+
+
+async def _analysis_request(s, base_url: str, api_key: str, model: str, prompt: str,
+                            corr: str) -> Dict[str, Any]:
+    """One analysis on one model: the JSON, or an exception. Retries once on a
+    transient HTTP error and once on unparseable JSON; never loops."""
     payload = {
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
@@ -313,42 +412,70 @@ async def _analyze(outcome: CallOutcome) -> Dict[str, Any]:
         # resolved target (Sarvam) not the provider, so a "vertex" conversation — whose
         # analysis runs on Sarvam — still disables thinking.
         payload["reasoning_effort"] = None
-    try:
-        async with httpx.AsyncClient(timeout=_ANALYSIS_TIMEOUT) as client:
-            resp = await client.post(
-                f"{base_url}/chat/completions",
-                headers={"Authorization": f"Bearer {api_key}"},
-                json=payload,
-            )
-            resp.raise_for_status()
-            # `or ""`: reasoning models (e.g. Sarvam-30b/-105b) return content=None
-            # when max_tokens dies mid-think — degrade to the heuristic, don't crash.
-            content = resp.json()["choices"][0]["message"].get("content") or ""
+
+    async def _post() -> str:
+        for attempt in (1, 2):
+            try:
+                async with httpx.AsyncClient(timeout=_ANALYSIS_TIMEOUT) as client:
+                    resp = await client.post(
+                        f"{base_url}/chat/completions",
+                        headers={"Authorization": f"Bearer {api_key}"},
+                        json=payload,
+                    )
+                    resp.raise_for_status()
+                    # `or ""`: reasoning models (e.g. Sarvam-30b/-105b) return content=None
+                    # when max_tokens dies mid-think — degrade to the heuristic, don't crash.
+                    return resp.json()["choices"][0]["message"].get("content") or ""
+            except Exception as e:
+                if attempt == 1 and _is_transient(e):
+                    logger.warning("analysis %s on %s corr=%s — retrying once in %.0fs",
+                                   _analysis_error_reason(e), model, corr,
+                                   _ANALYSIS_RETRY_BACKOFF_SECS)
+                    await asyncio.sleep(_ANALYSIS_RETRY_BACKOFF_SECS)
+                    continue
+                raise
+        raise RuntimeError("unreachable")
+
+    content = await _post()
+    parsed = _parse_analysis_json(content)
+    if parsed is None:
+        # One retry with the model told what went wrong — cheaper than a
+        # lost analysis, and it never loops.
+        logger.warning("analysis JSON unparseable corr=%s — retrying once", corr)
+        payload["messages"].append({"role": "assistant", "content": content[:4000]})
+        payload["messages"].append({"role": "user", "content":
+            "That was not valid JSON. Return ONLY the JSON object, complete and valid, "
+            "nothing before or after it."})
+        content = await _post()
         parsed = _parse_analysis_json(content)
         if parsed is None:
-            # One retry with the model told what went wrong — cheaper than a
-            # lost analysis, and it never loops.
-            logger.warning("analysis JSON unparseable corr=%s — retrying once", outcome.corr)
-            payload["messages"].append({"role": "assistant", "content": content[:4000]})
-            payload["messages"].append({"role": "user", "content":
-                "That was not valid JSON. Return ONLY the JSON object, complete and valid, "
-                "nothing before or after it."})
-            async with httpx.AsyncClient(timeout=_ANALYSIS_TIMEOUT) as client:
-                resp = await client.post(f"{base_url}/chat/completions",
-                                         headers={"Authorization": f"Bearer {api_key}"}, json=payload)
-                resp.raise_for_status()
-                content = resp.json()["choices"][0]["message"].get("content") or ""
-            parsed = _parse_analysis_json(content)
-            if parsed is None:
-                raise ValueError("analysis JSON unparseable after retry")
-        _coerce_disposition(parsed, dispositions, outcome.corr)
-        return parsed
+            raise ValueError("analysis JSON unparseable after retry")
+    return parsed
+
+
+# A burst of failed analyses is an outage, not bad luck: each one loses that call's
+# label and callback. One ERROR line when more than _BURST_COUNT fail inside
+# _BURST_WINDOW_SECS, so a log watch catches the next 11:47-12:02 while it happens.
+_BURST_WINDOW_SECS = 600.0
+_BURST_COUNT = 3
+_analysis_failures: List[float] = []
+
+
+def _note_analysis_failure(corr: str, errors: List[str]) -> None:
+    try:
+        now = time.time()
+        _analysis_failures.append(now)
+        while _analysis_failures and now - _analysis_failures[0] > _BURST_WINDOW_SECS:
+            _analysis_failures.pop(0)
+        logger.error("analysis failed on every model corr=%s errors=%s — degrading to "
+                     "heuristic", corr, errors)
+        if len(_analysis_failures) > _BURST_COUNT:
+            logger.error("analysis-burst: %d analyses failed in the last %.0f min — the "
+                         "analysis model is down or rate-limited; those calls carry no label "
+                         "or callback until re-analysed", len(_analysis_failures),
+                         _BURST_WINDOW_SECS / 60)
     except Exception:
-        logger.exception("analysis failed corr=%s — degrading to heuristic", outcome.corr)
-        return {"disposition": _INSUFFICIENT,
-                "summary": "Automatic analysis unavailable; see transcript.",
-                "leadRating": None, "extractedQa": {}, "callbackRequested": False,
-                "callbackTimeText": None, **_NO_SENDS, **_NO_FOLLOW_UP}
+        pass
 
 
 def _sanitize_follow_up(analysis: Dict[str, Any], corr: str) -> None:
@@ -509,6 +636,284 @@ def _drop_unevidenced_booking(analysis: Dict[str, Any], corr: str) -> None:
         # Never cost the report: an unexpected shape here must leave the
         # analysis exactly as the model returned it.
         logger.exception("report: booking-evidence check failed corr=%s", corr)
+
+
+# A spoken day or time, in the scripts saaras emits: "3 baje", "तीन बजे", "5 pm",
+# "kal", "Friday", "शाम". Used only to find WHERE in the call a time was first put
+# on the table, never to read what the time was.
+# Devanagari has no \b that works across matras, so a Hindi word is fenced by
+# "no Devanagari letter on either side" — "कल" must not match inside "निकलना".
+_DV = r"(?<![ऀ-ॿ]){}(?![ऀ-ॿ])"
+
+
+def _dv(*words: str) -> str:
+    return "|".join(_DV.format(w) for w in words)
+
+
+# A SLOT the assistant offers: a clock time, a weekday, or tomorrow/day-after.
+# Deliberately not "today/morning/evening" — "Good evening" is a greeting, and a
+# greeting counted as the offer would widen the window to the whole call.
+_SLOT_RE = re.compile(
+    r"\d{1,2}\s*(?::\s*\d{2}|\.\d{2})?\s*(?:am|pm|a\.m\.|p\.m\.|o'?clock|baje\b|बजे)"
+    r"|\bbaje\b|\b(?:kal|parso|parson|tomorrow|monday|tuesday|wednesday|thursday|"
+    r"friday|saturday|sunday|somvar|mangalvar|budhvar|guruvar|shukravar|shanivar|ravivar)\b|"
+    + _dv("बजे", "कल", "परसों", "सोमवार", "मंगलवार", "बुधवार", "गुरुवार", "शुक्रवार",
+          "शनिवार", "रविवार"),
+    re.IGNORECASE)
+# A time the CALLER names back ("evening better", "5 baje") — broader, since here
+# a false hit only means "do not downgrade", which is today's behaviour.
+_TIME_WORD_RE = re.compile(
+    _SLOT_RE.pattern + r"|\b(?:aaj|today|tonight|morning|afternoon|evening|noon|subah|"
+    r"dopahar|shaam|sham|raat)\b|" + _dv("आज", "सुबह", "दोपहर", "शाम", "रात"),
+    re.IGNORECASE)
+
+# Acceptance beyond _AFFIRMATIVE_WORDS that people use for a slot.
+_SLOT_ACCEPT_WORDS = frozenset({
+    "done", "fine", "chalega", "chalegi", "confirm", "confirmed", "perfect",
+    "works", "alright", "चलेगा", "चलेगी", "डन", "फाइन", "कन्फर्म",
+})
+
+
+def _caller_accepts_slot(text: str) -> bool:
+    words = [w.strip(_WORD_STRIP) for w in text.casefold().split()]
+    if any(w in _AFFIRMATIVE_WORDS or w in _SLOT_ACCEPT_WORDS for w in words):
+        return True
+    # Naming a time back ("5 baje", "evening better") is engaging with the slot.
+    return bool(_TIME_WORD_RE.search(text))
+
+
+def _proposal_unanswered(outcome: CallOutcome) -> bool:
+    """True when the assistant put a day/time on the table and the CALLER never
+    said one accepting or time-naming word after it.
+
+    Measured from the transcript, because the analyser's own meetingRequested /
+    meetingDatetimeIso are exactly what it gets wrong: call 8d4ba02f
+    (2026-11-19, 23 s) ended on the bot's "दस मिनट दिखा दूँ, कल Friday दोपहर तीन
+    बजे?" with no answer, and the model filled BOTH fields from that proposal
+    ("proposed a demo … which constitutes an agreed booking"), walking straight
+    through _drop_unevidenced_booking.
+
+    Deliberately one-sided, so a real booking is never lost:
+      * no assistant time mention at all, or the CALLER named a time first →
+        False (their own slot, or nothing to judge — the existing guard still
+        applies);
+      * ANY caller acceptance or time after the FIRST assistant time mention →
+        False, so "haan, 5 baje theek hai" followed by the bot's own "anything
+        else?" still books, and so does a caller who named the slot themselves.
+    """
+    turns = [t for t in outcome.transcript
+             if t.get("text") and not str(t["text"]).lstrip().startswith("[")
+             and t.get("role") in ("user", "assistant")]
+    # The first slot named by EITHER side. A caller who named it first proposed
+    # it ("Friday 4 pm" → bot: "Booked for Friday 4 pm. Thank you!"): the bot's
+    # confirmation is then the last turn, and that is a booking, not a pitch.
+    first = next((i for i, t in enumerate(turns)
+                  if (t["role"] == "assistant" and _SLOT_RE.search(t["text"]))
+                  or (t["role"] == "user" and _TIME_WORD_RE.search(t["text"]))), None)
+    if first is None or turns[first]["role"] == "user":
+        return False
+    return not any(t["role"] == "user" and _caller_accepts_slot(t["text"])
+                   for t in turns[first + 1:])
+
+
+def _drop_unanswered_proposal(analysis: Dict[str, Any], outcome: CallOutcome) -> None:
+    """Refuse a meeting the caller never answered — label AND auto-book fields.
+
+    The fields are cleared whatever the label: admin_core books and raises the
+    "demo agreed" alert off meetingRequested + meetingDatetimeIso alone, so an
+    "Interested" call carrying the bot's own proposal would still have produced
+    a calendar entry nobody agreed to. A booking-shaped label degrades the same
+    way _drop_unevidenced_booking does, to the retry-safe sentinel (and to a
+    human when the caller engaged — admin_core's engaged_unjudged branch).
+    """
+    corr = outcome.corr
+    try:
+        if not (analysis.get("meetingRequested") or analysis.get("meetingDatetimeIso")
+                or any(h in _norm_label(analysis.get("disposition") or "")
+                       for h in _BOOKING_LABEL_HINTS)):
+            return
+        if not _proposal_unanswered(outcome):
+            return
+        label = str(analysis.get("disposition") or "")
+        if label and any(h in _norm_label(label) for h in _BOOKING_LABEL_HINTS):
+            logger.warning("report: %r rests on a time only the assistant proposed — the "
+                           "caller never accepted it; degrading to %s corr=%s",
+                           label, _INSUFFICIENT, corr)
+            analysis["disposition"] = _INSUFFICIENT
+            analysis["dispositionDowngradedFrom"] = label
+        elif analysis.get("meetingRequested"):
+            logger.warning("report: meeting time %r was only proposed by the assistant — "
+                           "not booking it corr=%s", analysis.get("meetingDatetimeIso"), corr)
+        analysis["meetingRequested"] = False
+        analysis["meetingDatetimeIso"] = None
+    except Exception:
+        logger.exception("report: unanswered-proposal check failed corr=%s", corr)
+
+
+# ── "Interested" the caller never showed ─────────────────────────────────────
+# admin_core reads any label containing "interested" (and nothing negated or
+# booking-shaped, EngagementCallOutcomeService.verdict) as a hot lead: a CRM
+# follow-up due now and a team alert "please call them while they are interested".
+# The analyser was given no definition of interest, so a caller who listened, asked
+# who was calling, or said they were busy came back Interested.
+#
+# Measured on the caller's words, one-sided like the booking guards: any sign of
+# interest keeps the label; only a refusal, or a thin call with no such sign, loses
+# it — to the retry-safe sentinel (admin_core sends an engaged caller to a human).
+# A long call with no keyword is left to the model: a prospect describing their
+# business at length is a lead even without saying "price".
+_INTEREST_RE = re.compile(
+    r"\b(?:price|pricing|prices|fee|fees|cost|costs|charges?|kitna|kitne|kitni|rupees?|"
+    r"discount|emi|course|courses|batch|batches|classes|demo|trial|admission|syllabus|"
+    r"timings?|duration|details?|info|information|brochure|interested|chahiye|want|"
+    r"need|join|enrol|enroll|register|whatsapp|send|bhej\w*|share|bata\w*|samjha\w*|"
+    r"explain|tell\s+me|how\s+much|how\s+does|kaise|online|offline|location|address|"
+    r"certificate|placement)\b|"
+    + _dv("कितना", "कितने", "कितनी", "फीस", "कोर्स", "डेमो", "एडमिशन", "बैच", "चाहिए",
+          "जानकारी", "डिटेल", "डिटेल्स", "व्हाट्सएप")
+    + r"|(?<![ऀ-ॿ])(?:बता|भेज|समझा)",
+    re.IGNORECASE)
+# A plain refusal. Removed from the text BEFORE the interest search, so "not
+# interested" / "nahi chahiye" / "don't send" never count as interest.
+_REFUSAL_RE = re.compile(
+    r"\bnot\s+interested\b|\bno\s+interest\b|\binterest(?:ed)?\s+nahi\w*|"
+    r"\bnah(?:i|in|ee)\s+chahiye\b|\bnai\s+chahiye\b|\bno\s+need\b|"
+    r"\b(?:don'?t|do\s+not)\s+(?:need|want|call|send)\b|\bcall\s+mat\b|"
+    r"\bmat\s+(?:karo|karna|kijiye|bhejo)\b|\bzaro?o?rat\s+nahi\w*|\bneed\s+nahi\b|"
+    r"\bwrong\s+number\b|\bgalat\s+number\b|\bnot\s+required\b|"
+    r"\balready\s+(?:joined|enrolled|taken|done|bought)\b|"
+    r"नहीं\s*चाहिए|ज़?ज?रूरत\s*नहीं|इंटरेस्टेड\s*नहीं|इंटरेस्ट\s*नहीं|कॉल\s*मत|गलत\s*नंबर",
+    re.IGNORECASE)
+# Busy / later: not a refusal and not interest. Removed before the interest search
+# ("class mein hoon" is not a question about classes) and from the thin count.
+_BUSY_RE = re.compile(
+    r"\bbusy\b|\bbaad\s+m(?:e|ein)\b|\blater\b|\babhi\s+nah(?:i|in)\b|\bdriving\b|"
+    r"\b(?:meeting|class|office|kaam)\s+m(?:e|ein)\b|बाद\s*में|अभी\s*नहीं|बिज़?ी",
+    re.IGNORECASE)
+# Asking who is calling is not interest in what they are calling about.
+_IDENTITY_RE = re.compile(
+    r"\bwho\s+(?:is\s+this|are\s+you|is\s+calling|is\s+speaking)\b|"
+    r"\bwhere\s+(?:are\s+you\s+)?(?:calling\s+)?from\b|\bwhich\s+company\b|"
+    r"\bka?(?:u|o)n\s+(?:bol\s+raha|bol\s+rahe|bol\s+rahi|hai|ho)\w*|\bka?(?:u|o)n\b|"
+    r"\bkaha?n?\s+se\b|\bkidhar\s+se\b|\bkya\s+naam\b|कौन|कहा[ँं]?\s*से",
+    re.IGNORECASE)
+# Words that carry nothing once greetings, "ok", "who is this" and busy talk are out:
+# "abhi main busy hoon, baad mein call karna" leaves only these. ANY other word — even
+# a one-word answer like "CBSE" to "which board?" — is the caller engaging, and keeps
+# the label: this guard only removes Interested where the caller said nothing at all.
+_FILLER_WORDS = frozenset({
+    "hai", "hain", "ho", "hoon", "hu", "hun", "main", "mai", "me", "mein", "raha", "rahe",
+    "rahi", "kar", "karo", "karna", "karenge", "karunga", "call", "phone", "abhi", "toh",
+    "to", "na", "kya", "thank", "thanks", "you", "i", "am", "is", "it", "this", "that",
+    "the", "a", "no", "bye", "sorry", "wait", "ek", "minute", "second", "bhai", "are",
+    "aap", "ap", "baat", "my", "please", "and", "what", "huh", "nahi", "nahin",
+    "है", "हैं", "हो", "हूँ", "हूं", "मैं", "में", "रहा", "रहे", "रही", "बोल", "कर", "करो",
+    "करना", "अभी", "तो", "क्या", "कॉल", "फोन", "धन्यवाद", "आप", "बात", "नहीं",
+})
+_THIN_CALLER_WORDS = 0
+
+
+def _is_interest_label(label: str) -> bool:
+    """Mirror of admin_core EngagementCallOutcomeService.verdict == INTERESTED."""
+    d = _norm_label(label)
+    if not d or "interested" not in d:
+        return False
+    if re.search(r"notinterested|wrongnumber|notrelevant|donotcall|wrongperson", d):
+        return False
+    if re.search(r"not|cancel|declin|reject|noshow|lost|uninterest", d):
+        return False
+    return not any(h in d for h in _BOOKING_LABEL_HINTS)
+
+
+def _interest_evidence(outcome: CallOutcome) -> tuple:
+    """(interest shown, refused, content words left) from the caller's own turns."""
+    text = " ".join(_caller_turns(outcome)).casefold()
+    refused = bool(_REFUSAL_RE.search(text))
+    rest = _REFUSAL_RE.sub(" ", text)
+    rest = _BUSY_RE.sub(" ", rest)
+    interest = bool(_INTEREST_RE.search(rest))
+    rest = _IDENTITY_RE.sub(" ", rest)
+    # "kal call karna" / "shaam ko" is WHEN to call back (a callback, rule 5), not
+    # interest; an agreed meeting time already returned early in the caller.
+    rest = _TIME_WORD_RE.sub(" ", rest)
+    words =[w.strip(_WORD_STRIP) for w in rest.split()]
+    content = [w for w in words if w and w not in _GREETING_WORDS
+               and w not in _AFFIRMATIVE_WORDS and w not in _FILLER_WORDS]
+    return interest, refused, len(content)
+
+
+def _drop_unevidenced_interest(analysis: Dict[str, Any], outcome: CallOutcome) -> None:
+    """Refuse an interested-type label the caller's words do not support."""
+    corr = outcome.corr
+    try:
+        label = str(analysis.get("disposition") or "")
+        if not _is_interest_label(label):
+            return
+        if analysis.get("meetingRequested") and analysis.get("meetingDatetimeIso"):
+            return                   # an agreed meeting survived both booking guards
+        interest, refused, content = _interest_evidence(outcome)
+        if interest:
+            return
+        if not refused and content > _THIN_CALLER_WORDS:
+            return
+        why = ("the caller refused" if refused else
+               f"the caller said nothing showing interest ({content} content words)")
+        logger.warning("report: %r but %s — degrading to %s corr=%s",
+                       label, why, _INSUFFICIENT, corr)
+        analysis["disposition"] = _INSUFFICIENT
+        analysis["dispositionDowngradedFrom"] = label
+    except Exception:
+        logger.exception("report: interest-evidence check failed corr=%s", corr)
+
+
+# Callback-type labels, best first. "callback" outranks a generic follow-up because
+# admin_core treats any label containing it as an explicit call-back instruction
+# (AiCallOutcomeClassifier.isExplicitCallback) — the precise meaning we have.
+_CALLBACK_LABEL_HINTS = ("callback", "callagain", "calllater", "followup")
+
+
+def _callback_disposition(dispositions: List[str]) -> Optional[str]:
+    for hint in _CALLBACK_LABEL_HINTS:
+        for d in dispositions or []:
+            if hint in _norm_label(d):
+                return d
+    return None
+
+
+def _promote_callback(analysis: Dict[str, Any], outcome: CallOutcome,
+                      dispositions: List[str]) -> None:
+    """A caller who asked to be called back is not a failed call.
+
+    Call 66e34cec (2026-11-19, 104 s): "I'll revert back… you can call on the same
+    number", "Tomorrow. Evening." — callbackRequested=true, and AiCallFollowThrough
+    correctly queued the AI callback, but the label was Incomplete, so the CRM and
+    every report counted a warm lead next to the hello-only pickups.
+
+    Only ever replaces the "no conclusion" sentinel, and only with a label the
+    agent itself defines — never a decisive label, never an invented one. A call
+    the answering machine took (machine greeting, no person after it) is not a
+    callback whatever the analyser thought: "please call back later" is the
+    recording, and the flag is cleared so no follow-up is raised for it.
+    """
+    corr = outcome.corr
+    try:
+        if not analysis.get("callbackRequested"):
+            return
+        if _machine_markers(outcome) and _person_turns(outcome) == 0:
+            logger.info("report: callback reported on a machine-only call — clearing corr=%s", corr)
+            analysis["callbackRequested"] = False
+            analysis["callbackTimeText"] = None
+            return
+        if analysis.get("disposition") != _INSUFFICIENT:
+            return
+        label = _callback_disposition(dispositions)
+        if not label:
+            return
+        logger.info("report: caller asked for a callback — %s instead of %s corr=%s",
+                    label, _INSUFFICIENT, corr)
+        analysis["disposition"] = label
+    except Exception:
+        logger.exception("report: callback promotion failed corr=%s", corr)
 
 
 # Spoken acceptance, in both scripts saaras actually emits. Deliberately NOT a
@@ -1124,6 +1529,13 @@ async def build_and_post_report(outcome: CallOutcome, call_uuid: Optional[str]) 
     else:
         analysis = await _analyze(outcome)
         _drop_unevidenced_booking(analysis, outcome.corr)
+        _drop_unanswered_proposal(analysis, outcome)
+        _drop_unevidenced_interest(analysis, outcome)
+        # AFTER the booking and interest guards: a callback label like "Follow_Up_Scheduled"
+        # reads as booking-shaped to them, and a caller who asked for a call-back
+        # must not be degraded to a failed call on the way through.
+        _promote_callback(analysis, outcome,
+                          list((ctx.get("agent") or {}).get("dispositions") or []))
         _sanitize_follow_up(analysis, outcome.corr)
     agent = ctx.get("agent") or {}
     _sanitize_sends(analysis, outcome, agent, outcome.corr)
@@ -1207,6 +1619,13 @@ async def build_and_post_report(outcome: CallOutcome, call_uuid: Optional[str]) 
             ).isoformat().replace("+00:00", "Z"),
         },
     }
+    # Why the analysis failed (or what the primary did before the fallback answered).
+    # Top level AND inside diagnostics, which is what the call panel reads: the
+    # 2026-11-19 burst could not be diagnosed once the pod logs were gone.
+    if analysis.get("analysisError"):
+        payload["analysisError"] = analysis["analysisError"]
+        if isinstance(payload.get("diagnostics"), dict):
+            payload["diagnostics"]["analysisError"] = analysis["analysisError"]
     ok = await admin_core.post_report(ctx.get("instituteId"), ctx.get("webhookToken"), payload)
     if not ok:
         spool_report(ctx.get("instituteId"), ctx.get("webhookToken"), payload)

@@ -241,6 +241,11 @@ class CallDiagnostics:
     # the caller could not answer.
     handbacks: int = 0
     empty_replies: int = 0        # genuinely empty model answers re-asked for the next line
+    # Reply sentences that were the model's own notes — "(silence)", "(Stay
+    # silent)", "Wait for a human." — dropped before the TTS (2026-11-19: 33 of
+    # 99 answered calls spoke them). Non-zero means the prompt is still asking
+    # for silence in words; the caller no longer hears it.
+    stage_directions_dropped: int = 0
     # The gate suppressed the whole reply and asked the model for a fresh line
     # (all-repeat / answer-question / restatement). Nothing was said to the
     # caller, so not a handback — HANDBACK_LOOP counted these until call
@@ -1108,6 +1113,7 @@ def to_payload(d: CallDiagnostics) -> Dict[str, Any]:
                 "repeatsSuppressed": d.repeats_suppressed,
                 "echoesTrimmed": d.echoes_trimmed,
                 "handbacks": d.handbacks,
+                "stageDirectionsDropped": d.stage_directions_dropped,
                 "nextStepRequests": d.next_step_requests,
                 "repeatEscalations": d.repeat_escalations,
                 "contentFreeTurns": d.content_free_turns,
