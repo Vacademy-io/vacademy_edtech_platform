@@ -269,7 +269,7 @@ export const StudentProfileOverlay = () => {
             case 'enrollDeroll':
                 return <StudentEnrollDeroll />;
             case 'enquiry':
-                return <StudentEnquiry />;
+                return <StudentEnquiry userId={selectedStudent.user_id || selectedStudent.id} />;
             case 'application':
                 return <StudentApplication />;
             case 'lead':

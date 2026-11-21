@@ -185,7 +185,10 @@ export const StudentTestRecord = ({
                 const assessData = await getAssessmentDetailsData({
                     assessmentId: assessmentId,
                     instituteId: instituteDetails?.id,
-                    type: examType,
+                    // From Manage Students the side view has no exam type, and the status
+                    // endpoint requires one. It only picks the step-form keys; the saved
+                    // sections this dialog reads are the same for every type.
+                    type: examType || 'EXAM',
                 });
                 setAssessmentDetails(assessData);
             } catch (error) {
@@ -510,7 +513,7 @@ export const StudentTestRecord = ({
                     }}
                     testReport={selectedTest}
                     studentReport={selectedStudentReport}
-                    assessmentDetails={assessmentDetails!}
+                    assessmentDetails={assessmentDetails}
                 />
             )}
 
