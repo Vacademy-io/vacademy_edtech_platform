@@ -59,12 +59,14 @@ and demo-guide visitor tokens.
    could not load (applicants, payment summary, learning reports, the main Learners list, the Team list). Each
    handler was read end to end; the two that used to return passwords now leave them out for the demo user. Result: 99.
    Later the same day two count-only reads were added (call metrics, question-library facets). Result: 101.
+   2026-11-21: learner dues (read) and the test participants list were added; the participants list first got a
+   staff-of-this-institute check in its controller. Result: 103.
    No entry overlaps a write route of the same shape (checked by script against all 1,820 non-GET routes).
 5. GETs: all 1,510 were reviewed for writes, sends, spend, credentials and bulk exports: 588 by reading the
    handler and what it calls, 922 by a static call tracer with a hand read of every hit (654 of those rest on the
    tracer alone, see "Known gaps").
 
-## Allowed non-GET reads (101)
+## Allowed non-GET reads (103)
 
 
 ### admin-core-service: Fee tracking: search, collection dashboard, adjustment lists
@@ -74,6 +76,7 @@ and demo-guide visitor tokens.
 | POST | `/admin-core-service/v1/admin/student-fee/adjustment/history` | `FeeTrackingAdminController#getInstituteAdjustmentHistory` | AdjustmentHistoryQueryService.getInstituteHistory is @Transactional(readOnly=true): adjustmentHistoryRepository.findAll(spec) + enrichment reads |
 | POST | `/admin-core-service/v1/admin/student-fee/adjustment/pending` | `FeeTrackingAdminController#getPendingAdjustments` | FeeTrackingService.getPendingAdjustments is @Transactional(readOnly=true): bill/adjustment reads + auth user lookup |
 | POST | `/admin-core-service/v1/admin/student-fee/dashboard/collection` | `FeeTrackingAdminController#getCollectionDashboard` | FeeTrackingService.getCollectionDashboard is @Transactional(readOnly=true): collectionDashboardRepository summary SELECTs |
+| POST | `/admin-core-service/v1/admin/student-fee/*/dues` | `FeeTrackingAdminController#getStudentDues` | feeAccessGuard.requireStaffOrLearnerSide, then FeeTrackingService.getStudentDues: one finder + in-memory paging; no writes |
 | POST | `/admin-core-service/v1/admin/student-fee/search` | `FeeTrackingAdminController#searchStudentFeePayments` | FeeTrackingService.searchFeePayments is @Transactional(readOnly=true): studentFeePaymentRepository.findAll + native SELECT search |
 
 ### admin-core-service: Admissions: paged list of admission responses
@@ -369,6 +372,7 @@ and demo-guide visitor tokens.
 
 | Method | Path | Controller method | Evidence |
 |---|---|---|---|
+| POST | `/assessment-service/assessment/admin-participants/all/registered-participants` | `AdminAssessmentGetParticipantsController#closedAssessmentParticipants` | AssessmentFolderAccessGuard.requireStaff (instituteId must equal the caller's clientId, staff role there), then paged SELECTs filtered by assessmentId and instituteId. Returns participant email and phone of the caller's own institute only |
 | POST | `/assessment-service/question-library/v1/questions/facets` | `QuestionLibraryController` | QuestionLibraryFacetService.facets (@Transactional readOnly): four native COUNT ... GROUP BY queries; counts and tag names only. Siblings (`/assign`, `/edit`, `/copy`, `/import`, `/tags/auto`) write and stay refused |
 | POST | `/assessment-service/question-library/v1/questions/filter` | `QuestionLibraryController#listQuestions` | QuestionLibraryService.listQuestions -> QuestionLibraryScope.of (selects) + GetQuestionBankManager.getQuestions + nodeRepository.find*/count* (selects) |
 
@@ -430,7 +434,6 @@ These look like reads by name or are used by read screens, and are **not** on th
 | POST | `/admin-core-service/institute/institute_learner/get/v1/all-csv` | whole-list CSV export of learners |
 | POST | `/admin-core-service/institute/institute_learner/get/v1/basic-details-csv` | CSV of learners with username and password |
 | POST | `/auth-service/v1/user/users-credential` | returns usernames and passwords |
-| POST | `/assessment-service/assessment/admin-participants/all/registered-participants` | Reads only, but returns every participant's email, phone and username and does NOT check that the caller belongs to the `instituteId` it is given. Allowing it would let anyone holding the demo sign-in read another institute's roster if they know its ids. Needs an institute check first. The demo shows an empty Submissions tab until then |
 | POST | `/notification-service/v1/chat/people/search` | forwards the caller's token to `users-of-status`, which is refused |
 | POST | `/admin-core-service/institute/v1/certificate/learner/get` | named "get" but generates, stores and notifies when a certificate is missing |
 | POST | `/admin-core-service/open/v1/catalogue-resources/download` | saves a download-analytics row |

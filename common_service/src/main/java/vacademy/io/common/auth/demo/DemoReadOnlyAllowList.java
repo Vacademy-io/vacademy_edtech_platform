@@ -52,6 +52,7 @@ public final class DemoReadOnlyAllowList {
         read("POST", "/admin-core-service/v1/admin/student-fee/adjustment/pending");
         read("POST", "/admin-core-service/v1/admin/student-fee/dashboard/collection");
         read("POST", "/admin-core-service/v1/admin/student-fee/search");
+        read("POST", "/admin-core-service/v1/admin/student-fee/*/dues");
         // Admissions: paged list of admission responses
         read("POST", "/admin-core-service/v1/admission/responses/list");
         read("POST", "/admin-core-service/v1/applicant/list");
@@ -172,6 +173,8 @@ public final class DemoReadOnlyAllowList {
 
         // ───── assessment-service ─────
         // Assessments: admin list, participants, leaderboard, reports, dashboard
+        // Staff of the institute only (AssessmentFolderAccessGuard.requireStaff in the controller)
+        read("POST", "/assessment-service/assessment/admin-participants/all/registered-participants");
         read("POST", "/assessment-service/assessment/admin-participants/all/respondent-list");
         read("POST", "/assessment-service/assessment/admin/assessment-admin-list-filter");
         read("POST", "/assessment-service/assessment/admin/dashboard/insights");
