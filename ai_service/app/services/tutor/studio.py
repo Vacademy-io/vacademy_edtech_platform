@@ -223,7 +223,7 @@ Check: <one short question the learner answers aloud> (Expected: <the answer>)
 ## <idea 3 heading>
 ...
 
-Rules: exactly three ideas, each with a Check. Facts must be correct, standard and uncontroversial; when unsure, leave \
+Rules: exactly three ideas, each with a Check. The learners are in India: use Indian examples, names and places, and rupees (₹) for money, never dollars or pounds. Facts must be correct, standard and uncontroversial; when unsure, leave \
 the detail out. Write the notes in English whatever language the request is in. No preamble and no closing line."""
 
 GROUNDED_RULE = ("Build the lesson ONLY from the material below: choose its single most important idea and teach that. "

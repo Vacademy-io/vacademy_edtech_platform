@@ -1781,7 +1781,7 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
                         _save()
                     await _send({"type": "pace", "pace": pace})
                 new_lang = msg.get("language")
-                if new_lang in settings.language_pair and new_lang != lang:
+                if new_lang in (tutor_langs.pair(lesson.language) if is_demo else settings.language_pair) and new_lang != lang:
                     lang = new_lang
                     if warmup is None:
                         _save()

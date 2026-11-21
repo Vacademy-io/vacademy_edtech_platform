@@ -740,7 +740,7 @@ def demo_start(payload: DemoStartRequest, request: Request, background: Backgrou
             "slide_id": lesson.slide_id,
             "slide_title": lesson.slide_title,
             "language": boot["language"],
-            "languages": settings.language_pair,
+            "languages": tutor_langs.pair(lesson.language),
             "resumed": False,
             "teacher_name": c["teacher_name"] or settings.teacher_name,
             "teacher_avatar_file_id": settings.teacher_avatar_file_id,
