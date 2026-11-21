@@ -240,3 +240,22 @@ def test_install_wraps_only_once(capture):
         client.get("https://api.sarvam.ai/v1/x")
 
     assert len(calls) == 1
+
+
+def test_a_call_to_a_free_model_is_marked(capture):
+    _, calls = capture
+    with httpx.Client(transport=_transport(200)) as client:
+        client.post("https://openrouter.ai/api/v1/chat/completions",
+                    json={"model": "xiaomi/mimo-v2-flash:free", "messages": []})
+        client.post("https://openrouter.ai/api/v1/chat/completions",
+                    json={"model": "google/gemini-2.5-flash", "messages": []})
+
+    assert calls[0]["operation"] == "POST /api/v1 (free model)"
+    assert calls[1]["operation"] == "POST /api/v1"
+
+
+def test_the_free_mark_matches_what_the_alerts_look_for(capture):
+    module, _ = capture
+    alerts_src = (Path(__file__).resolve().parent.parent / "app" / "services" / "external_api_alerts.py").read_text(encoding="utf-8")
+
+    assert f'FREE_MODEL_MARK = "{module.FREE_MODEL_MARK}"' in alerts_src

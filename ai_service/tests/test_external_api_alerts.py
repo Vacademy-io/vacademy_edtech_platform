@@ -80,8 +80,10 @@ def test_out_of_credits_is_found_behind_a_newer_network_error():
     assert alerts.classify(rows, 5, NOW).kind == alerts.CREDITS
 
 
-def test_a_success_after_a_402_clears_it():
-    assert alerts.classify([call("SUCCESS", 200), call(http_status=402)], 5, NOW) is None
+def test_a_success_after_a_402_clears_it_once_the_402_has_settled():
+    # A minute after the 402 is too soon: a low balance still lets small calls through.
+    assert alerts.classify([call("SUCCESS", 200), call(http_status=402, minutes_ago=2)], 5, NOW).kind == alerts.CREDITS
+    assert alerts.classify([call("SUCCESS", 200), call(http_status=402, minutes_ago=31)], 5, NOW) is None
 
 
 @pytest.mark.parametrize(
@@ -267,3 +269,50 @@ def test_without_the_token_every_number_is_reported_not_silently_skipped(monkeyp
 
     assert [r["success"] for r in results] == [False, False]
     assert "WHATSAPP_ACCESS_TOKEN_VIDYAYATAN" in results[0]["error"]
+
+
+def free(status="SUCCESS", minutes_ago=1, http_status=200):
+    return {**call(status, http_status=http_status, minutes_ago=minutes_ago), "operation": "POST /api/v1 (free model)"}
+
+
+def test_a_free_model_answering_does_not_clear_out_of_credits():
+    rows = [free(minutes_ago=1), free(minutes_ago=2), call(http_status=402, minutes_ago=3)]
+
+    problem = alerts.classify(rows, threshold=5, now=NOW)
+
+    assert problem.kind == alerts.CREDITS
+    assert problem.http_status == 402
+
+
+def test_free_model_calls_do_not_break_a_failing_run():
+    rows = [call(minutes_ago=1), free(minutes_ago=2), call(minutes_ago=3), free(minutes_ago=4),
+            call(minutes_ago=5), call(minutes_ago=6), call(minutes_ago=7)]
+
+    assert alerts.classify(rows, threshold=5, now=NOW).kind == alerts.FAILING
+
+
+def test_free_model_failures_alone_are_not_an_api_problem():
+    rows = [free("FAILED", minutes_ago=i, http_status=429) for i in range(1, 10)]
+
+    assert alerts.classify(rows, threshold=5, now=NOW) is None
+
+
+def test_a_small_paid_call_getting_through_right_after_a_402_is_not_a_recovery():
+    rows = [call("SUCCESS", http_status=200, minutes_ago=1),
+            call(http_status=402, error="This request requires more credits, can only afford 900", minutes_ago=5),
+            call("SUCCESS", http_status=200, minutes_ago=6)]
+
+    assert alerts.classify(rows, threshold=5, now=NOW).kind == alerts.CREDITS
+
+
+def test_paid_calls_succeeding_well_after_the_last_402_clear_it():
+    rows = [call("SUCCESS", http_status=200, minutes_ago=1), call(http_status=402, minutes_ago=45)]
+
+    assert alerts.classify(rows, threshold=5, now=NOW) is None
+
+
+def test_recovery_needs_a_paid_call_not_a_free_one():
+    paid = alerts.paid_calls([free(minutes_ago=1), call(http_status=402, minutes_ago=2)])
+
+    assert [r["status"] for r in paid] == ["FAILED"]
+    assert alerts.is_free_call(free()) and not alerts.is_free_call(call())

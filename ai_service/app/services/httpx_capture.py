@@ -17,6 +17,7 @@ here can change or fail the request it observes, and a streamed response is time
 from __future__ import annotations
 
 import functools
+import json
 import ipaddress
 import logging
 import time
@@ -57,9 +58,33 @@ def vendor_for_host(host: Optional[str]) -> Optional[str]:
     return host if integrated_vendor(host) else None
 
 
+# Appended to the operation of a call to a free model ("…:free" on OpenRouter). Free models answer
+# even when the account has no credits, so their successes say nothing about the key's balance;
+# the API alerts leave them out. Kept short so it fits MAX_OPERATION_LENGTH.
+FREE_MODEL_MARK = " (free model)"
+MAX_MODEL_SNIFF_BYTES = 256 * 1024
+
+
+def _free_model(request: httpx.Request) -> bool:
+    """True when the JSON body asks for a free model. Never reads a streamed body."""
+    try:
+        content = request.content  # raises for a streamed body that was not read
+    except Exception:  # noqa: BLE001
+        return False
+    if not content or len(content) > MAX_MODEL_SNIFF_BYTES or b":free" not in content:
+        return False
+    try:
+        model = json.loads(content).get("model")
+    except Exception:  # noqa: BLE001
+        return False
+    return isinstance(model, str) and model.endswith(":free")
+
+
 def _operation(request: httpx.Request) -> str:
     segments = [s for s in request.url.path.split("/") if s][:2]
-    return f"{request.method} /{'/'.join(segments)}"[:MAX_OPERATION_LENGTH]
+    base = f"{request.method} /{'/'.join(segments)}"
+    mark = FREE_MODEL_MARK if _free_model(request) else ""
+    return base[: MAX_OPERATION_LENGTH - len(mark)] + mark
 
 
 def _credential_hint(request: httpx.Request) -> Optional[str]:
