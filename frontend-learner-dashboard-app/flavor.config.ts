@@ -329,4 +329,11 @@ export const flavorConfig: FlavorConfigs = {
     domain: "coachupias.com",
     subdomain: "student",
   },
+
+  // Yogyam Global Careers Android + iOS app (student.yogyam.co)
+  "co.yogyam.app": {
+    appName: "Yogyam Global Careers",
+    domain: "yogyam.co",
+    subdomain: "student",
+  },
 };
