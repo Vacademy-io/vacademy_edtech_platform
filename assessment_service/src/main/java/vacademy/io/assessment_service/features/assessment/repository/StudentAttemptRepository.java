@@ -348,6 +348,7 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
                     AND abr.batch_id IN (:batchIds)
                 )
             )
+            ORDER BY sa.created_at DESC NULLS LAST, a.created_at DESC, a.id
             """, countQuery = """
             SELECT COUNT(*)
             FROM public.assessment a
@@ -523,6 +524,7 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
                     AND abr.batch_id IN (:batchIds)
                 )
             )
+            ORDER BY sa.created_at DESC NULLS LAST, a.created_at DESC, a.id
             """, countQuery = """
             SELECT COUNT(*)
             FROM public.assessment a
