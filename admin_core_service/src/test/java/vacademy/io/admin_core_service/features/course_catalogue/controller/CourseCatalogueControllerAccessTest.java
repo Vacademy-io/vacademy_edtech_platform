@@ -96,6 +96,7 @@ class CourseCatalogueControllerAccessTest {
     private List<Executable> everyCatalogueEndpoint(CustomUserDetails user) {
         return List.of(
                 () -> controller.updateCatalogue(user, CATALOGUE, new CourseCatalogueRequest()),
+                () -> controller.deleteCatalogue(user, CATALOGUE),
                 () -> controller.getDraft(user, CATALOGUE),
                 () -> controller.saveDraft(user, CATALOGUE, new SaveDraftRequest("{}", "MANUAL", null)),
                 () -> controller.publishDraft(user, CATALOGUE, true, null, null),
@@ -129,6 +130,7 @@ class CourseCatalogueControllerAccessTest {
         // The checked draft's hash reaches the service (MCP publish).
         verify(revisionService).publish(CATALOGUE, "u-1", false, 3, "abc123");
         verify(revisionService).discardDraft(CATALOGUE);
+        verify(catalogueManager).deleteCatalogue(admin, CATALOGUE);
     }
 
     /**

@@ -74,6 +74,13 @@ public class CourseCatalogueController {
         return catalogueManager.updateCatalogue(userDetails, catalogueId, request);
     }
 
+    @DeleteMapping("/delete")
+    public ResponseEntity<Void> deleteCatalogue(@RequestAttribute("user") CustomUserDetails userDetails,
+                                                @RequestParam("catalogueId") String catalogueId) {
+        requireCatalogueAccess(userDetails, catalogueId);
+        return catalogueManager.deleteCatalogue(userDetails, catalogueId);
+    }
+
     @GetMapping("/institute/get-all")
     public ResponseEntity<List<CourseCatalogueResponse>> getAllCatalogues(@RequestAttribute("user") CustomUserDetails userDetails,
                                                                           @RequestParam("instituteId") String instituteId) {
