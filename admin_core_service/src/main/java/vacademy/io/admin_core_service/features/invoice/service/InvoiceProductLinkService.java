@@ -370,7 +370,7 @@ public class InvoiceProductLinkService {
      */
     private InvoiceProductLinkDTO recordPaymentOnMembership(String invoiceId) {
         try {
-            InvoiceProductLinkDTO link = newTx.execute(status -> {
+            InvoiceProductLinkDTO recordedLink = newTx.execute(status -> {
                 Invoice invoice = invoiceRepository.findById(invoiceId).orElse(null);
                 InvoiceProductLinkDTO link = invoice != null ? read(invoice) : null;
                 if (link == null || !InvoiceProductLinkDTO.STATUS_FULFILLED.equals(link.getStatus())
@@ -401,19 +401,19 @@ public class InvoiceProductLinkService {
                         invoice.getInvoiceNumber(), recorded, plan.getId());
                 return link;
             });
-            if (link != null && link.isRenewal()) {
+            if (recordedLink != null && recordedLink.isRenewal()) {
                 // The money is in and the renewal applied: the institute's renewal workflows run now,
                 // once (paymentRecorded guards it), as they do for a gateway renewal. A new enrolment
                 // already ran the enrolment workflow when it was enrolled.
                 try {
                     Invoice paid = invoiceRepository.findById(invoiceId).orElse(null);
-                    renewalPaymentService.emitInvoiceRenewalPaid(link.getResultUserPlanId(),
+                    renewalPaymentService.emitInvoiceRenewalPaid(recordedLink.getResultUserPlanId(),
                             paid != null ? paid.getInstituteId() : null, paid != null ? paid.getInvoiceNumber() : null);
                 } catch (Exception e) {
                     log.warn("Invoice {}: renewal workflows not triggered: {}", invoiceId, e.getMessage());
                 }
             }
-            if (link != null) {
+            if (recordedLink != null) {
                 // Same plan caches a renewal clears, so the membership shows the payment now.
                 for (String name : List.of("userPlanById", "userPlanWithPaymentLogs", "membershipDetails")) {
                     org.springframework.cache.Cache cache = cacheManager.getCache(name);
@@ -422,7 +422,7 @@ public class InvoiceProductLinkService {
                     }
                 }
             }
-            return link;
+            return recordedLink;
         } catch (Exception e) {
             log.error("Invoice {}: could not record its payment on the membership: {}", invoiceId, e.getMessage(), e);
             return null;
