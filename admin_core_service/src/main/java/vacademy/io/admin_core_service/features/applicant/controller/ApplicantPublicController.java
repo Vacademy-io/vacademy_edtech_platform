@@ -13,6 +13,7 @@ import vacademy.io.admin_core_service.features.applicant.dto.BulkApplyRowDTO;
 import vacademy.io.admin_core_service.features.applicant.dto.BulkRowResultDTO;
 import vacademy.io.admin_core_service.features.applicant.dto.ApplyRequestDTO;
 import vacademy.io.admin_core_service.features.applicant.dto.ApplyResponseDTO;
+import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
 import vacademy.io.admin_core_service.features.applicant.service.ApplicantService;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.admin_core_service.features.applicant.dto.ParentWithChildrenResponseDTO;
@@ -33,10 +34,13 @@ public class ApplicantPublicController {
     private static final Logger logger = LoggerFactory.getLogger(ApplicantPublicController.class);
 
     private final ApplicantService applicantService;
+    private final InstituteAccessValidator instituteAccessValidator;
 
     @Autowired
-    public ApplicantPublicController(ApplicantService applicantService) {
+    public ApplicantPublicController(ApplicantService applicantService,
+                                     InstituteAccessValidator instituteAccessValidator) {
         this.applicantService = applicantService;
+        this.instituteAccessValidator = instituteAccessValidator;
     }
 
     /**
@@ -155,11 +159,15 @@ public class ApplicantPublicController {
         logger.info("Request to initiate payment. Applicant: {}, Option: {}, Vendor: {}", applicantId, paymentOptionId,
                 requestDTO.getVendor());
 
-        // MANUAL (offline/cash) payments are admin-only — reject unauthenticated
-        // callers
-        if ("MANUAL".equalsIgnoreCase(requestDTO.getVendor()) && userDetails == null) {
-            logger.warn("Rejected unauthenticated attempt to record manual payment for applicant: {}", applicantId);
-            return ResponseEntity.status(403).build();
+        // MANUAL (offline/cash) payments are staff-only
+        if ("MANUAL".equalsIgnoreCase(requestDTO.getVendor())) {
+            if (userDetails == null) {
+                logger.warn("Rejected unauthenticated attempt to record manual payment for applicant: {}", applicantId);
+                return ResponseEntity.status(403).build();
+            }
+            // Recording an offline payment is for staff of the institute the applicant applied to.
+            instituteAccessValidator.requireInstituteStaffOrSuperAdmin(userDetails,
+                    applicantService.getInstituteIdForApplicant(applicantId));
         }
 
         PaymentResponseDTO response = applicantService.preparePayment(applicantId, paymentOptionId,

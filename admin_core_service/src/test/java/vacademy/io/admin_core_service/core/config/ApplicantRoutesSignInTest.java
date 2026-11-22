@@ -44,6 +44,11 @@ class ApplicantRoutesSignInTest {
             "POST, /admin-core-service/v1/invoices/test/generate/pl-1",
             "POST, /admin-core-service/v1/invoices/test/generate-multi-package/order-1",
             "POST, /admin-core-service/v1/invoices/test/generate-single/pl-1",
+            // legacy presentation mode (no client calls it)
+            "POST, /admin-core-service/live-presenter/v1/create",
+            "GET,  /admin-core-service/live-presenter/v1/session-1",
+            "GET,  /admin-core-service/live-learner/v1/session-1",
+            "POST, /admin-core-service/live-learner/v1/session-1/heartbeat",
     })
     void requiresSignIn(String method, String uri) {
         assertFalse(isOpen(method, uri), uri + " should require sign-in");
