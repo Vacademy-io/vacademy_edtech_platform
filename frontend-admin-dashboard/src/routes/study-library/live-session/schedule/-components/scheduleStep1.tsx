@@ -2497,7 +2497,7 @@ export default function ScheduleStep1() {
                     name="sessionType"
                     render={({ field }) => (
                         <MyRadioButton
-                            name="meetingType"
+                            name="sessionType"
                             value={field.value ?? ''}
                             onChange={field.onChange}
                             options={[
