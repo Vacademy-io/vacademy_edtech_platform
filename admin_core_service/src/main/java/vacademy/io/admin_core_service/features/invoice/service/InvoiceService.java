@@ -211,6 +211,15 @@ public class InvoiceService {
     @Lazy
     private PaymentService paymentService;
 
+    // Product an admin invoice pays for (renewal / new enrolment). @Lazy: it reaches the renewal
+    // and bulk-assign services, which both depend on this one.
+    @Autowired
+    @Lazy
+    private InvoiceProductLinkService invoiceProductLinkService;
+
+    @Autowired
+    private org.springframework.context.ApplicationEventPublisher applicationEventPublisher;
+
     @Autowired
     private InstitutePaymentGatewayMappingService institutePaymentGatewayMappingService;
 
@@ -581,7 +590,13 @@ public class InvoiceService {
             // marked paid, so emptiness would wrongly route it to the enrollment builder — which
             // dereferences userPlan and NPEs. Treat it as an admin invoice unless at least one
             // mapped log carries a real UserPlan.
-            boolean hasEnrollmentLog = paymentLogs.stream().anyMatch(pl -> pl.getUserPlan() != null);
+            // An admin invoice is always rebuilt from its own row, even once its payment is recorded
+            // on the membership it paid for (InvoiceProductLinkService): the plan builder would
+            // re-price it from the plan and lose the admin's custom amount and line items.
+            boolean adminBill = "ADMIN_MANUAL".equals(invoice.getSource())
+                    || INVOICE_SOURCE_LIVE_SESSION.equals(invoice.getSource());
+            boolean hasEnrollmentLog = !adminBill
+                    && paymentLogs.stream().anyMatch(pl -> pl.getUserPlan() != null);
             InvoiceData invoiceData;
             if (!hasEnrollmentLog) {
                 // Admin invoice — rebuild from the persisted row + line items + stored overrides
@@ -5288,6 +5303,11 @@ public class InvoiceService {
         Institute institute = instituteRepository.findById(request.getInstituteId())
                 .orElseThrow(() -> new VacademyException("Institute not found: " + request.getInstituteId()));
 
+        // The product this invoice pays for (renewal / new enrolment), checked before anything
+        // is numbered or written; applied once the invoice is paid (InvoiceProductLinkService).
+        InvoiceProductLinkDTO productLink = invoiceProductLinkService.resolveForCreate(
+                request.getProductLink(), request.getUserIds(), request.getInstituteId(), adminUserId);
+
         // Admin discount becomes a negative DISCOUNT line, so the subtotal, tax, total,
         // stored line items and PDF below all see the discounted figures.
         AdminInvoiceDiscount adminInvoiceDiscount = applyAdminInvoiceDiscount(request, adminUserId, true);
@@ -5417,6 +5437,9 @@ public class InvoiceService {
                 if (adminInvoiceDiscount != null) {
                     dataJson.put("admin_discount", adminInvoiceDiscount.audit());
                 }
+                if (productLink != null) {
+                    dataJson.put(InvoiceProductLinkService.JSON_KEY, InvoiceProductLinkService.toStored(productLink));
+                }
                 if (proformaMode) {
                     // Read back by finalizeProformaOnPayment: the flag says "still a proforma",
                     // the doc type says which real series to draw from once it is paid.
@@ -5483,6 +5506,12 @@ public class InvoiceService {
 
             String pdfUrl = pdfFileId != null ? mediaService.getFilePublicUrlByIdWithoutExpiry(pdfFileId) : null;
             String paymentLink = buildPaymentLink(institute, invoice.getId());
+
+            // "Apply now, collect later": the renewal / enrolment runs as soon as this commits,
+            // before the invoice is paid. The admin waits for it.
+            if (productLink != null && Boolean.TRUE.equals(productLink.getApplyNow())) {
+                publishAdminInvoicePaid(invoice, true);
+            }
 
             // Notify the learner via in-app system alert
             try {
@@ -5780,7 +5809,26 @@ public class InvoiceService {
                     invoiceId, e.getMessage());
         }
 
+        // Last, so nothing above can save a stale copy over it: the renewal / enrolment this
+        // invoice pays for runs once the payment commits. The admin waits for it.
+        publishAdminInvoicePaid(invoice, true);
+
         return mapToDTO(invoice);
+    }
+
+    /**
+     * Admin invoices only: hands the invoice to InvoiceProductLinkService, which (after this
+     * transaction commits) applies the product attached to it if that is due, and records a paid
+     * invoice's payment on the membership it paid for. Called when the invoice is paid, and when
+     * it is raised with the product set to apply now.
+     */
+    private void publishAdminInvoicePaid(Invoice invoice, boolean waitForResult) {
+        if (!"ADMIN_MANUAL".equals(invoice.getSource())
+                || InvoiceProductLinkService.read(invoice.getInvoiceDataJson()) == null) {
+            return;
+        }
+        applicationEventPublisher.publishEvent(new vacademy.io.admin_core_service.features.invoice.event
+                .AdminInvoiceProductLinkEvent(invoice.getId(), invoice.getInstituteId(), waitForResult));
     }
 
     /**
@@ -6396,6 +6444,10 @@ public class InvoiceService {
         } catch (Exception e) {
             log.error("Failed to send paid invoice email for invoice {}: {}", invoice.getId(), e.getMessage(), e);
         }
+
+        // The renewal / enrolment this invoice pays for, after commit. Not awaited: a gateway
+        // webhook must answer quickly.
+        publishAdminInvoicePaid(invoice, false);
     }
 
     /**
@@ -6681,6 +6733,11 @@ public class InvoiceService {
 
         // Same discount line create would add — computed, never persisted or redeemed.
         applyAdminInvoiceDiscount(request, null, false);
+
+        // Same product check create runs, so a product that cannot be renewed / enrolled into is
+        // reported at the review step rather than on Create. Read-only.
+        invoiceProductLinkService.resolveForCreate(
+                request.getProductLink(), request.getUserIds(), request.getInstituteId(), null);
 
         // Billed user = first id in the request (the dialog is single-user). Missing user
         // still previews with blank party fields the admin can fill via overrides.
@@ -7161,7 +7218,10 @@ public class InvoiceService {
                 PaymentLog firstPaymentLog = invoice.getPaymentLogMappings().get(0).getPaymentLog();
                 if (firstPaymentLog.getUserPlan() != null) {
                     userPlanId = firstPaymentLog.getUserPlan().getId();
+                    // An admin invoice has its own discount; its payment may sit on a plan only
+                    // because the invoice paid for that membership.
                     if (discountGrantedBy == null
+                            && !"ADMIN_MANUAL".equals(invoice.getSource())
                             && StringUtils.hasText(firstPaymentLog.getUserPlan().getDiscountGrantedByUserId())) {
                         discountGrantedBy = firstPaymentLog.getUserPlan().getDiscountGrantedByUserId();
                         var snapshot = vacademy.io.admin_core_service.features.user_subscription.dto.CouponSnapshotDTO
@@ -7202,6 +7262,7 @@ public class InvoiceService {
                 .source(invoice.getSource())
                 .sourceId(invoice.getSourceId())
                 .notes(readInvoiceDataJsonField(invoice.getInvoiceDataJson(), "notes"))
+                .productLink(InvoiceProductLinkService.read(invoice.getInvoiceDataJson()))
                 .createdAt(invoice.getCreatedAt())
                 .updatedAt(invoice.getUpdatedAt())
                 .lineItems(lineItemDTOs)

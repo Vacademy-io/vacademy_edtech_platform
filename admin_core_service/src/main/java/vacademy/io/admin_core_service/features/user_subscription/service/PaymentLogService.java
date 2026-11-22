@@ -505,6 +505,19 @@ public class PaymentLogService {
         }
     }
 
+    /**
+     * The payment settles an admin invoice. Such a payment is recorded on the membership it paid
+     * for once the invoice's renewal / enrolment is applied (InvoiceProductLinkService), so it can
+     * carry a plan; it must still take the admin-invoice branch, never the enrolment one (which
+     * would credit the ledger a second time, raise a course invoice and fire PAYMENT_SUCCESS),
+     * including when a gateway re-delivers its webhook.
+     */
+    private boolean isAdminInvoicePayment(PaymentLog paymentLog) {
+        return paymentLog.getId() != null
+                && invoicePaymentLogMappingRepository.existsByPaymentLogIdAndInvoiceSource(
+                        paymentLog.getId(), "ADMIN_MANUAL");
+    }
+
     private void handlePostPaymentLogicForSyncPayment(PaymentLog paymentLog, String instituteId) {
         if (isCommerceOrderLog(paymentLog)
                 || (paymentLog.getUserPlan() != null && commercePlans.isCommercePlan(paymentLog.getUserPlan()))) {
@@ -515,7 +528,7 @@ public class PaymentLogService {
         }
         handlePaymentSuccessEntryCleanup(paymentLog, instituteId);
 
-        if (paymentLog.getUserPlan() == null) {
+        if (paymentLog.getUserPlan() == null || isAdminInvoicePayment(paymentLog)) {
             // Admin-created invoice: mark invoice as PAID
             if (invoicePaymentLogMappingRepository.findFirstByPaymentLogId(paymentLog.getId()).isPresent()) {
                 log.info("Admin invoice payment PAID (sync path) for paymentLogId={}", paymentLog.getId());
@@ -1048,8 +1061,9 @@ public class PaymentLogService {
         // Handle payment success - mark ABANDONED_CART as DELETED
         handlePaymentSuccessEntryCleanup(paymentLog, instituteId);
 
-        // Check if this is an admin-invoice payment or donation (both have null userPlan)
-        if (paymentLog.getUserPlan() == null) {
+        // Check if this is an admin-invoice payment or donation (both have null userPlan, except an
+        // admin invoice payment already recorded on the membership it paid for)
+        if (paymentLog.getUserPlan() == null || isAdminInvoicePayment(paymentLog)) {
             if (invoicePaymentLogMappingRepository.findFirstByPaymentLogId(paymentLog.getId()).isPresent()) {
                 log.info("Admin invoice payment PAID (webhook path) for paymentLogId={}", paymentLog.getId());
                 invoiceService.markAdminInvoicePaidByPaymentLog(paymentLog.getId(), instituteId);

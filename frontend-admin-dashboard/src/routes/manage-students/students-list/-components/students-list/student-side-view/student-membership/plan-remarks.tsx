@@ -25,14 +25,17 @@ const formatWhen = (iso: string): string => {
 
 const RemarkRow = ({ remark }: { remark: PlanRemark }) => {
     const { t } = useTranslation('manageStudentsPlanDetails');
-    const isRenewal = remark.action_type === 'MANUAL_RENEWAL';
+    // INVOICE_RENEWAL: renewed because an admin invoice raised for it was paid.
+    const isRenewal = remark.action_type === 'MANUAL_RENEWAL' || remark.action_type === 'INVOICE_RENEWAL';
     const isEndDateChange = remark.action_type === 'END_DATE_CHANGE';
+    // The title carries the amounts ("Price changed: 431 → 621 INR").
+    const isPriceChange = remark.action_type === 'PRICE_CHANGE';
     const Icon = isRenewal ? ArrowsClockwise : isEndDateChange ? CalendarCheck : ChatText;
     return (
         <li className="flex gap-2 rounded-md border border-neutral-100 bg-neutral-50 p-2.5">
             <Icon className="mt-0.5 size-4 shrink-0 text-neutral-500" />
             <div className="min-w-0 flex-1 space-y-0.5">
-                {(isRenewal || isEndDateChange) && (
+                {(isRenewal || isEndDateChange || isPriceChange) && (
                     <p className="text-xs font-semibold text-neutral-800">{remark.title}</p>
                 )}
                 {remark.description && (

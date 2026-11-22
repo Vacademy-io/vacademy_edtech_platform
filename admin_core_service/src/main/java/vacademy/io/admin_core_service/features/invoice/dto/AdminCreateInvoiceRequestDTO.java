@@ -83,4 +83,10 @@ public class AdminCreateInvoiceRequestDTO {
      * who created the invoice is recorded as the one who granted it.
      */
     private vacademy.io.common.payment.dto.AdminDiscountRequestDTO adminDiscount;
+
+    /**
+     * Optional product this invoice pays for: a renewal of a membership the learner holds, or an
+     * enrolment in a new course. Applied once the invoice is paid. Single-learner invoices only.
+     */
+    private InvoiceProductLinkDTO productLink;
 }

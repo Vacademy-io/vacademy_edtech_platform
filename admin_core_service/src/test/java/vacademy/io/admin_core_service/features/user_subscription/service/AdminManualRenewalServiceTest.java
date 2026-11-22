@@ -541,4 +541,80 @@ class AdminManualRenewalServiceTest {
         verify(planRepo, never()).save(any());
         verifyNoInteractions(timeline);
     }
+
+    // ── renewal paid through an admin invoice ──
+
+    private static AdminManualRenewalService.InvoiceRenewal invoiceRenewal(double amount, Date until, boolean lockPrice) {
+        return new AdminManualRenewalService.InvoiceRenewal("up-1", INST, java.math.BigDecimal.valueOf(amount), "AUD",
+                until, lockPrice, "inv-1", "INV-0042", "admin-1", "Finance Admin");
+    }
+
+    @Test
+    @DisplayName("invoice renewal: plan and access renewed, but no payment, ledger row or invoice of its own")
+    void invoiceRenewalWritesNoMoney() {
+        ManualRenewalResultDTO result = service.renewFromInvoice(invoiceRenewal(621, null, false));
+
+        assertEquals("EXPIRED", result.getPreviousStatus());
+        assertEquals("ACTIVE", plan.getStatus());
+        long daysAhead = (plan.getEndDate().getTime() - System.currentTimeMillis()) / DAY;
+        assertTrue(daysAhead >= 364 && daysAhead <= 365, "~365 days from today, was " + daysAhead);
+        assertEquals("ACTIVE", lapsed.getStatus());
+        assertEquals(plan.getEndDate(), lapsed.getExpiryDate());
+        verify(paymentLogService, never()).createPaymentLog(any(), anyDouble(), any(), any(), any(), any(), any(), any());
+        verifyNoInteractions(ledger, invoices, offline);
+        assertNull(plan.getRegionalPrice(), "the price is only locked when asked");
+        verify(access).recordGrant(eq(LearnerAccessSourceEnum.RENEWAL), eq(INST), eq(lapsed), any(),
+                any(), eq("up-1"), any(), any(), eq("Renewal through invoice INV-0042"), eq("admin-1"), eq("Finance Admin"));
+        verify(timeline).logEvent(eq("USER_PLAN"), eq("up-1"), eq("INVOICE_RENEWAL"), eq("ADMIN"), eq("admin-1"),
+                eq("Finance Admin"), contains("INV-0042"), isNull(), any(), eq("u-1"));
+    }
+
+    @Test
+    @DisplayName("invoice renewal: an explicit end date wins; one that has passed falls back to the normal renewal")
+    void invoiceRenewalEndDate() {
+        Date chosen = new Date(System.currentTimeMillis() + 100 * DAY);
+        service.renewFromInvoice(invoiceRenewal(621, chosen, false));
+        assertEquals(chosen, plan.getEndDate());
+
+        plan.setStatus("EXPIRED");
+        plan.setEndDate(new Date(System.currentTimeMillis() - 30 * DAY));
+        service.renewFromInvoice(invoiceRenewal(621, new Date(System.currentTimeMillis() - DAY), false));
+        long daysAhead = (plan.getEndDate().getTime() - System.currentTimeMillis()) / DAY;
+        assertTrue(daysAhead >= 364 && daysAhead <= 365, "fell back to ~365 days, was " + daysAhead);
+    }
+
+    @Test
+    @DisplayName("invoice renewal with the price option: future renewals are charged the invoiced amount")
+    void invoiceRenewalLocksPrice() {
+        service.renewFromInvoice(invoiceRenewal(621, null, true));
+        assertEquals(new java.math.BigDecimal("621.00"), plan.getRegionalPrice());
+        assertEquals("AUD", plan.getRegionalCurrency());
+    }
+
+    @Test
+    @DisplayName("invoice renewal with the price option at the list price clears any lock instead")
+    void invoiceRenewalAtListPriceClearsLock() {
+        plan.setRegionalPrice(new java.math.BigDecimal("500.00"));
+        plan.setRegionalCurrency("AUD");
+        service.renewFromInvoice(invoiceRenewal(431, null, true));
+        assertNull(plan.getRegionalPrice());
+        assertNull(plan.getRegionalCurrency());
+    }
+
+    @Test
+    @DisplayName("raising the invoice: a renewable membership of the billed learner is described; others refused")
+    void describeRenewableForInvoice() {
+        assertTrue(service.describeRenewableForInvoice("up-1", INST, "u-1").startsWith("Renewal"));
+
+        assertThrows(VacademyException.class, () -> service.describeRenewableForInvoice("up-1", INST, "someone-else"));
+        assertThrows(VacademyException.class, () -> service.describeRenewableForInvoice("up-1", "other-inst", "u-1"));
+        plan.setStatus("TERMINATED");
+        assertThrows(VacademyException.class, () -> service.describeRenewableForInvoice("up-1", INST, "u-1"));
+        plan.setStatus("EXPIRED");
+        when(mappingRepo.findByUserPlanIdAndStatus("up-1", "INACTIVE")).thenReturn(List.of());
+        assertThrows(VacademyException.class, () -> service.describeRenewableForInvoice("up-1", INST, "u-1"));
+
+        verify(planRepo, never()).save(any());
+        verify(mappingRepo, never()).save(any());
+    }
 }

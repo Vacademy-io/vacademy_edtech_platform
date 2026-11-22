@@ -90,5 +90,15 @@ public interface InvoicePaymentLogMappingRepository extends JpaRepository<Invoic
     /** Payment log ids behind one invoice, without loading the logs. */
     @Query("SELECT m.paymentLog.id FROM InvoicePaymentLogMapping m WHERE m.invoice.id = :invoiceId")
     List<String> findPaymentLogIdsByInvoiceId(@Param("invoiceId") String invoiceId);
+
+    /**
+     * Whether the payment log settles an invoice of the given source (ADMIN_MANUAL for an admin
+     * invoice). An admin invoice payment can carry the membership it paid for, so the plan
+     * column alone no longer tells it apart from an enrolment payment.
+     */
+    @Query("SELECT COUNT(m) > 0 FROM InvoicePaymentLogMapping m "
+            + "WHERE m.paymentLog.id = :paymentLogId AND m.invoice.source = :source")
+    boolean existsByPaymentLogIdAndInvoiceSource(@Param("paymentLogId") String paymentLogId,
+                                                 @Param("source") String source);
 }
 

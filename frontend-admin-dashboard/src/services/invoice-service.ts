@@ -15,6 +15,7 @@ import {
     POST_MARK_INVOICE_PAID_MANUAL,
     PUT_UPDATE_INVOICE,
     POST_INVOICES_BY_PAYMENT_LOGS,
+    POST_APPLY_INVOICE_PRODUCT_LINK,
 } from '@/constants/urls';
 import type { AdminDiscountRequest } from '@/services/admin-discounts';
 
@@ -73,6 +74,55 @@ export interface InvoiceDTO {
     amount_paid?: number | null;
     /** Installment rows still owing money: the latest receipt for what was paid (view/download open it). */
     receipt_number?: string | null;
+    /** Admin invoices: the membership renewal / course enrolment this invoice pays for. */
+    product_link?: InvoiceProductLink | null;
+}
+
+export type InvoiceProductLinkType = 'RENEWAL' | 'NEW_ENROLLMENT';
+/** PENDING until paid; then IN_PROGRESS → FULFILLED, or FAILED (retryable). */
+export type InvoiceProductLinkStatus = 'PENDING' | 'IN_PROGRESS' | 'FULFILLED' | 'FAILED';
+
+/**
+ * The product an admin invoice pays for. Sent on create (the admin's choice); read back with
+ * the fulfilment state. Applied once — when the invoice is paid.
+ */
+export interface InvoiceProductLink {
+    type: InvoiceProductLinkType;
+    /** RENEWAL: the membership to renew. */
+    user_plan_id?: string | null;
+    /** NEW_ENROLLMENT: the course (package session); invite / option / plan default when omitted. */
+    package_session_id?: string | null;
+    enroll_invite_id?: string | null;
+    payment_option_id?: string | null;
+    plan_id?: string | null;
+    /** RENEWAL: access until this day (yyyy-MM-dd); omitted = the plan's normal renewal. */
+    new_end_date?: string | null;
+    /** Charge this invoice's total on the membership's future renewals too. */
+    apply_as_member_price?: boolean | null;
+    /** NEW_ENROLLMENT: send the institute's enrolment email. */
+    notify_learner?: boolean | null;
+    /** Renew / enrol as soon as the invoice is raised ("apply now, collect later"). */
+    apply_now?: boolean | null;
+    // Read back only
+    status?: InvoiceProductLinkStatus | null;
+    label?: string | null;
+    error?: string | null;
+    fulfilled_at?: string | null;
+    result_user_plan_id?: string | null;
+    result_end_date?: string | null;
+    locked_price?: number | null;
+    /** The paid invoice's payment is recorded on the membership. */
+    payment_recorded?: boolean | null;
+}
+
+/** Re-applies the renewal / enrolment of a paid invoice after it failed; returns the refreshed invoice. */
+export async function applyInvoiceProductLink(invoiceId: string, instituteId: string): Promise<InvoiceDTO> {
+    const response = await authenticatedAxiosInstance.post<InvoiceDTO>(
+        POST_APPLY_INVOICE_PRODUCT_LINK(invoiceId),
+        {},
+        { params: { instituteId } }
+    );
+    return response.data;
 }
 
 export interface UserAccountLedgerEntryDTO {
@@ -403,6 +453,8 @@ export interface AdminCreateInvoiceRequest {
      * accepts institute-wide coupons only. apply_for_cycles is not used here.
      */
     admin_discount?: AdminDiscountRequest;
+    /** Product this invoice pays for — renewed / enrolled once it is paid. Single learner only. */
+    product_link?: InvoiceProductLink;
 }
 
 /** One editable/derived dynamic value discovered in the institute's invoice template. */
