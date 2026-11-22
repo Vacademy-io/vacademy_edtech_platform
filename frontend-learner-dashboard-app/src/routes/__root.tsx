@@ -137,6 +137,8 @@ const isAuthenticated = hasLearnerSession;
 
 // The ?lc= login code this page load has already exchanged (see beforeLoad).
 let exchangedLoginCode: string | null = null;
+// The ?sso_code= single sign-on code this page load has already exchanged.
+let exchangedSsoCode: string | null = null;
 
 // Helper function to check if a route is public
 const isPublicRoute = (pathname: string): boolean => {
@@ -1069,6 +1071,79 @@ export const Route = createRootRouteWithContext<{
         console.warn("[__root] Login code was not accepted:", error);
       }
       window.history.replaceState(window.history.state, "", cleanPath);
+    }
+
+    // Single sign-on through the institute's own provider: the backend sends the
+    // learner back with a one-time ?sso_code= (60 seconds, single use). Swap it for
+    // tokens, then reload the same URL without it. A failed swap drops the code and
+    // shows the login page's "sign-in link expired" note.
+    const ssoCode = urlParams.get("sso_code");
+    if (
+      ssoCode &&
+      ssoCode !== exchangedSsoCode &&
+      typeof window !== "undefined" &&
+      !(urlAccessToken && urlRefreshToken)
+    ) {
+      // Once per page: the redirect below re-runs this beforeLoad before
+      // location.replace lands, and the code works only once.
+      exchangedSsoCode = ssoCode;
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete("sso_code");
+      const cleanPath = `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`;
+      try {
+        const { default: axios } = await import("axios");
+        const { SSO_EXCHANGE_URL, readSsoVerifier, clearSsoVerifier } =
+          await import("@/lib/auth/enterprise-sso");
+        const verifier = readSsoVerifier();
+        clearSsoVerifier();
+        const response = await axios.post(SSO_EXCHANGE_URL, {
+          code: ssoCode,
+          client_verifier: verifier,
+        });
+        const accessToken: string | undefined = response.data?.accessToken;
+        const refreshToken: string | undefined = response.data?.refreshToken;
+        const ssoInstituteId: string | undefined = response.data?.instituteId;
+        if (accessToken && refreshToken) {
+          const { performFullAuthCycle } =
+            await import("@/services/auth-cycle-service");
+          const { getTokenDecodedData } =
+            await import("@/lib/auth/sessionUtility");
+          const { pickLoginInstituteId } =
+            await import("@/lib/auth/pick-login-institute");
+          const decoded = getTokenDecodedData(accessToken);
+          // The institute whose provider signed them in, else the usual pick.
+          const instituteId =
+            ssoInstituteId ||
+            (await pickLoginInstituteId(
+              decoded?.authorities,
+              decoded?.user,
+              urlParams.get("instituteId"),
+            )) ||
+            (decoded?.authorities && Object.keys(decoded.authorities)[0]);
+          if (instituteId) {
+            await performFullAuthCycle({ accessToken, refreshToken }, instituteId);
+            await Preferences.set({
+              key: "selectedInstituteId",
+              value: instituteId,
+            });
+            const target =
+              cleanUrl.pathname === "/" || cleanUrl.pathname.startsWith("/login")
+                ? await resolvePostLoginRoute({ explicitRedirect: null })
+                : cleanPath;
+            const internalTarget = /^https?:\/\//.test(target) ? "/dashboard" : target;
+            console.log("[__root] Single sign-on complete, going to:", internalTarget);
+            window.location.replace(`${window.location.origin}${internalTarget}`);
+            throw redirect({ to: internalTarget.split("?")[0] as never });
+          }
+        }
+      } catch (error) {
+        if (error instanceof Response) throw error;
+        console.warn("[__root] Single sign-on code was not accepted:", error);
+      }
+      const failed = new URL(`${window.location.origin}/login`);
+      failed.searchParams.set("sso_error", "expired");
+      window.location.replace(failed.toString());
+      throw redirect({ to: "/login" as never });
     }
 
     // Reader-mode guard: on native iOS (always) or a reader-mode institute,
