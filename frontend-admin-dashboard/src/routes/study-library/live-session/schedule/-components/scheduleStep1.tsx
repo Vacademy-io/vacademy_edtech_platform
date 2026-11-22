@@ -1091,6 +1091,16 @@ export default function ScheduleStep1() {
         return [];
     }, [isMeetPlatform, isZoomPlatform, sessionTypeWatch]);
 
+    // A platform can rule out the current streaming choice (Google Meet, or a live Zoom class, can't
+    // be embedded). The radio then kept "Embed in app" selected but greyed out, and that value was
+    // saved, so a pasted Zoom link was later opened in an iframe Zoom refuses to load.
+    useEffect(() => {
+        const current = form.getValues('streamingType');
+        if (current && (disabledStreamingOptions as string[]).includes(current)) {
+            form.setValue('streamingType', SessionPlatform.REDIRECT_TO_OTHER_PLATFORM);
+        }
+    }, [disabledStreamingOptions, form]);
+
     // Map detectedPlatform string to enum value for comparison
     const detectedEnumPlatform = useMemo(() => {
         switch (detectedPlatform) {
