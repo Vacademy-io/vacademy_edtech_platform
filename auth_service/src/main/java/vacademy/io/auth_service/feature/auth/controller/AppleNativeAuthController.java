@@ -14,6 +14,8 @@ import vacademy.io.auth_service.feature.auth.dto.AppleNativeLoginRequestDto;
 import vacademy.io.auth_service.feature.auth.dto.JwtResponseDto;
 import vacademy.io.auth_service.feature.auth.manager.LearnerOAuth2Manager;
 import vacademy.io.auth_service.feature.auth.service.AppleIdentityTokenVerifier;
+import vacademy.io.common.auth.entity.OAuth2VendorToUserDetail;
+import vacademy.io.common.auth.repository.OAuth2VendorToUserDetailRepository;
 import vacademy.io.common.auth.service.OAuth2VendorToUserDetailService;
 import vacademy.io.common.exceptions.VacademyException;
 
@@ -47,6 +49,9 @@ public class AppleNativeAuthController {
     @Autowired
     private OAuth2VendorToUserDetailService oAuth2VendorToUserDetailService;
 
+    @Autowired
+    private OAuth2VendorToUserDetailRepository oAuth2VendorToUserDetailRepository;
+
     @PostMapping("/native")
     public JwtResponseDto appleNativeLogin(@RequestBody AppleNativeLoginRequestDto request) throws Exception {
         if (request == null || !StringUtils.hasText(request.getIdentityToken())) {
@@ -77,27 +82,39 @@ public class AppleNativeAuthController {
             }
         }
 
-        // Email: prefer the verified id_token claim, then the first-sign-in body
-        // field (Apple only returns the convenience fields once).
+        // Email: only the verified id_token claim is trusted. When the token
+        // carries no email, the sign-in is accepted only if this Apple subject
+        // is already linked to an email from an earlier sign-in.
         String tokenEmail = jwt.getClaimAsString("email");
-        String email = StringUtils.hasText(tokenEmail) ? tokenEmail : request.getEmail();
         Object isPrivateRelay = jwt.getClaims().get("is_private_email");
+        String email;
 
-        // ── Account-linking policy (keyed on the stable Apple subject) ──
-        // The Apple `sub` is the canonical identity for this user, independent of
-        // whether they share a real email or a stable "Hide My Email" relay
-        // address. We recover any email previously recorded for this sub so that:
-        //   • a returning user (incl. relay users) always lands on the SAME account;
-        //   • a first-time real (shared) email links to any existing account with
-        //     that address (cross-provider linking with a prior Google/email signup);
-        //   • a first-time relay address has no prior match, so a new account is
-        //     created and bound to this sub for next time.
-        // This call also upserts the (apple, sub, email) mapping — mirrors the
-        // GitHub private-email recovery in CustomOAuth2SuccessHandler.
-        String recoveredEmail = oAuth2VendorToUserDetailService
-                .getEmailByProviderIdAndSubject(VENDOR_APPLE, sub, email);
-        if (StringUtils.hasText(recoveredEmail)) {
-            email = recoveredEmail;
+        if (StringUtils.hasText(tokenEmail)) {
+            email = tokenEmail;
+            // ── Account-linking policy (keyed on the stable Apple subject) ──
+            // The Apple `sub` is the canonical identity for this user, independent of
+            // whether they share a real email or a stable "Hide My Email" relay
+            // address. We recover any email previously recorded for this sub so that:
+            //   • a returning user (incl. relay users) always lands on the SAME account;
+            //   • a first-time real (shared) email links to any existing account with
+            //     that address (cross-provider linking with a prior Google/email signup);
+            //   • a first-time relay address has no prior match, so a new account is
+            //     created and bound to this sub for next time.
+            // This call also upserts the (apple, sub, email) mapping — mirrors the
+            // GitHub private-email recovery in CustomOAuth2SuccessHandler.
+            String recoveredEmail = oAuth2VendorToUserDetailService
+                    .getEmailByProviderIdAndSubject(VENDOR_APPLE, sub, tokenEmail);
+            if (StringUtils.hasText(recoveredEmail)) {
+                email = recoveredEmail;
+            }
+        } else {
+            email = oAuth2VendorToUserDetailRepository.findByProviderIdAndSubject(VENDOR_APPLE, sub)
+                    .map(OAuth2VendorToUserDetail::getEmailId)
+                    .filter(StringUtils::hasText)
+                    .orElse(null);
+            if (email == null) {
+                throw new VacademyException(HttpStatus.UNAUTHORIZED, "Invalid Apple identity token");
+            }
         }
 
         if (!StringUtils.hasText(email)) {
