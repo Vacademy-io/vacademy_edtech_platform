@@ -1000,7 +1000,11 @@ export default function ScheduleStep1() {
 
     const detectedPlatform = useMemo(() => {
         const link = (defaultLinkWatch || '').trim();
-        const youtubeRegex = /^(https?:\/\/(www\.)?youtube\.com\/(watch\?v=|@.+\/live))/i;
+        // watch?v=, /live/<id>, /embed/, /shorts/, @channel/live and youtu.be share links (the
+        // learner player embeds all of them). A narrower match fell through to 'other' and flipped a
+        // pasted YouTube link to "redirect".
+        const youtubeRegex =
+            /^https?:\/\/((www|m)\.)?(youtube\.com\/(watch\?|live\/|embed\/|shorts\/|@[^/]+\/live)|youtu\.be\/)/i;
         const meetRegex = /^(https?:\/\/meet\.google\.com\/(new|[a-zA-Z0-9-]+))/i;
         const zoomRegex = /^(https?:\/\/([\w.-]+\.)?zoom\.us\/)/i;
         if (youtubeRegex.test(link)) return 'youtube';
