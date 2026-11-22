@@ -357,6 +357,12 @@ public class SubOrgLearnerService {
         }
         Institute subOrg = validateSubOrg(request.getSubOrgId());
         validateInstitute(request.getInstituteId());
+
+        // Seat limit first, before any account is created: a refused add must not leave
+        // a login account behind for someone who never joined.
+        for (String psId : psIds) {
+            validateMemberCountLimit(request.getSubOrgId(), request.getInstituteId(), psId, admin);
+        }
         // How the offline payment was made: validated now, before the learner is created,
         // so a bad mode fails the request instead of leaving an enrollment without its payment.
         OfflinePaymentDetailsService.Resolved offlinePaidVia = "OFFLINE".equalsIgnoreCase(request.getPaymentMode())
@@ -371,10 +377,7 @@ public class SubOrgLearnerService {
         // 4. Ensure student record exists
         ensureStudentExists(user);
 
-        // 5. Validate member count limit + dedupe enrollment per PS
-        for (String psId : psIds) {
-            validateMemberCountLimit(request.getSubOrgId(), request.getInstituteId(), psId, admin);
-        }
+        // 5. Dedupe enrollment per PS (seat limit was checked before the user was created)
         for (String psId : psIds) {
             // Re-use existing helper by temporarily setting the field — single-PS dedupe.
             String saved = request.getPackageSessionId();
