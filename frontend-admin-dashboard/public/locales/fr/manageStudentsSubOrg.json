@@ -36,5 +36,25 @@
         "heading": "Administrateurs {{term}}",
         "emptyTitle": "Aucun administrateur trouvé",
         "emptyHint": "Aucun administrateur n'est lié à ce {{term}}."
+    },
+    "seats": {
+        "heading": "Limite de places",
+        "used": "places utilisées",
+        "left_one": "{{count}} place restante",
+        "left_other": "{{count}} places restantes",
+        "full": "Limite atteinte",
+        "noLimit": "Aucune limite",
+        "increase": "Augmenter la limite",
+        "newLimitLabel": "Nouvelle limite de places",
+        "save": "Enregistrer",
+        "saving": "Enregistrement…",
+        "cancel": "Annuler",
+        "appliesToEachBatch": "S'applique à chaque lot de : {{term}}.",
+        "toast": {
+            "invalid": "Saisissez un nombre entier supérieur à 0",
+            "mustIncrease": "La nouvelle limite doit dépasser la limite actuelle ({{current}})",
+            "updated": "Limite de places fixée à {{count}}",
+            "failed": "Impossible de mettre à jour la limite de places"
+        }
     }
 }

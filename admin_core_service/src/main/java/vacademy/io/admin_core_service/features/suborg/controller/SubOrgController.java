@@ -398,10 +398,12 @@ public class SubOrgController {
     public ResponseEntity<SeatUsageDTO> getSeatUsage(
             @RequestParam String subOrgId,
             @RequestParam String packageSessionId,
+            @RequestParam(required = false) String parentInstituteId,
             @RequestAttribute(value = "user", required = false) CustomUserDetails user) {
+        // Guard resolves the parent from the sub-org linkage, never from the caller param.
         subOrgAccessScopeService.assertCanAccessSubOrg(user, subOrgId, null);
         return ResponseEntity.ok(
-                subOrgSubscriptionService.getSeatUsage(subOrgId, packageSessionId));
+                subOrgSubscriptionService.getSeatUsage(subOrgId, parentInstituteId, packageSessionId));
     }
 
     /**

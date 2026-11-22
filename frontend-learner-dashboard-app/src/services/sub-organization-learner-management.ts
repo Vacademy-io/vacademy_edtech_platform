@@ -222,7 +222,8 @@ export const addMember = async (memberData: AddMemberRequest): Promise<AddMember
     return response.data;
   } catch (error) {
     console.error('Error adding member:', error);
-    toast.error('Failed to add learner');
+    // No toast here: callers show the server's reason (e.g. the seat-limit message
+    // with the institute support email), which a generic toast would bury.
     throw error;
   }
 };
