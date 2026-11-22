@@ -30,14 +30,32 @@ public class CommunityApplicationSecurityConfig {
             // admin_core_service's institute-facing app-status endpoint reads through this.
             "/community-service/internal/**" };
 
-    private static final String[] ALLOWED_PATHS = { "/community-service/engage/learner/**",
+    /**
+     * Signed-in only, matched BEFORE ALLOWED_PATHS so they win over the broad wildcards there.
+     * Presentation editing, the deck list and session history are admin-dashboard / classroom
+     * panel calls that always carry a token; get-presentation stays open for the public viewer.
+     * The content-structure writes have no client.
+     */
+    static final String[] SIGNED_IN_PATHS = {
+            "/community-service/presentation/add-presentation",
+            "/community-service/presentation/edit-presentation",
+            "/community-service/presentation/get-all-presentation",
+            "/community-service/presentation/add-slide/**",
+            "/community-service/engage/admin/presentation/*/sessions",
+            "/community-service/subject/add-chapters",
+            "/community-service/subject/add-chapters-with-topics",
+            "/community-service/chapter/add-topics" };
+
+    static final String[] ALLOWED_PATHS = { "/community-service/engage/learner/**",
             "/community-service/engage/**", "/community-service/subject/**", "/community-service/chapter/**",
             "/community-service/actuator/**", "/community-service/swagger-ui.html",
             "/community-service/presentation/**", "/community-service/v1/report/alert/**",
             "/community-service/v3/api-docs/**", "/community-service/swagger-ui/**",
             "/community-service/webjars/swagger-ui/**", "/community-service/api-docs/**",
-            // Diagnostics endpoints - open for health dashboard
-            "/community-service/diagnostics/**",
+            // Diagnostics summary - open for the health dashboard. The detailed views under
+            // /diagnostics/** need a signed-in platform super admin.
+            "/community-service/diagnostics/health",
+            "/community-service/diagnostics/health/quick",
             // Public status-page incidents - open for health dashboard
             "/community-service/public/v1/status/**",
             // Public onboarding form (intake + demo handoff) - open for the onboarding pages
@@ -83,6 +101,9 @@ public class CommunityApplicationSecurityConfig {
                 .authorizeHttpRequests(authz -> {
                     // Use AntPathRequestMatcher for Ant-style pattern matching (compatible with
                     // Spring 6)
+                    for (String path : SIGNED_IN_PATHS) {
+                        authz.requestMatchers(AntPathRequestMatcher.antMatcher(path)).authenticated();
+                    }
                     for (String path : ALLOWED_PATHS) {
                         authz.requestMatchers(AntPathRequestMatcher.antMatcher(path)).permitAll();
                     }
