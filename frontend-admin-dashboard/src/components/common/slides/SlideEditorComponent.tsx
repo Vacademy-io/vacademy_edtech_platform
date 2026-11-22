@@ -63,7 +63,7 @@ import { AssemblyAI } from 'assemblyai';
 import { ASSEMBLYAI_API_KEY } from '@/config/assemblyai';
 import { TranscriptModal } from './components/TranscriptModal';
 import { createNewSlide } from './utils/util';
-import { AiGeneratingLoader, aiSteps, pptSteps } from './AiGeneratingLoader';
+import { AiGeneratingLoader, aiSteps, pptSteps, finishSessionSteps } from './AiGeneratingLoader';
 import { SlideRegenerateModal } from './components/SlideRegenerateModal';
 import { RecommendationOverlay, RecommendationToast } from './components/RecommendationUI';
 import { PRODUCT_NAME } from '@/config/branding';
@@ -1949,7 +1949,7 @@ const SlidesEditorComponent = ({
                             <AiGeneratingLoader
                                 title="Finalizing Session..."
                                 description="Generating full session transcript. This may take up to a minute, please don't close this window."
-                                steps={[{ text: 'Ending session on server...' }, { text: 'Transcribing audio...' }, { text: 'Sending summary...' }]}
+                                steps={finishSessionSteps}
                             />
                         ) : (
                             <>
