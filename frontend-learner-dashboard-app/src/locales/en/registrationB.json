@@ -331,6 +331,15 @@
         "addedFailedCount_one": "Failed to add {{count}} staff member. Check the results below.",
         "addedFailedCount_other": "Failed to add {{count}} staff members. Check the results below."
       }
+    },
+    "seats": {
+      "usedOfTotal": "{{used}} / {{total}} seats used",
+      "usedNoLimit": "{{used}} seats used · no limit",
+      "left_one": "{{count}} seat left",
+      "left_other": "{{count}} seats left",
+      "full": "Seat limit reached",
+      "askSupportEmail": "You've used all your seats. To add more, please ask support at {{email}} to increase your seat limit.",
+      "askSupport": "You've used all your seats. To add more, please ask the institute support team to increase your seat limit."
     }
   }
 }

@@ -35,5 +35,25 @@
         "heading": "{{term}} एडमिन",
         "emptyTitle": "कोई एडमिन नहीं मिला",
         "emptyHint": "इस {{term}} से कोई प्रशासक संबद्ध नहीं है।"
+    },
+    "seats": {
+        "heading": "सीट सीमा",
+        "used": "सीटें उपयोग में",
+        "left_one": "{{count}} सीट शेष",
+        "left_other": "{{count}} सीटें शेष",
+        "full": "सीमा पूरी",
+        "noLimit": "कोई सीमा नहीं",
+        "increase": "सीमा बढ़ाएँ",
+        "newLimitLabel": "नई सीट सीमा",
+        "save": "सहेजें",
+        "saving": "सहेजा जा रहा है…",
+        "cancel": "रद्द करें",
+        "appliesToEachBatch": "इस {{term}} के हर बैच पर लागू होती है।",
+        "toast": {
+            "invalid": "0 से बड़ी पूर्ण संख्या दर्ज करें",
+            "mustIncrease": "नई सीमा वर्तमान {{current}} से अधिक होनी चाहिए",
+            "updated": "सीट सीमा {{count}} कर दी गई",
+            "failed": "सीट सीमा अपडेट नहीं हो सकी"
+        }
     }
 }

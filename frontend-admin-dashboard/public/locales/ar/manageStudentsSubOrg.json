@@ -39,5 +39,25 @@
         "heading": "مسؤولو {{term}}",
         "emptyTitle": "لم يتم العثور على مسؤولين",
         "emptyHint": "لا يوجد مسؤولون مرتبطون بهذا {{term}}."
+    },
+    "seats": {
+        "heading": "حد المقاعد",
+        "used": "مقاعد مستخدمة",
+        "left_one": "تبقى {{count}} مقعد",
+        "left_other": "تبقى {{count}} مقاعد",
+        "full": "تم بلوغ الحد",
+        "noLimit": "بلا حد",
+        "increase": "زيادة الحد",
+        "newLimitLabel": "حد المقاعد الجديد",
+        "save": "حفظ",
+        "saving": "جارٍ الحفظ…",
+        "cancel": "إلغاء",
+        "appliesToEachBatch": "ينطبق على كل دفعة في {{term}}.",
+        "toast": {
+            "invalid": "أدخل عددًا صحيحًا أكبر من 0",
+            "mustIncrease": "يجب أن يكون الحد الجديد أكبر من الحد الحالي {{current}}",
+            "updated": "تم تعيين حد المقاعد إلى {{count}}",
+            "failed": "تعذر تحديث حد المقاعد"
+        }
     }
 }

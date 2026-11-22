@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { AdminMappings, StudentMapping, getMembers, addMember, terminateMembers, AddMemberRequest, getInstituteCustomFields, InstituteCustomField } from '@/services/sub-organization-learner-management';
+import { AdminMappings, StudentMapping, getMembers, addMember, terminateMembers, AddMemberRequest, getInstituteCustomFields, InstituteCustomField, getSeatUsage, SeatUsageResponse } from '@/services/sub-organization-learner-management';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -10,7 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash, Users, ArrowsClockwise, SpinnerGap, UploadSimple } from '@phosphor-icons/react';
+import { Plus, Trash, Users, ArrowsClockwise, SpinnerGap, UploadSimple, Armchair, WarningCircle } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/bootstrap.css";
@@ -55,6 +55,7 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
   const [terminateMode, setTerminateMode] = useState<'SOFT' | 'HARD'>('HARD');
   const [terminateAccessTillDate, setTerminateAccessTillDate] = useState<string>('');
   const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
+  const [seatUsage, setSeatUsage] = useState<SeatUsageResponse | null>(null);
 
   // Form states for add member
   const [formData, setFormData] = useState<any>({
@@ -146,8 +147,28 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
     }
   }, [selectedPackageSession]);
 
+  // Seat limit of the selected batch: same numbers add-member enforces. Failing to read
+  // it just hides the badge; the backend still refuses adds past the limit.
+  const loadSeatUsage = async () => {
+    const selectedMapping = adminMappings.find(m => m.package_session_id === selectedPackageSession);
+    if (!selectedMapping) {
+      setSeatUsage(null);
+      return;
+    }
+    try {
+      setSeatUsage(
+        await getSeatUsage(selectedPackageSession, selectedMapping.sub_org_id, selectedMapping.institute_id)
+      );
+    } catch (error) {
+      console.error('Error loading seat usage:', error);
+      setSeatUsage(null);
+    }
+  };
+
   const loadMembers = async () => {
     if (!selectedPackageSession) return;
+
+    loadSeatUsage();
 
     setIsLoading(true);
     try {
@@ -294,6 +315,7 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
       // Extract error message from API response
       const errorMessage = error?.response?.data?.ex || error?.response?.data?.message || t('subOrgLearners.addStaff.toast.addFailed');
       toast.error(errorMessage);
+      loadSeatUsage(); // a seat-limit refusal means the badge may be stale
     } finally {
       setIsAdding(false);
     }
@@ -519,6 +541,11 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
     (adminMappings.find(m => m.package_session_id === selectedPackageSession) || adminMappings[0])?.sub_org_details?.institute_name ||
     t('subOrgLearners.page.defaultOrgName');
 
+  const seatLimit = seatUsage?.total_seats ?? null;
+  const seatsUsed = seatUsage?.used_seats ?? 0;
+  const seatsFull = seatLimit !== null && seatsUsed >= seatLimit;
+  const seatsLeft = seatLimit !== null ? Math.max(0, seatLimit - seatsUsed) : null;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -534,13 +561,13 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
             <ArrowsClockwise className="w-4 h-4 me-2" />
             {t('subOrgLearners.page.refreshButton')}
           </Button>
-          <Button variant="outline" onClick={() => setIsBulkUploadOpen(true)}>
+          <Button variant="outline" onClick={() => setIsBulkUploadOpen(true)} disabled={seatsFull}>
             <UploadSimple className="w-4 h-4 me-2" />
             {t('subOrgLearners.page.bulkUploadButton')}
           </Button>
           <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button disabled={seatsFull}>
                 <Plus className="w-4 h-4 me-2" />
                 {t('subOrgLearners.addStaff.addButton')}
               </Button>
@@ -672,6 +699,39 @@ export function SubOrgLearnersComponent({ adminMappings, instituteDetails }: Sub
                 <p className="text-sm text-gray-600 mt-1">
                   {getPackageSessionName(selectedPackageSession)}
                 </p>
+              )}
+              {seatUsage && (
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${
+                      seatsFull
+                        ? 'bg-red-50 text-red-700 ring-red-200'
+                        : 'bg-gray-50 text-gray-700 ring-gray-200'
+                    }`}
+                  >
+                    <Armchair className="h-3.5 w-3.5" />
+                    {seatLimit !== null
+                      ? t('subOrgLearners.seats.usedOfTotal', { used: seatsUsed, total: seatLimit })
+                      : t('subOrgLearners.seats.usedNoLimit', { used: seatsUsed })}
+                  </span>
+                  {seatLimit !== null && (
+                    <span className={`text-xs ${seatsFull ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+                      {seatsFull
+                        ? t('subOrgLearners.seats.full')
+                        : t('subOrgLearners.seats.left', { count: seatsLeft ?? 0 })}
+                    </span>
+                  )}
+                </div>
+              )}
+              {seatsFull && (
+                <div className="mt-2 flex items-start gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  <WarningCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>
+                    {seatUsage?.support_email
+                      ? t('subOrgLearners.seats.askSupportEmail', { email: seatUsage.support_email })
+                      : t('subOrgLearners.seats.askSupport')}
+                  </span>
+                </div>
               )}
               {selectedMembers.length > 0 && (
                 <p className="text-sm text-gray-600 mt-1">

@@ -89,7 +89,6 @@ public class SubOrgLearnerService {
     private final vacademy.io.admin_core_service.features.suborg.service.SubOrgExitService subOrgExitService;
     private final UserPlanRepository userPlanRepository;
     private final EnrollInviteRepository enrollInviteRepository;
-    private final vacademy.io.admin_core_service.features.suborg.service.SubOrgSeatCapResolver seatCapResolver;
     private final StudentSubOrgRepository studentSubOrgRepository;
     private final PackageSessionEnrollInviteToPaymentOptionService packageSessionEnrollInviteToPaymentOptionService;
     private final FacultyService facultyService;
@@ -358,6 +357,12 @@ public class SubOrgLearnerService {
         }
         Institute subOrg = validateSubOrg(request.getSubOrgId());
         validateInstitute(request.getInstituteId());
+
+        // Seat limit first, before any account is created: a refused add must not leave
+        // a login account behind for someone who never joined.
+        for (String psId : psIds) {
+            validateMemberCountLimit(request.getSubOrgId(), request.getInstituteId(), psId, admin);
+        }
         // How the offline payment was made: validated now, before the learner is created,
         // so a bad mode fails the request instead of leaving an enrollment without its payment.
         OfflinePaymentDetailsService.Resolved offlinePaidVia = "OFFLINE".equalsIgnoreCase(request.getPaymentMode())
@@ -372,10 +377,7 @@ public class SubOrgLearnerService {
         // 4. Ensure student record exists
         ensureStudentExists(user);
 
-        // 5. Validate member count limit + dedupe enrollment per PS
-        for (String psId : psIds) {
-            validateMemberCountLimit(request.getSubOrgId(), request.getInstituteId(), psId);
-        }
+        // 5. Dedupe enrollment per PS (seat limit was checked before the user was created)
         for (String psId : psIds) {
             // Re-use existing helper by temporarily setting the field — single-PS dedupe.
             String saved = request.getPackageSessionId();
@@ -1253,60 +1255,63 @@ public class SubOrgLearnerService {
 
     }
 
-    private void validateMemberCountLimit(String subOrgId, String instituteId, String packageSessionId) {
-        String userPlanId = findRootAdminPlanId(subOrgId, packageSessionId);
-        if (userPlanId == null) {
-            log.warn("ROOT_ADMIN mapping has no user_plan_id for batch {} - skipping validation",
-                    packageSessionId);
+    /**
+     * Refuses one more member once the batch is at its seat limit. The numbers come from
+     * {@link vacademy.io.admin_core_service.features.suborg.service.SubOrgSubscriptionService#getSeatUsage},
+     * the same seat usage the admin dashboard shows, so the two never disagree.
+     *
+     * <p>A sub-org admin (learner portal) is told to ask the institute support email for more
+     * seats; institute staff are told where they can raise the limit themselves.
+     */
+    private void validateMemberCountLimit(String subOrgId, String instituteId, String packageSessionId,
+                                          CustomUserDetails caller) {
+        vacademy.io.admin_core_service.features.suborg.dto.SeatUsageDTO usage =
+                subOrgSubscriptionService.getSeatUsage(subOrgId, instituteId, packageSessionId);
+        Integer limit = usage.getTotalSeats();
+        if (limit == null) {
+            log.info("No seat limit for sub-org {} batch {} - allowing enrollment", subOrgId, packageSessionId);
+            return;
+        }
+        long used = usage.getUsedSeats();
+        log.info("Batch seats - used: {}, limit: {}, sub-org: {}, batch: {}", used, limit, subOrgId, packageSessionId);
+        if (used < limit) {
             return;
         }
 
-        log.info("Found ROOT_ADMIN mapping with user_plan_id: {} for batch {}", userPlanId, packageSessionId);
-
-        // Step 2: Get UserPlan by ID
-        Optional<UserPlan> userPlanOpt = userPlanRepository.findById(userPlanId);
-
-        if (userPlanOpt.isEmpty()) {
-            log.warn("UserPlan not found for id: {} - skipping validation", userPlanId);
-            return;
+        boolean callerIsSubOrgAdmin = caller != null
+                && isActiveAdminOfSubOrg(caller.getUserId(), subOrgId, instituteId);
+        String seats = String.format("Seat limit reached: %d of %d seats are already in use.", used, limit);
+        if (callerIsSubOrgAdmin) {
+            String supportEmail = instituteSupportEmail(instituteId);
+            throw new VacademyException(seats + (supportEmail != null
+                    ? " To add more learners, please ask support at " + supportEmail + " to increase your seat limit."
+                    : " To add more learners, please ask the institute support team to increase your seat limit."));
         }
+        throw new VacademyException(seats
+                + " Increase the seat limit from the learner's Sub-Org tab (or Edit Sub-Org), then try again.");
+    }
 
-        UserPlan userPlan = userPlanOpt.get();
-        PaymentPlan paymentPlan = userPlan.getPaymentPlan();
+    /**
+     * Seat usage of one batch for the learner portal team page: the same numbers add-member
+     * enforces, plus the parent institute email so a full sub-org knows whom to ask.
+     */
+    @Transactional(readOnly = true)
+    public vacademy.io.admin_core_service.features.suborg.dto.SeatUsageDTO getSeatUsageForPortal(
+            String subOrgId, String instituteId, String packageSessionId) {
+        vacademy.io.admin_core_service.features.suborg.dto.SeatUsageDTO usage =
+                subOrgSubscriptionService.getSeatUsage(subOrgId, instituteId, packageSessionId);
+        usage.setSupportEmail(instituteSupportEmail(instituteId));
+        return usage;
+    }
 
-        if (paymentPlan == null) {
-            log.warn("No PaymentPlan found for UserPlan: {} - skipping validation", userPlan.getId());
-            return;
+    private String instituteSupportEmail(String instituteId) {
+        if (!StringUtils.hasText(instituteId)) {
+            return null;
         }
-
-        Integer memberCountLimit = seatCapResolver.resolve(subOrgId, instituteId, paymentPlan);
-
-        if (memberCountLimit == null) {
-            log.info("No member_count limit set for payment_plan: {} - allowing unlimited enrollment",
-                    paymentPlan.getId());
-            return;
-        }
-
-        // Step 3: Count current ACTIVE members in this batch
-        long currentMemberCount = mappingRepository.countBySubOrgIdAndPackageSessionIdAndStatus(
-                subOrgId,
-                packageSessionId,
-                LearnerSessionStatusEnum.ACTIVE.name());
-
-        log.info("Batch quota - Current: {}, Limit: {}, UserPlan: {}",
-                currentMemberCount, memberCountLimit, userPlanId);
-
-        // Step 4: Validate limit not exceeded
-        if (currentMemberCount >= memberCountLimit) {
-            throw new VacademyException(
-                    String.format("Member limit exceeded for this batch. " +
-                            "Current members: %d, Maximum allowed: %d. " +
-                            "Please contact ROOT_ADMIN to upgrade the plan.",
-                            currentMemberCount, memberCountLimit));
-        }
-
-        log.info("Validation passed. {} seats remaining for this batch.",
-                (memberCountLimit - currentMemberCount - 1));
+        return instituteRepository.findById(instituteId)
+                .map(Institute::getEmail)
+                .filter(StringUtils::hasText)
+                .orElse(null);
     }
 
     /**
