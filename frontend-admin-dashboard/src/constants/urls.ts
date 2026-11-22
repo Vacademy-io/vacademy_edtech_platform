@@ -1453,6 +1453,8 @@ export const CREATE_CATALOGUE = (instituteId: string) =>
     `${CATALOGUE_BASE_URL}/create?instituteId=${instituteId}`;
 export const UPDATE_CATALOGUE = (catalogueId: string) =>
     `${CATALOGUE_BASE_URL}/update?catalogueId=${catalogueId}`;
+export const DELETE_CATALOGUE = (catalogueId: string) =>
+    `${CATALOGUE_BASE_URL}/delete?catalogueId=${catalogueId}`;
 export const GET_CATALOGUE_BY_TAG = (instituteId: string, tagName: string) =>
     `${CATALOGUE_BASE_URL}/institute/get/by-tag?instituteId=${instituteId}&tagName=${encodeURIComponent(tagName)}`;
 // Draft/publish revisions (AI Page Builder Phase A)
