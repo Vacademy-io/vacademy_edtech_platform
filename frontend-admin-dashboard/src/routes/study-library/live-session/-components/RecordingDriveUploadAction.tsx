@@ -7,7 +7,7 @@
 // the recording behaves like any library recording — Add to course and
 // Upload to YouTube work off the fileId.
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { CloudArrowDown, ArrowSquareOut, GoogleLogo } from '@phosphor-icons/react';
 
@@ -42,6 +42,33 @@ export function RecordingDriveUploadAction({ rec, onAttached }: Props) {
 
     const driveUrl = rec.playbackUrl || rec.downloadUrl;
 
+    // Back from "Allow Google Drive access": the callback returns to this class page with
+    // ?google_connected=1 (or ?google_error=…). Say so once and drop the params.
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (!params.has('google_connected') && !params.has('google_error')) return;
+        if (params.get('google_connected')) {
+            toast.success(
+                'Google Drive access allowed. Click Save to library to copy the recording.',
+                {
+                    id: 'google-drive-access',
+                }
+            );
+        } else {
+            toast.error(
+                'Google Drive access was not allowed. You can still upload the recording yourself.',
+                {
+                    id: 'google-drive-access',
+                }
+            );
+        }
+        params.delete('google_connected');
+        params.delete('google_error');
+        params.delete('google_reason');
+        const qs = params.toString();
+        window.history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : ''));
+    }, []);
+
     const handleSave = async () => {
         setIsSaving(true);
         try {
@@ -64,7 +91,8 @@ export function RecordingDriveUploadAction({ rec, onAttached }: Props) {
     const handleAllowDriveAccess = async () => {
         setIsConnecting(true);
         try {
-            const { oauth_url } = await initiateGoogleOAuth(true);
+            // Come back to this class page (not Settings) so the admin can save the recording.
+            const { oauth_url } = await initiateGoogleOAuth(true, window.location.pathname);
             window.location.href = oauth_url; // leave the SPA for Google's consent screen
         } catch {
             toast.error('Could not start Google sign-in. Please try again.');
