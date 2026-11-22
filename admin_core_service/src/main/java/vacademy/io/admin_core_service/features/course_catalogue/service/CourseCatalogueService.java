@@ -84,6 +84,12 @@ public class CourseCatalogueService {
                 if (optional.isEmpty()) {
                         throw new RuntimeException("Catalogue not found");
                 }
+                Optional<CatalogueInstituteMapping> mapping = catalogueInstituteMappingRepository
+                                .findByCourseCatalogueId(catalogueId);
+                // A deleted site stays deleted: this write copies the request status
+                // onto the mapping, so an editor tab left open would bring it back.
+                if (mapping.isEmpty() || CatalogueStatusEnum.DELETED.name().equals(mapping.get().getStatus()))
+                        throw new VacademyException(HttpStatus.NOT_FOUND, "Catalogue Not Found");
 
                 CourseCatalogue catalogue = optional.get();
                 String previousJson = catalogue.getCatalogueJson();
@@ -101,11 +107,6 @@ public class CourseCatalogueService {
                         catalogueRevisionService.recordLegacyPublishedRevision(catalogueId,
                                         request.getCatalogueJson(), userId);
                 }
-
-                Optional<CatalogueInstituteMapping> mapping = catalogueInstituteMappingRepository
-                                .findByCourseCatalogueId(catalogueId);
-                if (mapping.isEmpty())
-                        throw new VacademyException(HttpStatus.NOT_FOUND, "Catalogue Not Found");
 
                 mapping.get().setStatus(request.getStatus());
                 mapping.get().setSource(request.getSource());
@@ -126,6 +127,30 @@ public class CourseCatalogueService {
                                 // mid-edit); report it so the caller knows it now lags the live site.
                                 .openDraftRevisionNo(catalogueRevisionService.openDraftRevisionNo(catalogueId))
                                 .build();
+        }
+
+        /**
+         * Soft delete: the site and its mapping move to DELETED. Every reader
+         * (Manage Pages list, editor and public by-tag lookups, catalog API,
+         * storefront jobs) serves only ACTIVE/DRAFT, so the site disappears
+         * everywhere and its tag is free for a new site. The row and its
+         * revisions stay in the database.
+         */
+        @Transactional
+        public void deleteCatalogue(String catalogueId) {
+                CatalogueInstituteMapping mapping = catalogueInstituteMappingRepository
+                                .findByCourseCatalogueId(catalogueId)
+                                .orElseThrow(() -> new VacademyException(HttpStatus.NOT_FOUND, "Catalogue Not Found"));
+                if (CatalogueStatusEnum.DELETED.name().equals(mapping.getStatus())) return;
+
+                mapping.setStatus(CatalogueStatusEnum.DELETED.name());
+                catalogueInstituteMappingRepository.save(mapping);
+
+                CourseCatalogue catalogue = mapping.getCourseCatalogue();
+                if (catalogue != null) {
+                        catalogue.setStatus(CatalogueStatusEnum.DELETED.name());
+                        courseCatalogueRepository.save(catalogue);
+                }
         }
 
         @Transactional(readOnly = true)

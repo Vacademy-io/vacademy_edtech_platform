@@ -138,7 +138,11 @@ export const CatalogueList = () => {
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (tagName: string) => deleteCatalogueConfig(instituteId!, tagName),
+        mutationFn: (tagName: string) => {
+            const catalogueId = tags?.find((t) => t.tagName === tagName)?.id;
+            if (!catalogueId) throw new Error(`Site "${tagName}" not found`);
+            return deleteCatalogueConfig(catalogueId);
+        },
         onSuccess: () => {
             toast({ title: 'Deleted', description: 'Site deleted successfully' });
             setDeletingTag(null);
