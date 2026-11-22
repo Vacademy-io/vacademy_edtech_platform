@@ -8,10 +8,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import vacademy.io.common.core.internal_api_wrapper.InternalClientUtils;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Asks admin-core to make sure the learner record exists and holds the batches a connection
@@ -35,8 +41,14 @@ public class SsoEnrolmentSyncClient {
         this.adminCoreBaseUrl = adminCoreBaseUrl;
     }
 
-    /** @return true when admin-core applied the change */
-    public boolean sync(String instituteId, String userId, String username, String fullName, String email,
+    /** What admin-core actually did. */
+    public record Result(Set<String> added, Set<String> removed) {
+    }
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    /** @return what admin-core added and removed, or empty when the call failed */
+    public Optional<Result> sync(String instituteId, String userId, String username, String fullName, String email,
                         String mobileNumber, Collection<String> add, Collection<String> remove) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("institute_id", instituteId);
@@ -50,15 +62,28 @@ public class SsoEnrolmentSyncClient {
         try {
             ResponseEntity<String> response = internalClientUtils.makeHmacRequest(applicationName,
                     HttpMethod.POST.name(), adminCoreBaseUrl, PATH, body);
-            boolean ok = response != null && response.getStatusCode().is2xxSuccessful();
-            if (!ok) {
+            if (response == null || !response.getStatusCode().is2xxSuccessful()) {
                 log.warn("SSO learner sync refused: institute={} user={} status={}", instituteId, userId,
                         response == null ? null : response.getStatusCode());
+                return Optional.empty();
             }
-            return ok;
+            JsonNode answer = MAPPER.readTree(response.getBody() == null ? "{}" : response.getBody());
+            return Optional.of(new Result(ids(answer.path("added")), ids(answer.path("removed"))));
         } catch (Exception e) {
             log.error("SSO learner sync failed: institute={} user={}: {}", instituteId, userId, e.getMessage());
-            return false;
+            return Optional.empty();
         }
+    }
+
+    private static Set<String> ids(JsonNode array) {
+        Set<String> out = new LinkedHashSet<>();
+        if (array != null && array.isArray()) {
+            array.forEach(node -> {
+                if (node.isTextual() && !node.asText().isBlank()) {
+                    out.add(node.asText());
+                }
+            });
+        }
+        return out;
     }
 }

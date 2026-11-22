@@ -58,7 +58,8 @@ public record SsoClaims(String subject, String email, Boolean emailVerified, Str
             name = joined.isEmpty() ? null : joined;
         }
         if (name == null && email != null) {
-            name = email.substring(0, email.indexOf('@'));
+            int at = email.indexOf('@');
+            name = at > 0 ? email.substring(0, at) : email;
         }
         String phone = connection.getClaimPhone() == null || connection.getClaimPhone().isBlank()
                 ? null : string(claims.get(connection.getClaimPhone()));

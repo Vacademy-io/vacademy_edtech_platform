@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RestController;
 import vacademy.io.auth_service.feature.sso.entity.InstituteSsoConnection;
 import vacademy.io.auth_service.feature.sso.service.SsoConnectionService;
 import vacademy.io.auth_service.feature.sso.service.SsoLoginService;
-import vacademy.io.common.auth.dto.learner.UserWithJwtDTO;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.net.URI;
@@ -61,12 +60,14 @@ public class SsoOpenController {
                                         @RequestParam(value = "institute_id", required = false) String instituteId,
                                         @RequestParam(value = "portal_origin", required = false) String portalOrigin,
                                         @RequestParam(value = "return_path", required = false) String returnPath,
-                                        @RequestParam(value = "login_hint", required = false) String loginHint) {
+                                        @RequestParam(value = "login_hint", required = false) String loginHint,
+                                        @RequestParam(value = "client_binding", required = false) String clientBinding) {
         if ((connectionId == null || connectionId.isBlank()) && (instituteId == null || instituteId.isBlank())) {
             return html(HttpStatus.BAD_REQUEST, "Sign-in could not start", "The link is missing its institute.");
         }
         try {
-            String url = loginService.start(connectionId, instituteId, portalOrigin, returnPath, loginHint, false);
+            String url = loginService.start(connectionId, instituteId, portalOrigin, returnPath, loginHint,
+                    clientBinding, false);
             return redirect(url);
         } catch (VacademyException e) {
             return html(HttpStatus.BAD_REQUEST, "Sign-in could not start", e.getMessage());
@@ -90,10 +91,12 @@ public class SsoOpenController {
     @PostMapping("/exchange")
     public ResponseEntity<Map<String, Object>> exchange(@RequestBody(required = false) Map<String, String> body) {
         String code = body == null ? null : body.get("code");
-        UserWithJwtDTO tokens = loginService.exchange(code);
+        String verifier = body == null ? null : body.get("client_verifier");
+        SsoLoginService.ExchangeResult result = loginService.exchange(code, verifier);
         Map<String, Object> out = new LinkedHashMap<>();
-        out.put("accessToken", tokens.getAccessToken());
-        out.put("refreshToken", tokens.getRefreshToken());
+        out.put("accessToken", result.tokens().getAccessToken());
+        out.put("refreshToken", result.tokens().getRefreshToken());
+        out.put("instituteId", result.instituteId());
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(out);
     }
 

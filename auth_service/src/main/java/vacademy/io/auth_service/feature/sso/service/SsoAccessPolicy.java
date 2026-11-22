@@ -72,14 +72,16 @@ public final class SsoAccessPolicy {
         return remove;
     }
 
-    /** What to remember as granted after a successful sync. */
-    public static Set<String> grantedAfterSync(Collection<String> previouslyGranted, Set<String> desired,
-                                               boolean removeOnGroupLoss) {
-        Set<String> granted = new LinkedHashSet<>();
-        if (!removeOnGroupLoss) {
-            granted.addAll(clean(previouslyGranted));
-        }
-        granted.addAll(desired);
+    /**
+     * What to remember as granted after a sync: what was granted before, minus what admin-core
+     * took away, plus what admin-core actually added. A batch the learner already held (paid, or
+     * added by an admin) is never recorded, so losing a group never switches it off.
+     */
+    public static Set<String> grantedAfterSync(Collection<String> previouslyGranted, Collection<String> removed,
+                                               Collection<String> added) {
+        Set<String> granted = new LinkedHashSet<>(clean(previouslyGranted));
+        granted.removeAll(clean(removed));
+        granted.addAll(clean(added));
         return granted;
     }
 

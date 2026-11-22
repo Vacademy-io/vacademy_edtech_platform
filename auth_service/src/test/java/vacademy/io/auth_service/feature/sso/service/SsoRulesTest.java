@@ -53,8 +53,15 @@ class SsoRulesTest {
         Set<String> desired = Set.of("a");
         assertEquals(Set.of("b"), SsoAccessPolicy.toRemove(List.of("a", "b"), desired, true));
         assertTrue(SsoAccessPolicy.toRemove(List.of("a", "b"), desired, false).isEmpty());
-        assertEquals(Set.of("a"), SsoAccessPolicy.grantedAfterSync(List.of("a", "b"), desired, true));
-        assertEquals(Set.of("a", "b"), SsoAccessPolicy.grantedAfterSync(List.of("a", "b"), desired, false));
+    }
+
+    @Test
+    void onlyWhatAdminCoreReallyAddedCountsAsGranted() {
+        // "x" was already held (paid / added by an admin): admin-core reports it as not added,
+        // so it is never recorded and losing the group can never switch it off.
+        assertEquals(Set.of("a", "new"),
+                SsoAccessPolicy.grantedAfterSync(List.of("a", "b"), List.of("b"), List.of("new")));
+        assertEquals(Set.of(), SsoAccessPolicy.grantedAfterSync(List.of(), List.of(), List.of()));
     }
 
     // ── email domains ────────────────────────────────────────────────────────
@@ -120,6 +127,9 @@ class SsoRulesTest {
         assertNull(SsoLoginService.safeReturnPath("/\\evil.com"));
         assertNull(SsoLoginService.safeReturnPath("https://evil.com"));
         assertNull(SsoLoginService.safeReturnPath("/a\nb"));
+        assertNull(SsoLoginService.safeReturnPath("/a b"));
+        assertNull(SsoLoginService.safeReturnPath("/a|b{c}"));
+        assertEquals("/course", SsoLoginService.safeReturnPath("/course#section-2"));
         assertNull(SsoLoginService.safeReturnPath(null));
     }
 

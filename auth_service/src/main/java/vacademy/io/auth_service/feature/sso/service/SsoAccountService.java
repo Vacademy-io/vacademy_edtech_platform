@@ -90,7 +90,7 @@ public class SsoAccountService {
         }
         boolean created = false;
         if (user == null) {
-            user = createAccount(claims);
+            user = createAccount(connection, claims);
             created = true;
         }
         ensureLearnerRole(user, instituteId, connection.getId());
@@ -162,18 +162,42 @@ public class SsoAccountService {
         return true;
     }
 
-    private User createAccount(SsoClaims claims) {
+    /**
+     * Refuses the sign-in unless the account is a plain learner of this institute and nowhere
+     * else. The token minted afterwards carries every role the account holds, so an account that
+     * later gained a role in another institute (or a staff role) must not be reachable through
+     * one institute's provider.
+     *
+     * @throws SsoFailure account_conflict
+     */
+    public void assertOnlyLearnerHere(User user, String instituteId) {
+        if (!isPlainLearnerOnlyOf(user.getId(), instituteId)) {
+            throw new SsoFailure("account_conflict",
+                    "This account also has access outside this institute, so it cannot use this institute's sign-in");
+        }
+    }
+
+    /**
+     * A new account for this institute. Accounts elsewhere are found by email (newest first), so
+     * the email goes on the account only when the provider vouched for it and no other account
+     * already uses it; otherwise the account has no email and the address lives on the identity
+     * and the institute's learner record. The phone never goes on the account (unverified).
+     */
+    private User createAccount(InstituteSsoConnection connection, SsoClaims claims) {
         String base = claims.email() != null ? claims.email().substring(0, claims.email().indexOf('@'))
                 : UsernameGenerator.generateUsername(claims.fullName());
         base = base.replaceAll("[^A-Za-z0-9._-]", "");
         if (base.length() < 3) {
             base = UsernameGenerator.generateUsername(claims.fullName());
         }
+        boolean vouched = Boolean.TRUE.equals(claims.emailVerified())
+                || (claims.emailVerified() == null && connection.isTrustProviderEmail());
+        boolean emailFree = claims.email() != null
+                && identityRepository.findUserIdsByEmail(claims.email().toLowerCase(Locale.ROOT)).isEmpty();
         User user = User.builder()
                 .fullName(claims.fullName())
                 .username(uniqueUsername(base.toLowerCase(Locale.ROOT)))
-                .email(claims.email())
-                .mobileNumber(digitsOrNull(claims.phone()))
+                .email(vouched && emailFree ? claims.email() : null)
                 .password(UsernameGenerator.generatePassword(12))
                 .isRootUser(true)
                 .build();
@@ -238,24 +262,19 @@ public class SsoAccountService {
                         .orElseThrow(() -> new IllegalStateException("STUDENT role missing")));
     }
 
-    /** Name and phone follow the provider. Email does not: it is part of how others find the account. */
+    /**
+     * The name follows the provider. Email and phone do not: other sign-in methods find accounts
+     * by them, so they are never taken from a provider onto a shared account.
+     */
     private void refreshProfile(User user, SsoClaims claims) {
-        boolean changed = false;
         if (StringUtils.hasText(claims.fullName()) && !claims.fullName().equals(user.getFullName())) {
             user.setFullName(claims.fullName());
-            changed = true;
-        }
-        String phone = digitsOrNull(claims.phone());
-        if (phone != null && !phone.equals(user.getMobileNumber())) {
-            user.setMobileNumber(phone);
-            changed = true;
-        }
-        if (changed) {
             userRepository.save(user);
         }
     }
 
-    private static String digitsOrNull(String phone) {
+    /** Digits of a phone number, or null when too short to be one. */
+    static String digitsOrNull(String phone) {
         if (phone == null) {
             return null;
         }

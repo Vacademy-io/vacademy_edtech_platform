@@ -104,7 +104,7 @@ public class SsoConnectionController {
                                                        @PathVariable String instituteId,
                                                        @RequestParam(value = "portal_origin", required = false) String portalOrigin) {
         accessGuard.requireInstituteAdmin(user, instituteId);
-        String url = loginService.start(null, instituteId, portalOrigin, null, null, true);
+        String url = loginService.start(null, instituteId, portalOrigin, null, null, null, true);
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(Map.of("url", url));
     }
 }

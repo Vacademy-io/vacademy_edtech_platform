@@ -204,16 +204,44 @@ public class OidcProviderClient {
         String key = discovery.issuer() + "|" + discovery.jwksUri() + "|" + clientId;
         return decoderCache.computeIfAbsent(key, k -> {
             guardedUri(discovery.jwksUri());
-            NimbusJwtDecoder.JwkSetUriJwtDecoderBuilder builder = NimbusJwtDecoder.withJwkSetUri(discovery.jwksUri());
+            NimbusJwtDecoder.JwkSetUriJwtDecoderBuilder builder = NimbusJwtDecoder.withJwkSetUri(discovery.jwksUri())
+                    .restOperations(guardedRestTemplate());
             List<SignatureAlgorithm> algs = signatureAlgorithms(discovery.idTokenSigningAlgs());
             builder.jwsAlgorithms(set -> set.addAll(algs));
             NimbusJwtDecoder decoder = builder.build();
             OAuth2TokenValidator<Jwt> issuer = jwt -> issuerMatches(discovery.issuer(), jwt);
             OAuth2TokenValidator<Jwt> audience = jwt -> audienceMatches(clientId, jwt);
+            OAuth2TokenValidator<Jwt> expiry = jwt -> jwt.getExpiresAt() != null
+                    ? OAuth2TokenValidatorResult.success()
+                    : OAuth2TokenValidatorResult.failure(new OAuth2Error("invalid_token", "exp missing", null));
             decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
-                    new JwtTimestampValidator(Duration.ofSeconds(120)), issuer, audience));
+                    expiry, new JwtTimestampValidator(Duration.ofSeconds(120)), issuer, audience));
             return decoder;
         });
+    }
+
+    /**
+     * The client Nimbus uses for the provider's signing keys (fetched again on key rotation):
+     * every request re-checks the address, and redirects are not followed.
+     */
+    private static org.springframework.web.client.RestTemplate guardedRestTemplate() {
+        org.springframework.http.client.SimpleClientHttpRequestFactory factory =
+                new org.springframework.http.client.SimpleClientHttpRequestFactory() {
+                    @Override
+                    protected void prepareConnection(java.net.HttpURLConnection connection, String method)
+                            throws java.io.IOException {
+                        super.prepareConnection(connection, method);
+                        connection.setInstanceFollowRedirects(false);
+                    }
+                };
+        factory.setConnectTimeout((int) TIMEOUT.toMillis());
+        factory.setReadTimeout((int) TIMEOUT.toMillis());
+        org.springframework.web.client.RestTemplate rest = new org.springframework.web.client.RestTemplate(factory);
+        rest.getInterceptors().add((request, body, execution) -> {
+            guardedUri(request.getURI().toString());
+            return execution.execute(request, body);
+        });
+        return rest;
     }
 
     /** Asymmetric algorithms only: HS* would mean signing with the client secret, "none" means unsigned. */

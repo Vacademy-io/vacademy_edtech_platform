@@ -21,7 +21,13 @@ public final class SsoEmailDomains {
             "outlook.com", "hotmail.com", "live.com", "msn.com", "icloud.com", "me.com", "mac.com",
             "aol.com", "proton.me", "protonmail.com", "zoho.com", "zohomail.com", "zohomail.in",
             "rediffmail.com", "gmx.com", "gmx.net", "mail.com", "yandex.com", "yandex.ru",
-            "hey.com", "fastmail.com", "tutanota.com", "qq.com", "163.com", "126.com");
+            "hey.com", "fastmail.com", "tutanota.com", "qq.com", "163.com", "126.com",
+            "outlook.in", "hotmail.co.uk", "hotmail.in", "live.in", "live.co.uk", "yahoo.co.uk",
+            "yahoo.com.au", "yahoo.ca", "aol.co.uk", "proton.ch", "pm.me", "tuta.io", "mail.ru",
+            "inbox.ru", "naver.com", "daum.net", "web.de", "t-online.de", "orange.fr", "free.fr",
+            "laposte.net", "libero.it", "seznam.cz", "wp.pl", "usa.net",
+            // the platform's own and its brands' domains: no institute speaks for them
+            "vacademy.io", "vacademy.ai", "vidyayatan.com", "evalezy.com", "telleo.ai", "voomsales.com");
 
     private SsoEmailDomains() {
     }

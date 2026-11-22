@@ -92,9 +92,16 @@ public class SsoLoginService {
 
     // ── start ────────────────────────────────────────────────────────────────
 
-    /** @return the provider URL to send the browser to */
+    private static final java.util.regex.Pattern BINDING = java.util.regex.Pattern.compile("^[A-Za-z0-9_-]{43}$");
+
+    /**
+     * @param clientBinding base64url SHA-256 of a random value the portal keeps in the tab
+     *                      (login CSRF). Without one (a provider's app tile, an old bookmark) the
+     *                      browser is sent to the portal, which starts again with a binding.
+     * @return the URL to send the browser to: the provider, or the portal to bind first
+     */
     public String start(String connectionId, String instituteId, String portalOrigin, String returnPath,
-                        String loginHint, boolean testMode) {
+                        String loginHint, String clientBinding, boolean testMode) {
         InstituteSsoConnection connection = (StringUtils.hasText(connectionId)
                 ? connections.findById(connectionId) : connections.findByInstitute(instituteId))
                 .orElseThrow(() -> new VacademyException(HttpStatus.NOT_FOUND, "Single sign-on is not set up"));
@@ -102,6 +109,11 @@ public class SsoLoginService {
             throw new VacademyException(HttpStatus.NOT_FOUND, "Single sign-on is switched off for this institute");
         }
         String origin = resolvePortalOrigin(connection.getInstituteId(), portalOrigin);
+        String path = safeReturnPath(returnPath);
+        boolean bound = clientBinding != null && BINDING.matcher(clientBinding).matches();
+        if (!testMode && !bound) {
+            return origin + "/login?sso=start" + (path == null ? "" : "&redirect=" + enc(path));
+        }
         OidcProviderClient.Discovery discovery = provider.discover(connection.getIssuer());
 
         String state = randomToken(32);
@@ -115,7 +127,8 @@ public class SsoLoginService {
                 .nonce(nonce)
                 .codeVerifier(verifier)
                 .portalOrigin(origin)
-                .returnPath(safeReturnPath(returnPath))
+                .returnPath(path)
+                .clientBinding(testMode ? null : clientBinding)
                 .mode(testMode ? SsoLoginAttempt.MODE_TEST : SsoLoginAttempt.MODE_LOGIN)
                 .expiresAt(new Date(now.getTime() + ATTEMPT_TTL.toMillis()))
                 .build());
@@ -183,14 +196,25 @@ public class SsoLoginService {
         }
     }
 
-    /** A same-site path ("/x"), never "//host" or a URL. */
+    private static final java.util.regex.Pattern PATH_CHARS =
+            java.util.regex.Pattern.compile("^[A-Za-z0-9\\-._~!$&'()*+,;=:@/?%]*$");
+
+    /**
+     * A same-site path ("/x"), never "//host" or a URL. The fragment is dropped (the code is
+     * appended as a query parameter) and only URL-safe characters are kept, so the redirect built
+     * from it is always a valid URI.
+     */
     static String safeReturnPath(String path) {
         if (!StringUtils.hasText(path)) {
             return null;
         }
         String trimmed = path.trim();
+        int hash = trimmed.indexOf('#');
+        if (hash >= 0) {
+            trimmed = trimmed.substring(0, hash);
+        }
         if (!trimmed.startsWith("/") || trimmed.startsWith("//") || trimmed.startsWith("/\\")
-                || trimmed.length() > 1000 || trimmed.chars().anyMatch(c -> c < 0x20)) {
+                || trimmed.length() > 1000 || !PATH_CHARS.matcher(trimmed).matches()) {
             return null;
         }
         return trimmed;
@@ -255,6 +279,13 @@ public class SsoLoginService {
                 return new CallbackResult(null, page("Test failed", e.getMessage(), null));
             }
             return new CallbackResult(failRedirect(attempt, "provider_error"), null);
+        } catch (RuntimeException e) {
+            // e.g. two first sign-ins of the same person racing on the identity's unique key
+            log.error("SSO sign-in failed unexpectedly", e);
+            if (test) {
+                return new CallbackResult(null, page("Test failed", "Unexpected error: " + e.getClass().getSimpleName(), null));
+            }
+            return new CallbackResult(failRedirect(attempt, "generic"), null);
         }
     }
 
@@ -283,9 +314,13 @@ public class SsoLoginService {
             throw new SsoFailure("not_assigned", "The user is not in a group allowed to sign in");
         }
 
+        if (attempt.getClientBinding() == null) {
+            throw new SsoFailure("expired", "This sign-in was not started from the learner portal");
+        }
         SsoAccountService.Resolved resolved = accounts.resolve(connection, claims);
         String userId = resolved.user().getId();
         String instituteId = connection.getInstituteId();
+        accounts.assertOnlyLearnerHere(resolved.user(), instituteId);
 
         if (userSessionService.checkSessionLimit(userId, instituteId).isPresent()) {
             throw new SsoFailure("session_limit", "The learner is signed in on too many devices");
@@ -301,6 +336,7 @@ public class SsoLoginService {
                 .userId(userId)
                 .instituteId(instituteId)
                 .connectionId(connection.getId())
+                .clientBinding(attempt.getClientBinding())
                 .expiresAt(new Date(now.getTime() + HANDOFF_TTL.toMillis()))
                 .build());
         String path = attempt.getReturnPath() == null ? "/" : attempt.getReturnPath();
@@ -314,13 +350,13 @@ public class SsoLoginService {
                 SsoConnectionService.rules(connection), claims.groups());
         List<String> previous = SsoConnectionService.list(identity.getGrantedPackageSessionIds());
         Set<String> remove = SsoAccessPolicy.toRemove(previous, desired, connection.isRemoveAccessOnGroupLoss());
-        boolean synced = enrolments.sync(connection.getInstituteId(), resolved.user().getId(),
-                resolved.user().getUsername(), resolved.user().getFullName(), resolved.user().getEmail(),
-                resolved.user().getMobileNumber(), desired, remove);
-        if (synced) {
-            identity.setGrantedPackageSessionIds(SsoConnectionService.json(
-                    SsoAccessPolicy.grantedAfterSync(previous, desired, connection.isRemoveAccessOnGroupLoss())));
-        }
+        // The learner record gets the provider's email and phone even when the shared account does
+        // not carry them (see SsoAccountService#createAccount).
+        enrolments.sync(connection.getInstituteId(), resolved.user().getId(), resolved.user().getUsername(),
+                        resolved.user().getFullName(), claims.email(), SsoAccountService.digitsOrNull(claims.phone()),
+                        desired, remove)
+                .ifPresent(result -> identity.setGrantedPackageSessionIds(SsoConnectionService.json(
+                        SsoAccessPolicy.grantedAfterSync(previous, result.removed(), result.added()))));
         identity.setEmail(claims.email());
         identity.setLastLoginAt(new Date());
         identity.setUpdatedAt(new Date());
@@ -329,14 +365,25 @@ public class SsoLoginService {
 
     // ── exchange ─────────────────────────────────────────────────────────────
 
-    /** Swaps a one-time code for tokens. */
-    public UserWithJwtDTO exchange(String code) {
-        if (!StringUtils.hasText(code) || code.length() > 200) {
+    /** Tokens plus the institute the sign-in was for, so the portal opens that one. */
+    public record ExchangeResult(UserWithJwtDTO tokens, String instituteId) {
+    }
+
+    /**
+     * Swaps a one-time code for tokens. {@code clientVerifier} is the value whose hash the portal
+     * sent to /start from the same tab; a code carried to another browser is useless.
+     */
+    public ExchangeResult exchange(String code, String clientVerifier) {
+        if (!StringUtils.hasText(code) || code.length() > 200
+                || !StringUtils.hasText(clientVerifier) || clientVerifier.length() > 200) {
             throw new VacademyException(HttpStatus.UNAUTHORIZED, "Sign-in code is missing");
         }
         String hash = sha256Hex(code.trim());
         Optional<SsoHandoffCode> row = handoffs.findById(hash);
-        if (row.isEmpty() || handoffs.consume(hash, new Date()) != 1) {
+        boolean sameTab = row.isPresent() && MessageDigest.isEqual(
+                s256(clientVerifier.trim()).getBytes(StandardCharsets.US_ASCII),
+                row.get().getClientBinding().getBytes(StandardCharsets.US_ASCII));
+        if (!sameTab || handoffs.consume(hash, new Date()) != 1) {
             throw new VacademyException(HttpStatus.UNAUTHORIZED, "Sign-in code is invalid or expired");
         }
         SsoHandoffCode handoff = row.get();
@@ -345,7 +392,7 @@ public class SsoLoginService {
         userSessionService.createSession(handoff.getUserId(), handoff.getInstituteId(), tokens.getAccessToken(), "WEB");
         log.info("SSO sign-in completed: user={} institute={} connection={}", handoff.getUserId(),
                 handoff.getInstituteId(), handoff.getConnectionId());
-        return tokens;
+        return new ExchangeResult(tokens, handoff.getInstituteId());
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

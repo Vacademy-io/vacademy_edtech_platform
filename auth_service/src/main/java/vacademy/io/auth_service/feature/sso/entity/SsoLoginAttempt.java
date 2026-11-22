@@ -43,6 +43,9 @@ public class SsoLoginAttempt {
     @Column(name = "return_path")
     private String returnPath;
 
+    @Column(name = "client_binding")
+    private String clientBinding;
+
     @Column(name = "mode", nullable = false)
     private String mode;
 

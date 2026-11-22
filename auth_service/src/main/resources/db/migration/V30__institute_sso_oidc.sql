@@ -73,6 +73,9 @@ CREATE TABLE IF NOT EXISTS public.sso_login_attempt (
     code_verifier               varchar(256) NOT NULL,
     portal_origin               varchar(512) NOT NULL,
     return_path                 varchar(1024) NULL,
+    -- SHA-256 (base64url) of a random value the portal keeps in the tab that started the
+    -- sign-in; the exchange must present that value (login CSRF). Null only in TEST mode.
+    client_binding              varchar(128) NULL,
     mode                        varchar(20)  NOT NULL DEFAULT 'LOGIN',
     expires_at                  timestamp    NOT NULL,
     used_at                     timestamp    NULL,
@@ -87,6 +90,7 @@ CREATE TABLE IF NOT EXISTS public.sso_handoff_code (
     user_id                     varchar(255) NOT NULL,
     institute_id                varchar(255) NOT NULL,
     connection_id               varchar(255) NOT NULL,
+    client_binding              varchar(128) NOT NULL,
     expires_at                  timestamp    NOT NULL,
     used_at                     timestamp    NULL,
     created_at                  timestamp    DEFAULT CURRENT_TIMESTAMP

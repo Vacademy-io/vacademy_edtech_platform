@@ -33,6 +33,9 @@ public class SsoHandoffCode {
     @Column(name = "connection_id", nullable = false)
     private String connectionId;
 
+    @Column(name = "client_binding", nullable = false)
+    private String clientBinding;
+
     @Column(name = "expires_at", nullable = false)
     private Date expiresAt;
 

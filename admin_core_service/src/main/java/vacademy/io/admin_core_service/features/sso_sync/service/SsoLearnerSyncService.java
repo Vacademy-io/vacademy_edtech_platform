@@ -3,7 +3,9 @@ package vacademy.io.admin_core_service.features.sso_sync.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.institute_learner.dto.InstituteStudentDetails;
 import vacademy.io.admin_core_service.features.institute_learner.entity.Student;
@@ -33,6 +35,9 @@ import java.util.stream.Collectors;
  * enrolment uses (policies, re-enrolment, enrolment workflow). Removals mark the mapping
  * INACTIVE, exactly what "make inactive" does from the learner list, so progress is kept.
  * auth-service only ever asks to remove batches it granted itself.
+ *
+ * <p>Each batch is added in its own transaction: an enrolment policy that refuses one batch (or
+ * a failed write inside it) must not roll back the learner record and the other batches.
  */
 @Slf4j
 @Service
@@ -43,16 +48,19 @@ public class SsoLearnerSyncService {
     private final StudentRegistrationManager registrationManager;
     private final StudentSessionRepository studentSessionRepository;
     private final PackageSessionRepository packageSessionRepository;
+    private final TransactionTemplate perBatch;
 
     public SsoLearnerSyncService(StudentRegistrationManager registrationManager,
                                  StudentSessionRepository studentSessionRepository,
-                                 PackageSessionRepository packageSessionRepository) {
+                                 PackageSessionRepository packageSessionRepository,
+                                 PlatformTransactionManager transactionManager) {
         this.registrationManager = registrationManager;
         this.studentSessionRepository = studentSessionRepository;
         this.packageSessionRepository = packageSessionRepository;
+        this.perBatch = new TransactionTemplate(transactionManager);
+        this.perBatch.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
-    @Transactional
     public SsoLearnerSyncResponse sync(SsoLearnerSyncRequest request) {
         if (request == null || !StringUtils.hasText(request.getInstituteId()) || !StringUtils.hasText(request.getUserId())) {
             throw new VacademyException(HttpStatus.BAD_REQUEST, "institute_id and user_id are required");
@@ -96,11 +104,14 @@ public class SsoLearnerSyncService {
                     .enrollmentDate(new Date())
                     .build();
             try {
-                registrationManager.linkStudentToInstitute(student, details);
-                registrationManager.triggerEnrollmentWorkflow(instituteId, user, id, null);
+                perBatch.executeWithoutResult(status -> {
+                    registrationManager.linkStudentToInstitute(student, details);
+                    registrationManager.triggerEnrollmentWorkflow(instituteId, user, id, null);
+                });
                 added.add(id);
-            } catch (VacademyException e) {
-                // An enrolment policy (re-enrolment gap, blocked while active elsewhere) said no.
+            } catch (RuntimeException e) {
+                // An enrolment policy (re-enrolment gap, blocked while active elsewhere) said no,
+                // or the write failed; that batch alone is rolled back.
                 log.info("SSO sync: batch {} not added for user {}: {}", id, request.getUserId(), e.getMessage());
                 skipped.add(id);
             }
