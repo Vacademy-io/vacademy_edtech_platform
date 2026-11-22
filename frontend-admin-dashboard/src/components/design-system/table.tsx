@@ -280,6 +280,14 @@ interface MyTableProps<T> {
      */
     enableColumnReorder?: boolean;
     onColumnOrderChange?: (orderedColumnIds: string[]) => void;
+    /**
+     * Stretch the table to the width of its container. By default the table is exactly
+     * as wide as the sum of its column sizes (150px each unless a column sets `size`),
+     * which leaves the header row stopping short of a wide container. With this on, the
+     * column sizes become minimums and the spare width is shared out; a container
+     * narrower than the sum still scrolls sideways.
+     */
+    fillContainer?: boolean;
 }
 
 export function MyTable<T>({
@@ -305,6 +313,7 @@ export function MyTable<T>({
     enableColumnPinning = true,
     enableColumnReorder = false,
     onColumnOrderChange,
+    fillContainer = false,
 }: MyTableProps<T>) {
     const { isCompact } = useCompactMode();
 
@@ -483,7 +492,7 @@ export function MyTable<T>({
 
             <div className="relative w-full rounded-lg border">
                 <div
-                    className="max-h-[70vh] overflow-auto"
+                    className="max-h-table-scroll overflow-auto"
                     style={{
                         WebkitOverflowScrolling: 'touch',
                         transform: 'translate3d(0, 0, 0)',
@@ -495,7 +504,9 @@ export function MyTable<T>({
                     <table
                         className="w-full caption-bottom text-sm"
                         style={{
-                            width: table?.getCenterTotalSize?.() || 'auto',
+                            width: fillContainer
+                                ? '100%'
+                                : table?.getCenterTotalSize?.() || 'auto',
                             minWidth: table?.getCenterTotalSize?.() || '100%',
                             transform: 'translate3d(0, 0, 0)',
                             WebkitTransform: 'translate3d(0, 0, 0)',

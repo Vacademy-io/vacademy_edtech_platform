@@ -3,6 +3,7 @@ import {
     GET_CATALOGUE_TAGS,
     CREATE_CATALOGUE,
     UPDATE_CATALOGUE,
+    DELETE_CATALOGUE,
     GET_CATALOGUE_BY_TAG,
     CATALOGUE_REVISION_DRAFT,
     CATALOGUE_REVISION_SAVE_DRAFT,
@@ -207,13 +208,6 @@ export const saveCatalogueConfig = async (
     });
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const deleteCatalogueConfig = async (
-    instituteId: string,
-    tagName: string
-): Promise<void> => {
-    // Backend doesn't have a delete endpoint in the documentation provided
-    // This might need to be implemented on backend or use a different approach
-    console.warn('Delete catalogue endpoint not yet implemented in backend');
-    throw new Error('Delete functionality not available - please archive the catalogue instead');
+export const deleteCatalogueConfig = async (catalogueId: string): Promise<void> => {
+    await authenticatedAxiosInstance.delete(DELETE_CATALOGUE(catalogueId));
 };

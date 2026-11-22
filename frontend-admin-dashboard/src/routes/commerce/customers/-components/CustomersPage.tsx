@@ -263,6 +263,8 @@ function CustomersContent({
                     </ul>
                     <div className="hidden md:block">
                         <MyTable<CustomerRow>
+                            fillContainer
+                            enableColumnResizing={false}
                             data={tableData}
                             columns={columns}
                             isLoading={false}

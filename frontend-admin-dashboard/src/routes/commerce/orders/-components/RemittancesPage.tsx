@@ -192,6 +192,8 @@ function RemittancesList() {
             {query.isSuccess && rows.length > 0 && (
                 <>
                     <MyTable<RemittanceView>
+                        fillContainer
+                        enableColumnResizing={false}
                         data={{
                             content: rows,
                             page_no: page,

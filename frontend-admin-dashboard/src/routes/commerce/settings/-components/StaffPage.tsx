@@ -210,6 +210,8 @@ function StaffContent() {
                     )}
                     {staffQuery.isSuccess && staff.length > 0 && (
                         <MyTable<CommerceStaffMember>
+                            fillContainer
+                            enableColumnResizing={false}
                             data={asTableData(staff)}
                             columns={columns}
                             isLoading={false}

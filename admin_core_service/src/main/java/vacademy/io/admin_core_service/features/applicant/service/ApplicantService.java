@@ -1398,6 +1398,15 @@ public class ApplicantService {
          * 3. Updates ApplicantStage response_json with order_id.
          */
         @Transactional
+        /** The institute an applicant applied to (from the applicant's application stage). */
+        public String getInstituteIdForApplicant(String applicantId) {
+                Applicant applicant = applicantRepository.findById(java.util.UUID.fromString(applicantId))
+                                .orElseThrow(() -> new VacademyException("Applicant not found"));
+                return applicationStageRepository.findById(UUID.fromString(applicant.getApplicationStageId()))
+                                .map(vacademy.io.admin_core_service.features.applicant.entity.ApplicationStage::getInstituteId)
+                                .orElseThrow(() -> new VacademyException("Application Stage not found"));
+        }
+
         public vacademy.io.common.payment.dto.PaymentResponseDTO preparePayment(
                         String applicantId,
                         String paymentOptionId,

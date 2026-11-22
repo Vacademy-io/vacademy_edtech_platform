@@ -64,6 +64,7 @@ import {
   AppleSignInCancelledError,
 } from "@/lib/auth/appleNativeAuth";
 import { AppleSignInButton } from "@/components/common/auth/AppleSignInButton";
+import { EnterpriseSsoButton } from "@/components/common/auth/login/enterprise-sso-button";
 import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
 import {
@@ -1157,6 +1158,10 @@ export function LoginForm({
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-6">
+                <EnterpriseSsoButton
+                  instituteId={routedInstituteId}
+                  returnPath={new URLSearchParams(window.location.search).get("redirect")}
+                />
                 {/* OAuth Buttons */}
                 <motion.div
                   initial={{ y: 10, opacity: 0 }}

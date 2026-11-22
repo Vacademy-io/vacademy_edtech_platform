@@ -8,6 +8,9 @@ import vacademy.io.notification_service.features.hub.dto.HubEmailEventListDTO;
 import vacademy.io.notification_service.features.hub.dto.HubOverviewDTO;
 import vacademy.io.notification_service.features.hub.dto.HubRecentItemDTO;
 import vacademy.io.notification_service.features.hub.service.NotificationHubService;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.notification_service.config.InstituteStaffAccess;
 
 import java.util.List;
 
@@ -26,7 +29,10 @@ public class NotificationHubController {
     @GetMapping("/overview")
     public ResponseEntity<HubOverviewDTO> getOverview(
             @RequestParam String instituteId,
-            @RequestParam(defaultValue = "7") int windowDays) {
+            @RequestParam(defaultValue = "7") int windowDays,
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId) {
+        InstituteStaffAccess.requireStaff(user, clientId, instituteId);
         int clamped = Math.max(1, Math.min(windowDays, 90));
         return ResponseEntity.ok(hubService.getOverview(instituteId, clamped));
     }
@@ -41,7 +47,10 @@ public class NotificationHubController {
             @RequestParam String eventType,
             @RequestParam(defaultValue = "7") int windowDays,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "20") int size,
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId) {
+        InstituteStaffAccess.requireStaff(user, clientId, instituteId);
         int clampedWindow = Math.max(1, Math.min(windowDays, 90));
         int clampedPage = Math.max(0, page);
         int clampedSize = Math.max(1, Math.min(size, 100));
@@ -53,7 +62,10 @@ public class NotificationHubController {
     public ResponseEntity<List<HubRecentItemDTO>> getRecent(
             @RequestParam String instituteId,
             @RequestParam(defaultValue = "20") int limit,
-            @RequestParam(defaultValue = "0") int offset) {
+            @RequestParam(defaultValue = "0") int offset,
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId) {
+        InstituteStaffAccess.requireStaff(user, clientId, instituteId);
         return ResponseEntity.ok(hubService.getRecentIncoming(instituteId, limit, offset));
     }
 }

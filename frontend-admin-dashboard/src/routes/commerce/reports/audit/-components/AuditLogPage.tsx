@@ -274,6 +274,8 @@ function ChangesTable({ rows }: { rows: AuditRow[] }) {
     return (
         <div data-testid="audit-changes-table">
             <MyTable<AuditRow>
+                fillContainer
+                enableColumnResizing={false}
                 data={{ content: rows, page_no: 0, page_size: rows.length, total_elements: rows.length, total_pages: 1, last: true }}
                 columns={columns}
                 isLoading={false}
@@ -320,6 +322,8 @@ function ApprovalsTable({ rows }: { rows: ApprovalRow[] }) {
     return (
         <div data-testid="audit-approvals-table">
             <MyTable<ApprovalRow>
+                fillContainer
+                enableColumnResizing={false}
                 data={{ content: rows, page_no: 0, page_size: rows.length, total_elements: rows.length, total_pages: 1, last: true }}
                 columns={columns}
                 isLoading={false}

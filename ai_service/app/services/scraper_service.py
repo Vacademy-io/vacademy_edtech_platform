@@ -1,64 +1,87 @@
 import httpx
 from bs4 import BeautifulSoup
 from fastapi import HTTPException
-import ipaddress
-from urllib.parse import urlparse
-import socket
 import logging
+import socket
+from urllib.parse import urlparse
+
+from .safe_http import WEB_PORTS, SafeFetchError, host_is_blocked_name, is_public_address, safe_fetch
 
 logger = logging.getLogger(__name__)
 
+# Pages larger than this are not read (the extracted text is capped at 20k chars anyway).
+MAX_PAGE_BYTES = 5_000_000
+
+
 class ScraperService:
     async def scrape_url(self, url: str) -> dict:
-        # 1. Validation & SSRF Check
-        self._validate_url(url)
-        
-        # 2. Fetching
+        # Fetch through safe_fetch: public addresses only, connection pinned to
+        # the resolved address, every redirect hop re-checked, body size capped.
         try:
-            async with httpx.AsyncClient(follow_redirects=True, timeout=10.0) as client:
-                response = await client.get(url)
-                response.raise_for_status()
-                html_content = response.text
-        except httpx.HTTPStatusError as e:
-             logger.warning(f"HTTP error fetching URL {url}: {e}")
-             if e.response.status_code == 403:
-                 raise HTTPException(status_code=403, detail="Access denied to the target URL.")
-             if e.response.status_code == 404:
-                 raise HTTPException(status_code=404, detail="Target URL not found.")
-             raise HTTPException(status_code=e.response.status_code, detail=f"Error fetching URL: {str(e)}")
-        except httpx.RequestError as e:
-            logger.warning(f"Request error fetching URL {url}: {e}")
-            raise HTTPException(status_code=400, detail=f"Failed to reach the URL or timeout: {str(e)}")
+            result = await safe_fetch(
+                url,
+                max_bytes=MAX_PAGE_BYTES,
+                timeout=10.0,
+                total_timeout=20.0,
+                max_redirects=5,
+                allow_http=True,
+                allowed_ports=WEB_PORTS,
+                headers={"User-Agent": "Mozilla/5.0 (compatible; VacademyFetch/1.0)"},
+            )
+        except SafeFetchError as e:
+            logger.warning(f"Fetch refused or failed for URL {url}: {e.code}")
+            if e.code in ("blocked_host", "blocked_address"):
+                raise HTTPException(status_code=400, detail="Public access only. Access to internal/private resources is forbidden.")
+            if e.code == "dns_failed":
+                raise HTTPException(status_code=400, detail="Invalid hostname or DNS resolution failed.")
+            if e.code == "bad_url":
+                raise HTTPException(status_code=400, detail="Invalid URL format.")
+            if e.code == "too_large":
+                raise HTTPException(status_code=400, detail="The page is too large to read.")
+            raise HTTPException(status_code=400, detail="Failed to reach the URL or timeout.")
         except Exception as e:
             logger.error(f"Unexpected error fetching URL {url}: {e}")
-            raise HTTPException(status_code=400, detail=f"Failed to fetch user provided URL: {str(e)}")
+            raise HTTPException(status_code=400, detail="Failed to fetch user provided URL.")
 
-        # 3. Processing/Filtering
+        status = result.status_code
+        if status == 403:
+            raise HTTPException(status_code=403, detail="Access denied to the target URL.")
+        if status == 404:
+            raise HTTPException(status_code=404, detail="Target URL not found.")
+        if status >= 400:
+            raise HTTPException(status_code=status, detail=f"Error fetching URL: HTTP {status}")
+
+        # Decode the body the same way httpx does (charset header, then detection).
+        # Only the content type is passed on: the body is already decompressed.
+        content_type = result.headers.get("content-type")
+        html_content = httpx.Response(
+            status, headers={"content-type": content_type} if content_type else None, content=result.content
+        ).text
         return self._extract_content(html_content)
 
     def _validate_url(self, url: str):
+        """Pre-check used by knowledge-base URL ingestion: the host must resolve only to public
+        addresses. The fetch itself (scrape_url) re-checks every hop through safe_fetch."""
         try:
             parsed = urlparse(url)
             hostname = parsed.hostname
             if not hostname:
                 raise HTTPException(status_code=400, detail="Invalid URL: Missing hostname")
-
-            # Basic SSRF check
-            # Resolve to IP
-            ip = socket.gethostbyname(hostname)
-            ip_addr = ipaddress.ip_address(ip)
-            
-            if ip_addr.is_private or ip_addr.is_loopback or ip_addr.is_link_local:
-                 raise HTTPException(status_code=400, detail="Public access only. Access to internal/private resources is forbidden.")
+            if host_is_blocked_name(hostname):
+                raise HTTPException(status_code=400, detail="Public access only. Access to internal/private resources is forbidden.")
+            infos = socket.getaddrinfo(hostname, parsed.port or 443, type=socket.SOCK_STREAM)
+            addresses = {info[4][0] for info in infos}
+            if not addresses or not all(is_public_address(a) for a in addresses):
+                raise HTTPException(status_code=400, detail="Public access only. Access to internal/private resources is forbidden.")
         except socket.gaierror:
-             raise HTTPException(status_code=400, detail="Invalid hostname or DNS resolution failed.")
+            raise HTTPException(status_code=400, detail="Invalid hostname or DNS resolution failed.")
         except ValueError:
-             raise HTTPException(status_code=400, detail="Invalid URL format.")
+            raise HTTPException(status_code=400, detail="Invalid URL format.")
         except HTTPException:
             raise
         except Exception as e:
-             logger.error(f"SSRF validation error for {url}: {e}")
-             raise HTTPException(status_code=400, detail="URL validation failed.")
+            logger.error(f"SSRF validation error for {url}: {e}")
+            raise HTTPException(status_code=400, detail="URL validation failed.")
 
     def _extract_content(self, html: str) -> dict:
         try:

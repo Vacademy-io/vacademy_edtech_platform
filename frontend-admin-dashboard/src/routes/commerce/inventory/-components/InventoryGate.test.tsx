@@ -63,16 +63,36 @@ vi.mock('@/components/design-system/table', () => ({
     MyTable: ({
         data,
         columns,
+        fillContainer,
+        enableColumnResizing,
     }: {
         data: { content: unknown[] };
-        columns: { id: string; cell?: (ctx: { row: { original: unknown } }) => ReactNode }[];
+        columns: {
+            id: string;
+            size?: number;
+            header?: string | (() => ReactNode);
+            cell?: (ctx: { row: { original: unknown } }) => ReactNode;
+        }[];
+        fillContainer?: boolean;
+        enableColumnResizing?: boolean;
     }) => (
-        <table>
+        <table data-fill={String(!!fillContainer)} data-resizable={String(enableColumnResizing !== false)}>
+            <thead>
+                <tr>
+                    {columns.map((column) => (
+                        <th key={column.id} data-column={column.id} data-size={column.size ?? ''}>
+                            {typeof column.header === 'function' ? column.header() : column.header}
+                        </th>
+                    ))}
+                </tr>
+            </thead>
             <tbody>
                 {data.content.map((row, index) => (
                     <tr key={index}>
                         {columns.map((column) => (
-                            <td key={column.id}>{column.cell ? column.cell({ row: { original: row } }) : null}</td>
+                            <td key={column.id} data-column={column.id}>
+                                {column.cell ? column.cell({ row: { original: row } }) : null}
+                            </td>
                         ))}
                     </tr>
                 ))}
@@ -91,7 +111,7 @@ vi.mock('../-shared/inventory-api', () => ({
 import * as api from '../-shared/inventory-api';
 import { accessFor, MANAGER, place, WAREHOUSE } from '../-shared/inventory-test-fixtures';
 import { InventoryPage } from './InventoryPage';
-import { StockTab } from './StockTab';
+import { STOCK_COLUMN_SIZE, StockTab } from './StockTab';
 
 const mocked = vi.mocked(api);
 const wrap = (node: ReactNode) => {
@@ -154,6 +174,58 @@ describe('inventory gate', () => {
         expect(screen.queryByText('inventory.stock.setReorder')).toBeNull();
         expect(screen.queryByText('inventory.stock.collection')).toBeNull();
         expect(collections.mock.calls.every((call) => call[2] === false)).toBe(true);
+    });
+
+    it('stock table: fills its container, no resize handles, actions column fits both buttons', async () => {
+        state.access = accessFor(MANAGER);
+        mocked.fetchOverview.mockResolvedValue(overview);
+        const { container } = wrap(
+            <StockTab locationId="L1" places={[place('L1', 'ST1')]} allPlaces={[]} onPickLocation={() => undefined} />
+        );
+        await screen.findByText('inventory.stock.setReorder');
+        const table = container.querySelector('table') as HTMLElement;
+        expect(table.dataset.fill).toBe('true');
+        expect(table.dataset.resizable).toBe('false');
+        const actions = container.querySelector('th[data-column="actions"]') as HTMLElement;
+        expect(Number(actions.dataset.size)).toBe(STOCK_COLUMN_SIZE.actionsBoth);
+        // The two buttons wrap instead of overflowing into each other.
+        const cell = container.querySelector('td[data-column="actions"] > div') as HTMLElement;
+        expect(cell.className).toContain('flex-wrap');
+        cell.querySelectorAll('button').forEach((button) => expect(button.className).toContain('whitespace-nowrap'));
+    });
+
+    it('stock table: number headings right-aligned like the numbers, unset reorder level reads "Not set"', async () => {
+        state.access = accessFor(MANAGER);
+        mocked.fetchOverview.mockResolvedValue({
+            ...overview,
+            rows: overview.rows.map((row) => ({ ...row, levels: [{ location_id: 'L1', on_hand: 3, reorder_level: null, low: false }] })),
+        });
+        const { container } = wrap(
+            <StockTab locationId="L1" places={[place('L1', 'ST1')]} allPlaces={[]} onPickLocation={() => undefined} />
+        );
+        expect(await screen.findByText('inventory.stock.reorderNotSet')).toBeTruthy();
+        for (const id of ['place-L1', 'transit', 'held', 'sellable', 'reorder']) {
+            const heading = container.querySelector(`th[data-column="${id}"] > span`) as HTMLElement;
+            expect(heading.className).toContain('text-end');
+        }
+        expect(container.querySelector('th[data-column="item"] > span')).toBeNull();
+    });
+
+    it('stock table: all places shown → no empty actions column', async () => {
+        state.access = accessFor(MANAGER);
+        mocked.fetchOverview.mockResolvedValue({
+            ...overview,
+            locations: [
+                { id: 'L1', code: 'ST1', name: 'Store', gstin: null },
+                { id: 'L2', code: 'WH1', name: 'Warehouse', gstin: null },
+            ],
+        });
+        const { container } = wrap(
+            <StockTab locationId={null} places={[place('L1', 'ST1'), place('L2', 'WH1')]} allPlaces={[]} onPickLocation={() => undefined} />
+        );
+        await screen.findByText('Steel bottle');
+        expect(container.querySelector('th[data-column="actions"]')).toBeNull();
+        expect(container.querySelector('th[data-column="reorder"]')).toBeNull();
     });
 
     it('a manager sees both', async () => {

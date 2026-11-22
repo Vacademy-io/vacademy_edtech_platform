@@ -31,7 +31,7 @@ public class AppleNativeLoginRequestDto {
     /** Stable Apple subject id as surfaced by the plugin ({@code user}); the id_token {@code sub} is authoritative. */
     private String user;
 
-    /** First-sign-in convenience email (fallback when the id_token omits {@code email}). */
+    /** First-sign-in convenience email. Not used for sign-in: only the id_token {@code email} is trusted. */
     private String email;
 
     /** First-sign-in given name (null afterwards). */

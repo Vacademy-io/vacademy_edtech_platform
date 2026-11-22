@@ -166,6 +166,8 @@ function SessionsList() {
             {rows.length > 0 && (
                 <>
                     <MyTable<SessionRow>
+                        fillContainer
+                        enableColumnResizing={false}
                         data={{
                             content: rows,
                             page_no: page,

@@ -38,8 +38,8 @@ public class ApplicationSecurityConfig {
             "/admin-core-service/batch/v1/search",
             "/admin-core-service/public/**",
             "/admin-core-service/public/domain-routing/v1/**",
-            "/admin-core-service/live-presenter/v1/**",
-            "/admin-core-service/live-learner/v1/**",
+            // /live-presenter/v1/** and /live-learner/v1/** (legacy presentation mode) are NOT
+            // listed: no client calls them, so they need sign-in like any other route.
             "/admin-core-service/institute/open_learner/v1/**",
             "/admin-core-service/institute/v1/internal/create",
             "/admin-core-service/learner/v1/details/**",

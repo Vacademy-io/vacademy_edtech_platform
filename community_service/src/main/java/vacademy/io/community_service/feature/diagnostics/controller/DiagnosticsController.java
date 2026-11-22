@@ -3,8 +3,11 @@ package vacademy.io.community_service.feature.diagnostics.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.common.auth.util.SuperAdminAuthUtil;
 import vacademy.io.community_service.feature.diagnostics.dto.InfrastructureHealthResponse;
 import vacademy.io.community_service.feature.diagnostics.service.DiagnosticsService;
 
@@ -19,6 +22,9 @@ import vacademy.io.community_service.feature.diagnostics.service.DiagnosticsServ
  * - Application services (auth, admin, media, assessment, notification)
  * - Dependencies (Redis, PostgreSQL)
  * - Inter-service connectivity matrix
+ *
+ * /health and /health/quick stay open for the health dashboard; the detailed views
+ * (pods, events, connectivity, database, redis) are for platform super admins.
  */
 @RestController
 @RequestMapping("/community-service/diagnostics")
@@ -52,7 +58,8 @@ public class DiagnosticsController {
      * Includes: ingress-nginx, cert-manager, kube-system, default
      */
     @GetMapping("/kubernetes/pods")
-    public ResponseEntity<Object> getKubernetesPodStatus() {
+    public ResponseEntity<Object> getKubernetesPodStatus(@RequestAttribute("user") CustomUserDetails user) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
         return ResponseEntity.ok(diagnosticsService.getKubernetesPodStatus());
     }
 
@@ -61,7 +68,8 @@ public class DiagnosticsController {
      * Tests: auth↔admin, admin↔media, admin↔assessment, etc.
      */
     @GetMapping("/connectivity")
-    public ResponseEntity<Object> getConnectivityStatus() {
+    public ResponseEntity<Object> getConnectivityStatus(@RequestAttribute("user") CustomUserDetails user) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
         return ResponseEntity.ok(diagnosticsService.getConnectivityStatus());
     }
 
@@ -70,7 +78,8 @@ public class DiagnosticsController {
      * Useful for diagnosing recent issues
      */
     @GetMapping("/kubernetes/events")
-    public ResponseEntity<Object> getKubernetesEvents() {
+    public ResponseEntity<Object> getKubernetesEvents(@RequestAttribute("user") CustomUserDetails user) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
         return ResponseEntity.ok(diagnosticsService.getRecentEvents());
     }
 
@@ -78,7 +87,8 @@ public class DiagnosticsController {
      * Get database connectivity status for all services
      */
     @GetMapping("/database")
-    public ResponseEntity<Object> getDatabaseHealth() {
+    public ResponseEntity<Object> getDatabaseHealth(@RequestAttribute("user") CustomUserDetails user) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
         return ResponseEntity.ok(diagnosticsService.getDatabaseHealth());
     }
 
@@ -86,7 +96,8 @@ public class DiagnosticsController {
      * Get Redis health and stats
      */
     @GetMapping("/redis")
-    public ResponseEntity<Object> getRedisHealth() {
+    public ResponseEntity<Object> getRedisHealth(@RequestAttribute("user") CustomUserDetails user) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
         return ResponseEntity.ok(diagnosticsService.getRedisHealth());
     }
 }

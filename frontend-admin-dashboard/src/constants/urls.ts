@@ -1453,6 +1453,8 @@ export const CREATE_CATALOGUE = (instituteId: string) =>
     `${CATALOGUE_BASE_URL}/create?instituteId=${instituteId}`;
 export const UPDATE_CATALOGUE = (catalogueId: string) =>
     `${CATALOGUE_BASE_URL}/update?catalogueId=${catalogueId}`;
+export const DELETE_CATALOGUE = (catalogueId: string) =>
+    `${CATALOGUE_BASE_URL}/delete?catalogueId=${catalogueId}`;
 export const GET_CATALOGUE_BY_TAG = (instituteId: string, tagName: string) =>
     `${CATALOGUE_BASE_URL}/institute/get/by-tag?instituteId=${instituteId}&tagName=${encodeURIComponent(tagName)}`;
 // Draft/publish revisions (AI Page Builder Phase A)
@@ -1625,6 +1627,9 @@ export const WHITE_LABEL_STATUS = (instituteId: string) =>
 // The institute's own Google OAuth client, so "Continue with Google" shows the brand's name.
 export const INSTITUTE_OAUTH_CLIENT = (instituteId: string, provider: 'google') =>
     `${BASE_URL}/auth-service/v1/institutes/${instituteId}/oauth-clients/${provider}`;
+// The institute's own identity provider (OIDC single sign-on for learners).
+export const INSTITUTE_SSO_CONNECTION = (instituteId: string) =>
+    `${BASE_URL}/auth-service/v1/institutes/${instituteId}/sso-connection`;
 
 // App Registry Status (read-only) — mobile/desktop app registration status for this institute,
 // sourced from the health-check dashboard's App Registration module. Registration itself stays

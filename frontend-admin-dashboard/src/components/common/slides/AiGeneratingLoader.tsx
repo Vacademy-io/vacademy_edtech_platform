@@ -35,7 +35,7 @@ export const finishSessionSteps = [
 
 interface Step {
     text: string;
-    icon?: React.ElementType<{ className?: string }>;
+    icon?: React.ComponentType<{ className?: string }>;
 }
 
 interface AiGeneratingLoaderProps {

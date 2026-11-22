@@ -5,7 +5,7 @@ import { CommerceLoadingRows } from '@/routes/commerce/-components/CommerceState
 import { useAdminLanguage } from '@/routes/commerce/-components/CatalogueBits';
 import { useVariantSearch } from '../-shared/inventory-hooks';
 import type { VariantPick } from '../-shared/inventory-types';
-import { InventoryErrorNotice, Qty } from './inventory-ui';
+import { distinctParts, InventoryErrorNotice, Qty } from './inventory-ui';
 
 /** A short pause after typing before searching (one request per word, not per key). */
 export function useDebounced<T>(value: T, ms = 300): T {
@@ -60,9 +60,11 @@ export function VariantResults({
                         <span className="flex min-w-0 flex-col">
                             <span className="truncate text-body text-foreground">{pickName(item, lang)}</span>
                             <span className="truncate text-caption text-muted-foreground">
-                                {[item.variant_name, item.sku, item.status === 'DRAFT' ? t('inventory.picker.draft') : null]
-                                    .filter(Boolean)
-                                    .join(' · ')}
+                                {distinctParts([
+                                    item.variant_name,
+                                    item.sku,
+                                    item.status === 'DRAFT' ? t('inventory.picker.draft') : null,
+                                ]).join(' · ')}
                             </span>
                         </span>
                         {showOnHand && item.on_hand !== null && (

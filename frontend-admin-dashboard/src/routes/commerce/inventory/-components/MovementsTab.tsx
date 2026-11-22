@@ -255,6 +255,8 @@ export function MovementsTab({
             {rows.length > 0 && (
                 <>
                     <MyTable<MovementRow>
+                        fillContainer
+                        enableColumnResizing={false}
                         data={{
                             content: rows,
                             page_no: page,

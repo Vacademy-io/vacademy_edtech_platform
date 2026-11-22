@@ -2495,9 +2495,12 @@ function RecordingTranscribeAction({
             return data;
         },
         enabled: true,
+        // Poll on the row's current status too, not only the last GET result: "Process Recording"
+        // sets it to QUEUED from the POST response, and keying on query data alone never started
+        // the poll, so the row sat on "Transcribing…" until the tab regained focus or a reload.
         refetchInterval: (query) => {
             const s = query.state.data?.status;
-            return s === 'QUEUED' || s === 'RUNNING' ? 10_000 : false;
+            return polling || s === 'QUEUED' || s === 'RUNNING' ? 10_000 : false;
         },
         refetchOnWindowFocus: true,
     });

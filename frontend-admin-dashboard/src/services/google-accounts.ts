@@ -59,10 +59,12 @@ export const listGoogleAccounts = async (): Promise<GoogleAccountSummary[]> => {
 /**
  * Start "Connect Google Workspace": returns the Google consent URL. The caller redirects the
  * browser there; Google bounces back to the server callback, which stores the encrypted
- * refresh token and lands the admin back on Settings (?google_connected=1 or ?google_error=...).
+ * refresh token and lands the admin back on Settings (?google_connected=1 or ?google_error=...),
+ * or on `returnPath` when given (a same-origin path, e.g. the class page the admin started from).
  */
 export const initiateGoogleOAuth = async (
-    driveAccess = false
+    driveAccess = false,
+    returnPath?: string
 ): Promise<{ oauth_url: string; session_key: string }> => {
     const instituteId = getInstituteId();
     // driveAccess also asks for read access to Meet recordings in Drive ("Save to library").
@@ -70,7 +72,11 @@ export const initiateGoogleOAuth = async (
         oauth_url: string;
         session_key: string;
     }>(GOOGLE_OAUTH_INITIATE, null, {
-        params: driveAccess ? { instituteId, driveAccess } : { instituteId },
+        params: {
+            instituteId,
+            ...(driveAccess ? { driveAccess } : {}),
+            ...(returnPath ? { returnPath } : {}),
+        },
     });
     return data;
 };

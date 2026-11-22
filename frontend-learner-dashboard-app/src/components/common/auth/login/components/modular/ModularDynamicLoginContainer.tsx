@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { FcGoogle } from "react-icons/fc"; // design-lint-ignore: Google brand logo
+import { EnterpriseSsoButton } from "@/components/common/auth/login/enterprise-sso-button";
 import { ArrowRight } from "@phosphor-icons/react";
 import { isIOSNative, shouldHideThirdPartyLogin } from "@/utils/ios-iap-compliance";
 import { LOGIN_URL_GOOGLE_GITHUB } from "@/constants/urls";
@@ -730,6 +731,11 @@ export function ModularDynamicLoginContainer({
           </p>
         </div>
       </motion.div>
+
+      <EnterpriseSsoButton
+        instituteId={instituteId}
+        returnPath={new URLSearchParams(window.location.search).get("redirect")}
+      />
 
       {/* OAuth Providers. On native iOS, Sign in with Apple (below) provides the
           Guideline 4.8 parity that previously required hiding Google/GitHub.
