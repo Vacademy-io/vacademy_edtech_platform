@@ -65,8 +65,9 @@ public class SsoAccountService {
     @Transactional
     public Resolved resolve(InstituteSsoConnection connection, SsoClaims claims) {
         String instituteId = connection.getInstituteId();
-        Optional<UserSsoIdentity> known = identityRepository.findByConnectionIdAndSubject(connection.getId(),
-                claims.subject());
+        String issuer = OidcProviderClient.normaliseIssuer(connection.getIssuer());
+        Optional<UserSsoIdentity> known = identityRepository.findByConnectionIdAndIssuerAndSubject(
+                connection.getId(), issuer, claims.subject());
         if (known.isPresent()) {
             UserSsoIdentity identity = known.get();
             Optional<User> user = userRepository.findById(identity.getUserId());
@@ -99,6 +100,7 @@ public class SsoAccountService {
         UserSsoIdentity identity = identityRepository.save(UserSsoIdentity.builder()
                 .connectionId(connection.getId())
                 .instituteId(instituteId)
+                .issuer(issuer)
                 .subject(claims.subject())
                 .userId(user.getId())
                 .email(claims.email())

@@ -32,6 +32,9 @@ public class UserSsoIdentity {
     @Column(name = "institute_id", nullable = false)
     private String instituteId;
 
+    @Column(name = "issuer", nullable = false)
+    private String issuer;
+
     @Column(name = "subject", nullable = false)
     private String subject;
 

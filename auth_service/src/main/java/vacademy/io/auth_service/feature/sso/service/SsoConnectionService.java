@@ -191,7 +191,9 @@ public class SsoConnectionService {
         }
         row.setUpdatedBy(userId);
         row.setUpdatedAt(new Date());
-        return repository.save(row);
+        InstituteSsoConnection saved = repository.saveAndFlush(row);
+        identityRepository.reattachOrphans(saved.getId(), instituteId, saved.getIssuer());
+        return saved;
     }
 
     @Transactional

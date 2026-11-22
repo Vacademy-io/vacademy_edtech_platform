@@ -49,6 +49,9 @@ CREATE TABLE IF NOT EXISTS public.user_sso_identity (
     id                          varchar(255) PRIMARY KEY,
     connection_id               varchar(255) NOT NULL,
     institute_id                varchar(255) NOT NULL,
+    -- the provider that vouched for this person; a connection removed and set up again with
+    -- the same issuer gets its people back instead of creating second accounts
+    issuer                      varchar(1024) NOT NULL,
     subject                     varchar(512) NOT NULL,
     user_id                     varchar(255) NOT NULL,
     email                       varchar(512) NULL,
@@ -57,7 +60,7 @@ CREATE TABLE IF NOT EXISTS public.user_sso_identity (
     last_login_at               timestamp    NULL,
     created_at                  timestamp    DEFAULT CURRENT_TIMESTAMP,
     updated_at                  timestamp    DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_user_sso_identity_subject UNIQUE (connection_id, subject)
+    CONSTRAINT uq_user_sso_identity_subject UNIQUE (connection_id, issuer, subject)
 );
 CREATE INDEX IF NOT EXISTS idx_user_sso_identity_user ON public.user_sso_identity (user_id);
 
