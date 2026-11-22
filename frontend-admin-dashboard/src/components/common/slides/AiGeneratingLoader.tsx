@@ -9,6 +9,7 @@ import {
     RefreshCw,
     Layers,
 } from 'lucide-react';
+import { StopCircle, Waveform, PaperPlaneTilt } from '@phosphor-icons/react';
 
 export const aiSteps = [
     { text: 'Analyzing your topic...', icon: BrainCircuit },
@@ -26,9 +27,15 @@ export const pptSteps = [
     { text: 'Finalizing your new slides...', icon: CheckCircle },
 ];
 
+export const finishSessionSteps = [
+    { text: 'Ending session on server...', icon: StopCircle },
+    { text: 'Transcribing audio...', icon: Waveform },
+    { text: 'Sending summary...', icon: PaperPlaneTilt },
+];
+
 interface Step {
     text: string;
-    icon: React.FC<React.SVGProps<SVGSVGElement>>;
+    icon?: React.ElementType<{ className?: string }>;
 }
 
 interface AiGeneratingLoaderProps {
@@ -71,7 +78,8 @@ export const AiGeneratingLoader = ({
 
             <div className="w-full space-y-3 px-4 pt-2">
                 {steps.map((step, index) => {
-                    const Icon = step.icon;
+                    // A step without an icon must not crash the loader (React cannot render undefined)
+                    const Icon = step.icon ?? Sparkles;
                     const isActive = index === currentStepIndex;
                     const isCompleted = index < currentStepIndex;
 
