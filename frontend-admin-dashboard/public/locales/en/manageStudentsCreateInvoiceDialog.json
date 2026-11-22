@@ -132,6 +132,8 @@
         "applyNowRenewal": "Renew now, collect the payment later",
         "applyNowEnrol": "Enrol now, collect the payment later",
         "applyNowNote": "Applied as soon as the invoice is created. The payment is recorded on the membership when it arrives. Cancelling the invoice later does not undo it.",
-        "applyAsMemberPriceHint": "The membership moves to a plan at this price with the same validity. If no plan has this price, a private one is created that only this learner is on; the original plan does not change."
+        "applyAsMemberPriceHint": "The membership moves to a plan at this price with the same validity. If no plan has this price, a private one is created that only this learner is on; the original plan does not change.",
+        "courseSearch": "Search by {{course}}, level, batch or session",
+        "courseEmpty": "Nothing matches"
     }
 }

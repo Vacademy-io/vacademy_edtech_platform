@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { MyInput } from '@/components/design-system/input';
+import { SearchableSelect, prefixFirstFilter } from '@/components/design-system/searchable-select';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
@@ -220,9 +221,20 @@ export function InvoiceProductLinkField({
                         id: b.id,
                         label: `${b.package_dto?.package_name ?? courseTerm}${level}${child}${session}`,
                         orgAssociated: !!b.is_org_associated,
+                        // Search also matches each part on its own: batch, level, session.
+                        keywords: [b.name, b.level?.level_name, b.session?.session_name].filter(
+                            (k): k is string => !!k
+                        ),
                     };
                 })
-                .sort((a, b) => a.label.localeCompare(b.label)),
+                .sort((a, b) => a.label.localeCompare(b.label))
+                // The searchable list keys items by label: two unnamed batches of the same course,
+                // level and session would collide, so a duplicate gets a short id suffix.
+                .map((c, i, all) =>
+                    all.some((o, j) => j !== i && o.label === c.label)
+                        ? { ...c, label: `${c.label} · #${c.id.slice(-4)}` }
+                        : c
+                ),
         [batches, courseTerm]
     );
     const selectedCourse = courseOptions.find((c) => c.id === value.packageSessionId) ?? null;
@@ -407,34 +419,34 @@ export function InvoiceProductLinkField({
                 <div className="space-y-3">
                     <div className="flex flex-col gap-1">
                         <label className="text-caption text-neutral-600">{courseTerm}</label>
-                        <Select
-                            value={value.packageSessionId ?? undefined}
-                            onValueChange={(id) =>
+                        <SearchableSelect
+                            options={courseOptions.map((c) => ({
+                                value: c.id,
+                                label: c.label,
+                                keywords: c.keywords,
+                            }))}
+                            value={value.packageSessionId ?? ''}
+                            onChange={(id) =>
                                 onChange({
                                     ...EMPTY_PRODUCT_LINK,
                                     mode: 'NEW_ENROLLMENT',
-                                    packageSessionId: id,
+                                    packageSessionId: id || null,
                                     notifyLearner: value.notifyLearner,
                                     applyAsMemberPrice: value.applyAsMemberPrice,
                                     applyNow: value.applyNow,
                                 })
                             }
-                        >
-                            <SelectTrigger>
-                                <SelectValue
-                                    placeholder={t('productLink.coursePlaceholder', {
-                                        defaultValue: 'Choose…',
-                                    })}
-                                />
-                            </SelectTrigger>
-                            <SelectContent className="z-popover-above-modal max-h-72">
-                                {courseOptions.map((c) => (
-                                    <SelectItem key={c.id} value={c.id}>
-                                        {c.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                            placeholder={t('productLink.coursePlaceholder', { defaultValue: 'Choose…' })}
+                            searchPlaceholder={t('productLink.courseSearch', {
+                                defaultValue: 'Search by {{course}}, level, batch or session',
+                                course: courseTerm.toLowerCase(),
+                            })}
+                            emptyText={t('productLink.courseEmpty', { defaultValue: 'Nothing matches' })}
+                            filter={prefixFirstFilter}
+                            // Inside the dialog: a portalled list could not be scrolled.
+                            portal={false}
+                            triggerClassName="w-full"
+                        />
                     </div>
 
                     {value.packageSessionId && (
