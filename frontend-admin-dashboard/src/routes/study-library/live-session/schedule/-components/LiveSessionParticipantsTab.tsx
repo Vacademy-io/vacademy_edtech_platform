@@ -1,6 +1,13 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { useEffect, useMemo, useState, Suspense } from 'react';
+import {
+    useEffect,
+    useMemo,
+    useState,
+    Suspense,
+    type KeyboardEvent as ReactKeyboardEvent,
+    type MouseEvent as ReactMouseEvent,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { Checkbox } from '@/components/ui/checkbox';
 import { UseFormReturn } from 'react-hook-form';
@@ -41,6 +48,33 @@ type SelectedLevel = {
 const sameLevel = (a: SelectedLevel, b: SelectedLevel) =>
     a.courseId === b.courseId && a.sessionId === b.sessionId && a.levelId === b.levelId;
 
+// This tab renders inside the schedule step-2 <form>, whose submit opens the
+// Review & confirm dialog. The shared learner-list pieces shown here (filter
+// chips, Manage filters, export buttons, sort header, pagination) use
+// MyButton / <button> without type="button", so the browser treats each one
+// as a submit button — and Enter in a search box submits implicitly. Cancel
+// only submissions aimed at the enclosing form; dialogs portaled out with
+// their own <form> are left alone. These run in the bubble phase, after the
+// clicked element's own handlers (popover toggles, page changes, exports).
+const preventSubmitClick = (e: ReactMouseEvent<HTMLElement>) => {
+    const form = e.currentTarget.closest('form');
+    if (!form) return;
+    const button = (e.target as Element).closest('button');
+    if (button?.type === 'submit' && button.form === form) {
+        e.preventDefault();
+    }
+};
+
+const preventSubmitOnEnter = (e: ReactKeyboardEvent<HTMLElement>) => {
+    if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
+    const form = e.currentTarget.closest('form');
+    if (!form) return;
+    const target = e.target;
+    if (target instanceof HTMLInputElement && target.form === form) {
+        e.preventDefault();
+    }
+};
+
 export function LiveSessionParticipantsTab({
     form,
     courses,
@@ -68,7 +102,12 @@ export function LiveSessionParticipantsTab({
     }, [selectedTab, form]);
 
     return (
-        <Tabs value={selectedTab} onValueChange={handleChange}>
+        <Tabs
+            value={selectedTab}
+            onValueChange={handleChange}
+            onClick={preventSubmitClick}
+            onKeyDown={preventSubmitOnEnter}
+        >
             <TabsList className="mt-4 flex h-auto w-full flex-wrap justify-start border border-neutral-500 !bg-transparent p-0 sm:w-fit">
                 <TabsTrigger
                     value="Batch"
