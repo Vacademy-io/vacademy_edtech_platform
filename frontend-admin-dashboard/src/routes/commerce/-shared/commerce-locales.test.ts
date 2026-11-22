@@ -486,3 +486,27 @@ describe('commerce strings: every key the code asks for exists', () => {
         expect(en['reports.errors.REPORT_BUSY']).toBe('Another download is running. Try again in a minute.');
     });
 });
+
+describe('commerce strings: billing counters are "counters" (owner review)', () => {
+    /** GST report names keep the accounting word "register" (sales register, credit note register). */
+    const GST_REGISTER_KEYS = /^reports\.|\.salesRegister\.|REGISTER_DOES_NOT_ADD_UP|sales-register/;
+
+    it('no visible string outside the GST registers calls a till a "register"', () => {
+        const offenders = Object.entries(en).filter(
+            ([key, text]) => /\bregisters?\b/i.test(text) && !/\bregistered\b|\bunregistered\b/i.test(text) && !GST_REGISTER_KEYS.test(key)
+        );
+        expect(offenders).toEqual([]);
+        const hiOffenders = Object.entries(hi).filter(([key, text]) => text.includes('रजिस्टर') && !GST_REGISTER_KEYS.test(key));
+        expect(hiOffenders).toEqual([]);
+    });
+
+    it('the empty till page does not repeat its title in the sentence under it', () => {
+        for (const strings of [en, hi]) {
+            const title = strings['pos.start.emptyTitle'] ?? '';
+            expect(title).toBeTruthy();
+            expect(strings['pos.start.empty']).not.toContain(title);
+            expect(strings['pos.start.emptyCashier']).not.toContain(title);
+        }
+        expect(en['pos.start.empty']).toBe('Add a counter to start billing.');
+    });
+});

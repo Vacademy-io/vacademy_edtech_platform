@@ -101,7 +101,10 @@ export function PosStartPage() {
                 {registers.isLoading && <CommerceLoadingRows rows={3} />}
                 {registers.isError && <PosErrorNotice error={registers.error} />}
                 {registers.isSuccess && list.length === 0 && (
-                    <CommerceEmptyState title={t('pos.start.emptyTitle')} description={t('pos.start.empty')}>
+                    <CommerceEmptyState
+                        title={t('pos.start.emptyTitle')}
+                        description={access.isManager ? t('pos.start.empty') : t('pos.start.emptyCashier')}
+                    >
                         {access.isManager && (
                             <Link to="/commerce/settings/registers">
                                 <MyButton type="button" buttonType="primary" scale="large" className="h-12">

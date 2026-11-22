@@ -314,7 +314,7 @@
                 "description": "HSN codes, units and rate slabs by price."
             },
             "locations": {
-                "title": "Locations and registers",
+                "title": "Locations",
                 "description": "Stores, warehouses, source places and exhibitions."
             },
             "staff": {
@@ -322,7 +322,7 @@
                 "description": "Allowed locations for each person and your approval PIN."
             },
             "registers": {
-                "title": "POS registers",
+                "title": "Billing counters",
                 "description": "Billing counters at each location."
             },
             "shipping": {
@@ -470,7 +470,7 @@
         "description": "Every place of yours: stores, warehouses, the places goods come from, and exhibitions.",
         "add": "Add location",
         "edit": "Edit {{name}}",
-        "registersNote": "POS registers for each location are coming soon.",
+        "registersNote": "Billing counters for each location are set up under Settings → Billing counters.",
         "columns": {
             "name": "Location",
             "type": "Type",
@@ -2224,7 +2224,8 @@
             "closeIt": "Close it",
             "tapToOpen": "Tap to open this counter.",
             "emptyTitle": "No counters yet",
-            "empty": "No counters yet. A manager adds one under Settings → Registers."
+            "empty": "Add a counter to start billing.",
+            "emptyCashier": "Ask a manager to add a counter."
         },
         "sell": {
             "scan": "Scan a label or type a name or SKU",
