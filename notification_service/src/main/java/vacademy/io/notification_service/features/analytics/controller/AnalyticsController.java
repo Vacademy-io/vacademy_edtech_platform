@@ -6,6 +6,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.notification_service.config.InstituteStaffAccess;
 import vacademy.io.notification_service.features.analytics.dto.*;
 import vacademy.io.notification_service.features.analytics.service.DailyParticipationService;
 import vacademy.io.notification_service.features.analytics.service.LeadJourneyFunnelService;
@@ -28,8 +31,11 @@ public class AnalyticsController {
         description = "Returns 14-day workflow participation metrics including outgoing/incoming messages, unique users, and response rates for each day and template"
     )
     public ResponseEntity<DailyParticipationResponseDTO> getDailyParticipation(
-            @RequestBody DailyParticipationRequestDTO request
+            @RequestBody DailyParticipationRequestDTO request,
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId
     ) {
+        InstituteStaffAccess.requireStaff(user, clientId, request.getInstituteId());
         log.info("Received daily participation request: {}", request);
 
         Timestamp startDate = request.getStartDate() != null
@@ -54,8 +60,11 @@ public class AnalyticsController {
         description = "Returns a paginated leaderboard of most active users based on their message activity (outgoing + incoming). Includes user details from custom fields."
     )
     public ResponseEntity<EngagementLeaderboardResponseDTO> getEngagementLeaderboard(
-            @RequestBody EngagementLeaderboardRequestDTO request
+            @RequestBody EngagementLeaderboardRequestDTO request,
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId
     ) {
+        InstituteStaffAccess.requireStaff(user, clientId, request.getInstituteId());
         log.info("Received engagement leaderboard request: {}", request);
 
         Timestamp startDate = request.getStartDate() != null 
@@ -87,8 +96,11 @@ public class AnalyticsController {
         description = "Returns a paginated list of users who completed the challenge (received completion template). Includes user details and completion dates."
     )
     public ResponseEntity<CompletionCohortResponseDTO> getCompletionCohort(
-            @RequestBody CompletionCohortRequestDTO request
+            @RequestBody CompletionCohortRequestDTO request,
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId
     ) {
+        InstituteStaffAccess.requireStaff(user, clientId, request.getInstituteId());
         log.info("Received completion cohort request: {}", request);
 
         Timestamp startDate = request.getStartDate() != null 
@@ -119,8 +131,11 @@ public class AnalyticsController {
         description = "Returns per-day send/recipient/reply metrics plus a per-recipient roster for a multi-day WhatsApp drip identified by a template-name prefix (default 'lead_journey_day_'). Surfaces journeys that are not registered in notification_template_day_map (e.g. Facebook-leads journeys)."
     )
     public ResponseEntity<LeadJourneyFunnelResponseDTO> getLeadJourneyFunnel(
-            @RequestBody LeadJourneyFunnelRequestDTO request
+            @RequestBody LeadJourneyFunnelRequestDTO request,
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId
     ) {
+        InstituteStaffAccess.requireStaff(user, clientId, request.getInstituteId());
         log.info("Received lead-journey funnel request: {}", request);
 
         Timestamp startDate = request.getStartDate() != null
@@ -147,8 +162,11 @@ public class AnalyticsController {
         description = "Returns all outgoing template identifiers grouped by day for the given institute. Used to populate dropdown for completion cohort filtering."
     )
     public ResponseEntity<TemplateIdentifiersResponseDTO> getOutgoingTemplates(
-            @RequestParam("institute_id") String instituteId
+            @RequestParam("institute_id") String instituteId,
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId
     ) {
+        InstituteStaffAccess.requireStaff(user, clientId, instituteId);
         log.info("Received outgoing templates request for institute: {}", instituteId);
 
         TemplateIdentifiersResponseDTO response = dailyParticipationService.getOutgoingTemplates(instituteId);

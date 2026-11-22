@@ -8,6 +8,9 @@ import org.springframework.web.bind.annotation.*;
 import vacademy.io.notification_service.features.email_tracking.dto.UserEmailTrackingRequest;
 import vacademy.io.notification_service.features.email_tracking.dto.UserEmailTrackingResponse;
 import vacademy.io.notification_service.features.email_tracking.service.EmailTrackingService;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.notification_service.config.InstituteStaffAccess;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -43,7 +46,10 @@ public class EmailTrackingController {
             @RequestParam(required = false) String sourceId,
             @RequestParam(required = false) String fromDate,
             @RequestParam(required = false) String toDate,
-            @RequestParam(required = false) String eventType) {
+            @RequestParam(required = false) String eventType,
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId) {
+        InstituteStaffAccess.requireSelfOrStaff(user, clientId, userId);
         
         try {
             log.info("Fetching emails for userId: {}, page: {}, size: {}", userId, page, size);
@@ -80,7 +86,10 @@ public class EmailTrackingController {
             @RequestParam(required = false) String sourceId,
             @RequestParam(required = false) String fromDate,
             @RequestParam(required = false) String toDate,
-            @RequestParam(required = false) String eventType) {
+            @RequestParam(required = false) String eventType,
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId) {
+        InstituteStaffAccess.requireStaff(user, clientId);
         
         try {
             log.info("Fetching emails for email address: {}, page: {}, size: {}", email, page, size);
@@ -112,7 +121,10 @@ public class EmailTrackingController {
      */
     @GetMapping("/{emailId}")
     public ResponseEntity<UserEmailTrackingResponse> getEmailTracking(
-            @PathVariable String emailId) {
+            @PathVariable String emailId,
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId) {
+        InstituteStaffAccess.requireStaff(user, clientId);
         
         try {
             log.info("Fetching tracking details for email: {}", emailId);
@@ -136,7 +148,10 @@ public class EmailTrackingController {
      */
     @GetMapping("/{emailId}/history")
     public ResponseEntity<List<UserEmailTrackingResponse.EmailTrackingStatus>> getEmailEventHistory(
-            @PathVariable String emailId) {
+            @PathVariable String emailId,
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId) {
+        InstituteStaffAccess.requireStaff(user, clientId);
         
         try {
             log.info("Fetching full event history for email: {}", emailId);
@@ -162,7 +177,10 @@ public class EmailTrackingController {
      */
     @PostMapping("/search")
     public ResponseEntity<Page<UserEmailTrackingResponse>> searchEmails(
-            @RequestBody UserEmailTrackingRequest request) {
+            @RequestBody UserEmailTrackingRequest request,
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId) {
+        InstituteStaffAccess.requireStaff(user, clientId);
         
         try {
             log.info("Searching emails with request: {}", request);

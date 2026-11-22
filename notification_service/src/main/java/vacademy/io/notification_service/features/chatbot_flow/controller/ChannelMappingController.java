@@ -6,7 +6,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.client.DefaultResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
+import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.notification_service.config.InstituteStaffAccess;
 import vacademy.io.notification_service.constants.NotificationConstants;
 import vacademy.io.notification_service.features.chatbot_flow.engine.provider.CombotMessageProvider;
 import vacademy.io.notification_service.features.chatbot_flow.engine.provider.WatiMessageProvider;
@@ -15,6 +21,10 @@ import vacademy.io.notification_service.features.combot.repository.ChannelToInst
 import vacademy.io.notification_service.institute.InstituteInfoDTO;
 import vacademy.io.notification_service.institute.InstituteInternalService;
 
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
@@ -245,34 +255,143 @@ public class ChannelMappingController {
     }
 
     /**
-     * Verify that our webhook endpoint is reachable (self-test).
+     * Verify that our webhook endpoint is reachable (self-test). Institute staff only; the
+     * URL must be a public http(s) address, redirects are not followed and the response body
+     * is never returned.
      */
     @PostMapping("/verify-webhook")
-    public ResponseEntity<Map<String, Object>> verifyWebhook(@RequestBody Map<String, String> body) {
+    public ResponseEntity<Map<String, Object>> verifyWebhook(
+            @RequestBody Map<String, String> body,
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId) {
+        InstituteStaffAccess.requireStaff(user, clientId);
+
         String webhookUrl = body.get("webhookUrl");
         if (webhookUrl == null) {
             return ResponseEntity.badRequest().body(Map.of("success", false));
+        }
+        if (!isPublicHttpUrl(webhookUrl)) {
+            return ResponseEntity.ok(Map.of(
+                    "success", false,
+                    "message", "Webhook URL must be a public http(s) address"
+            ));
         }
 
         try {
             // Send a GET with verify params to our own endpoint
             String testUrl = webhookUrl + "?hub.mode=subscribe&hub.challenge=test123&hub.verify_token=vacademy_webhook_secret";
-            ResponseEntity<String> response = restTemplate.getForEntity(testUrl, String.class);
+            ResponseEntity<String> response = WEBHOOK_CHECK_CLIENT.getForEntity(testUrl, String.class);
 
             boolean success = response.getStatusCode().is2xxSuccessful()
                     && "test123".equals(response.getBody());
 
             return ResponseEntity.ok(Map.of(
                     "success", success,
-                    "message", success ? "Webhook endpoint verified" : "Verification failed: " + response.getBody()
+                    "message", success ? "Webhook endpoint verified"
+                            : "Verification failed (HTTP " + response.getStatusCode().value() + ")"
             ));
 
         } catch (Exception e) {
+            log.info("Webhook self-test could not reach {}: {}", webhookUrl, e.getClass().getSimpleName());
             return ResponseEntity.ok(Map.of(
                     "success", false,
-                    "message", "Endpoint unreachable: " + e.getMessage()
+                    "message", "Endpoint unreachable"
             ));
         }
+    }
+
+    /** Self-test client: short timeouts, never follows redirects, 4xx/5xx returned as responses. */
+    private static final RestTemplate WEBHOOK_CHECK_CLIENT = buildWebhookCheckClient();
+
+    private static RestTemplate buildWebhookCheckClient() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory() {
+            @Override
+            protected void prepareConnection(HttpURLConnection connection, String httpMethod) throws IOException {
+                super.prepareConnection(connection, httpMethod);
+                connection.setInstanceFollowRedirects(false);
+            }
+        };
+        factory.setConnectTimeout(5000);
+        factory.setReadTimeout(10000);
+        RestTemplate client = new RestTemplate(factory);
+        client.setErrorHandler(new DefaultResponseErrorHandler() {
+            @Override
+            public boolean hasError(ClientHttpResponse response) {
+                return false;
+            }
+        });
+        return client;
+    }
+
+    /**
+     * True for an http(s) URL whose host resolves only to public addresses (no loopback,
+     * private, link-local, CGNAT, unique-local or metadata address, no cluster-internal name).
+     */
+    static boolean isPublicHttpUrl(String url) {
+        try {
+            URI uri = new URI(url.trim());
+            String scheme = uri.getScheme();
+            String host = uri.getHost();
+            if (scheme == null || host == null || uri.getUserInfo() != null) {
+                return false;
+            }
+            if (!scheme.equalsIgnoreCase("https") && !scheme.equalsIgnoreCase("http")) {
+                return false;
+            }
+            String h = host.toLowerCase();
+            if (h.equals("localhost") || h.endsWith(".local") || h.endsWith(".internal")
+                    || h.endsWith(".svc") || h.endsWith(".cluster.local") || !h.contains(".")) {
+                return false;
+            }
+            InetAddress[] addresses = InetAddress.getAllByName(host);
+            if (addresses.length == 0) {
+                return false;
+            }
+            for (InetAddress address : addresses) {
+                if (isNonPublicAddress(address)) {
+                    return false;
+                }
+            }
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private static boolean isNonPublicAddress(InetAddress address) {
+        if (address.isAnyLocalAddress() || address.isLoopbackAddress() || address.isLinkLocalAddress()
+                || address.isSiteLocalAddress() || address.isMulticastAddress()) {
+            return true;
+        }
+        byte[] b = address.getAddress();
+        if (b.length == 4) {
+            int first = b[0] & 0xFF;
+            int second = b[1] & 0xFF;
+            return first == 0                                  // 0.0.0.0/8
+                    || (first == 100 && second >= 64 && second <= 127) // 100.64.0.0/10
+                    || (first == 192 && second == 0 && (b[2] & 0xFF) == 0) // 192.0.0.0/24
+                    || first >= 240;                           // reserved
+        }
+        if (b.length == 16) {
+            if ((b[0] & 0xFE) == 0xFC) {                       // fc00::/7
+                return true;
+            }
+            boolean v4Mapped = true;
+            for (int i = 0; i < 10; i++) {
+                if (b[i] != 0) {
+                    v4Mapped = false;
+                    break;
+                }
+            }
+            if (v4Mapped && (b[10] & 0xFF) == 0xFF && (b[11] & 0xFF) == 0xFF) {
+                try {
+                    return isNonPublicAddress(InetAddress.getByAddress(new byte[]{b[12], b[13], b[14], b[15]}));
+                } catch (Exception e) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     // ==================== Cache Invalidation ====================
