@@ -1279,16 +1279,36 @@ public class SubOrgLearnerService {
                 && isActiveAdminOfSubOrg(caller.getUserId(), subOrgId, instituteId);
         String seats = String.format("Seat limit reached: %d of %d seats are already in use.", used, limit);
         if (callerIsSubOrgAdmin) {
-            String supportEmail = instituteRepository.findById(instituteId)
-                    .map(Institute::getEmail)
-                    .filter(StringUtils::hasText)
-                    .orElse(null);
+            String supportEmail = instituteSupportEmail(instituteId);
             throw new VacademyException(seats + (supportEmail != null
                     ? " To add more learners, please ask support at " + supportEmail + " to increase your seat limit."
                     : " To add more learners, please ask the institute support team to increase your seat limit."));
         }
         throw new VacademyException(seats
                 + " Increase the seat limit from the learner's Sub-Org tab (or Edit Sub-Org), then try again.");
+    }
+
+    /**
+     * Seat usage of one batch for the learner portal team page: the same numbers add-member
+     * enforces, plus the parent institute email so a full sub-org knows whom to ask.
+     */
+    @Transactional(readOnly = true)
+    public vacademy.io.admin_core_service.features.suborg.dto.SeatUsageDTO getSeatUsageForPortal(
+            String subOrgId, String instituteId, String packageSessionId) {
+        vacademy.io.admin_core_service.features.suborg.dto.SeatUsageDTO usage =
+                subOrgSubscriptionService.getSeatUsage(subOrgId, instituteId, packageSessionId);
+        usage.setSupportEmail(instituteSupportEmail(instituteId));
+        return usage;
+    }
+
+    private String instituteSupportEmail(String instituteId) {
+        if (!StringUtils.hasText(instituteId)) {
+            return null;
+        }
+        return instituteRepository.findById(instituteId)
+                .map(Institute::getEmail)
+                .filter(StringUtils::hasText)
+                .orElse(null);
     }
 
     /**

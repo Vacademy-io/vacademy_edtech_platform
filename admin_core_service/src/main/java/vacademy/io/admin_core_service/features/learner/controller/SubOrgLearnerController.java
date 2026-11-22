@@ -61,16 +61,35 @@ public class SubOrgLearnerController {
         if (request == null) {
             throw new VacademyException(HttpStatus.BAD_REQUEST, "Request body is required");
         }
+        requireSubOrgAdminOrStaff(user, request.getSubOrgId(), request.getInstituteId());
+    }
+
+    /** Platform super-admin, an admin of this sub-organization, or institute staff not limited to other sub-orgs. */
+    private void requireSubOrgAdminOrStaff(CustomUserDetails user, String subOrgId, String instituteId) {
         if (user == null || !StringUtils.hasText(user.getUserId())) {
             throw new VacademyException(HttpStatus.FORBIDDEN, "Only staff of this institute can add members");
         }
         if (isSuperAdmin(user)
-                || subOrgLearnerService.isActiveAdminOfSubOrg(user.getUserId(), request.getSubOrgId(),
-                        request.getInstituteId())) {
+                || subOrgLearnerService.isActiveAdminOfSubOrg(user.getUserId(), subOrgId, instituteId)) {
             return;
         }
-        instituteAccessValidator.requireInstituteStaff(user, request.getInstituteId());
-        subOrgAccessScopeService.assertNotCrossSubOrg(user, request.getSubOrgId());
+        instituteAccessValidator.requireInstituteStaff(user, instituteId);
+        subOrgAccessScopeService.assertNotCrossSubOrg(user, subOrgId);
+    }
+
+    /**
+     * Seat usage of one batch for the learner portal team page (used / total seats, plus the
+     * institute email to ask for more). Same access as adding a member.
+     */
+    @GetMapping("/seat-usage")
+    public ResponseEntity<vacademy.io.admin_core_service.features.suborg.dto.SeatUsageDTO> getSeatUsage(
+            @RequestParam("package_session_id") String packageSessionId,
+            @RequestParam("sub_org_id") String subOrgId,
+            @RequestParam("institute_id") String instituteId,
+            @RequestAttribute(value = "user", required = false) CustomUserDetails user) {
+        requireSubOrgAdminOrStaff(user, subOrgId, instituteId);
+        return ResponseEntity.ok(
+                subOrgLearnerService.getSeatUsageForPortal(subOrgId, instituteId, packageSessionId));
     }
 
     private static boolean isSuperAdmin(CustomUserDetails user) {
