@@ -97,7 +97,10 @@ export interface InvoiceProductLink {
     plan_id?: string | null;
     /** RENEWAL: access until this day (yyyy-MM-dd); omitted = the plan's normal renewal. */
     new_end_date?: string | null;
-    /** Charge this invoice's total on the membership's future renewals too. */
+    /**
+     * Charge this invoice's total on future renewals too: the membership is put on a plan at that
+     * price (an existing one, or a private plan the server creates; never shown to other learners).
+     */
     apply_as_member_price?: boolean | null;
     /** NEW_ENROLLMENT: send the institute's enrolment email. */
     notify_learner?: boolean | null;
@@ -110,7 +113,10 @@ export interface InvoiceProductLink {
     fulfilled_at?: string | null;
     result_user_plan_id?: string | null;
     result_end_date?: string | null;
-    locked_price?: number | null;
+    /** The renewal price set from this invoice, and the plan the membership now renews on. */
+    renewal_price?: number | null;
+    price_plan_id?: string | null;
+    price_plan_name?: string | null;
     /** The paid invoice's payment is recorded on the membership. */
     payment_recorded?: boolean | null;
 }

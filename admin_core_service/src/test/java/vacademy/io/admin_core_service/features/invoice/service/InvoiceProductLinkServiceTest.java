@@ -27,6 +27,8 @@ import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentO
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan;
 import vacademy.io.admin_core_service.features.user_subscription.entity.UserPlan;
 import vacademy.io.admin_core_service.features.user_subscription.repository.PaymentLogRepository;
+import vacademy.io.admin_core_service.features.user_subscription.repository.PaymentPlanRepository;
+import vacademy.io.admin_core_service.features.user_subscription.service.CustomPricePlanService;
 import vacademy.io.admin_core_service.features.user_subscription.repository.UserPlanRepository;
 import vacademy.io.admin_core_service.features.user_subscription.service.AdminManualRenewalService;
 import vacademy.io.common.exceptions.VacademyException;
@@ -58,6 +60,8 @@ class InvoiceProductLinkServiceTest {
     private AdminManualRenewalService renewals;
     private BulkAssignmentService bulkAssign;
     private InvoiceProductLinkService service;
+    private CustomPricePlanService customPlans;
+    private PaymentPlanRepository paymentPlans;
     private Invoice invoice;
     private UserPlan membership;
     private PaymentLog settled;
@@ -90,8 +94,10 @@ class InvoiceProductLinkServiceTest {
         InvoicePaymentLogMappingRepository mappings = mock(InvoicePaymentLogMappingRepository.class);
         when(mappings.findPaymentLogIdsByInvoiceId("inv-1")).thenReturn(List.of("pl-0", "pl-1"));
 
-        service = new InvoiceProductLinkService(invoiceRepository, userPlans, paymentLogs, mappings,
-                studentSessions, resolver, commerceGuard, renewals, bulkAssign, mock(AuthService.class),
+        customPlans = mock(CustomPricePlanService.class);
+        paymentPlans = mock(PaymentPlanRepository.class);
+        service = new InvoiceProductLinkService(invoiceRepository, userPlans, paymentLogs, paymentPlans, customPlans,
+                mappings, studentSessions, resolver, commerceGuard, renewals, bulkAssign, mock(AuthService.class),
                 mock(PlatformTransactionManager.class), mock(org.springframework.cache.CacheManager.class));
 
         invoice = new Invoice();
@@ -162,8 +168,8 @@ class InvoiceProductLinkServiceTest {
     @Test
     @DisplayName("no product chosen: nothing stored, nothing checked")
     void noProduct() {
-        assertNull(service.resolveForCreate(null, List.of("u-1"), INST, "admin-1"));
-        assertNull(service.resolveForCreate(new InvoiceProductLinkDTO(), List.of("u-1"), INST, "admin-1"));
+        assertNull(service.resolveForCreate(null, List.of("u-1"), INST, "admin-1", null, null));
+        assertNull(service.resolveForCreate(new InvoiceProductLinkDTO(), List.of("u-1"), INST, "admin-1", null, null));
         verifyNoInteractions(renewals, resolver);
     }
 
@@ -171,20 +177,21 @@ class InvoiceProductLinkServiceTest {
     @DisplayName("a product needs exactly one billed learner")
     void singleLearnerOnly() {
         assertThrows(VacademyException.class,
-                () -> service.resolveForCreate(pendingRenewal(), List.of("u-1", "u-2"), INST, "admin-1"));
+                () -> service.resolveForCreate(pendingRenewal(), List.of("u-1", "u-2"), INST, "admin-1", null, null));
     }
 
     @Test
     @DisplayName("renewal: checked against the learner's own membership and stored PENDING with its label")
     void renewalResolved() {
-        when(renewals.describeRenewableForInvoice("up-1", INST, "u-1")).thenReturn("Renewal · Gold · Yearly");
+        when(renewals.describeRenewableForInvoice("up-1", INST, "u-1", new BigDecimal("621.00"), "INR"))
+                .thenReturn("Renewal · Gold · Yearly");
         InvoiceProductLinkDTO req = new InvoiceProductLinkDTO();
         req.setType("RENEWAL");
         req.setUserPlanId("up-1");
         req.setNewEndDate("2999-01-31");
         req.setApplyAsMemberPrice(true);
 
-        InvoiceProductLinkDTO link = service.resolveForCreate(req, List.of("u-1"), INST, "admin-1");
+        InvoiceProductLinkDTO link = service.resolveForCreate(req, List.of("u-1"), INST, "admin-1", new BigDecimal("621.00"), "INR");
 
         assertEquals("PENDING", link.getStatus());
         assertEquals("Renewal · Gold · Yearly", link.getLabel());
@@ -197,12 +204,12 @@ class InvoiceProductLinkServiceTest {
     @Test
     @DisplayName("renewal: an access end date that is not in the future is refused")
     void renewalPastEndDate() {
-        when(renewals.describeRenewableForInvoice(any(), any(), any())).thenReturn("Renewal · Gold");
+        when(renewals.describeRenewableForInvoice(any(), any(), any(), any(), any())).thenReturn("Renewal · Gold");
         InvoiceProductLinkDTO req = new InvoiceProductLinkDTO();
         req.setType("RENEWAL");
         req.setUserPlanId("up-1");
         req.setNewEndDate("2001-01-01");
-        assertThrows(VacademyException.class, () -> service.resolveForCreate(req, List.of("u-1"), INST, "a"));
+        assertThrows(VacademyException.class, () -> service.resolveForCreate(req, List.of("u-1"), INST, "a", new BigDecimal("621.00"), "INR"));
     }
 
     @Test
@@ -213,7 +220,7 @@ class InvoiceProductLinkServiceTest {
         req.setType("NEW_ENROLLMENT");
         req.setPackageSessionId("ps-1");
 
-        InvoiceProductLinkDTO link = service.resolveForCreate(req, List.of("u-1"), INST, "admin-1");
+        InvoiceProductLinkDTO link = service.resolveForCreate(req, List.of("u-1"), INST, "admin-1", new BigDecimal("621.00"), "INR");
 
         assertEquals("ei-1", link.getEnrollInviteId());
         assertEquals("po-1", link.getPaymentOptionId());
@@ -231,16 +238,16 @@ class InvoiceProductLinkServiceTest {
         req.setPackageSessionId("ps-1");
 
         when(resolver.resolve(any(), eq(INST), eq(true))).thenReturn(config("CPO", false));
-        assertThrows(VacademyException.class, () -> service.resolveForCreate(req, List.of("u-1"), INST, "a"));
+        assertThrows(VacademyException.class, () -> service.resolveForCreate(req, List.of("u-1"), INST, "a", new BigDecimal("621.00"), "INR"));
 
         when(resolver.resolve(any(), eq(INST), eq(true))).thenReturn(config("ONE_TIME", true));
-        assertThrows(VacademyException.class, () -> service.resolveForCreate(req, List.of("u-1"), INST, "a"));
+        assertThrows(VacademyException.class, () -> service.resolveForCreate(req, List.of("u-1"), INST, "a", new BigDecimal("621.00"), "INR"));
 
         when(resolver.resolve(any(), eq(INST), eq(true))).thenReturn(config("ONE_TIME", false));
         when(studentSessions.findTopByPackageSessionIdAndUserIdAndStatusIn(eq("ps-1"), eq(INST), eq("u-1"), anyList()))
                 .thenReturn(Optional.of(new StudentSessionInstituteGroupMapping()));
         VacademyException e = assertThrows(VacademyException.class,
-                () -> service.resolveForCreate(req, List.of("u-1"), INST, "a"));
+                () -> service.resolveForCreate(req, List.of("u-1"), INST, "a", new BigDecimal("621.00"), "INR"));
         assertTrue(e.getMessage().contains("renewal"), e.getMessage());
     }
 
@@ -251,8 +258,12 @@ class InvoiceProductLinkServiceTest {
     void renewalAppliedOnce() throws Exception {
         storeLink(pendingRenewal());
         Date end = new Date(System.currentTimeMillis() + 365L * 86_400_000L);
-        when(renewals.renewFromInvoice(any())).thenReturn(
-                ManualRenewalResultDTO.builder().userPlanId("up-1").newEndDate(end).build());
+        PaymentPlan custom = new PaymentPlan();
+        custom.setId("pp-621");
+        custom.setName("Yearly · 621.00");
+        custom.setActualPrice(621.0);
+        when(renewals.renewFromInvoice(any())).thenReturn(new AdminManualRenewalService.InvoiceRenewalResult(
+                ManualRenewalResultDTO.builder().userPlanId("up-1").newEndDate(end).build(), custom, null));
 
         InvoiceProductLinkDTO first = service.fulfil("inv-1", false);
         InvoiceProductLinkDTO second = service.fulfil("inv-1", false);
@@ -262,11 +273,12 @@ class InvoiceProductLinkServiceTest {
         verify(renewals, times(1)).renewFromInvoice(req.capture());
         assertEquals(new BigDecimal("621.00"), req.getValue().amount());
         assertEquals("INR", req.getValue().currency());
-        assertTrue(req.getValue().lockMemberPrice());
+        assertTrue(req.getValue().setRenewalPrice());
         assertEquals("INV-0042", req.getValue().invoiceNumber());
         assertEquals("FULFILLED", first.getStatus());
         assertEquals("FULFILLED", second.getStatus());
-        assertEquals(new BigDecimal("621.00"), first.getLockedPrice());
+        assertEquals("pp-621", first.getPricePlanId());
+        assertEquals(0, new BigDecimal("621").compareTo(first.getRenewalPrice()));
         assertTrue(invoice.getInvoiceDataJson().contains("\"notes\":\"kept\""), "other invoice data untouched");
         assertSame(membership, settled.getUserPlan(), "the payment is recorded on the membership");
         assertNull(abandoned.getUserPlan(), "an abandoned gateway attempt stays off the membership");
@@ -281,8 +293,8 @@ class InvoiceProductLinkServiceTest {
         InvoiceProductLinkDTO link = pendingRenewal();
         link.setApplyNow(true);
         storeLink(link);
-        when(renewals.renewFromInvoice(any())).thenReturn(
-                ManualRenewalResultDTO.builder().userPlanId("up-1").newEndDate(new Date()).build());
+        when(renewals.renewFromInvoice(any())).thenReturn(new AdminManualRenewalService.InvoiceRenewalResult(
+                ManualRenewalResultDTO.builder().userPlanId("up-1").newEndDate(new Date()).build(), null, null));
 
         InvoiceProductLinkDTO applied = service.fulfil("inv-1", false);
         assertEquals("FULFILLED", applied.getStatus());
@@ -340,7 +352,51 @@ class InvoiceProductLinkServiceTest {
         assertFalse(req.getValue().getOptions().isDryRun());
         assertEquals("FULFILLED", link.getStatus());
         assertEquals("up-new", link.getResultUserPlanId());
-        verify(renewals, never()).lockMemberPriceFromInvoice(any(), any(), any(), any(), any(), any(), any());
+        verifyNoInteractions(customPlans);
+    }
+
+    @Test
+    @DisplayName("paid enrolment with a renewal price: enrolled straight onto a plan at the invoice amount")
+    void enrolmentOnPricePlan() throws Exception {
+        InvoiceProductLinkDTO stored = pendingEnrolment();
+        stored.setApplyAsMemberPrice(true);
+        storeLink(stored);
+        PaymentPlan base = new PaymentPlan();
+        base.setId("pp-1");
+        PaymentPlan custom = new PaymentPlan();
+        custom.setId("pp-621");
+        custom.setName("Yearly · 621.00");
+        custom.setActualPrice(621.0);
+        when(paymentPlans.findById("pp-1")).thenReturn(Optional.of(base));
+        when(customPlans.refusal(isNull(), eq(base), any(), eq(new BigDecimal("621.00")), eq("INR"), eq(INST)))
+                .thenReturn(null);
+        when(customPlans.findOrCreate(base, new BigDecimal("621.00"), "INV-0042")).thenReturn(custom);
+        BulkAssignResultItemDTO row = BulkAssignResultItemDTO.builder()
+                .userId("u-1").status("SUCCESS").userPlanId("up-new").build();
+        when(bulkAssign.bulkAssign(any(), any())).thenReturn(BulkAssignResponseDTO.builder().results(List.of(row)).build());
+
+        InvoiceProductLinkDTO link = service.fulfil("inv-1", false);
+
+        ArgumentCaptor<BulkAssignRequestDTO> req = ArgumentCaptor.forClass(BulkAssignRequestDTO.class);
+        verify(bulkAssign).bulkAssign(req.capture(), any());
+        assertEquals("pp-621", req.getValue().getAssignments().get(0).getPlanId());
+        assertEquals("FULFILLED", link.getStatus());
+        assertEquals("pp-621", link.getPricePlanId());
+    }
+
+    @Test
+    @DisplayName("raising an enrolment invoice with a renewal price on a free course is refused")
+    void enrolmentRenewalPriceRefusedAtCreate() {
+        when(resolver.resolve(any(), eq(INST), eq(true))).thenReturn(config("FREE", false));
+        when(customPlans.refusal(any(), any(), any(), any(), any(), any()))
+                .thenReturn("A renewal price can only be set on a subscription or one-time plan (this one is FREE)");
+        InvoiceProductLinkDTO req = new InvoiceProductLinkDTO();
+        req.setType("NEW_ENROLLMENT");
+        req.setPackageSessionId("ps-1");
+        req.setApplyAsMemberPrice(true);
+        VacademyException e = assertThrows(VacademyException.class,
+                () -> service.resolveForCreate(req, List.of("u-1"), INST, "a", new BigDecimal("621.00"), "INR"));
+        assertTrue(e.getMessage().contains("FREE"));
     }
 
     @Test

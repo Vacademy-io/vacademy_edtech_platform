@@ -516,11 +516,21 @@ export function InvoiceProductLinkField({
                         checked={value.applyAsMemberPrice}
                         onCheckedChange={(c) => set({ applyAsMemberPrice: c === true })}
                     />
-                    <span>
-                        {t('productLink.applyAsMemberPrice', {
-                            defaultValue: 'Charge {{amount}} on future renewals too (instead of the plan price)',
-                            amount: totalLabel,
-                        })}
+                    <span className="flex flex-col">
+                        <span>
+                            {t('productLink.applyAsMemberPrice', {
+                                defaultValue: 'Charge {{amount}} on future renewals too (instead of the plan price)',
+                                amount: totalLabel,
+                            })}
+                        </span>
+                        {value.applyAsMemberPrice && (
+                            <span className="text-neutral-500">
+                                {t('productLink.applyAsMemberPriceHint', {
+                                    defaultValue:
+                                        'The membership moves to a plan at this price with the same validity. If no plan has this price, a private one is created that only this learner is on; the original plan does not change.',
+                                })}
+                            </span>
+                        )}
                     </span>
                 </label>
             )}
@@ -680,6 +690,15 @@ export function InvoiceProductLinkStatus({
                     </button>
                 )}
             </div>
+            {link.status === 'FULFILLED' && link.renewal_price != null && (
+                <span className="text-neutral-600">
+                    {t('productLink.status.renewsAt', {
+                        defaultValue: 'renews at {{amount}} ({{plan}})',
+                        amount: `${link.renewal_price} ${invoice.currency ?? ''}`.trim(),
+                        plan: link.price_plan_name ?? '',
+                    })}
+                </span>
+            )}
             {link.error && invoiceStatus !== 'REJECTED' && (
                 <span className={link.status === 'FAILED' ? 'text-danger-600' : 'text-warning-700'}>
                     {link.error}

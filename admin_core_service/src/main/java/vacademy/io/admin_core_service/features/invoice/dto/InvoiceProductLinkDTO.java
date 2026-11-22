@@ -72,8 +72,9 @@ public class InvoiceProductLinkDTO {
     private String newEndDate;
 
     /**
-     * Charge this invoice's total on the membership's future renewals too (the member's own
-     * price, the same lock "Change price" sets). Off = the plan's normal price.
+     * Charge this invoice's total on the membership's future renewals too: the membership is put
+     * on a plan at that price (an existing plan of the same payment option, or a private one
+     * created for it; see CustomPricePlanService). Off = the plan's normal price.
      */
     private Boolean applyAsMemberPrice;
 
@@ -104,8 +105,11 @@ public class InvoiceProductLinkDTO {
     private String resultUserPlanId;
     /** The membership's end date after the renewal / enrolment (yyyy-MM-dd). */
     private String resultEndDate;
-    /** The member price locked by {@link #applyAsMemberPrice}, when it was applied. */
-    private BigDecimal lockedPrice;
+    /** The renewal price set by {@link #applyAsMemberPrice}, when it was applied. */
+    private BigDecimal renewalPrice;
+    /** The plan the membership renews on at that price (an existing plan, or a private one made for it). */
+    private String pricePlanId;
+    private String pricePlanName;
 
     @JsonIgnore
     public boolean isRenewal() {

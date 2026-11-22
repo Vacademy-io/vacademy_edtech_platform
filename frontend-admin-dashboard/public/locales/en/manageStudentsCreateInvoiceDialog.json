@@ -126,10 +126,12 @@
             "retryFailed": "Could not apply it",
             "appliedAwaitingPayment": "applied · access until {{date}} · payment pending",
             "appliedAwaitingPaymentNoDate": "applied · payment pending",
-            "pendingNow": "not applied yet"
+            "pendingNow": "not applied yet",
+            "renewsAt": "renews at {{amount}} ({{plan}})"
         },
         "applyNowRenewal": "Renew now, collect the payment later",
         "applyNowEnrol": "Enrol now, collect the payment later",
-        "applyNowNote": "Applied as soon as the invoice is created. The payment is recorded on the membership when it arrives. Cancelling the invoice later does not undo it."
+        "applyNowNote": "Applied as soon as the invoice is created. The payment is recorded on the membership when it arrives. Cancelling the invoice later does not undo it.",
+        "applyAsMemberPriceHint": "The membership moves to a plan at this price with the same validity. If no plan has this price, a private one is created that only this learner is on; the original plan does not change."
     }
 }

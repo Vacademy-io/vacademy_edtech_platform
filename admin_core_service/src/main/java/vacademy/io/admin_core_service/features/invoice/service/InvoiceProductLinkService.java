@@ -29,13 +29,15 @@ import vacademy.io.admin_core_service.features.learner_management.dto.BulkAssign
 import vacademy.io.admin_core_service.features.learner_management.dto.BulkAssignResultItemDTO;
 import vacademy.io.admin_core_service.features.learner_management.service.BulkAssignmentService;
 import vacademy.io.admin_core_service.features.learner_management.service.DefaultInviteResolver;
-import vacademy.io.admin_core_service.features.user_subscription.dto.ManualRenewalResultDTO;
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentLog;
+import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan;
 import vacademy.io.admin_core_service.features.user_subscription.entity.UserPlan;
 import vacademy.io.admin_core_service.features.user_subscription.enums.PaymentOptionType;
 import vacademy.io.admin_core_service.features.user_subscription.repository.PaymentLogRepository;
+import vacademy.io.admin_core_service.features.user_subscription.repository.PaymentPlanRepository;
 import vacademy.io.admin_core_service.features.user_subscription.repository.UserPlanRepository;
 import vacademy.io.admin_core_service.features.user_subscription.service.AdminManualRenewalService;
+import vacademy.io.admin_core_service.features.user_subscription.service.CustomPricePlanService;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.institute.entity.session.PackageSession;
@@ -101,6 +103,8 @@ public class InvoiceProductLinkService {
     private final InvoiceRepository invoiceRepository;
     private final UserPlanRepository userPlanRepository;
     private final PaymentLogRepository paymentLogRepository;
+    private final PaymentPlanRepository paymentPlanRepository;
+    private final CustomPricePlanService customPricePlanService;
     private final InvoicePaymentLogMappingRepository invoicePaymentLogMappingRepository;
     private final StudentSessionRepository studentSessionRepository;
     private final DefaultInviteResolver defaultInviteResolver;
@@ -115,6 +119,8 @@ public class InvoiceProductLinkService {
     public InvoiceProductLinkService(InvoiceRepository invoiceRepository,
                                      UserPlanRepository userPlanRepository,
                                      PaymentLogRepository paymentLogRepository,
+                                     PaymentPlanRepository paymentPlanRepository,
+                                     CustomPricePlanService customPricePlanService,
                                      InvoicePaymentLogMappingRepository invoicePaymentLogMappingRepository,
                                      StudentSessionRepository studentSessionRepository,
                                      DefaultInviteResolver defaultInviteResolver,
@@ -127,6 +133,8 @@ public class InvoiceProductLinkService {
         this.invoiceRepository = invoiceRepository;
         this.userPlanRepository = userPlanRepository;
         this.paymentLogRepository = paymentLogRepository;
+        this.paymentPlanRepository = paymentPlanRepository;
+        this.customPricePlanService = customPricePlanService;
         this.invoicePaymentLogMappingRepository = invoicePaymentLogMappingRepository;
         this.studentSessionRepository = studentSessionRepository;
         this.defaultInviteResolver = defaultInviteResolver;
@@ -159,10 +167,14 @@ public class InvoiceProductLinkService {
      * store on it (status PENDING, with a label). Null when no product was chosen. Throws with a
      * message for the admin when the product cannot be renewed / enrolled into, so nothing is
      * raised that would fail once the learner has paid.
+     *
+     * @param invoiceTotal what the invoice charges, checked as the renewal price when the admin
+     *                     ticked it; null skips that check (preview, before totals exist)
      */
     @Transactional(readOnly = true)
     public InvoiceProductLinkDTO resolveForCreate(InvoiceProductLinkDTO req, List<String> userIds,
-                                                  String instituteId, String adminUserId) {
+                                                  String instituteId, String adminUserId,
+                                                  BigDecimal invoiceTotal, String currency) {
         if (req == null || !StringUtils.hasText(req.getType())) {
             return null;
         }
@@ -176,6 +188,7 @@ public class InvoiceProductLinkService {
         link.setApplyNow(Boolean.TRUE.equals(req.getApplyNow()));
         link.setCreatedBy(adminUserId);
         link.setStatus(InvoiceProductLinkDTO.STATUS_PENDING);
+        BigDecimal renewalPrice = Boolean.TRUE.equals(link.getApplyAsMemberPrice()) ? invoiceTotal : null;
 
         if (req.isRenewal()) {
             if (!StringUtils.hasText(req.getUserPlanId())) {
@@ -184,7 +197,7 @@ public class InvoiceProductLinkService {
             link.setType(InvoiceProductLinkDTO.TYPE_RENEWAL);
             link.setUserPlanId(req.getUserPlanId());
             link.setLabel(adminManualRenewalService.describeRenewableForInvoice(
-                    req.getUserPlanId(), instituteId, userId));
+                    req.getUserPlanId(), instituteId, userId, renewalPrice, currency));
             if (StringUtils.hasText(req.getNewEndDate())) {
                 LocalDate until = parseDay(req.getNewEndDate());
                 if (!until.isAfter(LocalDate.now())) {
@@ -217,6 +230,13 @@ public class InvoiceProductLinkService {
                     && PaymentOptionType.CPO.name().equalsIgnoreCase(config.getPaymentOption().getType())) {
                 throw new VacademyException("This course is paid in installments (fee plan). "
                         + "Enrol the learner from Enrol Learner; its installments are billed there.");
+            }
+            if (renewalPrice != null) {
+                String refusal = customPricePlanService.refusal(null, config.getPaymentPlan(),
+                        config.getPaymentOption(), renewalPrice, currency, instituteId);
+                if (refusal != null) {
+                    throw new VacademyException(refusal);
+                }
             }
             boolean standing = studentSessionRepository.findTopByPackageSessionIdAndUserIdAndStatusIn(
                     req.getPackageSessionId(), instituteId, userId,
@@ -428,20 +448,37 @@ public class InvoiceProductLinkService {
         Date requested = StringUtils.hasText(link.getNewEndDate())
                 ? Date.from(parseDay(link.getNewEndDate()).atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant())
                 : null;
-        boolean lock = Boolean.TRUE.equals(link.getApplyAsMemberPrice());
-        ManualRenewalResultDTO result = adminManualRenewalService.renewFromInvoice(
+        boolean setPrice = Boolean.TRUE.equals(link.getApplyAsMemberPrice());
+        AdminManualRenewalService.InvoiceRenewalResult renewed = adminManualRenewalService.renewFromInvoice(
                 new AdminManualRenewalService.InvoiceRenewal(link.getUserPlanId(), claim.instituteId(),
-                        amountOf(claim), claim.currency(), requested, lock,
+                        amountOf(claim), claim.currency(), requested, setPrice,
                         claim.invoiceId(), claim.invoiceNumber(), link.getCreatedBy(), actorName(link.getCreatedBy())));
-        return Outcome.fulfilled(result.getUserPlanId(), result.getNewEndDate(), lock ? amountOf(claim) : null);
+        return new Outcome(true, renewed.result().getUserPlanId(), renewed.result().getNewEndDate(),
+                renewed.pricePlan(), renewed.priceWarning() != null
+                        ? "Renewed, but the renewal price was not changed: " + renewed.priceWarning() : null);
     }
 
     private Outcome enrol(Claim claim, InvoiceProductLinkDTO link) {
+        // With a renewal price, the learner is enrolled straight onto a plan at the invoice amount
+        // (same payment option, validity and currency), so their renewals charge it. Worked out
+        // before enrolling, so a failure here leaves nothing behind and can be retried.
+        String planId = link.getPlanId();
+        PaymentPlan pricePlan = null;
+        String priceWarning = null;
+        if (Boolean.TRUE.equals(link.getApplyAsMemberPrice())) {
+            PaymentPlan base = StringUtils.hasText(planId) ? paymentPlanRepository.findById(planId).orElse(null) : null;
+            priceWarning = customPricePlanService.refusal(null, base, base != null ? base.getPaymentOption() : null,
+                    amountOf(claim), claim.currency(), claim.instituteId());
+            if (priceWarning == null) {
+                pricePlan = customPricePlanService.findOrCreate(base, amountOf(claim), claim.invoiceNumber());
+                planId = pricePlan.getId();
+            }
+        }
         AssignmentItemDTO item = AssignmentItemDTO.builder()
                 .packageSessionId(link.getPackageSessionId())
                 .enrollInviteId(link.getEnrollInviteId())
                 .paymentOptionId(link.getPaymentOptionId())
-                .planId(link.getPlanId())
+                .planId(planId)
                 .build();
         // No payment date / transaction id / reference: bulk assign then records no payment, so
         // the invoice's payment stays the only one (no second log, ledger row or invoice).
@@ -465,24 +502,9 @@ public class InvoiceProductLinkService {
                     ? row.getMessage() : "The enrolment did not go through");
         }
 
-        BigDecimal locked = null;
-        String warning = null;
-        if (Boolean.TRUE.equals(link.getApplyAsMemberPrice())) {
-            try {
-                locked = adminManualRenewalService.lockMemberPriceFromInvoice(row.getUserPlanId(), claim.instituteId(),
-                        amountOf(claim), claim.currency(), claim.invoiceNumber(),
-                        link.getCreatedBy(), actorName(link.getCreatedBy()));
-            } catch (Exception e) {
-                // The learner is enrolled; only the renewal price is missing. Kept as FULFILLED
-                // with a note, since a retry would try to enrol them a second time.
-                log.warn("Invoice {}: enrolled, but the member price could not be set: {}",
-                        claim.invoiceNumber(), e.getMessage(), e);
-                warning = "Enrolled, but the renewal price was not set (" + e.getMessage()
-                        + "). Set it from the membership's Change price.";
-            }
-        }
         Date end = userPlanRepository.findById(row.getUserPlanId()).map(UserPlan::getEndDate).orElse(null);
-        return new Outcome(true, row.getUserPlanId(), end, locked, warning);
+        return new Outcome(true, row.getUserPlanId(), end, pricePlan,
+                priceWarning != null ? "Enrolled on the plan's own price: " + priceWarning : null);
     }
 
     private InvoiceProductLinkDTO record(String invoiceId, Outcome outcome) {
@@ -500,7 +522,11 @@ public class InvoiceProductLinkService {
             link.setResultUserPlanId(outcome.userPlanId());
             link.setResultEndDate(outcome.endDate() != null
                     ? new SimpleDateFormat("yyyy-MM-dd").format(outcome.endDate()) : null);
-            link.setLockedPrice(outcome.lockedPrice());
+            if (outcome.pricePlan() != null) {
+                link.setRenewalPrice(BigDecimal.valueOf(outcome.pricePlan().getActualPrice()));
+                link.setPricePlanId(outcome.pricePlan().getId());
+                link.setPricePlanName(outcome.pricePlan().getName());
+            }
             link.setError(outcome.error());
         } else {
             link.setStatus(InvoiceProductLinkDTO.STATUS_FAILED);
@@ -618,9 +644,9 @@ public class InvoiceProductLinkService {
                          String invoiceNumber, BigDecimal totalAmount, String currency) {
     }
 
-    private record Outcome(boolean ok, String userPlanId, Date endDate, BigDecimal lockedPrice, String error) {
-        static Outcome fulfilled(String userPlanId, Date endDate, BigDecimal lockedPrice) {
-            return new Outcome(true, userPlanId, endDate, lockedPrice, null);
+    private record Outcome(boolean ok, String userPlanId, Date endDate, PaymentPlan pricePlan, String error) {
+        static Outcome fulfilled(String userPlanId, Date endDate, PaymentPlan pricePlan) {
+            return new Outcome(true, userPlanId, endDate, pricePlan, null);
         }
 
         static Outcome failed(String error) {

@@ -5303,11 +5303,6 @@ public class InvoiceService {
         Institute institute = instituteRepository.findById(request.getInstituteId())
                 .orElseThrow(() -> new VacademyException("Institute not found: " + request.getInstituteId()));
 
-        // The product this invoice pays for (renewal / new enrolment), checked before anything
-        // is numbered or written; applied once the invoice is paid (InvoiceProductLinkService).
-        InvoiceProductLinkDTO productLink = invoiceProductLinkService.resolveForCreate(
-                request.getProductLink(), request.getUserIds(), request.getInstituteId(), adminUserId);
-
         // Admin discount becomes a negative DISCOUNT line, so the subtotal, tax, total,
         // stored line items and PDF below all see the discounted figures.
         AdminInvoiceDiscount adminInvoiceDiscount = applyAdminInvoiceDiscount(request, adminUserId, true);
@@ -5331,6 +5326,14 @@ public class InvoiceService {
         String taxLabel = effectiveTax.taxLabel();
         BigDecimal taxAmount = effectiveTax.taxAmount();
         BigDecimal totalAmount = effectiveTax.totalAmount();
+
+        // The product this invoice pays for (renewal / new enrolment), checked before anything
+        // is numbered or written; applied once the invoice is paid (InvoiceProductLinkService).
+        // The total is checked as the renewal price when the admin asked for that.
+        InvoiceProductLinkDTO productLink = invoiceProductLinkService.resolveForCreate(
+                request.getProductLink(), request.getUserIds(), request.getInstituteId(), adminUserId,
+                totalAmount, StringUtils.hasText(request.getCurrency())
+                        ? request.getCurrency() : paymentSettingService.getDefaultCurrency(request.getInstituteId()));
 
         // Per-invoice text overrides (invoice_number, party & institute details, tax label…).
         // User-scoped keys are stripped for bulk so they don't bleed across users.
@@ -6737,7 +6740,7 @@ public class InvoiceService {
         // Same product check create runs, so a product that cannot be renewed / enrolled into is
         // reported at the review step rather than on Create. Read-only.
         invoiceProductLinkService.resolveForCreate(
-                request.getProductLink(), request.getUserIds(), request.getInstituteId(), null);
+                request.getProductLink(), request.getUserIds(), request.getInstituteId(), null, null, null);
 
         // Billed user = first id in the request (the dialog is single-user). Missing user
         // still previews with blank party fields the admin can fill via overrides.

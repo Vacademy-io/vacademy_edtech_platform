@@ -106,6 +106,7 @@ public class AdminManualRenewalService {
     private final PaymentSettingService paymentSettingService;
     private final PaymentDateDefaults paymentDateDefaults;
     private final vacademy.io.admin_core_service.features.commerce.common.CommercePlans commercePlans;
+    private final CustomPricePlanService customPricePlanService;
 
     @Transactional(readOnly = true)
     public ManualRenewalPreviewDTO preview(String userPlanId, String instituteId) {
@@ -261,24 +262,41 @@ public class AdminManualRenewalService {
     /**
      * A renewal an admin invoice pays for, applied once that invoice is paid (or when it is raised, with apply now).
      *
-     * @param amount          what the invoice charged (its total): the custom price of this renewal
+     * @param amount           what the invoice charged (its total): the price of this renewal
      * @param requestedEndDate access until this day; null, or a day no longer ahead, means the
-     *                        plan's normal renewal from today
-     * @param lockMemberPrice also charge {@code amount} on the membership's future renewals
+     *                         plan's normal renewal from today
+     * @param setRenewalPrice  also charge {@code amount} on the membership's future renewals, by
+     *                         moving it onto a plan at that price (CustomPricePlanService)
      */
     public record InvoiceRenewal(String userPlanId, String instituteId, BigDecimal amount, String currency,
-                                 Date requestedEndDate, boolean lockMemberPrice,
+                                 Date requestedEndDate, boolean setRenewalPrice,
                                  String invoiceId, String invoiceNumber,
                                  String actorId, String actorName) {
+    }
+
+    /**
+     * What an invoice renewal did.
+     *
+     * @param pricePlan    the plan the membership now renews on, when a renewal price was set
+     * @param priceWarning why the renewal price was not set although asked for (the renewal itself
+     *                     still went through), else null
+     */
+    public record InvoiceRenewalResult(ManualRenewalResultDTO result,
+                                       vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan pricePlan,
+                                       String priceWarning) {
     }
 
     /**
      * Checks, when the invoice is raised, that the membership can be renewed through it, and
      * describes it for the invoice ("Renewal · Gold Membership · Yearly"). Same rules as a manual
      * renewal, plus the membership must be the billed learner's own.
+     *
+     * @param renewalPrice when the invoice amount is also to be the renewal price: that amount,
+     *                     checked against the plan (currency, regional price, autopay limit)
      */
     @Transactional(readOnly = true)
-    public String describeRenewableForInvoice(String userPlanId, String instituteId, String userId) {
+    public String describeRenewableForInvoice(String userPlanId, String instituteId, String userId,
+                                              BigDecimal renewalPrice, String currency) {
         UserPlan plan = loadForInstitute(userPlanId, instituteId);
         if (userId != null && !userId.equals(plan.getUserId())) {
             throw new VacademyException("That membership belongs to another learner");
@@ -293,6 +311,13 @@ public class AdminManualRenewalService {
             throw new VacademyException("This membership's invite has no course to give access to. "
                     + "Enrol the learner in a course instead.");
         }
+        if (renewalPrice != null) {
+            String refusal = customPricePlanService.refusal(plan, plan.getPaymentPlan(), plan.getPaymentOption(),
+                    renewalPrice, currency, instituteId);
+            if (refusal != null) {
+                throw new VacademyException(refusal);
+            }
+        }
         return "Renewal · " + planLabel(plan);
     }
 
@@ -302,10 +327,15 @@ public class AdminManualRenewalService {
      * everything about money: the invoice already holds the payment, its ledger entries and its
      * own invoice document, so no payment log, ledger row or second invoice is written here.
      * Autopay is left exactly as it was.
+     *
+     * <p>With {@code setRenewalPrice} the membership moves onto a plan at the invoice amount (same
+     * payment option, validity and currency), so later renewals charge it the normal way. If that
+     * is no longer possible by the time this runs (the autopay limit changed, say), the renewal
+     * still goes through and the reason comes back as {@code priceWarning}.
      */
     @CacheEvict(value = { "userPlanById", "userPlanWithPaymentLogs", "membershipDetails" }, allEntries = true)
     @Transactional
-    public ManualRenewalResultDTO renewFromInvoice(InvoiceRenewal req) {
+    public InvoiceRenewalResult renewFromInvoice(InvoiceRenewal req) {
         UserPlan plan = loadForInstitute(req.userPlanId(), req.instituteId());
         commercePlans.refuseCommercePlan(plan, "renew the plan");
         String reason = notRenewableReason(plan);
@@ -326,7 +356,19 @@ public class AdminManualRenewalService {
 
         String previousStatus = plan.getStatus();
         Date previousEndDate = plan.getEndDate();
-        BigDecimal lockedPrice = req.lockMemberPrice() ? lockMemberPrice(plan, req.amount(), req.currency()) : null;
+        vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan previousPlan = plan.getPaymentPlan();
+        vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan pricePlan = null;
+        String priceWarning = null;
+        if (req.setRenewalPrice()) {
+            priceWarning = customPricePlanService.refusal(plan, previousPlan, plan.getPaymentOption(),
+                    req.amount(), req.currency(), req.instituteId());
+            if (priceWarning == null) {
+                pricePlan = customPricePlanService.findOrCreate(previousPlan, req.amount(), req.invoiceNumber());
+                plan.setPaymentPlan(pricePlan);
+                plan.setPaymentPlanId(pricePlan.getId());
+                plan.setPlanJson(JsonUtil.toJson(pricePlan));
+            }
+        }
         extendPlanAndAccess(plan, req.instituteId(), newEndDate, touched,
                 "Renewal through invoice " + req.invoiceNumber(), req.actorId(), req.actorName());
 
@@ -338,22 +380,29 @@ public class AdminManualRenewalService {
         metadata.put("previous_status", previousStatus);
         metadata.put("previous_end_date", previousEndDate != null ? isoDate(previousEndDate) : null);
         metadata.put("new_end_date", isoDate(newEndDate));
-        if (lockedPrice != null) {
-            metadata.put("member_price", lockedPrice);
+        if (pricePlan != null) {
+            metadata.put("previous_plan_id", previousPlan != null ? previousPlan.getId() : null);
+            metadata.put("plan_id", pricePlan.getId());
+            metadata.put("renewal_price", pricePlan.getActualPrice());
+        }
+        if (priceWarning != null) {
+            metadata.put("renewal_price_not_set", priceWarning);
         }
         String title = String.format("Renewal through invoice %s: %s %s, access until %s",
                 req.invoiceNumber(), req.currency(), plainAmount(req.amount()),
                 new SimpleDateFormat("dd MMM yyyy").format(newEndDate));
+        String description = pricePlan != null
+                ? "Future renewals charged at " + req.currency() + " " + plainAmount(req.amount())
+                        + " (plan " + pricePlan.getName() + ")"
+                : priceWarning != null ? "Renewal price not changed: " + priceWarning : null;
         timelineEventService.logEvent(REMARK_TYPE, plan.getId(), ACTION_INVOICE_RENEWAL,
-                "ADMIN", req.actorId(), req.actorName(), title,
-                lockedPrice != null ? "Future renewals charged at " + req.currency() + " " + plainAmount(lockedPrice)
-                        : null,
-                metadata, plan.getUserId());
+                "ADMIN", req.actorId(), req.actorName(), title, description, metadata, plan.getUserId());
 
-        log.info("Invoice renewal of plan {} via invoice {}: {} -> ACTIVE, end {} -> {}, {} access row(s)",
-                plan.getId(), req.invoiceNumber(), previousStatus, previousEndDate, newEndDate, touched.size());
+        log.info("Invoice renewal of plan {} via invoice {}: {} -> ACTIVE, end {} -> {}, {} access row(s), price plan {}",
+                plan.getId(), req.invoiceNumber(), previousStatus, previousEndDate, newEndDate, touched.size(),
+                pricePlan != null ? pricePlan.getId() : null);
 
-        return ManualRenewalResultDTO.builder()
+        ManualRenewalResultDTO result = ManualRenewalResultDTO.builder()
                 .userPlanId(plan.getId())
                 .previousStatus(previousStatus)
                 .status(plan.getStatus())
@@ -362,28 +411,7 @@ public class AdminManualRenewalService {
                 .mappingsUpdated(touched.size())
                 .invoiceQueued(false)
                 .build();
-    }
-
-    /**
-     * After an invoice-paid enrolment: charge the invoice's amount on the new membership's
-     * renewals too, and note it in the plan's history. Returns the price now locked.
-     */
-    @CacheEvict(value = { "userPlanById", "userPlanWithPaymentLogs", "membershipDetails" }, allEntries = true)
-    @Transactional
-    public BigDecimal lockMemberPriceFromInvoice(String userPlanId, String instituteId, BigDecimal price,
-                                                 String currency, String invoiceNumber,
-                                                 String actorId, String actorName) {
-        UserPlan plan = loadForInstitute(userPlanId, instituteId);
-        BigDecimal locked = lockMemberPrice(plan, price, currency);
-        userPlanRepository.save(plan);
-        Map<String, Object> metadata = new LinkedHashMap<>();
-        metadata.put("new_price", locked);
-        metadata.put("currency", currency);
-        metadata.put("invoice_number", invoiceNumber);
-        timelineEventService.logEvent(REMARK_TYPE, plan.getId(), ACTION_PRICE_CHANGE, "ADMIN", actorId, actorName,
-                "Price set from invoice " + invoiceNumber + ": " + currency + " " + plainAmount(locked),
-                "Renewals of this membership are charged at the invoiced amount", metadata, plan.getUserId());
-        return locked;
+        return new InvoiceRenewalResult(result, pricePlan, priceWarning);
     }
 
     /**
@@ -672,31 +700,6 @@ public class AdminManualRenewalService {
                     null, plan.getId(), plan.getPaymentPlanId(), plan.getEnrollInviteId(),
                     grantReason, adminId, adminName);
         }
-    }
-
-    /**
-     * Sets the member's own price per period (user_plan.regional_price + currency, the lock
-     * {@link #changeMemberPrice} writes and every later charge reads). The plan's list price in
-     * its own currency clears the lock instead. Not saved here. Returns the price now in force.
-     */
-    private BigDecimal lockMemberPrice(UserPlan plan, BigDecimal price, String currency) {
-        if (price == null || price.signum() < 0) {
-            throw new VacademyException("The member price cannot be negative");
-        }
-        BigDecimal next = price.setScale(2, java.math.RoundingMode.HALF_UP);
-        BigDecimal list = plan.getPaymentPlan() != null ? BigDecimal.valueOf(plan.getPaymentPlan().getActualPrice()) : null;
-        String planCurrency = plan.getPaymentPlan() != null ? plan.getPaymentPlan().getCurrency() : null;
-        boolean isListPrice = list != null && next.compareTo(list) == 0
-                && (planCurrency == null || planCurrency.equalsIgnoreCase(currency))
-                && plan.getRegionalCountry() == null;
-        if (isListPrice) {
-            plan.setRegionalPrice(null);
-            plan.setRegionalCurrency(null);
-        } else {
-            plan.setRegionalPrice(next);
-            plan.setRegionalCurrency(currency);
-        }
-        return next;
     }
 
     private static String planLabel(UserPlan plan) {
