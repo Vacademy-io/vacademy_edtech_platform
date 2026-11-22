@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
+import vacademy.io.admin_core_service.features.course_catalogue.dtos.CourseCatalogueRequest;
 import vacademy.io.admin_core_service.features.course_catalogue.entity.CatalogueInstituteMapping;
 import vacademy.io.admin_core_service.features.course_catalogue.entity.CourseCatalogue;
 import vacademy.io.admin_core_service.features.course_catalogue.repository.CatalogueInstituteMappingRepository;
@@ -23,7 +24,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * Deleting a site from Manage Pages: a soft delete that hides it from every
- * ACTIVE/DRAFT reader.
+ * ACTIVE/DRAFT reader and cannot be undone by a later update.
  */
 class CourseCatalogueDeleteTest {
 
@@ -78,5 +79,22 @@ class CourseCatalogueDeleteTest {
     void unknownSiteIs404() {
         VacademyException ex = assertThrows(VacademyException.class, () -> service.deleteCatalogue("missing"));
         assertEquals(HttpStatus.NOT_FOUND, ex.getStatus());
+    }
+
+    /** An editor tab left open on the site must not resurrect it on save. */
+    @Test
+    void updateOnDeletedSiteIs404AndWritesNothing() {
+        mapping.setStatus("DELETED");
+        CourseCatalogueRequest request = new CourseCatalogueRequest();
+        request.setCatalogueJson("{\"pages\":[]}");
+        request.setStatus("ACTIVE");
+
+        VacademyException ex = assertThrows(VacademyException.class,
+                () -> service.updateCatalogue(CATALOGUE, request, "u-1"));
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatus());
+        assertEquals("DELETED", mapping.getStatus());
+        verify(catalogueRepository, never()).save(any());
+        verify(mappingRepository, never()).save(any());
     }
 }
