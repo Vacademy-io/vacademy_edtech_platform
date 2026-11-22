@@ -548,7 +548,7 @@ class AdminManualRenewalServiceTest {
 
     private static AdminManualRenewalService.InvoiceRenewal invoiceRenewal(double amount, Date until, boolean lockPrice) {
         return new AdminManualRenewalService.InvoiceRenewal("up-1", INST, java.math.BigDecimal.valueOf(amount), "AUD",
-                until, lockPrice, "inv-1", "INV-0042", "admin-1", "Finance Admin");
+                until, lockPrice, null, "inv-1", "INV-0042", "admin-1", "Finance Admin");
     }
 
     @Test
@@ -639,6 +639,33 @@ class AdminManualRenewalServiceTest {
 
         verify(planRepo, never()).save(any());
         verify(mappingRepo, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("invoice renewal with a separate renewal price: the plan is priced at it, not at the invoice total")
+    void invoiceRenewalUsesRenewalPrice() {
+        PaymentPlan custom = new PaymentPlan();
+        custom.setId("pp-621");
+        custom.setActualPrice(621.0);
+        when(customPlans.refusal(any(), any(), any(), any(), any(), any())).thenReturn(null);
+        when(customPlans.findOrCreate(any(), eq(new java.math.BigDecimal("621.00")), any())).thenReturn(custom);
+
+        // The invoice charged 821 (621 renewal + 200 registration fee); renewals stay at 621.
+        service.renewFromInvoice(new AdminManualRenewalService.InvoiceRenewal("up-1", INST,
+                java.math.BigDecimal.valueOf(821), "AUD", null, true, new java.math.BigDecimal("621.00"),
+                "inv-1", "INV-0042", "admin-1", "Finance Admin"));
+
+        verify(customPlans).findOrCreate(any(), eq(new java.math.BigDecimal("621.00")), eq("INV-0042"));
+        assertEquals("pp-621", plan.getPaymentPlanId());
+    }
+
+    @Test
+    @DisplayName("raising the invoice: a membership the organisation pays for is refused")
+    void describeRefusesSubOrgMembership() {
+        plan.setSource("SUB_ORG");
+        VacademyException e = assertThrows(VacademyException.class,
+                () -> service.describeRenewableForInvoice("up-1", INST, "u-1", null, null));
+        assertTrue(e.getMessage().contains("organisation"));
     }
 
     @Test

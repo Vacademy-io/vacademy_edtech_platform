@@ -109,7 +109,8 @@
             "chooseCourse": "Choose what this invoice enrols the learner in",
             "orgAssociated": "This one enrols learners into an organisation. Use Enrol Learner for it instead.",
             "chooseInvite": "Choose an invite",
-            "cpo": "This is paid in installments (fee plan). Use Enrol Learner; its installments are billed there."
+            "cpo": "This is paid in installments (fee plan). Use Enrol Learner; its installments are billed there.",
+            "renewalPrice": "Enter the renewal price (more than zero)"
         },
         "status": {
             "renewalChip": "Renewal",
@@ -134,6 +135,10 @@
         "applyNowNote": "Applied as soon as the invoice is created. The payment is recorded on the membership when it arrives. Cancelling the invoice later does not undo it.",
         "applyAsMemberPriceHint": "The membership moves to a plan at this price with the same validity. If no plan has this price, a private one is created that only this learner is on; the original plan does not change.",
         "courseSearch": "Search by {{course}}, level, batch or session",
-        "courseEmpty": "Nothing matches"
+        "courseEmpty": "Nothing matches",
+        "applyAsMemberPriceCustom": "Charge a custom price on future renewals (instead of the plan price)",
+        "renewalPriceLabel": "Renewal price",
+        "renewalPriceSuffix": "{{currency}} per renewal",
+        "autopayWarning": "Autopay is on for this membership. If its renewal date ({{date}}) passes before this invoice is paid, autopay charges the learner as well. Tick \"Renew now\" below, or make sure the invoice is paid before then."
     }
 }

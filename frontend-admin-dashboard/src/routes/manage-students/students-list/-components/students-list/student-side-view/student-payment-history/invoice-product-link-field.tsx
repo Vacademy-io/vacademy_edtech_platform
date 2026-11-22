@@ -3,7 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
-import { Info } from '@phosphor-icons/react';
+import { Info, Warning } from '@phosphor-icons/react';
 import type { TFunction } from 'i18next';
 
 import {
@@ -53,6 +53,8 @@ export interface ProductLinkDraft {
     notifyLearner: boolean;
     // Both
     applyAsMemberPrice: boolean;
+    /** With applyAsMemberPrice: the price future renewals charge (text while typing). */
+    renewalPrice: string;
     /** Renew / enrol as soon as the invoice is raised, instead of when it is paid. */
     applyNow: boolean;
 }
@@ -70,8 +72,44 @@ export const EMPTY_PRODUCT_LINK: ProductLinkDraft = {
     inviteAmbiguous: false,
     notifyLearner: false,
     applyAsMemberPrice: false,
+    renewalPrice: '',
     applyNow: false,
 };
+
+/**
+ * The draft for a product already on an invoice (edit, or Duplicate). Auto-resolved fields
+ * (option type, ambiguity) are filled in again by the picker once it loads.
+ */
+export function draftFromProductLink(link: InvoiceProductLink | null | undefined): ProductLinkDraft {
+    if (!link) return EMPTY_PRODUCT_LINK;
+    const common = {
+        ...EMPTY_PRODUCT_LINK,
+        applyAsMemberPrice: !!link.apply_as_member_price,
+        renewalPrice: link.renewal_price != null ? String(link.renewal_price) : '',
+        applyNow: !!link.apply_now,
+    };
+    if (link.type === 'RENEWAL') {
+        return {
+            ...common,
+            mode: 'RENEWAL',
+            userPlanId: link.user_plan_id ?? null,
+            newEndDate: link.new_end_date ?? '',
+        };
+    }
+    return {
+        ...common,
+        mode: 'NEW_ENROLLMENT',
+        packageSessionId: link.package_session_id ?? null,
+        enrollInviteId: link.enroll_invite_id ?? null,
+        planId: link.plan_id ?? null,
+        notifyLearner: !!link.notify_learner,
+    };
+}
+
+function renewalPricePayload(d: ProductLinkDraft): number | undefined {
+    const n = Number(d.renewalPrice);
+    return d.applyAsMemberPrice && d.renewalPrice.trim() !== '' && Number.isFinite(n) && n > 0 ? n : undefined;
+}
 
 /** Request payload for the draft, or undefined for "no product". */
 export function toProductLinkPayload(d: ProductLinkDraft): InvoiceProductLink | undefined {
@@ -81,6 +119,7 @@ export function toProductLinkPayload(d: ProductLinkDraft): InvoiceProductLink | 
             user_plan_id: d.userPlanId,
             new_end_date: d.newEndDate || undefined,
             apply_as_member_price: d.applyAsMemberPrice,
+            renewal_price: renewalPricePayload(d),
             apply_now: d.applyNow,
         };
     }
@@ -95,6 +134,7 @@ export function toProductLinkPayload(d: ProductLinkDraft): InvoiceProductLink | 
             plan_id: d.planId ?? undefined,
             notify_learner: d.notifyLearner,
             apply_as_member_price: d.applyAsMemberPrice,
+            renewal_price: renewalPricePayload(d),
             apply_now: d.applyNow,
         };
     }
@@ -107,6 +147,11 @@ export function getProductLinkError(
     t: TFunction,
     isOrgAssociated: boolean
 ): string | null {
+    if (d.mode !== 'NONE' && d.applyAsMemberPrice && renewalPricePayload(d) === undefined) {
+        return t('productLink.errors.renewalPrice', {
+            defaultValue: 'Enter the renewal price (more than zero)',
+        });
+    }
     if (d.mode === 'RENEWAL' && !d.userPlanId) {
         return t('productLink.errors.chooseMembership', {
             defaultValue: 'Choose the membership this invoice renews',
@@ -168,8 +213,10 @@ interface InvoiceProductLinkFieldProps {
     instituteId: string;
     value: ProductLinkDraft;
     onChange: (next: ProductLinkDraft) => void;
-    /** Invoice total, for the "charge this on future renewals" option. */
-    totalLabel: string;
+    /** Currency of the invoice, shown next to the renewal price. */
+    currencyLabel: string;
+    /** Prefill for the renewal price: the product's own invoice line (not the whole total). */
+    suggestedRenewalPrice: number | null;
     /** Prefills the first invoice line (only where the admin has not typed one yet). */
     onSuggestLine: (suggestion: { description: string; unitPrice: number | null }) => void;
     /** Reports whether the chosen course enrols into an organisation (blocks submit). */
@@ -186,7 +233,8 @@ export function InvoiceProductLinkField({
     instituteId,
     value,
     onChange,
-    totalLabel,
+    currencyLabel,
+    suggestedRenewalPrice,
     onSuggestLine,
     onOrgAssociatedChange,
 }: InvoiceProductLinkFieldProps) {
@@ -201,7 +249,9 @@ export function InvoiceProductLinkField({
         enabled: value.mode === 'RENEWAL' && !!userId && !!instituteId,
         staleTime: 60 * 1000,
     });
-    const plans = plansPage?.content ?? [];
+    // The organisation pays for a sub-org membership, so it is not renewed by invoicing the learner
+    // (the server refuses it too).
+    const plans = (plansPage?.content ?? []).filter((p) => p.source !== 'SUB_ORG');
     const selectedPlan = plans.find((p) => p.id === value.userPlanId) ?? null;
 
     // ── New enrolment: courses, invite, plan ──
@@ -412,6 +462,16 @@ export function InvoiceProductLinkField({
                             })}
                         </p>
                     )}
+                    {selectedPlan?.auto_renewal_enabled && !value.applyNow && (
+                        <p className="flex items-start gap-1.5 rounded-md border border-warning-200 bg-warning-50 px-3 py-2 text-caption text-warning-700">
+                            <Warning className="mt-0.5 size-3.5 shrink-0" />
+                            {t('productLink.autopayWarning', {
+                                defaultValue:
+                                    'Autopay is on for this membership. If its renewal date ({{date}}) passes before this invoice is paid, autopay charges the learner as well. Tick "Renew now" below, or make sure the invoice is paid before then.',
+                                date: shortDate(selectedPlan.next_charge_at || selectedPlan.end_date) || '—',
+                            })}
+                        </p>
+                    )}
                 </div>
             )}
 
@@ -526,15 +586,45 @@ export function InvoiceProductLinkField({
                     <Checkbox
                         className="mt-0.5"
                         checked={value.applyAsMemberPrice}
-                        onCheckedChange={(c) => set({ applyAsMemberPrice: c === true })}
+                        onCheckedChange={(c) =>
+                            set({
+                                applyAsMemberPrice: c === true,
+                                // Prefilled from the product's own line, so a registration fee or a
+                                // one-off discount elsewhere on the invoice is not repeated every renewal.
+                                renewalPrice:
+                                    c === true && !value.renewalPrice && suggestedRenewalPrice
+                                        ? String(suggestedRenewalPrice)
+                                        : value.renewalPrice,
+                            })
+                        }
                     />
-                    <span className="flex flex-col">
+                    <span className="flex flex-col gap-1">
                         <span>
-                            {t('productLink.applyAsMemberPrice', {
-                                defaultValue: 'Charge {{amount}} on future renewals too (instead of the plan price)',
-                                amount: totalLabel,
+                            {t('productLink.applyAsMemberPriceCustom', {
+                                defaultValue: 'Charge a custom price on future renewals (instead of the plan price)',
                             })}
                         </span>
+                        {value.applyAsMemberPrice && (
+                            <span className="flex items-center gap-2">
+                                <MyInput
+                                    inputType="number"
+                                    inputPlaceholder="0"
+                                    input={value.renewalPrice}
+                                    onChangeFunction={(e) => set({ renewalPrice: e.target.value })}
+                                    size="small"
+                                    className="w-28 text-right tabular-nums"
+                                    aria-label={t('productLink.renewalPriceLabel', { defaultValue: 'Renewal price' })}
+                                    min={0}
+                                    step={0.01}
+                                />
+                                <span className="text-neutral-600">
+                                    {t('productLink.renewalPriceSuffix', {
+                                        defaultValue: '{{currency}} per renewal',
+                                        currency: currencyLabel,
+                                    })}
+                                </span>
+                            </span>
+                        )}
                         {value.applyAsMemberPrice && (
                             <span className="text-neutral-500">
                                 {t('productLink.applyAsMemberPriceHint', {

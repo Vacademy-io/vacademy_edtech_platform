@@ -114,6 +114,7 @@ export interface InvoiceProductLink {
     result_user_plan_id?: string | null;
     result_end_date?: string | null;
     /** The renewal price set from this invoice, and the plan the membership now renews on. */
+    /** Sent: the price future renewals charge (else the invoice total). Read back: the plan's price. */
     renewal_price?: number | null;
     price_plan_id?: string | null;
     price_plan_name?: string | null;
@@ -373,6 +374,8 @@ export interface AdminUpdateInvoiceRequest {
     overrides?: Record<string, string>;
     tax_enabled?: boolean;
     tax_rate_percent?: number;
+    /** Change the product: omitted = keep it; `{ type: '' }` removes it. */
+    product_link?: InvoiceProductLink | { type: '' };
 }
 
 /**

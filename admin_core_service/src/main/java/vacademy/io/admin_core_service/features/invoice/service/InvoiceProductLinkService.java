@@ -15,6 +15,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.commerce.common.CommerceLegacyGuard;
+import vacademy.io.admin_core_service.features.enrollment_policy.service.RenewalPaymentService;
 import vacademy.io.admin_core_service.features.institute_learner.enums.LearnerSessionStatusEnum;
 import vacademy.io.admin_core_service.features.institute_learner.repository.StudentSessionRepository;
 import vacademy.io.admin_core_service.features.invoice.dto.InvoiceProductLinkDTO;
@@ -114,6 +115,7 @@ public class InvoiceProductLinkService {
     private final AuthService authService;
     private final TransactionTemplate newTx;
     private final CacheManager cacheManager;
+    private final RenewalPaymentService renewalPaymentService;
     private final ExecutorService executor;
 
     public InvoiceProductLinkService(InvoiceRepository invoiceRepository,
@@ -129,7 +131,8 @@ public class InvoiceProductLinkService {
                                      @Lazy BulkAssignmentService bulkAssignmentService,
                                      AuthService authService,
                                      PlatformTransactionManager transactionManager,
-                                     CacheManager cacheManager) {
+                                     CacheManager cacheManager,
+                                     @Lazy RenewalPaymentService renewalPaymentService) {
         this.invoiceRepository = invoiceRepository;
         this.userPlanRepository = userPlanRepository;
         this.paymentLogRepository = paymentLogRepository;
@@ -144,6 +147,7 @@ public class InvoiceProductLinkService {
         this.authService = authService;
         this.newTx = new TransactionTemplate(transactionManager);
         this.cacheManager = cacheManager;
+        this.renewalPaymentService = renewalPaymentService;
         this.newTx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         AtomicInteger n = new AtomicInteger();
         // Own small pool: the shared taskExecutor falls back to running on the caller's thread
@@ -188,7 +192,14 @@ public class InvoiceProductLinkService {
         link.setApplyNow(Boolean.TRUE.equals(req.getApplyNow()));
         link.setCreatedBy(adminUserId);
         link.setStatus(InvoiceProductLinkDTO.STATUS_PENDING);
-        BigDecimal renewalPrice = Boolean.TRUE.equals(link.getApplyAsMemberPrice()) ? invoiceTotal : null;
+        // The admin's renewal price (prefilled from the product line), else the invoice total.
+        BigDecimal requestedPrice = req.getRenewalPrice() != null && req.getRenewalPrice().signum() > 0
+                ? req.getRenewalPrice().setScale(2, java.math.RoundingMode.HALF_UP) : null;
+        BigDecimal renewalPrice = Boolean.TRUE.equals(link.getApplyAsMemberPrice())
+                ? (requestedPrice != null ? requestedPrice : invoiceTotal) : null;
+        if (Boolean.TRUE.equals(link.getApplyAsMemberPrice())) {
+            link.setRenewalPrice(requestedPrice);
+        }
 
         if (req.isRenewal()) {
             if (!StringUtils.hasText(req.getUserPlanId())) {
@@ -390,6 +401,18 @@ public class InvoiceProductLinkService {
                         invoice.getInvoiceNumber(), recorded, plan.getId());
                 return link;
             });
+            if (link != null && link.isRenewal()) {
+                // The money is in and the renewal applied: the institute's renewal workflows run now,
+                // once (paymentRecorded guards it), as they do for a gateway renewal. A new enrolment
+                // already ran the enrolment workflow when it was enrolled.
+                try {
+                    Invoice paid = invoiceRepository.findById(invoiceId).orElse(null);
+                    renewalPaymentService.emitInvoiceRenewalPaid(link.getResultUserPlanId(),
+                            paid != null ? paid.getInstituteId() : null, paid != null ? paid.getInvoiceNumber() : null);
+                } catch (Exception e) {
+                    log.warn("Invoice {}: renewal workflows not triggered: {}", invoiceId, e.getMessage());
+                }
+            }
             if (link != null) {
                 // Same plan caches a renewal clears, so the membership shows the payment now.
                 for (String name : List.of("userPlanById", "userPlanWithPaymentLogs", "membershipDetails")) {
@@ -451,7 +474,7 @@ public class InvoiceProductLinkService {
         boolean setPrice = Boolean.TRUE.equals(link.getApplyAsMemberPrice());
         AdminManualRenewalService.InvoiceRenewalResult renewed = adminManualRenewalService.renewFromInvoice(
                 new AdminManualRenewalService.InvoiceRenewal(link.getUserPlanId(), claim.instituteId(),
-                        amountOf(claim), claim.currency(), requested, setPrice,
+                        amountOf(claim), claim.currency(), requested, setPrice, renewalPriceOf(claim, link),
                         claim.invoiceId(), claim.invoiceNumber(), link.getCreatedBy(), actorName(link.getCreatedBy())));
         return new Outcome(true, renewed.result().getUserPlanId(), renewed.result().getNewEndDate(),
                 renewed.pricePlan(), renewed.priceWarning() != null
@@ -467,10 +490,11 @@ public class InvoiceProductLinkService {
         String priceWarning = null;
         if (Boolean.TRUE.equals(link.getApplyAsMemberPrice())) {
             PaymentPlan base = StringUtils.hasText(planId) ? paymentPlanRepository.findById(planId).orElse(null) : null;
+            BigDecimal price = renewalPriceOf(claim, link);
             priceWarning = customPricePlanService.refusal(null, base, base != null ? base.getPaymentOption() : null,
-                    amountOf(claim), claim.currency(), claim.instituteId());
+                    price, claim.currency(), claim.instituteId());
             if (priceWarning == null) {
-                pricePlan = customPricePlanService.findOrCreate(base, amountOf(claim), claim.invoiceNumber());
+                pricePlan = customPricePlanService.findOrCreate(base, price, claim.invoiceNumber());
                 planId = pricePlan.getId();
             }
         }
@@ -594,6 +618,12 @@ public class InvoiceProductLinkService {
             log.debug("Could not resolve admin name for {}: {}", userId, e.getMessage());
         }
         return "Admin";
+    }
+
+    /** The admin's renewal price, else what the invoice charges. */
+    private static BigDecimal renewalPriceOf(Claim claim, InvoiceProductLinkDTO link) {
+        return link.getRenewalPrice() != null && link.getRenewalPrice().signum() > 0
+                ? link.getRenewalPrice() : amountOf(claim);
     }
 
     private static BigDecimal amountOf(Claim claim) {

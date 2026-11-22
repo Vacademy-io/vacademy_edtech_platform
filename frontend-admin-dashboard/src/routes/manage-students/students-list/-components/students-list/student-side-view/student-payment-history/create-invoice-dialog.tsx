@@ -62,7 +62,9 @@ import {
 import { useInstituteDefaultCurrency } from '@/services/payment-setting';
 import {
     InvoiceProductLinkField,
+    InvoiceProductLinkStatus,
     EMPTY_PRODUCT_LINK,
+    draftFromProductLink,
     getProductLinkError,
     toProductLinkPayload,
     type ProductLinkDraft,
@@ -469,8 +471,10 @@ export function CreateInvoiceDialog({
     const [discountServerError, setDiscountServerError] = useState<string | null>(null);
 
     // The product this invoice pays for (renewal / new enrolment), applied once it is paid.
-    // New invoices only — an edit keeps whatever product the invoice was raised with.
-    const showProductLink = !isEditing;
+    // Editable on an unpaid invoice until it starts being applied; after that it is shown read-only.
+    const editedLink = editInvoice?.product_link ?? null;
+    const productLinkLocked = !!editedLink && !!editedLink.status && editedLink.status !== 'PENDING';
+    const showProductLink = !productLinkLocked;
     const [productLink, setProductLink] = useState<ProductLinkDraft>(EMPTY_PRODUCT_LINK);
     const [productOrgAssociated, setProductOrgAssociated] = useState(false);
     // What the dialog itself last filled in, so picking another product can replace it.
@@ -517,7 +521,9 @@ export function CreateInvoiceDialog({
         setTaxRatePercentText(null);
         setAdminDiscount(EMPTY_ADMIN_DISCOUNT);
         setDiscountPreview(null);
-        setProductLink(EMPTY_PRODUCT_LINK);
+        // Edit: the invoice's own product. Duplicate: the same product again (renewing the same
+        // membership again, say). New: none.
+        setProductLink(draftFromProductLink((editInvoice || duplicateFrom)?.product_link));
         setProductOrgAssociated(false);
         lastSuggestionRef.current = { description: '', unitPrice: null };
         // Edit takes precedence over duplicate; both seed from an existing invoice's items,
@@ -768,6 +774,11 @@ export function CreateInvoiceDialog({
                 overrides: req.overrides,
                 tax_enabled: req.tax_enabled,
                 tax_rate_percent: req.tax_rate_percent,
+                // Only when there is something to say: omitted keeps the stored product, so an
+                // edit of an invoice without one sends exactly what it always did.
+                ...(showProductLink && (editedLink || productLink.mode !== 'NONE')
+                    ? { product_link: req.product_link ?? { type: '' as const } }
+                    : {}),
             });
             setSuccessResult({
                 invoice_id: updated.id,
@@ -955,10 +966,21 @@ export function CreateInvoiceDialog({
                                 instituteId={instituteId}
                                 value={productLink}
                                 onChange={setProductLink}
-                                totalLabel={fmt(total, currency)}
+                                currencyLabel={currency}
+                                suggestedRenewalPrice={
+                                    (Number(watchedLineItems[0]?.quantity) || 0) *
+                                        (Number(watchedLineItems[0]?.unit_price) || 0) || null
+                                }
                                 onSuggestLine={handleSuggestLine}
                                 onOrgAssociatedChange={setProductOrgAssociated}
                             />
+                        </div>
+                    )}
+
+                    {/* Product already being applied: shown, not editable. */}
+                    {productLinkLocked && editInvoice && (
+                        <div className="rounded-lg border border-neutral-200 px-4 py-3">
+                            <InvoiceProductLinkStatus invoice={editInvoice} instituteId={instituteId} />
                         </div>
                     )}
 

@@ -265,11 +265,12 @@ public class AdminManualRenewalService {
      * @param amount           what the invoice charged (its total): the price of this renewal
      * @param requestedEndDate access until this day; null, or a day no longer ahead, means the
      *                         plan's normal renewal from today
-     * @param setRenewalPrice  also charge {@code amount} on the membership's future renewals, by
-     *                         moving it onto a plan at that price (CustomPricePlanService)
+     * @param setRenewalPrice  also charge {@code renewalPrice} on the membership's future renewals,
+     *                         by moving it onto a plan at that price (CustomPricePlanService)
+     * @param renewalPrice     the price for future renewals; null = {@code amount}
      */
     public record InvoiceRenewal(String userPlanId, String instituteId, BigDecimal amount, String currency,
-                                 Date requestedEndDate, boolean setRenewalPrice,
+                                 Date requestedEndDate, boolean setRenewalPrice, BigDecimal renewalPrice,
                                  String invoiceId, String invoiceNumber,
                                  String actorId, String actorName) {
     }
@@ -305,6 +306,11 @@ public class AdminManualRenewalService {
         String reason = notRenewableReason(plan);
         if (reason != null) {
             throw new VacademyException(reason);
+        }
+        // The organisation pays for a sub-org membership, not the learner.
+        if ("SUB_ORG".equalsIgnoreCase(plan.getSource())) {
+            throw new VacademyException("This membership is paid by the learner's organisation. "
+                    + "Renew it from the organisation, not with an invoice to the learner.");
         }
         // Fails now, not after the money is in, when the plan has no course to give access to.
         if (accessToRenew(plan, instituteId).isEmpty()) {
@@ -359,11 +365,12 @@ public class AdminManualRenewalService {
         vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan previousPlan = plan.getPaymentPlan();
         vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan pricePlan = null;
         String priceWarning = null;
+        BigDecimal renewalPrice = req.renewalPrice() != null ? req.renewalPrice() : req.amount();
         if (req.setRenewalPrice()) {
             priceWarning = customPricePlanService.refusal(plan, previousPlan, plan.getPaymentOption(),
-                    req.amount(), req.currency(), req.instituteId());
+                    renewalPrice, req.currency(), req.instituteId());
             if (priceWarning == null) {
-                pricePlan = customPricePlanService.findOrCreate(previousPlan, req.amount(), req.invoiceNumber());
+                pricePlan = customPricePlanService.findOrCreate(previousPlan, renewalPrice, req.invoiceNumber());
                 plan.setPaymentPlan(pricePlan);
                 plan.setPaymentPlanId(pricePlan.getId());
                 plan.setPlanJson(JsonUtil.toJson(pricePlan));
@@ -392,7 +399,7 @@ public class AdminManualRenewalService {
                 req.invoiceNumber(), req.currency(), plainAmount(req.amount()),
                 new SimpleDateFormat("dd MMM yyyy").format(newEndDate));
         String description = pricePlan != null
-                ? "Future renewals charged at " + req.currency() + " " + plainAmount(req.amount())
+                ? "Future renewals charged at " + req.currency() + " " + plainAmount(renewalPrice)
                         + " (plan " + pricePlan.getName() + ")"
                 : priceWarning != null ? "Renewal price not changed: " + priceWarning : null;
         timelineEventService.logEvent(REMARK_TYPE, plan.getId(), ACTION_INVOICE_RENEWAL,

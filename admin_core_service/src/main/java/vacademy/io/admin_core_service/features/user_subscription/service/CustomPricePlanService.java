@@ -116,8 +116,10 @@ public class CustomPricePlanService {
         }
 
         PaymentPlan plan = new PaymentPlan();
-        plan.setName((StringUtils.hasText(basePlan.getName()) ? basePlan.getName() : "Plan")
-                + " · " + plain(target));
+        // Same name as the plan it is based on: learners see it on their membership, receipts and
+        // reminders, where "Yearly" reads right and an internal suffix does not. The status, tag
+        // and description mark it as a custom plan for admins and reports.
+        plan.setName(StringUtils.hasText(basePlan.getName()) ? basePlan.getName() : "Plan");
         plan.setStatus(STATUS_PRIVATE);
         plan.setTag(TAG);
         plan.setActualPrice(target.doubleValue());

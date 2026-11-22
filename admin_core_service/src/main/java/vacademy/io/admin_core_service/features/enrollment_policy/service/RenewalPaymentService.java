@@ -531,6 +531,36 @@ public class RenewalPaymentService {
     }
 
     /**
+     * A renewal paid through an admin invoice (InvoiceProductLinkService): fires the same
+     * PAYMENT_SUCCESS renewal event a gateway renewal fires, so the institute's renewal workflows
+     * (confirmation messages, LMS re-access) run for it too. Called once, when the invoice is paid
+     * and its renewal applied; never for an "apply now" renewal that is still unpaid. Extra
+     * context: {@code source=ADMIN_INVOICE} and the invoice number. Never throws.
+     *
+     * <p>Own transaction: it is called from a background thread with none, and the event reads the
+     * plan's lazy relations (price, invite).
+     */
+    @org.springframework.transaction.annotation.Transactional
+    public void emitInvoiceRenewalPaid(String userPlanId, String instituteId, String invoiceNumber) {
+        try {
+            UserPlan userPlan = userPlanRepository.findById(userPlanId).orElse(null);
+            if (userPlan == null) {
+                return;
+            }
+            Map<String, Object> extra = new HashMap<>();
+            if (userPlan.getEndDate() != null) {
+                extra.put("newEndDate", userPlan.getEndDate().toString());
+                extra.put("newEndDateLabel", new java.text.SimpleDateFormat("dd MMM yyyy").format(userPlan.getEndDate()));
+            }
+            extra.put("source", "ADMIN_INVOICE");
+            extra.put("invoiceNumber", invoiceNumber);
+            emitRenewalEvent(WorkflowTriggerEvent.PAYMENT_SUCCESS, userPlan, instituteId, extra);
+        } catch (Exception e) {
+            log.warn("Invoice renewal event for plan {} not sent: {}", userPlanId, e.getMessage());
+        }
+    }
+
+    /**
      * Common renewal workflow-event emission. Context mirrors PaymentLogService's initial-payment
      * events (userId/userPlanId/enrollInviteId/packageSessionIds) plus {@code renewal: true} and a
      * full {@code user} DTO (name/mobile/email) so SEND_WHATSAPP nodes can message directly.

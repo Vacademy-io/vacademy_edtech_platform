@@ -61,6 +61,7 @@ class InvoiceProductLinkServiceTest {
     private BulkAssignmentService bulkAssign;
     private InvoiceProductLinkService service;
     private CustomPricePlanService customPlans;
+    private vacademy.io.admin_core_service.features.enrollment_policy.service.RenewalPaymentService renewalEvents;
     private PaymentPlanRepository paymentPlans;
     private Invoice invoice;
     private UserPlan membership;
@@ -98,7 +99,8 @@ class InvoiceProductLinkServiceTest {
         paymentPlans = mock(PaymentPlanRepository.class);
         service = new InvoiceProductLinkService(invoiceRepository, userPlans, paymentLogs, paymentPlans, customPlans,
                 mappings, studentSessions, resolver, commerceGuard, renewals, bulkAssign, mock(AuthService.class),
-                mock(PlatformTransactionManager.class), mock(org.springframework.cache.CacheManager.class));
+                mock(PlatformTransactionManager.class), mock(org.springframework.cache.CacheManager.class),
+                renewalEvents = mock(vacademy.io.admin_core_service.features.enrollment_policy.service.RenewalPaymentService.class));
 
         invoice = new Invoice();
         invoice.setId("inv-1");
@@ -202,6 +204,23 @@ class InvoiceProductLinkServiceTest {
     }
 
     @Test
+    @DisplayName("renewal price: the admin's amount is checked and stored, not the invoice total")
+    void renewalPriceFromAdmin() {
+        when(renewals.describeRenewableForInvoice("up-1", INST, "u-1", new BigDecimal("621.00"), "INR"))
+                .thenReturn("Renewal · Gold");
+        InvoiceProductLinkDTO req = new InvoiceProductLinkDTO();
+        req.setType("RENEWAL");
+        req.setUserPlanId("up-1");
+        req.setApplyAsMemberPrice(true);
+        req.setRenewalPrice(new BigDecimal("621"));
+
+        InvoiceProductLinkDTO link = service.resolveForCreate(req, List.of("u-1"), INST, "a", new BigDecimal("821.00"), "INR");
+
+        assertEquals(new BigDecimal("621.00"), link.getRenewalPrice());
+        verify(renewals).describeRenewableForInvoice("up-1", INST, "u-1", new BigDecimal("621.00"), "INR");
+    }
+
+    @Test
     @DisplayName("renewal: an access end date that is not in the future is refused")
     void renewalPastEndDate() {
         when(renewals.describeRenewableForInvoice(any(), any(), any(), any(), any())).thenReturn("Renewal · Gold");
@@ -283,6 +302,7 @@ class InvoiceProductLinkServiceTest {
         assertSame(membership, settled.getUserPlan(), "the payment is recorded on the membership");
         assertNull(abandoned.getUserPlan(), "an abandoned gateway attempt stays off the membership");
         assertTrue(second.getPaymentRecorded());
+        verify(renewalEvents, times(1)).emitInvoiceRenewalPaid("up-1", INST, "INV-0042");
     }
 
     @Test
@@ -299,6 +319,7 @@ class InvoiceProductLinkServiceTest {
         InvoiceProductLinkDTO applied = service.fulfil("inv-1", false);
         assertEquals("FULFILLED", applied.getStatus());
         assertNull(settled.getUserPlan(), "nothing is paid yet");
+        verifyNoInteractions(renewalEvents);
 
         invoice.setStatus("PAID");
         settled.setPaymentStatus("PAID");
@@ -307,6 +328,7 @@ class InvoiceProductLinkServiceTest {
         verify(renewals, times(1)).renewFromInvoice(any());
         assertSame(membership, settled.getUserPlan());
         assertTrue(paid.getPaymentRecorded());
+        verify(renewalEvents, times(1)).emitInvoiceRenewalPaid("up-1", INST, "INV-0042");
     }
 
     @Test
@@ -352,7 +374,7 @@ class InvoiceProductLinkServiceTest {
         assertFalse(req.getValue().getOptions().isDryRun());
         assertEquals("FULFILLED", link.getStatus());
         assertEquals("up-new", link.getResultUserPlanId());
-        verifyNoInteractions(customPlans);
+        verifyNoInteractions(customPlans, renewalEvents);
     }
 
     @Test

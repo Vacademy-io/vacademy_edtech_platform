@@ -105,7 +105,12 @@ public class InvoiceProductLinkDTO {
     private String resultUserPlanId;
     /** The membership's end date after the renewal / enrolment (yyyy-MM-dd). */
     private String resultEndDate;
-    /** The renewal price set by {@link #applyAsMemberPrice}, when it was applied. */
+    /**
+     * With {@link #applyAsMemberPrice}: the price future renewals charge. Sent by the admin
+     * (prefilled from the product's invoice line, so a registration fee or one-off discount on
+     * the same invoice does not leak into every renewal); null falls back to the invoice total.
+     * After it is applied, the price of the plan the membership renews on.
+     */
     private BigDecimal renewalPrice;
     /** The plan the membership renews on at that price (an existing plan, or a private one made for it). */
     private String pricePlanId;

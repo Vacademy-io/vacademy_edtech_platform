@@ -5634,6 +5634,23 @@ public class InvoiceService {
         dataJson.put("overrides", renderOverrides);
         dataJson.put("editedBy", userDetails != null ? userDetails.getUserId() : "system");
         dataJson.put("editedAt", LocalDateTime.now().toString());
+        // Product change (only when the request carries one; omitted keeps the stored product).
+        boolean applyProductNow = false;
+        if (request.getProductLink() != null) {
+            InvoiceProductLinkDTO current = InvoiceProductLinkService.read(invoice.getInvoiceDataJson());
+            if (current != null && current.getStatus() != null
+                    && !InvoiceProductLinkDTO.STATUS_PENDING.equals(current.getStatus())) {
+                throw new VacademyException("This invoice's product has already been applied ("
+                        + current.getStatus() + "), so it can no longer be changed.");
+            }
+            InvoiceProductLinkDTO next = invoiceProductLinkService.resolveForCreate(request.getProductLink(),
+                    List.of(invoiceUserId), invoiceInstituteId,
+                    userDetails != null ? userDetails.getUserId() : null,
+                    effectiveTax.totalAmount(), invoice.getCurrency());
+            // null removes it (read() treats a non-object as no product).
+            dataJson.put(InvoiceProductLinkService.JSON_KEY, next != null ? InvoiceProductLinkService.toStored(next) : null);
+            applyProductNow = next != null && Boolean.TRUE.equals(next.getApplyNow());
+        }
         invoice.setInvoiceDataJson(mergeInvoiceDataJson(invoice.getInvoiceDataJson(), dataJson));
 
         invoice = invoiceRepository.save(invoice);
@@ -5686,6 +5703,11 @@ public class InvoiceService {
         } catch (Exception e) {
             log.error("Failed to regenerate PDF for edited invoice {}: {}", invoice.getInvoiceNumber(),
                     e.getMessage(), e);
+        }
+
+        // "Apply now" chosen while editing: same as at create, it runs once this commits.
+        if (applyProductNow) {
+            publishAdminInvoicePaid(invoice, true);
         }
 
         log.info("[InvoiceEdit] invoiceId={} invoiceNumber={} editedBy={} newTotal={}",
