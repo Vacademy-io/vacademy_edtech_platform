@@ -90,6 +90,9 @@ import { SectionCard } from './SectionCard';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 
+// The only YouTube links recognised before youtu.be / live / shorts support (see detectedPlatform).
+const LEGACY_YOUTUBE_LINK = /^(https?:\/\/(www\.)?youtube\.com\/(watch\?v=|@.+\/live))/i;
+
 // Default feedback questions configuration
 const buildDefaultFeedbackQuestions = (t: TFunction) => [
     {
@@ -1001,8 +1004,8 @@ export default function ScheduleStep1() {
     const detectedPlatform = useMemo(() => {
         const link = (defaultLinkWatch || '').trim();
         // watch?v=, /live/<id>, /embed/, /shorts/, @channel/live and youtu.be share links (the
-        // learner player embeds all of them). A narrower match fell through to 'other' and flipped a
-        // pasted YouTube link to "redirect".
+        // learner player embeds all of them). A narrower match fell through to 'other' and showed a
+        // pasted YouTube link as "Other".
         const youtubeRegex =
             /^https?:\/\/((www|m)\.)?(youtube\.com\/(watch\?|live\/|embed\/|shorts\/|@[^/]+\/live)|youtu\.be\/)/i;
         const meetRegex = /^(https?:\/\/meet\.google\.com\/(new|[a-zA-Z0-9-]+))/i;
@@ -1018,7 +1021,13 @@ export default function ScheduleStep1() {
         switch (detectedPlatform) {
             case 'youtube': {
                 form.setValue('sessionPlatform', StreamingPlatform.YOUTUBE);
-                form.setValue('streamingType', SessionPlatform.EMBED_IN_APP);
+                // youtu.be / live / shorts links used to be detected as "Other", so existing classes
+                // with them keep the streaming type they were saved with until the admin changes the
+                // link. New links, and watch?v= links, still default to Embed in app as before.
+                const savedLinkOnEdit = isEdit && !form.getFieldState('defaultLink').isDirty;
+                if (!savedLinkOnEdit || LEGACY_YOUTUBE_LINK.test((defaultLinkWatch || '').trim())) {
+                    form.setValue('streamingType', SessionPlatform.EMBED_IN_APP);
+                }
                 break;
             }
             case 'meet': {
