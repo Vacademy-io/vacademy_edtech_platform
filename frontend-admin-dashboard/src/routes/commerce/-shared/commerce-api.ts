@@ -197,6 +197,28 @@ export async function fetchProducts(
     return asPage<ProductSummary>(res.data, size);
 }
 
+/** Pages read at most by `fetchAllProducts`: 50 × 100 = 5,000 products. */
+export const ALL_PRODUCTS_MAX_PAGES = 50;
+
+/**
+ * Every product matching the filters, page after page (100 a page), up to
+ * `maxPages`. For a list that must name all its members, such as the products
+ * of a collection, where the first page alone left the rest unnamed.
+ */
+export async function fetchAllProducts(
+    filters: Omit<ProductListFilters, 'page' | 'size'> = {},
+    maxPages = ALL_PRODUCTS_MAX_PAGES
+): Promise<ProductSummary[]> {
+    const out: ProductSummary[] = [];
+    for (let page = 0; page < maxPages; page++) {
+        const result = await fetchProducts({ ...filters, page, size: COMMERCE_MAX_PAGE_SIZE });
+        out.push(...result.content);
+        const lastPage = result.last || page + 1 >= result.total_pages || result.content.length === 0;
+        if (lastPage) break;
+    }
+    return out;
+}
+
 export async function fetchCollections(
     page = 0,
     size = 50

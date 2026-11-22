@@ -1092,7 +1092,10 @@
             "remove": "Take {{name}} out",
             "inCollection": "In this collection ({{count}})",
             "empty": "No products in this collection yet.",
-            "saved": "Products of the collection saved"
+            "saved": "Products of the collection saved",
+            "missing": "Product no longer available",
+            "filter": "Filter this list",
+            "noFilterMatch": "No product in this collection matches."
         }
     },
     "import": {

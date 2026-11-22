@@ -6,6 +6,7 @@ import {
     fetchCommerceStaff,
     fetchLocations,
     fetchMyPinStatus,
+    fetchAllProducts,
     fetchProducts,
     fetchStaffLocations,
     fetchTaxClasses,
@@ -47,6 +48,8 @@ export const commerceKeys = {
     staffLocations: (userId: string) => [...root(), 'staff-locations', userId] as const,
     myPin: () => [...root(), 'my-pin'] as const,
     products: (filters: ProductListFilters) => [...root(), 'products', filters] as const,
+    /** Under the products key, so a catalogue write refreshes it too. */
+    allProducts: (filters: ProductListFilters) => [...root(), 'products', 'all', filters] as const,
     collections: (page: number, size: number) => [...root(), 'collections', page, size] as const,
 };
 
@@ -106,6 +109,15 @@ export const useProducts = (filters: ProductListFilters = {}, enabled?: boolean)
     useQuery({
         queryKey: commerceKeys.products(filters),
         queryFn: () => fetchProducts(filters),
+        enabled: isOn(enabled),
+        staleTime: LIST_STALE_MS,
+    });
+
+/** Every product matching the filters (all pages), e.g. the members of one collection. */
+export const useAllProducts = (filters: Omit<ProductListFilters, 'page' | 'size'>, enabled?: boolean) =>
+    useQuery({
+        queryKey: commerceKeys.allProducts(filters),
+        queryFn: () => fetchAllProducts(filters),
         enabled: isOn(enabled),
         staleTime: LIST_STALE_MS,
     });

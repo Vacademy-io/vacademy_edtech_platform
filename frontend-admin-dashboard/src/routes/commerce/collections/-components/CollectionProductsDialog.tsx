@@ -16,18 +16,32 @@ import {
     useSaveCollectionProducts,
 } from '@/routes/commerce/-shared/catalogue-hooks';
 import { i18nName } from '@/routes/commerce/-shared/collection-tree';
-import { COMMERCE_MAX_PAGE_SIZE } from '@/routes/commerce/-shared/commerce-api';
 import { readCommerceError } from '@/routes/commerce/-shared/commerce-errors';
-import { useProducts } from '@/routes/commerce/-shared/commerce-hooks';
+import { useAllProducts, useProducts } from '@/routes/commerce/-shared/commerce-hooks';
 import type { CommerceCollection, ProductSummary } from '@/routes/commerce/-shared/commerce-types';
 
 /**
  * The products of one collection: see them in order, take one out, search the
  * catalogue and add. Saving replaces the stored set with the list shown.
  *
- * Names come from the product list filtered by this collection (first 100);
- * a product beyond that keeps its place and is shown by its id.
+ * Names come from the product list filtered by this collection, every page of
+ * it (a collection can hold hundreds). A stored id with no product behind it
+ * keeps its place and reads "Product no longer available", never the raw id.
  */
+
+/** Above this many rows the list gets its own filter box. */
+export const MEMBER_FILTER_FROM = 10;
+
+/** What a row of the list reads: the product's name, or a sentence when it is gone. */
+export function memberLabel(
+    product: ProductSummary | undefined,
+    language: string,
+    missing: string
+): string {
+    if (!product) return missing;
+    return i18nName(product.names, language, product.slug || product.external_ref || missing);
+}
+
 export function CollectionProductsDialog({
     collection,
     onClose,
@@ -39,14 +53,12 @@ export function CollectionProductsDialog({
     const language = useAdminLanguage();
     const collectionId = collection?.id ?? null;
     const stored = useCollectionProductIds(collectionId);
-    const members = useProducts(
-        { collectionId: collectionId ?? undefined, size: COMMERCE_MAX_PAGE_SIZE },
-        !!collectionId
-    );
+    const members = useAllProducts({ collectionId: collectionId ?? undefined }, !!collectionId);
     const save = useSaveCollectionProducts();
     const [ids, setIds] = useState<string[]>([]);
     const [known, setKnown] = useState<Record<string, ProductSummary>>({});
     const [search, setSearch] = useState('');
+    const [filter, setFilter] = useState('');
     const [q, setQ] = useState('');
     const results = useProducts({ q, size: 20 }, !!collectionId && q.length >= 2);
 
@@ -56,13 +68,14 @@ export function CollectionProductsDialog({
     useEffect(() => {
         setSearch('');
         setQ('');
+        setFilter('');
     }, [collectionId]);
     useEffect(() => {
         const timer = setTimeout(() => setQ(search.trim()), 350);
         return () => clearTimeout(timer);
     }, [search]);
     useEffect(() => {
-        const rows = [...(members.data?.content ?? []), ...(results.data?.content ?? [])];
+        const rows = [...(members.data ?? []), ...(results.data?.content ?? [])];
         if (rows.length === 0) return;
         setKnown((current) => ({
             ...current,
@@ -70,10 +83,12 @@ export function CollectionProductsDialog({
         }));
     }, [members.data, results.data]);
 
-    const nameOf = (id: string) => {
-        const product = known[id];
-        return product ? i18nName(product.names, language, product.slug ?? id) : id;
-    };
+    const nameOf = (id: string) =>
+        memberLabel(known[id], language, t('collections.productsDialog.missing'));
+    const filterText = filter.trim().toLowerCase();
+    const shownIds = filterText
+        ? ids.filter((id) => nameOf(id).toLowerCase().includes(filterText))
+        : ids;
     const changed = useMemo(
         () => JSON.stringify(ids) !== JSON.stringify(stored.data ?? []),
         [ids, stored.data]
@@ -171,7 +186,16 @@ export function CollectionProductsDialog({
                     <p className="text-body font-medium text-foreground">
                         {t('collections.productsDialog.inCollection', { count: ids.length })}
                     </p>
-                    {stored.isLoading && <CommerceLoadingRows rows={2} />}
+                    {(stored.isLoading || members.isLoading) && <CommerceLoadingRows rows={2} />}
+                    {members.isError && (
+                        <CommerceErrorState
+                            message={
+                                readCommerceError(members.error, t('collections.errors.products'))
+                                    .message
+                            }
+                            onRetry={() => void members.refetch()}
+                        />
+                    )}
                     {stored.isError && (
                         <CommerceErrorState
                             message={
@@ -186,14 +210,36 @@ export function CollectionProductsDialog({
                             {t('collections.productsDialog.empty')}
                         </p>
                     )}
+                    {members.isSuccess && ids.length > MEMBER_FILTER_FROM && (
+                        <MyInput
+                            inputType="search"
+                            input={filter}
+                            onChangeFunction={(event) => setFilter(event.target.value)}
+                            inputPlaceholder={t('collections.productsDialog.filter')}
+                            aria-label={t('collections.productsDialog.filter')}
+                            className="sm:w-full"
+                        />
+                    )}
+                    {members.isSuccess && filterText && shownIds.length === 0 && (
+                        <p className="text-caption text-muted-foreground">
+                            {t('collections.productsDialog.noFilterMatch')}
+                        </p>
+                    )}
                     <ul className="flex flex-col gap-1">
-                        {ids.map((id) => (
+                        {(members.isSuccess ? shownIds : []).map((id) => (
                             <li
                                 key={id}
                                 className="flex items-center justify-between gap-2 rounded-md border border-border p-2"
                             >
                                 <div className="flex min-w-0 items-center gap-2">
-                                    <span className="min-w-0 truncate text-body text-foreground">
+                                    <span
+                                        className={
+                                            known[id]
+                                                ? 'min-w-0 truncate text-body text-foreground'
+                                                : 'min-w-0 truncate text-body italic text-muted-foreground'
+                                        }
+                                        title={nameOf(id)}
+                                    >
                                         {nameOf(id)}
                                     </span>
                                     {known[id] && (
