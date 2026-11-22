@@ -33,6 +33,9 @@ public class InvoiceController {
     private InvoiceBulkExportService invoiceBulkExportService;
 
     @Autowired
+    private vacademy.io.admin_core_service.features.invoice.service.InvoiceProductLinkService invoiceProductLinkService;
+
+    @Autowired
     private vacademy.io.admin_core_service.features.invoice.service.ManualReminderService manualReminderService;
 
     @Autowired
@@ -356,6 +359,30 @@ public class InvoiceController {
                 instituteAccessValidator::requireInstituteStaffOrSuperAdmin,
                 () -> { });
         return ResponseEntity.ok(invoiceService.markInvoicePaidManually(invoiceId, request, userDetails));
+    }
+
+    /**
+     * Applies, again, the product attached to a PAID admin invoice — the membership renewal or
+     * course enrolment it pays for — after it failed (shown on the invoice with the reason).
+     * Runs at most once: an already-applied product is returned unchanged. Waits for the outcome
+     * and returns the refreshed invoice.
+     *
+     * <p>{@code POST /v1/invoices/{invoiceId}/product-link/apply?instituteId=xxx}
+     */
+    @PostMapping("/{invoiceId}/product-link/apply")
+    @vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable(
+            entityType = "INVOICE",
+            action = "UPDATE",
+            entityIdExpr = "#invoiceId",
+            descriptionExpr = "'applied the product of invoice ' + (#result?.body?.invoiceNumber ?: #invoiceId)"
+                    + " + ' (' + (#result?.body?.productLink?.status ?: '') + ')'")
+    public ResponseEntity<InvoiceDTO> applyInvoiceProductLink(
+            @PathVariable String invoiceId,
+            @RequestParam String instituteId,
+            @RequestAttribute("user") CustomUserDetails userDetails) {
+        instituteAccessValidator.guardStaff("invoices.applyInvoiceProductLink", userDetails, instituteId);
+        invoiceProductLinkService.retry(invoiceId, instituteId);
+        return ResponseEntity.ok(invoiceService.getInvoiceById(invoiceId));
     }
 
     /**

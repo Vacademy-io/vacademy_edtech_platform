@@ -1401,6 +1401,9 @@ export const PUT_UPDATE_INVOICE = (invoiceId: string) =>
     `${BASE_URL}/admin-core-service/v1/invoices/${invoiceId}`;
 export const POST_MARK_INVOICE_PAID_MANUAL = (invoiceId: string) =>
     `${BASE_URL}/admin-core-service/v1/invoices/${invoiceId}/mark-paid-manual`;
+/** POST ?instituteId=… — re-applies the renewal / enrolment a paid admin invoice pays for. */
+export const POST_APPLY_INVOICE_PRODUCT_LINK = (invoiceId: string) =>
+    `${BASE_URL}/admin-core-service/v1/invoices/${invoiceId}/product-link/apply`;
 // Bulk "which invoice covers each of these payments?" lookup — drives the Invoice
 // column on Manage Payments. Institute-scoped via the instituteId query param.
 export const POST_INVOICES_BY_PAYMENT_LOGS = `${BASE_URL}/admin-core-service/v1/invoices/by-payment-logs`;

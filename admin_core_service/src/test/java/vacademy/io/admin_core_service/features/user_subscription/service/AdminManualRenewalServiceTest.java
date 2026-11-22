@@ -73,6 +73,7 @@ class AdminManualRenewalServiceTest {
     private StudentSessionRepository studentSessions;
     private AdminManualRenewalService service;
     private vacademy.io.admin_core_service.features.commerce.common.CommercePlans commercePlans;
+    private CustomPricePlanService customPlans;
     private UserPlan plan;
     private StudentSessionInstituteGroupMapping lapsed;
     private CustomUserDetails admin;
@@ -95,10 +96,11 @@ class AdminManualRenewalServiceTest {
         PaymentDateDefaults paymentDates = mock(PaymentDateDefaults.class);
         when(paymentDates.today(any())).thenReturn(new java.util.Date());
         commercePlans = mock(vacademy.io.admin_core_service.features.commerce.common.CommercePlans.class);
+        customPlans = mock(CustomPricePlanService.class);
         service = new AdminManualRenewalService(planRepo, mappingRepo, paymentLogService, paymentLogRepo,
                 offline, ledger, access, timeline, invoices, auth, invitations, packageSessions, studentSessions,
                 new PaymentSettingService(mock(InstituteRepository.class), new ObjectMapper()),
-                paymentDates, commercePlans);
+                paymentDates, commercePlans, customPlans);
 
         EnrollInvite invite = new EnrollInvite();
         invite.setInstituteId(INST);
@@ -540,5 +542,139 @@ class AdminManualRenewalServiceTest {
 
         verify(planRepo, never()).save(any());
         verifyNoInteractions(timeline);
+    }
+
+    // ── renewal paid through an admin invoice ──
+
+    private static AdminManualRenewalService.InvoiceRenewal invoiceRenewal(double amount, Date until, boolean lockPrice) {
+        return new AdminManualRenewalService.InvoiceRenewal("up-1", INST, java.math.BigDecimal.valueOf(amount), "AUD",
+                until, lockPrice, null, "inv-1", "INV-0042", "admin-1", "Finance Admin");
+    }
+
+    @Test
+    @DisplayName("invoice renewal: plan and access renewed, but no payment, ledger row or invoice of its own")
+    void invoiceRenewalWritesNoMoney() {
+        AdminManualRenewalService.InvoiceRenewalResult renewed =
+                service.renewFromInvoice(invoiceRenewal(621, null, false));
+        ManualRenewalResultDTO result = renewed.result();
+
+        assertEquals("EXPIRED", result.getPreviousStatus());
+        assertEquals("ACTIVE", plan.getStatus());
+        long daysAhead = (plan.getEndDate().getTime() - System.currentTimeMillis()) / DAY;
+        assertTrue(daysAhead >= 364 && daysAhead <= 365, "~365 days from today, was " + daysAhead);
+        assertEquals("ACTIVE", lapsed.getStatus());
+        assertEquals(plan.getEndDate(), lapsed.getExpiryDate());
+        verify(paymentLogService, never()).createPaymentLog(any(), anyDouble(), any(), any(), any(), any(), any(), any());
+        verifyNoInteractions(ledger, invoices, offline, customPlans);
+        assertNull(renewed.pricePlan(), "the renewal price is only changed when asked");
+        verify(access).recordGrant(eq(LearnerAccessSourceEnum.RENEWAL), eq(INST), eq(lapsed), any(),
+                any(), eq("up-1"), any(), any(), eq("Renewal through invoice INV-0042"), eq("admin-1"), eq("Finance Admin"));
+        verify(timeline).logEvent(eq("USER_PLAN"), eq("up-1"), eq("INVOICE_RENEWAL"), eq("ADMIN"), eq("admin-1"),
+                eq("Finance Admin"), contains("INV-0042"), isNull(), any(), eq("u-1"));
+    }
+
+    @Test
+    @DisplayName("invoice renewal: an explicit end date wins; one that has passed falls back to the normal renewal")
+    void invoiceRenewalEndDate() {
+        Date chosen = new Date(System.currentTimeMillis() + 100 * DAY);
+        service.renewFromInvoice(invoiceRenewal(621, chosen, false));
+        assertEquals(chosen, plan.getEndDate());
+
+        plan.setStatus("EXPIRED");
+        plan.setEndDate(new Date(System.currentTimeMillis() - 30 * DAY));
+        service.renewFromInvoice(invoiceRenewal(621, new Date(System.currentTimeMillis() - DAY), false));
+        long daysAhead = (plan.getEndDate().getTime() - System.currentTimeMillis()) / DAY;
+        assertTrue(daysAhead >= 364 && daysAhead <= 365, "fell back to ~365 days, was " + daysAhead);
+    }
+
+    @Test
+    @DisplayName("invoice renewal with a renewal price: the membership moves onto a plan at that price")
+    void invoiceRenewalMovesToPricePlan() {
+        PaymentPlan base = plan.getPaymentPlan();
+        PaymentPlan custom = new PaymentPlan();
+        custom.setId("pp-621");
+        custom.setName("Yearly · 621.00");
+        custom.setActualPrice(621.0);
+        custom.setValidityInDays(365);
+        when(customPlans.refusal(eq(plan), eq(base), any(), any(), eq("AUD"), eq(INST))).thenReturn(null);
+        when(customPlans.findOrCreate(eq(base), eq(java.math.BigDecimal.valueOf(621.0)), eq("INV-0042"))).thenReturn(custom);
+
+        AdminManualRenewalService.InvoiceRenewalResult renewed =
+                service.renewFromInvoice(invoiceRenewal(621, null, true));
+
+        assertSame(custom, renewed.pricePlan());
+        assertNull(renewed.priceWarning());
+        assertEquals("pp-621", plan.getPaymentPlanId());
+        assertSame(custom, plan.getPaymentPlan());
+        assertNull(plan.getRegionalPrice(), "no per-member price override is used");
+        verify(planRepo, atLeastOnce()).save(plan);
+    }
+
+    @Test
+    @DisplayName("invoice renewal whose renewal price is refused by then: renewed anyway, plan unchanged, reason returned")
+    void invoiceRenewalPriceRefusedStillRenews() {
+        when(customPlans.refusal(any(), any(), any(), any(), any(), any())).thenReturn("autopay covers up to 431.00");
+
+        AdminManualRenewalService.InvoiceRenewalResult renewed =
+                service.renewFromInvoice(invoiceRenewal(621, null, true));
+
+        assertEquals("ACTIVE", plan.getStatus());
+        assertNull(renewed.pricePlan());
+        assertEquals("autopay covers up to 431.00", renewed.priceWarning());
+        verify(customPlans, never()).findOrCreate(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("raising the invoice: a renewable membership of the billed learner is described; others refused")
+    void describeRenewableForInvoice() {
+        assertTrue(service.describeRenewableForInvoice("up-1", INST, "u-1", null, null).startsWith("Renewal"));
+
+        assertThrows(VacademyException.class, () -> service.describeRenewableForInvoice("up-1", INST, "someone-else", null, null));
+        assertThrows(VacademyException.class, () -> service.describeRenewableForInvoice("up-1", "other-inst", "u-1", null, null));
+        plan.setStatus("TERMINATED");
+        assertThrows(VacademyException.class, () -> service.describeRenewableForInvoice("up-1", INST, "u-1", null, null));
+        plan.setStatus("EXPIRED");
+        when(mappingRepo.findByUserPlanIdAndStatus("up-1", "INACTIVE")).thenReturn(List.of());
+        assertThrows(VacademyException.class, () -> service.describeRenewableForInvoice("up-1", INST, "u-1", null, null));
+
+        verify(planRepo, never()).save(any());
+        verify(mappingRepo, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("invoice renewal with a separate renewal price: the plan is priced at it, not at the invoice total")
+    void invoiceRenewalUsesRenewalPrice() {
+        PaymentPlan custom = new PaymentPlan();
+        custom.setId("pp-621");
+        custom.setActualPrice(621.0);
+        when(customPlans.refusal(any(), any(), any(), any(), any(), any())).thenReturn(null);
+        when(customPlans.findOrCreate(any(), eq(new java.math.BigDecimal("621.00")), any())).thenReturn(custom);
+
+        // The invoice charged 821 (621 renewal + 200 registration fee); renewals stay at 621.
+        service.renewFromInvoice(new AdminManualRenewalService.InvoiceRenewal("up-1", INST,
+                java.math.BigDecimal.valueOf(821), "AUD", null, true, new java.math.BigDecimal("621.00"),
+                "inv-1", "INV-0042", "admin-1", "Finance Admin"));
+
+        verify(customPlans).findOrCreate(any(), eq(new java.math.BigDecimal("621.00")), eq("INV-0042"));
+        assertEquals("pp-621", plan.getPaymentPlanId());
+    }
+
+    @Test
+    @DisplayName("raising the invoice: a membership the organisation pays for is refused")
+    void describeRefusesSubOrgMembership() {
+        plan.setSource("SUB_ORG");
+        VacademyException e = assertThrows(VacademyException.class,
+                () -> service.describeRenewableForInvoice("up-1", INST, "u-1", null, null));
+        assertTrue(e.getMessage().contains("organisation"));
+    }
+
+    @Test
+    @DisplayName("raising the invoice with a renewal price: a refused price is reported before anything is raised")
+    void describeRefusesRenewalPrice() {
+        when(customPlans.refusal(any(), any(), any(), any(), any(), any()))
+                .thenReturn("The invoice is in INR but the plan is priced in AUD.");
+        VacademyException e = assertThrows(VacademyException.class, () -> service.describeRenewableForInvoice(
+                "up-1", INST, "u-1", java.math.BigDecimal.valueOf(621), "INR"));
+        assertTrue(e.getMessage().contains("AUD"));
     }
 }

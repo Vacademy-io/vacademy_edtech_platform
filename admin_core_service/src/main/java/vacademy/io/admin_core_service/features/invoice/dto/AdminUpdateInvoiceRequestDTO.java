@@ -50,4 +50,11 @@ public class AdminUpdateInvoiceRequestDTO {
 
     /** Per-invoice tax rate as a percentage (e.g. 18). Null = institute default. */
     private BigDecimal taxRatePercent;
+
+    /**
+     * Change the product this unpaid invoice pays for. Null (every caller before this field) =
+     * leave it as it is; an object without a type = remove it. Refused once the product has
+     * started being applied.
+     */
+    private InvoiceProductLinkDTO productLink;
 }

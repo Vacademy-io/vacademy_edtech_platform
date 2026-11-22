@@ -106,6 +106,7 @@ public class AdminManualRenewalService {
     private final PaymentSettingService paymentSettingService;
     private final PaymentDateDefaults paymentDateDefaults;
     private final vacademy.io.admin_core_service.features.commerce.common.CommercePlans commercePlans;
+    private final CustomPricePlanService customPricePlanService;
 
     @Transactional(readOnly = true)
     public ManualRenewalPreviewDTO preview(String userPlanId, String instituteId) {
@@ -149,24 +150,11 @@ public class AdminManualRenewalService {
             throw new VacademyException("The new end date must be in the future");
         }
 
-        List<StudentSessionInstituteGroupMapping> active = mappingRepository
-                .findByUserPlanIdAndStatus(plan.getId(), LearnerSessionStatusEnum.ACTIVE.name());
-        List<StudentSessionInstituteGroupMapping> lapsed = new ArrayList<>();
-        for (String status : REACTIVATABLE) {
-            lapsed.addAll(mappingRepository.findByUserPlanIdAndStatus(plan.getId(), status));
-        }
-        // No access row is linked to the plan: older enrolments and imports often left
-        // user_plan_id empty, and some plans were never given their course at all. The gateway
-        // renewal enrols here, which fires the enrolment workflow and its emails; a silent admin
-        // action must not, so the plan's own course rows are adopted or built directly instead.
         // Resolved before anything is written, so a refusal still leaves nothing behind.
-        List<StudentSessionInstituteGroupMapping> granted = new ArrayList<>();
-        if (active.isEmpty() && lapsed.isEmpty()) {
-            granted = accessForUnlinkedPlan(plan, instituteId);
-            if (granted.isEmpty()) {
-                throw new VacademyException("This membership's invite has no course to give access to. "
-                        + "Enrol the learner instead of renewing.");
-            }
+        List<StudentSessionInstituteGroupMapping> touched = accessToRenew(plan, instituteId);
+        if (touched.isEmpty()) {
+            throw new VacademyException("This membership's invite has no course to give access to. "
+                    + "Enrol the learner instead of renewing.");
         }
 
         String adminId = admin != null ? admin.getUserId() : null;
@@ -213,33 +201,8 @@ public class AdminManualRenewalService {
 
         String previousStatus = plan.getStatus();
         Date previousEndDate = plan.getEndDate();
-        plan.setEndDate(newEndDate);
-        plan.setStatus(UserPlanStatusEnum.ACTIVE.name());
-        plan.setIsTrial(false);
-        plan.setRenewalAttemptCount(0);
-        plan.setLastRenewalAttemptAt(null);
-        // auto_renewal_enabled is left alone. A charge is only scheduled where the member
-        // already had autopay on; otherwise nothing is due to be taken automatically.
-        boolean autopayOn = Boolean.TRUE.equals(plan.getAutoRenewalEnabled());
-        plan.setNextChargeAt(autopayOn ? newEndDate : null);
-        userPlanRepository.save(plan);
-
-        String grantReason = "Manual renewal recorded by admin";
-        List<StudentSessionInstituteGroupMapping> touched = new ArrayList<>(active);
-        touched.addAll(lapsed);
-        touched.addAll(granted);
-        for (StudentSessionInstituteGroupMapping m : touched) {
-            Date previousExpiry = m.getExpiryDate();
-            if (m.getUserPlanId() == null) {
-                m.setUserPlanId(plan.getId());
-            }
-            m.setStatus(LearnerSessionStatusEnum.ACTIVE.name());
-            m.setExpiryDate(newEndDate);
-            mappingRepository.save(m);
-            learnerAccessService.recordGrant(LearnerAccessSourceEnum.RENEWAL, instituteId, m, previousExpiry,
-                    null, plan.getId(), plan.getPaymentPlanId(), plan.getEnrollInviteId(),
-                    grantReason, adminId, adminName);
-        }
+        extendPlanAndAccess(plan, instituteId, newEndDate, touched,
+                "Manual renewal recorded by admin", adminId, adminName);
 
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put("amount", req.getAmount());
@@ -289,6 +252,173 @@ public class AdminManualRenewalService {
                 .mappingsUpdated(touched.size())
                 .invoiceQueued(invoiceQueued)
                 .build();
+    }
+
+    // ------------------------------------------------- renewal paid through an admin invoice
+
+    /** Timeline action for a renewal paid through an admin invoice. */
+    public static final String ACTION_INVOICE_RENEWAL = "INVOICE_RENEWAL";
+
+    /**
+     * A renewal an admin invoice pays for, applied once that invoice is paid (or when it is raised, with apply now).
+     *
+     * @param amount           what the invoice charged (its total): the price of this renewal
+     * @param requestedEndDate access until this day; null, or a day no longer ahead, means the
+     *                         plan's normal renewal from today
+     * @param setRenewalPrice  also charge {@code renewalPrice} on the membership's future renewals,
+     *                         by moving it onto a plan at that price (CustomPricePlanService)
+     * @param renewalPrice     the price for future renewals; null = {@code amount}
+     */
+    public record InvoiceRenewal(String userPlanId, String instituteId, BigDecimal amount, String currency,
+                                 Date requestedEndDate, boolean setRenewalPrice, BigDecimal renewalPrice,
+                                 String invoiceId, String invoiceNumber,
+                                 String actorId, String actorName) {
+    }
+
+    /**
+     * What an invoice renewal did.
+     *
+     * @param pricePlan    the plan the membership now renews on, when a renewal price was set
+     * @param priceWarning why the renewal price was not set although asked for (the renewal itself
+     *                     still went through), else null
+     */
+    public record InvoiceRenewalResult(ManualRenewalResultDTO result,
+                                       vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan pricePlan,
+                                       String priceWarning) {
+    }
+
+    /**
+     * Checks, when the invoice is raised, that the membership can be renewed through it, and
+     * describes it for the invoice ("Renewal · Gold Membership · Yearly"). Same rules as a manual
+     * renewal, plus the membership must be the billed learner's own.
+     *
+     * @param renewalPrice when the invoice amount is also to be the renewal price: that amount,
+     *                     checked against the plan (currency, regional price, autopay limit)
+     */
+    @Transactional(readOnly = true)
+    public String describeRenewableForInvoice(String userPlanId, String instituteId, String userId,
+                                              BigDecimal renewalPrice, String currency) {
+        UserPlan plan = loadForInstitute(userPlanId, instituteId);
+        if (userId != null && !userId.equals(plan.getUserId())) {
+            throw new VacademyException("That membership belongs to another learner");
+        }
+        commercePlans.refuseCommercePlan(plan, "renew the plan");
+        String reason = notRenewableReason(plan);
+        if (reason != null) {
+            throw new VacademyException(reason);
+        }
+        // The organisation pays for a sub-org membership, not the learner.
+        if ("SUB_ORG".equalsIgnoreCase(plan.getSource())) {
+            throw new VacademyException("This membership is paid by the learner's organisation. "
+                    + "Renew it from the organisation, not with an invoice to the learner.");
+        }
+        // Fails now, not after the money is in, when the plan has no course to give access to.
+        if (accessToRenew(plan, instituteId).isEmpty()) {
+            throw new VacademyException("This membership's invite has no course to give access to. "
+                    + "Enrol the learner in a course instead.");
+        }
+        if (renewalPrice != null) {
+            String refusal = customPricePlanService.refusal(plan, plan.getPaymentPlan(), plan.getPaymentOption(),
+                    renewalPrice, currency, instituteId);
+            if (refusal != null) {
+                throw new VacademyException(refusal);
+            }
+        }
+        return "Renewal · " + planLabel(plan);
+    }
+
+    /**
+     * Renews a membership through the admin invoice raised for it (paid, or apply now). The same renewal
+     * as {@link #renew} (end date, status, course access, remark in the plan's history), minus
+     * everything about money: the invoice already holds the payment, its ledger entries and its
+     * own invoice document, so no payment log, ledger row or second invoice is written here.
+     * Autopay is left exactly as it was.
+     *
+     * <p>With {@code setRenewalPrice} the membership moves onto a plan at the invoice amount (same
+     * payment option, validity and currency), so later renewals charge it the normal way. If that
+     * is no longer possible by the time this runs (the autopay limit changed, say), the renewal
+     * still goes through and the reason comes back as {@code priceWarning}.
+     */
+    @CacheEvict(value = { "userPlanById", "userPlanWithPaymentLogs", "membershipDetails" }, allEntries = true)
+    @Transactional
+    public InvoiceRenewalResult renewFromInvoice(InvoiceRenewal req) {
+        UserPlan plan = loadForInstitute(req.userPlanId(), req.instituteId());
+        commercePlans.refuseCommercePlan(plan, "renew the plan");
+        String reason = notRenewableReason(plan);
+        if (reason != null) {
+            throw new VacademyException(reason);
+        }
+
+        Date now = new Date();
+        // A chosen date that has passed by the time the invoice is paid falls back to the normal
+        // renewal: the member paid for a period, not for a day already gone.
+        Date newEndDate = req.requestedEndDate() != null && req.requestedEndDate().after(now)
+                ? req.requestedEndDate() : defaultNewEndDate(plan, now);
+        List<StudentSessionInstituteGroupMapping> touched = accessToRenew(plan, req.instituteId());
+        if (touched.isEmpty()) {
+            throw new VacademyException("This membership's invite has no course to give access to. "
+                    + "Enrol the learner in a course instead.");
+        }
+
+        String previousStatus = plan.getStatus();
+        Date previousEndDate = plan.getEndDate();
+        vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan previousPlan = plan.getPaymentPlan();
+        vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan pricePlan = null;
+        String priceWarning = null;
+        BigDecimal renewalPrice = req.renewalPrice() != null ? req.renewalPrice() : req.amount();
+        if (req.setRenewalPrice()) {
+            priceWarning = customPricePlanService.refusal(plan, previousPlan, plan.getPaymentOption(),
+                    renewalPrice, req.currency(), req.instituteId());
+            if (priceWarning == null) {
+                pricePlan = customPricePlanService.findOrCreate(previousPlan, renewalPrice, req.invoiceNumber());
+                plan.setPaymentPlan(pricePlan);
+                plan.setPaymentPlanId(pricePlan.getId());
+                plan.setPlanJson(JsonUtil.toJson(pricePlan));
+            }
+        }
+        extendPlanAndAccess(plan, req.instituteId(), newEndDate, touched,
+                "Renewal through invoice " + req.invoiceNumber(), req.actorId(), req.actorName());
+
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("amount", req.amount());
+        metadata.put("currency", req.currency());
+        metadata.put("invoice_id", req.invoiceId());
+        metadata.put("invoice_number", req.invoiceNumber());
+        metadata.put("previous_status", previousStatus);
+        metadata.put("previous_end_date", previousEndDate != null ? isoDate(previousEndDate) : null);
+        metadata.put("new_end_date", isoDate(newEndDate));
+        if (pricePlan != null) {
+            metadata.put("previous_plan_id", previousPlan != null ? previousPlan.getId() : null);
+            metadata.put("plan_id", pricePlan.getId());
+            metadata.put("renewal_price", pricePlan.getActualPrice());
+        }
+        if (priceWarning != null) {
+            metadata.put("renewal_price_not_set", priceWarning);
+        }
+        String title = String.format("Renewal through invoice %s: %s %s, access until %s",
+                req.invoiceNumber(), req.currency(), plainAmount(req.amount()),
+                new SimpleDateFormat("dd MMM yyyy").format(newEndDate));
+        String description = pricePlan != null
+                ? "Future renewals charged at " + req.currency() + " " + plainAmount(renewalPrice)
+                        + " (plan " + pricePlan.getName() + ")"
+                : priceWarning != null ? "Renewal price not changed: " + priceWarning : null;
+        timelineEventService.logEvent(REMARK_TYPE, plan.getId(), ACTION_INVOICE_RENEWAL,
+                "ADMIN", req.actorId(), req.actorName(), title, description, metadata, plan.getUserId());
+
+        log.info("Invoice renewal of plan {} via invoice {}: {} -> ACTIVE, end {} -> {}, {} access row(s), price plan {}",
+                plan.getId(), req.invoiceNumber(), previousStatus, previousEndDate, newEndDate, touched.size(),
+                pricePlan != null ? pricePlan.getId() : null);
+
+        ManualRenewalResultDTO result = ManualRenewalResultDTO.builder()
+                .userPlanId(plan.getId())
+                .previousStatus(previousStatus)
+                .status(plan.getStatus())
+                .previousEndDate(previousEndDate)
+                .newEndDate(newEndDate)
+                .mappingsUpdated(touched.size())
+                .invoiceQueued(false)
+                .build();
+        return new InvoiceRenewalResult(result, pricePlan, priceWarning);
     }
 
     /**
@@ -528,6 +658,69 @@ public class AdminManualRenewalService {
     }
 
     // ---------------------------------------------------------------- helpers
+
+    /**
+     * The course access a renewal brings back: the plan's ACTIVE rows (extended) and its
+     * INACTIVE / EXPIRED rows (reactivated). No access row is linked to the plan: older
+     * enrolments and imports often left user_plan_id empty, and some plans were never given their
+     * course at all. The gateway renewal enrols here, which fires the enrolment workflow and its
+     * emails; a silent admin action must not, so the plan's own course rows are adopted or built
+     * directly instead. Nothing is saved here.
+     */
+    private List<StudentSessionInstituteGroupMapping> accessToRenew(UserPlan plan, String instituteId) {
+        List<StudentSessionInstituteGroupMapping> touched = new ArrayList<>(mappingRepository
+                .findByUserPlanIdAndStatus(plan.getId(), LearnerSessionStatusEnum.ACTIVE.name()));
+        for (String status : REACTIVATABLE) {
+            touched.addAll(mappingRepository.findByUserPlanIdAndStatus(plan.getId(), status));
+        }
+        if (touched.isEmpty()) {
+            touched.addAll(accessForUnlinkedPlan(plan, instituteId));
+        }
+        return touched;
+    }
+
+    /**
+     * Makes the plan ACTIVE until {@code newEndDate} and its course access with it. Autopay is
+     * left alone: a charge is only scheduled where the member already had it on.
+     */
+    private void extendPlanAndAccess(UserPlan plan, String instituteId, Date newEndDate,
+                                     List<StudentSessionInstituteGroupMapping> touched,
+                                     String grantReason, String adminId, String adminName) {
+        plan.setEndDate(newEndDate);
+        plan.setStatus(UserPlanStatusEnum.ACTIVE.name());
+        plan.setIsTrial(false);
+        plan.setRenewalAttemptCount(0);
+        plan.setLastRenewalAttemptAt(null);
+        boolean autopayOn = Boolean.TRUE.equals(plan.getAutoRenewalEnabled());
+        plan.setNextChargeAt(autopayOn ? newEndDate : null);
+        userPlanRepository.save(plan);
+
+        for (StudentSessionInstituteGroupMapping m : touched) {
+            Date previousExpiry = m.getExpiryDate();
+            if (m.getUserPlanId() == null) {
+                m.setUserPlanId(plan.getId());
+            }
+            m.setStatus(LearnerSessionStatusEnum.ACTIVE.name());
+            m.setExpiryDate(newEndDate);
+            mappingRepository.save(m);
+            learnerAccessService.recordGrant(LearnerAccessSourceEnum.RENEWAL, instituteId, m, previousExpiry,
+                    null, plan.getId(), plan.getPaymentPlanId(), plan.getEnrollInviteId(),
+                    grantReason, adminId, adminName);
+        }
+    }
+
+    private static String planLabel(UserPlan plan) {
+        String invite = plan.getEnrollInvite() != null ? plan.getEnrollInvite().getName() : null;
+        String paymentPlan = plan.getPaymentPlan() != null ? plan.getPaymentPlan().getName() : null;
+        if (StringUtils.hasText(invite) && StringUtils.hasText(paymentPlan)) {
+            return invite + " · " + paymentPlan;
+        }
+        return StringUtils.hasText(invite) ? invite : StringUtils.hasText(paymentPlan) ? paymentPlan : "Membership";
+    }
+
+    private static String plainAmount(BigDecimal amount) {
+        return amount == null ? "0.00" : amount.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString();
+    }
 
     /**
      * Access for a plan that has no row linked to it. For each course on the plan's invite, the
