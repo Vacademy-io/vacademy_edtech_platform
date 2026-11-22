@@ -288,16 +288,24 @@ public class ChannelMappingController {
             return ResponseEntity.ok(Map.of(
                     "success", success,
                     "message", success ? "Webhook endpoint verified"
-                            : "Verification failed (HTTP " + response.getStatusCode().value() + ")"
+                            : "Verification failed: " + excerpt(response.getBody())
             ));
 
         } catch (Exception e) {
             log.info("Webhook self-test could not reach {}: {}", webhookUrl, e.getClass().getSimpleName());
             return ResponseEntity.ok(Map.of(
                     "success", false,
-                    "message", "Endpoint unreachable"
+                    "message", "Endpoint unreachable: " + excerpt(e.getMessage())
             ));
         }
+    }
+
+    /** First 300 characters, so admins still see why their endpoint failed the check. */
+    private static String excerpt(String text) {
+        if (text == null) {
+            return "";
+        }
+        return text.length() <= 300 ? text : text.substring(0, 300) + "…";
     }
 
     /** Self-test client: short timeouts, never follows redirects, 4xx/5xx returned as responses. */
