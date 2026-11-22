@@ -131,6 +131,8 @@ export function CountsTab(props: TabProps) {
             {rows.length > 0 && (
                 <>
                     <MyTable<CountRow>
+                        fillContainer
+                        enableColumnResizing={false}
                         data={{
                             content: rows,
                             page_no: page,

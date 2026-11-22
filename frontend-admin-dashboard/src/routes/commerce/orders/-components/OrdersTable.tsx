@@ -261,6 +261,8 @@ export function OrdersTable(props: OrdersTableProps) {
             </ul>
             <div className="hidden md:block">
                 <MyTable<StaffOrderRow>
+                    fillContainer
+                    enableColumnResizing={false}
                     data={data}
                     columns={columns}
                     isLoading={false}

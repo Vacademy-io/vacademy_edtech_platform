@@ -55,6 +55,7 @@ import {
     useOrderErrorHandler,
     useOrderErrorText,
 } from './order-ui';
+import { distinctParts } from '@/routes/commerce/inventory/-components/inventory-ui';
 
 /**
  * Pack station (contract §5.3): find the order by its packing slip or number,
@@ -683,7 +684,7 @@ function PackLineRow({
                 <div className="flex min-w-0 flex-col">
                     <span className="text-body font-medium text-foreground">{line.name}</span>
                     <span className="text-caption text-muted-foreground">
-                        {[line.variantLabel, line.sku].filter(Boolean).join(' · ')}
+                        {distinctParts([line.variantLabel, line.sku]).join(' · ')}
                     </span>
                     {line.mode === 'PIECE' && !full && (
                         <span className="text-caption text-warning-600">{t('orders.pack.pieceLine')}</span>

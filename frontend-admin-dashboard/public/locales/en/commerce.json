@@ -2703,6 +2703,7 @@
             "heldOnline": "Held online",
             "sellableOnline": "Can sell online",
             "reorderLevel": "Reorder at",
+            "reorderNotSet": "Not set",
             "adjust": "Adjust stock",
             "damage": "Record damage",
             "setReorder": "Set reorder level",

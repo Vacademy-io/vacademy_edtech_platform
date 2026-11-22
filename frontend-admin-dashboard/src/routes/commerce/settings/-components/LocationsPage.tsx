@@ -28,8 +28,8 @@ const asTableData = <T,>(rows: T[]): TableData<T> => ({
 });
 
 /**
- * Settings → Locations and registers (checklist item 2). POS registers per
- * location arrive with the POS backend; the note at the foot says so.
+ * Settings → Locations (checklist item 2). Billing counters per location
+ * live under Settings → Billing counters; the note at the foot says so.
  */
 export function LocationsPage() {
     const { t } = useTranslation('commerce');
@@ -225,6 +225,8 @@ function LocationsTable({
             )}
             {query.isSuccess && locations.length > 0 && (
                 <MyTable<CommerceLocation>
+                    fillContainer
+                    enableColumnResizing={false}
                     data={asTableData(locations)}
                     columns={columns}
                     isLoading={false}

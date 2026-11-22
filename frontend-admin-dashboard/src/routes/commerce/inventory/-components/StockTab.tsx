@@ -14,12 +14,18 @@ import type { OverviewFilter, OverviewRow, PlaceRef } from '../-shared/inventory
 import { AdjustDialog } from './AdjustDialog';
 import { useDebounced } from './ItemPicker';
 import type { TabProps } from './InventoryPage';
-import { collectionName, InventoryErrorNotice, ItemCell, Qty } from './inventory-ui';
+import { collectionName, InventoryErrorNotice, ItemCell, NumberHeader, Qty } from './inventory-ui';
 import { ReorderLevelDialog } from './ReorderLevelDialog';
 
 const PAGE_SIZE = 50;
 export const MAX_OVERVIEW_PLACES = 8;
 const FILTERS: OverviewFilter[] = ['ALL', 'LOW', 'OUT'];
+/**
+ * Column sizes (px). The table fills its container, so these are minimums; the
+ * actions column is sized for both buttons side by side ("Adjust stock" and
+ * "Set reorder level") so they never run into each other.
+ */
+export const STOCK_COLUMN_SIZE = { item: 260, number: 130, actionsOne: 140, actionsBoth: 290 } as const;
 
 /** The columns of the Stock tab: one place, or the first eight of mine by code. */
 export function overviewPlaces(locationId: string | null, places: TabProps['places']): { ids: string[]; cut: boolean } {
@@ -64,7 +70,10 @@ export function StockTab({ locationId, places }: TabProps) {
         const levelOf = (row: OverviewRow, id: string) => row.levels.find((l) => l.location_id === id);
         const placeColumns: ColumnDef<OverviewRow>[] = columnsPlaces.map((place) => ({
             id: `place-${place.id}`,
-            header: columnsPlaces.length === 1 ? t('inventory.stock.onHand') : (place.code ?? place.name ?? ''),
+            size: STOCK_COLUMN_SIZE.number,
+            header: () => (
+                <NumberHeader label={columnsPlaces.length === 1 ? t('inventory.stock.onHand') : (place.code ?? place.name ?? '')} />
+            ),
             cell: ({ row }) => {
                 const level = levelOf(row.original, place.id);
                 return (
@@ -94,62 +103,76 @@ export function StockTab({ locationId, places }: TabProps) {
                 <Qty qty={value} scale={row.qty_scale} unit={row.unit} />
             </span>
         );
+        const numberColumn = (id: string, label: string, value: (row: OverviewRow) => number | null): ColumnDef<OverviewRow> => ({
+            id,
+            size: STOCK_COLUMN_SIZE.number,
+            header: () => <NumberHeader label={label} />,
+            cell: ({ row }) => number(value(row.original), row.original),
+        });
         return [
             {
                 id: 'item',
+                size: STOCK_COLUMN_SIZE.item,
                 header: t('inventory.columns.item'),
                 cell: ({ row }) => (
                     <ItemCell name={row.original.product_name} variant={row.original.variant_name} sku={row.original.sku} />
                 ),
             },
             ...placeColumns,
-            { id: 'transit', header: t('inventory.stock.inTransit'), cell: ({ row }) => number(row.original.in_transit, row.original) },
-            { id: 'held', header: t('inventory.stock.heldOnline'), cell: ({ row }) => number(row.original.held_online, row.original) },
-            {
-                id: 'sellable',
-                header: t('inventory.stock.sellableOnline'),
-                cell: ({ row }) => number(row.original.sellable_online, row.original),
-            },
+            numberColumn('transit', t('inventory.stock.inTransit'), (row) => row.in_transit),
+            numberColumn('held', t('inventory.stock.heldOnline'), (row) => row.held_online),
+            numberColumn('sellable', t('inventory.stock.sellableOnline'), (row) => row.sellable_online),
             ...(single
                 ? [
                       {
                           id: 'reorder',
-                          header: t('inventory.stock.reorderLevel'),
-                          cell: ({ row }: { row: { original: OverviewRow } }) =>
-                              number(levelOf(row.original, single.id)?.reorder_level ?? null, row.original),
+                          size: STOCK_COLUMN_SIZE.number,
+                          header: () => <NumberHeader label={t('inventory.stock.reorderLevel')} />,
+                          cell: ({ row }: { row: { original: OverviewRow } }) => {
+                              const level = levelOf(row.original, single.id)?.reorder_level ?? null;
+                              return level === null ? (
+                                  <span className="block text-end text-muted-foreground">{t('inventory.stock.reorderNotSet')}</span>
+                              ) : (
+                                  number(level, row.original)
+                              );
+                          },
                       } as ColumnDef<OverviewRow>,
                   ]
                 : []),
-            {
-                id: 'actions',
-                header: '',
-                cell: ({ row }) => (
-                    <div className="flex justify-end gap-1">
-                        {single && (
-                            <MyButton
-                                type="button"
-                                buttonType="text"
-                                scale="small"
-                                className="h-12 md:h-6"
-                                onClick={() => setAdjusting({ row: row.original, place: single })}
-                            >
-                                {t('inventory.stock.adjust')}
-                            </MyButton>
-                        )}
-                        {single && access.isManager && (
-                            <MyButton
-                                type="button"
-                                buttonType="text"
-                                scale="small"
-                                className="h-12 md:h-6"
-                                onClick={() => setReorder({ row: row.original, place: single })}
-                            >
-                                {t('inventory.stock.setReorder')}
-                            </MyButton>
-                        )}
-                    </div>
-                ),
-            },
+            // Adjust and set-reorder work at one place, so the column exists only then.
+            ...(single
+                ? [
+                      {
+                          id: 'actions',
+                          size: access.isManager ? STOCK_COLUMN_SIZE.actionsBoth : STOCK_COLUMN_SIZE.actionsOne,
+                          header: '',
+                          cell: ({ row }: { row: { original: OverviewRow } }) => (
+                              <div className="flex flex-wrap justify-end gap-1">
+                                  <MyButton
+                                      type="button"
+                                      buttonType="text"
+                                      scale="small"
+                                      className="h-12 whitespace-nowrap md:h-6"
+                                      onClick={() => setAdjusting({ row: row.original, place: single })}
+                                  >
+                                      {t('inventory.stock.adjust')}
+                                  </MyButton>
+                                  {access.isManager && (
+                                      <MyButton
+                                          type="button"
+                                          buttonType="text"
+                                          scale="small"
+                                          className="h-12 whitespace-nowrap md:h-6"
+                                          onClick={() => setReorder({ row: row.original, place: single })}
+                                      >
+                                          {t('inventory.stock.setReorder')}
+                                      </MyButton>
+                                  )}
+                              </div>
+                          ),
+                      } as ColumnDef<OverviewRow>,
+                  ]
+                : []),
         ];
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [t, columnsPlaces.map((p) => p.id).join(','), single?.id, access.isManager]);
@@ -222,6 +245,8 @@ export function StockTab({ locationId, places }: TabProps) {
                         error={null}
                         currentPage={page}
                         scrollable
+                        fillContainer
+                        enableColumnResizing={false}
                     />
                     <MyPagination
                         currentPage={page}

@@ -134,6 +134,7 @@ export function ReportTable({
     return (
         <div data-testid={testId}>
             <MyTable<{ row: ReportRow; index: number }>
+                fillContainer
                 data={{
                     content,
                     page_no: 0,

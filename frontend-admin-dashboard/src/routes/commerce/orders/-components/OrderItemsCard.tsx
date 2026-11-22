@@ -7,6 +7,7 @@ import { itemLines, liveShipment } from '@/routes/commerce/orders/-shared/order-
 import { formatQuantity } from '@/routes/commerce/orders/-shared/order-format';
 import type { StaffOrderDetail } from '@/routes/commerce/orders/-shared/order-types';
 import { money } from './order-ui';
+import { distinctParts } from '@/routes/commerce/inventory/-components/inventory-ui';
 
 /** The items, with piece codes of the live parcel, and the shipping/COD charge lines. */
 export function OrderItemsCard({ detail }: { detail: StaffOrderDetail }) {
@@ -30,7 +31,7 @@ export function OrderItemsCard({ detail }: { detail: StaffOrderDetail }) {
                             <div className="flex min-w-0 flex-col gap-0.5">
                                 <span className="text-body font-medium text-foreground">{line.name ?? '—'}</span>
                                 <span className="text-caption text-muted-foreground">
-                                    {[line.variant_label, line.sku].filter(Boolean).join(' · ')}
+                                    {distinctParts([line.variant_label, line.sku]).join(' · ')}
                                 </span>
                                 {codes.length > 0 && (
                                     <span className="break-all font-mono text-caption text-foreground">

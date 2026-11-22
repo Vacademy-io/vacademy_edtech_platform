@@ -527,6 +527,8 @@ function ProductsListContent({ openProduct }: { openProduct: (productId: string)
                     </ul>
                     <div className="hidden md:block">
                         <MyTable<ProductSummary>
+                            fillContainer
+                            enableColumnResizing={false}
                             data={query.data}
                             columns={columns}
                             isLoading={false}

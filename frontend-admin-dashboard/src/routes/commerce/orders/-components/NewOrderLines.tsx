@@ -23,6 +23,7 @@ import { formatQuantity } from '@/routes/commerce/orders/-shared/order-format';
 import { readOrderError } from '@/routes/commerce/orders/-shared/order-errors';
 import type { ScanResult } from '@/routes/commerce/orders/-shared/order-types';
 import { buzz, useScanInput } from '@/routes/commerce/orders/-shared/use-scan-input';
+import { distinctParts } from '@/routes/commerce/inventory/-components/inventory-ui';
 import { Field, OrderNotice, inputClass, useOrderErrorText } from './order-ui';
 
 /** Quantity problems worded as every length box words them (`units.problems.*`). */
@@ -307,7 +308,9 @@ export function NewOrderLines({
                                             >
                                                 <span className="flex min-w-0 flex-col">
                                                     <span className="truncate">{variant.name ?? variant.sku ?? '—'}</span>
-                                                    {variant.sku && <span className="text-caption text-muted-foreground">{variant.sku}</span>}
+                                                    {variant.sku && distinctParts([variant.name, variant.sku]).length > 1 && (
+                                                        <span className="text-caption text-muted-foreground">{variant.sku}</span>
+                                                    )}
                                                 </span>
                                                 <span className="shrink-0 text-caption tabular-nums text-foreground">
                                                     {variant.price !== null
@@ -355,7 +358,7 @@ export function NewOrderLines({
                                     <div className="flex min-w-0 flex-col">
                                         <span className="text-body font-medium text-foreground">{line.name || line.sku}</span>
                                         <span className="text-caption text-muted-foreground">
-                                            {[line.variantName, line.sku].filter(Boolean).join(' · ')}
+                                            {distinctParts([line.variantName, line.sku]).join(' · ')}
                                         </span>
                                         {line.pieceCodes.length > 0 && (
                                             <span className="text-caption text-muted-foreground">

@@ -49,8 +49,22 @@ export function InventoryErrorNotice({ error, className }: { error: unknown; cla
     );
 }
 
-/** Name, variant and SKU (and a piece code) of an item, stacked. */
-export function ItemCell({
+const sameCode = (a: string | null | undefined, b: string | null | undefined) =>
+    !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase();
+
+/**
+ * The non-empty parts, each once (case and spaces ignored): ["BAG-1", "BAG-1"]
+ * → ["BAG-1"]. For "variant · SKU" lines, where an unnamed variant is its SKU.
+ */
+export const distinctParts = (parts: (string | null | undefined)[]): string[] =>
+    parts.filter((part, index): part is string => !!part && parts.findIndex((other) => sameCode(other, part)) === index);
+
+/**
+ * The lines under an item's name: the variant, then the SKU and a piece code.
+ * A variant saved without a name is named after its SKU, and a label code can
+ * equal the SKU, so a line that only repeats what is already shown is left out.
+ */
+export function itemCellLines({
     name,
     variant,
     sku,
@@ -60,16 +74,45 @@ export function ItemCell({
     variant?: string | null;
     sku?: string | null;
     code?: string | null;
+}): { title: string; variant: string | null; codes: string } {
+    const title = name || sku || '—';
+    const shownVariant = variant && !sameCode(variant, sku) && !sameCode(variant, title) ? variant : null;
+    const shownSku = sku && !sameCode(sku, title) ? sku : null;
+    const shownCode = code && !sameCode(code, sku) && !sameCode(code, title) ? code : null;
+    return { title, variant: shownVariant, codes: [shownSku, shownCode].filter(Boolean).join(' · ') };
+}
+
+/** Name, variant and SKU (and a piece code) of an item, stacked; each line shown once. */
+export function ItemCell(props: {
+    name: string | null | undefined;
+    variant?: string | null;
+    sku?: string | null;
+    code?: string | null;
 }) {
+    const lines = itemCellLines(props);
     return (
         <div className="flex min-w-0 flex-col">
-            <span className="truncate text-body text-foreground">{name || sku || '—'}</span>
-            {variant && <span className="truncate text-caption text-muted-foreground">{variant}</span>}
-            <span className="truncate text-caption text-muted-foreground">
-                {[sku, code].filter(Boolean).join(' · ')}
+            {/* A long name is cut with an ellipsis; the title shows it whole on hover. */}
+            <span className="truncate text-body text-foreground" title={lines.title}>
+                {lines.title}
             </span>
+            {lines.variant && (
+                <span className="truncate text-caption text-muted-foreground" title={lines.variant}>
+                    {lines.variant}
+                </span>
+            )}
+            {lines.codes && (
+                <span className="truncate text-caption text-muted-foreground" title={lines.codes}>
+                    {lines.codes}
+                </span>
+            )}
         </div>
     );
+}
+
+/** A column heading over numbers: right-aligned like the numbers under it. */
+export function NumberHeader({ label }: { label: string }) {
+    return <span className="block text-end">{label}</span>;
 }
 
 export function Qty({

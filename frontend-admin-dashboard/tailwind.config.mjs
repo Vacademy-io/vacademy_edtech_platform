@@ -52,6 +52,9 @@ module.exports = {
                 // A file / row list inside a dialog: scrolls itself so a
                 // 200-file upload never pushes the dialog's buttons off-screen.
                 'list-md': '16rem',
+                // The scroll box of a data table (MyTable): the header stays put
+                // while up to 70% of the viewport of rows scrolls under it.
+                'table-scroll': '70vh',
             },
             width: {
                 // DialogContent's base class is `w-[400px] max-w-[90vw]` — a

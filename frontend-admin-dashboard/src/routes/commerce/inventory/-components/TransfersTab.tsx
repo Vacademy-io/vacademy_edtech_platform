@@ -145,6 +145,8 @@ export function TransfersTab(props: TabProps) {
             {rows.length > 0 && (
                 <>
                     <MyTable<TransferRow>
+                        fillContainer
+                        enableColumnResizing={false}
                         data={{
                             content: rows,
                             page_no: page,

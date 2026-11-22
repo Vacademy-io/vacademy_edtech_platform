@@ -147,6 +147,8 @@ export function RegistersPage() {
                 )}
                 {list.length > 0 && (
                     <MyTable<RegisterView>
+                        fillContainer
+                        enableColumnResizing={false}
                         data={asTableData(list)}
                         columns={columns}
                         isLoading={false}

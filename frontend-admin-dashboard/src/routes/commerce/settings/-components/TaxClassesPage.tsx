@@ -231,6 +231,8 @@ function TaxClassesContent({
             )}
             {query.isSuccess && taxClasses.length > 0 && (
                 <MyTable<TaxClass>
+                    fillContainer
+                    enableColumnResizing={false}
                     data={asTableData(taxClasses)}
                     columns={columns}
                     isLoading={false}

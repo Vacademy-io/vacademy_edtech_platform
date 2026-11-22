@@ -2703,6 +2703,7 @@
             "heldOnline": "ऑनलाइन रुका हुआ",
             "sellableOnline": "ऑनलाइन बेच सकते हैं",
             "reorderLevel": "इतना बचे तो फिर मँगाएँ",
+            "reorderNotSet": "तय नहीं",
             "adjust": "स्टॉक ठीक करें",
             "damage": "नुकसान दर्ज करें",
             "setReorder": "फिर मँगाने का स्तर तय करें",
