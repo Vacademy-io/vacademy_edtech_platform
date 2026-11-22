@@ -14,12 +14,12 @@ import vacademy.io.notification_service.dto.WhatsAppOTPRequest;
 import vacademy.io.notification_service.dto.WhatsAppOTPResponse;
 import vacademy.io.notification_service.features.email_otp.entity.EmailOtp;
 import vacademy.io.notification_service.features.email_otp.repository.OtpRepository;
+import vacademy.io.notification_service.features.email_otp.service.OTPService;
 import vacademy.io.notification_service.institute.InstituteInternalService;
 import vacademy.io.notification_service.institute.InstituteInfoDTO;
 import vacademy.io.notification_service.constants.NotificationConstants;
 
 import java.util.Optional;
-import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 @Slf4j
@@ -181,10 +181,8 @@ public class WhatsAppOTPService {
             }
 
             // Validate OTP
-            if (emailOtp.getOtp().equals(otp)) {
+            if (OTPService.checkCode(otpRepository, emailOtp, otp)) {
                 log.info("OTP verified successfully for phone: {}", maskPhoneNumber(phoneNumber));
-                emailOtp.setIsVerified("true");
-                otpRepository.save(emailOtp);
                 return true;
             }
 
@@ -203,12 +201,7 @@ public class WhatsAppOTPService {
      * Generate random OTP
      */
     private String generateOTP(int length) {
-        ThreadLocalRandom random = ThreadLocalRandom.current();
-        StringBuilder otp = new StringBuilder();
-        for (int i = 0; i < length; i++) {
-            otp.append(random.nextInt(10));
-        }
-        return otp.toString();
+        return OTPService.generateOTP(length);
     }
 
     /**
