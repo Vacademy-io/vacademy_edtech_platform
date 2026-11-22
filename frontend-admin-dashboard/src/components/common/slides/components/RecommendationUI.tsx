@@ -13,7 +13,8 @@ import { Wand2, Sparkles, X, Plus, ChevronLeft, ChevronRight, Zap } from 'lucide
 
 
 // --- A self-contained renderer that takes slide data directly ---
-const DirectSlideRenderer = ({ slide }: { slide: AppSlide }) => {
+// Recommended slides are not in the deck store yet, so previews must render the slide object itself.
+export const DirectSlideRenderer = ({ slide }: { slide: AppSlide }) => {
     if (!slide) return null;
 
     switch (slide.type) {
