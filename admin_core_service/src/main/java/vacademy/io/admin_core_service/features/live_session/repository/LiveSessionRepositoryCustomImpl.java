@@ -353,7 +353,7 @@ public class LiveSessionRepositoryCustomImpl implements LiveSessionRepositoryCus
 
     private String buildOrderByClause(SessionSearchRequest request) {
         String sortBy = request.getSortBy() != null ? request.getSortBy() : "meetingDate";
-        String sortDirection = request.getSortDirection() != null ? request.getSortDirection() : "ASC";
+        String sortDirection = normalizeSortDirection(request.getSortDirection());
 
         // Map sortBy to actual column names
         String column = switch (sortBy.toLowerCase()) {
@@ -370,6 +370,11 @@ public class LiveSessionRepositoryCustomImpl implements LiveSessionRepositoryCus
         } else {
             return String.format(" ORDER BY %s %s", column, sortDirection);
         }
+    }
+
+    /** Only ASC or DESC (any case) is honoured; anything else falls back to ASC. */
+    static String normalizeSortDirection(String sortDirection) {
+        return sortDirection != null && "DESC".equalsIgnoreCase(sortDirection.trim()) ? "DESC" : "ASC";
     }
 
     private void setQueryParameters(Query query, Map<String, Object> parameters) {
