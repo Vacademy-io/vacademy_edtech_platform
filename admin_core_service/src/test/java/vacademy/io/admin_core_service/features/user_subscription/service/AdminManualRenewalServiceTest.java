@@ -660,12 +660,10 @@ class AdminManualRenewalServiceTest {
     }
 
     @Test
-    @DisplayName("raising the invoice: a membership the organisation pays for is refused")
-    void describeRefusesSubOrgMembership() {
+    @DisplayName("raising the invoice: an organisation (sub-org) membership of the billed account can be renewed")
+    void describeAllowsSubOrgMembership() {
         plan.setSource("SUB_ORG");
-        VacademyException e = assertThrows(VacademyException.class,
-                () -> service.describeRenewableForInvoice("up-1", INST, "u-1", null, null));
-        assertTrue(e.getMessage().contains("organisation"));
+        assertTrue(service.describeRenewableForInvoice("up-1", INST, "u-1", null, null).startsWith("Renewal"));
     }
 
     @Test

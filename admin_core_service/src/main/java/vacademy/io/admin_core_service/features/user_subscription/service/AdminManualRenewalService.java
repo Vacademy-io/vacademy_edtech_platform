@@ -307,11 +307,6 @@ public class AdminManualRenewalService {
         if (reason != null) {
             throw new VacademyException(reason);
         }
-        // The organisation pays for a sub-org membership, not the learner.
-        if ("SUB_ORG".equalsIgnoreCase(plan.getSource())) {
-            throw new VacademyException("This membership is paid by the learner's organisation. "
-                    + "Renew it from the organisation, not with an invoice to the learner.");
-        }
         // Fails now, not after the money is in, when the plan has no course to give access to.
         if (accessToRenew(plan, instituteId).isEmpty()) {
             throw new VacademyException("This membership's invite has no course to give access to. "
