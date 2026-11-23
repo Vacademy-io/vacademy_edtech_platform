@@ -81,6 +81,22 @@ public class SubOrgLearnerController {
     }
 
     /**
+     * Parent-institute staff adding many learners to one batch of a sub-organization (the
+     * sub-org page's Learners tab). A learner already ACTIVE in the batch is moved into the
+     * sub-org instead of being enrolled a second time. Answers per learner.
+     */
+    @PostMapping("/bulk-add-members")
+    public ResponseEntity<vacademy.io.admin_core_service.features.suborg.dto.SubOrgBulkMembersResponseDTO> bulkAddMembers(
+            @RequestBody vacademy.io.admin_core_service.features.suborg.dto.SubOrgBulkAddMembersRequestDTO request,
+            @RequestAttribute(value = "user", required = false) CustomUserDetails user) {
+        if (request == null) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "Request body is required");
+        }
+        requireStaffManagingSubOrg(user, request.getSubOrgId(), request.getInstituteId());
+        return ResponseEntity.ok(subOrgBulkMemberService.addMembers(request, user));
+    }
+
+    /**
      * Moves learners' existing ACTIVE enrollments into a sub-organization (students list →
      * select → Move to sub-org). Answers per learner.
      */
