@@ -58,6 +58,13 @@
     "courseProgress": "{{done}} / {{total}} {{term}} completed",
     "noModulesYet": "No {{term}} yet"
   },
+  "moduleSwitcher": {
+    "triggerAria": "Switch {{term}}, current: {{name}}",
+    "progress": "{{done}} / {{total}} {{term}} done",
+    "current": "Now",
+    "viewAll": "See all {{term}}",
+    "courseOverview": "{{term}} overview"
+  },
   "leaseLockOverlay": {
     "leaseExpired": {
       "title": "Connect to the internet to keep offline access",

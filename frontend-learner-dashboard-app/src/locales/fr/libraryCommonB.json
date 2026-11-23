@@ -59,6 +59,13 @@
         "courseProgress": "{{done}} / {{total}} {{term}} terminé(s)",
         "noModulesYet": "Aucun(e) {{term}} pour l'instant"
     },
+    "moduleSwitcher": {
+        "triggerAria": "Changer de {{term}}, actuel : {{name}}",
+        "progress": "{{done}} / {{total}} {{term}} terminés",
+        "current": "Actuel",
+        "viewAll": "Voir tous les {{term}}",
+        "courseOverview": "Aperçu : {{term}}"
+    },
     "leaseLockOverlay": {
         "leaseExpired": {
             "title": "Connectez-vous à Internet pour conserver l'accès hors ligne",

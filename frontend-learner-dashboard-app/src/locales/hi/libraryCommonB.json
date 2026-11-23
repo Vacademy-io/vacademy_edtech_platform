@@ -58,6 +58,13 @@
     "courseProgress": "{{done}} / {{total}} {{term}} पूर्ण",
     "noModulesYet": "अभी तक कोई {{term}} नहीं है"
   },
+  "moduleSwitcher": {
+    "triggerAria": "{{term}} बदलें, अभी: {{name}}",
+    "progress": "{{done}} / {{total}} {{term}} पूरे",
+    "current": "अभी",
+    "viewAll": "सभी {{term}} देखें",
+    "courseOverview": "{{term}} का अवलोकन"
+  },
   "leaseLockOverlay": {
     "leaseExpired": {
       "title": "ऑफ़लाइन एक्सेस बनाए रखने के लिए इंटरनेट से जुड़ें",

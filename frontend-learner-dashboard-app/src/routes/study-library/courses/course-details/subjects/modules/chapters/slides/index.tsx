@@ -28,6 +28,10 @@ import {
 import { CourseTreeSidebar } from "@/components/common/study-library/level-material/subject-material/module-material/chapter-material/slide-material/course-tree-sidebar";
 import { LessonListSidebar } from "@/components/common/study-library/level-material/subject-material/module-material/chapter-material/slide-material/lesson-list-sidebar";
 import {
+  ModuleSwitcher,
+  switchableModules,
+} from "@/components/common/study-library/level-material/subject-material/module-material/chapter-material/slide-material/module-switcher";
+import {
   computeDisplayTitles,
   getSlideMeta,
   getSlideTitle,
@@ -546,6 +550,22 @@ function Slides() {
   // "hidden": no viewer sidebar at all — the learner moves through the course
   // with the Prev/Next controls in the slide header alone.
   const hideSlidesSidebar = sidebarNavigation === "hidden";
+  // Strings for the sidebar header's module switcher and course link.
+  const { t: tLibrary } = useTranslation("libraryCommonB");
+  // A course split into several named modules gets a module switcher in the
+  // sidebar header. It shows only in the lesson-list sidebar, which lists every
+  // module in one long scroll. The tree already has a node per module, and the
+  // breadcrumb sidebar keeps its module popover, which there is also the only
+  // way to pick a chapter. It sits with the learning path, so an institute
+  // that hid that (showLearningPath off) gets no switcher either.
+  const switcherModules = useMemo(
+    () =>
+      sidebarNavigation === "lessons"
+        ? switchableModules(currentSubjectModules)
+        : [],
+    [sidebarNavigation, currentSubjectModules]
+  );
+  const showModuleSwitcher = showLearningPath && switcherModules.length > 1;
 
   // Whether the "Give Feedback" slide sits in the Prev/Next sequence. Unset
   // follows the sidebar mode: the sidebar-less viewer leaves it out so Next
@@ -941,6 +961,37 @@ function Slides() {
       setModulesWithChaptersData,
     ]
   );
+
+  // Module switcher: open the chosen module at the chapter the switcher picked
+  // (its first unfinished one). The slide is left for this page to choose, the
+  // same as the breadcrumb's module popover does.
+  const handleModuleSwitch = useCallback(
+    (targetModuleId: string, targetChapterId: string) => {
+      navigate({
+        to: "/study-library/courses/course-details/subjects/modules/chapters/slides",
+        search: {
+          courseId,
+          subjectId,
+          moduleId: targetModuleId,
+          chapterId: targetChapterId,
+          slideId: "",
+          sessionId,
+        },
+      });
+    },
+    [navigate, courseId, subjectId, sessionId]
+  );
+
+  // The course page, where the Content Structure cards are. The dashboard and
+  // the back arrow both skip it once a course is under way, so the sidebar
+  // header links to it.
+  const openCourseOverview = useCallback(() => {
+    if (!courseId) return;
+    navigate({
+      to: "/study-library/courses/course-details",
+      search: { courseId, packageSessionId: resolvedSessionId || undefined },
+    });
+  }, [navigate, courseId, resolvedSessionId]);
 
   // truncatedChapterName removed (unused)
   const handleInstituteLogoClick = useCallback(() => {
@@ -1569,7 +1620,31 @@ function Slides() {
               className="text-caption font-semibold text-gray-900 leading-tight truncate"
               title={courseName ? toTitleCase(courseName) : undefined}
             >
-              {courseName ? toTitleCase(courseName) : `${getTerminology(ContentTerms.Course, SystemTerms.Course)} Details`}
+              {/* The course name opens the course page (its structure
+                  cards), the one way back to them from inside the viewer. */}
+              {courseId ? (
+                <button
+                  type="button"
+                  onClick={openCourseOverview}
+                  title={[
+                    courseName ? toTitleCase(courseName) : null,
+                    tLibrary("moduleSwitcher.courseOverview", {
+                      term: getTerminology(ContentTerms.Course, SystemTerms.Course),
+                    }),
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                  // max-w-full, not w-full: the Fun skin restyles every
+                  // `button.w-full` in this panel as a bordered control.
+                  className="block max-w-full truncate text-start transition-colors hover:text-primary-500 hover:underline"
+                >
+                  {courseName ? toTitleCase(courseName) : `${getTerminology(ContentTerms.Course, SystemTerms.Course)} Details`}
+                </button>
+              ) : courseName ? (
+                toTitleCase(courseName)
+              ) : (
+                `${getTerminology(ContentTerms.Course, SystemTerms.Course)} Details`
+              )}
             </h3>
           </div>
           {/* Focus mode: hides this sidebar + tightens content margins.
@@ -1585,6 +1660,15 @@ function Slides() {
             <ArrowsOut size={14} weight="bold" />
           </button>
         </div>
+
+        {showModuleSwitcher && (
+          <ModuleSwitcher
+            modules={switcherModules}
+            currentModuleId={moduleId || ""}
+            onModuleSelect={handleModuleSwitch}
+            onOpenOverview={openCourseOverview}
+          />
+        )}
 
         {/* Breadcrumb: [Subject >] Module Switcher > Current Chapter.
             Rendered in every mode. It was gated to "breadcrumb" mode on the
@@ -1606,7 +1690,10 @@ function Slides() {
             !!subjectId &&
             courseSubjects.length > 0 &&
             !isDefaultName(subjectName);
-          const showModuleCrumb = !isDefaultName(moduleName);
+          // The module switcher above already names the module and lists
+          // the others, so the crumb would only repeat it.
+          const showModuleCrumb =
+            !isDefaultName(moduleName) && !showModuleSwitcher;
           const showChapterCrumb = !isDefaultName(chapterName);
           return (
           <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium min-w-0">
