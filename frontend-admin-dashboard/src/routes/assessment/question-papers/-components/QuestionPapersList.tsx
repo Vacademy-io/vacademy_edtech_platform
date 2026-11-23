@@ -49,6 +49,9 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { QuestionPaperCard } from './QuestionPaperCard';
+import { usePaperFolderUi } from './folders/paper-folder-context';
+import { MovePaperToFolderMenuItem, PaperDragWrapper } from './folders/PaperFolderCardParts';
+import { usePaperFolderLinks } from '@/services/question-paper-folders';
 import { dateGroupKey, PaperSort } from '../-utils/question-paper-list';
 import { useRefetchStore } from '../-global-states/refetch-store';
 export type SectionFormType = z.infer<typeof sectionDetailsSchema>;
@@ -223,6 +226,34 @@ export const QuestionPapersList = ({
         const timer = setTimeout(() => setJustAddedId(null), 10000);
         return () => clearTimeout(timer);
     }, [justAddedId, setJustAddedId]);
+
+    // Folders on (Question Papers page only; the default context is "off" everywhere else):
+    // the flat "All papers" list names each paper's folder.
+    const folderUi = usePaperFolderUi();
+    const pagePaperIds = useMemo(
+        () => (questionPaperList?.content ?? []).map((paper) => paper.id),
+        [questionPaperList]
+    );
+    const { data: folderLinks } = usePaperFolderLinks(
+        pagePaperIds,
+        !isAssessment && folderUi.enabled && folderUi.showFolderChip
+    );
+    const folderIdByPaper = useMemo(
+        () =>
+            new Map(
+                (folderLinks ?? []).map((link) => [link.question_paper_id, link.folder_id] as const)
+            ),
+        [folderLinks]
+    );
+    const folderChipName = (paperId: string): string | null => {
+        if (!folderUi.showFolderChip) return null;
+        const folderId = folderIdByPaper.get(paperId);
+        return folderId ? folderUi.foldersById[folderId]?.name ?? null : null;
+    };
+    const knownFolderOf = (paperId: string): string | null | undefined => {
+        if (folderUi.scopeFolderId !== undefined) return folderUi.scopeFolderId;
+        return folderLinks ? folderIdByPaper.get(paperId) ?? null : undefined;
+    };
 
     const toggleFavouriteOnPage = (paper: QuestionPaperInterface) => {
         handleMarkQuestionPaperStatus.mutate(
@@ -738,58 +769,74 @@ export const QuestionPapersList = ({
                                     <span className="h-px flex-1 bg-neutral-200" />
                                 </div>
                             )}
-                            <QuestionPaperCard
-                                paper={paper}
-                                levelName={
-                                    instituteDetails
-                                        ? nameOrNull(
-                                              getLevelNameById(
-                                                  instituteDetails.levels,
-                                                  paper.level_id
+                            <PaperDragWrapper
+                                enabled={folderUi.dragEnabled}
+                                questionPaperId={paper.id}
+                                title={paper.title}
+                            >
+                                <QuestionPaperCard
+                                    paper={paper}
+                                    folderName={folderChipName(paper.id)}
+                                    extraMenuItems={
+                                        folderUi.enabled ? (
+                                            <MovePaperToFolderMenuItem
+                                                questionPaperId={paper.id}
+                                                title={paper.title}
+                                                folderId={knownFolderOf(paper.id)}
+                                            />
+                                        ) : undefined
+                                    }
+                                    levelName={
+                                        instituteDetails
+                                            ? nameOrNull(
+                                                  getLevelNameById(
+                                                      instituteDetails.levels,
+                                                      paper.level_id
+                                                  )
                                               )
-                                          )
-                                        : null
-                                }
-                                subjectName={
-                                    instituteDetails?.subjects
-                                        ? nameOrNull(
-                                              getSubjectNameById(
-                                                  instituteDetails.subjects,
-                                                  paper.subject_id
+                                            : null
+                                    }
+                                    subjectName={
+                                        instituteDetails?.subjects
+                                            ? nameOrNull(
+                                                  getSubjectNameById(
+                                                      instituteDetails.subjects,
+                                                      paper.subject_id
+                                                  )
                                               )
-                                          )
-                                        : null
-                                }
-                                isJustAdded={paper.id === justAddedId}
-                                onToggleFavourite={() => toggleFavouriteOnPage(paper)}
-                                onDelete={() => setPendingDelete(paper)}
-                                viewButton={
-                                    <ViewQuestionPaper
-                                        questionPaperId={paper.id}
-                                        title={paper.title}
-                                        subject={paper.subject_id}
-                                        level={paper.level_id}
-                                        refetchData={refetchData}
-                                        currentQuestionIndex={currentQuestionIndex}
-                                        setCurrentQuestionIndex={setCurrentQuestionIndex}
-                                        examType={examType}
-                                        buttonText={
-                                            <span className="flex items-center gap-1.5">
-                                                <Eye size={16} />
-                                                {t('list.viewButton')}
-                                            </span>
-                                        }
-                                        triggerVariant="secondary"
-                                    />
-                                }
-                                exportButton={
-                                    <ExportQuestionPaper
-                                        questionPaperId={paper.id}
-                                        title={paper.title}
-                                        triggerVariant="button"
-                                    />
-                                }
-                            />
+                                            : null
+                                    }
+                                    isJustAdded={paper.id === justAddedId}
+                                    onToggleFavourite={() => toggleFavouriteOnPage(paper)}
+                                    onDelete={() => setPendingDelete(paper)}
+                                    viewButton={
+                                        <ViewQuestionPaper
+                                            questionPaperId={paper.id}
+                                            title={paper.title}
+                                            subject={paper.subject_id}
+                                            level={paper.level_id}
+                                            refetchData={refetchData}
+                                            currentQuestionIndex={currentQuestionIndex}
+                                            setCurrentQuestionIndex={setCurrentQuestionIndex}
+                                            examType={examType}
+                                            buttonText={
+                                                <span className="flex items-center gap-1.5">
+                                                    <Eye size={16} />
+                                                    {t('list.viewButton')}
+                                                </span>
+                                            }
+                                            triggerVariant="secondary"
+                                        />
+                                    }
+                                    exportButton={
+                                        <ExportQuestionPaper
+                                            questionPaperId={paper.id}
+                                            title={paper.title}
+                                            triggerVariant="button"
+                                        />
+                                    }
+                                />
+                            </PaperDragWrapper>
                         </Fragment>
                     );
                 })}

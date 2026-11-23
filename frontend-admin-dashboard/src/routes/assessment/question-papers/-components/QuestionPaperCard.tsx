@@ -1,6 +1,15 @@
 import { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BookOpen, Clock, DotsThree, FileText, Stack, Star, Trash } from '@phosphor-icons/react';
+import {
+    BookOpen,
+    Clock,
+    DotsThree,
+    FileText,
+    Folder,
+    Stack,
+    Star,
+    Trash,
+} from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -38,6 +47,10 @@ interface QuestionPaperCardProps {
     onDelete: () => void;
     viewButton: ReactNode;
     exportButton: ReactNode;
+    /** Folders on, flat list: the folder this paper is in. */
+    folderName?: string | null;
+    /** Folders on: "Move to folder", shown above Delete in the ⋯ menu. */
+    extraMenuItems?: ReactNode;
 }
 
 /** One paper on the Question Papers page. */
@@ -50,6 +63,8 @@ export const QuestionPaperCard = ({
     onDelete,
     viewButton,
     exportButton,
+    folderName,
+    extraMenuItems,
 }: QuestionPaperCardProps) => {
     const { t, i18n } = useTranslation('assessmentQuestionPapersPage');
     const created = new Date(paper.created_on);
@@ -132,6 +147,12 @@ export const QuestionPaperCard = ({
                         <BookOpen size={12} />
                         {subjectName ?? t('list.noSubject')}
                     </span>
+                    {folderName ? (
+                        <span className="inline-flex max-w-full items-center gap-1 rounded-full border border-primary-200 bg-primary-50 px-2 py-0.5 text-primary-600">
+                            <Folder size={12} className="shrink-0" />
+                            <span className="truncate">{folderName}</span>
+                        </span>
+                    ) : null}
                 </div>
             </div>
             <div className="flex shrink-0 items-center gap-2">
@@ -168,6 +189,7 @@ export const QuestionPaperCard = ({
                         </MyButton>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                        {extraMenuItems}
                         <DropdownMenuItem
                             className="cursor-pointer gap-2 text-danger-600 focus:text-danger-600"
                             onClick={onDelete}

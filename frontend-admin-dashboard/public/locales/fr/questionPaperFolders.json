@@ -1,0 +1,80 @@
+{
+    "grid": {
+        "title": "Dossiers",
+        "newFolder": "Nouveau dossier",
+        "dropHint": "Déposez le sujet sur un dossier pour l’y déplacer",
+        "empty": "Aucun dossier pour l’instant. Créez-en un, puis glissez-y des sujets ou utilisez ⋯ → Déplacer vers un dossier.",
+        "count_one": "{{count}} sujet",
+        "count_many": "{{count}} sujets",
+        "count_other": "{{count}} sujets",
+        "reorder": "Glisser pour réordonner {{name}}",
+        "loading": "Chargement des dossiers…",
+        "loadError": "Impossible de charger les dossiers.",
+        "retry": "Réessayer",
+        "unfiledTitle": "Hors dossier",
+        "unfiledHint": "Glissez un sujet sur un dossier ci-dessus pour l’y déplacer, ou utilisez ⋯ → Déplacer vers un dossier.",
+        "allFolders": "Tous les dossiers"
+    },
+    "menu": {
+        "moveToFolder": "Déplacer vers un dossier",
+        "folderActions": "Actions pour {{name}}",
+        "edit": "Modifier",
+        "copyLink": "Copier le lien",
+        "delete": "Supprimer le dossier"
+    },
+    "form": {
+        "createTitle": "Nouveau dossier",
+        "editTitle": "Modifier le dossier",
+        "nameRequired": "Saisissez un nom de dossier",
+        "cancel": "Annuler",
+        "saving": "Enregistrement…",
+        "save": "Enregistrer",
+        "create": "Créer le dossier"
+    },
+    "move": {
+        "title": "Déplacer vers un dossier",
+        "afterAddTitle": "Ajouter à un dossier",
+        "afterAddHint": "Choisissez un dossier pour « {{name}} ». Vous pourrez le changer plus tard via ⋯ → Déplacer vers un dossier.",
+        "hint": "Choisissez le dossier de « {{name}} ».",
+        "back": "Retour",
+        "skip": "Passer",
+        "createAndAdd": "Créer et ajouter",
+        "add": "Ajouter au dossier",
+        "move": "Déplacer",
+        "current": "Actuel",
+        "noFolder": "Aucun dossier",
+        "noFolderHint": "Le sortir de son dossier",
+        "createNew": "Créer un dossier"
+    },
+    "toast": {
+        "updated": "Dossier enregistré",
+        "created": "Dossier « {{name}} » créé",
+        "createdAndMoved": "Dossier « {{name}} » créé et le sujet ajouté",
+        "moved": "Déplacé vers {{name}}",
+        "removed": "Retiré du dossier",
+        "error": "Une erreur s’est produite. Veuillez réessayer.",
+        "linkCopied": "Lien du dossier copié",
+        "deleted": "Dossier supprimé. Ses sujets ne sont plus dans aucun dossier."
+    },
+    "delete": {
+        "title": "Supprimer le dossier ?",
+        "body_one": "« {{name}} » sera supprimé. Son sujet est conservé et passe dans Hors dossier.",
+        "body_many": "« {{name}} » sera supprimé. Ses {{count}} sujets sont conservés et passent dans Hors dossier.",
+        "body_other": "« {{name}} » sera supprimé. Ses {{count}} sujets sont conservés et passent dans Hors dossier.",
+        "confirm": "Supprimer le dossier"
+    },
+    "banner": {
+        "emptyHint": "Aucun sujet ici pour l’instant. Revenez à Tous les dossiers et glissez un sujet sur ce dossier, ou utilisez ⋯ → Déplacer vers un dossier.",
+        "unfiledHint": "Les sujets qui ne sont dans aucun dossier.",
+        "folderEmptyTitle": "Aucun sujet dans ce dossier pour l’instant",
+        "folderEmptyHint": "Revenez à Tous les dossiers et déplacez des sujets ici via ⋯ → Déplacer vers un dossier, ou ajoutez un sujet et choisissez ce dossier.",
+        "unfiledEmptyTitle": "Tous les sujets sont dans un dossier",
+        "unfiledEmptyHint": "Les nouveaux sujets et ceux retirés d’un dossier apparaissent ici."
+    },
+    "view": {
+        "label": "Affichage des sujets",
+        "folders": "Dossiers",
+        "list": "Tous les sujets",
+        "listHint": "Tous les sujets dans une seule liste. Chaque carte indique son dossier."
+    }
+}
