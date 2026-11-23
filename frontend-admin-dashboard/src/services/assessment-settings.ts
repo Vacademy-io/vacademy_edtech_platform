@@ -64,6 +64,9 @@ export const mergeWithDefaults = (
         assessmentFolders: {
             enabled: settings?.assessmentFolders?.enabled === true,
         },
+        questionPaperFolders: {
+            enabled: settings?.questionPaperFolders?.enabled === true,
+        },
         evalezy: mergeEvalezySettings(settings?.evalezy),
     };
 };

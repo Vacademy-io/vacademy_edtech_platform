@@ -32,5 +32,11 @@
         "description": "Group assessments into folders such as English or Maths. Students see the folders first and open one to see its tests.",
         "enableLabel": "Organise assessments in folders",
         "enableHint": "Shows a folder panel on the assessment list, a folder step after publishing, and folder cards in the student app."
+    },
+    "questionPaperFolders": {
+        "title": "Question paper folders",
+        "description": "Group question papers into folders such as Class 10 Maths or JEE Mocks on the Questions Banks and Papers page.",
+        "enableLabel": "Organise question papers in folders",
+        "enableHint": "Shows folder cards on the Questions Banks and Papers page, Move to folder on each paper, and a folder step after you add a paper. Only staff see these folders."
     }
 }

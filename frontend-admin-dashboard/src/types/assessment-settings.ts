@@ -169,6 +169,8 @@ export interface AssessmentSettingsData {
         enabled: boolean;
     };
     assessmentFolders?: AssessmentFolderSettings;
+    /** Folders on the Question Banks and Papers page; off unless enabled === true. */
+    questionPaperFolders?: AssessmentFolderSettings;
     reportBranding: ReportBrandingSettings;
     resultNotifications: ResultNotificationSettings;
     examExperience: ExamExperienceSettings;
@@ -260,6 +262,7 @@ export const DEFAULT_ASSESSMENT_SETTINGS: AssessmentSettingsData = {
     },
     aiCopyCheck: { commentPlacement: 'INSIDE' },
     assessmentFolders: { enabled: false },
+    questionPaperFolders: { enabled: false },
     evalezy: { ...DEFAULT_EVALEZY_SETTINGS },
 };
 
