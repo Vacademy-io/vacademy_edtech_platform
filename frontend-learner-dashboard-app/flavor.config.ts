@@ -336,4 +336,11 @@ export const flavorConfig: FlavorConfigs = {
     domain: "yogyam.co",
     subdomain: "student",
   },
+
+  // Nrithya Android app (learner portal learn.nrithyagurukulam.com)
+  "com.nrithya.app": {
+    appName: "Nrithya",
+    domain: "nrithyagurukulam.com",
+    subdomain: "learn",
+  },
 };
