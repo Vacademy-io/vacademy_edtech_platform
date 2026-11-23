@@ -7,6 +7,7 @@ import {
   applyInstituteUiAxes,
 } from "@/utils/institute-theme-roles";
 import { Preferences } from "@capacitor/preferences";
+import { upsertLearnerSettings } from "@/services/learner-settings-cache";
 import { shouldHidePaidPurchaseUI } from "@/utils/ios-iap-compliance";
 import { applyTabBranding } from "@/utils/branding";
 import { useDomainRouting } from "@/hooks/use-domain-routing";
@@ -3101,9 +3102,10 @@ const EnrollByInvite = ({
         applyInstituteFont();
         applyInstituteUiAxes();
 
-        // Store learner branding subset used by applyTabBranding
-        const learnerKey = `LEARNER_${instituteId}`;
-        const learnerSettings = {
+        // Store learner branding subset used by applyTabBranding. Only the
+        // fields this page knows: the policy URLs and auth flags in this record
+        // come from domain routing and must survive this write.
+        await upsertLearnerSettings(instituteId, {
           tabText:
             instituteData?.tabText ?? instituteData?.institute_name ?? null,
           tabIconFileId:
@@ -3112,17 +3114,6 @@ const EnrollByInvite = ({
             null,
           fontFamily: instituteData?.fontFamily ?? null,
           theme: instituteData?.institute_theme_code ?? null,
-          privacyPolicyUrl: null,
-          termsAndConditionUrl: null,
-          allowSignup: null,
-          allowGoogleAuth: null,
-          allowGithubAuth: null,
-          allowEmailOtpAuth: null,
-          allowUsernamePasswordAuth: null,
-        };
-        await Preferences.set({
-          key: learnerKey,
-          value: JSON.stringify(learnerSettings),
         });
 
         // Apply tab title, favicon, and font
@@ -3136,11 +3127,15 @@ const EnrollByInvite = ({
     void syncBranding();
   }, [instituteId, instituteData]);
 
-  // Load policy URLs from per-institute learner settings stored by domain resolution
+  // Load policy URLs from per-institute learner settings stored by domain resolution.
+  // Domain routing is what writes them, so read only once it has answered: this
+  // effect used to run on the first render, before that write, find nothing and
+  // never look again — the footer then linked to the built-in Vacademy policy.
+  const isDomainRoutingLoading = domainRouting.isLoading;
   useEffect(() => {
     const loadPolicyLinks = async () => {
       try {
-        if (!instituteId) return;
+        if (!instituteId || isDomainRoutingLoading) return;
         const key = `LEARNER_${instituteId}`;
         const stored = await Preferences.get({ key });
         if (stored?.value) {
@@ -3153,7 +3148,7 @@ const EnrollByInvite = ({
       }
     };
     void loadPolicyLinks();
-  }, [instituteId]);
+  }, [instituteId, isDomainRoutingLoading]);
 
   if (
     isLoading ||

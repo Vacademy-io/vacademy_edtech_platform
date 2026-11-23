@@ -19,6 +19,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Preferences } from "@capacitor/preferences";
 import { z } from "zod";
+import { DashboardLoader } from "@/components/core/dashboard-loader";
 import { useDomainRouting } from "@/hooks/use-domain-routing";
 import { peekDomainRouting } from "@/services/domain-routing";
 import {
@@ -71,23 +72,46 @@ function PrivacyPolicy() {
   // Redirect to institute-specific privacy policy if configured — unless that
   // URL is this page (a portal pointing privacy_policy_url at its own
   // /privacy-policy) or the caller asked for a specific brand.
+  //
+  // The URL is stored by domain routing, so it can only be looked up once that
+  // has answered. Reading on the first render found nothing on a cold visit (a
+  // link opened straight from a store listing or a consent screen) and showed
+  // the built-in Vacademy policy for an institute that had set its own. Until
+  // the lookup is settled, show a loader rather than the built-in text.
+  const [policyLookupDone, setPolicyLookupDone] = useState(false);
+  const isDomainRoutingLoading = domainRouting.isLoading;
   useEffect(() => {
-    if (appIdOverride) return;
+    if (appIdOverride) {
+      setPolicyLookupDone(true);
+      return;
+    }
+    if (isDomainRoutingLoading) return;
+    let cancelled = false;
     (async () => {
+      let redirecting = false;
       try {
         const instituteId = (await Preferences.get({ key: "InstituteId" })).value || "";
-        if (!instituteId) return;
-        const stored = await Preferences.get({ key: `LEARNER_${instituteId}` });
-        if (!stored?.value) return;
-        const parsed = JSON.parse(stored.value);
-        if (parsed?.privacyPolicyUrl && !urlPointsAtCurrentPage(parsed.privacyPolicyUrl)) {
-          window.location.assign(parsed.privacyPolicyUrl);
+        if (instituteId) {
+          const stored = await Preferences.get({ key: `LEARNER_${instituteId}` });
+          if (stored?.value) {
+            const parsed = JSON.parse(stored.value);
+            if (parsed?.privacyPolicyUrl && !urlPointsAtCurrentPage(parsed.privacyPolicyUrl)) {
+              redirecting = true;
+              window.location.assign(parsed.privacyPolicyUrl);
+            }
+          }
         }
       } catch {
         // Ignore and show internal policy page
       }
+      if (!cancelled && !redirecting) setPolicyLookupDone(true);
     })();
-  }, [appIdOverride]);
+    return () => {
+      cancelled = true;
+    };
+  }, [appIdOverride, isDomainRoutingLoading]);
+
+  if (!policyLookupDone) return <DashboardLoader />;
 
   const instituteName = overrideInstituteName ?? domainRouting.instituteName ?? null;
   const appName = identity?.appName ?? instituteName ?? "Vacademy";

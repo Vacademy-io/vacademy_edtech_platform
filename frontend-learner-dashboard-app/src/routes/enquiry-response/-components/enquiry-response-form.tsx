@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useDomainRouting } from "@/hooks/use-domain-routing";
 import { Preferences } from "@capacitor/preferences";
+import { upsertLearnerSettings } from "@/services/learner-settings-cache";
 import { applyTabBranding } from "@/utils/branding";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { handleGetPublicInstituteDetails } from "@/components/common/enroll-by-invite/-services/enroll-invite-services";
@@ -249,8 +250,9 @@ const AudienceResponseForm = ({
           value: JSON.stringify(mappedDetails),
         });
 
-        const learnerKey = `LEARNER_${instituteId}`;
-        const learnerSettings = {
+        // Only the branding this page knows. The policy URLs and auth flags in
+        // this record come from domain routing and must survive this write.
+        await upsertLearnerSettings(instituteId, {
           tabText:
             instituteData?.tabText ?? instituteData?.institute_name ?? null,
           tabIconFileId:
@@ -259,17 +261,6 @@ const AudienceResponseForm = ({
             null,
           fontFamily: instituteData?.fontFamily ?? null,
           theme: instituteData?.institute_theme_code ?? null,
-          privacyPolicyUrl: null,
-          termsAndConditionUrl: null,
-          allowSignup: null,
-          allowGoogleAuth: null,
-          allowGithubAuth: null,
-          allowEmailOtpAuth: null,
-          allowUsernamePasswordAuth: null,
-        };
-        await Preferences.set({
-          key: learnerKey,
-          value: JSON.stringify(learnerSettings),
         });
 
         await applyTabBranding(document.title);
