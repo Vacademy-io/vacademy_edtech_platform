@@ -345,6 +345,8 @@
             "start": "Commencer",
             "review": "Revoir"
         },
+        "viewDetails": "Voir les détails",
+        "ctaAria": "{{action}} : {{course}}",
         "cardAria": "{{course}}, {{percent}} % terminé. {{action}}"
     },
     "dashboardHero": {

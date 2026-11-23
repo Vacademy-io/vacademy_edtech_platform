@@ -335,6 +335,8 @@
             "start": "शुरू करें",
             "review": "दोहराएँ"
         },
+        "viewDetails": "विवरण देखें",
+        "ctaAria": "{{action}}: {{course}}",
         "cardAria": "{{course}}, {{percent}}% पूर्ण। {{action}}"
     },
     "dashboardHero": {
