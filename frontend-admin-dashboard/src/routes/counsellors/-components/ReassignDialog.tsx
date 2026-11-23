@@ -50,6 +50,13 @@ interface Props {
      * inactive). The parent owns the status call + dialog close.
      */
     onMarkInactiveWithoutReassign?: () => Promise<void> | void;
+    /**
+     * Opened from Institute → Teams before a member is disabled or deleted. Only the
+     * wording changes: the admin is removing a person, not taking a counsellor offline,
+     * so title, intro, button and toast name that action. The parent runs the
+     * disable / delete itself after onComplete.
+     */
+    handoverFor?: 'disable' | 'delete';
 }
 
 /**
@@ -74,6 +81,7 @@ export function ReassignDialog({
     markInactive = false,
     onComplete,
     onMarkInactiveWithoutReassign,
+    handoverFor,
 }: Props) {
     const { t } = useTranslation('counsellorsReassignDialog');
     const [mode, setMode] = useState<ReassignMode>('SINGLE');
@@ -210,7 +218,9 @@ export function ReassignDialog({
             // backend result — the authoritative number of leads moved (the
             // dialog's openLeads list is capped at 500 for display).
             const n = result.total_leads;
-            if (markInactive && result.marked_inactive) {
+            if (handoverFor) {
+                toast.success(t('handover.moved', { count: n }));
+            } else if (markInactive && result.marked_inactive) {
                 toast.success(
                     n > 0
                         ? t('toast.reassignedAndMarkedInactive', { count: n })
@@ -244,10 +254,14 @@ export function ReassignDialog({
                 Tailwind dance that lets an inner scroll-container actually
                 shrink — without min-h-0 the body grows to its content height
                 and overflows the viewport instead of scrolling. */}
-            <DialogContent className="flex max-h-[85vh] w-[95vw] max-w-5xl flex-col gap-0 p-0">
+            <DialogContent className="flex max-h-dialog-tall w-dialog-xl max-w-5xl flex-col gap-0 p-0">
                 <DialogHeader className="border-b border-neutral-200 px-6 py-4">
                     <DialogTitle>
-                        {markInactive
+                        {handoverFor
+                            ? t(`handover.${handoverFor}.title`, {
+                                  name: fromUserName ?? t('fallback.counsellor'),
+                              })
+                            : markInactive
                             ? t('title.markInactive', {
                                   name: fromUserName ?? t('fallback.counsellor'),
                               })
@@ -255,7 +269,15 @@ export function ReassignDialog({
                               ? t('title.reassignFrom', { count: totalCount, name: fromUserName })
                               : t('title.reassign', { count: totalCount })}
                     </DialogTitle>
-                    {markInactive && (
+                    {handoverFor && (
+                        <p className="mt-1 text-caption text-neutral-500">
+                            {t(`handover.${handoverFor}.intro`, {
+                                count: totalCount,
+                                name: fromUserName ?? t('fallback.they'),
+                            })}
+                        </p>
+                    )}
+                    {markInactive && !handoverFor && (
                         <p className="mt-1 text-caption text-neutral-500">
                             {openLeads.length === 0
                                 ? t('markInactive.noLeads', {
@@ -355,7 +377,11 @@ export function ReassignDialog({
                         </MyButton>
                     )}
                     <MyButton buttonType="primary" onClick={submit} disable={submitting || skipping}>
-                        {submitting
+                        {handoverFor
+                            ? submitting
+                                ? t('working')
+                                : t(`handover.${handoverFor}.confirm`)
+                            : submitting
                             ? markInactive
                                 ? t('working')
                                 : t('reassigning')

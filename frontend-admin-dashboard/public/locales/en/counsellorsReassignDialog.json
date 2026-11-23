@@ -60,5 +60,21 @@
         "reassignedAndMarkedInactive_other": "Reassigned {{count}} leads and marked inactive",
         "reassignedCount_one": "Reassigned {{count}} lead",
         "reassignedCount_other": "Reassigned {{count}} leads"
+    },
+    "handover": {
+        "disable": {
+            "title": "Disable {{name}}: hand over their leads first",
+            "intro_one": "{{name}} still owns {{count}} open lead. Choose who takes it over; {{name}} is disabled right after.",
+            "intro_other": "{{name}} still owns {{count}} open leads. Choose who takes them over; {{name}} is disabled right after.",
+            "confirm": "Reassign and disable"
+        },
+        "delete": {
+            "title": "Delete {{name}}: hand over their leads first",
+            "intro_one": "{{name}} still owns {{count}} open lead. Choose who takes it over; {{name}} is deleted right after.",
+            "intro_other": "{{name}} still owns {{count}} open leads. Choose who takes them over; {{name}} is deleted right after.",
+            "confirm": "Reassign and delete"
+        },
+        "moved_one": "Moved {{count}} lead",
+        "moved_other": "Moved {{count}} leads"
     }
 }

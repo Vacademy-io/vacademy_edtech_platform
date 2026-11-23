@@ -68,5 +68,21 @@
         "reassignedCount_one": "{{count}} lead réattribué",
         "reassignedCount_many": "{{count}} leads réattribués",
         "reassignedCount_other": "{{count}} leads réattribués"
+    },
+    "handover": {
+        "disable": {
+            "title": "Désactiver {{name}} : transférez d’abord ses prospects",
+            "intro_one": "{{name}} a encore {{count}} prospect ouvert. Choisissez qui le reprend ; {{name}} sera désactivé juste après.",
+            "intro_other": "{{name}} a encore {{count}} prospects ouverts. Choisissez qui les reprend ; {{name}} sera désactivé juste après.",
+            "confirm": "Réattribuer et désactiver"
+        },
+        "delete": {
+            "title": "Supprimer {{name}} : transférez d’abord ses prospects",
+            "intro_one": "{{name}} a encore {{count}} prospect ouvert. Choisissez qui le reprend ; {{name}} sera supprimé juste après.",
+            "intro_other": "{{name}} a encore {{count}} prospects ouverts. Choisissez qui les reprend ; {{name}} sera supprimé juste après.",
+            "confirm": "Réattribuer et supprimer"
+        },
+        "moved_one": "{{count}} prospect transféré",
+        "moved_other": "{{count}} prospects transférés"
     }
 }

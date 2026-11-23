@@ -151,6 +151,7 @@ function RouteComponent() {
         total: number;
     } | null>(null);
     const [checkingLeads, setCheckingLeads] = useState(false);
+    const [leadCheckFailed, setLeadCheckFailed] = useState(false);
     const handoverCandidatesQuery = useQuery({
         queryKey: ['workbench-counsellors-candidates', instituteId, 'assignable'],
         enabled: !!instituteId && !!handover,
@@ -387,32 +388,59 @@ function RouteComponent() {
     });
 
     /**
-     * Confirm of the Teams dialog. Disable / delete first checks whether the member still
-     * owns open leads; if so, the reassign popup opens instead and the status change runs
-     * only after the leads were handed over (the popup also takes them out of their pools).
-     * Members with no open leads (teachers, idle counsellors) go straight through.
+     * Before a disable / delete: does the member still own open leads? When they do, the
+     * reassign popup opens and the status change waits for the handover. When they don't
+     * (teachers, idle counsellors), the status change runs straight away. When the check
+     * itself fails, the confirm dialog stays open with a warning: the admin can retry, or
+     * remove access anyway knowing the leads stay with that person.
      */
-    const handleConfirm = async () => {
+    const removeAccessAfterHandover = async (kind: 'disable' | 'delete', member: TeamMember) => {
+        if (!instituteId) {
+            confirmMutation.mutate({ kind, member });
+            return;
+        }
+        setCheckingLeads(true);
+        try {
+            const leads = await fetchCounsellorLeads(instituteId, member.id, 'OPEN', 0, 500);
+            const total = leads?.totalElements ?? leads?.content?.length ?? 0;
+            if (total > 0) {
+                setConfirm(null);
+                setLeadCheckFailed(false);
+                setHandover({ kind, member, leads: leads?.content ?? [], total });
+                return;
+            }
+            setLeadCheckFailed(false);
+            confirmMutation.mutate({ kind, member });
+        } catch {
+            // Bring the confirm back (it is closed while a handover was in progress) with
+            // the warning, instead of silently removing access and stranding the leads.
+            setConfirm({ kind, member });
+            setLeadCheckFailed(true);
+        } finally {
+            setCheckingLeads(false);
+        }
+    };
+
+    const handleConfirm = () => {
         if (!confirm) return;
         const { kind, member } = confirm;
-        if ((kind === 'disable' || kind === 'delete') && instituteId) {
-            setCheckingLeads(true);
-            try {
-                const leads = await fetchCounsellorLeads(instituteId, member.id, 'OPEN', 0, 500);
-                const total = leads?.totalElements ?? leads?.content?.length ?? 0;
-                if (total > 0) {
-                    setConfirm(null);
-                    setHandover({ kind, member, leads: leads?.content ?? [], total });
-                    return;
-                }
-            } catch {
-                // No lead data for this member: nothing to hand over. The status change
-                // below still takes them out of every counsellor pool server-side.
-            } finally {
-                setCheckingLeads(false);
-            }
+        if (kind === 'disable' || kind === 'delete') {
+            void removeAccessAfterHandover(kind, member);
+            return;
         }
         confirmMutation.mutate(confirm);
+    };
+
+    /**
+     * After a handover commits, check again before removing access: a lead can be
+     * assigned to the member while the popup was open (or after a Custom preview was
+     * built). Anything new reopens the popup for just those leads, so nothing is left
+     * with someone who can no longer sign in.
+     */
+    const finishHandover = (kind: 'disable' | 'delete', member: TeamMember) => {
+        queryClient.invalidateQueries({ queryKey: ['workbench-counsellors'] });
+        queryClient.invalidateQueries({ queryKey: ['workbench-counsellors-candidates'] });
+        void removeAccessAfterHandover(kind, member);
     };
 
     const changeTab = (next: string) => {
@@ -1109,13 +1137,25 @@ function RouteComponent() {
                 name={confirm?.member.full_name ?? ''}
                 email={confirm?.member.email}
                 busy={confirmMutation.isPending || checkingLeads}
-                onClose={() => setConfirm(null)}
-                onConfirm={() => void handleConfirm()}
+                onClose={() => {
+                    setConfirm(null);
+                    setLeadCheckFailed(false);
+                }}
+                onConfirm={handleConfirm}
                 onDisableInstead={
                     confirm?.kind === 'delete' && confirm.member.status !== 'DISABLED'
-                        ? () => setConfirm({ kind: 'disable', member: confirm.member })
+                        ? () => {
+                              setLeadCheckFailed(false);
+                              setConfirm({ kind: 'disable', member: confirm.member });
+                          }
                         : undefined
                 }
+                leadCheckFailed={leadCheckFailed}
+                onProceedAnyway={() => {
+                    if (!confirm) return;
+                    setLeadCheckFailed(false);
+                    confirmMutation.mutate(confirm);
+                }}
             />
 
             {/* Hand over open leads before disable / delete. No "without reassigning"
@@ -1133,15 +1173,10 @@ function RouteComponent() {
                 totalOpenLeads={handover?.total}
                 reassignAll
                 markInactive
+                handoverFor={handover?.kind}
                 candidates={handoverCandidatesQuery.data?.content ?? []}
                 onComplete={() => {
-                    if (handover) {
-                        confirmMutation.mutate({ kind: handover.kind, member: handover.member });
-                    }
-                    queryClient.invalidateQueries({ queryKey: ['workbench-counsellors'] });
-                    queryClient.invalidateQueries({
-                        queryKey: ['workbench-counsellors-candidates'],
-                    });
+                    if (handover) finishHandover(handover.kind, handover.member);
                 }}
             />
         </LayoutContainer>
