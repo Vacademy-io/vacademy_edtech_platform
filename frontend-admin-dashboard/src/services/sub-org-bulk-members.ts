@@ -1,7 +1,7 @@
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
-import { MOVE_SUB_ORG_MEMBERS } from '@/constants/urls';
+import { BULK_ADD_SUB_ORG_MEMBERS, MOVE_SUB_ORG_MEMBERS } from '@/constants/urls';
 
-/** What happened to one learner in a bulk move into a sub-org. */
+/** What happened to one learner in a bulk add / move into a sub-org. */
 export type SubOrgBulkStatus = 'ADDED' | 'MOVED' | 'ALREADY_MEMBER' | 'FAILED';
 
 export interface SubOrgBulkResultItem {
@@ -22,11 +22,25 @@ export interface SubOrgBulkResult {
     results: SubOrgBulkResultItem[];
 }
 
+/** Learner to add: `id` for an existing account, otherwise email (or mobile) identifies them. */
+export interface SubOrgBulkLearner {
+    id?: string;
+    full_name?: string;
+    email?: string;
+    mobile_number?: string;
+    username?: string;
+}
+
 export interface SubOrgMoveMember {
     user_id: string;
     package_session_id: string;
 }
 
+/**
+ * Learners per request. Each add creates an account and runs the enrollment workflow, so
+ * small chunks keep every request short and let the progress bar move.
+ */
+export const SUB_ORG_ADD_CHUNK_SIZE = 10;
 /** Moves only update existing rows; the server takes up to 500 per request. */
 export const SUB_ORG_MOVE_CHUNK_SIZE = 100;
 
@@ -68,6 +82,19 @@ export function failedChunk(
         results: items.map((i) => ({ ...i, status: 'FAILED' as const, message })),
     };
 }
+
+export const bulkAddSubOrgMembers = async (payload: {
+    institute_id: string;
+    sub_org_id: string;
+    package_session_id: string;
+    learners: SubOrgBulkLearner[];
+}): Promise<SubOrgBulkResult> => {
+    const response = await authenticatedAxiosInstance.post<SubOrgBulkResult>(
+        BULK_ADD_SUB_ORG_MEMBERS,
+        payload
+    );
+    return response.data;
+};
 
 export const moveSubOrgMembers = async (payload: {
     institute_id: string;
