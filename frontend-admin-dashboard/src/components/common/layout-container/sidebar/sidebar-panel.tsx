@@ -65,6 +65,7 @@ import { parseSidebarLink, pickActiveSidebarLink } from './helper';
 import { filterRecentEntries } from '@/lib/capabilities/nav-access';
 import { useEntitlement } from '@/lib/capabilities/use-entitlement';
 import { filterSettingsTabs } from '@/routes/settings/-utils/settings-entitlements';
+import { validateSettingsSearch } from '@/routes/settings/-utils/settings-tab-aliases';
 import { Link, useLocation, useNavigate } from '@tanstack/react-router';
 import { useRouter, useRouterState } from '@tanstack/react-router';
 import { getCategoryColors } from './sidebar-colors';
@@ -175,10 +176,12 @@ export const SidebarPanel: React.FC<SidebarPanelProps> = ({
         activeCategory === 'SETTINGS'
             ? filterSettingsTabs(getAvailableSettingsTabs(), entitlement)
             : [];
-    // Reactively read the selectedTab search param from the URL
+    // Reactively read the selectedTab search param from the URL; a merged tab id
+    // (e.g. mcpServer) highlights the screen that replaced it, as /settings opens it.
     const routerState = useRouterState({ select: (s) => s.location.search });
-    const activeSettingsTab =
-        (routerState as unknown as Record<string, string>)?.selectedTab || 'tab';
+    const activeSettingsTab = validateSettingsSearch(
+        (routerState as unknown as Record<string, unknown>) ?? {}
+    ).selectedTab;
 
     return (
         <div
@@ -472,7 +475,7 @@ export const SETTINGS_TAB_ICONS: Record<string, React.FC<IconProps>> = {
     customFields: Sliders,
     language: Translate,
     aiSettings: Brain,
-    assistantTools: Robot,
+    aiAccess: Robot,
     course: BookOpen,
     lms: Stack,
     assessment: ClipboardText,
@@ -550,6 +553,7 @@ const SettingsTabsList: React.FC<SettingsTabsListProps> = ({ tabs, activeTab, on
     const isSearching = trimmedQuery.length > 0;
     const matchesQuery = (tab: SettingsTabEntry, domain: string) =>
         tab.value.toLowerCase().includes(trimmedQuery) ||
+        (tab.keywords ?? []).some((k) => k.toLowerCase().includes(trimmedQuery)) ||
         tab.group.toLowerCase().includes(trimmedQuery) ||
         domain.toLowerCase().includes(trimmedQuery);
 

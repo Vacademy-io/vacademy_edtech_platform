@@ -30,10 +30,13 @@ import java.util.Set;
  *
  * <p>Only orders that never had an invoice are repaired: an order whose invoice was credited in
  * full (by hand, an RTO, an unpack) is not billed again, and the issue here never passes
- * {@code allowAfterFullCredit}. Only orders changed within the last {@value #LOOKBACK_DAYS} days
- * are read (a pack that failed to invoice is noticed within minutes). An order whose repair
- * fails is left alone for {@value #RETRY_AFTER_MINUTES} minutes ({@code sweep_retry_after}), so
- * a few orders that always fail never hold up the orders of other shops behind them.
+ * {@code allowAfterFullCredit}. PACKED and later orders are read only when changed within the
+ * last {@value #LOOKBACK_DAYS} days (a pack that failed to invoice is noticed within minutes); a
+ * CONFIRMED order of a shop that invoices at confirmation is read whatever its age, since only
+ * this job issues its invoice. An order whose repair fails is left alone for 1 h, 4 h, 16 h,
+ * then 24 h ({@code sweep_failures}, {@code sweep_retry_after}), and orders that never failed
+ * are read first, so a few orders that always fail never hold up the orders of other shops.
+ * A success clears the count.
  */
 @Slf4j
 @Component
@@ -42,7 +45,8 @@ public class CommerceOrderInvoiceBacklog implements CommerceInvoiceBacklog {
     /** An order is left to its own transaction this long before the job looks at it. */
     static final long GRACE_MILLIS = 10L * 60 * 1000;
     static final int LOOKBACK_DAYS = 7;
-    static final int RETRY_AFTER_MINUTES = 60;
+    /** The deferral that turns daily: one alert line when an order reaches it. */
+    static final int DAILY_AFTER_FAILURES = 4;
     private static final Set<CommerceOrderStatus> AFTER_PACK = EnumSet.of(CommerceOrderStatus.PACKED,
             CommerceOrderStatus.SHIPPED, CommerceOrderStatus.DELIVERED);
 
@@ -98,17 +102,33 @@ public class CommerceOrderInvoiceBacklog implements CommerceInvoiceBacklog {
             return; // issued meanwhile
         }
         Invoice invoice = desk.issueInvoice(order, lines, null, false);
+        orderRepository.clearSweep(orderId);
         log.info("Commerce order {} ({}) got its invoice {} from the backlog", order.getOrderNumber(), orderId,
                 invoice.getInvoiceNumber());
     }
 
     /** The failed order is left alone for a while; a failure to note that changes nothing else. */
     private void deferQuietly(String orderId) {
+        deferQuietly(orderRepository, ownTransaction, orderId, new Date(), "invoice");
+    }
+
+    /**
+     * One more failure of a sweep on the order (its own transaction, after the failed one rolled
+     * back): the order is deferred by the backoff of {@code deferSweep}. The deferral that turns
+     * daily is said once in an alert line. Shared with the COD confirmation timer.
+     */
+    public static void deferQuietly(CommerceOrderRepository orders, TransactionTemplate transaction, String orderId,
+                                    Date now, String sweep) {
         try {
-            Date until = new Date(System.currentTimeMillis() + RETRY_AFTER_MINUTES * 60L * 1000);
-            ownTransaction.executeWithoutResult(status -> orderRepository.deferSweep(orderId, until));
+            Integer failures = transaction.execute(status -> {
+                orders.deferSweep(orderId, now);
+                return orders.sweepFailures(orderId);
+            });
+            if (failures != null && failures == DAILY_AFTER_FAILURES) {
+                log.error("COMMERCE_ALERT sweep_backoff_daily order={} sweep={}", orderId, sweep);
+            }
         } catch (RuntimeException e) {
-            log.warn("Commerce order {}: could not defer the invoice backlog retry: {}", orderId, e.getMessage());
+            log.warn("Commerce order {}: could not defer the {} sweep retry: {}", orderId, sweep, e.getMessage());
         }
     }
 

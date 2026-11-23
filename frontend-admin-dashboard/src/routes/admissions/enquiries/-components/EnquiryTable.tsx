@@ -750,7 +750,7 @@ const EnquiryTableInner = ({
             {/* Bulk Action Bar */}
             {selectedRows.size > 0 && (
                 <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2">
-                    <div className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-white px-5 py-3 shadow-2xl ring-1 ring-black/5">
+                    <div data-assistant-fab="avoid-phone" className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-white px-5 py-3 shadow-2xl ring-1 ring-black/5">
                         {/* Count Badge */}
                         <div className="flex items-center gap-2">
                             <span className="flex size-7 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white">

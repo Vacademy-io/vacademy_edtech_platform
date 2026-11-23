@@ -269,6 +269,8 @@ export interface BadgeEvalContext {
   liveSessionCount: number;
   /** Live classes attended in a row, newest-first (no misses). */
   liveSessionStreak: number;
+  /** Course slides marked "Count as engagement" completed (server points). */
+  courseActivities: number;
 }
 
 /** The learner's current value for a badge's trigger — drives the progress bar in the popup. */
@@ -290,6 +292,8 @@ function badgeProgressCurrent(trigger: string, ctx: BadgeEvalContext): number {
       return ctx.liveSessionCount;
     case "live_session_streak":
       return ctx.liveSessionStreak;
+    case "course_activity_count":
+      return ctx.courseActivities;
     case "manual":
       // Staff-awarded: there is no automatic condition to make progress on.
       return 0;
@@ -318,6 +322,8 @@ function isBadgeUnlocked(badge: BadgeDefinitionConfig, ctx: BadgeEvalContext): b
       return ctx.liveSessionCount >= t;
     case "live_session_streak":
       return ctx.liveSessionStreak >= t;
+    case "course_activity_count":
+      return ctx.courseActivities >= t;
     case "manual":
       // Never auto-unlocks — only a staff award (merged in computeBadges) can.
       return false;
@@ -522,6 +528,12 @@ export function computeGamificationData(params: {
    * streak is 0) and the streak badge trigger, so every surface shows one number.
    */
   serverStreak?: { currentStreak: number; longestStreak?: number | null } | null;
+  /**
+   * The server points (points summary). Points badges unlock on the higher of the
+   * browser estimate and the server total, so points earned on the server (daily tasks,
+   * course activities) count without re-locking a badge the estimate already gave.
+   */
+  serverPoints?: { totalPoints?: number | null; courseActivitiesCompleted?: number | null } | null;
 }): PlayGamificationData {
   const {
     dashboard,
@@ -535,6 +547,7 @@ export function computeGamificationData(params: {
     liveSessionCount = 0,
     liveSessionStreak = 0,
     serverStreak = null,
+    serverPoints = null,
   } = params;
 
   const clientStreak = computeStreak(activities);
@@ -592,11 +605,17 @@ export function computeGamificationData(params: {
           courses: dashboard?.courses ?? 0,
           slides: dashboard?.slides?.length ?? 0,
           streak: currentStreak,
-          totalXp,
+          totalXp: Math.max(
+            totalXp,
+            Number.isFinite(serverPoints?.totalPoints) ? Number(serverPoints?.totalPoints) : 0
+          ),
           maxCourseCompletionPct,
           bestAssessmentScorePct,
           liveSessionCount,
           liveSessionStreak,
+          courseActivities: Number.isFinite(serverPoints?.courseActivitiesCompleted)
+            ? Number(serverPoints?.courseActivitiesCompleted)
+            : 0,
         },
         awardedBadges
       )

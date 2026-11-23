@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import vacademy.io.admin_core_service.features.commerce.security.CommerceAccessGuard;
 import vacademy.io.admin_core_service.features.commerce.security.CommerceFeature;
+import vacademy.io.admin_core_service.features.commerce.security.CommerceRole;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.InvalidRequestException;
 
@@ -44,7 +45,9 @@ public class StockLocationController {
     @GetMapping
     public ResponseEntity<List<Map<String, Object>>> list(@RequestAttribute("user") CustomUserDetails user,
                                                           @RequestParam("instituteId") String instituteId) {
-        accessGuard.require(user, instituteId, CommerceFeature.INVENTORY, StockAccess.ANY_STAFF);
+        // A shop with the billing counter only (no stock module): its managers read the locations.
+        accessGuard.requireEither(user, instituteId, CommerceFeature.INVENTORY, StockAccess.ANY_STAFF,
+                CommerceFeature.POS, Set.of(CommerceRole.STORE_MANAGER));
         Set<String> assigned = stockAccess.visibleLocationIds(user, instituteId);
         List<Map<String, Object>> out = new ArrayList<>();
         for (StockLocation location : locationService.list(instituteId)) {

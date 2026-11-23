@@ -228,6 +228,10 @@ secrets:
   # validate tokens auth-service signs. Do NOT randomize until the Java code is
   # changed to read it from config.
   jwtSecretKey: "357638792F423F4428472B4B6250655368566D597133743677397A2443264629"
+  # Optional. A second key accepted for VERIFYING tokens only (never signing), by the
+  # Java services and ai-service, so jwtSecretKey can change without signing anyone
+  # out. Leave empty (one key, the default); set it only while changing jwtSecretKey.
+  jwtSecretKeyPrevious: ""
   # Shared internal client secret used for BOTH the client_secret_key rows (seeded
   # into every service DB) AND ai-service's CLIENT_SECRET env. Java services read
   # their client secret from the DB; ai-service reads it from env — these must

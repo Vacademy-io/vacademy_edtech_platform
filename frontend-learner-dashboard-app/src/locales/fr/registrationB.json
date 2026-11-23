@@ -337,6 +337,15 @@
         "addedFailedCount_many": "Échec de l'ajout de {{count}} membres du personnel. Consultez les résultats ci-dessous.",
         "addedFailedCount_other": "Échec de l'ajout de {{count}} membres du personnel. Consultez les résultats ci-dessous."
       }
+    },
+    "seats": {
+      "usedOfTotal": "{{used}} / {{total}} places utilisées",
+      "usedNoLimit": "{{used}} places utilisées · aucune limite",
+      "left_one": "{{count}} place restante",
+      "left_other": "{{count}} places restantes",
+      "full": "Limite de places atteinte",
+      "askSupportEmail": "Toutes vos places sont utilisées. Pour en ajouter, demandez au support ({{email}}) d'augmenter votre limite.",
+      "askSupport": "Toutes vos places sont utilisées. Pour en ajouter, demandez à l'équipe support de l'établissement d'augmenter votre limite."
     }
   }
 }

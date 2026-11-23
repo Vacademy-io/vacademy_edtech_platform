@@ -38,7 +38,15 @@ public class InstitutePolicyService {
     /** How long an answer is reused when admin-core could not be asked (down, restarting, slow). */
     private static final long POLICY_FAILURE_TTL_MS = 10 * 1000L;
 
-    private record CachedPolicy(InstituteSignupPolicy policy, long fetchedAt, long ttlMs) {
+    private record CachedPolicy(InstituteSignupPolicy policy, long fetchedAt, long ttlMs, boolean answered) {
+    }
+
+    /**
+     * @param policy   the policy, or null when the institute has no usable settings
+     * @param answered false when admin-core has not answered (and there is no earlier answer):
+     *                 then {@code policy} is null without meaning "no settings"
+     */
+    public record SignupPolicyAnswer(InstituteSignupPolicy policy, boolean answered) {
     }
 
     /** admin-core did not answer; distinct from an institute that has no settings. */
@@ -65,24 +73,34 @@ public class InstitutePolicyService {
      * admin-core must not cost an institute's new learner-authors their TEACHER role for minutes.
      */
     public InstituteSignupPolicy fetchSignupPolicyCached(String instituteId) {
+        SignupPolicyAnswer answer = fetchSignupPolicyAnswerCached(instituteId);
+        return answer == null ? null : answer.policy();
+    }
+
+    /**
+     * {@link #fetchSignupPolicyCached}, also saying whether admin-core answered: a null policy
+     * with {@code answered == false} means "unknown", not "no settings".
+     */
+    public SignupPolicyAnswer fetchSignupPolicyAnswerCached(String instituteId) {
         if (!StringUtils.hasText(instituteId))
-            return null;
+            return new SignupPolicyAnswer(null, true);
         long now = clock.getAsLong();
         CachedPolicy cached = policyCache.get(instituteId);
         if (cached != null && now - cached.fetchedAt() < cached.ttlMs()) {
-            return cached.policy();
+            return new SignupPolicyAnswer(cached.policy(), cached.answered());
         }
         try {
             InstituteSignupPolicy policy = requestSignupPolicy(instituteId);
-            policyCache.put(instituteId, new CachedPolicy(policy, now, POLICY_CACHE_TTL_MS));
-            return policy;
+            policyCache.put(instituteId, new CachedPolicy(policy, now, POLICY_CACHE_TTL_MS, true));
+            return new SignupPolicyAnswer(policy, true);
         } catch (PolicyUnavailableException e) {
             InstituteSignupPolicy lastKnown = cached == null ? null : cached.policy();
+            boolean answered = cached != null && cached.answered();
             log.warn("Signup policy for institute {} could not be fetched; {} for {} ms: {}", instituteId,
-                    lastKnown == null ? "treating as unknown" : "reusing the last answer", POLICY_FAILURE_TTL_MS,
+                    answered ? "reusing the last answer" : "treating as unknown", POLICY_FAILURE_TTL_MS,
                     e.getCause() == null ? "no response" : e.getCause().getMessage());
-            policyCache.put(instituteId, new CachedPolicy(lastKnown, now, POLICY_FAILURE_TTL_MS));
-            return lastKnown;
+            policyCache.put(instituteId, new CachedPolicy(lastKnown, now, POLICY_FAILURE_TTL_MS, answered));
+            return new SignupPolicyAnswer(lastKnown, answered);
         }
     }
 

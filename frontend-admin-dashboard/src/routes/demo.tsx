@@ -1,13 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 import { DemoSignup } from './signup/-components/DemoSignup';
+import { utmContext, utmSearchSchema } from './signup/-services/utm-search';
 
 const searchSchema = z.object({
     product: z.string().optional(),
     source: z.string().optional(),
-    utm_source: z.string().optional(),
     campaign: z.string().optional(),
-    utm_campaign: z.string().optional(),
+    ...utmSearchSchema,
 });
 
 /** Evalezy one-screen demo (evalezy.vacademy.io/demo): name, email, phone, then the app. */
@@ -24,6 +24,7 @@ function DemoPage() {
                 product: search.product || 'evalezy',
                 source: search.source || search.utm_source || 'demo',
                 campaign: search.campaign || search.utm_campaign,
+                ...utmContext(search),
             }}
         />
     );

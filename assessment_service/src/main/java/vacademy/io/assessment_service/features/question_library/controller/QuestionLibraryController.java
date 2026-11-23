@@ -9,9 +9,11 @@ import vacademy.io.assessment_service.features.question_bank.dto.QuestionBankFil
 import vacademy.io.assessment_service.features.question_core.dto.QuestionDTO;
 import vacademy.io.assessment_service.features.question_library.dto.*;
 import vacademy.io.assessment_service.features.question_library.service.QuestionLibraryAccess;
+import vacademy.io.assessment_service.features.question_library.service.QuestionLibraryAutoTagService;
 import vacademy.io.assessment_service.features.question_library.service.QuestionLibraryCopyService;
 import vacademy.io.assessment_service.features.question_library.service.QuestionLibraryCurationService;
 import vacademy.io.assessment_service.features.question_library.service.QuestionLibraryEditService;
+import vacademy.io.assessment_service.features.question_library.service.QuestionLibraryFacetService;
 import vacademy.io.assessment_service.features.question_library.service.QuestionLibraryImportService;
 import vacademy.io.assessment_service.features.question_library.service.QuestionLibraryService;
 import vacademy.io.common.auth.model.CustomUserDetails;
@@ -47,6 +49,12 @@ public class QuestionLibraryController {
 
     @Autowired
     private QuestionLibraryImportService importService;
+
+    @Autowired
+    private QuestionLibraryFacetService facetService;
+
+    @Autowired
+    private QuestionLibraryAutoTagService autoTagService;
 
     @Autowired
     private QuestionLibraryAccess libraryAccess;
@@ -123,6 +131,22 @@ public class QuestionLibraryController {
             @RequestParam(value = "pageSize", defaultValue = DEFAULT_PAGE_SIZE, required = false) int pageSize) {
         accessGuard.requireStaff(user, clientId, instituteId);
         return ResponseEntity.ok(libraryService.listQuestions(user, instituteId, filter, pageNo, Math.min(Math.max(pageSize, 1), 100)));
+    }
+
+    /**
+     * How many questions each topic, difficulty, type and tag would give next to the filters
+     * already set. Takes the same body as /questions/filter. scopeNodeId is the open topic,
+     * whose direct children are counted as topics (the top level when absent).
+     */
+    @PostMapping("/questions/facets")
+    public ResponseEntity<LibraryFacetsResponse> questionFacets(
+            @RequestAttribute("user") CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
+            @RequestParam("instituteId") String instituteId,
+            @RequestParam(value = "scopeNodeId", required = false) String scopeNodeId,
+            @RequestBody(required = false) QuestionBankFilter filter) {
+        accessGuard.requireStaff(user, clientId, instituteId);
+        return ResponseEntity.ok(facetService.facets(instituteId, filter, scopeNodeId));
     }
 
     @PostMapping("/questions/assign")
@@ -266,6 +290,36 @@ public class QuestionLibraryController {
                                                            @RequestBody LibraryTagRequest request) {
         requireManager(user, clientId, instituteId);
         return ResponseEntity.ok(curationService.removeTag(instituteId, request));
+    }
+
+    /** Renames a library tag everywhere, merging it into another tag that already has the name. */
+    @PostMapping("/tags/rename")
+    public ResponseEntity<LibraryActionResponse> renameTag(@RequestAttribute("user") CustomUserDetails user,
+                                                           @RequestHeader(value = "clientId", required = false) String clientId,
+                                                           @RequestParam("instituteId") String instituteId,
+                                                           @RequestBody LibraryTagRequest request) {
+        requireManager(user, clientId, instituteId);
+        return ResponseEntity.ok(curationService.renameTag(instituteId, request));
+    }
+
+    /** Takes a library tag off every question. */
+    @PostMapping("/tags/delete")
+    public ResponseEntity<LibraryActionResponse> deleteTag(@RequestAttribute("user") CustomUserDetails user,
+                                                           @RequestHeader(value = "clientId", required = false) String clientId,
+                                                           @RequestParam("instituteId") String instituteId,
+                                                           @RequestBody LibraryTagRequest request) {
+        requireManager(user, clientId, instituteId);
+        return ResponseEntity.ok(curationService.deleteTag(instituteId, request));
+    }
+
+    /** One batch of AI concept tags for the untagged questions under a topic (limit 0 only counts). */
+    @PostMapping("/tags/auto")
+    public ResponseEntity<LibraryAutoTagResponse> autoTag(@RequestAttribute("user") CustomUserDetails user,
+                                                          @RequestHeader(value = "clientId", required = false) String clientId,
+                                                          @RequestParam("instituteId") String instituteId,
+                                                          @RequestBody LibraryAutoTagRequest request) {
+        requireManager(user, clientId, instituteId);
+        return ResponseEntity.ok(autoTagService.autoTag(instituteId, request));
     }
 
     /** New questions (Word upload, AI, hand-written, Excel rows) saved straight into topics. */

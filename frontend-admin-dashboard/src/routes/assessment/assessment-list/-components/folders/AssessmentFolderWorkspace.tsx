@@ -23,6 +23,7 @@ import { MyDialog } from '@/components/design-system/dialog';
 import { reportApiError } from '@/lib/report-api-error';
 import { AssessmentFolderFormDialog } from '@/components/common/assessment-folders/AssessmentFolderFormDialog';
 import { MoveToFolderDialog } from '@/components/common/assessment-folders/MoveToFolderDialog';
+import { FolderTestOrderDialog } from '@/components/common/assessment-folders/FolderTestOrderDialog';
 import { usePendingFolderPrompt } from '@/components/common/assessment-folders/pending-folder-prompt';
 import {
     AssessmentFolder,
@@ -152,6 +153,7 @@ export const AssessmentFolderWorkspace = ({
     const [moveTarget, setMoveTarget] = useState<MoveTarget | null>(null);
     const [formFolder, setFormFolder] = useState<AssessmentFolder | null | undefined>(undefined);
     const [deleteFolder, setDeleteFolder] = useState<AssessmentFolder | null>(null);
+    const [testOrderFolder, setTestOrderFolder] = useState<AssessmentFolder | null>(null);
     const [deleting, setDeleting] = useState(false);
     const [dragLabel, setDragLabel] = useState<string | null>(null);
     const [view, setViewState] = useState<FolderViewMode>(readView);
@@ -405,6 +407,7 @@ export const AssessmentFolderWorkspace = ({
         onEdit: (folder: AssessmentFolder) => setFormFolder(folder),
         onDelete: setDeleteFolder,
         onCopyLink: copyLink,
+        onTestOrder: setTestOrderFolder,
         canManage: canManageFolders,
     };
     const toolbar = !atTop ? (
@@ -474,6 +477,10 @@ export const AssessmentFolderWorkspace = ({
                     clearPendingPrompt();
                     if (folderId) selectFolder(folderId);
                 }}
+            />
+            <FolderTestOrderDialog
+                folder={testOrderFolder}
+                onOpenChange={(open) => !open && setTestOrderFolder(null)}
             />
             <AssessmentFolderFormDialog
                 open={formFolder !== undefined}

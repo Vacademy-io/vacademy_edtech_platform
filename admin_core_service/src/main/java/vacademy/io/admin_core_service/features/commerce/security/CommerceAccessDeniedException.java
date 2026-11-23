@@ -15,6 +15,7 @@ public class CommerceAccessDeniedException extends ForbiddenException {
     public static final String LOCATION_NOT_ALLOWED = "LOCATION_NOT_ALLOWED";
     public static final String PIN_INVALID = "PIN_INVALID";
     public static final String PIN_LOCKED = "PIN_LOCKED";
+    public static final String INSTITUTE_WIDE_REQUIRED = "INSTITUTE_WIDE_REQUIRED";
 
     private final String code;
 

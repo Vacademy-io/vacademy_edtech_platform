@@ -76,6 +76,12 @@ export const ACTIVITY_RESPONSE_COLUMN_WIDTHS: ColumnWidthConfig = {
     responseStatus: 'min-w-[140px]',
 };
 
+export const QUESTION_SLIDE_ACTIVITY_COLUMN_WIDTHS: ColumnWidthConfig = {
+    ...ACTIVITY_RESPONSE_COLUMN_WIDTHS,
+    attemptNumber: 'min-w-20',
+    correctAnswer: 'min-w-32',
+};
+
 export const ACTIVITY_RESPONSE_ASSIGNMENT_COLUMN_WIDTHS: ColumnWidthConfig = {
     uploadDate: 'min-w-[120px]',
     uploadTime: 'min-w-[140px]',

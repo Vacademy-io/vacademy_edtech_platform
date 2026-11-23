@@ -4,6 +4,7 @@ import {
   SUB_ORG_MEMBERS,
   SUB_ORG_ADD_MEMBER,
   SUB_ORG_TERMINATE_MEMBER,
+  SUB_ORG_SEAT_USAGE,
   ENROLLMENT_INVITE_URL
 } from '@/constants/urls';
 import { toast } from 'sonner';
@@ -222,7 +223,8 @@ export const addMember = async (memberData: AddMemberRequest): Promise<AddMember
     return response.data;
   } catch (error) {
     console.error('Error adding member:', error);
-    toast.error('Failed to add learner');
+    // No toast here: callers show the server's reason (e.g. the seat-limit message
+    // with the institute support email), which a generic toast would bury.
     throw error;
   }
 };
@@ -261,6 +263,32 @@ export const getInstituteCustomFields = async (
 };
 
 
+// Seat usage of one batch: the numbers add-member enforces. total_seats null = no limit.
+export interface SeatUsageResponse {
+  package_session_id: string;
+  package_name: string | null;
+  used_seats: number;
+  total_seats: number | null;
+  support_email?: string | null;
+}
+
+export const getSeatUsage = async (
+  packageSessionId: string,
+  subOrgId: string,
+  instituteId: string
+): Promise<SeatUsageResponse> => {
+  const headers = await getAuthHeaders();
+  const response = await axios.get<SeatUsageResponse>(SUB_ORG_SEAT_USAGE, {
+    headers,
+    params: {
+      package_session_id: packageSessionId,
+      sub_org_id: subOrgId,
+      institute_id: instituteId,
+    },
+  });
+  return response.data;
+};
+
 // Export all functions
 export const subOrganizationLearnerManagementApi = {
   checkAdminAccess,
@@ -268,5 +296,6 @@ export const subOrganizationLearnerManagementApi = {
   addMember,
   terminateMembers,
   getInstituteCustomFields,
+  getSeatUsage,
 };
 

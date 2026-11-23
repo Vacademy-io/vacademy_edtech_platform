@@ -13,6 +13,9 @@ import { getTerminology } from "@/components/common/layout-container/sidebar/uti
 import { RoleTerms, SystemTerms } from "@/types/naming-settings";
 import { useFunTheme } from "@/hooks/use-fun-theme";
 import { FunQuizResult, type FunAnswerPart, type FunReviewRow } from "./fun-quiz/FunQuizResult";
+import type { QuizCbeResults } from "@/services/study-library/tracking-api/quiz-cbe-grading";
+import { cbeReviewStatus, isCbeQuizQuestion, parseCbeRow, type QuizCbeRow } from "./quiz-cbe";
+import { QuizCbeReviewCard } from "./quiz-cbe-review";
 
 interface Option {
   id: string;
@@ -67,6 +70,12 @@ interface QuizReviewProps {
   attemptLogs?: QuizAttemptLog[];
   /** Fun skin only: the quiz's title, shown above its result. */
   title?: string;
+  /** Spreadsheet & Written Response questions: the server's view of one attempt's AI checks. */
+  cbeResults?: QuizCbeResults | null;
+  /** A grade call for `cbeResults`'s attempt is running. */
+  cbeChecking?: boolean;
+  /** Asks for the failed AI checks of the latest attempt again. */
+  onRetryCbe?: () => void;
 }
 
 const getQuestionText = (q: Question) => {
@@ -211,9 +220,11 @@ const isAnswerMatch = (
 // Up to two decimals, no trailing zeros: 1, 0.5, 0.33.
 const formatMarks = (value: number): string => String(Math.round(value * 100) / 100);
 
-export const QuizReview: React.FC<QuizReviewProps> = ({ questions, userAnswers, onRestart, scoreCard, showCorrectAnswers = true, passed, passPercentage, partialMarking = false, marksPerQuestion = 1, defaultNegativeMarking = 0, attemptNumber, maxAttempts, canReattempt = true, attemptLogs, title }) => {
+export const QuizReview: React.FC<QuizReviewProps> = ({ questions, userAnswers, onRestart, scoreCard, showCorrectAnswers = true, passed, passPercentage, partialMarking = false, marksPerQuestion = 1, defaultNegativeMarking = 0, attemptNumber, maxAttempts, canReattempt = true, attemptLogs, title, cbeResults, cbeChecking = false, onRetryCbe }) => {
   const { t } = useTranslation("libraryCommonA");
-  const isFun = useFunTheme();
+  // The Fun result has no place for a spreadsheet answer: a quiz with one keeps the standard review.
+  const funTheme = useFunTheme();
+  const isFun = funTheme && !questions.some(isCbeQuizQuestion);
   const [showFullPassageIdx, setShowFullPassageIdx] = useState<number | null>(null);
   const [showPastAttempts, setShowPastAttempts] = useState(false);
   const [selectedAttemptId, setSelectedAttemptId] = useState<string | null>(null);
@@ -355,7 +366,11 @@ export const QuizReview: React.FC<QuizReviewProps> = ({ questions, userAnswers, 
       if (!qs.question_id || !qs.response_json) return;
       try {
         const parsed = JSON.parse(qs.response_json);
-        if (Array.isArray(parsed.selectedOptions) && parsed.selectedOptions.length > 0) {
+        const cbeRow = parseCbeRow(qs.response_json);
+        if (cbeRow) {
+          // A spreadsheet answer is kept as JSON text, as the quiz viewer keeps it.
+          if (cbeRow.answer) map.set(qs.question_id, JSON.stringify(cbeRow.answer));
+        } else if (Array.isArray(parsed.selectedOptions) && parsed.selectedOptions.length > 0) {
           const ids = parsed.selectedOptions.map((o: { id: string }) => String(o.id));
           map.set(qs.question_id, ids.length === 1 ? ids[0] : ids);
         } else if (parsed.answer != null) {
@@ -399,6 +414,25 @@ export const QuizReview: React.FC<QuizReviewProps> = ({ questions, userAnswers, 
     });
     return map;
   }, [activeAttempt]);
+
+  // Spreadsheet & Written Response rows of the active attempt, as the server recorded them.
+  const cbeRowByQuestionId = useMemo(() => {
+    const map = new Map<string, QuizCbeRow>();
+    activeAttempt?.quiz_sides?.forEach((qs) => {
+      const row = qs.question_id ? parseCbeRow(qs.response_json) : null;
+      if (row) map.set(qs.question_id, row);
+    });
+    return map;
+  }, [activeAttempt]);
+
+  // The server's AI-check view belongs to one attempt. Right after a submit the attempt
+  // logs may not include it yet: the latest view then shows the server's results alone.
+  const cbeResultsAreNewer =
+    !!cbeResults && !isViewingPastAttempt && !!activeAttempt && cbeResults.attempt_id !== activeAttempt.id;
+  const cbeResultsForView =
+    cbeResults && (!activeAttempt || cbeResults.attempt_id === activeAttempt.id || cbeResultsAreNewer)
+      ? cbeResults
+      : null;
 
   // Share of the marks a not-fully-correct answer earned (0 = plain wrong).
   const partialShareFor = (
@@ -469,10 +503,21 @@ export const QuizReview: React.FC<QuizReviewProps> = ({ questions, userAnswers, 
     let partial = 0;
     let wrong = 0;
     let skipped = 0;
+    let pending = 0;
     questions.forEach((q) => {
       const ans = activeAttemptAnswers.get(q.id) ?? userAnswers[q.id];
       const isAnswered =
         ans != null && !(typeof ans === 'string' && ans.trim() === '') && !(Array.isArray(ans) && ans.length === 0);
+      if (isCbeQuizQuestion(q)) {
+        // Marked by AI after the submit: counted from the recorded row, never from a key.
+        const status = cbeReviewStatus(cbeResultsAreNewer ? null : cbeRowByQuestionId.get(q.id) ?? null, isAnswered);
+        if (status === 'correct') correct++;
+        else if (status === 'partial') partial++;
+        else if (status === 'wrong') wrong++;
+        else if (status === 'pending') pending++;
+        else skipped++;
+        return;
+      }
       if (!isAnswered) {
         skipped++;
         return;
@@ -482,12 +527,17 @@ export const QuizReview: React.FC<QuizReviewProps> = ({ questions, userAnswers, 
       else if (partialShareFor(q, ans, correctAnswers) > 0) partial++;
       else wrong++;
     });
-    return { ...effectiveScoreCard, correct, partial, wrong, skipped };
+    return { ...effectiveScoreCard, correct, partial, wrong, skipped, pending };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [effectiveScoreCard, activeAttemptAnswers, recordedMarksByQuestionId, userAnswers, questions, partialMarking]);
+  }, [effectiveScoreCard, activeAttemptAnswers, recordedMarksByQuestionId, userAnswers, questions, partialMarking, cbeRowByQuestionId, cbeResultsAreNewer]);
+  // A fail is not shown while spreadsheet answers wait for their marks: those could still pass it.
   const effectivePassed =
     effectiveScoreCardWithCounts && passPercentage != null && effectiveScoreCardWithCounts.totalMarks > 0
       ? (effectiveScoreCardWithCounts.earned / effectiveScoreCardWithCounts.totalMarks) * 100 >= passPercentage
+        ? true
+        : (effectiveScoreCardWithCounts.pending ?? 0) > 0
+          ? null
+          : false
       : passed;
 
   const PASSAGE_LIMIT = 200;
@@ -675,6 +725,11 @@ export const QuizReview: React.FC<QuizReviewProps> = ({ questions, userAnswers, 
             <span className="flex items-center gap-1.5 font-medium text-red-600">
               <span>❌</span> {t("quizReview.wrongLabel", { count: effectiveScoreCardWithCounts.wrong })}
             </span>
+            {(effectiveScoreCardWithCounts.pending ?? 0) > 0 && (
+              <span className="flex items-center gap-1.5 font-medium text-primary-500">
+                <span>⏳</span> {t("quizReview.checkingLabel", { count: effectiveScoreCardWithCounts.pending })}
+              </span>
+            )}
             <span className="flex items-center gap-1.5 font-medium text-gray-500">
               <span>⏭</span> {t("quizReview.skippedLabel", { count: effectiveScoreCardWithCounts.skipped })}
             </span>
@@ -819,6 +874,21 @@ export const QuizReview: React.FC<QuizReviewProps> = ({ questions, userAnswers, 
 
       <div className="space-y-10">
         {questions.map((q, idx) => {
+          if (isCbeQuizQuestion(q)) {
+            return (
+              <QuizCbeReviewCard
+                key={q.id}
+                index={idx}
+                question={q}
+                row={cbeResultsAreNewer ? null : cbeRowByQuestionId.get(q.id) ?? null}
+                fallbackAnswer={isViewingPastAttempt ? undefined : userAnswers[q.id]}
+                result={cbeResultsForView?.questions.find((r) => r.question_id === q.id) ?? null}
+                checking={cbeChecking && !isViewingPastAttempt}
+                onRetry={!isViewingPastAttempt ? onRetryCbe : undefined}
+                defaultMaxMarks={q.marks ?? marksPerQuestion}
+              />
+            );
+          }
           const passage = getPassageText(q);
           const questionText = getQuestionText(q);
           const explanation = getExplanationText(q);

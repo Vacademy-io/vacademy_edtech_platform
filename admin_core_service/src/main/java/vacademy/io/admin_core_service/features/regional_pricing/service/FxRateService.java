@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.regional_pricing.service;
 
+import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +38,7 @@ public class FxRateService {
 
     private final FxRateRepository fxRateRepository;
     private final ObjectMapper objectMapper;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate = ExternalCallLog.attach(new RestTemplate());
 
     @Value("${regional.pricing.fx.url:https://open.er-api.com/v6/latest/USD}")
     private String fxUrl;

@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -394,10 +395,19 @@ public class PortalUrlReconciler {
     }
 
     /**
-     * The hosts flagged {@code is_primary} for {@code role}, alphabetical so the
-     * outcome is deterministic. Normally one; {@code choose} handles the legacy
-     * rows that break the "at most one primary per role token" invariant enforced
-     * on write in {@code WhiteLabelService}.
+     * The hosts flagged {@code is_primary} for {@code role}: rows that ARE that
+     * portal first, then rows that merely let that role in, each group
+     * alphabetical so the outcome is deterministic. Normally one; {@code choose}
+     * handles the legacy rows that break the "at most one primary per portal"
+     * invariant enforced on write in {@code WhiteLabelService}.
+     *
+     * <p>A row's extra tokens say who may log in there, not which portal it is:
+     * an admin portal stored as {@code "ADMIN,TEACHER"} lets teachers in, but a
+     * primary {@code "TEACHER"} row is the teacher portal. So when a choice has
+     * to be made, the teacher portal is tried first, and the admin host stays the
+     * fallback for an institute without one. The list itself still holds both,
+     * so {@code choose}'s "a live incumbent holds" rule sees the same tie it saw
+     * before and never moves a column that is already working.
      */
     private List<String> primaryHostsForRole(List<InstituteDomainRouting> routings, String role) {
         if (routings == null) {
@@ -406,11 +416,34 @@ public class PortalUrlReconciler {
         return routings.stream()
                 .filter(InstituteDomainRouting::isPrimary)
                 .filter(r -> servesRole(r, role))
+                .sorted(Comparator.comparing((InstituteDomainRouting r) -> role.equals(portalTypeOf(r.getRole())) ? 0 : 1)
+                        .thenComparing(PortalUrlReconciler::hostOf, Comparator.nullsLast(Comparator.naturalOrder())))
                 .map(PortalUrlReconciler::hostOf)
                 .filter(StringUtils::hasText)
                 .distinct()
-                .sorted()
                 .toList();
+    }
+
+    /**
+     * Which portal a comma-separated role string describes: LEARNER when it holds
+     * LEARNER (the learner app serves it), else ADMIN, else TEACHER, else null
+     * for a row that names only institute custom roles. Every other token on the
+     * row is a role allowed to log in there.
+     */
+    public static String portalTypeOf(String roleString) {
+        if (!StringUtils.hasText(roleString)) {
+            return null;
+        }
+        Set<String> tokens = new HashSet<>();
+        for (String raw : roleString.split(",")) {
+            tokens.add(raw.trim().toUpperCase(Locale.ROOT));
+        }
+        for (String portal : PORTAL_ROLES) {
+            if (tokens.contains(portal)) {
+                return portal;
+            }
+        }
+        return null;
     }
 
     /** True when the row's comma-separated role list contains {@code role}. */

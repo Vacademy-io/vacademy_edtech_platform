@@ -6,6 +6,7 @@ import {
     GET_MANUAL_RENEWAL_PREVIEW,
     RECORD_MANUAL_RENEWAL,
     USER_PLAN_REMARKS,
+    CHANGE_MEMBER_PRICE,
     CHANGE_USER_PLAN_END_DATE,
 } from '@/constants/urls';
 import type { OfflinePaymentDetails } from '@/services/offline-payment-modes';
@@ -127,6 +128,12 @@ export interface UserPlan {
     discount_granted_at?: string | null;
     /** How many billing cycles have been charged at the discounted price so far. */
     discount_cycles_applied?: number | null;
+    /** The member's own price per period when set; null = the plan's list price. */
+    regional_price?: number | null;
+    regional_currency?: string | null;
+    /** Autopay armed on this membership, and when it next charges. */
+    auto_renewal_enabled?: boolean | null;
+    next_charge_at?: string | null;
     enroll_invite_id: string;
     payment_option_id: string;
     payment_option_json: string;
@@ -465,5 +472,27 @@ export const addPlanRemark = async (
         { remark },
         { params: { instituteId } }
     );
+    return response.data;
+};
+
+export interface MemberPriceResult {
+    user_plan_id: string;
+    previous_price: number | null;
+    new_price: number | null;
+    list_price: number | null;
+    currency: string | null;
+    uses_list_price: boolean;
+    autopay_on: boolean;
+}
+
+/** Set the price this member pays each period, or price null to go back to the list price. */
+export const changeMemberPrice = async (
+    userPlanId: string,
+    instituteId: string,
+    body: { price: number | null; remarks: string }
+): Promise<MemberPriceResult> => {
+    const response = await authenticatedAxiosInstance.post(CHANGE_MEMBER_PRICE(userPlanId), body, {
+        params: { instituteId },
+    });
     return response.data;
 };

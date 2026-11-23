@@ -564,6 +564,7 @@ ENROLL_TOOLS: Dict[str, ToolSpec] = {
         default_roles=None,
         phase=3,
         mode="WRITE",
+        opt_in=True,   # opt-in over MCP too: never on by a default in the assistant
     ),
 }
 

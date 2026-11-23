@@ -4,6 +4,7 @@ import { DownloadSimple, SpinnerGap } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
 import { EXPORT_ASSESSMENT_REPORT } from "@/constants/urls";
+import { saveFile } from "@/lib/download/save-file";
 
 interface PdfDownloadButtonProps {
   assessmentId: string;
@@ -34,14 +35,7 @@ export function PdfDownloadButton({
       });
 
       const blob = new Blob([response.data], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${assessmentName || "assessment"}-report.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      await saveFile(blob, `${assessmentName || "assessment"}-report.pdf`);
     } catch (err) {
       console.error("Error downloading PDF report:", err);
       setError(true);

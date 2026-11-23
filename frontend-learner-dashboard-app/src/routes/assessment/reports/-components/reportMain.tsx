@@ -18,12 +18,20 @@ import {
   LoadingState,
 } from "@/components/design-system/states";
 import { FileText, Eye } from "@phosphor-icons/react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { getFileDetail } from "@/services/upload_file";
 import { toast } from "sonner";
 import { EvaluatedReportDialog } from "@/components/common/student-test-records/evaluated-report-dialog";
 import { useTranslation } from "react-i18next";
 import { isReportableAttempt } from "../-utils/reportable-attempt";
 import { openStudentReport } from "@/services/student-report-routing";
+import { RevisedTag } from "@/components/common/student-test-records/revised-tag";
 
 interface EvaluatedPreview {
   url: string;
@@ -73,6 +81,8 @@ export const handleGetStudentReport = ({
   };
 };
 
+type ReportSortOrder = "latest" | "oldest";
+
 const AssessmentReportList = ({
   assessment_types,
 }: {
@@ -85,6 +95,10 @@ const AssessmentReportList = ({
   const [hasMore, setHasMore] = useState(true);
   const [pageNo, setPageNo] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  // Newest first by default (the server's order); "oldest" asks for the reverse.
+  const [sortOrder, setSortOrder] = useState<ReportSortOrder>("latest");
+  // Bumped on every sort change so a page still loading for the old order is dropped.
+  const requestSeq = useRef(0);
   const pageSize = 10;
   const observer = useRef<IntersectionObserver | null>(null);
   const loadingRef = useRef<HTMLDivElement | null>(null);
@@ -177,6 +191,7 @@ const AssessmentReportList = ({
 
   const fetchReports = async () => {
     if (loading || !hasMore) return;
+    const seq = requestSeq.current;
 
     try {
       setLoading(true);
@@ -201,7 +216,7 @@ const AssessmentReportList = ({
           // (as "Pending evaluation"). Marks/report stay gated until RELEASED.
           release_result_status: ["RELEASED", "PENDING"],
           assessment_type: [assessment_types],
-          sort_columns: {},
+          sort_columns: sortOrder === "oldest" ? { attempt_date: "ASC" } : {},
         },
         {
           params: {
@@ -212,6 +227,8 @@ const AssessmentReportList = ({
           },
         }
       );
+
+      if (seq !== requestSeq.current) return;
 
       const newReports = (response.data.content as Report[]).filter(
         isReportableAttempt
@@ -231,11 +248,24 @@ const AssessmentReportList = ({
         setPageNo((prev) => prev + 1);
       }
     } catch (err) {
+      if (seq !== requestSeq.current) return;
       console.error("Error fetching reports:", err);
       setError(t("reportList.error.loadFailed"));
     } finally {
-      setLoading(false);
+      if (seq === requestSeq.current) setLoading(false);
     }
+  };
+
+  const changeSortOrder = (next: ReportSortOrder) => {
+    if (next === sortOrder) return;
+    requestSeq.current += 1;
+    setSortOrder(next);
+    // The current rows stay until page 0 of the new order replaces them, so the
+    // empty state never flashes in between.
+    setError(null);
+    setHasMore(true);
+    setLoading(false);
+    setPageNo(0);
   };
 
   // Setup intersection observer for infinite scrolling
@@ -259,10 +289,10 @@ const AssessmentReportList = ({
     [loading, hasMore]
   );
 
-  // Load initial data
+  // Load initial data, the next page, or the first page of a new sort order
   useEffect(() => {
     fetchReports();
-  }, [pageNo]);
+  }, [pageNo, sortOrder]);
 
   // Cleanup observer on component unmount
   useEffect(() => {
@@ -291,6 +321,25 @@ const AssessmentReportList = ({
 
   return (
     <div className="w-full space-y-4 p-4 md:p-6 lg:p-8">
+      {(reports.length > 0 || sortOrder !== "latest") && (
+        <div className="flex items-center justify-end gap-2">
+          <span className="text-caption text-muted-foreground">
+            {t("reportList.sort.label")}
+          </span>
+          <Select
+            value={sortOrder}
+            onValueChange={(value) => changeSortOrder(value as ReportSortOrder)}
+          >
+            <SelectTrigger className="h-9 w-44" aria-label={t("reportList.sort.label")}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="latest">{t("reportList.sort.latest")}</SelectItem>
+              <SelectItem value="oldest">{t("reportList.sort.oldest")}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
       {reports.map((report: Report, index: number) => {
         const released = isReportReleased(report);
         // The list API's `total_marks` is the attempt's achieved score
@@ -359,6 +408,11 @@ const AssessmentReportList = ({
                         ? t("reportList.status.released")
                         : t("reportList.status.pendingEvaluation")}
                     </span>
+                    {/* A teacher changed a mark after release: the score above
+                        is already the new one; the tag says so (spec W11). */}
+                    {released && report.result_revised_at && (
+                      <RevisedTag at={report.result_revised_at} />
+                    )}
                     {assessment_types !== "HOMEWORK" && (
                       <span className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-2xs font-medium text-muted-foreground">
                         {PLAY_MODE_KEYS[report.play_mode]

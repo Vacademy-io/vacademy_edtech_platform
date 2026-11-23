@@ -36,6 +36,13 @@ import { FormControl, FormField, FormItem, FormLabel } from '@/components/ui/for
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { MyInput } from '@/components/design-system/input';
 import { useTranslation } from 'react-i18next';
+import {
+    hasUnrecordedSavedSections,
+    resolveSavedSectionIds,
+    snapshotFormValues,
+    withoutSectionIds,
+    type SavedSectionRef,
+} from '../../-utils/saved-section-ids';
 type SectionFormType = z.infer<typeof sectionDetailsSchema>;
 
 const Step2AddingQuestions: React.FC<StepContentProps> = ({
@@ -59,6 +66,19 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
         })
     );
 
+    // Create flow: the store holds the sections as last saved, with the ids that
+    // save produced. Ids saved to another assessment (an abandoned wizard) are
+    // dropped, so those sections are created here rather than skipped as unchanged.
+    const isCreateFlow = assessmentId === 'defaultId';
+    const storeSectionsBelongHere =
+        !isCreateFlow ||
+        (!!savedAssessmentId && storeDataStep2.savedForAssessmentId === savedAssessmentId);
+    const storeSections =
+        storeDataStep2.section &&
+        (storeSectionsBelongHere
+            ? storeDataStep2.section
+            : withoutSectionIds(storeDataStep2.section));
+
     const form = useForm<SectionFormType>({
         resolver: zodResolver(sectionDetailsSchema),
         defaultValues: {
@@ -74,7 +94,7 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
                 sectionWiseDuration: false, // Default to false
                 questionWiseDuration: false,
             },
-            section: storeDataStep2.section || [
+            section: storeSections || [
                 {
                     sectionId: '',
                     sectionName: t('sectionDefaultName', { number: 1 }),
@@ -111,9 +131,74 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
     });
 
     const { handleSubmit, getValues, control, watch } = form;
-    // Store initial data in useRef to ensure it remains constant throughout the form updates
+    // What the next save is diffed against: the last saved state. In the create flow
+    // that is the store's copy (step 2 only writes the store after a successful save).
     const oldData = useRef(getValues());
     const allSections = getValues('section');
+
+    const baselineSectionIds = () =>
+        (oldData.current?.section ?? []).map((section) => section.sectionId).filter(Boolean);
+
+    // Write the ids of sections the server holds but the form does not know yet into
+    // the form and into oldData, so the next save updates them instead of adding copies.
+    const applySavedSectionIds = (serverSections: SavedSectionRef[] | undefined) => {
+        const current = getValues('section') ?? [];
+        const ids = resolveSavedSectionIds(
+            current.map((section) => section.sectionId),
+            serverSections,
+            baselineSectionIds()
+        );
+        ids.forEach((id, index) => {
+            if (id && id !== current[index]?.sectionId) {
+                form.setValue(`section.${index}.sectionId`, id);
+            }
+        });
+        const baseline = oldData.current;
+        if (baseline?.section) {
+            oldData.current = {
+                ...baseline,
+                section: baseline.section.map((section, index) =>
+                    !section.sectionId && ids[index]
+                        ? { ...section, sectionId: ids[index]! }
+                        : section
+                ),
+            };
+        }
+    };
+
+    // Read the assessment back - fresh, never a cached copy from before the save - and
+    // give the form's new sections the ids the server stored for them. True when the
+    // server held sections the form did not know.
+    const readBackSavedSectionIds = async (): Promise<boolean> => {
+        const details = await queryClient.fetchQuery({
+            ...getAssessmentDetails({
+                assessmentId: savedAssessmentId,
+                instituteId: instituteDetails?.id,
+                type: examType,
+            }),
+            staleTime: 0,
+        });
+        const serverSections = details?.[currentStep]?.saved_data?.sections;
+        const formIds = (getValues('section') ?? []).map((section) => section.sectionId);
+        if (!hasUnrecordedSavedSections(formIds, serverSections, baselineSectionIds())) {
+            return false;
+        }
+        applySavedSectionIds(serverSections);
+        return true;
+    };
+
+    // After a create-flow save: read the assessment back for the new sections' ids
+    // (the save response has none) and make what was just saved the new baseline.
+    const recordSavedSections = async () => {
+        try {
+            await readBackSavedSectionIds();
+        } catch (error) {
+            // Ids stay blank for now; opening step 2 again retries from the details query.
+            console.warn('Could not read back the saved sections', error);
+            queryClient.invalidateQueries({ queryKey: ['GET_ASSESSMENT_DETAILS'] });
+        }
+        oldData.current = snapshotFormValues(getValues());
+    };
 
     const handleSubmitStep2Form = useMutation({
         mutationFn: ({
@@ -140,7 +225,8 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
                 queryClient.invalidateQueries({ queryKey: ['GET_ASSESSMENT_DETAILS'] });
                 queryClient.invalidateQueries({ queryKey: ['GET_QUESTIONS_DATA_FOR_SECTIONS'] });
             } else {
-                syncStep2DataWithStore(form);
+                await recordSavedSections();
+                syncStep2DataWithStore(form, savedAssessmentId);
                 toast.success(t('toasts.saveSuccess'), {
                     className: 'success-toast',
                     duration: 2000,
@@ -149,13 +235,29 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
                 queryClient.invalidateQueries({ queryKey: ['GET_QUESTIONS_DATA_FOR_SECTIONS'] });
             }
         },
-        onError: (error: unknown) => {
+        onError: async (error: unknown) => {
             reportApiError(error, {
                 feature: 'assessment-step2-add-questions',
                 tags: { actionType: assessmentId !== 'defaultId' ? 'update' : 'create' },
                 extra: { assessmentId, instituteId: instituteDetails?.id, examType },
                 fallbackMessage: t('errors.saveFailed'),
             });
+            // Create flow: the save may have committed although its response was lost
+            // (a gateway timeout on a large paper). If the server now holds sections the
+            // form does not know, it did - record them as saved, so a retry updates them
+            // instead of adding every section and question a second time.
+            if (isCreateFlow && savedAssessmentId) {
+                try {
+                    if (await readBackSavedSectionIds()) {
+                        oldData.current = snapshotFormValues(getValues());
+                    }
+                } catch (readBackError) {
+                    console.warn(
+                        'Could not read back the sections after a failed save',
+                        readBackError
+                    );
+                }
+            }
         },
     });
 
@@ -411,6 +513,17 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
             oldData.current = initialFormValues;
         }
     }, [assessmentDetails, assessmentId]);
+
+    // Create flow, back on step 2 after a save whose ids could not be read back:
+    // pick them up from the saved assessment now, before anything is saved again.
+    // Once, on mount, from a fresh read: the cached details can predate that save.
+    useEffect(() => {
+        if (!isCreateFlow || !savedAssessmentId) return;
+        if (!(getValues('section') ?? []).some((section) => !section.sectionId)) return;
+        readBackSavedSectionIds().catch((error) =>
+            console.warn('Could not read back the saved sections', error)
+        );
+    }, []);
 
     if (isLoading || handleSubmitStep2Form.status === 'pending') return <DashboardLoader />;
 

@@ -12,8 +12,8 @@ import vacademy.io.notification_service.features.email_otp.entity.EmailOtp;
 import vacademy.io.notification_service.features.email_otp.repository.OtpRepository;
 import vacademy.io.notification_service.service.EmailService;
 
+import java.security.SecureRandom;
 import java.util.Optional;
-import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class OTPService {
@@ -40,13 +40,35 @@ public class OTPService {
     static final int MAX_OTP_EMAILS_PER_WINDOW = 5;
     static final int OTP_WINDOW_MINUTES = 10;
 
+    /** Wrong entries allowed per code; after this the code no longer verifies. */
+    public static final int MAX_WRONG_ATTEMPTS = 5;
+
+    private static final SecureRandom RANDOM = new SecureRandom();
+
     public static String generateOTP(int length) {
-        ThreadLocalRandom random = ThreadLocalRandom.current();
         StringBuilder otp = new StringBuilder();
         for (int i = 0; i < length; i++) {
-            otp.append(random.nextInt(10));
+            otp.append(RANDOM.nextInt(10));
         }
         return otp.toString();
+    }
+
+    /**
+     * Checks an entered code against a stored, unexpired OTP. Each check first takes one
+     * attempt (atomically, so parallel checks cannot exceed the limit); a correct code gives
+     * the attempt back and marks the OTP verified. Once {@link #MAX_WRONG_ATTEMPTS} wrong
+     * entries are used up, the OTP stops verifying and a new one has to be requested.
+     */
+    public static boolean checkCode(OtpRepository otpRepository, EmailOtp storedOtp, String enteredCode) {
+        if (otpRepository.takeVerifyAttempt(storedOtp.getId(), MAX_WRONG_ATTEMPTS) == 0) {
+            log.warn("OTP {} has no attempts left", storedOtp.getId());
+            return false;
+        }
+        if (storedOtp.getOtp() != null && storedOtp.getOtp().equals(enteredCode)) {
+            otpRepository.markVerified(storedOtp.getId());
+            return true;
+        }
+        return false;
     }
 
     public Boolean sendEmailOtp(String to, String subject, String service, String name, String instituteId) {
@@ -107,10 +129,8 @@ public class OTPService {
             }
 
             // Validate OTP
-            if (emailOtp.getOtp().equals(otp)) {
+            if (checkCode(otpRepository, emailOtp, otp)) {
                 log.info("EMAIL OTP VERIFIED SUCCESSFULLY - Email: {}", email);
-                emailOtp.setIsVerified("true");
-                otpRepository.save(emailOtp);
                 return true;
             } else {
                 log.warn("EMAIL OTP MISMATCH - Email: {}", email);

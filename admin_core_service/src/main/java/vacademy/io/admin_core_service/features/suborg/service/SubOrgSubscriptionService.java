@@ -25,6 +25,7 @@ import vacademy.io.admin_core_service.features.fee_management.repository.Complex
 import vacademy.io.admin_core_service.features.institute.repository.InstituteRepository;
 import vacademy.io.admin_core_service.features.institute.service.setting.InstituteTerminologyService;
 import vacademy.io.admin_core_service.features.institute.service.setting.InstituteTerminologyService.Terms;
+import vacademy.io.admin_core_service.features.institute_learner.entity.StudentSessionInstituteGroupMapping;
 import vacademy.io.admin_core_service.features.institute_learner.enums.LearnerSessionStatusEnum;
 import vacademy.io.admin_core_service.features.institute_learner.repository.StudentSessionInstituteGroupMappingRepository;
 import vacademy.io.admin_core_service.features.packages.service.PackageSessionService;
@@ -34,6 +35,7 @@ import vacademy.io.admin_core_service.features.suborg.dto.SeatUsageDTO;
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentOption;
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan;
 import vacademy.io.admin_core_service.features.user_subscription.entity.UserPlan;
+import vacademy.io.admin_core_service.features.user_subscription.repository.UserPlanRepository;
 import vacademy.io.admin_core_service.features.user_subscription.enums.PaymentOptionType;
 import vacademy.io.admin_core_service.features.user_subscription.repository.PaymentOptionRepository;
 import vacademy.io.admin_core_service.features.user_subscription.service.PaymentOptionService;
@@ -71,6 +73,7 @@ public class SubOrgSubscriptionService {
     private final FacultySubjectPackageSessionMappingRepository facultyMappingRepository;
     private final InstituteTerminologyService instituteTerminologyService;
     private final InstituteRepository instituteRepository;
+    private final UserPlanRepository userPlanRepository;
 
     /**
      * Creates a sub-org with an org-level EnrollInvite that the sub-org admin
@@ -368,36 +371,27 @@ public class SubOrgSubscriptionService {
     }
 
     /**
-     * Returns seat usage for a sub-org in a specific package session.
+     * Seat usage for one batch of a sub-org: the numbers add-member enforces, so what the
+     * admin dashboard shows is exactly what decides whether one more learner fits.
+     *
+     * <p>{@code totalSeats} goes through {@link SubOrgSeatCapResolver}: the sub-org setting
+     * first, then the plan the batch ROOT_ADMIN bought. A sub-org with neither has no cap
+     * (null). The scoped FREE invite plan is deliberately not a fallback: sub-orgs on a
+     * shared plan without a ROOT_ADMIN were never capped by it, and must not start now.
      */
-    public SeatUsageDTO getSeatUsage(String subOrgId, String packageSessionId) {
+    @Transactional(readOnly = true)
+    public SeatUsageDTO getSeatUsage(String subOrgId, String parentInstituteId, String packageSessionId) {
         PackageSession ps = packageSessionService.findById(packageSessionId);
 
         long usedSeats = mappingRepository.countBySubOrgIdAndPackageSessionIdAndStatus(
                 subOrgId, packageSessionId, LearnerSessionStatusEnum.ACTIVE.name());
 
-        // Find the scoped invite's plan to get totalSeats
-        PaymentPlan scopedPlan = null;
         Optional<EnrollInvite> scopedInvite = enrollInviteRepository
                 .findScopedInviteForSubOrgAndPackageSession(subOrgId, packageSessionId);
-        if (scopedInvite.isPresent()) {
-            List<PackageSessionLearnerInvitationToPaymentOption> inviteMappings =
-                    packageSessionEnrollInviteToPaymentOptionService.findByInvite(scopedInvite.get());
-            for (PackageSessionLearnerInvitationToPaymentOption mapping : inviteMappings) {
-                if (mapping.getPaymentOption() != null
-                        && mapping.getPaymentOption().getPaymentPlans() != null) {
-                    for (PaymentPlan plan : mapping.getPaymentOption().getPaymentPlans()) {
-                        if (plan.getMemberCount() != null) {
-                            scopedPlan = plan;
-                            break;
-                        }
-                    }
-                }
-                if (scopedPlan != null) break;
-            }
-        }
-        Integer totalSeats = seatCapResolver.resolve(subOrgId,
-                scopedInvite.map(EnrollInvite::getInstituteId).orElse(null), scopedPlan);
+        String instituteId = StringUtils.hasText(parentInstituteId)
+                ? parentInstituteId
+                : scopedInvite.map(EnrollInvite::getInstituteId).orElse(null);
+        Integer totalSeats = seatCapResolver.resolve(subOrgId, instituteId, rootAdminPlan(subOrgId, packageSessionId));
 
         return SeatUsageDTO.builder()
                 .packageSessionId(packageSessionId)
@@ -406,6 +400,16 @@ public class SubOrgSubscriptionService {
                 .usedSeats(usedSeats)
                 .totalSeats(totalSeats)
                 .build();
+    }
+
+    /** The plan the batch ROOT_ADMIN bought, or null when the batch has no ROOT_ADMIN plan. */
+    private PaymentPlan rootAdminPlan(String subOrgId, String packageSessionId) {
+        return mappingRepository.findRootAdminMappingBySubOrgAndPackageSession(subOrgId, packageSessionId)
+                .map(StudentSessionInstituteGroupMapping::getUserPlanId)
+                .filter(StringUtils::hasText)
+                .flatMap(userPlanRepository::findById)
+                .map(UserPlan::getPaymentPlan)
+                .orElse(null);
     }
 
     /**

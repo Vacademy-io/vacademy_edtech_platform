@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.audience.entity.AudienceResponse;
+import vacademy.io.admin_core_service.features.credits.service.SelfSignupTrialGate;
 import vacademy.io.admin_core_service.features.audience.enums.AudienceStatusEnum;
 import vacademy.io.admin_core_service.features.audience.entity.UserLeadProfile;
 import vacademy.io.admin_core_service.features.audience.repository.AudienceResponseRepository;
@@ -145,6 +146,17 @@ public class AiCallService {
 
     @Autowired
     private CreditClient creditClient;
+
+    @Autowired(required = false)
+    private SelfSignupTrialGate selfSignupTrialGate;
+
+    /**
+     * Whether a self sign-up's trial has ended with nothing bought (docs/PRODUCT_SELF_SIGNUP.md).
+     * Fails OPEN, like ai_service's own trial check: a fault never stops a paying customer.
+     */
+    public boolean trialEnded(String instituteId) {
+        return selfSignupTrialGate != null && selfSignupTrialGate.trialEnded(instituteId);
+    }
 
     /**
      * True only when the institute can actually pay for a call. Fails CLOSED on
@@ -287,6 +299,13 @@ public class AiCallService {
                         .dispatched(false)
                         .providerMessage(TOLL_FREE_MESSAGE)
                         .build();
+            }
+            // SELF SIGN-UP TRIAL. Every real dial (manual, bulk, workflow, API, agent test)
+            // passes here. An ended trial (Evalezy's rule) is institute-wide and clears only
+            // when credits are bought or granted: a conflict, so the queue holds the lane
+            // instead of burning each call's retries.
+            if (trialEnded(req.getInstituteId())) {
+                throw new ConflictException(SelfSignupTrialGate.MSG_TRIAL_ENDED);
             }
             if (isBlank(campaignId)) {
                 throw new VacademyException("No campaign configured — set a default Campaign ID in Settings → AI Calling.");

@@ -57,6 +57,8 @@ export function LiveTestEngine({
     playMode: attempt.playMode,
     evaluationType: attempt.evaluationType,
     instituteId: attempt.instituteId,
+    assessmentName: attempt.assessmentName,
+    resultType: attempt.resultType,
   });
   const navigation = useQuestionNavigation();
   const hasAssessment = useAssessmentStore((s) => Boolean(s.assessment));

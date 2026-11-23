@@ -25,6 +25,9 @@ export const SLIDE_TYPE_NAMES = {
     SCRATCH: 'Scratch Project',
     CODE: 'Code Editor',
     DISCUSSION: 'Discussion',
+    FLASHCARDS: 'Flashcards',
+    POLL: 'Poll',
+    GAME: 'Game',
 
     // Video types
     VIDEO: 'Video',
@@ -51,6 +54,9 @@ const SLIDE_TYPE_NAME_KEYS: Record<keyof typeof SLIDE_TYPE_NAMES, string> = {
     SCRATCH: 'types.scratchProject',
     CODE: 'types.codeEditor',
     DISCUSSION: 'types.discussion',
+    FLASHCARDS: 'types.flashcards',
+    POLL: 'types.poll',
+    GAME: 'types.game',
     VIDEO: 'types.video',
     AUDIO: 'types.audio',
     QUESTION: 'types.question',
@@ -89,6 +95,10 @@ export function getSlideTypeForNaming(slide: Partial<Slide>, t?: TFunction): str
                 return translateSlideType('CODE', t);
             case 'DISCUSSION':
                 return translateSlideType('DISCUSSION', t);
+            case 'FLASHCARDS':
+            case 'POLL':
+            case 'GAME':
+                return translateSlideType(docType, t);
             default:
                 return translateSlideType('DOC', t);
         }
@@ -181,6 +191,11 @@ export function generateUniqueDocumentSlideTitle(
             break;
         case 'DISCUSSION':
             slideTypeKey = 'DISCUSSION';
+            break;
+        case 'FLASHCARDS':
+        case 'POLL':
+        case 'GAME':
+            slideTypeKey = documentType;
             break;
         default:
             slideTypeKey = 'DOC';

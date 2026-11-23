@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowsOut, DownloadSimple, FilePdf, SpinnerGap, X } from "@phosphor-icons/react";
 import type { DocumentViewerEngineLabels } from "./DocumentViewerEngine";
+import { saveUrl } from "@/lib/download/save-file";
 
 /**
  * Catalogue `documentViewer` section — a PDF (brochure, prospectus, book
@@ -64,23 +65,7 @@ const deriveFileName = (url: string, preferred?: unknown): string => {
  * path fails we fall back to opening the file in a new tab, which is still a
  * PDF the visitor can save.
  */
-const downloadPdf = async (url: string, fileName: string) => {
-  try {
-    const res = await fetch(url, { mode: "cors" });
-    if (!res.ok) throw new Error(String(res.status));
-    const blob = await res.blob();
-    const objectUrl = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = objectUrl;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000);
-  } catch {
-    window.open(url, "_blank", "noopener,noreferrer");
-  }
-};
+const downloadPdf = (url: string, fileName: string) => saveUrl(url, fileName);
 
 const EngineFallback: React.FC<{ label: string; onDark?: boolean }> = ({ label, onDark }) => (
   <div className={`flex h-full min-h-48 flex-col items-center justify-center gap-3 text-sm ${onDark ? "text-white/80" : "text-catalogue-text-muted"}`} role="status">

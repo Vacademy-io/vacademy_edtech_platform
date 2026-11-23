@@ -43,7 +43,16 @@ export interface StudentPreviewDraft {
   theme?: Record<string, unknown> | null;
   /** Brand colour: a preset theme code or a "#rrggbb" hex. */
   brand?: string | null;
+  /**
+   * Learner home builder draft, exactly as the admin's POST /learner-home/admin/preview
+   * returned it (the resolved shape, `preview: true`). Read by /home-preview and
+   * by the dashboard inside this frame.
+   */
+  home?: unknown;
 }
+
+/** Fired on window when the admin sends a new home draft (no reload needed). */
+export const PREVIEW_HOME_EVENT = "vx-preview-home";
 
 const isFramed = (): boolean => {
   try {
@@ -197,11 +206,25 @@ export function installStudentPreviewBridge(): void {
       // noop
     }
 
+    if (data.type === "home") {
+      // Only the home builder draft changed: store it and let the open page
+      // redraw. A reload is not needed because no settings reader is involved.
+      try {
+        const current = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || "{}") as StudentPreviewDraft;
+        sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ ...current, home: data.home ?? null }));
+      } catch {
+        return;
+      }
+      window.dispatchEvent(new Event(PREVIEW_HOME_EVENT));
+      return;
+    }
+
     if (data.type === "draft") {
       const next = JSON.stringify({
         display: data.display ?? null,
         theme: data.theme ?? null,
         brand: data.brand ?? null,
+        home: data.home ?? null,
       });
       let prev: string | null = null;
       try {

@@ -1,0 +1,38 @@
+/* Fun skin: the learner home builder's blocks (banner, shortcuts, course shelf,
+   notice, event). Every selector starts with html.ui-fun. Tokens come from
+   base.css; the plain notice is FunCustomCard (home.css), not styled here. */
+
+html.ui-fun .fun-home .fun-block-title {
+  font-size: 1.25rem;
+  line-height: calc(1.625rem * var(--fun-leading));
+  font-weight: 900;
+  color: var(--fun-ink);
+}
+
+/* Cards: the Fun card edge (2px line, big radius, no drop shadow). */
+html.ui-fun .fun-home :is(.fun-block-card, .fun-block-notice, .fun-block-event) {
+  border: 2px solid var(--fun-line-card);
+  border-radius: var(--fun-radius-card);
+  background: var(--fun-ground);
+  box-shadow: none;
+}
+html.ui-fun .fun-home .fun-block-card__name { font-weight: 800; color: var(--fun-ink); }
+html.ui-fun .fun-home .fun-block-notice__body { font-weight: 700; color: var(--fun-muted); }
+
+/* Shortcut tiles: a sticker disc with a lip, the label in the Fun weight. */
+html.ui-fun .fun-home .fun-block-tile__disc {
+  background: color-mix(in srgb, var(--fun-brand) 10%, var(--fun-ground));
+  color: var(--fun-brand);
+  border: 2px solid var(--fun-line-card);
+  box-shadow: 0 3px 0 var(--fun-line-card);
+}
+html.ui-fun .fun-home .fun-block-tile__label { font-weight: 800; color: var(--fun-ink); }
+html.ui-fun .fun-home .fun-block-link { color: var(--fun-brand); font-weight: 800; }
+
+/* The countdown: Nunito's figures are proportional, so a ticking number jumps;
+   tabular figures keep it still. */
+html.ui-fun .fun-home .fun-block-event__countdown {
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+  color: var(--fun-brand);
+}

@@ -3,14 +3,17 @@
  * product rail, trust strip, collection grid and occasion banner. Each takes its source in
  * its props, so it can sit on any page.
  */
-import React, { useMemo } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { Category } from '../api/types';
 import { findCategory } from '../edge/commerce-edge';
 import { withinDates } from '../logic/dates';
 import { ratioClass } from '../logic/media';
+import { BannerCarousel } from './Banner';
 import { BARE_SECTIONS, CONTENT_SECTIONS } from './ContentSections';
-import { ErrorState, useCommerceThemeVars, usePresetClass } from './primitives';
+import { EmptyState, ErrorState, useCommerceThemeVars, usePresetClass } from './primitives';
+import { ListingView } from './Listing';
+import { NewsCarousel } from './News';
 import { ProductRail } from './ProductCard';
 import { ReassuranceRows } from './Product';
 import { menuCategories, useCategoryTree, usePageProduct, useProductRail } from './queries';
@@ -32,7 +35,7 @@ const SectionHead: React.FC<{ title: string; to?: string; cta?: string }> = ({ t
         <div className="cmx-head">
             {title && <h2 className="cmx-h2">{title}</h2>}
             {to && (
-                <ShopLink to={to} className="cmx-link cmx-small shrink-0">
+                <ShopLink to={to} className="cmx-link cmx-small cmx-tap inline-flex min-w-11 shrink-0 items-center justify-end">
                     {cta || t('rail.viewAll')}
                 </ShopLink>
             )}
@@ -214,12 +217,45 @@ const OccasionBanner: React.FC<{ props: Props }> = ({ props }) => {
     );
 };
 
+/**
+ * commerceProductGrid ("shop all"): props { title, collection }. Every product of the shop (or
+ * of one collection) in a grid with the count, Filter·Sort and "Show more", the same listing the
+ * category pages use; filters and sort live in the address.
+ */
+const ProductGridSection: React.FC<{ props: Props }> = ({ props }) => {
+    const { siteT, t } = useCommerceSite();
+    const collection = str(props.collection).toLowerCase();
+    const slug = /^[a-z0-9][a-z0-9-]{0,159}$/.test(collection) ? collection : undefined;
+    const title = siteT(str(props.title)) || t('grid.title');
+    const [total, setTotal] = useState<number | null>(null);
+    const onTotal = useCallback((count: number) => setTotal(count), []);
+    return (
+        <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+                <h2 className="cmx-h2">{title}</h2>
+                <p className="cmx-small cmx-muted m-0">{total !== null ? t('search.count', { count: total }) : '\u00a0'}</p>
+            </div>
+            <ListingView
+                collection={slug}
+                countInHeader
+                onTotal={onTotal}
+                listId={slug ? `grid:c/${slug}` : 'grid:all'}
+                listName={title}
+                empty={<EmptyState title={t('listing.empty.title')} body={t('listing.empty.body')} />}
+            />
+        </div>
+    );
+};
+
 const SECTIONS: Record<string, React.FC<{ props: Props }>> = {
     commerceCategoryRail: CategoryRail,
     commerceCollectionGrid: CollectionGrid,
     commerceProductRail: ProductRailSection,
+    commerceProductGrid: ProductGridSection,
     commerceTrustStrip: TrustStrip,
     commerceOccasionBanner: OccasionBanner,
+    commerceBannerCarousel: BannerCarousel,
+    commerceNewsCarousel: NewsCarousel,
     ...CONTENT_SECTIONS,
 };
 
@@ -231,11 +267,50 @@ const sectionAnchor = (value: unknown): string | undefined => {
     return /^[a-z][a-z0-9-]{0,60}$/.test(id) ? id : undefined;
 };
 
+/**
+ * An address that names this section's anchor (news#<id>) opens at it. The section arrives after
+ * the browser's own jump to the anchor (the shop's code loads later), so it scrolls itself into
+ * view once, below the fixed header (scroll-margin-top in commerce.css).
+ */
+const useOpenAtAnchor = (ref: React.RefObject<HTMLElement | null>, anchor: string | undefined) => {
+    useEffect(() => {
+        const el = ref.current;
+        if (!anchor || !el || typeof window === 'undefined' || window.location.hash !== `#${anchor}`) return;
+        const frame = requestAnimationFrame(() => el.scrollIntoView?.({ block: 'start' }));
+        return () => cancelAnimationFrame(frame);
+    }, [ref, anchor]);
+};
+
+/**
+ * A section whose block has nothing to show (every slide or story past its dates, a blog that did
+ * not answer) leaves no empty band: it is hidden before it paints, and again whenever its block
+ * empties later. Not :has(), so it also holds in browsers without it.
+ */
+const useHideWhenEmpty = (ref: React.RefObject<HTMLElement | null>) => {
+    useLayoutEffect(() => {
+        const section = ref.current;
+        const shell = section?.firstElementChild;
+        if (!section || !shell) return;
+        const update = () => {
+            section.hidden = !shell.hasChildNodes();
+        };
+        update();
+        if (typeof MutationObserver !== 'function') return;
+        const observer = new MutationObserver(update);
+        observer.observe(shell, { childList: true });
+        return () => observer.disconnect();
+    }, [ref]);
+};
+
 /** One commerce section of an authored page; an unknown type renders nothing. */
 export const CommerceSectionView: React.FC<{ type: string; props: Props }> = ({ type, props }) => {
     const { config, locale } = useCommerceSite();
     const preset = usePresetClass();
     const themeVars = useCommerceThemeVars();
+    const anchor = sectionAnchor(props.anchor);
+    const ref = useRef<HTMLElement>(null);
+    useOpenAtAnchor(ref, anchor);
+    useHideWhenEmpty(ref);
     const Bare = BARE_SECTIONS[type];
     const Section = SECTIONS[type];
     if ((!Section && !Bare) || !config.enabled) return null;
@@ -248,7 +323,8 @@ export const CommerceSectionView: React.FC<{ type: string; props: Props }> = ({ 
     }
     return (
         <section
-            id={sectionAnchor(props.anchor)}
+            ref={ref}
+            id={anchor}
             className={cn('cmx cmx-section', preset, ratioClass(config.theme.imageRatio), props.band === true && 'cmx-band')}
             lang={locale}
             style={themeVars}

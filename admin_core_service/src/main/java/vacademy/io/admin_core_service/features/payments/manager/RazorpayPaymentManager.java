@@ -453,6 +453,52 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
         }
     }
 
+    /**
+     * {@code GET /v1/payments/:id/refunds}: the refunds of one payment (at most 100), as maps
+     * (id, payment_id, amount, currency, status, receipt, acquirer_data, created_at, ...). Used by
+     * the shop's refund poll to find a refund whose create answer was lost. The exception message
+     * never carries a credential.
+     */
+    public List<Map<String, Object>> fetchPaymentRefunds(String razorpayPaymentId,
+                                                         Map<String, Object> paymentGatewaySpecificData) {
+        if (!StringUtils.hasText(razorpayPaymentId)) {
+            throw new VacademyException("Cannot fetch Razorpay refunds: missing payment id");
+        }
+        try {
+            RazorpayClient razorpayClient = createRazorpayClient(paymentGatewaySpecificData);
+            JSONObject request = new JSONObject();
+            request.put("count", 100);
+            List<com.razorpay.Refund> refunds = razorpayClient.payments.fetchAllRefunds(razorpayPaymentId, request);
+            List<Map<String, Object>> out = new java.util.ArrayList<>();
+            if (refunds != null) {
+                for (com.razorpay.Refund refund : refunds) {
+                    out.add(jsonToMap(refund.toJson()));
+                }
+            }
+            return out;
+        } catch (RazorpayException e) {
+            throw new VacademyException("Error fetching the refunds of Razorpay payment " + razorpayPaymentId);
+        }
+    }
+
+    /**
+     * {@code GET /v1/payments/:id/refunds/:refund_id}: one refund of a payment, as a map. The
+     * exception message never carries a credential.
+     */
+    public Map<String, Object> fetchPaymentRefund(String razorpayPaymentId, String razorpayRefundId,
+                                                  Map<String, Object> paymentGatewaySpecificData) {
+        if (!StringUtils.hasText(razorpayPaymentId) || !StringUtils.hasText(razorpayRefundId)) {
+            throw new VacademyException("Cannot fetch a Razorpay refund: missing payment or refund id");
+        }
+        try {
+            RazorpayClient razorpayClient = createRazorpayClient(paymentGatewaySpecificData);
+            com.razorpay.Refund refund = razorpayClient.payments.fetchRefund(razorpayPaymentId, razorpayRefundId);
+            return jsonToMap(refund.toJson());
+        } catch (RazorpayException e) {
+            throw new VacademyException("Error fetching Razorpay refund " + razorpayRefundId);
+        }
+    }
+
     private RazorpayClient createRazorpayClient(Map<String, Object> paymentGatewaySpecificData)
             throws RazorpayException {
         String keyId = extractApiKey(paymentGatewaySpecificData);

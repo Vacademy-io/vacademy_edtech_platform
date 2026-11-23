@@ -687,7 +687,8 @@ class EngagementTrackingServiceTest {
             validator = mock(InstituteAccessValidator.class);
             user = mock(CustomUserDetails.class);
             mvc = MockMvcBuilders.standaloneSetup(
-                    new EngagementAdminController(mock(EngagementPlanService.class), tracking, validator),
+                    new EngagementAdminController(mock(EngagementPlanService.class), tracking, validator,
+                            mock(vacademy.io.admin_core_service.features.engagement.planning.EngagementTeacherScope.class)),
                     new EngagementInsightController(tracking, validator)).build();
         }
 

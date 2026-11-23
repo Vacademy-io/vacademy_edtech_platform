@@ -40,13 +40,24 @@ export const ASSISTANT_ACTION_CONFIRM = (sessionId: string, actionId: string) =>
 export const ASSISTANT_ACTION_CANCEL = (sessionId: string, actionId: string) =>
     `${AI_SERVICE_BASE_URL}/assistant/session/${sessionId}/action/${actionId}/cancel`;
 export const ASSISTANT_CAPABILITIES = `${AI_SERVICE_BASE_URL}/assistant/capabilities`;
+// Chat history: the caller's own chats. GET list (?page&page_size&q); GET / DELETE one;
+// POST continue reopens a chat so new messages go into it.
+export const ASSISTANT_SESSIONS = `${AI_SERVICE_BASE_URL}/assistant/sessions`;
+export const ASSISTANT_SESSION_VIEW = (sessionId: string) =>
+    `${AI_SERVICE_BASE_URL}/assistant/sessions/${sessionId}`;
+export const ASSISTANT_SESSION_CONTINUE = (sessionId: string) =>
+    `${AI_SERVICE_BASE_URL}/assistant/sessions/${sessionId}/continue`;
+// Multipart upload (file + optional language) -> { transcript, language }; nothing is sent.
+export const ASSISTANT_SPEECH_TO_TEXT = `${AI_SERVICE_BASE_URL}/assistant/speech-to-text`;
 
-// Vacademy MCP server (Model Context Protocol). These back the MCP settings tab
+// Vacademy MCP server (Model Context Protocol). These back Settings → AI access
 // and the OAuth consent page; all require Authorization + clientId headers
 // except MCP_OAUTH_TXN, which the consent page reads before the user logs in.
 // See ai_service app/mcp/consent.py.
 export const MCP_OAUTH_BASE = `${AI_SERVICE_BASE_URL}/mcp/oauth`;
 export const MCP_CONNECTION_INFO = `${MCP_OAUTH_BASE}/connection-info`;
+/** Settings → AI access: both doors' capabilities per area (assistant groups + MCP tools). */
+export const AI_ACCESS_CATALOG = `${MCP_OAUTH_BASE}/access-catalog`;
 export const MCP_OAUTH_CONSENT = `${MCP_OAUTH_BASE}/consent`;
 export const MCP_OAUTH_TXN = (txn: string) => `${MCP_OAUTH_BASE}/txn/${txn}`;
 export const MCP_MANUAL_CLIENT = `${MCP_OAUTH_BASE}/manual-client`;
@@ -559,6 +570,7 @@ export const BATCHES_SUMMARY = `${BASE_URL}/admin-core-service/institute/v1/batc
 
 export const ADMIN_DETAILS_URL = `${BASE_URL}/auth-service/v1/user-details/get`;
 export const GET_STUDENTS = `${BASE_URL}/admin-core-service/institute/institute_learner/get/v2/all`;
+export const GET_LEARNER_LOCATION_FILTER_OPTIONS = `${BASE_URL}/admin-core-service/institute/institute_learner/get/v2/location-filter-options`;
 export const GET_CONTACTS_LIST = `${BASE_URL}/admin-core-service/v1/audience/distinct-institute-users-and-audience`;
 export const GET_CONTACT_CUSTOM_FIELD_VALUES = `${BASE_URL}/admin-core-service/v1/audience/contact-custom-field-values`;
 export const GET_ASSESSMENT_DETAILS = `${BASE_URL}/assessment-service/assessment/create/v1/status`;
@@ -614,6 +626,8 @@ export const STEP2_QUESTIONS_URL = `${BASE_URL}/assessment-service/assessment/ad
 export const STEP2_QUESTIONS_FULL_URL = `${BASE_URL}/assessment-service/assessment/add-questions/create/v1/questions-of-sections/full`;
 export const STEP2_EDIT_QUESTIONS_URL = `${BASE_URL}/assessment-service/assessment/add-questions/create/v1/edit-questions`;
 export const COPY_INTAKE_BASE_URL = `${BASE_URL}/assessment-service/assessment/copy-intake/v1`;
+// Scan station: a scanned pile (two passes per load) turned into one copy per student.
+export const SCAN_STATION_BASE_URL = `${COPY_INTAKE_BASE_URL}/scan`;
 // OMR sheets: paper sets, the printable bubble sheet per set, and the scan + review of filled sheets.
 export const OMR_BASE_URL = `${BASE_URL}/assessment-service/assessment/omr/v1`;
 export const STEP3_ASSESSMENT_URL = `${BASE_URL}/assessment-service/assessment/add-participants/create/v1/submit`;
@@ -666,6 +680,8 @@ export const GET_PARTICIPANT_REGISTRATION_DETAILS = `${BASE_URL}/assessment-serv
 export const GET_PARTICIPANTS_QUESTION_WISE = `${BASE_URL}/assessment-service/assessment/admin-participants/all/respondent-list`;
 export const GET_REVALUATE_STUDENT_RESULT = `${BASE_URL}/assessment-service/assessment/admin/revaluate`;
 export const GET_RELEASE_STUDENT_RESULT = `${BASE_URL}/assessment-service/admin/participants/release-result`;
+// Submission review (one submission's marks, history and release), phase 1a.
+export const SUBMISSION_REVIEW_BASE = `${BASE_URL}/assessment-service/assessment/submission-review/v1`;
 export const PROVIDE_REATTEMPT_URL = `${BASE_URL}/assessment-service/admin/participants/provide-reattempt`;
 // Learner-raised reattempt / time-extension requests awaiting an admin decision.
 export const REATTEMPT_REQUEST_LIST_URL = `${BASE_URL}/assessment-service/admin/reattempt-request/v1/list`;
@@ -814,6 +830,10 @@ export const getQuestionSlideEvaluationSecretUrl = (slideId: string) =>
     `${BASE_URL}/admin-core-service/slide/question-slide/v1/${encodeURIComponent(slideId)}/evaluation-secret`;
 export const UPDATE_ASSIGNMENT_ORDER = `${BASE_URL}/admin-core-service/slide/assignment-slide/add-or-update`;
 export const ADD_UPDATE_QUIZ_SLIDE = `${BASE_URL}/admin-core-service/slide/quiz-slide/add-or-update`;
+// Spreadsheet & Written Response (CBE) questions inside a quiz slide: their solutions,
+// marking schemes and grading notes keyed by question id, for the editor (staff only).
+export const getQuizSlideEvaluationSecretsUrl = (slideId: string) =>
+    `${BASE_URL}/admin-core-service/slide/quiz-slide/v1/${encodeURIComponent(slideId)}/evaluation-secrets`;
 export const ADD_UPDATE_ASSIGNMENT_SLIDE = `${BASE_URL}/admin-core-service/slide/assignment-slide/add-or-update`;
 export const ADD_UPDATE_ASSESSMENT_SLIDE = `${BASE_URL}/admin-core-service/slide/assessment-slide/add-or-update`;
 // GET lists the course slides that launch an assessment; DELETE removes them all.
@@ -1287,6 +1307,19 @@ export const USER_PLAN_REMARKS = (userPlanId: string) =>
     `${BASE_URL}/admin-core-service/v1/user-plan/${userPlanId}/remarks`;
 export const CHANGE_USER_PLAN_END_DATE = (userPlanId: string) =>
     `${BASE_URL}/admin-core-service/v1/user-plan/${userPlanId}/end-date`;
+export const CHANGE_MEMBER_PRICE = (userPlanId: string) =>
+    `${BASE_URL}/admin-core-service/v1/user-plan/${userPlanId}/member-price`;
+// Breaks and holds (docs/ENROLMENT_BREAKS.md): hold reminders or pause an enrolment.
+export const ENROLMENT_BREAKS_BASE = `${BASE_URL}/admin-core-service/v1/enrolment-breaks`;
+export const ENROLMENT_BREAKS_FOR_LEARNER = (userId: string) =>
+    `${ENROLMENT_BREAKS_BASE}/learner/${userId}`;
+export const ENROLMENT_BREAK_PREVIEW = `${ENROLMENT_BREAKS_BASE}/preview`;
+export const ENROLMENT_BREAK_BY_ID = (breakId: string) => `${ENROLMENT_BREAKS_BASE}/${breakId}`;
+export const ENROLMENT_BREAK_END = (breakId: string) => `${ENROLMENT_BREAKS_BASE}/${breakId}/end`;
+export const ENROLMENT_BREAK_END_PREVIEW = (breakId: string) =>
+    `${ENROLMENT_BREAKS_BASE}/${breakId}/end/preview`;
+export const ENROLMENT_BREAK_CANCEL = (breakId: string) =>
+    `${ENROLMENT_BREAKS_BASE}/${breakId}/cancel`;
 
 // System files
 export const ADD_SYSTEM_FILE = `${BASE_URL}/admin-core-service/system-files/v1/add`;
@@ -1353,6 +1386,8 @@ export const GET_INVOICES_BULK_DOWNLOAD = (instituteId: string) =>
     `${BASE_URL}/admin-core-service/v1/invoices/institute/${instituteId}/bulk-download`;
 export const GET_INVOICE_DOWNLOAD_URL = (invoiceId: string) =>
     `${BASE_URL}/admin-core-service/v1/invoices/${invoiceId}/download`;
+// The built-in invoice PDF layout every institute without its own INVOICE template prints.
+export const GET_BUILT_IN_INVOICE_TEMPLATE = `${BASE_URL}/admin-core-service/v1/invoices/built-in-template`;
 export const GET_INVOICE_BY_ID = (invoiceId: string) =>
     `${BASE_URL}/admin-core-service/v1/invoices/${invoiceId}`;
 export const POST_ADMIN_CREATE_INVOICE = `${BASE_URL}/admin-core-service/v1/invoices/admin/create`;
@@ -1366,6 +1401,9 @@ export const PUT_UPDATE_INVOICE = (invoiceId: string) =>
     `${BASE_URL}/admin-core-service/v1/invoices/${invoiceId}`;
 export const POST_MARK_INVOICE_PAID_MANUAL = (invoiceId: string) =>
     `${BASE_URL}/admin-core-service/v1/invoices/${invoiceId}/mark-paid-manual`;
+/** POST ?instituteId=… — re-applies the renewal / enrolment a paid admin invoice pays for. */
+export const POST_APPLY_INVOICE_PRODUCT_LINK = (invoiceId: string) =>
+    `${BASE_URL}/admin-core-service/v1/invoices/${invoiceId}/product-link/apply`;
 // Bulk "which invoice covers each of these payments?" lookup — drives the Invoice
 // column on Manage Payments. Institute-scoped via the instituteId query param.
 export const POST_INVOICES_BY_PAYMENT_LOGS = `${BASE_URL}/admin-core-service/v1/invoices/by-payment-logs`;
@@ -1418,6 +1456,8 @@ export const CREATE_CATALOGUE = (instituteId: string) =>
     `${CATALOGUE_BASE_URL}/create?instituteId=${instituteId}`;
 export const UPDATE_CATALOGUE = (catalogueId: string) =>
     `${CATALOGUE_BASE_URL}/update?catalogueId=${catalogueId}`;
+export const DELETE_CATALOGUE = (catalogueId: string) =>
+    `${CATALOGUE_BASE_URL}/delete?catalogueId=${catalogueId}`;
 export const GET_CATALOGUE_BY_TAG = (instituteId: string, tagName: string) =>
     `${CATALOGUE_BASE_URL}/institute/get/by-tag?instituteId=${instituteId}&tagName=${encodeURIComponent(tagName)}`;
 // Draft/publish revisions (AI Page Builder Phase A)
@@ -1590,6 +1630,9 @@ export const WHITE_LABEL_STATUS = (instituteId: string) =>
 // The institute's own Google OAuth client, so "Continue with Google" shows the brand's name.
 export const INSTITUTE_OAUTH_CLIENT = (instituteId: string, provider: 'google') =>
     `${BASE_URL}/auth-service/v1/institutes/${instituteId}/oauth-clients/${provider}`;
+// The institute's own identity provider (OIDC single sign-on for learners).
+export const INSTITUTE_SSO_CONNECTION = (instituteId: string) =>
+    `${BASE_URL}/auth-service/v1/institutes/${instituteId}/sso-connection`;
 
 // App Registry Status (read-only) — mobile/desktop app registration status for this institute,
 // sourced from the health-check dashboard's App Registration module. Registration itself stays
@@ -1602,6 +1645,10 @@ export const INSTITUTE_PAYMENT_GATEWAYS = (instituteId: string) =>
     `${BASE_URL}/admin-core-service/v1/institute/payment-gateways?instituteId=${instituteId}`;
 export const INSTITUTE_PAYMENT_GATEWAY_BY_ID = (instituteId: string, mappingId: string) =>
     `${BASE_URL}/admin-core-service/v1/institute/payment-gateways/${mappingId}?instituteId=${instituteId}`;
+export const INSTITUTE_PAYMENT_GATEWAY_ACTIVATE = (instituteId: string, mappingId: string) =>
+    `${BASE_URL}/admin-core-service/v1/institute/payment-gateways/${mappingId}/activate?instituteId=${instituteId}`;
+export const INSTITUTE_PAYMENT_GATEWAY_USAGE = (instituteId: string, mappingId: string) =>
+    `${BASE_URL}/admin-core-service/v1/institute/payment-gateways/${mappingId}/usage?instituteId=${instituteId}`;
 
 // Institute Mobile App (Android + iOS) self-service registration
 // The config resource — GET to read it (fill the form), PUT to save it (no build).

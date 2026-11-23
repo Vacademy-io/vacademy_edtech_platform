@@ -30,7 +30,10 @@
         "assignment": "واجب",
         "scormModule": "وحدة SCORM",
         "content": "محتوى",
-        "discussion": "نقاش"
+        "discussion": "نقاش",
+        "flashcards": "بطاقات تعليمية",
+        "poll": "استطلاع",
+        "game": "لعبة"
     },
     "slideDetails": {
         "pageCount_zero": "{{count}} صفحة",
@@ -480,6 +483,28 @@
             "shared": "شكرًا لمشاركتك",
             "sentForReview": "أُرسل إلى معلّمك للمراجعة",
             "reported": "شكرًا لإبلاغ معلّمك"
+        }
+    },
+    "activity": {
+        "unavailable": "هذا النشاط غير جاهز بعد.",
+        "loading": "جارٍ التحميل…",
+        "loadFailed": "تعذّر التحميل. تحقق من اتصالك وحاول مرة أخرى.",
+        "poll": {
+            "label": "استطلاع",
+            "pick": "اختر واحدًا. لا توجد إجابة صحيحة.",
+            "voteFailed": "لم يُسجَّل تصويتك. حاول مرة أخرى.",
+            "votes_one": "{{count}} صوت من صفك",
+            "votes_other": "{{count}} أصوات من صفك",
+            "thanksHidden": "شكرًا لتصويتك. سيرى معلمك النتائج.",
+            "canChange": "يمكنك تغيير تصويتك."
+        },
+        "game": {
+            "label": "العب اللعبة. تُحفظ أفضل نتيجة لك.",
+            "best": "الأفضل: {{best}}",
+            "bestOf": "الأفضل: {{best}} / {{max}}",
+            "scored": "نتيجتك {{score}}.",
+            "saving": "جارٍ حفظ نتيجتك…",
+            "saveFailed": "تعذّر حفظ نتيجتك. العب مرة أخرى للمحاولة."
         }
     }
 }

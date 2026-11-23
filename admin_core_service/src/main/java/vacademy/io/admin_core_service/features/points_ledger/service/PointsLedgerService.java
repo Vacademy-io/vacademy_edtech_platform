@@ -52,7 +52,8 @@ public class PointsLedgerService {
             PointsSourceType.ASSESSMENT.name(), "Assessments",
             PointsSourceType.ACTIVITY.name(), "Learning activity",
             PointsSourceType.MANUAL.name(), "Awarded by your institute",
-            PointsSourceType.AI_TUTOR_QUIZ.name(), "AI tutor quizzes");
+            PointsSourceType.AI_TUTOR_QUIZ.name(), "AI tutor quizzes",
+            PointsSourceType.COURSE_ACTIVITY.name(), "Course activities");
 
     /** The label a points source is shown under. */
     public static String sourceLabel(String sourceType) {
@@ -210,6 +211,7 @@ public class PointsLedgerService {
         int pointsToNextLevel = (int) (POINTS_PER_LEVEL - (safeTotal % POINTS_PER_LEVEL));
 
         PointsSummaryDTO dto = new PointsSummaryDTO(total, weekPoints, todayPoints, level, pointsToNextLevel, breakdown);
+        dto.setCourseActivitiesCompleted(pointsLedgerRepository.countCourseActivities(instituteId, userId));
         dto.setToday(today.toString());
         dto.setTimezone(zone.getId());
         Set<LocalDate> activeDays = TransactionSynchronizationManager.isActualTransactionActive()

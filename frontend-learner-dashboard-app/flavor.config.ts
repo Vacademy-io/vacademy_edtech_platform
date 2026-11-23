@@ -168,6 +168,13 @@ export const flavorConfig: FlavorConfigs = {
     subdomain: "student",
   },
 
+  // Elevate Education iOS app, published from the institute's own Apple team
+  "in.elevateeducation.app": {
+    appName: "Elevate Education",
+    domain: "elevateeducation.in",
+    subdomain: "student",
+  },
+
   // Elevate Education Android app
   "com.elevateeducation.app": {
     appName: "Elevate Education",
@@ -313,6 +320,20 @@ export const flavorConfig: FlavorConfigs = {
   "com.mecademy.app": {
     appName: "Mecademy",
     domain: "mecademy.in",
+    subdomain: "student",
+  },
+
+  // COACH UP IAS Android app (student.coachupias.com)
+  "com.coachupias.app": {
+    appName: "COACH UP IAS",
+    domain: "coachupias.com",
+    subdomain: "student",
+  },
+
+  // Yogyam Global Careers Android + iOS app (student.yogyam.co)
+  "co.yogyam.app": {
+    appName: "Yogyam Global Careers",
+    domain: "yogyam.co",
     subdomain: "student",
   },
 

@@ -14,17 +14,17 @@ You need an admin account in your institute's admin portal for the first part. E
 
 <Steps>
   <Step title="Switch the server on. Don't save yet.">
-    In your admin portal, open **Settings → MCP Server**. Under **Enable the MCP server**, switch on **MCP server enabled**.
+    In your admin portal, open **Settings → AI access**. Under **Connected AI apps → Enable the MCP server**, switch on **MCP server enabled**.
 
     Don't click **Save settings** yet. You will save once, at the end of step 3.
 
-    <Frame caption="Settings → MCP Server, with the MCP server enabled switch at the top.">
-      <img src="/mcp-server/images/screenshots/settings-enable.svg" alt="Placeholder for a screenshot of the MCP Server settings page and its enable switch" />
+    <Frame caption="Settings → AI access, with the MCP server enabled switch under Connected AI apps.">
+      <img src="/mcp-server/images/screenshots/settings-enable.svg" alt="Placeholder for a screenshot of the AI access settings page and the MCP server enable switch" />
     </Frame>
   </Step>
 
   <Step title="Choose what AI apps can do">
-    Under **What AI apps can do**, set each area to **Off**, **View** or **Edit**. Open a row to see exactly what it allows.
+    Under **What AI can do**, set each area to **Off**, **View** or **Edit** in the **AI apps** column. Open a row to see exactly what it allows. The **In-product assistant** column next to it is the assistant inside your admin portal; it has its own setting and does not change what AI apps can do.
 
     <Warning>
     When you first switch the server on, the page ticks every area at **Edit**, except the edits that are **turned on separately** (opt-in). That includes some edits that apply at once, such as course invite links. For a safe start, click **View only**, then set every area except **Institute stats**, **Lead forms** and **Courses** to **Off**.
@@ -41,7 +41,7 @@ You need an admin account in your institute's admin portal for the first part. E
 
     Some edits, such as publishing a website or enrolling learners, are **turned on separately** (opt-in). Neither the Edit level nor **Turn everything on** switches them on. See [Opt-in edits](/mcp-server/settings/opt-in-features).
 
-    <Frame caption="What AI apps can do, with the Courses row open: each edit shows its badge, and some say Turned on separately.">
+    <Frame caption="What AI can do, with the Courses row open: each AI apps edit shows its badge, and some say Turned on separately.">
       <img src="/mcp-server/images/screenshots/settings-areas.svg" alt="Placeholder for a screenshot of the area list with one row open" />
     </Frame>
   </Step>
@@ -51,7 +51,7 @@ You need an admin account in your institute's admin portal for the first part. E
 
     For example, add *Teacher* for your course team, or the role your institute uses for counsellors (a custom role, if you created one). Anyone whose role is not on the list is refused, even with the link.
 
-    To give one role more than the rest, use **Per-role access (advanced)**. See [Who can connect](/mcp-server/settings/roles).
+    To give one role more than the rest, pick it under **Settings for** above the area list and turn on **Customize AI apps for this role**. See [Who can connect](/mcp-server/settings/roles).
 
     Now click **Save settings**. Nothing changes for your team until you save.
 
@@ -164,7 +164,7 @@ Counsellors: read [For counsellors](/mcp-server/for-counsellors) before you conn
     Approval requests last 15 minutes and work once. Start the connection again from your AI app.
   </Accordion>
   <Accordion title="A tool says it is not enabled">
-    That area, or that particular edit, is off for your role. Ask an admin to turn it on in **Settings → MCP Server**. The change applies to your next request; no need to reconnect.
+    That area, or that particular edit, is off for your role. Ask an admin to turn it on in **Settings → AI access**. The change applies to your next request; no need to reconnect.
   </Accordion>
   <Accordion title="The AI app asks me to reconnect">
     Your sign-in could no longer be renewed, for example after a long break, or an admin revoked the connection. Reconnect from your AI app and approve again.

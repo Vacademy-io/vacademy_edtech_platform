@@ -51,6 +51,7 @@
         "wrongLabel": "Wrong: {{count}}",
         "partialLabel": "Partial: {{count}}",
         "partiallyCorrect": "Partially correct · {{percent}}% marks",
+        "checkingLabel": "Being checked: {{count}}",
         "skippedLabel": "Skipped: {{count}}",
         "attemptPassed": "Attempt passed",
         "youPassed": "You passed!",

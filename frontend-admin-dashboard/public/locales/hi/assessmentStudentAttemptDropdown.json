@@ -16,9 +16,16 @@
         "evaluateWithAI": {
             "recheckTitle": "क्या इस कॉपी को AI से दोबारा जाँचना है?",
             "recheckMessage": "{{name}} की कॉपी पहले ही जाँची जा चुकी है या उसका मूल्यांकन चल रहा है। नई जाँच मौजूदा अंकों को बदल देगी, जिनमें शिक्षक के किए बदलाव भी शामिल हैं। नया परिणाम तैयार होने तक यह “मूल्यांकन हो रहा है” दिखाएगी।",
+            "recheckTitleTyped": "क्या इन उत्तरों को AI से दोबारा जाँचना है?",
+            "recheckMessageTyped": "{{name}} के लिखे उत्तरों के अंक पहले ही दिए जा चुके हैं या दिए जा रहे हैं। AI की नई जाँच उनके अंकों को बदल देगी, जिनमें शिक्षक के किए बदलाव भी शामिल हैं। नया परिणाम तैयार होने तक यह प्रयास “मूल्यांकन हो रहा है” दिखाएगा।",
+            "checkTitleTyped": "इन उत्तरों को AI से जाँचें?",
+            "checkMessageTyped": "AI {{name}} के लिखे उत्तरों (लंबे उत्तर और स्प्रेडशीट व लिखित प्रश्न) को अंक देगा। इसमें आपके संस्थान के AI क्रेडिट लगते हैं। परिणाम जारी होने से पहले शिक्षक अंकों की जाँच करते हैं।",
+            "checkConfirm": "AI से जाँचें",
             "estimatedCostLabel": "अनुमानित लागत:",
             "creditsPerPage_one": "{{count}} क्रेडिट प्रति पेज",
             "creditsPerPage_other": "{{count}} क्रेडिट प्रति पेज",
+            "creditsPerAnswer_one": "{{count}} क्रेडिट प्रति उत्तर",
+            "creditsPerAnswer_other": "{{count}} क्रेडिट प्रति उत्तर",
             "creditsCount_one": "{{count}} क्रेडिट",
             "creditsCount_other": "{{count}} क्रेडिट",
             "balance_one": "शेष: {{count}}",
@@ -28,7 +35,7 @@
             "recheckConfirm": "दोबारा जाँचें"
         },
         "revaluateEntireAssessment": {
-            "title": "संपूर्ण आकलन का पुनर्मूल्यांकन करें",
+            "title": "उत्तर कुंजी से फिर जाँचें",
             "confirmMessagePrefix": "क्या आप वाकई इसके लिए पुनर्मूल्यांकन करना चाहते हैं",
             "confirmMessageSuffix": "संपूर्ण आकलन के लिए?"
         },
@@ -53,6 +60,7 @@
     "dropdown": {
         "checkingSubmission": "सबमिशन जांची जा रही है...",
         "viewSubmission": "सबमिशन देखें",
+        "viewAnswerSheet": "उत्तर पुस्तिका देखें",
         "loadingSubmission": "सबमिशन लोड हो रही है...",
         "uploadSubmission": "सबमिशन अपलोड करें",
         "provideReattempt": "पुनः प्रयास प्रदान करें",
@@ -69,7 +77,12 @@
         "downloadReport": "रिपोर्ट डाउनलोड करें",
         "releaseResult": "परिणाम जारी करें",
         "downloadAiReport": "AI रिपोर्ट डाउनलोड करें",
-        "proctoring": "प्रॉक्टरिंग"
+        "proctoring": "प्रॉक्टरिंग",
+        "openSubmission": "सबमिशन खोलें",
+        "remarkWithKey": "उत्तर कुंजी से फिर जाँचें",
+        "markOnSheet": "उत्तर पत्रिका पर जाँचें",
+        "sendUpdatedResult": "अपडेट किया गया परिणाम भेजें",
+        "hideResultAgain": "परिणाम फिर से छिपाएँ"
     },
     "toasts": {
         "reattemptProvided": "{{name}} को पुनः प्रयास प्रदान कर दिया गया है।",
@@ -79,6 +92,7 @@
         "revaluateSuccess": "इस आकलन के लिए आपके प्रयास का पुनर्मूल्यांकन कर दिया गया है। कृपया अपना ईमेल जांचें!",
         "evaluationStarted": "AI मूल्यांकन सफलतापूर्वक शुरू हो गया है!",
         "evaluationError": "AI मूल्यांकन शुरू करने में विफल। कृपया फिर से प्रयास करें।",
+        "alreadyReleased": "यह परिणाम पहले ही जारी हो चुका है, इसलिए AI मूल्यांकन इसके अंक नहीं बदल सकता। अंक स्वयं संपादित करें।",
         "noEvaluatedCopy": "इस प्रयास के लिए कोई मूल्यांकित प्रति नहीं मिली।",
         "evaluatedCopyLoadError": "मूल्यांकित प्रति लोड करने में विफल। कृपया फिर से प्रयास करें।",
         "noSubmissionFile": "इस प्रयास के लिए कोई सबमिशन फ़ाइल नहीं मिली।",

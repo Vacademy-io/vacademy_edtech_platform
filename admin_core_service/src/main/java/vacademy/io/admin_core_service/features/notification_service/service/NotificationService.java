@@ -110,6 +110,7 @@ public class NotificationService {
                         .emailType(dto.getEmailType() != null ? dto.getEmailType() : "UTILITY_EMAIL")
                         .source(dto.getSource())
                         .sourceId(dto.getSourceId())
+                        .logTemplateName(dto.getTemplateName())
                         .build())
                 .build());
     }
@@ -199,10 +200,11 @@ public class NotificationService {
         log.info("sendWhatsappViaUnified: template={}, userDetails={}, headerParams={}, headerVideoParams={}, buttonUrlParams={}, buttonIndexParams={}, headerType={}",
                 request.getTemplateName(),
                 request.getUserDetails() != null ? request.getUserDetails().size() : 0,
-                request.getHeaderParams() != null ? request.getHeaderParams().keySet() : "null",
-                request.getHeaderVideoParams() != null ? request.getHeaderVideoParams().keySet() : "null",
-                request.getButtonUrlParams() != null ? request.getButtonUrlParams().keySet() : "null",
-                request.getButtonIndexParams() != null ? request.getButtonIndexParams().keySet() : "null",
+                // Sizes only: the keys of these maps are phone numbers.
+                request.getHeaderParams() != null ? request.getHeaderParams().size() : "null",
+                request.getHeaderVideoParams() != null ? request.getHeaderVideoParams().size() : "null",
+                request.getButtonUrlParams() != null ? request.getButtonUrlParams().size() : "null",
+                request.getButtonIndexParams() != null ? request.getButtonIndexParams().size() : "null",
                 request.getHeaderType());
 
         if (request.getUserDetails() != null) {

@@ -61,6 +61,32 @@ public class CacheConfiguration {
                         .recordStats()
                         .build());
 
+        // Submission review: the paper of an assessment (sections + questions + schemes),
+        // read by every submission page, list count and mark write. Short TTL so an edited
+        // paper shows within a minute without any eviction wiring.
+        cacheManager.registerCustomCache("submissionPaper",
+                Caffeine.newBuilder()
+                        .expireAfterWrite(60, TimeUnit.SECONDS)
+                        .maximumSize(500)
+                        .recordStats()
+                        .build());
+
+        // Submission review: the per-assessment "marking" strip of the Submissions list.
+        cacheManager.registerCustomCache("markingSummary",
+                Caffeine.newBuilder()
+                        .expireAfterWrite(15, TimeUnit.SECONDS)
+                        .maximumSize(500)
+                        .recordStats()
+                        .build());
+
+        // Submission review: display names of teachers in "marked by" and the history.
+        cacheManager.registerCustomCache("userNames",
+                Caffeine.newBuilder()
+                        .expireAfterWrite(10, TimeUnit.MINUTES)
+                        .maximumSize(5_000)
+                        .recordStats()
+                        .build());
+
         return cacheManager;
     }
 }

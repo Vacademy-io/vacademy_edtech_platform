@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { DEFAULT_PROCTORING_FORM } from '@/types/assessments/proctoring';
 import { DEFAULT_EXAM_INTERFACE_FORM } from '@/types/assessments/exam-interface';
 import { DEFAULT_REPORT_OPTIONS_FORM } from '@/types/assessments/report-options';
+import type { ReportPagesForm } from '@/types/assessments/report-pages';
 
 export const BasicInfoFormSchema = z.object({
     status: z.string(),
@@ -91,8 +92,13 @@ export const BasicInfoFormSchema = z.object({
             showYourAnswer: z.boolean(),
             showCorrectAnswer: z.boolean(),
             showExplanation: z.boolean(),
+            // Registration fields printed under the student's name (this assessment only).
+            studentFields: z.array(z.string()).default([]),
         })
         .default(DEFAULT_REPORT_OPTIONS_FORM),
+    // Pages before/after the student's report (types/assessments/report-pages.ts). Loaded
+    // from the server by the Report pages section; sent as report_pages only when changed.
+    reportPages: z.custom<ReportPagesForm>().optional(),
     switchSections: z.boolean(),
     raiseReattemptRequest: z.boolean(),
     raiseTimeIncreaseRequest: z.boolean(),

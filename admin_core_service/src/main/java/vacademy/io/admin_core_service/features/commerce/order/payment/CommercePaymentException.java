@@ -74,6 +74,10 @@ public class CommercePaymentException {
     @Column(name = "resolution_note", length = 500)
     private String resolutionNote;
 
+    /** The automatic refund made for an OVERSOLD_PAID or DUPLICATE_PAYMENT row (V710). */
+    @Column(name = "refund_id", length = 36)
+    private String refundId;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private Date createdAt;
 

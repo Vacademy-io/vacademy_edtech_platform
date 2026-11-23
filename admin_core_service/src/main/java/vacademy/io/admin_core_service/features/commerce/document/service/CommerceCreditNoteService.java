@@ -100,6 +100,25 @@ public class CommerceCreditNoteService {
                 .map(CommerceCreditNote::getTotal).reduce(ZERO, BigDecimal::add);
     }
 
+    /**
+     * True while some unit of the invoice has no credit note yet. A part note can take what is left
+     * of the invoice's total before its last units come back (a bill rounded down, most of it
+     * returned), so the total alone does not say the invoice is credited in full.
+     */
+    @Transactional(readOnly = true)
+    public boolean hasUnitsLeft(String instituteId, String invoiceId) {
+        Map<String, Earlier> earlier = earlierByInvoiceLine(instituteId,
+                creditNoteRepository.findByInstituteIdAndInvoiceIdOrderByCreatedAtAsc(instituteId, invoiceId));
+        for (InvoiceLineItem line : invoiceLineItemRepository.findByInvoiceId(invoiceId)) {
+            int quantity = line.getQuantity() == null ? 1 : line.getQuantity();
+            Earlier before = earlier.get(line.getId());
+            if ((before == null ? 0 : before.quantity) < quantity) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Transactional(readOnly = true)
     public boolean hasCreditNotes(String instituteId, String invoiceId) {
         return !creditNoteRepository.findByInstituteIdAndInvoiceIdOrderByCreatedAtAsc(instituteId, invoiceId)

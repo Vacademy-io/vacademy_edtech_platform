@@ -86,6 +86,8 @@ import {
 } from '@/lib/capabilities/nav-access';
 import { filterCommerceSidebar } from '@/lib/commerce/commerce-access';
 import { useCommerceAccess } from '@/lib/commerce/use-commerce-access';
+import { filterLearnerHomeSidebar } from '@/lib/learner-home/learner-home-access';
+import { useCapabilities } from '@/services/capabilities';
 // Sidebar sub-items under "Assessments and Tests" that deep-link into the
 // create-assessment wizard. Hidden together with the Create Assessment button.
 const ASSESSMENT_CREATE_SUB_ITEM_IDS = new Set([
@@ -224,6 +226,7 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
     // commerce roles. Reads the /capabilities/me the entitlement already loaded:
     // no extra request.
     const commerceAccess = useCommerceAccess();
+    const { can: canCapability } = useCapabilities();
 
     useEffect(() => {
         setIsVoltSubdomain(
@@ -317,10 +320,13 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
         );
 
         const tabVis = new Map(roleDisplay.sidebar.map((t) => [t.id, t]));
+        // Allow-list mode (Telleo sign-ups): an entry the settings do not mention is hidden,
+        // not shown. Everyone else keeps "unmentioned = shown".
+        const allowList = roleDisplay.ui?.sidebarAllowList === true;
         const mapped = base
             .filter((item) => {
                 const cfg = tabVis.get(item.id);
-                return cfg ? cfg.visible !== false : true;
+                return cfg ? cfg.visible !== false : !allowList;
             })
             .map((item) => {
                 const cfg = tabVis.get(item.id);
@@ -364,7 +370,7 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
                     const filteredSubs = item.subItems
                         .filter((s) => {
                             const c = subVis.get(s.subItemId);
-                            return c ? c.visible !== false : true;
+                            return c ? c.visible !== false : !allowList;
                         })
                         .sort((a, b) => {
                             const ao = subVis.get(a.subItemId)?.order ?? 0;
@@ -459,9 +465,13 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
     // Then the institute's plan. In LEGACY this returns roleSidebarItems itself.
     // Then the commerce gates: no commerce tab without its feature and a role that
     // sees it, and shop-only staff (a cashier) get nothing but the shop.
-    const entitledItems = filterCommerceSidebar(
-        filterSidebarByEntitlement(roleSidebarItems, entitlement),
-        commerceAccess
+    // Learner home is an opt-in module too: no tab until the feature is on.
+    const entitledItems = filterLearnerHomeSidebar(
+        filterCommerceSidebar(
+            filterSidebarByEntitlement(roleSidebarItems, entitlement),
+            commerceAccess
+        ),
+        canCapability
     );
     // Shop-only staff: the rail draws only categories with something to show,
     // exactly as it does for a MANAGED plan, so a cashier sees one icon, not four
@@ -585,10 +595,18 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
             items: finalSidebarItems,
             sidebarCategories: roleDisplay?.sidebarCategories ?? null,
             settingsReady: roleDisplayResolved,
+            allowListOnly: roleDisplayResolved && roleDisplay?.ui?.sidebarAllowList === true,
         });
         // finalSidebarItems/roleDisplay are captured through the signatures.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [navSignature, categoriesSignature, roleDisplayResolved, data?.id, setNavSnapshot]);
+    }, [
+        navSignature,
+        categoriesSignature,
+        roleDisplayResolved,
+        roleDisplay?.ui?.sidebarAllowList,
+        data?.id,
+        setNavSnapshot,
+    ]);
 
     // Browser tab title leads with the section ("All Leads · I2CAN"), so several
     // tabs open on lists that share one page can still be told apart.

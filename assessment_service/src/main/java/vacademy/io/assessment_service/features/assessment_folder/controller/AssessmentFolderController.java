@@ -74,6 +74,25 @@ public class AssessmentFolderController {
         return ResponseEntity.ok(folderService.move(instituteId, request));
     }
 
+    /** The order students see a folder's tests in (by name, or arranged by an admin). */
+    @GetMapping("/test-order")
+    public ResponseEntity<FolderTestOrderDto> testOrder(@RequestAttribute("user") CustomUserDetails user,
+                                                        @RequestHeader(value = "clientId", required = false) String clientId,
+                                                        @RequestParam("instituteId") String instituteId,
+                                                        @RequestParam("folderId") String folderId) {
+        accessGuard.requireStaff(user, clientId, instituteId);
+        return ResponseEntity.ok(folderService.getTestOrder(instituteId, folderId));
+    }
+
+    @PostMapping("/test-order")
+    public ResponseEntity<FolderTestOrderDto> saveTestOrder(@RequestAttribute("user") CustomUserDetails user,
+                                                            @RequestHeader(value = "clientId", required = false) String clientId,
+                                                            @RequestParam("instituteId") String instituteId,
+                                                            @RequestBody FolderTestOrderRequest request) {
+        accessGuard.requireStaff(user, clientId, instituteId);
+        return ResponseEntity.ok(folderService.saveTestOrder(instituteId, request));
+    }
+
     /** Which folder each of the given assessments is in (for the folder chip on admin cards). */
     @PostMapping("/by-assessments")
     public ResponseEntity<List<AssessmentFolderLinkDto>> byAssessments(@RequestAttribute("user") CustomUserDetails user,

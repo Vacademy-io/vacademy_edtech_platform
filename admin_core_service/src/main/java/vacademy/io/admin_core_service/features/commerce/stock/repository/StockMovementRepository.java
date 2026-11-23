@@ -47,6 +47,28 @@ public interface StockMovementRepository extends JpaRepository<StockMovement, St
             """, nativeQuery = true)
     long sumInTransit(@Param("instituteId") String instituteId, @Param("packageSessionId") String packageSessionId);
 
+    /**
+     * Units of a variant that moved at a location after {@code since} (database time, like
+     * {@code created_at}): the {@code moved_since} of a count line. Served by
+     * {@code idx_stock_movement_variant_created}.
+     */
+    @Query(value = """
+            SELECT CAST(COALESCE(SUM(m.quantity_delta), 0) AS integer) FROM stock_movement m
+            WHERE m.institute_id = :instituteId AND m.location_id = :locationId
+              AND m.package_session_id = :packageSessionId AND m.created_at > :since
+            """, nativeQuery = true)
+    int sumMovedSince(@Param("instituteId") String instituteId, @Param("locationId") String locationId,
+                      @Param("packageSessionId") String packageSessionId, @Param("since") LocalDateTime since);
+
+    /** Whether any stock movement exists for a variant of the product (its measure is then fixed). */
+    @Query(value = """
+            SELECT EXISTS (SELECT 1 FROM stock_movement m
+                           JOIN commerce_variant cv ON cv.package_session_id = m.package_session_id
+                                                   AND cv.institute_id = m.institute_id
+                           WHERE m.institute_id = :instituteId AND cv.package_id = :packageId)
+            """, nativeQuery = true)
+    boolean existsForPackage(@Param("instituteId") String instituteId, @Param("packageId") String packageId);
+
     /** :locationIds is ignored when :allLocations is true (pass any non-empty list). */
     @Query("""
             SELECT m FROM StockMovement m

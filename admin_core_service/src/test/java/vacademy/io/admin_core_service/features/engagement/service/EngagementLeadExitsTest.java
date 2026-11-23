@@ -508,14 +508,14 @@ class EngagementLeadExitsTest {
                 .thenReturn(new com.fasterxml.jackson.databind.ObjectMapper().readTree(
                         "[{\"channel\":\"EMAIL\",\"email\":\"asha@example.com\",\"subject\":\"Re: Hi\","
                                 + "\"text\":\"stop\",\"wamid\":\"<m1@mail>\","
-                                + "\"repliedToActionId\":\"action1\",\"mailbox\":\"sales@academy.test\"},"
+                                + "\"repliedToActionId\":\"action1\",\"mailbox\":\"sales@academy.test\",\"autoSubmitted\":true},"
                                 + "{\"channel\":\"EMAIL\",\"email\":\"ravi@example.com\",\"subject\":\"Re: Hi\","
                                 + "\"text\":\"ok\",\"wamid\":\"<m2@mail>\"}]"));
 
         job.sweep();
-        verify(responder).handleEmailReply(INST, "asha@example.com", "Re: Hi", "stop", "<m1@mail>", "action1", "sales@academy.test");
-        // An older notification-service sends neither field: the engine keeps its old choice.
-        verify(responder).handleEmailReply(INST, "ravi@example.com", "Re: Hi", "ok", "<m2@mail>", null, null);
+        verify(responder).handleEmailReply(INST, "asha@example.com", "Re: Hi", "stop", "<m1@mail>", "action1", "sales@academy.test", true);
+        // An older notification-service sends none of these fields: the engine keeps its old choice.
+        verify(responder).handleEmailReply(INST, "ravi@example.com", "Re: Hi", "ok", "<m2@mail>", null, null, false);
         verify(responder, never()).handleReply(any(), any(), any(), any());
         verify(members, never()).promoteByPhones(any(), any(), any(), any());
     }

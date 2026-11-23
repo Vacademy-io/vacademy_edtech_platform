@@ -533,6 +533,26 @@ class CommerceOrderServiceTest {
         assertMoney("90.00", right.view().getShipping().getCharge());
     }
 
+    /**
+     * W9: less than one sale step left (4 base units of a cloth cut in 5) is sold out, not "only
+     * 0 m": OUT_OF_STOCK, with no available count. One step left still sells.
+     */
+    @Test
+    void lessThanOneStepLeftIsSoldOut() {
+        variants.put("ps-linen", variant("ps-linen", "LINEN", "20.00", 4, 10, 5));
+        CartPriceDtos.UnavailableLine line = service.priceCart(INSTITUTE, cart(line("ps-linen", 5))).view()
+                .getUnavailable().get(0);
+        assertEquals("OUT_OF_STOCK", line.getReason());
+        assertNull(line.getAvailableQuantity());
+
+        variants.put("ps-linen", variant("ps-linen", "LINEN", "20.00", 9, 10, 5));
+        CartPriceDtos.UnavailableLine some = service.priceCart(INSTITUTE, cart(line("ps-linen", 10))).view()
+                .getUnavailable().get(0);
+        assertEquals("INSUFFICIENT_STOCK", some.getReason(), "one step left: a smaller length is offered");
+        assertEquals(5, some.getAvailableQuantity());
+        assertTrue(service.priceCart(INSTITUTE, cart(line("ps-linen", 5))).view().getUnavailable().isEmpty());
+    }
+
     @Test
     void twoLinesOfOneVariantCannotTogetherTakeMoreThanTheStock() {
         variants.put("ps-few", variant("ps-few", "FEW", "100.00", 3, 1, 1));

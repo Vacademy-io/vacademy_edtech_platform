@@ -117,5 +117,9 @@
   },
   "nav": {
     "allPages": "All pages"
+  },
+  "neon": {
+    "nextMission": "Next mission",
+    "firstMission": "First mission"
   }
 }

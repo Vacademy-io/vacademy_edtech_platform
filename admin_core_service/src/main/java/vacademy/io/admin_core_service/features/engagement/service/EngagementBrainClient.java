@@ -117,7 +117,17 @@ public class EngagementBrainClient {
     public record StatusOption(String key, String label) {}
 
     /** An approved WhatsApp template the model may choose from (never invent one). */
-    public record TemplateOption(String name, String body, List<String> variableNames, String language) {}
+    /**
+     * An approved template the brain may choose. {@code variableSources} ({variable: source}, see
+     * TemplateVariableSources) is never shown to the model: the server uses it to fill a value the
+     * model left out from the person's own data.
+     */
+    public record TemplateOption(String name, String body, List<String> variableNames, String language,
+                                 Map<String, String> variableSources) {
+        public TemplateOption(String name, String body, List<String> variableNames, String language) {
+            this(name, body, variableNames, language, Map.of());
+        }
+    }
 
     public Decision decide(EngagementEngine engine, String compiledPrompt,
                            Map<String, String> dataBlocks, Instant now,

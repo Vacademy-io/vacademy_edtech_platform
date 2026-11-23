@@ -15,16 +15,21 @@
   <true/>
   <key>com.apple.security.files.downloads.read-write</key>
   <true/>
-  <!-- Microphone ONLY, for the AI assistant's voice input (useVoiceRecorder ->
-       getUserMedia({audio}) in src/hooks/useVoiceRecorder.ts, reached from the
-       chatbot mic button). There is deliberately NO com.apple.security.device.camera:
-       nothing in this app opens a video stream — the webcam-proctoring hook
-       (src/hooks/proctoring/useCamDetection.ts) is commented out, and live classes
-       (BBB/Zoom) are handed to the default browser by setup.ts's
-       setWindowOpenHandler, so they never capture inside the app. Apple rejected
-       build 4 under Guideline 2.4.5(i) for exactly that unused camera key
-       (2026-08-26); do not add it back without shipping in-app video first. -->
+  <!-- Microphone: live classes (BBB inside the app, src/routes/study-library/live-class/
+       classroom/) and the AI assistant's voice input (src/hooks/useVoiceRecorder.ts). -->
   <key>com.apple.security.device.audio-input</key>
+  <true/>
+  <!-- Camera: live classes now run INSIDE the app (BBB in an iframe, getUserMedia({video})
+       when the learner turns the camera on). History: Apple rejected build 4 under
+       Guideline 2.4.5(i) (2026-08-26) for this key while nothing used the camera; it is
+       back only because in-app video ships with it. Do not remove the in-app class and
+       keep this key — that recreates the rejection. -->
+  <key>com.apple.security.device.camera</key>
+  <true/>
+  <!-- WebRTC (live-class audio/video) binds local UDP sockets for ICE and receives media
+       on them. network.client only covers outbound traffic; binding/inbound needs
+       network.server under the App Sandbox. No listening service is exposed. -->
+  <key>com.apple.security.network.server</key>
   <true/>
   <!-- Bundle id io.zoeedtech.app on team 7XKD5M7288 (Saurabh Kumar). This is the
        SAME bundle id as the ZOE Online School iOS app, so the Mac build joins the

@@ -150,6 +150,7 @@
 			<string>
 				remote-notification
 			</string>
+			<string>audio</string>
 		</array>
 		<!-- Allow querying/opening the Zoom app via custom URL schemes
 		     (AppLauncher.canOpenUrl needs these declared on iOS) -->

@@ -250,15 +250,92 @@ export const startTutorDemo = async (params: {
   topicKey: string;
   language?: TutorLanguage;
   mode: "VOICE" | "TEXT";
+  /** Tutezy Studio: the kiosk or visitor code (lifts the per-visitor limit for the kiosk). */
+  studioCode?: string;
 }): Promise<{ token: string; minutes: number; boot: TutorStartResponse }> => {
   const res = await guestAxiosInstance.post(`${BASE}/demo/start`, {
     name: params.name,
     topic_key: params.topicKey,
     language: params.language,
     mode: params.mode,
+    studio_code: params.studioCode,
   });
   return res.data;
 };
+
+// ── Tutezy Studio: a lesson from any topic, PDF or YouTube link (stall kiosk) ──
+
+export interface TutorStudioConfig {
+  role: "kiosk" | "visitor";
+  minutes: number;
+  event: string;
+  languages: TutorLanguage[];
+  made: number;
+  avg_seconds: number | null;
+  recent: Array<{ title: string; kind: string; language: string }>;
+  /** Kiosk only: the link (with the visitor code) shown as a QR for phones. */
+  visitor_link?: string | null;
+}
+
+export type TutorStudioKind = "topic" | "text" | "youtube" | "pdf";
+
+export interface TutorStudioJob {
+  id: string;
+  status: "QUEUED" | "WRITING" | "BUILDING" | "READY" | "REJECTED" | "FAILED";
+  kind: TutorStudioKind;
+  title: string | null;
+  language: TutorLanguage;
+  topic_key: string | null;
+  error: string | null;
+  seconds: number | null;
+  elapsed: number;
+}
+
+export const getTutorStudioConfig = async (code: string): Promise<TutorStudioConfig> => {
+  const res = await guestAxiosInstance.get(`${BASE}/studio/config`, { params: { code } });
+  return res.data;
+};
+
+export const createTutorStudioJob = async (params: {
+  code: string;
+  kind: TutorStudioKind;
+  text?: string;
+  file?: File;
+  name: string;
+  language: TutorLanguage;
+  org?: string;
+  phone?: string;
+}): Promise<{ job_id: string }> => {
+  if (params.kind === "pdf" && params.file) {
+    const form = new FormData();
+    form.append("file", params.file);
+    form.append("code", params.code);
+    form.append("name", params.name);
+    form.append("language", params.language);
+    if (params.org) form.append("org", params.org);
+    if (params.phone) form.append("phone", params.phone);
+    const res = await guestAxiosInstance.post(`${BASE}/studio/jobs/upload`, form, { headers: { "Content-Type": "multipart/form-data" } });
+    return res.data;
+  }
+  const res = await guestAxiosInstance.post(`${BASE}/studio/jobs`, {
+    code: params.code,
+    kind: params.kind,
+    text: params.text,
+    name: params.name,
+    language: params.language,
+    org: params.org || undefined,
+    phone: params.phone || undefined,
+  });
+  return res.data;
+};
+
+export const getTutorStudioJob = async (jobId: string): Promise<TutorStudioJob> => {
+  const res = await guestAxiosInstance.get(`${BASE}/studio/jobs/${jobId}`);
+  return res.data;
+};
+
+/** An SVG QR code for one of our own https links, drawn by the server. */
+export const tutorStudioQrUrl = (link: string): string => `${BASE}/studio/qr?u=${encodeURIComponent(link)}`;
 
 /** Guest lessons: the Spatius token for the demo avatar, authenticated with the guest JWT. */
 export const getTutorDemoAvatarToken = async (tutorSessionId: string, guestToken: string): Promise<TutorAvatarToken> => {

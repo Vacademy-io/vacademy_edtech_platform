@@ -14,11 +14,15 @@ costs one cheap query, not 86 embedding calls, on every restart.
 
 Ingestion is under the product-wide sentinel institute
 ``HELP_KNOWLEDGE_INSTITUTE_ID`` (one copy serves every institute; the help tool's
-executor searches it). Idempotent: delete-then-insert.
+executor searches it).
 
-Single-replica assumption: ai-service runs one replica, so we don't guard the
-delete+insert with a cross-process lock. If scaled out, add a Postgres advisory
-lock around ``sync_help_corpus`` (held on one connection for the full run).
+Each entry is replaced on its own: its embedding is computed first, then its old
+rows are deleted and the new ones inserted in one transaction, under a
+transaction-scoped advisory lock on the entry. Searches therefore always find
+every entry (old or new text) while a sync runs, and replicas that start at the
+same time cannot leave two copies of an entry. Entries no longer in the seed are
+removed at the end. The up-to-date check counts distinct entries as well as
+rows, so stray copies are cleaned up by the next sync.
 """
 from __future__ import annotations
 
@@ -34,7 +38,6 @@ from sqlalchemy import text
 from ..db import db_session
 from .api_key_resolver import ApiKeyResolver
 from .embedding_service import EmbeddingService
-from .rag_service import RAGService
 from .assistant_tool_registry import HELP_KNOWLEDGE_INSTITUTE_ID, _StaticKeyResolver
 
 logger = logging.getLogger(__name__)
@@ -67,44 +70,104 @@ def _corpus_hash(entries: List[Dict[str, Any]]) -> str:
     ).hexdigest()
 
 
-def _read_marker() -> Tuple[Any, int]:
-    """Return (stored corpus_version, row count) for the sentinel help corpus."""
+def _entry_key(entry: Dict[str, Any]) -> str:
+    return str(entry.get("id") or entry.get("task") or "")
+
+
+def _usable(entries: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Entries with an id and some text, the last one winning when an id repeats."""
+    by_key: Dict[str, Dict[str, Any]] = {}
+    for entry in entries:
+        key = _entry_key(entry)
+        if key and (entry.get("content_text") or "").strip():
+            by_key[key] = entry
+    return list(by_key.values())
+
+
+def _read_marker() -> Tuple[Any, int, int]:
+    """(stored corpus_version, distinct entries, duplicated chunks) for the sentinel help corpus."""
     with db_session() as db:
         row = db.execute(
             text(
-                "SELECT meta_data->>'corpus_version' AS v, count(*) AS c "
+                "SELECT max(meta_data->>'corpus_version') AS v, "
+                "count(DISTINCT meta_data->>'corpus_version') AS versions, "
+                "count(*) - count(DISTINCT (source_id, chunk_index)) AS dup, count(DISTINCT source_id) AS d "
                 "FROM content_embeddings "
-                "WHERE institute_id = :i AND source_type = 'help_knowledge' "
-                "GROUP BY meta_data->>'corpus_version' ORDER BY c DESC LIMIT 1"
+                "WHERE institute_id = :i AND source_type = 'help_knowledge'"
             ),
             {"i": HELP_KNOWLEDGE_INSTITUTE_ID},
         ).first()
-    return (row[0], row[1]) if row else (None, 0)
+    if not row or not row[3]:
+        return (None, 0, 0)
+    # Rows from more than one version mean a sync did not finish: report no version.
+    return (row[0] if row[1] == 1 else None, int(row[3]), int(row[2]))
+
+
+_INSERT_SQL = text(
+    "INSERT INTO content_embeddings (id, institute_id, source_type, source_id, content_text, "
+    "chunk_index, embedding, meta_data, created_at, updated_at) "
+    "VALUES (gen_random_uuid(), :i, 'help_knowledge', :sid, :content_text, :chunk_index, "
+    "CAST(:embedding AS vector), CAST(:meta_data AS jsonb), NOW(), NOW())"
+)
+
+
+def _replace_entry(source_id: str, chunks: List[Tuple[int, str, List[float]]], metadata: Dict[str, Any]) -> None:
+    """Swap one entry's rows for the new chunks in a single transaction."""
+    with db_session() as db:
+        try:
+            db.execute(
+                text("SELECT pg_advisory_xact_lock(hashtext('help_knowledge:' || :sid))"),
+                {"sid": source_id},
+            )
+            db.execute(
+                text(
+                    "DELETE FROM content_embeddings "
+                    "WHERE institute_id = :i AND source_type = 'help_knowledge' AND source_id = :sid"
+                ),
+                {"i": HELP_KNOWLEDGE_INSTITUTE_ID, "sid": source_id},
+            )
+            for index, chunk, embedding in chunks:
+                db.execute(_INSERT_SQL, {
+                    "i": HELP_KNOWLEDGE_INSTITUTE_ID,
+                    "sid": source_id,
+                    "content_text": chunk,
+                    "chunk_index": index,
+                    "embedding": str(embedding),
+                    "meta_data": json.dumps(metadata),
+                })
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+
+
+def _remove_stale(keep: List[str]) -> int:
+    """Delete help rows whose entry is no longer in the seed."""
+    with db_session() as db:
+        result = db.execute(
+            text(
+                "DELETE FROM content_embeddings "
+                "WHERE institute_id = :i AND source_type = 'help_knowledge' "
+                "AND NOT (source_id = ANY(:keep))"
+            ),
+            {"i": HELP_KNOWLEDGE_INSTITUTE_ID, "keep": keep},
+        )
+        db.commit()
+        return int(result.rowcount or 0)
 
 
 async def _ingest(entries: List[Dict[str, Any]], version: str) -> int:
-    """Delete-then-insert the corpus under the sentinel, stamping the version."""
+    """Replace each entry in place, then drop entries that left the seed."""
     with db_session() as db:
         keys = ApiKeyResolver(db).resolve_keys(
             institute_id=HELP_KNOWLEDGE_INSTITUTE_ID, user_id=None
         )
-
-    with db_session() as db:
-        db.execute(
-            text(
-                "DELETE FROM content_embeddings "
-                "WHERE institute_id = :i AND source_type = 'help_knowledge'"
-            ),
-            {"i": HELP_KNOWLEDGE_INSTITUTE_ID},
-        )
-        db.commit()
+    embedder = EmbeddingService(_StaticKeyResolver(keys))
 
     ok = 0
     for entry in entries:
-        entry_id = entry.get("id") or entry.get("task")
+        entry_id = _entry_key(entry)
         content = (entry.get("content_text") or "").strip()
-        if not entry_id or not content:
-            continue
         metadata = {
             "task": entry.get("task"),
             "role": entry.get("role") or "any",
@@ -113,25 +176,27 @@ async def _ingest(entries: List[Dict[str, Any]], version: str) -> int:
             "corpus_version": version,
         }
         try:
-            with db_session() as db:
-                rag = RAGService(db, EmbeddingService(_StaticKeyResolver(keys)))
-                count = await rag.ingest_content(
-                    content_text=content,
-                    source_type="help_knowledge",
-                    source_id=str(entry_id),
-                    institute_id=HELP_KNOWLEDGE_INSTITUTE_ID,
-                    metadata=metadata,
-                )
-            if count > 0:
-                ok += 1
+            pieces = embedder.chunk_text(content)
+            vectors = await embedder.embed_batch(pieces, HELP_KNOWLEDGE_INSTITUTE_ID)
+            chunks = [(i, piece, vec) for i, (piece, vec) in enumerate(zip(pieces, vectors)) if vec]
+            if not chunks:
+                # Keep the old text searchable rather than leave the entry empty.
+                logger.warning("help corpus: no embedding for %s; kept the previous copy", entry_id)
+                continue
+            _replace_entry(entry_id, chunks, metadata)
+            ok += 1
         except Exception as e:  # noqa: BLE001
             logger.warning("help corpus: failed to ingest %s: %s", entry_id, e)
+    if ok == len(entries):
+        removed = _remove_stale([_entry_key(e) for e in entries])
+        if removed:
+            logger.info("help corpus: removed %d rows of entries no longer in the seed", removed)
     return ok
 
 
 async def sync_help_corpus(force: bool = False) -> None:
     """Sync the deployed corpus to the seed file; no-op when already current."""
-    entries = load_seed()
+    entries = _usable(load_seed())
     if not entries:
         logger.info("help corpus: no seed at %s; nothing to sync", SEED_PATH)
         return
@@ -139,13 +204,13 @@ async def sync_help_corpus(force: bool = False) -> None:
     version = _corpus_hash(entries)
     if not force:
         try:
-            stored, count = _read_marker()
+            stored, distinct, duplicated = _read_marker()
         except Exception as e:  # noqa: BLE001
             logger.warning("help corpus: could not read version marker (%s); re-ingesting", e)
-            stored, count = None, -1
-        if stored == version and count == len(entries):
+            stored, distinct, duplicated = None, -1, -1
+        if stored == version and distinct == len(entries) and duplicated == 0:
             logger.info(
-                "help corpus: up to date (%d entries, v=%s)", count, version[:12]
+                "help corpus: up to date (%d entries, v=%s)", distinct, version[:12]
             )
             return
 

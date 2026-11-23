@@ -8,6 +8,12 @@ export interface SignupContext {
     plan?: string;
     source?: string;
     campaign?: string;
+    /** The visit's utm tags from the product's website; the lead keeps them beside source. */
+    utm_source?: string;
+    utm_medium?: string;
+    utm_campaign?: string;
+    utm_content?: string;
+    utm_term?: string;
 }
 
 /** A product's sign-up screen, as set in the super-admin portal. */
@@ -17,6 +23,12 @@ export interface SignupProductConfig {
     trial_days: number;
     logo_url?: string | null;
     app_path: string;
+    /** The visitor proves a phone number with a WhatsApp code before the account exists. */
+    phone_verification_required?: boolean;
+    /** The form does not ask how many teachers there are. */
+    hide_teachers?: boolean;
+    /** "What kind of business" choices; absent = the institute types. */
+    institute_types?: string[] | null;
 }
 
 export const fetchSignupConfig = async (product: string): Promise<SignupProductConfig> => {
@@ -52,10 +64,35 @@ export interface SelfSignupDetails {
     institute_type: string;
     city: string;
     state: string;
-    teachers: number;
+    teachers?: number;
     /** "Buy <plan>" sign-up: no free trial, the app opens on that plan's payment. */
     buy?: string;
 }
+
+/** Sends a WhatsApp code to the phone; needs the email proof from the step before. */
+export const requestPhoneOtp = async (
+    product: string,
+    signupToken: string,
+    phone: string
+): Promise<void> => {
+    await axios.post(`${API}/request-phone-otp`, { product, signup_token: signupToken, phone });
+};
+
+/** Checks the WhatsApp code; the new token carries the email and the phone. */
+export const verifyPhoneOtp = async (
+    product: string,
+    signupToken: string,
+    phone: string,
+    otp: string
+): Promise<string> => {
+    const { data } = await axios.post<{ signup_token: string }>(`${API}/verify-phone-otp`, {
+        product,
+        signup_token: signupToken,
+        phone,
+        otp,
+    });
+    return data.signup_token;
+};
 
 export interface SignupTokens {
     accessToken: string;
@@ -109,6 +146,11 @@ export const startDemo = async (
         product: context.product,
         source: context.source,
         campaign: context.campaign,
+        utm_source: context.utm_source,
+        utm_medium: context.utm_medium,
+        utm_campaign: context.utm_campaign,
+        utm_content: context.utm_content,
+        utm_term: context.utm_term,
         ...details,
     });
     return data;

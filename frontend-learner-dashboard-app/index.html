@@ -3,6 +3,29 @@
   <head>
     <meta charset="UTF-8" />
     <script>
+      // In-app live class exit. BBB sends learners to its logoutURL when they leave
+      // or the class ends; for in-app classes that URL carries vxBbbExit=1. Inside
+      // the class frame, tell the app (src/routes/study-library/live-class/classroom)
+      // where to go and stop here, instead of loading the whole portal in the frame.
+      // In a normal tab the marker is simply dropped from the address.
+      (function () {
+        try {
+          var s = new URLSearchParams(window.location.search);
+          if (s.get("vxBbbExit") !== "1") return;
+          s.delete("vxBbbExit");
+          var q = s.toString();
+          var path = window.location.pathname + (q ? "?" + q : "");
+          if (window.self !== window.top) {
+            window.parent.postMessage({ type: "vacademy:bbb-exit", path: path }, "*");
+            window.stop();
+            document.documentElement.innerHTML = "";
+            return;
+          }
+          window.history.replaceState(null, "", path + window.location.hash);
+        } catch (e) {}
+      })();
+    </script>
+    <script>
       // Sign-in hand-off: keep credentials out of the address.
       // The app reads them through src/lib/auth/arrival-tokens.ts.
       (function () {
@@ -37,6 +60,23 @@
             "",
             location.pathname + (kept ? "?" + kept : "") + location.hash
           );
+        } catch (e) {}
+      })();
+      // Order link of a shop message ("/order#l=l1.<payload>.<mac>"): the link
+      // token leaves the address before any other script runs. It is kept in
+      // memory only (never in storage), and the order page takes it once
+      // (takeOrder in src/routes/$tagName/-components/commerce/ui/OrderPage.tsx).
+      // Any other address, or a fragment of another shape, is left as it is.
+      (function () {
+        try {
+          var m = /^#l=(l1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/.exec(location.hash || "");
+          if (!m || m[1].length > 200 || !/\/order\/?$/.test(location.pathname)) return;
+          Object.defineProperty(window, "__cmxOrderLink", {
+            configurable: true,
+            writable: true,
+            value: m[1]
+          });
+          history.replaceState(history.state, "", location.pathname + location.search);
         } catch (e) {}
       })();
     </script>

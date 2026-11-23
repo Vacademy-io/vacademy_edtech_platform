@@ -12,6 +12,7 @@ import {
     type ModelCopy,
     type ModelScreen,
 } from './skin-previews';
+import { isNewerSkin } from './legacy-skin';
 
 /**
  * The learner skin choice. Each option is a card holding a small phone with
@@ -238,7 +239,7 @@ export function SkinPicker({ value, onChange, brandHex }: SkinPickerProps) {
                     <p id={`${id}-blurb`} className="mt-1 text-sm text-neutral-600">
                         {t(`learnerUi.skin.blurb.${shown}`)}
                     </p>
-                    {shown === 'fun' ? (
+                    {isNewerSkin(shown) ? (
                         <p className="mt-2 flex items-start gap-1.5 text-xs text-neutral-500">
                             <Info size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
                             {t('learnerUi.skin.funFallback')}

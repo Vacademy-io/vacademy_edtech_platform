@@ -1,5 +1,5 @@
 """
-The CRM lead write tools over MCP:
+The CRM lead write tools, over MCP and in the in-product assistant:
 
 * ``crm_lead_activity`` — log what happened with one lead (a call, a WhatsApp
   chat, a visit, a note), and schedule, move or complete its follow-ups;
@@ -27,6 +27,10 @@ Writes use crm_data's uniform two-step:
   apply re-checks the stored targets against the caller's scope and their
   state and sends exactly those.
 
+In the in-product assistant every write — the direct ones too — is one
+confirmation card built from the same preview, and the card's Confirm runs
+the same executor with the preview's token (crm_data.card_door, crm_cards).
+
 Lead-written text (notes, answers, follow-up content) comes back inside
 ``lead_content``; lead lists show phone numbers and emails masked.
 """
@@ -41,7 +45,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 from . import crm_data as cd
 from . import institute_setting_reader as isr
 from . import learner_data as ld
-from .assistant_tool_registry import ToolContext, ToolSpec
+from .assistant_tool_registry import CARD_CONFIRM_TEXT, CRM_TOPIC, ToolContext, ToolSpec, card_schema
 
 logger = logging.getLogger(__name__)
 
@@ -337,7 +341,11 @@ INTAKE_SCHEMA: Dict[str, Any] = {
             "leads with a very similar name (same once normalised, or same first and last name) submitted in the "
             "last " + str(SIMILAR_NAME_DAYS) + " days, contact masked. It is only a warning: ask the user whether "
             "it is the same person (then use that lead instead) before confirming. For an opted-out person: " + cd.OPT_OUT_READD_NOTE + " Both actions are two-step, "
-            "and new leads run the list's automations (the preview lists them). Actions:\n"
+            "and new leads run the list's automations (the preview lists them). When the preview has "
+            "acknowledgement_email.will_send, each new lead with an email address is emailed the list's "
+            "acknowledgement as soon as they are added: tell the user before confirming. A starting status that is "
+            "the institute's converted status follows its admission rule: a new lead has no course or fee plan yet, "
+            "so the preview warns (no_course_yet) or such leads are refused (course_required). Actions:\n"
             "- add_lead (list_id, name, phone and/or email, source?: MANUAL (default) | WALK_IN (someone at the "
             "front desk) | INBOUND_CALL | REFERRAL, counsellor_id? ('me' or a counsellor id from catalog; for a "
             "walk-in usually 'me'), status?, answers?, re_enquiry?).\n"
@@ -878,6 +886,97 @@ async def _log_interaction(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, 
                 done["status"] = {**_status_view(gated_status), **res}
         return done, failures
 
+    async def save_activity() -> Dict[str, Any]:
+        """The additive part (note, answers, follow-up, an ungated call outcome): the result so far, or an error."""
+        out: Dict[str, Any] = {"lead": who, "saved": {}}
+        # telephonyCallLogId is the key the dashboard's own call-log notes carry.
+        metadata = {"outcome": outcome, "telephonyCallLogId": call_id or None,
+                    "student_response": fields.get("student_response")}
+        title = f"{cd.ACTIVITY_KINDS[kind][1]}: {outcome}" if outcome else None
+        event = await cd.write_activity(ctx, lead, kind, note or outcome, {k: v for k, v in metadata.items() if v},
+                                        title=title)
+        if cd.is_error(event):
+            return event
+        out["saved"]["activity"] = event
+        failed_: List[Dict[str, Any]] = []
+        if answers:
+            resp = await cd.ac(ctx, "PUT", PROFILE_PATH.format(rid=lead["lead_id"]),
+                               body=_answers_body(lead["lead_id"], answers))
+            if cd.is_error(resp):
+                failed_.append({"what": "answers", **_rejected(resp, "The answers")})
+            else:
+                out["saved"]["answers"] = cd.lead_content([{"question": a["label"], "answer": a["value"]}
+                                                           for a in answers])
+        if follow_at:
+            fu = await _create_followup(ctx, lead, follow_at, follow_note or note[:_FOLLOWUP_NOTE_MAX], fields)
+            if cd.is_error(fu):
+                failed_.append({"what": "followup", **fu})
+            else:
+                out["saved"]["followup"] = fu
+        if disp and not gated_disp:
+            res = await _apply_disposition(ctx, call_id, disp, note, follow_at)
+            if cd.is_error(res):
+                failed_.append({"what": "call_outcome", **res})
+            else:
+                out["saved"]["call_outcome"] = res
+        if notes:
+            out["notes"] = notes
+        if held:
+            out["status"] = held_view
+        elif status and not gated_status:
+            out["status"] = {**_status_view(status), "unchanged": True}
+        out["_failed"] = failed_
+        return out
+
+    if cd.card_door(ctx):
+        # The in-product assistant: the whole interaction is one card, applied together on Confirm.
+        async def card_preview() -> Dict[str, Any]:
+            view: Dict[str, Any] = {"lead": who, "kind": kind,
+                                    "note": cd.lead_content(note) if note else None, "outcome": outcome or None}
+            if answers:
+                view["answers"] = cd.lead_content([{"question": a["label"], "answer": a["value"]} for a in answers])
+            if follow_at:
+                view["followup"] = {"at": cd.iso(follow_at), "at_local": _local(ctx, follow_at),
+                                    "note": cd.lead_content(follow_note) if follow_note else None}
+            if gated_status:
+                view["status_change"] = {"from": lead.get("status_key"), "to": _status_view(gated_status)}
+            if disp:
+                view["call_outcome"] = disp["disposition_key"]
+            if gated_status or gated_disp:
+                autos = await cd.automations_for(ctx, cd.EVENT_STATUS_CHANGED, audience_id=lead.get("list_id"))
+                view["automations"] = _automation_view(autos)
+            if held:
+                view["status_not_changed"] = held_view
+            elif status and not gated_status:
+                view["status"] = {**_status_view(status), "unchanged": True}
+            if no_course:
+                view["no_course_yet"] = no_course
+            if notes:
+                view["notes"] = notes
+            return view
+
+        async def card_apply(_summary: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+            out = await save_activity()
+            if cd.is_error(out):
+                return out
+            failed_ = out.pop("_failed")
+            if gated_status or gated_disp:
+                done, failures = await apply_gated()
+                out["saved"].update(done)
+                failed_ += failures
+            if no_course:
+                out["no_course_yet"] = no_course
+            if failed_:
+                out["failed"] = failed_
+            out["done"] = not failed_
+            return out
+
+        card_request = {"args": {k: v for k, v in args.items() if k not in ("user_id", "institute_id",
+                                                                          "confirm_token")},
+                        **request}
+        return await cd.preview_or_apply(ctx, args, purpose=purpose, confirm="edit_token", request=card_request,
+                                         state=state, preview=card_preview, apply=card_apply)
+
     if args.get("confirm_token"):
         if not (gated_status or gated_disp):
             return cd.err("nothing_to_confirm", message="Nothing in this request waits for confirmation (the status "
@@ -896,42 +995,10 @@ async def _log_interaction(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, 
         return result
 
     # ── the additive part, applied now
-    out: Dict[str, Any] = {"lead": who, "saved": {}}
-    # telephonyCallLogId is the key the dashboard's own call-log notes carry.
-    metadata = {"outcome": outcome, "telephonyCallLogId": call_id or None,
-                "student_response": fields.get("student_response")}
-    title = f"{cd.ACTIVITY_KINDS[kind][1]}: {outcome}" if outcome else None
-    event = await cd.write_activity(ctx, lead, kind, note or outcome, {k: v for k, v in metadata.items() if v},
-                                    title=title)
-    if cd.is_error(event):
-        return event
-    out["saved"]["activity"] = event
-    failed: List[Dict[str, Any]] = []
-    if answers:
-        resp = await cd.ac(ctx, "PUT", PROFILE_PATH.format(rid=lead["lead_id"]),
-                           body=_answers_body(lead["lead_id"], answers))
-        if cd.is_error(resp):
-            failed.append({"what": "answers", **_rejected(resp, "The answers")})
-        else:
-            out["saved"]["answers"] = cd.lead_content([{"question": a["label"], "answer": a["value"]} for a in answers])
-    if follow_at:
-        fu = await _create_followup(ctx, lead, follow_at, follow_note or note[:_FOLLOWUP_NOTE_MAX], fields)
-        if cd.is_error(fu):
-            failed.append({"what": "followup", **fu})
-        else:
-            out["saved"]["followup"] = fu
-    if disp and not gated_disp:
-        res = await _apply_disposition(ctx, call_id, disp, note, follow_at)
-        if cd.is_error(res):
-            failed.append({"what": "call_outcome", **res})
-        else:
-            out["saved"]["call_outcome"] = res
-    if notes:
-        out["notes"] = notes
-    if held:
-        out["status"] = held_view
-    elif status and not gated_status:
-        out["status"] = {**_status_view(status), "unchanged": True}
+    out = await save_activity()
+    if cd.is_error(out):
+        return out
+    failed: List[Dict[str, Any]] = out.pop("_failed")
     if gated_status or gated_disp:
         autos = await cd.automations_for(ctx, cd.EVENT_STATUS_CHANGED, audience_id=lead.get("list_id"))
         if not autos:
@@ -960,6 +1027,20 @@ async def _log_interaction(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, 
     return out
 
 
+def _call_request(args: Dict[str, Any], **resolved: Any) -> Dict[str, Any]:
+    """What a confirmation binds for a one-lead write: the call's arguments and the ids they resolved to."""
+    return {"args": {k: v for k, v in args.items() if k not in ("user_id", "institute_id", "confirm_token")},
+            **resolved}
+
+
+async def _card_lead(ctx: ToolContext, lead_id: Any) -> Optional[Dict[str, Any]]:
+    """The lead a follow-up or meeting belongs to, as lists show it, for the assistant's card (None when unknown)."""
+    if not lead_id:
+        return None
+    lead = await cd.resolve_lead(ctx, lead_id=lead_id)
+    return None if cd.is_error(lead) else _lead_view(lead)
+
+
 async def _add_note(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
     note = _text(args.get("note"), _NOTE_MAX)
     if not note:
@@ -970,10 +1051,20 @@ async def _add_note(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
     lead = await _lead(ctx, args)
     if cd.is_error(lead):
         return lead
-    event = await cd.write_activity(ctx, lead, kind, note)
-    if cd.is_error(event):
-        return event
-    return {"lead": _lead_view(lead), "saved": event, "done": True}
+
+    async def preview() -> Dict[str, Any]:
+        return {"lead": _lead_view(lead), "kind": kind, "note": cd.lead_content(note)}
+
+    async def apply(_summary: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        event = await cd.write_activity(ctx, lead, kind, note)
+        if cd.is_error(event):
+            return event
+        return {"lead": _lead_view(lead), "saved": event, "done": True}
+
+    # Applies directly over MCP; a card in the in-product assistant.
+    return await cd.preview_or_apply(ctx, args, purpose=_purpose(ACTIVITY_TOOL, "add_note"), confirm="none",
+                                     request=_call_request(args, lead_id=lead["lead_id"]),
+                                     state={"lead": lead["lead_id"]}, preview=preview, apply=apply)
 
 
 async def _schedule_followup(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
@@ -987,14 +1078,30 @@ async def _schedule_followup(args: Dict[str, Any], ctx: ToolContext) -> Dict[str
     fields, problems, notes = _followup_fields(ctx, args, note)
     if problems:
         return _invalid(problems)
-    fu = await _create_followup(ctx, lead, when, note, fields)
-    if cd.is_error(fu):
-        return fu
-    out = {"lead": _lead_view(lead), "followup": fu, "done": True,
-           "automations_when_due": await _followup_automations(ctx, lead.get("list_id"))}
-    if notes:
-        out["notes"] = notes
-    return out
+
+    async def preview() -> Dict[str, Any]:
+        view: Dict[str, Any] = {"lead": _lead_view(lead),
+                                "followup": {"at": cd.iso(when), "at_local": _local(ctx, when),
+                                             "note": cd.lead_content(note) if note else None, "fields": fields},
+                                "automations_when_due": await _followup_automations(ctx, lead.get("list_id"))}
+        if notes:
+            view["notes"] = notes
+        return view
+
+    async def apply(_summary: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        fu = await _create_followup(ctx, lead, when, note, fields)
+        if cd.is_error(fu):
+            return fu
+        out = {"lead": _lead_view(lead), "followup": fu, "done": True,
+               "automations_when_due": await _followup_automations(ctx, lead.get("list_id"))}
+        if notes:
+            out["notes"] = notes
+        return out
+
+    # Applies directly over MCP; a card in the in-product assistant.
+    return await cd.preview_or_apply(ctx, args, purpose=_purpose(ACTIVITY_TOOL, "schedule_followup"), confirm="none",
+                                     request=_call_request(args, lead_id=lead["lead_id"]),
+                                     state={"lead": lead["lead_id"]}, preview=preview, apply=apply)
 
 
 async def _open_followup(ctx: ToolContext, followup_id: Any) -> Dict[str, Any]:
@@ -1021,15 +1128,37 @@ async def _reschedule_followup(args: Dict[str, Any], ctx: ToolContext) -> Dict[s
     note = _text(args.get("note"), _FOLLOWUP_NOTE_MAX)
     if note:
         body["content"] = note
-    resp = await cd.ac(ctx, "PUT", f"{FOLLOWUP_PATH}/{row['id']}", body=body)
-    if cd.is_error(resp):
-        return _rejected(resp, "The follow-up")
-    out = {"followup_id": row["id"], "lead_id": row.get("lead_id"), "from": cd.iso(row.get("schedule_time")),
-           "to": cd.iso(when), "to_local": _local(ctx, when), "done": True}
-    if str(row.get("status") or "PENDING").upper() != "PENDING":
-        out["note"] = ("This follow-up was already due, so its 'due' automations do not run again; the 'overdue' "
-                       "ones run if it passes the new time without being completed.")
-    return out
+    already_due = ("This follow-up was already due, so its 'due' automations do not run again; the 'overdue' "
+                   "ones run if it passes the new time without being completed.")
+    due = str(row.get("status") or "PENDING").upper() != "PENDING"
+
+    async def preview() -> Dict[str, Any]:
+        start = row.get("schedule_time")
+        view: Dict[str, Any] = {"lead": await _card_lead(ctx, row.get("lead_id")), "followup_id": row["id"],
+                                "from": cd.iso(start), "to": cd.iso(when), "to_local": _local(ctx, when),
+                                "note": cd.lead_content(note) if note else None}
+        start_dt = start if isinstance(start, datetime) else None
+        if start_dt is not None:
+            view["from_local"] = _local(ctx, start_dt if start_dt.tzinfo else start_dt.replace(tzinfo=timezone.utc))
+        if due:
+            view["note_on_due"] = already_due
+        return view
+
+    async def apply(_summary: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        resp = await cd.ac(ctx, "PUT", f"{FOLLOWUP_PATH}/{row['id']}", body=body)
+        if cd.is_error(resp):
+            return _rejected(resp, "The follow-up")
+        out = {"followup_id": row["id"], "lead_id": row.get("lead_id"), "from": cd.iso(row.get("schedule_time")),
+               "to": cd.iso(when), "to_local": _local(ctx, when), "done": True}
+        if due:
+            out["note"] = already_due
+        return out
+
+    # Applies directly over MCP; a card in the in-product assistant, refused when the follow-up moved since.
+    return await cd.preview_or_apply(ctx, args, purpose=_purpose(ACTIVITY_TOOL, "reschedule_followup"),
+                                     confirm="none", request=_call_request(args, followup_id=row["id"]),
+                                     state={"at": cd.iso(row.get("schedule_time")), "status": row.get("status")},
+                                     preview=preview, apply=apply)
 
 
 async def _complete_followup(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
@@ -1067,6 +1196,8 @@ async def _complete_followup(args: Dict[str, Any], ctx: ToolContext) -> Dict[str
         if follow_at:
             view["then_schedules"] = {"at": cd.iso(follow_at), "at_local": _local(ctx, follow_at),
                                       "note": cd.lead_content(follow_note) if follow_note else None}
+        if cd.card_door(ctx):
+            view["lead"] = await _card_lead(ctx, row.get("lead_id"))
         return view
 
     async def apply(summary: Optional[Dict[str, Any]]) -> Dict[str, Any]:
@@ -1872,6 +2003,85 @@ async def _intake_checks(ctx: ToolContext, args: Dict[str, Any]) -> Dict[str, An
             "scope": s}
 
 
+_RESPONDENT_EMAIL_SQL = ("SELECT a.send_respondent_email AS respondent_email_on FROM audience a\n"
+                         "WHERE a.id = :aid AND a.institute_id = :inst")
+
+
+async def _acknowledgement(ctx: ToolContext, list_id: str, emails: int, total: int = 1) -> Optional[Dict[str, Any]]:
+    """
+    Whether admin-core emails each new lead with an email address the list's acknowledgement ("thank you for
+    your response"): it does when no new-lead automation runs for the list and the list's respondent email is
+    on or unset (AudienceService.submitLead). ``emails`` = how many of the ``total`` new leads have an email address.
+    None when no new lead has one.
+    """
+    if not emails:
+        return None
+    autos = await cd.automations_for(ctx, cd.EVENT_LEAD_SUBMISSION, audience_id=list_id)
+    found, ok = cd.rows(ctx, _RESPONDENT_EMAIL_SQL, {"aid": list_id, "inst": ctx.principal.institute_id})
+    who = "The new lead" if total == 1 else f"{emails} of the new leads"
+    if any(a.get("unknown") for a in autos) or not ok or not found:
+        return {"will_send": None, "emails": emails, "message": (
+            f"{who} with an email address may get the list's acknowledgement email (whether it is sent could not "
+            "be checked). Check the list's respondent email setting in Audience Manager before confirming.")}
+    if autos:
+        return {"will_send": False, "emails": emails, "message": (
+            "No acknowledgement email: this list's new-lead automations run instead (listed under automations).")}
+    if found[0].get("respondent_email_on") is False:
+        return {"will_send": False, "emails": emails,
+                "message": "No acknowledgement email: the list's respondent email is off."}
+    return {"will_send": True, "emails": emails, "message": (
+        f"{who} will get the list's acknowledgement email (\"Thank you for submitting your response\") as soon as "
+        "they are added: this list has no new-lead automation and its respondent email is on. Tell the user before "
+        "they confirm; to avoid it, switch the list's respondent email off in Audience Manager first.")}
+
+
+async def _intake_automations(ctx: ToolContext, list_id: str, *, repeat: bool) -> Dict[str, Any]:
+    """The automations a new lead can run besides the list's new-lead ones."""
+    out: Dict[str, Any] = {"automations_when_assigned": _automation_view(
+        await cd.automations_for(ctx, cd.EVENT_ASSIGNED, audience_id=list_id))}
+    if repeat:
+        out["automations_on_repeat_enquiry"] = _automation_view(
+            await cd.automations_for(ctx, cd.EVENT_REATTEMPT, audience_id=list_id))
+    return out
+
+
+def _new_lead_no_course(label: str, count: int) -> str:
+    who = "This new lead" if count == 1 else f"{count} new leads"
+    return (f"{who} would start as {label} with no course or fee plan here: a lead added now has none yet, since "
+            "it has only just been added.")
+
+
+def _intake_admission(ctx: ToolContext, rows: List[Tuple[int, Dict[str, Any]]],
+                      labels: Dict[str, str]) -> Dict[str, Any]:
+    """
+    The admission rule for new leads that start as CONVERTED: ``{mode, rows: [row index], label}``. Every such
+    row counts as having no course (a new lead has none yet); OFF looks nothing up.
+    """
+    hits = [i for i, r in rows if r.get("lead_status_key") == CONVERTED_KEY]
+    mode = _admission_mode(ctx) if hits else "OFF"
+    if mode == "OFF":
+        return {"mode": "OFF", "rows": [], "label": None}
+    return {"mode": mode, "rows": hits, "label": labels.get(CONVERTED_KEY) or "Converted"}
+
+
+def _intake_course_required(label: str, count: int) -> Dict[str, Any]:
+    return cd.err("course_required", count=count, to={"status": CONVERTED_KEY, "label": label}, message=(
+        "Nothing was changed. " + _new_lead_no_course(label, count) + " This institute asks for one before a lead "
+        f"is moved to {label}. Add the lead with another status, then add the course or fee plan in the admin "
+        "portal and move them to " + label + "."))
+
+
+def _intake_no_course_note(label: str, count: int) -> Dict[str, Any]:
+    return {"count": count, "message": (_new_lead_no_course(label, count) + " Tell the user before they confirm: "
+                                        f"moving them to {label} without one leaves the admission without a course "
+                                        "or fees in reports.")}
+
+
+def _status_labels(statuses: Dict[str, Any]) -> Dict[str, str]:
+    return {st["status_key"]: cd.clean(st.get("label")) or st["status_key"]
+            for st in statuses.values() if isinstance(st, dict) and not cd.is_error(st) and st.get("status_key")}
+
+
 async def _check_row(ctx: ToolContext, row: Dict[str, Any], fields: List[Dict[str, Any]],
                      statuses: Dict[str, Any],
                      roster: Optional[Dict[str, str]]) -> Tuple[Optional[Dict[str, Any]], List[str]]:
@@ -1915,6 +2125,15 @@ async def _check_row(ctx: ToolContext, row: Dict[str, Any], fields: List[Dict[st
     return out, problems
 
 
+def _answer_view(fields: List[Dict[str, Any]], row: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """A row's form answers by question, as data."""
+    values = row.get("custom_field_values") or {}
+    if not values:
+        return None
+    labels = {f["field_id"]: f["label"] for f in fields}
+    return cd.lead_content([{"question": labels.get(fid, fid), "answer": v} for fid, v in values.items()])
+
+
 async def _add_lead(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
     base = await _intake_checks(ctx, args)
     if cd.is_error(base):
@@ -1924,9 +2143,13 @@ async def _add_lead(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
         roster = await cd.counsellor_roster(ctx, assignable=True)
         if cd.is_error(roster):
             return roster
-    row, problems = await _check_row(ctx, args, base["fields"], {}, roster)
+    statuses: Dict[str, Any] = {}
+    row, problems = await _check_row(ctx, args, base["fields"], statuses, roster)
     if problems:
         return _invalid(problems)
+    admission = _intake_admission(ctx, [(0, row)], _status_labels(statuses))
+    if admission["rows"] and admission["mode"] == "BLOCK":
+        return _intake_course_required(admission["label"], 1)
     person = {"phone": row["user_dto"]["mobile_number"], "email": row["user_dto"]["email"]}
     found = await _existing(ctx, [person])
     if cd.is_error(found):
@@ -1955,9 +2178,15 @@ async def _add_lead(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
                       if row.get("counsellor_id") else
                       "Estimate: the list's lead routing picks the owner (or it stays unassigned)."),
             "status": row.get("lead_status_key"),
-            "answers": cd.lead_content(row.get("custom_field_values")) if row.get("custom_field_values") else None,
+            "answers": _answer_view(base["fields"], row),
             "automations": await _automations_by_list(ctx, cd.EVENT_LEAD_SUBMISSION, [base["list"]["list_id"]]),
+            **await _intake_automations(ctx, base["list"]["list_id"], repeat=bool(blocking)),
             "_summary": {"list_id": base["list"]["list_id"], "re_enquiry": bool(blocking)}}
+        ack = await _acknowledgement(ctx, base["list"]["list_id"], 1 if row["user_dto"]["email"] else 0)
+        if ack:
+            view["acknowledgement_email"] = ack
+        if admission["rows"]:
+            view["no_course_yet"] = _intake_no_course_note(admission["label"], 1)
         view.update(similar)
         if blocking:
             view["re_enquiry_of"] = _match_report(blocking, person)
@@ -2057,6 +2286,13 @@ async def _import_leads(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any
             continue
         re_enquiries += bool(hits)
         send.append((i, row))
+    admission = _intake_admission(ctx, send, _status_labels(statuses))
+    no_course = set(admission["rows"])
+    if no_course and admission["mode"] == "BLOCK":
+        refused = _intake_course_required(admission["label"], len(no_course))["message"]
+        dropped += [{"row": i, "reason": refused} for i in sorted(no_course)]
+        send = [(i, r) for i, r in send if i not in no_course]
+        no_course = set()
     if not send:
         return cd.err("nothing_to_import", dropped=dropped[:100],
                       message="No row can be added (see dropped). Nothing was changed.",
@@ -2070,11 +2306,19 @@ async def _import_leads(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any
             "rows": [{"row": i, "name": r["user_dto"]["full_name"],
                       "phone": cd.mask_phone(r["user_dto"]["mobile_number"]),
                       "email": cd.mask_email(r["user_dto"]["email"]), "owner": r.get("counsellor_name")
-                      or r.get("counsellor_id") or "list routing", "status": r.get("lead_status_key")}
+                      or r.get("counsellor_id") or "list routing", "status": r.get("lead_status_key"),
+                      **({"no_course_yet": True} if i in no_course else {})}
                      for i, r in send[:MAX_PREVIEW_ROWS]],
             "dropped": dropped or None,
             "automations": await _automations_by_list(ctx, cd.EVENT_LEAD_SUBMISSION, [base["list"]["list_id"]]),
+            **await _intake_automations(ctx, base["list"]["list_id"], repeat=bool(re_enquiries)),
             "_summary": {"list_id": base["list"]["list_id"], "rows": indexes}}
+        ack = await _acknowledgement(ctx, base["list"]["list_id"],
+                                     sum(1 for _, r in send if r["user_dto"]["email"]), len(send))
+        if ack:
+            view["acknowledgement_email"] = ack
+        if no_course:
+            view["no_course_yet"] = _intake_no_course_note(admission["label"], len(no_course))
         if re_enquiries:
             view["re_enquiries"] = re_enquiries
         if left_out_opted:
@@ -2453,17 +2697,81 @@ async def execute_crm_lead_intake(args: Dict[str, Any], ctx: ToolContext) -> str
     return await _run(INTAKE_TOOL, args, ctx)
 
 
-def _tool(name: str, schema: Dict[str, Any], executor: Any, group: str) -> ToolSpec:
+# ── the in-product assistant's wording (same executors; the card replaces the confirm_token) ──
+
+def _reworded(schema: Dict[str, Any], *swaps: Tuple[str, str]) -> Dict[str, Any]:
+    description = schema["function"]["description"]
+    for old, new in swaps:
+        if old not in description:
+            raise ValueError(f"{schema['function']['name']}: wording to replace not found: {old[:60]}")
+        description = description.replace(old, new)
+    return card_schema(schema, description)
+
+
+_ADMISSION_RULE_CARD = (" A move to the institute's converted status follows its admission rule: when it warns, the "
+                        "card lists the people with no course or fee plan here yet and Confirm still works; when it "
+                        "requires a course, the change is refused (course_required) until one is added.")
+
+ASSISTANT_ACTIVITY_SCHEMA = card_schema(ACTIVITY_SCHEMA, (
+    "Record what happened with ONE lead and manage its follow-ups. " + _FIND_FIRST + " Actions:\n"
+    "- log_interaction (lead, kind: CALL | WHATSAPP | MEETING | NOTE | VISIT | EMAIL, note, outcome?, "
+    "next_followup_at?, followup_note?, student_response?, follow_up_mode?, next_action?, status?, answers?, "
+    "call_id?, disposition_key?): use this after any conversation — e.g. 'spoke to her, wants NEET, call back "
+    "Friday 5 pm' is ONE call: note + answers + next_followup_at. Everything in it (note, answers, follow-up, call "
+    "outcome, status) is saved together when the user confirms the card. status is a status key or label from "
+    "crm_leads catalog; a lead that crm_leads list leaves out as opted out keeps its status (the card says so). "
+    "call_id + disposition_key record a call's outcome (dispositions in crm_leads catalog)." + _ADMISSION_RULE_CARD
+    + "\n- add_note (lead, note, kind?): just a note on the lead's timeline.\n"
+    "- schedule_followup (lead, at, note?, student_response?, follow_up_mode?, next_action?).\n"
+    "- reschedule_followup (followup_id, at, note?): move an open follow-up.\n"
+    "- complete_followup (followup_id, outcome, next_followup_at?, followup_note?): marks it done — it cannot be "
+    "undone.\n"
+    "Times are ISO date-times (2026-10-17T17:00); without an offset they are read in the institute's timezone. The "
+    "follow-up fields take the institute's options (crm_leads catalog); some institutes require them, or a note. "
+    + CARD_CONFIRM_TEXT + " " + _LEAD_TEXT
+))
+ASSISTANT_EDIT_SCHEMA = _reworded(
+    EDIT_SCHEMA,
+    ("Every action is two-step. ", ""),
+    ("when it warns, the preview lists the people with no course or fee plan here yet (no_course_yet) and the "
+     "confirm still works;", "when it warns, the card lists the people with no course or fee plan here yet and "
+                             "Confirm still works;"),
+    ("For a single lead you get an edit confirm_token; for several, a single-use one (hourly limits apply). The "
+     "confirm is refused when a lead changed after the preview — preview again. " + _TWO_STEP,
+     "Changes to several leads count toward hourly limits. " + CARD_CONFIRM_TEXT),
+)
+ASSISTANT_MERGE_SCHEMA = _reworded(
+    MERGE_SCHEMA,
+    ("both actions are two-step. ", ""),
+    ("You get an edit confirm_token; the confirm is refused when either person changed after the preview — "
+     "preview again. " + _TWO_STEP, CARD_CONFIRM_TEXT),
+)
+ASSISTANT_INTAKE_SCHEMA = _reworded(
+    INTAKE_SCHEMA,
+    ("Both actions are two-step, and new leads run the list's automations (the preview lists them).",
+     "New leads run the list's automations (the card lists them)."),
+    ("When the preview has acknowledgement_email.will_send, each new lead",
+     "When the card warns about the acknowledgement email, each new lead"),
+    ("so the preview warns (no_course_yet) or such leads are refused", "so the card warns or such leads are refused"),
+    (_TWO_STEP, CARD_CONFIRM_TEXT),
+)
+
+
+def _tool(name: str, schema: Dict[str, Any], mcp_schema: Dict[str, Any], executor: Any, group: str) -> ToolSpec:
+    # Both doors. MCP: the two-step with a confirm_token (mcp_schema). The in-product assistant: the same
+    # executor, confirmed on the assistant's card (crm_cards), offered on CRM pages; opt-in on both doors.
     return ToolSpec(name=name, schema=schema, executor=executor, required_permission=None, setting_key=group,
-                    default_enabled=False, default_roles=None, phase=3, mode="WRITE", mcp_only=True,
-                    module_feature=LEADS_FEATURE)
+                    default_enabled=False, default_roles=None, phase=3, mode="WRITE",
+                    module_feature=LEADS_FEATURE, topic=CRM_TOPIC, opt_in=True, card_bridge=True,
+                    mcp_schema=mcp_schema)
 
 
 LEAD_EDIT_TOOLS: Dict[str, ToolSpec] = {
-    ACTIVITY_TOOL: _tool(ACTIVITY_TOOL, ACTIVITY_SCHEMA, execute_crm_lead_activity, ACTIVITY_GROUP),
-    EDIT_TOOL: _tool(EDIT_TOOL, EDIT_SCHEMA, execute_crm_lead_edit, EDIT_GROUP),
-    MERGE_TOOL: _tool(MERGE_TOOL, MERGE_SCHEMA, execute_crm_lead_merge, MERGE_GROUP),
-    INTAKE_TOOL: _tool(INTAKE_TOOL, INTAKE_SCHEMA, execute_crm_lead_intake, INTAKE_GROUP),
+    ACTIVITY_TOOL: _tool(ACTIVITY_TOOL, ASSISTANT_ACTIVITY_SCHEMA, ACTIVITY_SCHEMA, execute_crm_lead_activity,
+                         ACTIVITY_GROUP),
+    EDIT_TOOL: _tool(EDIT_TOOL, ASSISTANT_EDIT_SCHEMA, EDIT_SCHEMA, execute_crm_lead_edit, EDIT_GROUP),
+    MERGE_TOOL: _tool(MERGE_TOOL, ASSISTANT_MERGE_SCHEMA, MERGE_SCHEMA, execute_crm_lead_merge, MERGE_GROUP),
+    INTAKE_TOOL: _tool(INTAKE_TOOL, ASSISTANT_INTAKE_SCHEMA, INTAKE_SCHEMA, execute_crm_lead_intake, INTAKE_GROUP),
 }
 
 

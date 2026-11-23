@@ -241,6 +241,8 @@ public class WorkflowCatalogController {
         eventMeta.put("INVITE_FORM_FILL", new String[]{"Invite Form Filled", "Fires when a learner completes an invite enrollment form", "Invites", "ENROLL_INVITE"});
         // CRM
         eventMeta.put("MEMBERSHIP_EXPIRY", new String[]{"Membership Expiry", "Fires when a user's membership/subscription is about to expire", "CRM", "USER_PLAN"});
+        eventMeta.put("MEMBERSHIP_PAYMENT_DUE", new String[]{"Membership Payment Reminder", "Fires on each step of the payment reminder schedule (Settings → Payment reminders): before, on and after a membership's due date. Carries amount, currency, dueDate, daysOverdue, stage and payLink", "CRM", "USER_PLAN"});
+        eventMeta.put("MEMBERSHIP_PAYMENT_RED_LIST", new String[]{"Membership Payment Red List", "Fires once when a membership has stayed unpaid for the red-list days set in Payment reminders; use it to alert staff", "CRM", "USER_PLAN"});
         eventMeta.put("ENROLLMENT_REPORTS", new String[]{"Enrollment Reports", "Fires periodically for generating enrollment reports", "CRM", "INSTITUTE"});
         // Lead TAT / Follow-up SLA (emit-only; the workflow you bind here decides the channel/template/recipients)
         eventMeta.put("LEAD_ASSIGNED_TO_COUNSELOR", new String[]{"Lead Assigned to Counselor", "Fires when a lead is assigned or reassigned to a counselor", "CRM", "AUDIENCE"});
@@ -261,6 +263,17 @@ public class WorkflowCatalogController {
         eventMeta.put("ASSESSMENT_REATTEMPT_GRANTED", new String[]{"Assessment Reattempt Granted", "Fires for each learner an admin grants extra attempts to", "Assessment", "ASSESSMENT"});
         eventMeta.put("ASSESSMENT_REATTEMPT_REQUESTED", new String[]{"Assessment Reattempt Requested", "Fires when a learner asks for another attempt or more time — notify staff", "Assessment", "ASSESSMENT"});
         eventMeta.put("ASSESSMENT_AI_EVALUATION_COMPLETED", new String[]{"AI Copy Check Completed", "Fires when a bulk AI check of uploaded answer copies finishes — notify the coordinator, with counts of checked / failed / copies needing review", "Assessment", "ASSESSMENT"});
+
+        // Commerce (shop orders): an ACTIVE workflow on one of these replaces the shop's default buyer message
+        eventMeta.put("ORDER_CONFIRMED", new String[]{"Shop Order Confirmed", "Fires when a shop order is paid or accepted (cash on delivery, staff order)", "Shop", "INSTITUTE"});
+        eventMeta.put("COD_CONFIRMATION_NEEDED", new String[]{"Shop COD Order Needs Confirmation", "Fires when a cash-on-delivery order above the confirmation amount is placed", "Shop", "INSTITUTE"});
+        eventMeta.put("ORDER_SHIPPED", new String[]{"Shop Order Shipped", "Fires when a shipment of a shop order is marked shipped", "Shop", "INSTITUTE"});
+        eventMeta.put("ORDER_DELIVERED", new String[]{"Shop Order Delivered", "Fires when a shipment of a shop order is marked delivered", "Shop", "INSTITUTE"});
+        eventMeta.put("ORDER_CANCELLED", new String[]{"Shop Order Cancelled", "Fires when a confirmed or paid shop order is cancelled", "Shop", "INSTITUTE"});
+        eventMeta.put("ORDER_RTO", new String[]{"Shop Parcel Returning", "Fires when the courier sends a shop parcel back (return to origin)", "Shop", "INSTITUTE"});
+        eventMeta.put("RETURN_APPROVED", new String[]{"Shop Return Approved", "Fires when staff approve a return of a shop order", "Shop", "INSTITUTE"});
+        eventMeta.put("REFUND_PROCESSED", new String[]{"Shop Refund Processed", "Fires when a refund of a shop order is paid out", "Shop", "INSTITUTE"});
+        eventMeta.put("POS_BILL_ISSUED", new String[]{"Shop Counter Bill Issued", "Fires when a counter sale's bill is issued to a buyer", "Shop", "INSTITUTE"});
 
         List<CatalogItemDTO> events = new ArrayList<>();
         for (WorkflowTriggerEvent event : WorkflowTriggerEvent.values()) {

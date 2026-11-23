@@ -110,6 +110,16 @@ USE_CASES: Tuple[UseCase, ...] = (
         ),
     ),
     UseCase(
+        "demo_guide", "Demo guide (AI guide on the product demo page)", GROUP_ADMIN, "ai_service", KIND_CHAT,
+        "Talks with visitors of the public product demo (demo.vacademy.io), picks the product tours to play and "
+        "takes their contact details. Internal: usage is recorded against the lead institute and never charged.",
+        (_AI + "demo_guide/engine.py:llm_stream", _AI + "demo_guide/settings.py:DEFAULT_MODEL"),
+        held_reason=(
+            "Spoken replies on a public page: the first sentence must arrive fast, so it needs a model whose "
+            "reasoning can be turned off (same default as site_assistant). Bulk 'all chat features to GLM' skips it"
+        ),
+    ),
+    UseCase(
         "knowledge_base_qa", "Knowledge base Q&A + paper blueprint", GROUP_LEARNER, "ai_service", KIND_CHAT,
         "Grounded answers from an institute's knowledge base, and the KB question-paper blueprint.",
         (_AI + "services/kb/retrieval.py:37", _AI + "services/kb/paper.py:50"),
@@ -229,6 +239,12 @@ USE_CASES: Tuple[UseCase, ...] = (
         "Re-reads cropped handwritten marks — affects student marks",
         (_AI + "services/copy_check/deduction_check.py:41",),
         seeded_in_release_2=True,
+    ),
+    UseCase(
+        "copy_check_scan_header", "Scan Station name-field read", GROUP_ASSESSMENT, "ai_service", KIND_VISION,
+        "Reads the printed Name field at the top of scanned answer-sheet pages to find where each copy starts "
+        "(Scan Station, off by default). Falls back to the copy-check default model.",
+        (_AI + "services/copy_check/scan/header_read.py:99",),
     ),
     UseCase(
         "question_metadata", "Question metadata tagging", GROUP_ASSESSMENT, "ai_service", KIND_CHAT,

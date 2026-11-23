@@ -641,10 +641,13 @@ class CommerceM1DatabaseProofIT {
                 "SELECT contype::text AS kind, count(*) FROM pg_constraint WHERE conrelid::regclass::text LIKE 'commerce\\_%' GROUP BY 1 ORDER BY 1");
         sql("unique indexes on the commerce tables",
                 "SELECT tablename, indexname FROM pg_indexes WHERE tablename LIKE 'commerce\\_%' AND indexdef LIKE 'CREATE UNIQUE%' ORDER BY 1, 2");
-        assertEquals(46, tables, "the 16 commerce tables of M1, the 13 of stock, tax and documents, "
+        assertEquals(52, tables, "the 16 commerce tables of M1, the 13 of stock, tax and documents, "
                 + "the shipping rule, the 3 of the import, the 6 of orders and customers (V685), "
-                + "the gateway order, OTP challenge and payment exception (V686) "
-                + "and the 4 of the order desk and COD (V688)");
+                + "the gateway order, OTP challenge and payment exception (V686), "
+                + "the 4 of the order desk and COD (V688), "
+                + "the 3 of returns and refunds (V710) "
+                + "and the 3 of buyer order messages (V721: commerce_notification_setting, "
+                + "commerce_notification_event, commerce_notification_delivery)");
         assertTrue(wrong.isEmpty(), "entity and migration disagree: " + wrong);
     }
 
@@ -1366,6 +1369,15 @@ class CommerceM1DatabaseProofIT {
         return mockingDetails(mock).getInvocations().size();
     }
 
+    /**
+     * Calls on the workflow engine other than the read-only {@code hasActiveWorkflow} lookup of the
+     * buyer-message planner (WP-33), which may run on its executor right after the commit.
+     */
+    private long firedWorkflows(Object mock) {
+        return mockingDetails(mock).getInvocations().stream()
+                .filter(i -> !"hasActiveWorkflow".equals(i.getMethod().getName())).count();
+    }
+
     @Test
     @Order(8)
     void f_g_stockHoldsAndThePaidPathOfACommercePlan_thenACoursePaymentStillEnrols() {
@@ -1450,7 +1462,7 @@ class CommerceM1DatabaseProofIT {
                 + " paymentNotificatonService=" + calls(paymentNotificatonService) + " dynamicNotificationService=" + calls(dynamicNotificationService)
                 + " asyncEnrollmentEmailService=" + calls(asyncEnrollmentEmailService) + " invoiceService=" + calls(invoiceService)
                 + " authService=" + (calls(authService) - authCallsBefore));
-        assertEquals(0, calls(workflowTriggerService), "no workflow trigger");
+        assertEquals(0, firedWorkflows(workflowTriggerService), "no workflow trigger");
         assertEquals(0, calls(paymentNotificatonService), "no payment mail");
         assertEquals(0, calls(dynamicNotificationService), "no enrolment notification");
         assertEquals(0, calls(asyncEnrollmentEmailService), "no credentials mail");

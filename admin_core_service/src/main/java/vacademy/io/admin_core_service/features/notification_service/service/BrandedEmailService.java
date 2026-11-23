@@ -7,6 +7,7 @@ import vacademy.io.admin_core_service.features.domain_routing.repository.Institu
 import vacademy.io.admin_core_service.features.institute.entity.Template;
 import vacademy.io.admin_core_service.features.institute.repository.InstituteRepository;
 import vacademy.io.admin_core_service.features.institute.repository.TemplateRepository;
+import vacademy.io.admin_core_service.features.student_analysis.service.aggregation.ThemeColorResolver;
 import vacademy.io.common.institute.entity.Institute;
 
 import java.util.HashMap;
@@ -28,7 +29,7 @@ public class BrandedEmailService {
 
     /** Global-default templates live under this pseudo institute. */
     public static final String DEFAULT_INSTITUTE_ID = "DEFAULT";
-    private static final String FALLBACK_THEME_COLOR = "#FF9800";
+    private static final String FALLBACK_THEME_COLOR = "#333333";
     private static final String FALLBACK_SUPPORT_EMAIL = "support@vacademy.io";
     private static final String FALLBACK_LEARNER_URL = "https://learner.vacademy.io";
     private static final String EMAIL_TYPE = "TRANSACTIONAL";
@@ -95,6 +96,7 @@ public class BrandedEmailService {
         String name = "";
         String themeColor = FALLBACK_THEME_COLOR;
         String cta = FALLBACK_LEARNER_URL;
+        String supportEmail = FALLBACK_SUPPORT_EMAIL;
         try {
             Institute inst = instituteRepository.findById(instituteId).orElse(null);
             if (inst != null) {
@@ -102,6 +104,11 @@ public class BrandedEmailService {
                     name = inst.getInstituteName();
                 }
                 themeColor = normalizeThemeColor(inst.getInstituteThemeCode());
+                // The institute's own contact address, so "Questions? Reply to ..." in a
+                // white-label mail doesn't point at the platform's support inbox.
+                if (inst.getEmail() != null && !inst.getEmail().isBlank()) {
+                    supportEmail = inst.getEmail().trim();
+                }
             }
         } catch (Exception ignore) {
             // defaults
@@ -115,15 +122,14 @@ public class BrandedEmailService {
         } catch (Exception ignore) {
             // default learner url
         }
-        return new InstituteContext(name, themeColor, FALLBACK_SUPPORT_EMAIL, cta,
+        return new InstituteContext(name, themeColor, supportEmail, cta,
                 name.isBlank() ? null : name);
     }
 
     private static String normalizeThemeColor(String themeCode) {
-        if (themeCode == null || themeCode.trim().isEmpty()) return FALLBACK_THEME_COLOR;
-        String t = themeCode.trim();
-        if (t.matches("^[0-9A-Fa-f]{6}$")) return "#" + t;
-        return t;
+        // Hex or a theme preset ("primary", "blue", ...) -> hex; anything else -> neutral.
+        String resolved = ThemeColorResolver.resolve(themeCode);
+        return resolved != null ? resolved : FALLBACK_THEME_COLOR;
     }
 
     private static String applyPlaceholders(String template, Map<String, String> values) {

@@ -36,6 +36,7 @@ import {
     ProfileActionBar,
 } from '../profile-ui';
 import { MyButton } from '@/components/design-system/button';
+import { SubOrgSeatLimitCard } from './sub-org-seat-limit-card';
 
 export const StudentSubOrg = ({ isSubmissionTab }: { isSubmissionTab?: boolean }) => {
     const { t } = useTranslation('manageStudentsSubOrg');
@@ -218,6 +219,14 @@ export const StudentSubOrg = ({ isSubmissionTab }: { isSubmissionTab?: boolean }
                             </MyButton>
                         </a>
                     </ProfileActionBar>
+
+                    {/* Seat limit for the picked batch (admins can raise it) */}
+                    {selectedStudent.sub_org_id && selectedPsId && (
+                        <SubOrgSeatLimitCard
+                            subOrgId={selectedStudent.sub_org_id}
+                            packageSessionId={selectedPsId}
+                        />
+                    )}
 
                     {/* Admin credentials card */}
                     <ProfileSectionCard icon={Key} heading={t('credentials.heading')}>

@@ -25,6 +25,12 @@ public class UserPlanDTO {
     private String paymentPlanId;
     /** Copies bought on this line; null on DTOs built before V640 reads as 1. */
     private Integer quantity;
+    /** The member's own price per period when set (price lock), else null = the plan's list price. */
+    private java.math.BigDecimal regionalPrice;
+    private String regionalCurrency;
+    /** Autopay armed on this membership, and when it next charges. */
+    private Boolean autoRenewalEnabled;
+    private Date nextChargeAt;
     private String planJson;
 
     private String appliedCouponDiscountId;

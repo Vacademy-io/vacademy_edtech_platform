@@ -11,6 +11,7 @@ import {
     HandGrabbing,
     Link as LinkIcon,
     ListBullets,
+    ListNumbers,
     PencilSimple,
     Plus,
     SquaresFour,
@@ -37,6 +38,8 @@ export interface FolderActions {
     onEdit: (folder: AssessmentFolder) => void;
     onDelete: (folder: AssessmentFolder) => void;
     onCopyLink: (folder: AssessmentFolder) => void;
+    /** Opens the order students see the folder's tests in. */
+    onTestOrder: (folder: AssessmentFolder) => void;
     /** Display Settings → Assessment Actions → Manage assessment folders, for the current role. */
     canManage: boolean;
 }
@@ -176,6 +179,7 @@ const FolderTile = ({
     onEdit,
     onDelete,
     onCopyLink,
+    onTestOrder,
     canManage,
 }: FolderActions & { folder: AssessmentFolder }) => {
     const { t } = useTranslation('assessmentFolders');
@@ -255,6 +259,7 @@ const FolderTile = ({
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onCopyLink={onCopyLink}
+                onTestOrder={onTestOrder}
                 className="opacity-0 group-hover:opacity-100"
             />
         </div>
@@ -267,8 +272,9 @@ const FolderMenu = ({
     onEdit,
     onDelete,
     onCopyLink,
+    onTestOrder,
     className,
-}: Pick<FolderActions, 'canManage' | 'onEdit' | 'onDelete' | 'onCopyLink'> & {
+}: Pick<FolderActions, 'canManage' | 'onEdit' | 'onDelete' | 'onCopyLink' | 'onTestOrder'> & {
     folder: AssessmentFolder;
     className?: string;
 }) => {
@@ -296,6 +302,15 @@ const FolderMenu = ({
                     >
                         <PencilSimple size={16} />
                         {t('menu.edit')}
+                    </DropdownMenuItem>
+                ) : null}
+                {canManage ? (
+                    <DropdownMenuItem
+                        className="cursor-pointer gap-2"
+                        onSelect={() => onTestOrder(folder)}
+                    >
+                        <ListNumbers size={16} />
+                        {t('menu.testOrder')}
                     </DropdownMenuItem>
                 ) : null}
                 <DropdownMenuItem
@@ -381,7 +396,19 @@ export const FolderBreadcrumb = ({
                 </div>
             </div>
             {folder ? (
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    {actions.canManage ? (
+                        <MyButton
+                            type="button"
+                            buttonType="secondary"
+                            scale="small"
+                            className="gap-1"
+                            onClick={() => actions.onTestOrder(folder)}
+                        >
+                            <ListNumbers size={14} />
+                            {t('menu.testOrder')}
+                        </MyButton>
+                    ) : null}
                     <MyButton
                         type="button"
                         buttonType="secondary"

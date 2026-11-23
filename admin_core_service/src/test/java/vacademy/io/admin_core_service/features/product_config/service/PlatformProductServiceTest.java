@@ -161,7 +161,9 @@ class PlatformProductServiceTest {
         assertEquals(6000, offer.getPlans().get(0).getPriceInr());
         assertEquals(150, offer.getPlans().get(0).getCredits());
         assertEquals(1, offer.getPlans().get(0).getUsers());
+        assertEquals(6, offer.getPlans().get(0).getValidityMonths());
         assertEquals(20000, offer.getPlans().get(1).getPriceInr());
+        assertNull(offer.getPlans().get(1).getValidityMonths());
         assertEquals(6, offer.getPlanValidityMonths());
     }
 
@@ -219,6 +221,118 @@ class PlatformProductServiceTest {
         }
     }
 
+    private static List<vacademy.io.admin_core_service.features.product_config.dto.ProductLinkDTO> twoLinks() {
+        return List.of(
+                vacademy.io.admin_core_service.features.product_config.dto.ProductLinkDTO.builder()
+                        .title(" Create a test ").url("https://example.com/tutorials/#create").subtitle("0:49").build(),
+                vacademy.io.admin_core_service.features.product_config.dto.ProductLinkDTO.builder()
+                        .title("Upload copies").url("https://example.com/tutorials/#upload").subtitle(" ").build());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void welcomeLinksSaveAndAnOlderDashboardKeepsThem() {
+        when(jdbcTemplate.update(anyString(), anyString(), anyString(), anyString())).thenReturn(1);
+        ProductSettingsDTO stored = valid();
+        stored.setWelcomeLinks(List.of(vacademy.io.admin_core_service.features.product_config.dto.ProductLinkDTO.builder()
+                .title("Create a test").url("https://example.com/tutorials/#create").subtitle("0:49").build()));
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), eq("product.evalezy"))).thenReturn(List.of(stored));
+        ProductSettingsDTO withLinks = valid();
+        withLinks.setWelcomeLinks(twoLinks());
+        service.update("evalezy", withLinks, "admin1");
+        service.update("evalezy", valid(), "admin1");
+        ArgumentCaptor<String> json = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate, times(2)).update(contains("ai_platform_settings"), json.capture(), eq("admin1"), eq("product.evalezy"));
+        String sent = json.getAllValues().get(0);
+        assertTrue(sent.contains("{\"title\":\"Create a test\",\"url\":\"https://example.com/tutorials/#create\",\"subtitle\":\"0:49\"}"), sent);
+        assertTrue(sent.contains("{\"title\":\"Upload copies\",\"url\":\"https://example.com/tutorials/#upload\",\"subtitle\":null}"), sent);
+        // The dashboard does not send the links: the stored ones stay.
+        assertTrue(json.getAllValues().get(1).contains("\"welcome_links\":[{\"title\":\"Create a test\""), json.getAllValues().get(1));
+    }
+
+    @Test
+    void badWelcomeLinksAreRefused() {
+        var b = vacademy.io.admin_core_service.features.product_config.dto.ProductLinkDTO.builder();
+        ProductSettingsDTO http = valid();
+        http.setWelcomeLinks(List.of(b.title("A").url("http://example.com").build()));
+        assertThrows(VacademyException.class, () -> PlatformProductService.validate(http));
+        ProductSettingsDTO noTitle = valid();
+        noTitle.setWelcomeLinks(List.of(b.title(" ").url("https://example.com").build()));
+        assertThrows(VacademyException.class, () -> PlatformProductService.validate(noTitle));
+        ProductSettingsDTO tooMany = valid();
+        List<vacademy.io.admin_core_service.features.product_config.dto.ProductLinkDTO> many = new java.util.ArrayList<>();
+        for (int i = 0; i <= PlatformProductService.MAX_WELCOME_LINKS; i++) many.add(b.title("T" + i).url("https://example.com").build());
+        tooMany.setWelcomeLinks(many);
+        assertThrows(VacademyException.class, () -> PlatformProductService.validate(tooMany));
+        ProductSettingsDTO ok = valid();
+        ok.setWelcomeLinks(twoLinks());
+        assertDoesNotThrow(() -> PlatformProductService.validate(ok));
+    }
+
+    private static vacademy.io.admin_core_service.features.product_config.dto.ProductShortLinkDTO shortLink(
+            String code, String source, String campaign) {
+        return vacademy.io.admin_core_service.features.product_config.dto.ProductShortLinkDTO.builder()
+                .code(code).source(source).campaign(campaign).build();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shortLinksSaveCleanedAndAnOlderDashboardKeepsThem() {
+        when(jdbcTemplate.update(anyString(), anyString(), anyString(), anyString())).thenReturn(1);
+        ProductSettingsDTO stored = valid();
+        stored.setShortLinks(List.of(shortLink("ig", "instagram", "launch")));
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), eq("product.evalezy"))).thenReturn(List.of(stored));
+        ProductSettingsDTO withLinks = valid();
+        withLinks.setShortLinks(List.of(shortLink(" IG ", "Instagram", " Launch "), shortLink("li", "linkedin", " ")));
+        service.update("evalezy", withLinks, "admin1");
+        service.update("evalezy", valid(), "admin1");
+        ArgumentCaptor<String> json = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate, times(2)).update(contains("ai_platform_settings"), json.capture(), eq("admin1"), eq("product.evalezy"));
+        String sent = json.getAllValues().get(0);
+        assertTrue(sent.contains("{\"code\":\"ig\",\"source\":\"instagram\",\"campaign\":\"launch\"}"), sent);
+        assertTrue(sent.contains("{\"code\":\"li\",\"source\":\"linkedin\",\"campaign\":null}"), sent);
+        // The dashboard does not send the links: the stored ones stay.
+        assertTrue(json.getAllValues().get(1).contains("\"short_links\":[{\"code\":\"ig\""), json.getAllValues().get(1));
+    }
+
+    @Test
+    void badShortLinksAreRefused() {
+        for (var bad : List.of(
+                shortLink("a b", "instagram", null),       // space in the path
+                shortLink("-ig", "instagram", null),       // starts with -
+                shortLink("ig/x", "instagram", null),      // a slash makes it two path parts
+                shortLink("ig", " ", null),                // no source
+                shortLink("ig", "insta gram", null),       // space in the source
+                shortLink("ig", "instagram", "big sale"))) { // space in the campaign
+            ProductSettingsDTO p = valid();
+            p.setShortLinks(List.of(bad));
+            assertThrows(VacademyException.class, () -> PlatformProductService.validate(p), bad.toString());
+        }
+        ProductSettingsDTO twice = valid();
+        twice.setShortLinks(List.of(shortLink("ig", "instagram", null), shortLink("IG", "linkedin", null)));
+        assertThrows(VacademyException.class, () -> PlatformProductService.validate(twice));
+        ProductSettingsDTO tooMany = valid();
+        List<vacademy.io.admin_core_service.features.product_config.dto.ProductShortLinkDTO> many = new java.util.ArrayList<>();
+        for (int i = 0; i <= PlatformProductService.MAX_SHORT_LINKS; i++) many.add(shortLink("c" + i, "instagram", null));
+        tooMany.setShortLinks(many);
+        assertThrows(VacademyException.class, () -> PlatformProductService.validate(tooMany));
+        ProductSettingsDTO ok = valid();
+        ok.setShortLinks(List.of(shortLink("IG", "Instagram", "Launch-2026"), shortLink("wa", "whatsapp", null)));
+        assertDoesNotThrow(() -> PlatformProductService.validate(ok));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void publicOfferCarriesTheShortLinks() {
+        ProductSettingsDTO stored = valid();
+        stored.setProductKey("evalezy");
+        stored.setShortLinks(List.of(shortLink("ig", "instagram", "launch")));
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), eq("product.evalezy"))).thenReturn(List.of(stored));
+        String json = assertDoesNotThrow(() -> new com.fasterxml.jackson.databind.ObjectMapper()
+                .writeValueAsString(service.publicOffer("evalezy")));
+        assertTrue(json.contains("\"short_links\":[{\"code\":\"ig\",\"source\":\"instagram\",\"campaign\":\"launch\"}]"), json);
+    }
+
     @Test
     void badPlansAreRefused() {
         ProductSettingsDTO dup = valid();
@@ -257,5 +371,33 @@ class PlatformProductServiceTest {
         assertEquals(2, offer.getPlans().size());
         assertEquals(2000, offer.getPlans().get(1).getCredits());
         assertEquals(12, offer.getPlanValidityMonths());
+    }
+
+    private static vacademy.io.admin_core_service.features.product_config.dto.ProductPlanDTO plan(
+            String key, String mode, Integer months) {
+        return vacademy.io.admin_core_service.features.product_config.dto.ProductPlanDTO.builder()
+                .key(key).name(key).priceInr(100).credits(10).users(1).accessMode(mode).validityMonths(months).build();
+    }
+
+    @Test
+    void aPlanSavedWithoutAccessOrLengthKeepsTheStoredOnes() {
+        var saved = PlatformProductService.cleanPlans(
+                List.of(plan("starter", null, null), plan("api-pro", "api", 12)),
+                List.of(plan("starter", "PLATFORM", 1)));
+        assertEquals("PLATFORM", saved.get(0).getAccessMode());
+        assertEquals(1, saved.get(0).getValidityMonths());
+        assertEquals("API", saved.get(1).getAccessMode());
+        assertEquals(12, saved.get(1).getValidityMonths());
+    }
+
+    @Test
+    void planAccessIsPlatformOrApi() {
+        ProductSettingsDTO b = valid();
+        b.setPlans(List.of(plan("starter", "PORTAL", null)));
+        assertThrows(VacademyException.class, () -> PlatformProductService.validatePlans(b));
+        b.setPlans(List.of(plan("starter", "API", 0)));
+        assertThrows(VacademyException.class, () -> PlatformProductService.validatePlans(b));
+        b.setPlans(List.of(plan("starter", "api", 12), plan("pro", null, null)));
+        assertDoesNotThrow(() -> PlatformProductService.validatePlans(b));
     }
 }

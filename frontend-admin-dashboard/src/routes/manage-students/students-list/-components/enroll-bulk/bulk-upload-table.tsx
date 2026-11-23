@@ -523,7 +523,7 @@ export function EditableBulkUploadTable({
                 </div>
             </div>
 
-            <div className="fixed bottom-0 left-[30vw] end-0 z-50 w-fit bg-white py-2">{/* design-lint-ignore: viewport-relative offset aligning the fixed pagination bar under the table, no fixed-width token fits */}
+            <div data-assistant-fab="avoid" className="fixed bottom-0 left-[30vw] end-0 z-50 w-fit bg-white py-2">{/* design-lint-ignore: viewport-relative offset aligning the fixed pagination bar under the table, no fixed-width token fits */}
                 <MyPagination
                     currentPage={page}
                     totalPages={paginatedData.total_pages}

@@ -86,4 +86,15 @@ public class SuperAdminProductController {
         SuperAdminAuthUtil.requireSuperAdmin(user);
         return alerts.sendTest(productKey);
     }
+
+    /**
+     * Add earlier sign-ups of this product to its sign-up lead list. Body: {"institute_ids": [...]},
+     * at most 50. No alert and no mail; a person already in the list is skipped.
+     */
+    @org.springframework.web.bind.annotation.PostMapping("/{productKey}/signup-leads/backfill")
+    public List<java.util.Map<String, String>> backfillSignupLeads(@RequestAttribute("user") CustomUserDetails user,
+            @PathVariable String productKey, @RequestBody java.util.Map<String, List<String>> body) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
+        return demoLeads.backfill(productKey, body == null ? null : body.get("institute_ids"));
+    }
 }

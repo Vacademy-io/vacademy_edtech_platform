@@ -36,7 +36,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class StudentReportNotificationService {
 
-    private static final String DEFAULT_THEME = "#ed7424";
+    private static final String DEFAULT_THEME = "#333333";
     private static final String REPORT_PATH = "/my-reports/";
     private static final String SOURCE = "STUDENT_REPORT_READY";
 

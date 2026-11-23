@@ -32,10 +32,13 @@ export interface InboxSearch {
     template?: string;
     /** What happened to the message. Only meaningful with a day or period, so dropped without one. */
     outcome?: InboxOutcomeKey;
+    /** One task by id: the daily approvals email links each person to theirs. */
+    task?: string;
 }
 
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_TEMPLATE_LENGTH = 300;
+const TASK_ID = /^[A-Za-z0-9-]{1,64}$/;
 
 /** A real calendar day: "2026-02-31" has the right shape but the server would refuse it. */
 export function isIsoDay(value: unknown): value is string {
@@ -97,6 +100,7 @@ export function normalizeInboxSearch(raw: Record<string, unknown>): InboxSearch 
         to: period?.to,
         template,
         outcome: date || period ? oneOf(INBOX_OUTCOME_KEYS, raw.outcome) : undefined,
+        task: typeof raw.task === 'string' && TASK_ID.test(raw.task) ? raw.task : undefined,
     };
 }
 
@@ -110,6 +114,7 @@ export function hasInboxFilters(s: InboxSearch): boolean {
         s.from ||
         s.to ||
         s.template ||
-        s.outcome
+        s.outcome ||
+        s.task
     );
 }

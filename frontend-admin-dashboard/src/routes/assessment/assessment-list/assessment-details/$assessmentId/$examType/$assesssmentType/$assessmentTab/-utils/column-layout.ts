@@ -19,12 +19,13 @@ export interface ColumnLike {
 export const columnIdOf = (column: ColumnLike): string => column.id ?? column.accessorKey ?? '';
 
 /**
- * Structural cells: the select box and the open-detail arrow, then the row menu. They have
- * no header to name in the popover and nothing meaningful to toggle, so they are never
- * listed there — and therefore never appear in a saved order either.
+ * Structural cells: the select box and the open-detail arrow, then the Open button and the
+ * row menu. They have no header to name in the popover and nothing meaningful to toggle,
+ * so they are never listed there — and therefore never appear in a saved order either.
+ * "Open" (the Submission page) sits with the row menu at the end of every row, as in W1.
  */
 export const LEADING_STRUCTURAL_COLUMN_IDS = ['checkbox', 'details'];
-export const TRAILING_STRUCTURAL_COLUMN_IDS = ['options'];
+export const TRAILING_STRUCTURAL_COLUMN_IDS = ['open', 'options'];
 export const STRUCTURAL_COLUMN_IDS = new Set([
     ...LEADING_STRUCTURAL_COLUMN_IDS,
     ...TRAILING_STRUCTURAL_COLUMN_IDS,

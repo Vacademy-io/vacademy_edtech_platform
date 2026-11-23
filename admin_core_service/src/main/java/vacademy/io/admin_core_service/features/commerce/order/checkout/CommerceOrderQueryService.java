@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.commerce.order.checkout;
 
+import vacademy.io.admin_core_service.features.commerce.returns.service.CommerceOrderReturnsView;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +37,7 @@ import vacademy.io.admin_core_service.features.commerce.shipment.entity.Commerce
 import vacademy.io.admin_core_service.features.commerce.shipment.repository.CommerceShipmentLineRepository;
 import vacademy.io.admin_core_service.features.commerce.shipment.repository.CommerceShipmentRepository;
 import vacademy.io.admin_core_service.features.commerce.stock.repository.CommercePieceRepository;
+import vacademy.io.admin_core_service.features.commerce.stock.repository.StockVariantRepository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -44,6 +46,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -86,6 +89,35 @@ public class CommerceOrderQueryService {
     private final CommerceShipmentRepository shipmentRepository;
     private final CommerceShipmentLineRepository shipmentLineRepository;
     private final CommercePieceRepository pieceRepository;
+
+    /** Returns and refunds (WP-32); set by Spring, absent in tests built by hand. */
+    private org.springframework.beans.factory.ObjectProvider<CommerceOrderReturnsView> returnsView;
+
+    @Autowired(required = false)
+    public void setReturnsView(org.springframework.beans.factory.ObjectProvider<CommerceOrderReturnsView> returnsView) {
+        this.returnsView = returnsView;
+    }
+
+    /** The buyer messages of an order (WP-33); set by Spring, absent in tests built by hand. */
+    private vacademy.io.admin_core_service.features.commerce.notify.repository.CommerceNotificationStore notificationStore;
+
+    @Autowired(required = false)
+    public void setNotificationStore(
+            vacademy.io.admin_core_service.features.commerce.notify.repository.CommerceNotificationStore store) {
+        this.notificationStore = store;
+    }
+
+    /** The variants' stock facts for the staff detail (WP-34); set by Spring, absent in tests built by hand. */
+    private StockVariantRepository variantRepository;
+
+    @Autowired(required = false)
+    public void setVariantRepository(StockVariantRepository variantRepository) {
+        this.variantRepository = variantRepository;
+    }
+
+    private CommerceOrderReturnsView returnsView() {
+        return returnsView == null ? null : returnsView.getIfAvailable();
+    }
 
     /** Without the order desk's repositories (the staff detail then lists no parcels). */
     public CommerceOrderQueryService(CommerceOrderRepository orderRepository,
@@ -333,14 +365,7 @@ public class CommerceOrderQueryService {
 
     /** {@code a•••@example.com}: the first letter and the domain. */
     static String maskEmail(String email) {
-        if (!StringUtils.hasText(email) || CommerceBuyerResolver.isHolderEmail(email)) {
-            return null;
-        }
-        int at = email.indexOf('@');
-        if (at < 1) {
-            return null;
-        }
-        return email.charAt(0) + "•••" + email.substring(at);
+        return vacademy.io.admin_core_service.features.commerce.notify.CommerceMasks.email(email);
     }
 
     /** Who a {@code /me} call is for: the phone, and the session when one was used. */
@@ -407,6 +432,15 @@ public class CommerceOrderQueryService {
     }
 
     private CheckoutDtos.OrderView buyerView(CommerceOrder order) {
+        CheckoutDtos.OrderView view = buyerViewOf(order);
+        CommerceOrderReturnsView extra = returnsView();
+        if (extra != null) {
+            extra.enrich(view, order, lineRepository.findByOrderIdOrderByLineNoAsc(order.getId()));
+        }
+        return view;
+    }
+
+    private CheckoutDtos.OrderView buyerViewOf(CommerceOrder order) {
         List<CheckoutDtos.OrderLineView> lines = new ArrayList<>();
         for (CommerceOrderLine line : lineRepository.findByOrderIdOrderByLineNoAsc(order.getId())) {
             if (!CommerceOrderLine.TYPE_ITEM.equals(line.getLineType())) {
@@ -487,7 +521,7 @@ public class CommerceOrderQueryService {
 
     /** The desk queues of the staff list ({@code queue}). */
     public static final Set<String> QUEUES = Set.of("TO_CONFIRM", "TO_PACK", "TO_SHIP", "IN_TRANSIT",
-            "COD_TO_COLLECT", "RTO_TO_RECEIVE", "STOCK_SHORT", "DUES");
+            "COD_TO_COLLECT", "RTO_TO_RECEIVE", "STOCK_SHORT", "DUES", "RETURNS", "REFUND_DUE");
     private static final Set<String> PAYMENT_STATUSES = Set.of("UNPAID", "PARTIALLY_PAID", "PAID");
     private static final Set<String> CHANNELS = Set.of("ONLINE", "ADMIN", "POS");
     private static final ZoneId INDIA = ZoneId.of("Asia/Kolkata");
@@ -567,6 +601,10 @@ public class CommerceOrderQueryService {
                 row.setStatusSince(instant(since.get(order.getId())));
                 rows.add(row);
             }
+            CommerceOrderReturnsView extra = returnsView();
+            if (extra != null) {
+                extra.enrichRows(rows, orders);
+            }
             return StaffOrderDtos.StaffOrderPage.builder()
                     .orders(rows)
                     .page(index).pageSize(size).total(found.getTotalElements()).build();
@@ -583,14 +621,41 @@ public class CommerceOrderQueryService {
      */
     public StaffOrderDtos.StaffOrderDetail staffDetail(String instituteId, String orderId, Set<CommerceRole> roles,
                                                        boolean admin, boolean fromPrimary) {
+        StaffOrderDtos.StaffOrderDetail detail = staffDetailOnly(instituteId, orderId, roles, admin, fromPrimary);
+        attachNotifications(detail, instituteId, orderId);
+        return detail;
+    }
+
+    /**
+     * The buyer messages of the order, read after the detail's transaction (a failed read leaves
+     * the list out and never fails the detail).
+     */
+    private void attachNotifications(StaffOrderDtos.StaffOrderDetail detail, String instituteId, String orderId) {
+        if (detail == null || notificationStore == null) {
+            return;
+        }
+        try {
+            detail.setNotifications(vacademy.io.admin_core_service.features.commerce.notify.dto.NotificationSettingsDtos
+                    .DeliveryView.of(notificationStore.ofOrder(instituteId, orderId, 100)));
+        } catch (RuntimeException e) {
+            log.warn("Buyer messages of order {} not read: {}", orderId, e.getClass().getSimpleName());
+        }
+    }
+
+    private StaffOrderDtos.StaffOrderDetail staffDetailOnly(String instituteId, String orderId,
+                                                            Set<CommerceRole> roles, boolean admin,
+                                                            boolean fromPrimary) {
         return (fromPrimary ? primary : readOnly).execute(tx -> {
             CommerceOrder order = orderRepository.findByIdAndInstituteId(orderId, instituteId)
                     .orElseThrow(CommerceOrderQueryService::notFound);
             List<CommerceOrderLine> orderLines = lineRepository.findByOrderIdOrderByLineNoAsc(orderId);
+            Map<String, StockVariantRepository.VariantFacts> facts = variantFacts(instituteId, orderLines);
             List<StaffOrderDtos.StaffOrderLine> lines = new ArrayList<>();
             boolean hasReturns = false;
             for (CommerceOrderLine line : orderLines) {
                 hasReturns |= line.getQtyReturned() != null && line.getQtyReturned() > 0;
+                StockVariantRepository.VariantFacts fact = CommerceOrderLine.TYPE_ITEM.equals(line.getLineType())
+                        && line.getPackageSessionId() != null ? facts.get(line.getPackageSessionId()) : null;
                 lines.add(StaffOrderDtos.StaffOrderLine.builder()
                         .id(line.getId()).lineNo(line.getLineNo()).lineType(line.getLineType())
                         .packageSessionId(line.getPackageSessionId()).packageId(line.getPackageId())
@@ -606,6 +671,8 @@ public class CommerceOrderQueryService {
                         .stockShortQty(line.getStockShortQty()).listUnitPrice(line.getListUnitPrice())
                         .priceOverrideBy(line.getPriceOverrideBy()).cancelledValue(line.getCancelledValue())
                         .costTotal(line.getCostTotal())
+                        .stockMode(fact == null ? null : fact.getStockMode())
+                        .stockPolicy(fact == null ? null : fact.getStockPolicy())
                         .build());
             }
             List<StaffOrderDtos.StaffTender> tenders = new ArrayList<>();
@@ -638,7 +705,7 @@ public class CommerceOrderQueryService {
             if (!timeline.isEmpty()) {
                 row.setStatusSince(timeline.get(timeline.size() - 1).getAt());
             }
-            return StaffOrderDtos.StaffOrderDetail.builder()
+            StaffOrderDtos.StaffOrderDetail detail = StaffOrderDtos.StaffOrderDetail.builder()
                     .order(row)
                     .userId(order.getUserId())
                     .customerId(order.getCustomerId())
@@ -666,6 +733,8 @@ public class CommerceOrderQueryService {
                     .timeline(timeline)
                     .shipments(shipments)
                     .refundDue(order.getRefundDue())
+                    .amountDue(vacademy.io.admin_core_service.features.commerce.order.desk.CommerceReceiptService
+                            .amountDue(order.getTotal(), order.getAmountPaid(), null))
                     .stockShort(order.getStockShort())
                     .codAmount(order.getCodAmount())
                     .codRemittanceId(order.getCodRemittanceId())
@@ -678,6 +747,11 @@ public class CommerceOrderQueryService {
                             StringUtils.hasText(order.getCodRemittanceId()) || codReceived, hasReturns),
                             roles, admin))
                     .build();
+            CommerceOrderReturnsView extra = returnsView();
+            if (extra != null) {
+                extra.enrich(detail, order, orderLines, roles, admin);
+            }
+            return detail;
         });
     }
 
@@ -696,24 +770,29 @@ public class CommerceOrderQueryService {
                 found.stream().map(CommerceShipment::getId).toList())) {
             linesOf.computeIfAbsent(line.getShipmentId(), k -> new ArrayList<>()).add(line);
         }
-        Map<String, List<String>> piecesOf = new HashMap<>();
+        Map<String, List<CommercePieceRepository.PieceRow>> piecesOf = new HashMap<>();
         for (CommerceOrderLine line : orderLines) {
             if (!CommerceOrderLine.TYPE_ITEM.equals(line.getLineType()) || pieceRepository == null) {
                 continue;
             }
-            List<String> codes = pieceRepository.findRowsByOrderLine(instituteId, line.getId()).stream()
-                    .map(CommercePieceRepository.PieceRow::getCode).toList();
-            if (!codes.isEmpty()) {
-                piecesOf.put(line.getId(), codes);
+            List<CommercePieceRepository.PieceRow> pieces = pieceRepository.findRowsByOrderLine(instituteId,
+                    line.getId());
+            if (pieces != null && !pieces.isEmpty()) {
+                piecesOf.put(line.getId(), pieces);
             }
         }
         for (CommerceShipment s : found) {
             boolean live = !"CANCELLED".equals(s.getStatus());
             List<StaffOrderDtos.StaffShipmentLine> lines = new ArrayList<>();
             for (CommerceShipmentLine line : linesOf.getOrDefault(s.getId(), List.of())) {
+                List<CommercePieceRepository.PieceRow> pieces = live ? piecesOf.get(line.getOrderLineId()) : null;
                 lines.add(StaffOrderDtos.StaffShipmentLine.builder().id(line.getId())
                         .orderLineId(line.getOrderLineId()).quantity(line.getQuantity())
-                        .pieceCodes(live ? piecesOf.get(line.getOrderLineId()) : null).build());
+                        .pieceCodes(pieces == null ? null : pieces.stream().map(CommercePieceRepository.PieceRow::getCode)
+                                .toList())
+                        .pieceIds(pieces == null ? null : pieces.stream().map(CommercePieceRepository.PieceRow::getId)
+                                .toList())
+                        .build());
             }
             out.add(StaffOrderDtos.StaffShipment.builder()
                     .id(s.getId()).status(s.getStatus()).locationId(s.getLocationId())
@@ -727,6 +806,36 @@ public class CommerceOrderQueryService {
                     .cancelledAt(instant(s.getCancelledAt()))
                     .lines(lines)
                     .build());
+        }
+        return out;
+    }
+
+    /**
+     * The stock facts of the variants on the order's item lines, by package session: one query.
+     * Empty without the variant repository (the lines then carry no stock mode).
+     */
+    private Map<String, StockVariantRepository.VariantFacts> variantFacts(String instituteId,
+                                                                          List<CommerceOrderLine> orderLines) {
+        Map<String, StockVariantRepository.VariantFacts> out = new HashMap<>();
+        if (variantRepository == null) {
+            return out;
+        }
+        Set<String> ids = new LinkedHashSet<>();
+        for (CommerceOrderLine line : orderLines) {
+            if (CommerceOrderLine.TYPE_ITEM.equals(line.getLineType()) && line.getPackageSessionId() != null) {
+                ids.add(line.getPackageSessionId());
+            }
+        }
+        if (ids.isEmpty()) {
+            return out;
+        }
+        List<StockVariantRepository.VariantFacts> found = variantRepository.findFactsIn(instituteId, ids);
+        if (found != null) {
+            for (StockVariantRepository.VariantFacts fact : found) {
+                if (fact != null && fact.getPackageSessionId() != null) {
+                    out.put(fact.getPackageSessionId(), fact);
+                }
+            }
         }
         return out;
     }
@@ -783,6 +892,7 @@ public class CommerceOrderQueryService {
                 .createdAt(instant(order.getCreatedAt()))
                 .stockShort(order.getStockShort())
                 .refundDue(order.getRefundDue())
+                .codAmount(order.getCodAmount())
                 .build();
     }
 

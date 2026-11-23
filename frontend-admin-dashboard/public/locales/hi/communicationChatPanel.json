@@ -39,7 +39,9 @@
         "workflow": "वर्कफ़्लो “{{name}}” द्वारा भेजा गया",
         "workflowUnnamed": "एक वर्कफ़्लो द्वारा भेजा गया",
         "chatbotFlow": "चैटबॉट फ़्लो “{{name}}” द्वारा भेजा गया",
-        "chatbotFlowUnnamed": "एक चैटबॉट फ़्लो द्वारा भेजा गया"
+        "chatbotFlowUnnamed": "एक चैटबॉट फ़्लो द्वारा भेजा गया",
+        "adminResend": "{{name}} द्वारा फिर से भेजा गया",
+        "adminResendUnnamed": "एक एडमिन द्वारा फिर से भेजा गया"
     },
     "templateCategory": {
         "MARKETING": "मार्केटिंग",

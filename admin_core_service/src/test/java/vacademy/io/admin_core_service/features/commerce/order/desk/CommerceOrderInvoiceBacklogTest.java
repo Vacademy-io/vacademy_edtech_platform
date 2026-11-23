@@ -84,6 +84,7 @@ class CommerceOrderInvoiceBacklogTest {
         assertEquals(0, request.getValue().getTax().getTotal().compareTo(f.order.getTotal()));
         assertFalse(request.getValue().isAllowAfterFullCredit(),
                 "the backlog never bills again an invoice that was credited in full");
+        verify(f.orderRepository).clearSweep(ORDER);
     }
 
     @Test
@@ -98,17 +99,33 @@ class CommerceOrderInvoiceBacklogTest {
     }
 
     @Test
-    void anOrderWhoseRepairFailsIsDeferredAnHourAndTheFailureStillSurfaces() {
+    void anOrderWhoseRepairFailsCountsOneMoreFailureAndTheFailureStillSurfaces() {
         f.order.setStatus("PACKED");
         when(f.invoiceService.issue(anyString(), any())).thenThrow(new IllegalStateException("SELLER_GSTIN_MISSING"));
+        when(f.orderRepository.sweepFailures(ORDER)).thenReturn(4);
         long before = System.currentTimeMillis();
         assertThrows(IllegalStateException.class, () -> backlog.issueInvoiceFor(ORDER));
-        ArgumentCaptor<Date> until = ArgumentCaptor.forClass(Date.class);
-        verify(f.orderRepository).deferSweep(eq(ORDER), until.capture());
-        long hour = CommerceOrderInvoiceBacklog.RETRY_AFTER_MINUTES * 60L * 1000;
-        assertEquals(60, CommerceOrderInvoiceBacklog.RETRY_AFTER_MINUTES);
-        assertTrue(until.getValue().getTime() >= before + hour
-                && until.getValue().getTime() <= System.currentTimeMillis() + hour);
+        ArgumentCaptor<Date> now = ArgumentCaptor.forClass(Date.class);
+        // The backoff (1 h, 4 h, 16 h, then 24 h) is worked out by the UPDATE from the stored count.
+        verify(f.orderRepository).deferSweep(eq(ORDER), now.capture());
+        assertTrue(now.getValue().getTime() >= before && now.getValue().getTime() <= System.currentTimeMillis());
+        verify(f.orderRepository).sweepFailures(ORDER);
+        verify(f.orderRepository, never()).clearSweep(anyString());
+        assertEquals(4, CommerceOrderInvoiceBacklog.DAILY_AFTER_FAILURES);
+    }
+
+    @Test
+    void aConfirmedOrderOlderThanTheLookbackIsStillServedAndTheQueryPutsHealthyOrdersFirst() throws Exception {
+        String sql = vacademy.io.admin_core_service.features.commerce.order.repository.CommerceOrderRepository.class
+                .getMethod("findOrderIdsMissingInvoice", Date.class, Date.class, Date.class, int.class)
+                .getAnnotation(org.springframework.data.jpa.repository.Query.class).value();
+        assertTrue(sql.contains("(o.status = 'CONFIRMED' OR o.updated_at >= :since)"), sql);
+        assertTrue(sql.contains("ORDER BY o.sweep_failures ASC, o.updated_at ASC, o.id ASC"), sql);
+        String defer = vacademy.io.admin_core_service.features.commerce.order.repository.CommerceOrderRepository.class
+                .getMethod("deferSweep", String.class, Date.class)
+                .getAnnotation(org.springframework.data.jpa.repository.Query.class).value();
+        assertTrue(defer.contains("sweep_failures = sweep_failures + 1") && defer.contains("1440")
+                && defer.contains("POWER(4, sweep_failures)"), defer);
     }
 
     @Test

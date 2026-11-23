@@ -157,6 +157,109 @@ class AiReportHtmlBuilderV2Test {
     }
 
     @Test
+    void everyAnswerIsPrintedOnceWhetherOrNotThePaperHasSections() {
+        // One section: page 1 shows the answer map (no section scorecard), so page 2 must not repeat it.
+        String one = new AiReportHtmlBuilderV2().build(oneSection(model("Riya Verma", null, ai())));
+        assertThat(count(one, ">Every answer<")).isEqualTo(1);
+        // Two or more sections: page 1 has the scorecard and the map is on page 2 only.
+        String two = new AiReportHtmlBuilderV2().build(model("Riya Verma", null, ai()));
+        assertThat(count(two, ">Every answer<")).isEqualTo(1);
+        assertThat(count(new AiReportHtmlBuilderV2().buildWeb(oneSection(model("Riya Verma", null, ai()))), ">Every answer<"))
+                .isEqualTo(1);
+    }
+
+    @Test
+    void quarterMarkPenaltiesPrintExactly() {
+        assertThat(AiReportCharts.num(-0.25)).isEqualTo("−0.25");
+        assertThat(AiReportCharts.num(0.25)).isEqualTo("0.25");
+        assertThat(AiReportCharts.num(-1.5)).isEqualTo("−1.5");
+        assertThat(AiReportCharts.num(2)).isEqualTo("2");
+        assertThat(AiReportCharts.num(1.0 / 3)).isEqualTo("0.33");
+        assertThat(AiReportCharts.num(-0.001)).isEqualTo("0");
+
+        // Six wrong at −0.25 each: the tile, the per-question line and the total agree.
+        AiReportModel base = oneSection(model("Riya Verma", null, ai()));
+        List<QuestionRow> qs = base.getQuestions().stream()
+                .map(q -> new QuestionRow(q.questionId(), q.sectionId(), q.sectionIndex(), q.sectionName(), q.numberInSection(),
+                        1, -0.25, Outcome.WRONG, 3L, null, null, q.shortText()))
+                .toList();
+        String html = new AiReportHtmlBuilderV2().build(base.toBuilder().questions(qs).score(-0.25 * qs.size()).build());
+        // The minus sign is wrapped in the symbol font, so read the text without tags.
+        String text = html.replaceAll("<[^>]+>", "");
+        assertThat(text).contains("wrong (−0.25 each)", "−0.25 of 1 mark", "Wrong answers cost 1.25 marks");
+        assertThat(text).doesNotContain("−0.2 each");
+    }
+
+    @Test
+    void certificateAndEmailValuesThatAreNotMarksKeepTheirOneDecimalFormat() {
+        // The percentage and profile variables (cover pages, certificates, result emails) print as before.
+        assertThat(AiReportCharts.oneDecimal(200.0 / 3)).isEqualTo("66.7");
+        assertThat(AiReportCharts.oneDecimal(12.25)).isEqualTo("12.3");
+        assertThat(AiReportCharts.oneDecimal(50)).isEqualTo("50");
+        AiReportModel m = oneSection(model("Riya Verma", null, ai())).toBuilder().score(20).maxScore(30).build();
+        java.util.Map<String, Object> c = new ReportComposer(null, null).context(m, null);
+        assertThat(c.get("percentage")).isEqualTo("66.7");
+        assertThat(c.get("score")).isEqualTo("20");
+        assertThat(c.get("max_score")).isEqualTo("30");
+        // A quarter-mark total prints in templates exactly as it did before this change.
+        java.util.Map<String, Object> q = new ReportComposer(null, null).context(m.toBuilder().score(12.25).build(), null);
+        assertThat(q.get("score")).isEqualTo("12.3");
+    }
+
+    @Test
+    void theBigScoreShrinksOnlyWhenTwoDecimalMarksWouldOverflowItsBox() {
+        AiReportModel m = model("Riya Verma", null, ai());
+        // Two decimals that would overflow the 230px box: a smaller font.
+        assertThat(AiReportHtmlBuilderV2.bigScoreFit(m.toBuilder().score(12.25).maxScore(30).build()))
+                .startsWith(" style=\"font-size:").doesNotContain("96px");
+        // Prints as before (one decimal or whole): untouched, even where it was already wide.
+        assertThat(AiReportHtmlBuilderV2.bigScoreFit(m.toBuilder().score(12.5).maxScore(30).build())).isEmpty();
+        assertThat(AiReportHtmlBuilderV2.bigScoreFit(m.toBuilder().score(98.5).maxScore(100).build())).isEmpty();
+        assertThat(AiReportHtmlBuilderV2.bigScoreFit(m.toBuilder().score(-1.5).maxScore(6).build())).isEmpty();
+        // Two decimals that still fit: untouched.
+        assertThat(AiReportHtmlBuilderV2.bigScoreFit(m.toBuilder().score(1.25).maxScore(6).build())).isEmpty();
+    }
+
+    @Test
+    void negativeMarkingChartStaysAboveItsLabelsWhenNothingWasRight() {
+        // 0 earned, −1.5 lost, total −1.5, −0.25 without the guesses: six quarter-mark guesses, none right.
+        String svg = AiReportCharts.waterfall(0, -1.5, -1.5, -0.25, 5, new ReportPalette("#3352D1", "#FF8A5C"), 340);
+        java.util.regex.Matcher rect = java.util.regex.Pattern
+                .compile("<rect x=\"[^\"]+\" y=\"([^\"]+)\" width=\"[^\"]+\" height=\"([^\"]+)\"").matcher(svg);
+        int bars = 0;
+        while (rect.find()) {
+            bars++;
+            // The category labels sit at y 198; every bar must end at the plot bottom (180) or above.
+            assertThat(Double.parseDouble(rect.group(1)) + Double.parseDouble(rect.group(2))).isLessThanOrEqualTo(180.5);
+        }
+        assertThat(bars).isGreaterThanOrEqualTo(2);
+        // The "without guesses" label is kept inside the 340px chart.
+        assertThat(svg).contains("text-anchor=\"end\"").contains("−0.25");
+    }
+
+    @Test
+    void theOnScreenReportHasTheSameSectionsAsThePdfOnOneScrollingPage() {
+        AiReportModel m = model("Riya Verma", "ENR-001", ai());
+        String pdf = new AiReportHtmlBuilderV2().build(m);
+        String web = new AiReportHtmlBuilderV2().buildWeb(m);
+
+        for (String section : List.of("Riya's result", "Marks by section", "Where you stand", "Every answer", "Topic mastery",
+                "Bloom", "Speed vs accuracy", "Mistakes explained", "This week's plan", "Flashcards", "Progress",
+                "Question by question", "All 15 questions, with your answers", "Your potential")) {
+            assertThat(pdf).contains(section);
+            assertThat(web).contains(section);
+        }
+        // One header band, no page breaks, sized for a phone.
+        assertThat(count(web, "class=\"band\"")).isEqualTo(1);
+        assertThat(count(pdf, "class=\"band\"")).isGreaterThan(1);
+        assertThat(web).doesNotContain("page break").contains("name=\"viewport\"", "class=\"sheet\"", "@media (max-width:640px)");
+
+        // The report options hide the same things on screen.
+        String hidden = new AiReportHtmlBuilderV2().buildWeb(m.toBuilder().hideCorrectAnswer(true).hideExplanation(true).build());
+        assertThat(hidden).contains("Your answer").doesNotContain("Right answer", "-10 cm", "Explanation:");
+    }
+
+    @Test
     void paleBrandColoursGetDarkHeaderText() {
         assertThat(new ReportPalette("#FFE066", "#FFC531").onBrand).isEqualTo(ReportPalette.INK);
         assertThat(new ReportPalette("#1D3B8F", "#FFC531").onBrand).isEqualTo(ReportPalette.PAPER);
@@ -164,7 +267,21 @@ class AiReportHtmlBuilderV2Test {
 
     // ── fixtures ──
 
-    private static AiReportModel model(String name, String enrollment, JsonNode ai) {
+    /** The fixture cut down to its first section (Physics, 5 questions). */
+    private static AiReportModel oneSection(AiReportModel m) {
+        return m.toBuilder()
+                .sections(List.of(m.getSections().get(0)))
+                .questions(m.getQuestions().stream().filter(q -> q.sectionId().equals("s1")).toList())
+                .build();
+    }
+
+    private static int count(String haystack, String needle) {
+        int n = 0;
+        for (int i = haystack.indexOf(needle); i >= 0; i = haystack.indexOf(needle, i + needle.length())) n++;
+        return n;
+    }
+
+    static AiReportModel model(String name, String enrollment, JsonNode ai) {
         // Physics: 5 questions x 2 marks; Maths: 10 questions x 2 marks. Max 30.
         List<QuestionRow> qs = new ArrayList<>();
         Outcome[] phy = {Outcome.CORRECT, Outcome.CORRECT, Outcome.WRONG, Outcome.CORRECT, Outcome.SKIPPED};
@@ -218,7 +335,7 @@ class AiReportHtmlBuilderV2Test {
                 70.0, 22.0, "Sample question " + n);
     }
 
-    private static JsonNode ai() {
+    static JsonNode ai() {
         try {
             return OM.readTree("""
                     {"performance_analysis":"Riya, your maths is strong. Physics question 3 was answered in 4 seconds.",

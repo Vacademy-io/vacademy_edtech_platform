@@ -91,8 +91,14 @@ async def synthesize(*, engine: str, model: str, voice: str, pace, temperature,
         else:
             logger.warning("tts-warm: no one-shot renderer for engine {!r}", eng)
             return None
-    except Exception:
+    except Exception as exc:
         logger.exception("tts-warm: {} synthesis failed for {!r}", eng, text[:40])
+        from . import vendor_failures
+        vendor_failures.record(
+            {"rumik": "silk-api.rumik.ai", "navana": "tts.navana.ai", "sarvam": "api.sarvam.ai", "sarvam_v4": "api.sarvam.ai",
+             "smallest": "waves-api.smallest.ai", "google": "texttospeech.googleapis.com",
+             "edge": "speech.platform.bing.com"}.get(eng, str(eng)),
+            "TTS (cache warm)", reason=vendor_failures.clean_reason(f"{type(exc).__name__}: {exc}"))
         return None
     if not raw:
         return None

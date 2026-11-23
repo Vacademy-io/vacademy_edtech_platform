@@ -587,8 +587,12 @@ export function transformFormToDTOStep2(
         });
     }
 
-    if (notifySettings.beforeLive && notifySettings.beforeLiveTime) {
-        notifySettings.beforeLiveTime.forEach(({ time }) => {
+    // The "Notify Before" list has no on/off switch: a reminder row the admin added IS the opt-in.
+    // Gating on `beforeLive` (only set when an institute default reminder pre-filled the list) dropped
+    // every reminder added by hand, even though the preview showed it.
+    const beforeLiveTimes = (notifySettings.beforeLiveTime ?? []).filter(({ time }) => !!time);
+    if (beforeLiveTimes.length > 0) {
+        beforeLiveTimes.forEach(({ time }) => {
             addedNotificationActions.push({
                 id: null,
                 type: 'BEFORE_LIVE',

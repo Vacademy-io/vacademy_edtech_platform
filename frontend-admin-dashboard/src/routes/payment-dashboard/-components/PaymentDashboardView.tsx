@@ -64,6 +64,7 @@ import {
     YearChart,
 } from './DashboardCharts';
 import { BatchesTable, CourseLeaderboard } from './DashboardTables';
+import { nudgeAssistant } from '@/components/vacademy-assistant/page-ask';
 
 const ALL = '__all__';
 /** Matches no batch — see packageSessionIds. */
@@ -200,6 +201,7 @@ export function PaymentDashboardView() {
 
     const handleExport = async () => {
         setExporting(true);
+        nudgeAssistant('fees');
         try {
             const { entries } = await fetchAllPaymentLogs({
                 sort_columns: { createdAt: 'DESC' },

@@ -1,0 +1,9 @@
+package vacademy.io.assessment_service.features.submission_review.model;
+
+/** mark_event.event_type. Phase 1a writes a subset; the rest are declared for 1b+. */
+public enum MarkEventType {
+    SUBMIT_SCORED, AI_MARKED, AI_SUGGESTED, AI_FAILED, SUGGESTION_ACCEPTED,
+    SUGGESTION_DISMISSED, TEACHER_EDITED, KEY_REAPPLIED, OMR_FIXED, OFFLINE_ENTERED, ANSWER_CHANGED,
+    SKIPPED_PROTECTED, OVERRIDE_TEACHER, SCHEME_CHANGED, RELEASED, RELEASED_WITH_UNMARKED,
+    AI_ACCEPTED_ON_RELEASE, WITHDRAWN, UPDATE_SENT, TOTAL_IMPORTED, TOTAL_RECOMPUTED
+}

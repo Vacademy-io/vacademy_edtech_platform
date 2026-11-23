@@ -16,9 +16,17 @@
         "evaluateWithAI": {
             "recheckTitle": "Recorriger cette copie avec l’IA ?",
             "recheckMessage": "La copie de {{name}} est déjà corrigée ou en cours d’évaluation. Une nouvelle correction remplace ses notes actuelles, y compris les modifications d’un enseignant, et elle s’affiche « En cours d’évaluation » jusqu’à ce que le nouveau résultat soit prêt.",
+            "recheckTitleTyped": "Corriger à nouveau ces réponses avec l’IA ?",
+            "recheckMessageTyped": "Les réponses rédigées de {{name}} sont déjà notées ou en cours de notation. Une nouvelle correction par l’IA remplace leurs notes, y compris les modifications d’un enseignant, et la tentative s’affiche « En cours d’évaluation » jusqu’à ce que le nouveau résultat soit prêt.",
+            "checkTitleTyped": "Noter ces réponses avec l’IA ?",
+            "checkMessageTyped": "L’IA note les réponses rédigées de {{name}} (réponses longues et questions tableur et rédaction). Cela utilise les crédits IA de votre établissement. Un enseignant vérifie les notes avant la publication du résultat.",
+            "checkConfirm": "Noter avec l’IA",
             "estimatedCostLabel": "Coût estimé :",
             "creditsPerPage_one": "{{count}} crédit par page",
             "creditsPerPage_other": "{{count}} crédits par page",
+            "creditsPerAnswer_one": "{{count}} crédit par réponse",
+            "creditsPerAnswer_many": "{{count}} crédits par réponse",
+            "creditsPerAnswer_other": "{{count}} crédits par réponse",
             "creditsCount_one": "{{count}} crédit",
             "creditsCount_many": "{{count}} crédits",
             "creditsCount_other": "{{count}} crédits",
@@ -30,7 +38,7 @@
             "recheckConfirm": "Recorriger"
         },
         "revaluateEntireAssessment": {
-            "title": "Réévaluer l’ensemble de l’évaluation",
+            "title": "Recorriger avec le corrigé",
             "confirmMessagePrefix": "Voulez-vous vraiment effectuer la réévaluation pour",
             "confirmMessageSuffix": "pour l’ensemble de l’évaluation ?"
         },
@@ -55,6 +63,7 @@
     "dropdown": {
         "checkingSubmission": "Vérification de la soumission...",
         "viewSubmission": "Voir la soumission",
+        "viewAnswerSheet": "Voir la copie jointe",
         "loadingSubmission": "Chargement de la soumission...",
         "uploadSubmission": "Importer la soumission",
         "provideReattempt": "Accorder une nouvelle tentative",
@@ -71,7 +80,12 @@
         "downloadReport": "Télécharger le rapport",
         "releaseResult": "Publier le résultat",
         "downloadAiReport": "Télécharger le rapport IA",
-        "proctoring": "Surveillance"
+        "proctoring": "Surveillance",
+        "openSubmission": "Ouvrir la copie",
+        "remarkWithKey": "Recorriger avec le corrigé",
+        "markOnSheet": "Corriger sur la copie",
+        "sendUpdatedResult": "Envoyer le résultat mis à jour",
+        "hideResultAgain": "Masquer à nouveau le résultat"
     },
     "toasts": {
         "reattemptProvided": "Une nouvelle tentative a été accordée à {{name}}.",
@@ -81,6 +95,7 @@
         "revaluateSuccess": "Votre tentative pour cette évaluation a été réévaluée. Veuillez vérifier votre e-mail !",
         "evaluationStarted": "L’évaluation par IA a démarré avec succès !",
         "evaluationError": "Échec du démarrage de l’évaluation par IA. Veuillez réessayer.",
+        "alreadyReleased": "Ce résultat a déjà été publié : l’évaluation par IA ne peut plus modifier ses notes. Modifiez les notes manuellement.",
         "noEvaluatedCopy": "Aucune copie évaluée trouvée pour cette tentative.",
         "evaluatedCopyLoadError": "Échec du chargement de la copie évaluée. Veuillez réessayer.",
         "noSubmissionFile": "Aucun fichier de soumission trouvé pour cette tentative.",

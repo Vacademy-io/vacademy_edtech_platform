@@ -117,5 +117,9 @@
   },
   "nav": {
     "allPages": "सभी पेज"
+  },
+  "neon": {
+    "nextMission": "अगला मिशन",
+    "firstMission": "पहला मिशन"
   }
 }

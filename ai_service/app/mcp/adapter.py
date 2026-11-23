@@ -28,6 +28,7 @@ from sqlalchemy.orm import Session
 from ..schemas.auth import PinnedPrincipal
 from ..services.assistant_tool_registry import (
     ASSISTANT_TOOLS,
+    GROUP_LABELS,
     ToolContext,
     ToolSpec,
     execute_tool,
@@ -37,8 +38,10 @@ from ..services.assistant_tool_registry import (
 )
 from .access import setting_for_tool_gate
 from .constants import (
+    ASSISTANT_GROUP_PLACEMENT,
     MCP_EXPOSED_TOOLS,
     MCP_OPT_IN_GROUPS,
+    MCP_ALWAYS_ON_TOOLS,
     MCP_TOOL_AREAS,
     MCP_TOOL_GROUP_LABELS,
     MCP_TOOL_GROUP_SUMMARIES,
@@ -93,8 +96,8 @@ def tool_catalog(include_opt_in: bool = True, entitlements: Optional[Any] = None
     """
     catalog: List[Dict[str, Any]] = []
     for spec in exposed_specs():
-        fn = spec.schema.get("function", {})
-        key = spec.key()
+        fn = spec.schema_for(via_mcp=True).get("function", {})
+        key = spec.key(via_mcp=True)
         if not include_opt_in and key in MCP_OPT_IN_GROUPS:
             continue
         description = fn.get("description", "")
@@ -111,8 +114,8 @@ def tool_catalog(include_opt_in: bool = True, entitlements: Optional[Any] = None
                 "summary": MCP_TOOL_GROUP_SUMMARIES.get(key, description),
                 "actions": actions,
                 "mode": spec.mode,
-                # Not a toggle: on for everyone who may connect (identity only).
-                "always_on": bool(spec.always_allowed),
+                # Not a toggle: on for everyone who may connect (identity, product how-tos).
+                "always_on": bool(spec.always_allowed) or spec.name in MCP_ALWAYS_ON_TOOLS,
                 "module_feature": spec.module_feature or (spec.module_features_any or (None,))[0],
                 **_placement(key),
             }
@@ -122,8 +125,110 @@ def tool_catalog(include_opt_in: bool = True, entitlements: Optional[Any] = None
     return catalog
 
 
+def access_areas() -> List[Dict[str, Any]]:
+    """The settings page's rows, in display order: one per capability area."""
+    return [{"key": key, "label": area["label"], "summary": area["summary"], "order": index}
+            for index, (key, area) in enumerate(MCP_TOOL_AREAS.items())]
+
+
+def _in_product_groups() -> Dict[str, List[ToolSpec]]:
+    """In-product assistant settings group → its specs (MCP-only tools are never offered in-product)."""
+    groups: Dict[str, List[ToolSpec]] = {}
+    for spec in ASSISTANT_TOOLS.values():
+        if not spec.mcp_only:
+            groups.setdefault(spec.key(), []).append(spec)
+    return groups
+
+
+def _ordered_roles(specs: List[ToolSpec]) -> List[str]:
+    roles: List[str] = []
+    for spec in specs:
+        for role in spec.default_roles or []:
+            if role not in roles:
+                roles.append(role)
+    return roles
+
+
+def assistant_group_opt_in(key: str, specs: List[ToolSpec]) -> bool:
+    """
+    True when the assistant's group is turned on one by one, never by an area's
+    Edit level or a preset: one of its tools is ``ToolSpec.opt_in`` in the
+    registry, which every write whose change is an MCP opt-in group sets (e.g.
+    ``learner_edits`` changes enrolments, which MCP keeps as
+    ``learner_enrolment_changes``; test_mcp_ai_access_catalog pins that).
+    """
+    return any(s.opt_in for s in specs)
+
+
+def assistant_catalog(entitlements: Optional[Any] = None) -> List[Dict[str, Any]]:
+    """
+    The in-product assistant's settings groups, each placed in an area of the
+    settings page (ASSISTANT_GROUP_PLACEMENT) next to the MCP tools of that area.
+
+    Served from the backend for the same reason as ``tool_catalog``: the
+    dashboard renders it and keeps no list of its own. Each entry carries the
+    group's out-of-the-box defaults (``default_enabled``, ``default_roles``),
+    the plan feature its tools need and ``opt_in`` (see
+    ``assistant_group_opt_in``); with ``entitlements`` also ``entitled``.
+    """
+    groups = _in_product_groups()
+    catalog: List[Dict[str, Any]] = []
+    for key, place in ASSISTANT_GROUP_PLACEMENT.items():
+        specs = groups.get(key)
+        if not specs:
+            # A group renamed in the registry must be loud, not a silently missing switch.
+            logger.error("ASSISTANT_GROUP_PLACEMENT names '%s', which no in-product tool uses.", key)
+            continue
+        features = [f for s in specs for f in ([s.module_feature] if s.module_feature else
+                                               list(s.module_features_any or ()))]
+        area = MCP_TOOL_AREAS.get(place["area"]) or {"label": place["area"], "summary": ""}
+        entry: Dict[str, Any] = {
+            "key": key,
+            "label": GROUP_LABELS.get(key, key.replace("_", " ").capitalize()),
+            "tools": [s.name for s in specs],
+            "mode": "WRITE" if any(s.mode == "WRITE" for s in specs) else "READ",
+            "always_on": any(s.always_allowed for s in specs),
+            "default_enabled": any(s.default_enabled for s in specs),
+            "default_roles": _ordered_roles(specs),
+            "module_feature": features[0] if features else None,
+            "area": place["area"],
+            "area_label": area["label"],
+            "area_order": list(MCP_TOOL_AREAS).index(place["area"]) if place["area"] in MCP_TOOL_AREAS else 99,
+            "level": place["level"],
+            "opt_in": assistant_group_opt_in(key, specs),
+        }
+        if entitlements is not None:
+            # On when the plan includes at least one of the group's tools.
+            entry["entitled"] = any(missing_module_feature(s, entitlements) is None for s in specs)
+        catalog.append(entry)
+    return catalog
+
+
+def assistant_default_setting() -> Dict[str, Any]:
+    """
+    What the assistant allows while an institute has never saved its setting
+    (``_effective_enabled_tools`` with no setting), written out as a setting:
+    groups on for everyone in ``enabled_tools``, role defaults in
+    ``role_overrides``. The settings page starts from this until the setting
+    is first saved. Saved role lists are matched to a person's roles the same
+    way as these defaults: ignoring case, spaces and underscores.
+    """
+    enabled: List[str] = []
+    overrides: Dict[str, Dict[str, List[str]]] = {}
+    for key, specs in _in_product_groups().items():
+        if any(s.always_allowed for s in specs):
+            continue
+        if any(s.default_enabled for s in specs):
+            enabled.append(key)
+        for role in _ordered_roles(specs):
+            node = overrides.setdefault(role, {"enabled_tools": []})
+            if key not in node["enabled_tools"]:
+                node["enabled_tools"].append(key)
+    return {"enabled_tools": enabled, "role_overrides": overrides}
+
+
 def _to_mcp_tool(spec: ToolSpec) -> Tool:
-    fn = spec.schema.get("function", {})
+    fn = spec.schema_for(via_mcp=True).get("function", {})
     parameters = fn.get("parameters") or {"type": "object", "properties": {}}
     read_only = spec.mode == "READ"
     return Tool(
@@ -149,7 +254,7 @@ def list_tools_for(principal: PinnedPrincipal, mcp_setting: Dict[str, Any],
     on every call. Without it (tests, DB-less callers) that check is skipped.
     """
     gate_setting = setting_for_tool_gate(mcp_setting, principal)
-    specs = [spec for spec in exposed_specs() if is_tool_allowed(spec.name, principal, gate_setting)]
+    specs = [spec for spec in exposed_specs() if is_tool_allowed(spec.name, principal, gate_setting, via_mcp=True)]
     if db is not None and any(s.module_feature or s.module_features_any for s in specs):
         try:
             ent = load_entitlements(db, principal.institute_id)
@@ -211,7 +316,9 @@ async def call_tool(
     ctx = ToolContext(
         db=db,
         principal=principal,
-        keys=(),  # embeddings-only; none of the exposed tools need API keys
+        # No keys from the client, ever. A tool that embeds (search_help_knowledge)
+        # resolves the server's own key when it runs.
+        keys=(),
         bearer_token=platform_token,
         images_as_content=True,  # image fields become ImageContent below
         via_mcp=True,  # mcp_only tools (design_import, website_publish) run only here

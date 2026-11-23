@@ -136,6 +136,10 @@ public class CommerceOrderLine extends CommerceCatalogueEntity {
     @Column(name = "cancelled_value", nullable = false, precision = 12, scale = 2)
     private BigDecimal cancelledValue = BigDecimal.ZERO.setScale(2);
 
+    /** What the credit notes of this line's returns gave back (V710). */
+    @Column(name = "returned_value", nullable = false, precision = 12, scale = 2)
+    private BigDecimal returnedValue = BigDecimal.ZERO.setScale(2);
+
     /** Units still to ship or ship again: quantity less cancelled and shipped. */
     public int openQuantity() {
         return quantity - (qtyCancelled == null ? 0 : qtyCancelled) - (qtyShipped == null ? 0 : qtyShipped);

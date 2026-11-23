@@ -36,6 +36,9 @@ public class AiEvaluationController {
         private final AssessmentChoiceService choiceService;
         private final CopyCheckReRenderService reRenderService;
 
+        @org.springframework.beans.factory.annotation.Autowired(required = false)
+        private vacademy.io.assessment_service.features.submission_review.service.SubmissionReviewAccess submissionReviewAccess;
+
         /**
          * Is this test AI-checkable, or does it only hold the manual-upload
          * placeholder? Lets the UI offer "Enable AI checking" instead of a button
@@ -178,8 +181,14 @@ public class AiEvaluationController {
                         @PathVariable String processId,
                         @PathVariable String questionId,
                         @RequestBody QuestionOverrideRequest request) {
-                accessValidator.requireProcessAccess(user, instituteId, processId);
+                var attempt = accessValidator.requireProcessAttempt(user, instituteId, processId);
                 accessValidator.requireStaffRole(user);
+                // Same edit rule as the submission page (contract 8): staff as before 1a; an
+                // evaluator-only user on their own attempts and before release only.
+                if (submissionReviewAccess != null && attempt != null) {
+                        submissionReviewAccess.requireEdit(user, attempt,
+                                        "RELEASED".equals(attempt.getReportReleaseStatus()));
+                }
                 reviewService.overrideQuestion(processId, questionId, request.getMarksAwarded(),
                                 request.getFeedback(), request.getAnnotationEdits(), user.getUserId());
                 return ResponseEntity.ok("Question evaluation updated");

@@ -17,6 +17,12 @@ then); reading them is free.
 
 Every read is scoped to the pinned institute: the admin-core endpoints refuse a
 learner (or batch) that is not in it, and the saved-report SQL filters on it.
+
+In the in-product assistant the tool answers "how is this learner doing" and is
+worded for that (ASSISTANT_SCHEMA); it is also offered to the "learner_data"
+group (the learner lookups). A caller who has that group but not "Progress
+reports: view data" gets ``data`` with LOOKUP_MODULES and no ``detail``, and
+``guide``; the saved reports need "Progress reports: view data".
 """
 from __future__ import annotations
 
@@ -34,6 +40,8 @@ logger = logging.getLogger(__name__)
 
 LEARNER_REPORT_TOOL_NAME = "learner_report"
 LEARNER_REPORT_GROUP_KEY = "learner_reports"
+#: The in-product group of the learner lookups, which also offers ``data`` (see the module docstring).
+LOOKUP_GROUP_KEY = "learner_data"
 LEARNER_REPORT_ACTIONS = ("guide", "data", "saved_reports", "saved_report")
 
 #: The report's sections (admin-core ReportModule keys). Identity, institute and period are always sent.
@@ -44,6 +52,9 @@ REPORT_MODULES = ("attendance", "live_classes", "academics", "activity", "progre
 DETAIL_PARTS = ("attendance_sessions", "module_progress", "content_activity", "assignments", "doubts",
                 "attempt_insights", "attempt_details")
 DEFAULT_DETAIL_PARTS = DETAIL_PARTS[:-1]  # attempt_details (per-question input) only when asked for
+#: The report sections a lookups-only caller reads (module docstring).
+LOOKUP_MODULES = ("attendance", "live_classes", "academics", "activity", "progress", "certificates", "assignments",
+                  "doubts", "login")
 
 DEFAULT_ATTEMPTS = 10
 MAX_ATTEMPTS = 50
@@ -102,6 +113,38 @@ LEARNER_REPORT_SCHEMA: Dict[str, Any] = {
         },
     },
 }
+
+
+def _assistant_schema() -> Dict[str, Any]:
+    """The in-product assistant's wording: same parameters, worded for answering the user in the panel."""
+    import copy
+
+    out = copy.deepcopy(LEARNER_REPORT_SCHEMA)
+    fn = out["function"]
+    fn["description"] = (
+        "How a learner is doing: attendance, live classes, assessment scores (rank, class average, marks by "
+        "subject), study time and habits, course progress, certificates, assignments, doubts, logins and topic "
+        "mastery. Read-only. Pick an `action`:\n"
+        "- data (learner_id, modules, start_date, end_date — YYYY-MM-DD, default the last 30 days; optional "
+        "batch_id): pass ONLY the modules the question needs (usually 1-3); `academics` is slow — only for tests "
+        "and scores. Pass detail ['none'] unless the user asks for the class-by-class, slide-by-slide or "
+        "per-attempt records.\n"
+        "- saved_reports (learner_id): progress reports already generated in the dashboard; saved_report "
+        "(report_id): one of them in full.\n"
+        "- guide: what each field means and the dashboard report's status and grade rules.\n"
+        "learner_id: from learners(action='find'), or the selected student's user_id from the page context. "
+        "Answer from the returned data only; a missing section had no data in the window — never present it as 0."
+    )
+    props = fn["parameters"]["properties"]
+    props["learner_id"]["description"] = ("The learner's learner_id (from learners find), or the selected "
+                                          "student's user_id.")
+    props["batch_id"]["description"] = ("data: one of the learner's batch_ids (from learners find), or the "
+                                        "selected student's package_session_id. Default: their latest batch.")
+    return out
+
+
+#: The in-product assistant's schema (the MCP schema stays LEARNER_REPORT_SCHEMA).
+ASSISTANT_SCHEMA: Dict[str, Any] = _assistant_schema()
 
 
 GUIDE: Dict[str, Any] = {
@@ -252,10 +295,16 @@ async def _action_data(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]
     if bad:
         return bad
 
-    requested = [m for m in (args.get("modules") or []) if m in REPORT_MODULES]
-    unknown_modules = [m for m in (args.get("modules") or []) if m not in REPORT_MODULES]
+    lookups_only = _lookups_only(ctx)
+    allowed_modules = LOOKUP_MODULES if lookups_only else REPORT_MODULES
+    requested = [m for m in (args.get("modules") or []) if m in allowed_modules]
+    unknown_modules = [m for m in (args.get("modules") or []) if m not in allowed_modules]
+    if lookups_only and not requested:
+        requested = list(LOOKUP_MODULES)
     raw_detail = args.get("detail")
-    if raw_detail is None:
+    if lookups_only:
+        detail = []
+    elif raw_detail is None:
         detail = list(DEFAULT_DETAIL_PARTS)
     else:
         detail = [p for p in raw_detail if p in DETAIL_PARTS]
@@ -293,6 +342,8 @@ async def _action_data(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]
             else results[1]
     if unknown_modules:
         out["ignored_modules"] = unknown_modules
+    if lookups_only and (raw_detail not in (None, ["none"]) or unknown_modules):
+        out["not_included"] = _needs_reports_view("the detail parts and learning_insights")["message"]
     out["note"] = ("Facts only — write the report from these numbers; read learner_report(action='guide') for "
                    "the field meanings and rules. Missing sections had no data in the window.")
     return out
@@ -366,11 +417,30 @@ _ACTIONS = {
 }
 
 
+def _lookups_only(ctx: ToolContext) -> bool:
+    """In the assistant, the caller has this tool through the learner lookups group only (module docstring)."""
+    from .assistant_tool_registry import only_through_other_groups
+
+    return only_through_other_groups(ctx, LEARNER_REPORT_TOOL_NAME)
+
+
+def _needs_reports_view(what: str) -> Dict[str, Any]:
+    from .assistant_tool_registry import GROUP_LABELS
+
+    return _err("tool_not_permitted", message=(
+        f"This user's role has '{GROUP_LABELS.get(LOOKUP_GROUP_KEY, LOOKUP_GROUP_KEY)}', which covers the report "
+        f"sections of learner_report(action='data'); {what} need "
+        f"'{GROUP_LABELS.get(LEARNER_REPORT_GROUP_KEY, LEARNER_REPORT_GROUP_KEY)}'. Do not retry. Tell the user an "
+        "admin can enable it under [AI access settings](/settings?selectedTab=aiAccess)."))
+
+
 async def execute_learner_report(args: Dict[str, Any], ctx: ToolContext) -> str:
     action = str((args or {}).get("action") or "").strip()
     handler = _ACTIONS.get(action)
     if handler is None:
         return json.dumps(_err("unknown_action", action=action, available=list(LEARNER_REPORT_ACTIONS)))
+    if action in ("saved_reports", "saved_report") and _lookups_only(ctx):
+        return json.dumps({"action": action, **_needs_reports_view("the saved reports")}, ensure_ascii=False)
     result = await handler(args or {}, ctx)
     if isinstance(result, dict) and "action" not in result:
         result = {"action": action, **result}
@@ -380,11 +450,16 @@ async def execute_learner_report(args: Dict[str, Any], ctx: ToolContext) -> str:
 LEARNER_REPORT_TOOLS: Dict[str, ToolSpec] = {
     LEARNER_REPORT_TOOL_NAME: ToolSpec(
         name=LEARNER_REPORT_TOOL_NAME,
-        schema=LEARNER_REPORT_SCHEMA,
+        schema=ASSISTANT_SCHEMA,
+        mcp_schema=LEARNER_REPORT_SCHEMA,
         executor=execute_learner_report,
         required_permission=None,
         # Its own settings group: academic data is switched on separately from finding learners.
         setting_key=LEARNER_REPORT_GROUP_KEY,
+        # In the assistant also offered to the learner lookups group, for the report sections (see the
+        # module docstring). Over MCP only its own group.
+        setting_keys_any=[LEARNER_REPORT_GROUP_KEY, LOOKUP_GROUP_KEY],
+        mcp_setting_key=LEARNER_REPORT_GROUP_KEY,
         default_enabled=False,
         default_roles=["ADMIN"],
         phase=2,
@@ -401,5 +476,6 @@ def _register() -> None:
 
 _register()
 
-__all__ = ["LEARNER_REPORT_TOOLS", "LEARNER_REPORT_TOOL_NAME", "LEARNER_REPORT_GROUP_KEY", "LEARNER_REPORT_ACTIONS", "LEARNER_REPORT_SCHEMA",
-           "REPORT_MODULES", "DETAIL_PARTS", "GUIDE", "execute_learner_report"]
+__all__ = ["ASSISTANT_SCHEMA", "LOOKUP_MODULES", "LEARNER_REPORT_TOOLS", "LEARNER_REPORT_TOOL_NAME",
+           "LEARNER_REPORT_GROUP_KEY", "LEARNER_REPORT_ACTIONS", "LEARNER_REPORT_SCHEMA", "REPORT_MODULES",
+           "DETAIL_PARTS", "GUIDE", "execute_learner_report"]

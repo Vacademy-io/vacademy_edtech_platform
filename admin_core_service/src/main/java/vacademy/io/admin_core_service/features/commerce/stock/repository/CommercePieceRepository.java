@@ -92,6 +92,36 @@ public interface CommercePieceRepository extends JpaRepository<CommercePiece, St
     int unreserve(@Param("instituteId") String instituteId, @Param("id") String pieceId,
                   @Param("orderLineId") String orderLineId);
 
+    // -- Counter sale (WP-42) --
+
+    /**
+     * A counter sale: the piece the ledger just moved IN_STOCK to SOLD (its compare-and-set, under
+     * the piece row lock, in the caller's transaction) is named for the order line. 1 = linked;
+     * 0 = the piece is not SOLD. A piece that came back from an earlier sale (a return) still
+     * names that sale's line, so the old line is replaced, as packing does.
+     */
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+            UPDATE commerce_piece
+            SET order_line_id = :orderLineId, updated_at = CURRENT_TIMESTAMP
+            WHERE institute_id = :instituteId AND id = :id AND status = 'SOLD'
+            """, nativeQuery = true)
+    int linkSoldToLine(@Param("instituteId") String instituteId, @Param("id") String pieceId,
+                       @Param("orderLineId") String orderLineId);
+
+    /**
+     * The void of a counter sale: the piece the ledger just moved back IN_STOCK leaves its line.
+     * 1 = unlinked.
+     */
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+            UPDATE commerce_piece
+            SET order_line_id = NULL, updated_at = CURRENT_TIMESTAMP
+            WHERE institute_id = :instituteId AND id = :id AND status = 'IN_STOCK' AND order_line_id = :orderLineId
+            """, nativeQuery = true)
+    int unlinkFromLine(@Param("instituteId") String instituteId, @Param("id") String pieceId,
+                       @Param("orderLineId") String orderLineId);
+
     /** Written only by StockLedgerService, with the piece row locked. */
     @Modifying(flushAutomatically = true)
     @Query(value = """

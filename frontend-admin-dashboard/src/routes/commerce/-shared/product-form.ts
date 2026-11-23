@@ -10,6 +10,7 @@ import {
     type StockPolicy,
     type VariantRequest,
 } from './catalogue-types';
+import { decimalsFor, isPieceUnit, lengthInputText, parseLength, unitSign, unitWord } from './units';
 import { type Combination, combinationKey, duplicateSkus } from './variant-combinations';
 
 /**
@@ -69,6 +70,29 @@ export interface ProductFormValues {
 
 export const DEFAULT_MEASURE_UNIT = 'MTR';
 export const DEFAULT_MEASURE_SCALE = '10';
+/** Parts in one unit that goods sold by length may use (WP-44 D2): 1 is for counted goods only. */
+export const MEASURE_SCALES = [10, 100, 1000] as const;
+
+/**
+ * The scale the smallest cut is read with: the real one (W3: a stored old row
+ * with scale 4 reads "0.5" as 2, never at a rounded-up 10), the default 10 when
+ * it is blank or not a whole number above 1.
+ */
+export const measureScaleOf = (raw: string): number => {
+    const n = Number(raw.trim());
+    return Number.isInteger(n) && n > 1 && n <= 1_000_000 ? n : Number(DEFAULT_MEASURE_SCALE);
+};
+
+/**
+ * The smallest cut typed in units ("0.5" m) → base units (5 at scale 10), or
+ * null when it is blank, not a number, has more decimals than the scale holds
+ * ("0.55" at scale 10) or is 0.
+ */
+export function stepToBase(raw: string, scaleRaw: string): number | null {
+    if (raw.trim() === '') return null;
+    const parsed = parseLength(raw, measureScaleOf(scaleRaw));
+    return 'stored' in parsed && parsed.stored >= 1 ? parsed.stored : null;
+}
 
 const EMPTY_TRANSLATION: TranslationValues = {
     name: '',
@@ -168,7 +192,11 @@ export function productToValues(product: ProductDetail): ProductFormValues {
         sold_as: soldAsOf(product),
         unit: product.unit ?? '',
         qty_scale: text(product.qty_scale),
-        qty_step: text(product.qty_step),
+        // A measured product's smallest cut is shown in units ("0.5" m), stored in base units (5).
+        qty_step:
+            soldAsOf(product) === 'MEASURED' && product.qty_step
+                ? lengthInputText(product.qty_step, product.qty_scale)
+                : text(product.qty_step),
         tax_class_id: product.tax_class_id ?? '',
         origin_location_id: product.origin_location_id ?? '',
         translations,
@@ -291,7 +319,8 @@ export function measureFields(
             stock_mode: 'QUANTITY',
             unit: (values.unit.trim() || DEFAULT_MEASURE_UNIT).toUpperCase(),
             qty_scale: numberOrUndefined(values.qty_scale) ?? Number(DEFAULT_MEASURE_SCALE),
-            qty_step: numberOrUndefined(values.qty_step) ?? 1,
+            // Typed in units; validation refuses anything that is not a whole number of base units.
+            qty_step: stepToBase(values.qty_step, values.qty_scale) ?? 1,
         };
     }
     return {
@@ -379,13 +408,50 @@ export function valuesToProductRequest(
     return request;
 }
 
+/**
+ * WP-44 W1: a warning (never a block) when a measured product's tax class is
+ * quoted in another unit: the invoice prints the item's own unit, but the tax
+ * class's rates and price limits are read per one unit of the item.
+ * 'pieces' when the class has no measuring unit (blank, PCS); null when fine.
+ */
+export function taxUnitWarning(
+    values: Pick<ProductFormValues, 'sold_as' | 'unit'>,
+    taxClassUnit: string | null | undefined
+): 'mismatch' | 'pieces' | null {
+    if (values.sold_as !== 'MEASURED') return null;
+    const itemSign = unitSign(values.unit.trim() || DEFAULT_MEASURE_UNIT);
+    const classSign = unitSign(taxClassUnit);
+    if (classSign === itemSign) return null;
+    return classSign === null ? 'pieces' : 'mismatch';
+}
+
+/**
+ * The price and MRP labels of a variant row: per the unit's word for measured
+ * goods ("Price per m (₹, with tax)", "प्रति मीटर दाम …", "MRP per kg (₹)"),
+ * never the stored code ("MTR"); counted goods, and a measure whose unit counts
+ * pieces (refused on save), keep the plain labels.
+ */
+export function variantPriceLabels(
+    values: Pick<ProductFormValues, 'sold_as' | 'unit'>,
+    t: TFunction
+): { price: string; mrp: string } {
+    const word =
+        values.sold_as === 'MEASURED' ? unitWord(values.unit.trim() || DEFAULT_MEASURE_UNIT, t) : null;
+    if (!word) {
+        return { price: t('products.variants.price'), mrp: t('products.variants.mrp') };
+    }
+    return {
+        price: t('products.variants.pricePerUnit', { unit: word }),
+        mrp: t('products.variants.mrpPerUnit', { unit: word }),
+    };
+}
+
 // ─── Validation ──────────────────────────────────────────────────────────────
 
 /** Letters of any script, digits and single hyphens: the server's slug rule. */
 export const SLUG_PATTERN = /^[\p{L}\p{M}\p{N}]+(-[\p{L}\p{M}\p{N}]+)*$/u;
 const MONEY = /^(\d{1,10}(\.\d{1,2})?)?$/;
 const WHOLE = /^\d{0,9}$/;
-const POSITIVE_WHOLE = /^[1-9]\d{0,8}$/;
 export const BLOCK_CODE = /^[a-z0-9]+(_[a-z0-9]+)*$/;
 
 const translationSchema = z.object({
@@ -397,11 +463,19 @@ const translationSchema = z.object({
     content_blocks: z.array(z.object({ code: z.string(), html: z.string() })),
 });
 
+/** What is stored for the product being edited (null for a new one): rules on a changed measure. */
+export type StoredMeasure = Pick<ProductDetail, 'qty_scale' | 'unit' | 'stock_mode'> | null | undefined;
+
 /**
  * What the form checks before the server is asked. The server checks all of it
  * again and more (unique slug, SKU and barcode; tax class in force).
+ *
+ * The measure rules (scale 10/100/1000, a measuring unit) apply when the
+ * measure is set or changed (W3): a stored old row with another scale keeps its
+ * name, price and pictures editable, since its scale cannot change after
+ * publish anyway.
  */
-export const buildProductSchema = (t: TFunction) =>
+export const buildProductSchema = (t: TFunction, stored?: StoredMeasure) =>
     z
         .object({
             slug: z
@@ -493,11 +567,33 @@ export const buildProductSchema = (t: TFunction) =>
             });
 
             if (values.sold_as === 'MEASURED') {
-                if (values.qty_scale !== '' && !POSITIVE_WHOLE.test(values.qty_scale)) {
-                    issue(['qty_scale'], t('products.validation.positiveWhole'));
+                const measure = measureFields(values);
+                const storedScale = stored ? (stored.qty_scale ?? 1) : null;
+                const scaleChanged = storedScale === null || measure.qty_scale !== storedScale;
+                const unitChanged = !stored || scaleChanged || (measure.unit ?? '') !== (stored.unit ?? '').toUpperCase();
+                // Sold by length needs 10, 100 or 1000 parts in a unit (D2); 1 would read back as "by quantity".
+                if (
+                    scaleChanged &&
+                    values.qty_scale !== '' &&
+                    !(MEASURE_SCALES as readonly number[]).includes(Number(values.qty_scale))
+                ) {
+                    issue(['qty_scale'], t('products.validation.measureScale'));
                 }
-                if (!POSITIVE_WHOLE.test(values.qty_step)) {
-                    issue(['qty_step'], t('products.validation.positiveWhole'));
+                // W2: a measured item needs a measuring unit, never a piece code (one list with the server).
+                if (unitChanged && isPieceUnit(measure.unit)) {
+                    issue(['unit'], t('products.validation.measureUnit'));
+                }
+                if (stepToBase(values.qty_step, values.qty_scale) === null) {
+                    const scale = measureScaleOf(values.qty_scale);
+                    const parsed = parseLength(values.qty_step, scale);
+                    issue(
+                        ['qty_step'],
+                        'problem' in parsed && (parsed.problem === 'decimals' || parsed.problem === 'grid')
+                            ? t('products.validation.stepDecimals', { count: decimalsFor(scale) })
+                            : 'problem' in parsed && parsed.problem === 'comma'
+                              ? t('units.problems.comma')
+                              : t('products.validation.stepRequired')
+                    );
                 }
             }
 

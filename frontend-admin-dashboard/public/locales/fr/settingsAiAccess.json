@@ -1,0 +1,144 @@
+{
+    "loading": "Chargement des paramètres…",
+    "header": {
+        "title": "Accès IA",
+        "description": "Choisissez, en un seul endroit, ce que l’IA peut faire avec les données de votre établissement : l’assistant intégré à votre portail d’administration, et les applications d’IA que votre équipe connecte, comme Claude, ChatGPT et Cursor. Chaque fonctionnalité n’apparaît qu’une fois, avec les deux côte à côte. L’accès reste toujours limité à cet établissement, et chaque personne n’atteint que ce que son rôle autorise."
+    },
+    "capabilities": {
+        "title": "Ce que l’IA peut faire",
+        "description": "Réglez chaque domaine sur Désactivé, Consulter ou Modifier pour l’assistant intégré et pour les applications d’IA. Ouvrez une ligne pour voir exactement ce qu’elle autorise et activer ou désactiver une fonctionnalité précise."
+    },
+    "doors": {
+        "assistant": "Assistant intégré",
+        "mcp": "Applications d’IA",
+        "levelAria": "{{area}} : {{door}}"
+    },
+    "door": {
+        "none": "Non proposé",
+        "outsidePlan": "Hors de votre offre",
+        "everyoneOn": "Activé pour tout le monde",
+        "outsidePlanHint": "Votre offre ne comprend pas ceci. Ce qui a été enregistré pour ce domaine est conservé tel quel.",
+        "assistantEdits": "L’assistant ne fait que proposer ces modifications. Rien n’est appliqué tant que la personne n’a pas appuyé sur Confirm."
+    },
+    "scope": {
+        "label": "Paramètres pour",
+        "everyone": "Tout le monde",
+        "customized": "{{role}} (personnalisé)",
+        "everyoneHint": "S’applique à tous les rôles du personnel. Choisissez un rôle pour lui donner des fonctionnalités supplémentaires.",
+        "roleHint": "Tout ce que {{role}} a : ce que tout le monde a, plus ses propres ajouts. Ce qui est activé pour tout le monde est signalé et ne peut être désactivé que dans Tout le monde.",
+        "customizeAssistant": "Personnaliser l’assistant pour ce rôle",
+        "customizeMcp": "Personnaliser les applications d’IA pour ce rôle",
+        "notAllowedMcp": "Ce rôle ne peut pas connecter d’applications d’IA. Ajoutez-le d’abord dans Qui peut se connecter.",
+        "applyPreset": "Appliquer l’ensemble suggéré",
+        "presetApplied": "Ensemble suggéré appliqué. Cliquez sur Enregistrer les paramètres pour le conserver."
+    },
+    "mcpOff": "Le serveur MCP est désactivé : les applications d’IA ne peuvent pas encore se connecter. Vous pouvez tout de même choisir ce qu’elles pourront faire.",
+    "mcpPresetsLabel": "Applications d’IA",
+    "section": {
+        "mcpTitle": "Applications d’IA connectées",
+        "mcpDescription": "Activez le serveur MCP, choisissez qui peut se connecter et partagez les informations de connexion."
+    },
+    "footer": {
+        "save": "Enregistrer les paramètres",
+        "saving": "Enregistrement…",
+        "unsaved": "Certaines modifications ne sont pas enregistrées."
+    },
+    "toasts": {
+        "saved": "Paramètres d’accès IA enregistrés",
+        "saveFailed": "Impossible d’enregistrer les paramètres. Veuillez réessayer."
+    },
+    "errors": {
+        "catalogUnavailable": "Impossible de charger la liste des fonctionnalités d’IA. Vos paramètres enregistrés ne sont pas affectés. Réessayez dans un instant.",
+        "settingsUnavailable": "Impossible de charger vos paramètres d’IA enregistrés : rien ne peut encore être modifié ici. Réessayez dans un instant."
+    },
+    "areas": {
+        "identity": {
+            "label": "Qui est connecté",
+            "summary": "Nom, coordonnées et identité visuelle de l’établissement."
+        },
+        "help": {
+            "label": "Aide pratique",
+            "summary": "Guides pas à pas pour le portail d’administration, avec des liens."
+        },
+        "institute": {
+            "label": "Statistiques de l’établissement",
+            "summary": "Profil, frais impayés, cours en direct, nombre d’apprenants."
+        },
+        "website": {
+            "label": "Site web",
+            "summary": "Pages, sections, thème, SEO et trafic du site."
+        },
+        "lead_forms": {
+            "label": "Formulaires de prospects",
+            "summary": "Campagnes de prospects, leurs champs de formulaire et les prospects reçus."
+        },
+        "automations": {
+            "label": "Automatisations",
+            "summary": "Workflows, leurs exécutions et les modèles d’e-mail / WhatsApp."
+        },
+        "blog": {
+            "label": "Blog",
+            "summary": "Articles de blog et pages qui les affichent."
+        },
+        "courses": {
+            "label": "Cours",
+            "summary": "Contenu des cours, règles de diffusion progressive, liens d’invitation et tarifs."
+        },
+        "learners": {
+            "label": "Apprenants",
+            "summary": "Trouver des apprenants, les inscrire à des cours, modifier leurs informations et leurs inscriptions."
+        },
+        "batches": {
+            "label": "Groupes",
+            "summary": "Trouver des groupes, voir qui en fait partie et qui s’est inscrit récemment."
+        },
+        "learner_reports": {
+            "label": "Rapports de progression",
+            "summary": "Présence, notes, temps d’étude et progression d’un apprenant, pour que l’application d’IA rédige son rapport."
+        },
+        "assessments": {
+            "label": "Évaluations",
+            "summary": "Tests, résultat de chaque participant et classement."
+        },
+        "live_classes": {
+            "label": "Cours en direct",
+            "summary": "Cours en direct en ce moment, cours à venir et les vôtres."
+        },
+        "fees": {
+            "label": "Frais et paiements",
+            "summary": "Soldes dus, paiements et forfaits des apprenants, dossiers de frais et encaissements."
+        },
+        "announcements": {
+            "label": "Annonces",
+            "summary": "Annonces programmées et envoyées ; envoi d’une annonce."
+        },
+        "sub_orgs": {
+            "label": "Sous-organisations",
+            "summary": "Organisations partenaires / centres : leurs cours, places, administrateurs et apprenants."
+        },
+        "crm_leads": {
+            "label": "CRM : Prospects",
+            "summary": "Trouver et traiter les prospects : détails, relances, statut, responsables et nouvelles demandes."
+        },
+        "crm_calls": {
+            "label": "CRM : Appels",
+            "summary": "Appels, transcriptions et rappels ; appels aux prospects et campagnes d’IA."
+        },
+        "crm_meetings": {
+            "label": "CRM : Rendez-vous",
+            "summary": "Rendez-vous de conseil, créneaux libres et pages de réservation."
+        },
+        "crm_messages": {
+            "label": "CRM : Messages",
+            "summary": "Historique WhatsApp et e-mail des prospects, boîte de réception et modèles."
+        },
+        "crm_reports": {
+            "label": "CRM : Rapports",
+            "summary": "Sources, entonnoir, blocages, conseillers, appels, relances, SLA, rapports personnalisés, activité en direct."
+        },
+        "crm_payments": {
+            "label": "CRM : Paiements",
+            "summary": "Rapport et fichier des admissions, soldes dus, frais en retard, encaissements et rappels de frais."
+        }
+    }
+}

@@ -45,6 +45,15 @@ public interface CommerceGatewayOrderRepository extends JpaRepository<CommerceGa
     /** The row whose payment paid the order, if a payment has. */
     Optional<CommerceGatewayOrder> findFirstByCommerceOrderIdAndPayingTrue(String commerceOrderId);
 
+    /**
+     * The payment id that paid the order, read as a value (never a managed entity that an
+     * earlier read of the same request may hold with the values before {@link #markPaying}).
+     */
+    @Query(value = "SELECT g.gateway_payment_id FROM commerce_gateway_order g WHERE g.commerce_order_id = :orderId "
+            + "AND g.paying AND g.gateway_payment_id IS NOT NULL ORDER BY g.status_at DESC NULLS LAST LIMIT 1",
+            nativeQuery = true)
+    Optional<String> findPayingPaymentId(@Param("orderId") String orderId);
+
     /** The order code has dealt with the payment of this commerce order. */
     @Transactional
     @Modifying

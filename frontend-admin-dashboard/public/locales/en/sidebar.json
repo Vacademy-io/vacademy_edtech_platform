@@ -63,6 +63,7 @@
     "messagingDashboard": "Messaging Dashboard",
     "instituteOverview": "Institute Overview",
     "lmsDashboard": "LMS Dashboard",
+    "learnerHome": "Learner home",
     "institutePulse": "Institute Pulse",
     "instructorCopilot": "Instructor Copilot",
     "interactiveClass": "Interactive class",
@@ -120,6 +121,8 @@
     "regularizations": "Regularizations",
     "reports": "Reports",
     "utmCampaigns": "Campaigns (UTM)",
+    "adPerformance": "Ad Performance",
+    "socialPosts": "Social Posts",
     "requests": "Requests",
     "runs": "Runs",
     "salarySetup": "Salary Setup",
@@ -163,5 +166,6 @@
     "commerceCustomers": "Customers",
     "commerceDiscounts": "Discounts",
     "commerceReports": "Shop reports",
+    "commerceParallelRun": "Switch-over days",
     "commerceSettings": "Shop settings"
 }

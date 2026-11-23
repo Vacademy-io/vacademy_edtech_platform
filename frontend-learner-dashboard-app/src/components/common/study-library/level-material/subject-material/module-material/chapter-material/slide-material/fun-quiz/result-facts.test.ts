@@ -3,6 +3,7 @@ import {
   isPlaceholderName,
   joinPlace,
   marksText,
+  neonStars,
   passTick,
   resultActions,
   resultTiles,
@@ -120,5 +121,17 @@ describe("place names", () => {
     expect(joinPlace("Physics", "Lenses and mirrors")).toBe("Physics · Lenses and mirrors");
     expect(joinPlace("default", "Lenses and mirrors")).toBe("Lenses and mirrors");
     expect(joinPlace(null, undefined, "")).toBe("");
+  });
+});
+
+describe("neonStars", () => {
+  it("gives 3, 2 or 1 star from the score, none when not passed", () => {
+    expect(neonStars(100, "passed")).toBe(3);
+    expect(neonStars(90, "none")).toBe(3);
+    expect(neonStars(89, "passed")).toBe(2);
+    expect(neonStars(75, "none")).toBe(2);
+    expect(neonStars(74, "passed")).toBe(1);
+    expect(neonStars(0, "none")).toBe(1);
+    expect(neonStars(95, "notPassed")).toBe(0);
   });
 });

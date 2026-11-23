@@ -46,7 +46,8 @@
         "movedToAppearance": "The theme skin now lives in Settings → Appearance, together with corner style, density and surface style.",
         "openAppearance": "Open Appearance settings",
         "movedToTheme": "The theme skin is now in the Look & Layout tab, together with colours, font, corners and the app layout.",
-        "openTheme": "Open Look & Layout"
+        "openTheme": "Open Look & Layout",
+        "neonCity": "Neon City"
     },
     "widgets": {
         "cardTitle": "Dashboard Widgets",

@@ -1,0 +1,9 @@
+{
+    "title": "Ajouter depuis la banque de questions / l'épreuve",
+    "description": "Choisissez une épreuve enregistrée, puis les questions à ajouter à ce quiz.",
+    "toast": {
+        "noQuestions": "Cette épreuve ne contient aucune question à ajouter.",
+        "unsupportedSkipped_one": "{{count}} question a été ignorée : son type ne peut pas être utilisé dans un quiz.",
+        "unsupportedSkipped_other": "{{count}} questions ont été ignorées : leur type ne peut pas être utilisé dans un quiz."
+    }
+}

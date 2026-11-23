@@ -48,7 +48,12 @@ import { ToneBadge } from '../-components/ToneBadge';
 import { BulkApproveBar } from './-components/BulkApproveBar';
 import { ActiveFilters, InboxFilterControls } from './-components/InboxFilters';
 import { TaskOutcomeBadges, TaskOutcomeDetail } from './-components/TaskOutcome';
-import { canApproveTask } from './-utils/bulk-approve';
+import {
+    bulkVerbOf,
+    canSendTask,
+    needsWhatsAppTemplate,
+    type BulkVerb,
+} from './-utils/bulk-approve';
 import { hasBeenDispatched } from './-utils/outcome';
 import {
     hasInboxFilters,
@@ -70,9 +75,9 @@ import {
 } from '../-components/engine-ui';
 import { buildActionStatusMeta, buildChannelMeta, type InboxFilterKey } from '../-constants';
 import { useEngines, useTaskAction, useTaskOutcomes, useTaskPeople, useTasks } from '../-hooks';
-import { useBulkApproveCrmTasks } from '../-hooks/actions';
+import { useBulkActOnTasks } from '../-hooks/actions';
 import { useAssets } from '../-hooks/assets';
-import { listApprovableTaskIds } from '../-services/actions';
+import { listBulkActionableTasks } from '../-services/actions';
 import { formatDateTime, safeParse } from '../-utils';
 import type { EngagementAction, TaskListFilters, TaskOutcome, TaskPerson } from '../-types';
 
@@ -132,7 +137,8 @@ function personTitle(p?: TaskPerson): string | undefined {
 
 const PAGE_SIZE = 20;
 
-const NO_IDS: ReadonlySet<string> = new Set();
+/** The ticked tasks, each with what the bulk run does to it. */
+const NO_IDS: ReadonlyMap<string, BulkVerb> = new Map();
 
 type SortKey = 'priority' | 'oldest' | 'newest';
 
@@ -165,13 +171,8 @@ function ageText(iso: string | undefined, t: TFunction): string {
 function taskRules(task: EngagementAction) {
     // A proactive WhatsApp goes out only as an approved template; without one the backend refuses
     // every send, edited or not, so offering "Review & send" was a dead end.
-    const needsTemplate =
-        task.channel === 'WHATSAPP' && task.kind !== 'REPLY' && !task.templateName;
-    const canSend =
-        (task.status === 'OPEN' || task.status === 'ACKED') &&
-        !!task.channel &&
-        task.channel !== 'AI_CALL' &&
-        !needsTemplate;
+    const needsTemplate = needsWhatsAppTemplate(task);
+    const canSend = canSendTask(task);
     const canHandle = task.status === 'OPEN' || task.status === 'ACKED';
     return { needsTemplate, canSend, canHandle };
 }
@@ -209,17 +210,22 @@ function TaskInboxPage() {
         filters.to,
         filters.template,
         filters.outcome,
+        filters.task,
     ].join('|');
     const [pageState, setPageState] = useState({ page: 0, key: pageKey });
     const page = pageState.key === pageKey ? pageState.page : 0;
     const setPage = (next: number) => setPageState({ page: next, key: pageKey });
-    // The ticked approvals survive paging, but belong to one tab + filter set like the page number.
-    const [selection, setSelection] = useState<{ ids: ReadonlySet<string>; key: string }>({
-        ids: NO_IDS,
-        key: pageKey,
-    });
+    // The ticked tasks survive paging, but belong to one tab + filter set like the page number.
+    // `allPages` is set once every page was selected, so the bar stops offering it.
+    const [selection, setSelection] = useState<{
+        ids: ReadonlyMap<string, BulkVerb>;
+        key: string;
+        allPages: boolean;
+    }>({ ids: NO_IDS, key: pageKey, allPages: false });
     const selectedIds = selection.key === pageKey ? selection.ids : NO_IDS;
-    const setSelectedIds = (ids: ReadonlySet<string>) => setSelection({ ids, key: pageKey });
+    const allPagesSelected = selection.key === pageKey && selection.allPages;
+    const setSelectedIds = (ids: ReadonlyMap<string, BulkVerb>, allPages = false) =>
+        setSelection({ ids, key: pageKey, allPages });
     const [selectingAll, setSelectingAll] = useState(false);
     const [sending, setSending] = useState<EngagementAction | null>(null);
     const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -247,6 +253,7 @@ function TaskInboxPage() {
         to: filters.to,
         template: filters.template,
         outcome: withOutcome ? filters.outcome : undefined,
+        taskId: filters.task,
     });
     const { data, error, isLoading, isError, refetch } = useTasks(
         statuses,
@@ -278,7 +285,7 @@ function TaskInboxPage() {
     });
 
     const action = useTaskAction();
-    const bulkApprove = useBulkApproveCrmTasks();
+    const bulkApprove = useBulkActOnTasks();
     const tasks = data?.content ?? [];
     const { data: people } = useTaskPeople(tasks.map((task) => task.memberId));
     const personOf = (task: EngagementAction) => people?.[task.memberId];
@@ -330,33 +337,48 @@ function TaskInboxPage() {
         : matching;
     const current = visible.find((task) => task.id === selectedId) ?? visible[0];
 
-    const approvableOnPage = visible.filter(canApproveTask);
+    // AI calls and other CRM actions are approved; WhatsApp, email and in-app drafts are sent as
+    // drafted. Anything else (a WhatsApp with no template, a manual task) is opened on its own.
+    const actionableOnPage = visible.filter((task) => bulkVerbOf(task) !== null);
     const allOnPageSelected =
-        approvableOnPage.length > 0 && approvableOnPage.every((task) => selectedIds.has(task.id));
-    const showBulkBar = approvableOnPage.length > 0 || selectedIds.size > 0;
+        actionableOnPage.length > 0 && actionableOnPage.every((task) => selectedIds.has(task.id));
+    const showBulkBar = actionableOnPage.length > 0 || selectedIds.size > 0;
     // Every page can be selected only by what the server filters: the search box covers this page
-    // alone, and with an outcome filter the tabs carry no counts.
-    const approvalsTotal = q
-        ? undefined
-        : counts[FILTERS.findIndex((f) => f.key === 'approvals')]?.data?.totalElements;
+    // alone. The approvals tab knows its exact total; on the other tabs the list also holds tasks
+    // that can't be bulk-handled, so the offer carries no number.
+    const approvalsTotal =
+        counts[FILTERS.findIndex((f) => f.key === 'approvals')]?.data?.totalElements;
+    const canSelectAllPages = !q && !allPagesSelected && totalPages > 1;
+    const selectableTotal =
+        activeKey === 'approvals' && !filters.outcome ? approvalsTotal : undefined;
+    const selectedVerbs = new Set(selectedIds.values());
 
-    const toggleTask = (id: string, on: boolean) => {
-        const next = new Set(selectedIds);
-        if (on) next.add(id);
-        else next.delete(id);
+    const toggleTask = (task: EngagementAction, on: boolean) => {
+        const verb = bulkVerbOf(task);
+        const next = new Map(selectedIds);
+        if (on && verb) next.set(task.id, verb);
+        else next.delete(task.id);
         setSelectedIds(next);
     };
     const togglePage = (on: boolean) => {
-        const next = new Set(selectedIds);
-        approvableOnPage.forEach((task) => (on ? next.add(task.id) : next.delete(task.id)));
+        const next = new Map(selectedIds);
+        actionableOnPage.forEach((task) => {
+            const verb = bulkVerbOf(task);
+            if (on && verb) next.set(task.id, verb);
+            else next.delete(task.id);
+        });
         setSelectedIds(next);
     };
-    const selectAllApprovals = async () => {
+    const selectAllPages = async () => {
         setSelectingAll(true);
         try {
-            setSelectedIds(
-                new Set(await listApprovableTaskIds(instituteId, serverFilters('approvals', false)))
+            const all = await listBulkActionableTasks(
+                instituteId,
+                statuses,
+                serverFilters(activeKey, true),
+                bulkVerbOf
             );
+            setSelectedIds(new Map(all), true);
         } catch {
             toast.error(t('bulk.selectFailed'));
         } finally {
@@ -537,8 +559,11 @@ function TaskInboxPage() {
                                 <BulkApproveBar
                                     selectedCount={selectedIds.size}
                                     allOnPageSelected={allOnPageSelected}
-                                    canTogglePage={approvableOnPage.length > 0}
-                                    selectableTotal={approvalsTotal}
+                                    canTogglePage={actionableOnPage.length > 0}
+                                    canSelectAllPages={canSelectAllPages}
+                                    selectableTotal={selectableTotal}
+                                    hasApprovals={selectedVerbs.has('approve')}
+                                    hasSends={selectedVerbs.has('send')}
                                     selectingAll={selectingAll}
                                     running={
                                         bulkApprove.isPending
@@ -549,7 +574,7 @@ function TaskInboxPage() {
                                             : null
                                     }
                                     onTogglePage={togglePage}
-                                    onSelectAll={selectAllApprovals}
+                                    onSelectAll={selectAllPages}
                                     onClear={() => setSelectedIds(NO_IDS)}
                                     onApprove={() =>
                                         bulkApprove.mutate([...selectedIds], {
@@ -574,10 +599,10 @@ function TaskInboxPage() {
                                                 ? {
                                                       checked: selectedIds.has(task.id),
                                                       disabled:
-                                                          !canApproveTask(task) ||
+                                                          bulkVerbOf(task) === null ||
                                                           bulkApprove.isPending ||
                                                           selectingAll,
-                                                      onChange: (on) => toggleTask(task.id, on),
+                                                      onChange: (on) => toggleTask(task, on),
                                                   }
                                                 : undefined
                                         }
@@ -669,7 +694,7 @@ function TaskRow({
     outcomeLoading: boolean;
     active: boolean;
     onSelect: () => void;
-    /** The row's checkbox for bulk approval; absent when the list has nothing to approve. */
+    /** The row's checkbox for bulk approve / send; absent when the list has nothing to act on. */
     selection?: { checked: boolean; disabled: boolean; onChange: (on: boolean) => void };
 }) {
     const { t } = useTranslation('engagementEnginesInboxIndex');
@@ -702,7 +727,7 @@ function TaskRow({
                         aria-label={t('bulk.selectRow', {
                             name: who ?? engineName ?? t('kind.task'),
                         })}
-                        title={canApproveTask(task) ? undefined : t('bulk.notApprovable')}
+                        title={bulkVerbOf(task) ? undefined : t('bulk.notApprovable')}
                     />
                 </span>
             )}

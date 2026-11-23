@@ -17,7 +17,8 @@ class CheckoutDtosTest {
             Map.entry("Hold", Set.of("paymentLogId", "releaseToken", "expiresAt")),
             Map.entry("OrderView", Set.of("orderId", "orderNumber", "status", "paymentStatus", "paymentMethod",
                     "cancelReason", "placedAt", "holdExpiresAt", "paymentRetryable", "paymentProcessing", "currency",
-                    "lines", "totals", "recipient", "timeline", "masked")),
+                    "lines", "totals", "recipient", "timeline", "masked", "returnState", "refundState",
+                    "refundedAmount")),
             Map.entry("OrderLineView", Set.of("lineRef", "name", "variantLabel", "sku", "quantity", "qtyScale",
                     "unit", "unitPrice", "compareAtPrice", "discount", "lineTotal", "qtyCancelled", "qtyShipped")),
             Map.entry("Totals", Set.of("subtotal", "discount", "shipping", "codCharge", "tax", "roundOff", "total",
@@ -31,7 +32,9 @@ class CheckoutDtosTest {
                     "sessionExpiresAt")),
             Map.entry("OrderPage", Set.of("orders", "page", "pageSize", "total")),
             Map.entry("AddressView", Set.of("id", "label", "name", "phone", "line1", "line2", "landmark", "city",
-                    "stateCode", "pincode", "isDefault")));
+                    "stateCode", "pincode", "isDefault")),
+            // The answer to an order link (WP-33): a short order token for the order page.
+            Map.entry("OrderLinkExchange", Set.of("orderAccessToken", "orderAccessTokenExpiresAt", "phoneVerified")));
 
     @Test
     void thePublicViewsHaveExactlyTheAllowedFields() {

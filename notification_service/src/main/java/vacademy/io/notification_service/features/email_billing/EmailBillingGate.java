@@ -66,12 +66,12 @@ public class EmailBillingGate {
     private Estimate estimate(String instituteId, EmailBillingClass cls, int units, EmailBillingSettings.Snapshot s,
             boolean showBalance) {
         units = Math.max(0, units);
-        BigDecimal rate = s.creditsPerUnit();
+        BigDecimal rate = s.rate(instituteId);
         boolean chargeable = cls != null && cls.chargeable() && !s.isExempt(instituteId);
         boolean enforced = s.enforce() && cls != null && cls.blockable() && !s.isExempt(instituteId);
 
         EmailUsageStore.MonthTotals month = usageStore.monthTotals(instituteId, EmailBillingSettings.currentMonth());
-        long free = s.freeUnitsPerMonth();
+        long free = s.freeUnits(instituteId);
         long freeRemaining = Math.max(0, free - month.chargeableUnits());
         long beyondFreeSoFar = Math.max(0, month.chargeableUnits() - free);
         long pendingUnits = Math.max(0, beyondFreeSoFar - month.chargedUnits());

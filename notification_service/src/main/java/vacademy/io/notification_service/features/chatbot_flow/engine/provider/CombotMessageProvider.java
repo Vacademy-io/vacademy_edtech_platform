@@ -10,6 +10,7 @@ import org.springframework.web.client.RestTemplate;
 import vacademy.io.notification_service.constants.NotificationConstants;
 import vacademy.io.notification_service.institute.InstituteInfoDTO;
 import vacademy.io.notification_service.institute.InstituteInternalService;
+import vacademy.io.notification_service.util.LogMask;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -264,7 +265,8 @@ public class CombotMessageProvider implements ChatbotMessageProvider {
         headers.set("Authorization", "Bearer " + config.apiKey);
 
         // Log payload summary at INFO, full payload at DEBUG
-        log.info("Sending to Meta API: to={}, type={}", payload.get("to"), payload.get("type"));
+        log.info("Sending to Meta API: to={}, type={}", LogMask.phone(String.valueOf(payload.get("to"))),
+                payload.get("type"));
         if (log.isDebugEnabled()) {
             try {
                 log.debug("Full Meta payload: {}", objectMapper.writeValueAsString(payload));
@@ -278,7 +280,7 @@ public class CombotMessageProvider implements ChatbotMessageProvider {
                 log.error("COMBOT/META API error: status={}, body={}", response.getStatusCode(), response.getBody());
                 throw new RuntimeException("WhatsApp API returned " + response.getStatusCode());
             }
-            log.debug("COMBOT/META message sent successfully to {}", payload.get("to"));
+            log.debug("COMBOT/META message sent successfully to {}", LogMask.phone(String.valueOf(payload.get("to"))));
             return extractMessageId(response.getBody());
         } catch (Exception e) {
             log.error("Failed to send message via COMBOT/META: {}", e.getMessage());

@@ -91,7 +91,7 @@
         "retry": "Retry",
         "switching": "Switching institute…",
         "switchFailed": "Couldn't switch institute. Please try again.",
-        "adminRequired": "This portal needs the Admin role in that institute.",
+        "adminRequired": "Your role in that institute can't sign in to this portal.",
         "subOrgTitle": "Choose an organisation",
         "subOrgDescription": "You work with several organisations in {{institute}}. Pick one to continue.",
         "cancelSwitch": "Cancel switch",

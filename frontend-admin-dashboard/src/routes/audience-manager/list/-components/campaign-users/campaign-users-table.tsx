@@ -129,6 +129,7 @@ import { ListShareTab } from './ListShareTab';
 import { ListAutomationsTab } from './ListAutomationsTab';
 import { listCampaignKey, useListCampaign } from '../../-hooks/useListCampaign';
 import { CreateCampaignDialog } from '../create-campaign-dialog/CreateCampaignDialog';
+import { nudgeAssistant } from '@/components/vacademy-assistant/page-ask';
 
 // Every row in this view is from the same audience, so "Lead source" is
 // redundant — hidden by default and not offered in the Manage Column list.
@@ -927,6 +928,7 @@ const CampaignUsersContent = ({
             return;
         }
         setIsExporting(true);
+        nudgeAssistant('leads');
         try {
             toast.info(t('toasts.exportStarting'));
             const allDataPayload = { ...leadsPayload, page: 0, size: totalElements };

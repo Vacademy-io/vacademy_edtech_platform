@@ -55,6 +55,16 @@ public class AiVoiceCarrierService {
     /** A Plivo subaccount used only by the AI. */
     public static final String MODE_DEDICATED = "DEDICATED";
 
+    /**
+     * {@code provider_config} key marking a line WE set up on the platform's own Plivo account
+     * (a Telleo trial line). The customer may use it but not edit, unlink or read its account
+     * id: on a shared account, a free-text caller-ID would let them call out as any number on
+     * that account, another customer's included.
+     */
+    public static final String PLATFORM_MANAGED_KEY = "platformManaged";
+    public static final String PLATFORM_MANAGED_MESSAGE =
+            "This calling line is managed by Telleo, so it can't be changed here. Contact Telleo support to change it.";
+
     private final InstituteTelephonyConfigRepository repo;
     private final TelephonyConfigCache configCache;
     private final TelephonyProviderRegistry registry;
@@ -73,6 +83,7 @@ public class AiVoiceCarrierService {
 
         Map<String, String> aiConfig = ai == null
                 ? Map.of() : TelephonyJson.read(ai.getProviderConfig());
+        boolean managed = isPlatformManaged(aiConfig);
 
         AiVoiceCarrierViewDTO.AiVoiceCarrierViewDTOBuilder out = AiVoiceCarrierViewDTO.builder()
                 .mode(ai != null ? MODE_DEDICATED : MODE_PRIMARY)
@@ -81,8 +92,10 @@ public class AiVoiceCarrierService {
                 .primaryCanCarryAi(primaryCanCarryAi)
                 .dedicatedConfigured(ai != null)
                 .dedicatedEnabled(dedicatedActive)
-                .authId(aiConfig.get("authId"))
-                .appId(aiConfig.get("appId"))
+                .platformManaged(managed)
+                // The platform account's id is not the customer's to see.
+                .authId(managed ? null : aiConfig.get("authId"))
+                .appId(managed ? null : aiConfig.get("appId"))
                 .callerId(aiConfig.get("callerId"))
                 .authTokenSet(ai != null && notBlank(ai.getProviderSecretsEnc()))
                 .webhookTokenSet(ai != null && notBlank(ai.getWebhookTokenEnc()))
@@ -130,6 +143,7 @@ public class AiVoiceCarrierService {
 
     @Transactional
     public AiVoiceCarrierViewDTO save(String instituteId, AiVoiceCarrierDTO body) {
+        requireNotPlatformManaged(instituteId);
         String mode = body.getMode() == null ? "" : body.getMode().trim().toUpperCase();
         if (MODE_PRIMARY.equals(mode)) {
             return unlink(instituteId);
@@ -200,6 +214,7 @@ public class AiVoiceCarrierService {
      */
     @Transactional
     public AiVoiceCarrierViewDTO unlink(String instituteId) {
+        requireNotPlatformManaged(instituteId);
         repo.findAiVoiceByInstituteId(instituteId).ifPresent(cfg -> {
             repo.delete(cfg);
             log.info("ai carrier: institute {} unlinked its dedicated AI line — "
@@ -207,6 +222,25 @@ public class AiVoiceCarrierService {
         });
         evictAfterCommit(instituteId);
         return view(instituteId);
+    }
+
+    // ── Platform-managed lines ──────────────────────────────────────────────────
+
+    public static boolean isPlatformManaged(Map<String, String> providerConfig) {
+        return providerConfig != null && "true".equalsIgnoreCase(providerConfig.get(PLATFORM_MANAGED_KEY));
+    }
+
+    /** True when this institute's AI line was set up by us on the platform's account. */
+    public boolean isPlatformManaged(String instituteId) {
+        return repo.findAiVoiceByInstituteId(instituteId)
+                .map(cfg -> isPlatformManaged(TelephonyJson.read(cfg.getProviderConfig())))
+                .orElse(false);
+    }
+
+    private void requireNotPlatformManaged(String instituteId) {
+        if (isPlatformManaged(instituteId)) {
+            throw new VacademyException(org.springframework.http.HttpStatus.FORBIDDEN, PLATFORM_MANAGED_MESSAGE);
+        }
     }
 
     // ── helpers ─────────────────────────────────────────────────────────────────

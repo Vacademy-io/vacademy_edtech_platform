@@ -36,7 +36,14 @@ import {
 } from 'lucide-react';
 import PreferredCountriesSelector from './PreferredCountriesSelector';
 import { SearchableSelect } from '@/components/design-system/searchable-select';
-import { getSubOrgs } from '@/routes/manage-custom-teams/-services/custom-team-services';
+import { getAllRoles, getSubOrgs } from '@/routes/manage-custom-teams/-services/custom-team-services';
+import { MultiSelect } from '@/components/design-system/multi-select';
+import {
+    getPortalType,
+    normalizeRoleName,
+    parsePortalRoles,
+    type PortalType,
+} from '@/lib/auth/portal-roles';
 import {
     parsePreferredCountriesString,
     stringifyPreferredCountries,
@@ -50,7 +57,18 @@ import {
     type PhoneCountryGeoMode,
 } from '@/services/domain-routing';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
-import { WHITE_LABEL_SETUP, WHITE_LABEL_STATUS } from '@/constants/urls';
+import { BASE_URL, WHITE_LABEL_SETUP, WHITE_LABEL_STATUS } from '@/constants/urls';
+import { getCatalogueTags } from '@/routes/manage-pages/-services/catalogue-service';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { getInstituteId } from '@/constants/helper';
 import { copyTextToClipboard } from '@/lib/clipboard';
 import { Badge } from '@/components/ui/badge';
@@ -159,6 +177,17 @@ interface RoutingConfig {
      */
     stack_name_below_logo?: boolean;
     /**
+     * Show the institute's custom terminology (Settings → Naming) on this
+     * portal's login / sign-up screens too, not only after login.
+     */
+    apply_naming_setting?: boolean;
+    /**
+     * Learner portals: tag of the Manage Pages site that opens at this domain's
+     * root ("/"), with its pages at /<page>. '' clears it (then "/" follows the
+     * redirect route); undefined leaves the saved value alone.
+     */
+    root_catalogue_tag?: string;
+    /**
      * Sub-organisation this domain serves. Not styling — the routing row's
      * institute stays the PARENT, so this id is the only thing that tells one
      * sub-org's portal from another's. It drives the logo/name/theme overlay AND
@@ -261,7 +290,27 @@ interface WhiteLabelStatusResponse {
 /** A single row in the setup form */
 interface DomainFormEntry {
     id: string;
-    role: 'LEARNER' | 'ADMIN' | 'TEACHER';
+    /** Which portal the host is. */
+    role: PortalType;
+    /**
+     * Roles besides the portal's own that may sign in on this host (e.g.
+     * COUNSELLOR on an admin portal). Saved as one comma-separated role string,
+     * "ADMIN,COUNSELLOR,TEACHER"; the login screen refuses anyone else.
+     */
+    allowedRoles: string[];
+    /**
+     * The saved routing row this entry was loaded from. Sent back so the entry
+     * updates its own row — two rows can display the same host (a "*" row and
+     * an exact one). Undefined for a domain added in this form.
+     */
+    routingId?: string;
+    /**
+     * The saved row named no portal (only custom roles, e.g. "MANAGE_LEAD").
+     * It shows as an admin portal, which is what serves it, but is saved back
+     * without an ADMIN entry until the admin picks a portal — adding one would
+     * make it a candidate admin portal URL and change how its host resolves.
+     */
+    portalImplied?: boolean;
     domain: string;
     isPrimary: boolean;
     expanded: boolean;
@@ -271,6 +320,41 @@ interface DomainFormEntry {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const ROLES = ['LEARNER', 'ADMIN', 'TEACHER'] as const;
+
+/**
+ * Splits a stored role string into the portal and the extra roles allowed to
+ * sign in. A row naming only custom roles ("MANAGE_LEAD") is served by the
+ * admin app, so it reads as an admin portal; ADMIN is admitted there anyway.
+ */
+const toFormRoles = (
+    role: string | null | undefined
+): Pick<DomainFormEntry, 'role' | 'allowedRoles' | 'portalImplied'> => {
+    const named = getPortalType(role);
+    const portal = named ?? 'ADMIN';
+    return {
+        role: portal,
+        allowedRoles: parsePortalRoles(role).filter((r) => r !== portal),
+        portalImplied: named === null && parsePortalRoles(role).length > 0,
+    };
+};
+
+/** The role string the setup API stores: the portal first, then the extra roles. */
+const toPayloadRole = (
+    entry: Pick<DomainFormEntry, 'role' | 'allowedRoles' | 'portalImplied'>
+): string => {
+    const extra = entry.allowedRoles.filter((r) => r !== entry.role);
+    if (entry.portalImplied && entry.role === 'ADMIN' && extra.length > 0) return extra.join(',');
+    return [entry.role, ...extra].join(',');
+};
+
+/** Removes one routing row (DELETE ?instituteId=&routingId=). */
+const WHITE_LABEL_DOMAIN = `${BASE_URL}/admin-core-service/institute/white-label/v1/domain`;
+
+/** Select value standing for "no website on the home page" (a Select item can't be ''). */
+const NO_ROOT_CATALOGUE = '__none__';
+
+/** Roles that can never be ticked: learners never open a staff portal, and ADMIN always does. */
+const NON_TICKABLE_ROLES = new Set(['STUDENT', 'LEARNER', 'ADMIN']);
 
 const roleLabel = (role: string, t: (key: string) => string): string => {
     switch (role?.toUpperCase()) {
@@ -308,14 +392,18 @@ const PLATFORM_ZONE = 'vacademy.io';
  * label has to resolve to.
  *
  * Every short domain in production (u.aanandham.uk, u.readonrent.com,
- * u.elevateeducation.in, u.suchbliss.com) is a plain A record to this address —
+ * u.elevateeducation.in, u.suchbliss.com, …) is a plain A record to this address —
  * not a CNAME — and unproxied, because cert-manager answers an HTTP-01 challenge
  * that has to reach the origin directly.
+ *
+ * 43.242.225.46 is the CloudPe Mumbai ingress (prod moved off Hetzner 2026-11-16).
+ * The old Hetzner address 5.223.55.238 still forwards to it, so domains that
+ * point there keep working until their owners repoint them.
  *
  * Overridable so a change of ingress address is a deploy, not a code change.
  */
 const SHORT_LINK_LABEL = 'u';
-const SHORT_LINK_INGRESS_IP = import.meta.env.VITE_SHORT_LINK_INGRESS_IP || '5.223.55.238';
+const SHORT_LINK_INGRESS_IP = import.meta.env.VITE_SHORT_LINK_INGRESS_IP || '43.242.225.46';
 
 /**
  * Public suffixes made of two labels. Without them an apex host like
@@ -434,8 +522,8 @@ const DRAFT_STORAGE_PREFIX = 'vacademy:white-label-draft:';
 const draftKey = (instituteId: string) => `${DRAFT_STORAGE_PREFIX}${instituteId}`;
 
 const defaultFormEntries = (): DomainFormEntry[] => [
-    { id: makeFormId(), role: 'LEARNER', domain: '', isPrimary: true, expanded: false, config: emptyConfig() },
-    { id: makeFormId(), role: 'ADMIN',   domain: '', isPrimary: true, expanded: false, config: emptyConfig() },
+    { id: makeFormId(), role: 'LEARNER', allowedRoles: [], domain: '', isPrimary: true, expanded: false, config: emptyConfig() },
+    { id: makeFormId(), role: 'ADMIN',   allowedRoles: [], domain: '', isPrimary: true, expanded: false, config: emptyConfig() },
 ];
 
 const readDraft = (instituteId: string | null | undefined): DomainFormEntry[] | null => {
@@ -447,19 +535,30 @@ const readDraft = (instituteId: string | null | undefined): DomainFormEntry[] | 
         if (!Array.isArray(parsed) || parsed.length === 0) return null;
         const entries: DomainFormEntry[] = parsed
             .filter((e): e is Record<string, unknown> => !!e && typeof e === 'object')
-            .map((e) => ({
-                id: makeFormId(),
-                role: (ROLES as readonly string[]).includes(String(e.role))
-                    ? (e.role as DomainFormEntry['role'])
-                    : 'LEARNER',
-                domain: typeof e.domain === 'string' ? e.domain : '',
-                isPrimary: e.isPrimary === true,
-                expanded: false,
-                config:
-                    e.config && typeof e.config === 'object'
-                        ? (e.config as RoutingConfig)
-                        : emptyConfig(),
-            }));
+            .map((e) => {
+                // A draft from the previous form version holds the whole stored
+                // role string ("ADMIN,EVALUATOR,…") and no allowedRoles. Reading
+                // anything outside ROLES as LEARNER turned such an admin domain
+                // into a learner portal on the next save.
+                const stored = toFormRoles(typeof e.role === 'string' ? e.role : 'LEARNER');
+                return {
+                    id: makeFormId(),
+                    role: stored.role,
+                    allowedRoles: Array.isArray(e.allowedRoles)
+                        ? e.allowedRoles.filter((r): r is string => typeof r === 'string')
+                        : stored.allowedRoles,
+                    routingId: typeof e.routingId === 'string' ? e.routingId : undefined,
+                    portalImplied:
+                        typeof e.portalImplied === 'boolean' ? e.portalImplied : stored.portalImplied,
+                    domain: typeof e.domain === 'string' ? e.domain : '',
+                    isPrimary: e.isPrimary === true,
+                    expanded: false,
+                    config:
+                        e.config && typeof e.config === 'object'
+                            ? (e.config as RoutingConfig)
+                            : emptyConfig(),
+                };
+            });
         return entries.length > 0 ? entries : null;
     } catch {
         return null;
@@ -476,6 +575,9 @@ const writeDraft = (instituteId: string | null | undefined, entries: DomainFormE
             JSON.stringify(
                 entries.map((e) => ({
                     role: e.role,
+                    allowedRoles: e.allowedRoles,
+                    routingId: e.routingId,
+                    portalImplied: e.portalImplied,
                     domain: e.domain,
                     isPrimary: e.isPrimary,
                     config: e.config,
@@ -808,11 +910,25 @@ const ConfigValue = ({ label, value }: { label: string; value: any }) => {
 const ConfigFormSection = ({
     config,
     onUpdate,
+    portal,
+    catalogueTags,
 }: {
     config: RoutingConfig;
     onUpdate: (field: keyof RoutingConfig, value: any) => void;
+    /** Which portal this entry is; the home-page website is a learner-portal setting. */
+    portal?: PortalType;
+    /** Manage Pages sites of the institute, or null while they load. */
+    catalogueTags?: { tag: string; label: string }[] | null;
 }) => {
     const { t } = useTranslation('settingsWhiteLabel');
+    // A saved tag whose site was since deleted still shows, so it can be cleared.
+    const rootTag = config.root_catalogue_tag || '';
+    const rootTagOptions = [
+        ...(catalogueTags ?? []),
+        ...(rootTag && !(catalogueTags ?? []).some((o) => o.tag === rootTag)
+            ? [{ tag: rootTag, label: rootTag }]
+            : []),
+    ];
     return (
     <div className="space-y-5 pt-4">
         {/* Branding */}
@@ -876,6 +992,21 @@ const ConfigFormSection = ({
                         id="switch-stack_name_below_logo"
                         checked={!!config.stack_name_below_logo}
                         onCheckedChange={v => onUpdate('stack_name_below_logo', v)}
+                    />
+                </div>
+                <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                        <Label className="text-xs font-medium text-slate-700 cursor-pointer" htmlFor="switch-apply_naming_setting">
+                            {t('configForm.branding.applyNamingLabel')}
+                        </Label>
+                        <p className="text-caption text-neutral-400">
+                            {t('configForm.branding.applyNamingHint')}
+                        </p>
+                    </div>
+                    <Switch
+                        id="switch-apply_naming_setting"
+                        checked={!!config.apply_naming_setting}
+                        onCheckedChange={v => onUpdate('apply_naming_setting', v)}
                     />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1039,6 +1170,32 @@ const ConfigFormSection = ({
                            onChange={e => onUpdate('home_icon_click_route', e.target.value)} className="h-8 text-sm" />
                 </div>
             </div>
+
+            {/* The Manage Pages site served at "/". Learner portals only — the
+                admin app never renders a catalogue at its root. */}
+            {portal === 'LEARNER' && (
+                <div className="space-y-1">
+                    <Label className="text-xs text-slate-500">{t('configForm.routes.rootCatalogueLabel')}</Label>
+                    <Select
+                        value={rootTag || NO_ROOT_CATALOGUE}
+                        onValueChange={(v) => onUpdate('root_catalogue_tag', v === NO_ROOT_CATALOGUE ? '' : v)}
+                        disabled={catalogueTags === null}
+                    >
+                        <SelectTrigger className="h-8 max-w-sm text-sm">
+                            <SelectValue
+                                placeholder={catalogueTags === null ? t('configForm.routes.rootCatalogueLoading') : undefined}
+                            />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value={NO_ROOT_CATALOGUE}>{t('configForm.routes.rootCatalogueNone')}</SelectItem>
+                            {rootTagOptions.map((o) => (
+                                <SelectItem key={o.tag} value={o.tag}>{o.label}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <p className="text-caption text-neutral-400">{t('configForm.routes.rootCatalogueHint')}</p>
+                </div>
+            )}
         </div>
 
         <Separator />
@@ -1162,6 +1319,108 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
         };
     }, [instituteId]);
 
+    // The institute's roles, for each staff domain's "Who can sign in" picker.
+    // Best-effort like the sub-orgs: if the list fails to load, roles already
+    // saved on a domain still show (and can be removed) — only new ones can't
+    // be picked until a reload.
+    const [instituteRoles, setInstituteRoles] = useState<{ value: string; label: string }[]>([]);
+
+    useEffect(() => {
+        if (!instituteId) return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const raw: unknown = await getAllRoles();
+                const list = Array.isArray(raw) ? (raw as { name?: string | null }[]) : [];
+                const byValue = new Map<string, string>();
+                for (const r of list) {
+                    if (!r?.name) continue;
+                    const value = normalizeRoleName(r.name);
+                    if (!value || NON_TICKABLE_ROLES.has(value) || byValue.has(value)) continue;
+                    byValue.set(value, r.name);
+                }
+                const options = [...byValue]
+                    .map(([value, label]) => ({ value, label }))
+                    .sort((a, b) => a.label.localeCompare(b.label));
+                if (!cancelled) setInstituteRoles(options);
+            } catch (err) {
+                console.error('[WhiteLabel] Failed to load roles', err);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [instituteId]);
+
+    /** One entry's options: the institute's roles minus the portal's own, plus saved roles the list lacks. */
+    const allowedRoleOptions = (entry: DomainFormEntry) => {
+        const options = instituteRoles.filter((o) => o.value !== entry.role);
+        const saved = entry.allowedRoles
+            .filter((r) => !NON_TICKABLE_ROLES.has(r) && !options.some((o) => o.value === r))
+            .map((r) => ({ value: r, label: r }));
+        return [...options, ...saved];
+    };
+
+    // Manage Pages sites, for a learner domain's "Website on the home page".
+    // Loaded the first time a learner domain's settings are opened: the list
+    // carries every site's full page JSON, too heavy to fetch on every visit.
+    // null = not loaded yet; a failed load degrades to "no sites to pick".
+    const [catalogueTags, setCatalogueTags] = useState<{ tag: string; label: string }[] | null>(null);
+    const catalogueRequestedRef = useRef(false);
+    const learnerSettingsOpen = formEntries.some((e) => e.role === 'LEARNER' && e.expanded);
+
+    useEffect(() => {
+        if (!instituteId || !learnerSettingsOpen || catalogueRequestedRef.current) return;
+        catalogueRequestedRef.current = true;
+        getCatalogueTags(instituteId)
+            .then((tags) =>
+                setCatalogueTags(
+                    tags
+                        .filter((c) => c.tagName && c.status !== 'ARCHIVED')
+                        .map((c) => ({
+                            tag: c.tagName,
+                            label:
+                                c.status === 'DRAFT'
+                                    ? t('configForm.routes.rootCatalogueDraft', { tag: c.tagName })
+                                    : c.tagName,
+                        }))
+                        .sort((a, b) => a.label.localeCompare(b.label))
+                )
+            )
+            .catch((err) => {
+                console.error('[WhiteLabel] Failed to load sites', err);
+                setCatalogueTags([]);
+            });
+    }, [instituteId, learnerSettingsOpen, t]);
+
+    // ── Removing a saved domain ───────────────────────────────────────────────
+    const [deleteTarget, setDeleteTarget] = useState<RoutingEntry | null>(null);
+    const [deletingDomain, setDeletingDomain] = useState(false);
+
+    const confirmDeleteDomain = async () => {
+        if (!instituteId || !deleteTarget) return;
+        const removed = deleteTarget;
+        setDeletingDomain(true);
+        try {
+            await authenticatedAxiosInstance.delete(WHITE_LABEL_DOMAIN, {
+                params: { instituteId, routingId: removed.id },
+            });
+            toast.success(t('deleteDomain.success', { domain: fqdn(removed) }));
+            setDeleteTarget(null);
+            // Drop it from the setup form too, or the next Update would create it again.
+            setFormEntries((prev) => {
+                const rest = prev.filter((e) => e.routingId !== removed.id);
+                return rest.length > 0 ? rest : defaultFormEntries();
+            });
+            await fetchStatusRef.current();
+        } catch (err: any) {
+            const msg = err?.response?.data?.message || err?.response?.data;
+            toast.error(typeof msg === 'string' ? msg : t('deleteDomain.failed'));
+        } finally {
+            setDeletingDomain(false);
+        }
+    };
+
     const subOrgSearchPlaceholder = t('subOrg.searchPlaceholder');
     const subOrgSearchEmpty = t('subOrg.searchEmpty');
 
@@ -1199,7 +1458,8 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
 
             return {
                 id: makeFormId(),
-                role: r.role as 'LEARNER' | 'ADMIN' | 'TEACHER',
+                ...toFormRoles(r.role),
+                routingId: r.id,
                 domain: fullDomain,
                 isPrimary,
                 expanded: false,
@@ -1232,6 +1492,8 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
                     logo_width_px: r.logo_width_px ?? undefined,
                     logo_height_px: r.logo_height_px ?? undefined,
                     stack_name_below_logo: r.stack_name_below_logo ?? undefined,
+                    apply_naming_setting: r.apply_naming_setting ?? undefined,
+                    root_catalogue_tag: r.root_catalogue_tag ?? undefined,
                     // Round-trip the linkage. Before this the wizard didn't know the
                     // field existed, so every save posted a config without it and the
                     // backend blanked sub_org_id — un-branding the portal and
@@ -1333,7 +1595,8 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
         try {
             const payload = {
                 entries: nonEmpty.map(e => ({
-                    role: e.role,
+                    role: toPayloadRole(e),
+                    routing_id: e.routingId,
                     domain: e.domain.trim().toLowerCase(),
                     is_primary: e.isPrimary,
                     routing_config: e.config,
@@ -1367,7 +1630,7 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
         markEdited();
         setFormEntries(prev => [
             ...prev,
-            { id: makeFormId(), role: 'LEARNER', domain: '', isPrimary: false, expanded: false, config: emptyConfig() },
+            { id: makeFormId(), role: 'LEARNER', allowedRoles: [], domain: '', isPrimary: false, expanded: false, config: emptyConfig() },
         ]);
     };
 
@@ -1379,6 +1642,27 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
     const updateEntry = (id: string, field: keyof DomainFormEntry, value: any) => {
         markEdited();
         setFormEntries(prev => prev.map(e => e.id === id ? { ...e, [field]: value } : e));
+    };
+
+    /**
+     * A learner portal has no sign-in roles to keep, and a portal's own role is
+     * implied, so neither survives a change of portal.
+     */
+    const changePortal = (id: string, portal: PortalType) => {
+        markEdited();
+        setFormEntries(prev =>
+            prev.map(e =>
+                e.id === id
+                    ? {
+                          ...e,
+                          role: portal,
+                          portalImplied: false,
+                          allowedRoles:
+                              portal === 'LEARNER' ? [] : e.allowedRoles.filter((r) => r !== portal),
+                      }
+                    : e
+            )
+        );
     };
 
     const updateEntryConfig = (id: string, field: keyof RoutingConfig, value: any) => {
@@ -1509,6 +1793,7 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
                                                 key={entry.id}
                                                 entry={entry}
                                                 subOrgs={subOrgs}
+                                                onDelete={() => setDeleteTarget(entry)}
                                             />
                                         ))}
                                     </div>
@@ -1518,6 +1803,41 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
                     </CardContent>
                 </Card>
             )}
+
+            {/* ── Remove a saved domain ── */}
+            <AlertDialog
+                open={deleteTarget !== null}
+                onOpenChange={(open) => {
+                    if (!open && !deletingDomain) setDeleteTarget(null);
+                }}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{t('deleteDomain.title')}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {t('deleteDomain.description', {
+                                domain: deleteTarget ? fqdn(deleteTarget) : '',
+                            })}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={deletingDomain}>
+                            {t('deleteDomain.cancel')}
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            disabled={deletingDomain}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                void confirmDeleteDomain();
+                            }}
+                            className="bg-danger-600 hover:bg-danger-700"
+                        >
+                            {deletingDomain && <Loader2 className="me-2 size-4 animate-spin" />}
+                            {t('deleteDomain.confirm')}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
             {/* ── Short link DNS record (to forward to the customer) ── */}
             <ShortLinkDnsCard domains={shortLinkDomains} />
@@ -1586,7 +1906,7 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
                                         <div className="space-y-1">
                                             <Label className="text-xs text-slate-500">{t('setupCard.roleLabel')}</Label>
                                             <Select value={entry.role}
-                                                    onValueChange={v => updateEntry(entry.id, 'role', v)}>
+                                                    onValueChange={v => changePortal(entry.id, v as PortalType)}>
                                                 <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                                                 <SelectContent>
                                                     {ROLES.map(r => (
@@ -1669,12 +1989,42 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
                                     </div>
                                 </div>
 
+                                {/* Who can sign in. Staff portals only — the learner app
+                                    has no role gate. Indented to line up with the fields
+                                    above (past the entry number). */}
+                                {entry.role !== 'LEARNER' && (
+                                    <div className="space-y-1 px-4 pb-4 sm:ms-9">
+                                        <Label className="text-xs text-slate-500">
+                                            {t('allowedRoles.label')}
+                                        </Label>
+                                        <MultiSelect
+                                            options={allowedRoleOptions(entry)}
+                                            selected={entry.allowedRoles.filter((r) => !NON_TICKABLE_ROLES.has(r))}
+                                            onChange={(v) => updateEntry(entry.id, 'allowedRoles', v)}
+                                            placeholder={
+                                                entry.role === 'TEACHER'
+                                                    ? t('allowedRoles.placeholderTeacher')
+                                                    : t('allowedRoles.placeholderAdmin')
+                                            }
+                                            checkboxes
+                                            className="h-auto min-h-9 max-w-xl"
+                                        />
+                                        <p className="text-caption text-neutral-500">
+                                            {entry.role === 'TEACHER'
+                                                ? t('allowedRoles.hintTeacher')
+                                                : t('allowedRoles.hintAdmin')}
+                                        </p>
+                                    </div>
+                                )}
+
                                 {/* Expanded config section */}
                                 {entry.expanded && (
                                     <div className="border-t border-slate-100 bg-slate-50/30 px-4 pb-4">
                                         <ConfigFormSection
                                             config={entry.config}
                                             onUpdate={(field, value) => updateEntryConfig(entry.id, field, value)}
+                                            portal={entry.role}
+                                            catalogueTags={catalogueTags}
                                         />
                                     </div>
                                 )}
@@ -1775,7 +2125,15 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
 
 // ─── Routing Entry Card (current config display) ──────────────────────────────
 
-function RoutingEntryCard({ entry, subOrgs }: { entry: RoutingEntry; subOrgs: SubOrgOption[] }) {
+function RoutingEntryCard({
+    entry,
+    subOrgs,
+    onDelete,
+}: {
+    entry: RoutingEntry;
+    subOrgs: SubOrgOption[];
+    onDelete: () => void;
+}) {
     const { t } = useTranslation('settingsWhiteLabel');
     const subOrgName = entry.sub_org_id
         ? subOrgs.find((o) => o.id === entry.sub_org_id)?.name ?? entry.sub_org_id
@@ -1783,6 +2141,10 @@ function RoutingEntryCard({ entry, subOrgs }: { entry: RoutingEntry; subOrgs: Su
 
     const [expanded, setExpanded] = useState(false);
     const full = fqdn(entry);
+    // "ADMIN,COUNSELLOR,TEACHER" is the admin portal plus the roles it lets in.
+    const { role: portalType, allowedRoles } = toFormRoles(entry.role);
+    const signInRoles =
+        portalType === 'LEARNER' ? [] : allowedRoles.filter((r) => !NON_TICKABLE_ROLES.has(r));
 
     const hasConfig = !!(
         entry.tab_text || entry.theme || entry.font_family || entry.tab_icon_file_id ||
@@ -1797,7 +2159,8 @@ function RoutingEntryCard({ entry, subOrgs }: { entry: RoutingEntry; subOrgs: Su
         entry.phone_country_geo_mode ||
         entry.hide_institute_name != null ||
         entry.logo_width_px != null || entry.logo_height_px != null ||
-        entry.stack_name_below_logo != null
+        entry.stack_name_below_logo != null ||
+        entry.apply_naming_setting || entry.root_catalogue_tag
     );
 
     // Under GEO_FIRST the first configured country is NOT what a phone field
@@ -1819,9 +2182,17 @@ function RoutingEntryCard({ entry, subOrgs }: { entry: RoutingEntry; subOrgs: Su
             {/* Summary row */}
             <div className="flex items-center justify-between px-4 py-3">
                 <div className="flex items-center gap-3 min-w-0">
-                    <Badge variant="outline" className={roleBadgeClass(entry.role)}>
-                        {roleLabel(entry.role, t)}
+                    <Badge variant="outline" className={roleBadgeClass(portalType)}>
+                        {roleLabel(portalType, t)}
                     </Badge>
+                    {signInRoles.length > 0 && (
+                        <span
+                            className="truncate text-caption text-neutral-500"
+                            title={signInRoles.join(', ')}
+                        >
+                            {t('allowedRoles.summary', { roles: signInRoles.join(', ') })}
+                        </span>
+                    )}
                     <a href={`https://${full}`} target="_blank" rel="noopener noreferrer"
                        className="flex items-center gap-1 text-sm text-blue-600 hover:underline font-mono truncate">
                         {full}
@@ -1887,6 +2258,22 @@ function RoutingEntryCard({ entry, subOrgs }: { entry: RoutingEntry; subOrgs: Su
                             {expanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
                         </button>
                     )}
+                    {/* The domain outbound links use can't be removed (the server
+                        refuses too); the button says why instead of failing. */}
+                    <button
+                        type="button"
+                        onClick={onDelete}
+                        disabled={!!entry.is_portal_url}
+                        className="rounded p-1 text-neutral-400 transition-colors hover:bg-danger-50 hover:text-danger-600 disabled:cursor-not-allowed disabled:opacity-40"
+                        title={
+                            entry.is_portal_url
+                                ? t('deleteDomain.portalUrlTooltip')
+                                : t('deleteDomain.tooltip')
+                        }
+                        aria-label={t('deleteDomain.tooltip')}
+                    >
+                        <Trash2 className="size-4" />
+                    </button>
                 </div>
             </div>
 
@@ -1960,6 +2347,8 @@ function RoutingEntryCard({ entry, subOrgs }: { entry: RoutingEntry; subOrgs: Su
                         <ConfigValue label={t('routingEntryCard.fields.logoWidth')} value={entry.logo_width_px} />
                         <ConfigValue label={t('routingEntryCard.fields.logoHeight')} value={entry.logo_height_px} />
                         <ConfigValue label={t('routingEntryCard.fields.stackNameBelowLogo')} value={entry.stack_name_below_logo} />
+                        <ConfigValue label={t('configForm.branding.applyNamingLabel')} value={entry.apply_naming_setting || undefined} />
+                        <ConfigValue label={t('configForm.routes.rootCatalogueLabel')} value={entry.root_catalogue_tag} />
                         <ConfigValue
                             label={t('configForm.phone.geoModeLabel')}
                             value={t(`configForm.phone.geoModes.${savedGeoMode}.label`)}

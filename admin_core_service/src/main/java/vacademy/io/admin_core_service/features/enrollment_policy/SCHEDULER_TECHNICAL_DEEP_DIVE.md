@@ -15,14 +15,15 @@ correct processor based on where it sits in the subscription timeline.
 ## Trigger
 
 ```
-Cron: 0 0 1 * * ?    →   Every day at 01:00 AM (server JVM timezone)
+Cron: 0 0 4 * * ?    →   Every day at 04:00 (server JVM timezone), ShedLock-guarded,
+                         only for institutes with PAYMENT_SETTING.packageSessionRenewalSchedulerEnabled = true
 ```
 
 Entry point:
 
 ```
-PackageSessionScheduler.processPackageSessionExpiries()
-  └─ PackageSessionEnrolmentService.processActiveEnrollments()
+PackageSessionScheduler.processPackageSessionRenewals()
+  └─ PackageSessionEnrolmentService.processActiveEnrollmentsForInstitutes(instituteIds)
 ```
 
 ---
@@ -82,8 +83,7 @@ enrollment_policy/
 │   └── EnrollmentTemplateConstants.java          ← Default email template HTML + subject
 │
 ├── controller/
-│   ├── EnrollmentPolicyController.java           ← GET policy by packageSessionId
-│   └── TestEnrollMentController.java             ← Manual trigger (testing only)
+│   └── EnrollmentPolicyController.java           ← GET policy by packageSessionId
 │
 └── ENROLLMENT_POLICY_COMPREHENSIVE_GUIDE.md      ← Existing test case matrix
 ```
@@ -125,16 +125,16 @@ UserPlan.endDate relative to TODAY
 
 ```
 PackageSessionScheduler
-  └── processPackageSessionExpiries()
-        └── PackageSessionEnrolmentService.processActiveEnrollments()
+  └── processPackageSessionRenewals()
+        └── PackageSessionEnrolmentService.processActiveEnrollmentsForInstitutes(instituteIds)
 ```
 
 ### Step 2 — Load and Group Plans
 
 ```
 PackageSessionEnrolmentService
-  └── processActiveEnrollments()
-        ├── userPlanRepository.findAllByStatusIn(["ACTIVE", "CANCELED"])
+  └── processActiveEnrollmentsForInstitutes(instituteIds)
+        ├── userPlanRepository.findAllByStatusInAndInstituteIdIn(["ACTIVE", "CANCELED"], instituteIds)
         ├── Group by source → USER plans, SUB_ORG plans
         ├── processUserSourcePlans(userPlans)
         │     └── processUserPlan(userPlan)  [for each USER plan]
@@ -426,7 +426,7 @@ users are in IST (+5:30), "1 AM UTC" is 6:30 AM IST — mid-morning, not low-tra
 ### 5. Silent Per-Plan Failure
 **Severity: Medium**
 
-`processActiveEnrollments()` iterates plans and catches exceptions inside each `processUserPlan()`.
+`processActiveEnrollmentsForInstitutes()` iterates plans and catches exceptions inside each `processUserPlan()`.
 A single plan with malformed policy JSON silently logs and continues. There is no:
 - Dead-letter queue for failed plans.
 - Alerting/metrics on per-plan failure rate.

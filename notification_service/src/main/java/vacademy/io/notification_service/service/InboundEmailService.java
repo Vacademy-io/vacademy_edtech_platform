@@ -30,6 +30,7 @@ import vacademy.io.notification_service.features.notification_log.repository.Not
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -118,14 +119,10 @@ public class InboundEmailService {
             // mirroring how WhatsApp uses sender_business_channel_id for the institute's WA number.
             String instituteId = null;
             String matchedInstituteAddress = null;
-            for (String toAddr : toAddresses) {
-                Optional<EmailAddressMapping> mapping =
-                        emailAddressMappingRepository.findByEmailAddressIgnoreCaseAndIsActiveTrue(toAddr);
-                if (mapping.isPresent()) {
-                    instituteId = mapping.get().getInstituteId();
-                    matchedInstituteAddress = mapping.get().getEmailAddress();
-                    break;
-                }
+            Optional<EmailAddressMapping> mapping = findMailboxOwner(toAddresses, inReplyTo, fromAddress);
+            if (mapping.isPresent()) {
+                instituteId = mapping.get().getInstituteId();
+                matchedInstituteAddress = mapping.get().getEmailAddress();
             }
             if (instituteId == null) {
                 log.warn("No active email_address_mapping found for To={}, saving log without instituteId", toAddresses);
@@ -232,6 +229,63 @@ public class InboundEmailService {
         } catch (Exception e) {
             log.warn("Could not record bounce notice {}: {}", messageId, e.getMessage());
         }
+    }
+
+    /**
+     * The institute whose mailbox received this email: the first To/CC address with an active mapping.
+     * An address active in several institutes (each added it as a sender) goes to the institute that
+     * sent the email it answers, else to the one that last emailed this sender from that address. If
+     * neither tells, a later To/CC address owned by one institute decides; failing that, the oldest
+     * mapping keeps it, so adding another institute's address never takes its mail. Before this, a
+     * shared address threw on every email and nothing was saved.
+     */
+    Optional<EmailAddressMapping> findMailboxOwner(List<String> toAddresses, String inReplyTo, String fromAddress) {
+        EmailAddressMapping firstOwner = null;
+        for (String toAddr : toAddresses) {
+            List<EmailAddressMapping> owners =
+                    emailAddressMappingRepository.findAllByEmailAddressIgnoreCaseAndIsActiveTrue(toAddr);
+            if (owners.isEmpty()) {
+                continue;
+            }
+            if (owners.size() == 1) {
+                return Optional.of(owners.get(0));
+            }
+            Optional<EmailAddressMapping> contacted = ownerThatContacted(owners, toAddr, inReplyTo, fromAddress);
+            if (contacted.isPresent()) {
+                return contacted;
+            }
+            if (firstOwner == null) {
+                firstOwner = owners.stream()
+                        .min(Comparator.comparing(EmailAddressMapping::getCreatedAt,
+                                Comparator.nullsLast(Comparator.naturalOrder())))
+                        .orElseThrow();
+            }
+        }
+        if (firstOwner != null) {
+            log.info("Inbound To={} is shared by several institutes and none of them emailed {}, using the oldest mapping ({})",
+                    toAddresses, fromAddress, firstOwner.getInstituteId());
+        }
+        return Optional.ofNullable(firstOwner);
+    }
+
+    /** Of the institutes sharing {@code mailbox}, the one whose email this answers, else the last to email the sender from it. */
+    private Optional<EmailAddressMapping> ownerThatContacted(List<EmailAddressMapping> owners, String mailbox,
+                                                             String inReplyTo, String fromAddress) {
+        // Any owner's id works here: a non-null id only keeps the lookup off other mailboxes' email.
+        Optional<EmailAddressMapping> answered = findRepliedToEmail(inReplyTo, fromAddress, List.of(mailbox),
+                owners.get(0).getInstituteId())
+                .flatMap(sent -> ownerOf(owners, sent.getInstituteId()));
+        if (answered.isPresent() || fromAddress == null) {
+            return answered;
+        }
+        return notificationLogRepository
+                .findTopByChannelIdAndSenderBusinessChannelIdAndNotificationTypeOrderByNotificationDateDesc(
+                        fromAddress, mailbox, "EMAIL")
+                .flatMap(sent -> ownerOf(owners, sent.getInstituteId()));
+    }
+
+    private static Optional<EmailAddressMapping> ownerOf(List<EmailAddressMapping> owners, String instituteId) {
+        return owners.stream().filter(owner -> owner.getInstituteId().equals(instituteId)).findFirst();
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

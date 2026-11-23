@@ -741,6 +741,9 @@ public class SuperAdminCallService {
         Map<String, Double> agg = new LinkedHashMap<>(
                 Map.of("plivo", 0d, "stt", 0d, "tts", 0d, "llm", 0d));
         Map<String, Long> byEngine = new LinkedHashMap<>();
+        // The same modelled cost, by the vendor that charges it, so the platform portal can
+        // show what calling spends with Sarvam (speech-to-text is always priced at Sarvam's rate).
+        Map<String, Double> byVendor = new LinkedHashMap<>();
 
         for (Object[] r : (List<Object[]>) q.getResultList()) {
             String engine = (String) r[0];
@@ -788,6 +791,11 @@ public class SuperAdminCallService {
                     ? tokenLlm + card.getOrDefault("llm", 0d) * untokenedMins
                     : card.getOrDefault("llm", 0d) * mins));
             b.forEach((k, v) -> agg.merge(k, v, Double::sum));
+            byVendor.merge("plivo", b.get("plivo"), Double::sum);
+            byVendor.merge("sarvam", b.get("stt"), Double::sum);
+            byVendor.merge(ttsVendor(engine), b.get("tts"), Double::sum);
+            String llmVendor = r[24] == null || ((String) r[24]).isBlank() ? "llm" : ((String) r[24]).toLowerCase();
+            byVendor.merge(llmVendor, b.get("llm"), Double::sum);
             cost += b.values().stream().mapToDouble(Double::doubleValue).sum();
 
             // Speech cache, priced per ENGINE because the rate differs sixfold
@@ -826,6 +834,7 @@ public class SuperAdminCallService {
             billedTotal += credits * card.getOrDefault("credit_inr", 0d);
         }
         agg.replaceAll((k, v) -> round(v));
+        byVendor.replaceAll((k, v) -> round(v));
         double billed = round(billedTotal);
         double margin = round(billed - round(cost));
         return SuperAdminCallSummaryDTO.builder()
@@ -833,7 +842,7 @@ public class SuperAdminCallService {
                 .costInr(round(cost)).billedInr(billed).marginInr(margin)
                 .marginPct(billed > 0 ? round(margin / billed * 100) : null)
                 .red(red).amber(amber).green(green).withRecording(rec)
-                .costBreakdown(agg).byTtsModel(byEngine).costIsModelled(true)
+                .costBreakdown(agg).costByVendorInr(byVendor).byTtsModel(byEngine).costIsModelled(true)
                 // Null, not zero, when NOTHING in the range measured the cache:
                 // "it ran and saved nothing" and "it was never on" are different
                 // answers, and a fleet chart that conflates them will report a
@@ -847,4 +856,13 @@ public class SuperAdminCallService {
                 .ttsCacheSavedInr(cacheMeasured ? round(cacheSaved) : null)
                 .build();
     }
+
+    /** The company behind a TTS engine key of ENGINE_SQL: "sarvam_v4" and "sarvam" are both Sarvam. */
+    static String ttsVendor(String engine) {
+        String e = engine == null ? "" : engine.toLowerCase();
+        if (e.startsWith("sarvam")) return "sarvam";
+        if (e.startsWith("smallest")) return "smallest";
+        return e.isBlank() ? "tts" : e;
+    }
+
 }

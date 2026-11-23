@@ -65,4 +65,34 @@ public interface CommercePaymentGateway {
             return amountRefundedMinor > 0 || (refundStatus != null && !refundStatus.isBlank());
         }
     }
+
+    // -- Refunds (WP-32). Every method is a remote call: never inside a transaction (the
+    // implementation refuses), the institute's own credentials, errors as
+    // CommercePaymentGatewayException (NOT_CONFIGURED, INVALID_REQUEST, UNAVAILABLE) whose
+    // message names no credential.
+
+    /** One payment as the gateway reports it now (status, amount, amount refunded). */
+    GatewayPayment fetchPayment(String instituteId, String gatewayPaymentId);
+
+    /**
+     * Gives back {@code amountMinor} of a captured payment. {@code receipt} is our refund id, so
+     * a refund whose answer was lost can be found again; it is not relied on to stop a repeat.
+     */
+    GatewayRefund createRefund(String instituteId, String gatewayPaymentId, long amountMinor, String receipt,
+                               Map<String, String> notes);
+
+    /** The refunds of one payment (at most 100). */
+    List<GatewayRefund> fetchRefunds(String instituteId, String gatewayPaymentId);
+
+    /** One refund of a payment. */
+    GatewayRefund fetchRefund(String instituteId, String gatewayPaymentId, String gatewayRefundId);
+
+    /**
+     * One refund as the gateway reports it. {@code status} is lower case: {@code pending},
+     * {@code processed} or {@code failed}. {@code bankReference} is the acquirer's reference
+     * (ARN, else RRN) when the gateway has one.
+     */
+    record GatewayRefund(String id, String paymentId, long amountMinor, String currency, String status,
+                         String receipt, String bankReference, Instant createdAt) {
+    }
 }

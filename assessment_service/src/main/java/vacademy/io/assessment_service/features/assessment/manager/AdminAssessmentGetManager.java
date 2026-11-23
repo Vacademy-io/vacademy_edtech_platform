@@ -311,11 +311,11 @@ public class AdminAssessmentGetManager {
 
         Page<StudentReportDto> studentReportDtoPage = null;
         if (StringUtils.hasText(filter.getName())) {
-            studentReportDtoPage = studentAttemptRepository.findAssessmentForUserWithFilterAndSearch(false, filter.getName(), studentId, instituteId, filter.getStatus(), filter.getReleaseResultStatus() != null ? filter.getReleaseResultStatus() : new ArrayList<>(),filter.getAssessmentType()!=null ? filter.getAssessmentType() : new ArrayList<>(), scopeToBatches, batchIds, pageable);
+            studentReportDtoPage = studentAttemptRepository.findAssessmentForUserWithFilterAndSearch(false, filter.getName(), studentId, instituteId, filter.getStatus(), filter.getReleaseResultStatus() != null ? filter.getReleaseResultStatus() : new ArrayList<>(),filter.getAssessmentType()!=null ? filter.getAssessmentType() : new ArrayList<>(), scopeToBatches, batchIds, false, pageable);
 
         }
         if (Objects.isNull(studentReportDtoPage)) {
-            studentReportDtoPage = studentAttemptRepository.findAssessmentForUserWithFilter(false, studentId, instituteId, filter.getStatus(), filter.getReleaseResultStatus() != null ? filter.getReleaseResultStatus() : new ArrayList<>(),filter.getAssessmentType()!=null ? filter.getAssessmentType() : new ArrayList<>(), scopeToBatches, batchIds, pageable);
+            studentReportDtoPage = studentAttemptRepository.findAssessmentForUserWithFilter(false, studentId, instituteId, filter.getStatus(), filter.getReleaseResultStatus() != null ? filter.getReleaseResultStatus() : new ArrayList<>(),filter.getAssessmentType()!=null ? filter.getAssessmentType() : new ArrayList<>(), scopeToBatches, batchIds, false, pageable);
         }
 
         return ResponseEntity.ok(createReportResponse(studentReportDtoPage));
@@ -352,11 +352,11 @@ public class AdminAssessmentGetManager {
         requireNoFinalizedAttemptsForApiExam(assessment, methodType, request);
 
         return switch (RevaluateRequestEnum.valueOf(methodType)) {
-            case ENTIRE_ASSESSMENT -> revaluateForAllParticipants(assessment, instituteId);
+            case ENTIRE_ASSESSMENT -> revaluateForAllParticipants(assessment, instituteId, actor(userDetails));
             case ENTIRE_ASSESSMENT_PARTICIPANTS ->
-                    revaluateAssessmentForParticipantsAndAllAssessment(assessment, request, instituteId);
+                    revaluateAssessmentForParticipantsAndAllAssessment(assessment, request, instituteId, actor(userDetails));
             case PARTICIPANTS_AND_QUESTIONS ->
-                    revaluateAssessmentForParticipantsAndQuestions(assessment, request, instituteId);
+                    revaluateAssessmentForParticipantsAndQuestions(assessment, request, instituteId, actor(userDetails));
             default -> ResponseEntity.ok("Invalid Request");
         };
     }
@@ -385,23 +385,31 @@ public class AdminAssessmentGetManager {
         resultLockGuard.requireNoneFinalizedForApiExam(assessment, targeted);
     }
 
-    private ResponseEntity<String> revaluateAssessmentForParticipantsAndQuestions(Assessment assessment, RevaluateRequest request, String instituteId) {
+    private static String actor(CustomUserDetails userDetails) {
+        return userDetails == null ? null : userDetails.getUserId();
+    }
+
+    private ResponseEntity<String> revaluateAssessmentForParticipantsAndQuestions(Assessment assessment, RevaluateRequest request, String instituteId,
+                                                                                  String actorUserId) {
         if (Objects.isNull(request) || Objects.isNull(request.getAttemptIds()) || Objects.isNull(request.getQuestions()))
             throw new VacademyException("Invalid Request");
 
         try {
-            studentAttemptService.revaluateCustomParticipantAndQuestionsWrapper(assessment, request, instituteId);
+            studentAttemptService.revaluateCustomParticipantAndQuestionsWrapper(assessment, request, instituteId,
+                    actorUserId);
         } catch (Exception e) {
             log.error("[REVALUATE ERROR]: " + e.getMessage());
         }
         return ResponseEntity.ok("Done");
     }
 
-    private ResponseEntity<String> revaluateAssessmentForParticipantsAndAllAssessment(Assessment assessment, RevaluateRequest request, String instituteId) {
+    private ResponseEntity<String> revaluateAssessmentForParticipantsAndAllAssessment(Assessment assessment, RevaluateRequest request, String instituteId,
+                                                                                      String actorUserId) {
         if (Objects.isNull(request) || Objects.isNull(request.getAttemptIds()))
             throw new VacademyException("Invalid Request");
         try {
-            studentAttemptService.revaluateForParticipantIdsWrapper(assessment, request.getAttemptIds(), instituteId);
+            studentAttemptService.revaluateForParticipantIdsWrapper(assessment, request.getAttemptIds(), instituteId,
+                    actorUserId);
         } catch (Exception e) {
             log.error("[REVALUATE ERROR]: " + e.getMessage());
         }
@@ -409,9 +417,10 @@ public class AdminAssessmentGetManager {
         return ResponseEntity.ok("Done");
     }
 
-    private ResponseEntity<String> revaluateForAllParticipants(Assessment assessment, String instituteId) {
+    private ResponseEntity<String> revaluateForAllParticipants(Assessment assessment, String instituteId,
+                                                               String actorUserId) {
         try {
-            studentAttemptService.revaluateForAllParticipantsWrapper(assessment, instituteId);
+            studentAttemptService.revaluateForAllParticipantsWrapper(assessment, instituteId, actorUserId);
         } catch (Exception e) {
             log.error("[REVALUATE ERROR]: " + e.getMessage());
         }

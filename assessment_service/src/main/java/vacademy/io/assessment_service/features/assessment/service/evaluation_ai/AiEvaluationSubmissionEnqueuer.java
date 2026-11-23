@@ -41,6 +41,15 @@ public class AiEvaluationSubmissionEnqueuer {
          */
         static final List<String> ACTIVE_STATUSES = AiEvaluationStatusEnum.ACTIVE;
 
+        /**
+         * Runs that ended. A COMPLETED one (the AI already graded the attempt) or a
+         * CANCELLED one (a teacher stopped it on purpose) means an automatic submit never
+         * queues the attempt again; a FAILED one does, unless a teacher has since marked
+         * answers by hand on the review page.
+         */
+        static final List<String> FINISHED_STATUSES = List.of(AiEvaluationStatusEnum.COMPLETED.name(),
+                        AiEvaluationStatusEnum.CANCELLED.name(), AiEvaluationStatusEnum.FAILED.name());
+
         private final AiEvaluationProcessRepository aiEvaluationProcessRepository;
         private final TypedAnswerEvaluation typedAnswerEvaluation;
 
@@ -74,8 +83,14 @@ public class AiEvaluationSubmissionEnqueuer {
                                 return null;
                         }
                         // NULL means off. Every assessment that existed before V43 reads as
-                        // NULL here, so none of them start spending credits on their own.
-                        if (!Boolean.TRUE.equals(assessment.getAiEvaluationEnabled())) {
+                        // NULL here, so none of them start spending credits on their own -
+                        // with one exception (owner decision 2026-11-18): an online attempt
+                        // with a non-blank CBE_RESPONSE answer always goes to the AI, since
+                        // nothing else can mark it. That run grades the CBE answers only
+                        // (TypedAnswerEvaluation.cbeOnlyRun). MANUAL (PDF upload), uploaded
+                        // sheets, OMR and papers without CBE are untouched by it.
+                        boolean optedIn = Boolean.TRUE.equals(assessment.getAiEvaluationEnabled());
+                        if (!optedIn && !typedAnswerEvaluation.cbeAlwaysAiGraded(attempt, assessment)) {
                                 return null;
                         }
                         // A released result is frozen against AI writes (G8, T0.33): queueing it
@@ -87,13 +102,16 @@ public class AiEvaluationSubmissionEnqueuer {
                         }
                         // No credit check here, on purpose: this runs inside the learner's
                         // submit and must never wait on the credit service. The row is priced
-                        // and checked when it is dispatched (AiEvaluationCreditGate.checkAtDispatch);
-                        // a shortfall fails it there, unbilled, where the teacher sees it.
+                        // and checked when it is dispatched (AiEvaluationCreditGate.checkAtDispatch).
+                        // A shortfall fails it there, unbilled, only where the balance is
+                        // enforced: partner API rows, CBE-only runs on a test that never
+                        // opted in, or every dashboard row when credit-check.dashboard-enforced
+                        // is on (it is OFF in prod, so an opted-in test's run is sent anyway).
                         // With an uploaded copy the AI grades the sheet. Without one it grades
                         // only the typed written answers - so an online paper with nothing
                         // written would be dispatched only to fail with "nothing to grade";
                         // 88 such rows sat in the queue on one institute before this guard.
-                        if (!typedAnswerEvaluation.hasAnswerSheet(attempt)
+                        if (optedIn && !typedAnswerEvaluation.hasAnswerSheet(attempt)
                                         && !typedAnswerEvaluation.awaitsAiGrading(attempt, assessment)) {
                                 log.info("[AI-EVAL-ENQUEUE] Attempt {} has no submission file and no written question; not queued",
                                                 attempt.getId());
@@ -109,6 +127,30 @@ public class AiEvaluationSubmissionEnqueuer {
                                 log.info("[AI-EVAL-ENQUEUE] Attempt {} already has evaluation {} in flight, skipping",
                                                 attempt.getId(), active.get(0).getId());
                                 return active.get(0).getId();
+                        }
+                        // Nor re-grade one the AI already finished: a submit retry that lands
+                        // after a fast run (a CBE answer grades in seconds), or the learner
+                        // submitting an attempt the time-out sweep already ended and queued,
+                        // would otherwise pay for the same attempt twice (the AI-marked rows
+                        // are frozen, so it would re-read the same text). Nor restart one a
+                        // teacher stopped, nor let an automatic run overwrite marks a teacher
+                        // set by hand after a failed run. A teacher can still re-run any of
+                        // them from the submissions table.
+                        List<AiEvaluationProcess> finished = aiEvaluationProcessRepository
+                                        .findActiveByAttemptId(attempt.getId(), FINISHED_STATUSES);
+                        AiEvaluationProcess settled = finished.stream()
+                                        .filter(p -> AiEvaluationStatusEnum.COMPLETED.name().equals(p.getStatus())
+                                                        || AiEvaluationStatusEnum.CANCELLED.name().equals(p.getStatus()))
+                                        .findFirst().orElse(null);
+                        if (settled != null) {
+                                log.info("[AI-EVAL-ENQUEUE] Attempt {} already has evaluation {} ({}); not queued again",
+                                                attempt.getId(), settled.getId(), settled.getStatus());
+                                return null;
+                        }
+                        if (!finished.isEmpty() && typedAnswerEvaluation.hasTeacherReviewedMarks(attempt)) {
+                                log.info("[AI-EVAL-ENQUEUE] Attempt {} has marks a teacher reviewed; not queued again",
+                                                attempt.getId());
+                                return null;
                         }
 
                         AiEvaluationProcess process = new AiEvaluationProcess();

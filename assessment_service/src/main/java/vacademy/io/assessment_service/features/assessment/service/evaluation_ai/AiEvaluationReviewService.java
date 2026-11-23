@@ -47,6 +47,17 @@ public class AiEvaluationReviewService {
     @org.springframework.context.annotation.Lazy
     private CopyCheckReportDataSender reportDataSender;
 
+    /**
+     * Submission review (phase 1a): the one write path for marks. When present the review
+     * PUT is a thin wrapper over it (contract 7.2); absent in unit tests that predate it.
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @org.springframework.context.annotation.Lazy
+    private vacademy.io.assessment_service.features.submission_review.service.MarkWriter markWriter;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vacademy.io.assessment_service.features.submission_review.service.PaperOutline paperOutline;
+
     /** Key in ai_question_evaluation.evaluation_result_json holding the teacher's pen-note edits. */
     public static final String ANNOTATION_EDITS_KEY = "reviewer_annotation_edits";
     private static final com.fasterxml.jackson.databind.ObjectMapper JSON =
@@ -87,6 +98,11 @@ public class AiEvaluationReviewService {
         double max = row.getMaxMarks() != null ? row.getMaxMarks().doubleValue() : Double.MAX_VALUE;
         double clamped = marks == null ? 0.0 : Math.max(0.0, Math.min(marks, max));
 
+        if (markWriter != null && process.getStudentAttempt() != null) {
+            overrideThroughMarkWriter(process, row, questionId, clamped, feedback, annotationEdits, editorUserId);
+            return;
+        }
+
         row.setMarksAwarded(BigDecimal.valueOf(clamped));
         if (feedback != null) {
             row.setFeedback(feedback);
@@ -104,11 +120,13 @@ public class AiEvaluationReviewService {
         // table and (once released) the learner report read the reviewed value.
         String attemptId = process.getStudentAttempt() != null ? process.getStudentAttempt().getId() : null;
         if (attemptId != null) {
-            QuestionWiseMarks marksRow = questionWiseMarksRepository
-                    .findByStudentAttemptIdAndQuestionId(attemptId, questionId)
-                    .orElse(null);
-            if (marksRow != null) {
+            // Every marks row of the question: one per section it sits in.
+            for (QuestionWiseMarks marksRow : questionWiseMarksRepository
+                    .findAllByAttemptIdAndQuestionId(attemptId, questionId)) {
                 marksRow.setMarks(clamped);
+                marksRow.setStatus(vacademy.io.assessment_service.features.submission_review.model.AnswerStatus
+                        .fromMarks(clamped, marksRow.getMaxMarks() != null ? marksRow.getMaxMarks()
+                                : row.getMaxMarks() != null ? row.getMaxMarks().doubleValue() : null));
                 marksRow.setAiEvaluatedAt(new Date());
                 marksRow.setMarksSource("AI_REVIEWED");
                 // The teacher's edited feedback becomes the authoritative,
@@ -131,8 +149,65 @@ public class AiEvaluationReviewService {
                 questionId, processId, clamped, editorUserId);
     }
 
+    /**
+     * Contract 7.2: lock the attempt (global lock order: attempt, marks rows, AI rows), update
+     * the AI verdict as before, then one LEGACY_REVIEW_PUT change per section the question
+     * sits in. MarkWriter writes AI_REVIEWED (the partner API reads it), the history, the R6
+     * total and the result status; the old per-run total formula is gone.
+     */
+    private void overrideThroughMarkWriter(AiEvaluationProcess process, AiQuestionEvaluation row, String questionId,
+            double clamped, String feedback,
+            java.util.List<vacademy.io.assessment_service.features.assessment.dto.evaluation_ai.QuestionOverrideRequest.AnnotationEdit> annotationEdits,
+            String editorUserId) {
+        String attemptId = process.getStudentAttempt().getId();
+        studentAttemptRepository.lockById(attemptId);
+        row.setMarksAwarded(BigDecimal.valueOf(clamped));
+        if (feedback != null) {
+            row.setFeedback(feedback);
+        }
+        row.setStatus("COMPLETED");
+        if (annotationEdits != null) {
+            row.setEvaluationResultJson(withAnnotationEdits(row.getEvaluationResultJson(), annotationEdits));
+        }
+        row.setIsEdited(true);
+        row.setEditedBy(editorUserId);
+        row.setEditedAt(new Date());
+        questionEvaluationRepository.save(row);
+
+        java.util.LinkedHashSet<String> sections = new java.util.LinkedHashSet<>();
+        for (QuestionWiseMarks marksRow : questionWiseMarksRepository.findAllByAttemptIdAndQuestionId(attemptId,
+                questionId)) {
+            String sid = marksRow.getSectionId() != null ? marksRow.getSectionId()
+                    : marksRow.getSection() != null ? marksRow.getSection().getId() : null;
+            if (sid != null) sections.add(sid);
+        }
+        if (sections.isEmpty() && paperOutline != null && process.getStudentAttempt().getRegistration() != null) {
+            String assessmentId = process.getStudentAttempt().getRegistration().getAssessment().getId();
+            paperOutline.get(assessmentId).keysOfQuestion(questionId).forEach(k -> sections.add(k.sectionId()));
+        }
+        if (sections.isEmpty()) {
+            log.info("[copy-check] question {} of process {} has no marks row; only the AI verdict was edited",
+                    questionId, process.getId());
+            return;
+        }
+        java.util.List<vacademy.io.assessment_service.features.submission_review.service.MarkWriter.MarkChange> changes =
+                new java.util.ArrayList<>();
+        for (String sid : sections) {
+            changes.add(new vacademy.io.assessment_service.features.submission_review.service.MarkWriter.MarkChange(
+                    attemptId, sid, questionId,
+                    vacademy.io.assessment_service.features.submission_review.service.MarkWriter.Writer.LEGACY_REVIEW_PUT,
+                    clamped, null, feedback, false, null, editorUserId, null, null, false, null, null, row.getId()));
+        }
+        markWriter.applyAll(attemptId, changes,
+                new vacademy.io.assessment_service.features.submission_review.service.MarkWriter.BatchContext(null,
+                        null, false, editorUserId,
+                        vacademy.io.assessment_service.features.submission_review.service.MarkWriter.Writer.LEGACY_REVIEW_PUT));
+        log.info("[copy-check] question {} of process {} overridden to {} by {}", questionId, process.getId(),
+                clamped, editorUserId);
+    }
+
     /** The stored verdict JSON with the teacher's pen-note edits replaced. */
-    static String withAnnotationEdits(String resultJson,
+    public static String withAnnotationEdits(String resultJson,
             java.util.List<vacademy.io.assessment_service.features.assessment.dto.evaluation_ai.QuestionOverrideRequest.AnnotationEdit> edits) {
         com.fasterxml.jackson.databind.node.ObjectNode root;
         try {

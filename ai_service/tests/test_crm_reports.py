@@ -66,8 +66,9 @@ def report_calls(be):
 
 def test_spec_and_registration():
     spec = reg.ASSISTANT_TOOLS["crm_reports"]
-    assert spec.mcp_only and spec.mode == "READ" and spec.setting_key == "crm_reports"
-    assert spec.default_enabled is False and spec.default_roles is None and spec.module_feature == "crm.leads"
+    assert not spec.mcp_only and spec.mode == "READ" and spec.setting_key == "crm_reports" and spec.topic == "crm"
+    assert spec.default_enabled is False and spec.default_roles == ["ADMIN", "COUNSELLOR", "COUNSELOR"]
+    assert spec.module_feature == "crm.leads"
     enum = spec.schema["function"]["parameters"]["properties"]["action"]["enum"]
     assert set(rep.ACTION_SPEC) == set(enum) == set(rep._ACTIONS)
     for action, a in rep.ACTION_SPEC.items():

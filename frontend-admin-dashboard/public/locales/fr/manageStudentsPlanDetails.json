@@ -89,5 +89,26 @@
         "applying": "Applying…",
         "successToast": "Moved to {{plan}}",
         "failedToast": "Couldn't change the plan"
+    },
+    "memberPrice": {
+        "button": "Prix",
+        "badge": "Prix propre à ce membre (prix catalogue {{list}})",
+        "title": "Modifier le prix du membre",
+        "explainer": "Le prix catalogue du forfait est {{list}} ; ce membre paie {{current}}. Le nouveau prix s’applique à partir du prochain prélèvement ou renouvellement. Rien de déjà payé ne change.",
+        "autopayNote": "Le prélèvement automatique est activé : le prochain prélèvement utilise le nouveau prix.",
+        "useListPrice": "Utiliser le prix catalogue ({{list}})",
+        "newPrice": "Nouveau prix par période ({{currency}})",
+        "remarks": "Remarque",
+        "remarksPlaceholder": "Pourquoi ce membre paie un prix différent, ex. inscrit en 2024 à l’ancien tarif",
+        "cancel": "Annuler",
+        "submit": "Enregistrer le prix",
+        "saving": "Enregistrement…",
+        "success": "Prix fixé à {{price}}.",
+        "successList": "Le membre paie désormais le prix catalogue.",
+        "failed": "Impossible de modifier le prix.",
+        "errors": {
+            "price": "Saisissez un prix de 0 ou plus.",
+            "remarks": "Ajoutez une remarque expliquant le prix."
+        }
     }
 }

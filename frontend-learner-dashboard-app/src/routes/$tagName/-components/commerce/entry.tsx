@@ -13,7 +13,8 @@ import type { CommerceRoute } from './routes';
 import { sectionsOf } from './templates';
 import { ratioClass } from './logic/media';
 import { CartPage } from './ui/Cart';
-import { CategoryBar, HeaderSlot } from './ui/Chrome';
+import { CategoryBar, CategoryHeaderRow, HeaderSlot } from './ui/Chrome';
+import { categoryBarOn } from './config';
 import { ShopHead } from './ui/Head';
 import { CollectionTemplate, SearchTemplate } from './ui/Listing';
 import { ProductTemplate } from './ui/Product';
@@ -22,7 +23,7 @@ import { CommerceSectionView } from './ui/Sections';
 import { useCommerceThemeVars, usePresetClass } from './ui/primitives';
 import { AnnouncementBar, WhatsAppButton } from './ui/ContentSections';
 import { CommercePageProvider, CommerceSiteProvider, useCommerceSite } from './ui/site';
-import { useCommerceFonts, useOnline, useShopScroll } from './ui/hooks';
+import { useCommerceFonts, useOnline, useShopScroll, useZoomableViewport } from './ui/hooks';
 import type { MessageKey } from './i18n';
 
 const BuyPages = lazy(() => import('./ui/buy-pages'));
@@ -73,6 +74,9 @@ const RouteBody: React.FC<{ route: CommerceRoute; siteHeader: boolean; tracking:
     const preset = usePresetClass();
     const online = useOnline();
     useCommerceFonts();
+    useZoomableViewport();
+    // The site's category bar sits in the header on this page: no second tab row here.
+    const headerBar = siteHeader && categoryBarOn(config, route.kind);
     // The site's own GA4 / GTM / Meta Pixel (globalSettings.tracking), which the authored pages
     // already load; without it a visitor who lands on a product page would send no event at all.
     useCatalogueTracking(tracking);
@@ -97,9 +101,9 @@ const RouteBody: React.FC<{ route: CommerceRoute; siteHeader: boolean; tracking:
                 </p>
             )}
             {/* Checkout keeps the shopper on the form: no category menu to wander off through. */}
-            {route.kind !== 'checkout' && <CategoryBar current={route.kind === 'collection' ? route.slug : null} />}
+            {route.kind !== 'checkout' && !headerBar && <CategoryBar current={route.kind === 'collection' ? route.slug : null} />}
             <main id="catalogue-main" tabIndex={-1} ref={mainRef} className="outline-none">
-                {route.kind === 'product' && <ProductTemplate key={route.slug} slug={route.slug} sections={sectionsOf(config, 'product')} />}
+                {route.kind === 'product' && <ProductTemplate key={route.slug} slug={route.slug} sections={sectionsOf(config, 'product')} categoryBar={headerBar} />}
                 {route.kind === 'collection' && <CollectionTemplate key={route.slug} slug={route.slug} sections={sectionsOf(config, 'collection')} />}
                 {route.kind === 'search' && <SearchTemplate sections={sectionsOf(config, 'search')} />}
                 {route.kind === 'cart' && (
@@ -127,7 +131,7 @@ const RouteBody: React.FC<{ route: CommerceRoute; siteHeader: boolean; tracking:
 
 /** A fixed shop route inside the site's own chrome (header, footer, theme, language). */
 export const CommerceRoutePage: React.FC<SiteProps & { route: CommerceRoute }> = ({ instituteId, tagName, globalSettings, siteName, route }) => (
-    <CatalogueChrome tagName={tagName} instituteId={instituteId}>
+    <CatalogueChrome tagName={tagName} instituteId={instituteId} pageKey={route.kind}>
         <CommerceSiteProvider instituteId={instituteId} tagName={tagName} globalSettings={globalSettings} siteName={siteName}>
             <CommercePageProvider route={route}>
                 <RouteBody
@@ -156,6 +160,12 @@ export const CommerceSection: React.FC<SiteProps & { type: string; props: Record
 
 const SectionFonts: React.FC = () => {
     useCommerceFonts();
+    useZoomableViewport();
+    return null;
+};
+
+const HeaderZoom: React.FC = () => {
+    useZoomableViewport();
     return null;
 };
 
@@ -168,6 +178,14 @@ export const CommerceHeaderSlot: React.FC<SiteProps & { showLanguage?: boolean; 
     className,
 }) => (
     <CommerceSiteProvider instituteId={instituteId} tagName={tagName} globalSettings={globalSettings}>
+        <HeaderZoom />
         <HeaderSlot showLanguage={showLanguage} className={className} />
+    </CommerceSiteProvider>
+);
+
+/** The category bar row of the site header (commerce.categoryBar). */
+export const CommerceHeaderRow: React.FC<SiteProps & { menuOpen?: boolean }> = ({ instituteId, tagName, globalSettings, menuOpen }) => (
+    <CommerceSiteProvider instituteId={instituteId} tagName={tagName} globalSettings={globalSettings}>
+        <CategoryHeaderRow menuOpen={menuOpen} />
     </CommerceSiteProvider>
 );

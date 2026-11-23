@@ -1,4 +1,5 @@
-import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router';
+import { createFileRoute, redirect, useNavigate, useRouter } from '@tanstack/react-router';
+import { SUBMISSION_PAGE_REPLACES_AI_REVIEW } from '@/services/submission-review/flags';
 import {
     Circle,
     CheckCircle,
@@ -79,6 +80,20 @@ import { formatCriterionMarks } from './-utils/criteria-marks';
 import { getLayoutMap } from '@/routes/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab/-services/ai-evaluation-services';
 
 export const Route = createFileRoute('/assessment/evaluation-ai/$attemptId/$processId/')({
+    // The Submission page now shows everything this page did (marks, feedback, AI
+    // breakdown, CBE sheets, pen notes, redraw, run progress) plus release. Old links,
+    // the run list and the bulk panel land there with this run selected. The page below
+    // stays as the fallback while the flag is off.
+    beforeLoad: ({ params }) => {
+        if (SUBMISSION_PAGE_REPLACES_AI_REVIEW) {
+            throw redirect({
+                to: '/assessment/submission/$attemptId',
+                params: { attemptId: params.attemptId },
+                search: { run: params.processId },
+                replace: true,
+            });
+        }
+    },
     component: RouteComponent,
 });
 

@@ -33,6 +33,9 @@ public class InvoiceController {
     private InvoiceBulkExportService invoiceBulkExportService;
 
     @Autowired
+    private vacademy.io.admin_core_service.features.invoice.service.InvoiceProductLinkService invoiceProductLinkService;
+
+    @Autowired
     private vacademy.io.admin_core_service.features.invoice.service.ManualReminderService manualReminderService;
 
     @Autowired
@@ -53,7 +56,7 @@ public class InvoiceController {
             @PathVariable String invoiceId,
             @RequestAttribute("user") CustomUserDetails userDetails) {
         InvoiceDTO invoice = invoiceService.getInvoiceById(invoiceId);
-        instituteAccessValidator.validateUserAccess(userDetails, invoice.getInstituteId());
+        instituteAccessValidator.guardStaff("invoices.getInvoice", userDetails, invoice.getInstituteId());
         return ResponseEntity.ok(invoice);
     }
 
@@ -97,6 +100,16 @@ public class InvoiceController {
      * thing the frontend needs to call regardless of whether the PDF was ever
      * successfully uploaded the first time.
      */
+    /**
+     * The built-in invoice PDF layout, i.e. what every institute without an INVOICE template of its
+     * own prints. Settings &gt; Invoice shows it and can save it as the institute's own template so
+     * it can be edited; until then it is not in the templates table and so was invisible there.
+     */
+    @GetMapping("/built-in-template")
+    public ResponseEntity<java.util.Map<String, String>> getBuiltInInvoiceTemplate() {
+        return ResponseEntity.ok(java.util.Map.of("html", invoiceService.getBuiltInInvoiceTemplateHtml()));
+    }
+
     @GetMapping("/{invoiceId}/download")
     public ResponseEntity<String> downloadInvoice(@PathVariable String invoiceId) {
         String url = invoiceService.resolveOrRegeneratePdfUrl(invoiceId);
@@ -121,7 +134,11 @@ public class InvoiceController {
             @RequestParam(required = false) String userId,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @RequestAttribute(value = "user", required = false) CustomUserDetails userDetails) {
+        // Staff of the institute (security.institute-guards.enforce; when off this route keeps having no check).
+        instituteAccessValidator.guard("invoices.getInvoicesByInstitute", userDetails, () -> instituteId,
+                instituteAccessValidator::requireInstituteStaffOrSuperAdmin, () -> { });
         Page<InvoiceDTO> invoices = invoiceService.getInvoicesByInstituteId(
                 instituteId, userId, status, startDate, endDate, page, size);
         return ResponseEntity.ok(invoices);
@@ -145,7 +162,7 @@ public class InvoiceController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
             @RequestAttribute("user") CustomUserDetails userDetails,
             jakarta.servlet.http.HttpServletResponse response) {
-        instituteAccessValidator.validateUserAccess(userDetails, instituteId);
+        instituteAccessValidator.guardStaff("invoices.bulkDownloadInvoices", userDetails, instituteId);
         InvoiceBulkExportService.ExportPlan plan = invoiceBulkExportService.plan(instituteId, startDate, endDate);
         response.setContentType("application/zip");
         response.setHeader("Content-Disposition", "attachment; filename=\"invoices.zip\"");
@@ -174,7 +191,7 @@ public class InvoiceController {
             @RequestParam String instituteId,
             @RequestBody vacademy.io.admin_core_service.features.invoice.dto.PaymentLogInvoiceLookupRequestDTO request,
             @RequestAttribute("user") CustomUserDetails userDetails) {
-        instituteAccessValidator.validateUserAccess(userDetails, instituteId);
+        instituteAccessValidator.guardStaff("invoices.getInvoicesForPaymentLogs", userDetails, instituteId);
         return ResponseEntity.ok(invoiceService.getInvoicesForPaymentLogs(
                 instituteId, request != null ? request.getPaymentLogIds() : null));
     }
@@ -199,7 +216,7 @@ public class InvoiceController {
             @Valid @RequestBody AdminCreateInvoiceRequestDTO request,
             @RequestAttribute("user") CustomUserDetails userDetails) {
         // Cross-tenant guard: the caller must belong to the institute they are billing under.
-        instituteAccessValidator.validateUserAccess(userDetails, request.getInstituteId());
+        instituteAccessValidator.guardStaff("invoices.createAdminInvoices", userDetails, request.getInstituteId());
         // Only roles allowed to by Display Settings (learnerManagement.canApplyDiscounts).
         if (vacademy.io.admin_core_service.features.user_subscription.service.coupon.AdminDiscountService
                 .isRequested(request.getAdminDiscount())) {
@@ -225,7 +242,7 @@ public class InvoiceController {
             @RequestAttribute("user") CustomUserDetails userDetails) {
         // Cross-tenant guard: preview resolves the institute's template + billed user's PII, so
         // the caller must belong to the requested institute (mirrors createAdminInvoices).
-        instituteAccessValidator.validateUserAccess(userDetails, request.getInstituteId());
+        instituteAccessValidator.guardStaff("invoices.previewAdminInvoice", userDetails, request.getInstituteId());
         return ResponseEntity.ok(invoiceService.previewAdminInvoice(request));
     }
 
@@ -266,7 +283,7 @@ public class InvoiceController {
             @RequestParam String instituteId,
             @Valid @RequestBody vacademy.io.admin_core_service.features.invoice.dto.AdminUpdateInvoiceRequestDTO request,
             @RequestAttribute("user") CustomUserDetails userDetails) {
-        instituteAccessValidator.validateUserAccess(userDetails, instituteId);
+        instituteAccessValidator.guardStaff("invoices.updateAdminInvoice", userDetails, instituteId);
         return ResponseEntity.ok(
                 invoiceService.updateAdminInvoice(invoiceId, instituteId, request, userDetails));
     }
@@ -294,7 +311,7 @@ public class InvoiceController {
             @RequestParam String instituteId,
             @RequestBody(required = false) vacademy.io.admin_core_service.features.invoice.dto.RejectInvoiceRequestDTO request,
             @RequestAttribute("user") CustomUserDetails userDetails) {
-        instituteAccessValidator.validateUserAccess(userDetails, instituteId);
+        instituteAccessValidator.guardStaff("invoices.rejectInvoice", userDetails, instituteId);
         String reason = request != null ? request.getReason() : null;
         return ResponseEntity.ok(invoiceService.rejectInvoice(invoiceId, instituteId, reason, userDetails));
     }
@@ -312,7 +329,7 @@ public class InvoiceController {
             @PathVariable String invoiceId,
             @RequestParam String instituteId,
             @RequestAttribute("user") CustomUserDetails userDetails) {
-        instituteAccessValidator.validateUserAccess(userDetails, instituteId);
+        instituteAccessValidator.guardStaff("invoices.deleteInvoice", userDetails, instituteId);
         return ResponseEntity.ok(paymentDeletionService.deleteInvoice(
                 invoiceId, instituteId, userDetails != null ? userDetails.getUserId() : null));
     }
@@ -335,7 +352,37 @@ public class InvoiceController {
             @PathVariable String invoiceId,
             @RequestBody(required = false) vacademy.io.admin_core_service.features.invoice.dto.ManualInvoicePaymentRequestDTO request,
             @RequestAttribute(value = "user", required = false) CustomUserDetails userDetails) {
+        // The caller must be staff of the institute the invoice was issued under
+        // (security.institute-guards.enforce; when off this route keeps having no check).
+        instituteAccessValidator.guard("invoices.markInvoicePaidManually", userDetails,
+                () -> invoiceService.getInvoiceInstituteId(invoiceId),
+                instituteAccessValidator::requireInstituteStaffOrSuperAdmin,
+                () -> { });
         return ResponseEntity.ok(invoiceService.markInvoicePaidManually(invoiceId, request, userDetails));
+    }
+
+    /**
+     * Applies, again, the product attached to a PAID admin invoice — the membership renewal or
+     * course enrolment it pays for — after it failed (shown on the invoice with the reason).
+     * Runs at most once: an already-applied product is returned unchanged. Waits for the outcome
+     * and returns the refreshed invoice.
+     *
+     * <p>{@code POST /v1/invoices/{invoiceId}/product-link/apply?instituteId=xxx}
+     */
+    @PostMapping("/{invoiceId}/product-link/apply")
+    @vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable(
+            entityType = "INVOICE",
+            action = "UPDATE",
+            entityIdExpr = "#invoiceId",
+            descriptionExpr = "'applied the product of invoice ' + (#result?.body?.invoiceNumber ?: #invoiceId)"
+                    + " + ' (' + (#result?.body?.productLink?.status ?: '') + ')'")
+    public ResponseEntity<InvoiceDTO> applyInvoiceProductLink(
+            @PathVariable String invoiceId,
+            @RequestParam String instituteId,
+            @RequestAttribute("user") CustomUserDetails userDetails) {
+        instituteAccessValidator.guardStaff("invoices.applyInvoiceProductLink", userDetails, instituteId);
+        invoiceProductLinkService.retry(invoiceId, instituteId);
+        return ResponseEntity.ok(invoiceService.getInvoiceById(invoiceId));
     }
 
     /**
@@ -367,7 +414,9 @@ public class InvoiceController {
      * Usage: POST /admin-core-service/v1/invoices/test/generate/{paymentLogId}
      */
     @PostMapping("/test/generate/{paymentLogId}")
-    public ResponseEntity<String> testGenerateInvoice(@PathVariable String paymentLogId) {
+    public ResponseEntity<String> testGenerateInvoice(@PathVariable String paymentLogId,
+            @RequestAttribute(value = "user", required = false) CustomUserDetails userDetails) {
+        vacademy.io.common.auth.util.SuperAdminAuthUtil.requireSuperAdmin(userDetails);
         try {
             return ResponseEntity.ok(invoiceService.testGenerateInvoice(paymentLogId));
         } catch (Exception e) {
@@ -384,7 +433,9 @@ public class InvoiceController {
      * Usage: POST /admin-core-service/v1/invoices/test/generate-multi-package/{orderId}
      */
     @PostMapping("/test/generate-multi-package/{orderId}")
-    public ResponseEntity<String> testGenerateInvoiceMultiPackage(@PathVariable String orderId) {
+    public ResponseEntity<String> testGenerateInvoiceMultiPackage(@PathVariable String orderId,
+            @RequestAttribute(value = "user", required = false) CustomUserDetails userDetails) {
+        vacademy.io.common.auth.util.SuperAdminAuthUtil.requireSuperAdmin(userDetails);
         try {
             return ResponseEntity.ok(invoiceService.testGenerateInvoiceForMultiPackage(orderId));
         } catch (Exception e) {
@@ -401,7 +452,9 @@ public class InvoiceController {
      * Usage: POST /admin-core-service/v1/invoices/test/generate-single/{paymentLogId}
      */
     @PostMapping("/test/generate-single/{paymentLogId}")
-    public ResponseEntity<String> testGenerateInvoiceSingle(@PathVariable String paymentLogId) {
+    public ResponseEntity<String> testGenerateInvoiceSingle(@PathVariable String paymentLogId,
+            @RequestAttribute(value = "user", required = false) CustomUserDetails userDetails) {
+        vacademy.io.common.auth.util.SuperAdminAuthUtil.requireSuperAdmin(userDetails);
         try {
             return ResponseEntity.ok(invoiceService.testGenerateInvoiceSingle(paymentLogId));
         } catch (Exception e) {

@@ -5,6 +5,12 @@ import { GetFilterData } from '@/routes/manage-students/students-list/-constants
 import { MyTable, TableData } from '@/components/design-system/table';
 import { MyPagination } from '@/components/design-system/pagination';
 import { useStudentFilters } from '@/routes/manage-students/students-list/-hooks/useStudentFilters';
+import {
+    useLearnerLocationFilters,
+    withLocationFiltersAfterGender,
+} from '@/routes/manage-students/students-list/-hooks/useLearnerLocationFilters';
+import { getActiveRoleDisplaySettingsKey } from '@/lib/auth/instituteUtils';
+import { getDisplaySettingsFromCache } from '@/services/display-settings';
 import { useStudentTable } from '@/routes/manage-students/students-list/-hooks/useStudentTable';
 import { StudentTable } from '@/types/student-table-types';
 import { myColumns } from '@/components/design-system/utils/constants/table-column-data';
@@ -69,7 +75,6 @@ export const StudentListTab = ({ form }: { form: UseFormReturn<TestAccessFormTyp
             name: session.session_name,
         })) || [];
     const { t: tAllFilters } = useTranslation('manageStudentsAllFilters');
-    const filters: FilterConfig[] = GetFilterData(tAllFilters, instituteDetails, getCurrentSession());
     const [isAssessment] = useState(true);
     const { setValue } = form;
 
@@ -90,7 +95,25 @@ export const StudentListTab = ({ form }: { form: UseFormReturn<TestAccessFormTyp
         setAppliedFilters,
         handleSessionChange,
         sessionList,
+        setColumnFilters,
     } = useStudentFilters();
+
+    // City / Region chips, the same ones (and the same "Manage filters" switches) as the
+    // Learner List page. A role whose City / Region column is hidden there gets no chip here.
+    const roleHiddenColumns = useMemo(() => {
+        const cached = getDisplaySettingsFromCache(getActiveRoleDisplaySettingsKey());
+        return new Set(cached?.learnerListColumns?.hiddenColumns ?? []);
+    }, []);
+    const locationFilters = useLearnerLocationFilters({
+        instituteId,
+        appliedFilters,
+        setColumnFilters,
+        setAppliedFilters,
+    }).filter((f) => !roleHiddenColumns.has(f.id === 'cities' ? 'city' : 'region'));
+    const filters: FilterConfig[] = withLocationFiltersAfterGender(
+        GetFilterData(tAllFilters, instituteDetails, getCurrentSession()),
+        locationFilters
+    );
 
     const {
         studentTableData,

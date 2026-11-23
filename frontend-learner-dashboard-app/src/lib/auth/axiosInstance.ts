@@ -1,6 +1,7 @@
 import { Preferences } from "@capacitor/preferences";
 import { TokenKey } from "@/constants/auth/tokens";
 import axios from "axios";
+import type { InternalAxiosRequestConfig } from "axios";
 import * as Sentry from "@sentry/react";
 import {
   isTokenExpired,
@@ -168,6 +169,84 @@ const refreshTokens = async (refreshToken: string): Promise<void> => {
     }
     throw error;
   }
+};
+
+// ── 403 TOKEN_INVALID: the backend no longer accepts this access token (e.g. it
+// was signed with a key the platform has since replaced). Refresh once and retry
+// the request once; if that cannot work, end the session and go to sign-in. ──
+type RetriableConfig = InternalAxiosRequestConfig & {
+  __tokenInvalidRetried?: boolean;
+};
+
+// One refresh shared by every request that is refused at the same moment.
+let tokenInvalidRefresh: Promise<void> | null = null;
+let tokenInvalidLogoutStarted = false;
+
+const bearerSent = (config?: InternalAxiosRequestConfig): string | null => {
+  const headers = config?.headers as Record<string, unknown> | undefined;
+  const raw = headers?.Authorization ?? headers?.authorization;
+  return typeof raw === "string" && raw.startsWith("Bearer ")
+    ? raw.slice("Bearer ".length)
+    : null;
+};
+
+const endSessionForInvalidToken = async (
+  requestUrl: string,
+  tokensAlreadyCleared: boolean,
+) => {
+  if (tokenInvalidLogoutStarted) return;
+  tokenInvalidLogoutStarted = true;
+  captureAuthEvent(
+    "Forced logout: token not accepted and could not be refreshed",
+    "warning",
+    { requestUrl },
+  );
+  if (!tokensAlreadyCleared) await removeTokensAndLogout();
+  window.location.assign("/login");
+};
+
+const recoverFromInvalidToken = async (error: {
+  config?: RetriableConfig;
+}): Promise<unknown> => {
+  const config = error.config;
+  const requestUrl = String(config?.url || "");
+  const sent = bearerSent(config);
+  const current = await getTokenFromStorage(TokenKey.accessToken);
+  // No session to recover (already signed out), or a bearer we did not attach.
+  if (!config || !sent || !current) return Promise.reject(error);
+
+  if (config.__tokenInvalidRetried) {
+    // Refused again with a freshly refreshed token: refreshing cannot fix it.
+    if (sent === current) await endSessionForInvalidToken(requestUrl, false);
+    return Promise.reject(error);
+  }
+
+  // When another request has already replaced the token, just retry with it.
+  if (sent === current) {
+    const refreshToken = await getTokenFromStorage(TokenKey.refreshToken);
+    if (!refreshToken) {
+      await endSessionForInvalidToken(requestUrl, false);
+      return Promise.reject(error);
+    }
+    try {
+      if (!tokenInvalidRefresh) {
+        tokenInvalidRefresh = refreshTokens(refreshToken).finally(() => {
+          tokenInvalidRefresh = null;
+        });
+      }
+      await tokenInvalidRefresh;
+    } catch (refreshError) {
+      // refreshTokens already cleared the session when the server rejected the
+      // refresh token; a network blip or 5xx keeps it for the next request.
+      if (isRefreshTokenRejected(refreshError)) {
+        await endSessionForInvalidToken(requestUrl, true);
+      }
+      return Promise.reject(error);
+    }
+  }
+
+  config.__tokenInvalidRetried = true;
+  return authenticatedAxiosInstance(config);
 };
 
 // Create an instance of Axios
@@ -426,7 +505,10 @@ authenticatedAxiosInstance.interceptors.response.use(
 
     // Handle forbidden errors (403) - might be token issues
     if (!isPublicDomainRouting && error.response && status === 403) {
-      // Handle 403 errors silently
+      if ((responseData as { error?: unknown } | undefined)?.error === "TOKEN_INVALID") {
+        return recoverFromInvalidToken(error);
+      }
+      // Other 403s are handled by the caller
     }
 
     return Promise.reject(error);

@@ -16,9 +16,12 @@ import java.util.Optional;
  * on the same site, or 410 with none.
  *
  * <p>Lookup order: an EXACT row for the path with its query string, an EXACT row for the path
- * alone, then the longest PREFIX row the path (with its query string) starts with. Each is one
- * read on the unique key {@code (institute_id, match_type, from_path)}; the PREFIX read walks
- * only the PREFIX rows of the institute, which are a handful of pattern rows.
+ * alone, then the longest PREFIX row the path (with its query string) starts with. A PREFIX
+ * address that ends in {@code /} ({@code /product/}) stops at that segment: it catches
+ * {@code /product/x} and {@code /product} itself, not {@code /products}. Each is one read on
+ * the unique key {@code (institute_id, match_type, from_path)}; the PREFIX read walks only the
+ * PREFIX rows of the institute, which the staff import caps at
+ * {@link SiteRedirectPlanner#MAX_PREFIX_ROWS_PER_INSTITUTE}.
  */
 @Service
 public class SiteRedirectResolver {
@@ -49,11 +52,14 @@ public class SiteRedirectResolver {
             found = first(entityManager.createNativeQuery("""
                             SELECT r.status_code, r.to_path FROM site_redirect r
                             WHERE r.institute_id = :instituteId AND r.match_type = 'PREFIX'
-                              AND left(:path, length(r.from_path)) = r.from_path
+                              AND (left(:path, length(r.from_path)) = r.from_path
+                                   OR (length(r.from_path) > 1 AND right(r.from_path, 1) = '/'
+                                       AND r.from_path = :pathOnly || '/'))
                             ORDER BY length(r.from_path) DESC
                             """)
                     .setParameter("instituteId", instituteId)
                     .setParameter("path", full)
+                    .setParameter("pathOnly", pathOnly)
                     .setMaxResults(1)
                     .getResultList());
         }
@@ -128,7 +134,8 @@ public class SiteRedirectResolver {
         }
         String to = redirect.toPath();
         if (redirect.statusCode() != 301 || to == null || !to.startsWith("/") || to.startsWith("//")
-                || to.indexOf('\\') >= 0 || to.indexOf('\r') >= 0 || to.indexOf('\n') >= 0) {
+                || to.indexOf('\\') >= 0 || to.indexOf('\r') >= 0 || to.indexOf('\n') >= 0
+                || SiteRedirectPaths.targetProblem(to) != null) {
             return false;
         }
         int query = to.indexOf('?');
@@ -138,8 +145,11 @@ public class SiteRedirectResolver {
 
     /**
      * A path as {@code from_path} stores it: percent-decoded (either hex case), Unicode NFC,
-     * ASCII lower-cased, slashes collapsed, no trailing slash. The query string is kept as
-     * sent. Null for a path that is empty, does not start with a slash or is too long.
+     * ASCII lower-cased, slashes collapsed, no trailing slash. The query string is kept as a
+     * browser sends it: anything outside printable ASCII percent-encoded as UTF-8
+     * ({@link SiteRedirectPaths#ascii}), so a row typed with {@code ?q=ख} is found by the
+     * {@code ?q=%E0%A4%96} a browser asks for. Null for a path that is empty, does not start with
+     * a slash or is too long.
      */
     public static String normalise(String raw) {
         if (raw == null) {
@@ -151,7 +161,7 @@ public class SiteRedirectResolver {
         }
         int at = value.indexOf('?');
         String path = at < 0 ? value : value.substring(0, at);
-        String query = at < 0 || at == value.length() - 1 ? "" : value.substring(at);
+        String query = at < 0 || at == value.length() - 1 ? "" : SiteRedirectPaths.ascii(value.substring(at));
         try {
             // A plus sign is a plus sign in a path, not a space.
             path = URLDecoder.decode(path.replace("+", "%2B"), StandardCharsets.UTF_8);
@@ -175,6 +185,7 @@ public class SiteRedirectResolver {
         while (out.length() > 1 && out.charAt(out.length() - 1) == '/') {
             out.setLength(out.length() - 1);
         }
-        return out + query;
+        // The encoded query can be longer than what was sent; the column holds 1,024 characters.
+        return out.length() + query.length() > MAX_PATH_LENGTH ? null : out + query;
     }
 }

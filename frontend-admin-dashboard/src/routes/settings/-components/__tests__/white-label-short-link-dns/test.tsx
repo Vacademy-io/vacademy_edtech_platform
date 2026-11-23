@@ -39,6 +39,7 @@ vi.mock('@/lib/auth/axiosInstance', () => ({ default: { get: vi.fn(), post: vi.f
 
 vi.mock('@/routes/manage-custom-teams/-services/custom-team-services', () => ({
     getSubOrgs: vi.fn(),
+    getAllRoles: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock('@/lib/clipboard', () => ({ copyTextToClipboard: vi.fn() }));
@@ -62,7 +63,7 @@ const toastError = toast.error as unknown as Mock;
 const toastSuccess = toast.success as unknown as Mock;
 
 /** The nginx ingress every white-label short domain has to point at. */
-const INGRESS_IP = '5.223.55.238';
+const INGRESS_IP = '43.242.225.46';
 
 const routingEntry = (overrides: Record<string, unknown> = {}) => ({
     id: 'row-1',

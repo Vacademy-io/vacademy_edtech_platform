@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useSlideStore } from '@/stores/Slides/useSlideStore';
 import type { Slide, RecommendationBatch } from '@/stores/Slides/useSlideStore';
-import { SlideRenderer } from '../SlideRenderer';
+import { DirectSlideRenderer } from './RecommendationUI';
 import { SlideTypeEnum } from '../utils/types';
 
 interface RecommendationsSidePanelProps {
@@ -224,12 +224,9 @@ export const RecommendationsSidePanel: React.FC<RecommendationsSidePanelProps> =
                                 <div className="flex-1 p-4 bg-gradient-to-b from-slate-800/20 to-slate-900/40">
                                     <div className="h-full bg-white rounded-xl overflow-hidden shadow-2xl border border-white/20">
                                         <div className="h-full p-2">
-                                            <SlideRenderer 
-                                                currentSlideId={currentSlide.id} 
-                                                editModeExcalidraw={false}
-                                                editModeQuiz={false}
-                                                slides={[currentSlide]}
-                                            />
+                                            {/* SlideRenderer looks the id up in the deck store, where a
+                                                recommendation does not exist yet ("Slide data not found") */}
+                                            <DirectSlideRenderer slide={currentSlide} />
                                         </div>
                                     </div>
                                 </div>

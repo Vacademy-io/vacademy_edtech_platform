@@ -8,10 +8,12 @@ import { MyDropdown } from '@/components/design-system/dropdown';
 import { StudentTable } from '@/types/student-table-types';
 import { AssessmentStatusOptions } from '../-components/AssessmentStatusOptions';
 import { SubmissionFileCell } from '../-components/SubmissionFileCell';
-import { EvaluationStatusCell } from '../-components/EvaluationStatusCell';
+import { MarkingCell } from '../-components/submission-review/MarkingCell';
+import { ResultCell } from '../-components/submission-review/ResultCell';
+import { OpenCell, OpenScoreCell, pageAttemptIds } from '../-components/submission-review/OpenCell';
 import { useStudentSidebar } from '@/routes/manage-students/students-list/-context/selected-student-sidebar-context';
-import { StatusChips } from '@/components/design-system/chips';
 import { useSidebar } from '@/components/ui/sidebar';
+import { useSubmissionsSidePanel, type SubmissionsSidePanel } from '../-components/submission-review/side-view-store';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { useTranslation } from 'react-i18next';
@@ -44,9 +46,15 @@ const SerialCell = ({
     return <span className="text-body text-neutral-500">{offset + row.index + 1}</span>;
 };
 
-const useClickHandlers = () => {
+/**
+ * Which side view a click opens. The Name cell opens the learner ("student"); any other
+ * cell of an Attempted row opens that attempt's submission ("submission"), which links on
+ * to the learner. Rows with no attempt (Pending, Ongoing) only have the learner.
+ */
+const useClickHandlers = (opens: SubmissionsSidePanel = 'student') => {
     const { setSelectedStudent, selectedStudent } = useStudentSidebar();
     const { setOpen, open } = useSidebar();
+    const { panel, setPanel } = useSubmissionsSidePanel();
 
     // Opens the detail sidebar on the click itself. This used to sit behind a 250ms
     // setTimeout so that a double-click could cancel it, which made every row in the
@@ -55,8 +63,13 @@ const useClickHandlers = () => {
     // immediately toggling it shut again.
     const handleClick = (event: React.MouseEvent, row: Row<StudentTable>) => {
         if (event.detail > 1) return;
-        if (selectedStudent?.id != row.original.id) {
+        const target: SubmissionsSidePanel =
+            opens === 'submission' && (row.original as StudentTable & { attempt_id?: string }).attempt_id
+                ? 'submission'
+                : 'student';
+        if (selectedStudent?.id != row.original.id || panel !== target) {
             setSelectedStudent(row.original);
+            setPanel(target);
             setOpen(true);
         } else {
             setOpen(!open);
@@ -66,8 +79,16 @@ const useClickHandlers = () => {
     return { handleClick };
 };
 
-const CreateClickableCell = ({ row, columnId }: { row: Row<StudentTable>; columnId: string }) => {
-    const { handleClick } = useClickHandlers();
+const CreateClickableCell = ({
+    row,
+    columnId,
+    opens,
+}: {
+    row: Row<StudentTable>;
+    columnId: string;
+    opens?: SubmissionsSidePanel;
+}) => {
+    const { handleClick } = useClickHandlers(opens);
 
     return (
         <div onClick={(event) => handleClick(event, row)} className="cursor-pointer">
@@ -79,9 +100,9 @@ const CreateClickableCell = ({ row, columnId }: { row: Row<StudentTable>; column
 // Duration cell that flags a near-zero attempt time. A "0.00 min" duration means
 // the learner submitted almost instantly — usually a non-attempt or auto-submit,
 // which a teacher scanning submissions should be able to spot at a glance.
-const DurationCell = ({ row }: { row: Row<StudentTable> }) => {
+const DurationCell = ({ row, opens }: { row: Row<StudentTable>; opens?: SubmissionsSidePanel }) => {
     const { t } = useTranslation('assessmentStudentColumns');
-    const { handleClick } = useClickHandlers();
+    const { handleClick } = useClickHandlers(opens);
     const value = String(row.getValue('duration') ?? '');
     const minutes = parseFloat(value);
     const isInstant = !Number.isNaN(minutes) && minutes <= 0;
@@ -159,64 +180,8 @@ const StudentIdentityCell = ({ row }: { row: Row<StudentTable> }) => {
     );
 };
 
-// Score arrives pre-formatted as "18.00 / 20". Splitting it lets the mark carry the weight
-// and the denominator recede, so a column of scores can be compared at a glance.
-const ScoreCell = ({ row }: { row: Row<StudentTable> }) => {
-    const { handleClick } = useClickHandlers();
-    const raw = String(row.getValue('score') ?? '');
-    const separator = raw.indexOf(' / ');
-
-    return (
-        <div
-            onClick={(event) => handleClick(event, row)}
-            className="cursor-pointer whitespace-nowrap"
-        >
-            {separator === -1 ? (
-                raw
-            ) : (
-                <>
-                    {/* The achieved mark carries the accent, the denominator recedes — but
-                        only once something has actually been awarded. Painting a zero green
-                        reads as "good" on an ungraded or blank attempt. */}
-                    <span
-                        className={
-                            parseFloat(raw) > 0
-                                ? 'font-semibold text-primary-500'
-                                : 'font-semibold text-neutral-700'
-                        }
-                    >
-                        {raw.slice(0, separator)}
-                    </span>
-                    <span className="text-neutral-400">{raw.slice(separator)}</span>
-                </>
-            )}
-        </div>
-    );
-};
-
-// Result Status chip.
-//
-// This used to call <StatusChips status="released" />, but `released` is not one of
-// ActivityStatusData's keys, so StatusChips bailed out on its `if (!statusData) return
-// null` guard and the column rendered *empty* for every released submission. This file
-// is @ts-nocheck'd, so the invalid status string was never typechecked. Map onto
-// statuses that actually exist and pass the label explicitly.
-//
-// Also replaces a second, hand-rolled copy on the external column set that used raw
-// bg-green-100 / bg-gray-100 palette colours instead of the design system.
-const ResultStatusCell = ({ row }: { row: Row<StudentTable> }) => {
-    const { t } = useTranslation('assessmentStudentColumns');
-    const status = row.original.result_status;
-    if (status !== 'RELEASED' && status !== 'PENDING') {
-        return <span className="text-body text-neutral-400">{t('status.notAvailable')}</span>;
-    }
-    const isReleased = status === 'RELEASED';
-    return (
-        <StatusChips status={isReleased ? 'success' : 'inactive'} className="whitespace-nowrap">
-            {isReleased ? t('status.released') : t('status.notReleased')}
-        </StatusChips>
-    );
-};
+// Score and Result cells for the Attempted tables live in ../-components/submission-review
+// (OpenScoreCell opens the Submission page; ResultCell knows "Released, changed").
 
 // Reusable ASC/DESC sortable column header. `sortKey` is the frontend column id
 // the parent's `meta.onSort` maps to a backend sort key (studentName, score,
@@ -283,14 +248,46 @@ const EndTimeHeaderCell = () => {
     return <>{t('columns.endTime')}</>;
 };
 
-const EvaluationStatusHeaderCell = () => {
-    const { t } = useTranslation('assessmentStudentColumns');
-    return <>{t('columns.evaluationStatus')}</>;
+// W1 (submission review): "Marking" and "Result" replace the three-state chip, and an
+// "Open" column (plus the Score cell) opens the Submission page. The Name cell opens the
+// student side view; the row's other cells open the submission side view.
+const MarkingHeaderCell = () => {
+    const { t } = useTranslation('assessmentSubmissionReviewList');
+    return <>{t('columns.marking')}</>;
 };
 
-const ResultStatusHeaderCell = () => {
-    const { t } = useTranslation('assessmentStudentColumns');
-    return <>{t('columns.resultStatus')}</>;
+const ResultHeaderCell = () => {
+    const { t } = useTranslation('assessmentSubmissionReviewList');
+    return <>{t('columns.result')}</>;
+};
+
+const OpenHeaderCell = () => {
+    const { t } = useTranslation('assessmentSubmissionReviewList');
+    return <span className="sr-only">{t('columns.open')}</span>;
+};
+
+const markingColumn: ColumnDef<StudentTable> = {
+    accessorKey: 'evaluation_status',
+    header: MarkingHeaderCell,
+    cell: ({ row }) => <MarkingCell row={row} />,
+};
+
+const attemptedScoreColumn: ColumnDef<StudentTable> = {
+    accessorKey: 'score',
+    header: ScoreHeaderCell,
+    cell: ({ row, table }) => <OpenScoreCell row={row} table={table} />,
+};
+
+const attemptedResultColumn: ColumnDef<StudentTable> = {
+    accessorKey: 'result_status',
+    header: ResultHeaderCell,
+    cell: ({ row }) => <ResultCell row={row} />,
+};
+
+const openColumn: ColumnDef<StudentTable> = {
+    id: 'open',
+    header: OpenHeaderCell,
+    cell: ({ row, table }) => <OpenCell row={row} table={table} />,
 };
 
 const EnrollmentNumberHeaderCell = () => {
@@ -378,44 +375,33 @@ export const assessmentStatusStudentAttemptedColumnsInternal: ColumnDef<StudentT
     {
         accessorKey: 'package_session_id',
         header: getTerminology(ContentTerms.Batch, SystemTerms.Batch),
-        cell: ({ row }) => <CreateClickableCell row={row} columnId="package_session_id" />,
+        cell: ({ row }) => <CreateClickableCell opens="submission" row={row} columnId="package_session_id" />,
     },
     {
         accessorKey: 'attempt_date',
         header: AttemptDateHeaderCell,
-        cell: ({ row }) => <CreateClickableCell row={row} columnId="attempt_date" />,
+        cell: ({ row }) => <CreateClickableCell opens="submission" row={row} columnId="attempt_date" />,
     },
     {
         accessorKey: 'start_time',
         header: StartTimeHeaderCell,
-        cell: ({ row }) => <CreateClickableCell row={row} columnId="start_time" />,
+        cell: ({ row }) => <CreateClickableCell opens="submission" row={row} columnId="start_time" />,
     },
     {
         accessorKey: 'end_time',
         header: EndTimeHeaderCell,
-        cell: ({ row }) => <CreateClickableCell row={row} columnId="end_time" />,
+        cell: ({ row }) => <CreateClickableCell opens="submission" row={row} columnId="end_time" />,
     },
     {
         accessorKey: 'duration',
         header: DurationHeaderCell,
-        cell: ({ row }) => <DurationCell row={row} />,
+        cell: ({ row }) => <DurationCell row={row} opens="submission" />,
     },
-    {
-        accessorKey: 'evaluation_status',
-        header: EvaluationStatusHeaderCell,
-        // Chip + (manual evaluation only) an eye button to open the evaluated copy.
-        cell: ({ row }) => <EvaluationStatusCell row={row} />,
-    },
-    {
-        accessorKey: 'score',
-        header: ScoreHeaderCell,
-        cell: ({ row }) => <ScoreCell row={row} />,
-    },
-    {
-        accessorKey: 'result_status',
-        header: ResultStatusHeaderCell,
-        cell: ({ row }) => <ResultStatusCell row={row} />,
-    },
+    // Marking replaces the evaluation chip (it keeps the evaluated-copy eye button).
+    markingColumn,
+    attemptedScoreColumn,
+    attemptedResultColumn,
+    openColumn,
 
     // Contact columns, mirroring what this tab's own CSV export already carries. Appended
     // rather than placed next to the name so Score and the status chips stay where people
@@ -423,23 +409,27 @@ export const assessmentStatusStudentAttemptedColumnsInternal: ColumnDef<StudentT
     {
         accessorKey: 'email',
         header: 'Email',
-        cell: ({ row }) => <CreateClickableCell row={row} columnId="email" />,
+        cell: ({ row }) => <CreateClickableCell opens="submission" row={row} columnId="email" />,
     },
     {
         accessorKey: 'mobile_number',
         header: 'Phone Number',
-        cell: ({ row }) => <CreateClickableCell row={row} columnId="mobile_number" />,
+        cell: ({ row }) => <CreateClickableCell opens="submission" row={row} columnId="mobile_number" />,
     },
     {
         accessorKey: 'username',
         header: 'Username',
-        cell: ({ row }) => <CreateClickableCell row={row} columnId="username" />,
+        cell: ({ row }) => <CreateClickableCell opens="submission" row={row} columnId="username" />,
     },
     {
         id: 'options',
         header: 'Actions',
-        cell: ({ row }) => (
-            <AssessmentStatusOptions student={row.original} studentType="Attempted" />
+        cell: ({ row, table }) => (
+            <AssessmentStatusOptions
+                student={row.original}
+                studentType="Attempted"
+                getPageAttemptIds={() => pageAttemptIds(table)}
+            />
         ),
     },
 ];
@@ -673,33 +663,27 @@ export const assessmentStatusStudentAttemptedColumnsExternal: ColumnDef<StudentT
     {
         accessorKey: 'attempt_date',
         header: AttemptDateHeaderCell,
-        cell: ({ row }) => <CreateClickableCell row={row} columnId="attempt_date" />,
+        cell: ({ row }) => <CreateClickableCell opens="submission" row={row} columnId="attempt_date" />,
     },
     {
         accessorKey: 'start_time',
         header: StartTimeHeaderCell,
-        cell: ({ row }) => <CreateClickableCell row={row} columnId="start_time" />,
+        cell: ({ row }) => <CreateClickableCell opens="submission" row={row} columnId="start_time" />,
     },
     {
         accessorKey: 'end_time',
         header: EndTimeHeaderCell,
-        cell: ({ row }) => <CreateClickableCell row={row} columnId="end_time" />,
+        cell: ({ row }) => <CreateClickableCell opens="submission" row={row} columnId="end_time" />,
     },
     {
         accessorKey: 'duration',
         header: DurationHeaderCell,
-        cell: ({ row }) => <DurationCell row={row} />,
+        cell: ({ row }) => <DurationCell row={row} opens="submission" />,
     },
-    {
-        accessorKey: 'score',
-        header: ScoreHeaderCell,
-        cell: ({ row }) => <ScoreCell row={row} />,
-    },
-    {
-        accessorKey: 'result_status',
-        header: ResultStatusHeaderCell,
-        cell: ({ row }) => <ResultStatusCell row={row} />,
-    },
+    markingColumn,
+    attemptedScoreColumn,
+    attemptedResultColumn,
+    openColumn,
 
     // Contact columns, mirroring what this tab's own CSV export already carries. Appended
     // rather than placed next to the name so Score and the status chips stay where people
@@ -707,23 +691,27 @@ export const assessmentStatusStudentAttemptedColumnsExternal: ColumnDef<StudentT
     {
         accessorKey: 'email',
         header: 'Email',
-        cell: ({ row }) => <CreateClickableCell row={row} columnId="email" />,
+        cell: ({ row }) => <CreateClickableCell opens="submission" row={row} columnId="email" />,
     },
     {
         accessorKey: 'mobile_number',
         header: 'Phone Number',
-        cell: ({ row }) => <CreateClickableCell row={row} columnId="mobile_number" />,
+        cell: ({ row }) => <CreateClickableCell opens="submission" row={row} columnId="mobile_number" />,
     },
     {
         accessorKey: 'username',
         header: 'Username',
-        cell: ({ row }) => <CreateClickableCell row={row} columnId="username" />,
+        cell: ({ row }) => <CreateClickableCell opens="submission" row={row} columnId="username" />,
     },
     {
         id: 'options',
         header: 'Actions',
-        cell: ({ row }) => (
-            <AssessmentStatusOptions student={row.original} studentType="Attempted" />
+        cell: ({ row, table }) => (
+            <AssessmentStatusOptions
+                student={row.original}
+                studentType="Attempted"
+                getPageAttemptIds={() => pageAttemptIds(table)}
+            />
         ),
     },
 ];

@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.StudentReportFilter;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.StudentReportDto;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.StudentReportOverallDetailDto;
+import vacademy.io.assessment_service.features.assessment.service.aireport.AiReportWebData;
 import vacademy.io.assessment_service.features.learner_assessment.dto.SmartLeaderboardDto;
 import vacademy.io.assessment_service.features.learner_assessment.dto.StudentComparisonDto;
 import vacademy.io.assessment_service.features.learner_assessment.service.LearnerReportService;
@@ -94,5 +95,25 @@ public class LearnerReportController {
             @RequestParam(name = "attemptId", required = false) String attemptId,
             @RequestParam(name = "instituteId") String instituteId) {
         return learnerReportService.getAiReportPdf(user, assessmentId, attemptId, instituteId);
+    }
+
+    /** The same AI report as /ai-pdf, as an HTML page ({"html": ...}) for the learner app's screen. */
+    @GetMapping("/ai-html")
+    public ResponseEntity<Map<String, String>> getAiReportWebHtml(
+            @RequestAttribute("user") CustomUserDetails user,
+            @RequestParam(name = "assessmentId") String assessmentId,
+            @RequestParam(name = "attemptId", required = false) String attemptId,
+            @RequestParam(name = "instituteId") String instituteId) {
+        return learnerReportService.getAiReportWebHtml(user, assessmentId, attemptId, instituteId);
+    }
+
+    /** The same AI report as /ai-pdf, as data, for the learner app's on-screen cards and charts. */
+    @GetMapping("/ai-data")
+    public ResponseEntity<AiReportWebData> getAiReportWebData(
+            @RequestAttribute("user") CustomUserDetails user,
+            @RequestParam(name = "assessmentId") String assessmentId,
+            @RequestParam(name = "attemptId", required = false) String attemptId,
+            @RequestParam(name = "instituteId") String instituteId) {
+        return learnerReportService.getAiReportWebData(user, assessmentId, attemptId, instituteId);
     }
 }

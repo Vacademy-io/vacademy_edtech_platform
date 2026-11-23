@@ -78,14 +78,20 @@ public class StorefrontCatalogService {
 
     /**
      * The listing parameters. {@code attributes} maps an attribute code to the value codes
-     * picked for it; {@code inStock} null leaves availability unfiltered.
+     * picked for it; {@code inStock} null leaves availability unfiltered. {@code priceMin} and
+     * {@code priceMax} are per display unit for measured goods (per metre, not per 10 cm), as the
+     * price sort and the price bands are; a card's {@code price.amount} stays per base unit.
      */
     public record ProductQuery(String q, String collection, Map<String, List<String>> attributes,
                                BigDecimal priceMin, BigDecimal priceMax, Boolean inStock, String sort, int page,
                                int pageSize, boolean facets, String locale) {
     }
 
-    /** A product with what every filter and sort needs, computed once per request. */
+    /**
+     * A product with what every filter and sort needs, computed once per request. {@code price} is
+     * the price of one display unit (a metre of cloth, not 10 cm), so sorts, the price filter and
+     * the price bands compare like with like; the card itself keeps the per-base-unit amount.
+     */
     record Item(Product product, StockStates.Stock stock, BigDecimal price) {
     }
 
@@ -166,9 +172,17 @@ public class StorefrontCatalogService {
         List<Item> out = new ArrayList<>(s.products().size());
         for (Product product : s.products()) {
             out.add(new Item(product, StorefrontViews.stockOf(product, s.settings()),
-                    StorefrontViews.cardPrice(product, s.settings())));
+                    displayUnitPrice(StorefrontViews.cardPrice(product, s.settings()), product.qtyScale())));
         }
         return out;
+    }
+
+    /** The card price of one display unit: per-base-unit price × scale (12.34 at scale 10 gives 123.40). */
+    static BigDecimal displayUnitPrice(BigDecimal basePrice, int qtyScale) {
+        if (basePrice == null || qtyScale <= 1) {
+            return basePrice;
+        }
+        return basePrice.multiply(BigDecimal.valueOf(qtyScale));
     }
 
     private List<StorefrontDtos.ProductCard> cards(StorefrontSnapshot s, List<Item> items, List<String> chain) {

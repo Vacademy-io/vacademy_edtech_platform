@@ -5,6 +5,12 @@
     "gender": {
         "title": "الجنس"
     },
+    "city": {
+        "title": "المدينة"
+    },
+    "region": {
+        "title": "المنطقة"
+    },
     "sessionExpiry": {
         "titleSuffix": "انتهاء الصلاحية",
         "optionLabel": "تنتهي الصلاحية خلال {{days}} يومًا"

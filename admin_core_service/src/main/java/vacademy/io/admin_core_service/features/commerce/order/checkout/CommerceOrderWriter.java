@@ -78,6 +78,8 @@ public class CommerceOrderWriter {
 
     public static final String CHANNEL_ONLINE = "ONLINE";
     public static final String CHANNEL_ADMIN = "ADMIN";
+    /** A counter sale (POS): DELIVERED at once, paid in full, stock taken by the ledger. */
+    public static final String CHANNEL_POS = "POS";
     public static final String PAYMENT_PARTIALLY_PAID = "PARTIALLY_PAID";
     /** payment_method of a staff-created order: money is taken by hand, never through the gateway. */
     public static final String METHOD_OFFLINE = "OFFLINE";
@@ -415,6 +417,107 @@ public class CommerceOrderWriter {
         return new Written(order, lines, null);
     }
 
+    /** A counter sale, resolved before its transaction opens (see {@link #writePos}). */
+    public record PosNewOrder(String instituteId, String orderNumber, String clientRequestId, String requestHash,
+                              String userId, String customerId, String actorUserId, String phone, String name,
+                              String buyerGstin, CartPriceSnapshot snapshot, String sessionId, String locationId,
+                              java.time.LocalDate documentDate, List<PosTender> tenders) {
+    }
+
+    /** Money taken at the counter; {@code cashTendered} is the cash handed over for a CASH tender. */
+    public record PosTender(String mode, BigDecimal amount, String reference, BigDecimal cashTendered) {
+    }
+
+    /**
+     * Writes a counter sale (channel POS) in the caller's transaction: the header DELIVERED and
+     * PAID at once, the lines with every unit shipped, the plans and payment logs of
+     * {@link #writeMoneyRows} <b>without</b> stock holds (the counter's stock is taken by the
+     * stock ledger, not by a hold), and one RECEIVED tender per amount taken, stamped with the
+     * session. {@code customerId} is the shop customer of a named buyer, null for a walk-in.
+     *
+     * <p>It does not post stock, link pieces, issue the invoice or settle the payment logs: the
+     * counter's sale service does those steps in the same transaction.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Written writePos(PosNewOrder n) {
+        CartPriceSnapshot snapshot = n.snapshot();
+        TaxResult tax = snapshot.getTax();
+        Date now = new Date();
+        CommerceOrder order = new CommerceOrder();
+        order.setInstituteId(n.instituteId());
+        order.setOrderNumber(n.orderNumber());
+        order.setPaymentGroupId(UUID.randomUUID().toString());
+        order.setChannel(CHANNEL_POS);
+        order.setUserId(n.userId());
+        order.setCustomerId(n.customerId());
+        order.setCustomerName(n.name());
+        order.setCustomerPhone(n.phone());
+        order.setPhoneVerified(false);
+        order.setBuyerGstin(n.buyerGstin());
+        order.setPlaceOfSupplyState(snapshot.getPlaceOfSupplyState());
+        order.setSubtotal(money(tax.getSubtotal()));
+        order.setDiscount(money(tax.getDiscount()));
+        order.setShipping(money(tax.getShipping()));
+        order.setCodCharge(money(tax.getCodCharge()));
+        order.setTax(money(tax.getTaxAmount()));
+        order.setRoundOff(money(tax.getRoundOff()));
+        order.setTotal(money(snapshot.getTotal()));
+        order.setAmountPaid(ZERO);
+        order.setCurrency(snapshot.getCurrency());
+        order.setPaymentMethod(METHOD_OFFLINE);
+        order.setPaymentStatus(PAYMENT_UNPAID);
+        CommerceOrderTransitions.require(null, CommerceOrderStatus.DELIVERED);
+        order.setStatus(CommerceOrderStatus.DELIVERED.name());
+        order.setConfirmedAt(now);
+        order.setDeliveredAt(now);
+        order.setPosSessionId(n.sessionId());
+        order.setFulfilmentLocationId(n.locationId());
+        order.setDocumentDate(n.documentDate());
+        order.setClientRequestId(n.clientRequestId());
+        order.setRequestHash(n.requestHash());
+        order.setLocale(snapshot.getLocale());
+        order.setCreatedBy(n.actorUserId());
+        order.setPriceSnapshotJson(json(snapshot));
+        // Flushed: a double tap fails on the unique client key here, before anything else is written.
+        order = orderRepository.saveAndFlush(order);
+
+        List<CommerceOrderLine> lines = buildLines(order, snapshot);
+        for (CommerceOrderLine line : lines) {
+            if (CommerceOrderLine.TYPE_ITEM.equals(line.getLineType())) {
+                line.setQtyShipped(line.getQuantity());
+            }
+        }
+        lines = lineRepository.saveAll(lines);
+        MoneyRows money = writeMoneyRows(order, lines, 0, VENDOR_OFFLINE, false);
+        lines = lineRepository.saveAll(lines);
+        order.setPrimaryPaymentLogId(money.primaryPaymentLogId());
+
+        BigDecimal received = ZERO;
+        for (PosTender t : n.tenders() == null ? List.<PosTender>of() : n.tenders()) {
+            CommerceOrderTender tender = new CommerceOrderTender();
+            tender.setInstituteId(order.getInstituteId());
+            tender.setOrderId(order.getId());
+            tender.setPosSessionId(n.sessionId());
+            tender.setMode(t.mode());
+            tender.setAmount(money(t.amount()));
+            tender.setReference(t.reference());
+            tender.setCashTendered(t.cashTendered() == null ? null : money(t.cashTendered()));
+            tender.setStatus(CommerceOrderTender.STATUS_RECEIVED);
+            tender.setReceivedAt(now);
+            tender.setRecordedBy(n.actorUserId());
+            tenderRepository.save(tender);
+            received = received.add(money(t.amount()));
+        }
+        if (received.compareTo(order.getTotal()) != 0) {
+            throw new IllegalStateException("the tenders of a counter sale must equal its total");
+        }
+        order.setAmountPaid(received);
+        order.setPaymentStatus(PAYMENT_PAID);
+        order = orderRepository.save(order);
+        history(order, null, CommerceOrderStatus.DELIVERED, n.actorUserId(), "Counter sale");
+        return new Written(order, lines, null);
+    }
+
     /**
      * The legacy money rows of an order: a stock hold per stock-tracked variant, then per ITEM
      * line a {@code user_plan} (PENDING_FOR_PAYMENT) and a {@code payment_log} (PAYMENT_PENDING)
@@ -440,6 +543,18 @@ public class CommerceOrderWriter {
     @Transactional(propagation = Propagation.MANDATORY)
     public MoneyRows writeMoneyRows(CommerceOrder order, List<CommerceOrderLine> lines, int holdMinutes,
                                     String vendor) {
+        return writeMoneyRows(order, lines, holdMinutes, vendor, true);
+    }
+
+    /**
+     * {@link #writeMoneyRows(CommerceOrder, List, int, String)}; with {@code holdStock} false no
+     * stock hold is taken (a counter sale, whose stock the ledger takes) and {@code holds} is
+     * empty. The sale-link price check, the one-line-per-variant rule, the plans, the logs and
+     * the payment group are the same.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public MoneyRows writeMoneyRows(CommerceOrder order, List<CommerceOrderLine> lines, int holdMinutes,
+                                    String vendor, boolean holdStock) {
         List<CommerceOrderLine> items = lines.stream()
                 .filter(line -> CommerceOrderLine.TYPE_ITEM.equals(line.getLineType())).toList();
         if (items.isEmpty()) {
@@ -475,13 +590,17 @@ public class CommerceOrderWriter {
             }
         }
 
-        // 2. Stock, sorted by package session inside hold().
+        // 2. Stock, sorted by package session inside hold(). None for a counter sale.
         List<StockHold> holds;
-        try {
-            holds = stockHoldService.hold(order.getInstituteId(), quantities, StockHoldKind.PURCHASE, holdMinutes);
-        } catch (ConflictException e) {
-            throw new CheckoutException(HttpStatus.CONFLICT, CheckoutException.OUT_OF_STOCK,
-                    "An item in the cart is no longer in stock in the quantity asked.");
+        if (!holdStock) {
+            holds = List.of();
+        } else {
+            try {
+                holds = stockHoldService.hold(order.getInstituteId(), quantities, StockHoldKind.PURCHASE, holdMinutes);
+            } catch (ConflictException e) {
+                throw new CheckoutException(HttpStatus.CONFLICT, CheckoutException.OUT_OF_STOCK,
+                        "An item in the cart is no longer in stock in the quantity asked.");
+            }
         }
         Map<String, StockHold> holdBySession = new HashMap<>();
         for (StockHold hold : holds) {

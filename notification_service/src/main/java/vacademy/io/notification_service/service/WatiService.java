@@ -12,6 +12,7 @@ import org.springframework.web.client.RestTemplate;
 import vacademy.io.notification_service.features.external_communication_log.model.ExternalCommunicationSource;
 import vacademy.io.notification_service.features.external_communication_log.service.ExternalCommunicationLogService;
 import vacademy.io.common.logging.SentryLogger;
+import vacademy.io.notification_service.util.LogMask;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -155,7 +156,8 @@ public class WatiService {
 
         try {
             String jsonRequest = objectMapper.writeValueAsString(request);
-            log.info("WATI Bulk Request body: {}", jsonRequest);
+            // A count only: the body holds each recipient's number, name and message values.
+            log.info("WATI Bulk Request: template={}, receivers={}", templateName, receivers.size());
             String logId = externalCommunicationLogService.start(ExternalCommunicationSource.WHATSAPP, null, request);
             HttpEntity<String> entity = new HttpEntity<>(jsonRequest, headers);
 
@@ -277,7 +279,8 @@ public class WatiService {
             String json = objectMapper.writeValueAsString(body);
             HttpEntity<String> entity = new HttpEntity<>(json, headers);
             ResponseEntity<String> response = restTemplate.exchange(endpoint, HttpMethod.POST, entity, String.class);
-            log.info("WATI updateContactAttributes {}: status={}, body={}", phone, response.getStatusCode(), response.getBody());
+            log.info("WATI updateContactAttributes {}: status={}, body={}", LogMask.phone(phone), response.getStatusCode(),
+                    response.getBody());
 
             // WATI returns HTTP 200 even on failure — check "result" field in body
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
@@ -286,7 +289,8 @@ public class WatiService {
             }
             return false;
         } catch (Exception e) {
-            log.info("WATI updateContactAttributes failed for {} (contact may not exist yet): {}", phone, e.getMessage());
+            log.info("WATI updateContactAttributes failed for {} (contact may not exist yet): {}", LogMask.phone(phone),
+                    e.getMessage());
             return false;
         }
     }
@@ -303,13 +307,14 @@ public class WatiService {
             String json = objectMapper.writeValueAsString(body);
             HttpEntity<String> entity = new HttpEntity<>(json, headers);
             ResponseEntity<String> response = restTemplate.exchange(endpoint, HttpMethod.POST, entity, String.class);
-            log.info("WATI addContact {}: status={}, body={}", phone, response.getStatusCode(), response.getBody());
+            log.info("WATI addContact {}: status={}, body={}", LogMask.phone(phone), response.getStatusCode(),
+                    response.getBody());
             return true;
         } catch (Exception e) {
             // Per-recipient failure: counted and reported ONCE by upsertContacts.
             // A per-recipient Sentry event fanned a single WATI outage into up to
             // one event per recipient (thousands per failing batch).
-            log.warn("WATI addContact failed for {}: {}", phone, e.getMessage());
+            log.warn("WATI addContact failed for {}: {}", LogMask.phone(phone), e.getMessage());
             return false;
         }
     }

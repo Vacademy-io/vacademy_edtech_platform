@@ -4,14 +4,11 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.io.Decoders;
-import io.jsonwebtoken.security.Keys;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import vacademy.io.common.auth.service.JwtService;
 import vacademy.io.common.exceptions.VacademyException;
 
-import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,6 +27,14 @@ public class SelfSignupTokenService {
     private static final String PURPOSE = "self-signup";
 
     public String issue(String email, String method, String name, String subjectId, String vendorId) {
+        return issue(email, method, name, subjectId, vendorId, null);
+    }
+
+    /**
+     * @param phone a phone number the visitor ALSO proved (WhatsApp code), digits with the country
+     *              code; null when only the email is proven.
+     */
+    public String issue(String email, String method, String name, String subjectId, String vendorId, String phone) {
         long now = System.currentTimeMillis();
         Map<String, Object> claims = new HashMap<>();
         claims.put("purpose", PURPOSE);
@@ -38,11 +43,12 @@ public class SelfSignupTokenService {
         claims.put("name", name == null ? "" : name);
         claims.put("subject_id", subjectId == null ? "" : subjectId);
         claims.put("vendor_id", vendorId == null ? "" : vendorId);
+        claims.put("phone", phone == null ? "" : phone);
         return Jwts.builder()
                 .setClaims(claims)
                 .setIssuedAt(new Date(now))
                 .setExpiration(new Date(now + TTL_MILLIS))
-                .signWith(getKey(), SignatureAlgorithm.HS256)
+                .signWith(JwtService.signingKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
@@ -55,7 +61,7 @@ public class SelfSignupTokenService {
             throw new VacademyException(HttpStatus.UNAUTHORIZED, "Please verify your email again");
         }
         try {
-            Claims claims = Jwts.parserBuilder().setSigningKey(getKey()).build().parseClaimsJws(token).getBody();
+            Claims claims = JwtService.parseSignedClaims(token);
             if (!PURPOSE.equals(claims.get("purpose", String.class))) {
                 throw new VacademyException(HttpStatus.UNAUTHORIZED, "Please verify your email again");
             }
@@ -63,9 +69,5 @@ public class SelfSignupTokenService {
         } catch (JwtException | IllegalArgumentException e) {
             throw new VacademyException(HttpStatus.UNAUTHORIZED, "Your verification has expired. Please verify your email again");
         }
-    }
-
-    private Key getKey() {
-        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(JwtService.secretKey));
     }
 }

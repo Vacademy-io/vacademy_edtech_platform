@@ -26,13 +26,16 @@ public class WorkflowExecutionController {
 
     private final WorkflowExecutionService workflowExecutionService;
     private final UserWorkflowRunService userWorkflowRunService;
+    private final WorkflowAccessGuard accessGuard;
 
     @PostMapping("/list")
     public ResponseEntity<PagedWorkflowExecutionResponseDTO> getWorkflowExecutions(
             @RequestBody WorkflowExecutionFilterDTO filter,
             @RequestParam(value = "pageNo", defaultValue = DEFAULT_PAGE_NUMBER, required = false) int pageNo,
-            @RequestParam(value = "pageSize", defaultValue = PageConstants.DEFAULT_PAGE_SIZE, required = false) int pageSize) {
+            @RequestParam(value = "pageSize", defaultValue = PageConstants.DEFAULT_PAGE_SIZE, required = false) int pageSize,
+            @RequestAttribute("user") CustomUserDetails user) {
 
+        accessGuard.requireStaff(user, filter.getInstituteId());
         log.info("Getting workflow executions for instituteId: {}, workflowIds: {}, statuses: {}, page: {}, size: {}",
                 filter.getInstituteId(), filter.getWorkflowIds(), filter.getStatuses(), pageNo, pageSize);
 
@@ -49,7 +52,10 @@ public class WorkflowExecutionController {
     public ResponseEntity<WorkflowExecutionSummaryDTO> getExecutionSummary(
             @RequestParam("workflowId") String workflowId,
             @RequestParam(value = "startDate", required = false) Instant startDate,
-            @RequestParam(value = "endDate", required = false) Instant endDate) {
+            @RequestParam(value = "endDate", required = false) Instant endDate,
+            @RequestAttribute("user") CustomUserDetails user) {
+
+        accessGuard.requireStaffForWorkflow(user, workflowId);
 
         log.info("Getting execution summary for workflowId: {}", workflowId);
         WorkflowExecutionSummaryDTO summary = workflowExecutionService.getExecutionSummary(workflowId, startDate, endDate);
@@ -68,8 +74,10 @@ public class WorkflowExecutionController {
             @PathVariable("userId") String userId,
             @RequestParam("instituteId") String instituteId,
             @RequestParam(value = "pageNo", defaultValue = DEFAULT_PAGE_NUMBER, required = false) int pageNo,
-            @RequestParam(value = "pageSize", defaultValue = PageConstants.DEFAULT_PAGE_SIZE, required = false) int pageSize) {
+            @RequestParam(value = "pageSize", defaultValue = PageConstants.DEFAULT_PAGE_SIZE, required = false) int pageSize,
+            @RequestAttribute("user") CustomUserDetails user) {
 
+        accessGuard.requireStaff(user, instituteId);
         log.info("Getting workflow runs for userId: {}, instituteId: {}, page: {}, size: {}",
                 userId, instituteId, pageNo, pageSize);
         return ResponseEntity.ok(
@@ -87,6 +95,7 @@ public class WorkflowExecutionController {
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails user) {
 
+        accessGuard.requireStaff(user, instituteId);
         log.info("Retrying workflow execution {} for instituteId {} (requested by {})",
                 executionId, instituteId, user != null ? user.getUserId() : null);
         return ResponseEntity.ok(userWorkflowRunService.retry(

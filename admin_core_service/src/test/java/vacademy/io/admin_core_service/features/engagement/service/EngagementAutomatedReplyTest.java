@@ -248,7 +248,11 @@ class EngagementAutomatedReplyTest {
             assertFalse(responder.handleEmailReply("i1", "a@abc.in", "Automatic reply: Your offer", "I am away", "mid1"));
 
             verify(members).markReplyHandled(eq("m1"), any(), any());
-            verify(actions, never()).save(any());
+            // Only a closed note on the person's history, never a task.
+            ArgumentCaptor<EngagementAction> saved = ArgumentCaptor.forClass(EngagementAction.class);
+            verify(actions).save(saved.capture());
+            assertEquals("NO_OP", saved.getValue().getKind());
+            assertEquals("DONE", saved.getValue().getStatus());
             verifyNoInteractions(alerts, dispatcher);
         }
 

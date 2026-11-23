@@ -375,6 +375,8 @@
             "start": "ابدأ",
             "review": "مراجعة"
         },
+        "viewDetails": "عرض التفاصيل",
+        "ctaAria": "{{action}}: {{course}}",
         "cardAria": "{{course}}، {{percent}}٪ مكتمل. {{action}}"
     },
     "dashboardHero": {

@@ -105,7 +105,8 @@ public class EngagementReplyJob {
                             if (replyResponder.handleEmailReply(instituteId, reply.path("email").asText(null),
                                     reply.path("subject").asText(null), reply.path("text").asText(null),
                                     reply.path("wamid").asText(null),
-                                    reply.path("repliedToActionId").asText(null), reply.path("mailbox").asText(null))) {
+                                    reply.path("repliedToActionId").asText(null), reply.path("mailbox").asText(null),
+                                    reply.path("autoSubmitted").asBoolean(false))) {
                                 answered++;
                             }
                             continue;

@@ -241,6 +241,14 @@ class SerperService:
         except Exception as e:
             logger.debug(f"[Serper] Call log skipped: {e}")
 
+    @staticmethod
+    def _error_detail(error: urllib.error.HTTPError) -> str:
+        """Serper's own words, which is how an empty balance can be told from a bad query."""
+        try:
+            return f": {error.read(200).decode('utf-8', 'replace')}"
+        except Exception:
+            return ""
+
     # ── HTTP ────────────────────────────────────────────────────────────
 
     def _request(self, url: str, payload: Dict[str, Any], max_retries: int = 2) -> Optional[Dict[str, Any]]:
@@ -267,7 +275,8 @@ class SerperService:
                     self._cache_put(cache_key, data)
                     return data
             except urllib.error.HTTPError as e:
-                self._log_call(url, payload, api_key, started, http_status=e.code, error=f"HTTP {e.code}: {e.reason}")
+                self._log_call(url, payload, api_key, started, http_status=e.code,
+                               error=f"HTTP {e.code}: {e.reason}{self._error_detail(e)}")
                 if e.code in (429, 401, 403) and attempt < max_retries - 1:
                     logger.warning(f"[Serper] HTTP {e.code} on key {self._key_index}, rotating...")
                     self._rotate_key()

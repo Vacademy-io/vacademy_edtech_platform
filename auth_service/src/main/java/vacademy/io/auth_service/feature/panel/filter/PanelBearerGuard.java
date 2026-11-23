@@ -2,9 +2,6 @@ package vacademy.io.auth_service.feature.panel.filter;
 
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.io.Decoders;
-import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpHeaders;
@@ -15,8 +12,6 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import vacademy.io.auth_service.feature.panel.service.PanelApiException;
 import vacademy.io.common.auth.service.JwtService;
-
-import java.security.Key;
 
 /**
  * The Bearer endpoints under /auth-service/v1/panel/** (scan, approve, pairing, rooms and panels)
@@ -55,8 +50,7 @@ public class PanelBearerGuard implements HandlerInterceptor, WebMvcConfigurer {
             return false;
         }
         try {
-            Object claim = Jwts.parserBuilder().setSigningKey(signingKey()).build()
-                    .parseClaimsJws(authorization.substring(BEARER.length())).getBody().get(PANEL_CLAIM);
+            Object claim = JwtService.parseSignedClaims(authorization.substring(BEARER.length())).get(PANEL_CLAIM);
             return claim != null;
         } catch (ExpiredJwtException e) {
             return e.getClaims().get(PANEL_CLAIM) != null;
@@ -64,9 +58,5 @@ public class PanelBearerGuard implements HandlerInterceptor, WebMvcConfigurer {
             // Not a token this service signed: the security chain decides what it may reach.
             return false;
         }
-    }
-
-    private static Key signingKey() {
-        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(JwtService.secretKey));
     }
 }

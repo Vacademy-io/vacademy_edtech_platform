@@ -173,4 +173,72 @@ class CommerceWebhookBranchTest {
         assertNull(branch.instituteOfGatewayOrder(payment("order_rzp9", 1, "x")));
         assertNull(branch.instituteOfGatewayOrder(json.readTree("{\"id\":\"pay_1\"}")));
     }
+
+    // -- refund events (WP-32) --
+
+    @SuppressWarnings("unchecked")
+    private vacademy.io.admin_core_service.features.commerce.returns.service.CommerceRefundWebhookService refunds() {
+        var service = org.mockito.Mockito.mock(
+                vacademy.io.admin_core_service.features.commerce.returns.service.CommerceRefundWebhookService.class);
+        org.springframework.beans.factory.ObjectProvider<
+                vacademy.io.admin_core_service.features.commerce.returns.service.CommerceRefundWebhookService> provider =
+                org.mockito.Mockito.mock(org.springframework.beans.factory.ObjectProvider.class);
+        when(provider.getIfAvailable()).thenReturn(service);
+        branch.setRefundWebhook(provider);
+        return service;
+    }
+
+    @Test
+    void aRefundEventOfOurPaymentGoesToTheRefundServiceWithItsEntity() throws Exception {
+        var refunds = refunds();
+        when(guard.webhookMatch("RAZORPAY", "order_rzp1", "order-1")).thenReturn(new WebhookMatch("row-1", "order-1"));
+        JsonNode refund = json.readTree("{\"id\":\"rfnd_1\",\"amount\":100}");
+
+        Result processed = branch.handle("refund.processed", payment("order_rzp1", 49900, "order-1"), "inst-1", refund);
+        Result failed = branch.handle("refund.failed", payment("order_rzp1", 49900, "order-1"), "inst-1", refund);
+
+        assertEquals(Outcome.HANDLED, processed.outcome());
+        assertEquals(Outcome.HANDLED, failed.outcome());
+        verify(refunds).handle("refund.processed", refund, row, "inst-1");
+        verify(refunds).handle("refund.failed", refund, row, "inst-1");
+        verifyNoInteractions(confirmService);
+    }
+
+    @Test
+    void refundCreatedNeedsNothingAndANullEntityIsHandledForThePoll() throws Exception {
+        var refunds = refunds();
+        when(guard.webhookMatch("RAZORPAY", "order_rzp1", "order-1")).thenReturn(new WebhookMatch("row-1", "order-1"));
+
+        assertEquals(Outcome.HANDLED, branch.handle("refund.created", payment("order_rzp1", 49900, "order-1"),
+                "inst-1", json.readTree("{}")).outcome());
+        org.mockito.Mockito.verifyNoInteractions(refunds);
+        assertEquals(Outcome.HANDLED, branch.handle("refund.processed", payment("order_rzp1", 49900, "order-1"),
+                "inst-1", null).outcome());
+        verify(refunds).handle("refund.processed", null, row, "inst-1");
+    }
+
+    @Test
+    void aRefundEventVerifiedWithAnotherInstitutesSecretIsRefused() throws Exception {
+        var refunds = refunds();
+        when(guard.webhookMatch("RAZORPAY", "order_rzp1", "order-1")).thenReturn(new WebhookMatch("row-1", "order-1"));
+        when(confirmService.refuse(eq(CommercePaymentConfirmService.REASON_INSTITUTE_MISMATCH), eq(row), eq("inst-2"),
+                any(), any(), any())).thenReturn(new Result(Outcome.REFUSED, "order-1", "INSTITUTE_MISMATCH", 0));
+
+        Result result = branch.handle("refund.processed", payment("order_rzp1", 49900, "order-1"), "inst-2",
+                json.readTree("{\"id\":\"rfnd_1\"}"));
+
+        assertTrue(result.refused());
+        org.mockito.Mockito.verifyNoInteractions(refunds);
+    }
+
+    @Test
+    void aRefundEventOfACoursePaymentIsNotCommerceAndItsRefundEntityIsNeverRead() throws Exception {
+        var refunds = refunds();
+        JsonNode refund = org.mockito.Mockito.mock(JsonNode.class);
+
+        Result result = branch.handle("refund.processed", payment("order_rzp9", 10000, "log-course"), "inst-1", refund);
+
+        assertSame(Result.NOT_COMMERCE, result);
+        org.mockito.Mockito.verifyNoInteractions(refunds, refund, confirmService);
+    }
 }

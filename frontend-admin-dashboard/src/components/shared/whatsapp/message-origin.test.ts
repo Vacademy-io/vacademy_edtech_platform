@@ -16,6 +16,13 @@ describe('messageOriginKey', () => {
         expect(messageOriginKey({ type: 'CHATBOT_FLOW', id: 'f-1' })).toBe('origin.chatbotFlowUnnamed');
     });
 
+    it('names the admin who resent a message', () => {
+        expect(messageOriginKey({ type: 'ADMIN_RESEND', id: 'u-1', name: 'Sarita R' })).toBe(
+            'origin.adminResend'
+        );
+        expect(messageOriginKey({ type: 'ADMIN_RESEND', id: 'u-1' })).toBe('origin.adminResendUnnamed');
+    });
+
     it('shows nothing for no origin or a type the UI does not know', () => {
         expect(messageOriginKey(null)).toBeNull();
         expect(messageOriginKey(undefined)).toBeNull();

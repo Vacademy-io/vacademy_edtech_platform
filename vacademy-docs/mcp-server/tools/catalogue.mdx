@@ -4,7 +4,7 @@ description: "Every area an admin can switch on, and where to find the full refe
 icon: "table-list"
 ---
 
-Tools are grouped into **areas**, the same rows you see in **Settings → MCP Server → What AI apps can do**. Each area has a **View** level, and most have one or more **edits** you can switch on. Your AI app only sees the tools that are switched on for you.
+Tools are grouped into **areas**, the same rows you see in **Settings → AI access → What AI can do** (the **AI apps** column). Each area has a **View** level, and most have one or more **edits** you can switch on. Your AI app only sees the tools that are switched on for you.
 
 ## LMS areas
 
@@ -22,7 +22,7 @@ Tools are grouped into **areas**, the same rows you see in **Settings → MCP Se
 
 ## CRM areas
 
-The CRM areas show in **Settings → MCP Server** for every institute, but the AI app gets CRM tools only when your plan includes the CRM. Each person sees only the leads their admin portal shows them: counsellors their own leads, managers their team's, admins the whole institute.
+The CRM areas show in **Settings → AI access** for every institute, but the AI app gets CRM tools only when your plan includes the CRM. Each person sees only the leads their admin portal shows them: counsellors their own leads, managers their team's, admins the whole institute.
 
 | Area | View | Edit |
 | :--- | :--- | :--- |
@@ -48,14 +48,20 @@ Every tool, its actions and its parameters, generated from the server itself:
 | Area | Tools |
 | :--- | :--- |
 | [Who is connected](/mcp-server/tools/identity) | `whoami` |
+| [How-to help](/mcp-server/tools/help) | `search_help_knowledge` |
 | [Institute stats](/mcp-server/tools/institute) | `get_institute_overview` |
 | [Website](/mcp-server/tools/website) | `website`, `catalog_data_edit`, `design_import`, `website_edit`, `website_publish` |
 | [Lead forms](/mcp-server/tools/lead-forms) | `audience_forms`, `audience_forms_edit` |
 | [Automations](/mcp-server/tools/automations) | `workflows`, `workflows_edit` |
 | [Blog](/mcp-server/tools/blog) | `blog`, `blog_edit` |
 | [Courses](/mcp-server/tools/courses) | `courses`, `course_drip_edit`, `course_edit`, `course_invites_edit`, `course_structure_edit` |
-| [Learners](/mcp-server/tools/learners) | `learners`, `learner_edit`, `learner_enroll` |
+| [Learners](/mcp-server/tools/learners) | `learners`, `learner_edit`, `learner_enroll`, `manage_enrollment` |
+| [Batches](/mcp-server/tools/batches) | `find_batch`, `list_batch_learners`, `list_recent_enrollments` |
 | [Progress reports](/mcp-server/tools/learner-reports) | `learner_report` |
+| [Assessments](/mcp-server/tools/assessments) | `find_assessment`, `get_assessment_leaderboard`, `get_assessment_results` |
+| [Live classes](/mcp-server/tools/live-classes) | `get_class_schedule` |
+| [Fees and payments](/mcp-server/tools/fees) | `get_collections_summary`, `get_fee_dues`, `get_payment_history`, `get_subscription_plans`, `search_fee_records` |
+| [Announcements](/mcp-server/tools/announcements) | `list_announcements`, `send_announcement` |
 | [Sub-organisations](/mcp-server/tools/sub-orgs) | `sub_orgs`, `sub_org_edit`, `sub_org_enroll` |
 | [CRM: Leads](/mcp-server/tools/crm-leads) | `crm_leads`, `crm_lead_activity`, `crm_lead_edit`, `crm_lead_intake`, `crm_lead_merge`, `crm_team_edit` |
 | [CRM: Calls](/mcp-server/tools/crm-calls) | `crm_calls`, `crm_ai_campaign`, `crm_dial` |

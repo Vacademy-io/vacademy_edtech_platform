@@ -235,7 +235,8 @@ public class AiEvaluationService {
                 if (assessment == null) {
                         return 0;
                 }
-                int count = 0;
+                // Distinct questions: one in two sections is graded (and billed) once.
+                java.util.Set<String> questions = new java.util.HashSet<>();
                 for (QuestionAssessmentSectionMapping mapping : questionMappingRepository
                                 .getQuestionAssessmentSectionMappingByAssessmentId(assessment.getId())) {
                         if (mapping.getQuestion() == null || mapping.getSection() == null
@@ -246,9 +247,10 @@ public class AiEvaluationService {
                         if (typed && !TypedAnswerEvaluation.isAiGraded(mapping.getQuestion())) {
                                 continue;
                         }
-                        count++;
+                        questions.add(mapping.getQuestion().getId() != null ? mapping.getQuestion().getId()
+                                        : "mapping-" + System.identityHashCode(mapping));
                 }
-                return count;
+                return questions.size();
         }
 
         private String initiateEvaluationForAttempt(StudentAttempt attempt, String preferredModel) {

@@ -7,7 +7,7 @@
  *
  * Pure builders (tested) and one sender. Never throws: analytics must not break a page.
  */
-import { perUnitAmount } from './format';
+import { formatUnits, lineAmount, sumAmounts, unitSign } from './format';
 
 export interface EventItem {
     /** SKU when known, else the variant or product id. */
@@ -18,6 +18,8 @@ export interface EventItem {
     /** Base units. */
     quantity?: number;
     qtyScale?: number | null;
+    /** The unit code (MTR); names the length of a measured line. */
+    unit?: string | null;
     variant?: string | null;
     category?: string | null;
     /** Position in a list, from 0. */
@@ -62,33 +64,50 @@ export interface BuiltEvent {
 const round2 = (n: number): number => Math.round(n * 100) / 100;
 
 /**
- * A GA4 item. Goods sold by length are reported per whole unit: price per metre and the
- * number of metres, so price times quantity is the money, as GA4 expects.
+ * A GA4 item. GA4 expects whole quantities, so a line of goods sold by length is ONE item: its
+ * price is the value of the whole cut (2.5 m of a ₹123.40 cloth = 308.50), and the length goes
+ * into item_variant ("2.5 m", after the variant's own label when it has one). With no quantity
+ * given (a listing, a product view) the item is one unit: the price of a metre. Pieces are
+ * unchanged: price of one, the count as the quantity. Price times quantity is the money.
  */
 export const gaItem = (item: EventItem): Record<string, unknown> => {
     const scale = Math.max(1, Math.floor(item.qtyScale || 1));
-    const price = perUnitAmount(item.unitPrice, scale);
-    const quantity = round2((item.quantity ?? scale) / scale);
+    const base = item.quantity ?? scale;
+    let price: number | null;
+    let quantity: number;
+    let variant = item.variant || null;
+    if (scale > 1) {
+        price = lineAmount(item.unitPrice, base);
+        quantity = 1;
+        if (item.quantity !== undefined) {
+            const sign = unitSign(item.unit);
+            const length = `${formatUnits(base, scale)}${sign ? ` ${sign}` : ''}`;
+            variant = variant ? `${variant} · ${length}` : length;
+        }
+    } else {
+        price = lineAmount(item.unitPrice, 1);
+        quantity = Math.round(base);
+    }
     return {
         item_id: item.id,
         item_name: item.name,
         ...(price !== null ? { price } : {}),
         quantity,
-        ...(item.variant ? { item_variant: item.variant } : {}),
+        ...(variant ? { item_variant: variant } : {}),
         ...(item.category ? { item_category: item.category } : {}),
         ...(typeof item.index === 'number' ? { index: item.index } : {}),
     };
 };
 
-const valueOf = (items: EventItem[]): number | null => {
-    let total = 0;
-    for (const item of items) {
-        if (typeof item.unitPrice !== 'number') return null;
-        const scale = Math.max(1, Math.floor(item.qtyScale || 1));
-        total += item.unitPrice * (item.quantity ?? scale);
-    }
-    return round2(total);
-};
+/** The money of the items, added in whole paise. */
+const valueOf = (items: EventItem[]): number | null =>
+    sumAmounts(
+        items.map((item) => {
+            if (typeof item.unitPrice !== 'number') return null;
+            const scale = Math.max(1, Math.floor(item.qtyScale || 1));
+            return lineAmount(item.unitPrice, item.quantity ?? scale);
+        })
+    );
 
 const money = (items: EventItem[], currency: string | null | undefined, given?: number | null): Record<string, unknown> => {
     const value = typeof given === 'number' ? round2(given) : valueOf(items);

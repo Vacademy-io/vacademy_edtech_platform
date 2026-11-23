@@ -223,19 +223,17 @@ public interface AssessmentRepository extends CrudRepository<Assessment, String>
                                                   Pageable pageable);
 
     /**
-     * "Past" is purely time-based: bound_end_time has elapsed. Do NOT additionally
-     * require recent_attempt.report_release_status = 'RELEASED' for MANUAL result
-     * types — recent_attempt is a LEFT JOIN, so an assessment the learner never
-     * attempted has a NULL report_release_status and the comparison evaluates to
-     * NULL, silently dropping every MISSED assessment from the learner's Past tab.
-     * It also hid attempted-but-unreleased ones, making the client's "Results
-     * pending" badge unreachable. Report visibility is gated client-side off
-     * result_type + report_release_status, both of which this query returns.
+     * Columns of the learner assessment list. StudentAssessmentMapper reads them by position
+     * (0..32), so add new columns only at the end.
      */
-    @Query(value = "(SELECT DISTINCT a.id, a.name, a.play_mode, a.evaluation_type, a.submission_type, a.duration, " +
+    String LEARNER_LIST_COLUMNS =
+            "a.id, a.name, a.play_mode, a.evaluation_type, a.submission_type, a.duration, " +
             "a.assessment_visibility, a.status, a.registration_close_date, a.registration_open_date, " +
             "a.expected_participants, a.cover_file_id, a.bound_start_time, a.bound_end_time, a.about_id, a.instructions_id, " +
-            "a.created_at, a.updated_at, recent_attempt.status AS recent_attempt_status, recent_attempt.start_time AS recent_attempt_start_time, a.reattempt_count, aur.reattempt_count, recent_attempt.total_attempts, a.preview_time, recent_attempt.id AS recent_attempt_id, aur.id AS assessment_user_registration_id, a.duration_distribution, a.can_switch_section, a.can_request_time_increase, a.can_request_reattempt, a.omr_mode, a.result_type, recent_attempt.report_release_status " +
+            "a.created_at, a.updated_at, recent_attempt.status AS recent_attempt_status, recent_attempt.start_time AS recent_attempt_start_time, a.reattempt_count, aur.reattempt_count, recent_attempt.total_attempts, a.preview_time, recent_attempt.id AS recent_attempt_id, aur.id AS assessment_user_registration_id, a.duration_distribution, a.can_switch_section, a.can_request_time_increase, a.can_request_reattempt, a.omr_mode, a.result_type, recent_attempt.report_release_status";
+
+    /** Learner list, first half: published tests of the learner's batches. */
+    String LEARNER_LIST_BY_BATCH =
             "FROM public.assessment a " +
             "LEFT JOIN public.assessment_batch_registration abr ON a.id = abr.assessment_id " +
             "LEFT JOIN public.assessment_institute_mapping aim ON a.id = aim.assessment_id " +
@@ -258,12 +256,10 @@ public interface AssessmentRepository extends CrudRepository<Assessment, String>
             "AND (:passedAssessments IS NULL OR :passedAssessments = 'false' OR CURRENT_TIMESTAMP AT TIME ZONE 'UTC' > a.bound_end_time) " +
             "AND (:upcomingAssessments IS NULL OR :upcomingAssessments = 'false' OR (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' < a.bound_start_time)) " +
             "AND (:assessmentTypes IS NULL OR a.assessment_type IN :assessmentTypes) " +
-            "AND (:assessmentModes IS NULL OR a.play_mode IN :assessmentModes)) " +
-            "UNION " +
-            "(SELECT DISTINCT a.id, a.name, a.play_mode, a.evaluation_type, a.submission_type, a.duration, " +
-            "a.assessment_visibility, a.status, a.registration_close_date, a.registration_open_date, " +
-            "a.expected_participants, a.cover_file_id, a.bound_start_time, a.bound_end_time, a.about_id, a.instructions_id, " +
-            "a.created_at, a.updated_at, recent_attempt.status AS recent_attempt_status, recent_attempt.start_time AS recent_attempt_start_time, a.reattempt_count, aur.reattempt_count, recent_attempt.total_attempts, a.preview_time, recent_attempt.id AS recent_attempt_id, aur.id AS assessment_user_registration_id, a.duration_distribution, a.can_switch_section, a.can_request_time_increase, a.can_request_reattempt, a.omr_mode, a.result_type, recent_attempt.report_release_status " +
+            "AND (:assessmentModes IS NULL OR a.play_mode IN :assessmentModes)) ";
+
+    /** Learner list, second half: tests the learner is registered for directly. */
+    String LEARNER_LIST_BY_USER =
             "FROM public.assessment a " +
             "LEFT JOIN public.assessment_user_registration aur ON a.id = aur.assessment_id " +
             "LEFT JOIN public.assessment_institute_mapping aim ON a.id = aim.assessment_id " +
@@ -285,62 +281,79 @@ public interface AssessmentRepository extends CrudRepository<Assessment, String>
             "AND (:passedAssessments IS NULL OR :passedAssessments = 'false' OR CURRENT_TIMESTAMP AT TIME ZONE 'UTC' > a.bound_end_time) " +
             "AND (:upcomingAssessments IS NULL OR :upcomingAssessments = 'false' OR (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' < a.bound_start_time)) " +
             "AND (:assessmentTypes IS NULL OR a.assessment_type IN :assessmentTypes) " +
-            "AND (:assessmentModes IS NULL OR a.play_mode IN :assessmentModes))",
-            countQuery =
-                    "SELECT COUNT(DISTINCT id) FROM (" +
-                            "SELECT DISTINCT a.id FROM public.assessment a " +
-                            "LEFT JOIN public.assessment_batch_registration abr ON a.id = abr.assessment_id " +
-                            "LEFT JOIN public.assessment_institute_mapping aim ON a.id = aim.assessment_id " +
-                            "LEFT JOIN public.assessment_user_registration aur ON a.id = aur.assessment_id AND aur.user_id IN :userIds " +
-                            "LEFT JOIN ( " +
-                            "SELECT sa.registration_id, sa.status, sa.start_time, sa.id, sa.report_release_status, " +
-                            "ROW_NUMBER() OVER (PARTITION BY sa.registration_id ORDER BY CASE WHEN sa.status = 'LIVE' THEN 0 ELSE 1 END, sa.start_time DESC, sa.created_at DESC, sa.id DESC) AS rn , COUNT(*) FILTER (WHERE sa.status IN ('LIVE', 'ENDED')) OVER (PARTITION BY sa.registration_id) AS total_attempts " +
-                            "FROM public.student_attempt sa " +
-                            // Restrict the window to this learner's own registrations. Without it
-                            // Postgres ranks EVERY attempt in the table and re-runs that scan per
-                            // matching row, which is what made the learner exam list take seconds
-                            // during an arrival burst. The outer join already requires
-                            // aur.id = registration_id with aur.user_id IN :userIds, so this filter
-                            // cannot change the result set.
-                            "WHERE (:checkUserIds IS NULL OR sa.registration_id IN (SELECT aur2.id FROM public.assessment_user_registration aur2 WHERE aur2.user_id IN :userIds)) " +
-                            ") AS recent_attempt ON aur.id = recent_attempt.registration_id AND recent_attempt.rn = 1 " +
-                            "WHERE (:name IS NULL OR :name = '' OR LOWER(a.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +
+            "AND (:assessmentModes IS NULL OR a.play_mode IN :assessmentModes))";
+
+    String LEARNER_LIST_COUNT =
+            "SELECT COUNT(DISTINCT id) FROM (" +
+            "SELECT DISTINCT a.id FROM public.assessment a " +
+            "LEFT JOIN public.assessment_batch_registration abr ON a.id = abr.assessment_id " +
+            "LEFT JOIN public.assessment_institute_mapping aim ON a.id = aim.assessment_id " +
+            "LEFT JOIN public.assessment_user_registration aur ON a.id = aur.assessment_id AND aur.user_id IN :userIds " +
+            "LEFT JOIN ( " +
+            "SELECT sa.registration_id, sa.status, sa.start_time, sa.id, sa.report_release_status, " +
+            "ROW_NUMBER() OVER (PARTITION BY sa.registration_id ORDER BY CASE WHEN sa.status = 'LIVE' THEN 0 ELSE 1 END, sa.start_time DESC, sa.created_at DESC, sa.id DESC) AS rn , COUNT(*) FILTER (WHERE sa.status IN ('LIVE', 'ENDED')) OVER (PARTITION BY sa.registration_id) AS total_attempts " +
+            "FROM public.student_attempt sa " +
+            // Restrict the window to this learner's own registrations. Without it
+            // Postgres ranks EVERY attempt in the table and re-runs that scan per
+            // matching row, which is what made the learner exam list take seconds
+            // during an arrival burst. The outer join already requires
+            // aur.id = registration_id with aur.user_id IN :userIds, so this filter
+            // cannot change the result set.
+            "WHERE (:checkUserIds IS NULL OR sa.registration_id IN (SELECT aur2.id FROM public.assessment_user_registration aur2 WHERE aur2.user_id IN :userIds)) " +
+            ") AS recent_attempt ON aur.id = recent_attempt.registration_id AND recent_attempt.rn = 1 " +
+            "WHERE (:name IS NULL OR :name = '' OR LOWER(a.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +
             "AND (:folderId IS NULL OR EXISTS (SELECT 1 FROM public.assessment_folder_mapping afm JOIN public.assessment_folder af ON af.id = afm.folder_id WHERE afm.assessment_id = a.id AND afm.folder_id = :folderId AND af.status = 'ACTIVE')) AND (:unfiledOnly IS NULL OR NOT EXISTS (SELECT 1 FROM public.assessment_folder_mapping afm2 JOIN public.assessment_folder af2 ON af2.id = afm2.folder_id WHERE afm2.assessment_id = a.id AND af2.status = 'ACTIVE')) " +
-                            "AND (:checkBatches IS NULL OR abr.batch_id IN :batchIds) " +
-                            "AND (:instituteIds IS NULL OR aim.institute_id IN :instituteIds) " +
-                            "AND (:assessmentStatuses IS NULL OR a.status IN :assessmentStatuses) " +
-                            "AND (:liveAssessments IS NULL OR :liveAssessments = 'false' OR (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' BETWEEN a.bound_start_time AND a.bound_end_time)) " +
-                            "AND (:passedAssessments IS NULL OR :passedAssessments = 'false' OR CURRENT_TIMESTAMP AT TIME ZONE 'UTC' > a.bound_end_time) " +
-                            "AND (:upcomingAssessments IS NULL OR :upcomingAssessments = 'false' OR (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' < a.bound_start_time)) " +
-                            "AND (:assessmentTypes IS NULL OR a.assessment_type IN :assessmentTypes) " +
-                            "AND (:assessmentModes IS NULL OR a.play_mode IN :assessmentModes) " +
-                            "UNION  " +
-                            "SELECT DISTINCT a.id FROM public.assessment a " +
-                            "LEFT JOIN public.assessment_user_registration aur ON a.id = aur.assessment_id " +
-                            "LEFT JOIN public.assessment_institute_mapping aim ON a.id = aim.assessment_id " +
-                            "LEFT JOIN ( " +
-                            "SELECT sa.registration_id, sa.status, sa.start_time, sa.id, sa.report_release_status, " +
-                            "ROW_NUMBER() OVER (PARTITION BY sa.registration_id ORDER BY CASE WHEN sa.status = 'LIVE' THEN 0 ELSE 1 END, sa.start_time DESC, sa.created_at DESC, sa.id DESC) AS rn , COUNT(*) FILTER (WHERE sa.status IN ('LIVE', 'ENDED')) OVER (PARTITION BY sa.registration_id) AS total_attempts " +
-                            "FROM public.student_attempt sa " +
-                            // Restrict the window to this learner's own registrations. Without it
-                            // Postgres ranks EVERY attempt in the table and re-runs that scan per
-                            // matching row, which is what made the learner exam list take seconds
-                            // during an arrival burst. The outer join already requires
-                            // aur.id = registration_id with aur.user_id IN :userIds, so this filter
-                            // cannot change the result set.
-                            "WHERE (:checkUserIds IS NULL OR sa.registration_id IN (SELECT aur2.id FROM public.assessment_user_registration aur2 WHERE aur2.user_id IN :userIds)) " +
-                            ") AS recent_attempt ON aur.id = recent_attempt.registration_id AND recent_attempt.rn = 1 " +
-                            "WHERE (:name IS NULL OR :name = '' OR LOWER(a.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +
+            "AND (:checkBatches IS NULL OR abr.batch_id IN :batchIds) " +
+            "AND (:instituteIds IS NULL OR aim.institute_id IN :instituteIds) " +
+            "AND (:assessmentStatuses IS NULL OR a.status IN :assessmentStatuses) " +
+            "AND (:liveAssessments IS NULL OR :liveAssessments = 'false' OR (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' BETWEEN a.bound_start_time AND a.bound_end_time)) " +
+            "AND (:passedAssessments IS NULL OR :passedAssessments = 'false' OR CURRENT_TIMESTAMP AT TIME ZONE 'UTC' > a.bound_end_time) " +
+            "AND (:upcomingAssessments IS NULL OR :upcomingAssessments = 'false' OR (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' < a.bound_start_time)) " +
+            "AND (:assessmentTypes IS NULL OR a.assessment_type IN :assessmentTypes) " +
+            "AND (:assessmentModes IS NULL OR a.play_mode IN :assessmentModes) " +
+            "UNION  " +
+            "SELECT DISTINCT a.id FROM public.assessment a " +
+            "LEFT JOIN public.assessment_user_registration aur ON a.id = aur.assessment_id " +
+            "LEFT JOIN public.assessment_institute_mapping aim ON a.id = aim.assessment_id " +
+            "LEFT JOIN ( " +
+            "SELECT sa.registration_id, sa.status, sa.start_time, sa.id, sa.report_release_status, " +
+            "ROW_NUMBER() OVER (PARTITION BY sa.registration_id ORDER BY CASE WHEN sa.status = 'LIVE' THEN 0 ELSE 1 END, sa.start_time DESC, sa.created_at DESC, sa.id DESC) AS rn , COUNT(*) FILTER (WHERE sa.status IN ('LIVE', 'ENDED')) OVER (PARTITION BY sa.registration_id) AS total_attempts " +
+            "FROM public.student_attempt sa " +
+            // Restrict the window to this learner's own registrations. Without it
+            // Postgres ranks EVERY attempt in the table and re-runs that scan per
+            // matching row, which is what made the learner exam list take seconds
+            // during an arrival burst. The outer join already requires
+            // aur.id = registration_id with aur.user_id IN :userIds, so this filter
+            // cannot change the result set.
+            "WHERE (:checkUserIds IS NULL OR sa.registration_id IN (SELECT aur2.id FROM public.assessment_user_registration aur2 WHERE aur2.user_id IN :userIds)) " +
+            ") AS recent_attempt ON aur.id = recent_attempt.registration_id AND recent_attempt.rn = 1 " +
+            "WHERE (:name IS NULL OR :name = '' OR LOWER(a.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +
             "AND (:folderId IS NULL OR EXISTS (SELECT 1 FROM public.assessment_folder_mapping afm JOIN public.assessment_folder af ON af.id = afm.folder_id WHERE afm.assessment_id = a.id AND afm.folder_id = :folderId AND af.status = 'ACTIVE')) AND (:unfiledOnly IS NULL OR NOT EXISTS (SELECT 1 FROM public.assessment_folder_mapping afm2 JOIN public.assessment_folder af2 ON af2.id = afm2.folder_id WHERE afm2.assessment_id = a.id AND af2.status = 'ACTIVE')) " +
-                            "AND (:checkUserIds IS NULL OR aur.user_id IN :userIds) " +
-                            "AND (:instituteIds IS NULL OR aim.institute_id IN :instituteIds) " +
-                            "AND (:assessmentStatuses IS NULL OR a.status IN :assessmentStatuses) " +
-                            "AND (:liveAssessments IS NULL OR :liveAssessments = 'false' OR (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' BETWEEN a.bound_start_time AND a.bound_end_time)) " +
-                            "AND (:passedAssessments IS NULL OR :passedAssessments = 'false' OR CURRENT_TIMESTAMP AT TIME ZONE 'UTC' > a.bound_end_time) " +
-                            "AND (:upcomingAssessments IS NULL OR :upcomingAssessments = 'false' OR (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' < a.bound_start_time)) " +
-                            "AND (:assessmentModes IS NULL OR a.play_mode IN :assessmentModes)" +
-                            "AND (:assessmentTypes IS NULL OR a.assessment_type IN :assessmentTypes) " +
-                            ") AS combined_results",
+            "AND (:checkUserIds IS NULL OR aur.user_id IN :userIds) " +
+            "AND (:instituteIds IS NULL OR aim.institute_id IN :instituteIds) " +
+            "AND (:assessmentStatuses IS NULL OR a.status IN :assessmentStatuses) " +
+            "AND (:liveAssessments IS NULL OR :liveAssessments = 'false' OR (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' BETWEEN a.bound_start_time AND a.bound_end_time)) " +
+            "AND (:passedAssessments IS NULL OR :passedAssessments = 'false' OR CURRENT_TIMESTAMP AT TIME ZONE 'UTC' > a.bound_end_time) " +
+            "AND (:upcomingAssessments IS NULL OR :upcomingAssessments = 'false' OR (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' < a.bound_start_time)) " +
+            "AND (:assessmentModes IS NULL OR a.play_mode IN :assessmentModes)" +
+            "AND (:assessmentTypes IS NULL OR a.assessment_type IN :assessmentTypes) " +
+            ") AS combined_results";
+
+
+    /**
+     * "Past" is purely time-based: bound_end_time has elapsed. Do NOT additionally
+     * require recent_attempt.report_release_status = 'RELEASED' for MANUAL result
+     * types — recent_attempt is a LEFT JOIN, so an assessment the learner never
+     * attempted has a NULL report_release_status and the comparison evaluates to
+     * NULL, silently dropping every MISSED assessment from the learner's Past tab.
+     * It also hid attempted-but-unreleased ones, making the client's "Results
+     * pending" badge unreachable. Report visibility is gated client-side off
+     * result_type + report_release_status, both of which this query returns.
+     */
+    @Query(value = "(SELECT DISTINCT " + LEARNER_LIST_COLUMNS + " " + LEARNER_LIST_BY_BATCH +
+            "UNION " +
+            "(SELECT DISTINCT " + LEARNER_LIST_COLUMNS + " " + LEARNER_LIST_BY_USER,
+            countQuery = LEARNER_LIST_COUNT,
             nativeQuery = true)
     Page<Object[]> studentAssessments(@Param("name") String name,
                                       @Param("checkBatches") Boolean checkBatches,
@@ -357,6 +370,52 @@ public interface AssessmentRepository extends CrudRepository<Assessment, String>
                                       @Param("folderId") String folderId,
                                       @Param("unfiledOnly") Boolean unfiledOnly,
                                       Pageable pageable);
+
+    /**
+     * Name of assessment `a` as a sort key: lower case, numbers compared by value. Every
+     * digit run is left-padded to 10 digits, so "Test 7" sorts before "Test 10" and "07A"
+     * before "10A". Regex repeats are spelled out because Hibernate reads braces in native
+     * SQL as alias placeholders.
+     */
+    String NATURAL_NAME_SORT_KEY =
+            "regexp_replace(regexp_replace(LOWER(a.name), '([0-9]+)', '0000000000\\1', 'g'), " +
+            "'0*([0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9])', '\\1', 'g')";
+
+    /**
+     * Sort keys of one folder's tests, after the list columns: the mapping's display_order
+     * (all 0 = by name, 1..N = arranged by an admin), then the name.
+     */
+    String LEARNER_FOLDER_SORT_COLUMNS =
+            ", (SELECT MIN(afo.display_order) FROM public.assessment_folder_mapping afo " +
+            "WHERE afo.assessment_id = a.id AND afo.folder_id = :folderId) AS folder_sort_order, " +
+            NATURAL_NAME_SORT_KEY + " AS folder_sort_key ";
+
+    /**
+     * studentAssessments for one folder (folderId must be set), in the folder's test order:
+     * display_order, then name, then id, so "load more" pages never repeat or skip a test.
+     * The lists outside a folder keep using studentAssessments, unchanged.
+     */
+    @Query(value = "(SELECT DISTINCT " + LEARNER_LIST_COLUMNS + LEARNER_FOLDER_SORT_COLUMNS + LEARNER_LIST_BY_BATCH +
+            "UNION " +
+            "(SELECT DISTINCT " + LEARNER_LIST_COLUMNS + LEARNER_FOLDER_SORT_COLUMNS + LEARNER_LIST_BY_USER +
+            " ORDER BY folder_sort_order ASC, folder_sort_key ASC, id ASC",
+            countQuery = LEARNER_LIST_COUNT,
+            nativeQuery = true)
+    Page<Object[]> studentAssessmentsInFolder(@Param("name") String name,
+                                              @Param("checkBatches") Boolean checkBatches,
+                                              @Param("batchIds") List<String> batchIds,
+                                              @Param("assessmentStatuses") List<String> assessmentStatuses,
+                                              @Param("liveAssessments") Boolean liveAssessments,
+                                              @Param("passedAssessments") Boolean passedAssessments,
+                                              @Param("upcomingAssessments") Boolean upcomingAssessments,
+                                              @Param("assessmentModes") List<String> assessmentModes,
+                                              @Param("instituteIds") List<String> instituteIds,
+                                              @Param("checkUserIds") Boolean checkUserIds,
+                                              @Param("userIds") List<String> userIds,
+                                              @Param("assessmentTypes") List<String> assessmentTypes,
+                                              @Param("folderId") String folderId,
+                                              @Param("unfiledOnly") Boolean unfiledOnly,
+                                              Pageable pageable);
 
 
     @Query(value = """

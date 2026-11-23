@@ -566,6 +566,67 @@ async def test_a_person_mentioning_a_menu_is_not_an_ivr_loop(clock):
     assert not tc.looks_like_ivr_loop()
 
 
+# Call 258fb517 (2026-11-19): a front-desk queue that never says "press 1".
+# Eight minutes, and "Okay." from the bot after every round.
+_QUEUE_LOOP = (
+    "Hi.",
+    "Your call is important to us.",
+    "As a customer care executive.",
+    "I'm busy on another call.",
+    "Kindly stay online.",
+    "And your call will be connected shortly.",
+    "Thank you.",
+)
+
+
+@pytest.mark.asyncio
+async def test_a_queue_message_that_keeps_coming_round_is_hung_up_on(clock):
+    rec = _Rec()
+    tc = _collector(rec)
+    at = 2.0
+    for loop in range(3):
+        assert not tc.looks_like_ivr_loop(), f"hung up after {loop} round(s) of the message"
+        for line in _QUEUE_LOOP:
+            await _say(tc, clock, at, line)
+            at += 3.0
+    assert tc.looks_like_ivr_loop()
+
+
+@pytest.mark.asyncio
+async def test_a_person_repeating_themselves_is_not_a_recording(clock):
+    """Short lines, questions, hellos, "I …" and "not interested" never count,
+    however often they are said; nor does the network's own hold announcement,
+    which the hold clock waits out."""
+    rec = _Rec()
+    tc = _collector(rec)
+    at = 2.0
+    for _ in range(4):
+        for line in ("Hello?", "हाँ जी बोलिए।", "मुझे नहीं चाहिए भाई, मैं busy हूँ अभी।",
+                     "Can you hear me properly on this line?",
+                     "I told you I am not interested in this.",
+                     "The person you are speaking with has put your call on hold."):
+            await _say(tc, clock, at, line)
+            at += 3.0
+    assert not tc.looks_like_ivr_loop()
+
+
+@pytest.mark.parametrize("line,counted", [
+    ("And your call will be connected shortly.", True),
+    ("Your call is important to us.", False),                     # hold wording: the hold clock's job
+    ("And may be recorded for quality and training purposes.", True),
+    ("LNCT University में आपका स्वागत है।", True),
+    ("Welcome to PVS.", False),                                   # too short to tell
+    ("Thank you.", False),
+    ("आप कहाँ से बोल रहे हैं जी?", False),                           # a question
+    ("मुझे अभी time नहीं है बाद में call करो", False),               # "मुझे": a person
+    ("Please stay on the line.", False),                          # the hold clock's job
+    ("[unclear sound from the caller]", False),
+])
+def test_recording_loop_key(line, counted):
+    from app.turntake import recording_loop_key
+    assert bool(recording_loop_key(line)) is counted, line
+
+
 @pytest.mark.parametrize("line,menu", [
     ("You have entered an invalid option.", True),
     ("Press 1 for admissions.", True),

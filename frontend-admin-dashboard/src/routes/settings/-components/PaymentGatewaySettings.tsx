@@ -11,6 +11,7 @@ import {
     Info,
     PencilSimple,
     Plus,
+    Power,
     Trash,
     WarningCircle,
 } from '@phosphor-icons/react';
@@ -49,10 +50,13 @@ import { BACKEND_BASE_URL } from '@/config/baseUrl';
 import { noAutofillProps } from '@/lib/no-autofill';
 import {
     PaymentGatewayMapping,
+    PaymentGatewayUsage,
     PaymentVendor,
     SECRET_MASK_PREFIX,
+    activatePaymentGateway,
     createPaymentGateway,
     deactivatePaymentGateway,
+    getPaymentGatewayUsage,
     isMaskedSecret,
     listPaymentGateways,
     updatePaymentGateway,
@@ -351,6 +355,9 @@ const GatewayDialog = ({
     }, [existingVendors, mode]);
 
     const schema = vendor ? findSchema(vendor) : undefined;
+    // Saving an inactive gateway also switches it back on: an admin who opens it to fix
+    // or re-enter keys expects learners to be able to pay again afterwards.
+    const reactivating = mode === 'edit' && initial?.status === 'INACTIVE';
 
     useEffect(() => {
         if (!open) return;
@@ -434,8 +441,13 @@ const GatewayDialog = ({
             } else if (initial) {
                 await updatePaymentGateway(instituteId, initial.id, {
                     payment_gateway_specific_data: data,
+                    ...(reactivating ? { status: 'ACTIVE' as const } : {}),
                 });
-                toast.success(t('toast.gatewayUpdated', { vendor: t(schema.label) }));
+                toast.success(
+                    reactivating
+                        ? t('toast.gatewayActivated', { vendor: t(schema.label) })
+                        : t('toast.gatewayUpdated', { vendor: t(schema.label) })
+                );
             }
             onSaved();
             onClose();
@@ -473,6 +485,15 @@ const GatewayDialog = ({
                 </DialogHeader>
 
                 <div className="space-y-4">
+                    {reactivating && schema && (
+                        <Alert className="border-warning-200 bg-warning-50">
+                            <WarningCircle className="size-4 text-warning-600" />
+                            <AlertDescription className="text-body text-warning-700">
+                                {t('dialog.inactiveNotice', { vendor: t(schema.label) })}
+                            </AlertDescription>
+                        </Alert>
+                    )}
+
                     {/* Vendor picker */}
                     {mode === 'create' ? (
                         <div className="space-y-1.5">
@@ -669,6 +690,8 @@ const GatewayDialog = ({
                             </>
                         ) : mode === 'create' ? (
                             t('dialog.addGatewayButton')
+                        ) : reactivating ? (
+                            t('dialog.saveAndActivate')
                         ) : (
                             t('dialog.saveChanges')
                         )}
@@ -685,12 +708,15 @@ interface MappingCardProps {
     mapping: PaymentGatewayMapping;
     onEdit: () => void;
     onDelete: () => void;
+    onActivate: () => void;
+    activating: boolean;
 }
 
-const MappingCard = ({ mapping, onEdit, onDelete }: MappingCardProps) => {
+const MappingCard = ({ mapping, onEdit, onDelete, onActivate, activating }: MappingCardProps) => {
     const { t } = useTranslation('settingsPaymentGateway');
     const schema = findSchema(mapping.vendor);
     const fields = schema?.fields ?? [];
+    const inactive = mapping.status === 'INACTIVE';
 
     return (
         <div className="rounded-lg border border-slate-200 bg-white">
@@ -713,16 +739,45 @@ const MappingCard = ({ mapping, onEdit, onDelete }: MappingCardProps) => {
                     >
                         <PencilSimple className="size-4" />
                     </button>
-                    <button
-                        type="button"
-                        onClick={onDelete}
-                        className="rounded p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                        title={t('mappingCard.deactivateGateway')}
-                    >
-                        <Trash className="size-4" />
-                    </button>
+                    {inactive ? (
+                        <MyButton
+                            buttonType="primary"
+                            scale="small"
+                            layoutVariant="default"
+                            onClick={onActivate}
+                            disable={activating}
+                        >
+                            {activating ? (
+                                <>
+                                    <CircleNotch className="mr-1 size-3 animate-spin" />
+                                    {t('mappingCard.activating')}
+                                </>
+                            ) : (
+                                <>
+                                    <Power className="mr-1 size-3" />
+                                    {t('mappingCard.activateGateway')}
+                                </>
+                            )}
+                        </MyButton>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={onDelete}
+                            className="rounded p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                            title={t('mappingCard.deactivateGateway')}
+                        >
+                            <Trash className="size-4" />
+                        </button>
+                    )}
                 </div>
             </div>
+
+            {inactive && (
+                <div className="flex items-start gap-2 border-t border-warning-200 bg-warning-50 px-4 py-2 text-caption text-warning-700">
+                    <WarningCircle className="mt-0.5 size-4 shrink-0 text-warning-600" />
+                    <span>{t('mappingCard.inactiveNotice')}</span>
+                </div>
+            )}
 
             <div className="border-t border-slate-100 bg-slate-50/40 px-4 py-3">
                 <div className="grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2">
@@ -795,6 +850,10 @@ export default function PaymentGatewaySettings(_props: { isTab?: boolean }) {
     const [editing, setEditing] = useState<PaymentGatewayMapping | undefined>();
     const [confirmDelete, setConfirmDelete] = useState<PaymentGatewayMapping | undefined>();
     const [deleting, setDeleting] = useState(false);
+    const [activatingId, setActivatingId] = useState<string | undefined>();
+    // Invite links on the gateway being deactivated; undefined while loading or if the lookup failed.
+    const [usage, setUsage] = useState<PaymentGatewayUsage | undefined>();
+    const [usageLoading, setUsageLoading] = useState(false);
 
     const fetchMappings = async () => {
         if (!instituteId) return;
@@ -815,13 +874,57 @@ export default function PaymentGatewaySettings(_props: { isTab?: boolean }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [instituteId]);
 
+    // Every configured vendor, inactive ones included: an inactive gateway is switched back on
+    // from its own card (Activate), so Add must not offer it a second time.
     const existingVendors = useMemo(
-        () =>
-            mappings
-                .filter((m) => m.status === 'ACTIVE')
-                .map((m) => m.vendor as PaymentVendor),
+        () => mappings.map((m) => m.vendor as PaymentVendor),
         [mappings]
     );
+
+    useEffect(() => {
+        if (!confirmDelete || !instituteId) {
+            setUsage(undefined);
+            setUsageLoading(false);
+            return;
+        }
+        let cancelled = false;
+        setUsage(undefined);
+        setUsageLoading(true);
+        getPaymentGatewayUsage(instituteId, confirmDelete.id)
+            .then((data) => {
+                if (!cancelled) setUsage(data);
+            })
+            .catch((err) => {
+                // The confirm dialog still works without the count; it just shows the generic warning.
+                console.error('[PaymentGateways] Failed to load gateway usage', err);
+            })
+            .finally(() => {
+                if (!cancelled) setUsageLoading(false);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [confirmDelete, instituteId]);
+
+    const vendorDisplayName = (vendor: string) => {
+        const vendorLabel = findSchema(vendor)?.label;
+        return vendorLabel ? t(vendorLabel) : vendor;
+    };
+
+    const handleActivate = async (m: PaymentGatewayMapping) => {
+        if (!instituteId) return;
+        setActivatingId(m.id);
+        try {
+            await activatePaymentGateway(instituteId, m.id);
+            toast.success(t('toast.gatewayActivated', { vendor: vendorDisplayName(m.vendor) }));
+            fetchMappings();
+        } catch (err) {
+            console.error('[PaymentGateways] Failed to activate', err);
+            toast.error(t('toast.activateFailed'));
+        } finally {
+            setActivatingId(undefined);
+        }
+    };
 
     const openCreate = () => {
         setDialogMode('create');
@@ -931,6 +1034,8 @@ export default function PaymentGatewaySettings(_props: { isTab?: boolean }) {
                                 mapping={m}
                                 onEdit={() => openEdit(m)}
                                 onDelete={() => setConfirmDelete(m)}
+                                onActivate={() => handleActivate(m)}
+                                activating={activatingId === m.id}
                             />
                         ))
                     )}
@@ -958,14 +1063,35 @@ export default function PaymentGatewaySettings(_props: { isTab?: boolean }) {
                         <DialogDescription>
                             {confirmDelete &&
                                 t('deleteDialog.description', {
-                                    vendor:
-                                        (() => {
-                                            const vendorLabel = findSchema(confirmDelete.vendor)?.label;
-                                            return vendorLabel ? t(vendorLabel) : confirmDelete.vendor;
-                                        })(),
+                                    vendor: vendorDisplayName(confirmDelete.vendor),
                                 })}
                         </DialogDescription>
                     </DialogHeader>
+                    {confirmDelete && usageLoading && (
+                        <p className="flex items-center gap-2 text-caption text-neutral-500">
+                            <CircleNotch className="size-3 animate-spin" />
+                            {t('deleteDialog.usageLoading')}
+                        </p>
+                    )}
+                    {confirmDelete && !usageLoading && usage && usage.paid_active_invites > 0 && (
+                        <Alert className="border-danger-200 bg-danger-50">
+                            <WarningCircle className="size-4 text-danger-600" />
+                            <AlertDescription className="text-body text-danger-700">
+                                {t('deleteDialog.usageSummary', {
+                                    vendor: vendorDisplayName(confirmDelete.vendor),
+                                    active: usage.active_invites,
+                                    paid: usage.paid_active_invites,
+                                })}
+                            </AlertDescription>
+                        </Alert>
+                    )}
+                    {confirmDelete && !usageLoading && usage && usage.paid_active_invites === 0 && (
+                        <p className="text-caption text-neutral-500">
+                            {t('deleteDialog.usageNone', {
+                                vendor: vendorDisplayName(confirmDelete.vendor),
+                            })}
+                        </p>
+                    )}
                     <DialogFooter className="gap-2">
                         <MyButton
                             buttonType="secondary"

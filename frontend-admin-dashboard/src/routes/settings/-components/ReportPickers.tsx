@@ -39,9 +39,14 @@ interface ScopePickerProps {
     scopeType: ReportScopeType;
     selected: string[];
     onChange: (ids: string[]) => void;
+    /**
+     * Reports read an empty selection as "every one of them" and warn about it. Pass false
+     * where an empty selection simply means none (e.g. single sign-on batches).
+     */
+    emptyMeansAll?: boolean;
 }
 
-export function ScopePicker({ scopeType, selected, onChange }: ScopePickerProps) {
+export function ScopePicker({ scopeType, selected, onChange, emptyMeansAll = true }: ScopePickerProps) {
     const { t } = useTranslation('settingsReportPickers');
     const [query, setQuery] = useState('');
     const debounced = useDebounced(query);
@@ -99,7 +104,7 @@ export function ScopePicker({ scopeType, selected, onChange }: ScopePickerProps)
 
             {/* An empty selection is not "none" — the runner reads it as EVERY scope of
                 this type, which is what trips the 50-document cap. Say so plainly. */}
-            {selected.length === 0 && (
+            {emptyMeansAll && selected.length === 0 && (
                 <p className="mb-2 text-caption text-warning-700">
                     {t('scopePicker.emptyWarning.prefix')} <b>{t('scopePicker.emptyWarning.every')}</b>{' '}
                     {t('scopePicker.emptyWarning.suffix', { noun })}

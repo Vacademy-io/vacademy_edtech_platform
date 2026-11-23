@@ -1,0 +1,686 @@
+{
+    "page": {
+        "title": "Learner home",
+        "description": "Choose what learners see first when they open the app, and in what order.",
+        "loadError": "Could not load the learner home.",
+        "retry": "Try again",
+        "notEnabledTitle": "Learner home is not switched on",
+        "notEnabledBody": "Ask your Vacademy contact to switch on the Learner home module for this institute.",
+        "noAccessTitle": "Only institute admins can edit the learner home",
+        "noAccessBody": "Ask an admin of this institute if you need a change on the learner home.",
+        "holisticTitle": "This institute keeps its own home page",
+        "holisticBody": "The learner home of this institute is built specially and cannot be changed here."
+    },
+    "tabs": {
+        "editor": "Editor",
+        "results": "Results",
+        "list": "Blocks",
+        "edit": "Edit",
+        "preview": "Preview"
+    },
+    "status": {
+        "saved": "Saved",
+        "saving": "Saving…",
+        "dirty": "Unsaved changes",
+        "error": "Not saved",
+        "conflict": "Edited elsewhere"
+    },
+    "topbar": {
+        "publish": "Publish",
+        "discard": "Discard draft",
+        "discardTitle": "Discard this draft?",
+        "discardBody": "Your changes since the last publish are deleted. Learners keep seeing the live version.",
+        "discardConfirm": "Discard",
+        "cancel": "Cancel",
+        "versions": "Versions",
+        "settings": "Page settings",
+        "live": "Live: version {{version}}",
+        "notLive": "Not published yet",
+        "draftOf": "Draft based on version {{version}}",
+        "reachNote": "Changes reach learners within about a minute of publishing.",
+        "retrySave": "Save again",
+        "unpublish": "Unpublish"
+    },
+    "conflict": {
+        "title": "Someone else saved this draft",
+        "body": "Saved by {{name}} at {{time}}. Reload to see their version, or overwrite it with yours.",
+        "bodyUnknown": "Reload to see the newer version, or overwrite it with yours.",
+        "reload": "Reload",
+        "overwrite": "Overwrite"
+    },
+    "start": {
+        "title": "Start your learner home",
+        "subtitle": "Pick a starting point. Nothing changes for learners until you publish.",
+        "recommended": "Recommended",
+        "use": "Use this",
+        "adds": "Includes",
+        "creating": "Creating…",
+        "editLive": "Edit the live home",
+        "editLiveBody": "Make a draft copy of version {{version}} and change it. Learners keep seeing the live version until you publish.",
+        "orStartFrom": "Or start again from",
+        "unpublish": "Unpublish",
+        "CURRENT": {
+            "title": "Start from my current home",
+            "body": "Brings in today’s home exactly as learners see it now, including your custom cards."
+        },
+        "COURSES_ONLY": {
+            "title": "Courses only",
+            "body": "For online course sellers: a banner, continue learning, shortcuts and a shelf of new courses."
+        },
+        "CLASSROOM": {
+            "title": "Classroom",
+            "body": "For batches and live classes: a must-read notice, live classes and today’s work near the top."
+        },
+        "STOREFRONT": {
+            "title": "Storefront",
+            "body": "For selling: a banner, shortcuts and course shelves that hide what each learner already owns."
+        },
+        "createFailed": "Could not create the draft.",
+        "sample": {
+            "noticeTitle": "Welcome to the new term",
+            "noticeBody": "Please read the term plan and the class rules before your first class.",
+            "ackLabel": "I have read this",
+            "untitled": "Untitled",
+            "open": "Open",
+            "imported": "Imported card"
+        },
+        "currentFailed": "Could not read your current home settings.",
+        "cardsLeftOut_one": "{{count}} custom card does not fit the page limits and is left out.",
+        "cardsLeftOut_other": "{{count}} custom cards do not fit the page limits and are left out.",
+        "cardsClipped_one": "{{count}} custom card is shortened to fit the length limits.",
+        "cardsClipped_other": "{{count}} custom cards are shortened to fit the length limits."
+    },
+    "blockTypes": {
+        "BANNER_CAROUSEL": "Banner",
+        "SHORTCUTS": "Shortcuts",
+        "COURSE_SHELF": "Course shelf",
+        "NOTICE": "Notice",
+        "EVENT": "Event",
+        "BUILTIN": "Built-in"
+    },
+    "blockTypeHints": {
+        "BANNER_CAROUSEL": "Up to 5 sliding pictures with links",
+        "SHORTCUTS": "A row of icons that open pages or features",
+        "COURSE_SHELF": "A row of courses from a tag, a list or the newest",
+        "NOTICE": "A message card, with an optional “I have read this”",
+        "EVENT": "A date with a countdown and a join button"
+    },
+    "builtins": {
+        "HERO": {
+            "name": "Hero",
+            "desc": "The greeting band with the resume button and the live-class banner."
+        },
+        "PINS": {
+            "name": "Pinned announcements",
+            "desc": "Announcements you pin to the dashboard."
+        },
+        "NOTEBOOK_REVIEW": {
+            "name": "Notebook review",
+            "desc": "A reminder to review saved notes."
+        },
+        "COMPANIONS": {
+            "name": "Study companions",
+            "desc": "The learner’s knowledge-base companions, if any."
+        },
+        "TODAY_TASKS": {
+            "name": "Today’s tasks",
+            "desc": "Tasks from a daily engagement plan, when one is running."
+        },
+        "CONTINUE_LEARNING": {
+            "name": "Continue learning",
+            "desc": "Each learner’s own last lessons, with a resume button."
+        },
+        "ENROLLED_COURSES": {
+            "name": "Enrolled courses",
+            "desc": "One card per course the learner is in, with progress."
+        },
+        "STATS_ROW": {
+            "name": "Stat cards",
+            "desc": "Counts of courses, live classes and assessments."
+        },
+        "LEARNING_ANALYTICS": {
+            "name": "Learning analytics",
+            "desc": "The learner’s study time and progress charts."
+        },
+        "MY_MEMBERSHIP": {
+            "name": "My membership",
+            "desc": "The learner’s memberships and their expiry."
+        },
+        "MY_BOOKS": {
+            "name": "My books",
+            "desc": "Books the learner has bought or rented."
+        },
+        "MY_ORDERS": {
+            "name": "My orders",
+            "desc": "The learner’s recent orders."
+        },
+        "UPCOMING_LIVE_CLASSES": {
+            "name": "Upcoming live classes",
+            "desc": "The learner’s next live classes with a join button."
+        },
+        "THIS_WEEK_ATTENDANCE": {
+            "name": "Attendance this week",
+            "desc": "The learner’s attendance for the week."
+        },
+        "MY_MENTORS": {
+            "name": "My mentors",
+            "desc": "Mentors assigned to the learner."
+        },
+        "GET_APP": {
+            "name": "Get the app",
+            "desc": "Download links for your app, when you have one."
+        },
+        "GAMIFICATION": {
+            "name": "Gamification",
+            "desc": "XP, streak and badges."
+        },
+        "RAISE_QUERY": {
+            "name": "Raise a query",
+            "desc": "A card to ask the institute a question, when doubts are on."
+        },
+        "EXPLORE_BUTTONS": {
+            "name": "Explore buttons",
+            "desc": "Buttons to browse memberships and books."
+        }
+    },
+    "list": {
+        "title": "Blocks",
+        "subtitle": "Phones show blocks in this order. Drag to reorder.",
+        "empty": "No blocks yet. Add one to start.",
+        "drag": "Drag to reorder {{name}}",
+        "moveUp": "Move up",
+        "moveDown": "Move down",
+        "more": "More actions for {{name}}",
+        "duplicate": "Duplicate",
+        "delete": "Remove",
+        "deleteTitle": "Remove this block?",
+        "deleteBody": "“{{name}}” is removed from the draft. Its results stay in Results.",
+        "enabled": "Shown",
+        "toggle": "Show {{name}}",
+        "funBadge": "Not shown in the Fun look",
+        "issues_one": "{{count}} to fix",
+        "issues_other": "{{count}} to fix",
+        "placement": "Desktop place",
+        "required": "Required"
+    },
+    "placement": {
+        "FULL": "Full width",
+        "MAIN": "Main column",
+        "RAIL": "Side column"
+    },
+    "devices": {
+        "BOTH": "Phone and desktop",
+        "PHONE": "Phone only",
+        "DESKTOP": "Desktop only"
+    },
+    "chips": {
+        "everyone": "Everyone",
+        "batches_one": "{{count}} batch",
+        "batches_other": "{{count}} batches",
+        "courses_one": "{{count}} course",
+        "courses_other": "{{count}} courses",
+        "notCourses_one": "not {{count}} course",
+        "notCourses_other": "not {{count}} courses",
+        "tags_one": "{{count}} tag",
+        "tags_other": "{{count}} tags",
+        "starts": "From {{date}}",
+        "until": "Until {{date}}",
+        "ended": "Ended",
+        "off": "Hidden"
+    },
+    "add": {
+        "button": "Add block",
+        "content": "New block",
+        "builtins": "Built-in widgets",
+        "limitReached": "Limit reached",
+        "allPlaced": "Every built-in is already on the page"
+    },
+    "editor": {
+        "noSelection": "Select a block to edit it.",
+        "adminLabel": "Name in this editor",
+        "adminLabelHint": "Only you see this name, here and in Results.",
+        "content": "Content",
+        "who": "Who sees it",
+        "when": "When",
+        "where": "Where",
+        "optional": "Optional",
+        "toFix": "To fix before publishing",
+        "warnings": "Worth a look"
+    },
+    "banner": {
+        "title": "Heading (optional)",
+        "titleHint": "Read out by screen readers; not shown on the banner.",
+        "autoRotate": "Slide every 6 seconds",
+        "autoRotateHint": "Learners can pause it. It never slides with one slide or reduced motion.",
+        "slides": "Slides",
+        "slide": "Slide {{n}}",
+        "addSlide": "Add slide",
+        "removeSlide": "Remove slide {{n}}",
+        "phoneImage": "Picture (2:1)",
+        "desktopImage": "Wide desktop picture (4:1)",
+        "desktopImageHint": "Optional. Used on screens 1024 px and wider.",
+        "link": "Opens",
+        "schedule": "Show this slide only between",
+        "maxSlides": "Up to 5 slides. More than 3 get few clicks.",
+        "moveUp": "Move slide {{n}} up",
+        "moveDown": "Move slide {{n}} down"
+    },
+    "shortcuts": {
+        "title": "Heading (optional)",
+        "tiles": "Tiles",
+        "tile": "Tile {{n}}",
+        "label": "Label",
+        "iconKind": "Look",
+        "iconKinds": {
+            "ICON": "Icon",
+            "IMAGE": "Picture"
+        },
+        "image": "Square picture (1:1)",
+        "addTile": "Add tile",
+        "removeTile": "Remove tile {{n}}",
+        "maxTiles": "Up to 16 tiles. Phones show 4 at a time and scroll.",
+        "moveUp": "Move tile {{n}} up",
+        "moveDown": "Move tile {{n}} down"
+    },
+    "shelf": {
+        "title": "Heading",
+        "source": "Courses to show",
+        "sources": {
+            "TAG": "Courses with a tag",
+            "HAND_PICKED": "Courses I pick",
+            "NEWEST": "Newest courses",
+            "FREE": "Free courses"
+        },
+        "tags": "Tags (up to 5)",
+        "tagsPlaceholder": "Pick course tags",
+        "noTags": "Your courses have no tags yet.",
+        "courses": "Courses (up to 20, in this order)",
+        "coursesPlaceholder": "Pick courses",
+        "limit": "Most courses to show",
+        "limitHint": "Between 4 and 20.",
+        "hideOwned": "Hide courses the learner already has",
+        "hideOwnedHint": "Each learner sees only courses they can still buy or join.",
+        "showPrice": "Show prices",
+        "seeAll": "“See all” opens",
+        "seeAllHint": "Left empty, it opens the course list (filtered by the first tag for a tag shelf).",
+        "visibilityNote": "Shelves show only courses a learner could see in the course catalogue."
+    },
+    "notice": {
+        "title": "Heading",
+        "body": "Message",
+        "bodyHint": "Plain text. Line breaks are kept.",
+        "counter": "{{count}} / {{max}}",
+        "image": "Picture (16:9, optional)",
+        "button": "Button",
+        "addButton": "Add a button",
+        "removeButton": "Remove button",
+        "buttonLabel": "Button text",
+        "tone": "Colour",
+        "tones": {
+            "NEUTRAL": "Plain",
+            "INFO": "Information",
+            "SUCCESS": "Good news",
+            "WARNING": "Important"
+        },
+        "dismissible": "Learners can close it",
+        "requireAck": "Ask learners to confirm they read it",
+        "requireAckHint": "Shows a button; it can be closed only after that. Results lists who read it.",
+        "ackLabel": "Confirm button text"
+    },
+    "event": {
+        "title": "Heading",
+        "subtitle": "Short line under the heading",
+        "image": "Picture (16:9, optional)",
+        "source": "Times come from",
+        "sources": {
+            "CUSTOM": "Dates I enter",
+            "LIVE_SESSION": "A public live class"
+        },
+        "session": "Public live class",
+        "sessionPlaceholder": "Pick a live class",
+        "noSessions": "No public live class has a coming schedule.",
+        "starts": "Starts",
+        "ends": "Ends",
+        "registerCta": "Button before it starts",
+        "joinCta": "Join button",
+        "addCta": "Add button",
+        "removeCta": "Remove button",
+        "ctaLabel": "Button text",
+        "joinOpens": "Join button appears this many minutes before the start",
+        "joinOpensHint": "0 to 120.",
+        "showCountdown": "Show a countdown",
+        "liveDefaultsNote": "Left empty, both buttons open the live class’s registration page.",
+        "hidesAfterEnd": "The block hides itself after the end time."
+    },
+    "builtin": {
+        "options": "Options",
+        "noOptions": "This widget has no options.",
+        "gettingStarted": "Show the “Let’s get you started” checklist",
+        "cards": "Cards to show",
+        "cardNames": {
+            "COURSES": "Courses",
+            "LIVE_CLASSES": "Live classes",
+            "EVALUATIONS": "Assessments"
+        },
+        "showAll": "Show every enrolled course, not just the first few",
+        "memberships": "Explore memberships button",
+        "books": "Explore books button",
+        "gateNote": "It also follows its own setting, so some learners may not see it.",
+        "funNote": "The Fun look leaves this widget out.",
+        "heroRequired": "The hero cannot be removed, but you can move it.",
+        "placeholderNote": "The preview shows a placeholder: each learner sees their own data."
+    },
+    "audience": {
+        "label": "Show to",
+        "everyone": "Everyone",
+        "rules": "Learners who match all of these",
+        "addRule": "Add a condition",
+        "removeRule": "Remove condition",
+        "kinds": {
+            "PACKAGE_SESSION": "are in batch",
+            "ENROLLED_IN_COURSE": "have course",
+            "NOT_ENROLLED_IN_COURSE": "do not have course",
+            "USER_TAG": "have tag"
+        },
+        "batch": "batch",
+        "batches": "batches",
+        "pickCourses": "Pick courses",
+        "pickTags": "Pick learner tags",
+        "noTags": "No learner tags yet. Add them under Learner tags.",
+        "maxRules": "Up to 5 conditions.",
+        "anyOf": "any of the picked ones"
+    },
+    "schedule": {
+        "start": "Show from",
+        "end": "Hide after",
+        "zone": "Times are in the institute’s time zone ({{zone}}).",
+        "clear": "Clear",
+        "always": "Always shown",
+        "states": {
+            "scheduled": "Scheduled",
+            "running": "Showing now",
+            "ended": "Ended"
+        }
+    },
+    "where": {
+        "devices": "Show on",
+        "placement": "On desktop, put it in",
+        "placementHint": "Phones always show one column in list order.",
+        "diagram": "Desktop layout: full-width blocks, then a main and a side column"
+    },
+    "link": {
+        "kind": "Link type",
+        "none": "No link",
+        "kinds": {
+            "COURSE": "A course",
+            "COURSE_LIST": "Course list",
+            "PRODUCT_PAGE": "Product page",
+            "LIVE_CLASS": "Public live class",
+            "ASSESSMENT": "Assessment",
+            "FEATURE": "In-app page",
+            "URL": "Web address",
+            "APP_PATH": "Imported link"
+        },
+        "pickCourse": "Pick a course",
+        "pickTag": "Filter by tag",
+        "allCourses": "All courses",
+        "pickPage": "Pick a product page",
+        "pickSession": "Pick a live class",
+        "pickAssessment": "Pick an assessment",
+        "pickFeature": "Pick a page",
+        "urlPlaceholder": "https://",
+        "sellsSomething": "This link leads to a payment page (hidden in the iPhone and iPad app)",
+        "urlProblems": {
+            "scheme": "Use an address that starts with https://, mailto: or tel:.",
+            "invalid": "This does not look like a web address.",
+            "empty": "Enter a web address."
+        },
+        "reader": {
+            "hidden": "Hidden in the iPhone and iPad app",
+            "hiddenIfNotOwned": "In the iPhone and iPad app, shown only to learners who own the course",
+            "hiddenIfPaid": "Hidden in the iPhone and iPad app when the class is paid"
+        },
+        "conditions": {
+            "sidebarTab": "Shown only when this page is on in the learner menu",
+            "notes": "Shown only when notes are on",
+            "doubts": "Shown only when doubts are on",
+            "plan": "Shown only to learners with a daily plan",
+            "chatbot": "Shown only when the AI assistant is on",
+            "appOnly": "Shown only in the mobile app",
+            "batch": "Shown only to learners in a batch",
+            "store": "Hidden in the play look and the iPhone and iPad app"
+        },
+        "features": {
+            "COURSES": "Courses",
+            "LIVE_CLASSES": "Live classes",
+            "ASSESSMENTS": "Assessments",
+            "REPORTS": "Reports",
+            "HOMEWORK": "Homework",
+            "ATTENDANCE": "Attendance",
+            "NOTEBOOK": "Notebook",
+            "DOUBTS": "Ask a doubt",
+            "REFERRAL": "Refer and earn",
+            "MENTORS": "My mentors",
+            "DAILY_TASKS": "Daily tasks",
+            "AI_CHAT": "AI assistant",
+            "DOWNLOADS": "Downloads",
+            "MY_FILES": "My files",
+            "LEADERBOARD": "Leaderboard",
+            "PROFILE": "Profile",
+            "NOTIFICATIONS": "Notifications",
+            "STORE_MEMBERSHIPS": "Memberships store",
+            "STORE_BOOKS": "Books store"
+        },
+        "imported": "Imported link: {{path}}. It still works; pick a target to replace it.",
+        "loading": "Loading…",
+        "noOptions": "Nothing to pick yet.",
+        "unknownOption": "Not found ({{id}})"
+    },
+    "icons": {
+        "pick": "Pick an icon",
+        "current": "Icon: {{name}}"
+    },
+    "image": {
+        "alt": "Describe the picture",
+        "altHint": "Read out to learners who use a screen reader.",
+        "decorative": "Decorative only (no description needed)",
+        "remove": "Remove picture",
+        "publicNote": "Pictures are public to anyone with the link. Do not put private information in them."
+    },
+    "settings": {
+        "title": "Page settings",
+        "phoneSpacing": "Space between blocks on phones",
+        "spacing": {
+            "COMPACT": "Compact",
+            "COMFORTABLE": "Comfortable (as today)"
+        },
+        "showHeader": "Show the greeting and date row",
+        "autoplayDefault": "New banners slide by themselves"
+    },
+    "preview": {
+        "title": "Preview",
+        "phone": "Phone",
+        "desktop": "Desktop",
+        "previewAs": "Preview as",
+        "anyLearner": "Any learner",
+        "batchesPicked_one": "{{count}} batch",
+        "batchesPicked_other": "{{count}} batches",
+        "tags": "Learner tags",
+        "at": "As on",
+        "now": "Now",
+        "reload": "Reload preview",
+        "open": "Open the learner site",
+        "note": "Built-in widgets show placeholders. Content blocks show as the picked learners would see them.",
+        "failed": "The preview could not be updated.",
+        "updating": "Updating…"
+    },
+    "publish": {
+        "title": "Publish learner home",
+        "checking": "Checking…",
+        "errors": "Fix these first",
+        "warnings": "Worth a look (you can still publish)",
+        "noIssues": "Everything looks good.",
+        "diff": "{{changed}} changed, {{added}} added, {{removed}} removed, {{moved}} moved",
+        "noChanges": "No changes since the live version.",
+        "publishNow": "Publish now",
+        "success": "Published version {{version}}. Learners see it within about a minute.",
+        "failed": "Could not publish.",
+        "saveFirst": "Saving your last changes…",
+        "goTo": "Go to block",
+        "layout": "Whole page"
+    },
+    "versions": {
+        "title": "Versions",
+        "subtitle": "The last 20 published versions.",
+        "empty": "Nothing has been published yet.",
+        "version": "Version {{version}}",
+        "live": "Live",
+        "archived": "Earlier",
+        "by": "By {{name}}",
+        "blocks_one": "{{count}} block",
+        "blocks_other": "{{count}} blocks",
+        "restore": "Restore to draft",
+        "restoreTitle": "Replace your unsaved draft?",
+        "restoreBody": "Version {{version}} replaces the draft you are editing. The live home does not change until you publish.",
+        "restoreConfirm": "Replace draft",
+        "restored": "Version {{version}} is now your draft.",
+        "failed": "Could not load versions."
+    },
+    "unpublish": {
+        "action": "Unpublish",
+        "title": "Unpublish the learner home?",
+        "body": "Learners go back to the old home within about a minute. Your versions are kept.",
+        "confirm": "Unpublish",
+        "done": "Unpublished. Learners see the old home again."
+    },
+    "results": {
+        "range": {
+            "7": "Last 7 days",
+            "30": "Last 30 days",
+            "90": "Last 90 days"
+        },
+        "block": "Block",
+        "views": "Views",
+        "clicks": "Clicks",
+        "ctr": "Click rate",
+        "phone": "Phone",
+        "desktop": "Desktop",
+        "dismisses": "Closed",
+        "acks": "Read",
+        "seeWhoRead": "See who read it",
+        "empty": "Numbers start from the day you publish.",
+        "noPublished": "Publish the learner home to see results.",
+        "failed": "Could not load results.",
+        "expand": "Show details for {{name}}",
+        "item": "Item",
+        "slide": "Slide {{n}}",
+        "removedBlock": "Removed block"
+    },
+    "acks": {
+        "title": "Who read “{{name}}”",
+        "total_one": "{{count}} learner read this",
+        "total_other": "{{count}} learners read this",
+        "name": "Name",
+        "email": "Email",
+        "at": "Read on",
+        "export": "Download CSV",
+        "empty": "No one has confirmed yet.",
+        "prev": "Previous",
+        "next": "Next",
+        "failed": "Could not load the list."
+    },
+    "studentDisplay": {
+        "managed": "Your learner home is managed in Learner home.",
+        "managedBody": "This list no longer changes what learners see while a learner home is published.",
+        "open": "Open Learner home"
+    },
+    "issues": {
+        "REQUIRED": "This is required.",
+        "TOO_LONG": "Too long: at most {{max}} characters.",
+        "TOO_FEW": "Add at least {{min}}.",
+        "TOO_MANY": "Too many: at most {{max}}.",
+        "OUT_OF_RANGE": "Must be between {{min}} and {{max}}.",
+        "IMAGE_REQUIRED": "Add a picture.",
+        "ALT_REQUIRED": "Describe the picture, or mark it decorative.",
+        "IMAGE_LOW_RES": "This picture is {{width}} px wide and may look blurry. Use at least {{min}} px.",
+        "LINK_REQUIRED": "Pick where this opens.",
+        "LINK_TARGET_MISSING": "This points to something that no longer exists.",
+        "URL_INVALID": "This web address cannot be used.",
+        "INVALID_URL": "This web address cannot be used.",
+        "IMPORTED_LINK": "An imported link. It works, but pick a target to replace it.",
+        "FEATURE_CONDITIONAL": "This page is not on for every learner; some will not see this link.",
+        "ICON_UNKNOWN": "Pick an icon from the list.",
+        "WINDOW_INVERTED": "The end must be after the start.",
+        "ENDED": "This has already ended, so learners will not see it.",
+        "ALL_SLIDES_ENDED": "Every slide has ended.",
+        "MANY_SLIDES": "{{count}} slides: slides after the third get few clicks.",
+        "EVENT_TIMES_REQUIRED": "Enter the start and end.",
+        "AUDIENCE_EMPTY": "Add a condition, or show it to everyone.",
+        "AUDIENCE_TOO_MANY": "At most {{max}} conditions.",
+        "AUDIENCE_CONDITION_EMPTY": "Pick at least one.",
+        "AUDIENCE_TOO_MANY_IDS": "At most {{max}} in one condition.",
+        "AUDIENCE_ID_MISSING": "{{count}} picked no longer exist.",
+        "LIMIT_BLOCKS": "At most {{max}} blocks on the page.",
+        "LIMIT_CONTENT_BLOCKS": "At most {{max}} blocks that are not built-in.",
+        "LIMIT_TYPE": "Too many blocks of one kind: at most {{max}}.",
+        "DUPLICATE_BUILTIN": "This widget is on the page twice.",
+        "DUPLICATE": "This appears twice.",
+        "HERO_REQUIRED": "The hero block is required.",
+        "ALL_DISABLED": "Every block is hidden.",
+        "PAYLOAD_TOO_LARGE": "The page is too big ({{kb}} KB of {{max}} KB). Remove some blocks.",
+        "STATS_NO_CARDS": "No card is picked, so nothing shows.",
+        "FUN_HIDDEN": "Your institute uses the Fun look, which leaves this widget out.",
+        "INVALID_VALUE": "This value is not allowed.",
+        "INVALID_TYPE": "This value is not allowed.",
+        "UNKNOWN_FIELD": "This field is not allowed.",
+        "UNREADABLE": "This could not be read.",
+        "LINK_INCOMPLETE": "Finish choosing where this opens.",
+        "LINK_TARGET_INACTIVE": "This points to something that is not active.",
+        "OTHER_INSTITUTE": "This belongs to another institute.",
+        "BLOCK_ENDED": "This has already ended, so learners will not see it.",
+        "SHELF_EMPTY_NOW": "No course matches this shelf right now, so it is hidden.",
+        "NOT_IN_FUN_SKIN": "Your institute uses the Fun look, which leaves this widget out.",
+        "ASSESSMENT_NOT_VERIFIED": "This assessment could not be checked. Make sure it still exists.",
+        "SHELF_CHECK_FAILED": "The courses of this shelf could not be checked right now.",
+        "IMAGE_TOO_SMALL": "This picture is small and may look blurry.",
+        "RENDITION_FAILED": "Faster versions of this picture could not be made; the original is used.",
+        "IMAGE_URL_MISSING": "This picture has no address. Upload it again.",
+        "fallback": "Check this field."
+    },
+    "fields": {
+        "title": "Heading",
+        "subtitle": "Short line",
+        "body": "Message",
+        "label": "Label",
+        "ackLabel": "Confirm button text",
+        "adminLabel": "Name in this editor",
+        "alt": "Picture description",
+        "image": "Picture",
+        "link": "Link",
+        "button": "Button",
+        "tags": "Tags",
+        "courses": "Courses",
+        "slides": "Slides",
+        "tiles": "Tiles",
+        "limit": "Most courses",
+        "schedule": "Schedule",
+        "audience": "Who sees it",
+        "icon": "Icon",
+        "session": "Live class"
+    },
+    "issuesPlain": {
+        "TOO_LONG": "Too long.",
+        "TOO_MANY": "Too many.",
+        "TOO_FEW": "Add more.",
+        "OUT_OF_RANGE": "This number is out of the allowed range.",
+        "IMAGE_LOW_RES": "This picture may look blurry.",
+        "MANY_SLIDES": "Slides after the third get few clicks.",
+        "AUDIENCE_TOO_MANY": "Too many conditions.",
+        "AUDIENCE_TOO_MANY_IDS": "Too many picked in one condition.",
+        "AUDIENCE_ID_MISSING": "Some picked items no longer exist.",
+        "LIMIT_BLOCKS": "Too many blocks on the page.",
+        "LIMIT_CONTENT_BLOCKS": "Too many blocks that are not built-in.",
+        "LIMIT_TYPE": "Too many blocks of one kind.",
+        "PAYLOAD_TOO_LARGE": "The page is too big. Remove some blocks."
+    }
+}

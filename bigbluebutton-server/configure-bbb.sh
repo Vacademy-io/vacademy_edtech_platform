@@ -190,12 +190,35 @@ docker stop greenlight-v3 2>/dev/null && docker update --restart=no greenlight-v
 # ── 7. Allow iframe embedding ─────────────────────────────────
 echo "[7/8] Configuring nginx for iframe embedding..."
 
+# Who may frame which BBB page. A map must live at http level (conf.d); the
+# server-level include below only reads its result.
+# - Live class pages: any https site. Every white-label learner domain (and any
+#   new institute's) works with no per-domain setup. A framing page still needs
+#   the learner's own signed join link, so this exposes nothing by itself.
+# - Recordings + learning dashboard: our own sites only.
+# - Capacitor apps (Android https://localhost, iOS capacitor://localhost), the
+#   Electron app and local dev everywhere.
+cat > /etc/nginx/conf.d/vacademy-frame-ancestors.conf <<'NGINX'
+map $uri $vacademy_frame_ancestors {
+    default "'self' https: capacitor://localhost capacitor-electron: http://localhost:*";
+    ~^/(playback|presentation|podcast|notes|screenshare|video|learning-analytics-dashboard)(/|$) "'self' https://*.vacademy.io https://localhost capacitor://localhost capacitor-electron: http://localhost:*";
+}
+NGINX
+
 cat > /etc/bigbluebutton/nginx/iframe-allow.nginx <<'NGINX'
-# Allow embedding BBB in iframes from any origin (multi-institute)
+# Allow embedding BBB in frames; allowed parents per path come from
+# /etc/nginx/conf.d/vacademy-frame-ancestors.conf.
 proxy_hide_header X-Frame-Options;
 proxy_hide_header Content-Security-Policy;
 
-add_header Content-Security-Policy "frame-ancestors 'self' https://*.vacademy.io http://localhost:*;" always;
+add_header Content-Security-Policy "frame-ancestors $vacademy_frame_ancestors;" always;
+NGINX
+
+# getJoinUrl turns any valid sessionToken into fresh signed join links (same
+# role, incl. MODERATOR). Nothing of ours calls it; block it so a leaked token
+# can't be multiplied.
+cat > /etc/bigbluebutton/nginx/block-getjoinurl.nginx <<'NGINX'
+location = /bigbluebutton/api/getJoinUrl { return 403; }
 NGINX
 
 # Remove X-Frame-Options from bbb-html5 nginx so our iframe-allow.nginx
@@ -205,12 +228,13 @@ if [ -f /etc/bigbluebutton/nginx/bbb-html5.nginx ]; then
 fi
 
 # ── 8. Cookie SameSite for iframe ─────────────────────────────
-echo "[8/8] Configuring cookies for cross-origin iframe..."
-if [ -f /etc/bigbluebutton/nginx/bbb-html5.nginx ]; then
-    grep -q 'proxy_cookie_flags' /etc/bigbluebutton/nginx/bbb-html5.nginx || \
-        sed -i '/proxy_pass/a\        proxy_cookie_flags ~ secure samesite=none;' \
-            /etc/bigbluebutton/nginx/bbb-html5.nginx 2>/dev/null || true
-fi
+# No server-side cookie change. The old step added `proxy_cookie_flags` to
+# bbb-html5.nginx, which needs nginx >= 1.19.3 (Ubuntu 22.04 ships 1.18, so
+# `nginx -t` would fail) and never touched bbb-web's JSESSIONID anyway.
+# Framed classes work because admin_core creates each meeting with
+# allowRequestsWithoutSession=true (BbbMeetingManager), so bbb-web authorises
+# audio/video/chat/slides by sessionToken without the cookie.
+echo "[8/8] Cookies: nothing to do (per-meeting allowRequestsWithoutSession)."
 
 # ── Persist changes across BBB updates ────────────────────────
 APPLY_SCRIPT="/etc/bigbluebutton/bbb-conf/apply-config.sh"

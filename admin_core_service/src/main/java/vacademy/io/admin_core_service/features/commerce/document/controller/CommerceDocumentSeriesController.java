@@ -31,6 +31,8 @@ public class CommerceDocumentSeriesController {
 
     private static final Set<CommerceRole> WRITE = Set.of(CommerceRole.STORE_MANAGER);
     private static final Set<CommerceRole> READ = Set.of(CommerceRole.STORE_MANAGER, CommerceRole.ACCOUNTANT);
+    /** A shop with the billing counter only (no orders module): its managers read the bill books. */
+    private static final Set<CommerceRole> POS_READ = Set.of(CommerceRole.STORE_MANAGER);
 
     private final CommerceDocumentSeriesService seriesService;
     private final CommerceAccessGuard commerceAccessGuard;
@@ -41,7 +43,8 @@ public class CommerceDocumentSeriesController {
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "50") int size,
             @RequestAttribute("user") CustomUserDetails user) {
-        commerceAccessGuard.require(user, instituteId, CommerceFeature.ORDERS, READ);
+        commerceAccessGuard.requireEither(user, instituteId, CommerceFeature.ORDERS, READ, CommerceFeature.POS,
+                POS_READ);
         return ResponseEntity.ok(seriesService.list(instituteId, page, size));
     }
 
@@ -50,7 +53,8 @@ public class CommerceDocumentSeriesController {
             @PathVariable("seriesId") String seriesId,
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails user) {
-        commerceAccessGuard.require(user, instituteId, CommerceFeature.ORDERS, READ);
+        commerceAccessGuard.requireEither(user, instituteId, CommerceFeature.ORDERS, READ, CommerceFeature.POS,
+                POS_READ);
         return ResponseEntity.ok(seriesService.get(instituteId, seriesId));
     }
 

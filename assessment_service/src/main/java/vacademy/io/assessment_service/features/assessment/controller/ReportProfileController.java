@@ -153,6 +153,63 @@ public class ReportProfileController {
     }
 
     /**
+     * Step 1 "Report pages": the pages this assessment's reports get (mode DEFAULT / NONE /
+     * CUSTOM with its own config), how many other tests share them and an attempt to preview
+     * with. No assessmentId = a test that is not saved yet (institute default only).
+     */
+    @GetMapping("/for-assessment")
+    public ResponseEntity<Map<String, Object>> forAssessment(@RequestAttribute("user") CustomUserDetails user,
+                                                             @RequestHeader(value = "clientId", required = false) String clientId,
+                                                             @RequestParam String instituteId,
+                                                             @RequestParam(required = false) String assessmentId) {
+        staff(user, clientId, instituteId);
+        boolean saved = assessmentId != null && !assessmentId.isBlank() && !"defaultId".equals(assessmentId);
+        if (saved) access.requireAssessmentInInstitute(user, instituteId, assessmentId);
+        return ResponseEntity.ok(profiles.forAssessment(saved ? assessmentId : null, instituteId));
+    }
+
+    /**
+     * Step 1 preview of unsaved report pages: the PDF this attempt's student would get with the
+     * pages as edited (body = the report_pages value Step 1 would save). Nothing is saved, and
+     * no AI analysis is generated: the AI report shows only when it already exists.
+     */
+    @PostMapping("/preview-pages")
+    public ResponseEntity<byte[]> previewPages(@RequestAttribute("user") CustomUserDetails user,
+                                               @RequestHeader(value = "clientId", required = false) String clientId,
+                                               @RequestParam String instituteId, @RequestParam String assessmentId,
+                                               @RequestParam String attemptId, @RequestBody JsonNode body) {
+        staff(user, clientId, instituteId);
+        access.requireAssessmentInInstitute(user, instituteId, assessmentId);
+        StudentAttempt attempt = attempts.findById(attemptId).orElseThrow(() -> new VacademyException("Attempt not found"));
+        if (attempt.getRegistration() == null || attempt.getRegistration().getAssessment() == null
+                || !assessmentId.equals(attempt.getRegistration().getAssessment().getId())) {
+            throw new VacademyException("Attempt is not part of this assessment");
+        }
+        ReportProfileService.Profile profile;
+        try {
+            profile = profiles.previewProfile(instituteId, body);
+        } catch (IllegalArgumentException e) {
+            throw new VacademyException(e.getMessage());
+        }
+        String userId = attempt.getRegistration().getUserId();
+        StudentReportOverallDetailDto detail = participantsManager.createStudentReportDetailResponse(assessmentId, attemptId, instituteId);
+        AiReportPdfService.NormalReport normal = () -> reportPdfRenderService.render(detail,
+                learnerReportService.buildComparisonData(userId, assessmentId, attemptId, instituteId),
+                learnerReportService.loadClassContext(assessmentId, instituteId));
+        try {
+            byte[] pdf = aiReportPdfService.renderWithProfile(userId, assessmentId, attemptId, instituteId, detail, null, normal, profile);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=report-preview.pdf")
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(pdf);
+        } catch (VacademyException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new VacademyException("Preview failed: " + e.getMessage());
+        }
+    }
+
+    /**
      * Generates missing AI analyses for an assessment's submitted learners (spends AI
      * credits). dryRun=true only counts. limit caps how many are generated.
      */

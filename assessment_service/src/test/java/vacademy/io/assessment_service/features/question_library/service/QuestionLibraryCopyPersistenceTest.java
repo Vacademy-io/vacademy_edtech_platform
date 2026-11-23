@@ -456,7 +456,7 @@ class QuestionLibraryCopyPersistenceTest {
                 VALUES ('zz-own', 'zz-t', 'OPTION', 'MCQS', 'PRIVATE', 'ACTIVE', ?)
                 """, CLIENT);
 
-        List<String> bank = questionRepository.findQuestionsByFilters(CLIENT, null, "ACTIVE", null, null, null, null, null, null, null, null, null,
+        List<String> bank = questionRepository.findQuestionsByFilters(CLIENT, null, "ACTIVE", null, null, null, null, null, null, null, null, null, null,
                         PageRequest.of(0, 50))
                 .map(Question::getId).getContent();
 

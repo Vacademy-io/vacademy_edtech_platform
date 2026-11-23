@@ -31,28 +31,14 @@ public class PackageSessionScheduler {
 
     private final PackageSessionEnrolmentService enrolmentService;
     private final UserPlanRepository userPlanRepository;
+
+    /** Paused memberships (docs/ENROLMENT_BREAKS.md) are skipped. Optional: absent = nothing skipped. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vacademy.io.admin_core_service.features.enrolment_break.service.EnrolmentBreakGuard enrolmentBreakGuard;
     private final WorkflowTriggerService workflowTriggerService;
     private final WorkflowExecutionRepository workflowExecutionRepository;
     private final RenewalChargeService renewalChargeService;
     private final PaymentSettingService paymentSettingService;
-
-    /**
-     * Pre-existing manual-trigger entry point for enrolment-policy actions
-     * (expire / graduate active UserPlans). Currently invoked only from
-     * {@code TestEnrollMentController} — intentionally not auto-scheduled
-     * because it sweeps the WHOLE user_plan table. The scheduled path is
-     * {@link #processPackageSessionRenewals()}, which scopes the sweep to
-     * institutes that opted in via PAYMENT_SETTING.
-     */
-    public void processPackageSessionExpiries() {
-        log.info("Starting PackageSessionScheduler job...");
-        try {
-            enrolmentService.processActiveEnrollments();
-        } catch (Exception e) {
-            log.error("Error during scheduled package session processing", e);
-        }
-        log.info("PackageSessionScheduler job finished.");
-    }
 
     // ─── Institute-gated renewal/expiry scan ───────────────────────────────
     //
@@ -102,6 +88,11 @@ public class PackageSessionScheduler {
     public void reportPaidPlansWithoutEnrollment() {
         try {
             List<UserPlan> orphans = userPlanRepository.findPaidActivePlansWithoutEnrollment();
+            // A paused learner's access is switched off on purpose (enrolment break): not an orphan.
+            if (enrolmentBreakGuard != null && !orphans.isEmpty()) {
+                orphans = orphans.stream().filter(p -> !enrolmentBreakGuard.isPlanPaused(p.getId()))
+                        .collect(Collectors.toList());
+            }
             if (orphans.isEmpty()) {
                 log.info("[PaidWithoutEnrollment] Clean — every paid ACTIVE plan has an enrolment");
                 return;
@@ -180,6 +171,11 @@ public class PackageSessionScheduler {
                 log.debug("[MembershipExpiry] Skipping plan {} — no institute resolvable", plan.getId());
                 continue;
             }
+            if (enrolmentBreakGuard != null
+                    && enrolmentBreakGuard.isFeeHeldForPlan(instituteId, plan.getUserId(), plan.getId())) {
+                log.debug("[MembershipExpiry] Skipping plan {} — learner on a break (fee reminders stopped)", plan.getId());
+                continue;
+            }
 
             // Application-level dedup against the EVENT_BASED key format
             // produced by EventBasedKeyGenerator:
@@ -227,8 +223,8 @@ public class PackageSessionScheduler {
     // hours AFTER the reminder scan so the "expiring soon" nudge always precedes
     // the charge. Narrowly scoped to plans with auto_renewal_enabled = true
     // (see UserPlanRepository.findDueForRenewal), so it can never touch a
-    // pre-existing / non-autopay plan — unlike processActiveEnrollments, which
-    // stays manual to avoid activating dormant destructive expiry behaviour.
+    // pre-existing / non-autopay plan. Expiry processing is separate and runs only
+    // for opted-in institutes (processPackageSessionRenewals above).
     //
     // ShedLock: the per-plan claim (claimForRenewal) protects a SUCCESSFUL charge
     // from being repeated, but a FAILED charge is re-armed for tomorrow at once,

@@ -1,6 +1,6 @@
 /**
- * The app skin class on <html> (Vibrant, Play, Cleaner Play, Corporate, Fun)
- * and its suspension while an exam screen with its own look is open.
+ * The app skin class on <html> (Vibrant, Play, Cleaner Play, Corporate, Fun,
+ * Neon City) and its suspension while an exam screen with its own look is open.
  *
  * Every skin sheet is keyed on one of these classes, and so are the custom
  * properties a skin redefines on <html>. A themed exam screen has to look like
@@ -19,6 +19,7 @@ export const APP_SKIN_CLASSES = [
   "ui-cleaner-play",
   "ui-corporate",
   "ui-fun",
+  "ui-neon-city",
 ] as const;
 
 export type AppSkinClass = (typeof APP_SKIN_CLASSES)[number];
@@ -38,10 +39,36 @@ const currentSkinClasses = (root: HTMLElement): string[] =>
 export const isAppSkinSuspended = (): boolean => suspendCount > 0;
 
 /**
+ * The classes <html> carries for a skin value. Neon City is drawn on Fun's
+ * screens, so it carries ui-fun as well: every Fun rule and every useFunTheme()
+ * reader applies, and the ui-neon-city sheet repaints them.
+ */
+export function uiSkinClasses(skin: string | null | undefined): AppSkinClass[] {
+  switch (skin) {
+    case "vibrant":
+      return ["ui-vibrant"];
+    case "play":
+      return ["ui-play"];
+    case "cleanerPlay":
+      return ["ui-cleaner-play"];
+    case "corporate":
+      return ["ui-corporate"];
+    case "fun":
+      return ["ui-fun"];
+    case "neonCity":
+      return ["ui-fun", "ui-neon-city"];
+    default:
+      return [];
+  }
+}
+
+/**
  * Sets the app skin (null = no skin). While suspended, only remembers it.
  */
-export function applyAppSkinClass(className: AppSkinClass | null): void {
-  const next = className ? [className] : [];
+export function applyAppSkinClass(
+  className: AppSkinClass | readonly AppSkinClass[] | null
+): void {
+  const next: string[] = className === null ? [] : typeof className === "string" ? [className] : [...className];
   if (suspendCount > 0) {
     pendingClasses = next;
     return;
@@ -49,7 +76,7 @@ export function applyAppSkinClass(className: AppSkinClass | null): void {
   const root = rootElement();
   if (!root) return;
   root.classList.remove(...APP_SKIN_CLASSES);
-  if (className) root.classList.add(className);
+  if (next.length > 0) root.classList.add(...next);
 }
 
 /**

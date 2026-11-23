@@ -1,0 +1,71 @@
+{
+    "status": {
+        "unsaved": "Modifications non enregistrées. Utilisez Enregistrer le brouillon ou Publier ci-dessus.",
+        "live": "En ligne pour les apprenants.",
+        "unsync": "Les modifications enregistrées ne sont pas encore en ligne. Publiez pour les partager.",
+        "draft": "Brouillon. Les apprenants ne le voient pas avant la publication."
+    },
+    "tabs": {
+        "setup": "Réglages",
+        "results": "Résultats",
+        "scores": "Scores"
+    },
+    "flashcards": {
+        "title": "Cartes mémoire",
+        "hint": "Les apprenants retournent chaque carte, puis choisissent Acquis ou À revoir. Les cartes à revoir reviennent jusqu'à ce qu'elles soient toutes acquises.",
+        "empty": "Ajoutez au moins une carte avec un recto et un verso avant de publier."
+    },
+    "poll": {
+        "title": "Sondage",
+        "question": "Question",
+        "questionPlaceholder": "Que voulez-vous demander à la classe ?",
+        "options": "Choix",
+        "optionLabel": "Choix {{n}}",
+        "optionPlaceholder": "Choix {{n}}",
+        "removeOption": "Retirer le choix {{n}}",
+        "addOption": "Ajouter un choix",
+        "optionsHint": "De 2 à 8 choix. Pas de bonne réponse ; les apprenants voient comment la classe a voté.",
+        "results": "Les apprenants voient les résultats",
+        "resultsOption": {
+            "AFTER_VOTE": "Après avoir voté",
+            "ALWAYS": "Toujours, même avant de voter",
+            "TEACHER_ONLY": "Jamais (vous seul les voyez)"
+        },
+        "allowChange": "Les apprenants peuvent changer leur vote",
+        "errors": {
+            "question": "Écrivez la question.",
+            "options": "Remplissez au moins 2 choix.",
+            "duplicate": "Deux choix disent la même chose."
+        }
+    },
+    "game": {
+        "title": "Jeu",
+        "page": "Page du jeu (HTML)",
+        "upload": "Importer un .html",
+        "pagePlaceholder": "Collez une page HTML complète, ou importez un fichier.",
+        "protocol": "Pour enregistrer un score, la page envoie :",
+        "noScore": "Cette page ne renvoie jamais de résultat ; aucun score ne sera enregistré. Les apprenants peuvent quand même la marquer terminée.",
+        "tooBig": "Ce fichier dépasse 2 Mo. Utilisez une page plus légère.",
+        "maxScore": "Score maximal",
+        "maxScoreHint": "Les scores au-delà sont plafonnés. Laissez vide si la page indique son propre maximum.",
+        "instructions": "Consignes pour les apprenants",
+        "instructionsPlaceholder": "Par exemple : associez chaque mot à sa définition avant la fin du chrono.",
+        "preview": "Aperçu"
+    },
+    "results": {
+        "loading": "Chargement…",
+        "error": "Les résultats n'ont pas pu se charger.",
+        "publishFirst": "Publiez le sondage pour recueillir des votes.",
+        "batch": "Groupe",
+        "allBatches": "Tous les groupes",
+        "votes_one": "{{count}} vote",
+        "votes_other": "{{count}} votes",
+        "optionCount": "{{count}} · {{pct}} %",
+        "players_one": "{{count}} apprenant a joué",
+        "players_other": "{{count}} apprenants ont joué",
+        "learner": "Apprenant",
+        "scoreOf": "{{score}} / {{max}}",
+        "attempts_one": "{{count}} essai",
+        "attempts_other": "{{count}} essais"
+    }
+}

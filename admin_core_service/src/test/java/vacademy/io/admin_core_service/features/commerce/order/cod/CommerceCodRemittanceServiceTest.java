@@ -435,4 +435,23 @@ class CommerceCodRemittanceServiceTest {
         assertFalse(a.equals(CommerceCodRemittanceService.validate(request("1590", "30.00", "1560.00", "o-2"), TODAY)
                 .hash()));
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void aReturnReceivedBeforeTheMoneyCameInIsDueBackAtTheRemittanceUnderTheSameLock() {
+        delivered("o-a", "ORD-A", "1090.00", 2);
+        vacademy.io.admin_core_service.features.commerce.returns.service.CommerceReturnDueService dues =
+                mock(vacademy.io.admin_core_service.features.commerce.returns.service.CommerceReturnDueService.class);
+        ObjectProvider<vacademy.io.admin_core_service.features.commerce.returns.service.CommerceReturnDueService>
+                provider = mock(ObjectProvider.class);
+        when(provider.getIfAvailable()).thenReturn(dues);
+        service.setReturnDueService(provider);
+
+        service.record(user, INSTITUTE, request("1090.00", "0", "1090.00", "o-a"));
+
+        InOrder order = inOrder(desk, remittances, dues);
+        order.verify(desk).lockOrder(INSTITUTE, "o-a");
+        order.verify(remittances).markRemitted(eq(INSTITUTE), eq("o-a"), anyString(), any());
+        order.verify(dues).raiseDeferred(orders.get("o-a"));
+    }
 }

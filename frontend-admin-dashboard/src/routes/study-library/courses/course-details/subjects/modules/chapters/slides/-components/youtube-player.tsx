@@ -43,6 +43,7 @@ import {
     TEACHER_DISPLAY_SETTINGS_KEY, CUSTOM_ROLE_DISPLAY_SETTINGS_KEY,
     type DisplaySettingsData,
 } from '@/types/display-settings';
+import { extractYouTubeVideoId } from '@/utils/youtube';
 
 export interface YTPlayer {
     destroy(): void;
@@ -266,15 +267,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({ videoUrl }) => {
         }
     };
 
-    const extractVideoId = (url: string): string => {
-        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-        const match = url.match(regExp);
-
-        if (match && match[2] && match[2].length === 11) {
-            return match[2];
-        }
-        return '';
-    };
+    const extractVideoId = (url: string): string => extractYouTubeVideoId(url) ?? '';
 
     // Function to load YouTube IFrame API
     const loadYouTubeAPI = () => {

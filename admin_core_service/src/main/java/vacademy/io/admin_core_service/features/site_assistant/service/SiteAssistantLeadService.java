@@ -159,6 +159,15 @@ public class SiteAssistantLeadService {
     }
 
     public Outcome submit(Lead lead) {
+        return submit(lead, SOURCE_TYPE);
+    }
+
+    /**
+     * The same pipeline for another internal caller that collected a contact in a conversation, stored
+     * under its own {@code source_type} (the demo guide: {@code DEMO_GUIDE}). Everything else is
+     * identical to {@link #submit(Lead)}; {@code source_id} is still {@code custom_fields.conversation_id}.
+     */
+    public Outcome submit(Lead lead, String sourceType) {
         // The pipeline would auto-provision a lead list for any id; never for an unknown institute.
         if (!instituteRepository.existsById(lead.instituteId())) {
             throw new CatalogApiException(HttpStatus.NOT_FOUND, "not_found", "No such institute.");
@@ -174,7 +183,7 @@ public class SiteAssistantLeadService {
         CatalogueLeadRequestDTO dto = CatalogueLeadRequestDTO.builder()
                 .instituteId(lead.instituteId())
                 .audienceId(lead.campaignId())
-                .sourceType(SOURCE_TYPE)
+                .sourceType(sourceType)
                 .sourceId(conversationId != null ? conversationId : DEFAULT_SOURCE_ID)
                 .fullName(lead.fullName())
                 .email(lead.email())
@@ -184,7 +193,7 @@ public class SiteAssistantLeadService {
         String result = audienceService.submitCatalogueLead(dto, true);
         if (result == null || !UUID_SHAPED.matcher(result.trim()).matches()) {
             // A repeat (same person, same campaign) or an institute dedup rule answers with a sentence.
-            log.info("site-assistant: lead for institute {} treated as duplicate: {}", lead.instituteId(), result);
+            log.info("{}: lead for institute {} treated as duplicate: {}", sourceType, lead.instituteId(), result);
             return new Outcome("duplicate", null);
         }
         String leadRef = result.trim();

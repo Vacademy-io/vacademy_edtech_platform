@@ -73,6 +73,15 @@ public class CommerceOrderAccessTokens {
         return VERSION + "." + encode(body) + "." + encode(sign(body));
     }
 
+    /**
+     * A token that ends at {@code expiresAt} (never later than the usual lifetime): the short token
+     * an order link is exchanged for.
+     */
+    public String issueUntil(String instituteId, String orderId, Instant expiresAt) {
+        Instant longest = clock.instant().plus(LIFETIME);
+        return issue(instituteId, orderId, expiresAt == null || expiresAt.isAfter(longest) ? longest : expiresAt);
+    }
+
     public Instant expiryOfNewToken() {
         return clock.instant().plus(LIFETIME);
     }

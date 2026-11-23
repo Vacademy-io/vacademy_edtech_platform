@@ -53,11 +53,13 @@ from .routers.lead_agent import router as lead_agent_router
 from .routers.kb_paper import router as kb_paper_router
 from .routers.kb_companion import router as kb_companion_router
 from .site_assistant.router import router as site_assistant_router
+from .demo_guide.router import router as demo_guide_router
 from .routers.paper_digitise import router as paper_digitise_router
 from .routers.kb_library import router as kb_library_router
 from .routers.voice_agent import router as voice_agent_router
 from .routers.tutor import router as tutor_router
 from .routers.tutor_ws import router as tutor_ws_router
+from .routers.tutor_studio import router as tutor_studio_router
 from .routers.input_asset import router as input_asset_router
 from .routers.reels import router as reels_router
 from .routers.studio_projects import router as studio_router
@@ -71,6 +73,8 @@ from .routers.engagement_plan import router as engagement_plan_router
 from .routers.page_builder import router as page_builder_router
 from .routers.course_assist import router as course_assist_router
 from .routers.copy_check import router as copy_check_router
+from .routers.copy_check_scan import router as copy_check_scan_router
+from .routers.copy_check_scan_build import router as copy_check_scan_build_router
 from .routers.omr import router as omr_router
 from .routers.lecture import router as lecture_router
 from .routers.ai_task_status import router as ai_task_status_router
@@ -139,6 +143,8 @@ async def _lifespan(app: FastAPI):
             ensure_tutor_asset_registry_schema(db)
             from .services.tutor.demo import ensure_tutor_demo_schema
             ensure_tutor_demo_schema(db)
+            from .services.tutor.studio import ensure_tutor_studio_schema
+            ensure_tutor_studio_schema(db)
         sweep_stale_tasks()
     except Exception as exc:  # noqa: BLE001
         _logger.warning("ai_task startup init skipped: %s", exc)
@@ -191,6 +197,13 @@ async def _lifespan(app: FastAPI):
         start_billing_reconciliation()
     except Exception as exc:  # noqa: BLE001
         _logger.warning("copy-check billing reconciliation startup skipped: %s", exc)
+    # Third-party API alerts: every few minutes, emails the team about an API that is
+    # out of credits or keeps failing. One replica runs each pass (advisory lock).
+    try:
+        from .services.external_api_alerts import start_external_api_alerts
+        start_external_api_alerts()
+    except Exception as exc:  # noqa: BLE001
+        _logger.warning("external API alerts startup skipped: %s", exc)
     # Vacademy Assistant help corpus: keep the deployed pgvector corpus in sync
     # with app/data/help_knowledge.jsonl. Change-detected, so an unchanged corpus
     # is a no-op. Lazy import + background task so it can't block app boot.
@@ -387,6 +400,13 @@ def create_app() -> FastAPI:
         lifespan=_lifespan,
     )
 
+    # Read-only demo user (core/demo_read_only.py): refuses writes made with that user's
+    # token on every route. Added before CORS so it sits INSIDE it and the 403 still
+    # carries the CORS headers the browser needs to read the body.
+    from .core import demo_read_only as _demo_read_only
+    app.add_middleware(_demo_read_only.DemoReadOnlyMiddleware, base_path=settings.api_base_path)
+    app.add_exception_handler(_demo_read_only.DemoReadOnlyRefused, _demo_read_only.refused_handler)
+
     # CORS
     allow_origins = [o.strip() for o in settings.cors_allow_origins.split(",") if o.strip()]
     allow_methods = [m.strip() for m in settings.cors_allow_methods.split(",") if m.strip()]
@@ -413,6 +433,12 @@ def create_app() -> FastAPI:
         # continue a stream.
         expose_headers=["Server-Timing", "Mcp-Session-Id", "Mcp-Protocol-Version"],
     )
+
+    # Demo guide (app/demo_guide): its routes answer CORS only to the products'
+    # stage origins. Sits outside the app-wide CORS middleware above and acts on
+    # /demo-guide/v1 paths only; every other path passes through untouched.
+    from .demo_guide.cors import DemoGuideCorsMiddleware
+    app.add_middleware(DemoGuideCorsMiddleware)
 
     # AI usage limits (services/metering/limit_gate.py): LimitExceeded -> HTTP 429
     # {"error": "AI_USAGE_LIMIT", ...} + Retry-After, and the soft-limit header
@@ -495,12 +521,14 @@ def create_app() -> FastAPI:
     app.include_router(kb_companion_router, prefix=settings.api_base_path)
     # Public website assistant for institute sites (hosted + embed), docs/site-assistant.
     app.include_router(site_assistant_router, prefix=settings.api_base_path)
+    app.include_router(demo_guide_router, prefix=settings.api_base_path)
     # A question-paper PDF read into gradable questions for offline tests.
     app.include_router(paper_digitise_router, prefix=settings.api_base_path)
     app.include_router(kb_library_router, prefix=settings.api_base_path)
     app.include_router(voice_agent_router, prefix=settings.api_base_path)
     app.include_router(tutor_router, prefix=settings.api_base_path)
     app.include_router(tutor_ws_router, prefix=settings.api_base_path)
+    app.include_router(tutor_studio_router, prefix=settings.api_base_path)
     # Primary path: /input-asset/* — handles both video and image kinds.
     app.include_router(
         input_asset_router,
@@ -528,6 +556,11 @@ def create_app() -> FastAPI:
     #   {api_base_path}/course/assist/v1/text  |  /v1/image
     app.include_router(course_assist_router, prefix=settings.api_base_path)
     app.include_router(copy_check_router, prefix=settings.api_base_path)
+    # Scan Station analyse-load (404 unless env COPY_CHECK_SCAN_STATION is on):
+    #   {api_base_path}/copy-check/scan/analyse-load
+    app.include_router(copy_check_scan_router, prefix=settings.api_base_path)
+    # Scan Station build (404 unless env COPY_CHECK_SCAN_STATION): {api_base_path}/copy-check/scan/build
+    app.include_router(copy_check_scan_build_router, prefix=settings.api_base_path)
     # OMR sheet reading (vendored OMRChecker) for assessment_service:
     #   {api_base_path}/omr/v1/read
     app.include_router(omr_router, prefix=settings.api_base_path)

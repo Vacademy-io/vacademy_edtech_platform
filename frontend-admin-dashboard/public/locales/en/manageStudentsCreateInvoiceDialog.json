@@ -72,12 +72,73 @@
         "creating": "Creating…"
     },
     "errors": {
-        "previewFailed": "Could not render the invoice preview. Please try again."
+        "previewFailed": "Could not render the invoice preview. Please try again.",
+        "createFailed": "Could not create the invoice"
     },
     "heading": {
         "invoice": "Invoice — {{userName}}",
         "reviewInvoice": "Review Invoice — {{userName}}",
         "editInvoice": "Edit Invoice {{invoiceNumber}} — {{userName}}",
         "createInvoice": "Create Invoice — {{userName}}"
+    },
+    "productLink": {
+        "heading": "Product (optional)",
+        "modes": {
+            "none": "No product",
+            "renewal": "Renew a membership",
+            "newEnrollment": "Enrol in a new {{course}}"
+        },
+        "membershipLabel": "Membership to renew",
+        "membershipPlaceholder": "Choose a membership",
+        "noMemberships": "This learner has no membership to renew",
+        "loading": "Loading…",
+        "accessUntilLabel": "Access until (optional)",
+        "accessUntilHint": "Empty: extended by the plan’s validity from its current end date (or from the payment day if it has lapsed).",
+        "renewalLinePrefix": "Renewal",
+        "coursePlaceholder": "Choose…",
+        "inviteLabel": "Invite",
+        "planLabel": "Plan",
+        "planDefault": "Default plan",
+        "noInvite": "No invite is set up for this yet: the learner gets free access through a new default invite.",
+        "notifyLearner": "Send the enrolment email when it is paid",
+        "applyAsMemberPrice": "Charge {{amount}} on future renewals too (instead of the plan price)",
+        "renewalNote": "The membership is renewed when this invoice is paid. The invoice amount is the price of this renewal, and the payment is recorded on the membership.",
+        "enrollmentNote": "The learner is enrolled when this invoice is paid. The invoice amount is the price, and the payment is recorded on the new membership.",
+        "errors": {
+            "chooseMembership": "Choose the membership this invoice renews",
+            "chooseCourse": "Choose what this invoice enrols the learner in",
+            "orgAssociated": "This one enrols learners into an organisation. Use Enrol Learner for it instead.",
+            "chooseInvite": "Choose an invite",
+            "cpo": "This is paid in installments (fee plan). Use Enrol Learner; its installments are billed there.",
+            "renewalPrice": "Enter the renewal price (more than zero)"
+        },
+        "status": {
+            "renewalChip": "Renewal",
+            "enrolmentChip": "Enrolment",
+            "pending": "applies when paid",
+            "inProgress": "applying…",
+            "applied": "applied",
+            "appliedUntil": "applied · access until {{date}}",
+            "failed": "not applied",
+            "cancelled": "not applied (invoice cancelled)",
+            "retry": "Retry",
+            "retrying": "Applying…",
+            "appliedToast": "Applied",
+            "retryFailed": "Could not apply it",
+            "appliedAwaitingPayment": "applied · access until {{date}} · payment pending",
+            "appliedAwaitingPaymentNoDate": "applied · payment pending",
+            "pendingNow": "not applied yet",
+            "renewsAt": "renews at {{amount}} ({{plan}})"
+        },
+        "applyNowRenewal": "Renew now, collect the payment later",
+        "applyNowEnrol": "Enrol now, collect the payment later",
+        "applyNowNote": "Applied as soon as the invoice is created. The payment is recorded on the membership when it arrives. Cancelling the invoice later does not undo it.",
+        "applyAsMemberPriceHint": "The membership moves to a plan at this price with the same validity. If no plan has this price, a private one is created that only this learner is on; the original plan does not change.",
+        "courseSearch": "Search by {{course}}, level, batch or session",
+        "courseEmpty": "Nothing matches",
+        "applyAsMemberPriceCustom": "Charge a custom price on future renewals (instead of the plan price)",
+        "renewalPriceLabel": "Renewal price",
+        "renewalPriceSuffix": "{{currency}} per renewal",
+        "autopayWarning": "Autopay is on for this membership. If its renewal date ({{date}}) passes before this invoice is paid, autopay charges the learner as well. Tick \"Renew now\" below, or make sure the invoice is paid before then."
     }
 }

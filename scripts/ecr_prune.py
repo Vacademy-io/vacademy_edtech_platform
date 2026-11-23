@@ -23,8 +23,8 @@ import subprocess
 import sys
 
 REGISTRY = os.environ.get("ECR_REGISTRY", "public.ecr.aws/e0x1f4p4")
-KEEP_LATEST = int(os.environ.get("KEEP_LATEST", "10"))
-KEEP_DAYS = int(os.environ.get("KEEP_DAYS", "14"))
+KEEP_LATEST = int(os.environ.get("KEEP_LATEST", "3"))
+KEEP_DAYS = int(os.environ.get("KEEP_DAYS", "5"))
 APPLY = "--apply" in sys.argv
 
 

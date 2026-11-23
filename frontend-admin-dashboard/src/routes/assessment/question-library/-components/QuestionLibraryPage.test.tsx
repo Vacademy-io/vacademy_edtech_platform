@@ -7,7 +7,9 @@ const state = vi.hoisted(() => ({
     questions: [] as unknown[],
     papers: [] as unknown[],
     tags: [] as unknown[],
+    facets: undefined as unknown,
     lastFilters: undefined as Record<string, unknown> | undefined,
+    lastScope: undefined as string | null | undefined,
 }));
 
 vi.mock('react-i18next', () => ({
@@ -71,6 +73,19 @@ vi.mock('../-services/question-library-services', async (original) => {
             };
         },
         useLibraryTags: () => ({ data: state.tags, isLoading: false, isError: false }),
+        useLibraryFacets: (
+            _institute: string,
+            _filters: Record<string, unknown>,
+            scope: string | null
+        ) => {
+            state.lastScope = scope;
+            return {
+                data: state.facets,
+                isLoading: false,
+                isError: false,
+                refetch: () => undefined,
+            };
+        },
         useLibraryPapers: () => ({
             data: state.papers,
             isLoading: false,
@@ -113,7 +128,9 @@ describe('QuestionLibraryPage', () => {
         state.questions = [];
         state.papers = [];
         state.tags = [];
+        state.facets = undefined;
         state.lastFilters = undefined;
+        state.lastScope = undefined;
     });
 
     it('shows one message, no zero stats or filters, when a reader finds the library empty', () => {
@@ -144,12 +161,16 @@ describe('QuestionLibraryPage', () => {
             'header.importExcel',
             'browse.addQuestions',
             'bulk.selectPage',
+            'manageTags.button',
+            'autoTag.button',
         ]) {
             expect(screen.queryByText(write)).toBeNull();
         }
         expect(screen.queryByLabelText('list.edit')).toBeNull();
         expect(screen.queryByLabelText('papers.remove')).toBeNull();
-        expect(screen.queryByRole('checkbox')).toBeNull();
+        expect(screen.queryByLabelText('list.select')).toBeNull();
+        // The filter panel is for everyone.
+        expect(screen.getByText('facets.title')).toBeTruthy();
     });
 
     it('gives the owner institute its write actions', () => {
@@ -185,39 +206,98 @@ describe('QuestionLibraryPage', () => {
 
         render(<QuestionLibraryPage />);
 
-        expect(screen.getByText('browse.courses')).toBeTruthy();
+        // Course cards at the top, and the same courses as the first filter group.
+        expect(screen.getAllByText('browse.courses')).toHaveLength(2);
         expect(state.lastFilters?.library_node_ids).toBeUndefined();
-        fireEvent.click(screen.getByText('UPSC'));
+        expect(state.lastScope).toBeNull();
+        fireEvent.click(screen.getAllByText('UPSC')[0]!);
 
-        expect(screen.getByText('browse.insideTopic')).toBeTruthy();
+        // Inside a course the list leads: its topics are a filter, their cards open on demand.
+        expect(screen.queryByText('browse.insideTopic')).toBeNull();
+        expect(screen.getByText('facets.inside')).toBeTruthy();
         expect(screen.getByText('Polity')).toBeTruthy();
         expect(screen.getByText('browse.allCourses')).toBeTruthy();
         expect(state.lastFilters?.library_node_ids).toEqual(['upsc']);
+        expect(state.lastScope).toBe('upsc');
+        fireEvent.click(screen.getByText('browse.subtopicCards'));
+        expect(screen.getByText('browse.insideTopic')).toBeTruthy();
 
         fireEvent.click(screen.getByText('browse.allCourses'));
         expect(state.lastFilters?.library_node_ids).toBeUndefined();
     });
 
-    it('filters by one tag at a time and by difficulty', () => {
-        state.tree = { nodes: [topic], summary: summary(1), max_depth: 5, can_manage: false };
-        state.questions = [question];
-        state.tags = [
-            { tag_id: 't1', tag_name: 'Article 21', kind: 'CONCEPT', question_count: 4 },
-            { tag_id: 't2', tag_name: 'UPSC 2023', kind: 'PYQ', question_count: 2 },
-        ];
+    it('opens a topic from the filter panel', () => {
+        const polity = { ...topic, id: 'polity', parent_id: 'upsc', name: 'Polity', depth: 2 };
+        const upsc = { ...topic, id: 'upsc', name: 'UPSC', question_count: 3 };
+        state.tree = {
+            nodes: [upsc, polity],
+            summary: summary(3),
+            max_depth: 5,
+            can_manage: false,
+        };
 
         render(<QuestionLibraryPage />);
+        fireEvent.click(screen.getByLabelText('facets.openTopic'));
 
+        expect(state.lastFilters?.library_node_ids).toEqual(['upsc']);
+        expect(state.lastScope).toBe('upsc');
+    });
+
+    it('ticks many values: any inside a group, every group, and topics inside the open one', () => {
+        const polity = { ...topic, id: 'polity', parent_id: 'upsc', name: 'Polity', depth: 2 };
+        const history = { ...topic, id: 'history', parent_id: 'upsc', name: 'History', depth: 2 };
+        const upsc = { ...topic, id: 'upsc', name: 'UPSC', question_count: 3 };
+        state.tree = {
+            nodes: [upsc, polity, history],
+            summary: summary(3),
+            max_depth: 5,
+            can_manage: false,
+        };
+        state.questions = [question];
+        state.facets = {
+            difficulties: { EASY: 4, MEDIUM: 0, HARD: 2 },
+            question_types: { MCQS: 6 },
+            topics: [
+                { id: 'polity', count: 4 },
+                { id: 'history', count: 2 },
+            ],
+            tags: [
+                { tag_id: 't1', tag_name: 'Article 21', kind: 'CONCEPT', question_count: 4 },
+                { tag_id: 't3', tag_name: 'Article 14', kind: 'CONCEPT', question_count: 1 },
+                { tag_id: 't2', tag_name: 'UPSC 2023', kind: 'PYQ', question_count: 2 },
+            ],
+        };
+
+        render(<QuestionLibraryPage />);
+        fireEvent.click(screen.getAllByText('UPSC')[0]!);
+
+        // Counts sit next to each value.
         expect(screen.getByText('tags.kind.CONCEPT')).toBeTruthy();
-        fireEvent.click(screen.getByText('Article 21'));
-        expect(state.lastFilters?.tag_ids).toEqual(['t1']);
-        fireEvent.click(screen.getByText('UPSC 2023'));
-        expect(state.lastFilters?.tag_ids).toEqual(['t2']);
-        fireEvent.click(screen.getByText('UPSC 2023'));
-        expect(state.lastFilters?.tag_ids).toBeUndefined();
+        expect(screen.getByText('tags.kind.PYQ')).toBeTruthy();
 
-        fireEvent.mouseDown(screen.getByRole('tab', { name: /difficulty.HARD/ }));
-        expect(state.lastFilters?.difficulties).toEqual(['HARD']);
+        fireEvent.click(screen.getByText('Article 21'));
+        fireEvent.click(screen.getByText('Article 14'));
+        fireEvent.click(screen.getByText('UPSC 2023'));
+        expect(state.lastFilters?.tag_groups).toEqual({ CONCEPT: ['t1', 't3'], PYQ: ['t2'] });
+
+        fireEvent.click(screen.getByText('difficulty.EASY'));
+        fireEvent.click(screen.getByText('difficulty.HARD'));
+        expect(state.lastFilters?.difficulties).toEqual(['EASY', 'HARD']);
+
+        fireEvent.click(screen.getByText('Polity'));
+        fireEvent.click(screen.getByText('History'));
+        expect(state.lastFilters?.library_node_ids).toEqual(['polity', 'history']);
+
+        // A ticked value also shows as a chip above the list; clicking it unticks.
+        const chips = screen.getAllByLabelText('facets.remove');
+        expect(chips).toHaveLength(7);
+        fireEvent.click(chips[0]!);
+        expect(state.lastFilters?.library_node_ids).toEqual(['history']);
+
+        fireEvent.click(screen.getAllByText('facets.clearAll')[0]!);
+        expect(state.lastFilters?.tag_groups).toBeUndefined();
+        expect(state.lastFilters?.difficulties).toBeUndefined();
+        expect(state.lastFilters?.library_node_ids).toEqual(['upsc']);
     });
 
     it('lets the owner import from Excel and add questions inside an open topic', () => {
@@ -230,7 +310,7 @@ describe('QuestionLibraryPage', () => {
         // Adding questions needs a topic to put them in.
         expect(screen.queryByText('browse.addQuestions')).toBeNull();
 
-        fireEvent.click(screen.getByText('Chemical Reactions'));
+        fireEvent.click(screen.getAllByText('Chemical Reactions')[0]!);
         fireEvent.click(screen.getAllByText('browse.addQuestions')[0]!);
         expect(screen.getByText('add-questions-dialog')).toBeTruthy();
     });

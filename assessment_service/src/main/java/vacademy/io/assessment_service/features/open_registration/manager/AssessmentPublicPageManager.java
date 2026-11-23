@@ -183,12 +183,19 @@ public class AssessmentPublicPageManager {
             return ResponseEntity.ok(ParticipantPublicResponseDto.builder().remainingAttempts(assessment.get().getReattemptCount()).isAlreadyRegistered(false).build());
         }
 
-        List<String> psIdList = List.of(psIds.split(","));
+        List<String> psIdList = Arrays.stream(psIds.split(","))
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .toList();
 
         Set<AssessmentBatchRegistration> batchRegistrations = assessment.get().getBatchRegistrations();
 
+        // psIds are the learner's package session ids, so they match the batch the
+        // assessment is assigned to (batch_id), not the id of the assignment row itself.
+        // Matching on the row id meant a learner enrolled in an assigned batch was never
+        // recognised here, and after registration closed could not continue from the link.
         for (AssessmentBatchRegistration batchRegistration : batchRegistrations) {
-            if (psIdList.contains(batchRegistration.getId())) {
+            if (psIdList.contains(batchRegistration.getBatchId())) {
                 return ResponseEntity.ok(ParticipantPublicResponseDto.builder().remainingAttempts(assessment.get().getReattemptCount()).isAlreadyRegistered(true).lastAttemptStatus(null).build());
             }
         }

@@ -39,6 +39,16 @@ public interface QuestionRepository extends JpaRepository<Question, String> {
                     + "    SELECT 1 FROM entity_tags et "
                     + "    WHERE et.entity_id = q.id AND et.entity_name = 'QUESTION' "
                     + "        AND et.tag_id = ANY(string_to_array(:tagIdsCsv, ',')))) "
+                    // tagGroupsCsv holds group~tagId pairs. Every group needs one of its tags.
+                    + "AND (:tagGroupsCsv IS NULL OR NOT EXISTS ("
+                    + "    SELECT 1 FROM unnest(string_to_array(:tagGroupsCsv, ',')) AS tgw(pair) "
+                    + "    WHERE NOT EXISTS ("
+                    + "        SELECT 1 FROM entity_tags etg "
+                    + "        WHERE etg.entity_id = q.id AND etg.entity_name = 'QUESTION' "
+                    + "            AND etg.tag_id IN ("
+                    + "                SELECT split_part(tgm.pair, '~', 2) "
+                    + "                FROM unnest(string_to_array(:tagGroupsCsv, ',')) AS tgm(pair) "
+                    + "                WHERE split_part(tgm.pair, '~', 1) = split_part(tgw.pair, '~', 1))))) "
                     + "AND (:libraryNodeIdsCsv IS NULL OR EXISTS ("
                     + "    SELECT 1 FROM question_library_mapping lm "
                     + "    WHERE lm.question_id = q.id "
@@ -71,6 +81,8 @@ public interface QuestionRepository extends JpaRepository<Question, String> {
      *   - kb ids and node ids are matched with the jsonb containment operator so the GIN
      *     index on source_meta is used. node_ids is an array inside the document, hence
      *     the array-wrapped right-hand side.
+     *   - tagGroupsCsv is group~tagId pairs. A question must carry a tag from every group
+     *     named there, any one of that group. Group names never contain a comma or a tilde.
      *   - libraryNodeIdsCsv must already include every topic below the chosen ones -
      *     the manager expands it. unsortedFlag is any non-null value to mean only
      *     questions in no library topic.
@@ -98,6 +110,7 @@ public interface QuestionRepository extends JpaRepository<Question, String> {
             @Param("kbIdsCsv") String kbIdsCsv,
             @Param("kbNodeIdsCsv") String kbNodeIdsCsv,
             @Param("tagIdsCsv") String tagIdsCsv,
+            @Param("tagGroupsCsv") String tagGroupsCsv,
             @Param("libraryNodeIdsCsv") String libraryNodeIdsCsv,
             @Param("unsortedFlag") String unsortedFlag,
             Pageable pageable

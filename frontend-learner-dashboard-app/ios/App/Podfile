@@ -107,6 +107,14 @@ target 'Elevate Education' do
   capacitor_pods
 end
 
+target 'COACH UP IAS' do
+  capacitor_pods
+end
+
+target 'Yogyam' do
+  capacitor_pods
+end
+
 post_install do |installer|
   assertDeploymentTarget(installer)
 end

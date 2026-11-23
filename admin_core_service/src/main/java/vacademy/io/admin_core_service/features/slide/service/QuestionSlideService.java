@@ -176,6 +176,9 @@ public class QuestionSlideService {
         if (dto.getReAttemptCount() != null){
             questionSlide.setReAttemptCount(dto.getReAttemptCount());
         }
+        if (dto.getShowAnswerAfterSubmit() != null) {
+            questionSlide.setShowAnswerAfterSubmit(dto.getShowAnswerAfterSubmit());
+        }
         if (StringUtils.hasText(dto.getSourceType())){
             questionSlide.setSourceType(dto.getSourceType());
         }

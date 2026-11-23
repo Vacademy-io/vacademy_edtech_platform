@@ -76,11 +76,17 @@ public class InvoiceDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<InvoiceLineItemDTO> lineItems;
+    /**
+     * Admin invoices only: the membership renewal or course enrolment this invoice pays for,
+     * and whether it has been applied. Admin API only — stripped for learners/parents.
+     */
+    private InvoiceProductLinkDTO productLink;
 
     /** Copy for learner/parent-facing responses: drops the admin-only discount notes. */
     public InvoiceDTO withoutInternalDiscountNotes() {
         this.discountGrantedByUserId = null;
         this.discountReason = null;
+        this.productLink = null;
         return this;
     }
 }

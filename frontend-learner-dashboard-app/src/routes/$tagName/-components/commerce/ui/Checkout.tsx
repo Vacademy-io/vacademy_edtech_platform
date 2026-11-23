@@ -35,7 +35,7 @@ import {
     type FieldName,
 } from '../logic/checkout';
 import { sendBeginCheckoutOnce, sendCommerceEvent, sendPurchaseOnce, type EventItem } from '../logic/events';
-import { formatMoney, formatUnits } from '../logic/format';
+import { formatMoney, quantityText } from '../logic/format';
 import { buyerIdentityOf, identityRules } from '../logic/identity';
 import { payWithRazorpay } from '../logic/razorpay';
 import { ChallengeError } from '../logic/turnstile';
@@ -56,7 +56,7 @@ import {
 } from './buy-common';
 import { useOnline } from './hooks';
 import { OtpStep, PhoneField } from './Otp';
-import { EmptyState, ErrorState, shouldRetry, unitLabel } from './primitives';
+import { EmptyState, ErrorState, shouldRetry } from './primitives';
 import { useDebounced } from './queries';
 import { ShopLink, useCommerceSite, whatsappLink } from './site';
 
@@ -81,6 +81,7 @@ const eventItems = (cart: ReturnType<typeof useCommerceCart.getState>['cart'], p
             unitPrice: p?.unit_price ?? line.unitPrice,
             quantity: line.quantity,
             qtyScale: line.qtyScale,
+            unit: line.unit,
             variant: p?.variant_label || line.variantLabel,
         };
     });
@@ -678,6 +679,8 @@ export const CheckoutPage: React.FC = () => {
                                 }
                             />
                         )}
+                        {/* Transactional notice; the marketing tick box further down is separate. */}
+                        <p className="cmx-small cmx-muted">{t('checkout.updatesNotice')}</p>
                         {!rules.verified && (rules.otpRequired || otpOpen || rules.otpRecommended || mode === 'EMAIL') && (
                             <div ref={otpRef} className={cn('flex flex-col gap-2', rules.otpRequired && 'cmx-buy-required')}>
                                 {rules.otpRequired && <p className="cmx-small font-medium">{method === 'COD' ? t('checkout.codNeedsOtp') : t('checkout.otpRequired')}</p>}
@@ -976,8 +979,7 @@ const SummaryBody: React.FC<{ price: CartPrice | undefined }> = ({ price }) => {
             <ul className="flex flex-col gap-3">
                 {cart.lines.map((line) => {
                     const p = priced.get(line.variantId);
-                    const scale = Math.max(1, Math.floor(line.qtyScale || 1));
-                    const qty = scale > 1 ? `${formatUnits(line.quantity, scale)} ${unitLabel(t, line.unit, true)}` : String(line.quantity);
+                    const qty = quantityText(line.quantity, line.qtyScale, line.unit, t);
                     return (
                         <li key={line.variantId} className="flex items-start gap-3">
                             <div className="cmx-img cmx-line__thumb w-12 shrink-0">

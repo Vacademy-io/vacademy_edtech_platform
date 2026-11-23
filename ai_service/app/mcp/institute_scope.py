@@ -88,8 +88,19 @@ def admin_portal_base(db: Any, institute_id: Optional[str], default_url: str) ->
     ``institute_domain_routing``, else the platform dashboard. Never raises:
     a lookup problem degrades to the default.
     """
+    return known_admin_portal_base(db, institute_id) or default_url.rstrip("/")
+
+
+def known_admin_portal_base(db: Any, institute_id: Optional[str]) -> Optional[str]:
+    """
+    The institute's own admin portal origin when one is on record, else None.
+
+    ``institutes.admin_portal_base_url`` (the value ``whoami`` reports as
+    ``admin_portal_url``) first, else an ADMIN row in ``institute_domain_routing``.
+    Never raises: a lookup problem answers None.
+    """
     if not institute_id or db is None:
-        return default_url.rstrip("/")
+        return None
     try:
         row = db.execute(
             text("SELECT admin_portal_base_url FROM institutes WHERE id = :id"), {"id": institute_id}
@@ -109,7 +120,7 @@ def admin_portal_base(db: Any, institute_id: Optional[str], default_url: str) ->
             return _origin(domain if (not sub or sub == "*") else f"{sub}.{domain}")
     except Exception as exc:  # noqa: BLE001
         logger.warning("admin portal lookup failed for institute %s: %s", institute_id, exc)
-    return default_url.rstrip("/")
+    return None
 
 
 def institute_name(db: Any, institute_id: Optional[str]) -> Optional[str]:
@@ -187,6 +198,7 @@ __all__ = [
     "institute_from_path_suffix",
     "institute_from_resource",
     "institute_name",
+    "known_admin_portal_base",
     "request_institute_id",
     "scoped_server_url",
 ]

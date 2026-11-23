@@ -1,0 +1,123 @@
+/* =====================================================================
+   Neon City: the home screen.
+   The greeting sits in the night sky of a sunset city (the app's top bar,
+   which Fun already unpins on the home), and the Next mission card overlaps
+   the road under it. The scene is one inline SVG, 1200x300, drawn so its
+   middle 390px is the phone board; wider screens see more city.
+   ===================================================================== */
+
+html.ui-neon-city {
+  --neon-scene: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 300' preserveAspectRatio='xMidYMax slice'%3E%3Cdefs%3E%3ClinearGradient id='s' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23170A36'/%3E%3Cstop offset='0.42' stop-color='%234E1873'/%3E%3Cstop offset='0.72' stop-color='%23B8267C'/%3E%3Cstop offset='0.86' stop-color='%23FF6A4D'/%3E%3C/linearGradient%3E%3ClinearGradient id='u' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23FFE27A'/%3E%3Cstop offset='0.55' stop-color='%23FF8A3D'/%3E%3Cstop offset='1' stop-color='%23FF3D8B'/%3E%3C/linearGradient%3E%3Cmask id='m'%3E%3Crect width='1200' height='300' fill='%23fff'/%3E%3Crect y='180' width='1200' height='3'/%3E%3Crect y='194' width='1200' height='5'/%3E%3Crect y='209' width='1200' height='7'/%3E%3Crect y='226' width='1200' height='9'/%3E%3C/mask%3E%3C/defs%3E%3Crect width='1200' height='300' fill='url(%23s)'/%3E%3Ccircle cx='667' cy='208' r='90' fill='url(%23u)' mask='url(%23m)'/%3E%3Cg fill='%231B0A36'%3E%3Crect x='380' y='210' width='20' height='42'/%3E%3Crect x='402' y='186' width='26' height='66'/%3E%3Crect x='430' y='200' width='18' height='52'/%3E%3Crect x='460' y='168' width='20' height='84'/%3E%3Crect x='467' y='150' width='5' height='20'/%3E%3Crect x='482' y='214' width='30' height='38'/%3E%3Crect x='548' y='202' width='18' height='50'/%3E%3Crect x='568' y='180' width='24' height='72'/%3E%3Crect x='594' y='214' width='16' height='38'/%3E%3Crect x='690' y='192' width='20' height='60'/%3E%3Crect x='712' y='152' width='18' height='100'/%3E%3Crect x='719' y='136' width='4' height='18'/%3E%3Crect x='732' y='206' width='26' height='46'/%3E%3Crect x='760' y='184' width='16' height='68'/%3E%3Crect x='776' y='210' width='18' height='42'/%3E%3Crect x='120' y='214' width='24' height='38'/%3E%3Crect x='146' y='192' width='20' height='60'/%3E%3Crect x='168' y='206' width='30' height='46'/%3E%3Crect x='200' y='176' width='18' height='76'/%3E%3Crect x='205' y='160' width='5' height='18'/%3E%3Crect x='222' y='218' width='26' height='34'/%3E%3Crect x='250' y='198' width='22' height='54'/%3E%3Crect x='830' y='200' width='22' height='52'/%3E%3Crect x='854' y='172' width='18' height='80'/%3E%3Crect x='860' y='156' width='5' height='18'/%3E%3Crect x='874' y='212' width='28' height='40'/%3E%3Crect x='904' y='190' width='20' height='62'/%3E%3Crect x='926' y='206' width='24' height='46'/%3E%3Crect x='1000' y='182' width='22' height='70'/%3E%3Crect x='1024' y='210' width='30' height='42'/%3E%3Crect x='1056' y='194' width='18' height='58'/%3E%3C/g%3E%3Cg fill='%23FFC94A' opacity='0.75'%3E%3Crect x='406' y='194' width='3' height='3'/%3E%3Crect x='414' y='194' width='3' height='3'/%3E%3Crect x='406' y='206' width='3' height='3'/%3E%3Crect x='464' y='178' width='3' height='3'/%3E%3Crect x='464' y='192' width='3' height='3'/%3E%3Crect x='573' y='188' width='3' height='3'/%3E%3Crect x='582' y='188' width='3' height='3'/%3E%3Crect x='573' y='200' width='3' height='3'/%3E%3Crect x='716' y='162' width='3' height='3'/%3E%3Crect x='723' y='174' width='3' height='3'/%3E%3Crect x='716' y='188' width='3' height='3'/%3E%3Crect x='764' y='194' width='3' height='3'/%3E%3Crect x='150' y='200' width='3' height='3'/%3E%3Crect x='204' y='186' width='3' height='3'/%3E%3Crect x='858' y='182' width='3' height='3'/%3E%3Crect x='908' y='198' width='3' height='3'/%3E%3Crect x='1004' y='192' width='3' height='3'/%3E%3C/g%3E%3Crect y='252' width='1200' height='48' fill='%23120A2A'/%3E%3Crect y='251' width='1200' height='1.5' fill='%23FF3D8B'/%3E%3Cg stroke='%23FF3D8B' stroke-width='1' opacity='0.35'%3E%3Cline x1='600' y1='252' x2='-400' y2='300'/%3E%3Cline x1='600' y1='252' x2='-100' y2='300'/%3E%3Cline x1='600' y1='252' x2='200' y2='300'/%3E%3Cline x1='600' y1='252' x2='450' y2='300'/%3E%3Cline x1='600' y1='252' x2='600' y2='300'/%3E%3Cline x1='600' y1='252' x2='750' y2='300'/%3E%3Cline x1='600' y1='252' x2='1000' y2='300'/%3E%3Cline x1='600' y1='252' x2='1300' y2='300'/%3E%3Cline x1='600' y1='252' x2='1600' y2='300'/%3E%3Cline x1='0' y1='262' x2='1200' y2='262'/%3E%3Cline x1='0' y1='278' x2='1200' y2='278'/%3E%3C/g%3E%3Cg stroke='%230D0520' fill='none' stroke-linecap='round'%3E%3Cpath d='M435 300 C 438 268, 431 240, 443 206' stroke-width='5.0'/%3E%3Cpath d='M443 206 C 425 196, 411 202, 403 216' stroke-width='4.0'/%3E%3Cpath d='M443 206 C 429 186, 413 186, 403 192' stroke-width='4.0'/%3E%3Cpath d='M443 206 C 455 188, 471 186, 483 196' stroke-width='4.0'/%3E%3Cpath d='M443 206 C 461 200, 473 210, 477 224' stroke-width='4.0'/%3E%3Cpath d='M443 206 C 443 190, 437 180, 429 176' stroke-width='4.0'/%3E%3Cpath d='M758 300 C 762 244, 754 213, 767 176' stroke-width='6.6'/%3E%3Cpath d='M767 176 C 747 165, 732 172, 723 187' stroke-width='4.4'/%3E%3Cpath d='M767 176 C 752 154, 734 154, 723 161' stroke-width='4.4'/%3E%3Cpath d='M767 176 C 780 156, 798 154, 811 165' stroke-width='4.4'/%3E%3Cpath d='M767 176 C 787 169, 800 180, 804 196' stroke-width='4.4'/%3E%3Cpath d='M767 176 C 767 158, 760 147, 752 143' stroke-width='4.4'/%3E%3Cpath d='M130 300 C 134 264, 126 231, 140 190' stroke-width='7.2'/%3E%3Cpath d='M140 190 C 118 178, 102 185, 92 202' stroke-width='4.8'/%3E%3Cpath d='M140 190 C 123 166, 104 166, 92 173' stroke-width='4.8'/%3E%3Cpath d='M140 190 C 154 168, 174 166, 188 178' stroke-width='4.8'/%3E%3Cpath d='M140 190 C 162 183, 176 195, 181 212' stroke-width='4.8'/%3E%3Cpath d='M140 190 C 140 171, 133 159, 123 154' stroke-width='4.8'/%3E%3Cpath d='M1052 300 C 1055 262, 1048 234, 1060 200' stroke-width='5.0'/%3E%3Cpath d='M1060 200 C 1042 190, 1028 196, 1020 210' stroke-width='4.0'/%3E%3Cpath d='M1060 200 C 1046 180, 1030 180, 1020 186' stroke-width='4.0'/%3E%3Cpath d='M1060 200 C 1072 182, 1088 180, 1100 190' stroke-width='4.0'/%3E%3Cpath d='M1060 200 C 1078 194, 1090 204, 1094 218' stroke-width='4.0'/%3E%3Cpath d='M1060 200 C 1060 184, 1054 174, 1046 170' stroke-width='4.0'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* The page under the home is night, not the card colour. */
+html.ui-neon-city .dashboard-container.bg-background { background-color: transparent; }
+
+/* ── The bar on the home: the sunset ───────────────────────────────── */
+html.ui-neon-city .navbar.fun-navbar:has(.fun-home-header) {
+  z-index: 0;
+  align-items: flex-start;
+  min-height: 15.5rem;
+  padding-bottom: 0;
+  background-color: #170A36;
+  background-image: var(--neon-scene);
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  background-size: cover;
+}
+html.ui-neon-city .navbar.fun-navbar:has(.fun-home-header) .fun-navbar__icon,
+html.ui-neon-city .navbar.fun-navbar:has(.fun-home-header) .fun-navbar__account { background-color: rgb(18 10 42 / 0.72); }
+/* The page after the bar rides up over the road, so the card overlaps it (the
+   wrappers inside clip, so the whole page moves, not the card). */
+html.ui-neon-city .navbar.fun-navbar:has(.fun-home-header) + * {
+  position: relative;
+  z-index: 1;
+  margin-top: -2.75rem;
+}
+
+/* Greeting: the board's stamped headline. */
+html.ui-neon-city .fun-home-header__greet { color: var(--neon-text-soft); }
+html.ui-neon-city .fun-home-header__name {
+  font-family: var(--neon-display);
+  font-weight: 400;
+  font-size: 2.25rem;
+  line-height: calc(2.375rem * var(--fun-leading));
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-shadow: 3px 3px 0 var(--neon-pink);
+  transform: skewX(var(--neon-slant));
+  transform-origin: left bottom;
+}
+html.ui-neon-city:is([lang="hi"], [lang="mr"]) .fun-home-header__name {
+  font-family: 'Teko', var(--neon-display);
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
+html.ui-neon-city[dir="rtl"] .fun-home-header__name { transform: skewX(calc(var(--neon-slant) * -1)); transform-origin: right bottom; }
+
+/* Section titles ("Your courses"): Anton, slanted. */
+html.ui-neon-city .fun-section-title {
+  font-family: var(--neon-display);
+  font-weight: 400;
+  font-size: 1.5rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  transform: skewX(var(--neon-slant));
+  transform-origin: left bottom;
+}
+html.ui-neon-city:is([lang="hi"], [lang="mr"]) .fun-section-title { font-family: 'Teko', var(--neon-display); font-weight: 600; text-transform: none; letter-spacing: 0; font-size: 1.625rem; }
+html.ui-neon-city[dir="rtl"] .fun-section-title { transform: skewX(calc(var(--neon-slant) * -1)); transform-origin: right bottom; }
+
+/* ── Next mission card ─────────────────────────────────────────────── */
+/* A night card with a lip; the course colour marks the course name, the bar
+   and the picture, and the button is the action pink. */
+html.ui-neon-city .fun-hero--course {
+  background: var(--neon-card);
+  color: var(--neon-text);
+  border: 1.5px solid var(--neon-line);
+  box-shadow: 0 6px 0 #0A0520;
+}
+html.ui-neon-city .fun-hero--course .fun-hero__eyebrow { color: var(--fc-text); }
+html.ui-neon-city .fun-hero--course .fun-hero__count { color: var(--neon-text-quiet); }
+html.ui-neon-city .fun-hero--course .fun-hero__note { background: var(--neon-raised); color: var(--neon-text-soft); }
+html.ui-neon-city .fun-hero--course .fun-hero__percent { color: var(--fc-text); }
+html.ui-neon-city .fun-hero--course .fun-progress--band { background: var(--neon-raised); }
+html.ui-neon-city .fun-hero--course .fun-progress--band > * { background: var(--fc-solid); }
+html.ui-neon-city .fun-hero--course .fun-hero__deco { background: var(--fc-solid); opacity: 0.9; }
+html.ui-neon-city .fun-hero--course .fun-hero__mark { background: var(--neon-night); color: var(--fc-text); }
+html.ui-neon-city .fun-hero--course .fun-btn--on-colour {
+  --fun-btn-lip: var(--neon-pink-lip);
+  background: var(--neon-pink);
+  color: var(--neon-night);
+  font-family: var(--neon-display);
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+html.ui-neon-city:is([lang="hi"], [lang="mr"]) .fun-hero--course .fun-btn--on-colour { font-family: var(--fun-font-family); font-weight: 800; letter-spacing: 0; text-transform: none; }
+html.ui-neon-city .fun-hero--course .fun-hero__cta--quiet { border-color: var(--neon-line); color: var(--neon-text); background: transparent; }
+html.ui-neon-city .fun-hero--course :is(a, button):focus-visible { outline-color: var(--neon-text); }
+
+html.ui-neon-city .neon-mission {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  color: var(--neon-aqua);
+}
+html.ui-neon-city .neon-mission__pin { width: 14px; height: 16px; flex: none; }
+html.ui-neon-city .neon-mission__pin-hole { fill: var(--neon-card); }
+/* A new learner's first lesson: gold, like the board. */
+html.ui-neon-city .fun-hero--course .fun-hero__eyebrow-row .fun-hero__eyebrow { color: var(--neon-gold); }
+html.ui-neon-city .fun-hero--course:has(.fun-hero__eyebrow-row) { border-color: var(--neon-gold); }
+html.ui-neon-city .fun-hero--course:has(.fun-hero__eyebrow-row) .fun-btn--on-colour { --fun-btn-lip: var(--neon-gold-lip); background: var(--neon-gold); }
+
+/* ── Laptop sidebar ────────────────────────────────────────────────── */
+/* Fun pins the sidebar at 221px (13.8125rem) for Nunito. Manrope runs wider, so
+   at that width "Learning Center", "Assessments" and longer institute names were
+   cut to "Learning Ce…". Neon City keeps the app's own 17rem (272px). */
+html.ui-neon-city .group\/sidebar-wrapper { --sidebar-width: 17rem !important; }
+html.ui-neon-city .fun-sidebar [data-sidebar="menu-button"] { font-weight: 700; }
+html.ui-neon-city .fun-sidebar [data-sidebar="menu-button"][data-active="true"] { font-weight: 800; }
+html.ui-neon-city .fun-sidebar [data-sidebar="header"] [data-sidebar="menu-button"] { font-weight: 800; }

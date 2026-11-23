@@ -20,6 +20,7 @@ import vacademy.io.admin_core_service.features.commerce.security.CommerceRole;
 import vacademy.io.admin_core_service.features.commerce.shipment.service.CommerceShipmentService;
 import vacademy.io.admin_core_service.features.commerce.stock.service.CommerceCounterService;
 import vacademy.io.admin_core_service.features.commerce.stock.service.CommerceStockSettings;
+import vacademy.io.admin_core_service.features.commerce.storefront.service.StorefrontSnapshotLoader;
 import vacademy.io.admin_core_service.features.user_subscription.entity.UserPlan;
 import vacademy.io.admin_core_service.features.user_subscription.service.PaymentLogService;
 import vacademy.io.admin_core_service.features.user_subscription.service.UserPlanService;
@@ -186,6 +187,45 @@ class StaffOrderServiceTest {
         verify(counterService, never()).nextNumber(anyString(), anyString());
     }
 
+    /** D4: a line off its sale step is a 400 QUANTITY_STEP in metres, not the general CART_CHANGED. */
+    @Test
+    void aLineOffItsStepIsRefusedWithTheStepInMetresBeforeAnythingIsWritten() {
+        StorefrontSnapshotLoader.CartVariant linen = new StorefrontSnapshotLoader.CartVariant("ps-l1", "pkg-l1",
+                "LINEN-1", "linen-cloth", true, true, true, false, "tc-1", "MTR", 10, 5, null, 100, null,
+                Map.of("en", "Linen cloth"), new BigDecimal("20.00"), null, "INR");
+        CartPriceDtos.CartPrice offStep = CartPriceDtos.CartPrice.builder().unavailable(List.of(
+                CartPriceDtos.UnavailableLine.builder().lineRef("L1").variantId("ps-l1").reason("QUANTITY_STEP")
+                        .qtyStep(5).build())).build();
+        when(orderService.priceCart(eq(INST), any(CartPriceRequest.class), any(CommerceOrderService.StaffPricing.class)))
+                .thenReturn(new CommerceOrderService.CartPrice(null, offStep, Map.of("ps-l1", linen)));
+
+        InvalidRequestException refused = assertThrows(InvalidRequestException.class, () -> service.create(manager,
+                INST, request().lines(List.of(StaffOrderRequest.Line.builder().variantId("ps-l1").quantity(23)
+                        .build())).restOnCredit(true).build()));
+
+        assertEquals("QUANTITY_STEP: line L1 is sold in steps of 0.5 m", refused.getMessage());
+        verify(f.writer, never()).writeStaff(any());
+        verify(counterService, never()).nextNumber(anyString(), anyString());
+
+        // Without the variant at hand the step still names the line (in base units).
+        when(orderService.priceCart(eq(INST), any(CartPriceRequest.class), any(CommerceOrderService.StaffPricing.class)))
+                .thenReturn(new CommerceOrderService.CartPrice(null, offStep));
+        assertEquals("QUANTITY_STEP: line L1 is sold in steps of 5", assertThrows(InvalidRequestException.class,
+                () -> service.create(manager, INST, request().restOnCredit(true).build())).getMessage());
+
+        // W12 (P NIT-5): a variant the priced cart does not hold is read, so the step is in metres.
+        when(orderService.cartVariant(INST, "ps-l1", null)).thenReturn(linen);
+        assertEquals("QUANTITY_STEP: line L1 is sold in steps of 0.5 m", assertThrows(InvalidRequestException.class,
+                () -> service.create(manager, INST, request().restOnCredit(true).build())).getMessage());
+        // A line asked by SKU is found in the priced cart's variants by its SKU.
+        CartPriceDtos.CartPrice bySku = CartPriceDtos.CartPrice.builder().unavailable(List.of(
+                CartPriceDtos.UnavailableLine.builder().lineRef("L1").sku("LINEN-1").reason("QUANTITY_STEP")
+                        .qtyStep(5).build())).build();
+        assertEquals("QUANTITY_STEP: line L1 is sold in steps of 0.5 m", assertThrows(InvalidRequestException.class,
+                () -> CommerceOrderService.requireOnStep(new CommerceOrderService.CartPrice(null, bySku,
+                        Map.of("ps-l1", linen)))).getMessage());
+    }
+
     @Test
     void theBodyIsChecked() {
         assertThrows(InvalidRequestException.class, () -> service.create(manager, INST, request()
@@ -268,5 +308,56 @@ class StaffOrderServiceTest {
                 () -> service.create(manager, INST, other))));
         assertNull(f.order.getCancelReason());
         assertEquals(ORDER, f.order.getId());
+    }
+
+    // ------------------------------------------------------------------ buyer messages (WP-33)
+
+    private List<CommerceOrderEvents.OrderEvent> emitted() {
+        ArgumentCaptor<CommerceOrderEvents.OrderEvent> captor = ArgumentCaptor.forClass(
+                CommerceOrderEvents.OrderEvent.class);
+        verify(f.events, org.mockito.Mockito.atLeast(0)).afterCommit(captor.capture());
+        return captor.getAllValues();
+    }
+
+    @Test
+    void aSaleHandedOverAtTheCounterIsABillOnly() {
+        service.create(manager, INST, request().shippingAddress(null).chargeShipping(null)
+                .tenders(List.of(tender("CASH", "1060"))).handOverNow(true).build());
+        List<CommerceOrderEvents.OrderEvent> sent = emitted();
+        assertEquals(List.of(CommerceOrderEvents.POS_BILL_ISSUED),
+                sent.stream().map(CommerceOrderEvents.OrderEvent::type).toList());
+        CommerceOrderEvents.OrderEvent bill = sent.get(0);
+        assertEquals(INST, bill.instituteId());
+        assertEquals(f.order.getId(), bill.orderId());
+        assertEquals("", bill.refId());
+        assertTrue(bill.notifyCustomer());
+    }
+
+    @Test
+    void anOrderForLaterDeliveryIsConfirmed() {
+        service.create(manager, INST, request().tenders(List.of(tender("CASH", "1060"))).build());
+        List<CommerceOrderEvents.OrderEvent> sent = emitted();
+        assertEquals(List.of(CommerceOrderEvents.ORDER_CONFIRMED),
+                sent.stream().map(CommerceOrderEvents.OrderEvent::type).toList());
+        assertEquals("", sent.get(0).refId());
+        assertTrue(sent.get(0).notifyCustomer());
+        verify(shipments, never()).handOverInside(any(), any(), any(), any());
+    }
+
+    @Test
+    void anOrderOnCreditForLaterDeliveryIsConfirmedToo() {
+        service.create(manager, INST, request().tenders(List.of(tender("CASH", "100"))).restOnCredit(true).build());
+        assertEquals(List.of(CommerceOrderEvents.ORDER_CONFIRMED),
+                emitted().stream().map(CommerceOrderEvents.OrderEvent::type).toList());
+    }
+
+    @Test
+    void aRepeatedRequestTellsNobodyAgain() {
+        StaffOrderRequest body = request().tenders(List.of(tender("CASH", "1060"))).handOverNow(true).build();
+        f.order.setRequestHash(CommerceRequestGuard.hash("STAFF_ORDER", body));
+        when(f.orderRepository.findByInstituteIdAndClientRequestId(INST, "staff-order-1")).thenReturn(Optional.of(
+                f.order));
+        assertTrue(service.create(manager, INST, body).replayed());
+        assertTrue(emitted().isEmpty());
     }
 }

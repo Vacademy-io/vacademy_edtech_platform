@@ -58,6 +58,7 @@ const ctx: BadgeEvalContext = {
   bestAssessmentScorePct: null,
   liveSessionCount: 0,
   liveSessionStreak: 0,
+  courseActivities: 0,
 };
 
 function def(partial: Partial<BadgeDefinitionConfig> & { id: string }): BadgeDefinitionConfig {
@@ -229,6 +230,34 @@ describe("computeGamificationData", () => {
     expect(withAward.level).toBe(withoutAward.level);
     expect(withAward.badges[0]!.unlocked).toBe(true);
     expect(withoutAward.badges[0]!.unlocked).toBe(false);
+  });
+
+  it("unlocks course-activity badges from the server count", () => {
+    const badgeConfig = cfg([def({ id: "act", trigger: "course_activity_count", threshold: 3 })]);
+    const two = computeGamificationData({
+      ...baseParams,
+      badgeConfig,
+      serverPoints: { totalPoints: 20, courseActivitiesCompleted: 2 },
+    });
+    const three = computeGamificationData({
+      ...baseParams,
+      badgeConfig,
+      serverPoints: { totalPoints: 30, courseActivitiesCompleted: 3 },
+    });
+    expect(two.badges[0]!.unlocked).toBe(false);
+    expect(three.badges[0]!.unlocked).toBe(true);
+  });
+
+  it("counts server points toward points badges without re-locking the browser estimate", () => {
+    const badgeConfig = cfg([def({ id: "xp", trigger: "xp_total", threshold: 50 })]);
+    const serverAhead = computeGamificationData({
+      ...baseParams,
+      badgeConfig,
+      serverPoints: { totalPoints: 60, courseActivitiesCompleted: 6 },
+    });
+    const noServer = computeGamificationData({ ...baseParams, badgeConfig });
+    expect(serverAhead.badges[0]!.unlocked).toBe(true);
+    expect(noServer.badges[0]!.unlocked).toBe(false);
   });
 });
 

@@ -172,6 +172,9 @@ export interface Report {
   sections: AllSections;
   play_mode: string;
   report_release_status: string;
+  // Set by the server only for a RELEASED attempt whose marks a teacher changed
+  // after release (learner "Revised" tag). Absent on older servers.
+  result_revised_at?: string | null;
 }
 export interface ParsedHistoryState {
   report?: Report;
@@ -187,6 +190,8 @@ export interface AssessmentTestReport {
   // replaces the platform-generated report on download.
   report_file_id?: string | null;
   question_overall_detail_dto: QuestionOverallDetailDTO;
+  // When a teacher changed a mark after release (only sent once released).
+  result_revised_at?: string | null;
 }
 export interface TestReportDialogProps {
   testReport: AssessmentTestReport | null;

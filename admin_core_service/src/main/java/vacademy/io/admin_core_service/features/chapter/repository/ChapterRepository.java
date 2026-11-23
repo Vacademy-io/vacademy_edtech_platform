@@ -277,6 +277,7 @@ public interface ChapterRepository extends JpaRepository<Chapter, String> {
                             'default_question_time_mins', q.default_question_time_mins,
                             'points', q.points,
                             're_attempt_count', q.re_attempt_count,
+                            'show_answer_after_submit', COALESCE(q.show_answer_after_submit, TRUE),
                             'auto_evaluation_json', q.auto_evaluation_json,
                             'evaluation_type', q.evaluation_type,
                             'media_id', q.media_id,

@@ -58,7 +58,8 @@ public class WorkflowTriggerService {
             if (contextData == null || contextData.isEmpty()) {
                 log.warn("Context data is EMPTY or NULL");
             } else {
-                log.info("Context data received ({} keys): {}", contextData.size(), contextData);
+                // Keys only: a context may hold a phone number or an e-mail address.
+                log.info("Context data received ({} keys): {}", contextData.size(), contextData.keySet());
             }
 
             // Priority-based matching: specific triggers take priority over global ones
@@ -207,7 +208,8 @@ public class WorkflowTriggerService {
                     // longer have to compute it themselves or rely on T(java.time.Instant)
                     // SpEL (which the body evaluator doesn't pick up).
                     seedContext.put("triggerTime", Instant.now().toString());
-                    log.info("Seed context prepared for workflow run ({} keys): {}", seedContext.size(), seedContext);
+                    log.info("Seed context prepared for workflow run ({} keys): {}", seedContext.size(),
+                            seedContext.keySet());
 
                     // Record WHO this run is for and WHAT it started from, before running it.
                     // Written up-front so a run that crashes mid-way still shows up on the

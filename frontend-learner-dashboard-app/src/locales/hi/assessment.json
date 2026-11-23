@@ -116,6 +116,11 @@
     }
   },
   "reportList": {
+    "sort": {
+      "label": "क्रम",
+      "latest": "नवीनतम पहले",
+      "oldest": "सबसे पुराने पहले"
+    },
     "navHeading": "रिपोर्ट्स",
     "toast": {
       "evaluatedNotAvailable": "मूल्यांकित प्रति अभी उपलब्ध नहीं है।",

@@ -335,6 +335,8 @@
             "start": "Start",
             "review": "Review"
         },
+        "viewDetails": "View details",
+        "ctaAria": "{{action}}: {{course}}",
         "cardAria": "{{course}}, {{percent}}% complete. {{action}}"
     },
     "dashboardHero": {

@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,7 @@ import vacademy.io.notification_service.features.chatbot_flow.enums.EscalationRe
 import vacademy.io.notification_service.features.chatbot_flow.enums.EscalationStatus;
 import vacademy.io.notification_service.features.chatbot_flow.repository.ChatbotEscalationRepository;
 import vacademy.io.notification_service.features.chatbot_flow.repository.ChatbotFlowRepository;
+import vacademy.io.notification_service.features.chatbot_flow.repository.NotificationTemplateRepository;
 import vacademy.io.notification_service.features.send.dto.UnifiedSendRequest;
 import vacademy.io.notification_service.features.send.dto.UnifiedSendResponse;
 import vacademy.io.notification_service.features.send.service.UnifiedSendService;
@@ -52,6 +54,10 @@ public class ChatbotEscalationService {
     private final InstituteInternalService instituteInternalService;
     private final UnifiedSendService unifiedSendService;
     private final ObjectMapper objectMapper;
+
+    /** Checks a flow's named email template before sending; not final, so the constructor is unchanged. */
+    @Autowired(required = false)
+    private NotificationTemplateRepository notificationTemplateRepository;
 
     /**
      * How long before the SAME open escalation may email the admins again. A learner who keeps
@@ -343,8 +349,18 @@ public class ChatbotEscalationService {
                         .source(NOTIFY_SOURCE)
                         .sourceId(escalation.getId());
 
-        if (settings.emailTemplate == null || settings.emailTemplate.isBlank()) {
-            // No template configured — fall back to the built-in layout so the alert still lands.
+        String templateName = emptyToNull(settings.emailTemplate);
+        if (templateName != null && !emailTemplateResolves(escalation.getInstituteId(), templateName)) {
+            // A named template the send cannot load goes out as subject "Notification" with an
+            // empty body. Send the built-in alert instead, as if no template were named.
+            log.warn("Escalation {}: email template '{}' not found (or empty) for institute {} — "
+                            + "sending the built-in alert instead.",
+                    escalation.getId(), templateName, escalation.getInstituteId());
+            templateName = null;
+        }
+
+        if (templateName == null) {
+            // No usable template — fall back to the built-in layout so the alert still lands.
             options.emailSubject("Action needed: " + displayName(escalation)
                             + " is waiting for a reply on WhatsApp")
                     .emailBody(buildEmailBody(escalation, instituteName, inboxUrl));
@@ -353,7 +369,7 @@ public class ChatbotEscalationService {
         UnifiedSendRequest request = UnifiedSendRequest.builder()
                 .instituteId(escalation.getInstituteId())
                 .channel("EMAIL")
-                .templateName(emptyToNull(settings.emailTemplate))
+                .templateName(templateName)
                 .recipients(settings.emails.stream()
                         .map(email -> UnifiedSendRequest.Recipient.builder()
                                 .email(email)
@@ -365,6 +381,25 @@ public class ChatbotEscalationService {
 
         return dispatch(request, settings.emails, "email",
                 UnifiedSendResponse.RecipientResult::getEmail);
+    }
+
+    /**
+     * Whether the unified send will find {@code templateName} as an EMAIL template with a body —
+     * the same lookup it runs. Unknown when the repository is not wired, so the named template is
+     * kept as before; a failed lookup counts as unresolvable, since the send would fail it too.
+     */
+    private boolean emailTemplateResolves(String instituteId, String templateName) {
+        if (notificationTemplateRepository == null) return true;
+        try {
+            return notificationTemplateRepository
+                    .findByInstituteIdAndNameAndChannelType(instituteId, templateName, "EMAIL")
+                    .map(t -> t.getContent() != null && !t.getContent().isBlank())
+                    .orElse(false);
+        } catch (Exception e) {
+            log.warn("Could not look up email template '{}' for institute {}: {}",
+                    templateName, instituteId, e.getMessage());
+            return false;
+        }
     }
 
     /** @return the phone numbers that accepted the send */

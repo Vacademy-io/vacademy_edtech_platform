@@ -26,7 +26,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>io.elevateeducation.app</string>
+	<string>in.elevateeducation.app</string>
 	<key>PROJECT_ID</key>
 	<string>vacademy-app-2</string>
 	<key>STORAGE_BUCKET</key>
@@ -42,7 +42,7 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:779885739059:ios:07ee267b9b5890e0ec3746</string>
+	<string>1:779885739059:ios:6cff45ababd9d8d2ec3746</string>
 	<!-- App Info.plist keys -->
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
@@ -77,6 +77,7 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
+		<string>audio</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreenElevate</string>

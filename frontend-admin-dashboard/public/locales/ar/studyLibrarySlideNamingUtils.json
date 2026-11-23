@@ -12,6 +12,9 @@
         "assignment": "واجب",
         "pdfDocument": "مستند PDF",
         "slide": "شريحة",
-        "quiz": "اختبار قصير"
+        "quiz": "اختبار قصير",
+        "flashcards": "بطاقات تعليمية",
+        "poll": "استطلاع",
+        "game": "لعبة"
     }
 }

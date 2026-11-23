@@ -209,4 +209,20 @@ public class CommerceOrder extends CommerceCatalogueEntity {
     /** A COD order above the confirmation amount is cancelled when staff have not confirmed it by then. */
     @Column(name = "cod_confirm_due_at")
     private Date codConfirmDueAt;
+
+    // -- Returns and refunds (V710) --
+
+    /** Sum of the order's ORDER-kind refunds that did not fail; open due = refund_due less this. */
+    @Column(name = "refund_committed", nullable = false, precision = 12, scale = 2)
+    private BigDecimal refundCommitted = BigDecimal.ZERO.setScale(2);
+
+    /** Sum of the order's ORDER-kind refunds that were paid out (PROCESSED). */
+    @Column(name = "amount_refunded", nullable = false, precision = 12, scale = 2)
+    private BigDecimal amountRefunded = BigDecimal.ZERO.setScale(2);
+
+    // -- Buyer messages (V721) --
+
+    /** In every signed order link; raised by the revoke query only, which ends every link not yet opened. */
+    @Column(name = "link_epoch", nullable = false, insertable = false, updatable = false)
+    private Short linkEpoch;
 }

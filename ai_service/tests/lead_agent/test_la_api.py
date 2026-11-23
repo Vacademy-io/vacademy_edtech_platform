@@ -238,7 +238,7 @@ def test_a_new_gate_passes_the_waiting_leads_it_now_accepts(client, la_db):
     # review_score (the bars before rank and fill, 2026-10-30) are kept as saved and decide nothing
     assert r.json()["gate"] == {"send_score": 55, "require_approval": False, "auto_score": 70, "review_score": 45,
                                 "min_contact": "likely", "require_intent": False, "auto_competitor_users": True,
-                                "effort": "STANDARD"}
+                                "org_email_only": False, "effort": "STANDARD"}
     # saving the gate judges the waiting leads at once (scheduler.rejudge_waiting): the plain lead and the
     # competitor's user (judged without that penalty now) clear the bar, the very large one (50 after its
     # penalty) is rejected
@@ -272,7 +272,7 @@ def test_an_agent_saved_before_rank_and_fill_shows_the_default_send_bar(client, 
     gate = client.get(f"{BASE}/agents/{agent['id']}").json()["gate"]
     assert gate == {"send_score": 50, "require_approval": False, "auto_score": 70, "review_score": 45,
                     "min_contact": "likely", "require_intent": False, "auto_competitor_users": False,
-                    "effort": "STANDARD"}
+                    "org_email_only": False, "effort": "STANDARD"}
 
 
 def test_suppressions_normalise(client):

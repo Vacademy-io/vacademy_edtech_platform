@@ -147,7 +147,7 @@ class EngagementTaskInboxFiltersTest {
             when(actions.findInbox(eq(INST), eq(List.of("OPEN", "ACKED")), isNull(), isNull(), isNull(), any(Pageable.class))).thenReturn(old);
 
             Page<EngagementAction> out = controller.inbox(INST, "OPEN,ACKED", 0, 500,
-                    null, " ", "", null, null, " ", null, null, user).getBody();
+                    null, " ", "", null, null, " ", null, null, null, user).getBody();
 
             assertSame(old, out);
             verify(actions).findInbox(INST, List.of("OPEN", "ACKED"), null, null, null, PageRequest.of(0, 200));
@@ -157,7 +157,7 @@ class EngagementTaskInboxFiltersTest {
         @Test
         @DisplayName("a filter goes to the query service, size still capped at 200")
         void aFilterUsesTheQueryService() {
-            controller.inbox(INST, "SENT", 1, 999, "e1", null, null, null, null, null, null, null, user);
+            controller.inbox(INST, "SENT", 1, 999, "e1", null, null, null, null, null, null, null, null, user);
 
             verify(query).inbox(INST, List.of("SENT"), filter("e1", null, null, null, null, null), 1, 200);
             verify(actions, never()).findInbox(anyString(), anyList(), any(), any(), any(), any(Pageable.class));
@@ -167,11 +167,35 @@ class EngagementTaskInboxFiltersTest {
         @DisplayName("from + to alone are a filter too")
         void aPeriodAloneUsesTheQueryService() {
             controller.inbox(INST, "SENT", 0, 50, null, null, null, null, "2026-10-27", "2026-10-29", null, null,
-                    user);
+                    null, user);
 
             verify(query).inbox(INST, List.of("SENT"),
                     new TaskFilter(null, null, null, null, "2026-10-27", "2026-10-29", null, null), 0, 50);
             verify(actions, never()).findInbox(anyString(), anyList(), any(), any(), any(), any(Pageable.class));
+        }
+
+        @Test
+        @DisplayName("taskId opens that one task of this institute in the asked statuses, else nothing")
+        void taskIdOpensOneTask() {
+            EngagementAction mine = new EngagementAction();
+            mine.setId("t1");
+            mine.setInstituteId(INST);
+            mine.setStatus("OPEN");
+            EngagementAction other = new EngagementAction();
+            other.setId("t2");
+            other.setInstituteId("someone-else");
+            other.setStatus("OPEN");
+            when(actions.findById("t1")).thenReturn(java.util.Optional.of(mine));
+            when(actions.findById("t2")).thenReturn(java.util.Optional.of(other));
+
+            Page<EngagementAction> one = controller.inbox(INST, "OPEN,ACKED", 0, 50, "e9", null, null, null, null,
+                    null, null, null, "t1", user).getBody();
+            org.junit.jupiter.api.Assertions.assertEquals(List.of("t1"), ids(one));
+            org.junit.jupiter.api.Assertions.assertTrue(controller.inbox(INST, "OPEN,ACKED", 0, 50, null, null, null,
+                    null, null, null, null, null, "t2", user).getBody().isEmpty());
+            org.junit.jupiter.api.Assertions.assertTrue(controller.inbox(INST, "SENT", 0, 50, null, null, null,
+                    null, null, null, null, null, "t1", user).getBody().isEmpty());
+            verifyNoInteractions(query);
         }
 
         @Test

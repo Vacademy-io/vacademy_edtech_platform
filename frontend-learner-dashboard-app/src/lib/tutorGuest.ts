@@ -13,6 +13,12 @@ export interface TutorGuest {
   minutes: number;
   name: string;
   topicKey: string;
+  /** Tutezy Studio (stall kiosk): leave the lesson to this route, not /try, and do it without a tap. */
+  returnTo?: "/studio";
+  /** Seconds the studio took to build this lesson (shown on the closing screen). */
+  builtInSeconds?: number;
+  /** The studio lesson's title. */
+  title?: string;
 }
 
 export function readTutorGuest(): TutorGuest | null {

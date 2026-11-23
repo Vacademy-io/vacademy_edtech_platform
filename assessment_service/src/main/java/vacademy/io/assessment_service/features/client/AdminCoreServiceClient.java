@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import vacademy.io.assessment_service.features.assessment.dto.batch_pending.EnrolledLearnerDto;
+import vacademy.io.assessment_service.features.assessment.service.ThemeColorResolver;
 import vacademy.io.assessment_service.features.assessment_dashboard.dto.BatchEnrollmentRow;
 import vacademy.io.assessment_service.features.learner_assessment.dto.ReportBrandingDto;
 import vacademy.io.common.core.internal_api_wrapper.InternalClientUtils;
@@ -369,7 +370,9 @@ public class AdminCoreServiceClient {
 
         ReportBrandingDto result = branding != null ? branding : ReportBrandingDto.builder().build();
         if (logoMissing && StringUtils.hasText(logoFileId)) result.setLogoFileId(logoFileId);
-        if (colorMissing && StringUtils.hasText(themeCode)) result.setPrimaryColor(themeCode);
+        // The theme code is usually a preset name ("blue", "primary"); every report needs "#RRGGBB".
+        String themeColor = ThemeColorResolver.resolve(themeCode);
+        if (colorMissing && themeColor != null) result.setPrimaryColor(themeColor);
         return result;
     }
 

@@ -1,4 +1,4 @@
-import { isEvalezyMode } from '@/lib/evalezy-mode';
+import { hostProduct } from '@/lib/product-host';
 import React, { useState, useRef, useEffect } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -119,7 +119,7 @@ export function EmailLogin({
                     email,
                     client_name: 'ADMIN',
                     ...(instituteId && { institute_id: instituteId }),
-                    ...(isEvalezyMode() && { product: 'evalezy' }),
+                    ...(hostProduct() && { product: hostProduct()?.key }),
                 },
                 {
                     headers: {
@@ -516,17 +516,23 @@ export function EmailLogin({
                 </div>
             )}
 
-            {(allowSignup || isEvalezyMode()) && (
+            {(allowSignup || !!hostProduct()) && (
                 <div className="mt-4 text-center">
                     <p className="text-sm">
                         {t('noAccount')}&nbsp;&nbsp;
                         <span
                             className="cursor-pointer text-primary-500"
-                            onClick={() =>
-                                isEvalezyMode()
-                                    ? navigate({ to: '/signup/start', search: { product: 'evalezy' } })
-                                    : navigate({ to: '/signup' })
-                            }
+                            onClick={() => {
+                                const ownProduct = hostProduct();
+                                if (ownProduct) {
+                                    navigate({
+                                        to: '/signup/start',
+                                        search: { product: ownProduct.key },
+                                    });
+                                } else {
+                                    navigate({ to: '/signup' });
+                                }
+                            }}
                         >
                             {t('createOne')}
                         </span>

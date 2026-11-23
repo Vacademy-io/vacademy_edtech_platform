@@ -67,7 +67,8 @@ public class GoogleOAuthController {
     public ResponseEntity<Map<String, String>> initiate(
             @RequestAttribute("user") CustomUserDetails user,
             @RequestParam String instituteId,
-            @RequestParam(defaultValue = "false") boolean driveAccess) {
+            @RequestParam(defaultValue = "false") boolean driveAccess,
+            @RequestParam(required = false) String returnPath) {
         instituteAccessValidator.validateUserAccess(user, instituteId);
         requireAdminRole(user);
 
@@ -76,6 +77,9 @@ public class GoogleOAuthController {
                 .vendor(VENDOR)
                 .initiatedBy(user.getUserId())
                 .expiresAt(LocalDateTime.now().plusMinutes(10))
+                // Optional landing page for the callback (e.g. the class page "Allow Google Drive
+                // access" started from). Only a plain same-origin path is kept; redirect() checks it too.
+                .returnPath(returnPath != null && returnPath.matches("^/[A-Za-z0-9/_-]*$") ? returnPath : null)
                 .build());
 
         return ResponseEntity.ok(Map.of(

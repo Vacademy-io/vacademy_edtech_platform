@@ -142,6 +142,44 @@ public class QuestionLibraryCurationService {
         return LibraryActionResponse.builder().nodesCreated(0).affected(removed).build();
     }
 
+    /**
+     * Renames a library tag on every question of the library. When another tag already has
+     * the new name (any case) the two are merged into it. Only library tags (concept, past
+     * paper, source) move: the same tag used as an editor subject tag stays as it is.
+     */
+    @Transactional
+    public LibraryActionResponse renameTag(String ownerId, LibraryTagRequest request) {
+        if (request == null || blankToNull(request.getTagId()) == null) throw new VacademyException("tag_id is required");
+        String tagId = request.getTagId().trim();
+        String name = request.getName() == null ? "" : request.getName().trim().replaceAll("\\s+", " ");
+        if (name.isEmpty()) throw new VacademyException("Tag name is required");
+        if (name.length() > MAX_TAG_LENGTH) throw new VacademyException("Tag name is too long");
+
+        // A tag spelled exactly so wins over one that differs only in case: renaming onto an
+        // exact twin would break the one-name-per-institute rule.
+        String exact = nodeRepository.findTagIdByExactName(ownerId, name);
+        String existing = exact != null ? exact : nodeRepository.findTagIdByName(ownerId, name);
+        if (tagId.equals(existing)) {
+            // Same tag, new spelling (usually a change of case).
+            nodeRepository.renameTagRow(ownerId, tagId, name);
+            return LibraryActionResponse.builder().nodesCreated(0).affected(1).build();
+        }
+        String target = existing != null ? existing : resolveTagId(ownerId, name);
+        // Never delete the links just copied onto the same tag.
+        if (tagId.equals(target)) return LibraryActionResponse.builder().nodesCreated(0).affected(0).build();
+        int moved = nodeRepository.copyLibraryTagLinks(ownerId, tagId, target);
+        nodeRepository.deleteLibraryTagLinks(ownerId, tagId);
+        return LibraryActionResponse.builder().nodesCreated(0).affected(moved).build();
+    }
+
+    /** Takes a library tag off every question of the library. The tag itself and its editor uses stay. */
+    @Transactional
+    public LibraryActionResponse deleteTag(String ownerId, LibraryTagRequest request) {
+        if (request == null || blankToNull(request.getTagId()) == null) throw new VacademyException("tag_id is required");
+        int removed = nodeRepository.deleteLibraryTagLinks(ownerId, request.getTagId().trim());
+        return LibraryActionResponse.builder().nodesCreated(0).affected(removed).build();
+    }
+
     // ---------------------------------------------------------------- difficulty
 
     /** Difficulty is a label, not content, so it changes in place even on questions tests already use. */

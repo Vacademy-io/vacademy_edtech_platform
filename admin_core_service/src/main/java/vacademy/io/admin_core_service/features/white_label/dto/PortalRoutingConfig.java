@@ -134,4 +134,19 @@ public class PortalRoutingConfig {
      */
     @JsonProperty("stack_name_below_logo")
     private Boolean stackNameBelowLogo;
+
+    /**
+     * Show the institute's custom terminology (Settings → Naming) on this
+     * portal's pre-login screens too. Null keeps the stored value.
+     */
+    @JsonProperty("apply_naming_setting")
+    private Boolean applyNamingSetting;
+
+    /**
+     * Learner portals only: tag of the course catalogue (Manage Pages site) that
+     * answers on this host's root. Null keeps the stored value; an empty string
+     * clears it, so "/" redirects to {@code redirect} again.
+     */
+    @JsonProperty("root_catalogue_tag")
+    private String rootCatalogueTag;
 }

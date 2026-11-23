@@ -129,6 +129,22 @@ class SiteAssistantLeadServiceTest {
     }
 
     @Test
+    void anotherInternalCallerKeepsItsOwnSourceType() {
+        when(audience.submitCatalogueLead(any(), eq(true))).thenReturn(RESP);
+        SiteAssistantLeadService.Outcome out = service.submit(SiteAssistantLeadService.validate(body("""
+                {"institute_id":"inst-1","kind":"SALES","campaign_id":"aud-9","full_name":"Asha",
+                 "email":"asha@example.com",
+                 "custom_fields":{"conversation_id":"5b1e9f0a-0000-4000-8000-000000000002"}}
+                """)), "DEMO_GUIDE");
+        assertEquals("received", out.status());
+        ArgumentCaptor<CatalogueLeadRequestDTO> dto = ArgumentCaptor.forClass(CatalogueLeadRequestDTO.class);
+        verify(audience).submitCatalogueLead(dto.capture(), eq(true));
+        assertEquals("DEMO_GUIDE", dto.getValue().getSourceType());
+        assertEquals("5b1e9f0a-0000-4000-8000-000000000002", dto.getValue().getSourceId());
+        assertEquals("aud-9", dto.getValue().getAudienceId());
+    }
+
+    @Test
     void campaignFieldsArriveKeyedByCustomFieldIdNeverByTheLongInstituteFieldKey() {
         // A BV-style campaign field: CustomFieldKeyGenerator appends "_inst_<instituteId>", so the
         // field_key is longer than the 64-character custom_fields key limit. ai_service sends the

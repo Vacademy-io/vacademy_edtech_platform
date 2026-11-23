@@ -1,11 +1,12 @@
 import { createLazyFileRoute } from '@tanstack/react-router';
-import { LayoutContainer } from '@/components/common/layout-container/layout-container';
-import { CommerceComingSoonPage } from '@/routes/commerce/-components/CommerceComingSoonPage';
+import { PosGate } from '@/routes/commerce/pos/-components/PosGate';
+import { PosStartPage } from '@/routes/commerce/pos/-components/PosStartPage';
 
+/** P1: pick a counter, open it or continue. Full screen: no admin frame on the till. */
 export const Route = createLazyFileRoute('/commerce/pos/')({
     component: () => (
-        <LayoutContainer>
-            <CommerceComingSoonPage navId="commerce-pos" />
-        </LayoutContainer>
+        <PosGate>
+            <PosStartPage />
+        </PosGate>
     ),
 });

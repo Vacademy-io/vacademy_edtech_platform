@@ -84,6 +84,7 @@ SEEDED_LATER: Dict[str, Tuple[str, Tuple[str, ...]]] = {
     "site_assistant": ("V598__Site_assistant.sql", ("site_assistant_answer",)),
     "course_knowledge": ("V600__Course_knowledge.sql", ("course_kb_ocr_page", "course_kb_transcribe_minute")),
     "lead_agent": ("V612__lead_agent.sql", ("lead_agent_lead_local", "lead_agent_lead_remote")),
+    "demo_guide": ("V742__Demo_guide.sql", ("demo_guide_turn",)),
 }
 SEEDED_LATER_TOOL_KEYS = {k for _m, keys in SEEDED_LATER.values() for k in keys}
 
@@ -100,6 +101,7 @@ EXPLICIT_USE_CASE_TOOL_KEYS: Dict[str, str] = {
 NOT_BILLED: Dict[str, str] = {
     "platform_default": "base model tier; the caller's own request_type / use case is what bills",
     "knowledge_base_figure": "reserved, not read by code yet",
+    "copy_check_scan_header": "Scan Station header reads are logged in usage, not billed (v1 is off by default)",
 }
 
 FEATURE_GROUPS = {

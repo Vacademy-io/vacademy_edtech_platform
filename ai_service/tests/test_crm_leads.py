@@ -127,8 +127,9 @@ def counsellor_ctx(**kw):
 
 def test_tool_registration_and_action_spec():
     spec = reg.ASSISTANT_TOOLS["crm_leads"]
-    assert spec.mcp_only and spec.mode == "READ" and spec.setting_key == "crm_leads"
-    assert spec.module_feature == "crm.leads" and spec.default_enabled is False and spec.default_roles is None
+    assert not spec.mcp_only and spec.mode == "READ" and spec.setting_key == "crm_leads" and spec.topic == "crm"
+    assert spec.module_feature == "crm.leads" and spec.default_enabled is False
+    assert spec.default_roles == ["ADMIN", "COUNSELLOR", "COUNSELOR"]
     enum = spec.schema["function"]["parameters"]["properties"]["action"]["enum"]
     assert list(m.ACTION_SPEC) == enum == list(m.CRM_LEADS_ACTIONS)
     for action, a in m.ACTION_SPEC.items():

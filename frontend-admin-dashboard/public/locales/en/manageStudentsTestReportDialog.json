@@ -41,5 +41,6 @@
         "explanation": "Explanation:",
         "noResponse": "No response",
         "empty": "No answer review available"
-    }
+    },
+    "openSubmission": "Open submission"
 }

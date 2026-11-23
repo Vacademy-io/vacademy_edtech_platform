@@ -479,6 +479,15 @@ class CommerceCheckoutDatabaseProofIT {
         return mockingDetails(mock).getInvocations().size();
     }
 
+    /**
+     * Calls on the workflow engine other than the read-only {@code hasActiveWorkflow} lookup of the
+     * buyer-message planner (WP-33), which may run on its executor right after the commit.
+     */
+    private long firedWorkflows(Object mock) {
+        return mockingDetails(mock).getInvocations().stream()
+                .filter(i -> !"hasActiveWorkflow".equals(i.getMethod().getName())).count();
+    }
+
     /** Runs the tasks at the same moment on their own threads; an exception is the task's result. */
     private List<Object> atOnce(List<Callable<Object>> tasks) {
         ExecutorService pool = Executors.newFixedThreadPool(tasks.size());
@@ -1063,8 +1072,9 @@ class CommerceCheckoutDatabaseProofIT {
         assertEquals(0, count("SELECT count(*) FROM user_account_ledger WHERE user_id = ?", buyer), "no learner-ledger row");
         assertEquals(0, count("SELECT count(*) FROM invoice WHERE user_id = ? OR commerce_order_id = ?", buyer, orderId),
                 "no course invoice row (the commerce invoice is issued at PACKED)");
-        verifyNoInteractions(invoiceService, workflowTriggerService, paymentNotificatonService,
-                dynamicNotificationService, asyncEnrollmentEmailService, authService);
+        verifyNoInteractions(invoiceService, paymentNotificatonService, dynamicNotificationService,
+                asyncEnrollmentEmailService, authService);
+        assertEquals(0, firedWorkflows(workflowTriggerService), "no workflow fired");
         note("   collaborators called for the shop order: invoiceService=" + calls(invoiceService) + " workflowTriggerService="
                 + calls(workflowTriggerService) + " paymentNotificatonService=" + calls(paymentNotificatonService)
                 + " dynamicNotificationService=" + calls(dynamicNotificationService) + " asyncEnrollmentEmailService="
@@ -1084,8 +1094,9 @@ class CommerceCheckoutDatabaseProofIT {
                 + "h.user_plan_id WHERE l.order_id = ?", orderId));
         assertEquals(9, slots(flowA));
         assertEquals(8, slots(flowB));
-        verifyNoInteractions(invoiceService, workflowTriggerService, paymentNotificatonService,
-                dynamicNotificationService, asyncEnrollmentEmailService);
+        verifyNoInteractions(invoiceService, paymentNotificatonService, dynamicNotificationService,
+                asyncEnrollmentEmailService);
+        assertEquals(0, firedWorkflows(workflowTriggerService), "no workflow fired");
         outsideServicesAnswerLocally();
 
         // The order page of the buyer says so.

@@ -89,6 +89,12 @@ public class PaymentSettingService {
      */
     public static final String DEFAULT_CURRENCY_KEY = "defaultCurrency";
 
+    /**
+     * Bill month-shaped plans (30/90/180/365 days) by calendar months on each learner's own due
+     * day, and keep that day when a renewal is paid late. Off unless enabled. See BillingPeriod.
+     */
+    public static final String CALENDAR_MONTH_BILLING_KEY = "calendarMonthBilling";
+
     /** What every fallback used before an institute could configure one. */
     public static final String PLATFORM_FALLBACK_CURRENCY = "INR";
 
@@ -149,6 +155,10 @@ public class PaymentSettingService {
      * flag, or unparseable JSON all mean disabled. An institute must choose to show its
      * members a way to move between plans rather than find it already on.
      */
+    public boolean isCalendarMonthBilling(String instituteId) {
+        return readFlag(instituteId, CALENDAR_MONTH_BILLING_KEY);
+    }
+
     public boolean isPlanChangeEnabled(String instituteId) {
         return readFlag(instituteId, PLAN_CHANGE_ENABLED_KEY);
     }

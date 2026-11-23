@@ -116,6 +116,7 @@ export const platformClass = (platform?: string): string =>
   platform === "ios" || platform === "android" || platform === "electron" ? platform : "web";
 
 export const skinClass = (classes: { contains(name: string): boolean }): string => {
+  if (classes.contains("ui-neon-city")) return "neonCity";
   if (classes.contains("ui-corporate")) return "corporate";
   if (classes.contains("ui-fun")) return "fun";
   if (classes.contains("ui-cleaner-play")) return "cleanerPlay";

@@ -112,6 +112,154 @@ public class RazorpayCommercePaymentGateway implements CommercePaymentGateway {
         return payments;
     }
 
+    // ------------------------------------------------------------------ refunds (WP-32)
+
+    @Override
+    public GatewayPayment fetchPayment(String instituteId, String gatewayPaymentId) {
+        requireNoTransaction();
+        requireIds(instituteId, gatewayPaymentId);
+        Map<String, Object> gatewayData = credentials(instituteId);
+        Map<String, Object> p;
+        try {
+            p = razorpayPaymentManager.fetchPayment(gatewayPaymentId, gatewayData);
+        } catch (RuntimeException e) {
+            throw unavailable("payment " + gatewayPaymentId, instituteId, e, gatewayData);
+        }
+        if (p == null) {
+            throw new CommercePaymentGatewayException(CommercePaymentGatewayException.UNAVAILABLE,
+                    "The payment gateway did not answer");
+        }
+        Long amount = number(p.get("amount"));
+        Long created = number(p.get("created_at"));
+        String status = text(p.get("status"));
+        Long refunded = number(p.get("amount_refunded"));
+        String refundStatus = text(p.get("refund_status"));
+        if (refundStatus != null && "null".equalsIgnoreCase(refundStatus)) {
+            refundStatus = null;
+        }
+        return new GatewayPayment(text(p.get("id")), text(p.get("order_id")),
+                status == null ? null : status.toLowerCase(Locale.ROOT), amount == null ? -1L : amount,
+                text(p.get("currency")), created == null ? null : Instant.ofEpochSecond(created),
+                refunded == null ? 0L : refunded, refundStatus);
+    }
+
+    @Override
+    public GatewayRefund createRefund(String instituteId, String gatewayPaymentId, long amountMinor, String receipt,
+                                      Map<String, String> notes) {
+        requireNoTransaction();
+        requireIds(instituteId, gatewayPaymentId);
+        if (amountMinor <= 0 || !StringUtils.hasText(receipt) || receipt.length() > MAX_RECEIPT_LENGTH) {
+            throw new CommercePaymentGatewayException(CommercePaymentGatewayException.INVALID_REQUEST,
+                    "A refund needs an amount above zero and a receipt of at most " + MAX_RECEIPT_LENGTH
+                            + " characters");
+        }
+        Map<String, Object> gatewayData = credentials(instituteId);
+        Map<String, Object> raw;
+        try {
+            raw = razorpayPaymentManager.refundPayment(gatewayPaymentId, amountMinor, receipt, notes, gatewayData);
+        } catch (RuntimeException e) {
+            throw unavailable("refund of payment " + gatewayPaymentId, instituteId, e, gatewayData);
+        }
+        GatewayRefund refund = refundOf(raw);
+        if (refund == null || refund.id() == null) {
+            throw new CommercePaymentGatewayException(CommercePaymentGatewayException.UNAVAILABLE,
+                    "The payment gateway answered without a refund id");
+        }
+        return refund;
+    }
+
+    @Override
+    public List<GatewayRefund> fetchRefunds(String instituteId, String gatewayPaymentId) {
+        requireNoTransaction();
+        requireIds(instituteId, gatewayPaymentId);
+        Map<String, Object> gatewayData = credentials(instituteId);
+        List<Map<String, Object>> raw;
+        try {
+            raw = razorpayPaymentManager.fetchPaymentRefunds(gatewayPaymentId, gatewayData);
+        } catch (RuntimeException e) {
+            throw unavailable("refunds of payment " + gatewayPaymentId, instituteId, e, gatewayData);
+        }
+        List<GatewayRefund> out = new ArrayList<>();
+        if (raw != null) {
+            for (Map<String, Object> r : raw) {
+                GatewayRefund refund = refundOf(r);
+                if (refund != null) {
+                    out.add(refund);
+                }
+            }
+        }
+        return out;
+    }
+
+    @Override
+    public GatewayRefund fetchRefund(String instituteId, String gatewayPaymentId, String gatewayRefundId) {
+        requireNoTransaction();
+        requireIds(instituteId, gatewayPaymentId);
+        if (!StringUtils.hasText(gatewayRefundId)) {
+            throw new CommercePaymentGatewayException(CommercePaymentGatewayException.INVALID_REQUEST,
+                    "A refund id is needed to read a refund");
+        }
+        Map<String, Object> gatewayData = credentials(instituteId);
+        Map<String, Object> raw;
+        try {
+            raw = razorpayPaymentManager.fetchPaymentRefund(gatewayPaymentId, gatewayRefundId, gatewayData);
+        } catch (RuntimeException e) {
+            throw unavailable("refund " + gatewayRefundId, instituteId, e, gatewayData);
+        }
+        GatewayRefund refund = refundOf(raw);
+        if (refund == null || refund.id() == null) {
+            throw new CommercePaymentGatewayException(CommercePaymentGatewayException.UNAVAILABLE,
+                    "The payment gateway answered without the refund");
+        }
+        return refund;
+    }
+
+    /** A Razorpay refund entity as the port's record; null for null. */
+    @SuppressWarnings("unchecked")
+    static GatewayRefund refundOf(Map<String, Object> r) {
+        if (r == null) {
+            return null;
+        }
+        Long amount = number(r.get("amount"));
+        Long created = number(r.get("created_at"));
+        String status = text(r.get("status"));
+        String bankReference = null;
+        Object acquirer = r.get("acquirer_data");
+        if (acquirer instanceof Map<?, ?> data) {
+            bankReference = text(((Map<String, Object>) data).get("arn"));
+            if (bankReference == null || "null".equalsIgnoreCase(bankReference)) {
+                bankReference = text(((Map<String, Object>) data).get("rrn"));
+            }
+            if (bankReference != null && "null".equalsIgnoreCase(bankReference)) {
+                bankReference = null;
+            }
+        }
+        return new GatewayRefund(text(r.get("id")), text(r.get("payment_id")), amount == null ? -1L : amount,
+                text(r.get("currency")), status == null ? null : status.toLowerCase(Locale.ROOT),
+                text(r.get("receipt")), bankReference, created == null ? null : Instant.ofEpochSecond(created));
+    }
+
+    private static void requireNoTransaction() {
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            throw new IllegalStateException("The gateway is called with no transaction open");
+        }
+    }
+
+    private static void requireIds(String instituteId, String gatewayPaymentId) {
+        if (!StringUtils.hasText(instituteId) || !StringUtils.hasText(gatewayPaymentId)) {
+            throw new CommercePaymentGatewayException(CommercePaymentGatewayException.INVALID_REQUEST,
+                    "Institute and gateway payment are needed");
+        }
+    }
+
+    private static CommercePaymentGatewayException unavailable(String what, String instituteId, RuntimeException e,
+                                                               Map<String, Object> gatewayData) {
+        log.warn("Razorpay {} (institute {}) failed: {}", what, instituteId,
+                withoutCredentials(e.getMessage(), gatewayData));
+        return new CommercePaymentGatewayException(CommercePaymentGatewayException.UNAVAILABLE,
+                "The payment gateway did not answer");
+    }
+
     /** The institute's Razorpay credentials, read at most once per {@link #CREDENTIAL_CACHE_MILLIS}. */
     private Map<String, Object> credentials(String instituteId) {
         long now = System.currentTimeMillis();

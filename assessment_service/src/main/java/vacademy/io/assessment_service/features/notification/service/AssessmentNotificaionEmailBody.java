@@ -1,8 +1,12 @@
 package vacademy.io.assessment_service.features.notification.service;
 
+import org.springframework.util.StringUtils;
+import org.springframework.web.util.HtmlUtils;
+
 public class AssessmentNotificaionEmailBody {
 
-    public static String getEmailBodyForAdminsForResultRelease(String assessmentName, String dateConducted) {
+    public static String getEmailBodyForAdminsForResultRelease(String assessmentName, String dateConducted,
+                                                                String instituteName) {
         return """
                 <!DOCTYPE html>
                 <html>
@@ -51,14 +55,15 @@ public class AssessmentNotificaionEmailBody {
 
                         <p>You can now review the results and take necessary actions.</p>
                         <p>Best Regards,</p>
-                        <p><strong>Vacademy Team</strong></p>
+                        %s
                     </div>
                 </body>
                 </html>
-                """.formatted(assessmentName, assessmentName, dateConducted);
+                """.formatted(assessmentName, assessmentName, dateConducted, signOff(instituteName));
     }
 
-    public static String getEmailBodyForAdminsForReevaluation(String assessmentName, String dateConducted) {
+    public static String getEmailBodyForAdminsForReevaluation(String assessmentName, String dateConducted,
+                                                               String instituteName) {
         return """
                 <!DOCTYPE html>
                 <html>
@@ -107,11 +112,17 @@ public class AssessmentNotificaionEmailBody {
 
                         <p>The updated results are now available for review.</p>
                         <p>Best Regards,</p>
-                        <p><strong>Vacademy Team</strong></p>
+                        %s
                     </div>
                 </body>
                 </html>
-                """.formatted(assessmentName, assessmentName, dateConducted);
+                """.formatted(assessmentName, assessmentName, dateConducted, signOff(instituteName));
     }
 
+    /** The sender line: the institute's name, or nothing when it cannot be read. */
+    private static String signOff(String instituteName) {
+        return StringUtils.hasText(instituteName)
+                ? "<p><strong>" + HtmlUtils.htmlEscape(instituteName.trim()) + "</strong></p>"
+                : "";
+    }
 }

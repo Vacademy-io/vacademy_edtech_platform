@@ -452,7 +452,15 @@
             "refreshOrRejoin": "يرجى تحديث الصفحة أو محاولة الانضمام مرة أخرى.",
             "stillSettingUp": "{{liveClass}} لا تزال قيد الإعداد. يرجى التحديث خلال لحظات."
         },
-        "zoomSettingUpTooltip": "لا يزال اجتماع Zoom قيد الإعداد. تحقق مرة أخرى بعد قليل."
+        "zoomSettingUpTooltip": "لا يزال اجتماع Zoom قيد الإعداد. تحقق مرة أخرى بعد قليل.",
+        "classroom": {
+            "title": "حصة مباشرة",
+            "leave": "مغادرة",
+            "leaveConfirm": "هل تريد مغادرة الحصة؟",
+            "loading": "جارٍ الاتصال بحصتك…",
+            "error": "تعذّر فتح حصتك.",
+            "retry": "حاول مرة أخرى"
+        }
     },
     "supportersSection": {
         "headingPrefix": "الجهات",

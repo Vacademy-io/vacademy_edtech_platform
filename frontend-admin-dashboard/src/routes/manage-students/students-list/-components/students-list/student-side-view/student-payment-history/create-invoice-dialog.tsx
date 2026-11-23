@@ -60,6 +60,15 @@ import {
     type AdminDiscountRequest,
 } from '@/services/admin-discounts';
 import { useInstituteDefaultCurrency } from '@/services/payment-setting';
+import {
+    InvoiceProductLinkField,
+    InvoiceProductLinkStatus,
+    EMPTY_PRODUCT_LINK,
+    draftFromProductLink,
+    getProductLinkError,
+    toProductLinkPayload,
+    type ProductLinkDraft,
+} from './invoice-product-link-field';
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 
@@ -461,6 +470,19 @@ export function CreateInvoiceDialog({
     const [discountPreview, setDiscountPreview] = useState<AdminDiscountPreview | null>(null);
     const [discountServerError, setDiscountServerError] = useState<string | null>(null);
 
+    // The product this invoice pays for (renewal / new enrolment), applied once it is paid.
+    // Editable on an unpaid invoice until it starts being applied; after that it is shown read-only.
+    const editedLink = editInvoice?.product_link ?? null;
+    const productLinkLocked = !!editedLink && !!editedLink.status && editedLink.status !== 'PENDING';
+    const showProductLink = !productLinkLocked;
+    const [productLink, setProductLink] = useState<ProductLinkDraft>(EMPTY_PRODUCT_LINK);
+    const [productOrgAssociated, setProductOrgAssociated] = useState(false);
+    // What the dialog itself last filled in, so picking another product can replace it.
+    const lastSuggestionRef = useRef<{ description: string; unitPrice: number | null }>({
+        description: '',
+        unitPrice: null,
+    });
+
     const { data: invoiceSettings, isLoading: isSettingsLoading } = useQuery({
         queryKey: ['invoice-settings'],
         queryFn: fetchInvoiceSettings,
@@ -499,6 +521,11 @@ export function CreateInvoiceDialog({
         setTaxRatePercentText(null);
         setAdminDiscount(EMPTY_ADMIN_DISCOUNT);
         setDiscountPreview(null);
+        // Edit: the invoice's own product. Duplicate: the same product again (renewing the same
+        // membership again, say). New: none.
+        setProductLink(draftFromProductLink((editInvoice || duplicateFrom)?.product_link));
+        setProductOrgAssociated(false);
+        lastSuggestionRef.current = { description: '', unitPrice: null };
         // Edit takes precedence over duplicate; both seed from an existing invoice's items,
         // but only edit carries the original's due date forward.
         const seedFrom = editInvoice || duplicateFrom;
@@ -582,7 +609,33 @@ export function CreateInvoiceDialog({
         setTaxRatePercentText(null);
         setAdminDiscount(EMPTY_ADMIN_DISCOUNT);
         setDiscountPreview(null);
+        setProductLink(EMPTY_PRODUCT_LINK);
+        setProductOrgAssociated(false);
         onOpenChange(false);
+    };
+
+    // A picked product prefills the first line, but never over what the admin typed: the
+    // invoice amount is theirs to set (that is the custom price of the renewal / enrolment).
+    const handleSuggestLine = ({ description, unitPrice }: { description: string; unitPrice: number | null }) => {
+        const first = form.getValues('line_items.0');
+        if (!first) return;
+        const last = lastSuggestionRef.current;
+        const currentDescription = first.description?.trim() ?? '';
+        if (!currentDescription || currentDescription === last.description) {
+            form.setValue('line_items.0.description', description, { shouldValidate: true });
+            last.description = description;
+        }
+        const currentPrice = Number(first.unit_price) || 0;
+        const priceUntouched = currentPrice <= 0 || (last.unitPrice != null && currentPrice === last.unitPrice);
+        if (priceUntouched && unitPrice != null && unitPrice > 0) {
+            form.setValue('line_items.0.unit_price', unitPrice, { shouldValidate: true });
+            last.unitPrice = unitPrice;
+        }
+    };
+
+    const serverMessage = (err: unknown): string | undefined => {
+        const e = err as { response?: { data?: { message?: string; ex?: string } }; message?: string };
+        return e?.response?.data?.message || e?.response?.data?.ex || undefined;
     };
 
     // Build the create/preview request from the items form + review edits.
@@ -627,6 +680,7 @@ export function CreateInvoiceDialog({
             admin_discount: !showDiscount
                 ? undefined
                 : toAdminDiscountPayload(adminDiscount, { includeCycles: false }),
+            product_link: showProductLink ? toProductLinkPayload(productLink) : undefined,
         };
     };
 
@@ -653,8 +707,9 @@ export function CreateInvoiceDialog({
                 setReviewDates(dates);
                 skipNextPreviewRef.current = true;
             }
-        } catch {
-            setPreviewError(t('manageStudentsCreateInvoiceDialog:errors.previewFailed'));
+        } catch (err) {
+            // The server's reason when it has one (e.g. the attached product cannot be renewed).
+            setPreviewError(serverMessage(err) || t('manageStudentsCreateInvoiceDialog:errors.previewFailed'));
         } finally {
             setPreviewLoading(false);
         }
@@ -677,6 +732,13 @@ export function CreateInvoiceDialog({
     const handleNext = async () => {
         const ok = await form.trigger();
         if (!ok) return;
+        if (showProductLink) {
+            const productErr = getProductLinkError(productLink, t, productOrgAssociated);
+            if (productErr) {
+                toast.error(productErr);
+                return;
+            }
+        }
         if (showDiscount) {
             const discountErr =
                 getAdminDiscountValidationError(adminDiscount, subtotal) ||
@@ -712,6 +774,11 @@ export function CreateInvoiceDialog({
                 overrides: req.overrides,
                 tax_enabled: req.tax_enabled,
                 tax_rate_percent: req.tax_rate_percent,
+                // Only when there is something to say: omitted keeps the stored product, so an
+                // edit of an invoice without one sends exactly what it always did.
+                ...(showProductLink && (editedLink || productLink.mode !== 'NONE')
+                    ? { product_link: req.product_link ?? { type: '' as const } }
+                    : {}),
             });
             setSuccessResult({
                 invoice_id: updated.id,
@@ -728,7 +795,15 @@ export function CreateInvoiceDialog({
             return;
         }
 
-        const results = await createAdminInvoice(req);
+        let results;
+        try {
+            results = await createAdminInvoice(req);
+        } catch (err) {
+            toast.error(serverMessage(err) || t('manageStudentsCreateInvoiceDialog:errors.createFailed', {
+                defaultValue: 'Could not create the invoice',
+            }));
+            throw err;
+        }
         const userResult = results.find((r) => r.user_id === userId) ?? results[0];
         if (!userResult) throw new Error('No invoice returned from server');
         setSuccessResult(userResult);
@@ -882,6 +957,32 @@ export function CreateInvoiceDialog({
                             {t('manageStudentsCreateInvoiceDialog:items.addItem')}
                         </MyButton>
                     </div>
+
+                    {/* ── Product this invoice pays for (new invoices only) ── */}
+                    {showProductLink && (
+                        <div className="rounded-lg border border-neutral-200 px-4 py-3">
+                            <InvoiceProductLinkField
+                                userId={userId}
+                                instituteId={instituteId}
+                                value={productLink}
+                                onChange={setProductLink}
+                                currencyLabel={currency}
+                                suggestedRenewalPrice={
+                                    (Number(watchedLineItems[0]?.quantity) || 0) *
+                                        (Number(watchedLineItems[0]?.unit_price) || 0) || null
+                                }
+                                onSuggestLine={handleSuggestLine}
+                                onOrgAssociatedChange={setProductOrgAssociated}
+                            />
+                        </div>
+                    )}
+
+                    {/* Product already being applied: shown, not editable. */}
+                    {productLinkLocked && editInvoice && (
+                        <div className="rounded-lg border border-neutral-200 px-4 py-3">
+                            <InvoiceProductLinkStatus invoice={editInvoice} instituteId={instituteId} />
+                        </div>
+                    )}
 
                     {/* ── Admin discount (new invoices only) ── */}
                     {showDiscount && (

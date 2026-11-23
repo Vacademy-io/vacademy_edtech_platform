@@ -170,6 +170,8 @@ export interface ApiCustomFieldUsageItem {
         instituteId: string;
         status: string;
         config?: string;
+        /** The field's own mandatory flag (custom_fields.is_mandatory). */
+        isMandatory?: boolean | null;
     };
     enroll_invite_count: number;
     audience_count: number;
@@ -215,6 +217,8 @@ export interface CustomFieldUsage {
     sessionCount: number;
     assessmentCount: number;
     isDefault: boolean;
+    /** The field's own mandatory flag in the DB (custom_fields.is_mandatory). */
+    isMandatory?: boolean;
 }
 
 // Field Visibility Interface
@@ -1506,6 +1510,31 @@ export const getCustomFieldSettingsFromCache = (): CustomFieldSettingsData | nul
 };
 
 /**
+ * Custom fields the admin's manual "enroll learner" forms must show: every field
+ * that is really mandatory (a learner can't be created without it, whatever its
+ * toggles say) plus the optional ones switched on for "Learner's Enrollment",
+ * in the settings order. Reads `customFields` only: it already holds every live
+ * field, grouped ones included, whereas `fieldGroups` can also carry stale
+ * group entries kept in the settings blob.
+ *
+ * `required` on the returned fields is true only when Settings marks the field
+ * Required AND the field itself is mandatory in the DB. Settings' Required list
+ * alone is not enough: it still carries legacy "Name"/"Phone" fields from old
+ * institute defaults that duplicate Full Name/Phone and that no form requires.
+ */
+export const getEnrollmentFormCustomFields = (
+    settings: CustomFieldSettingsData | null
+): CustomField[] => {
+    if (!settings?.customFields) return [];
+    return settings.customFields
+        .map((field) => ({
+            ...field,
+            required: field.required && field.usage?.isMandatory === true,
+        }))
+        .filter((field) => field.required || field.visibility?.learnerEnrollment === true);
+};
+
+/**
  * Fetch custom field settings from API and update cache
  */
 const fetchCustomFieldSettingsFromAPI = async (): Promise<CustomFieldSettingsData> => {
@@ -1629,6 +1658,7 @@ const fetchCustomFieldSettingsFromAPI = async (): Promise<CustomFieldSettingsDat
                             sessionCount: item.session_count ?? 0,
                             assessmentCount: item.assessment_count ?? 0,
                             isDefault: item.default ?? false,
+                            isMandatory: item.custom_field.isMandatory === true,
                         });
                     }
                 });

@@ -220,7 +220,11 @@ public class CommerceDocumentPdfService {
 
     // ------------------------------------------------------------------ views
 
-    DocumentView invoiceView(Invoice invoice) {
+    /**
+     * The printable view of an invoice, read only. Public so the measured-goods proof can render
+     * the HTML ({@link CommerceDocumentHtml#build}) without storing a PDF.
+     */
+    public DocumentView invoiceView(Invoice invoice) {
         CommerceInvoiceSnapshot snapshot = CommerceInvoiceService.readSnapshot(invoice);
         TaxResult tax = snapshot.getTax();
         Map<String, CommerceInvoiceLineExtra> extras = extrasByRef(snapshot);
@@ -273,7 +277,11 @@ public class CommerceDocumentPdfService {
                 .build();
     }
 
-    DocumentView creditNoteView(CommerceCreditNote note) {
+    /**
+     * The printable view of a credit note, read only. Public so the measured-goods proof can render
+     * the HTML ({@link CommerceDocumentHtml#build}) without storing a PDF.
+     */
+    public DocumentView creditNoteView(CommerceCreditNote note) {
         Invoice invoice = invoiceRepository.findById(note.getInvoiceId())
                 .orElseThrow(() -> new IllegalStateException("credit note " + note.getId() + " has no invoice"));
         CommerceInvoiceSnapshot snapshot = CommerceInvoiceService.readSnapshot(invoice);
@@ -303,6 +311,7 @@ public class CommerceDocumentPdfService {
                     .qtyScale(ref == null ? 1 : scaleByRef.getOrDefault(ref, 1))
                     .unit(line.getUnit())
                     .unitPrice(line.getUnitPrice())
+                    .discount(creditLineDiscount(line.getUnitPrice(), line.getQuantity(), line.getAmount()))
                     .taxableValue(line.getTaxableValue())
                     .ratePercent(line.getTaxRate())
                     .amount(line.getAmount())
@@ -342,6 +351,21 @@ public class CommerceDocumentPdfService {
                 .roundOff(note.getRoundOff())
                 .total(note.getTotal())
                 .build();
+    }
+
+    /**
+     * The discount column of a credit note row, as the invoice prints it: price x quantity less
+     * the amount credited (the row's share of the line and order discounts), so the printed row
+     * adds up. Null when there is none (or the row is above its list value, as a set's rounded
+     * rate can be by a paisa).
+     */
+    static BigDecimal creditLineDiscount(BigDecimal unitPrice, Integer quantity, BigDecimal amount) {
+        if (unitPrice == null || quantity == null || amount == null) {
+            return null;
+        }
+        BigDecimal discount = unitPrice.multiply(BigDecimal.valueOf(quantity)).subtract(amount).setScale(2,
+                java.math.RoundingMode.HALF_UP);
+        return discount.signum() > 0 ? discount : null;
     }
 
     private static void addTo(Map<String, TaxRateRow> rows, String key, String hsnCode, CommerceCreditNoteLine line) {

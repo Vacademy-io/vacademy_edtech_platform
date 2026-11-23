@@ -471,6 +471,8 @@ function isDeviceAuthFailure(status: number | undefined, data: unknown): boolean
     const body = data as { error?: unknown; path?: unknown } | null;
     if (isRevoked(status, data)) return true;
     if (status === 403 && body?.error === 'ACCESS_DENIED' && body?.path === '/error') return true;
+    // A token the server can no longer verify (e.g. signed with a retired key): refresh and retry.
+    if (status === 403 && body?.error === 'TOKEN_INVALID') return true;
     return (status === 403 || status === 510) && bodySaysExpired(data);
 }
 

@@ -11,11 +11,13 @@ import vacademy.io.admin_core_service.features.slide.repository.ScormSlideReposi
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.media.dto.FileDetailsDTO;
 
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -470,6 +472,24 @@ public class ScormService {
         return destFile;
     }
 
+    /**
+     * Manifest parser that never resolves external entities or fetches external DTDs.
+     * A DOCTYPE line is still tolerated so older manifests keep parsing.
+     */
+    static DocumentBuilder newManifestDocumentBuilder() throws Exception {
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        dbFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        dbFactory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+        dbFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+        dbFactory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+        dbFactory.setXIncludeAware(false);
+        dbFactory.setExpandEntityReferences(false);
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        // Any entity that still needs resolving resolves to nothing.
+        dBuilder.setEntityResolver((publicId, systemId) -> new InputSource(new StringReader("")));
+        return dBuilder;
+    }
+
     private String parseLaunchPath(File dir) throws Exception {
         File manifest = new File(dir, "imsmanifest.xml");
         if (!manifest.exists()) {
@@ -480,8 +500,7 @@ public class ScormService {
             throw new FileNotFoundException("imsmanifest.xml not found and no common launch file detected");
         }
 
-        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        DocumentBuilder dBuilder = newManifestDocumentBuilder();
         Document doc = dBuilder.parse(manifest);
         doc.getDocumentElement().normalize();
 

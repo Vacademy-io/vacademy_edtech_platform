@@ -531,6 +531,36 @@ public class RenewalPaymentService {
     }
 
     /**
+     * A renewal paid through an admin invoice (InvoiceProductLinkService): fires the same
+     * PAYMENT_SUCCESS renewal event a gateway renewal fires, so the institute's renewal workflows
+     * (confirmation messages, LMS re-access) run for it too. Called once, when the invoice is paid
+     * and its renewal applied; never for an "apply now" renewal that is still unpaid. Extra
+     * context: {@code source=ADMIN_INVOICE} and the invoice number. Never throws.
+     *
+     * <p>Own transaction: it is called from a background thread with none, and the event reads the
+     * plan's lazy relations (price, invite).
+     */
+    @org.springframework.transaction.annotation.Transactional
+    public void emitInvoiceRenewalPaid(String userPlanId, String instituteId, String invoiceNumber) {
+        try {
+            UserPlan userPlan = userPlanRepository.findById(userPlanId).orElse(null);
+            if (userPlan == null) {
+                return;
+            }
+            Map<String, Object> extra = new HashMap<>();
+            if (userPlan.getEndDate() != null) {
+                extra.put("newEndDate", userPlan.getEndDate().toString());
+                extra.put("newEndDateLabel", new java.text.SimpleDateFormat("dd MMM yyyy").format(userPlan.getEndDate()));
+            }
+            extra.put("source", "ADMIN_INVOICE");
+            extra.put("invoiceNumber", invoiceNumber);
+            emitRenewalEvent(WorkflowTriggerEvent.PAYMENT_SUCCESS, userPlan, instituteId, extra);
+        } catch (Exception e) {
+            log.warn("Invoice renewal event for plan {} not sent: {}", userPlanId, e.getMessage());
+        }
+    }
+
+    /**
      * Common renewal workflow-event emission. Context mirrors PaymentLogService's initial-payment
      * events (userId/userPlanId/enrollInviteId/packageSessionIds) plus {@code renewal: true} and a
      * full {@code user} DTO (name/mobile/email) so SEND_WHATSAPP nodes can message directly.
@@ -586,18 +616,24 @@ public class RenewalPaymentService {
      */
     private Date calculateNewEndDate(UserPlan userPlan) {
         Date now = new Date();
-        Date base = userPlan.getEndDate();
-        if (base == null || base.before(now)) {
-            base = now;
-        }
-
         int daysToAdd = resolveValidityDays(userPlan);
-
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(base);
-        calendar.add(Calendar.DAY_OF_MONTH, daysToAdd);
-        return calendar.getTime();
+        String instituteId = userPlan.getEnrollInvite() != null ? userPlan.getEnrollInvite().getInstituteId() : null;
+        boolean calendar = instituteId != null && billingSettings != null
+                && billingSettings.isCalendarMonthBilling(instituteId);
+        java.time.ZoneId zone = calendar && timezoneService != null
+                ? timezoneService.getZone(instituteId) : java.time.ZoneId.systemDefault();
+        Date base = vacademy.io.admin_core_service.features.user_subscription.util.BillingPeriod
+                .renewalBase(userPlan.getEndDate(), now, daysToAdd, calendar, zone);
+        return vacademy.io.admin_core_service.features.user_subscription.util.BillingPeriod
+                .add(base, daysToAdd, calendar, zone);
     }
+
+    /** Calendar-month billing switch (PAYMENT_SETTING.calendarMonthBilling). Optional. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vacademy.io.admin_core_service.features.institute.service.setting.PaymentSettingService billingSettings;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vacademy.io.admin_core_service.features.institute.service.InstituteTimezoneService timezoneService;
 
     /**
      * Validity days for the plan, from the linked PaymentPlan (falling back to

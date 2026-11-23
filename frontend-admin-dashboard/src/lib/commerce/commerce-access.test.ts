@@ -53,12 +53,12 @@ const visibleCommerceIds = (roles: string[], isFeatureOn: (key: string) => boole
 
 const ALL_IDS = COMMERCE_NAV.map((rule) => rule.id);
 
-describe('the sidebar and the access table describe the same ten tabs', () => {
+describe('the sidebar and the access table describe the same eleven tabs', () => {
     it('every COMMERCE sidebar entry is a COMMERCE_NAV rule with the same route, in order', () => {
         expect(commerceItems.map((item) => [item.id, item.to])).toEqual(
             COMMERCE_NAV.map((rule) => [rule.id, rule.route])
         );
-        expect(commerceItems).toHaveLength(10);
+        expect(commerceItems).toHaveLength(11);
     });
 
     it('commerce tabs carry no sub-items and no adminOnly gate (the gate is the role)', () => {
@@ -151,6 +151,46 @@ describe('feature gate: off until granted, in every mode', () => {
     });
 });
 
+describe('switch-over days: reports AND migration', () => {
+    it('migration off (the default) closes only the switch-over days', () => {
+        expect(visibleCommerceIds(['ADMIN'], onExcept(COMMERCE_FEATURE.MIGRATION))).toEqual(
+            ALL_IDS.filter((id) => id !== 'commerce-parallel-run')
+        );
+        expect(
+            access(['ADMIN'], onExcept(COMMERCE_FEATURE.MIGRATION)).denialFor(
+                'commerce-parallel-run'
+            )
+        ).toBe('feature');
+    });
+
+    it('migration on without tax and reports stays closed', () => {
+        expect(
+            visibleCommerceIds(['ADMIN'], onExcept(COMMERCE_FEATURE.TAX_REPORTS))
+        ).not.toContain('commerce-parallel-run');
+        expect(visibleCommerceIds(['ADMIN'], onlyOn(COMMERCE_FEATURE.MIGRATION))).toEqual([
+            'commerce-home',
+            'commerce-settings',
+        ]);
+    });
+
+    it('both on: store manager and accountant, not warehouse staff or the cashier', () => {
+        const both = onlyOn(COMMERCE_FEATURE.TAX_REPORTS, COMMERCE_FEATURE.MIGRATION);
+        expect(visibleCommerceIds(['ADMIN'], both)).toContain('commerce-parallel-run');
+        expect(visibleCommerceIds([COMMERCE_ROLE.STORE_MANAGER], both)).toContain(
+            'commerce-parallel-run'
+        );
+        expect(visibleCommerceIds([COMMERCE_ROLE.ACCOUNTANT], both)).toContain(
+            'commerce-parallel-run'
+        );
+        expect(
+            access([COMMERCE_ROLE.WAREHOUSE_STAFF], both).denialFor('commerce-parallel-run')
+        ).toBe('role');
+        expect(
+            access([COMMERCE_ROLE.POS_CASHIER], both).denialFor('commerce-parallel-run')
+        ).toBe('role');
+    });
+});
+
 describe('role gate', () => {
     it('a cashier sees only POS', () => {
         expect(visibleCommerceIds([COMMERCE_ROLE.POS_CASHIER])).toEqual(['commerce-pos']);
@@ -160,7 +200,7 @@ describe('role gate', () => {
         ).toEqual(['commerce-pos']);
     });
 
-    it('an institute ADMIN sees all ten', () => {
+    it('an institute ADMIN sees all eleven', () => {
         expect(visibleCommerceIds(['ADMIN'])).toEqual(ALL_IDS);
     });
 
@@ -169,7 +209,13 @@ describe('role gate', () => {
         [COMMERCE_ROLE.WAREHOUSE_STAFF, ['commerce-home', 'commerce-orders', 'commerce-inventory']],
         [
             COMMERCE_ROLE.ACCOUNTANT,
-            ['commerce-home', 'commerce-orders', 'commerce-customers', 'commerce-reports'],
+            [
+                'commerce-home',
+                'commerce-orders',
+                'commerce-customers',
+                'commerce-reports',
+                'commerce-parallel-run',
+            ],
         ],
     ])('%s sees its tabs', (role, expected) => {
         expect(visibleCommerceIds([role])).toEqual(expected);

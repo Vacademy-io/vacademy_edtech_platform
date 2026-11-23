@@ -124,6 +124,11 @@
     }
   },
   "reportList": {
+    "sort": {
+      "label": "الترتيب حسب",
+      "latest": "الأحدث أولاً",
+      "oldest": "الأقدم أولاً"
+    },
     "navHeading": "التقارير",
     "toast": {
       "evaluatedNotAvailable": "النسخة المصححة غير متاحة بعد.",

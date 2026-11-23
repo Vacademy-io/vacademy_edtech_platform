@@ -59,6 +59,10 @@ public enum WorkflowTriggerEvent {
 
     // CRM
     MEMBERSHIP_EXPIRY,
+    /** A membership's payment reminder step (FEE_REMINDER_SETTING): before, on or after its due date. */
+    MEMBERSHIP_PAYMENT_DUE,
+    /** A membership has stayed unpaid for the institute's red-list days. Staff alert. */
+    MEMBERSHIP_PAYMENT_RED_LIST,
     ENROLLMENT_REPORTS,
 
     // Lead TAT / Follow-up SLA (emit-only; delivery handled by the workflow engine)
@@ -126,6 +130,18 @@ public enum WorkflowTriggerEvent {
     HR_PAYROLL_PROCESSED,
     HR_PAYROLL_APPROVED,
     HR_PAYROLL_PAID,
-    HR_EMPLOYEE_STATUS_CHANGED
+    HR_EMPLOYEE_STATUS_CHANGED,
+
+    // Commerce (shop orders). Fired by CommerceNotificationSender for the buyer's messages; an
+    // ACTIVE workflow on one of these replaces the shop's default messages for that trigger.
+    ORDER_CONFIRMED,
+    COD_CONFIRMATION_NEEDED,
+    ORDER_SHIPPED,
+    ORDER_DELIVERED,
+    ORDER_CANCELLED,
+    ORDER_RTO,
+    RETURN_APPROVED,
+    REFUND_PROCESSED,
+    POS_BILL_ISSUED
 }
 

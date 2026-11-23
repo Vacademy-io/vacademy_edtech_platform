@@ -1,9 +1,11 @@
 import {
     ClipboardText,
+    Hourglass,
     MagnifyingGlass,
     Megaphone,
     Money,
     Question,
+    UserPlus,
     UsersThree,
     VideoCamera,
     type Icon,
@@ -27,17 +29,21 @@ export interface LaunchBarStarter {
  */
 export const STARTERS: readonly LaunchBarStarter[] = [
     { key: 'overview', group: 'institute_overview', tool: 'get_institute_overview', Icon: Money },
-    { key: 'learner', group: 'learner_data', tool: 'find_learner', Icon: MagnifyingGlass },
+    { key: 'learner', group: 'learner_data', tool: 'list_recent_enrollments', Icon: MagnifyingGlass },
     {
         key: 'assessments',
         group: 'assessments',
         tool: 'get_assessment_results',
         Icon: ClipboardText,
     },
-    { key: 'announcement', group: 'announcements', tool: 'send_announcement', Icon: Megaphone },
+    { key: 'announcement', group: 'announcements', tool: 'list_announcements', Icon: Megaphone },
     { key: 'schedule', group: 'schedule', tool: 'get_class_schedule', Icon: VideoCamera },
     { key: 'payments', group: 'payments', tool: 'get_fee_dues', Icon: Money },
-    { key: 'batch', group: 'batch_data', tool: 'list_batch_learners', Icon: UsersThree },
+    { key: 'batch', group: 'batch_data', tool: 'list_recent_enrollments', Icon: UsersThree },
+    // CRM reads: only for users the capabilities endpoint gives the CRM groups.
+    { key: 'crmNewLeads', group: 'crm_reports', tool: 'crm_reports', Icon: UserPlus },
+    { key: 'crmFirstContact', group: 'crm_reports', tool: 'crm_reports', Icon: Hourglass },
+    { key: 'crmFeesDue', group: 'crm_collections', tool: 'crm_collections', Icon: Money },
     { key: 'help', group: 'search_help_knowledge', tool: 'search_help_knowledge', Icon: Question },
 ];
 
@@ -51,18 +57,23 @@ export const STARTERS: readonly LaunchBarStarter[] = [
 export const STARTER_FEATURES: Readonly<Record<string, readonly string[]>> = {
     // get_institute_overview(sections=['outstanding_fees'])
     overview: ['finance.fees'],
-    // find_learner searches ENROLLED learners only (never leads/contacts)
+    // list_recent_enrollments — learners enrolled in the last 7 days (never leads/contacts)
     learner: ['lms.batches'],
     // get_assessment_results — "pending evaluations"
     assessments: ['assessments.tests'],
-    // send_announcement — the tool also targets roles/users, so batches are not required
+    // list_announcements — the latest announcements sent
     announcement: ['communications.announcements'],
     // get_class_schedule — "today's classes"
     schedule: ['live_classes.sessions'],
     // get_fee_dues — a learner's overdue installments
     payments: ['finance.fees'],
-    // list_batch_learners
+    // list_recent_enrollments — joins per batch
     batch: ['lms.batches'],
+    // crm_reports(overview / sla_breaches)
+    crmNewLeads: ['crm.leads'],
+    crmFirstContact: ['crm.leads'],
+    // crm_collections(who_owes) — installments and invoices
+    crmFeesDue: ['crm.leads', 'finance.fees'],
 };
 
 /**

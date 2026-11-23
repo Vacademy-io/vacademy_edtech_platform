@@ -24,12 +24,22 @@ export interface CommerceError {
 const CODE_PREFIX = /^([A-Z_]+):\s*(.*)$/s;
 
 /**
+ * The text of the error body's `message` (else `ex`), trimmed. A field that is
+ * not a string (an object, a number) counts as no sentence, so an unexpected
+ * body never crashes the screen that reads it.
+ */
+export function serverSentence(error: unknown): string {
+    const body = getBackendErrorBody(error) as { message?: unknown; ex?: unknown } | null | undefined;
+    const text = (value: unknown) => (typeof value === 'string' ? value : '');
+    return (text(body?.message) || text(body?.ex)).trim();
+}
+
+/**
  * The server's own sentence for a failed commerce call (the UI shows the
  * server's message), split from its leading code when it has one.
  */
 export function readCommerceError(error: unknown, fallback: string): CommerceError {
-    const body = getBackendErrorBody(error);
-    const raw = (body?.message || body?.ex || '').trim();
+    const raw = serverSentence(error);
     if (!raw) return { code: null, message: fallback };
     const match = CODE_PREFIX.exec(raw);
     const code = match?.[1];

@@ -1,6 +1,8 @@
 package vacademy.io.admin_core_service.features.commerce.document.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -13,6 +15,8 @@ import vacademy.io.admin_core_service.features.commerce.document.enums.DocumentT
 import vacademy.io.admin_core_service.features.commerce.document.enums.SeriesKind;
 import vacademy.io.admin_core_service.features.commerce.document.enums.SeriesStatus;
 import vacademy.io.admin_core_service.features.commerce.document.repository.CommerceDocumentSeriesRepository;
+import vacademy.io.admin_core_service.features.commerce.pos.entity.PosRegister;
+import vacademy.io.admin_core_service.features.commerce.pos.repository.PosRegisterRepository;
 import vacademy.io.admin_core_service.features.commerce.tax.service.CommerceInputRules;
 import vacademy.io.admin_core_service.features.commerce.tax.service.CommerceTaxSettingService;
 import vacademy.io.admin_core_service.features.commerce.tax.service.GstinValidator;
@@ -47,6 +51,14 @@ public class CommerceDocumentSeriesService {
     private final CommerceSellerLookup sellerLookup;
     private final DocumentClock clock;
     private final CommerceAuditService auditService;
+
+    /** The POS registers (WP-42); resolved lazily so the document package needs no POS bean. */
+    private ObjectProvider<PosRegisterRepository> registerRepository;
+
+    @Autowired(required = false)
+    public void setRegisterRepository(ObjectProvider<PosRegisterRepository> registerRepository) {
+        this.registerRepository = registerRepository;
+    }
 
     @Transactional(readOnly = true)
     public Page<DocumentSeriesDTO> list(String instituteId, int page, int size) {
@@ -95,10 +107,14 @@ public class CommerceDocumentSeriesService {
             require(sellerLookup.locationBelongsToInstitute(instituteId, locationId),
                     "location_id is not a location of this institute");
         }
-        // HOOK (register): pos_register does not exist yet, so a register id cannot be checked
-        // against the institute. Replace this refusal with that check when the table lands.
-        require(trimToNull(request.getRegisterId()) == null,
-                "register_id cannot be set yet: POS registers are not available");
+        // A register's own series: a SYSTEM series of the register's location, for counter sales.
+        String registerId = trimToNull(request.getRegisterId());
+        if (registerId != null) {
+            requireRegisterOf(instituteId, registerId, locationId);
+            require(channel == DocumentChannel.POS || channel == DocumentChannel.ALL,
+                    "VALIDATION: a register series has the channel POS or ALL");
+            require(kind == SeriesKind.SYSTEM, "VALIDATION: a register series is a SYSTEM series, not a bill book");
+        }
 
         CommerceDocumentSeries series = new CommerceDocumentSeries();
         series.setInstituteId(instituteId);
@@ -109,6 +125,7 @@ public class CommerceDocumentSeriesService {
         series.setFinancialYear(financialYear);
         series.setSellerGstin(sellerGstin);
         series.setLocationId(locationId);
+        series.setRegisterId(registerId);
         series.setStatus(SeriesStatus.ACTIVE.name());
 
         if (kind == SeriesKind.MANUAL_BOOK) {
@@ -168,6 +185,15 @@ public class CommerceDocumentSeriesService {
         return toDto(series);
     }
 
+    /** 400 unless the register is a register of this institute at {@code locationId}. */
+    private void requireRegisterOf(String instituteId, String registerId, String locationId) {
+        PosRegisterRepository registers = registerRepository == null ? null : registerRepository.getIfAvailable();
+        PosRegister register = registers == null ? null
+                : registers.findByInstituteIdAndId(instituteId, registerId).orElse(null);
+        require(register != null && locationId != null && locationId.equals(register.getLocationId()),
+                "VALIDATION: register_id is not a register of this location");
+    }
+
     private CommerceDocumentSeries requireSeries(String instituteId, String seriesId) {
         return seriesRepository.findByInstituteIdAndId(instituteId, seriesId)
                 .orElseThrow(() -> new ResourceNotFoundException("Document series not found"));
@@ -204,6 +230,9 @@ public class CommerceDocumentSeriesService {
         view.put("financial_year", series.getFinancialYear());
         view.put("channel", series.getChannel());
         view.put("location_id", series.getLocationId());
+        if (series.getRegisterId() != null) {
+            view.put("register_id", series.getRegisterId());
+        }
         view.put("seller_gstin", series.getSellerGstin());
         view.put("book_from", series.getBookFrom());
         view.put("book_to", series.getBookTo());

@@ -105,6 +105,7 @@ export const TRIGGER_TO_LIBRARY_THEME: Record<string, string> = {
     assessment_score: "perfect_score",
     course_completion: "completionist",
     live_session_count: "live_learner",
+    course_activity_count: "scholar",
 };
 
 export function libraryThemeForTrigger(trigger: string): string | undefined {

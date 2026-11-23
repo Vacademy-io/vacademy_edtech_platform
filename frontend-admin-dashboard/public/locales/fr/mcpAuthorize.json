@@ -10,7 +10,7 @@
         "title": "Si vous approuvez, cette application pourra :",
         "readOnly": "N'utilise que ce que les paramètres MCP de votre établissement autorisent. Toute modification du site web est enregistrée en brouillon que vous publiez vous-même.",
         "sameAsYou": "Voir exactement ce que vous voyez, et rien de plus.",
-        "revocable": "Être déconnectée à tout moment depuis Paramètres → Serveur MCP."
+        "revocable": "Être déconnectée à tout moment depuis Paramètres → Accès IA."
     },
     "approve": "Approuver",
     "approving": "Approbation…",

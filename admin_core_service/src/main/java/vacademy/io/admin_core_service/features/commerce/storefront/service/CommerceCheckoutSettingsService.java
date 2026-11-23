@@ -16,6 +16,10 @@ import vacademy.io.common.exceptions.InvalidRequestException;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.institute.entity.Institute;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import vacademy.io.admin_core_service.features.commerce.returns.policy.CommerceReturnPolicy;
+import vacademy.io.admin_core_service.features.commerce.returns.policy.CommerceReturnSettings;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.LinkedHashMap;
@@ -24,7 +28,7 @@ import java.util.Map;
 /**
  * The checkout keys of {@code COMMERCE_SETTING} for staff: buyer identity, the hourly OTP cap,
  * the cash-on-delivery limits (with the blocked pincodes and the staff-confirmation window) and
- * the order-desk keys ({@code orders.refundShippingOnRto}). The generic institute-settings
+ * the order-desk keys ({@code orders.refundShippingOnRto}) and the return policy ({@code returns}). The generic institute-settings
  * route writes {@code COMMERCE_SETTING} for super admins only, so these keys have their writer
  * here.
  *
@@ -60,9 +64,20 @@ public class CommerceCheckoutSettingsService {
         this.storefrontSettings = storefrontSettings;
     }
 
+    /** The return policy reader (WP-32); absent in tests built by hand, then the defaults are shown. */
+    private CommerceReturnSettings returnSettings;
+
+    @Autowired(required = false)
+    public void setReturnSettings(CommerceReturnSettings returnSettings) {
+        this.returnSettings = returnSettings;
+    }
+
     /** The values in force (defaults where the setting has none). */
     public Map<String, Object> get(String instituteId) {
-        return view(storefrontSettings.read(instituteId));
+        Map<String, Object> answer = view(storefrontSettings.read(instituteId));
+        answer.put("returns", CommerceReturnPolicy.view(returnSettings == null ? CommerceReturnPolicy.defaults()
+                : returnSettings.read(instituteId)));
+        return answer;
     }
 
     /**
@@ -163,8 +178,96 @@ public class CommerceCheckoutSettingsService {
                 ordersNode.put("refundShippingOnRto", orders.path("refund_shipping_on_rto").asBoolean());
             }
         }
+        JsonNode returns = body.get("returns");
+        CommerceReturnPolicy.Settings returnPolicy = CommerceReturnPolicy.parse(data.get(CommerceReturnSettings.KEY));
+        if (returns != null && !returns.isNull()) {
+            returnPolicy = CommerceReturnPolicy.fromBody(returns, returnPolicy);
+            data.set(CommerceReturnSettings.KEY, CommerceReturnPolicy.toStored(returnPolicy));
+        }
         settingWriter.putSettingKey(institute, KEY, entry, InstituteSettingWriter.Actor.tenant(userId));
-        return view(StorefrontSettings.parse(data));
+        Map<String, Object> answer = view(StorefrontSettings.parse(data));
+        answer.put("returns", CommerceReturnPolicy.view(returnPolicy));
+        return answer;
+    }
+
+    /** The key of the buyer-message values in {@code COMMERCE_SETTING}. */
+    static final String NOTIFICATIONS = "notifications";
+
+    /**
+     * Writes {@code COMMERCE_SETTING.notifications} (the shop-wide values of the buyer messages)
+     * the way {@link #update} writes its keys: read-modify-write under the institute row lock, every
+     * other key of the setting kept as stored. The caller has checked the values.
+     *
+     * @param patch the stored names: {@code linkBaseUrl} (text or null), {@code linkDays} (whole
+     *              number or null), {@code shopName} ({@code {"hi": text|null, "en": text|null}});
+     *              a key left out keeps its value, null removes it (its default applies)
+     * @return the {@code notifications} object as written
+     */
+    @Transactional
+    public JsonNode updateNotifications(String instituteId, String userId, JsonNode patch) {
+        if (patch == null || !patch.isObject()) {
+            throw new InvalidRequestException("invalid_request: the body is a JSON object");
+        }
+        Institute institute = instituteRepository.findByIdForUpdate(instituteId)
+                .orElseThrow(() -> new VacademyException("Institute not found"));
+        if (entityManager != null) {
+            entityManager.refresh(institute);
+        }
+        ObjectNode entry = currentEntry(institute.getSetting());
+        JsonNode existingData = entry.get("data");
+        ObjectNode data = existingData instanceof ObjectNode o ? o : entry.putObject("data");
+        JsonNode stored = data.get(NOTIFICATIONS);
+        ObjectNode notifications = stored instanceof ObjectNode o ? o : data.putObject(NOTIFICATIONS);
+        java.util.Iterator<Map.Entry<String, JsonNode>> fields = patch.fields();
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> field = fields.next();
+            JsonNode value = field.getValue();
+            switch (field.getKey()) {
+                case "linkBaseUrl" -> {
+                    if (value == null || value.isNull()) {
+                        notifications.remove("linkBaseUrl");
+                    } else if (value.isTextual()) {
+                        notifications.put("linkBaseUrl", value.asText());
+                    } else {
+                        throw new InvalidRequestException("invalid_request: link_base_url is text");
+                    }
+                }
+                case "linkDays" -> {
+                    if (value == null || value.isNull()) {
+                        notifications.remove("linkDays");
+                    } else if (value.isIntegralNumber()) {
+                        notifications.put("linkDays", value.asInt());
+                    } else {
+                        throw new InvalidRequestException("invalid_request: link_days is a whole number");
+                    }
+                }
+                case "shopName" -> {
+                    if (value == null || !value.isObject()) {
+                        throw new InvalidRequestException("invalid_request: shop_name is a JSON object");
+                    }
+                    JsonNode names = notifications.get("shopName");
+                    ObjectNode namesNode = names instanceof ObjectNode o ? o : notifications.putObject("shopName");
+                    java.util.Iterator<Map.Entry<String, JsonNode>> locales = value.fields();
+                    while (locales.hasNext()) {
+                        Map.Entry<String, JsonNode> locale = locales.next();
+                        if (!"hi".equals(locale.getKey()) && !"en".equals(locale.getKey())) {
+                            throw new InvalidRequestException("invalid_request: shop_name has the keys hi and en");
+                        }
+                        JsonNode name = locale.getValue();
+                        if (name == null || name.isNull()) {
+                            namesNode.putNull(locale.getKey());
+                        } else if (name.isTextual()) {
+                            namesNode.put(locale.getKey(), name.asText());
+                        } else {
+                            throw new InvalidRequestException("invalid_request: shop_name values are text");
+                        }
+                    }
+                }
+                default -> throw new InvalidRequestException("invalid_request: unknown notifications key");
+            }
+        }
+        settingWriter.putSettingKey(institute, KEY, entry, InstituteSettingWriter.Actor.tenant(userId));
+        return notifications.deepCopy();
     }
 
     static Map<String, Object> view(StorefrontSettings settings) {

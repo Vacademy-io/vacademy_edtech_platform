@@ -124,9 +124,12 @@ public interface CommerceOrderRepository extends JpaRepository<CommerceOrder, St
      * Orders past their invoice point that never had a commerce document, oldest first: no
      * invoice row of the order that is not cancelled, live or credited. An order whose invoice
      * was credited in full (an unpack before a re-pack, an RTO, a credit note by hand) is never
-     * listed: the backlog repairs a missed issue, it never bills again what was reversed. Only
-     * orders changed within the lookback ({@code since}) and not deferred by an earlier failed
-     * try ({@code sweep_retry_after}) are read.
+     * listed: the backlog repairs a missed issue, it never bills again what was reversed. A
+     * CONFIRMED order (of a shop that invoices at confirmation) is read whatever its age, since
+     * nothing else ever issues its invoice; a PACKED or later order only when changed within the
+     * lookback ({@code since}). Orders deferred by an earlier failed try ({@code sweep_retry_after})
+     * are left out. Orders that never failed come first ({@code sweep_failures}), so a few orders
+     * that always fail cannot take the slots of healthy ones.
      */
     @Query(value = """
             SELECT o.id FROM commerce_order o
@@ -136,12 +139,12 @@ public interface CommerceOrderRepository extends JpaRepository<CommerceOrder, St
                         WHERE ts.institute_id = o.institute_id AND ts.invoice_at = 'CONFIRMED')))
               AND o.channel <> 'POS'
               AND o.updated_at < :before
-              AND o.updated_at >= :since
+              AND (o.status = 'CONFIRMED' OR o.updated_at >= :since)
               AND (o.sweep_retry_after IS NULL OR o.sweep_retry_after <= :now)
               AND NOT EXISTS (
                   SELECT 1 FROM invoice i
                   WHERE i.commerce_order_id = o.id AND i.cancelled_at IS NULL)
-            ORDER BY o.updated_at ASC, o.id ASC
+            ORDER BY o.sweep_failures ASC, o.updated_at ASC, o.id ASC
             LIMIT :maxRows
             """, nativeQuery = true)
     java.util.List<String> findOrderIdsMissingInvoice(@Param("before") Date before, @Param("since") Date since,
@@ -153,17 +156,37 @@ public interface CommerceOrderRepository extends JpaRepository<CommerceOrder, St
     long countInvoicesEver(@Param("orderId") String orderId);
 
     /**
-     * A background sweep failed on the order: the sweeps leave it alone until {@code until}.
-     * Runs in its own transaction after the failed one rolled back.
+     * A background sweep failed on the order: one more failure, and the sweeps leave it alone
+     * for 1 h, 4 h, 16 h, then 24 h after each further failure (the right side reads the old
+     * count). Runs in its own transaction after the failed one rolled back; never touches
+     * {@code updated_at}.
      */
     @Modifying
-    @Query(value = "UPDATE commerce_order SET sweep_retry_after = :until WHERE id = :orderId", nativeQuery = true)
-    int deferSweep(@Param("orderId") String orderId, @Param("until") Date until);
+    @Query(value = """
+            UPDATE commerce_order
+            SET sweep_failures = sweep_failures + 1,
+                sweep_retry_after = CAST(:now AS TIMESTAMP) + make_interval(mins => CASE WHEN sweep_failures >= 3
+                    THEN 1440 ELSE 60 * CAST(POWER(4, sweep_failures) AS INTEGER) END)
+            WHERE id = :orderId
+            """, nativeQuery = true)
+    int deferSweep(@Param("orderId") String orderId, @Param("now") Date now);
+
+    /** How often the background sweeps failed on the order. */
+    @Query(value = "SELECT sweep_failures FROM commerce_order WHERE id = :orderId", nativeQuery = true)
+    Integer sweepFailures(@Param("orderId") String orderId);
+
+    /** A sweep succeeded on the order (or staff moved it on): its failures and deferral are cleared. */
+    @Modifying
+    @Query(value = """
+            UPDATE commerce_order SET sweep_failures = 0, sweep_retry_after = NULL
+            WHERE id = :orderId AND (sweep_failures > 0 OR sweep_retry_after IS NOT NULL)
+            """, nativeQuery = true)
+    int clearSweep(@Param("orderId") String orderId);
 
     /**
      * The staff order list with its filters. Every filter is optional (null = any). {@code queue}
      * is one of the desk queues (TO_CONFIRM, TO_PACK, TO_SHIP, IN_TRANSIT, COD_TO_COLLECT,
-     * RTO_TO_RECEIVE, STOCK_SHORT, DUES). {@code search} matches the order number, the phone,
+     * RTO_TO_RECEIVE, STOCK_SHORT, DUES, RETURNS, REFUND_DUE). {@code search} matches the order number, the phone,
      * part of the name or a tracking number.
      */
     @Query(value = "SELECT o.* FROM commerce_order o WHERE " + STAFF_FILTER
@@ -198,7 +221,11 @@ public interface CommerceOrderRepository extends JpaRepository<CommerceOrder, St
                    OR (CAST(:queue AS VARCHAR) = 'STOCK_SHORT' AND o.stock_short)
                    OR (CAST(:queue AS VARCHAR) = 'DUES' AND o.channel = 'ADMIN'
                        AND o.payment_status IN ('UNPAID', 'PARTIALLY_PAID')
-                       AND o.status NOT IN ('CANCELLED', 'RTO')))
+                       AND o.status NOT IN ('CANCELLED', 'RTO'))
+                   OR (CAST(:queue AS VARCHAR) = 'RETURNS' AND EXISTS (
+                       SELECT 1 FROM commerce_return r WHERE r.order_id = o.id
+                       AND r.status IN ('REQUESTED', 'APPROVED', 'RECEIVED')))
+                   OR (CAST(:queue AS VARCHAR) = 'REFUND_DUE' AND o.refund_due > o.refund_committed))
               AND (CAST(:text AS VARCHAR) IS NULL
                    OR o.order_number = CAST(:text AS VARCHAR)
                    OR o.customer_phone = CAST(:phone AS VARCHAR)
@@ -232,6 +259,17 @@ public interface CommerceOrderRepository extends JpaRepository<CommerceOrder, St
             LIMIT 1
             """, nativeQuery = true)
     Optional<String> findLiveInvoiceId(@Param("instituteId") String instituteId, @Param("orderId") String orderId);
+
+    /**
+     * Credit given for goods returned on the order that did not become money owed back: per
+     * received (or closed) return, {@code credit_total - due_raised}. On a staff order left on
+     * credit this lowers what is still due (a return cannot refund money that was never paid).
+     */
+    @Query(value = """
+            SELECT COALESCE(SUM(r.credit_total - r.due_raised), 0) FROM commerce_return r
+            WHERE r.order_id = :orderId AND r.status IN ('RECEIVED', 'CLOSED')
+            """, nativeQuery = true)
+    java.math.BigDecimal sumReturnCreditNotRaised(@Param("orderId") String orderId);
 
     /** The credit notes of an order, oldest first. */
     @Query(value = """

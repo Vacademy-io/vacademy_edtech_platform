@@ -17,5 +17,7 @@
     "comprehensionNumeric": "استيعاب رقمي",
     "cbeSection": "اختبار حاسوبي (CBE)",
     "cbeResponse": "جدول بيانات وإجابة مكتوبة",
-    "cbeTitleType": "جدول بيانات ومكتوب"
+    "cbeTitleType": "جدول بيانات ومكتوب",
+    "showAnswerAfterSubmit": "إظهار الإجابة الصحيحة بعد الإرسال",
+    "showAnswerAfterSubmitHint": "يرى المتعلمون فور الإرسال ما إذا كانت إجابتهم صحيحة أم خاطئة، والإجابة الصحيحة. عند الإيقاف يظهر الشرح فقط."
 }

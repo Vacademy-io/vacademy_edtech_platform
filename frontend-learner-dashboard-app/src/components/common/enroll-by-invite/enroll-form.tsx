@@ -112,6 +112,7 @@ import { getTerminology } from "@/components/common/layout-container/sidebar/uti
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 import { trackUtmAttribution } from "@/lib/utm-attribution";
 import { resolveLearnerIdentity } from "@/lib/learner-identity";
+import { extractVideoId } from "@/utils/study-library/tracking/extractVideoId";
 
 // SUBSCRIPTION, FREE, UPFRONT, DONATION
 
@@ -3159,13 +3160,8 @@ const EnrollByInvite = ({
     return <DashboardLoader />;
 
   // Helper to extract YouTube video ID from URL
-  const getYouTubeVideoId = (url: string): string | null => {
-    if (!url) return null;
-    const regExp =
-      /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return match && match[2].length === 11 ? match[2] : null;
-  };
+  const getYouTubeVideoId = (url: string): string | null =>
+    extractVideoId(url) || null;
 
   // Keep the header, course-info bar, and main body on one centered column so
   // the institute logo + plan title line up with the form below. Only widen to

@@ -118,6 +118,16 @@ class CommerceLineCancelTest {
     }
 
     @Test
+    void thePendingCreditIsWhatIsOwedNetOfGoodsReturnedBeforePayment() {
+        // The same rule as "Record receipt" and the order detail's amount_due.
+        org.mockito.Mockito.when(f.orderRepository.sumReturnCreditNotRaised(ORDER))
+                .thenReturn(new BigDecimal("160.00"));
+        cancel("l1", 1);
+        assertEquals(new BigDecimal("1560.00"), f.order.getTotal());
+        assertEquals(new BigDecimal("1400.00"), pendingTotal(), "pending = total - paid - credit of returns");
+    }
+
+    @Test
     void aFullyCancelledLineLeavesALogOfZeroAndItsPlanCancelled() {
         cancel("l2", 1);
         verify(f.legacyRepository).setLogAmount("log-l2", "group-1", new BigDecimal("0.00"));

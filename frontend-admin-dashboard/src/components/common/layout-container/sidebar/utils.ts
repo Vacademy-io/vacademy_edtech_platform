@@ -33,6 +33,7 @@ import {
     SealCheck,
     UserCircle,
     SquaresFour,
+    HouseLine,
     Stack,
     Storefront,
     Receipt,
@@ -43,6 +44,7 @@ import {
     UsersThree,
     SealPercent,
     ChartPieSlice,
+    Scales,
     Wrench,
 } from '@phosphor-icons/react';
 import i18next from 'i18next';
@@ -671,6 +673,20 @@ export const getSidebarItemsData = (): SidebarItemsType[] => [
                 subItemLink: '/audience-manager/reports?tab=utm',
                 subItemId: 'utm-campaigns',
             },
+            {
+                // Meta + Google ad spend next to the enquiries and admissions
+                // they produced; admin-only because it shows spend.
+                subItem: sidebarT('sidebar:adPerformance'),
+                subItemLink: '/audience-manager/ad-performance',
+                subItemId: 'ad-performance',
+                adminOnly: true,
+            },
+            {
+                subItem: sidebarT('sidebar:socialPosts'),
+                subItemLink: '/audience-manager/social-posts',
+                subItemId: 'social-posts',
+                adminOnly: true,
+            },
         ],
     },
     {
@@ -1064,6 +1080,13 @@ export const getSidebarItemsData = (): SidebarItemsType[] => [
         category: 'COMMERCE',
     },
     {
+        icon: Scales,
+        id: 'commerce-parallel-run',
+        title: sidebarT('sidebar:commerceParallelRun'),
+        to: '/commerce/parallel-run',
+        category: 'COMMERCE',
+    },
+    {
         icon: Wrench,
         id: 'commerce-settings',
         title: sidebarT('sidebar:commerceSettings'),
@@ -1106,6 +1129,16 @@ export const getSidebarItemsData = (): SidebarItemsType[] => [
         title: sidebarT('sidebar:lmsDashboard'),
         id: 'lms-dashboard',
         to: '/lms-dashboard',
+        category: 'LMS',
+    },
+    // Learner home builder: the learner app's home page as blocks. Institute
+    // ADMIN only (helper.ts ALWAYS_ADMIN_ONLY_TAB_IDS) and only when the opt-in
+    // `learner_home` module is on (lib/learner-home, filtered in mySidebar).
+    {
+        icon: HouseLine,
+        title: sidebarT('sidebar:learnerHome'),
+        id: 'learner-home',
+        to: '/learner-home',
         category: 'LMS',
     },
     {

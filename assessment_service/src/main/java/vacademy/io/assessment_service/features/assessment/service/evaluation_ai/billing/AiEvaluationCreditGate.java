@@ -309,6 +309,19 @@ public class AiEvaluationCreditGate {
          */
         public DispatchCheck checkAtDispatch(String instituteId, BigDecimal quotedCredits, String rateSnapshotJson,
                         AiEvaluationCharge fallbackCharge, boolean apiTraffic) {
+                return checkAtDispatch(instituteId, quotedCredits, rateSnapshotJson, fallbackCharge, apiTraffic, false);
+        }
+
+        /**
+         * As {@link #checkAtDispatch(String, BigDecimal, String, AiEvaluationCharge, boolean)};
+         * {@code enforceBalance} refuses a dashboard row the balance does not cover even while
+         * the dashboard gate is off ({@code credit-check.dashboard-enforced=false}). Used for a
+         * run nobody asked for on a test that never opted in to AI (CBE answers always go to
+         * the AI): it must not take an institute's balance negative. A credit service that
+         * cannot be reached still lets a dashboard row through, as before.
+         */
+        public DispatchCheck checkAtDispatch(String instituteId, BigDecimal quotedCredits, String rateSnapshotJson,
+                        AiEvaluationCharge fallbackCharge, boolean apiTraffic, boolean enforceBalance) {
                 Map<String, Object> snapshot = parse(rateSnapshotJson);
                 BigDecimal limit = decimal(snapshot.get("credit_limit"));
                 if (limit == null || limit.signum() < 0) limit = BigDecimal.ZERO;
@@ -349,7 +362,7 @@ public class AiEvaluationCreditGate {
                         }
                         balance = BigDecimal.ZERO;
                 }
-                if (balance.add(limit).compareTo(quote) < 0 && (apiTraffic || dashboardEnforced)) {
+                if (balance.add(limit).compareTo(quote) < 0 && (apiTraffic || dashboardEnforced || enforceBalance)) {
                         return new DispatchCheck(DispatchVerdict.INSUFFICIENT, quote, balance, limit, newQuote);
                 }
                 return new DispatchCheck(DispatchVerdict.PROCEED, quote, balance, limit, newQuote);

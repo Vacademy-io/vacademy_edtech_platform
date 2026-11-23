@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { announceSlideCompleted } from "@/services/slide-engagement";
 import { Trans, useTranslation } from "react-i18next";
 import { getLearnerTrackingSettings, getRequiredReadSeconds } from "@/services/learner-tracking-settings";
 import { v4 as uuidv4 } from "uuid";
@@ -528,8 +529,10 @@ export const DocViewer: React.FC<DocViewerProps> = ({
             }
             totalPagesReadRef.current = Math.max(totalPagesReadRef.current, 1);
             setTimeout(() => syncPDFTrackingData(), 150);
+            // An HTML activity marked "Count as engagement" is completed (and paid) by this.
+            announceSlideCompleted(activeItem?.id, { pageReported: true });
         },
-        [syncPDFTrackingData]
+        [syncPDFTrackingData, activeItem?.id]
     );
 
     // Handle page change

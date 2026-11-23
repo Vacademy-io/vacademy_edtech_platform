@@ -12,6 +12,8 @@ import {
     ListChecks,
     ChatsCircle,
     FileXls,
+    Cards,
+    ChartBar,
 } from '@phosphor-icons/react';
 import { Video, Sparkle } from '@phosphor-icons/react';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
@@ -147,6 +149,12 @@ export const getIcon = (
             return <ChatsCircle className={`${iconClass} text-primary-500`} />;
         case 'SPREADSHEET':
             return <FileXls className={`${iconClass} text-success-600`} />;
+        case 'FLASHCARDS':
+            return <Cards className={`${iconClass} text-primary-500`} />;
+        case 'POLL':
+            return <ChartBar className={`${iconClass} text-primary-500`} />;
+        case 'GAME':
+            return <GameController className={`${iconClass} text-primary-500`} />;
         case 'PRESENTATION':
             return <FileDoc className={`${iconClass} text-orange-500`} />;
         case 'AUDIO':

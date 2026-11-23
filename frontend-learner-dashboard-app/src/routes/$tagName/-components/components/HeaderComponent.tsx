@@ -35,7 +35,7 @@ import { MegaMenuNavItem } from "../header/MegaMenuNavItem";
 import { MobileMegaMenu } from "../header/MobileMegaMenu";
 import { HeaderSearch } from "../header/HeaderSearch";
 import { HeaderLanguageSwitcher } from "../header/HeaderLanguageSwitcher";
-import { CommerceHeaderSlot } from "../commerce/lazy";
+import { CommerceHeaderRow, CommerceHeaderSlot, isCategoryBarOn, isCategoryBarOnFor } from "../commerce/lazy";
 import { isCommerceEnabled } from "../commerce/config";
 import { DesktopNavDropdown, MobileNavDropdown } from "./header/NavDropdown";
 import { dropdownHasActive } from "./header/nav-dropdown";
@@ -222,6 +222,17 @@ export const HeaderComponent: React.FC<HeaderProps & {
     // every other site, which renders exactly as before.
     const showCommerce = isCommerceEnabled(resolvedGlobalSettings);
     const hasHeaderExtras = showSearchButton || showSwitcher || showSiteCart || showCommerce;
+    // The shop's category bar: a second row of this header on the pages the
+    // site lists (commerce.categoryBar, off by default). False on every other site.
+    // The editor previews every page at the site root: the page it shows decides.
+    const showCategoryBar =
+      showCommerce &&
+      !!resolvedInstituteId &&
+      (previewPath !== undefined
+        ? isCategoryBarOnFor(resolvedGlobalSettings, previewPath)
+        : isCategoryBarOn(resolvedGlobalSettings, effectiveTagName, location.pathname));
+    // A shop's menu toggle is a full 44px tap target (other sites keep their 36px button).
+    const shopToggle = showCommerce ? ' inline-flex min-h-11 min-w-11 items-center justify-center' : '';
     // Opt-in looks of the design (site-chrome-types.ts); all off when absent.
     const chrome = resolveHeaderChrome({
       barSize,
@@ -648,7 +659,7 @@ export const HeaderComponent: React.FC<HeaderProps & {
         <span className="text-sm font-medium text-catalogue-text-secondary">
           {t("header.language.label", "Site language")}
         </span>
-        <HeaderLanguageSwitcher authoredLocales={resolvedGlobalSettings?.i18n?.locales} variant={switcherVariant} />
+        <HeaderLanguageSwitcher authoredLocales={resolvedGlobalSettings?.i18n?.locales} variant={switcherVariant} tall={showCommerce} />
       </div>
     );
 
@@ -834,7 +845,7 @@ export const HeaderComponent: React.FC<HeaderProps & {
                   }}
                   // With search / language / cart in the bar, the menu toggle
                   // moves to the far end on phones, where visitors look for it.
-                  className={`${bp.phoneOnly} p-2 rounded-catalogue-sm text-catalogue-text-secondary hover:text-catalogue-text-primary hover:bg-catalogue-interactive-hover transition-colors duration-200${hasHeaderExtras ? ' order-last lg:order-none' : ''}`}
+                  className={`${bp.phoneOnly} p-2 rounded-catalogue-sm text-catalogue-text-secondary hover:text-catalogue-text-primary hover:bg-catalogue-interactive-hover transition-colors duration-200${hasHeaderExtras ? ' order-last lg:order-none' : ''}${shopToggle}`}
                   aria-label={t("header.toggleMenu")}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1305,6 +1316,15 @@ export const HeaderComponent: React.FC<HeaderProps & {
             )
           )}
         </div>
+
+        {showCategoryBar && resolvedInstituteId && (
+          <CommerceHeaderRow
+            instituteId={resolvedInstituteId}
+            tagName={effectiveTagName}
+            globalSettings={resolvedGlobalSettings}
+            menuOpen={isMobileMenuOpen}
+          />
+        )}
 
         {/* Search Bar - Only for hero section header */}
 

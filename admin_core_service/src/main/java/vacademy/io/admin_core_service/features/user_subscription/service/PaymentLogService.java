@@ -17,7 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.util.CollectionUtils;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
+import com.fasterxml.jackson.databind.JsonNode;
 import vacademy.io.admin_core_service.features.common.util.JsonUtil;
+import vacademy.io.admin_core_service.features.payments.util.WebhookOrderLookup;
 import vacademy.io.admin_core_service.features.notification_service.service.PaymentNotificatonService;
 import vacademy.io.admin_core_service.features.user_subscription.dto.BalanceLearnerProjection;
 import vacademy.io.admin_core_service.features.user_subscription.dto.BillingSummaryProjection;
@@ -503,6 +505,19 @@ public class PaymentLogService {
         }
     }
 
+    /**
+     * The payment settles an admin invoice. Such a payment is recorded on the membership it paid
+     * for once the invoice's renewal / enrolment is applied (InvoiceProductLinkService), so it can
+     * carry a plan; it must still take the admin-invoice branch, never the enrolment one (which
+     * would credit the ledger a second time, raise a course invoice and fire PAYMENT_SUCCESS),
+     * including when a gateway re-delivers its webhook.
+     */
+    private boolean isAdminInvoicePayment(PaymentLog paymentLog) {
+        return paymentLog.getId() != null
+                && invoicePaymentLogMappingRepository.existsByPaymentLogIdAndInvoiceSource(
+                        paymentLog.getId(), "ADMIN_MANUAL");
+    }
+
     private void handlePostPaymentLogicForSyncPayment(PaymentLog paymentLog, String instituteId) {
         if (isCommerceOrderLog(paymentLog)
                 || (paymentLog.getUserPlan() != null && commercePlans.isCommercePlan(paymentLog.getUserPlan()))) {
@@ -513,7 +528,7 @@ public class PaymentLogService {
         }
         handlePaymentSuccessEntryCleanup(paymentLog, instituteId);
 
-        if (paymentLog.getUserPlan() == null) {
+        if (paymentLog.getUserPlan() == null || isAdminInvoicePayment(paymentLog)) {
             // Admin-created invoice: mark invoice as PAID
             if (invoicePaymentLogMappingRepository.findFirstByPaymentLogId(paymentLog.getId()).isPresent()) {
                 log.info("Admin invoice payment PAID (sync path) for paymentLogId={}", paymentLog.getId());
@@ -700,27 +715,157 @@ public class PaymentLogService {
      */
     @Transactional
     public void updatePaymentLogsByOrderId(String orderId, String paymentStatus, String instituteId) {
+        applyStatusToOrderLogs(orderId, paymentStatus, instituteId, this::findLogsByOrderIdLegacy);
+    }
+
+    /**
+     * Webhook form of {@link #updatePaymentLogsByOrderId}: the same update pipeline, but the
+     * logs are found by an exact match of the gateway order id for that gateway only
+     * ({@link #findLogsForWebhook}), never by substring or by a bare primary-key fallback
+     * across gateways. Used when webhook verification is enforced.
+     */
+    @Transactional
+    public void updatePaymentLogsForWebhook(String orderId, String vendor, String paymentStatus,
+            String instituteId) {
+        applyStatusToOrderLogs(orderId, paymentStatus, instituteId, id -> findLogsForWebhook(id, vendor));
+    }
+
+    /**
+     * The order-id lookup {@link #updatePaymentLogsByOrderId} has always used, one attempt:
+     * a stored {@code "order_id"/"orderId":"<id>"} anywhere in payment_specific_data, else
+     * the id as a substring of it, else the id as a payment log primary key.
+     */
+    public List<PaymentLog> findLogsByOrderIdLegacy(String orderId) {
+        List<PaymentLog> paymentLogs = paymentLogRepository.findAllByOrderIdInOriginalRequest(orderId);
+        if (paymentLogs.isEmpty()) {
+            paymentLogs = paymentLogRepository.findAllByOrderIdInJson(orderId);
+        }
+        if (paymentLogs.isEmpty()) {
+            paymentLogs = new ArrayList<>();
+            paymentLogRepository.findById(orderId).ifPresent(paymentLogs::add);
+        }
+        return paymentLogs;
+    }
+
+    /**
+     * Logs of one gateway order, matched exactly (see {@link WebhookOrderLookup}): the log's
+     * vendor equals {@code vendor} and {@code orderId} equals its id or its stored
+     * {@code originalRequest.order_id} / {@code originalRequest.orderId}.
+     */
+    public List<PaymentLog> findLogsForWebhook(String orderId, String vendor) {
+        if (!StringUtils.hasText(orderId) || !StringUtils.hasText(vendor)) {
+            return new ArrayList<>();
+        }
+        List<PaymentLog> candidates = paymentLogRepository.findWebhookOrderCandidates(orderId,
+                WebhookOrderLookup.quotedValueLikePattern(orderId));
+        List<PaymentLog> matched = new ArrayList<>();
+        for (PaymentLog candidate : candidates) {
+            if (WebhookOrderLookup.matches(candidate, orderId, vendor)) {
+                matched.add(candidate);
+            }
+        }
+        return matched;
+    }
+
+    /**
+     * What a webhook verifier needs to know about a gateway order, read in one transaction:
+     * the exactly matched logs (ids, amounts, owning institutes) and the ids the legacy
+     * lookup finds, so a difference between the two can be reported.
+     */
+    @Transactional(readOnly = true)
+    public WebhookOrderMatch matchWebhookOrder(String orderId, String vendor) {
+        List<PaymentLog> exact = findLogsForWebhook(orderId, vendor);
+        List<String> ids = new ArrayList<>();
+        List<Double> amounts = new ArrayList<>();
+        Set<String> institutes = new LinkedHashSet<>();
+        Set<String> childIds = new HashSet<>();
+        for (PaymentLog pLog : exact) {
+            ids.add(pLog.getId());
+            amounts.add(pLog.getPaymentAmount());
+            String institute = resolveOwningInstituteId(pLog);
+            institutes.add(institute);
+            childIds.addAll(childPaymentLogIds(pLog));
+        }
+        // An id with LIKE wildcards would make the legacy lookup read a large part of the
+        // table a second time; it is reported as unknown instead.
+        List<String> legacyIds = null;
+        if (StringUtils.hasText(orderId) && orderId.indexOf('%') < 0 && orderId.indexOf('_') < 0) {
+            legacyIds = new ArrayList<>();
+            for (PaymentLog pLog : findLogsByOrderIdLegacy(orderId)) {
+                legacyIds.add(pLog.getId());
+            }
+        }
+        return new WebhookOrderMatch(ids, amounts, institutes, childIds, legacyIds);
+    }
+
+    /**
+     * @param logIds       exactly matched log ids
+     * @param amounts      their payment amounts, same order
+     * @param instituteIds owning institute of each matched log (may contain null)
+     * @param childLogIds  ids listed as children of a multi-package parent among them
+     * @param legacyLogIds ids the legacy lookup finds for the same order id; null when it was
+     *                     not run (the id holds LIKE wildcards)
+     */
+    public record WebhookOrderMatch(List<String> logIds, List<Double> amounts, Set<String> instituteIds,
+            Set<String> childLogIds, List<String> legacyLogIds) {
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<String> childPaymentLogIds(PaymentLog pLog) {
+        try {
+            if (StringUtils.hasText(pLog.getPaymentSpecificData())) {
+                Map<String, Object> data = JsonUtil.fromJson(pLog.getPaymentSpecificData(), Map.class);
+                Object children = data != null ? data.get("childPaymentLogIds") : null;
+                if (children instanceof List<?> list) {
+                    List<String> ids = new ArrayList<>();
+                    for (Object id : list) {
+                        if (id != null) {
+                            ids.add(id.toString());
+                        }
+                    }
+                    return ids;
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Could not read child logs of payment log {}: {}", pLog.getId(), e.getMessage());
+        }
+        return List.of();
+    }
+
+    /**
+     * The institute a payment log belongs to, from server-side records only: the enrolment
+     * invite of its plan, the admin invoice it pays, or the institute the payment was
+     * initiated for (stored as {@code originalRequest.institute_id} by the server at checkout).
+     */
+    public String resolveOwningInstituteId(PaymentLog paymentLog) {
+        String instituteId = resolveInstituteIdForPaymentLog(paymentLog);
+        if (StringUtils.hasText(instituteId) || paymentLog == null
+                || !StringUtils.hasText(paymentLog.getPaymentSpecificData())) {
+            return instituteId;
+        }
+        try {
+            JsonNode request = JsonUtil.fromJson(paymentLog.getPaymentSpecificData(), JsonNode.class)
+                    .path("originalRequest");
+            String fromRequest = request.path("institute_id").asText(null);
+            if (!StringUtils.hasText(fromRequest)) {
+                fromRequest = request.path("instituteId").asText(null);
+            }
+            return StringUtils.hasText(fromRequest) ? fromRequest : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private void applyStatusToOrderLogs(String orderId, String paymentStatus, String instituteId,
+            java.util.function.Function<String, List<PaymentLog>> finder) {
         log.info("Attempting to update payment logs by Order ID={}, setting paymentStatus={}", orderId, paymentStatus);
 
         List<PaymentLog> paymentLogs = new ArrayList<>();
         int maxRetries = 10;
 
-        // --- Retry Loop to find by OrderID in JSON or by PK as fallback ---
+        // --- Retry Loop to find the order's logs (the log may not be committed yet) ---
         for (int i = 0; i < maxRetries; i++) {
-            // First check by orderId in originalRequest.order_id JSON path (primary method)
-            paymentLogs = paymentLogRepository.findAllByOrderIdInOriginalRequest(orderId);
-
-            // If not found, try the broader search
-            if (paymentLogs.isEmpty()) {
-                paymentLogs = paymentLogRepository.findAllByOrderIdInJson(orderId);
-            }
-
-            // If none found by OrderId, check if the input is actually a PK (legacy/default
-            // way)
-            if (paymentLogs.isEmpty()) {
-                Optional<PaymentLog> logOpt = paymentLogRepository.findById(orderId);
-                logOpt.ifPresent(paymentLogs::add);
-            }
+            paymentLogs = finder.apply(orderId);
 
             if (!paymentLogs.isEmpty()) {
                 log.info("Found {} payment logs for ID/Order {} on attempt {}/{}", paymentLogs.size(), orderId, i + 1,
@@ -916,8 +1061,9 @@ public class PaymentLogService {
         // Handle payment success - mark ABANDONED_CART as DELETED
         handlePaymentSuccessEntryCleanup(paymentLog, instituteId);
 
-        // Check if this is an admin-invoice payment or donation (both have null userPlan)
-        if (paymentLog.getUserPlan() == null) {
+        // Check if this is an admin-invoice payment or donation (both have null userPlan, except an
+        // admin invoice payment already recorded on the membership it paid for)
+        if (paymentLog.getUserPlan() == null || isAdminInvoicePayment(paymentLog)) {
             if (invoicePaymentLogMappingRepository.findFirstByPaymentLogId(paymentLog.getId()).isPresent()) {
                 log.info("Admin invoice payment PAID (webhook path) for paymentLogId={}", paymentLog.getId());
                 invoiceService.markAdminInvoicePaidByPaymentLog(paymentLog.getId(), instituteId);

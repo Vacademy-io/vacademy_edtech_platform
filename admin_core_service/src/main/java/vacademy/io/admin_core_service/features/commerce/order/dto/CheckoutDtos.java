@@ -116,6 +116,12 @@ public final class CheckoutDtos {
          * placed: state and timeline only, no order id, items, totals or recipient.
          */
         private boolean masked;
+        /** NONE, IN_PROGRESS, PART or FULL (WP-32). */
+        private String returnState;
+        /** NONE, PENDING, PART or FULL (WP-32). */
+        private String refundState;
+        /** What was given back to the buyer so far (WP-32). */
+        private BigDecimal refundedAmount;
     }
 
     @Data
@@ -262,5 +268,19 @@ public final class CheckoutDtos {
         private String stateCode;
         private String pincode;
         private Boolean isDefault;
+    }
+
+    /** The answer to an order link: a short order access token for the order page. */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class OrderLinkExchange {
+        private String orderAccessToken;
+        /** ISO-8601 instant. */
+        private String orderAccessTokenExpiresAt;
+        private Boolean phoneVerified;
     }
 }

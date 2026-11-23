@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import z from "zod";
 import { DashboardLoader } from "@/components/core/dashboard-loader";
 import AIReportDetailsPage from "@/components/common/my-reports/ai-report-details-page";
+import { AiReportRichView } from "@/components/common/my-reports/ai-report-rich-view";
 import { LayoutContainer } from "@/components/common/layout-container/layout-container";
 import { addHours } from "date-fns";
 import { formatTime } from "@/lib/format-date";
@@ -254,12 +255,20 @@ function RouteComponent() {
               </TabsList>
             </Tabs>
             {tab === "ai" ? (
-              <AIReportDetailsPage
-                report={parsedProcessedJSON}
+              <AiReportRichView
                 assessmentId={assessmentId as string}
                 assessmentName={assessmentName as string}
                 attemptId={attemptId as string}
                 comparisonData={comparisonData}
+                fallback={
+                  <AIReportDetailsPage
+                    report={parsedProcessedJSON}
+                    assessmentId={assessmentId as string}
+                    assessmentName={assessmentName as string}
+                    attemptId={attemptId as string}
+                    comparisonData={comparisonData}
+                  />
+                }
               />
             ) : (
               <ComparisonDashboard
@@ -272,12 +281,20 @@ function RouteComponent() {
             )}
           </div>
         ) : (
-          <AIReportDetailsPage
-            report={parsedProcessedJSON}
+          <AiReportRichView
             assessmentId={assessmentId as string}
             assessmentName={assessmentName as string}
-            attemptId={attemptId as string}
+            attemptId={attemptId}
             comparisonData={comparisonData}
+            fallback={
+              <AIReportDetailsPage
+                report={parsedProcessedJSON}
+                assessmentId={assessmentId as string}
+                assessmentName={assessmentName as string}
+                attemptId={attemptId as string}
+                comparisonData={comparisonData}
+              />
+            }
           />
         )}
       </LayoutContainer>

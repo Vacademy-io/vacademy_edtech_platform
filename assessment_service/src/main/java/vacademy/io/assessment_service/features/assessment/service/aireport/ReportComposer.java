@@ -67,7 +67,7 @@ public class ReportComposer {
     private void appendPage(PdfMerger merger, JsonNode page, Map<String, Object> ctx, Profile profile) throws Exception {
         String type = page.path("type").asText("");
         switch (type) {
-            case "TEMPLATE" -> append(merger, htmlToPdf(fullDocument(ReportTemplateEngine.render(page.path("html").asText(""), ctx))));
+            case "TEMPLATE" -> append(merger, htmlToPdf(fullDocument(templateBody(page, ctx))));
             case "PDF" -> {
                 String uri = page.path("data_uri").asText("");
                 append(merger, uri.startsWith("data:application/pdf;base64,") ? inlinePdf(uri) : file(page.path("file_id").asText()));
@@ -79,6 +79,16 @@ public class ReportComposer {
             }
             default -> log.warn("[report-profile] unknown page type {} in profile {}", type, profile.id());
         }
+    }
+
+    /**
+     * A template page's filled HTML. Pages written in the wizard's simple editor get normal page
+     * margins and text size; designed pages (e.g. a styled scholarship letter) bring their own layout.
+     */
+    static String templateBody(JsonNode page, Map<String, Object> ctx) {
+        String body = ReportTemplateEngine.render(page.path("html").asText(""), ctx);
+        if (!"simple".equals(page.path("editor").asText(""))) return body;
+        return "<div style=\"padding:48px 56px;font-size:13px;line-height:1.55;color:#1f2937;\">" + body + "</div>";
     }
 
     private static void append(PdfMerger merger, byte[] pdf) throws Exception {
@@ -122,10 +132,26 @@ public class ReportComposer {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ConverterProperties props = new ConverterProperties();
         props.setFontProvider(fonts.newProvider());
-        // Templates may only use inline assets: no base URI, so nothing is fetched from the network.
+        // Templates may only use inline assets: no base URI, and absolute URLs are refused too,
+        // because admins write these pages in the assessment wizard.
+        props.setResourceRetriever(NO_NETWORK);
         HtmlConverter.convertToPdf(html, out, props);
         return out.toByteArray();
     }
+
+    /** Fetches nothing: data: images are decoded by iText itself, any other URL resolves to nothing. */
+    static final com.itextpdf.styledxmlparser.resolver.resource.IResourceRetriever NO_NETWORK =
+            new com.itextpdf.styledxmlparser.resolver.resource.IResourceRetriever() {
+                @Override
+                public java.io.InputStream getInputStreamByUrl(java.net.URL url) {
+                    return null;
+                }
+
+                @Override
+                public byte[] getByteArrayByUrl(java.net.URL url) {
+                    return null;
+                }
+            };
 
     // ── Template values ──
 
@@ -141,9 +167,9 @@ public class ReportComposer {
         c.put("institute_name", m.getInstituteName() == null ? "" : m.getInstituteName());
 
         double pct = m.getMaxScore() > 0 ? 100.0 * m.getScore() / m.getMaxScore() : 0;
-        c.put("score", AiReportCharts.num(m.getScore()));
-        c.put("max_score", AiReportCharts.num(m.getMaxScore()));
-        c.put("percentage", AiReportCharts.num(pct));
+        c.put("score", AiReportCharts.oneDecimal(m.getScore()));
+        c.put("max_score", AiReportCharts.oneDecimal(m.getMaxScore()));
+        c.put("percentage", AiReportCharts.oneDecimal(pct));
         c.put("percentage_whole", String.valueOf((long) Math.floor(Math.max(0, pct))));
         boolean ranked = m.getParticipants() != null && m.getParticipants() >= 2 && m.getRank() != null;
         c.put("has_rank", ranked);
@@ -169,8 +195,8 @@ public class ReportComposer {
             row.put("attempted", String.valueOf(sq.size() - sSkipped));
             row.put("correct", String.valueOf(count(sq, Outcome.CORRECT) + count(sq, Outcome.PARTIAL)));
             row.put("wrong", String.valueOf(count(sq, Outcome.WRONG)));
-            row.put("marks", AiReportCharts.num(s.score()));
-            row.put("max", AiReportCharts.num(s.max()));
+            row.put("marks", AiReportCharts.oneDecimal(s.score()));
+            row.put("max", AiReportCharts.oneDecimal(s.max()));
             sections.add(row);
         }
         c.put("sections", sections);
@@ -192,6 +218,28 @@ public class ReportComposer {
         if (m.getLogoDataUri() != null) assets.putIfAbsent("institute_logo", m.getLogoDataUri());
         c.put("asset", assets);
 
+        // Ready-made blocks for pages written in the wizard's simple editor, built here as raw
+        // HTML ({{{sections_table}}}, {{{logo_img}}}, {{{asset_img.signature}}}).
+        c.put("sections_table", sectionsTable(sections));
+        c.put("logo_img", m.getLogoDataUri() == null ? "" : img(m.getLogoDataUri(), 64, 200));
+        Map<String, Object> assetImages = new HashMap<>();
+        assets.forEach((k, v) -> assetImages.put(k, img((String) v, 90, 260)));
+        c.put("asset_img", assetImages);
+
+        // Registration answers chosen in the report settings (report_options.student_fields):
+        // all on one line ({{student_details}}) or one by one ({{detail.student_roll_number}}).
+        List<ReportStudentDetail> details = m.getStudentDetails() == null ? List.of() : m.getStudentDetails();
+        List<String> detailParts = new ArrayList<>();
+        Map<String, Object> byKey = new HashMap<>();
+        for (ReportStudentDetail d : details) {
+            if (d == null || d.value() == null || d.value().isBlank()) continue;
+            detailParts.add((d.label() == null || d.label().isBlank() ? "" : d.label() + ": ") + d.value());
+            String key = detailKey(d.label());
+            if (!key.isEmpty()) byKey.putIfAbsent(key, d.value());
+        }
+        c.put("student_details", String.join(" \u00b7 ", detailParts));
+        c.put("detail", byKey);
+
         String qrUrl = cfg != null ? cfg.path("qr_url").asText("") : "";
         c.put("qr_svg", qrUrl.isBlank() ? "" : qrSvg(qrUrl, cfg.path("qr_size").asInt(128)));
 
@@ -199,11 +247,48 @@ public class ReportComposer {
             Map<String, Double> basis = Map.of("percentage", pct, "score", m.getScore());
             cfg.path("variables").fields().forEachRemaining(e -> {
                 Double v = evaluate(e.getValue(), basis);
-                c.put(e.getKey(), v == null ? "" : AiReportCharts.num(v));
+                c.put(e.getKey(), v == null ? "" : AiReportCharts.oneDecimal(v));
                 c.put("has_" + e.getKey(), v != null && v > 0);
             });
         }
         return c;
+    }
+
+    /** "Student Roll Number" -> student_roll_number: the key of {{detail.*}} (the wizard builds the same key). */
+    static String detailKey(String label) {
+        if (label == null) return "";
+        return label.toLowerCase(Locale.ROOT).replaceAll("[^\\p{L}\\p{N}]+", "_").replaceAll("^_+|_+$", "");
+    }
+
+    private static String img(String dataUri, int maxHeight, int maxWidth) {
+        return "<img src=\"" + dataUri.replace("\"", "%22") + "\" style=\"max-height:" + maxHeight + "px;max-width:" + maxWidth + "px;\"/>";
+    }
+
+    private static String escHtml(Object v) {
+        return v == null ? "" : v.toString().replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
+    }
+
+    /** Section-wise marks as a plain table, for {{{sections_table}}}. Empty when the paper has no sections. */
+    static String sectionsTable(List<Map<String, Object>> sections) {
+        if (sections == null || sections.isEmpty()) return "";
+        String th = "border:1px solid #cbd5e1;padding:5px 8px;background:#f1f5f9;text-align:left;font-size:11px;";
+        String td = "border:1px solid #cbd5e1;padding:5px 8px;font-size:11px;";
+        StringBuilder t = new StringBuilder("<table style=\"border-collapse:collapse;width:100%;\"><tr>");
+        for (String h : new String[]{"Section", "Questions", "Attempted", "Correct", "Wrong", "Marks"}) {
+            t.append("<th style=\"").append(th).append("\">").append(h).append("</th>");
+        }
+        t.append("</tr>");
+        for (Map<String, Object> row : sections) {
+            t.append("<tr>");
+            t.append("<td style=\"").append(td).append("\">").append(escHtml(row.get("name"))).append("</td>");
+            for (String k : new String[]{"questions", "attempted", "correct", "wrong"}) {
+                t.append("<td style=\"").append(td).append("\">").append(escHtml(row.get(k))).append("</td>");
+            }
+            t.append("<td style=\"").append(td).append("\">").append(escHtml(row.get("marks"))).append(" / ")
+                    .append(escHtml(row.get("max"))).append("</td>");
+            t.append("</tr>");
+        }
+        return t.append("</table>").toString();
     }
 
     /**

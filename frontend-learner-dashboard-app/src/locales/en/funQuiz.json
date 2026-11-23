@@ -69,6 +69,9 @@
     "notes_other": "{{count}} notes",
     "viewingPast": "You are looking at an earlier attempt.",
     "noRecorded": "This attempt has no recorded answers, so every question shows as skipped.",
-    "backToLatest": "Back to latest"
+    "backToLatest": "Back to latest",
+    "neonCleared": "Quiz cleared",
+    "neonNotYet": "Not yet",
+    "neonStars": "{{count}} of 3 stars"
   }
 }

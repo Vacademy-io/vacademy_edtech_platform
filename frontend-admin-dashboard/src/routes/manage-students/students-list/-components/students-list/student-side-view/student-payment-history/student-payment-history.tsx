@@ -46,6 +46,7 @@ import {
 } from '@/routes/manage-payments/-components/PermanentDeleteDialog';
 import { useCanDeletePayments } from '@/routes/manage-payments/-hooks/useCanDeletePayments';
 import { CpoInstallmentsEditor } from './cpo-installments-editor';
+import { InvoiceProductLinkStatus } from './invoice-product-link-field';
 import { CreateInvoiceDialog } from './create-invoice-dialog';
 import { useGetUserBasicDetails } from '@/services/get_user_basic_details';
 import { ProfileSectionCard, ProfileEmpty, ProfileMiniBar } from '../profile-ui';
@@ -503,6 +504,14 @@ const InvoicesList = ({
                                                 </span>
                                             )}
                                         </div>
+                                        {/* The renewal / enrolment this invoice pays for, and whether it was applied. */}
+                                        {inv.product_link && (
+                                            <InvoiceProductLinkStatus
+                                                invoice={inv}
+                                                instituteId={instituteId}
+                                                onRefresh={onRefresh}
+                                            />
+                                        )}
                                     </div>
                                     {canDownload && (
                                         <>

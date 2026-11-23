@@ -113,6 +113,60 @@ export const fetchFolderLinks = async (
     return Array.isArray(res.data) ? res.data : [];
 };
 
+/**
+ * How students see a folder's tests: NAME = by name, A to Z (new tests take their place);
+ * CUSTOM = the order an admin arranged (new tests go to the end).
+ */
+export type FolderTestOrderMode = 'NAME' | 'CUSTOM';
+
+export interface FolderTestOrderItem {
+    assessment_id: string;
+    name: string;
+    status: 'PUBLISHED' | 'DRAFT';
+}
+
+export interface FolderTestOrder {
+    folder_id: string;
+    mode: FolderTestOrderMode;
+    /** Draft and published tests of the folder, in the order students see them. */
+    assessments: FolderTestOrderItem[];
+}
+
+export const FOLDER_TEST_ORDER_QUERY_KEY = ['ASSESSMENT_FOLDER_TEST_ORDER'] as const;
+
+export const fetchFolderTestOrder = async (folderId: string): Promise<FolderTestOrder> => {
+    const res = await authenticatedAxiosInstance.get<FolderTestOrder>(`${FOLDER_BASE}/test-order`, {
+        params: { ...instituteParams(), folderId },
+    });
+    return res.data;
+};
+
+/** CUSTOM: `assessmentIds` is the new order. NAME: back to A to Z (ids are ignored). */
+export const saveFolderTestOrder = async (
+    folderId: string,
+    mode: FolderTestOrderMode,
+    assessmentIds: string[]
+): Promise<FolderTestOrder> => {
+    const res = await authenticatedAxiosInstance.post<FolderTestOrder>(
+        `${FOLDER_BASE}/test-order`,
+        { folder_id: folderId, mode, assessment_ids: mode === 'CUSTOM' ? assessmentIds : [] },
+        { params: instituteParams() }
+    );
+    return res.data;
+};
+
+export const useFolderTestOrder = (folderId: string | undefined) =>
+    useQuery({
+        queryKey: [...FOLDER_TEST_ORDER_QUERY_KEY, getInstituteId(), folderId],
+        queryFn: () => fetchFolderTestOrder(folderId as string),
+        enabled: Boolean(folderId),
+        staleTime: 0,
+    });
+
+/** Natural A to Z, like the server: "Test 7" before "Test 10", case ignored. */
+export const compareTestNames = (a: string, b: string) =>
+    a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+
 /** Relative admin route of one folder — what a sidebar sub-tab points at. */
 export const assessmentFolderRoute = (folderId: string) =>
     `/assessment/assessment-list?folderId=${encodeURIComponent(folderId)}`;
@@ -133,13 +187,14 @@ export const useAssessmentFolderLinks = (assessmentIds: string[], enabled = true
         staleTime: 30 * 1000,
     });
 
-/** Invalidates folder counts and card chips after any folder change. */
+/** Invalidates folder counts, card chips and test orders after any folder change. */
 export const useInvalidateAssessmentFolders = () => {
     const queryClient = useQueryClient();
     return () =>
         Promise.all([
             queryClient.invalidateQueries({ queryKey: ASSESSMENT_FOLDERS_QUERY_KEY }),
             queryClient.invalidateQueries({ queryKey: ASSESSMENT_FOLDER_LINKS_QUERY_KEY }),
+            queryClient.invalidateQueries({ queryKey: FOLDER_TEST_ORDER_QUERY_KEY }),
         ]);
 };
 

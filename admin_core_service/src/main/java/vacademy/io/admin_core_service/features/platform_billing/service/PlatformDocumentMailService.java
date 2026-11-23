@@ -221,9 +221,14 @@ public class PlatformDocumentMailService {
             if (uri.getScheme() == null || uri.getHost() == null) {
                 return null;
             }
-            String path = appPath.trim().startsWith("/") ? appPath.trim() : "/" + appPath.trim();
+            // The product's app root: "/evalezy" stays, Telleo's landing "/telleo/setup" is "/telleo".
+            String root = java.util.Arrays.stream(appPath.trim().split("/"))
+                    .filter(StringUtils::hasText).findFirst().orElse(null);
+            if (root == null) {
+                return null;
+            }
             return uri.getScheme() + "://" + uri.getHost() + (uri.getPort() > 0 ? ":" + uri.getPort() : "")
-                    + path + "/plan";
+                    + "/" + root + "/plan";
         } catch (IllegalArgumentException e) {
             return null;
         }

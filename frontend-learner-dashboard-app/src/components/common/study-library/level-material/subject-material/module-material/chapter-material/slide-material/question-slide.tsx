@@ -12,6 +12,7 @@ import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
 import {
     SUBMIT_QUESTION_SLIDE_ANSWERS,
     GET_QUESTION_SLIDE_ACTIVITY_LOGS,
+    QUESTION_SLIDE_MY_RESULT,
 } from "@/constants/urls";
 import { v4 as uuidv4 } from "uuid";
 import { getUserId } from "@/constants/getUserId";
@@ -22,6 +23,19 @@ import { refreshProgressAfterSubmit } from "@/utils/study-library/tracking/refre
 import { toast } from "sonner";
 import { trackOrQueue, isNetworkError } from "@/lib/offline/events/track-or-queue";
 import CbeQuestionSlide from "./cbe-question-slide";
+import { CheckCircle, XCircle } from "@phosphor-icons/react";
+import { cn } from "@/lib/utils";
+import { announceSlideCompleted } from "@/services/slide-engagement";
+import { QuizInstantFeedbackPanel } from "./quiz-instant-feedback-panel";
+import {
+    answerKindOf,
+    correctAnswerHtml,
+    instantVerdictOf,
+    optionReview,
+    submittedOptionsOf,
+    type OptionReview,
+    type QuestionSlideResult,
+} from "./question-slide-result";
 
 interface Option {
     id: string;
@@ -74,6 +88,34 @@ interface QuestionResponseMap {
     };
 }
 
+/** An option row; once the answer is checked, the right options green and a wrong pick red. */
+const optionRowClass = (review: OptionReview, selected: boolean) =>
+    cn(
+        "flex flex-row-reverse items-center justify-between rounded-md border p-3 w-full transition-all duration-200",
+        review === "correct"
+            ? "border-success-500 bg-success-50"
+            : review === "wrong"
+              ? "border-danger-500 bg-danger-50"
+              : selected
+                ? "border-gray-600 bg-gray-50 hover:border-gray-400"
+                : "border-gray-200 hover:border-gray-400"
+    );
+
+const OptionReviewIcon = ({ review }: { review: OptionReview }) =>
+    review === "correct" ? (
+        <CheckCircle
+            aria-hidden="true"
+            weight="fill"
+            className="size-5 shrink-0 text-success-600"
+        />
+    ) : review === "wrong" ? (
+        <XCircle
+            aria-hidden="true"
+            weight="fill"
+            className="size-5 shrink-0 text-danger-600"
+        />
+    ) : null;
+
 const ChoiceOrTextQuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
     const { t } = useTranslation("libraryCommonB");
     const router = useRouter();
@@ -114,6 +156,13 @@ const ChoiceOrTextQuestionSlide = ({ questionData, onSubmit }: QuestionSlideProp
     // re-enable it as "Resubmit" once the learner edits their answer (retry).
     const [lastSubmittedSignatureMap, setLastSubmittedSignatureMap] = useState<
         Record<string, string>
+    >({});
+    // Per-slide result of the latest submission (right / wrong + the correct
+    // answer), filled only when the author left "Show correct answer after
+    // submit" on. Null: unknown yet, or nothing to show — the slide then behaves
+    // exactly as before.
+    const [resultMap, setResultMap] = useState<
+        Record<string, QuestionSlideResult | null>
     >({});
     const [isDecimal, setIsDecimal] = useState(false);
     const [maxDecimals, setMaxDecimals] = useState(0);
@@ -189,6 +238,23 @@ const ChoiceOrTextQuestionSlide = ({ questionData, onSubmit }: QuestionSlideProp
     const unchangedSinceSubmit =
         hasSubmitted &&
         currentAnswerSignature === (lastSubmittedSignatureMap[slideId] ?? "");
+
+    // Read the learner's latest result on this slide. Best-effort: signed out,
+    // slow (capped so Submit never hangs on it) or failed, nothing is shown,
+    // which is the slide's behaviour without it.
+    const loadResult = async (id: string): Promise<QuestionSlideResult | null> => {
+        try {
+            const userId = await getUserId();
+            if (!userId) return null;
+            const res = await authenticatedAxiosInstance.get<QuestionSlideResult>(
+                QUESTION_SLIDE_MY_RESULT,
+                { params: { slide_id: id }, timeout: 10000 }
+            );
+            return res.data ?? null;
+        } catch {
+            return null;
+        }
+    };
 
     // Submit question mutation
     const submitQuestionMutation = useMutation({
@@ -303,7 +369,8 @@ const ChoiceOrTextQuestionSlide = ({ questionData, onSubmit }: QuestionSlideProp
             if (result && "offlineQueued" in result && result.offlineQueued) {
                 toast.info(t("questionSlide.toast.savedOffline"));
             } else {
-                console.log("Question answer submitted successfully");
+                // Collects "Count as engagement" points once the server sees it done.
+                announceSlideCompleted(slideId);
             }
         },
         onError: (error: Error) => {
@@ -428,6 +495,20 @@ const ChoiceOrTextQuestionSlide = ({ questionData, onSubmit }: QuestionSlideProp
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [slideId, questionData?.id]);
+
+    // A returning learner sees the result of their latest answer again.
+    useEffect(() => {
+        if (!slideId || slideId === "unknown") return;
+        let cancelled = false;
+        void loadResult(slideId).then((result) => {
+            if (cancelled || !result) return;
+            setResultMap((prev) => ({ ...prev, [slideId]: result }));
+        });
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [slideId]);
 
     const handleOptionSelect = (optionId: string, optionName: string) => {
         if (isSubmitting) return;
@@ -562,6 +643,8 @@ const ChoiceOrTextQuestionSlide = ({ questionData, onSubmit }: QuestionSlideProp
             ...prev,
             [slideId]: true,
         }));
+        // The shown result belongs to the previous answer; never pair it with this one.
+        setResultMap((prev) => ({ ...prev, [slideId]: null }));
 
         try {
             let submissionValue: string | string[];
@@ -621,6 +704,15 @@ const ChoiceOrTextQuestionSlide = ({ questionData, onSubmit }: QuestionSlideProp
                 toast.success("Answer saved — it will sync when you're back online");
             }
 
+            // Right or wrong comes from the server (the answer key is not on the
+            // device). Read before the state below changes, so the result and the
+            // "submitted" look land in one render. A queued offline answer has
+            // no result until it syncs.
+            const result = queuedOffline ? null : await loadResult(slideId);
+            if (result) {
+                setResultMap((prev) => ({ ...prev, [slideId]: result }));
+            }
+
             // Keep the learner's answer on screen (do NOT clear it) and reveal
             // the answer guidance so they can self-check. These are formative
             // "Knowledge Check" questions — "look back, think again and retry",
@@ -651,6 +743,30 @@ const ChoiceOrTextQuestionSlide = ({ questionData, onSubmit }: QuestionSlideProp
         }
     };
 
+    // ---- Result after submit (author's "Show correct answer after submit") ----
+    // Shown only while the answer on screen is the one that was checked; once the
+    // learner edits it for a retry, the slide goes back to its plain look.
+    const slideResult = resultMap[slideId] ?? null;
+    // ...and only when that answer is the one the result is about (a returning
+    // learner's pre-filled answer can come from an older attempt).
+    const resultIsForShownAnswer =
+        !!slideResult &&
+        buildAnswerSignature(submittedOptionsOf(slideResult)) ===
+            currentAnswerSignature;
+    const instantVerdict =
+        unchangedSinceSubmit && resultIsForShownAnswer
+            ? instantVerdictOf(slideResult)
+            : null;
+    const reviewingOptions =
+        instantVerdict === "correct" || instantVerdict === "incorrect";
+    const reviewOf = (optionId: string, selectedIds: string[]): OptionReview =>
+        reviewingOptions ? optionReview(optionId, selectedIds, slideResult) : null;
+    const explanationHtml = questionData?.explanation_text_data?.content?.trim()
+        ? questionData.explanation_text_data.content
+        : slideResult?.explanation_html?.trim()
+          ? slideResult.explanation_html
+          : null;
+
     // Render the appropriate question component based on question type
     const renderQuestionContent = () => {
         switch (questionType) {
@@ -667,13 +783,21 @@ const ChoiceOrTextQuestionSlide = ({ questionData, onSubmit }: QuestionSlideProp
                                         option.text.content
                                     )
                                 }
-                                className={`flex flex-row-reverse items-center justify-between rounded-md border p-3 w-full transition-all duration-200 hover:border-gray-400 ${
+                                className={optionRowClass(
+                                    reviewOf(
+                                        option.id,
+                                        selectedOption ? [selectedOption.id] : []
+                                    ),
                                     selectedOption?.id === option.id
-                                        ? "border-gray-600 bg-gray-50"
-                                        : "border-gray-200"
-                                }`}
+                                )}
                             >
-                                <div className="relative flex items-center">
+                                <div className="relative flex items-center gap-2">
+                                    <OptionReviewIcon
+                                        review={reviewOf(
+                                            option.id,
+                                            selectedOption ? [selectedOption.id] : []
+                                        )}
+                                    />
                                     <div
                                         className={`w-5 h-5 border rounded-md flex items-center justify-center transition-colors ${
                                             selectedOption?.id === option.id
@@ -730,15 +854,23 @@ const ChoiceOrTextQuestionSlide = ({ questionData, onSubmit }: QuestionSlideProp
                                         option.text.content
                                     )
                                 }
-                                className={`flex flex-row-reverse items-center justify-between rounded-md border p-3 w-full transition-all duration-200 hover:border-gray-400 ${
+                                className={optionRowClass(
+                                    reviewOf(
+                                        option.id,
+                                        selectedOptions.map((opt) => opt.id)
+                                    ),
                                     selectedOptions.some(
                                         (opt) => opt.id === option.id
                                     )
-                                        ? "border-gray-600 bg-gray-50"
-                                        : "border-gray-200"
-                                }`}
+                                )}
                             >
-                                <div className="relative flex items-center">
+                                <div className="relative flex items-center gap-2">
+                                    <OptionReviewIcon
+                                        review={reviewOf(
+                                            option.id,
+                                            selectedOptions.map((opt) => opt.id)
+                                        )}
+                                    />
                                     <div
                                         className={`w-5 h-5 border rounded-md flex items-center justify-center transition-colors ${
                                             selectedOptions.some(
@@ -971,11 +1103,26 @@ const ChoiceOrTextQuestionSlide = ({ questionData, onSubmit }: QuestionSlideProp
                 </button>
             </div>
 
+            {/* Right / wrong, the correct answer and the explanation, when the
+                author left "Show correct answer after submit" on. */}
+            {instantVerdict && (
+                <QuizInstantFeedbackPanel
+                    verdict={instantVerdict}
+                    answerHtml={correctAnswerHtml(
+                        questionType,
+                        slideResult,
+                        questionData?.options
+                    )}
+                    answerKind={answerKindOf(questionType)}
+                    explanationHtml={explanationHtml}
+                />
+            )}
+
             {/* Answer guidance (explanation_text_data). Locked until the learner
                 submits — it can NEVER be read before an attempt. After submit it
-                auto-expands and can be collapsed/re-opened for self-checking. */}
-            {hasSubmitted &&
-                questionData?.explanation_text_data?.content?.trim() && (
+                auto-expands and can be collapsed/re-opened for self-checking.
+                The panel above already carries it while a result is shown. */}
+            {!instantVerdict && hasSubmitted && explanationHtml && (
                 <div className="mt-6 w-full">
                     <button
                         type="button"
@@ -996,8 +1143,7 @@ const ChoiceOrTextQuestionSlide = ({ questionData, onSubmit }: QuestionSlideProp
                         <div
                             className="rich-text-content mt-3 rounded-lg border border-neutral-200 bg-neutral-50 p-4 text-neutral-700"
                             dangerouslySetInnerHTML={{
-                                __html: questionData.explanation_text_data
-                                    .content,
+                                __html: explanationHtml,
                             }}
                         />
                     )}

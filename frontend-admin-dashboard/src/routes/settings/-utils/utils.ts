@@ -23,6 +23,8 @@ import AssessmentSettings from '../-components/AssessmentSettings';
 import WhatsAppSettings from '../-components/WhatsAppSettings/WhatsAppSettings';
 import LeadSettings from '../-components/LeadSettings';
 import GuardianSettings from '../-components/GuardianSettings';
+import EnrolmentBreakSettings from '../-components/EnrolmentBreakSettings';
+import PaymentReminderSettings from '../-components/PaymentReminderSettings';
 import OnboardingSettings from '../-components/OnboardingSettings';
 import GtmSettings from '../-components/GtmSettings';
 import UtmSettings from '../-components/UtmSettings';
@@ -42,8 +44,7 @@ import PaymentGatewaySettings from '../-components/PaymentGatewaySettings';
 import LmsSettings from '../-components/Lms/LmsSettings';
 import AiCallingSettings from '../-components/AiCallingSettings';
 import CrmIntelligenceSettings from '../-components/CrmIntelligenceSettings';
-import AssistantToolsSettings from '../-components/AssistantToolsSettings';
-import MCPServerSettings from '../-components/MCPServerSettings';
+import AiAccessSettings from '../-components/AiAccess/AiAccessSettings';
 import BadgesRewardsSettings from '../-components/BadgesRewards/BadgesRewardsSettings';
 import EngagementSettings from '../-components/EngagementSettings';
 import LanguageSettings from '../-components/LanguageSettings';
@@ -102,6 +103,8 @@ export interface SettingsTabEntry {
     component: ComponentType<Record<string, unknown>>;
     domain: SettingsDomain;
     group: string;
+    /** Other words the settings search should find this screen by (e.g. an older name). */
+    keywords?: string[];
     /**
      * Chrome-free variant to render when this setting is shown inside the
      * quick-access popup instead of the full /settings page. Falls back to
@@ -205,18 +208,13 @@ export const getAvailableSettingsTabs = (): SettingsTabEntry[] => {
             group: 'Platform Configuration',
         },
         {
-            tab: SettingsTabs.AssistantTools,
-            value: 'Vacademy Assistant',
-            component: AssistantToolsSettings,
+            tab: SettingsTabs.AiAccess,
+            value: 'AI access',
+            component: AiAccessSettings,
             domain: 'General',
             group: 'Platform Configuration',
-        },
-        {
-            tab: SettingsTabs.McpServer,
-            value: 'MCP Server',
-            component: MCPServerSettings,
-            domain: 'General',
-            group: 'Platform Configuration',
+            // The screen that replaced "Vacademy Assistant" and "MCP Server".
+            keywords: ['Vacademy Assistant', 'MCP Server', 'AI apps', 'Claude', 'ChatGPT'],
         },
         {
             tab: SettingsTabs.StorageUsage,
@@ -374,6 +372,20 @@ export const getAvailableSettingsTabs = (): SettingsTabEntry[] => {
             tab: SettingsTabs.Payment,
             value: 'Payment Settings',
             component: PaymentSettings,
+            domain: 'Finances',
+            group: 'Billing & Payments',
+        },
+        {
+            tab: SettingsTabs.PaymentReminders,
+            value: 'Payment Reminders',
+            component: PaymentReminderSettings,
+            domain: 'Finances',
+            group: 'Billing & Payments',
+        },
+        {
+            tab: SettingsTabs.EnrolmentBreaks,
+            value: 'Breaks and Holds',
+            component: EnrolmentBreakSettings,
             domain: 'Finances',
             group: 'Billing & Payments',
         },

@@ -2,18 +2,26 @@ package vacademy.io.admin_core_service.features.commerce.security;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vacademy.io.admin_core_service.features.commerce.accounts.AccountsAuditKinds;
 import vacademy.io.admin_core_service.features.commerce.audit.CommerceAuditService;
 import vacademy.io.admin_core_service.features.commerce.security.entity.CommerceStaffLocation;
+import vacademy.io.admin_core_service.features.commerce.security.entity.CommerceStaffScope;
 import vacademy.io.admin_core_service.features.commerce.security.repository.CommerceStaffLocationRepository;
+import vacademy.io.admin_core_service.features.commerce.security.repository.CommerceStaffScopeRepository;
 import vacademy.io.common.exceptions.InvalidRequestException;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.UUID;
 
 /** Location assignment and PIN set-up for commerce staff. Callers pass a guarded institute id. */
 @Service
@@ -29,12 +37,22 @@ public class CommerceStaffService {
     private final CommerceStaffLocationRepository staffLocationRepository;
     private final CommercePinService pinService;
     private final CommerceAuditService auditService;
+    /** Institute-wide scope rows; null in services built by hand without them. */
+    private final CommerceStaffScopeRepository staffScopeRepository;
 
     public CommerceStaffService(CommerceStaffLocationRepository staffLocationRepository,
                                 CommercePinService pinService, CommerceAuditService auditService) {
+        this(staffLocationRepository, pinService, auditService, null);
+    }
+
+    @Autowired
+    public CommerceStaffService(CommerceStaffLocationRepository staffLocationRepository,
+                                CommercePinService pinService, CommerceAuditService auditService,
+                                CommerceStaffScopeRepository staffScopeRepository) {
         this.staffLocationRepository = staffLocationRepository;
         this.pinService = pinService;
         this.auditService = auditService;
+        this.staffScopeRepository = staffScopeRepository;
     }
 
     @Transactional(readOnly = true)
@@ -132,6 +150,83 @@ public class CommerceStaffService {
 
     public boolean hasPin(String instituteId, String userId) {
         return pinService.hasPin(instituteId, userId);
+    }
+
+    /**
+     * Whether the staff member acts for every location ({@code all_locations}; false when no row).
+     * The id is not checked against auth_service: the guard reads roles from the caller's own token,
+     * so a row for an unknown id grants nothing.
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> scope(String instituteId, String staffUserId) {
+        requireId(staffUserId, "user_id");
+        String staffId = staffUserId.trim();
+        return scopeView(staffId, requireScopeRepository().findByInstituteIdAndUserId(instituteId, staffId));
+    }
+
+    /**
+     * Sets {@code all_locations} for a staff member (insert or update in one statement) and audits
+     * the old and new value. Writing the value it already has changes nothing and audits nothing.
+     */
+    @Transactional
+    public Map<String, Object> setScope(String instituteId, String actorUserId, String staffUserId,
+                                        Boolean allLocations) {
+        requireId(staffUserId, "user_id");
+        if (allLocations == null) {
+            throw new InvalidRequestException("VALIDATION: all_locations is required");
+        }
+        String staffId = staffUserId.trim();
+        CommerceStaffScopeRepository repository = requireScopeRepository();
+        Optional<CommerceStaffScope> before = repository.findByInstituteIdAndUserId(instituteId, staffId);
+        boolean old = before.map(CommerceStaffScope::isAllLocations).orElse(false);
+        if (before.isPresent() && old == allLocations) {
+            return scopeView(staffId, before);
+        }
+        if (before.isEmpty() && !allLocations) {
+            // No row means "not institute-wide" already.
+            return scopeView(staffId, before);
+        }
+        Optional<CommerceStaffScope> after;
+        if (before.isPresent()) {
+            CommerceStaffScope row = before.get();
+            row.setAllLocations(allLocations);
+            row.setSetBy(actorUserId);
+            after = Optional.of(repository.saveAndFlush(row));
+        } else {
+            // One statement, so two first writes for the same user never collide on the unique key.
+            repository.upsert(UUID.randomUUID().toString(), instituteId, staffId, allLocations, actorUserId);
+            after = repository.findByInstituteIdAndUserId(instituteId, staffId);
+        }
+        auditService.record(instituteId, actorUserId, null, AccountsAuditKinds.STAFF_SCOPE_EDIT,
+                AccountsAuditKinds.REF_STAFF, staffId, scopeJson(old), scopeJson(allLocations), null);
+        Map<String, Object> out = scopeView(staffId, after);
+        out.put("all_locations", allLocations);
+        out.put("set_by", actorUserId);
+        return out;
+    }
+
+    private CommerceStaffScopeRepository requireScopeRepository() {
+        if (staffScopeRepository == null) {
+            throw new IllegalStateException("staff scope repository is not available");
+        }
+        return staffScopeRepository;
+    }
+
+    private static Map<String, Object> scopeView(String staffId, Optional<CommerceStaffScope> row) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("user_id", staffId);
+        out.put("all_locations", row.map(CommerceStaffScope::isAllLocations).orElse(false));
+        out.put("set_by", row.map(CommerceStaffScope::getSetBy).orElse(null));
+        out.put("updated_at", row.map(CommerceStaffScope::getUpdatedAt).orElse(null));
+        return out;
+    }
+
+    private static String scopeJson(boolean allLocations) {
+        try {
+            return MAPPER.writeValueAsString(Map.of("all_locations", allLocations));
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("could not write the scope as JSON", e);
+        }
     }
 
     private static Set<String> currentIds(List<CommerceStaffLocation> rows) {

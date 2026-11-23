@@ -14,6 +14,7 @@ import vacademy.io.admin_core_service.features.user_subscription.service.Payment
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -54,7 +55,7 @@ class RazorpayWebHookCommerceBranchTest {
 
     @Test
     void aShopPaymentIsHandledByTheBranchAndNoLegacyLogicRuns() {
-        when(branch.handle(eq("payment.captured"), any(), eq("inst-1")))
+        when(branch.handle(eq("payment.captured"), any(), eq("inst-1"), isNull()))
                 .thenReturn(new Result(Outcome.HANDLED, "order-1", null, 2));
 
         ResponseEntity<String> answer = process(event("payment.captured", "order_rzp1", "order-1"));
@@ -68,7 +69,7 @@ class RazorpayWebHookCommerceBranchTest {
 
     @Test
     void aRefusedShopPaymentIsAcknowledgedMarkedFailedAndChangesNothing() {
-        when(branch.handle(any(), any(), any()))
+        when(branch.handle(any(), any(), any(), any()))
                 .thenReturn(new Result(Outcome.REFUSED, "order-1", "AMOUNT_MISMATCH", 0));
 
         ResponseEntity<String> answer = process(event("payment.captured", "order_rzp1", "order-1"));
@@ -81,7 +82,7 @@ class RazorpayWebHookCommerceBranchTest {
 
     @Test
     void aCoursePaymentGoesOnToTheLegacyPathUnchanged() {
-        when(branch.handle(any(), any(), any())).thenReturn(Result.NOT_COMMERCE);
+        when(branch.handle(any(), any(), any(), any())).thenReturn(Result.NOT_COMMERCE);
 
         ResponseEntity<String> answer = process(event("payment.failed", "order_rzp9", "log-course"));
 
@@ -97,5 +98,66 @@ class RazorpayWebHookCommerceBranchTest {
         process(event("payment.failed", "order_rzp9", "log-course"));
 
         verify(paymentLogService).updatePaymentLog("log-course", "FAILED", "inst-1");
+    }
+
+    // -- refund events (WP-32) --
+
+    private static String refundEvent(String type, String gatewayOrderId, String notesOrderId) {
+        return "{\"event\":\"" + type + "\",\"payload\":{\"payment\":{\"entity\":{\"id\":\"pay_1\","
+                + "\"order_id\":\"" + gatewayOrderId + "\",\"amount\":49900,\"currency\":\"INR\","
+                + "\"notes\":{\"orderId\":\"" + notesOrderId + "\",\"instituteId\":\"inst-1\"}}},"
+                + "\"refund\":{\"entity\":{\"id\":\"rfnd_1\",\"payment_id\":\"pay_1\",\"amount\":20000,"
+                + "\"status\":\"processed\",\"receipt\":\"r-1\"}}}}";
+    }
+
+    @Test
+    void aRefundEventOfACoursePaymentRunsTheLegacyPathExactlyAsWithoutTheBranch() {
+        String payload = refundEvent("refund.processed", "order_rzp9", "log-course");
+        when(branch.handle(any(), any(), any(), any())).thenReturn(Result.NOT_COMMERCE);
+        ResponseEntity<String> withBranch = process(payload);
+
+        // The same event on a service without the commerce branch: the legacy behaviour as it was.
+        RazorpayWebHookService legacy = new RazorpayWebHookService();
+        PaymentLogService legacyLogs = mock(PaymentLogService.class);
+        WebHookService legacyHooks = mock(WebHookService.class);
+        ReflectionTestUtils.setField(legacy, "objectMapper", new ObjectMapper());
+        ReflectionTestUtils.setField(legacy, "commerceWebhookBranch", null);
+        ReflectionTestUtils.setField(legacy, "paymentLogService", legacyLogs);
+        ReflectionTestUtils.setField(legacy, "webHookService", legacyHooks);
+        ResponseEntity<String> without = ReflectionTestUtils.invokeMethod(legacy, "processVerifiedPayload", "wh-1",
+                payload, "inst-1");
+
+        assertEquals(without.getStatusCode(), withBranch.getStatusCode());
+        assertEquals(without.getBody(), withBranch.getBody());
+        assertEquals(calls(legacyLogs), calls(paymentLogService), "the same legacy calls, in the same order");
+        assertEquals(calls(legacyHooks), calls(webHooks));
+    }
+
+    @Test
+    void aRefundEventOfAShopPaymentGoesToTheBranchWithItsRefundEntityAndNoLegacyLogicRuns() {
+        org.mockito.ArgumentCaptor<com.fasterxml.jackson.databind.JsonNode> refund =
+                org.mockito.ArgumentCaptor.forClass(com.fasterxml.jackson.databind.JsonNode.class);
+        when(branch.handle(eq("refund.processed"), any(), eq("inst-1"), refund.capture()))
+                .thenReturn(new Result(Outcome.HANDLED, "order-1", null, 0));
+
+        ResponseEntity<String> answer = process(refundEvent("refund.processed", "order_rzp1", "order-1"));
+
+        assertEquals(200, answer.getStatusCode().value());
+        assertEquals("rfnd_1", refund.getValue().path("id").asText());
+        verify(webHooks).updateWebHookStatus("wh-1", WebHookStatus.PROCESSED, null);
+        verifyNoInteractions(paymentLogService);
+    }
+
+    @Test
+    void aPaymentEventCarriesNoRefundEntity() {
+        when(branch.handle(any(), any(), any(), any())).thenReturn(Result.NOT_COMMERCE);
+        process(event("payment.failed", "order_rzp9", "log-course"));
+        verify(branch).handle(eq("payment.failed"), any(), eq("inst-1"), isNull());
+    }
+
+    private static java.util.List<String> calls(Object mock) {
+        return org.mockito.Mockito.mockingDetails(mock).getInvocations().stream()
+                .map(i -> i.getMethod().getName() + i.getArguments().length + java.util.Arrays.toString(i.getArguments()))
+                .toList();
     }
 }

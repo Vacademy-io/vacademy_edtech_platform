@@ -14,7 +14,6 @@ import {
 } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { MyInput } from '@/components/design-system/input';
-import { formatMoney } from '@/components/design-system/money-cell';
 import { MyPagination } from '@/components/design-system/pagination';
 import { MyTable } from '@/components/design-system/table';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -48,7 +47,7 @@ import { type ProductListFilters, fetchProducts } from '@/routes/commerce/-share
 import { readCommerceError } from '@/routes/commerce/-shared/commerce-errors';
 import { useProducts } from '@/routes/commerce/-shared/commerce-hooks';
 import type { ProductStatus, ProductSummary } from '@/routes/commerce/-shared/commerce-types';
-import { productWarnings, serverFilterSupport } from '@/routes/commerce/-shared/product-list';
+import { priceRange, productWarnings, serverFilterSupport } from '@/routes/commerce/-shared/product-list';
 import { ProductBulkBar } from './ProductBulkBar';
 
 /** 50 rows a page. */
@@ -66,14 +65,6 @@ const useDebounced = (value: string, delayMs: number) => {
     return debounced;
 };
 
-const priceRange = (product: ProductSummary): string => {
-    if (product.min_price === null) return '—';
-    const currency = product.currency ?? 'INR';
-    const min = formatMoney(product.min_price, currency);
-    return product.max_price !== null && product.max_price !== product.min_price
-        ? `${min} – ${formatMoney(product.max_price, currency)}`
-        : min;
-};
 
 /**
  * Products list: search by name, SKU or barcode; filter by
@@ -325,7 +316,7 @@ function ProductsListContent({ openProduct }: { openProduct: (productId: string)
             size: 180,
             cell: ({ row }) => (
                 <span className="block text-end text-body tabular-nums text-foreground">
-                    {priceRange(row.original)}
+                    {priceRange(row.original, t)}
                 </span>
             ),
         },
@@ -521,7 +512,7 @@ function ProductsListContent({ openProduct }: { openProduct: (productId: string)
                                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                                         <CommerceStatusChip kind="product" value={product.status} />
                                         <span className="text-caption tabular-nums text-foreground">
-                                            {priceRange(product)}
+                                            {priceRange(product, t)}
                                         </span>
                                         <span className="text-caption text-muted-foreground">
                                             {t('products.variantCount', {
@@ -536,6 +527,8 @@ function ProductsListContent({ openProduct }: { openProduct: (productId: string)
                     </ul>
                     <div className="hidden md:block">
                         <MyTable<ProductSummary>
+                            fillContainer
+                            enableColumnResizing={false}
                             data={query.data}
                             columns={columns}
                             isLoading={false}

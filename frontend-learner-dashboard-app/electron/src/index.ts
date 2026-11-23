@@ -5,6 +5,7 @@ import { app, MenuItem, protocol } from 'electron';
 import electronIsDev from 'electron-is-dev';
 import unhandled from 'electron-unhandled';
 import { autoUpdater } from 'electron-updater';
+import { setupLiveClass } from './live-class';
 import { checkAndStageOtaBundle, isWebBundleOtaShell } from './ota';
 
 import { ElectronCapacitorApp, setupContentSecurityPolicy, setupReloadWatcher } from './setup';
@@ -67,6 +68,9 @@ if (electronIsDev) {
   await app.whenReady();
   // Security - Set Content-Security-Policy based on whether or not we are in dev mode.
   setupContentSecurityPolicy(myCapacitorApp.getCustomURLScheme());
+  // In-app live class: keep-awake/throttling IPC + screen-share handler (live-class.ts).
+  // Registered before the window loads so `vacademyShell.liveClass` never calls into nothing.
+  setupLiveClass(myCapacitorApp.getCustomURLScheme(), electronIsDev);
   // Initialize our app, build windows, and load content.
   await myCapacitorApp.init();
   // Check for updates if we are in a packaged app. Which channel depends on the package:

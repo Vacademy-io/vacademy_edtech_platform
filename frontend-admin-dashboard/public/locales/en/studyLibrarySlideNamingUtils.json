@@ -12,6 +12,9 @@
         "assignment": "Assignment",
         "pdfDocument": "PDF Document",
         "slide": "Slide",
-        "quiz": "Quiz"
+        "quiz": "Quiz",
+        "flashcards": "Flashcards",
+        "poll": "Poll",
+        "game": "Game"
     }
 }

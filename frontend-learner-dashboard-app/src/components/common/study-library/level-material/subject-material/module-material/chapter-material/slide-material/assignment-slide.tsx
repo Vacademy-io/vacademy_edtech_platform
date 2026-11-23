@@ -55,6 +55,7 @@ import {
 import { useServerTime, getServerTime } from "@/hooks/use-server-time";
 import { getStudentDisplaySettings } from "@/services/student-display-settings";
 import { format, parseISO } from "date-fns";
+import { downloadLink } from "@/lib/download/save-file";
 
 /** Returns an SVG icon string based on file extension / MIME type */
 const getFileIconSvg = (fileName: string, mimeType: string): string => {
@@ -448,14 +449,7 @@ const AttachmentPreview = ({
 
   const triggerDownload = () => {
     if (!url) return;
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = fileName;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    void downloadLink(url, fileName, { target: "_blank", rel: "noopener noreferrer" });
   };
 
   const isGraded = tone === "graded";

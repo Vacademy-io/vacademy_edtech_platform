@@ -176,6 +176,36 @@ class DomainRoutingAdminServiceTest {
     }
 
     @Nested
+    @DisplayName("applyNamingSetting")
+    class ApplyNamingSetting {
+
+        @Test
+        @DisplayName("A save that does not mention it keeps custom terminology on the login page")
+        void omittedFlagIsKept() {
+            // The white-label wizard never sent this field, and every save switched
+            // the login page back to platform terminology.
+            InstituteDomainRouting row = existingRow();
+            row.setApplyNamingSetting(true);
+            when(repository.findById("row-1")).thenReturn(Optional.of(row));
+
+            assertTrue(service.update("row-1", bareRequest()).orElseThrow().isApplyNamingSetting());
+        }
+
+        @Test
+        @DisplayName("An explicit false turns it off")
+        void explicitFalseIsApplied() {
+            InstituteDomainRouting row = existingRow();
+            row.setApplyNamingSetting(true);
+            when(repository.findById("row-1")).thenReturn(Optional.of(row));
+
+            DomainRoutingUpsertRequest req = bareRequest();
+            req.setApplyNamingSetting(false);
+
+            assertFalse(service.update("row-1", req).orElseThrow().isApplyNamingSetting());
+        }
+    }
+
+    @Nested
     @DisplayName("sub-org linkage")
     class SubOrgLinkage {
 

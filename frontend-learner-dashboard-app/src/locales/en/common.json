@@ -54,5 +54,12 @@
         "resetsAt": "You can use it again after {{when}}, or ask your teacher.",
         "tryLater": "Try again later, or ask your teacher.",
         "warning": "You're close to your AI usage allowance."
+    },
+    "fileSave": {
+        "savedToDownloads": "Saved to Downloads: {{name}}",
+        "savedToDocuments": "Saved to Documents: {{name}}",
+        "noAppToOpen": "No app on this phone can open this file.",
+        "updateApp": "Update the app to download files.",
+        "saveFailed": "Couldn't save the file. Please try again."
     }
 }

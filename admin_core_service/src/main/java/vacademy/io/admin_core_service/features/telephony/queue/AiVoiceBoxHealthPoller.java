@@ -45,6 +45,7 @@ public class AiVoiceBoxHealthPoller {
     private static final String HEALTH_PATH = "/voice-bot-service/health";
 
     private final AiVoiceBoxRepository repository;
+    private final VoiceBotVendorFailureRecorder vendorFailures;
     private final ObjectMapper mapper = new ObjectMapper();
     private final HttpClient http = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(3))
@@ -82,6 +83,7 @@ public class AiVoiceBoxHealthPoller {
         box.setActiveCalls(activeCalls);
         box.setLastHealthCheck(Instant.now());
         repository.save(box);
+        vendorFailures.record(box.getSlug(), body.get("vendorFailures"));
         if (recovered) {
             log.info("ai voice box {} is back — {} slot(s) returned to the fleet",
                     box.getSlug(), box.getMaxConcurrent());

@@ -38,7 +38,9 @@ function mapSidebarToTeacherConfig(menu: SidebarItemsType[]): SidebarTabConfig[]
                 // the toggle genuinely per-role rather than institute-wide.
                 item.id !== 'live-activity' &&
                 // AI Course/Program Creator ships hidden; admins opt in via Display Settings.
-                item.id !== 'ai-copilot-tab'
+                item.id !== 'ai-copilot-tab' &&
+                // Learner home builder: institute ADMIN only (its API refuses teachers).
+                item.id !== 'learner-home'
                     ? true
                     : false,
             subTabs:
@@ -74,6 +76,7 @@ function defaultDashboardWidgetsTeacher(): DashboardWidgetConfig[] {
         'kpiBand',
         'pendingActions',
         'unresolvedDoubts',
+        'engagementPlanning',
         'recentNotifications',
         'liveClasses',
         'learningCenter',
@@ -114,6 +117,7 @@ function defaultDashboardWidgetsTeacher(): DashboardWidgetConfig[] {
         'subOrgActivityDues',
         // 5. Engagement signals
         'unresolvedDoubts',
+        'engagementPlanning',
         'recentNotifications',
         'dailyActivityTrend',
         'userActivitySummary',
@@ -193,6 +197,9 @@ const TEACHER_DEFAULTS_BASE: Omit<DisplaySettingsData, 'sidebar'> = {
             { id: 'LIVE_SESSION', order: 6, visible: false },
             { id: 'PLANNING', order: 7, visible: false },
             { id: 'ACTIVITY', order: 8, visible: false },
+            // Daily engagement (2026-11): 8.5 slots it after Activity without renumbering
+            // saved orders. Listed so teachers can find it and admins can move or hide it.
+            { id: 'ENGAGEMENT', order: 8.5, visible: true },
             { id: 'PULSE', order: 9, visible: true },
             { id: 'REPORTS', order: 10, visible: true },
             { id: 'CERTIFICATES', order: 11, visible: false },

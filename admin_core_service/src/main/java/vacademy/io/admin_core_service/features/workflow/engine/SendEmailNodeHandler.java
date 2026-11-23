@@ -50,6 +50,10 @@ public class SendEmailNodeHandler implements NodeHandler {
     /** Holds lead nurture back from leads an engagement engine is working. Optional: absent = no hold. */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private EngagementWorkflowSuppression engagementSuppression;
+
+    /** Learners on a break (docs/ENROLMENT_BREAKS.md). Optional: absent = no hold. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vacademy.io.admin_core_service.features.enrolment_break.service.EnrolmentBreakGuard enrolmentBreakGuard;
     private final Map<String, Template> templateCache = new java.util.concurrent.ConcurrentHashMap<>();
 
     // Throttling defaults — workflows that fan out to many recipients (e.g., a batch
@@ -290,6 +294,11 @@ public class SendEmailNodeHandler implements NodeHandler {
                 Set<String> engagedEmails = engagementSuppression != null
                         && EngagementWorkflowSuppression.appliesTo(context)
                         ? engagementSuppression.engagedLeadEmails(finalInstituteId) : Set.of();
+                // Learners on a break whose class or fee reminders are stopped (live-class and
+                // membership-expiry events only; see EnrolmentBreakGuard.categoryForWorkflow).
+                final var breakCategory = enrolmentBreakGuard == null ? null
+                        : vacademy.io.admin_core_service.features.enrolment_break.service.EnrolmentBreakGuard.categoryForWorkflow(context);
+                final boolean checkBreaks = breakCategory != null && enrolmentBreakGuard.instituteHasActiveBreaks(finalInstituteId);
 
                 // Map to store original items for failure tracking
                 Map<String, Object> recipientToItemMap = new HashMap<>();
@@ -310,6 +319,14 @@ public class SendEmailNodeHandler implements NodeHandler {
                                 .failureReason("SKIPPED")
                                 .itemData(originalItem)
                                 .build());
+                        continue;
+                    }
+
+                    Object breakUserId = request.get("userId");
+                    if (checkBreaks && breakUserId != null
+                            && enrolmentBreakGuard.isHeld(finalInstituteId, String.valueOf(breakUserId), breakCategory, null, null)) {
+                        log.info("Skipping email to {}: learner on a break with these reminders stopped.", recipient);
+                        skippedCount++;
                         continue;
                     }
 
@@ -399,6 +416,7 @@ public class SendEmailNodeHandler implements NodeHandler {
                             newDto.setNotificationType("EMAIL");
                             newDto.setSource("WORKFLOW");
                             newDto.setSourceId("send_email_node_batch");
+                            newDto.setTemplateName((String) request.get("templateName"));
                             newDto.setUsers(new ArrayList<>());
                             return newDto;
                         });
@@ -1023,6 +1041,8 @@ public class SendEmailNodeHandler implements NodeHandler {
                 request.put("subject", template.getSubject());
                 request.put("body", template.getContent());
                 request.put("placeholders", finalVars);
+                // Labels the notification_log row, so the student timeline names the template.
+                request.put("templateName", templateName);
 
             }
             // Fallback to hardcoded subject/body
@@ -1255,6 +1275,7 @@ public class SendEmailNodeHandler implements NodeHandler {
                     chunkDto.setSource(batch.getSource());
                     chunkDto.setSourceId(batch.getSourceId());
                     chunkDto.setEmailType(batch.getEmailType());
+                    chunkDto.setTemplateName(batch.getTemplateName());
                     chunkDto.setUsers(new ArrayList<>(users.subList(i, end)));
                 }
                 int chunkUserCount = end - i;

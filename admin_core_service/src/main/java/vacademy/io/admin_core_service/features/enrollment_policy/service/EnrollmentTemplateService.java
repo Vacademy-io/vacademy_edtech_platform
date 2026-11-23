@@ -6,18 +6,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.common.enums.StatusEnum;
 import vacademy.io.admin_core_service.features.enrollment_policy.constants.EnrollmentTemplateConstants;
-import vacademy.io.admin_core_service.features.enrollment_policy.enums.NotificationType;
+import vacademy.io.admin_core_service.features.enrollment_policy.enums.NotificationTriggerType;
 import vacademy.io.admin_core_service.features.enrollment_policy.processor.EnrolmentContext;
 import vacademy.io.admin_core_service.features.institute.entity.Template;
 import vacademy.io.admin_core_service.features.institute.repository.TemplateRepository;
-import vacademy.io.common.auth.dto.UserDTO;
+import vacademy.io.common.institute.entity.Institute;
 import vacademy.io.common.institute.entity.session.PackageSession;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * Service for handling email templates in enrollment policy notifications.
@@ -31,123 +29,83 @@ public class EnrollmentTemplateService {
     private final TemplateRepository templateRepository;
 
     /**
-     * Gets the email body for a notification, using template if specified or
-     * default template.
+     * Default subject for a policy email that names no usable template and carries no inline
+     * content. BEFORE_EXPIRY gets its own subject: access has not ended yet.
      *
-     * @param instituteId  Institute ID for template lookup
-     * @param templateName Optional template name (if null, uses default)
-     * @param context      Enrollment context for placeholder values
-     * @return Email body with placeholders replaced
+     * @param placeholders the same values the notification substitutes into a template
      */
-    public String getEmailBody(String instituteId, String templateName, EnrolmentContext context) {
-        String templateBody = getTemplateBody(instituteId, templateName);
-        Map<String, String> placeholders = buildPlaceholders(context);
-        return replacePlaceholders(templateBody, placeholders);
+    public String getDefaultEmailSubject(NotificationTriggerType trigger, Map<String, String> placeholders) {
+        return replacePlaceholders(EnrollmentTemplateConstants.defaultSubject(trigger), placeholders);
     }
 
     /**
-     * Gets the email subject for a notification, using template if specified or
-     * default template.
-     *
-     * @param instituteId  Institute ID for template lookup
-     * @param templateName Optional template name (if null, uses default)
-     * @param context      Enrollment context for placeholder values
-     * @return Email subject with placeholders replaced
+     * Default body for the same case. The renew button is only rendered when
+     * {@code renewal_link} has a value (the institute has a learner portal).
      */
-    public String getEmailSubject(String instituteId, String templateName, EnrolmentContext context) {
-        String templateSubject = getTemplateSubject(instituteId, templateName);
-        Map<String, String> placeholders = buildPlaceholders(context);
-        return replacePlaceholders(templateSubject, placeholders);
+    public String getDefaultEmailBody(NotificationTriggerType trigger, Map<String, String> placeholders) {
+        boolean withRenewalLink = placeholders != null && StringUtils.hasText(placeholders.get("renewal_link"));
+        return replacePlaceholders(EnrollmentTemplateConstants.defaultBody(trigger, withRenewalLink), placeholders);
     }
 
     /**
-     * Gets template body from Templates table or returns default.
+     * The shared learner portal (default.learner.portal.url). Institutes without a portal of their
+     * own have their learners sign in there, so their links fall back to it rather than vanish.
      */
-    private String getTemplateBody(String instituteId, String templateName) {
-        if (!StringUtils.hasText(templateName)) {
-            log.debug("No template name provided, using default template");
-            return EnrollmentTemplateConstants.DEFAULT_EXPIRY_TEMPLATE_BODY;
+    @org.springframework.beans.factory.annotation.Value("${default.learner.portal.url:}")
+    private String defaultLearnerPortalUrl;
+
+    private String defaultPortalOrNull() {
+        if (defaultLearnerPortalUrl == null || defaultLearnerPortalUrl.isBlank()) {
+            return null;
         }
+        String base = defaultLearnerPortalUrl.trim();
+        while (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        return base;
+    }
 
+    /**
+     * The institute's own learner-portal origin ({@code https://host}, no trailing slash) for
+     * this plan, else the shared learner portal its learners sign in to; null only when neither
+     * is configured (callers then leave the link out).
+     */
+    public String resolveLearnerPortalUrl(EnrolmentContext context) {
+        String base = readInstitute(context, Institute::getLearnerPortalBaseUrl);
+        if (!StringUtils.hasText(base)) {
+            return defaultPortalOrNull();
+        }
+        base = base.trim();
+        if (!base.startsWith("http://") && !base.startsWith("https://")) {
+            base = "https://" + base;
+        }
+        while (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        return base;
+    }
+
+    /** The plan's institute name for {{institute_name}}; "" when it cannot be read. */
+    public String resolveInstituteName(EnrolmentContext context) {
+        String name = readInstitute(context, Institute::getInstituteName);
+        return name != null ? name : "";
+    }
+
+    /**
+     * Reads one field of the plan's institute (all mappings of a UserPlan belong to one
+     * institute, so the first mapping's is the plan's). Null when it cannot be read; the
+     * institute is a lazy association, and a mail must not fail over branding.
+     */
+    private String readInstitute(EnrolmentContext context, Function<Institute, String> field) {
         try {
-            Template template = templateRepository
-                    .findByInstituteIdAndNameAndTypeAndStatus(instituteId, templateName, NotificationType.EMAIL.name(), StatusEnum.ACTIVE.name())
-                    .orElse(null);
-
-            if (template == null || !StringUtils.hasText(template.getContent())) {
-                log.warn("Template not found or empty: {} for institute: {}, using default", templateName, instituteId);
-                return EnrollmentTemplateConstants.DEFAULT_EXPIRY_TEMPLATE_BODY;
-            }
-
-            log.debug("Using template: {} for institute: {}", templateName, instituteId);
-            return template.getContent();
+            Institute institute = context != null && context.getMappings() != null && !context.getMappings().isEmpty()
+                    ? context.getMappings().get(0).getInstitute()
+                    : null;
+            return institute != null ? field.apply(institute) : null;
         } catch (Exception e) {
-            log.error("Error fetching template: {} for institute: {}, using default", templateName, instituteId, e);
-            return EnrollmentTemplateConstants.DEFAULT_EXPIRY_TEMPLATE_BODY;
+            log.warn("Could not read the institute for enrollment notification: {}", e.getMessage());
+            return null;
         }
-    }
-
-    /**
-     * Gets template subject from Templates table or returns default.
-     */
-    private String getTemplateSubject(String instituteId, String templateName) {
-        if (!StringUtils.hasText(templateName)) {
-            log.debug("No template name provided, using default subject");
-            return EnrollmentTemplateConstants.DEFAULT_EXPIRY_TEMPLATE_SUBJECT;
-        }
-
-        try {
-            Template template = templateRepository
-                    .findByInstituteIdAndNameAndTypeAndStatus(instituteId, templateName, NotificationType.EMAIL.name(),StatusEnum.ACTIVE.name())
-                    .orElse(null);
-
-            if (template == null || !StringUtils.hasText(template.getSubject())) {
-                log.warn("Template not found or subject empty: {} for institute: {}, using default", templateName,
-                        instituteId);
-                return EnrollmentTemplateConstants.DEFAULT_EXPIRY_TEMPLATE_SUBJECT;
-            }
-
-            log.debug("Using template subject: {} for institute: {}", templateName, instituteId);
-            return template.getSubject();
-        } catch (Exception e) {
-            log.error("Error fetching template subject: {} for institute: {}, using default", templateName, instituteId,
-                    e);
-            return EnrollmentTemplateConstants.DEFAULT_EXPIRY_TEMPLATE_SUBJECT;
-        }
-    }
-
-    /**
-     * Builds placeholder map from enrollment context.
-     */
-    private Map<String, String> buildPlaceholders(EnrolmentContext context) {
-        Map<String, String> placeholders = new HashMap<>();
-
-        // Learner name
-        UserDTO user = context.getUser();
-        String learnerName = (user != null && StringUtils.hasText(user.getFullName()))
-                ? user.getFullName()
-                : "Learner";
-        placeholders.put("learner_name", learnerName);
-
-        // Course name - format: levelName (if not DEFAULT) + packageName + sessionName
-        // (if not DEFAULT)
-        // Get from first mapping (all mappings belong to same UserPlan)
-        String courseName = context.getMappings() != null && !context.getMappings().isEmpty()
-            ? formatCourseName(context.getMappings().get(0).getPackageSession())
-            : "Course";
-        placeholders.put("course_name", courseName);
-
-        // Expiry date
-        Date expiryDate = context.getEndDate();
-        String expiryDateStr = (expiryDate != null)
-                ? new SimpleDateFormat("yyyy-MM-dd").format(expiryDate)
-                : "N/A";
-        placeholders.put("expiry_date", expiryDateStr);
-
-        // Renewal link (hardcoded for now)
-        placeholders.put("renewal_link", EnrollmentTemplateConstants.DEFAULT_RENEWAL_LINK);
-
-        return placeholders;
     }
 
     /**
@@ -212,3 +170,4 @@ public class EnrollmentTemplateService {
         return byInstituteIdAndNameAndType.orElse(null);
     }
 }
+

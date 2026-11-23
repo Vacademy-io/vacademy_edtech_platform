@@ -41,6 +41,11 @@ data:
     // common_service JwtService — the string is decoded as base64 there too).
     const JWT_SECRET_B64 = process.env.JWT_SECRET_B64 || '';
     const JWT_KEY = JWT_SECRET_B64 ? Buffer.from(JWT_SECRET_B64, 'base64') : null;
+    // Optional second key, accepted for verification only (same rule as JwtService's
+    // JWT_SECRET_KEY_PREVIOUS). Unset = one key, as before.
+    const JWT_SECRET_B64_PREVIOUS = (process.env.JWT_SECRET_B64_PREVIOUS || '').trim();
+    const JWT_KEY_PREVIOUS = JWT_SECRET_B64_PREVIOUS && JWT_SECRET_B64_PREVIOUS !== JWT_SECRET_B64
+      ? Buffer.from(JWT_SECRET_B64_PREVIOUS, 'base64') : null;
     const STATEMENT_TIMEOUT_MS = 30000;
     const MAX_ROWS = 50000;
     const MAX_BODY_BYTES = 1 * 1024 * 1024;
@@ -89,6 +94,17 @@ data:
       return ba.length === bb.length && crypto.timingSafeEqual(ba, bb);
     }
 
+    // One line per user per hour when a token verifies only with the previous key.
+    const previousKeyLoggedAt = new Map();
+    function notePreviousKeyUse(user) {
+      const id = String(user || '-');
+      const now = Date.now();
+      if (now - (previousKeyLoggedAt.get(id) || 0) < 3600000) return;
+      if (previousKeyLoggedAt.size >= 10000) previousKeyLoggedAt.clear();
+      previousKeyLoggedAt.set(id, now);
+      console.log(`token verified with JWT_SECRET_B64_PREVIOUS (user=${id})`);
+    }
+
     function verifyPlatformJwt(token) {
       if (!JWT_KEY) return null;
       const parts = token.split('.');
@@ -99,9 +115,12 @@ data:
         payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
       } catch { return null; }
       if (header.alg !== 'HS256') return null;
-      const expected = crypto.createHmac('sha256', JWT_KEY)
-        .update(`${parts[0]}.${parts[1]}`).digest('base64url');
-      if (!timingSafeEq(parts[2], expected)) return null;
+      const signs = (key) => timingSafeEq(parts[2], crypto.createHmac('sha256', key)
+        .update(`${parts[0]}.${parts[1]}`).digest('base64url'));
+      if (!signs(JWT_KEY)) {
+        if (!JWT_KEY_PREVIOUS || !signs(JWT_KEY_PREVIOUS)) return null;
+        notePreviousKeyUse(payload.user);
+      }
       if (typeof payload.exp === 'number' && payload.exp * 1000 < Date.now()) return null;
       if (payload.is_root_user !== true) return null;
       return payload;
@@ -258,6 +277,12 @@ spec:
                 secretKeyRef:
                   name: analytics-api-secret
                   key: JWT_SECRET_B64
+                  optional: true
+            - name: JWT_SECRET_B64_PREVIOUS
+              valueFrom:
+                secretKeyRef:
+                  name: analytics-api-secret
+                  key: JWT_SECRET_B64_PREVIOUS
                   optional: true
           volumeMounts:
             - name: code

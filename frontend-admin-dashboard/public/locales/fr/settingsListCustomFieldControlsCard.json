@@ -34,6 +34,8 @@
     "builtIn": {
         "title": "Filtres intégrés",
         "description": "Désactivez les filtres que cet établissement n'utilise pas. Ils disparaîtront de la barre de filtres.",
-        "counsellor": "Conseiller"
+        "counsellor": "Conseiller",
+        "city": "Ville",
+        "region": "Région"
     }
 }

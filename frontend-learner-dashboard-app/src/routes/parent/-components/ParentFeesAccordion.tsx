@@ -29,6 +29,7 @@ import {
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Warning, DownloadSimple, Receipt, CaretDown, CaretUp, SpinnerGap } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import { downloadLink } from "@/lib/download/save-file";
 
 interface ParentFeesAccordionProps {
   child: ChildProfile;
@@ -719,12 +720,7 @@ function ReceiptsTable({
     try {
       const { download_url, file_name } = await getReceiptDownloadUrl(invoice.invoice_id);
 
-      const link = document.createElement("a");
-      link.href = download_url;
-      link.download = file_name;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      if (!(await downloadLink(download_url, file_name))) return;
 
       toast.success(t("admissionPortal.fees.toast.downloadStarted"), {
         description: t("admissionPortal.fees.toast.receiptRef", {

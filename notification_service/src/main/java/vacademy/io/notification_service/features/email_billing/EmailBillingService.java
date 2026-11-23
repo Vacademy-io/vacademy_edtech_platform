@@ -70,10 +70,10 @@ public class EmailBillingService {
         EmailBillingSettings.Snapshot s = settings.get();
         boolean exempt = s.isExempt(instituteId);
         EmailUsageStore.MonthTotals totals = usageStore.monthTotals(instituteId, month);
-        long free = s.freeUnitsPerMonth();
+        long free = s.freeUnits(instituteId);
         long beyond = Math.max(0, totals.chargeableUnits() - free);
         BigDecimal pending = exempt ? BigDecimal.ZERO
-                : EmailBillingGate.credits(Math.max(0, beyond - totals.chargedUnits()), s.creditsPerUnit());
+                : EmailBillingGate.credits(Math.max(0, beyond - totals.chargedUnits()), s.rate(instituteId));
 
         boolean current = month.equals(EmailBillingSettings.currentMonth());
         if (current) {
@@ -98,7 +98,7 @@ public class EmailBillingService {
         days.forEach((day, d) -> daily.add(new DayUsage(day, d[0], d[1], d[2])));
 
         return new UsageSummary(month, free, Math.min(free, totals.chargeableUnits()),
-                Math.max(0, free - totals.chargeableUnits()), totals.chargeableUnits(), beyond, s.creditsPerUnit(),
+                Math.max(0, free - totals.chargeableUnits()), totals.chargeableUnits(), beyond, s.rate(instituteId),
                 totals.chargedCredits(), pending, balance, available, s.enforce() && !exempt, exempt,
                 blockedStore.count(instituteId, "BLOCKED"), byClass, daily, delivery(instituteId, ym));
     }

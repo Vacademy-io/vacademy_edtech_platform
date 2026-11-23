@@ -18,4 +18,12 @@ public interface CommerceSalesMoneyHook {
 
     /** A courier's COD remittance was recorded (WP-31). */
     void codRemitted(String instituteId, String remittanceId, BigDecimal netAmount);
+
+    /**
+     * A refund was paid out (WP-32), whatever its method: GATEWAY, BANK_TRANSFER, UPI, CASH or
+     * EXCHANGE_CREDIT (the books decide what each posts). A default, so no implementer breaks.
+     */
+    default void refundProcessed(String instituteId, String orderId, String refundId, String method,
+                                 BigDecimal amount) {
+    }
 }

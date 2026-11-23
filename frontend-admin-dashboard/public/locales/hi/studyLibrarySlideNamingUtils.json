@@ -12,6 +12,9 @@
         "assignment": "असाइनमेंट",
         "pdfDocument": "PDF डॉक्यूमेंट",
         "slide": "स्लाइड",
-        "quiz": "क्विज़"
+        "quiz": "क्विज़",
+        "flashcards": "फ़्लैशकार्ड",
+        "poll": "पोल",
+        "game": "खेल"
     }
 }

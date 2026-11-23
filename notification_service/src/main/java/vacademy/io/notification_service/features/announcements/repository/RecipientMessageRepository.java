@@ -265,7 +265,8 @@ public interface RecipientMessageRepository extends JpaRepository<RecipientMessa
             Pageable pageable);
 
     /**
-     * Get active dashboard pins (not dismissed and within duration)
+     * Get active dashboard pins: not dismissed, inside the pin's start/end window, and the
+     * announcement not switched off (INACTIVE / EXPIRED).
      */
     @Query("""
         SELECT rm FROM RecipientMessage rm 
@@ -274,6 +275,9 @@ public interface RecipientMessageRepository extends JpaRepository<RecipientMessa
         WHERE rm.userId = :userId 
           AND rm.modeType = 'DASHBOARD_PIN' 
           AND adp.isActive = true
+          AND a.status NOT IN (vacademy.io.notification_service.features.announcements.enums.AnnouncementStatus.INACTIVE,
+                               vacademy.io.notification_service.features.announcements.enums.AnnouncementStatus.EXPIRED)
+          AND adp.pinStartTime <= CURRENT_TIMESTAMP
           AND (adp.pinEndTime IS NULL OR adp.pinEndTime > CURRENT_TIMESTAMP)
           AND NOT EXISTS (SELECT mi FROM MessageInteraction mi WHERE mi.recipientMessageId = rm.id AND mi.userId = :userId AND mi.interactionType = 'DISMISSED')
         ORDER BY adp.priority DESC, rm.createdAt DESC
@@ -281,7 +285,7 @@ public interface RecipientMessageRepository extends JpaRepository<RecipientMessa
     List<RecipientMessage> findActiveDashboardPins(@Param("userId") String userId);
 
     /**
-     * Get active app overlays (not dismissed, not expired). Dismiss-once semantics:
+     * Get active app overlays (not dismissed, not expired, announcement not switched off). Dismiss-once semantics:
      * a DISMISSED interaction permanently hides the overlay for that user.
      */
     @Query("""
@@ -291,6 +295,8 @@ public interface RecipientMessageRepository extends JpaRepository<RecipientMessa
         WHERE rm.userId = :userId
           AND rm.modeType = 'APP_OVERLAY'
           AND aao.isActive = true
+          AND a.status NOT IN (vacademy.io.notification_service.features.announcements.enums.AnnouncementStatus.INACTIVE,
+                               vacademy.io.notification_service.features.announcements.enums.AnnouncementStatus.EXPIRED)
           AND (aao.showUntil IS NULL OR aao.showUntil > CURRENT_TIMESTAMP)
           AND NOT EXISTS (SELECT mi FROM MessageInteraction mi WHERE mi.recipientMessageId = rm.id AND mi.userId = :userId AND mi.interactionType = 'DISMISSED')
         ORDER BY aao.priority DESC, rm.createdAt DESC

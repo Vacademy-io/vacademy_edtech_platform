@@ -21,6 +21,18 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
+    <!-- Live class inside the app (BBB in the WebView, see liveclass/LiveClassService).
+         A microphone|mediaPlayback foreground service keeps the mic and class audio alive
+         while the app is backgrounded or the screen is locked. The typed FGS permissions are
+         required from API 34 (normal permissions, granted at install).
+         NOTE: Play Console needs a "Foreground service" declaration for both types. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- Bluetooth headset microphone (SCO) for WebRTC. Runtime "Nearby devices" permission on
+         API 31+ (asked by VacademyLiveClass.prepare, optional); legacy normal permission below. -->
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
 
@@ -51,6 +63,8 @@
             android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask"
+            android:supportsPictureInPicture="true"
+            android:resizeableActivity="true"
             android:exported="true">
             <!-- Main App Launcher -->
             <intent-filter>
@@ -102,6 +116,11 @@
             android:name="io.vacademy.student.app.offlinedownloads.OfflineDownloadService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+        <!-- Held for the length of a live class (VacademyLiveClass.enterClass / exitClass). -->
+        <service
+            android:name="io.vacademy.student.app.liveclass.LiveClassService"
+            android:exported="false"
+            android:foregroundServiceType="microphone|mediaPlayback" />
 
     </application>
 </manifest>

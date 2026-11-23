@@ -7,9 +7,11 @@ import vacademy.io.admin_core_service.features.commerce.audit.CommerceAuditServi
 import vacademy.io.admin_core_service.features.commerce.document.service.DocumentClock;
 import vacademy.io.admin_core_service.features.commerce.stock.entity.StockLocation;
 import vacademy.io.admin_core_service.features.commerce.stock.repository.StockLocationRepository;
+import vacademy.io.admin_core_service.features.commerce.stock.repository.StockMovementRepository;
 import vacademy.io.admin_core_service.features.commerce.tax.service.CommerceTaxClassService;
 import vacademy.io.admin_core_service.features.commerce.catalogue.dto.ProductRequest;
 import vacademy.io.admin_core_service.features.commerce.catalogue.dto.ProductResponse;
+import vacademy.io.admin_core_service.features.commerce.catalogue.dto.ProductSummaryResponse;
 import vacademy.io.admin_core_service.features.commerce.catalogue.dto.ProductTranslationDTO;
 import vacademy.io.admin_core_service.features.commerce.catalogue.dto.VariantRequest;
 import vacademy.io.admin_core_service.features.commerce.catalogue.dto.VariantResponse;
@@ -47,6 +49,7 @@ import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentO
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan;
 import vacademy.io.admin_core_service.features.user_subscription.repository.PaymentOptionRepository;
 import vacademy.io.admin_core_service.features.user_subscription.repository.PaymentPlanRepository;
+import vacademy.io.common.exceptions.ConflictException;
 import vacademy.io.common.exceptions.InvalidRequestException;
 import vacademy.io.common.exceptions.ResourceNotFoundException;
 import vacademy.io.common.institute.entity.Institute;
@@ -496,6 +499,119 @@ class CommerceProductServiceTest {
         ProductRequest clear = new ProductRequest();
         clear.setTaxClassId("");
         assertThrows(InvalidRequestException.class, () -> service.update(INSTITUTE, ACTOR, packageId, clear));
+    }
+
+    @Test
+    void theMeasureOfAnItemWithStockIsLockedEvenAsADraft() {
+        StockMovementRepository movements = mock(StockMovementRepository.class);
+        service.setMovementRepository(movements);
+        service.save(INSTITUTE, ACTOR, sariRequest("DRAFT"));
+        String packageId = products.get(0).getPackageId();
+        // No stock yet: a draft may still change its unit.
+        when(movements.existsForPackage(INSTITUTE, packageId)).thenReturn(false);
+        ProductRequest metres = new ProductRequest();
+        metres.setUnit("MTR");
+        metres.setQtyScale(10);
+        service.update(INSTITUTE, ACTOR, packageId, metres);
+        assertEquals("MTR", products.get(0).getUnit());
+        // Stock received (a quick add, then a receipt): unit, scale and stock mode are fixed.
+        when(movements.existsForPackage(INSTITUTE, packageId)).thenReturn(true);
+        for (ProductRequest change : List.of(measure("PCS", null, null), measure(null, 1, null),
+                measure(null, null, "PIECE"))) {
+            ConflictException refused = assertThrows(ConflictException.class,
+                    () -> service.update(INSTITUTE, ACTOR, packageId, change));
+            assertTrue(refused.getMessage().startsWith("STOCK_EXISTS"), refused.getMessage());
+        }
+        assertEquals("MTR", products.get(0).getUnit());
+        assertEquals(10, products.get(0).getQtyScale());
+        // The same values again are not a change.
+        service.update(INSTITUTE, ACTOR, packageId, measure("MTR", 10, null));
+    }
+
+    /** D2: a power-of-ten scale, and a one-of-a-kind item is counted in pieces. */
+    @Test
+    void theScaleIsAPowerOfTenAndAOneOfAKindItemIsCountedInPieces() {
+        service.save(INSTITUTE, ACTOR, sariRequest("DRAFT"));
+        String packageId = products.get(0).getPackageId();
+
+        InvalidRequestException piece = assertThrows(InvalidRequestException.class,
+                () -> service.update(INSTITUTE, ACTOR, packageId, measure("MTR", 10, "PIECE")));
+        assertEquals("VALIDATION: a one-of-a-kind item is counted in pieces (qty_scale 1)", piece.getMessage());
+        InvalidRequestException four = assertThrows(InvalidRequestException.class,
+                () -> service.update(INSTITUTE, ACTOR, packageId, measure("MTR", 4, "QUANTITY")));
+        assertEquals("VALIDATION: qty_scale is 1, 10, 100 or 1000", four.getMessage());
+        assertEquals(1, products.get(0).getQtyScale(), "nothing was written");
+
+        for (int scale : new int[] {10, 100, 1000}) {
+            service.update(INSTITUTE, ACTOR, packageId, measure("MTR", scale, "QUANTITY"));
+            assertEquals(scale, products.get(0).getQtyScale());
+        }
+        // A one-of-a-kind item on a measured product: refused by the effective scale.
+        assertThrows(InvalidRequestException.class,
+                () -> service.update(INSTITUTE, ACTOR, packageId, measure(null, null, "PIECE")));
+        // Neither field in the request: the product is left as it is.
+        ProductRequest brandOnly = new ProductRequest();
+        brandOnly.setBrand("Test brand");
+        service.update(INSTITUTE, ACTOR, packageId, brandOnly);
+        assertEquals(1000, products.get(0).getQtyScale());
+        assertEquals("QUANTITY", products.get(0).getStockMode());
+        // Back to counted pieces: scale 1 with PIECE is fine.
+        service.update(INSTITUTE, ACTOR, packageId, measure("PCS", 1, "PIECE"));
+        assertEquals("PIECE", products.get(0).getStockMode());
+    }
+
+    /** W2: a measured item needs a unit with a sign; blank or a piece code is refused. */
+    @Test
+    void aMeasuredItemNeedsAMeasuredUnit() {
+        service.save(INSTITUTE, ACTOR, sariRequest("DRAFT"));
+        String packageId = products.get(0).getPackageId();
+        assertEquals("PCS", products.get(0).getUnit(), "a new product starts in pieces");
+
+        // The scale alone on a product in PCS (an API create without a unit).
+        InvalidRequestException scaleOnly = assertThrows(InvalidRequestException.class,
+                () -> service.update(INSTITUTE, ACTOR, packageId, measure(null, 10, null)));
+        assertEquals("VALIDATION: a measured item needs its unit (MTR, KG, …)", scaleOnly.getMessage());
+        for (String piece : List.of("PCS", "pc", "NOS", "NO", "PIECE", "PIECES")) {
+            assertThrows(InvalidRequestException.class,
+                    () -> service.update(INSTITUTE, ACTOR, packageId, measure(piece, 10, "QUANTITY")), piece);
+        }
+        assertEquals(1, products.get(0).getQtyScale(), "nothing was written");
+        assertEquals("PCS", products.get(0).getUnit());
+
+        service.update(INSTITUTE, ACTOR, packageId, measure("MTR", 10, "QUANTITY"));
+        assertEquals(10, products.get(0).getQtyScale());
+        // A measured product cannot be turned back to a piece unit while measured.
+        assertThrows(InvalidRequestException.class,
+                () -> service.update(INSTITUTE, ACTOR, packageId, measure("PCS", null, null)));
+        assertEquals("MTR", products.get(0).getUnit());
+        // Counted again (scale 1): any unit.
+        service.update(INSTITUTE, ACTOR, packageId, measure("PCS", 1, null));
+        assertEquals("PCS", products.get(0).getUnit());
+    }
+
+    @Test
+    void aProductSummaryCarriesItsUnitScaleAndStep() {
+        ProductRequest cloth = sariRequest("DRAFT");
+        cloth.setUnit("MTR");
+        cloth.setQtyScale(10);
+        cloth.setQtyStep(5);
+        service.save(INSTITUTE, ACTOR, cloth);
+        when(productRepository.search(eq(INSTITUTE), any(), any(), any(), eq(false), any()))
+                .thenAnswer(inv -> new org.springframework.data.domain.PageImpl<>(List.copyOf(products)));
+
+        ProductSummaryResponse summary = service.list(INSTITUTE, null, null, null, 0, 20).getContent().get(0);
+
+        assertEquals("MTR", summary.getUnit());
+        assertEquals(10, summary.getQtyScale());
+        assertEquals(5, summary.getQtyStep());
+    }
+
+    private static ProductRequest measure(String unit, Integer qtyScale, String stockMode) {
+        ProductRequest request = new ProductRequest();
+        request.setUnit(unit);
+        request.setQtyScale(qtyScale);
+        request.setStockMode(stockMode);
+        return request;
     }
 
     @Test

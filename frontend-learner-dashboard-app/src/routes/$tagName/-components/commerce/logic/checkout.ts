@@ -407,6 +407,60 @@ export const readOrderFragment = (hash: string | null | undefined): string | nul
     return token && token.length <= 512 && /^[A-Za-z0-9._~-]+$/.test(token) ? token : null;
 };
 
+/**
+ * The link token in an "#l=<token>" fragment (the order link of a WhatsApp or e-mail message),
+ * else null. The page exchanges it once for an order token and never keeps it anywhere.
+ */
+export const readOrderLinkFragment = (hash: string | null | undefined): string | null => {
+    const raw = (hash || '').replace(/^#/, '');
+    if (!raw) return null;
+    const params = new URLSearchParams(raw);
+    const token = params.get('l');
+    return isOrderLinkToken(token) ? token : null;
+};
+
+/** Whether a value has the shape of an order link token (the server decides whether it is good). */
+export const isOrderLinkToken = (token: unknown): token is string =>
+    typeof token === 'string' && token.length > 0 && token.length <= 200 && /^[A-Za-z0-9._-]+$/.test(token);
+
+/** Where the early script in index.html holds an order link token it took out of the address. */
+export const HELD_ORDER_LINK = '__cmxOrderLink';
+
+/**
+ * The order link token the early script in index.html took out of the address, read once: the
+ * holder is removed at the same time, so a second read (or any later script) finds nothing.
+ * Null when there is none or it is not shaped like a link token.
+ */
+export const takeHeldOrderLink = (win: Window | undefined): string | null => {
+    if (!win) return null;
+    const holder = win as unknown as Record<string, unknown>;
+    let value: unknown;
+    try {
+        value = holder[HELD_ORDER_LINK];
+        if (value === undefined) return null;
+        if (!delete holder[HELD_ORDER_LINK]) holder[HELD_ORDER_LINK] = undefined;
+    } catch {
+        return null;
+    }
+    return isOrderLinkToken(value) ? value : null;
+};
+
+/**
+ * A fragment that may be carried into a new address (a language switch): one holding an order
+ * token ("t") or an order link token ("l") never is, whatever the router remembered.
+ */
+export const carriedHash = (hash: string | null | undefined): string => {
+    const raw = hash || '';
+    if (!raw) return '';
+    try {
+        const params = new URLSearchParams(raw.replace(/^#/, ''));
+        if (params.has('l') || params.has('t')) return '';
+    } catch {
+        return '';
+    }
+    return raw;
+};
+
 /** Ordered steps of the timeline a buyer sees. */
 export const TIMELINE_STEPS = ['PLACED', 'CONFIRMED', 'PACKED', 'SHIPPED', 'DELIVERED'] as const;
 

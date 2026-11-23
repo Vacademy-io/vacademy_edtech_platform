@@ -10,6 +10,7 @@ import { CUSTOM_ROLE_DISPLAY_SETTINGS_KEY } from '@/types/display-settings';
 import { THEME_ROLE_SETTINGS_KEY } from '@/types/theme-role-settings';
 import { LANGUAGE_SETTING_STORAGE_KEY } from '@/services/language-settings';
 import { getPrimaryRole, getValidInstitutes, type Institute } from '@/lib/auth/instituteUtils';
+import { portalAdmitsRoles } from '@/lib/auth/portal-roles';
 
 export interface SwitchableInstitute {
     id: string;
@@ -21,12 +22,12 @@ export interface SwitchableInstitute {
 
 export interface EligibleInstituteOptions {
     /**
-     * True when this portal only admits ADMINs for the given institute
-     * (domain branding `role === 'ADMIN'`). Mirrors the check at the top of
-     * `handleInstituteSelection`, so the list never offers an institute the
+     * The roles this portal admits for the given institute, or null when it
+     * does not gate (see `getPortalAllowedRoles`). Mirrors the check at the top
+     * of `handleInstituteSelection`, so the list never offers an institute the
      * switch would then refuse.
      */
-    requiresAdmin?: (instituteId: string) => boolean;
+    portalAllowedRoles?: (instituteId: string) => string[] | null;
 }
 
 /**
@@ -48,7 +49,9 @@ export const getEligibleInstitutes = (
     }));
 
     return getValidInstitutes(all)
-        .filter((inst) => !(options.requiresAdmin?.(inst.id) && !inst.roles.includes('ADMIN')))
+        .filter((inst) =>
+            portalAdmitsRoles(options.portalAllowedRoles?.(inst.id) ?? null, inst.roles)
+        )
         .map((inst) => ({
             id: inst.id,
             roles: inst.roles,

@@ -15,6 +15,8 @@ import { templateCacheService } from '@/services/template-cache-service';
 import { EmailBrandSettings, getEmailBrandSettings } from '@/services/email-brand-settings';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { HtmlTemplateEditor } from '@/components/templates/html/HtmlTemplateEditor';
+import { isRawHtmlTemplate } from '@/components/templates/html/html-template-utils';
 import './email-editor.css';
 
 const EmailBuilder = React.lazy(() => import('./EmailBuilder'));
@@ -129,6 +131,22 @@ export const TemplateEditorEmail: React.FC<TemplateEditorEmailProps> = ({ templa
                 <Loader2 className="size-6 animate-spin" />
                 <span className="ml-2">Loading template...</span>
             </div>
+        );
+    }
+
+    // An invoice template written as HTML cannot be opened by the builder (it would show a blank
+    // page, and saving that would overwrite the template), so it gets the HTML editor instead.
+    if (
+        template &&
+        isRawHtmlTemplate(template, localStorage.getItem(`email_template_mjml_${template.id}`))
+    ) {
+        return (
+            <HtmlTemplateEditor
+                template={template}
+                isSaving={isSaving}
+                onSave={handleSave}
+                onBack={handleBack}
+            />
         );
     }
 

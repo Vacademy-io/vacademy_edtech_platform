@@ -837,7 +837,11 @@ def start_session(
         lesson = load_lesson(db, target_slide)
         if lesson is None:
             raise LookupError("This slide has no teaching plan yet")
-        pair = settings.language_pair
+        # A demo / studio lesson is taught in the languages ITS plan was
+        # compiled in (a Kannada studio lesson on an English demo institute),
+        # not in the demo institute's course pair.
+        pair = (tutor_langs.pair(lesson.language) if guest and target_slide.startswith("demo:")
+                else settings.language_pair)
         lang = language if language in pair else (st.preferred_language if settings.session_language == "learner" and st.preferred_language in pair else settings.course_language)
         pointer = resume_position(db, lesson, st)
         resumed = pointer is not None

@@ -41,6 +41,9 @@ public interface AiCopyIntakeItemRepository extends JpaRepository<AiCopyIntakeIt
 
     Optional<AiCopyIntakeItem> findFirstByProcessId(String processId);
 
+    /** Any copy made from one of these files; the scan station uses it to find a batch it started before a crash. */
+    Optional<AiCopyIntakeItem> findFirstByFileIdIn(java.util.Collection<String> fileIds);
+
     List<AiCopyIntakeItem> findByBatchIdAndStatusIn(String batchId, List<String> statuses);
 
     @Query("SELECT COUNT(i) FROM AiCopyIntakeItem i WHERE i.batchId = :batchId AND i.status IN :statuses")

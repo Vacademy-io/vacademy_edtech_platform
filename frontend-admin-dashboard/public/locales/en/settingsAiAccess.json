@@ -1,0 +1,144 @@
+{
+    "loading": "Loading settings…",
+    "header": {
+        "title": "AI access",
+        "description": "Choose what AI can do with your institute’s data, in one place: the assistant inside your admin portal, and AI apps your team connects, such as Claude, ChatGPT and Cursor. Every capability appears once, with both side by side. Access always stays inside this institute, and each person reaches only what their role allows."
+    },
+    "capabilities": {
+        "title": "What AI can do",
+        "description": "Set each area to Off, View or Edit for the in-product assistant and for AI apps. Open a row to see exactly what it allows and to switch single capabilities on or off."
+    },
+    "doors": {
+        "assistant": "In-product assistant",
+        "mcp": "AI apps",
+        "levelAria": "{{area}}: {{door}}"
+    },
+    "door": {
+        "none": "Not offered",
+        "outsidePlan": "Not in your plan",
+        "everyoneOn": "On for everyone",
+        "outsidePlanHint": "Your plan doesn’t include this. Anything saved for it is kept as it is.",
+        "assistantEdits": "The assistant only proposes these changes. Nothing is applied until the person presses Confirm."
+    },
+    "scope": {
+        "label": "Settings for",
+        "everyone": "Everyone",
+        "customized": "{{role}} (customized)",
+        "everyoneHint": "Applies to every staff role. Pick a role to give it extra capabilities on top.",
+        "roleHint": "Everything {{role}} has: what everyone has plus its own extras. What’s on for everyone is marked and can only be turned off under Everyone.",
+        "customizeAssistant": "Customize the assistant for this role",
+        "customizeMcp": "Customize AI apps for this role",
+        "notAllowedMcp": "This role can’t connect AI apps. Add it under Who can connect first.",
+        "applyPreset": "Apply the suggested set",
+        "presetApplied": "Suggested set applied. Click Save settings to keep it."
+    },
+    "mcpOff": "The MCP server is off, so AI apps can’t connect yet. You can still choose what they’ll be able to do.",
+    "mcpPresetsLabel": "AI apps",
+    "section": {
+        "mcpTitle": "Connected AI apps",
+        "mcpDescription": "Turn the MCP server on, choose who may connect, and share the connection details."
+    },
+    "footer": {
+        "save": "Save settings",
+        "saving": "Saving…",
+        "unsaved": "You have unsaved changes."
+    },
+    "toasts": {
+        "saved": "AI access settings saved",
+        "saveFailed": "Could not save the settings. Please try again."
+    },
+    "errors": {
+        "catalogUnavailable": "Couldn’t load the list of AI capabilities. Your saved settings are unaffected. Try again in a moment.",
+        "settingsUnavailable": "Couldn’t load your saved AI settings, so nothing here can be changed yet. Try again in a moment."
+    },
+    "areas": {
+        "identity": {
+            "label": "Who is connected",
+            "summary": "Name, contact details and the institute’s branding."
+        },
+        "help": {
+            "label": "How-to help",
+            "summary": "Step-by-step how-tos for the admin portal, with links."
+        },
+        "institute": {
+            "label": "Institute stats",
+            "summary": "Profile, outstanding fees, live classes, learner counts."
+        },
+        "website": {
+            "label": "Website",
+            "summary": "Pages, sections, theme, SEO and site traffic."
+        },
+        "lead_forms": {
+            "label": "Lead forms",
+            "summary": "Lead campaigns, their form fields and leads received."
+        },
+        "automations": {
+            "label": "Automations",
+            "summary": "Workflows, their runs, and email / WhatsApp templates."
+        },
+        "blog": {
+            "label": "Blog",
+            "summary": "Blog posts and the pages that show them."
+        },
+        "courses": {
+            "label": "Courses",
+            "summary": "Course content, drip rules, invite links and pricing."
+        },
+        "learners": {
+            "label": "Learners",
+            "summary": "Find learners, enrol them into courses, edit their details and change enrolments."
+        },
+        "batches": {
+            "label": "Batches",
+            "summary": "Find batches, see who is in one and who enrolled recently."
+        },
+        "learner_reports": {
+            "label": "Progress reports",
+            "summary": "A learner’s attendance, scores, study time and progress, for the AI app to write their report."
+        },
+        "assessments": {
+            "label": "Assessments",
+            "summary": "Tests, each participant’s result and the leaderboard."
+        },
+        "live_classes": {
+            "label": "Live classes",
+            "summary": "Classes live now, upcoming classes and your own."
+        },
+        "fees": {
+            "label": "Fees and payments",
+            "summary": "Learners’ dues, payments and plans, fee records and collections."
+        },
+        "announcements": {
+            "label": "Announcements",
+            "summary": "Scheduled and sent announcements; sending one."
+        },
+        "sub_orgs": {
+            "label": "Sub-organisations",
+            "summary": "Partner organisations / centres: their courses, seats, admins and learners."
+        },
+        "crm_leads": {
+            "label": "CRM: Leads",
+            "summary": "Find and work leads: details, follow-ups, status, owners and new enquiries."
+        },
+        "crm_calls": {
+            "label": "CRM: Calls",
+            "summary": "Calls, transcripts and callbacks; calling leads and AI campaigns."
+        },
+        "crm_meetings": {
+            "label": "CRM: Meetings",
+            "summary": "Counselling meetings, free slots and booking pages."
+        },
+        "crm_messages": {
+            "label": "CRM: Messages",
+            "summary": "Lead WhatsApp and email history, inbox and templates."
+        },
+        "crm_reports": {
+            "label": "CRM: Reports",
+            "summary": "Sources, funnel, bottlenecks, counsellors, calling, follow-ups, SLAs, custom reports, live activity."
+        },
+        "crm_payments": {
+            "label": "CRM: Payments",
+            "summary": "Admissions report and file, dues, overdue fees, collections and fee reminders."
+        }
+    }
+}

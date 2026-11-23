@@ -8,6 +8,7 @@ import type { FooterBrandProps, FooterLinkColumn } from "../../../-types/site-ch
 import { CatalogueLink } from "../../CatalogueLink";
 import { HeaderLanguageSwitcher } from "../../header/HeaderLanguageSwitcher";
 import { useNewsletterSignup } from "../newsletter/use-newsletter-signup";
+import { isCommerceEnabled } from "../../commerce/config";
 
 /**
  * Footer variant "brand" (Figma 73:588): logo + wordmark + description +
@@ -40,6 +41,9 @@ const SMALL = "text-[13px] leading-5 text-palette-body"; // design-lint-ignore: 
 const SOCIAL = "flex size-9 items-center justify-center rounded-[10px] border border-palette-border bg-catalogue-bg-elevated text-palette-olive transition-colors duration-200 hover:border-palette-outline"; // design-lint-ignore: Figma social tile radius 10
 const COLUMN_HEADING = "text-[15px] font-bold leading-[22px] text-palette-body"; // design-lint-ignore: Figma column heading 15/22
 const LINK = "text-start text-sm leading-5 text-palette-body transition-colors duration-200 hover:text-palette-primary";
+/** A shop's footer on a phone: every link and icon a 44px tap target (other sites keep the design's sizes). */
+const SHOP_LINK = " flex min-h-11 w-full items-center sm:inline sm:min-h-0 sm:w-auto";
+const SHOP_SOCIAL = SOCIAL.replace("size-9", "size-11 sm:size-9");
 const LEGAL = "text-[13px] leading-[18px] text-palette-body"; // design-lint-ignore: Figma legal row 13/18
 
 // Outline glyphs in the palette olive, 14px, as in the design.
@@ -93,6 +97,8 @@ export const FooterBrand: React.FC<Props> = ({
   globalSettings,
 }) => {
   const { t } = useTranslation("coursePlayerB");
+  const shop = isCommerceEnabled(globalSettings);
+  const linkClass = shop ? LINK + SHOP_LINK : LINK;
   const left = (leftSection ?? {}) as FooterProps["leftSection"] & NonNullable<FooterBrandProps["leftSection"]>;
   const logoUrl = useLogoUrl(left.logo);
   const news = newsletter && newsletter.enabled !== false ? newsletter : null;
@@ -111,7 +117,7 @@ export const FooterBrand: React.FC<Props> = ({
     RouteMatcher.isExternalLink(link.route) ? (
       <a
         href={link.route}
-        className={LINK}
+        className={linkClass}
         target={link.openInSameTab ? "_self" : "_blank"}
         rel={!link.openInSameTab ? "noopener noreferrer" : undefined}
       >
@@ -120,7 +126,7 @@ export const FooterBrand: React.FC<Props> = ({
     ) : (
       // A real link (href with the site prefix and the visitor's language), so
       // it opens in a new tab, copies and is followed by crawlers.
-      <CatalogueLink to={link.route} className={LINK}>
+      <CatalogueLink to={link.route} className={linkClass}>
         {link.label}
       </CatalogueLink>
     );
@@ -215,7 +221,7 @@ export const FooterBrand: React.FC<Props> = ({
                           rel={social.openInSameTab ? undefined : "noopener noreferrer"}
                           aria-label={name}
                           title={name}
-                          className={SOCIAL}
+                          className={shop ? SHOP_SOCIAL : SOCIAL}
                         >
                           <Icon aria-hidden="true" size={14} />
                         </a>
@@ -258,7 +264,7 @@ export const FooterBrand: React.FC<Props> = ({
               {bottomNote ? <p className={LEGAL}>{bottomNote}</p> : <span />}
               <div className="flex flex-wrap items-center gap-6">
                 {showLanguageSwitcher && (
-                  <HeaderLanguageSwitcher authoredLocales={globalSettings?.i18n?.locales} variant="footer" />
+                  <HeaderLanguageSwitcher authoredLocales={globalSettings?.i18n?.locales} variant="footer" tall={shop} />
                 )}
                 {bottomTagline && <p className={LEGAL}>{bottomTagline}</p>}
               </div>

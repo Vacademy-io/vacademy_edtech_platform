@@ -127,6 +127,16 @@ public interface StudentSessionInstituteGroupMappingRepository
                                     @Param("instituteId") String instituteId,
                                     @Param("statuses") List<String> statuses);
 
+  /**
+   * Workflow roster: one row per mapping, carrying the learner contact fields that the
+   * notification nodes need.
+   *
+   * <p>Index 9 is is_trial, taken from the plan the mapping was created under. Day based
+   * workflows used to infer trial state from enrolled_date, which resets every time a
+   * returning learner enrols again, so a paid renewal looked like a brand new trial. The
+   * join is on the user_plan primary key, so it cannot multiply rows, and it is a LEFT
+   * join so mappings that carry no user_plan_id still come back, with is_trial null.
+   */
   @Query(value = """
       SELECT
           ssigm.id AS mapping_id,                 -- Index 0
@@ -137,9 +147,11 @@ public interface StudentSessionInstituteGroupMappingRepository
           s.email AS email,                       -- Index 5
           s.username AS username,                 -- Index 6
           ssigm.package_session_id,               -- Index 7
-          ssigm.enrolled_date AS enrolled_date    -- Index 8
+          ssigm.enrolled_date AS enrolled_date,   -- Index 8
+          up.is_trial AS is_trial                 -- Index 9
       FROM student_session_institute_group_mapping ssigm
       JOIN student s ON s.user_id = ssigm.user_id
+      LEFT JOIN user_plan up ON up.id = ssigm.user_plan_id
       WHERE ssigm.package_session_id IN (:psIds)
         AND ssigm.status IN (:statuses)
       """, nativeQuery = true)
@@ -345,6 +357,8 @@ public interface StudentSessionInstituteGroupMappingRepository
    * autopay off (cancelled mandate) or plan CANCELED/PAYMENT_FAILED/EXPIRED.
    * The audience for "pay to continue your membership" messages carrying the
    * /subscriptions/<username> link. end_date_label preformatted for messages.
+   * email is the member address, needed because a username is not always an
+   * email address. It is the last column so earlier positions stay fixed.
    */
   @Query(value = """
       SELECT DISTINCT ON (up.id)
@@ -355,7 +369,8 @@ public interface StudentSessionInstituteGroupMappingRepository
           s.username AS username,
           up.status AS plan_status,
           up.end_date AS end_date,
-          to_char(up.end_date, 'DD Mon YYYY') AS end_date_label
+          to_char(up.end_date, 'DD Mon YYYY') AS end_date_label,
+          s.email AS email
       FROM user_plan up
       JOIN student_session_institute_group_mapping ssigm ON ssigm.user_plan_id = up.id
       JOIN student s ON s.user_id = up.user_id

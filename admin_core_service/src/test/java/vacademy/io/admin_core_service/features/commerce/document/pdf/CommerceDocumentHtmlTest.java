@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.xml.sax.InputSource;
 import vacademy.io.admin_core_service.features.commerce.document.enums.DocumentType;
 import vacademy.io.admin_core_service.features.commerce.tax.calc.CommerceTaxCalculator;
+import vacademy.io.admin_core_service.features.commerce.tax.calc.TaxComponentInput;
 import vacademy.io.admin_core_service.features.commerce.tax.calc.TaxLineInput;
 import vacademy.io.admin_core_service.features.commerce.tax.calc.TaxLineResult;
 import vacademy.io.admin_core_service.features.commerce.tax.calc.TaxRequest;
@@ -136,6 +137,102 @@ class CommerceDocumentHtmlTest {
         assertFalse(plain.contains("GSTIN"));
         assertFalse(plain.contains("Tax by rate"));
         assertFalse(plain.contains("Composition"));
+    }
+
+    /** A measured line prints its length in metres and its rate per metre; a counted line keeps "2 PCS". */
+    @Test
+    void aMeasuredLinePrintsMetresAndTheRatePerMetre() throws Exception {
+        String money = CommercePdfRenderer.unicodeFontAvailable() ? "₹" : "Rs. ";
+        DocumentView view = DocumentView.builder()
+                .documentType(DocumentType.INVOICE).number("CC/2627-00043").date(LocalDate.of(2026, 11, 19))
+                .orderNumber("ORD-1002").sellerName("Test Seller TEST").sellerStateCode("09").buyerName("Buyer TEST")
+                .currency("INR")
+                .lines(List.of(
+                        DocumentView.Line.builder().description("Cotton cloth").quantity(25).qtyScale(10).unit("MTR")
+                                .unitPrice(new BigDecimal("12.34")).discount(BigDecimal.ZERO)
+                                .amount(new BigDecimal("308.50")).build(),
+                        DocumentView.Line.builder().description("Steel bottle").quantity(2).qtyScale(1).unit("PCS")
+                                .unitPrice(new BigDecimal("250.00")).discount(BigDecimal.ZERO)
+                                .amount(new BigDecimal("500.00")).build()))
+                .total(new BigDecimal("808.50"))
+                .build();
+
+        String html = CommerceDocumentHtml.build(view);
+
+        assertWellFormed(html);
+        assertTrue(html.contains("<td class=\"num\">2.5 m</td>"), html);
+        assertTrue(html.contains("<td class=\"num\">" + money + "123.40 / m</td>"));
+        assertTrue(html.contains("<td class=\"num\">" + money + "308.50</td>"));
+        assertFalse(html.contains("MTR"), "the stored code is not printed for a measured line");
+        assertTrue(html.contains("<td class=\"num\">2 PCS</td>"), "a counted line prints as before");
+        assertTrue(html.contains("<td class=\"num\">" + money + "250.00</td>"), "a counted rate has no unit");
+    }
+
+    /**
+     * Money NIT-1: 3.4 m of a cloth sold as a set (60 / 40). The parts' rates per base unit are
+     * rounded (7.40, 4.94); the printed rate per metre is worked from the row, so 74.04 / m x 3.4
+     * = 251.74 and 49.36 / m x 3.4 = 167.82, not 74.00 / m and 49.40 / m.
+     */
+    @Test
+    void aMeasuredSetPrintsARatePerMetreThatAddsUp() {
+        String money = CommercePdfRenderer.unicodeFontAvailable() ? "₹" : "Rs. ";
+        TaxResult tax = new CommerceTaxCalculator().calculate(TaxRequest.builder()
+                .mode(TaxMode.REGULAR).sellerStateCode("09").placeOfSupplyState("09").date(TestTaxData.DATE_TEST)
+                .lines(List.of(TaxLineInput.builder().lineRef("l1").lineType(TaxLineType.ITEM)
+                        .description("Suit cloth").unitPrice(new BigDecimal("12.34")).quantity(34).qtyScale(10)
+                        .unit("MTR").components(List.of(
+                                TaxComponentInput.builder().componentRef("top").description("Top cloth")
+                                        .priceSharePercent(new BigDecimal("60"))
+                                        .taxClass(TestTaxData.flatClassTest()).build(),
+                                TaxComponentInput.builder().componentRef("bottom").description("Bottom cloth")
+                                        .priceSharePercent(new BigDecimal("40"))
+                                        .taxClass(TestTaxData.flatClassTest()).build()))
+                        .build()))
+                .build());
+        assertEquals(0, new BigDecimal("7.40").compareTo(tax.getLines().get(0).getUnitPrice()), "stored as before");
+        List<DocumentView.Line> lines = new ArrayList<>();
+        for (TaxLineResult line : tax.getLines()) {
+            lines.add(DocumentView.Line.builder().description(line.getDescription()).quantity(line.getQuantity())
+                    .qtyScale(line.getQtyScale()).unit(line.getUnit()).unitPrice(line.getUnitPrice())
+                    .discount(line.getLineDiscount().add(line.getOrderDiscount()))
+                    .taxableValue(line.getTaxableValue()).ratePercent(line.getRatePercent()).amount(line.getNet())
+                    .build());
+        }
+        String html = CommerceDocumentHtml.build(DocumentView.builder()
+                .documentType(DocumentType.INVOICE).number("CC/2627-00044").date(LocalDate.of(2026, 11, 19))
+                .sellerName("Test Seller TEST").sellerStateCode("09").buyerName("Buyer TEST").currency("INR")
+                .lines(lines).total(tax.getTotal()).build());
+
+        assertTrue(html.contains("<td class=\"num\">" + money + "74.04 / m</td>"), html);
+        assertTrue(html.contains("<td class=\"num\">" + money + "49.36 / m</td>"), html);
+        assertTrue(html.contains("<td class=\"num\">" + money + "251.74</td>"));
+        assertFalse(html.contains("74.00 / m") || html.contains("49.40 / m"), "no rate rounded per 10 cm");
+    }
+
+    /**
+     * Money MINOR-2: 1.2 m back from a 3.4 m line sold at 123.40 / m less 19.56 (net 400.00) is
+     * credited 141.18. The credit note row shows the 6.90 discount, so 1.2 x 123.40 - 6.90 = 141.18.
+     */
+    @Test
+    void aCreditNoteRowShowsItsShareOfTheDiscount() {
+        String money = CommercePdfRenderer.unicodeFontAvailable() ? "₹" : "Rs. ";
+        BigDecimal discount = CommerceDocumentPdfService.creditLineDiscount(new BigDecimal("12.34"), 12,
+                new BigDecimal("141.18"));
+        assertEquals(0, new BigDecimal("6.90").compareTo(discount), String.valueOf(discount));
+        assertEquals(null, CommerceDocumentPdfService.creditLineDiscount(new BigDecimal("12.34"), 12,
+                new BigDecimal("148.08")), "no discount: a dash as before");
+        assertEquals(null, CommerceDocumentPdfService.creditLineDiscount(new BigDecimal("7.40"), 12,
+                new BigDecimal("88.85")), "a set's rounded rate below the amount is no discount");
+
+        String html = CommerceDocumentHtml.build(DocumentView.builder()
+                .documentType(DocumentType.CREDIT_NOTE).number("CN/2627-00001").date(LocalDate.of(2026, 11, 19))
+                .sellerName("Test Seller TEST").sellerStateCode("09").buyerName("Buyer TEST").currency("INR")
+                .lines(List.of(DocumentView.Line.builder().description("Cotton cloth").quantity(12).qtyScale(10)
+                        .unit("MTR").unitPrice(new BigDecimal("12.34")).discount(discount)
+                        .amount(new BigDecimal("141.18")).build()))
+                .total(new BigDecimal("141.18")).build());
+        assertTrue(html.contains("<td class=\"num\">1.2 m</td><td class=\"num\">" + money + "123.40 / m</td>"
+                + "<td class=\"num\">" + money + "6.90</td>"), html);
     }
 
     @Test

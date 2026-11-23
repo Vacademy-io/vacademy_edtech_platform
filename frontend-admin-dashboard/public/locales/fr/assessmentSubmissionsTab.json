@@ -78,6 +78,7 @@
     },
     "buttons": {
         "offlineEntry": "Saisie hors ligne",
+        "scanStation": "Poste de numérisation",
         "revaluate": "Réévaluer",
         "aiEvaluations": "Évaluations IA",
         "bulkAiCheck": "Vérification IA en masse",

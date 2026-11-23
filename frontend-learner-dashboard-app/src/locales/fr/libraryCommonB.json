@@ -59,6 +59,13 @@
         "courseProgress": "{{done}} / {{total}} {{term}} terminé(s)",
         "noModulesYet": "Aucun(e) {{term}} pour l'instant"
     },
+    "moduleSwitcher": {
+        "triggerAria": "Changer de {{term}}, actuel : {{name}}",
+        "progress": "{{done}} / {{total}} {{term}} terminés",
+        "current": "Actuel",
+        "viewAll": "Voir tous les {{term}}",
+        "courseOverview": "Aperçu : {{term}}"
+    },
     "leaseLockOverlay": {
         "leaseExpired": {
             "title": "Connectez-vous à Internet pour conserver l'accès hors ligne",
@@ -322,6 +329,20 @@
             "endedHint": "Il n’y a plus rien à lire. Vous pouvez quitter cette page.",
             "notStartedHint": "La lecture démarrera d’elle-même au début du cours."
         }
+    },
+    "quizCbe": {
+        "checking": "Correction de votre réponse par l’IA…",
+        "checkingHint": "Cela peut prendre jusqu’à deux minutes. Vos points s’afficheront ici une fois terminé.",
+        "pending": "En attente de la correction par l’IA.",
+        "failedNoCredits": "Votre réponse est enregistrée, mais elle n’a pas pu être corrigée car l’établissement n’a plus de crédits IA.",
+        "failed": "Votre réponse est enregistrée, mais la correction par l’IA n’a pas abouti.",
+        "retry": "Corriger à nouveau",
+        "unattempted": "Votre réponse est identique au modèle de départ ; elle n’a donc pas été notée.",
+        "noChecksLeft": "Vous avez utilisé les {{max}} corrections IA de cette question ; cette réponse n’a donc pas été notée.",
+        "skipped": "Sans réponse.",
+        "yourAnswer": "Votre réponse",
+        "savedOffline": "Votre réponse est enregistrée sur cet appareil. Elle sera corrigée lorsque vous serez de nouveau en ligne et rouvrirez ce quiz.",
+        "marksPending": "– / {{max}}"
     },
     "cbeSlide": {
         "typeLabel": "Tableur et réponse rédigée",

@@ -35,6 +35,7 @@ const ADMIN_BUNDLE: RoleBundle = {
         'roleTypeUsers',
         'liveClasses',
         'unresolvedDoubts',
+        'engagementPlanning',
         'instituteOverview',
         'aiFeaturesCard',
     ],
@@ -49,6 +50,7 @@ const TEACHER_BUNDLE: RoleBundle = {
         'myCourses',
         'liveClasses',
         'unresolvedDoubts',
+        'engagementPlanning',
         'aiFeaturesCard',
     ],
 };

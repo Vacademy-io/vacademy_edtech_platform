@@ -1,6 +1,7 @@
 """
 The ``crm_team_edit`` tool — move leads between counsellors and switch a
-counsellor's lead routing off and on, over the MCP server.
+counsellor's lead routing off and on, over the MCP server and in the in-product
+assistant (where the preview is the assistant's confirmation card, crm_cards).
 
 Managers ask for this when someone goes on leave ("move Rahul's leads to
 Priya", "stop sending Rahul new leads this week") or when new leads need an
@@ -43,7 +44,7 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from . import crm_data as cd
-from .assistant_tool_registry import ToolContext, ToolSpec
+from .assistant_tool_registry import CARD_CONFIRM_TEXT, CRM_TOPIC, ToolContext, ToolSpec, card_schema
 
 logger = logging.getLogger(__name__)
 
@@ -1013,10 +1014,20 @@ async def execute_crm_team_edit(args: Dict[str, Any], ctx: ToolContext) -> str:
     return json.dumps(result, ensure_ascii=False, default=str)
 
 
+_MCP_TWO_STEP = ("Every action is two calls: call WITHOUT confirm_token to get a preview (nothing changes) and a "
+                 "confirm_token; show the preview to the user; only on a clear yes call again with the SAME arguments "
+                 "plus confirm_token.\n")
+if _MCP_TWO_STEP not in SCHEMA["function"]["description"]:
+    raise ValueError("crm_team_edit: wording to replace not found")
+#: The in-product assistant's wording: the same executor, confirmed on the assistant's card (crm_cards).
+ASSISTANT_SCHEMA = card_schema(SCHEMA, SCHEMA["function"]["description"].replace(_MCP_TWO_STEP,
+                                                                                  CARD_CONFIRM_TEXT + "\n"))
+
 TEAM_TOOLS: Dict[str, ToolSpec] = {
     TOOL_NAME: ToolSpec(
         name=TOOL_NAME,
-        schema=SCHEMA,
+        schema=ASSISTANT_SCHEMA,
+        mcp_schema=SCHEMA,
         executor=execute_crm_team_edit,
         required_permission=None,
         setting_key=GROUP_KEY,
@@ -1024,8 +1035,11 @@ TEAM_TOOLS: Dict[str, ToolSpec] = {
         default_roles=None,
         phase=3,
         mode="WRITE",
-        mcp_only=True,
         module_feature=MODULE_FEATURE,
+        # Both doors, opt-in on each: MCP's two-step, and the in-product assistant's card on CRM pages.
+        topic=CRM_TOPIC,
+        opt_in=True,
+        card_bridge=True,
     ),
 }
 

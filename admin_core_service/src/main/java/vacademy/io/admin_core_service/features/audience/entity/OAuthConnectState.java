@@ -104,6 +104,13 @@ public class OAuthConnectState {
     @Column(name = "frontend_origin", length = 255)
     private String frontendOrigin;
 
+    /**
+     * Marketing OAuth only: SHA-256 (hex) of the nonce set in an HttpOnly cookie by /initiate. The
+     * callback accepts only the browser that holds the matching cookie. Null for other flows.
+     */
+    @Column(name = "browser_nonce_hash", length = 64)
+    private String browserNonceHash;
+
     @PrePersist
     void onCreate() {
         createdAt = LocalDateTime.now();

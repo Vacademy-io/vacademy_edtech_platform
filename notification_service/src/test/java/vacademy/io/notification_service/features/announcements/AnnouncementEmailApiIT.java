@@ -86,7 +86,7 @@ class AnnouncementEmailApiIT {
                 )
         );
 
-        mockMvc.perform(post("/notification-service/v1/announcements")
+        mockMvc.perform(post("/notification-service/v1/announcements").with(AnnouncementTestAuth.admin("INST_EMAIL_IT"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk());

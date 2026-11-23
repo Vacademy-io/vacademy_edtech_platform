@@ -41,7 +41,8 @@ public class ApplicationSecurityConfig {
 
     private static final String[] ALLOWED_PATHS = { "/assessment-service/open-registrations/register/v1/**",
 
-            "/assessment-service/question-paper/upload/docx/v1/**", "/assessment-service/actuator/**",
+            // /question-paper/upload/docx/v1/** is NOT listed: no client calls it, so it needs sign-in.
+            "/assessment-service/actuator/**",
 
             "/assessment-service/swagger-ui.html", "/assessment-service/v1/report/alert/**",
 
@@ -51,13 +52,14 @@ public class ApplicationSecurityConfig {
 
             "/assessment-service/open-registrations/v1/assessment-page",
 
-            "/assessment-service/scheduler/test/**", "/assessment-service/health/**",
+            // /scheduler/test/** is NOT listed: it needs a signed-in platform super admin.
+            "/assessment-service/health/**",
             // NOTE: /assessment/evaluation-ai/** and /assessment/evaluation-criteria/**
             // were previously permitAll — anyone could trigger paid grading runs on
             // arbitrary attempts, stop other tenants' runs, and read student PII from
             // progress. They now require a valid JWT (fall through to anyRequest()
-            // .authenticated()) and enforce institute ownership in
-            // EvaluationAccessValidator. The copy-check callback path below stays open
+            // .authenticated()); evaluation-ai enforces institute ownership in
+            // EvaluationAccessValidator and evaluation-criteria writes require staff. The copy-check callback path below stays open
             // because it is authenticated by a shared X-Internal-Service-Token instead.
             // Copy-check callbacks: deliberately NOT under /internal/** because
             // InternalAuthFilter (common_service) intercepts anything whose URI

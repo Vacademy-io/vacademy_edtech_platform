@@ -83,3 +83,5 @@ fastembed>=0.7
 # IANA time zones for zoneinfo: the slim image has no /usr/share/zoneinfo, and the
 # CRM tools report in each institute's own time zone (app/services/crm_data.py).
 tzdata>=2024.1
+# segno — pure-Python QR codes (SVG) for the Tutezy Studio stall screen
+segno==1.6.6

@@ -74,15 +74,15 @@ public interface CommerceCodRemittanceRepository extends JpaRepository<CommerceC
                      @Param("remittanceId") String remittanceId, @Param("collectedAt") Date collectedAt);
 
     /**
-     * COD orders past their staff-confirmation time, oldest due first ({@code
-     * idx_commerce_order_cod_confirm}), leaving out an order whose cancel failed a short while ago
-     * ({@code sweep_retry_after} still ahead).
+     * COD orders past their staff-confirmation time: orders that never failed first, then oldest
+     * due first ({@code idx_commerce_order_cod_confirm}), leaving out an order whose cancel failed
+     * a short while ago ({@code sweep_retry_after} still ahead).
      */
     @Query(value = """
             SELECT o.id FROM commerce_order o
             WHERE o.status = 'COD_PENDING_CONFIRMATION' AND o.cod_confirm_due_at <= :now
               AND (o.sweep_retry_after IS NULL OR o.sweep_retry_after <= :now)
-            ORDER BY o.cod_confirm_due_at ASC, o.id ASC
+            ORDER BY o.sweep_failures ASC, o.cod_confirm_due_at ASC, o.id ASC
             LIMIT :maxRows
             """, nativeQuery = true)
     List<String> findOrdersPastConfirmation(@Param("now") Date now, @Param("maxRows") int maxRows);

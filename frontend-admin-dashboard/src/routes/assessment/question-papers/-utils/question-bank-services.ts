@@ -21,6 +21,11 @@ export interface QuestionBankFilters {
     question_types?: string[];
     difficulties?: string[];
     tag_ids?: string[];
+    /**
+     * Tags in named groups (the library uses the tag kind). Any tag inside a group, every
+     * group: { CONCEPT: [a, b], PYQ: [c] } is (a or b) and c.
+     */
+    tag_groups?: Record<string, string[]>;
     statuses?: string[];
     /** Already in the section being filled — hidden from the picker. */
     exclude_question_ids?: string[];

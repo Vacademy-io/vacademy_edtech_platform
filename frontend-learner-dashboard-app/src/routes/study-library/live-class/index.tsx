@@ -384,7 +384,7 @@ export function LiveClassView({ embedded = false }: { embedded?: boolean }) {
           // BBB: fetch a personalized per-user join URL (real name + userId) and
           // open it. NEVER open the stored generic meeting_link for BBB — it is a
           // shared "Attendee"/"attendee-id" URL that causes duplicate-userId ejects.
-          await openBbbJoinForLearner(session.schedule_id);
+          await openBbbJoinForLearner(session.schedule_id, "VIEWER", { navigate: navigate as any, title: session.title });
         } else if (
           session.session_streaming_service_type ===
           SessionStreamingServiceType.EMBED

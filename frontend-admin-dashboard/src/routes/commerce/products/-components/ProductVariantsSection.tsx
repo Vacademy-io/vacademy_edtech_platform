@@ -27,8 +27,8 @@ import { sectionDomId } from '@/routes/commerce/-shared/product-errors';
 import {
     type ProductFormValues,
     type VariantValues,
-    DEFAULT_MEASURE_UNIT,
     emptyVariant,
+    variantPriceLabels,
 } from '@/routes/commerce/-shared/product-form';
 import {
     MAX_OPTIONS,
@@ -119,8 +119,7 @@ export function ProductVariantsSection({
     const soldAs = useWatch({ control: form.control, name: 'sold_as' });
     const unit = useWatch({ control: form.control, name: 'unit' });
     // Measured goods are priced per unit (a metre); the form converts to the base unit on save.
-    const measureUnit =
-        soldAs === 'MEASURED' ? (unit.trim() || DEFAULT_MEASURE_UNIT).toUpperCase() : '';
+    const priceLabels = variantPriceLabels({ sold_as: soldAs, unit }, t);
     const variants = useWatch({ control: form.control, name: 'variants' });
     const [applyAll, setApplyAll] = useState({ price: '', mrp: '', weight_grams: '' });
 
@@ -450,13 +449,7 @@ export function ProductVariantsSection({
                                 <Cell
                                     index={index}
                                     name="price"
-                                    label={
-                                        measureUnit
-                                            ? t('products.variants.pricePerUnit', {
-                                                  unit: measureUnit,
-                                              })
-                                            : t('products.variants.price')
-                                    }
+                                    label={priceLabels.price}
                                     transform={toMoney}
                                     inputMode="decimal"
                                     alignEnd
@@ -464,13 +457,7 @@ export function ProductVariantsSection({
                                 <Cell
                                     index={index}
                                     name="mrp"
-                                    label={
-                                        measureUnit
-                                            ? t('products.variants.mrpPerUnit', {
-                                                  unit: measureUnit,
-                                              })
-                                            : t('products.variants.mrp')
-                                    }
+                                    label={priceLabels.mrp}
                                     transform={toMoney}
                                     inputMode="decimal"
                                     alignEnd

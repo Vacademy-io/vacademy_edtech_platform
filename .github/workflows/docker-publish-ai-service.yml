@@ -98,6 +98,7 @@ jobs:
               S3_AWS_ACCESS_SECRET=${{ secrets.S3_AWS_ACCESS_SECRET }} \
               S3_AWS_REGION=${{ secrets.S3_AWS_REGION }} \
               AWS_BUCKET_NAME=${{ secrets.AWS_S3_PUBLIC_BUCKET }} \
+              CDN_PUBLIC_BASE_URL=${{ secrets.CDN_PUBLIC_BASE_URL }} \
               GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \
               YOUTUBE_API_KEY=${{ secrets.YOUTUBE_API_KEY }} \
               RUNPOD_API_KEY=${{ secrets.RUNPOD_API_KEY }} \
@@ -105,6 +106,7 @@ jobs:
               FAL_API_KEY=${{ secrets.FAL_API_KEY }} \
               LLM_DEFAULT_MODEL=z-ai/glm-5.3-flash \
               LLM_FALLBACK_MODEL=google/gemini-2.5-flash \
+              COPY_CHECK_SCAN_STATION=1 \
               DB_USERNAME=${{ secrets.DB_USERNAME }} \
               DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
               ADMIN_CORE_SERVICE_DB_URL=jdbc:postgresql://pgbouncer:6432/admin_core_service \
@@ -148,6 +150,15 @@ jobs:
             if [ -n "${{ secrets.OPENROUTER_MANAGEMENT_KEY }}" ]; then
               kubectl set env deployment/"$DEPLOYMENT_NAME" --namespace "$NAMESPACE" \
                 OPENROUTER_MANAGEMENT_KEY=${{ secrets.OPENROUTER_MANAGEMENT_KEY }} >/dev/null
+            fi
+
+            # WhatsApp for External API alerts: the same Vidyayatan account and secrets
+            # community_service pages the server health check with. Only when present;
+            # without them the alerts still email and the test send says WhatsApp is not set up.
+            if [ -n "${{ secrets.WHATSAPP_ACCESS_TOKEN_VIDYAYATAN }}" ] && [ -n "${{ secrets.WHATSAPP_PHONE_NUMBER_ID_VIDYAYATAN }}" ]; then
+              kubectl set env deployment/"$DEPLOYMENT_NAME" --namespace "$NAMESPACE" \
+                WHATSAPP_ACCESS_TOKEN_VIDYAYATAN=${{ secrets.WHATSAPP_ACCESS_TOKEN_VIDYAYATAN }} \
+                WHATSAPP_PHONE_NUMBER_ID_VIDYAYATAN=${{ secrets.WHATSAPP_PHONE_NUMBER_ID_VIDYAYATAN }} >/dev/null
             fi
 
             # Spatius (premium teacher avatar). Same rule: only when the secret is

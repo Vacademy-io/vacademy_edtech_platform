@@ -448,6 +448,12 @@ class CommerceOrderDeskDatabaseProofIT {
                 + "LIMIT 1", orderId);
     }
 
+    /** True when the desk's REFUND_DUE queue lists the order (open due above zero). */
+    private boolean inRefundDueQueue(String orderId) {
+        return queryService.staffList(inst, new CommerceOrderQueryService.StaffListFilter(null, null, null, null,
+                "REFUND_DUE", null, null, null), 0, 50).getOrders().stream().anyMatch(o -> o.getId().equals(orderId));
+    }
+
     private long liveInvoices(String orderId) {
         return count("SELECT count(*) FROM invoice i WHERE i.commerce_order_id = ? AND i.cancelled_at IS NULL "
                 + "AND i.total_amount > COALESCE((SELECT SUM(cn.total) FROM commerce_credit_note cn "
@@ -583,6 +589,15 @@ class CommerceOrderDeskDatabaseProofIT {
         pack(orderId, pieceCodes(pieceA, 1));
         String piece = text("SELECT id FROM commerce_piece WHERE order_line_id = ?", lineOf(orderId));
         assertEquals("RESERVED", text("SELECT status FROM commerce_piece WHERE id = ?", piece));
+        // WP-34 B1: the staff detail says the line needs a piece scan and names the packed piece by id.
+        StaffOrderDtos.StaffOrderDetail packedDetail = queryService.staffDetail(inst, orderId);
+        StaffOrderDtos.StaffOrderLine packedLine = packedDetail.getLines().stream()
+                .filter(l -> "ITEM".equals(l.getLineType())).findFirst().orElseThrow();
+        assertEquals("PIECE", packedLine.getStockMode());
+        StaffOrderDtos.StaffShipmentLine packedShipmentLine = packedDetail.getShipments().stream()
+                .filter(s -> !"CANCELLED".equals(s.getStatus())).findFirst().orElseThrow().getLines().get(0);
+        assertEquals(packedLine.getQuantity(), packedShipmentLine.getPieceIds().size());
+        assertEquals(List.of(piece), packedShipmentLine.getPieceIds());
         ship(orderId, key());
         assertEquals("SOLD", text("SELECT status FROM commerce_piece WHERE id = ?", piece));
         int afterShip = slots(pieceA);
@@ -612,8 +627,10 @@ class CommerceOrderDeskDatabaseProofIT {
                 + "AND piece_id = ? AND reason IS NULL", inst, piece));
         BigDecimal paid = money("SELECT amount_paid FROM commerce_order WHERE id = ?", orderId);
         assertEquals(0, paid.compareTo(money("SELECT refund_due FROM commerce_order WHERE id = ?", orderId)));
-        assertEquals(1, count("SELECT count(*) FROM commerce_payment_exception WHERE commerce_order_id = ? AND kind = "
-                + "'REFUND_DUE' AND gateway_payment_id = ?", orderId, "RTO:" + liveShipment(orderId)));
+        // WP-32: the due is listed in the REFUND_DUE queue; no exception row is written.
+        assertEquals(0, count("SELECT count(*) FROM commerce_payment_exception WHERE commerce_order_id = ? AND kind = "
+                + "'REFUND_DUE'", orderId));
+        assertTrue(inRefundDueQueue(orderId), "the order is in the REFUND_DUE queue");
         assertEquals("RTO", status(orderId));
         noDrift("rto received resaleable");
 
@@ -745,8 +762,9 @@ class CommerceOrderDeskDatabaseProofIT {
         assertEquals(0, liveInvoices(orderId));
         assertEquals(1, count("SELECT count(*) FROM commerce_credit_note WHERE commerce_order_id = ?", orderId),
                 "one credit note covers the unpack and the cancel");
-        assertEquals(1, count("SELECT count(*) FROM commerce_payment_exception WHERE commerce_order_id = ? AND kind = "
-                + "'REFUND_DUE'", orderId));
+        assertEquals(0, money("SELECT amount_paid FROM commerce_order WHERE id = ?", orderId)
+                .compareTo(money("SELECT refund_due FROM commerce_order WHERE id = ?", orderId)));
+        assertTrue(inRefundDueQueue(orderId), "the order is in the REFUND_DUE queue");
         assertEquals(0, count("SELECT count(*) FROM stock_movement sm JOIN commerce_shipment_line sl ON sl.id = "
                 + "sm.reference_id JOIN commerce_order_line l ON l.id = sl.order_line_id WHERE l.order_id = ?", orderId));
         assertEquals(1, count("SELECT count(*) FROM user_plan up JOIN commerce_order_line l ON l.user_plan_id = up.id "
@@ -942,8 +960,9 @@ class CommerceOrderDeskDatabaseProofIT {
         assertEquals(1, cancels.stream().filter(r -> r instanceof StaffOrderDtos.StaffOrderDetail).count(),
                 cancels.toString());
         assertEquals(available + 3, slots(raceV), "one give-back");
-        assertEquals(1, count("SELECT count(*) FROM commerce_payment_exception WHERE commerce_order_id = ? AND kind = "
-                + "'REFUND_DUE'", toCancel));
+        assertEquals(0, money("SELECT amount_paid FROM commerce_order WHERE id = ?", toCancel)
+                .compareTo(money("SELECT refund_due FROM commerce_order WHERE id = ?", toCancel)), "raised once");
+        assertTrue(inRefundDueQueue(toCancel), "the order is in the REFUND_DUE queue");
         noDrift("two cancels");
 
         // A replay of a transition: same key, same body.

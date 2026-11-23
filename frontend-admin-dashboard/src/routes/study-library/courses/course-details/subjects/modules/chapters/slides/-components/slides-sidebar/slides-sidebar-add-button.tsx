@@ -38,7 +38,26 @@ import {
 } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-hooks/use-slides';
 import { useContentStore } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-stores/chapter-sidebar-store';
 import { useDialogStore } from '@/routes/study-library/courses/-stores/slide-add-dialogs-store';
-import { File, GameController, ClipboardText, ChatsCircle, FileXls, Files } from '@phosphor-icons/react';
+import {
+    File,
+    GameController,
+    ClipboardText,
+    ChatsCircle,
+    FileXls,
+    Files,
+    Cards,
+    ChartBar,
+} from '@phosphor-icons/react';
+import {
+    FLASHCARDS_DOC_TYPE,
+    GAME_DOC_TYPE,
+    POLL_DOC_TYPE,
+    createDefaultFlashcardsDataJson,
+    createDefaultGameData,
+    createDefaultPollData,
+    serializeGameData,
+    serializePollData,
+} from '../activity/activity-types';
 import {
     DISCUSSION_DOC_TYPE,
     createDefaultDiscussionDataJson,
@@ -292,6 +311,24 @@ export const ChapterSidebarAddButton = () => {
                 value: 'spreadsheet',
                 icon: <FileXls className="size-4 text-success-600" />,
                 description: t('menu.spreadsheet.description'),
+            },
+            {
+                label: t('menu.flashcards.label'),
+                value: 'flashcards',
+                icon: <Cards className="size-4 text-primary-500" />,
+                description: t('menu.flashcards.description'),
+            },
+            {
+                label: t('menu.poll.label'),
+                value: 'poll',
+                icon: <ChartBar className="size-4 text-primary-500" />,
+                description: t('menu.poll.description'),
+            },
+            {
+                label: t('menu.game.label'),
+                value: 'game',
+                icon: <GameController className="size-4 text-primary-500" />,
+                description: t('menu.game.description'),
             },
             {
                 label: t('menu.quiz.label'),
@@ -880,6 +917,58 @@ export const ChapterSidebarAddButton = () => {
             case 'spreadsheet':
                 setSpreadsheetDialogOpen(true);
                 break;
+
+            case 'flashcards':
+            case 'poll':
+            case 'game': {
+                // Flashcards / Poll / Game: a DOCUMENT slide whose data is the deck, the
+                // poll or the game page as JSON (see activity/activity-types.ts). Created
+                // as a draft-ready slide; the teacher fills it in, then saves or publishes.
+                const docType =
+                    value === 'flashcards'
+                        ? FLASHCARDS_DOC_TYPE
+                        : value === 'poll'
+                          ? POLL_DOC_TYPE
+                          : GAME_DOC_TYPE;
+                const data =
+                    docType === FLASHCARDS_DOC_TYPE
+                        ? createDefaultFlashcardsDataJson()
+                        : docType === POLL_DOC_TYPE
+                          ? serializePollData(createDefaultPollData())
+                          : serializeGameData(createDefaultGameData());
+                try {
+                    const slideId = crypto.randomUUID();
+                    const uniqueTitle = generateUniqueDocumentSlideTitle(items || [], docType);
+                    // An empty deck, poll or game must never go live by itself: always a draft.
+                    const response = await addUpdateDocumentSlide({
+                        id: slideId,
+                        title: uniqueTitle,
+                        image_file_id: '',
+                        description: '',
+                        slide_order: getNextSlideOrder(items || []),
+                        document_slide: {
+                            id: crypto.randomUUID(),
+                            type: docType,
+                            data,
+                            title: uniqueTitle,
+                            cover_file_id: '',
+                            total_pages: 1,
+                            published_data: null,
+                            published_document_total_pages: 1,
+                        },
+                        status: 'DRAFT',
+                        new_slide: true,
+                        notify: false,
+                    });
+                    if (response) {
+                        await reorderSlidesAfterNewSlide(slideId);
+                    }
+                } catch (err) {
+                    console.error('Error creating activity slide:', err);
+                    toast.error(t('toasts.activityCreateFailed'));
+                }
+                break;
+            }
 
             case 'document-quiz':
                 setIsDocumentQuizDialogOpen(true);

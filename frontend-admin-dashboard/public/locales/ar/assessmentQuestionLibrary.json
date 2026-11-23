@@ -366,6 +366,49 @@
         "tagsImported_many": "{{topics}} مواضيع جديدة، تم تصنيف {{count}} أسئلة",
         "tagsImported_other": "{{topics}} مواضيع جديدة، تم تصنيف {{count}} أسئلة"
     },
+    "facets": {
+        "title": "عوامل التصفية",
+        "clearAll": "مسح الكل",
+        "clearGroup": "مسح",
+        "searchIn": "بحث في {{name}}",
+        "openTopic": "فتح {{name}}",
+        "noMatch": "لا توجد نتائج",
+        "showAll": "عرض الكل ({{total}})",
+        "showLess": "عرض أقل",
+        "remove": "إزالة عامل التصفية {{name}}",
+        "inside": "في {{name}}",
+        "countsFailed": "تعذر تحميل الأعداد. لا تزال عوامل التصفية تعمل."
+    },
+    "autoTag": {
+        "button": "وسم بالذكاء الاصطناعي",
+        "title": "وسم بالذكاء الاصطناعي: {{name}}",
+        "hint": "يقرأ الذكاء الاصطناعي كل سؤال هنا بلا وسم مفهوم ويضيف من 1 إلى 3، مع إعادة استخدام الوسوم المستخدمة هنا. لا تتغير الوسوم الموجودة.",
+        "nothingToDo": "كل سؤال هنا لديه وسم مفهوم بالفعل.",
+        "untagged": "{{total}} سؤال بلا وسم مفهوم",
+        "progress": "تمت قراءة {{tried}} من {{total}}، وتم وسم {{tagged}}",
+        "start": "بدء الوسم",
+        "resume": "متابعة",
+        "stop": "إيقاف",
+        "done": "تم. وُسم {{tagged}} سؤال.",
+        "stopped": "توقف. وُسم {{tagged}} سؤال حتى الآن.",
+        "tagsUsed": "الوسوم المستخدمة"
+    },
+    "manageTags": {
+        "button": "إدارة الوسوم",
+        "title": "وسوم المكتبة",
+        "titleIn": "الوسوم في {{name}}",
+        "hint": "إعادة تسمية وسم باسم وسم آخر موجود تدمجهما. الحذف يزيل الوسم من كل الأسئلة وتبقى الأسئلة.",
+        "search": "بحث في الوسوم",
+        "empty": "لا توجد وسوم هنا بعد",
+        "loadFailed": "تعذر تحميل الوسوم.",
+        "save": "حفظ",
+        "rename": "إعادة تسمية {{name}}",
+        "delete": "حذف {{name}}",
+        "confirmDelete": "إزالة من {{total}} سؤال؟",
+        "yesDelete": "إزالة",
+        "renamed": "أصبح \"{{from}}\" الآن \"{{to}}\"",
+        "deleted": "أُزيل \"{{name}}\" من كل الأسئلة"
+    },
     "tabs": {
         "questions": "الأسئلة"
     },
@@ -390,7 +433,8 @@
         "unsortedHint_one": "{{count}} سؤال للتصنيف",
         "unsortedHint_other": "{{count}} أسئلة للتصنيف",
         "addCourse": "إضافة دورة",
-        "addTopic": "إضافة موضوع"
+        "addTopic": "إضافة موضوع",
+        "subtopicCards": "المواضيع الفرعية ({{total}})"
     },
     "tags": {
         "kind": {

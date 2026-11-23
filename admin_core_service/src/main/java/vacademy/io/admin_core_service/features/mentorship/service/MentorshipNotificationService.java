@@ -17,6 +17,7 @@ import vacademy.io.admin_core_service.features.notification.dto.NotificationToUs
 import vacademy.io.admin_core_service.features.notification.dto.UnifiedSendRequest;
 import vacademy.io.admin_core_service.features.notification.util.PhoneCountryUtil;
 import vacademy.io.admin_core_service.features.notification_service.service.NotificationService;
+import vacademy.io.admin_core_service.features.student_analysis.service.aggregation.ThemeColorResolver;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.institute.entity.Institute;
 
@@ -62,7 +63,7 @@ public class MentorshipNotificationService {
 
     /** Global-default templates live under this pseudo institute (see V424 seed). */
     private static final String DEFAULT_INSTITUTE_ID = "DEFAULT";
-    private static final String FALLBACK_THEME_COLOR = "#FF9800";
+    private static final String FALLBACK_THEME_COLOR = "#333333";
     private static final String FALLBACK_SUPPORT_EMAIL = "support@vacademy.io";
     private static final String FALLBACK_LEARNER_URL = "https://learner.vacademy.io";
 
@@ -391,13 +392,28 @@ public class MentorshipNotificationService {
                                   Map<String, String> vars, Defaults d) {
         Map<String, Object> em = channel(trigger, "email");
         if (channelEnabled(em, d.emailDefault()) && email != null && !email.isBlank()) {
-            // Prefer the branded DB template (institute override -> DEFAULT seed); fall back to
-            // the admin's inline subject/body, then the code default.
-            if (!sendTemplatedEmail(instituteId, email, vars.getOrDefault("name", "there"),
-                    d.templateName(), vars)) {
+            // Order: the institute's own DB template -> the admin's customised inline
+            // subject/body -> the shared DEFAULT template -> the code default.
+            String recipientName = vars.getOrDefault("name", "there");
+            String inlineSubject = customised(str(em, "subject"), d.emailSubject());
+            String inlineBody = customised(str(em, "body"), d.emailBody());
+            Template own = findTemplate(instituteId, d.templateName());
+            boolean sent = sendTemplatedEmail(instituteId, email, recipientName, d.templateName(), own, vars);
+            if (!sent && (inlineSubject != null || inlineBody != null)) {
                 sendEmail(instituteId, email, userId,
-                        applyPlaceholders(orDefault(str(em, "subject"), d.emailSubject()), vars),
-                        applyPlaceholders(orDefault(str(em, "body"), d.emailBody()), vars), d.type());
+                        applyPlaceholders(orDefault(inlineSubject, d.emailSubject()), vars),
+                        applyPlaceholders(orDefault(inlineBody, d.emailBody()), vars), d.type());
+                sent = true;
+            }
+            // DEFAULT only when the institute has no template of its own: if theirs was tried and
+            // the send failed, go straight to the code default (two tries at most, as before).
+            if (!sent && own == null) {
+                sent = sendTemplatedEmail(instituteId, email, recipientName, d.templateName(),
+                        findTemplate(DEFAULT_INSTITUTE_ID, d.templateName()), vars);
+            }
+            if (!sent) {
+                sendEmail(instituteId, email, userId, applyPlaceholders(d.emailSubject(), vars),
+                        applyPlaceholders(d.emailBody(), vars), d.type());
             }
         }
         Map<String, Object> al = channel(trigger, "system_alert");
@@ -455,8 +471,14 @@ public class MentorshipNotificationService {
     private boolean sendTemplatedEmail(String instituteId, String email, String recipientName,
                                        String templateName, Map<String, String> vars) {
         if (templateName == null || templateName.isBlank() || email == null || email.isBlank()) return false;
-        Template template = resolveTemplate(instituteId, templateName);
-        if (template == null) return false;
+        return sendTemplatedEmail(instituteId, email, recipientName, templateName,
+                resolveTemplate(instituteId, templateName), vars);
+    }
+
+    /** Render and send an already-resolved template row; false when there is none or the send fails. */
+    private boolean sendTemplatedEmail(String instituteId, String email, String recipientName,
+                                       String templateName, Template template, Map<String, String> vars) {
+        if (template == null || email == null || email.isBlank()) return false;
         try {
             InstituteContext ctx = loadInstituteContext(instituteId);
             Map<String, String> v = new HashMap<>(vars);
@@ -490,6 +512,18 @@ public class MentorshipNotificationService {
         }
     }
 
+    /** The EMAIL template row owned by exactly {@code ownerId} (an institute or DEFAULT), else null. */
+    private Template findTemplate(String ownerId, String templateName) {
+        if (ownerId == null || templateName == null || templateName.isBlank()) return null;
+        try {
+            return templateRepository.findByInstituteIdAndNameAndType(ownerId, templateName, "EMAIL")
+                    .orElse(null);
+        } catch (Exception e) {
+            log.warn("mentorship template lookup failed ({}): {}", templateName, e.getMessage());
+            return null;
+        }
+    }
+
     private record InstituteContext(String name, String themeColor, String supportEmail,
                                     String ctaUrl, String fromName) {}
 
@@ -498,6 +532,7 @@ public class MentorshipNotificationService {
         String name = "";
         String themeColor = FALLBACK_THEME_COLOR;
         String cta = FALLBACK_LEARNER_URL;
+        String supportEmail = FALLBACK_SUPPORT_EMAIL;
         try {
             Institute inst = instituteRepository.findById(instituteId).orElse(null);
             if (inst != null) {
@@ -505,6 +540,10 @@ public class MentorshipNotificationService {
                     name = inst.getInstituteName();
                 }
                 themeColor = normalizeThemeColor(inst.getInstituteThemeCode());
+                // Institute's own contact address for {{support_email}}, not the platform inbox.
+                if (inst.getEmail() != null && !inst.getEmail().isBlank()) {
+                    supportEmail = inst.getEmail().trim();
+                }
             }
         } catch (Exception ignore) {
             // fall back to defaults
@@ -518,16 +557,15 @@ public class MentorshipNotificationService {
         } catch (Exception ignore) {
             // fall back to the default learner URL
         }
-        return new InstituteContext(name, themeColor, FALLBACK_SUPPORT_EMAIL, cta,
+        return new InstituteContext(name, themeColor, supportEmail, cta,
                 name.isBlank() ? null : name);
     }
 
     /** Accept a raw hex (with/without '#') or CSS keyword; blank -> fallback. Mirrors doubt emails. */
     private static String normalizeThemeColor(String themeCode) {
-        if (themeCode == null || themeCode.trim().isEmpty()) return FALLBACK_THEME_COLOR;
-        String t = themeCode.trim();
-        if (t.matches("^[0-9A-Fa-f]{6}$")) return "#" + t;
-        return t;
+        // Hex or a theme preset ("primary", "blue", ...) -> hex; anything else -> neutral.
+        String resolved = ThemeColorResolver.resolve(themeCode);
+        return resolved != null ? resolved : FALLBACK_THEME_COLOR;
     }
 
     // --------------------------------------------------------------- channels
@@ -707,6 +745,16 @@ public class MentorshipNotificationService {
 
     private static String orDefault(String v, String def) {
         return (v != null && !v.isBlank()) ? v : def;
+    }
+
+    /**
+     * The admin's inline text only when they actually changed it. The settings screen saves
+     * the stock text (same as the code default) for untouched triggers, and that must not
+     * override the branded DEFAULT template.
+     */
+    private static String customised(String v, String stock) {
+        if (v == null || v.isBlank()) return null;
+        return stock != null && v.trim().equals(stock.trim()) ? null : v;
     }
 
     private static String firstNonBlank(String a, String b, String c) {

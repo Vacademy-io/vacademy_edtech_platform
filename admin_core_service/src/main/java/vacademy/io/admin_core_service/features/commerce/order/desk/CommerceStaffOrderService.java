@@ -1,5 +1,8 @@
 package vacademy.io.admin_core_service.features.commerce.order.desk;
 
+import vacademy.io.admin_core_service.features.commerce.returns.entity.CommerceReturn;
+import vacademy.io.admin_core_service.features.commerce.returns.enums.RefundMethod;
+import vacademy.io.admin_core_service.features.commerce.returns.service.CommerceExchangeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -127,13 +130,35 @@ public class CommerceStaffOrderService {
         this.transaction = new TransactionTemplate(transactionManager);
     }
 
+    /** Exchanges (WP-32); set by Spring, absent in tests built by hand. */
+    private ObjectProvider<CommerceExchangeService> exchangeProvider;
+    private CommerceExchangeService exchangeService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setExchangeProvider(ObjectProvider<CommerceExchangeService> exchangeProvider) {
+        this.exchangeProvider = exchangeProvider;
+    }
+
+    /** For tests built by hand. */
+    public void useExchangeService(CommerceExchangeService exchangeService) {
+        this.exchangeService = exchangeService;
+    }
+
+    private CommerceExchangeService exchanges() {
+        if (exchangeService == null && exchangeProvider != null) {
+            exchangeService = exchangeProvider.getIfAvailable();
+        }
+        return exchangeService;
+    }
+
     /** A staff order as validated: what the transaction writes. */
     record Clean(String clientRequestId, String phone, String name, String email,
                  Map<String, Object> shippingAddress, Map<String, Object> billingAddress, String buyerGstin,
                  List<CartPriceRequest.Line> lines, Map<String, BigDecimal> overrides, String couponCode,
                  boolean chargeShipping, List<CommerceOrderWriter.StaffTender> tenders, boolean restOnCredit,
                  boolean handOverNow, String customerNote,
-                 Map<String, CommerceShipmentService.PackLine> handOverPieces) {
+                 Map<String, CommerceShipmentService.PackLine> handOverPieces,
+                 CommerceExchangeService.Ask exchange) {
 
         BigDecimal received() {
             return tenders.stream().map(CommerceOrderWriter.StaffTender::amount).reduce(BigDecimal.ZERO.setScale(2),
@@ -158,11 +183,22 @@ public class CommerceStaffOrderService {
         desk.authorize(user, instituteId, snapshot.getFulfilmentLocationId(), MANAGER);
         BigDecimal total = snapshot.getTotal();
         BigDecimal received = clean.received();
-        if (received.compareTo(total) > 0) {
+        if (clean.exchange() != null) {
+            // The credit of the return is known only under its lock: the tenders are checked there.
+            if (exchanges() == null) {
+                throw new ConflictException(CommerceExchangeService.EXCHANGE_NOT_AVAILABLE + ": exchanges are not "
+                        + "available");
+            }
+            // The exchange spends the return's credit: the caller must manage the return's
+            // location too (as POST /refunds with a return_id), not only the new order's.
+            CommerceReturn exchanged = transaction.execute(status -> exchanges().readReturn(instituteId,
+                    clean.exchange().returnId()));
+            desk.authorize(user, instituteId, exchanged == null ? null : exchanged.getLocationId(), MANAGER);
+        } else if (received.compareTo(total) > 0) {
             throw new InvalidRequestException("TENDERS_OVER: the money received (" + received.toPlainString()
                     + ") is more than the order total (" + total.toPlainString() + ")");
         }
-        if (received.compareTo(total) < 0 && !clean.restOnCredit()) {
+        if (clean.exchange() == null && received.compareTo(total) < 0 && !clean.restOnCredit()) {
             throw new InvalidRequestException("TENDERS_SHORT: " + total.subtract(received).toPlainString()
                     + " is not paid; record it or leave it on credit (rest_on_credit)");
         }
@@ -195,6 +231,9 @@ public class CommerceStaffOrderService {
         } catch (CheckoutException e) {
             throw refusal(e);
         }
+        if (clean.exchange() != null) {
+            exchanges().executeRemainder(instituteId, orderId);
+        }
         return new Created(desk.detail(instituteId, orderId, user, false), false);
     }
 
@@ -204,8 +243,39 @@ public class CommerceStaffOrderService {
 
     /** Inside the order transaction. Returns the order id. */
     String write(CommerceOrderWriter.StaffNewOrder newOrder, Clean clean, String actor) {
+        CommerceExchangeService.Locked exchange = null;
+        if (clean.exchange() != null) {
+            // The old order and the return are locked before anything of the new order is written.
+            exchange = exchanges().lock(newOrder.instituteId(), clean.exchange());
+            BigDecimal total = newOrder.snapshot().getTotal();
+            BigDecimal applied = CommerceExchangeService.applied(exchange.credit(), total);
+            BigDecimal received = clean.received().add(applied);
+            if (received.compareTo(total) > 0) {
+                throw new InvalidRequestException("TENDERS_OVER: the money received and the exchange credit ("
+                        + received.toPlainString() + ") are more than the order total (" + total.toPlainString() + ")");
+            }
+            if (received.compareTo(total) < 0 && !clean.restOnCredit()) {
+                throw new InvalidRequestException("TENDERS_SHORT: " + total.subtract(received).toPlainString()
+                        + " is not paid; record it or leave it on credit (rest_on_credit)");
+            }
+            CommerceExchangeService.requireRemainder(clean.exchange(), exchange.credit(), total);
+            List<CommerceOrderWriter.StaffTender> tenders = new ArrayList<>();
+            tenders.add(new CommerceOrderWriter.StaffTender(TenderMode.CREDIT_NOTE.name(), applied,
+                    exchange.creditNoteNumber()));
+            tenders.addAll(newOrder.tenders());
+            newOrder = new CommerceOrderWriter.StaffNewOrder(newOrder.instituteId(), newOrder.orderNumber(),
+                    newOrder.clientRequestId(), newOrder.requestHash(), newOrder.userId(), newOrder.actorUserId(),
+                    newOrder.phone(), newOrder.name(), newOrder.email(), newOrder.shippingAddress(),
+                    newOrder.billingAddress(), newOrder.buyerGstin(), newOrder.customerNote(), newOrder.snapshot(),
+                    newOrder.holdMinutes(), tenders, newOrder.restOnCredit());
+        }
         CommerceOrderWriter.Written written = writer.writeStaff(newOrder);
         CommerceOrder order = written.order();
+        if (exchange != null) {
+            order.setExchangeOfOrderId(exchange.oldOrder().getId());
+            order = orderRepository.save(order);
+            exchanges().apply(exchange, order, clean.exchange(), actor);
+        }
         List<CommerceOrderLine> lines = written.lines();
         for (CommerceOrderLine line : CommerceOrderDeskService.items(lines)) {
             if (line.getListUnitPrice() == null) {
@@ -236,7 +306,10 @@ public class CommerceStaffOrderService {
         if (clean.handOverNow()) {
             shipmentService.getObject().handOverInside(order, lines, clean.handOverPieces(), actor);
         }
-        events.afterCommit(desk.event(CommerceOrderEvents.ORDER_CONFIRMED, order, null, true));
+        // A sale handed over at the counter is a bill (the counter sale); anything else is an order
+        // to be delivered later.
+        events.afterCommit(desk.event(clean.handOverNow() ? CommerceOrderEvents.POS_BILL_ISSUED
+                : CommerceOrderEvents.ORDER_CONFIRMED, order, null, true));
         log.info("Commerce staff order {} ({}) created for institute {}: {} line(s), total {} {}, {}",
                 order.getOrderNumber(), order.getId(), order.getInstituteId(), lines.size(), order.getTotal(),
                 order.getCurrency(), order.getPaymentStatus());
@@ -321,6 +394,10 @@ public class CommerceStaffOrderService {
             }
             throw new ConflictException(CheckoutException.NOT_PRICEABLE + ": " + e.getMessage());
         }
+        // A line off its sale step is the staff's to fix (2.3 m of a cloth cut in 0.5 m): a 400
+        // naming the line and the step, before the general "cannot be sold as asked".
+        CommerceOrderService.requireOnStep(priced,
+                line -> orderService.cartVariant(instituteId, line.getVariantId(), line.getSku()));
         if (priced.view().getUnavailable() != null && !priced.view().getUnavailable().isEmpty()) {
             List<String> refs = new ArrayList<>();
             priced.view().getUnavailable().forEach(u -> refs.add(u.getLineRef() + " (" + u.getReason() + ")"));
@@ -434,10 +511,32 @@ public class CommerceStaffOrderService {
                     CommerceOrderDeskService.text(tender.getReference(), "tender reference", 100)));
         }
         boolean chargeShipping = request.getChargeShipping() != null ? request.getChargeShipping() : shipping != null;
+        CommerceExchangeService.Ask exchange = null;
+        if (request.getExchange() != null) {
+            String returnId = CommerceOrderDeskService.text(request.getExchange().getReturnId(), "exchange.return_id",
+                    36);
+            if (returnId == null) {
+                throw CommerceOrderDeskService.validation("exchange.return_id is required");
+            }
+            RefundMethod method = null;
+            String reference = null;
+            StaffOrderRequest.RemainderRefund rest = request.getExchange().getRemainderRefund();
+            if (rest != null) {
+                method = RefundMethod.of(rest.getMethod());
+                if (method == null || method == RefundMethod.EXCHANGE_CREDIT) {
+                    throw CommerceOrderDeskService.validation("exchange.remainder_refund.method is GATEWAY, CASH, UPI "
+                            + "or BANK_TRANSFER");
+                }
+                reference = CommerceOrderDeskService.text(rest.getReference(), "exchange.remainder_refund.reference",
+                        100);
+            }
+            exchange = new CommerceExchangeService.Ask(returnId, method, reference);
+        }
         return new Clean(key, phone, name, email, shipping, billing, gstin, lines, overrides,
                 CommerceOrderDeskService.text(request.getCouponCode(), "coupon_code", 64), chargeShipping, tenders,
                 Boolean.TRUE.equals(request.getRestOnCredit()), handOverNow,
-                CommerceOrderDeskService.text(request.getCustomerNote(), "customer_note", 500), handOverPieces);
+                CommerceOrderDeskService.text(request.getCustomerNote(), "customer_note", 500), handOverPieces,
+                exchange);
     }
 
     /** Piece ids or scan codes of one line: trimmed, distinct, at most {@code maxLength} characters each. */

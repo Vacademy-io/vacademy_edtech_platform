@@ -97,6 +97,9 @@ public class StudentRegistrationManager {
     private vacademy.io.admin_core_service.features.audience.service.AudienceService audienceService;
 
     @Autowired
+    private vacademy.io.admin_core_service.features.audience.service.LeadDedupSettingService leadDedupSettingService;
+
+    @Autowired
     private vacademy.io.admin_core_service.features.learner_access.service.LearnerAccessService learnerAccessService;
 
     @Autowired
@@ -155,7 +158,7 @@ public class StudentRegistrationManager {
                         instituteStudentDTO.getUserDetails(),
                         details.getPackageSessionId(), null);
             }
-        } else {
+        } else if (!selfSignupLeadBlocksTestLead(instituteId)) {
             // No package session means no student_session_institute_group_mapping row,
             // which makes this signup invisible in the admin's learner list (it requires
             // an enrollment row to show up at all). Surface it as a lead instead.
@@ -169,6 +172,36 @@ public class StudentRegistrationManager {
             }
         }
         return ResponseEntity.ok(new StudentDTO(student));
+    }
+
+    /**
+     * True when this institute's lead de-duplication would reject the open assessment's own
+     * lead because of the Self Sign-ups lead made here a moment earlier.
+     *
+     * <p>The only caller of {@link #addOpenStudentToInstitute} is the open assessment register
+     * page, and the registration it makes next adds the person to that test's
+     * "&lt;title&gt; - Open Assessment" list, which later receives their marks. With institute-wide
+     * de-duplication set to reject, the Self Sign-ups lead (same email and phone) made that
+     * test-list lead fail, so the marks reached no list. Such an institute keeps one lead per
+     * person, and the test-list lead is the useful one, so the Self Sign-ups lead is skipped.
+     * Every other institute keeps both, exactly as before.
+     */
+    private boolean selfSignupLeadBlocksTestLead(String instituteId) {
+        try {
+            return blocksTestLead(leadDedupSettingService.get(instituteId));
+        } catch (Exception e) {
+            log.warn("Lead dedup settings unreadable for institute {} — keeping the self-signup lead: {}",
+                    instituteId, e.getMessage());
+            return false;
+        }
+    }
+
+    static boolean blocksTestLead(
+            vacademy.io.admin_core_service.features.audience.service.LeadDedupSettingService.DedupSettings settings) {
+        return settings != null
+                && settings.enabled()
+                && settings.scope() == vacademy.io.admin_core_service.features.audience.service.LeadDedupSettingService.DedupScope.INSTITUTE
+                && settings.action() == vacademy.io.admin_core_service.features.audience.service.LeadDedupSettingService.DedupAction.REJECT;
     }
 
     public UserDTO createUserFromAuthService(UserDTO userDTO, String instituteId, boolean isNotify) {

@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import vacademy.io.assessment_service.core.config.AssessmentInternalUserDetailsService;
 import vacademy.io.common.auth.apikey.ApiKeyAuthentication;
+import vacademy.io.common.auth.demo.DemoReadOnlyGate;
 import vacademy.io.common.auth.entity.UserActivity;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.auth.repository.UserActivityRepository;
@@ -151,6 +152,14 @@ public class AssessmentJwtAuthFilter extends OncePerRequestFilter {
 
                 // Validate the JWT token using user details and JwtService
                 if (jwtService.isTokenValid(jwt, userDetails)) {
+                    // Read-only demo user: same gate as common_service's JwtAuthFilter,
+                    // applied before the request is authenticated.
+                    if (DemoReadOnlyGate.refuses(request, userDetails,
+                            jwtService.extractClaim(jwt, claims -> claims.get("authorities")))) {
+                        DemoReadOnlyGate.writeRefusal(response);
+                        return;
+                    }
+
                     // Create an authentication token with user details and authorities
 
                     // todo use loadUserByUsername from assessmentInternalUserDetailsService

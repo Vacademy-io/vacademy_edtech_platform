@@ -14,7 +14,7 @@ Menus may move. These steps match Cursor's MCP documentation as of October 2026.
 
 ## Add the server
 
-Copy the server URL from **Settings → MCP Server** in your admin portal. Then add it to one of Cursor's `mcp.json` files:
+Copy the server URL from **Settings → AI access** in your admin portal. Then add it to one of Cursor's `mcp.json` files:
 
 | File | Use it for |
 | :--- | :--- |
@@ -81,7 +81,7 @@ Only needed if your organisation requires every app to use a pre-registered clie
 
 <Steps>
   <Step title="Admin: create a client ID for Cursor">
-    In **Settings → MCP Server → Client IDs for other apps**, click **Add a client ID for another app**. Name it *Cursor* and add Cursor's redirect URLs, separated by a comma:
+    In **Settings → AI access → Client IDs for other apps**, click **Add a client ID for another app**. Name it *Cursor* and add Cursor's redirect URLs, separated by a comma:
 
     ```text
     http://localhost:8787/callback, https://www.cursor.com/agents/mcp/oauth/callback

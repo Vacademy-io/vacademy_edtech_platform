@@ -33,6 +33,17 @@ public interface PaymentLogRepository extends JpaRepository<PaymentLog, String> 
   @Query(value = "SELECT * FROM payment_log WHERE CAST(payment_specific_data AS TEXT) LIKE CONCAT('%\"order_id\":\"', :orderId, '\"%') OR CAST(payment_specific_data AS TEXT) LIKE CONCAT('%\"orderId\":\"', :orderId, '\"%')", nativeQuery = true)
   List<PaymentLog> findAllByOrderIdInOriginalRequest(@Param("orderId") String orderId);
 
+  /**
+   * Candidates for a webhook's order id: the log with that id, or logs whose
+   * payment_specific_data holds the id as a whole JSON string value. The pattern
+   * comes from WebhookOrderLookup.quotedValueLikePattern (wildcards escaped with a
+   * backslash); WebhookOrderLookup.matches makes the exact decision.
+   */
+  @Query(value = "SELECT * FROM payment_log WHERE id = :orderId"
+      + " OR CAST(payment_specific_data AS TEXT) LIKE :quotedPattern ESCAPE '\\'", nativeQuery = true)
+  List<PaymentLog> findWebhookOrderCandidates(@Param("orderId") String orderId,
+      @Param("quotedPattern") String quotedPattern);
+
   @Query("SELECT pl FROM PaymentLog pl WHERE pl.userPlan.id = :userPlanId ORDER BY pl.createdAt DESC")
   List<PaymentLog> findByUserPlanIdOrderByCreatedAtDesc(@Param("userPlanId") String userPlanId);
 

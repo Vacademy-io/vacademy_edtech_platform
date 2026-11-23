@@ -429,6 +429,9 @@ export function NonAdminSlidesView({
 
             {/* Action Buttons Container */}
             <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+                {/* The floating assistant button steps aside while this stack shows
+                    (Send for Approval marks itself). */}
+                {!allowDirectEditPublished && <span hidden data-assistant-fab="avoid" />}
                 {/* Preview / View Content button — only relevant in the
                     Copy-to-Edit / approval flow. In direct-edit mode the
                     teacher is editing the live course in place, so there's

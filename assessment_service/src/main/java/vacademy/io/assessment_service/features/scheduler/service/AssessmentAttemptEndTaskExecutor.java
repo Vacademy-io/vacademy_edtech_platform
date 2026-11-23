@@ -99,8 +99,12 @@ public class AssessmentAttemptEndTaskExecutor implements TaskExecutor {
         try {
             Assessment assessment = attempt.getRegistration().getAssessment();
             // Checked here first so the hourly sweep opens no transaction for the
-            // (almost every) attempt whose assessment never opted in.
-            if (!Boolean.TRUE.equals(assessment.getAiEvaluationEnabled())) return;
+            // (almost every) attempt whose assessment never opted in - except an online
+            // attempt with a CBE answer, which always goes to the AI (owner decision
+            // 2026-11-18; see TypedAnswerEvaluation.cbeAlwaysAiGraded). That check reads
+            // attempt_data first and touches the database only when it holds a CBE answer.
+            if (!Boolean.TRUE.equals(assessment.getAiEvaluationEnabled())
+                    && !typedAnswerEvaluation.cbeAlwaysAiGraded(attempt, assessment)) return;
             if (!typedAnswerEvaluation.isTypedAttempt(attempt, assessment)) return;
             aiEvaluationSubmissionEnqueuer.enqueueIfEnabled(attempt, assessment);
         } catch (Exception e) {
