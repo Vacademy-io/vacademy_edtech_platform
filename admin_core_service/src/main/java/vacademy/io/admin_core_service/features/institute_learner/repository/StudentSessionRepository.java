@@ -487,6 +487,13 @@ public interface StudentSessionRepository extends CrudRepository<StudentSessionI
           String status);
 
   /**
+   * How many of this learner's rows in {@code status} are stamped with this sub-org, in any
+   * batch. Moving a learner out of a sub-org keeps their student_sub_org link while this is
+   * still above zero.
+   */
+  long countByUserIdAndSubOrg_IdAndStatus(String userId, String subOrgId, String status);
+
+  /**
    * This learner's most recent row in ONE package session, whatever its status. Used by the
    * enrollment repair to find a lapsed membership worth reviving: a revoked trial leaves an
    * INACTIVE or DELETED row, and reviving that one keeps the learner's enrollment number,

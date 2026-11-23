@@ -28,6 +28,9 @@ public class SubOrgLearnerController {
     @Autowired
     private InstituteAccessValidator instituteAccessValidator;
 
+    @Autowired
+    private vacademy.io.admin_core_service.features.suborg.service.SubOrgBulkMemberService subOrgBulkMemberService;
+
 
     @GetMapping("/members")
     public ResponseEntity<SubOrgResponseDTO> getUsersByPackageAndSubOrg(
@@ -75,6 +78,35 @@ public class SubOrgLearnerController {
         }
         instituteAccessValidator.requireInstituteStaff(user, instituteId);
         subOrgAccessScopeService.assertNotCrossSubOrg(user, subOrgId);
+    }
+
+    /**
+     * Moves learners' existing ACTIVE enrollments into a sub-organization (students list →
+     * select → Move to sub-org). Answers per learner.
+     */
+    @PostMapping("/move-members")
+    public ResponseEntity<vacademy.io.admin_core_service.features.suborg.dto.SubOrgBulkMembersResponseDTO> moveMembers(
+            @RequestBody vacademy.io.admin_core_service.features.suborg.dto.SubOrgMoveMembersRequestDTO request,
+            @RequestAttribute(value = "user", required = false) CustomUserDetails user) {
+        if (request == null) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "Request body is required");
+        }
+        requireStaffManagingSubOrg(user, request.getSubOrgId(), request.getInstituteId());
+        return ResponseEntity.ok(subOrgBulkMemberService.moveMembers(request, user));
+    }
+
+    /**
+     * Staff of the parent institute (or a platform super-admin) who may see this sub-org and
+     * hold the Sub-Organizations "manage team" capability. Sub-org admins on the learner portal
+     * keep using add-member one by one.
+     */
+    private void requireStaffManagingSubOrg(CustomUserDetails user, String subOrgId, String instituteId) {
+        if (!StringUtils.hasText(subOrgId) || !StringUtils.hasText(instituteId)) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "sub_org_id and institute_id are required");
+        }
+        instituteAccessValidator.requireInstituteStaffOrSuperAdmin(user, instituteId);
+        subOrgAccessScopeService.assertCanAccessSubOrg(user, subOrgId, instituteId);
+        subOrgAccessScopeService.assertRolePermission(user, instituteId, SubOrgAccessScopeService.PERM_MANAGE_TEAM);
     }
 
     /**
