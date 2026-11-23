@@ -46,6 +46,8 @@ export interface AiReportWebData {
   assessment_name: string | null;
   student_name: string | null;
   enrollment_number: string | null;
+  /** Registration answers the assessment prints under the name (roll number, college, ...); absent on older servers. */
+  student_details?: { label: string; value: string }[] | null;
   attempt_date: number | null;
   headline: string | null;
   subline: string | null;
