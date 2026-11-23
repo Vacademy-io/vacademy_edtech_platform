@@ -50,6 +50,9 @@ import vacademy.io.admin_core_service.features.live_activity.enums.LiveActivityA
 @RequiredArgsConstructor
 public class CounsellorReassignService {
 
+    /** Upper bound for one batched handover call, whatever the client asks for. */
+    static final int MAX_BATCH_SIZE = 500;
+
     private final UserLeadProfileRepository profileRepo;
     private final LiveActivityCounsellorRecorder liveActivityCounsellorRecorder;
     private final UserLeadProfileService profileService;
@@ -312,6 +315,18 @@ public class CounsellorReassignService {
 
         boolean shouldMarkInactive = Boolean.TRUE.equals(req.getMarkInactive());
 
+        // Batched handover (large pipelines): move at most batch_size leads in this call and
+        // report what is left. Each call is its own transaction, so a failure late in a big
+        // handover keeps everything already moved, and no single request runs for minutes.
+        boolean batched = req.getBatchSize() != null && req.getBatchSize() > 0;
+        int inScope = openLeads.size();
+        if (batched) {
+            int limit = Math.min(req.getBatchSize(), MAX_BATCH_SIZE);
+            if (openLeads.size() > limit) {
+                openLeads = new ArrayList<>(openLeads.subList(0, limit));
+            }
+        }
+
         if (openLeads.isEmpty()) {
             // Nothing to move. Still honour mark_inactive so the "reassign-
             // first" UI flow degrades cleanly when the counsellor had no
@@ -324,6 +339,7 @@ public class CounsellorReassignService {
                     .totalLeads(0)
                     .assignments(Collections.emptyList())
                     .markedInactive(flipped)
+                    .remainingLeads(batched ? 0 : null)
                     .build();
         }
 
@@ -353,8 +369,11 @@ public class CounsellorReassignService {
         // drains (bounded — inflow outrunning 5 passes means something is
         // pathologically wrong; whatever lands in the final instant stays
         // visible on their card and can be re-swept with "Reassign leads").
+        // A batched call never drains here: the client keeps calling while remaining_leads
+        // is above 0, which sweeps up late arrivals the same way, one bounded step at a time.
         boolean fullSweep = (req.getLeadIds() == null || req.getLeadIds().isEmpty())
-                && !"MANUAL".equalsIgnoreCase(req.getMode());
+                && !"MANUAL".equalsIgnoreCase(req.getMode())
+                && !batched;
         if (fullSweep && !dryRun) {
             for (int pass = 0; pass < 5; pass++) {
                 List<UserLeadProfile> stragglers = profileRepo
@@ -391,6 +410,7 @@ public class CounsellorReassignService {
                 .totalLeads(results.size())
                 .assignments(results)
                 .markedInactive(flipped)
+                .remainingLeads(batched ? Math.max(0, inScope - plan.size()) : null)
                 .build();
     }
 
@@ -531,7 +551,8 @@ public class CounsellorReassignService {
             throw new VacademyException("No counsellors available for round-robin reassignment");
         }
         List<Plan> out = new ArrayList<>(leads.size());
-        int idx = 0;
+        // Batched handover: continue the rotation where the previous batch stopped.
+        int idx = req.getRotationOffset() != null ? Math.max(0, req.getRotationOffset()) : 0;
         for (UserLeadProfile l : leads) {
             out.add(new Plan(l, candidates.get(idx % candidates.size())));
             idx++;

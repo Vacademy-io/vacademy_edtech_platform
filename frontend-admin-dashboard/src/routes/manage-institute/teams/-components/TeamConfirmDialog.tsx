@@ -40,6 +40,13 @@ interface TeamConfirmDialogProps {
     onClose: () => void;
     /** Delete only: offer "Disable instead" for an active member. */
     onDisableInstead?: () => void;
+    /**
+     * Disable / delete only: the check for the member's open leads failed. The primary
+     * button retries the check; onProceedAnyway removes access without a handover, so an
+     * urgent removal is never blocked by a CRM hiccup, but the admin chooses it knowingly.
+     */
+    leadCheckFailed?: boolean;
+    onProceedAnyway?: () => void;
 }
 
 /** One confirm dialog for every Teams action that changes access or can't be undone. */
@@ -51,9 +58,12 @@ export function TeamConfirmDialog({
     onConfirm,
     onClose,
     onDisableInstead,
+    leadCheckFailed = false,
+    onProceedAnyway,
 }: TeamConfirmDialogProps) {
     const { t } = useTranslation('manageInstituteTeamsIndexLazy');
     if (!kind) return null;
+    const showLeadCheckFailure = leadCheckFailed && (kind === 'disable' || kind === 'delete');
     const style = KIND_STYLE[kind];
     const KindIcon = style.icon;
     const firstName = name.trim().split(/\s+/)[0] || name;
@@ -126,22 +136,36 @@ export function TeamConfirmDialog({
                                 </span>
                             </div>
                         )}
+                        {showLeadCheckFailure && (
+                            <div className="mt-4 flex items-start gap-2.5 rounded-lg border border-warning-200 bg-warning-50 px-3 py-2.5 text-caption text-warning-700">
+                                <Warning size={16} className="mt-0.5 shrink-0" />
+                                <span>{t('confirm.leadCheck.failed', { name: firstName })}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
                 <div className="flex justify-end gap-3 border-t border-neutral-100 bg-neutral-50 px-6 py-4">
                     <MyButton buttonType="secondary" disable={busy} onClick={onClose}>
                         {t(`confirm.${kind}.keep`, { defaultValue: t('common.cancel') })}
                     </MyButton>
+                    {showLeadCheckFailure && onProceedAnyway && (
+                        <MyButton buttonType="secondary" disable={busy} onClick={onProceedAnyway}>
+                            {t(`confirm.leadCheck.${kind}Anyway`)}
+                        </MyButton>
+                    )}
                     <MyButton
                         buttonType="primary"
                         disable={busy}
                         onClick={onConfirm}
                         className={cn(
                             style.destructive &&
+                                !showLeadCheckFailure &&
                                 'bg-danger-600 hover:bg-danger-700 active:bg-danger-700'
                         )}
                     >
-                        {t(`confirm.${kind}.action`)}
+                        {showLeadCheckFailure
+                            ? t('confirm.leadCheck.retry')
+                            : t(`confirm.${kind}.action`)}
                     </MyButton>
                 </div>
             </AlertDialogContent>

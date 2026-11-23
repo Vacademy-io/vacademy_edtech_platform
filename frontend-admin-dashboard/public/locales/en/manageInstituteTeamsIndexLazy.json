@@ -308,6 +308,12 @@
             "body": "Your edits to {{name}}'s details will be lost.",
             "action": "Discard changes",
             "keep": "Keep editing"
+        },
+        "leadCheck": {
+            "failed": "We couldn't check whether {{name}} still owns open leads. Try again to hand them over first. If you continue anyway, their open leads stay assigned to {{name}}.",
+            "retry": "Try again",
+            "disableAnyway": "Disable anyway",
+            "deleteAnyway": "Delete anyway"
         }
     },
     "table": {

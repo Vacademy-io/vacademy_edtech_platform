@@ -572,6 +572,32 @@ public class CounselorPoolService {
      * Backup is one id for all pools — a backup is just any institute
      * counsellor and not pool-membership-bound.
      */
+    /**
+     * Members who lost access to the institute (disabled, deleted or invite cancelled in
+     * Institute → Teams) stop receiving new leads: every ACTIVE pool row they hold in the
+     * institute becomes INACTIVE. Their existing leads stay with them, and re-enabling the
+     * member does not put them back in any pool; the admin turns that on per pool, the same
+     * as the public counsellor API's deactivate.
+     *
+     * @return number of pool rows that changed
+     */
+    @Transactional
+    public int deactivateMembershipsForRemovedMembers(String instituteId, Collection<String> userIds) {
+        if (instituteId == null || instituteId.isBlank() || userIds == null) {
+            return 0;
+        }
+        List<String> ids = userIds.stream().filter(id -> id != null && !id.isBlank()).distinct().toList();
+        if (ids.isEmpty()) {
+            return 0;
+        }
+        int rows = poolMemberRepository.deactivateActiveMembershipsInInstitute(instituteId, ids);
+        if (rows > 0) {
+            log.info("Teams access change: {} pool membership row(s) set INACTIVE for {} member(s) in institute {}",
+                    rows, ids.size(), instituteId);
+        }
+        return rows;
+    }
+
     @Transactional
     public void bulkUpdateMemberStatusAcrossPools(String counselorUserId, BulkUpdateMemberStatusRequest request,
                                                   CustomUserDetails admin) {

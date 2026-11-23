@@ -6,6 +6,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vacademy.io.auth_service.feature.admin_core_service.service.CounselorPoolSyncClient;
 import vacademy.io.auth_service.feature.user.audit.RoleStatusAuditClient;
 import vacademy.io.auth_service.feature.user.dto.ModifyUserRolesDTO;
 import vacademy.io.auth_service.feature.user.dto.UserRoleFilterDTO;
@@ -352,6 +353,11 @@ public class RoleService {
         }
         // Enable/disable is idempotent: repeating it (double click, retry) is not an error.
         evictCachedIdentities(instituteId, userIds);
+        // Disable / delete / cancel: the member must stop getting new leads from counsellor
+        // pools. Enable deliberately does not restore pool memberships (admin re-adds per pool).
+        if (!UserRoleStatus.ACTIVE.name().equals(newStatus) && counselorPoolSyncClient != null) {
+            counselorPoolSyncClient.deactivatePoolMemberships(instituteId, userIds);
+        }
         // The update queries above commit on their own, so the change is final here.
         if (roleStatusAuditClient != null && !before.isEmpty()) {
             roleStatusAuditClient.record(user, instituteId, newStatus, before,
@@ -371,6 +377,10 @@ public class RoleService {
     // Same reason: optional, so services built by hand in tests record nothing.
     @Autowired(required = false)
     private RoleStatusAuditClient roleStatusAuditClient;
+
+    // Same reason: optional, so services built by hand in tests make no admin_core call.
+    @Autowired(required = false)
+    private CounselorPoolSyncClient counselorPoolSyncClient;
 
     /**
      * Drops the cached caller identity ({@code username_instituteId}) that

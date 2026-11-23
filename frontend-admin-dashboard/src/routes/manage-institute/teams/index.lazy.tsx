@@ -60,6 +60,12 @@ import { OrgChartTab } from './-components/OrgChartTab';
 import { InviteMemberDialog } from './-components/InviteMemberDialog';
 import { MemberDetailsSheet, type MemberSection } from './-components/MemberDetailsSheet';
 import { TeamConfirmDialog, type TeamConfirmKind } from './-components/TeamConfirmDialog';
+import { ReassignDialog } from '@/routes/counsellors/-components/ReassignDialog';
+import {
+    fetchCounsellorLeads,
+    fetchCounsellors,
+    type WorkbenchLead,
+} from '@/routes/counsellors/-services/counsellor-workbench-services';
 import { InviteRowActions, MemberRowActions } from './-components/TeamRowActions';
 import { TeamTable, type TeamColumn } from './-components/TeamTable';
 import {
@@ -135,6 +141,22 @@ function RouteComponent() {
     const [confirm, setConfirm] = useState<{ kind: TeamConfirmKind; member: TeamMember } | null>(
         null
     );
+    // Disable / delete of a member who still owns open leads: their leads must be handed
+    // over first (the Counsellors reassign popup), because once disabled they drop out of
+    // every counsellor filter and picker and their leads would be stranded.
+    const [handover, setHandover] = useState<{
+        kind: 'disable' | 'delete';
+        member: TeamMember;
+        leads: WorkbenchLead[];
+        total: number;
+    } | null>(null);
+    const [checkingLeads, setCheckingLeads] = useState(false);
+    const [leadCheckFailed, setLeadCheckFailed] = useState(false);
+    const handoverCandidatesQuery = useQuery({
+        queryKey: ['workbench-counsellors-candidates', instituteId, 'assignable'],
+        enabled: !!instituteId && !!handover,
+        queryFn: () => fetchCounsellors(instituteId!, { size: 500, assignable: true }),
+    });
 
     useEffect(() => {
         setNavHeading(t('navHeading'));
@@ -364,6 +386,62 @@ function RouteComponent() {
             toast.error(message || t('confirm.failed'));
         },
     });
+
+    /**
+     * Before a disable / delete: does the member still own open leads? When they do, the
+     * reassign popup opens and the status change waits for the handover. When they don't
+     * (teachers, idle counsellors), the status change runs straight away. When the check
+     * itself fails, the confirm dialog stays open with a warning: the admin can retry, or
+     * remove access anyway knowing the leads stay with that person.
+     */
+    const removeAccessAfterHandover = async (kind: 'disable' | 'delete', member: TeamMember) => {
+        if (!instituteId) {
+            confirmMutation.mutate({ kind, member });
+            return;
+        }
+        setCheckingLeads(true);
+        try {
+            const leads = await fetchCounsellorLeads(instituteId, member.id, 'OPEN', 0, 500);
+            const total = leads?.totalElements ?? leads?.content?.length ?? 0;
+            if (total > 0) {
+                setConfirm(null);
+                setLeadCheckFailed(false);
+                setHandover({ kind, member, leads: leads?.content ?? [], total });
+                return;
+            }
+            setLeadCheckFailed(false);
+            confirmMutation.mutate({ kind, member });
+        } catch {
+            // Bring the confirm back (it is closed while a handover was in progress) with
+            // the warning, instead of silently removing access and stranding the leads.
+            setConfirm({ kind, member });
+            setLeadCheckFailed(true);
+        } finally {
+            setCheckingLeads(false);
+        }
+    };
+
+    const handleConfirm = () => {
+        if (!confirm) return;
+        const { kind, member } = confirm;
+        if (kind === 'disable' || kind === 'delete') {
+            void removeAccessAfterHandover(kind, member);
+            return;
+        }
+        confirmMutation.mutate(confirm);
+    };
+
+    /**
+     * After a handover commits, check again before removing access: a lead can be
+     * assigned to the member while the popup was open (or after a Custom preview was
+     * built). Anything new reopens the popup for just those leads, so nothing is left
+     * with someone who can no longer sign in.
+     */
+    const finishHandover = (kind: 'disable' | 'delete', member: TeamMember) => {
+        queryClient.invalidateQueries({ queryKey: ['workbench-counsellors'] });
+        queryClient.invalidateQueries({ queryKey: ['workbench-counsellors-candidates'] });
+        void removeAccessAfterHandover(kind, member);
+    };
 
     const changeTab = (next: string) => {
         if (next === 'orgChart' && !orgChartTabVisible) return;
@@ -1058,14 +1136,48 @@ function RouteComponent() {
                 kind={confirm?.kind ?? null}
                 name={confirm?.member.full_name ?? ''}
                 email={confirm?.member.email}
-                busy={confirmMutation.isPending}
-                onClose={() => setConfirm(null)}
-                onConfirm={() => confirm && confirmMutation.mutate(confirm)}
+                busy={confirmMutation.isPending || checkingLeads}
+                onClose={() => {
+                    setConfirm(null);
+                    setLeadCheckFailed(false);
+                }}
+                onConfirm={handleConfirm}
                 onDisableInstead={
                     confirm?.kind === 'delete' && confirm.member.status !== 'DISABLED'
-                        ? () => setConfirm({ kind: 'disable', member: confirm.member })
+                        ? () => {
+                              setLeadCheckFailed(false);
+                              setConfirm({ kind: 'disable', member: confirm.member });
+                          }
                         : undefined
                 }
+                leadCheckFailed={leadCheckFailed}
+                onProceedAnyway={() => {
+                    if (!confirm) return;
+                    setLeadCheckFailed(false);
+                    confirmMutation.mutate(confirm);
+                }}
+            />
+
+            {/* Hand over open leads before disable / delete. No "without reassigning"
+                option here: a disabled member is gone from every counsellor list, so leads
+                left with them could not be found and moved later. */}
+            <ReassignDialog
+                open={!!handover}
+                onOpenChange={(open) => {
+                    if (!open) setHandover(null);
+                }}
+                instituteId={instituteId ?? ''}
+                fromUserId={handover?.member.id ?? null}
+                fromUserName={handover?.member.full_name ?? null}
+                openLeads={handover?.leads ?? []}
+                totalOpenLeads={handover?.total}
+                reassignAll
+                markInactive
+                handoverFor={handover?.kind}
+                candidates={handoverCandidatesQuery.data?.content ?? []}
+                onComplete={() => {
+                    if (handover) finishHandover(handover.kind, handover.member);
+                }}
             />
         </LayoutContainer>
     );
