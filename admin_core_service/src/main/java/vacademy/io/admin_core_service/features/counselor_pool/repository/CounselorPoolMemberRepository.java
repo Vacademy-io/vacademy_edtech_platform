@@ -63,6 +63,22 @@ public interface CounselorPoolMemberRepository extends JpaRepository<CounselorPo
                                            @Param("backupUserId") String backupUserId);
 
     /**
+     * Takes members out of lead rotation in every pool of one institute: their ACTIVE rows
+     * become INACTIVE. Used when an admin disables, deletes or cancels a member in
+     * Institute - Teams. The backup column is left as it is, and rows that are already
+     * INACTIVE are not touched, so repeating the call changes nothing.
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE CounselorPoolMember m " +
+           "   SET m.status = 'INACTIVE', " +
+           "       m.updatedAt = CURRENT_TIMESTAMP " +
+           " WHERE m.counselorUserId IN :counselorUserIds " +
+           "   AND m.status = 'ACTIVE' " +
+           "   AND m.poolId IN (SELECT p.id FROM CounselorPool p WHERE p.instituteId = :instituteId)")
+    int deactivateActiveMembershipsInInstitute(@Param("instituteId") String instituteId,
+                                               @Param("counselorUserIds") java.util.Collection<String> counselorUserIds);
+
+    /**
      * Set monthly_target for exactly one (pool, audience, counsellor) cell. A
      * null target clears the value. No-op (returns 0) if the row doesn't
      * exist — by design, the UI only ever sends valid combinations and direct
