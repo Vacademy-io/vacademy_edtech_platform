@@ -32,5 +32,11 @@
         "description": "Regroupez les évaluations dans des dossiers comme Anglais ou Maths. Les élèves voient d’abord les dossiers, puis en ouvrent un pour voir ses tests.",
         "enableLabel": "Organiser les évaluations en dossiers",
         "enableHint": "Affiche un panneau de dossiers sur la liste des évaluations, une étape de dossier après la publication et des cartes de dossiers dans l’application élève."
+    },
+    "questionPaperFolders": {
+        "title": "Dossiers de sujets",
+        "description": "Regroupez les sujets dans des dossiers comme Maths 3e ou Examens blancs JEE sur la page Banques de questions et sujets.",
+        "enableLabel": "Organiser les sujets en dossiers",
+        "enableHint": "Affiche des cartes de dossiers sur la page Banques de questions et sujets, l’action Déplacer vers un dossier sur chaque sujet et une étape de dossier après l’ajout d’un sujet. Seul le personnel voit ces dossiers."
     }
 }

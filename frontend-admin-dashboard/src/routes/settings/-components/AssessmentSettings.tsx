@@ -189,6 +189,32 @@ const AssessmentSettings = () => {
                 </CardContent>
             </Card>
 
+            {/* Question paper folders (Question Banks and Papers page) */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-base">{t('questionPaperFolders.title')}</CardTitle>
+                    <CardDescription>{t('questionPaperFolders.description')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center justify-between rounded-lg border p-4">
+                        <div className="flex flex-col gap-1">
+                            <Label className="text-sm font-medium">
+                                {t('questionPaperFolders.enableLabel')}
+                            </Label>
+                            <p className="text-xs text-gray-500">
+                                {t('questionPaperFolders.enableHint')}
+                            </p>
+                        </div>
+                        <Switch
+                            checked={settings.questionPaperFolders?.enabled === true}
+                            onCheckedChange={(checked) =>
+                                handleToggle('questionPaperFolders', 'enabled', checked)
+                            }
+                        />
+                    </div>
+                </CardContent>
+            </Card>
+
             {/* Live test experience (tools, palette, mobile chrome) */}
             <ExamExperienceSettingsCard
                 settings={settings.examExperience ?? DEFAULT_ASSESSMENT_SETTINGS.examExperience}

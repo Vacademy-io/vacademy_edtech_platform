@@ -44,6 +44,8 @@ import { TokenKey } from '@/constants/auth/tokens';
 import { AssignmentFormType } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-form-schemas/assignmentFormSchema';
 import { useAddPaperWays } from './AddQuestionPaperFlow';
 import { useAddPaperFlowStore } from '../-global-states/add-paper-flow-store';
+import { PAPER_FOLDERS_QUERY_KEY, type PaperFolderFilter } from '@/services/question-paper-folders';
+import { PaperFolderEmptyState } from './folders/PaperFolderEmptyState';
 
 export type SectionFormType = z.infer<typeof sectionDetailsSchema>;
 
@@ -64,6 +66,11 @@ interface QuestionPapersTabsProps {
         questions: import('@/types/assessments/question-paper-form').MyQuestion[],
         options: { chooseManually: boolean }
     ) => void;
+    /**
+     * Question Papers page with folders on: list only one folder's papers, or the papers
+     * in no folder. Absent everywhere else, so those lists fetch exactly as before.
+     */
+    folderFilter?: PaperFolderFilter;
 }
 
 export const QuestionPapersTabs = ({
@@ -77,6 +84,7 @@ export const QuestionPapersTabs = ({
     examType,
     onManualSelectionReady,
     onQuestionsPicked,
+    folderFilter,
 }: QuestionPapersTabsProps) => {
     const { t } = useTranslation('assessmentQuestionPapersTabs');
     const { t: tPage } = useTranslation('assessmentQuestionPapersPage');
@@ -109,6 +117,26 @@ export const QuestionPapersTabs = ({
     const addPaperWays = useAddPaperWays();
     const pickWay = useAddPaperFlowStore((s) => s.pickWay);
     const { data: stats } = useQuestionPaperStats(isPage ? INSTITUTE_ID : undefined);
+    // Inside a folder (or "not in a folder") the Favourites badge counts that scope only;
+    // the institute-wide figure above would not match the list. Keyed under the stats key,
+    // so the same refetch / save invalidations refresh it.
+    const folderScoped = Boolean(folderFilter?.folder_id || folderFilter?.unfiled_only);
+    const { data: scopedFavourites } = useQuery({
+        queryKey: [QUESTION_PAPER_STATS_KEY, 'folder-favourites', INSTITUTE_ID, folderFilter],
+        queryFn: async () => {
+            const page = await getQuestionPaperDataWithFilters(
+                0,
+                1,
+                INSTITUTE_ID,
+                { statuses: statusesForTab('FAVOURITE') },
+                undefined,
+                folderFilter
+            );
+            return (page?.total_elements as number | undefined) ?? 0;
+        },
+        enabled: isPage && folderScoped && !!INSTITUTE_ID,
+        staleTime: 60 * 1000,
+    });
 
     const reportPaperListError = useCallback((error: unknown) => {
         console.error(error);
@@ -140,7 +168,8 @@ export const QuestionPapersTabs = ({
             pageSize,
             instituteId,
             filters,
-            PAPER_SORT_COLUMNS[sortRef.current]
+            PAPER_SORT_COLUMNS[sortRef.current],
+            folderFilter
         );
 
     const nameFilter = (search: string): Record<string, FilterOption[]> =>
@@ -345,6 +374,8 @@ export const QuestionPapersTabs = ({
             },
         });
         queryClient.invalidateQueries({ queryKey: [QUESTION_PAPER_STATS_KEY] });
+        // A deleted or re-added paper changes folder counts (no-op when folders are off).
+        if (folderFilter) queryClient.invalidateQueries({ queryKey: PAPER_FOLDERS_QUERY_KEY });
     };
 
     // Page only: after a paper is added, show it — All tab, newest first, page 1, no filters.
@@ -442,10 +473,13 @@ export const QuestionPapersTabs = ({
     if (isLoading) return <DashboardLoader />;
 
     const hasFilters = Object.keys(selectedQuestionPaperFilters).length > 0 || !!activeSearch;
-    const favouriteCount =
-        stats?.favourites ??
-        (questionPaperFavouriteList as { total_elements?: number } | null)?.total_elements ??
-        0;
+    const favouriteCount = folderScoped
+        ? scopedFavourites ??
+          (questionPaperFavouriteList as { total_elements?: number } | null)?.total_elements ??
+          0
+        : stats?.favourites ??
+          (questionPaperFavouriteList as { total_elements?: number } | null)?.total_elements ??
+          0;
 
     // Page empty states: a brand-new bank, no matches, or no favourites yet.
     const renderPageEmpty = (tab: 'ACTIVE' | 'FAVOURITE') => {
@@ -468,6 +502,10 @@ export const QuestionPapersTabs = ({
                     </MyButton>
                 </div>
             );
+        }
+        // Folders on: an empty folder is not an empty bank, so no "add your first paper" screen.
+        if (folderScoped && tab === 'ACTIVE') {
+            return <PaperFolderEmptyState unfiled={!folderFilter?.folder_id} />;
         }
         if (tab === 'FAVOURITE') {
             return (

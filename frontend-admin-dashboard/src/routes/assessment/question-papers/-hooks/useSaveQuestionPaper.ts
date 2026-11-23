@@ -6,6 +6,8 @@ import { addQuestionPaper } from '../-utils/question-paper-services';
 import { getIdByLevelName, getIdBySubjectName } from '../-utils/helper';
 import { QUESTION_PAPER_STATS_KEY } from '../-utils/question-paper-list';
 import { useRefetchStore } from '../-global-states/refetch-store';
+import { usePendingPaperFolderPrompt } from '../-global-states/pending-paper-folder-prompt';
+import { PAPER_FOLDERS_QUERY_KEY } from '@/services/question-paper-folders';
 import type { UploadQuestionPaperFormType } from '../-components/QuestionPaperUpload';
 
 /**
@@ -37,6 +39,14 @@ export const useSaveQuestionPaper = () => {
                 setJustAddedId(savedId ?? null);
                 handleShowNewest();
                 queryClient.invalidateQueries({ queryKey: [QUESTION_PAPER_STATS_KEY] });
+                // Folders on: the page asks which folder the new paper goes in (and the
+                // "Not in a folder" count changes). With folders off the page drops this.
+                if (savedId) {
+                    usePendingPaperFolderPrompt
+                        .getState()
+                        .setPending({ questionPaperId: savedId, title: values.title ?? '' });
+                }
+                queryClient.invalidateQueries({ queryKey: PAPER_FOLDERS_QUERY_KEY });
                 onSaved?.(savedId);
             },
             onError: (error: unknown) => {

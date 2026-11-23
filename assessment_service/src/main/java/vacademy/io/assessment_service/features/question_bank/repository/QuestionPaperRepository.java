@@ -69,6 +69,70 @@ public interface QuestionPaperRepository extends JpaRepository<QuestionPaper, St
             Pageable pageable
     );
 
+    /**
+     * findQuestionPapersByFilters plus one folder scope, used only when the Question Papers
+     * page asks for a folder (folderId) or for the papers in no folder (unfiledFlag = Y).
+     * The query above stays untouched, so every other list is unchanged.
+     */
+    @Query(
+            value = "SELECT qp.id AS id, qp.title AS title, iq.status AS status, " +
+                    "iq.level_id AS levelId, iq.subject_id AS subjectId, " +
+                    "qp.created_on AS createdOn, " +
+                    "qp.updated_on AS updatedOn, qp.created_by_user_id AS createdByUserId " +
+                    "FROM question_paper qp " +
+                    "LEFT JOIN institute_question_paper iq ON qp.id = iq.question_paper_id " +
+                    "WHERE (:title IS NULL OR qp.title ILIKE CONCAT('%', :title, '%')) " +
+                    "AND (:status IS NULL OR iq.status IN (:status)) " +
+                    "AND (:levelIds IS NULL OR iq.level_id IN (:levelIds)) " +
+                    "AND (:subjectIds IS NULL OR iq.subject_id IN (:subjectIds)) " +
+                    "AND iq.institute_id = :instituteId " +
+                    "AND (:tagIdsCsv IS NULL OR EXISTS (" +
+                    "    SELECT 1 FROM question_question_paper_mapping qqpm " +
+                    "    JOIN entity_tags et ON et.entity_id = qqpm.question_id " +
+                    "        AND et.entity_name = 'QUESTION' AND et.tag_source = 'SUBJECT' " +
+                    "    WHERE qqpm.question_paper_id = qp.id " +
+                    "        AND et.tag_id = ANY(string_to_array(:tagIdsCsv, ',')))) " +
+                    "AND (:folderId IS NULL OR EXISTS (" +
+                    "    SELECT 1 FROM question_paper_folder_mapping fm " +
+                    "    WHERE fm.question_paper_id = qp.id AND fm.institute_id = :instituteId " +
+                    "        AND fm.folder_id = :folderId)) " +
+                    "AND (:unfiledFlag IS NULL OR NOT EXISTS (" +
+                    "    SELECT 1 FROM question_paper_folder_mapping fm " +
+                    "    WHERE fm.question_paper_id = qp.id AND fm.institute_id = :instituteId))",
+            countQuery = "SELECT COUNT(qp) FROM question_paper qp " +
+                    "LEFT JOIN institute_question_paper iq ON qp.id = iq.question_paper_id " +
+                    "WHERE (:title IS NULL OR qp.title ILIKE CONCAT('%', :title, '%')) " +
+                    "AND (:status IS NULL OR iq.status IN (:status)) " +
+                    "AND (:levelIds IS NULL OR iq.level_id IN (:levelIds)) " +
+                    "AND (:subjectIds IS NULL OR iq.subject_id IN (:subjectIds)) " +
+                    "AND iq.institute_id = :instituteId " +
+                    "AND (:tagIdsCsv IS NULL OR EXISTS (" +
+                    "    SELECT 1 FROM question_question_paper_mapping qqpm " +
+                    "    JOIN entity_tags et ON et.entity_id = qqpm.question_id " +
+                    "        AND et.entity_name = 'QUESTION' AND et.tag_source = 'SUBJECT' " +
+                    "    WHERE qqpm.question_paper_id = qp.id " +
+                    "        AND et.tag_id = ANY(string_to_array(:tagIdsCsv, ',')))) " +
+                    "AND (:folderId IS NULL OR EXISTS (" +
+                    "    SELECT 1 FROM question_paper_folder_mapping fm " +
+                    "    WHERE fm.question_paper_id = qp.id AND fm.institute_id = :instituteId " +
+                    "        AND fm.folder_id = :folderId)) " +
+                    "AND (:unfiledFlag IS NULL OR NOT EXISTS (" +
+                    "    SELECT 1 FROM question_paper_folder_mapping fm " +
+                    "    WHERE fm.question_paper_id = qp.id AND fm.institute_id = :instituteId))",
+            nativeQuery = true
+    )
+    Page<Object[]> findQuestionPapersByFiltersInFolder(
+            @Param("title") String title,
+            @Param("status") List<String> status,
+            @Param("levelIds") List<String> levelIds,
+            @Param("subjectIds") List<String> subjectIds,
+            @Param("instituteId") String instituteId,
+            @Param("tagIdsCsv") String tagIdsCsv,
+            @Param("folderId") String folderId,
+            @Param("unfiledFlag") String unfiledFlag,
+            Pageable pageable
+    );
+
 
     @Query(
             value = "SELECT qp.id AS id, qp.title AS title, " +

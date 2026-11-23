@@ -104,3 +104,25 @@ describe('Evalezy settings', () => {
         });
     });
 });
+
+describe('Question paper folders setting', () => {
+    it('is off when it was never saved', () => {
+        expect(mergeWithDefaults({}).questionPaperFolders).toEqual({ enabled: false });
+    });
+
+    it('keeps the saved switch, apart from the assessment folders switch', () => {
+        const merged = mergeWithDefaults({
+            questionPaperFolders: { enabled: true },
+            assessmentFolders: { enabled: false },
+        });
+        expect(merged.questionPaperFolders).toEqual({ enabled: true });
+        expect(merged.assessmentFolders).toEqual({ enabled: false });
+    });
+
+    it('only a real true turns it on', () => {
+        expect(
+            mergeWithDefaults({ questionPaperFolders: { enabled: 'true' as never } })
+                .questionPaperFolders
+        ).toEqual({ enabled: false });
+    });
+});
