@@ -44,8 +44,13 @@ import { TokenKey } from '@/constants/auth/tokens';
 import { AssignmentFormType } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-form-schemas/assignmentFormSchema';
 import { useAddPaperWays } from './AddQuestionPaperFlow';
 import { useAddPaperFlowStore } from '../-global-states/add-paper-flow-store';
-import { PAPER_FOLDERS_QUERY_KEY, type PaperFolderFilter } from '@/services/question-paper-folders';
+import {
+    PAPER_FOLDERS_QUERY_KEY,
+    type PaperFolderFilter,
+    useQuestionPaperFoldersEnabled,
+} from '@/services/question-paper-folders';
 import { PaperFolderEmptyState } from './folders/PaperFolderEmptyState';
+import { PaperFolderPicker } from './folders/PaperFolderPicker';
 
 export type SectionFormType = z.infer<typeof sectionDetailsSchema>;
 
@@ -73,7 +78,29 @@ interface QuestionPapersTabsProps {
     folderFilter?: PaperFolderFilter;
 }
 
-export const QuestionPapersTabs = ({
+/**
+ * The "choose saved paper" pickers (assessment, homework, assignment, quiz: isAssessment)
+ * open on the folder cards when the institute turned folders on. Folders off, and the
+ * Question Papers page itself (its own folder workspace passes folderFilter), render the
+ * list exactly as before.
+ */
+export const QuestionPapersTabs = (props: QuestionPapersTabsProps) => {
+    const isPicker = props.isAssessment && props.folderFilter === undefined;
+    const foldersEnabled = useQuestionPaperFoldersEnabled(isPicker);
+    if (!isPicker) return <QuestionPapersTabsBody {...props} />;
+    // Wait for the setting, or the list would mount flat and then remount.
+    if (foldersEnabled === undefined) return <DashboardLoader />;
+    if (!foldersEnabled) return <QuestionPapersTabsBody {...props} />;
+    return (
+        <PaperFolderPicker
+            renderList={({ key, folderFilter }) => (
+                <QuestionPapersTabsBody key={key} {...props} folderFilter={folderFilter} />
+            )}
+        />
+    );
+};
+
+const QuestionPapersTabsBody = ({
     isAssessment,
     index,
     sectionsForm,
@@ -505,7 +532,7 @@ export const QuestionPapersTabs = ({
         }
         // Folders on: an empty folder is not an empty bank, so no "add your first paper" screen.
         if (folderScoped && tab === 'ACTIVE') {
-            return <PaperFolderEmptyState unfiled={!folderFilter?.folder_id} />;
+            return <PaperFolderEmptyState unfiled={!folderFilter?.folder_id} picker={!isPage} />;
         }
         if (tab === 'FAVOURITE') {
             return (
@@ -534,7 +561,8 @@ export const QuestionPapersTabs = ({
     const listFor = (list: typeof questionPaperList, tab: 'ACTIVE' | 'FAVOURITE') => {
         const total = (list as { total_elements?: number } | null)?.total_elements;
         // Only a truly empty result gets the empty state; an emptied later page steps back (below).
-        if (isPage && list && !total) return renderPageEmpty(tab);
+        // A picker opened on an empty folder says so too (the plain picker list is unchanged).
+        if ((isPage || folderScoped) && list && !total) return renderPageEmpty(tab);
         return list ? (
             <QuestionPapersList
                 questionPaperList={list}

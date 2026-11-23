@@ -168,12 +168,14 @@ export const useMovePapersMutation = () => {
  * undefined while the setting loads. Off unless explicitly true, so the page stays as it
  * was for every institute that never touches the switch.
  */
-export const useQuestionPaperFoldersEnabled = (): boolean | undefined => {
+export const useQuestionPaperFoldersEnabled = (enabled = true): boolean | undefined => {
     const { data, isError } = useQuery({
         queryKey: ['ASSESSMENT_SETTINGS_PAPER_FOLDERS_FLAG', getInstituteId()],
-        // Reads the 24h localStorage copy first, so refetching on every mount is cheap
-        // and picks up a toggle made a moment ago in Settings.
-        queryFn: () => getAssessmentSettings(),
+        // Always from the server: the 24h localStorage copy kept folders hidden for a day
+        // on every browser other than the one that turned them on. The fetch refreshes
+        // that copy too.
+        queryFn: () => getAssessmentSettings(true),
+        enabled,
         staleTime: 0,
     });
     if (isError) return false;

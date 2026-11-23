@@ -43,7 +43,7 @@ const useIsDraggingPaper = () => {
 };
 
 /** "Folders | All papers": the folder structure, or every paper in one list. */
-const PaperFolderViewSwitch = ({
+export const PaperFolderViewSwitch = ({
     value,
     onChange,
 }: {
