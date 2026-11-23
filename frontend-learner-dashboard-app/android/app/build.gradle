@@ -241,6 +241,16 @@ android {
 			resValue "string", "app_name", "EDUM3NTOR"
 			manifestPlaceholders.DEEP_LINK_HOST = "learner-edum3ntor.vacademy.io"
 		}
+		nrithya {
+			dimension "client"
+			applicationId "com.nrithya.app"
+			// Play automatic protection rejects bundles below minSdk 24.
+			minSdkVersion 24
+			versionCode 1
+			versionName "1.0.0"
+			resValue "string", "app_name", "Nrithya"
+			manifestPlaceholders.DEEP_LINK_HOST = "learn.nrithyagurukulam.com"
+		}
 	}
 }
 
