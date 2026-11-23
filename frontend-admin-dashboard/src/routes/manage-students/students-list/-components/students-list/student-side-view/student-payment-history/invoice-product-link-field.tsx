@@ -189,7 +189,9 @@ const RENEWABLE_STATUSES = ['ACTIVE', 'EXPIRED', 'CANCELED', 'PENDING', 'PENDING
 function planName(plan: UserPlan): string {
     const invite = plan.enroll_invite?.name;
     const paymentPlan = plan.payment_plan_dto?.name;
-    return [invite, paymentPlan].filter(Boolean).join(' · ') || 'Membership';
+    const org = plan.source === 'SUB_ORG' ? plan.sub_org_details?.name : null;
+    const name = [invite, paymentPlan].filter(Boolean).join(' · ') || 'Membership';
+    return org ? `${name} (${org})` : name;
 }
 
 function planPrice(plan: UserPlan): number | null {
@@ -249,9 +251,9 @@ export function InvoiceProductLinkField({
         enabled: value.mode === 'RENEWAL' && !!userId && !!instituteId,
         staleTime: 60 * 1000,
     });
-    // The organisation pays for a sub-org membership, so it is not renewed by invoicing the learner
-    // (the server refuses it too).
-    const plans = (plansPage?.content ?? []).filter((p) => p.source !== 'SUB_ORG');
+    // Every membership of this account, organisation (sub-org) ones included: a practice account
+    // renewing its own membership is exactly what an invoice is raised for. They are labelled.
+    const plans = plansPage?.content ?? [];
     const selectedPlan = plans.find((p) => p.id === value.userPlanId) ?? null;
 
     // ── New enrolment: courses, invite, plan ──
