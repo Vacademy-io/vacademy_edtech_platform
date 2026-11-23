@@ -9,7 +9,8 @@
         "sendWhatsappMessage": "إرسال رسالة واتساب",
         "sendEmail": "إرسال بريد إلكتروني",
         "createCertificate": "إنشاء شهادة",
-        "awardBadge": "منح شارة"
+        "awardBadge": "منح شارة",
+        "moveToSubOrg": "نقل إلى {{term}}"
     },
     "actionInfo": {
         "selectedStudents_zero": "لا يوجد طلاب محددون ({{count}})",

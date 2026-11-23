@@ -75,6 +75,7 @@ import { CreateInvoiceDialog } from '@/routes/manage-students/students-list/-com
 import { AddUserToSubOrgSection } from '@/routes/manage-custom-teams/sub-orgs/-components/sub-org-detail-modal';
 import { MarkPaidDialog } from '@/routes/manage-custom-teams/sub-orgs/-components/mark-paid-dialog';
 import { CustomTeamsList } from '@/routes/manage-custom-teams/-components/custom-teams-list';
+import { AddLearnersToSubOrgDialog } from './add-learners-to-sub-org-dialog';
 
 interface Props {
     subOrgId: string;
@@ -296,6 +297,7 @@ export function SubOrgAnalyticsPanel({
         courses?: { id: string; label: string }[];
     } | null>(null);
     const [recordPaymentOpen, setRecordPaymentOpen] = useState(false);
+    const [addLearnersOpen, setAddLearnersOpen] = useState(false);
     // Create Invoice CTA in the Invoices tab — surfaces the same dialog the drawer
     // uses, but pre-targeted at the sub-org admin user. Without this the only way
     // to raise an admin invoice was to open the per-user drawer first.
@@ -453,6 +455,10 @@ export function SubOrgAnalyticsPanel({
     const canViewFinance = subOrgPermission('canViewFinance');
     const canEditLedger =
         !restrictedView && !isCallerSubOrgAdmin() && subOrgPermission('canManageFinance');
+    // Parent-institute staff adding learners to this sub-org (sub-org admins add their own
+    // from the learner portal). Same capability as adding / removing team members.
+    const canAddLearners =
+        !restrictedView && !isCallerSubOrgAdmin() && subOrgPermission('canManageTeam');
 
     // 'admin' is the initial tab, but it is a finance tab. A role without finance
     // access would otherwise land on a tab whose trigger is hidden and see an empty
@@ -960,10 +966,23 @@ export function SubOrgAnalyticsPanel({
                 {/* Learners */}
                 <TabsContent value="learners" className="mt-3">
                     <section className="rounded-lg border bg-white p-4">
-                        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-700">
-                            <GraduationCap className="h-4 w-4" />
-                            {t('learnersTab.heading', { count: learners.length })}
-                        </h3>
+                        <header className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                            <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                                <GraduationCap className="h-4 w-4" />
+                                {t('learnersTab.heading', { count: learners.length })}
+                            </h3>
+                            {canAddLearners && instituteId && (
+                                <MyButton
+                                    type="button"
+                                    buttonType="primary"
+                                    scale="small"
+                                    onClick={() => setAddLearnersOpen(true)}
+                                >
+                                    <Plus className="size-4" />
+                                    {t('learnersTab.addLearners')}
+                                </MyButton>
+                            )}
+                        </header>
                         {learners.length === 0 ? (
                             <p className="text-xs text-muted-foreground">
                                 {t('learnersTab.noLearners')}
@@ -1370,6 +1389,17 @@ export function SubOrgAnalyticsPanel({
                 courses={drawer?.courses}
                 readOnly={isCallerSubOrgAdmin()}
             />
+
+            {canAddLearners && instituteId && (
+                <AddLearnersToSubOrgDialog
+                    open={addLearnersOpen}
+                    onOpenChange={setAddLearnersOpen}
+                    subOrgId={subOrgId}
+                    subOrgName={subOrgName}
+                    instituteId={instituteId}
+                    batches={psList}
+                />
+            )}
 
             {canEditLedger && adminUserPlanId && (
                 <RecordSubOrgPaymentDialog

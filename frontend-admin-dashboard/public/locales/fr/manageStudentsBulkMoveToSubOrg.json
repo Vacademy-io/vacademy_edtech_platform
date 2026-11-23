@@ -1,0 +1,34 @@
+{
+    "heading": "Déplacer vers {{term}}",
+    "intro_one": "Choisissez le {{term}} vers lequel déplacer l'apprenant sélectionné.",
+    "intro_other": "Choisissez le {{term}} vers lequel déplacer les {{count}} apprenants sélectionnés.",
+    "fields": {
+        "subOrg": "{{term}}",
+        "subOrgPlaceholder": "Sélectionner un {{term}}",
+        "search": "Rechercher…",
+        "noMatch": "Aucun résultat"
+    },
+    "empty": "Cet établissement n'a encore aucun {{term}}.",
+    "errors": {
+        "loadSubOrgs": "Impossible de charger la liste des {{term}}. Fermez puis réessayez.",
+        "requestFailed": "La requête a échoué. Veuillez réessayer."
+    },
+    "notes": {
+        "alreadyThere_one": "1 apprenant sélectionné est déjà dans {{name}} ; rien ne change pour lui.",
+        "alreadyThere_other": "{{count}} apprenants sélectionnés sont déjà dans {{name}} ; rien ne change pour eux.",
+        "fromOther_one": "1 apprenant sélectionné est dans un autre {{term}} et en sera retiré.",
+        "fromOther_other": "{{count}} apprenants sélectionnés sont dans un autre {{term}} et en seront retirés.",
+        "keeps": "Chaque apprenant garde le même lot, la même progression, les mêmes dates d'accès et paiements. Il compte dans les places de ce {{term}} et apparaît pour son administrateur. Les administrateurs de {{term}} ne sont jamais déplacés."
+    },
+    "running": "Déplacement… {{done}} sur {{total}}",
+    "buttons": {
+        "cancel": "Annuler",
+        "move_one": "Déplacer 1 apprenant",
+        "move_other": "Déplacer {{count}} apprenants",
+        "done": "Terminé"
+    },
+    "toasts": {
+        "done_one": "1 apprenant est maintenant dans {{name}}",
+        "done_other": "{{count}} apprenants sont maintenant dans {{name}}"
+    }
+}

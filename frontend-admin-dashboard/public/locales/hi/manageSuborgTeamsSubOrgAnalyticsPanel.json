@@ -83,6 +83,7 @@
         "noLearners": "अभी तक कोई शिक्षार्थी नामांकित नहीं है।",
         "enrolled": "{{date}} को नामांकित",
         "learnerSubtitle": "शिक्षार्थी",
+        "addLearners": "शिक्षार्थी जोड़ें",
         "dueCount_one": "({{count}} देय)",
         "dueCount_other": "({{count}} देय)"
     },

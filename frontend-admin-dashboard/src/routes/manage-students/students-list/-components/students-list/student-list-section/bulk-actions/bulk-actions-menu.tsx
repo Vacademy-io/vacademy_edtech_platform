@@ -4,13 +4,17 @@ import { DropdownItem } from '@/components/design-system/utils/types/dropdown-ty
 import { useDialogStore } from '@/routes/manage-students/students-list/-hooks/useDialogStore';
 import { BulkActionInfo } from '@/routes/manage-students/students-list/-types/bulk-actions-types';
 import { StudentTable } from '@/types/student-table-types';
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { useRouter } from '@tanstack/react-router';
 import { useEnrollRequestsDialogStore } from '@/routes/manage-students/enroll-requests/-components/bulk-actions/bulk-actions-store';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { toast } from 'sonner';
 import { BulkAwardBadgeDialog } from './bulk-award-badge-dialog';
+import { BulkMoveToSubOrgDialog } from './bulk-move-to-sub-org-dialog';
+import { canAccessSubOrgModule, subOrgPermission } from '@/lib/display-settings/sub-org-module';
+import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import { OtherTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 // Internal action-type constants used for dispatch logic. These must never be
 // swapped for translated display text — handleMenuOptionsChange switches on
@@ -27,6 +31,7 @@ const MENU_ACTION = {
     SEND_EMAIL: 'SEND_EMAIL',
     CREATE_CERTIFICATE: 'CREATE_CERTIFICATE',
     AWARD_BADGE: 'AWARD_BADGE',
+    MOVE_TO_SUB_ORG: 'MOVE_TO_SUB_ORG',
 } as const;
 
 /**
@@ -48,6 +53,8 @@ const BATCH_SCOPED_ACTIONS: ReadonlySet<string> = new Set([
     MENU_ACTION.RE_REGISTER,
     MENU_ACTION.TERMINATE_REGISTRATION,
     MENU_ACTION.DELETE,
+    // Moves the enrollment the row shows, so it needs that batch.
+    MENU_ACTION.MOVE_TO_SUB_ORG,
 ]);
 
 // Was a module-scope `BulkActionDropdownList` string array (imported from
@@ -100,13 +107,27 @@ export const BulkActionsMenu = ({
     // row-level "Accept Request" menu uses); its AcceptRequestDialog is already mounted
     // on this page and handles bulk approval.
     const { openBulkAcceptRequestDialog } = useEnrollRequestsDialogStore();
+    // Owned here rather than in the shared dialog store: like the badge dialog, it is mounted
+    // next to the menu so it works on every list that shows the menu.
+    const [moveToSubOrgInfo, setMoveToSubOrgInfo] = useState<BulkActionInfo | null>(null);
+    // Same gate as the Sub-Orgs module's own Add / Remove member actions.
+    const canMoveToSubOrg = canAccessSubOrgModule() && subOrgPermission('canManageTeam');
 
-    const dropdownList: DropdownItem[] = showApprovalActions
+    const baseList = buildBulkActionDropdownList(t);
+    const withSubOrg: DropdownItem[] = canMoveToSubOrg
         ? [
-              { label: t('menu.acceptRequest'), value: MENU_ACTION.ACCEPT_REQUEST },
-              ...buildBulkActionDropdownList(t),
+              ...baseList,
+              {
+                  label: t('menu.moveToSubOrg', {
+                      term: getTerminology(OtherTerms.SubOrg, SystemTerms.SubOrg),
+                  }),
+                  value: MENU_ACTION.MOVE_TO_SUB_ORG,
+              },
           ]
-        : buildBulkActionDropdownList(t);
+        : baseList;
+    const dropdownList: DropdownItem[] = showApprovalActions
+        ? [{ label: t('menu.acceptRequest'), value: MENU_ACTION.ACCEPT_REQUEST }, ...withSubOrg]
+        : withSubOrg;
 
     const handleMenuOptionsChange = (value: string) => {
         const needsBatch = BATCH_SCOPED_ACTIONS.has(value);
@@ -171,6 +192,9 @@ export const BulkActionsMenu = ({
             case MENU_ACTION.AWARD_BADGE:
                 openBulkAwardBadgeDialog(bulkActionInfo);
                 break;
+            case MENU_ACTION.MOVE_TO_SUB_ORG:
+                setMoveToSubOrgInfo(bulkActionInfo);
+                break;
             case MENU_ACTION.CREATE_CERTIFICATE:
                 // Navigate to certificate generation with selected students
                 router.navigate({
@@ -196,6 +220,10 @@ export const BulkActionsMenu = ({
                 Credentials item flips a store flag and nothing opens). Rendering the dialog as a
                 sibling of the dropdown means "Award badge" works on every list that shows it. */}
             <BulkAwardBadgeDialog />
+            <BulkMoveToSubOrgDialog
+                info={moveToSubOrgInfo}
+                onClose={() => setMoveToSubOrgInfo(null)}
+            />
         </>
     );
 };

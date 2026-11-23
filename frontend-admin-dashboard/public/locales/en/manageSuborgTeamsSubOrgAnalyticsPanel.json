@@ -83,6 +83,7 @@
         "noLearners": "No learners enrolled yet.",
         "enrolled": "Enrolled {{date}}",
         "learnerSubtitle": "Learner",
+        "addLearners": "Add learners",
         "dueCount_one": "({{count}} due)",
         "dueCount_other": "({{count}} due)"
     },

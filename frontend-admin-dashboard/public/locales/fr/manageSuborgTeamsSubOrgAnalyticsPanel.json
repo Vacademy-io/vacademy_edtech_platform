@@ -88,6 +88,7 @@
         "noLearners": "Aucun apprenant inscrit pour l'instant.",
         "enrolled": "Inscrit le {{date}}",
         "learnerSubtitle": "Apprenant",
+        "addLearners": "Ajouter des apprenants",
         "dueCount_one": "({{count}} dû)",
         "dueCount_many": "({{count}} dus)",
         "dueCount_other": "({{count}} dus)"

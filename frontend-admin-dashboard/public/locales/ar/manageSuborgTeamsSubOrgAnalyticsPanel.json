@@ -103,6 +103,7 @@
         "noLearners": "لا يوجد متعلمون مسجلون بعد.",
         "enrolled": "تم التسجيل في {{date}}",
         "learnerSubtitle": "متعلم",
+        "addLearners": "إضافة متعلمين",
         "dueCount_zero": "(لا مستحقات)",
         "dueCount_one": "({{count}} مستحق)",
         "dueCount_two": "({{count}} مستحقان)",

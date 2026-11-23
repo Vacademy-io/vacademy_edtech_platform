@@ -9,7 +9,8 @@
         "sendWhatsappMessage": "Send WhatsApp Message",
         "sendEmail": "Send Email",
         "createCertificate": "Create Certificate",
-        "awardBadge": "Award Badge"
+        "awardBadge": "Award Badge",
+        "moveToSubOrg": "Move to {{term}}"
     },
     "actionInfo": {
         "selectedStudents_one": "{{count}} student",

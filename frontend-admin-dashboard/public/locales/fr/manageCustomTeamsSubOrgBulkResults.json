@@ -1,0 +1,15 @@
+{
+    "tiles": {
+        "added": "Ajoutés",
+        "moved": "Déplacés",
+        "alreadyMember": "Déjà inclus",
+        "failed": "Échecs"
+    },
+    "status": {
+        "ADDED": "Ajouté",
+        "MOVED": "Déplacé",
+        "ALREADY_MEMBER": "Déjà inclus",
+        "FAILED": "Échec"
+    },
+    "unknownLearner": "Apprenant"
+}

@@ -1350,6 +1350,10 @@ export const GET_SUB_ORG_ADMINS = `${BASE_URL}/admin-core-service/sub-org/v1/sub
 export const GET_SUB_ORG_ALL_ADMINS = `${BASE_URL}/admin-core-service/sub-org/v1/all-admins`;
 export const GET_SUB_ORG_MEMBERS = `${BASE_URL}/admin-core-service/sub-org/v1/members`;
 export const ADD_SUB_ORG_MEMBER = `${BASE_URL}/admin-core-service/sub-org/v1/add-member`;
+/** Parent-institute staff: many learners into one batch of a sub-org (existing ACTIVE ones are moved). */
+export const BULK_ADD_SUB_ORG_MEMBERS = `${BASE_URL}/admin-core-service/sub-org/v1/bulk-add-members`;
+/** Parent-institute staff: move learners' existing ACTIVE enrollments into a sub-org. */
+export const MOVE_SUB_ORG_MEMBERS = `${BASE_URL}/admin-core-service/sub-org/v1/move-members`;
 // Sub-orgs already present in one package session (+ their admins) — powers the sub-org
 // step of the Enroll Learner wizard for org-associated batches.
 export const GET_SUB_ORGS_BY_PACKAGE_SESSION = `${BASE_URL}/admin-core-service/sub-org/v1/by-package-session`;

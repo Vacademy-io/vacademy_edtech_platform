@@ -1,0 +1,27 @@
+{
+    "heading": "Ajouter des {{learners}} à {{name}}",
+    "fields": {
+        "batch": "{{term}}",
+        "batchPlaceholder": "Sélectionner un {{term}}",
+        "search": "Rechercher…",
+        "noMatch": "Aucun résultat"
+    },
+    "noBatches": "Aucun {{term}} disponible pour ajouter des apprenants.",
+    "allBatchesHint": "Ce {{term}} n'a pas encore de cours propres ; tous les lots de l'établissement sont donc listés.",
+    "hint": "Les apprenants déjà inscrits dans le lot choisi sont déplacés dans ce {{term}} au lieu d'être inscrits deux fois. Les nouveaux apprenants reçoivent un compte et sont inscrits via ce {{term}}, dans la limite de ses places.",
+    "running": "Ajout… {{done}} sur {{total}}",
+    "buttons": {
+        "cancel": "Annuler",
+        "add_one": "Ajouter 1 apprenant",
+        "add_other": "Ajouter {{count}} apprenants",
+        "addMore": "En ajouter d'autres",
+        "done": "Terminé"
+    },
+    "errors": {
+        "requestFailed": "La requête a échoué. Veuillez réessayer."
+    },
+    "toasts": {
+        "done_one": "1 apprenant est maintenant dans {{name}}",
+        "done_other": "{{count}} apprenants sont maintenant dans {{name}}"
+    }
+}

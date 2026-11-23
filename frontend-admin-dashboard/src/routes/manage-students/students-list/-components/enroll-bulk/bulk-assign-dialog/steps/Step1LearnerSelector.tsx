@@ -30,6 +30,8 @@ interface Props {
     guardianLinkErrors?: Record<number, string>;
     /** Clears a chip's guardian-link error once the admin edits its sub-form again. */
     onClearGuardianLinkError?: (index: number) => void;
+    /** Callers that never link guardians (sub-org bulk add) hide the per-chip guardian controls. */
+    hideGuardianControls?: boolean;
 }
 
 export const Step1LearnerSelector = ({
@@ -39,10 +41,12 @@ export const Step1LearnerSelector = ({
     onPaymentInfoDetected,
     guardianLinkErrors,
     onClearGuardianLinkError,
+    hideGuardianControls = false,
 }: Props) => {
     const { t } = useTranslation('manageStudentsStep1LearnerSelector');
     const { enabled: guardianLinkingEnabled, isLoading: guardianSettingsLoading } = useParentSettings();
-    const showGuardianControls = guardianLinkingEnabled && !guardianSettingsLoading;
+    const showGuardianControls =
+        !hideGuardianControls && guardianLinkingEnabled && !guardianSettingsLoading;
     const [searchQuery, setSearchQuery] = useState('');
     const [mode, setMode] = useState<LearnerSourceMode>('manual');
     const [editingIndex, setEditingIndex] = useState<number | null>(null);

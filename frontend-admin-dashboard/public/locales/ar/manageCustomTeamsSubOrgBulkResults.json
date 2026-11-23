@@ -1,0 +1,15 @@
+{
+    "tiles": {
+        "added": "تمت الإضافة",
+        "moved": "تم النقل",
+        "alreadyMember": "موجود مسبقًا",
+        "failed": "فشل"
+    },
+    "status": {
+        "ADDED": "تمت الإضافة",
+        "MOVED": "تم النقل",
+        "ALREADY_MEMBER": "موجود مسبقًا",
+        "FAILED": "فشل"
+    },
+    "unknownLearner": "متعلم"
+}
