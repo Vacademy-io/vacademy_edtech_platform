@@ -4,6 +4,7 @@ import android.content.res.Configuration;
 import android.os.Bundle;
 import androidx.core.view.WindowCompat;
 import com.getcapacitor.BridgeActivity;
+import io.vacademy.student.app.filesave.FileSavePlugin;
 import io.vacademy.student.app.immersive.ImmersivePlugin;
 import io.vacademy.student.app.liveclass.LiveClassChromeClient;
 import io.vacademy.student.app.liveclass.LiveClassPlugin;
@@ -22,6 +23,8 @@ public class MainActivity extends BridgeActivity {
         // Live class inside the app (BBB iframe). Its presence is what lets the JS host classes
         // in-app instead of a Custom Tab: Capacitor.isPluginAvailable("VacademyLiveClass").
         registerPlugin(LiveClassPlugin.class);
+        // "Download" buttons: the WebView ignores <a download>, so files are saved through this.
+        registerPlugin(FileSavePlugin.class);
         super.onCreate(savedInstanceState);
         // Enable edge-to-edge rendering so WebView extends behind status bar and navigation bar
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);

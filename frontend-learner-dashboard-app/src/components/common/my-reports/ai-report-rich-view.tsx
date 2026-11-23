@@ -7,6 +7,7 @@ import { AI_REPORT_WEB_DATA, EXPORT_AI_REPORT } from "@/constants/urls";
 import { Button } from "@/components/ui/button";
 import { DashboardLoader } from "@/components/core/dashboard-loader";
 import { cn } from "@/lib/utils";
+import { saveFile } from "@/lib/download/save-file";
 import {
   type AiReportWebData, confidenceQuadrant, easyMarksMissed, expertise, negativeMarking, quarterAccuracy, speedBands,
 } from "./ai-report-rich-data";
@@ -128,14 +129,7 @@ export function AiReportRichView({ assessmentId, assessmentName, attemptId, comp
         params: { assessmentId, ...(attemptId ? { attemptId } : {}), instituteId },
         responseType: "blob",
       });
-      const url = window.URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${assessmentName || "ai-report"}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      await saveFile(new Blob([res.data], { type: "application/pdf" }), `${assessmentName || "ai-report"}.pdf`);
     } catch {
       setDownloadFailed(true);
       setTimeout(() => setDownloadFailed(false), 3000);

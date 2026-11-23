@@ -13,6 +13,7 @@ import {
   MarkdownCard, MisconceptionsCard, StrengthsWeaknessesCards, TopicAnalysisCard,
   type AiBehaviour, type AiBlooms, type AiConfidence, type AiLearningStep, type AiMisconception, type AiTopic,
 } from "./ai-report-sections";
+import { saveFile } from "@/lib/download/save-file";
 
 // ─── Types ───
 interface AIReportData {
@@ -67,11 +68,7 @@ export default function AIReportDetailsPage({
         method: "GET", url: EXPORT_AI_REPORT,
         params: { assessmentId, ...(attemptId ? { attemptId } : {}), instituteId: instId }, responseType: "blob",
       });
-      const url = window.URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
-      const a = document.createElement("a"); a.href = url;
-      a.download = `${assessmentName || "ai-report"}.pdf`;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      await saveFile(new Blob([res.data], { type: "application/pdf" }), `${assessmentName || "ai-report"}.pdf`);
     } catch { setDlError(true); setTimeout(() => setDlError(false), 3000); }
     finally { setDownloading(false); }
   };

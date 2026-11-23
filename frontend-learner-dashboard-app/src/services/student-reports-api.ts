@@ -1,6 +1,7 @@
 // import { BASE_URL } from "@/constants/urls";
 import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
 import { getUserId } from "@/constants/getUserId";
+import { saveFile } from "@/lib/download/save-file";
 import { BASE_URL } from "@/constants/urls";
 
 // ── V1 LLM-text report types (old endpoint) ───────────────────────────────────
@@ -397,12 +398,5 @@ export async function downloadReportPdf(processId: string): Promise<void> {
     `${BASE_URL}/admin-core-service/v1/student-analysis/report/${processId}/pdf`,
     { responseType: "blob" },
   );
-  const url = URL.createObjectURL(response.data as Blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `report-${processId}.pdf`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  await saveFile(response.data as Blob, `report-${processId}.pdf`);
 }

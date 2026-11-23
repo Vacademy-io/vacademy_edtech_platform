@@ -69,6 +69,7 @@ import { getTerminology } from "../layout-container/sidebar/utils";
 import { reportVisibility } from "@/lib/report-visibility";
 import { getInstituteId } from "@/constants/helper";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
+import { downloadLink, saveFile } from "@/lib/download/save-file";
 
 type TestMarks = {
   total_achievable_marks: number;
@@ -370,13 +371,7 @@ export const TestReportDialog = ({
         try {
           const uploadedUrl = await getPublicUrl(uploadedReportId);
           if (uploadedUrl) {
-            const uploadedLink = document.createElement("a");
-            uploadedLink.href = uploadedUrl;
-            uploadedLink.download = "assessment_report.pdf";
-            uploadedLink.target = "_blank";
-            document.body.appendChild(uploadedLink);
-            uploadedLink.click();
-            document.body.removeChild(uploadedLink);
+            await downloadLink(uploadedUrl, "assessment_report.pdf", { target: "_blank" });
             return;
           }
         } catch (error) {
@@ -396,12 +391,7 @@ export const TestReportDialog = ({
       });
 
       const blob = new Blob([response.data], { type: "application/pdf" });
-      const link = document.createElement("a");
-      link.href = window.URL.createObjectURL(blob);
-      link.download = "assessment_report.pdf";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      await saveFile(blob, "assessment_report.pdf");
     } catch (error) {
       console.error("Error exporting data:", error);
     } finally {

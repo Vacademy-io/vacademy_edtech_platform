@@ -36,6 +36,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
+import { downloadLink } from "@/lib/download/save-file";
 import { Warning, Receipt, DownloadSimple, CaretDown, CaretUp, SpinnerGap } from "@phosphor-icons/react";
 
 interface PaymentsModuleProps {
@@ -665,12 +666,7 @@ function ReceiptsTable({
     try {
       const { download_url, file_name } = await getReceiptDownloadUrl(invoice.invoice_id);
 
-      const link = document.createElement("a");
-      link.href = download_url;
-      link.download = file_name;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      if (!(await downloadLink(download_url, file_name))) return;
 
       toast.success(t("admissionPortal.fees.toast.downloadStarted"), {
         description: t("admissionPortal.fees.toast.receiptRef", {

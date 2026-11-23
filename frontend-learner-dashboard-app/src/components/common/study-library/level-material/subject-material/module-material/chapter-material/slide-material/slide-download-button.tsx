@@ -12,6 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useSlideDownloadPermission } from "@/hooks/useSlideDownloadPermission";
 import { SlideDownloadTypeKey } from "@/constants/slide-download-permission";
+import { saveFile, saveUrl, type SaveFileOptions } from "@/lib/download/save-file";
 
 /**
  * A Download button for a slide's own file, shown only when Content Protection
@@ -66,35 +67,21 @@ const extFromUrl = (url: string): string | null => {
   }
 };
 
-const saveBlob = (blob: Blob, name: string) => {
-  const objectUrl = window.URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = objectUrl;
-  link.download = name;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1000);
-};
-
 /**
  * Fetch `url` and save it as `base.<ext>` (extension from the response type,
  * else the URL, else `mimeType`). When the host refuses a cross-origin fetch,
- * the file opens in a new tab instead.
+ * the file opens in the browser instead.
  */
-const downloadUrl = async (url: string, base: string, mimeType?: string) => {
-  try {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const blob = await response.blob();
-    const type = (blob.type || mimeType || "").toLowerCase().split(";")[0]!.trim();
-    const ext = MIME_EXT[type] || extFromUrl(url) || (mimeType ? MIME_EXT[mimeType] : undefined);
-    saveBlob(blob, ext ? `${base}.${ext}` : base);
-  } catch {
-    // The file host refused a cross-origin fetch: let the browser open it.
-    window.open(url, "_blank", "noopener,noreferrer");
-  }
-};
+const downloadUrl = (url: string, base: string, mimeType?: string, options?: SaveFileOptions) =>
+  saveUrl(
+    url,
+    (blob) => {
+      const type = (blob.type || mimeType || "").toLowerCase().split(";")[0]!.trim();
+      const ext = MIME_EXT[type] || extFromUrl(url) || (mimeType ? MIME_EXT[mimeType] : undefined);
+      return ext ? `${base}.${ext}` : base;
+    },
+    options,
+  );
 
 /** The images inside an editor-authored document (http(s) or data: src), in order, no repeats. */
 export const imageSrcsFromHtml = (html: string | null | undefined): string[] => {
@@ -142,7 +129,7 @@ export const SlideDownloadButton = ({
       const doc = /<html[\s>]/i.test(html)
         ? html
         : `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${base}</title></head><body>${html}</body></html>`;
-      saveBlob(new Blob([doc], { type: "text/html;charset=utf-8" }), `${base}.html`);
+      await saveFile(new Blob([doc], { type: "text/html;charset=utf-8" }), `${base}.html`);
       return;
     }
     if (!url) return;
@@ -204,7 +191,8 @@ export const SlideImagesDownloadButton = ({
     setBusy(true);
     try {
       for (const index of indexes) {
-        await downloadUrl(images[index]!, nameFor(index));
+        // A batch must not open one viewer per image on Android.
+        await downloadUrl(images[index]!, nameFor(index), undefined, { open: indexes.length === 1 });
       }
     } finally {
       setBusy(false);

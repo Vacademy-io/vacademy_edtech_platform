@@ -54,5 +54,12 @@
         "resetsAt": "Vous pourrez l'utiliser à nouveau après {{when}}, ou demandez à votre enseignant.",
         "tryLater": "Réessayez plus tard, ou demandez à votre enseignant.",
         "warning": "Vous approchez de votre quota d'utilisation de l'IA."
+    },
+    "fileSave": {
+        "savedToDownloads": "Enregistré dans Téléchargements : {{name}}",
+        "savedToDocuments": "Enregistré dans Documents : {{name}}",
+        "noAppToOpen": "Aucune application de ce téléphone ne peut ouvrir ce fichier.",
+        "updateApp": "Mettez à jour l'application pour télécharger des fichiers.",
+        "saveFailed": "Impossible d'enregistrer le fichier. Veuillez réessayer."
     }
 }

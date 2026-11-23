@@ -13,6 +13,7 @@ import {
 import { convertHtmlToPdf } from "@/utils/html-to-pdf";
 import { getInstituteDetails } from "@/services/signup-api";
 import useSidebarStore from "@/components/common/layout-container/sidebar/useSidebar";
+import { saveFile } from "@/lib/download/save-file";
 
 interface InstituteBranding {
   name: string;
@@ -185,14 +186,7 @@ export default function AttendanceReportPage() {
     setDownloading(true);
     try {
       const blob = await convertHtmlToPdf(reportRef.current.outerHTML);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `attendance-report-${student.startDate}-to-${student.endDate}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      await saveFile(blob, `attendance-report-${student.startDate}-to-${student.endDate}.pdf`);
     } catch (err) {
       console.error("Failed to generate PDF:", err);
       alert(t("attendanceReport.pdfGenerationFailed"));

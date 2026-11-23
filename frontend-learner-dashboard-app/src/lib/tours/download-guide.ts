@@ -5,6 +5,7 @@ import {
   buildTutorialGuideHtml,
   type TutorialGuideBranding,
 } from './guide-html';
+import { saveFile } from '@/lib/download/save-file';
 
 const RENDER_PDF_URL = `${BASE_URL}/admin-core-service/institute/v1/tutorial-guide/render-pdf`;
 
@@ -85,12 +86,5 @@ export async function downloadTutorialGuidePdf(
   );
 
   const blob = new Blob([response.data], { type: 'application/pdf' });
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  window.URL.revokeObjectURL(url);
+  await saveFile(blob, fileName);
 }

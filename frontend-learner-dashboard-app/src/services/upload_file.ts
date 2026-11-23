@@ -10,6 +10,7 @@ import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
 import { getWithETag } from "@/lib/http/etagClient";
 import axios from "axios";
 import { isNullOrEmptyOrUndefined } from "@/lib/utils";
+import { saveFile } from "@/lib/download/save-file";
 
 interface SignedURLResponse {
     id: string;
@@ -292,14 +293,7 @@ export const downloadFileWithName = async (
         name = `${base}.${ext}`;
     }
 
-    const objectUrl = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = objectUrl;
-    link.download = name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(objectUrl);
+    await saveFile(blob, name);
 };
 
 /**
