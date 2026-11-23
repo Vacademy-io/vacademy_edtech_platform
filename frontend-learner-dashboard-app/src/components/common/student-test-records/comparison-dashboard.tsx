@@ -56,6 +56,7 @@ import { EmptyState } from "@/components/design-system/states";
 import { cn } from "@/lib/utils";
 import { playIllustrations } from "@/assets/play-illustrations";
 import { reportVisibility } from "@/lib/report-visibility";
+import { saveFile } from "@/lib/download/save-file";
 
 // Verdict thresholds mirror getPerformanceLevel in test-report-dialog.tsx.
 // Play-mode variants restate the verdict in play status tokens
@@ -271,14 +272,7 @@ export function ComparisonDashboard({
         responseType: "blob",
       });
       const blob = new Blob([response.data], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${assessmentName || "assessment"}-report.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      await saveFile(blob, `${assessmentName || "assessment"}-report.pdf`);
     } catch {
       toast.error(t("comparisonDashboard.errors.downloadReportFailed"));
     } finally {

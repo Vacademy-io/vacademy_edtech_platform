@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { MyButton } from "@/components/design-system/button";
 import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
+import { isNativeApp, saveUrl } from "@/lib/download/save-file";
 
 interface CertificateCompletionBannerProps {
     certificateUrl: string | null;
@@ -151,6 +152,12 @@ export const CertificateCompletionBanner = ({
                                 <a
                                     href={currentUrl}
                                     download={`${courseTitle}_Certificate.pdf`}
+                                    onClick={(e) => {
+                                        // The app's WebView ignores <a download>: save it natively there.
+                                        if (!isNativeApp()) return;
+                                        e.preventDefault();
+                                        void saveUrl(currentUrl, `${courseTitle}_Certificate.pdf`);
+                                    }}
                                 >
                                     <Download size={14} />
                                     {t("certificate.downloadCertificate")}

@@ -33,6 +33,7 @@ import type { LearnerNote, NoteKind } from "@/lib/notes/types";
 import { cn } from "@/lib/utils";
 import { NOTE_BAND, noteColorOf } from "./note-colors";
 import { NotebookReview } from "./NotebookReview";
+import { saveFile } from "@/lib/download/save-file";
 
 type KindFilter = "ALL" | NoteKind;
 const FILTERS: KindFilter[] = ["ALL", "HIGHLIGHT", "NOTE", "AREA", "BOOKMARK"];
@@ -41,14 +42,7 @@ const PAGE_SIZE = 50;
 const LESSON_ROUTE = "/study-library/courses/course-details/subjects/modules/chapters/slides";
 
 function saveTextFile(text: string, name: string) {
-  const url = URL.createObjectURL(new Blob([text], { type: "text/markdown;charset=utf-8" }));
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = name;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return saveFile(new Blob([text], { type: "text/markdown;charset=utf-8" }), name);
 }
 
 /** Prints through a hidden frame, so the learner stays on the page. */
@@ -214,7 +208,7 @@ export function NotebookPage() {
         bookmark: t("kind.bookmark"),
         page: (page) => t("pageNumber", { page }),
       };
-      if (format === "markdown") saveTextFile(notesToMarkdown(all, labels), "my-notebook.md");
+      if (format === "markdown") await saveTextFile(notesToMarkdown(all, labels), "my-notebook.md");
       else printHtml(notesToPrintHtml(all, labels, i18n.dir()));
     } catch {
       toast.error(t("exportFailed"));

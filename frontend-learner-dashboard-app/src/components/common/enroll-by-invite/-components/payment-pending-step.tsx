@@ -7,6 +7,7 @@ import { getPaymentCompletionStatus } from "../-services/enroll-invite-services"
 import { useEffect } from "react";
 import { SelectedPayment } from "./types";
 import { shouldHidePaidPurchaseUI } from "@/utils/ios-iap-compliance";
+import { downloadLink } from "@/lib/download/save-file";
 
 export interface User {
   id: string;
@@ -78,12 +79,7 @@ const PaymentPendingStep = ({
       return;
     }
 
-    const link = document.createElement("a");
-    link.href = invoicePdfUrl;
-    link.download = "invoice.pdf"; // You can customize this filename
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    void downloadLink(invoicePdfUrl, "invoice.pdf");
   };
 
   // Polling effect - checks payment status every 10 seconds

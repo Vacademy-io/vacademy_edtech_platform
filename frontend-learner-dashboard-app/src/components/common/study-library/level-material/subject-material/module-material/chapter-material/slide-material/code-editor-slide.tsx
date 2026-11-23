@@ -47,6 +47,7 @@ import { QuestionModeView } from "./coding-question/QuestionModeView";
 import type {
   CodeEditorData as CodingCodeEditorData,
 } from "./coding-question/types";
+import { saveFile } from "@/lib/download/save-file";
 
 export interface CodeEditorData {
   language: string;
@@ -671,16 +672,7 @@ const PracticeModeView: React.FC<CodeEditorSlideProps> = ({
   const downloadCode = () => {
     const code = getCurrentCode();
     const blob = new Blob([code], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `code.${
-      editorState.currentLanguage === "python" ? "py" : "js"
-    }`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    void saveFile(blob, `code.${editorState.currentLanguage === "python" ? "py" : "js"}`);
     handleUserActivity(); // Track download activity
   };
 

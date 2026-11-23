@@ -40,6 +40,8 @@ import VideoQuestionOverlay from "./video-question-overlay";
 import { getPublicUrl } from "@/services/upload_file";
 import { useMediaRefsStore } from "@/stores/mediaRefsStore";
 import { cn } from "@/lib/utils";
+import { isNativeApp, saveFile } from "@/lib/download/save-file";
+import { openInBrowser } from "@/lib/open-in-browser";
 // import { getPublicUrl } from "@/utils/study-library/storage/get-public-url";
 
 interface CustomVideoPlayerProps {
@@ -1269,17 +1271,11 @@ const CustomVideoPlayer = forwardRef<any, CustomVideoPlayerProps>(
             try {
                 const res = await fetch(actualVideoUrl);
                 const blob = await res.blob();
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = deriveFileName(actualVideoUrl);
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                URL.revokeObjectURL(url);
+                await saveFile(blob, deriveFileName(actualVideoUrl));
             } catch {
                 // Cross-origin fetch blocked — fall back to opening the file.
-                window.open(actualVideoUrl, "_blank", "noopener");
+                if (isNativeApp()) void openInBrowser(actualVideoUrl);
+                else window.open(actualVideoUrl, "_blank", "noopener");
             }
         };
 

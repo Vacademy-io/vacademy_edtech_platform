@@ -16,28 +16,13 @@ import type { Slide } from "@/hooks/study-library/use-slides";
 import type { CompletionContext } from "../mark-complete-button";
 import { parseSpreadsheetSlideData, spreadsheetDownloadName } from "./spreadsheet-slide-utils";
 import { fetchSpreadsheetGrid } from "./spreadsheet-grid-loader";
+import { saveUrl } from "@/lib/download/save-file";
 
 /** Seconds on the slide before it counts as viewed. */
 const VIEWED_AFTER_MS = 3000;
 
-const saveUrlAs = async (url: string, name: string) => {
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(String(res.status));
-    const blob = await res.blob();
-    const objectUrl = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = objectUrl;
-    link.download = name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1000);
-  } catch {
-    // The file host refused a cross-origin fetch: let the browser open it.
-    window.open(url, "_blank", "noopener,noreferrer");
-  }
-};
+/** Saves the workbook; when the file host refuses a cross-origin fetch, the browser opens it. */
+const saveUrlAs = (url: string, name: string) => saveUrl(url, name);
 
 /**
  * Read-only spreadsheet slide: every worksheet tab in the CBE grid (scrolls
