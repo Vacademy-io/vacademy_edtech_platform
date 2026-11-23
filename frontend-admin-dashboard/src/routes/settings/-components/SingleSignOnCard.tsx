@@ -498,6 +498,7 @@ export default function SingleSignOnCard() {
                                         <p className="text-caption text-neutral-500">{t('sso.defaultBatchesHint')}</p>
                                         <ScopePicker
                                             scopeType="BATCH"
+                                            emptyMeansAll={false}
                                             selected={defaultBatches}
                                             onChange={setDefaultBatches}
                                         />
@@ -544,6 +545,7 @@ export default function SingleSignOnCard() {
                                                 </div>
                                                 <ScopePicker
                                                     scopeType="BATCH"
+                                                    emptyMeansAll={false}
                                                     selected={rule.package_session_ids}
                                                     onChange={(ids) =>
                                                         setRules((prev) =>
