@@ -66,6 +66,10 @@ export enum OtherTerms {
     Invite = 'Invite',
     Inventory = 'Inventory',
     SubOrg = 'SubOrg',
+    /** Role label on a learner enrolled through a Sub-Org (org role LEARNER). */
+    SubOrgMember = 'SubOrgMember',
+    /** Role label on a Sub-Org's admin (org role ADMIN / ROOT_ADMIN). */
+    SubOrgAdmin = 'SubOrgAdmin',
 }
 
 export enum SystemTerms {
@@ -90,6 +94,8 @@ export enum SystemTerms {
     Invite = 'Invite',
     Inventory = 'Inventory',
     SubOrg = 'Sub-Org',
+    SubOrgMember = 'Sub-Org Member',
+    SubOrgAdmin = 'Sub-Org Admin',
     /** @deprecated Use SystemTerms.Subject instead */
     Subjects = 'Subject',
     /** @deprecated Use SystemTerms.Module instead */

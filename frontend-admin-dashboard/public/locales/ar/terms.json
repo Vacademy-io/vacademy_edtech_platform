@@ -139,6 +139,20 @@
     "Inventory_few": "المخزون",
     "Inventory_many": "المخزون",
     "Inventory_other": "المخزون",
+    "SubOrgMember": "عضو المؤسسة الفرعية",
+    "SubOrgMember_zero": "أعضاء المؤسسة الفرعية",
+    "SubOrgMember_one": "عضو المؤسسة الفرعية",
+    "SubOrgMember_two": "عضوا المؤسسة الفرعية",
+    "SubOrgMember_few": "أعضاء المؤسسة الفرعية",
+    "SubOrgMember_many": "أعضاء المؤسسة الفرعية",
+    "SubOrgMember_other": "أعضاء المؤسسة الفرعية",
+    "SubOrgAdmin": "مسؤول المؤسسة الفرعية",
+    "SubOrgAdmin_zero": "مسؤولو المؤسسة الفرعية",
+    "SubOrgAdmin_one": "مسؤول المؤسسة الفرعية",
+    "SubOrgAdmin_two": "مسؤولا المؤسسة الفرعية",
+    "SubOrgAdmin_few": "مسؤولو المؤسسة الفرعية",
+    "SubOrgAdmin_many": "مسؤولو المؤسسة الفرعية",
+    "SubOrgAdmin_other": "مسؤولو المؤسسة الفرعية",
     "gender": {
         "Course": "f",
         "Level": "m",
@@ -159,6 +173,8 @@
         "Learner": "m",
         "AudienceList": "f",
         "Invite": "f",
-        "Inventory": "m"
+        "Inventory": "m",
+        "SubOrgMember": "m",
+        "SubOrgAdmin": "m"
     }
 }

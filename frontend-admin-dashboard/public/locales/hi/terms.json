@@ -59,6 +59,12 @@
     "Inventory": "इन्वेंटरी",
     "Inventory_one": "इन्वेंटरी",
     "Inventory_other": "इन्वेंटरी",
+    "SubOrgMember": "सब-ऑर्ग सदस्य",
+    "SubOrgMember_one": "सब-ऑर्ग सदस्य",
+    "SubOrgMember_other": "सब-ऑर्ग सदस्य",
+    "SubOrgAdmin": "सब-ऑर्ग एडमिन",
+    "SubOrgAdmin_one": "सब-ऑर्ग एडमिन",
+    "SubOrgAdmin_other": "सब-ऑर्ग एडमिन",
     "gender": {
         "Course": "m",
         "Level": "m",
@@ -79,6 +85,8 @@
         "Learner": "m",
         "AudienceList": "f",
         "Invite": "m",
-        "Inventory": "f"
+        "Inventory": "f",
+        "SubOrgMember": "m",
+        "SubOrgAdmin": "m"
     }
 }

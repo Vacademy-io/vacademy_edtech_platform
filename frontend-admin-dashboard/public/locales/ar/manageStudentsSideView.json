@@ -7,10 +7,6 @@
         "cancelledMember": "عضو ملغى",
         "cancelledMemberTooltip": "تم إلغاء العضوية — يستمر الوصول حتى انتهاء صلاحية الخطة"
     },
-    "roles": {
-        "admin": "مسؤول التدريب",
-        "learner": "طاقم التدريب"
-    },
     "actions": {
         "deleteLead": "حذف العميل المحتمل",
         "openFullProfile": "فتح الملف الشخصي الكامل",

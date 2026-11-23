@@ -286,9 +286,9 @@ const MembershipRoleCell = ({ row }: { row: Row<StudentTable> }) => {
     const { handleClick, handleDoubleClick } = useClickHandlers();
     const roles = row.original.comma_separated_org_roles || '';
     const display = roles.includes('ADMIN')
-        ? 'Practice Admin'
+        ? getTerminology(OtherTerms.SubOrgAdmin, SystemTerms.SubOrgAdmin)
         : roles.includes('LEARNER')
-          ? 'Practice Staff'
+          ? getTerminology(OtherTerms.SubOrgMember, SystemTerms.SubOrgMember)
           : '-';
 
     return (

@@ -24,6 +24,8 @@ export interface NamingSettingsRequest {
     Invite?: string;
     Inventory?: string;
     SubOrg?: string;
+    SubOrgMember?: string;
+    SubOrgAdmin?: string;
     // Plural variants are sent as {key}_plural
     [key: string]: string | undefined;
 }
