@@ -231,7 +231,8 @@ def _box_is_busy() -> bool:
     """
     try:
         from . import main as _main
-        return _main._active_calls * 2 >= get_settings().max_concurrent_calls
+        # Pod-wide: the processes share the pod's CPU quota (app/procs.py).
+        return _main._pod_active() * 2 >= _main._pod_capacity()
     except Exception:
         return False
 
