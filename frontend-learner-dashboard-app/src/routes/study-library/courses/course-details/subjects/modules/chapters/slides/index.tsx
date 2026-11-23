@@ -56,7 +56,11 @@ import { GET_COURSE_DETAILS } from "@/constants/urls";
 import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
 import { handleGetCourseInit } from "@/routes/study-library/courses/course-details/-services/get-course-details";
 import { getInstituteId } from "@/constants/helper";
-import { fetchModulesWithChapters, fetchModulesWithChaptersPublic } from "@/services/study-library/getModulesWithChapters";
+import {
+  fetchModulesWithChapters,
+  fetchModulesWithChaptersPublic,
+  useModulesWithChaptersQuery,
+} from "@/services/study-library/getModulesWithChapters";
 import { toast } from "sonner";
 import FeedbackPage from "@/components/common/study-library/level-material/subject-material/module-material/chapter-material/slide-material/FeedbackPage";
 import { PencilSimple } from "@phosphor-icons/react";
@@ -390,6 +394,29 @@ function Slides() {
   const { slides, isLoading: slidesLoading } = useSlides(chapterId || "");
   const { studyLibraryData } = useStudyLibraryStore();
   const { modulesWithChaptersData, setModulesWithChaptersData } = useModulesWithChaptersStore();
+  // The modules store is app-wide and outlives this route, so a learner who
+  // opens a second course arrives with the first course's outline still in it
+  // until this course's fetch lands. The sidebars seed from what they are
+  // handed on mount and never refetch that subject, so the old outline (and its
+  // "5 / 42 completed") stuck for good. Hand them the store only once it holds
+  // the module in the URL; until then they fetch the outline themselves.
+  //
+  // The provider's own query for this subject is read first. It answers from
+  // cache (60s staleTime) without running its queryFn, which is the only thing
+  // that writes the store, so a learner back in a course within a minute finds
+  // the store still holding the course they just left. Same key and options as
+  // ModulesWithChaptersProvider, so this adds an observer, not a request.
+  const { data: subjectModulesFromQuery } = useQuery({
+    ...useModulesWithChaptersQuery(subjectId || "", resolvedSessionId),
+    enabled: !!resolvedSessionId && !!subjectId,
+  });
+  const currentSubjectModules = useMemo(() => {
+    if (!moduleId) return null;
+    const holdsModule = (list: ModulesWithChapters[] | null | undefined) =>
+      !!list?.some((m) => m.module?.id === moduleId);
+    if (holdsModule(subjectModulesFromQuery)) return subjectModulesFromQuery ?? null;
+    return holdsModule(modulesWithChaptersData) ? modulesWithChaptersData : null;
+  }, [subjectModulesFromQuery, modulesWithChaptersData, moduleId]);
 
   // Get drip conditions from store or fetch from API
   const {
@@ -1744,7 +1771,7 @@ function Slides() {
             currentSubjectId={subjectId || ""}
             currentChapterId={chapterId || ""}
             currentSlideId={slideId || ""}
-            currentSubjectModules={modulesWithChaptersData}
+            currentSubjectModules={currentSubjectModules}
             onSlideSelect={({
               subjectId: targetSubjectId,
               moduleId: targetModuleId,
@@ -1775,7 +1802,7 @@ function Slides() {
               currentModuleId={moduleId || ""}
               currentChapterId={chapterId || ""}
               currentSlideId={slideId || ""}
-              currentSubjectModules={modulesWithChaptersData}
+              currentSubjectModules={currentSubjectModules}
               onSlideSelect={({ subjectId: targetSubjectId, moduleId: targetModuleId, chapterId: targetChapterId, slideId: targetSlideId }) => {
                 navigate({
                   to: "/study-library/courses/course-details/subjects/modules/chapters/slides",
