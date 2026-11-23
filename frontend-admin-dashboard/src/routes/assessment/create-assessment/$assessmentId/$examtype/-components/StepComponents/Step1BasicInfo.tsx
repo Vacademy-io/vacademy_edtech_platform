@@ -124,6 +124,16 @@ const SectionCard = ({
     </Card>
 );
 
+/** This test's saved registration form fields (Step 3), in form order, for the report picker. */
+const registrationFormFieldNames = (assessmentDetails: any[]): string[] => {
+    const fields: { field_name?: string; field_order?: number; status?: string }[] =
+        assessmentDetails?.[2]?.saved_data?.registration_form_fields ?? [];
+    return [...fields]
+        .filter((f) => f?.field_name && f.status !== 'DELETED')
+        .sort((a, b) => (a.field_order ?? 0) - (b.field_order ?? 0))
+        .map((f) => f.field_name as string);
+};
+
 // Helper component for navigation header
 const NavigationHeader = ({ examType, isUpdate = false }: { examType: string; isUpdate?: boolean }) => {
     const { t } = useTranslation('assessmentStep1BasicInfo');
@@ -1353,7 +1363,11 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                     )}
                     {/* What the student's report shows per question. Surveys have no marked report. */}
                     {showsResultReleaseSettings(examType) && (
-                        <ReportOptionsSettingsCard control={form.control} />
+                        <ReportOptionsSettingsCard
+                            control={form.control}
+                            instituteId={instituteDetails?.id}
+                            formFieldNames={registrationFormFieldNames(assessmentDetails)}
+                        />
                     )}
 
                     <div className="flex flex-col gap-4" id="attempt-settings">

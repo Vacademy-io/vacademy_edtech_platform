@@ -5,6 +5,7 @@ import { FormControl, FormField, FormItem, FormLabel } from '@/components/ui/for
 import { Switch } from '@/components/ui/switch';
 import type { BasicSectionFormType } from '@/types/assessments/assessment-steps';
 import type { ReportOptionsForm } from '@/types/assessments/report-options';
+import { ReportStudentFieldsSection } from './ReportStudentFieldsSection';
 
 type ToggleName =
     | 'reportOptions.showQuestionWise'
@@ -24,11 +25,18 @@ const TOGGLES: { name: ToggleName; key: string; perQuestion: boolean }[] = [
  * the question-wise section itself, their answer, the correct answer and the
  * explanation. Saved per assessment as `report_options` (types/assessments/report-options.ts);
  * "Institute default" saves null so the institute's report settings apply.
+ * Below that, the registration details printed under the student's name (student_fields),
+ * which are always this assessment's own choice.
  */
 export const ReportOptionsSettingsCard = ({
     control,
+    instituteId,
+    formFieldNames = [],
 }: {
     control: Control<BasicSectionFormType>;
+    instituteId?: string;
+    /** This test's saved registration form fields, in form order. */
+    formFieldNames?: string[];
 }) => {
     const { t } = useTranslation('assessmentStep1BasicInfo');
     const options = useWatch({ control, name: 'reportOptions' }) as ReportOptionsForm | undefined;
@@ -109,6 +117,12 @@ export const ReportOptionsSettingsCard = ({
                     </p>
                 </div>
             )}
+
+            <ReportStudentFieldsSection
+                control={control}
+                instituteId={instituteId}
+                formFieldNames={formFieldNames}
+            />
         </div>
     );
 };

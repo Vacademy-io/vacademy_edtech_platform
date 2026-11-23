@@ -219,7 +219,14 @@
             "label": "Explication",
             "description": "La solution rédigée pour chaque question."
         },
-        "appliesTo": "S'applique au rapport téléchargé (le même fichier pour les élèves et les administrateurs), au rapport IA, à l'e-mail de résultat et à la revue des réponses dans l'application apprenant."
+        "appliesTo": "S'applique au rapport téléchargé (le même fichier pour les élèves et les administrateurs), au rapport IA, à l'e-mail de résultat et à la revue des réponses dans l'application apprenant.",
+        "studentFields": {
+            "label": "Informations de l'élève sur le rapport",
+            "description": "Choisissez les informations d'inscription à afficher sous le nom de l'élève, comme le numéro de matricule ou l'établissement. S'applique à cette évaluation uniquement.",
+            "empty": "Aucun champ d'inscription supplémentaire pour l'instant. Ajoutez des champs comme le numéro de matricule ou l'établissement au formulaire d'inscription de ce test ou aux champs personnalisés de l'institut.",
+            "notOnForm": "Absent du formulaire de ce test",
+            "hint": "Affiché sur le rapport téléchargé et le rapport IA. Une information n'apparaît que si le formulaire d'inscription de ce test la demande et que l'élève l'a renseignée. Le nom et l'e-mail sont toujours affichés."
+        }
     },
     "examInterface": {
         "title": "Interface d'examen",

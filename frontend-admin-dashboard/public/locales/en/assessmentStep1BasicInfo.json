@@ -227,7 +227,14 @@
             "label": "Explanation",
             "description": "The solution written for each question."
         },
-        "appliesTo": "Applies to the downloaded report (the same file for students and admins), the AI report, the result email and the answer review in the learner app."
+        "appliesTo": "Applies to the downloaded report (the same file for students and admins), the AI report, the result email and the answer review in the learner app.",
+        "studentFields": {
+            "label": "Student details on report",
+            "description": "Pick the registration details to print under the student's name, like Roll Number or College. Applies to this assessment only.",
+            "empty": "No extra registration fields yet. Add fields like Roll Number or College to this test's registration form or to the institute's custom fields.",
+            "notOnForm": "Not on this test's form",
+            "hint": "Printed on the downloaded report and the AI report. A detail shows only if this test's registration form asks for it and the student filled it in. Name and email are always shown."
+        }
     },
     "examInterface": {
         "title": "Exam interface",

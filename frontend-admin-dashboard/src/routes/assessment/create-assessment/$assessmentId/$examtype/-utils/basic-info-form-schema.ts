@@ -91,6 +91,8 @@ export const BasicInfoFormSchema = z.object({
             showYourAnswer: z.boolean(),
             showCorrectAnswer: z.boolean(),
             showExplanation: z.boolean(),
+            // Registration fields printed under the student's name (this assessment only).
+            studentFields: z.array(z.string()).default([]),
         })
         .default(DEFAULT_REPORT_OPTIONS_FORM),
     switchSections: z.boolean(),
