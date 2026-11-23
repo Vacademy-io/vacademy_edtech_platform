@@ -115,6 +115,10 @@ target 'Yogyam' do
   capacitor_pods
 end
 
+target 'Nrithya Gurukulam' do
+  capacitor_pods
+end
+
 post_install do |installer|
   assertDeploymentTarget(installer)
 end
