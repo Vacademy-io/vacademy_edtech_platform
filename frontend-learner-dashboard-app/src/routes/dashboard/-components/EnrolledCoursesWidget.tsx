@@ -306,27 +306,11 @@ const ClassicEnrolledCoursesWidget: React.FC<{ className?: string }> = ({
     SystemTerms.Course,
   );
 
-  const openCourse = useCallback(
+  // The course page: the Content Structure cards a learner picks a module or
+  // chapter from. The card itself always lands here, started or not, so the
+  // structure stays one tap away once a course is under way.
+  const openCourseDetails = useCallback(
     (course: EnrolledCourse) => {
-      // Resume straight into the last-visited slide when this device has a
-      // thread for the course; otherwise the course-details page.
-      const resume = getResumeForCourse(resumeScope, course.id);
-      if (resume && course.state !== "COMPLETED") {
-        navigate({
-          to: RESUME_ROUTE,
-          search: resumeSearchParams(resume) as {
-            courseId: string;
-            levelId?: string;
-            subjectId: string;
-            moduleId: string;
-            chapterId: string;
-            slideId: string;
-            sessionId: string;
-          },
-        });
-        return;
-      }
-
       try {
         // Course details reads this as a fallback when its own percentage
         // fetch hasn't landed yet — same handoff the catalogue cards use.
@@ -349,7 +333,32 @@ const ClassicEnrolledCoursesWidget: React.FC<{ className?: string }> = ({
         },
       });
     },
-    [navigate, resumeScope],
+    [navigate],
+  );
+
+  // The Continue / Start / Review button: straight into the last-visited slide
+  // when this device has a thread for the course; otherwise the course page.
+  const openCourse = useCallback(
+    (course: EnrolledCourse) => {
+      const resume = getResumeForCourse(resumeScope, course.id);
+      if (resume && course.state !== "COMPLETED") {
+        navigate({
+          to: RESUME_ROUTE,
+          search: resumeSearchParams(resume) as {
+            courseId: string;
+            levelId?: string;
+            subjectId: string;
+            moduleId: string;
+            chapterId: string;
+            slideId: string;
+            sessionId: string;
+          },
+        });
+        return;
+      }
+      openCourseDetails(course);
+    },
+    [navigate, resumeScope, openCourseDetails],
   );
 
   const viewAll = useCallback(() => {
@@ -455,11 +464,25 @@ const ClassicEnrolledCoursesWidget: React.FC<{ className?: string }> = ({
               {course.percentComplete}%
             </span>
           </span>
-          <span className={cn(s.cta, tint.ink)}>
+          {/* Above the card's own button (z-10), so this one resumes while a
+              tap anywhere else on the card opens the course page. */}
+          <button
+            type="button"
+            onClick={() => openCourse(course)}
+            aria-label={t("enrolledCourses.ctaAria", {
+              action: ctaLabel,
+              course: course.name,
+            })}
+            className={cn(
+              s.cta,
+              tint.ink,
+              "relative z-10 transition-opacity hover:opacity-80",
+            )}
+          >
             <CtaIcon size={13} weight="fill" />
             {ctaLabel}
             <ArrowRight size={13} weight="bold" />
-          </span>
+          </button>
         </span>
       </>
     );
@@ -467,7 +490,7 @@ const ClassicEnrolledCoursesWidget: React.FC<{ className?: string }> = ({
     const ariaLabel = t("enrolledCourses.cardAria", {
       course: course.name,
       percent: course.percentComplete,
-      action: ctaLabel,
+      action: t("enrolledCourses.viewDetails"),
     });
 
     const shellClass = cn(
@@ -476,18 +499,23 @@ const ClassicEnrolledCoursesWidget: React.FC<{ className?: string }> = ({
       s.tintShell && tint.surface,
     );
 
-    // The whole widget is the control. Any CTA inside stays a <span> — a
-    // <button> nested in a <button> is invalid and hides from screen readers.
+    // Two controls, siblings rather than nested (a <button> inside a <button>
+    // is invalid and hides from screen readers): a card-sized button stretched
+    // over the widget opens the course page, and the CTA in the rail sits above
+    // it and resumes.
     return (
-      <button
+      <div
         key={course.packageSessionId || course.id}
-        type="button"
-        onClick={() => openCourse(course)}
-        aria-label={ariaLabel}
-        className={shellClass}
+        className={cn(shellClass, "relative")}
       >
+        <button
+          type="button"
+          onClick={() => openCourseDetails(course)}
+          aria-label={ariaLabel}
+          className="absolute inset-0 rounded-xl"
+        />
         {body}
-      </button>
+      </div>
     );
   };
 

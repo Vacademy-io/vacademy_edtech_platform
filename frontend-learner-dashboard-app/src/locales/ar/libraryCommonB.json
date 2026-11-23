@@ -62,6 +62,13 @@
     "courseProgress": "{{done}} / {{total}} {{term}} مكتمل",
     "noModulesYet": "لا يوجد {{term}} بعد"
   },
+  "moduleSwitcher": {
+    "triggerAria": "تبديل {{term}}، الحالي: {{name}}",
+    "progress": "{{done}} / {{total}} {{term}} مكتملة",
+    "current": "الحالي",
+    "viewAll": "عرض كل {{term}}",
+    "courseOverview": "نظرة عامة على {{term}}"
+  },
   "leaseLockOverlay": {
     "leaseExpired": {
       "title": "اتصل بالإنترنت للحفاظ على الوصول دون اتصال",
