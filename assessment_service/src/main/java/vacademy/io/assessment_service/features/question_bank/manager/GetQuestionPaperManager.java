@@ -7,6 +7,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import vacademy.io.assessment_service.features.question_bank.dto.AllQuestionPaperResponse;
 import vacademy.io.assessment_service.features.question_bank.dto.QuestionPaperDTO;
 import vacademy.io.assessment_service.features.question_bank.dto.QuestionPaperFilter;
@@ -87,6 +88,17 @@ public class GetQuestionPaperManager {
         String tagIdsCsv = (questionPaperFilter.getTagIds() == null || questionPaperFilter.getTagIds().isEmpty())
                 ? null
                 : String.join(",", questionPaperFilter.getTagIds());
+
+        // Question Papers page with folders on: one folder, or the papers in no folder.
+        // Every other caller sends neither and keeps the original query below.
+        String folderId = StringUtils.hasText(questionPaperFilter.getFolderId())
+                ? questionPaperFilter.getFolderId().trim()
+                : null;
+        String unfiledFlag = folderId == null && Boolean.TRUE.equals(questionPaperFilter.getUnfiledOnly()) ? "Y" : null;
+        if (folderId != null || unfiledFlag != null) {
+            Page<Object[]> folderPage = questionPaperRepository.findQuestionPapersByFiltersInFolder(questionPaperFilter.getName(), questionPaperFilter.getStatuses(), questionPaperFilter.getLevelIds(), questionPaperFilter.getSubjectIds(), instituteId, tagIdsCsv, folderId, unfiledFlag, pageable);
+            return createAllQuestionPaperResponseFromPaginatedData(folderPage);
+        }
 
         // Retrieve employees based on the filter criteria
         Page<Object[]> employeePage = questionPaperRepository.findQuestionPapersByFilters(questionPaperFilter.getName(), questionPaperFilter.getStatuses(), questionPaperFilter.getLevelIds(), questionPaperFilter.getSubjectIds(), null, List.of(instituteId), tagIdsCsv, pageable);

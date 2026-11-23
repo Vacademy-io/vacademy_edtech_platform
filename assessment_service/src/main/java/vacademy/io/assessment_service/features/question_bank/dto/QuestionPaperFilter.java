@@ -21,4 +21,8 @@ public class QuestionPaperFilter {
     private List<String> subjectIds = new ArrayList<>();
     private List<String> tagIds = new ArrayList<>();
     private Map<String, String> sortColumns;
+    /** Question Papers page with folders on: only the papers of this folder. */
+    private String folderId;
+    /** Question Papers page with folders on: only the papers that are in no folder. */
+    private Boolean unfiledOnly;
 }
