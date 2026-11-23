@@ -30,6 +30,12 @@ public class ReassignResultDTO {
      */
     private Boolean markedInactive;
 
+    /**
+     * Batched calls only ({@code batch_size} set): open leads of the source counsellor still
+     * in scope after this call. 0 means the handover is complete. Null when not batched.
+     */
+    private Integer remainingLeads;
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

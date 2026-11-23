@@ -59,7 +59,9 @@
         "reassignedAndMarkedInactive_one": "Reassigned {{count}} lead and marked inactive",
         "reassignedAndMarkedInactive_other": "Reassigned {{count}} leads and marked inactive",
         "reassignedCount_one": "Reassigned {{count}} lead",
-        "reassignedCount_other": "Reassigned {{count}} leads"
+        "reassignedCount_other": "Reassigned {{count}} leads",
+        "partialFailure_one": "Moved {{count}} lead, then the handover stopped. Try again to move the rest; nothing already moved is lost.",
+        "partialFailure_other": "Moved {{count}} leads, then the handover stopped. Try again to move the rest; nothing already moved is lost."
     },
     "handover": {
         "disable": {
@@ -76,5 +78,6 @@
         },
         "moved_one": "Moved {{count}} lead",
         "moved_other": "Moved {{count}} leads"
-    }
+    },
+    "progress": "Moving {{done}} of {{total}} leads…"
 }

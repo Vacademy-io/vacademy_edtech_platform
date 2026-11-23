@@ -14,6 +14,13 @@ import {
     type WorkbenchLead,
 } from '../-services/counsellor-workbench-services';
 
+/**
+ * Leads per reassign call when a whole pipeline moves. Every lead fires its workflow
+ * trigger and timeline entry inline, so one call per batch keeps each request short
+ * and each commit small; the backend caps it at 500 whatever is sent.
+ */
+const HANDOVER_BATCH_SIZE = 200;
+
 interface Props {
     open: boolean;
     onOpenChange: (v: boolean) => void;
@@ -90,6 +97,8 @@ export function ReassignDialog({
     const [perRowOverrides, setPerRowOverrides] = useState<Record<string, string>>({});
     const [submitting, setSubmitting] = useState(false);
     const [skipping, setSkipping] = useState(false);
+    // Batched handover progress, shown on the confirm button while it runs.
+    const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
 
     // Pool-activeness is a PREFERENCE, not a gate: institutes that don't use
     // counselor pools have zero "active" members, and the old hard filter
@@ -112,6 +121,7 @@ export function ReassignDialog({
             setPerRowOverrides({});
             setSubmitting(false);
             setSkipping(false);
+            setProgress(null);
         }
     }, [open]);
 
@@ -149,78 +159,106 @@ export function ReassignDialog({
 
     async function submit() {
         if (!fromUserId) return;
+        if (mode === 'SINGLE' && !target && !(markInactive && openLeads.length === 0)) {
+            toast.error(t('toast.pickTarget'));
+            return;
+        }
+        if (mode === 'MANUAL' && !preview && !(markInactive && openLeads.length === 0)) {
+            toast.error(t('toast.generatePreviewFirst'));
+            return;
+        }
         setSubmitting(true);
+        setProgress(null);
+        // Leads moved so far, across every batch of this submit. Each batch is its own
+        // backend transaction, so whatever is counted here is committed even if a later
+        // batch fails.
+        let moved = 0;
+        let markedInactive = false;
         try {
-            let result;
             // reassignAll (counsellor-level flows): send NO lead_ids — the
-            // backend resolves and moves EVERY open lead of the source
-            // counsellor in one transaction, so nothing is left behind by the
-            // 500-row fetch cap. Per-row reassign keeps the whitelist so a
-            // single-row action can't sweep the whole pipeline.
+            // backend resolves every open lead of the source counsellor
+            // itself, so nothing is left behind by the 500-row fetch cap.
+            // Per-row reassign keeps the whitelist so a single-row action
+            // can't sweep the whole pipeline.
             const scopeIds = reassignAll ? undefined : openLeads.map((l) => l.lead_id);
             // Reassign-first edge case: marking inactive with no open leads —
             // backend short-circuits before evaluating mode-specific args, so
             // we send a no-op SINGLE request without a target. The flip still
             // happens server-side.
             if (markInactive && openLeads.length === 0) {
-                result = await commitReassign({
+                const r = await commitReassign({
                     institute_id: instituteId,
                     from_user_id: fromUserId,
                     mode: 'SINGLE',
                     mark_inactive: true,
                 });
-            } else if (mode === 'SINGLE') {
-                if (!target) {
-                    toast.error(t('toast.pickTarget'));
-                    setSubmitting(false);
-                    return;
+                moved = r.total_leads;
+                markedInactive = !!r.marked_inactive;
+            } else if (mode === 'SINGLE' || mode === 'ROUND_ROBIN') {
+                const base = {
+                    institute_id: instituteId,
+                    from_user_id: fromUserId,
+                    mode,
+                    target_user_id: mode === 'SINGLE' ? target : undefined,
+                    lead_ids: scopeIds,
+                    mark_inactive: markInactive,
+                };
+                if (!reassignAll) {
+                    const r = await commitReassign(base);
+                    moved = r.total_leads;
+                    markedInactive = !!r.marked_inactive;
+                } else {
+                    // A whole pipeline (can be thousands of leads) moves in bounded
+                    // batches until the backend reports nothing left. This also sweeps
+                    // up leads that land on the counsellor while the handover runs.
+                    // The call cap only guards against a runaway loop.
+                    const maxCalls = Math.ceil(totalCount / HANDOVER_BATCH_SIZE) + 20;
+                    for (let call = 0; call < maxCalls; call++) {
+                        const r = await commitReassign({
+                            ...base,
+                            batch_size: HANDOVER_BATCH_SIZE,
+                            rotation_offset: moved,
+                        });
+                        moved += r.total_leads;
+                        markedInactive = markedInactive || !!r.marked_inactive;
+                        const remaining = r.remaining_leads ?? 0;
+                        setProgress({ done: moved, total: moved + remaining });
+                        if (remaining === 0 || r.total_leads === 0) break;
+                    }
                 }
-                result = await commitReassign({
-                    institute_id: instituteId,
-                    from_user_id: fromUserId,
-                    mode: 'SINGLE',
-                    target_user_id: target,
-                    lead_ids: scopeIds,
-                    mark_inactive: markInactive,
-                });
-            } else if (mode === 'ROUND_ROBIN') {
-                result = await commitReassign({
-                    institute_id: instituteId,
-                    from_user_id: fromUserId,
-                    mode: 'ROUND_ROBIN',
-                    lead_ids: scopeIds,
-                    mark_inactive: markInactive,
-                });
             } else {
-                if (!preview) {
-                    toast.error(t('toast.generatePreviewFirst'));
-                    setSubmitting(false);
-                    return;
+                // MANUAL always scopes to exactly the previewed set — a lead that
+                // drifted in after the preview has no target and would fail the
+                // whole batch if the backend swept it up. The previewed set can be
+                // the whole pipeline, so it is sent in slices, each committed alone.
+                const entries = Object.entries(perRowOverrides);
+                for (let i = 0; i < entries.length; i += HANDOVER_BATCH_SIZE) {
+                    const slice = entries.slice(i, i + HANDOVER_BATCH_SIZE);
+                    const r = await commitReassign({
+                        institute_id: instituteId,
+                        from_user_id: fromUserId,
+                        mode: 'MANUAL',
+                        assignments: slice.map(([lead_id, to_user_id]) => ({
+                            lead_id,
+                            to_user_id,
+                        })),
+                        lead_ids: slice.map(([leadId]) => leadId),
+                        mark_inactive: markInactive,
+                    });
+                    moved += r.total_leads;
+                    markedInactive = markedInactive || !!r.marked_inactive;
+                    setProgress({ done: Math.min(i + slice.length, entries.length), total: entries.length });
                 }
-                result = await commitReassign({
-                    institute_id: instituteId,
-                    from_user_id: fromUserId,
-                    mode: 'MANUAL',
-                    assignments: Object.entries(perRowOverrides).map(([lead_id, to_user_id]) => ({
-                        lead_id,
-                        to_user_id,
-                    })),
-                    // MANUAL always scopes to exactly the previewed set — a
-                    // lead that drifted in after the preview has no target and
-                    // would fail the whole batch if the backend swept it up.
-                    lead_ids: Object.keys(perRowOverrides),
-                    mark_inactive: markInactive,
-                });
             }
             // Toast varies by whether the counsellor was also taken offline,
             // so the manager gets a single clear confirmation of what
-            // actually happened in the same transaction. Count comes from the
-            // backend result — the authoritative number of leads moved (the
-            // dialog's openLeads list is capped at 500 for display).
-            const n = result.total_leads;
+            // actually happened. Count comes from the backend results — the
+            // authoritative number of leads moved (the dialog's openLeads
+            // list is capped at 500 for display).
+            const n = moved;
             if (handoverFor) {
                 toast.success(t('handover.moved', { count: n }));
-            } else if (markInactive && result.marked_inactive) {
+            } else if (markInactive && markedInactive) {
                 toast.success(
                     n > 0
                         ? t('toast.reassignedAndMarkedInactive', { count: n })
@@ -233,9 +271,18 @@ export function ReassignDialog({
             onOpenChange(false);
         } catch (e) {
             const msg = (e as { response?: { data?: { ex?: string } } })?.response?.data?.ex;
-            toast.error(msg ?? t('toast.reassignFailed'));
+            if (moved > 0) {
+                // Earlier batches are committed and stay moved. Submitting again picks up
+                // only what is still with the counsellor, so a retry is always safe.
+                toast.error(t('toast.partialFailure', { count: moved }), {
+                    description: msg,
+                });
+            } else {
+                toast.error(msg ?? t('toast.reassignFailed'));
+            }
         } finally {
             setSubmitting(false);
+            setProgress(null);
         }
     }
 
@@ -246,7 +293,15 @@ export function ReassignDialog({
     }, [openLeads]);
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog
+            open={open}
+            onOpenChange={(next) => {
+                // Keep the dialog up while batches are still running: closing it would
+                // leave the handover half done without the admin noticing.
+                if (!next && submitting) return;
+                onOpenChange(next);
+            }}
+        >
             {/* The dialog now fills most of the screen for the manual flow
                 (which can list dozens of leads), but we cap it at 85vh so the
                 header / mode picker / footer stay anchored while the body
@@ -377,7 +432,9 @@ export function ReassignDialog({
                         </MyButton>
                     )}
                     <MyButton buttonType="primary" onClick={submit} disable={submitting || skipping}>
-                        {handoverFor
+                        {submitting && progress
+                            ? t('progress', { done: progress.done, total: progress.total })
+                            : handoverFor
                             ? submitting
                                 ? t('working')
                                 : t(`handover.${handoverFor}.confirm`)

@@ -55,6 +55,22 @@ public class ReassignRequest {
      */
     private Boolean markInactive;
 
+    /**
+     * Optional: move at most this many leads in this call (its own transaction) and report
+     * how many are left in {@code remaining_leads}. The client calls again until nothing is
+     * left, so a counsellor with thousands of open leads is handed over in short, separately
+     * committed steps with visible progress, instead of one request that can time out and
+     * roll everything back. Omitted = everything in one call (original behaviour).
+     */
+    private Integer batchSize;
+
+    /**
+     * ROUND_ROBIN with batches: how many leads earlier batches already moved, so the
+     * rotation continues where the previous batch stopped instead of restarting at the
+     * first counsellor (which would give the first few an extra lead every batch).
+     */
+    private Integer rotationOffset;
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

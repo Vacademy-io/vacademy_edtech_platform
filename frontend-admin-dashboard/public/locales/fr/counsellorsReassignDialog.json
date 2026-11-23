@@ -67,7 +67,9 @@
         "reassignedAndMarkedInactive_other": "{{count}} leads réattribués et marqué inactif",
         "reassignedCount_one": "{{count}} lead réattribué",
         "reassignedCount_many": "{{count}} leads réattribués",
-        "reassignedCount_other": "{{count}} leads réattribués"
+        "reassignedCount_other": "{{count}} leads réattribués",
+        "partialFailure_one": "{{count}} prospect transféré, puis le transfert s’est arrêté. Réessayez pour transférer le reste ; rien de ce qui a déjà été transféré n’est perdu.",
+        "partialFailure_other": "{{count}} prospects transférés, puis le transfert s’est arrêté. Réessayez pour transférer le reste ; rien de ce qui a déjà été transféré n’est perdu."
     },
     "handover": {
         "disable": {
@@ -84,5 +86,6 @@
         },
         "moved_one": "{{count}} prospect transféré",
         "moved_other": "{{count}} prospects transférés"
-    }
+    },
+    "progress": "Transfert de {{done}} sur {{total}} prospects…"
 }
