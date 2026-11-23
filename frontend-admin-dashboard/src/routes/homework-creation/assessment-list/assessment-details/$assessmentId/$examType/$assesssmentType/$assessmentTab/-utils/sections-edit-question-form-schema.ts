@@ -63,11 +63,11 @@ export const buildSectionsEditQuestionFormSchema = (t: TFunction) =>
                                     return;
                                 }
 
-                                if (question.singleChoiceOptions.length !== 4) {
+                                if (question.singleChoiceOptions.length < 2) {
                                     ctx.addIssue({
                                         code: z.ZodIssueCode.custom,
                                         message: t(
-                                            'homeworkCreationSectionsEditQuestionFormSchema:mcqs.exactlyFourOptions'
+                                            'homeworkCreationSectionsEditQuestionFormSchema:mcqs.atLeastTwoOptions'
                                         ),
                                         path: ['singleChoiceOptions'],
                                     });
@@ -114,11 +114,11 @@ export const buildSectionsEditQuestionFormSchema = (t: TFunction) =>
                                     return;
                                 }
 
-                                if (question.multipleChoiceOptions.length !== 4) {
+                                if (question.multipleChoiceOptions.length < 2) {
                                     ctx.addIssue({
                                         code: z.ZodIssueCode.custom,
                                         message: t(
-                                            'homeworkCreationSectionsEditQuestionFormSchema:mcqm.exactlyFourOptions'
+                                            'homeworkCreationSectionsEditQuestionFormSchema:mcqm.atLeastTwoOptions'
                                         ),
                                         path: ['multipleChoiceOptions'],
                                     });

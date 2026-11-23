@@ -128,10 +128,10 @@ export const generateCompleteAssessmentFormSchema = z.object({
                         return;
                     }
 
-                    if (question.singleChoiceOptions.length !== 4) {
+                    if (question.singleChoiceOptions.length < 2) {
                         ctx.addIssue({
                             code: z.ZodIssueCode.custom,
-                            message: 'MCQS must have exactly 4 options',
+                            message: 'MCQS must have at least 2 options',
                             path: ['singleChoiceOptions'],
                         });
                     }
@@ -170,10 +170,10 @@ export const generateCompleteAssessmentFormSchema = z.object({
                         return;
                     }
 
-                    if (question.multipleChoiceOptions.length !== 4) {
+                    if (question.multipleChoiceOptions.length < 2) {
                         ctx.addIssue({
                             code: z.ZodIssueCode.custom,
-                            message: 'MCQM must have exactly 4 options',
+                            message: 'MCQM must have at least 2 options',
                             path: ['multipleChoiceOptions'],
                         });
                     }
@@ -212,10 +212,10 @@ export const generateCompleteAssessmentFormSchema = z.object({
                         return;
                     }
 
-                    if (question.csingleChoiceOptions.length !== 4) {
+                    if (question.csingleChoiceOptions.length < 2) {
                         ctx.addIssue({
                             code: z.ZodIssueCode.custom,
-                            message: 'MCQS must have exactly 4 options',
+                            message: 'MCQS must have at least 2 options',
                             path: ['csingleChoiceOptions'],
                         });
                     }
@@ -254,10 +254,10 @@ export const generateCompleteAssessmentFormSchema = z.object({
                         return;
                     }
 
-                    if (question.cmultipleChoiceOptions.length !== 4) {
+                    if (question.cmultipleChoiceOptions.length < 2) {
                         ctx.addIssue({
                             code: z.ZodIssueCode.custom,
-                            message: 'CMCQM must have exactly 4 options',
+                            message: 'CMCQM must have at least 2 options',
                             path: ['cmultipleChoiceOptions'],
                         });
                     }
