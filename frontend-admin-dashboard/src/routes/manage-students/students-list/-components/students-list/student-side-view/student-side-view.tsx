@@ -533,11 +533,19 @@ export const StudentSidebar = ({
                                         .split(',')
                                         .map((role, index) => {
                                             const r = role.trim().toUpperCase();
+                                            // Both labels come from Naming Settings, same as the
+                                            // learner list's Membership Role column.
                                             const label =
-                                                r === 'ADMIN'
-                                                    ? t('roles.admin')
+                                                r === 'ADMIN' || r === 'ROOT_ADMIN'
+                                                    ? getTerminology(
+                                                          OtherTerms.SubOrgAdmin,
+                                                          SystemTerms.SubOrgAdmin
+                                                      )
                                                     : r === 'LEARNER'
-                                                      ? t('roles.learner')
+                                                      ? getTerminology(
+                                                            OtherTerms.SubOrgMember,
+                                                            SystemTerms.SubOrgMember
+                                                        )
                                                       : role.trim().toLowerCase().replace(/_/g, ' ');
                                             // Role badges keep their normal amber look, and only
                                             // turn red once the member has gone inactive.

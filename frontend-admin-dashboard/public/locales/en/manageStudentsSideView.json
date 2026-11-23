@@ -7,10 +7,6 @@
         "cancelledMember": "Cancelled Member",
         "cancelledMemberTooltip": "Membership cancelled — access continues until the plan expires"
     },
-    "roles": {
-        "admin": "Practice Admin",
-        "learner": "Practice Staff"
-    },
     "actions": {
         "deleteLead": "Delete lead",
         "openFullProfile": "Open full profile",

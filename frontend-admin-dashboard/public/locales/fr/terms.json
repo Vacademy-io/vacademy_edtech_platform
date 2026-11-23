@@ -79,6 +79,14 @@
     "Inventory_one": "Inventaire",
     "Inventory_many": "Inventaire",
     "Inventory_other": "Inventaire",
+    "SubOrgMember": "Membre de la sous-organisation",
+    "SubOrgMember_one": "Membre de la sous-organisation",
+    "SubOrgMember_many": "Membres de la sous-organisation",
+    "SubOrgMember_other": "Membres de la sous-organisation",
+    "SubOrgAdmin": "Administrateur de la sous-organisation",
+    "SubOrgAdmin_one": "Administrateur de la sous-organisation",
+    "SubOrgAdmin_many": "Administrateurs de la sous-organisation",
+    "SubOrgAdmin_other": "Administrateurs de la sous-organisation",
     "gender": {
         "Course": "m",
         "Level": "m",
@@ -99,6 +107,8 @@
         "Learner": "m",
         "AudienceList": "f",
         "Invite": "f",
-        "Inventory": "m"
+        "Inventory": "m",
+        "SubOrgMember": "m",
+        "SubOrgAdmin": "m"
     }
 }

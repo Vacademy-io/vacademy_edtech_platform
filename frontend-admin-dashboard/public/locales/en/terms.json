@@ -59,6 +59,12 @@
     "Inventory": "Inventory",
     "Inventory_one": "Inventory",
     "Inventory_other": "Inventory",
+    "SubOrgMember": "Sub-Org Member",
+    "SubOrgMember_one": "Sub-Org Member",
+    "SubOrgMember_other": "Sub-Org Members",
+    "SubOrgAdmin": "Sub-Org Admin",
+    "SubOrgAdmin_one": "Sub-Org Admin",
+    "SubOrgAdmin_other": "Sub-Org Admins",
     "gender": {
         "Course": "n",
         "Level": "n",
@@ -79,6 +85,8 @@
         "Learner": "n",
         "AudienceList": "n",
         "Invite": "n",
-        "Inventory": "n"
+        "Inventory": "n",
+        "SubOrgMember": "n",
+        "SubOrgAdmin": "n"
     }
 }
