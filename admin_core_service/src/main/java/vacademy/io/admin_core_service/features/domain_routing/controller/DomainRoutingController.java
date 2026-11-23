@@ -24,13 +24,8 @@ public class DomainRoutingController {
         return response.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    // Short on purpose. This answer is what an admin edits in Settings > White
-    // Label (privacy-policy / terms URLs, signup and auth toggles, branding), and
-    // browsers honour max-age without revalidating, so the old 2h TTL meant a
-    // saved change stayed invisible on the portal for up to two hours. It is two
-    // primary-key lookups, so asking again every few minutes is cheap.
     @GetMapping("/resolve")
-    @ClientCacheable(maxAgeSeconds = 300, scope = CacheScope.PRIVATE)
+    @ClientCacheable(maxAgeSeconds = 7200, scope = CacheScope.PRIVATE)
     public ResponseEntity<DomainRoutingResolveResponse> resolveGet(@RequestParam("domain") String domain,
                                                                    @RequestParam("subdomain") String subdomain,
                                                                    @RequestParam(value = "role", required = false) String role) {
@@ -42,7 +37,7 @@ public class DomainRoutingController {
     // native flavors such as the Vacademy Admin app, which are anchored to a
     // single institute and have no meaningful WebView hostname.
     @GetMapping("/resolve-by-institute")
-    @ClientCacheable(maxAgeSeconds = 300, scope = CacheScope.PRIVATE)
+    @ClientCacheable(maxAgeSeconds = 7200, scope = CacheScope.PRIVATE)
     public ResponseEntity<DomainRoutingResolveResponse> resolveByInstitute(
             @RequestParam("instituteId") String instituteId) {
         Optional<DomainRoutingResolveResponse> response = domainRoutingService.resolveByInstituteId(instituteId);
