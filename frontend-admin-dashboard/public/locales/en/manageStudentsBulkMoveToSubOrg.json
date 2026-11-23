@@ -16,8 +16,8 @@
     "notes": {
         "alreadyThere_one": "1 selected learner is already in {{name}}; nothing changes for them.",
         "alreadyThere_other": "{{count}} selected learners are already in {{name}}; nothing changes for them.",
-        "fromOther_one": "1 selected learner is in another {{term}} and will be moved out of it.",
-        "fromOther_other": "{{count}} selected learners are in another {{term}} and will be moved out of it.",
+        "fromOther_one": "1 selected learner is in another {{term}}. They move only if they did not join through it; otherwise the result shows why.",
+        "fromOther_other": "{{count}} selected learners are in another {{term}}. Those who joined through it are not moved; the result shows why.",
         "keeps": "Each learner keeps the same batch, progress, access dates and payments. They count against this {{term}}'s seats and appear for its admin. {{term}} admins are never moved."
     },
     "running": "Moving… {{done}} of {{total}}",
