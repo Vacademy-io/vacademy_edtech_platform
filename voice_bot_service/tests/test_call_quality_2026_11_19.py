@@ -382,3 +382,18 @@ def test_a_short_answer_to_a_qualifying_question_keeps_interested(caller):
     # One word answering "which board?" is the caller engaging — only a caller who
     # said nothing beyond hello / ok / who is this / busy loses the label.
     assert _interest(caller)["disposition"] == "Interested"
+
+
+@pytest.mark.parametrize("picks", [["3.", "3."], ["20.", "5."], ["pehla wala"], ["तीन"]])
+def test_picking_an_offered_slot_by_number_still_books(picks):
+    # Real bookings (236d14a9, 29efc3ff): the caller chose between two offered
+    # slots with a bare number. Replaying 47 real calls caught the first version
+    # of this guard cancelling both.
+    turns = [_a("Demo chahiye?"), _u("Haan"),
+             _a("Kal Tuesday subah eleven ya dopahar three baje, kya sahi rahega?")]
+    turns += [_u(p) for p in picks]
+    turns.append(_a("Done ji, demo book kar diya hai."))
+    a = {"disposition": "Demo_Booked", "meetingRequested": True,
+         "meetingDatetimeIso": "2026-11-24T15:00:00+05:30"}
+    rpt._drop_unanswered_proposal(a, _Outcome(turns))
+    assert a["disposition"] == "Demo_Booked" and a["meetingRequested"]

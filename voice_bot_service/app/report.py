@@ -674,9 +674,25 @@ _SLOT_ACCEPT_WORDS = frozenset({
 })
 
 
+# Picking one of the offered options. Real bookings answered "eleven or three?" with
+# a bare "3." and "Friday 20 or Saturday 21?" with "20." then "5." (calls 236d14a9,
+# 29efc3ff, 2026-11-19/23): any number, spoken or written, or "the first one".
+_PICK_WORDS = frozenset({
+    "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+    "eleven", "twelve", "first", "second", "pehla", "pehle", "pahla", "doosra", "dusra",
+    "wala", "wali", "wale", "ek", "do", "teen", "char", "paanch", "panch", "chhe", "saat",
+    "aath", "nau", "das", "gyarah", "barah",
+    "एक", "दो", "तीन", "चार", "पांच", "पाँच", "छह", "सात", "आठ", "नौ", "दस", "ग्यारह",
+    "बारह", "पहला", "पहले", "दूसरा", "वाला", "वाली",
+})
+
+
 def _caller_accepts_slot(text: str) -> bool:
     words = [w.strip(_WORD_STRIP) for w in text.casefold().split()]
-    if any(w in _AFFIRMATIVE_WORDS or w in _SLOT_ACCEPT_WORDS for w in words):
+    if any(w in _AFFIRMATIVE_WORDS or w in _SLOT_ACCEPT_WORDS or w in _PICK_WORDS
+           for w in words):
+        return True
+    if any(ch.isdigit() for ch in text):
         return True
     # Naming a time back ("5 baje", "evening better") is engaging with the slot.
     return bool(_TIME_WORD_RE.search(text))
