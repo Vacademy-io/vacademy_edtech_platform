@@ -48,7 +48,7 @@ def _procs() -> int:
 
 def haproxy_cfg(n: int) -> str:
     servers = "\n".join(
-        f"    server p{i} 127.0.0.1:{BASE + i} check inter 5s fall 3 rise 1"
+        f"    server p{i} 127.0.0.1:{BASE + i} check inter 2s fall 2 rise 1"
         for i in range(n))
     # Timeouts: a call is up to ~30 min; the tunnel timeout is what governs an
     # upgraded websocket. No forwardfor: the ingress's X-Forwarded-For passes
@@ -67,6 +67,13 @@ defaults
     timeout tunnel 2h
     timeout http-request 15s
     default-server maxconn 256
+    # A process that has just died refuses connections until the health check
+    # notices (up to ~4 s). Nothing has reached it yet, so retrying elsewhere is
+    # safe -- for /answer and for a /ws upgrade alike: every retry goes to a
+    # different process (redispatch 1), never back to the dead one.
+    retry-on conn-failure empty-response
+    retries 3
+    option redispatch 1
 
 frontend fe
     bind :{PORT}
@@ -82,9 +89,6 @@ backend calls
 backend api
     balance roundrobin
     option httpchk GET {HEALTH}
-    retry-on conn-failure
-    retries 2
-    option redispatch
 {servers}
 """
 
