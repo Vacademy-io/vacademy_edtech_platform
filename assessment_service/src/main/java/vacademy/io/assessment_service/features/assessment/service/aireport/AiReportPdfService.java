@@ -87,7 +87,7 @@ public class AiReportPdfService {
         if (enabled && processed != null && !processed.isBlank()) {
             try {
                 model = withReportOptions(dataService.load(userId, assessmentId, attemptId, instituteId,
-                        objectMapper.readTree(processed), branding(instituteId), detail), assessmentId, profile);
+                        objectMapper.readTree(processed), branding(instituteId), detail), assessmentId, attemptId, profile);
                 core = toPdf(builder.build(model));
             } catch (Exception e) {
                 if (normal == null) throw e;
@@ -119,9 +119,12 @@ public class AiReportPdfService {
      * The profile this render uses (resolved, or chosen for a preview); the assessment's own
      * report_options win over it.
      */
-    private AiReportModel withReportOptions(AiReportModel model, String assessmentId, ReportProfileService.Profile profile) {
+    private AiReportModel withReportOptions(AiReportModel model, String assessmentId, String attemptId,
+                                            ReportProfileService.Profile profile) {
         ReportOptions opts = profileService.reportOptions(assessmentId, profile);
         return model.toBuilder()
+                // This assessment's own student_fields only (never the profile's).
+                .studentDetails(profileService.studentDetails(assessmentId, attemptId))
                 .hideQuestionWise(!opts.showQuestionWise())
                 .hideYourAnswer(!opts.showYourAnswer())
                 .hideCorrectAnswer(!opts.showCorrectAnswer())
@@ -139,7 +142,7 @@ public class AiReportPdfService {
                                 StudentReportOverallDetailDto detail, String processedJson) throws Exception {
         AiReportModel model = dataService.load(userId, assessmentId, attemptId, instituteId,
                 objectMapper.readTree(processedJson), branding(instituteId), detail);
-        return builder.buildWeb(withReportOptions(model, assessmentId, profileService.resolve(assessmentId, instituteId)));
+        return builder.buildWeb(withReportOptions(model, assessmentId, attemptId, profileService.resolve(assessmentId, instituteId)));
     }
 
     /**
@@ -150,7 +153,7 @@ public class AiReportPdfService {
                                          StudentReportOverallDetailDto detail, String processedJson) throws Exception {
         AiReportModel model = dataService.load(userId, assessmentId, attemptId, instituteId,
                 objectMapper.readTree(processedJson), branding(instituteId), detail);
-        return AiReportWebData.from(withReportOptions(model, assessmentId, profileService.resolve(assessmentId, instituteId)), builder);
+        return AiReportWebData.from(withReportOptions(model, assessmentId, attemptId, profileService.resolve(assessmentId, instituteId)), builder);
     }
 
     // The model and profile of the last render on this thread, so notification variables can be

@@ -159,6 +159,13 @@ public class AiReportHtmlBuilderV2 {
         right.append("<div class=\"band-r1\">").append(esc(displayName(m.getStudentName()))).append("</div><div class=\"band-r2\">");
         List<String> bits = new ArrayList<>();
         if (notBlank(m.getEnrollmentNumber())) bits.add("Enrollment no. " + m.getEnrollmentNumber());
+        // Registration answers the assessment chose to print (roll number, college, ...), on the
+        // first page's band only so the running header of later pages stays one line.
+        if (first && m.getStudentDetails() != null) {
+            for (ReportStudentDetail d : m.getStudentDetails()) {
+                if (d != null && notBlank(d.value())) bits.add((notBlank(d.label()) ? d.label() + ": " : "") + d.value());
+            }
+        }
         if (first && m.getAttemptDate() != null) bits.add(date(m.getAttemptDate()));
         if (!first || bits.isEmpty()) bits.add(0, m.getAssessmentName());
         right.append(esc(String.join(" · ", bits))).append("</div>");

@@ -28,6 +28,8 @@ public class AiReportModel {
     private final String assessmentName;
     private final String studentName;
     private final String enrollmentNumber;
+    /** Registration answers the assessment prints under the name (report_options.student_fields); may be null. */
+    private final List<ReportStudentDetail> studentDetails;
     private final Date attemptDate;
 
     // Institute colours (already validated #rrggbb)

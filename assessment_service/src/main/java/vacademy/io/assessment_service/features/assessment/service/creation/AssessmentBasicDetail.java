@@ -70,8 +70,10 @@ public class AssessmentBasicDetail extends IStep {
     private static Object readReportOptions(String stored) {
         if (stored == null || stored.isBlank()) return null;
         try {
+            // The switches (when set) plus student_fields; only student_fields = the
+            // switches follow the institute default.
             return vacademy.io.assessment_service.features.assessment.service.aireport.ReportOptions
-                    .fromJson(new com.fasterxml.jackson.databind.ObjectMapper().readTree(stored)).toJson();
+                    .normalise(new com.fasterxml.jackson.databind.ObjectMapper().readTree(stored));
         } catch (Exception e) {
             return null;
         }

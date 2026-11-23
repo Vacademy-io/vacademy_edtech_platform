@@ -115,12 +115,47 @@ public class ReportProfileService {
                     "SELECT report_options::text FROM assessment WHERE id = ? AND report_options IS NOT NULL",
                     String.class, assessmentId);
             if (!own.isEmpty() && own.get(0) != null) {
-                return ReportOptions.fromJson(objectMapper.readTree(own.get(0)));
+                JsonNode node = objectMapper.readTree(own.get(0));
+                // Only student_fields saved: the switches follow the institute default.
+                if (ReportOptions.followsInstituteDefault(node)) return null;
+                return ReportOptions.fromJson(node);
             }
         } catch (Exception e) {
             log.warn("[report-options] could not read report_options of assessment {}: {}", assessmentId, e.getMessage());
         }
         return null;
+    }
+
+    /**
+     * The registration answers this assessment prints under the student's name
+     * ({@code report_options.student_fields}). Read from this assessment's own row only, never
+     * from the institute profile, so it never spreads to other assessments. Empty when none are
+     * chosen or the student did not fill them. Never throws.
+     */
+    public List<ReportStudentDetail> studentDetails(String assessmentId, String attemptId) {
+        if (assessmentId == null || attemptId == null) return List.of();
+        try {
+            List<String> stored = jdbc.queryForList(
+                    "SELECT report_options::text FROM assessment WHERE id = ? AND report_options IS NOT NULL",
+                    String.class, assessmentId);
+            if (stored.isEmpty() || stored.get(0) == null) return List.of();
+            List<String> wanted = ReportOptions.studentFields(objectMapper.readTree(stored.get(0)));
+            if (wanted.isEmpty()) return List.of();
+            List<ReportStudentDetail.Answer> answers = jdbc.query(
+                    "SELECT cf.field_name, cf.field_key, d.answer"
+                            + " FROM student_attempt sa"
+                            + " JOIN assessment_registration_custom_field_response_data d"
+                            + "   ON d.assessment_registration_id = sa.registration_id"
+                            + " JOIN assessment_custom_fields cf ON cf.id = d.custom_field_id"
+                            + " WHERE sa.id = ? AND cf.assessment_id = ?"
+                            + " ORDER BY cf.field_order",
+                    (rs, i) -> new ReportStudentDetail.Answer(rs.getString(1), rs.getString(2), rs.getString(3)),
+                    attemptId, assessmentId);
+            return ReportStudentDetail.match(wanted, answers);
+        } catch (Exception e) {
+            log.warn("[report-options] could not read the student details of attempt {}: {}", attemptId, e.getMessage());
+            return List.of();
+        }
     }
 
     /** The profile that applies to this assessment, or null for "no extra pages". Never throws. */

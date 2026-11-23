@@ -39,6 +39,33 @@ class AssessmentBasicDetailsManagerReportOptionsTest {
     }
 
     @Test
+    void studentFieldsAreStoredOnThisAssessmentOnly() throws Exception {
+        Assessment a = new Assessment();
+        BasicAssessmentDetailsDTO dto = new BasicAssessmentDetailsDTO();
+        // Institute default for the switches, plus fields: only the fields are stored.
+        dto.setReportOptions(OM.readTree("{\"student_fields\":[\"Student Roll Number\",\" College \"]}"));
+        AssessmentBasicDetailsManager.applyReportOptions(a, dto);
+        assertThat(OM.readTree(a.getReportOptions()))
+                .isEqualTo(OM.readTree("{\"student_fields\":[\"Student Roll Number\",\"College\"]}"));
+
+        Assessment other = new Assessment();
+        assertThat(other.getReportOptions()).isNull();
+
+        // Clearing the list with the switches on the institute default goes back to null.
+        dto.setReportOptions(OM.readTree("{\"student_fields\":[]}"));
+        AssessmentBasicDetailsManager.applyReportOptions(a, dto);
+        assertThat(a.getReportOptions()).isNull();
+    }
+
+    @Test
+    void aBadFieldListIsABadRequest() throws Exception {
+        BasicAssessmentDetailsDTO dto = new BasicAssessmentDetailsDTO();
+        dto.setReportOptions(OM.readTree("{\"student_fields\":\"College\"}"));
+        assertThatThrownBy(() -> AssessmentBasicDetailsManager.applyReportOptions(new Assessment(), dto))
+                .isInstanceOf(VacademyException.class);
+    }
+
+    @Test
     void anInvalidValueIsABadRequest() throws Exception {
         BasicAssessmentDetailsDTO dto = new BasicAssessmentDetailsDTO();
         dto.setReportOptions(OM.readTree("{\"show_correct_answer\":\"hide\"}"));

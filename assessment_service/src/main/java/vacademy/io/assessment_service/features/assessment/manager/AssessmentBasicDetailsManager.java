@@ -227,7 +227,8 @@ public class AssessmentBasicDetailsManager {
     /**
      * Report options (V69). Absent (Java null) leaves the stored value alone; an
      * explicit JSON null clears it back to the institute default. Anything but an
-     * object of booleans is a 400, raised before anything is saved.
+     * object of booleans (plus the optional student_fields list) is a 400, raised
+     * before anything is saved. Stored on this assessment's row only.
      */
     static void applyReportOptions(Assessment assessment, BasicAssessmentDetailsDTO dto) {
         com.fasterxml.jackson.databind.JsonNode options = dto.getReportOptions();
@@ -241,9 +242,11 @@ public class AssessmentBasicDetailsManager {
         } catch (IllegalArgumentException e) {
             throw new VacademyException(org.springframework.http.HttpStatus.BAD_REQUEST, e.getMessage());
         }
-        // Stored normalised (all four keys) so a reader never has to guess a default.
-        assessment.setReportOptions(vacademy.io.assessment_service.features.assessment.service.aireport.ReportOptions
-                .fromJson(options).toJson().toString());
+        // Stored normalised (all four keys, or none when only student_fields is set and the
+        // switches follow the institute default) so a reader never has to guess a default.
+        com.fasterxml.jackson.databind.node.ObjectNode normalised =
+                vacademy.io.assessment_service.features.assessment.service.aireport.ReportOptions.normalise(options);
+        assessment.setReportOptions(normalised == null ? null : normalised.toString());
     }
 
     /** Result type every API exam keeps (spec 3.2): AI marks are a draft until released. */
