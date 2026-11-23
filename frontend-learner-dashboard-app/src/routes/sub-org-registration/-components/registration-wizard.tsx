@@ -2,7 +2,6 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Preferences } from "@capacitor/preferences";
-import { upsertLearnerSettings } from "@/services/learner-settings-cache";
 import { Check } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 import { applyTabBranding } from "@/utils/branding";
@@ -175,9 +174,8 @@ const RegistrationWizard = ({
           value: JSON.stringify(mappedDetails),
         });
 
-        // Only the branding this page knows. The policy URLs and auth flags in
-        // this record come from domain routing and must survive this write.
-        await upsertLearnerSettings(instituteId, {
+        const learnerKey = `LEARNER_${instituteId}`;
+        const learnerSettings = {
           tabText:
             instituteData?.tabText ?? instituteData?.institute_name ?? null,
           tabIconFileId:
@@ -186,6 +184,17 @@ const RegistrationWizard = ({
             null,
           fontFamily: instituteData?.fontFamily ?? null,
           theme: instituteData?.institute_theme_code ?? null,
+          privacyPolicyUrl: null,
+          termsAndConditionUrl: null,
+          allowSignup: null,
+          allowGoogleAuth: null,
+          allowGithubAuth: null,
+          allowEmailOtpAuth: null,
+          allowUsernamePasswordAuth: null,
+        };
+        await Preferences.set({
+          key: learnerKey,
+          value: JSON.stringify(learnerSettings),
         });
 
         await applyTabBranding(document.title);

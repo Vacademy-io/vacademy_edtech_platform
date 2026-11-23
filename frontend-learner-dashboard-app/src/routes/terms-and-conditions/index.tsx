@@ -2,11 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { FileText, ArrowLeft, Users, CreditCard, WarningCircle, BookOpen } from "@phosphor-icons/react";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Preferences } from "@capacitor/preferences";
-import { DashboardLoader } from "@/components/core/dashboard-loader";
-import { useDomainRouting } from "@/hooks/use-domain-routing";
 
 export const Route = createFileRoute("/terms-and-conditions/")({
   component: TermsAndConditions,
@@ -15,44 +13,24 @@ export const Route = createFileRoute("/terms-and-conditions/")({
 function TermsAndConditions() {
   const { t } = useTranslation("miscRoutesB");
   const navigate = useNavigate();
-  const domainRouting = useDomainRouting();
-
-  // Redirect to institute-specific terms if configured.
-  //
-  // The URL is stored by domain routing, which this page never asked for: on a
-  // cold visit nothing had written it yet, so the built-in Vacademy terms showed
-  // for an institute that had set its own. Resolve the host first, then look the
-  // URL up; until that is settled show a loader rather than the built-in text.
-  const [termsLookupDone, setTermsLookupDone] = useState(false);
-  const isDomainRoutingLoading = domainRouting.isLoading;
+  
+  // Redirect to institute-specific terms if configured
   useEffect(() => {
-    if (isDomainRoutingLoading) return;
-    let cancelled = false;
     (async () => {
-      let redirecting = false;
       try {
         const instituteId = (await Preferences.get({ key: "InstituteId" })).value || "";
-        if (instituteId) {
-          const stored = await Preferences.get({ key: `LEARNER_${instituteId}` });
-          if (stored?.value) {
-            const parsed = JSON.parse(stored.value);
-            if (parsed?.termsAndConditionUrl) {
-              redirecting = true;
-              window.location.assign(parsed.termsAndConditionUrl);
-            }
-          }
+        if (!instituteId) return;
+        const stored = await Preferences.get({ key: `LEARNER_${instituteId}` });
+        if (!stored?.value) return;
+        const parsed = JSON.parse(stored.value);
+        if (parsed?.termsAndConditionUrl) {
+          window.location.assign(parsed.termsAndConditionUrl);
         }
       } catch {
         // Ignore and show internal terms page
       }
-      if (!cancelled && !redirecting) setTermsLookupDone(true);
     })();
-    return () => {
-      cancelled = true;
-    };
-  }, [isDomainRoutingLoading]);
-
-  if (!termsLookupDone) return <DashboardLoader />;
+  }, []);
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
