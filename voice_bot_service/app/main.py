@@ -33,13 +33,16 @@ from . import admin_core
 from . import vendor_failures
 from .ambience import build_ambience_mixer
 from .bot import CallOutcome, run_bot
-from . import memory, ttscache, ttswarm
+from . import memory, procs, ttscache, ttswarm
 from .config import get_settings
 from .providers import rumik_pace_description
 from .report import build_and_post_report, report_spool_sweeper
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s %(levelname)s %(name)s %(message)s")
+# Pipecat's loguru output: INFO plus a short DEBUG allowlist (app/pipecat_logs.py).
+from . import pipecat_logs  # noqa: E402
+pipecat_logs.configure()
 from .sarvam_v4_voices import SARVAM_V4_MODEL  # noqa: E402
 
 # Before any HTTP session exists: every later aiohttp/httpx client is covered.
@@ -58,8 +61,23 @@ _active_calls = 0
 _inflight_handshakes = 0
 
 
+def _pod_capacity() -> int:
+    """Calls the whole pod takes: MAX_CONCURRENT_CALLS is per process."""
+    return get_settings().max_concurrent_calls * procs.count()
+
+
+def _pod_active() -> int:
+    return procs.pod_totals(_active_calls, _inflight_handshakes)[0]
+
+
+def _publish_counts() -> None:
+    """Share this process's counts with the pod's other processes (app/procs.py).
+    A no-op in a single-process pod."""
+    procs.publish(_active_calls, _inflight_handshakes)
+
+
 def _capacity_left() -> bool:
-    return _active_calls < get_settings().max_concurrent_calls
+    return _pod_active() < _pod_capacity()
 
 
 def _warm_llm() -> None:
@@ -84,6 +102,13 @@ async def lifespan(app: FastAPI):
             logger.info("lifespan: LLM provider pre-warmed")
         except Exception:
             logger.exception("lifespan: LLM pre-warm failed (non-fatal)")
+        try:
+            # Silero + Smart Turn loaded once here, shared by every call
+            # (app/audio_models.py), so no call pays the load at answer time.
+            from . import audio_models
+            await asyncio.to_thread(audio_models.warm)
+        except Exception:
+            logger.exception("lifespan: audio model pre-load failed (non-fatal)")
         # The heavy imports are in: freeze them out of every future collection
         # (see app/memory.py) — but only while no call is live.
         if _active_calls == 0:
@@ -94,8 +119,12 @@ async def lifespan(app: FastAPI):
 
     # Background on purpose: pre-warm and the spool sweeper must not delay
     # startup (the probe window) or block /answer for live traffic.
+    _publish_counts()   # overwrite whatever a previous process in this slot left
     app.state.warm_task = asyncio.create_task(_warm())
-    app.state.spool_task = asyncio.create_task(report_spool_sweeper())
+    # Pod singletons (app/procs.py): with several processes only process 0
+    # sweeps the report spool, so a spooled report is never posted twice.
+    leader = procs.is_leader()
+    app.state.spool_task = asyncio.create_task(report_spool_sweeper()) if leader else None
 
     async def _open_speech_cache():
         # Rebuilds the RAM index from ONE SQL query. Off the startup path on
@@ -107,17 +136,19 @@ async def lifespan(app: FastAPI):
             logger.exception("lifespan: speech cache open failed (non-fatal)")
 
     app.state.speech_cache_task = asyncio.create_task(_open_speech_cache())
-    app.state.tts_sweeper_task = asyncio.create_task(ttswarm.sweeper())
+    app.state.tts_sweeper_task = asyncio.create_task(ttswarm.sweeper()) if leader else None
     # Mirrors the ledger into Postgres so the analytics screens are plain SQL
     # rather than a live dependency on this box's disk, and picks up any flush
     # queued the other way. Both use the auth this process already has.
-    app.state.tts_reporter_task = asyncio.create_task(ttswarm.reporter())
+    app.state.tts_reporter_task = asyncio.create_task(ttswarm.reporter()) if leader else None
     try:
         yield
     finally:
         for t in (app.state.warm_task, app.state.spool_task,
                   app.state.speech_cache_task, app.state.tts_sweeper_task,
                   app.state.tts_reporter_task):
+            if t is None:
+                continue
             t.cancel()
             with contextlib.suppress(asyncio.CancelledError, Exception):
                 await t
@@ -137,8 +168,10 @@ async def health():
     s = get_settings()
     return {
         "status": "ok",
-        "activeCalls": _active_calls,
-        "maxConcurrentCalls": s.max_concurrent_calls,
+        # Pod-wide (every process): the preStop drain waits on this number.
+        "activeCalls": _pod_active(),
+        "maxConcurrentCalls": _pod_capacity(),
+        "processes": procs.count(),
         "ws": s.wss_url("corr=<corr>"),
         # Per Sarvam STT key: rest left after a refusal. Numbers only, no key text.
         "sarvamSttKeys": _sarvam_key_status(),
@@ -952,6 +985,12 @@ def _consume_ws_token(corr: str, token: str, now: float | None = None) -> bool:
     if not get_settings().internal_client_secret:
         return True  # dev: verify already logged + returned True; nothing to spend
     key = f"{corr}|{token}"
+    if procs.multi():
+        # Several processes: the spend must be visible to all of them.
+        if not procs.spend_token_shared(key, _WS_TOKEN_TTL_SECS):
+            logger.warning("ws-token: replay rejected corr=%s", corr)
+            return False
+        return True
     if key in _spent_ws_tokens:
         logger.warning("ws-token: replay rejected corr=%s", corr)
         return False
@@ -1035,7 +1074,7 @@ async def answer(
     # /plivo/ai-next (human handoff or hangup) exactly as a finished call would.
     if not _capacity_left():
         logger.warning("answer: at capacity (%d/%d) — serving busy fallback corr=%s",
-                       _active_calls, s.max_concurrent_calls, corr)
+                       _pod_active(), _pod_capacity(), corr)
         busy_redirect = f'<Redirect method="POST">{escape(nxt)}</Redirect>' if nxt else "<Hangup/>"
         busy_xml = (
             '<?xml version="1.0" encoding="UTF-8"?><Response>'
@@ -1161,6 +1200,7 @@ async def ws_endpoint(websocket: WebSocket):
         await websocket.close()
         return
     _inflight_handshakes += 1
+    _publish_counts()
 
     call_uuid = None
     _inflight_held = True
@@ -1188,6 +1228,7 @@ async def ws_endpoint(websocket: WebSocket):
             return
         _active_calls += 1
         _active_slot = True
+        _publish_counts()
 
         stream_id = (call_data or {}).get("stream_id")
         call_uuid = (call_data or {}).get("call_id")
@@ -1275,6 +1316,8 @@ async def ws_endpoint(websocket: WebSocket):
             _inflight_handshakes -= 1
         if _active_slot:
             _active_calls -= 1
+        _publish_counts()
+        if _active_slot:
             # Free this call now rather than at the interpreter's next full
             # collection (app/memory.py). Scheduled, not inline: until this
             # handler returns, its own locals still reference the pipeline — and
