@@ -300,4 +300,204 @@ public class ReportProfileService {
             }
         }
     }
+
+    // ── Step 1 "Report pages": one assessment's pages, edited from the assessment wizard ──
+
+    public static final String MODE_DEFAULT = "DEFAULT";
+    public static final String MODE_NONE = "NONE";
+    public static final String MODE_CUSTOM = "CUSTOM";
+    static final int MAX_PAGES = 30;
+    static final int MAX_TEMPLATE_HTML = 300_000;
+    static final int MAX_ASSETS = 12;
+    static final int MAX_CONFIG_CHARS = 12_000_000;
+    private static final java.util.regex.Pattern ASSET_KEY = java.util.regex.Pattern.compile("[a-z0-9_]{1,40}");
+
+    /**
+     * What Step 1 shows for an assessment (null assessmentId = a test not saved yet):
+     * mode DEFAULT (institute default pages, if any), NONE (no extra pages) or CUSTOM (its own
+     * linked pages, with the full config), how many other tests share those pages, the
+     * institute default's name, and an attempt to preview with. Never throws.
+     */
+    public Map<String, Object> forAssessment(String assessmentId, String instituteId) {
+        Map<String, Object> out = new java.util.LinkedHashMap<>();
+        String mode = MODE_DEFAULT;
+        Profile linked = null;
+        int sharedWith = 0;
+        try {
+            if (assessmentId != null) {
+                List<String> link = jdbc.queryForList(
+                        "SELECT profile_id FROM assessment_report_profile_link WHERE assessment_id = ?", String.class, assessmentId);
+                if (!link.isEmpty()) {
+                    linked = NONE.equals(link.get(0)) ? null : get(link.get(0), instituteId);
+                    // A link to a deleted profile gives no pages today, the same as NONE.
+                    mode = linked != null ? MODE_CUSTOM : MODE_NONE;
+                    if (linked != null) {
+                        Integer others = jdbc.queryForObject(
+                                "SELECT COUNT(*) FROM assessment_report_profile_link WHERE profile_id = ? AND assessment_id <> ?",
+                                Integer.class, linked.id(), assessmentId);
+                        sharedWith = others == null ? 0 : others;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("[report-profile] could not read the pages of assessment {}: {}", assessmentId, e.getMessage());
+        }
+        out.put("mode", mode);
+        if (linked != null) {
+            Map<String, Object> p = new java.util.LinkedHashMap<>();
+            p.put("id", linked.id());
+            p.put("name", linked.name());
+            p.put("institute_default", linked.instituteDefault());
+            p.put("config", linked.config());
+            out.put("profile", p);
+        } else {
+            out.put("profile", null);
+        }
+        out.put("shared_with", sharedWith);
+        Profile def = instituteDefault(instituteId);
+        out.put("institute_default", def == null ? null : Map.of("id", def.id(), "name", def.name(),
+                "pages", def.before().size() + def.after().size()));
+        out.put("sample_attempt_id", assessmentId == null ? null : sampleAttemptId(assessmentId));
+        return out;
+    }
+
+    /** The institute's default profile, or null. Never throws. */
+    public Profile instituteDefault(String instituteId) {
+        try {
+            List<Map<String, Object>> rows = jdbc.queryForList("""
+                    SELECT id FROM assessment_report_profile
+                    WHERE institute_id = ? AND is_institute_default AND status = 'ACTIVE'
+                    ORDER BY updated_at DESC LIMIT 1
+                    """, instituteId);
+            return rows.isEmpty() ? null : get((String) rows.get(0).get("id"), instituteId);
+        } catch (Exception e) {
+            log.warn("[report-profile] could not read the default profile of institute {}: {}", instituteId, e.getMessage());
+            return null;
+        }
+    }
+
+    /** The newest submitted attempt (else the newest attempt) of an assessment, to preview with. */
+    private String sampleAttemptId(String assessmentId) {
+        try {
+            List<String> ids = jdbc.queryForList("""
+                    SELECT sa.id FROM student_attempt sa
+                    JOIN assessment_user_registration r ON r.id = sa.registration_id
+                    WHERE r.assessment_id = ?
+                    ORDER BY (sa.submit_time IS NULL), sa.submit_time DESC, sa.created_at DESC
+                    LIMIT 1
+                    """, String.class, assessmentId);
+            return ids.isEmpty() ? null : ids.get(0);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Refuses a malformed Step 1 report_pages value before anything is saved:
+     * {"mode": "DEFAULT"|"NONE"|"CUSTOM", "profile_id": optional, "config": {...} for CUSTOM}.
+     */
+    public static void validatePagesRequest(JsonNode request) {
+        if (request == null || !request.isObject()) throw new IllegalArgumentException("report_pages must be a JSON object");
+        String mode = request.path("mode").asText("");
+        if (!MODE_DEFAULT.equals(mode) && !MODE_NONE.equals(mode) && !MODE_CUSTOM.equals(mode)) {
+            throw new IllegalArgumentException("report_pages.mode must be DEFAULT, NONE or CUSTOM");
+        }
+        if (!MODE_CUSTOM.equals(mode)) return;
+        validateEditorConfig(request.get("config"));
+    }
+
+    /** The checks behind {@link #validatePagesRequest} for a config built in the wizard. */
+    static void validateEditorConfig(JsonNode config) {
+        validate(config);
+        if (config.toString().length() > MAX_CONFIG_CHARS) throw new IllegalArgumentException("Report pages are too large");
+        int pages = 0;
+        for (String side : new String[]{"before", "after"}) {
+            for (JsonNode p : iterate(config.path(side))) {
+                pages++;
+                if (p.path("name").asText("").length() > 200) throw new IllegalArgumentException("A page name is too long");
+                if ("TEMPLATE".equals(p.path("type").asText()) && p.path("html").asText("").length() > MAX_TEMPLATE_HTML) {
+                    throw new IllegalArgumentException("A written page is too long");
+                }
+            }
+        }
+        if (pages > MAX_PAGES) throw new IllegalArgumentException("At most " + MAX_PAGES + " extra pages");
+        JsonNode assets = config.path("assets");
+        if (!assets.isMissingNode() && !assets.isNull()) {
+            if (!assets.isObject()) throw new IllegalArgumentException("assets must be an object");
+            if (assets.size() > MAX_ASSETS) throw new IllegalArgumentException("At most " + MAX_ASSETS + " images for written pages");
+            assets.fields().forEachRemaining(e -> {
+                if (!ASSET_KEY.matcher(e.getKey()).matches()) throw new IllegalArgumentException("Bad image name: " + e.getKey());
+                if (!e.getValue().asText("").startsWith("data:image/")) throw new IllegalArgumentException("Image " + e.getKey() + " must be an image");
+            });
+        }
+        String qr = config.path("qr_url").asText("");
+        if (!qr.isBlank() && (qr.length() > 500 || !(qr.startsWith("https://") || qr.startsWith("http://")))) {
+            throw new IllegalArgumentException("QR code link must be a web address");
+        }
+        if (config.path("result_date").asText("").length() > 80) throw new IllegalArgumentException("Result date is too long");
+        JsonNode vars = config.path("variables");
+        if (!vars.isMissingNode() && !vars.isNull() && !vars.isObject()) throw new IllegalArgumentException("variables must be an object");
+    }
+
+    private static Iterable<JsonNode> iterate(JsonNode arr) {
+        return arr != null && arr.isArray() ? arr : List.of();
+    }
+
+    /**
+     * Saves an assessment's Step 1 report pages. DEFAULT drops its link (the institute default
+     * applies), NONE links it to no pages, CUSTOM saves the config as this assessment's own
+     * profile. The profile it started from is updated in place only when it belongs to this
+     * assessment alone; pages shared with other tests, or the institute default, are copied
+     * first, so saving here never changes another test's report. Returns the linked profile id
+     * (null for DEFAULT).
+     */
+    @Transactional
+    public String savePagesForAssessment(String instituteId, String assessmentId, String assessmentName, JsonNode request) {
+        validatePagesRequest(request);
+        String mode = request.path("mode").asText();
+        if (MODE_DEFAULT.equals(mode)) {
+            link(instituteId, List.of(assessmentId), null);
+            return null;
+        }
+        if (MODE_NONE.equals(mode)) {
+            link(instituteId, List.of(assessmentId), NONE);
+            return NONE;
+        }
+        String startedFrom = request.path("profile_id").asText("");
+        String target = !startedFrom.isBlank() && ownedOnlyBy(startedFrom, assessmentId, instituteId) ? startedFrom : null;
+        String name = target != null ? get(target, instituteId).name() : pagesProfileName(assessmentName);
+        String id = save(instituteId, target, name, request.get("config"), false);
+        link(instituteId, List.of(assessmentId), id);
+        return id;
+    }
+
+    /** True when the profile is this institute's, not its default, and linked to this assessment only. */
+    private boolean ownedOnlyBy(String profileId, String assessmentId, String instituteId) {
+        Profile p = get(profileId, instituteId);
+        if (p == null || p.instituteDefault()) return false;
+        Map<String, Object> counts = jdbc.queryForMap("""
+                SELECT COUNT(*) FILTER (WHERE assessment_id = ?) AS mine,
+                       COUNT(*) FILTER (WHERE assessment_id <> ?) AS others
+                FROM assessment_report_profile_link WHERE profile_id = ?
+                """, assessmentId, assessmentId, profileId);
+        return ((Number) counts.get("mine")).intValue() == 1 && ((Number) counts.get("others")).intValue() == 0;
+    }
+
+    static String pagesProfileName(String assessmentName) {
+        String base = assessmentName == null || assessmentName.isBlank() ? "Assessment" : assessmentName.trim();
+        if (base.length() > 200) base = base.substring(0, 200);
+        return base + " - report pages";
+    }
+
+    /**
+     * The profile a Step 1 preview renders with, built from the unsaved request: the institute
+     * default (DEFAULT), none (NONE) or the edited config (CUSTOM, never saved).
+     */
+    public Profile previewProfile(String instituteId, JsonNode request) {
+        validatePagesRequest(request);
+        String mode = request.path("mode").asText();
+        if (MODE_DEFAULT.equals(mode)) return instituteDefault(instituteId);
+        if (MODE_NONE.equals(mode)) return null;
+        return new Profile(null, instituteId, "Preview", request.get("config"), false);
+    }
 }

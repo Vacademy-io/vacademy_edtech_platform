@@ -104,7 +104,11 @@ public class AiReportPdfService {
         if (!wrap) return core;
         try {
             if (model == null) {
-                model = dataService.load(userId, assessmentId, attemptId, instituteId, null, branding(instituteId), detail);
+                model = dataService.load(userId, assessmentId, attemptId, instituteId, null, branding(instituteId), detail)
+                        .toBuilder()
+                        // Template pages can print the chosen registration answers ({{student_details}}).
+                        .studentDetails(profileService.studentDetails(assessmentId, attemptId))
+                        .build();
                 lastModel.set(model);
             }
             return composer.compose(profile, model, core);
