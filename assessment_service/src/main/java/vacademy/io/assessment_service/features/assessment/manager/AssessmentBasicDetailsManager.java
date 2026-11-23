@@ -58,6 +58,9 @@ public class AssessmentBasicDetailsManager {
     @Autowired
     vacademy.io.assessment_service.features.exam_interface.service.ExamInterfaceService examInterfaceService;
 
+    @Autowired(required = false)
+    vacademy.io.assessment_service.features.assessment.service.aireport.ReportProfileService reportProfileService;
+
     public ResponseEntity<AssessmentSaveResponseDto> saveBasicAssessmentDetails(CustomUserDetails user, BasicAssessmentDetailsDTO basicAssessmentDetailsDTO, String assessmentId, String instituteId, String type) {
 
         if (!StringUtils.hasText(assessmentId))
@@ -74,6 +77,7 @@ public class AssessmentBasicDetailsManager {
         // First, so an invalid value is refused before any other field is touched.
         applyExamInterface(assessment, basicAssessmentDetailsDTO);
         applyReportOptions(assessment, basicAssessmentDetailsDTO);
+        validateReportPages(basicAssessmentDetailsDTO);
 
         Optional.ofNullable(basicAssessmentDetailsDTO.getAssessmentPreviewTime()).ifPresent(assessment::setPreviewTime);
         Optional.ofNullable(basicAssessmentDetailsDTO.getSwitchSections()).ifPresent(assessment::setCanSwitchSection);
@@ -130,6 +134,7 @@ public class AssessmentBasicDetailsManager {
         if (assessmentInstituteMapping != null) {
             assessmentInstituteMappingRepository.save(assessmentInstituteMapping);
         }
+        saveReportPages(assessment, instituteId, basicAssessmentDetailsDTO);
         return ResponseEntity.ok(new AssessmentSaveResponseDto(assessment.getId(), AssessmentStatus.DRAFT.name()));
     }
 
@@ -160,6 +165,7 @@ public class AssessmentBasicDetailsManager {
         // First, so an invalid value is refused before anything is created.
         applyExamInterface(assessment, basicAssessmentDetailsDTO);
         applyReportOptions(assessment, basicAssessmentDetailsDTO);
+        validateReportPages(basicAssessmentDetailsDTO);
         if (source != null) {
             assessment.setSource(source);
             assessment.setSourceId(sourceId);
@@ -210,6 +216,9 @@ public class AssessmentBasicDetailsManager {
         assessmentWorkflowEventPublisher.publishAssessmentCreated(assessment, instituteId,
                 user != null ? user.getUserId() : null);
 
+        // Last, after the create event: a failure here must not leave a test without it.
+        saveReportPages(assessment, instituteId, basicAssessmentDetailsDTO);
+
         return ResponseEntity.ok(new AssessmentSaveResponseDto(assessment.getId(), AssessmentStatus.DRAFT.name()));
     }
 
@@ -227,7 +236,8 @@ public class AssessmentBasicDetailsManager {
     /**
      * Report options (V69). Absent (Java null) leaves the stored value alone; an
      * explicit JSON null clears it back to the institute default. Anything but an
-     * object of booleans is a 400, raised before anything is saved.
+     * object of booleans (plus the optional student_fields list) is a 400, raised
+     * before anything is saved. Stored on this assessment's row only.
      */
     static void applyReportOptions(Assessment assessment, BasicAssessmentDetailsDTO dto) {
         com.fasterxml.jackson.databind.JsonNode options = dto.getReportOptions();
@@ -241,9 +251,54 @@ public class AssessmentBasicDetailsManager {
         } catch (IllegalArgumentException e) {
             throw new VacademyException(org.springframework.http.HttpStatus.BAD_REQUEST, e.getMessage());
         }
-        // Stored normalised (all four keys) so a reader never has to guess a default.
-        assessment.setReportOptions(vacademy.io.assessment_service.features.assessment.service.aireport.ReportOptions
-                .fromJson(options).toJson().toString());
+        // Stored normalised (all four keys, or none when only student_fields is set and the
+        // switches follow the institute default) so a reader never has to guess a default.
+        com.fasterxml.jackson.databind.node.ObjectNode normalised =
+                vacademy.io.assessment_service.features.assessment.service.aireport.ReportOptions.normalise(options);
+        assessment.setReportOptions(normalised == null ? null : normalised.toString());
+    }
+
+    /** Report pages (Step 1, optional): a malformed value is a 400 raised before anything is saved. */
+    static void validateReportPages(BasicAssessmentDetailsDTO dto) {
+        com.fasterxml.jackson.databind.JsonNode pages = dto.getReportPages();
+        if (pages == null || pages.isNull()) return;
+        try {
+            vacademy.io.assessment_service.features.assessment.service.aireport.ReportProfileService.validatePagesRequest(pages);
+        } catch (IllegalArgumentException e) {
+            throw new VacademyException(org.springframework.http.HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+    }
+
+    /**
+     * Saves the Step 1 report pages as this assessment's own report profile (shared pages are
+     * copied, never edited in place; see ReportProfileService.savePagesForAssessment). Then
+     * swaps the request's page data for a summary, because the controller writes the request
+     * to the audit log and uploaded pages can be megabytes.
+     */
+    private void saveReportPages(Assessment assessment, String instituteId, BasicAssessmentDetailsDTO dto) {
+        com.fasterxml.jackson.databind.JsonNode pages = dto.getReportPages();
+        if (pages == null || pages.isNull() || reportProfileService == null) return;
+        if (instituteId == null || instituteId.isBlank()) {
+            throw new VacademyException(org.springframework.http.HttpStatus.BAD_REQUEST, "instituteId is required to save report pages");
+        }
+        String profileId;
+        try {
+            profileId = reportProfileService.savePagesForAssessment(instituteId, assessment.getId(), assessment.getName(), pages);
+        } catch (IllegalArgumentException e) {
+            throw new VacademyException(org.springframework.http.HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+        dto.setReportPages(reportPagesAuditSummary(pages, profileId));
+    }
+
+    static com.fasterxml.jackson.databind.node.ObjectNode reportPagesAuditSummary(com.fasterxml.jackson.databind.JsonNode pages,
+                                                                                  String profileId) {
+        com.fasterxml.jackson.databind.node.ObjectNode summary =
+                com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode();
+        summary.put("mode", pages.path("mode").asText());
+        if (profileId != null) summary.put("profile_id", profileId);
+        summary.put("pages_before", pages.path("config").path("before").size());
+        summary.put("pages_after", pages.path("config").path("after").size());
+        return summary;
     }
 
     /** Result type every API exam keeps (spec 3.2): AI marks are a draft until released. */

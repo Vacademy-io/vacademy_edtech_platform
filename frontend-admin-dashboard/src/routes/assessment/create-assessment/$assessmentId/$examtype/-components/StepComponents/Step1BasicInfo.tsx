@@ -124,6 +124,16 @@ const SectionCard = ({
     </Card>
 );
 
+/** This test's saved registration form fields (Step 3), in form order, for the report picker. */
+const registrationFormFieldNames = (assessmentDetails: any[]): string[] => {
+    const fields: { field_name?: string; field_order?: number; status?: string }[] =
+        assessmentDetails?.[2]?.saved_data?.registration_form_fields ?? [];
+    return [...fields]
+        .filter((f) => f?.field_name && f.status !== 'DELETED')
+        .sort((a, b) => (a.field_order ?? 0) - (b.field_order ?? 0))
+        .map((f) => f.field_name as string);
+};
+
 // Helper component for navigation header
 const NavigationHeader = ({ examType, isUpdate = false }: { examType: string; isUpdate?: boolean }) => {
     const { t } = useTranslation('assessmentStep1BasicInfo');
@@ -613,7 +623,7 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
     const assessmentId = params.assessmentId;
     const { setNavHeading } = useNavHeadingStore();
     const storeDataStep1 = useBasicInfoStore((state) => state);
-    const { setSavedAssessmentId } = useSavedAssessmentStore();
+    const { setSavedAssessmentId, savedAssessmentId } = useSavedAssessmentStore();
     const { data: instituteDetails } = useSuspenseQuery(useInstituteQuery());
 
     const { SubjectFilterData } = useFilterDataForAssesment(instituteDetails);
@@ -740,6 +750,9 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
             } else {
                 setSavedAssessmentId(data.assessment_id);
                 syncStep1DataWithStore(form);
+                // The report pages are saved now: reload them from the server (with their real
+                // id), so saving Step 1 again updates them instead of creating another copy.
+                form.setValue('reportPages', undefined);
                 // Remember the draft, so saving step 1 again updates it (see onSubmit).
                 useBasicInfoStore.getState().setBasicInfo({
                     savedDraft: { assessmentId: data.assessment_id, examType },
@@ -1353,7 +1366,16 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                     )}
                     {/* What the student's report shows per question. Surveys have no marked report. */}
                     {showsResultReleaseSettings(examType) && (
-                        <ReportOptionsSettingsCard control={form.control} />
+                        <ReportOptionsSettingsCard
+                            control={form.control}
+                            instituteId={instituteDetails?.id}
+                            assessmentId={
+                                assessmentId && assessmentId !== 'defaultId'
+                                    ? assessmentId
+                                    : savedAssessmentId || null
+                            }
+                            formFieldNames={registrationFormFieldNames(assessmentDetails)}
+                        />
                     )}
 
                     <div className="flex flex-col gap-4" id="attempt-settings">

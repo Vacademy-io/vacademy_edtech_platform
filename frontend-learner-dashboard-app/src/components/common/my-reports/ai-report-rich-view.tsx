@@ -176,6 +176,8 @@ export function AiReportRichView({ assessmentId, assessmentName, attemptId, comp
   const subtitle = [
     data.student_name,
     data.enrollment_number ? t("aiReportDetails.rich.enrollment", { value: data.enrollment_number }) : null,
+    // Same details the PDF prints, chosen per assessment in its report settings.
+    ...(data.student_details ?? []).map((d) => (d?.value ? (d.label ? `${d.label}: ${d.value}` : d.value) : null)),
     data.attempt_date ? new Date(data.attempt_date).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : null,
   ].filter(Boolean).join(" · ");
 

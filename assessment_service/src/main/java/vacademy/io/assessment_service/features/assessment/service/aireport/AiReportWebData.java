@@ -23,7 +23,8 @@ import java.util.List;
  */
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record AiReportWebData(
-        String instituteName, String assessmentName, String studentName, String enrollmentNumber, Long attemptDate,
+        String instituteName, String assessmentName, String studentName, String enrollmentNumber,
+        List<ReportStudentDetail> studentDetails, Long attemptDate,
         String headline, String subline,
         double score, double maxScore, Long timeTakenSeconds, Integer durationLimitMinutes,
         boolean hasClass, Integer rank, Integer participants, Double percentile, Double classAverage,
@@ -65,6 +66,7 @@ public record AiReportWebData(
         AiReportModel.Potential pot = m.getPotential();
         return new AiReportWebData(
                 m.getInstituteName(), m.getAssessmentName(), m.getStudentName(), m.getEnrollmentNumber(),
+                m.getStudentDetails() == null ? List.of() : m.getStudentDetails(),
                 m.getAttemptDate() == null ? null : m.getAttemptDate().getTime(),
                 builder.heroHeadline(m), builder.heroSubline(m),
                 m.getScore(), m.getMaxScore(), m.getTimeTakenSeconds(), m.getDurationLimitMinutes(),

@@ -151,6 +151,10 @@ public class ReportPdfRenderService {
                 .studentName(studentName)
                 .registrationUsername(registration != null ? registration.getUsername() : null)
                 .userEmail(registration != null ? registration.getUserEmail() : null)
+                // Only when this assessment chose fields (report_options.student_fields).
+                .studentDetails(reportProfileService != null
+                        ? reportProfileService.studentDetails(ctx.getAssessmentId(), attemptId)
+                        : null)
                 .fullLeaderboard(ctx.getFullLeaderboard())
                 .sections(ctx.getSections())
                 .analytics(analytics)

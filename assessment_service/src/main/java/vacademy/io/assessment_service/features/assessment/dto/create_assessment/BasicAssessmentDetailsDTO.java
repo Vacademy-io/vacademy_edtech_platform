@@ -50,6 +50,10 @@ public class BasicAssessmentDetailsDTO {
     // Field absent = leave the stored value alone; explicit JSON null (NullNode) =
     // clear it, so the institute's default report profile applies.
     private JsonNode reportOptions;
+    // Pages added before and after this assessment's report (Step 1 "Report pages"):
+    // {"mode":"DEFAULT"|"NONE"|"CUSTOM","profile_id":"...","config":{...}}. Absent = leave
+    // them alone. Saved as this assessment's own report profile (ReportProfileService).
+    private JsonNode reportPages;
     private String source;
     private String sourceId;
 

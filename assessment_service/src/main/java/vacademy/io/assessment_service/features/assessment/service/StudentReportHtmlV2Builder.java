@@ -138,6 +138,8 @@ public class StudentReportHtmlV2Builder {
         private final String registrationUsername;
         /** Registration email; nullable. */
         private final String userEmail;
+        /** Registration answers the assessment prints under the name (report_options.student_fields); nullable. */
+        private final List<vacademy.io.assessment_service.features.assessment.service.aireport.ReportStudentDetail> studentDetails;
         /** Not resolvable to a display name in this service today; nullable. */
         private final String batchName;
         /** Full cohort rows (ReportClassContext.fullLeaderboard); nullable. */
@@ -314,6 +316,18 @@ public class StudentReportHtmlV2Builder {
         if (in.getStudentName() != null && !in.getStudentName().isBlank()) {
             sb.append("<div style=\"font-size: 27px; font-weight: 800; color: ").append(accent).append(";\">")
                     .append(esc(in.getStudentName())).append("</div>");
+        }
+        // Registration answers the assessment chose to print (roll number, college, ...).
+        List<String> details = new ArrayList<>();
+        if (in.getStudentDetails() != null) {
+            for (vacademy.io.assessment_service.features.assessment.service.aireport.ReportStudentDetail d : in.getStudentDetails()) {
+                if (d == null || d.value() == null || d.value().isBlank()) continue;
+                details.add(esc(nvl(d.label(), "")) + ": <b style=\"color: " + INK + ";\">" + esc(d.value()) + "</b>");
+            }
+        }
+        if (!details.isEmpty()) {
+            sb.append("<div style=\"font-size: 11px; color: ").append(MUTED).append("; margin-top: 3px;\">")
+                    .append(String.join(" &nbsp;&middot;&nbsp; ", details)).append("</div>");
         }
         List<String> meta = new ArrayList<>();
         // Identity first (reference style: "SR No: 5709 · Batch: …") — a report

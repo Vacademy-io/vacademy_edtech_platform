@@ -1,6 +1,7 @@
 import { DEFAULT_PROCTORING_FORM, proctoringWireFromForm } from '@/types/assessments/proctoring';
 import { examInterfaceWireFromForm } from '@/types/assessments/exam-interface';
 import { reportOptionsWireFromForm } from '@/types/assessments/report-options';
+import { reportPagesWireFromForm } from '@/types/assessments/report-pages';
 import {
     GET_ASSESSMENT_DETAILS,
     PUBLISH_ASSESSMENT_URL,
@@ -237,6 +238,10 @@ export const handlePostStep1Data = async (
         // stored value). Surveys have no marked report.
         report_options:
             type === 'SURVEY' ? null : reportOptionsWireFromForm(data.reportOptions),
+        // Only when the Report pages section was changed; absent = the saved pages stay.
+        ...(type !== 'SURVEY' && reportPagesWireFromForm(data.reportPages)
+            ? { report_pages: reportPagesWireFromForm(data.reportPages) }
+            : {}),
     };
     const response = await authenticatedAxiosInstance({
         method: 'POST',
