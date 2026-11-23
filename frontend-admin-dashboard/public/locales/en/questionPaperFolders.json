@@ -74,5 +74,9 @@
         "folders": "Folders",
         "list": "All papers",
         "listHint": "Every paper in one list. Each card shows its folder."
+    },
+    "picker": {
+        "listHint": "Every paper in one list.",
+        "folderEmptyHint": "Pick a paper from another folder, or add papers to this folder on the Questions Banks and Papers page."
     }
 }

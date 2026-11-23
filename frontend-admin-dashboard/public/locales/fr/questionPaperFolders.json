@@ -76,5 +76,9 @@
         "folders": "Dossiers",
         "list": "Tous les sujets",
         "listHint": "Tous les sujets dans une seule liste. Chaque carte indique son dossier."
+    },
+    "picker": {
+        "listHint": "Tous les sujets dans une seule liste.",
+        "folderEmptyHint": "Choisissez un sujet dans un autre dossier, ou ajoutez des sujets à ce dossier sur la page Banques de questions et sujets."
     }
 }
