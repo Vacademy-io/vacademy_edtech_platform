@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next';
 import { StatusChip, type StatusType } from '@/components/design-system/status-chips';
-import { cn } from '@/lib/utils';
 import type { SubOrgBulkResult, SubOrgBulkStatus } from '@/services/sub-org-bulk-members';
 
 const CHIP_STATUS: Record<SubOrgBulkStatus, StatusType> = {
@@ -9,6 +8,9 @@ const CHIP_STATUS: Record<SubOrgBulkStatus, StatusType> = {
     ALREADY_MEMBER: 'INFO',
     FAILED: 'DANGER',
 };
+
+// Plain template strings, not cn(): tailwind-merge (default config) files the custom size
+// tokens (text-caption, text-h3) under text colour, so cn() drops them next to a colour.
 
 /** Failed rows first: those are the ones the admin has to act on. */
 const ORDER: Record<SubOrgBulkStatus, number> = {
@@ -49,7 +51,7 @@ export function SubOrgBulkResults({ result, unknownLabel }: Props) {
                 {tiles.map((tile) => (
                     <div key={tile.key} className="rounded-md border border-neutral-200 p-3">
                         <p className="text-caption text-neutral-500">{tile.label}</p>
-                        <p className={cn('text-h3 font-semibold', tile.tone)}>{tile.value}</p>
+                        <p className={`text-h3 font-semibold ${tile.tone}`}>{tile.value}</p>
                     </div>
                 ))}
             </div>
@@ -71,12 +73,11 @@ export function SubOrgBulkResults({ result, unknownLabel }: Props) {
                                 )}
                                 {row.message && (
                                     <p
-                                        className={cn(
-                                            'text-caption',
+                                        className={`text-caption ${
                                             row.status === 'FAILED'
                                                 ? 'text-danger-600'
                                                 : 'text-neutral-500'
-                                        )}
+                                        }`}
                                     >
                                         {row.message}
                                     </p>

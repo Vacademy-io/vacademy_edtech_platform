@@ -16,8 +16,8 @@
     "notes": {
         "alreadyThere_one": "1 apprenant sélectionné est déjà dans {{name}} ; rien ne change pour lui.",
         "alreadyThere_other": "{{count}} apprenants sélectionnés sont déjà dans {{name}} ; rien ne change pour eux.",
-        "fromOther_one": "1 apprenant sélectionné est dans un autre {{term}} et en sera retiré.",
-        "fromOther_other": "{{count}} apprenants sélectionnés sont dans un autre {{term}} et en seront retirés.",
+        "fromOther_one": "1 apprenant sélectionné est dans un autre {{term}}. Il n'est déplacé que s'il ne l'a pas rejoint par ce {{term}} ; sinon le résultat en indique la raison.",
+        "fromOther_other": "{{count}} apprenants sélectionnés sont dans un autre {{term}}. Ceux qui l'ont rejoint par ce {{term}} ne sont pas déplacés ; le résultat en indique la raison.",
         "keeps": "Chaque apprenant garde le même lot, la même progression, les mêmes dates d'accès et paiements. Il compte dans les places de ce {{term}} et apparaît pour son administrateur. Les administrateurs de {{term}} ne sont jamais déplacés."
     },
     "running": "Déplacement… {{done}} sur {{total}}",
