@@ -623,7 +623,7 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
     const assessmentId = params.assessmentId;
     const { setNavHeading } = useNavHeadingStore();
     const storeDataStep1 = useBasicInfoStore((state) => state);
-    const { setSavedAssessmentId } = useSavedAssessmentStore();
+    const { setSavedAssessmentId, savedAssessmentId } = useSavedAssessmentStore();
     const { data: instituteDetails } = useSuspenseQuery(useInstituteQuery());
 
     const { SubjectFilterData } = useFilterDataForAssesment(instituteDetails);
@@ -750,6 +750,9 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
             } else {
                 setSavedAssessmentId(data.assessment_id);
                 syncStep1DataWithStore(form);
+                // The report pages are saved now: reload them from the server (with their real
+                // id), so saving Step 1 again updates them instead of creating another copy.
+                form.setValue('reportPages', undefined);
                 // Remember the draft, so saving step 1 again updates it (see onSubmit).
                 useBasicInfoStore.getState().setBasicInfo({
                     savedDraft: { assessmentId: data.assessment_id, examType },
@@ -1366,6 +1369,11 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                         <ReportOptionsSettingsCard
                             control={form.control}
                             instituteId={instituteDetails?.id}
+                            assessmentId={
+                                assessmentId && assessmentId !== 'defaultId'
+                                    ? assessmentId
+                                    : savedAssessmentId || null
+                            }
                             formFieldNames={registrationFormFieldNames(assessmentDetails)}
                         />
                     )}
