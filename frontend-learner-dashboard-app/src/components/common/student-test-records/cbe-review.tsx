@@ -16,8 +16,10 @@ import { CbeStringsProvider } from "@/components/cbe/cbe-strings";
 import { DocumentView } from "@/components/cbe/DocumentView";
 import { useLearnerCbeStrings } from "@/lib/cbe/learner-cbe-strings";
 import { SheetView } from "@/components/cbe/SheetView";
+import { QuestionPassage } from "@/components/common/questionLiveTest/question-passage";
 import {
   CBE_QUESTION_TYPE,
+  htmlToPlainText,
   isCbePartAnswerEmpty,
   parseCbeConfig,
   type CbeConfig,
@@ -212,6 +214,58 @@ export function CbeCorrectAnswer({ correctOptions, t }: { correctOptions: unknow
       })}
     </div>
     </CbeStringsProvider>
+  );
+}
+
+/** A passage counts as a scenario when it has visible text, an image or a table (same rule as the live test). */
+const hasVisibleHtml = (html: string | null | undefined): html is string =>
+  !!html && (htmlToPlainText(html) !== "" || /<(img|table|svg)\b/i.test(html));
+
+type RichTextLike = { id?: string | null; content?: string | null } | null | undefined;
+
+/**
+ * The scenario (the question's passage) of a CBE review row, or "" for any other
+ * question type or when there is none.
+ *
+ * Source 1 is the questions-of-sections payload the report already loads. Source 2
+ * is the row's own parent_rich_text, used only when it really is the passage (its id
+ * equals the row's parent_id): older servers filled that field with the question text.
+ */
+export function cbeReportScenarioHtml(
+  review: {
+    question_id?: string | null;
+    question_type?: string | null;
+    parent_id?: string | null;
+    parent_rich_text?: RichTextLike;
+  },
+  questionsData: Record<string, Array<{ question_id: string; parent_rich_text?: RichTextLike }> | undefined> | null | undefined,
+): string {
+  if (review.question_type !== CBE_QUESTION_TYPE) return "";
+  for (const questions of Object.values(questionsData ?? {})) {
+    const question = questions?.find((q) => q.question_id === review.question_id);
+    const html = question?.parent_rich_text?.content;
+    if (hasVisibleHtml(html)) return html;
+  }
+  const own = review.parent_rich_text;
+  if (review.parent_id && own?.id === review.parent_id && hasVisibleHtml(own.content)) return own.content;
+  return "";
+}
+
+/** Financial-statement tables in a scenario stay readable: borders, padding (as in the live test). */
+const SCENARIO_TABLE_CLASSES =
+  "[&_table]:my-3 [&_table]:w-full [&_td]:border [&_td]:border-neutral-200 [&_td]:px-2 [&_td]:py-1 [&_th]:border [&_th]:border-neutral-200 [&_th]:px-2 [&_th]:py-1";
+
+/** The CBE scenario above the requirement in a report card, collapsible like the live test's. */
+export function CbeReportScenario({ html, t }: { html: string; t: TFunction }) {
+  if (!hasVisibleHtml(html)) return null;
+  return (
+    <QuestionPassage
+      html={html}
+      label={t("cbeReview.scenario")}
+      dollarMath={false}
+      className="mb-0 bg-white md:mb-0"
+      contentClassName={SCENARIO_TABLE_CLASSES}
+    />
   );
 }
 

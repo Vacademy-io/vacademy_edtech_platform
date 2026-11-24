@@ -264,6 +264,7 @@
   },
   "cbeReview": {
     "typeLabel": "Spreadsheet & written",
+    "scenario": "Scenario",
     "kindSpreadsheet": "Spreadsheet",
     "kindDocument": "Document",
     "marks_one": "{{count}} mark",

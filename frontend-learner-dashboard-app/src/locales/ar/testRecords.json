@@ -280,6 +280,7 @@
     },
     "cbeReview": {
         "typeLabel": "جدول بيانات وإجابة كتابية",
+        "scenario": "الحالة",
         "kindSpreadsheet": "جدول بيانات",
         "kindDocument": "مستند",
         "marks_zero": "{{count}} درجة",
