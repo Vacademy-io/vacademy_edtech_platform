@@ -264,6 +264,7 @@
   },
   "cbeReview": {
     "typeLabel": "स्प्रेडशीट और लिखित",
+    "scenario": "परिदृश्य",
     "kindSpreadsheet": "स्प्रेडशीट",
     "kindDocument": "दस्तावेज़",
     "marks_one": "{{count}} अंक",

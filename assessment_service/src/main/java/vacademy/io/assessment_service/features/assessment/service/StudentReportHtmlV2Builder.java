@@ -17,6 +17,7 @@ import vacademy.io.assessment_service.features.learner_assessment.dto.SectionCom
 import vacademy.io.assessment_service.features.learner_assessment.dto.SmartLeaderboardDto;
 import vacademy.io.assessment_service.features.learner_assessment.dto.StudentComparisonDto;
 import vacademy.io.assessment_service.features.learner_assessment.dto.context.SectionSnapshot;
+import vacademy.io.assessment_service.features.question_core.util.CbeAnswers;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -104,6 +105,9 @@ public class StudentReportHtmlV2Builder {
 
     /** Longest question / answer text rendered before truncation, so one essay cannot eat the report. */
     private static final int MAX_TEXT_CHARS = 1200;
+
+    /** A CBE scenario is the case the whole answer rests on, so it gets more room than a question. */
+    private static final int MAX_SCENARIO_CHARS = 4000;
 
     @Autowired
     private ReportBrandingHelper reportBrandingHelper;
@@ -251,6 +255,8 @@ public class StudentReportHtmlV2Builder {
         sb.append(".qnum { font-weight: 700; color: ").append(NAVY).append("; }");
         sb.append(".qtype { color: ").append(FAINT).append("; font-weight: 400; }");
         sb.append(".qtext { font-size: 11px; color: ").append(INK).append("; margin: 2px 0 7px 0; }");
+        sb.append(".qscen { font-size: 10px; color: ").append(INK).append("; background-color: #F5F7FA; border-left: 2px solid ")
+                .append(RULE).append("; padding: 5px 8px; margin: 2px 0 7px 0; }");
         sb.append(".qrow { font-size: 10.5px; margin-bottom: 3px; }");
         // 120px matches the label column the CODING block hardcodes inline, so
         // every "Your Answer:" lines up regardless of question type.
@@ -1052,6 +1058,15 @@ public class StudentReportHtmlV2Builder {
         sb.append("</td><td style=\"text-align: right; color: ").append(color).append("; font-weight: 700;\">")
                 .append(dot(color)).append(statusLabel(status)).append("</td></tr></table>");
 
+        // A CBE question's scenario (its passage) goes above the requirement, as in the test.
+        if ("CBE_RESPONSE".equals(row.getQuestionType()) && row.getParentRichText() != null) {
+            String scenario = truncate(CbeAnswers.htmlToText(row.getParentRichText().getContent()), MAX_SCENARIO_CHARS);
+            if (!scenario.isBlank()) {
+                sb.append("<div class=\"qscen\"><b>Scenario:</b><br/>")
+                        .append(esc(scenario).replace("\n", "<br/>")).append("</div>");
+            }
+        }
+
         String questionText = HtmlBuilderService.stripHtmlTags(row.getQuestionName());
         if (!questionText.isBlank()) {
             sb.append("<div class=\"qtext\">").append(esc(truncate(questionText))).append("</div>");
@@ -1177,11 +1192,15 @@ public class StudentReportHtmlV2Builder {
 
     /** One long essay answer must not push the rest of the report off the page. */
     private static String truncate(String text) {
+        return truncate(text, MAX_TEXT_CHARS);
+    }
+
+    private static String truncate(String text, int max) {
         if (text == null) {
             return "";
         }
         String trimmed = text.trim();
-        return trimmed.length() > MAX_TEXT_CHARS ? trimmed.substring(0, MAX_TEXT_CHARS) + " ..." : trimmed;
+        return trimmed.length() > max ? trimmed.substring(0, max) + " ..." : trimmed;
     }
 
     // ------------------------------------------- manual: evaluated sheet

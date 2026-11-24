@@ -34,7 +34,7 @@ import {
   LEARNER_OPTION_DISTRIBUTION_URL,
   EXPORT_ASSESSMENT_REPORT,
 } from "@/constants/urls";
-import { reportQuestionTypeLabel } from "./cbe-review";
+import { CbeReportScenario, cbeReportScenarioHtml, reportQuestionTypeLabel } from "./cbe-review";
 import { RevisedTag } from "./revised-tag";
 import {
   renderStudentResponse,
@@ -1015,6 +1015,8 @@ export function ComparisonDashboard({
                 currentSectionQuestions.map((review: any, index: number) => {
                   const classPct = classCorrectPct(review, optionDistribution);
                   const correctOptionIds = parseCorrectOptionIds(review);
+                  // A CBE question's case scenario, shown above its requirement.
+                  const scenarioHtml = cbeReportScenarioHtml(review, questionsData);
                   return (
                     <div
                       key={index}
@@ -1057,6 +1059,7 @@ export function ComparisonDashboard({
                       </div>
 
                       <div className="space-y-5 p-4 sm:p-5">
+                        {scenarioHtml && <CbeReportScenario html={scenarioHtml} t={t} />}
                         <div className="text-body leading-relaxed text-foreground">
                           {parseHtmlToString(review.question_name)}
                         </div>

@@ -20,7 +20,7 @@ import {
 } from "@/constants/helper";
 import { AttemptPapersCard } from "./attempt-papers-card";
 import { ResponseBreakdownComponent } from "./response-breakdown-component";
-import { reportQuestionTypeLabel } from "./cbe-review";
+import { CbeReportScenario, cbeReportScenarioHtml, reportQuestionTypeLabel } from "./cbe-review";
 import { ReviewAiFeedback } from "./review-ai-feedback";
 import { MarksBreakdownComponent } from "./marks-breakdown-component";
 import { Crown } from "@/svgs";
@@ -36,7 +36,7 @@ import {
   XCircle,
   MinusCircle,
 } from "@phosphor-icons/react";
-import { parseHtmlToString } from "@/lib/utils";
+import { cn, parseHtmlToString } from "@/lib/utils";
 import { Preferences } from "@capacitor/preferences";
 import { useRouter } from "@tanstack/react-router";
 import type {
@@ -852,11 +852,14 @@ export const TestReportDialog = ({
             </CardHeader>
             <CardContent className="p-card-lg space-y-6">
               {currentSectionAllQuestions && currentSectionAllQuestions.length > 0 ? (
-                currentSectionAllQuestions.map((review: any, index: number) => (
+                currentSectionAllQuestions.map((review: any, index: number) => {
+                  // A CBE question's case scenario, shown above its requirement.
+                  const scenarioHtml = cbeReportScenarioHtml(review, questionsData);
+                  return (
                   <Card key={index} className="border-slate-200 hover:shadow-md transition-shadow">
                     <CardHeader className="bg-slate-50 border-b border-slate-100">
                       <div className="flex items-start justify-between gap-4 flex-wrap">
-                        <div className="flex-1 space-y-2">
+                        <div className={cn("flex-1 space-y-2", scenarioHtml && "min-w-0")}>
                           <div className="flex items-center gap-3">
                             <CardTitle className="text-lg font-semibold text-slate-900">
                               {t("testReportDialog.questionNumber", { number: index + 1 })}
@@ -865,6 +868,7 @@ export const TestReportDialog = ({
                               {reportQuestionTypeLabel(review.question_type, t)}
                             </Badge>
                           </div>
+                          {scenarioHtml && <CbeReportScenario html={scenarioHtml} t={t} />}
                           <div className="text-sm text-slate-700 leading-relaxed">
                             {parseHtmlToString(review.question_name)}
                           </div>
@@ -948,7 +952,8 @@ export const TestReportDialog = ({
                       )}
                     </CardContent>
                   </Card>
-                ))
+                  );
+                })
               ) : (
                 <div className="text-center py-12 text-slate-500">
                   <p className="text-lg">{t("testReportDialog.noQuestionsAvailable")}</p>

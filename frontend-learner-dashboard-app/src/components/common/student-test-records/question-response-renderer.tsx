@@ -14,6 +14,8 @@ export interface SectionQuestions {
     question_id: string;
     options: QuestionOption[];
     options_with_explanation: QuestionOption[];
+    /** The question's passage (a CBE question's scenario). */
+    parent_rich_text?: { id?: string | null; content?: string | null } | null;
   }>;
 }
 

@@ -1254,8 +1254,9 @@ public class AssessmentParticipantsManager {
                     .questionText(currentQuestion.getTextData() != null ? currentQuestion.getTextData().toDTO() : null)
                     .parentId(currentQuestion.getParentRichText() != null ? currentQuestion.getParentRichText().getId()
                             : null)
-                    .parentRichText(
-                            currentQuestion.getTextData() != null ? currentQuestion.getTextData().toDTO() : null)
+                    // The question's passage (a CBE question's scenario), not its own text.
+                    .parentRichText(currentQuestion.getParentRichText() != null
+                            ? currentQuestion.getParentRichText().toDTO() : null)
                     .questionName(questionHtml)
                     .questionType(questionType)
                     .questionOrder(questionOrder)
