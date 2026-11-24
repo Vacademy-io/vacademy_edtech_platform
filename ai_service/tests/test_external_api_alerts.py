@@ -316,3 +316,21 @@ def test_recovery_needs_a_paid_call_not_a_free_one():
 
     assert [r["status"] for r in paid] == ["FAILED"]
     assert alerts.is_free_call(free()) and not alerts.is_free_call(call())
+
+
+def test_calls_logged_without_a_key_are_named_as_such():
+    assert alerts.key_label(alerts.NO_KEY) == "Key not recorded by the service that called it"
+    assert alerts.key_label("ab12") == "Key ending ab12"
+    assert "Key not recorded" in alerts.body_for([notice(vendor="api.plivo.com", key_hint=alerts.NO_KEY)])
+    assert "key not recorded" in alerts.whatsapp_fields([notice(key_hint=alerts.NO_KEY)], now=NOW)["3"]
+
+
+def test_java_services_rows_are_read_even_without_a_key():
+    sql = str(alerts._RECENT_CALLS)
+    assert "COALESCE(source_service, 'ai') <> 'ai'" in sql
+    assert "COALESCE(key_hint, :no_key)" in sql
+
+
+def test_plivo_402s_with_no_key_open_out_of_credits():
+    rows = [call(http_status=402, minutes_ago=i) for i in range(1, 4)]
+    assert alerts.classify(rows, threshold=2, now=NOW).kind == alerts.CREDITS

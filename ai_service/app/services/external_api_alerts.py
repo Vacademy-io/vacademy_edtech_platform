@@ -71,13 +71,20 @@ _OUT_OF_CREDITS = re.compile(
 _LOCK_KEY = "external_api_alerts"
 _TRY_LOCK = text("SELECT pg_try_advisory_xact_lock(hashtext(:key))")
 
+# admin_core, the other Java services and the voice bot log integrated vendors without the key they
+# used (Plivo's 402s, for one). Their rows count, grouped per vendor under NO_KEY. ai-service rows
+# with no key stay out: those are sites fetched without credentials, not API accounts.
+NO_KEY = "none"
+
 _RECENT_CALLS = text("""
     SELECT vendor, key_hint, operation, status, http_status, error_message, occurred_at
     FROM (
-        SELECT vendor, key_hint, operation, status, http_status, error_message, occurred_at,
-               row_number() OVER (PARTITION BY vendor, key_hint ORDER BY occurred_at DESC) AS newest_first
+        SELECT vendor, COALESCE(key_hint, :no_key) AS key_hint, operation, status, http_status,
+               error_message, occurred_at,
+               row_number() OVER (PARTITION BY vendor, COALESCE(key_hint, :no_key)
+                                  ORDER BY occurred_at DESC) AS newest_first
         FROM external_api_call_log
-        WHERE key_hint IS NOT NULL
+        WHERE (key_hint IS NOT NULL OR COALESCE(source_service, 'ai') <> 'ai')
           AND occurred_at > now() - make_interval(hours => CAST(:lookback AS int))
     ) ranked
     WHERE newest_first <= :max_rows
@@ -272,7 +279,7 @@ def evaluate(db: Any, now: Optional[datetime] = None) -> Optional[List[Notice]]:
     recipients, threshold, repeat_hours = _settings(db)
 
     calls: Dict[Tuple[str, str], List[Mapping[str, Any]]] = {}
-    for row in db.execute(_RECENT_CALLS, {"lookback": LOOKBACK_HOURS, "max_rows": MAX_ROWS_PER_KEY}).mappings():
+    for row in db.execute(_RECENT_CALLS, {"lookback": LOOKBACK_HOURS, "max_rows": MAX_ROWS_PER_KEY, "no_key": NO_KEY}).mappings():
         calls.setdefault((row["vendor"], row["key_hint"]), []).append(row)
 
     problems = {pair: p for pair, rows in calls.items() if (p := classify(rows, threshold, now))}
@@ -383,7 +390,7 @@ def body_for(notices: Sequence[Notice]) -> str:
     """Everything from a vendor or from staff is escaped: this is HTML going to people's inboxes."""
     parts = ['<div style="font-family:Arial,sans-serif;font-size:14px;color:#111">']
     for notice in notices:
-        facts = [f"Key ending {notice.key_hint}" if notice.key_hint != "****" else "Key too short to show"]
+        facts = [key_label(notice.key_hint)]
         facts.append(f"Account: {notice.account}" if notice.account
                      else "Account not entered, and it may be an institute's own key")
         if notice.http_status:
@@ -424,8 +431,14 @@ def _wa_text(value: Any, limit: int = WHATSAPP_FIELD_LIMIT) -> str:
     return flat if len(flat) <= limit else flat[: limit - 1].rstrip() + "…"
 
 
+def key_label(hint: str) -> str:
+    if hint == NO_KEY:
+        return "Key not recorded by the service that called it"
+    return "Key too short to show" if hint == "****" else f"Key ending {hint}"
+
+
 def _key_line(notice: Notice) -> str:
-    key = f"key ending {notice.key_hint}" if notice.key_hint != "****" else "key too short to show"
+    key = key_label(notice.key_hint).lower()
     return f"{notice.account} ({key})" if notice.account else key
 
 
@@ -597,7 +610,9 @@ __all__ = [
     "body_for",
     "classify",
     "evaluate",
+    "NO_KEY",
     "invalid_emails",
+    "key_label",
     "invalid_phones",
     "is_due",
     "looks_out_of_credits",
