@@ -144,7 +144,9 @@ export const StudentFilters = ({
     };
 
     const handleExportAccountDetails = async () => {
-        await buildExportAccountDetails(t)({ pageNo: 0, pageSize: totalElements || 0, filters: appliedFilters });
+        // The backend pages through every page itself, so a fixed chunk size exports all
+        // rows. Sizing one page to the full total made big institutes time out or get cut off.
+        await buildExportAccountDetails(t)({ pageNo: 0, pageSize: 1000, filters: appliedFilters });
     };
 
     return (

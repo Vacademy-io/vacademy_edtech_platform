@@ -416,13 +416,22 @@ export const downloadCsv = (filename: string, csv: string): void => {
     window.URL.revokeObjectURL(url);
 };
 
+/** Rows fetched per request while exporting. */
+export const EXPORT_FETCH_PAGE_SIZE = 1000;
+/** Runaway-loop guard only (5M rows at 1000 per page), not a row cap. */
+const EXPORT_MAX_PAGES = 5000;
+
 /**
- * Fetch every learner matching the current filters (one page, sized to the total),
- * mirroring the sub-org access restriction the old export applied.
+ * Fetch every learner matching the current filters, mirroring the sub-org access
+ * restriction the old export applied. Pages through the list in chunks of
+ * EXPORT_FETCH_PAGE_SIZE until the server reports the last page, so large institutes
+ * get every row instead of one oversized request that times out or gets cut off.
+ * totalElements is accepted for API compatibility. The loop stops on the server last flag.
  */
 export const fetchAllStudentsForExport = async (
     filters: StudentFilterRequest,
-    totalElements: number
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _totalElements?: number
 ): Promise<StudentTable[]> => {
     const exportFilters: StudentFilterRequest = { ...filters };
     const accessibleFilters = getAccessiblePackageFilters();
@@ -437,10 +446,24 @@ export const fetchAllStudentsForExport = async (
         }
     }
 
-    const response = await fetchStudents({
-        pageNo: 0,
-        pageSize: totalElements > 0 ? totalElements : 1,
-        filters: exportFilters,
-    });
-    return response.content ?? [];
+    // Each row is one enrolment mapping, keyed by id. A row that shifts across a page
+    // boundary while paging (ties in the sort column) would otherwise appear twice.
+    const rows = new Map<string, StudentTable>();
+    for (let pageNo = 0; pageNo < EXPORT_MAX_PAGES; pageNo++) {
+        const response = await fetchStudents({
+            pageNo,
+            pageSize: EXPORT_FETCH_PAGE_SIZE,
+            filters: exportFilters,
+        });
+        const content = response.content ?? [];
+        for (const row of content) {
+            rows.set(row.id, row);
+        }
+        const lastPage =
+            response.last ||
+            content.length < EXPORT_FETCH_PAGE_SIZE ||
+            (response.total_pages != null && pageNo + 1 >= response.total_pages);
+        if (lastPage) break;
+    }
+    return Array.from(rows.values());
 };
