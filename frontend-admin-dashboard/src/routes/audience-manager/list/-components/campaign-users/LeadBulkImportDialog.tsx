@@ -52,7 +52,18 @@ import {
 import { useGetCampaignById } from '../../-hooks/useGetCampaignById';
 import { cn } from '@/lib/utils';
 
-const BATCH_SIZE = 1000;
+/**
+ * Rows per request. The server creates each lead one at a time (user, dedup, counsellor),
+ * so a 1000-row batch could run past the gateway timeout under load and end the import.
+ * 200 keeps each request well inside it.
+ */
+const BATCH_SIZE = 200;
+/** One batch may not take longer than this before it is abandoned and retried. */
+const BATCH_TIMEOUT_MS = 120_000;
+/** Extra attempts per batch. Safe to resend: a lead already created for this campaign comes back as SKIPPED. */
+const BATCH_RETRIES = 2;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /**
  * Institute counsellors/admins/teachers, including email, so owners resolve by email or name.
@@ -456,23 +467,51 @@ export function LeadBulkImportDialog({
             const summary = { total_requested: 0, successful: 0, failed: 0, skipped: 0 };
             const results: BulkSubmitLeadResultItem[] = [];
 
+            let failedBatches = 0;
             for (let b = 0; b < batches.length; b++) {
-                const resp = await submitBulkAudienceLead(
-                    {
-                        audience_id: campaignId,
-                        rows: batches[b]!,
-                    },
-                    tBulkSubmitLead
-                );
-                summary.total_requested += resp.summary.total_requested;
-                summary.successful += resp.summary.successful;
-                summary.failed += resp.summary.failed;
-                summary.skipped += resp.summary.skipped;
+                const batch = batches[b]!;
                 const offset = b * BATCH_SIZE;
-                for (const r of resp.results) {
-                    results.push({ ...r, index: r.index + offset });
+                let resp: BulkSubmitLeadResponse | null = null;
+                let lastError: unknown = null;
+                for (let attempt = 0; attempt <= BATCH_RETRIES && !resp; attempt++) {
+                    if (attempt > 0) await sleep(3_000 * attempt);
+                    try {
+                        resp = await submitBulkAudienceLead(
+                            { audience_id: campaignId, rows: batch },
+                            tBulkSubmitLead,
+                            { timeoutMs: BATCH_TIMEOUT_MS }
+                        );
+                    } catch (error) {
+                        lastError = error;
+                    }
+                }
+
+                if (resp) {
+                    summary.total_requested += resp.summary.total_requested;
+                    summary.successful += resp.summary.successful;
+                    summary.failed += resp.summary.failed;
+                    summary.skipped += resp.summary.skipped;
+                    for (const r of resp.results) {
+                        results.push({ ...r, index: r.index + offset });
+                    }
+                } else {
+                    // Still failing after the retries: mark this batch FAILED and carry on
+                    // with the rest, instead of throwing away every batch after it.
+                    failedBatches += 1;
+                    const message =
+                        lastError instanceof Error && lastError.message
+                            ? lastError.message
+                            : t('toasts.submitFailed');
+                    summary.total_requested += batch.length;
+                    summary.failed += batch.length;
+                    batch.forEach((_, i) =>
+                        results.push({ index: offset + i, status: 'FAILED', message })
+                    );
                 }
                 setSubmitProgress({ done: b + 1, total: batches.length });
+            }
+            if (failedBatches > 0) {
+                toast.error(t('toasts.batchesFailed', { count: failedBatches, size: BATCH_SIZE }));
             }
 
             setResult({ summary, results });

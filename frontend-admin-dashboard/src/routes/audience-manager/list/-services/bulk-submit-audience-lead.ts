@@ -43,13 +43,15 @@ export interface BulkSubmitLeadResponse {
  */
 export const submitBulkAudienceLead = async (
     payload: BulkSubmitLeadRequest,
-    t: TFunction
+    t: TFunction,
+    options: { timeoutMs?: number } = {}
 ): Promise<BulkSubmitLeadResponse> => {
     try {
         const response = await authenticatedAxiosInstance({
             method: 'POST',
             url: BULK_SUBMIT_AUDIENCE_LEAD_ADMIN_URL,
             data: payload,
+            timeout: options.timeoutMs,
         });
         return response.data as BulkSubmitLeadResponse;
     } catch (error) {

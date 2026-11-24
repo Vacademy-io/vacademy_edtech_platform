@@ -106,6 +106,7 @@
         "allImportedSuccess_one": "All {{count}} lead imported successfully!",
         "allImportedSuccess_other": "All {{count}} leads imported successfully!",
         "importComplete": "Import complete: {{success}} success, {{failed}} failed, {{skipped}} skipped",
-        "submitFailed": "Failed to submit leads"
+        "submitFailed": "Failed to submit leads",
+        "batchesFailed": "{{count}} batch(es) of up to {{size}} rows could not be sent. Those rows are marked failed. Import the same file again to retry them: rows already added are skipped."
     }
 }
