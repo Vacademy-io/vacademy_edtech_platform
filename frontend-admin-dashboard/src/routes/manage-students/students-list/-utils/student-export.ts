@@ -441,6 +441,8 @@ export interface ExportProgress {
     totalRows: number;
     /** Set while a page is being retried after a failure. */
     retrying?: { pageNo: number; attempt: number };
+    /** Server-job stages. Absent while paging in the browser. */
+    phase?: 'queued' | 'server' | 'downloading';
 }
 
 export interface FetchAllStudentsOptions {
@@ -519,21 +521,7 @@ export const fetchAllStudentsForExport = async (
     filters: StudentFilterRequest,
     options: FetchAllStudentsOptions = {}
 ): Promise<StudentTable[]> => {
-    const exportFilters: StudentFilterRequest = { ...filters };
-    const accessibleFilters = getAccessiblePackageFilters();
-    if (accessibleFilters?.package_session_ids?.length) {
-        const allowed = new Set(accessibleFilters.package_session_ids);
-        if (exportFilters.package_session_ids?.length) {
-            exportFilters.package_session_ids = exportFilters.package_session_ids.filter((id) =>
-                allowed.has(id)
-            );
-        } else {
-            exportFilters.package_session_ids = accessibleFilters.package_session_ids;
-        }
-    }
-
-    // Each row is one enrolment mapping, keyed by id. A row that shifts across a page
-    // boundary while paging (ties in the sort column) would otherwise appear twice.
+    const exportFilters = scopeExportFilters(filters);
     const rows = new Map<string, StudentTable>();
     let totalPages = 0;
     let totalRows = 0;
@@ -566,4 +554,135 @@ export const fetchAllStudentsForExport = async (
         if (lastPage) break;
     }
     return Array.from(rows.values());
+};
+
+// ---------------------------------------------------------------------------
+// Server-side export job. The server pages through the list itself (no gateway
+// timeout applies to it) and hands back one gzipped JSON file with the same rows
+// /get/v2/all returns, so buildStudentsCsv makes the same CSV as before.
+// ---------------------------------------------------------------------------
+
+const EXPORT_JOBS_URL = GET_STUDENTS.replace(/\/all$/, '/export-jobs');
+const JOB_POLL_INTERVAL_MS = 2_000;
+/** Consecutive failed polls tolerated (a deploy or a blip) before giving up. */
+const JOB_MAX_POLL_FAILURES = 10;
+
+interface LearnerExportJob {
+    job_id: string;
+    status: 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+    processed_rows: number;
+    total_rows: number | null;
+    file_ready: boolean;
+    error_message?: string | null;
+}
+
+/** Thrown when the server reports the job failed. The message is safe to show. */
+export class ExportJobError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'ExportJobError';
+    }
+}
+
+const httpStatus = (error: unknown): number | undefined =>
+    (error as { response?: { status?: number } })?.response?.status;
+
+/** Decompresses the gzipped JSON file. Falls back to plain JSON if it is not gzipped. */
+const parseExportFile = async (buffer: ArrayBuffer): Promise<StudentTable[]> => {
+    const bytes = new Uint8Array(buffer);
+    const gzipped = bytes.length > 2 && bytes[0] === 0x1f && bytes[1] === 0x8b;
+    const text = gzipped
+        ? await new Response(
+              new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))
+          ).text()
+        : new TextDecoder().decode(bytes);
+    const parsed = JSON.parse(text);
+    return Array.isArray(parsed) ? parsed : [];
+};
+
+/**
+ * Runs the export as a server-side job and returns every matching row.
+ * Returns null when the server does not have the job endpoint yet (older deploy),
+ * so the caller can fall back to paging in the browser.
+ */
+export const fetchAllStudentsViaServerJob = async (
+    filters: StudentFilterRequest,
+    options: FetchAllStudentsOptions = {}
+): Promise<StudentTable[] | null> => {
+    const exportFilters = scopeExportFilters(filters);
+    let job: LearnerExportJob;
+    try {
+        const started = await authenticatedAxiosInstance.post<LearnerExportJob>(
+            EXPORT_JOBS_URL,
+            exportFilters,
+            { timeout: 30_000, signal: options.signal }
+        );
+        job = started.data;
+    } catch (error) {
+        if (isAbort(error, options.signal)) throw error;
+        const status = httpStatus(error);
+        if (status === 404 || status === 405) return null;
+        throw error;
+    }
+
+    let failures = 0;
+    while (job.status === 'QUEUED' || job.status === 'RUNNING') {
+        options.onProgress?.({
+            pagesDone: 0,
+            totalPages: 0,
+            rowsFetched: job.processed_rows ?? 0,
+            totalRows: job.total_rows ?? 0,
+            phase: job.status === 'QUEUED' ? 'queued' : 'server',
+        });
+        await wait(JOB_POLL_INTERVAL_MS, options.signal);
+        try {
+            const polled = await authenticatedAxiosInstance.get<LearnerExportJob>(
+                `${EXPORT_JOBS_URL}/${job.job_id}`,
+                { timeout: 30_000, signal: options.signal }
+            );
+            job = polled.data;
+            failures = 0;
+        } catch (error) {
+            if (isAbort(error, options.signal)) throw error;
+            failures += 1;
+            if (failures >= JOB_MAX_POLL_FAILURES) throw error;
+        }
+    }
+
+    if (job.status !== 'COMPLETED') {
+        throw new ExportJobError(job.error_message || 'The export failed on the server.');
+    }
+
+    options.onProgress?.({
+        pagesDone: 0,
+        totalPages: 0,
+        rowsFetched: job.processed_rows ?? 0,
+        totalRows: job.total_rows ?? job.processed_rows ?? 0,
+        phase: 'downloading',
+    });
+    const file = await authenticatedAxiosInstance.get<ArrayBuffer>(
+        `${EXPORT_JOBS_URL}/${job.job_id}/file`,
+        { responseType: 'arraybuffer', timeout: 5 * 60_000, signal: options.signal }
+    );
+    return parseExportFile(file.data);
+};
+
+/**
+ * Applies the sub-org / faculty access restriction the old export applied, so a
+ * scoped user only ever exports the batches they can see.
+ */
+const scopeExportFilters = (filters: StudentFilterRequest): StudentFilterRequest => {
+    const exportFilters: StudentFilterRequest = { ...filters };
+    const accessibleFilters = getAccessiblePackageFilters();
+    if (accessibleFilters?.package_session_ids?.length) {
+        const allowed = new Set(accessibleFilters.package_session_ids);
+        if (exportFilters.package_session_ids?.length) {
+            exportFilters.package_session_ids = exportFilters.package_session_ids.filter((id) =>
+                allowed.has(id)
+            );
+        } else {
+            exportFilters.package_session_ids = accessibleFilters.package_session_ids;
+        }
+    }
+    return exportFilters;
 };

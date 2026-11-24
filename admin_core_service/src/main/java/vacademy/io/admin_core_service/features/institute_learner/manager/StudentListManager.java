@@ -219,6 +219,44 @@ public class StudentListManager {
         }
     }
 
+    /**
+     * JWT authorities claim captured on the request thread, for work that runs later on a
+     * background thread (the learner export job). hasRole falls back to the JWT when the
+     * stored authorities are empty, and a background thread has no request to read it from.
+     */
+    private static final ThreadLocal<Map<String, Object>> CALLER_JWT_AUTHORITIES = new ThreadLocal<>();
+
+    /** The authorities claim of the current request bearer token, or null. Call on the request thread. */
+    public Map<String, Object> captureCallerJwtAuthorities() {
+        try {
+            return readJwtAuthoritiesFromRequest();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** Runs work with the given captured JWT authorities standing in for the missing request. */
+    public <T> T runWithCallerJwtAuthorities(Map<String, Object> jwtAuthorities,
+                                             java.util.function.Supplier<T> work) {
+        CALLER_JWT_AUTHORITIES.set(jwtAuthorities);
+        try {
+            return work.get();
+        } finally {
+            CALLER_JWT_AUTHORITIES.remove();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> readJwtAuthoritiesFromRequest() {
+        ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attrs == null) return null;
+        HttpServletRequest request = attrs.getRequest();
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) return null;
+        String jwt = authHeader.substring(7);
+        return jwtService.extractClaim(jwt, claims -> (Map<String, Object>) claims.get("authorities"));
+    }
+
     private boolean hasRole(CustomUserDetails user, String instituteId, String... roles) {
         // Fast path: check storedAuthorities from auth-service
         boolean fromAuthorities = user.getAuthorities().stream()
@@ -235,16 +273,9 @@ public class StudentListManager {
         // storedAuthorities can be empty when clientId header mismatches UserRole.instituteId in auth-service
         if (instituteId == null) return false;
         try {
-            ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-            if (attrs == null) return false;
-            HttpServletRequest request = attrs.getRequest();
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) return false;
-            String jwt = authHeader.substring(7);
-
-            @SuppressWarnings("unchecked")
-            Map<String, Object> authorities = jwtService.extractClaim(jwt,
-                    claims -> (Map<String, Object>) claims.get("authorities"));
+            // A background export has no request, so it uses the claims captured when it started.
+            Map<String, Object> authorities = CALLER_JWT_AUTHORITIES.get();
+            if (authorities == null) authorities = readJwtAuthoritiesFromRequest();
             if (authorities == null) return false;
 
             @SuppressWarnings("unchecked")

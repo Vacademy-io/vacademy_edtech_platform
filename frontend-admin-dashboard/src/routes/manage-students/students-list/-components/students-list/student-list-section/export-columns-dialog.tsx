@@ -13,8 +13,10 @@ import { useInstituteDetailsStore } from '@/stores/students/students-list/useIns
 import {
     buildStudentsCsv,
     downloadCsv,
+    ExportJobError,
     ExportPageError,
     fetchAllStudentsForExport,
+    fetchAllStudentsViaServerJob,
     getStudentExportColumns,
     type ExportColumn,
     type ExportProgress,
@@ -99,10 +101,12 @@ export const ExportColumnsDialog = ({
         const controller = new AbortController();
         abortRef.current = controller;
         try {
-            const students = await fetchAllStudentsForExport(appliedFilters, {
-                onProgress: setProgress,
-                signal: controller.signal,
-            });
+            const exportOptions = { onProgress: setProgress, signal: controller.signal };
+            // Server-side job first. null means this backend does not have it yet,
+            // so page through the list in the browser instead.
+            const students =
+                (await fetchAllStudentsViaServerJob(appliedFilters, exportOptions)) ??
+                (await fetchAllStudentsForExport(appliedFilters, exportOptions));
             if (controller.signal.aborted) return;
             if (students.length === 0) {
                 toast.error('No data to export for the current filters');
@@ -120,7 +124,9 @@ export const ExportColumnsDialog = ({
             toast.error(
                 error instanceof ExportPageError
                     ? `Export stopped on page ${error.pageNo + 1}: the server did not respond. Please try again, or narrow the filters.`
-                    : 'Error exporting CSV'
+                    : error instanceof ExportJobError
+                      ? error.message
+                      : 'Error exporting CSV'
             );
         } finally {
             if (abortRef.current === controller) abortRef.current = null;
@@ -134,6 +140,15 @@ export const ExportColumnsDialog = ({
         const total = progress.totalRows || totalElements;
         if (progress.retrying) {
             return `Page ${progress.retrying.pageNo + 1} is slow, retrying (attempt ${progress.retrying.attempt + 1})...`;
+        }
+        if (progress.phase === 'queued') return 'Waiting for the export to start...';
+        if (progress.phase === 'server') {
+            return progress.totalRows > 0
+                ? `Exporting ${formatNumber(progress.rowsFetched)} of ${formatNumber(progress.totalRows)} learners...`
+                : 'Exporting learners...';
+        }
+        if (progress.phase === 'downloading') {
+            return `Downloading ${formatNumber(progress.rowsFetched)} learners...`;
         }
         if (progress.pagesDone === 0) return 'Preparing your export...';
         return `Fetched ${formatNumber(progress.rowsFetched)} of ${formatNumber(total)} learners (page ${progress.pagesDone} of ${progress.totalPages || '?'})`;
