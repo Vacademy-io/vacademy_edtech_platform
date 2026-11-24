@@ -1057,8 +1057,18 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
      */
     @Modifying
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    @Query(value = "UPDATE student_attempt SET result_notice_pending = TRUE WHERE id = :attemptId", nativeQuery = true)
+    @Query(value = "UPDATE student_attempt SET result_notice_pending = TRUE, result_notice_ai_wait_since = NULL WHERE id = :attemptId", nativeQuery = true)
     int markResultNoticePending(@Param("attemptId") String attemptId);
+
+    /**
+     * Queues the result email of a practice or mock attempt, to be sent once its AI analysis
+     * is ready (AutoResultReleaseJob decides; it also drops it when the test has no result
+     * template of its own). REQUIRES_NEW for the same reason as markResultNoticePending.
+     */
+    @Modifying
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Query(value = "UPDATE student_attempt SET result_notice_pending = TRUE, result_notice_ai_wait_since = CAST(:since AS TIMESTAMP) WHERE id = :attemptId", nativeQuery = true)
+    int markResultNoticeAfterAi(@Param("attemptId") String attemptId, @Param("since") Date since);
 
     /**
      * A release that sent (or deliberately skipped) its own email: nothing left for the job.

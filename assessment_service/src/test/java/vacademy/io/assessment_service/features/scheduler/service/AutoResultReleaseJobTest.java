@@ -197,7 +197,29 @@ class AutoResultReleaseJobTest {
                 // "Hide result again" (submission review): a result a teacher hid is never re-released.
                 .contains("sa.result_withheld_at IS NULL");
         assertThat(AutoResultReleaseJob.CLAIM_SUBMIT_RELEASED_SQL).contains("SKIP LOCKED")
-                .contains("result_notice_pending = TRUE").contains("SET result_notice_pending = NULL");
+                .contains("result_notice_pending = TRUE").contains("SET result_notice_pending = NULL")
+                // a practice / mock notice waiting for its AI analysis is not sent at once
+                .contains("result_notice_ai_wait_since IS NULL");
+    }
+
+    @Test
+    void notices_released_after_the_ai_analysis_go_through_the_submit_time_path() {
+        AiWaitResultNoticeSelector selector = mock(AiWaitResultNoticeSelector.class);
+        job.aiWaitNotices = selector;
+        Assessment a1 = assessment("A1");
+        StudentAttempt x = attempt("x", a1, "RELEASED", new Date());
+        when(selector.claimReady()).thenReturn(List.of("x"));
+        when(jdbc.queryForList(anyString(), any(SqlParameterSource.class), eq(String.class))).thenReturn(List.of());
+        stubFind(x);
+
+        job.runOnce();
+
+        verify(manager).releaseAutomatically(List.of(x), a1, "inst-1", false);
+    }
+
+    @Test
+    void without_the_selector_the_ai_wait_step_does_nothing() {
+        assertThat(job.drainAiWait()).isZero();
     }
 
     @Test

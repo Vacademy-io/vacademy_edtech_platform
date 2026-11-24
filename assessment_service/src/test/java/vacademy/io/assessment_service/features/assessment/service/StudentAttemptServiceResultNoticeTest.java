@@ -15,6 +15,7 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -92,15 +93,52 @@ class StudentAttemptServiceResultNoticeTest {
     void a_mock_or_practice_attempt_is_not_emailed_per_attempt() {
         StudentAttempt mock = attempt("AUTO", "AUTO_AFTER_SUBMISSION", null);
         mock.getRegistration().getAssessment().setPlayMode("MOCK");
+        mock.setAttemptNumber(2);
         StudentAttempt saved = run(mock);
         verify(repo, never()).markResultNoticePending(anyString());
+        verify(repo, never()).markResultNoticeAfterAi(anyString(), any());
         // still released on submit, as before
         org.assertj.core.api.Assertions.assertThat(saved.getReportReleaseStatus()).isEqualTo("RELEASED");
 
         StudentAttempt practice = attempt("AUTO", "AUTO_AFTER_ASSESSMENT_END", null);
         practice.getRegistration().getAssessment().setPlayMode("PRACTICE");
+        practice.setAttemptNumber(3);
         run(practice);
         verify(repo, never()).markResultNoticePending(anyString());
+        verify(repo, never()).markResultNoticeAfterAi(anyString(), any());
+    }
+
+    @Test
+    void the_first_mock_attempt_waits_for_the_ai_analysis_instead() {
+        StudentAttempt mock = attempt("AUTO", "AUTO_AFTER_SUBMISSION", null);
+        mock.getRegistration().getAssessment().setPlayMode("MOCK");
+        mock.setAttemptNumber(1);
+        run(mock);
+        verify(repo, never()).markResultNoticePending(anyString());
+        verify(repo).markResultNoticeAfterAi(eq("att-1"), any(java.util.Date.class));
+    }
+
+    @Test
+    void an_exam_never_waits_for_the_ai_analysis() {
+        StudentAttempt exam = attempt("AUTO", "AUTO_AFTER_SUBMISSION", null);
+        exam.setAttemptNumber(1);
+        run(exam);
+        verify(repo).markResultNoticePending("att-1");
+        verify(repo, never()).markResultNoticeAfterAi(anyString(), any());
+    }
+
+    @Test
+    void the_ai_wait_also_waits_for_the_commit() {
+        TransactionSynchronizationManager.initSynchronization();
+        StudentAttempt mock = attempt("AUTO", "AUTO_AFTER_SUBMISSION", null);
+        mock.getRegistration().getAssessment().setPlayMode("MOCK");
+        mock.setAttemptNumber(1);
+
+        run(mock);
+        verify(repo, never()).markResultNoticeAfterAi(anyString(), any());
+
+        TransactionSynchronizationManager.getSynchronizations().forEach(TransactionSynchronization::afterCommit);
+        verify(repo).markResultNoticeAfterAi(eq("att-1"), any(java.util.Date.class));
     }
 
     @Test

@@ -16,6 +16,7 @@ import vacademy.io.admin_core_service.features.learner_tracking.repository.Learn
 import vacademy.io.admin_core_service.features.slide.entity.Slide;
 import vacademy.io.admin_core_service.features.slide.repository.SlideRepository;
 import vacademy.io.admin_core_service.features.learner_tracking.service.ActivityLogProcessorService;
+import vacademy.io.admin_core_service.features.learner_tracking.service.AssessmentAnalysisState;
 import vacademy.io.admin_core_service.features.learner_tracking.service.LLMActivityAnalyticsService;
 import vacademy.io.common.auth.model.CustomUserDetails;
 
@@ -361,6 +362,40 @@ public class LearnerLLMAnalyticsController {
                 } catch (Exception e) {
                         return ResponseEntity.internalServerError().body(Map.of("status", "error", "message", e.getMessage()));
                 }
+        }
+
+        /**
+         * Where a learner's AI analysis of one assessment stands, for the analysis queued at
+         * or after {@code since} (epoch millis): READY, PENDING, GAVE_UP or NONE.
+         *
+         * <p>assessment_service uses it to send a practice test's result email once the
+         * analysis is made, so the report carries the AI part. Read-only: it never makes the
+         * analysis and never spends credits.
+         */
+        @GetMapping("/internal/analysis-status")
+        @Operation(summary = "Internal: state of a learner's AI analysis of one source (HMAC auth, no JWT)")
+        public ResponseEntity<Map<String, Object>> getAnalysisStatusInternal(
+                        @RequestParam("userId") String userId,
+                        @RequestParam("sourceId") String sourceId,
+                        @RequestParam("since") long sinceMillis) {
+                if (userId == null || userId.isBlank() || sourceId == null || sourceId.isBlank()) {
+                        return ResponseEntity.badRequest().body(Map.of(
+                                        "status", "error",
+                                        "message", "userId and sourceId are required"));
+                }
+                List<Object[]> rows = activityLogRepository.findNewestLiveAssessmentLogSince(
+                                userId, sourceId, new java.sql.Timestamp(sinceMillis));
+                String status = null;
+                int attempts = 0;
+                if (!rows.isEmpty()) {
+                        Object[] row = rows.get(0);
+                        status = row[0] == null ? null : row[0].toString();
+                        attempts = row[1] instanceof Number n ? n.intValue() : 0;
+                }
+                Map<String, Object> body = new LinkedHashMap<>();
+                body.put("state", AssessmentAnalysisState.of(status, attempts).name());
+                body.put("status", status);
+                return ResponseEntity.ok(body);
         }
 
         /**

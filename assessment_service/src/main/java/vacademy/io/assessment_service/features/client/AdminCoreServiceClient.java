@@ -301,6 +301,40 @@ public class AdminCoreServiceClient {
         return new AiReportGenerationResult("error", null);
     }
 
+    /** Where a learner's AI analysis of one attempt stands (admin_core's analysis-status). */
+    public enum AnalysisState {
+        /** Made: the report can include it now. */
+        READY,
+        /** Queued or being made by the hourly scheduler. */
+        PENDING,
+        /** Will not be made on its own (no credits, usage limit, failed for good). */
+        GAVE_UP,
+        /** No analysis row since the given time (yet, or ever). */
+        NONE
+    }
+
+    /**
+     * The state of the newest AI analysis of {@code userId}'s {@code assessmentId} that was
+     * queued at or after {@code sinceMillis}. Read-only: never makes the analysis and never
+     * spends credits. Returns null when admin_core cannot be asked; the caller retries later.
+     */
+    public AnalysisState assessmentAnalysisState(String userId, String assessmentId, long sinceMillis) {
+        try {
+            String route = "/admin-core-service/llm-analytics/internal/analysis-status?userId=" + userId
+                    + "&sourceId=" + assessmentId + "&since=" + sinceMillis;
+            ResponseEntity<String> response = internalClientUtils.makeHmacRequest(
+                    clientName, "GET", adminCoreServiceBaseUrl, route, null);
+            if (response.getStatusCode() == HttpStatus.OK && StringUtils.hasText(response.getBody())) {
+                Object state = objectMapper.readValue(response.getBody(), Map.class).get("state");
+                return state == null ? null : AnalysisState.valueOf(state.toString());
+            }
+        } catch (Exception e) {
+            log.warn("AI analysis status lookup failed for user {} assessment {}: {}",
+                    userId, assessmentId, e.getMessage());
+        }
+        return null;
+    }
+
     /**
      * Report branding for an institute, read from {@code ASSESSMENT_SETTING.reportBranding}.
      * <p>

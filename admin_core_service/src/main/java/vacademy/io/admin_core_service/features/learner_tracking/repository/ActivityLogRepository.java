@@ -2526,6 +2526,17 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, String
     List<Object[]> findNewestLiveAssessmentLog(@Param("userId") String userId, @Param("sourceId") String sourceId);
 
     /**
+     * One learner's newest live assessment-analysis row queued at or after {@code since}, as
+     * {@code [status, processing_attempts]} (empty: none). Read by assessment_service to time
+     * a result email after the analysis is made.
+     */
+    @Query(value = "SELECT status, COALESCE(processing_attempts, 0) FROM activity_log " +
+            "WHERE user_id = :userId AND source_id = :sourceId AND source_type = 'llm_assessment' " +
+            "AND status <> 'superseded' AND created_at >= :since ORDER BY created_at DESC LIMIT 1", nativeQuery = true)
+    List<Object[]> findNewestLiveAssessmentLogSince(@Param("userId") String userId, @Param("sourceId") String sourceId,
+                                                    @Param("since") java.sql.Timestamp since);
+
+    /**
      * Takes one learner's analysis row for this caller, if it is still in one of the given
      * states. Exactly one caller wins - this request, another pod, or the hourly scheduler -
      * so an analysis is never made (and charged) twice.
