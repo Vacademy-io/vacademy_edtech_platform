@@ -114,6 +114,7 @@
         "allImportedSuccess_many": "Les {{count}} prospects ont tous été importés avec succès !",
         "allImportedSuccess_other": "Les {{count}} prospects ont tous été importés avec succès !",
         "importComplete": "Import terminé : {{success}} réussis, {{failed}} échoués, {{skipped}} ignorés",
-        "submitFailed": "Échec de l'envoi des prospects"
+        "submitFailed": "Échec de l'envoi des prospects",
+        "batchesFailed": "{{count}} lot(s) de {{size}} lignes maximum n’ont pas pu être envoyés. Ces lignes sont marquées en échec. Importez à nouveau le même fichier pour les réessayer : les lignes déjà ajoutées seront ignorées."
     }
 }
