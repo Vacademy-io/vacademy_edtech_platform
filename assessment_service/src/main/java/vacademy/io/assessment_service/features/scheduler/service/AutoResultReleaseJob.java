@@ -37,6 +37,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *   <li><b>Released on submit</b> ({@code AUTO_AFTER_SUBMISSION}, or an after-end test submitted
  *       after the end): the submit path releases at once and only marks
  *       {@code result_notice_pending}; the PDF is made here so the submit request stays fast.</li>
+ *   <li><b>Practice / mock, after the AI analysis</b>: the first attempt of a practice or mock
+ *       test that has its own result template, held by {@code result_notice_ai_wait_since}
+ *       until the attempt's AI analysis is ready ({@link AiWaitResultNoticeSelector}).</li>
  * </ol>
  *
  * <p>The scheduler thread only starts a run: rendering PDFs takes seconds per learner, and
@@ -89,6 +92,7 @@ public class AutoResultReleaseJob {
                 SELECT sa.id
                 FROM student_attempt sa
                 WHERE sa.result_notice_pending = TRUE
+                  AND sa.result_notice_ai_wait_since IS NULL
                 ORDER BY sa.id
                 LIMIT :limit
                 FOR UPDATE OF sa SKIP LOCKED
@@ -117,6 +121,10 @@ public class AutoResultReleaseJob {
         return t;
     });
     private final AtomicBoolean running = new AtomicBoolean(false);
+
+    /** Practice / mock notices waiting for the AI analysis; null in unit tests. */
+    @Autowired(required = false)
+    AiWaitResultNoticeSelector aiWaitNotices;
 
     @Value("${assessment.auto-result-release.enabled:true}")
     private boolean enabled = true;
@@ -158,13 +166,30 @@ public class AutoResultReleaseJob {
         }
     }
 
-    /** One run: drain both kinds, each up to {@link #MAX_PER_RUN}. */
+    /** One run: drain both kinds, each up to {@link #MAX_PER_RUN}, then the AI-wait notices. */
     void runOnce() {
         int afterEnd = drain(CLAIM_AFTER_END_SQL, true);
         int onSubmit = drain(CLAIM_SUBMIT_RELEASED_SQL, false);
-        if (afterEnd + onSubmit > 0) {
-            log.info("[AUTO-RELEASE] released after end: {}, emailed submit-time releases: {}", afterEnd, onSubmit);
+        int afterAi = drainAiWait();
+        if (afterEnd + onSubmit + afterAi > 0) {
+            log.info("[AUTO-RELEASE] released after end: {}, emailed submit-time releases: {}, emailed after AI analysis: {}",
+                    afterEnd, onSubmit, afterAi);
         }
+    }
+
+    /**
+     * Practice / mock first attempts whose test has its own result template: released on
+     * submit, emailed here once the AI analysis is ready (see {@link AiWaitResultNoticeSelector}).
+     */
+    int drainAiWait() {
+        if (aiWaitNotices == null) {
+            return 0;
+        }
+        List<String> ids = aiWaitNotices.claimReady();
+        if (!ids.isEmpty()) {
+            process(ids, false);
+        }
+        return ids.size();
     }
 
     private int drain(String claimSql, boolean afterEnd) {

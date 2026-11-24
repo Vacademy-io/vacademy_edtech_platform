@@ -275,13 +275,34 @@ public class StudentAttemptService {
             // submission of a live exam. Written as its own UPDATE, not an entity field, so a
             // later save of an older copy of this attempt cannot set the flag again. After
             // commit, so a failure here cannot roll back the learner's submission.
-            // EXAM only: a mock / practice test is retaken freely (up to 19 attempts each in
-            // prod), and a report email per attempt would be spam.
+            // EXAM: queued as before. A mock / practice test is retaken freely (up to 19
+            // attempts each in prod), so a report email per attempt would be spam: only the
+            // FIRST attempt is queued, and the job sends it only when the test has its own
+            // result template, once the attempt's AI analysis is ready.
             if (isExamPlayMode(saved)) {
                 queueResultNoticeAfterCommit(saved.getId());
+            } else if (isFirstAttempt(saved)) {
+                queueResultNoticeAfterAiAfterCommit(saved.getId());
             }
         }
         return saved;
+    }
+
+    static boolean isFirstAttempt(StudentAttempt attempt) {
+        Integer number = attempt.getAttemptNumber();
+        return number == null || number <= 1;
+    }
+
+    private void queueResultNoticeAfterAiAfterCommit(String attemptId) {
+        Date since = new Date();
+        runAfterCommit(() -> {
+            try {
+                studentAttemptRepository.markResultNoticeAfterAi(attemptId, since);
+            } catch (Exception e) {
+                log.error("[AUTO-RELEASE] could not queue the result email for attempt {}: {}",
+                        attemptId, e.getMessage());
+            }
+        });
     }
 
     private static boolean isExamPlayMode(StudentAttempt attempt) {
@@ -294,14 +315,17 @@ public class StudentAttemptService {
     }
 
     private void queueResultNoticeAfterCommit(String attemptId) {
-        Runnable mark = () -> {
+        runAfterCommit(() -> {
             try {
                 studentAttemptRepository.markResultNoticePending(attemptId);
             } catch (Exception e) {
                 log.error("[AUTO-RELEASE] could not queue the result email for attempt {}: {}",
                         attemptId, e.getMessage());
             }
-        };
+        });
+    }
+
+    private static void runAfterCommit(Runnable mark) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
