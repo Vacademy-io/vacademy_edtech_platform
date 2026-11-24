@@ -61,7 +61,27 @@ def test_the_latest_call_succeeding_is_nothing():
 
 
 def test_a_run_that_stopped_over_an_hour_ago_is_no_longer_failing():
-    assert alerts.classify([call(minutes_ago=61) for _ in range(5)], 5, NOW) is None
+    rows = [call(minutes_ago=61) for _ in range(5)] + [call("SUCCESS", 200, minutes_ago=120)]
+    assert alerts.classify(rows, 5, NOW) is None
+
+
+def keyless(minutes_ago, http_status=None, error="Bodhi TTS error idle_timeout"):
+    """A row from admin_core or the voice bot: failures only, no key."""
+    return {**call(http_status=http_status, error=error, minutes_ago=minutes_ago), "key_hint": alerts.NO_KEY}
+
+
+def test_failure_only_sources_alert_on_failures_within_the_hour():
+    assert alerts.classify([keyless(1), keyless(5)], 2, NOW).kind == alerts.FAILING
+
+
+def test_failure_only_sources_do_not_alert_on_old_failures_spread_out():
+    # Sarvam: one failure an hour and more ago, with successes the voice bot never logs.
+    assert alerts.classify([keyless(30), keyless(24 * 60 - 10)], 2, NOW) is None
+    assert alerts.classify([keyless(17 * 60 + i) for i in range(100)], 2, NOW) is None
+
+
+def test_failure_only_sources_still_open_out_of_credits_on_a_402():
+    assert alerts.classify([keyless(300, http_status=402, error=None)], 2, NOW).kind == alerts.CREDITS
 
 
 def test_one_402_is_enough_for_out_of_credits():
@@ -80,8 +100,10 @@ def test_out_of_credits_is_found_behind_a_newer_network_error():
     assert alerts.classify(rows, 5, NOW).kind == alerts.CREDITS
 
 
-def test_a_success_after_a_402_clears_it():
-    assert alerts.classify([call("SUCCESS", 200), call(http_status=402)], 5, NOW) is None
+def test_a_success_after_a_402_clears_it_once_the_402_has_settled():
+    # A minute after the 402 is too soon: a low balance still lets small calls through.
+    assert alerts.classify([call("SUCCESS", 200), call(http_status=402, minutes_ago=2)], 5, NOW).kind == alerts.CREDITS
+    assert alerts.classify([call("SUCCESS", 200), call(http_status=402, minutes_ago=31)], 5, NOW) is None
 
 
 @pytest.mark.parametrize(
@@ -267,3 +289,68 @@ def test_without_the_token_every_number_is_reported_not_silently_skipped(monkeyp
 
     assert [r["success"] for r in results] == [False, False]
     assert "WHATSAPP_ACCESS_TOKEN_VIDYAYATAN" in results[0]["error"]
+
+
+def free(status="SUCCESS", minutes_ago=1, http_status=200):
+    return {**call(status, http_status=http_status, minutes_ago=minutes_ago), "operation": "POST /api/v1 (free model)"}
+
+
+def test_a_free_model_answering_does_not_clear_out_of_credits():
+    rows = [free(minutes_ago=1), free(minutes_ago=2), call(http_status=402, minutes_ago=3)]
+
+    problem = alerts.classify(rows, threshold=5, now=NOW)
+
+    assert problem.kind == alerts.CREDITS
+    assert problem.http_status == 402
+
+
+def test_free_model_calls_do_not_break_a_failing_run():
+    rows = [call(minutes_ago=1), free(minutes_ago=2), call(minutes_ago=3), free(minutes_ago=4),
+            call(minutes_ago=5), call(minutes_ago=6), call(minutes_ago=7)]
+
+    assert alerts.classify(rows, threshold=5, now=NOW).kind == alerts.FAILING
+
+
+def test_free_model_failures_alone_are_not_an_api_problem():
+    rows = [free("FAILED", minutes_ago=i, http_status=429) for i in range(1, 10)]
+
+    assert alerts.classify(rows, threshold=5, now=NOW) is None
+
+
+def test_a_small_paid_call_getting_through_right_after_a_402_is_not_a_recovery():
+    rows = [call("SUCCESS", http_status=200, minutes_ago=1),
+            call(http_status=402, error="This request requires more credits, can only afford 900", minutes_ago=5),
+            call("SUCCESS", http_status=200, minutes_ago=6)]
+
+    assert alerts.classify(rows, threshold=5, now=NOW).kind == alerts.CREDITS
+
+
+def test_paid_calls_succeeding_well_after_the_last_402_clear_it():
+    rows = [call("SUCCESS", http_status=200, minutes_ago=1), call(http_status=402, minutes_ago=45)]
+
+    assert alerts.classify(rows, threshold=5, now=NOW) is None
+
+
+def test_recovery_needs_a_paid_call_not_a_free_one():
+    paid = alerts.paid_calls([free(minutes_ago=1), call(http_status=402, minutes_ago=2)])
+
+    assert [r["status"] for r in paid] == ["FAILED"]
+    assert alerts.is_free_call(free()) and not alerts.is_free_call(call())
+
+
+def test_calls_logged_without_a_key_are_named_as_such():
+    assert alerts.key_label(alerts.NO_KEY) == "Key not recorded by the service that called it"
+    assert alerts.key_label("ab12") == "Key ending ab12"
+    assert "Key not recorded" in alerts.body_for([notice(vendor="api.plivo.com", key_hint=alerts.NO_KEY)])
+    assert "key not recorded" in alerts.whatsapp_fields([notice(key_hint=alerts.NO_KEY)], now=NOW)["3"]
+
+
+def test_java_services_rows_are_read_even_without_a_key():
+    sql = str(alerts._RECENT_CALLS)
+    assert "COALESCE(source_service, 'ai') <> 'ai'" in sql
+    assert "COALESCE(key_hint, :no_key)" in sql
+
+
+def test_plivo_402s_with_no_key_open_out_of_credits():
+    rows = [call(http_status=402, minutes_ago=i) for i in range(1, 4)]
+    assert alerts.classify(rows, threshold=2, now=NOW).kind == alerts.CREDITS

@@ -40,6 +40,12 @@ SWEEP_SECONDS = 300
 # No calls for this long and a run of failures is no longer news. An empty balance stays open
 # for the whole lookback: it is still empty at 8am though nobody called overnight.
 FAILING_WINDOW = timedelta(hours=1)
+# An account running low refuses big requests (402 "can only afford N tokens") while small ones
+# still go through. A refusal this recent keeps an out-of-credits alert open whatever succeeded
+# since, so it does not flap between "out of credits" and "working again".
+CREDITS_SETTLE = timedelta(minutes=30)
+# Must match httpx_capture.FREE_MODEL_MARK. Free models answer with no credits on the account.
+FREE_MODEL_MARK = " (free model)"
 LOOKBACK_HOURS = 24
 # Enough to report a long run. The highest threshold the setting allows is 50.
 MAX_ROWS_PER_KEY = 100
@@ -65,13 +71,20 @@ _OUT_OF_CREDITS = re.compile(
 _LOCK_KEY = "external_api_alerts"
 _TRY_LOCK = text("SELECT pg_try_advisory_xact_lock(hashtext(:key))")
 
+# admin_core, the other Java services and the voice bot log integrated vendors without the key they
+# used (Plivo's 402s, for one). Their rows count, grouped per vendor under NO_KEY. ai-service rows
+# with no key stay out: those are sites fetched without credentials, not API accounts.
+NO_KEY = "none"
+
 _RECENT_CALLS = text("""
-    SELECT vendor, key_hint, status, http_status, error_message, occurred_at
+    SELECT vendor, key_hint, operation, status, http_status, error_message, occurred_at
     FROM (
-        SELECT vendor, key_hint, status, http_status, error_message, occurred_at,
-               row_number() OVER (PARTITION BY vendor, key_hint ORDER BY occurred_at DESC) AS newest_first
+        SELECT vendor, COALESCE(key_hint, :no_key) AS key_hint, operation, status, http_status,
+               error_message, occurred_at,
+               row_number() OVER (PARTITION BY vendor, COALESCE(key_hint, :no_key)
+                                  ORDER BY occurred_at DESC) AS newest_first
         FROM external_api_call_log
-        WHERE key_hint IS NOT NULL
+        WHERE (key_hint IS NOT NULL OR COALESCE(source_service, 'ai') <> 'ai')
           AND occurred_at > now() - make_interval(hours => CAST(:lookback AS int))
     ) ranked
     WHERE newest_first <= :max_rows
@@ -155,30 +168,60 @@ def looks_out_of_credits(http_status: Optional[int], error: Optional[str]) -> bo
     return http_status == 402 or bool(error and _OUT_OF_CREDITS.search(error))
 
 
+def is_free_call(row: Mapping[str, Any]) -> bool:
+    """A call to a free model: it proves nothing about the key's credits either way."""
+    return str(row.get("operation") or "").endswith(FREE_MODEL_MARK)
+
+
+def paid_calls(rows: Sequence[Mapping[str, Any]]) -> List[Mapping[str, Any]]:
+    return [r for r in rows if not is_free_call(r)]
+
+
 def classify(rows: Sequence[Mapping[str, Any]], threshold: int, now: datetime) -> Optional[Problem]:
-    """What is wrong with one API and key, from its calls, newest first. None when nothing is."""
+    """What is wrong with one API and key, from its calls, newest first. None when nothing is.
+
+    Free-model calls are left out. Out of credits holds while the newest refusal for credits has
+    no paid success after it, or is under CREDITS_SETTLE old: a small paid call getting through
+    on a nearly empty account is not a recovery."""
+    paid = paid_calls(rows)
     streak = []
-    for row in rows:
+    for row in paid:
         if row["status"] != "FAILED":
             break
         streak.append(row)
+
+    refusal = next((r for r in paid if r["status"] == "FAILED"
+                    and looks_out_of_credits(r["http_status"], r["error_message"])), None)
+    if refusal is not None:
+        success_since = any(r["status"] == "SUCCESS" and r["occurred_at"] > refusal["occurred_at"] for r in paid)
+        if not success_since or now - refusal["occurred_at"] <= CREDITS_SETTLE:
+            return Problem(
+                kind=CREDITS,
+                consecutive=len(streak),
+                last_failed_at=refusal["occurred_at"],
+                http_status=refusal["http_status"],
+                error=(refusal["error_message"] or "")[:MAX_ERROR_LENGTH] or None,
+            )
+
     if not streak:
         return None
     latest = streak[0]
-    out_of_credits = any(looks_out_of_credits(r["http_status"], r["error_message"]) for r in streak)
-    if out_of_credits:
-        kind = CREDITS
-    elif len(streak) >= threshold and now - latest["occurred_at"] <= FAILING_WINDOW:
-        kind = FAILING
-    else:
-        return None
-    return Problem(
-        kind=kind,
-        consecutive=len(streak),
-        last_failed_at=latest["occurred_at"],
-        http_status=latest["http_status"],
-        error=(latest["error_message"] or "")[:MAX_ERROR_LENGTH] or None,
-    )
+    if paid and paid[0].get("key_hint") == NO_KEY:
+        # admin_core and the voice bot log failures only, so every row is a failure and a run means
+        # nothing. Failing is this many failures within the last FAILING_WINDOW.
+        recent = [r for r in streak if now - r["occurred_at"] <= FAILING_WINDOW]
+        if len(recent) < threshold:
+            return None
+        streak = recent
+    if len(streak) >= threshold and now - latest["occurred_at"] <= FAILING_WINDOW:
+        return Problem(
+            kind=FAILING,
+            consecutive=len(streak),
+            last_failed_at=latest["occurred_at"],
+            http_status=latest["http_status"],
+            error=(latest["error_message"] or "")[:MAX_ERROR_LENGTH] or None,
+        )
+    return None
 
 
 def is_due(previous_notified_at: Optional[datetime], repeat_hours: float, now: datetime) -> bool:
@@ -243,7 +286,7 @@ def evaluate(db: Any, now: Optional[datetime] = None) -> Optional[List[Notice]]:
     recipients, threshold, repeat_hours = _settings(db)
 
     calls: Dict[Tuple[str, str], List[Mapping[str, Any]]] = {}
-    for row in db.execute(_RECENT_CALLS, {"lookback": LOOKBACK_HOURS, "max_rows": MAX_ROWS_PER_KEY}).mappings():
+    for row in db.execute(_RECENT_CALLS, {"lookback": LOOKBACK_HOURS, "max_rows": MAX_ROWS_PER_KEY, "no_key": NO_KEY}).mappings():
         calls.setdefault((row["vendor"], row["key_hint"]), []).append(row)
 
     problems = {pair: p for pair, rows in calls.items() if (p := classify(rows, threshold, now))}
@@ -282,7 +325,8 @@ def _close_finished(
                  "WHERE vendor = :vendor AND key_hint = :key_hint"),
             {"now": now, "vendor": pair[0], "key_hint": pair[1]},
         )
-        latest = calls.get(pair)
+        # The newest paid call: a free model answering is not "working again".
+        latest = paid_calls(calls.get(pair) or [])
         told = row["last_notified_at"] is not None and not row["muted"]
         if can_notify and told and latest and latest[0]["status"] == "SUCCESS":
             notices.append(Notice("recovered", pair[0], pair[1], row["kind"]))
@@ -353,7 +397,7 @@ def body_for(notices: Sequence[Notice]) -> str:
     """Everything from a vendor or from staff is escaped: this is HTML going to people's inboxes."""
     parts = ['<div style="font-family:Arial,sans-serif;font-size:14px;color:#111">']
     for notice in notices:
-        facts = [f"Key ending {notice.key_hint}" if notice.key_hint != "****" else "Key too short to show"]
+        facts = [key_label(notice.key_hint)]
         facts.append(f"Account: {notice.account}" if notice.account
                      else "Account not entered, and it may be an institute's own key")
         if notice.http_status:
@@ -394,8 +438,14 @@ def _wa_text(value: Any, limit: int = WHATSAPP_FIELD_LIMIT) -> str:
     return flat if len(flat) <= limit else flat[: limit - 1].rstrip() + "…"
 
 
+def key_label(hint: str) -> str:
+    if hint == NO_KEY:
+        return "Key not recorded by the service that called it"
+    return "Key too short to show" if hint == "****" else f"Key ending {hint}"
+
+
 def _key_line(notice: Notice) -> str:
-    key = f"key ending {notice.key_hint}" if notice.key_hint != "****" else "key too short to show"
+    key = key_label(notice.key_hint).lower()
     return f"{notice.account} ({key})" if notice.account else key
 
 
@@ -567,7 +617,9 @@ __all__ = [
     "body_for",
     "classify",
     "evaluate",
+    "NO_KEY",
     "invalid_emails",
+    "key_label",
     "invalid_phones",
     "is_due",
     "looks_out_of_credits",
