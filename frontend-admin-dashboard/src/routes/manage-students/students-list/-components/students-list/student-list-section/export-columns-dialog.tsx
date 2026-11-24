@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Export } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -7,14 +7,17 @@ import { MyDialog } from '@/components/design-system/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { cn } from '@/lib/utils';
+import { formatNumber } from '@/lib/formatters';
 import { StudentFilterRequest } from '@/types/student-table-types';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import {
     buildStudentsCsv,
     downloadCsv,
+    ExportPageError,
     fetchAllStudentsForExport,
     getStudentExportColumns,
     type ExportColumn,
+    type ExportProgress,
 } from '../../../-utils/student-export';
 import { nudgeAssistant } from '@/components/vacademy-assistant/page-ask';
 
@@ -54,6 +57,15 @@ export const ExportColumnsDialog = ({
         }, {})
     );
     const [isExporting, setIsExporting] = useState(false);
+    const [progress, setProgress] = useState<ExportProgress | null>(null);
+    const abortRef = useRef<AbortController | null>(null);
+
+    // Closing the dialog (or leaving the page) stops the export instead of letting
+    // it keep paging in the background.
+    useEffect(() => {
+        if (!open) abortRef.current?.abort();
+    }, [open]);
+    useEffect(() => () => abortRef.current?.abort(), []);
 
     const selectedCount = useMemo(
         () => columns.filter((col) => selected[col.id]).length,
@@ -82,9 +94,16 @@ export const ExportColumnsDialog = ({
             return;
         }
         setIsExporting(true);
+        setProgress({ pagesDone: 0, totalPages: 0, rowsFetched: 0, totalRows: totalElements });
         nudgeAssistant('learners');
+        const controller = new AbortController();
+        abortRef.current = controller;
         try {
-            const students = await fetchAllStudentsForExport(appliedFilters, totalElements);
+            const students = await fetchAllStudentsForExport(appliedFilters, {
+                onProgress: setProgress,
+                signal: controller.signal,
+            });
+            if (controller.signal.aborted) return;
             if (students.length === 0) {
                 toast.error('No data to export for the current filters');
                 return;
@@ -96,12 +115,29 @@ export const ExportColumnsDialog = ({
             downloadCsv(`students_export_${new Date().toISOString().split('T')[0]}.csv`, csv);
             toast.success(`Exported ${students.length} record(s)`);
             onOpenChange(false);
-        } catch {
-            toast.error('Error exporting CSV');
+        } catch (error) {
+            if (controller.signal.aborted) return;
+            toast.error(
+                error instanceof ExportPageError
+                    ? `Export stopped on page ${error.pageNo + 1}: the server did not respond. Please try again, or narrow the filters.`
+                    : 'Error exporting CSV'
+            );
         } finally {
+            if (abortRef.current === controller) abortRef.current = null;
             setIsExporting(false);
+            setProgress(null);
         }
     };
+
+    const progressText = (() => {
+        if (!progress) return 'Preparing your export...';
+        const total = progress.totalRows || totalElements;
+        if (progress.retrying) {
+            return `Page ${progress.retrying.pageNo + 1} is slow, retrying (attempt ${progress.retrying.attempt + 1})...`;
+        }
+        if (progress.pagesDone === 0) return 'Preparing your export...';
+        return `Fetched ${formatNumber(progress.rowsFetched)} of ${formatNumber(total)} learners (page ${progress.pagesDone} of ${progress.totalPages || '?'})`;
+    })();
 
     const footer = (
         <div className="flex w-full items-center justify-between gap-2">
@@ -140,7 +176,7 @@ export const ExportColumnsDialog = ({
             {isExporting ? (
                 <div className="flex flex-col items-center gap-2 py-10">
                     <DashboardLoader />
-                    <p className="animate-pulse text-xs text-neutral-500">Preparing your export...</p>
+                    <p className="animate-pulse text-xs text-neutral-500">{progressText}</p>
                 </div>
             ) : (
                 <div className="flex flex-col gap-4">

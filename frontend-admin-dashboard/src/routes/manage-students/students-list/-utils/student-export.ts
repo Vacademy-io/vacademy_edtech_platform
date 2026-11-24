@@ -6,9 +6,14 @@
 // the same JSON the table already uses, which lets us (a) apply the institute's
 // custom terminology to headers and (b) resolve package_session_id -> Course /
 // Level / Session names. Column selection is driven by the export dialog.
-import { StudentTable, StudentFilterRequest } from '@/types/student-table-types';
+import {
+    StudentTable,
+    StudentFilterRequest,
+    StudentListResponse,
+} from '@/types/student-table-types';
 import { BatchForSessionType } from '@/schemas/student/student-list/institute-schema';
-import { fetchStudents } from '../-services/getStudentTable';
+import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
+import { GET_STUDENTS } from '@/constants/urls';
 import { getAccessiblePackageFilters } from '@/lib/auth/facultyAccessUtils';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, OtherTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
@@ -420,18 +425,99 @@ export const downloadCsv = (filename: string, csv: string): void => {
 export const EXPORT_FETCH_PAGE_SIZE = 1000;
 /** Runaway-loop guard only (5M rows at 1000 per page), not a row cap. */
 const EXPORT_MAX_PAGES = 5000;
+/** One page may not take longer than this before it is abandoned and retried. */
+const EXPORT_PAGE_TIMEOUT_MS = 90_000;
+/** Extra attempts per page after the first one fails. */
+const EXPORT_PAGE_RETRIES = 2;
+
+export interface ExportProgress {
+    /** Pages fetched so far. */
+    pagesDone: number;
+    /** Total pages the server reported (0 until the first page arrives). */
+    totalPages: number;
+    /** Distinct rows collected so far. */
+    rowsFetched: number;
+    /** Total rows the server reported for these filters. */
+    totalRows: number;
+    /** Set while a page is being retried after a failure. */
+    retrying?: { pageNo: number; attempt: number };
+}
+
+export interface FetchAllStudentsOptions {
+    onProgress?: (progress: ExportProgress) => void;
+    /** Aborts the export, for example when the dialog is closed. */
+    signal?: AbortSignal;
+}
+
+/** Thrown when a page still fails after every retry. Carries the page for the error toast. */
+export class ExportPageError extends Error {
+    constructor(
+        public readonly pageNo: number,
+        public readonly reason: unknown
+    ) {
+        super(`Export failed on page ${pageNo + 1}`);
+        this.name = 'ExportPageError';
+    }
+}
+
+const wait = (ms: number, signal?: AbortSignal) =>
+    new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(resolve, ms);
+        signal?.addEventListener(
+            'abort',
+            () => {
+                clearTimeout(timer);
+                reject(new DOMException('Export cancelled', 'AbortError'));
+            },
+            { once: true }
+        );
+    });
+
+const isAbort = (error: unknown, signal?: AbortSignal) =>
+    signal?.aborted ||
+    (error instanceof DOMException && error.name === 'AbortError') ||
+    (typeof error === 'object' && error !== null && (error as { code?: string }).code === 'ERR_CANCELED');
+
+/** One page with a hard timeout, retried with a short backoff before giving up. */
+const fetchExportPage = async (
+    pageNo: number,
+    filters: StudentFilterRequest,
+    options: FetchAllStudentsOptions,
+    report: (retrying: ExportProgress['retrying']) => void
+): Promise<StudentListResponse> => {
+    let lastError: unknown;
+    for (let attempt = 0; attempt <= EXPORT_PAGE_RETRIES; attempt++) {
+        if (attempt > 0) {
+            report({ pageNo, attempt });
+            await wait(2_000 * attempt, options.signal);
+        }
+        try {
+            const response = await authenticatedAxiosInstance.post<StudentListResponse>(
+                `${GET_STUDENTS}?pageNo=${pageNo}&pageSize=${EXPORT_FETCH_PAGE_SIZE}`,
+                filters,
+                { timeout: EXPORT_PAGE_TIMEOUT_MS, signal: options.signal }
+            );
+            return response.data;
+        } catch (error) {
+            if (isAbort(error, options.signal)) throw error;
+            lastError = error;
+        }
+    }
+    throw new ExportPageError(pageNo, lastError);
+};
 
 /**
  * Fetch every learner matching the current filters, mirroring the sub-org access
- * restriction the old export applied. Pages through the list in chunks of
- * EXPORT_FETCH_PAGE_SIZE until the server reports the last page, so large institutes
- * get every row instead of one oversized request that times out or gets cut off.
- * totalElements is accepted for API compatibility. The loop stops on the server last flag.
+ * restriction the old export applied. Pages through the list EXPORT_FETCH_PAGE_SIZE
+ * rows at a time. It stops only when the server says the last page was reached: a
+ * page can hold fewer rows than asked for in the middle of the list (users with no
+ * active enrolment row are dropped after the id page is cut), so a short page is not
+ * the end. Each page has a timeout and retries, so a slow page fails loudly instead
+ * of leaving the dialog spinning forever.
  */
 export const fetchAllStudentsForExport = async (
     filters: StudentFilterRequest,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _totalElements?: number
+    options: FetchAllStudentsOptions = {}
 ): Promise<StudentTable[]> => {
     const exportFilters: StudentFilterRequest = { ...filters };
     const accessibleFilters = getAccessiblePackageFilters();
@@ -449,20 +535,34 @@ export const fetchAllStudentsForExport = async (
     // Each row is one enrolment mapping, keyed by id. A row that shifts across a page
     // boundary while paging (ties in the sort column) would otherwise appear twice.
     const rows = new Map<string, StudentTable>();
+    let totalPages = 0;
+    let totalRows = 0;
     for (let pageNo = 0; pageNo < EXPORT_MAX_PAGES; pageNo++) {
-        const response = await fetchStudents({
-            pageNo,
-            pageSize: EXPORT_FETCH_PAGE_SIZE,
-            filters: exportFilters,
-        });
+        const response = await fetchExportPage(pageNo, exportFilters, options, (retrying) =>
+            options.onProgress?.({
+                pagesDone: pageNo,
+                totalPages,
+                rowsFetched: rows.size,
+                totalRows,
+                retrying,
+            })
+        );
         const content = response.content ?? [];
         for (const row of content) {
             rows.set(row.id, row);
         }
+        totalPages = response.total_pages ?? totalPages;
+        totalRows = response.total_elements ?? totalRows;
+        options.onProgress?.({
+            pagesDone: pageNo + 1,
+            totalPages,
+            rowsFetched: rows.size,
+            totalRows,
+        });
+        // The server's last flag (or the page count it reported) is the only end
+        // signal. An empty page is a safety stop so a bad total can never loop.
         const lastPage =
-            response.last ||
-            content.length < EXPORT_FETCH_PAGE_SIZE ||
-            (response.total_pages != null && pageNo + 1 >= response.total_pages);
+            response.last || (totalPages > 0 && pageNo + 1 >= totalPages) || content.length === 0;
         if (lastPage) break;
     }
     return Array.from(rows.values());
