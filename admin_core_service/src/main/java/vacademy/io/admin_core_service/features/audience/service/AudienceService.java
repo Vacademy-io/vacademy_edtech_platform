@@ -12,6 +12,20 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import vacademy.io.admin_core_service.features.audience.config.LeadBulkImportExecutorConfig;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import vacademy.io.admin_core_service.features.audience.dto.*;
 import vacademy.io.admin_core_service.features.audience.dto.CounsellorAllocationSettingDTO;
 import vacademy.io.admin_core_service.features.audience.entity.Audience;
@@ -98,6 +112,15 @@ public class AudienceService {
 
     @jakarta.persistence.PersistenceContext
     private jakarta.persistence.EntityManager entityManager;
+
+    /** Shared pool for bulkSubmitLead rows, see LeadBulkImportExecutorConfig. */
+    @Autowired
+    @Qualifier(LeadBulkImportExecutorConfig.EXECUTOR)
+    private Executor leadBulkImportExecutor;
+
+    /** 1 = bulkSubmitLead runs rows sequentially on the request thread (pre-parallel behaviour). */
+    @Value("${lead.bulk-import.parallelism:3}")
+    private int leadBulkImportParallelism;
 
     @Autowired
     private AudienceRepository audienceRepository;
@@ -1555,7 +1578,7 @@ public class AudienceService {
         if (!"ACTIVE".equals(audience.getStatus())) {
             throw new VacademyException("Audience campaign is not active");
         }
-        String instituteId = audienceRepository.findById(requestDTO.getAudienceId()).get().getInstituteId();
+        String instituteId = audience.getInstituteId();
         // 1. Create/fetch user from auth_service
         String userId = null;
         UserDTO createdUser = null;
@@ -8231,9 +8254,18 @@ public class AudienceService {
     /**
      * Bulk submit simple leads (CSV import-friendly).
      * <p>
-     * Loops through rows and delegates persistence to the existing single-row
-     * {@link #submitLead(SubmitLeadRequestDTO)} method.
-     * Returns per-row results so that one failing row does not block the others.
+     * Delegates every row to the existing single-row {@link #submitLead(SubmitLeadRequestDTO)}
+     * method and returns per-row results, so one failing row does not block the others.
+     * <p>
+     * Rows run a few at a time on {@link LeadBulkImportExecutorConfig#EXECUTOR} instead of one
+     * after another. submitLead already runs concurrently in production (forms, webhooks and
+     * imports arrive together); the only new case is two rows of the same upload for the same
+     * person racing each other, so rows that share an email, a phone (last 10 digits, the same
+     * match the dedup check uses) or, with neither, a name are kept on ONE worker in file
+     * order. Same person = same outcome as the old sequential loop. The counsellor round-robin
+     * takes pessimistic locks, so parallel rows still rotate correctly. Workers run with the
+     * caller request and security context, so audit and timeline rows keep their actor.
+     * {@code lead.bulk-import.parallelism=1} restores the old sequential loop exactly.
      */
     public BulkSubmitLeadResponseDTO bulkSubmitLead(BulkSubmitLeadRequestDTO request) {
 
@@ -8242,24 +8274,22 @@ public class AudienceService {
         }
 
         String rootAudienceId = request.getAudienceId();
+        List<SubmitLeadRequestDTO> rows = request.getRows();
 
-        List<BulkSubmitLeadResultItemDTO> results = new ArrayList<>(request.getRows().size());
+        BulkSubmitLeadResultItemDTO[] results = new BulkSubmitLeadResultItemDTO[rows.size()];
+        List<Integer> toSubmit = new ArrayList<>(rows.size());
         Set<String> dedupeKeys = new HashSet<>();
 
-        int success = 0;
-        int failed = 0;
-        int skipped = 0;
-
-        for (int i = 0; i < request.getRows().size(); i++) {
-            SubmitLeadRequestDTO row = request.getRows().get(i);
+        // Pass 1 (sequential, no DB): validate rows and drop in-upload email repeats.
+        for (int i = 0; i < rows.size(); i++) {
+            SubmitLeadRequestDTO row = rows.get(i);
 
             if (row == null) {
-                failed++;
-                results.add(BulkSubmitLeadResultItemDTO.builder()
+                results[i] = BulkSubmitLeadResultItemDTO.builder()
                         .index(i)
                         .status("FAILED")
                         .message("Row is null")
-                        .build());
+                        .build();
                 continue;
             }
 
@@ -8270,12 +8300,11 @@ public class AudienceService {
             }
 
             if (!StringUtils.hasText(row.getAudienceId())) {
-                failed++;
-                results.add(BulkSubmitLeadResultItemDTO.builder()
+                results[i] = BulkSubmitLeadResultItemDTO.builder()
                         .index(i)
                         .status("FAILED")
                         .message("audience_id is required (root or row)")
-                        .build());
+                        .build();
                 continue;
             }
 
@@ -8288,93 +8317,42 @@ public class AudienceService {
             String dedupeKey = row.getAudienceId().trim() + "|" + emailKey;
 
             if (StringUtils.hasText(emailKey) && dedupeKeys.contains(dedupeKey)) {
-                skipped++;
-                results.add(BulkSubmitLeadResultItemDTO.builder()
+                results[i] = BulkSubmitLeadResultItemDTO.builder()
                         .index(i)
                         .status("SKIPPED")
                         .message("Duplicate email in upload payload")
-                        .build());
+                        .build();
                 continue;
             }
             if (StringUtils.hasText(emailKey)) {
                 dedupeKeys.add(dedupeKey);
             }
+            toSubmit.add(i);
+        }
 
-            try {
-                String responseId = submitLead(row);
+        // Pass 2: create the leads.
+        List<List<Integer>> groups = groupBulkRowsBySamePerson(rows, toSubmit);
+        if (leadBulkImportParallelism <= 1 || groups.size() <= 1) {
+            for (int i : toSubmit) {
+                results[i] = submitBulkLeadRow(i, rows.get(i));
+            }
+        } else {
+            submitBulkLeadGroupsInParallel(groups, rows, results);
+        }
 
-                // submitLead is stringly-typed: it returns either the new response ID or a
-                // human-readable outcome message. Any message must be classified as
-                // SKIPPED/FAILED — reporting one as SUCCESS puts prose in audienceResponseId
-                // and tells the caller a lead was saved when none was.
-                String outcome = responseId != null ? responseId.toLowerCase() : "";
-                boolean alreadySubmitted = outcome.contains("already submitted");
-                // Institute dedup (LEAD_SETTING.data.dedup) hard-rejects the row before
-                // anything is persisted ("A lead with this phone number/email already
-                // exists ..."), so it is a skip, not a success.
-                boolean dedupRejected = outcome.contains("already exists");
-
-                boolean isSuccess = responseId != null
-                        && !responseId.startsWith("Error")
-                        && !alreadySubmitted
-                        && !dedupRejected;
-
-                if (alreadySubmitted || dedupRejected) {
-                    skipped++;
-                    results.add(BulkSubmitLeadResultItemDTO.builder()
-                            .index(i)
-                            .status("SKIPPED")
-                            .message(responseId)
-                            .build());
-                } else if (isSuccess) {
-                    success++;
-                    results.add(BulkSubmitLeadResultItemDTO.builder()
-                            .index(i)
-                            .status("SUCCESS")
-                            .message("Lead submitted successfully")
-                            .audienceResponseId(responseId)
-                            .userId(row.getUserDTO() != null ? row.getUserDTO().getEmail() : null)
-                            .build());
-                } else {
-                    failed++;
-                    results.add(BulkSubmitLeadResultItemDTO.builder()
-                            .index(i)
-                            .status("FAILED")
-                            .message(responseId != null ? responseId : "Unknown error")
-                            .build());
-                }
-            } catch (VacademyException ve) {
-                String msg = ve.getMessage();
-                String normalizedMsg = msg != null ? msg.toLowerCase() : "";
-                boolean alreadySubmitted = normalizedMsg.contains("already submitted");
-
-                if (alreadySubmitted) {
-                    skipped++;
-                    results.add(BulkSubmitLeadResultItemDTO.builder()
-                            .index(i)
-                            .status("SKIPPED")
-                            .message(msg)
-                            .build());
-                } else {
-                    failed++;
-                    results.add(BulkSubmitLeadResultItemDTO.builder()
-                            .index(i)
-                            .status("FAILED")
-                            .message(msg)
-                            .build());
-                }
-            } catch (Exception e) {
-                failed++;
-                results.add(BulkSubmitLeadResultItemDTO.builder()
-                        .index(i)
-                        .status("FAILED")
-                        .message(e.getMessage())
-                        .build());
+        int success = 0;
+        int failed = 0;
+        int skipped = 0;
+        for (BulkSubmitLeadResultItemDTO item : results) {
+            switch (item.getStatus()) {
+                case "SUCCESS" -> success++;
+                case "SKIPPED" -> skipped++;
+                default -> failed++;
             }
         }
 
         BulkSubmitLeadResponseDTO.SummaryDTO summary = BulkSubmitLeadResponseDTO.SummaryDTO.builder()
-                .totalRequested(results.size())
+                .totalRequested(results.length)
                 .successful(success)
                 .failed(failed)
                 .skipped(skipped)
@@ -8382,8 +8360,213 @@ public class AudienceService {
 
         return BulkSubmitLeadResponseDTO.builder()
                 .summary(summary)
-                .results(results)
+                .results(new ArrayList<>(Arrays.asList(results)))
                 .build();
+    }
+
+    /** One bulk row through submitLead, classified as SUCCESS / SKIPPED / FAILED. Never throws. */
+    private BulkSubmitLeadResultItemDTO submitBulkLeadRow(int i, SubmitLeadRequestDTO row) {
+        try {
+            String responseId = submitLead(row);
+
+            // submitLead is stringly-typed: it returns either the new response ID or a
+            // human-readable outcome message. Any message must be classified as
+            // SKIPPED/FAILED — reporting one as SUCCESS puts prose in audienceResponseId
+            // and tells the caller a lead was saved when none was.
+            String outcome = responseId != null ? responseId.toLowerCase() : "";
+            boolean alreadySubmitted = outcome.contains("already submitted");
+            // Institute dedup (LEAD_SETTING.data.dedup) hard-rejects the row before
+            // anything is persisted ("A lead with this phone number/email already
+            // exists ..."), so it is a skip, not a success.
+            boolean dedupRejected = outcome.contains("already exists");
+
+            boolean isSuccess = responseId != null
+                    && !responseId.startsWith("Error")
+                    && !alreadySubmitted
+                    && !dedupRejected;
+
+            if (alreadySubmitted || dedupRejected) {
+                return BulkSubmitLeadResultItemDTO.builder()
+                        .index(i)
+                        .status("SKIPPED")
+                        .message(responseId)
+                        .build();
+            } else if (isSuccess) {
+                return BulkSubmitLeadResultItemDTO.builder()
+                        .index(i)
+                        .status("SUCCESS")
+                        .message("Lead submitted successfully")
+                        .audienceResponseId(responseId)
+                        .userId(row.getUserDTO() != null ? row.getUserDTO().getEmail() : null)
+                        .build();
+            } else {
+                return BulkSubmitLeadResultItemDTO.builder()
+                        .index(i)
+                        .status("FAILED")
+                        .message(responseId != null ? responseId : "Unknown error")
+                        .build();
+            }
+        } catch (VacademyException ve) {
+            String msg = ve.getMessage();
+            String normalizedMsg = msg != null ? msg.toLowerCase() : "";
+            boolean alreadySubmitted = normalizedMsg.contains("already submitted");
+
+            return BulkSubmitLeadResultItemDTO.builder()
+                    .index(i)
+                    .status(alreadySubmitted ? "SKIPPED" : "FAILED")
+                    .message(msg)
+                    .build();
+        } catch (Exception e) {
+            return BulkSubmitLeadResultItemDTO.builder()
+                    .index(i)
+                    .status("FAILED")
+                    .message(e.getMessage())
+                    .build();
+        }
+    }
+
+    /**
+     * Runs each group on the bulk-import pool (rows inside a group stay sequential, in file
+     * order) and waits for all of them. A group the pool rejects (queue full, pod shutting
+     * down) runs right here on the request thread instead, so no row is ever dropped.
+     */
+    private void submitBulkLeadGroupsInParallel(List<List<Integer>> groups, List<SubmitLeadRequestDTO> rows,
+            BulkSubmitLeadResultItemDTO[] results) {
+        RequestAttributes callerRequest = RequestContextHolder.getRequestAttributes();
+        if (callerRequest instanceof org.springframework.web.context.request.ServletRequestAttributes servlet) {
+            // Tomcat parses parameters and cookies lazily and not thread-safely: force it here,
+            // on the request thread, before workers can read the request concurrently.
+            servlet.getRequest().getParameterMap();
+            servlet.getRequest().getCookies();
+        }
+        Authentication callerAuth = SecurityContextHolder.getContext().getAuthentication();
+        Map<String, String> callerMdc = MDC.getCopyOfContextMap();
+
+        List<CompletableFuture<Void>> futures = new ArrayList<>(groups.size());
+        List<List<Integer>> submittedGroups = new ArrayList<>(groups.size());
+        for (List<Integer> group : groups) {
+            Runnable work = () -> {
+                for (int i : group) {
+                    results[i] = submitBulkLeadRow(i, rows.get(i));
+                }
+            };
+            try {
+                futures.add(CompletableFuture.runAsync(
+                        () -> runWithCallerContext(callerRequest, callerAuth, callerMdc, work),
+                        leadBulkImportExecutor));
+                submittedGroups.add(group);
+            } catch (RejectedExecutionException rejected) {
+                work.run();
+            }
+        }
+
+        for (int g = 0; g < futures.size(); g++) {
+            try {
+                futures.get(g).join();
+            } catch (CompletionException | CancellationException e) {
+                // submitBulkLeadRow never throws, so this is the worker itself failing.
+                logger.error("Bulk lead import worker failed: {}", e.getMessage());
+            }
+            for (int i : submittedGroups.get(g)) {
+                if (results[i] == null) {
+                    results[i] = BulkSubmitLeadResultItemDTO.builder()
+                            .index(i)
+                            .status("FAILED")
+                            .message("Import worker failed before this row was processed")
+                            .build();
+                }
+            }
+        }
+    }
+
+    /**
+     * Runs {@code work} with the caller request, authentication and MDC bound to this thread,
+     * then puts back whatever was bound before (the request thread itself may run a group).
+     */
+    private static void runWithCallerContext(RequestAttributes callerRequest, Authentication callerAuth,
+            Map<String, String> callerMdc, Runnable work) {
+        RequestAttributes previousRequest = RequestContextHolder.getRequestAttributes();
+        SecurityContext previousSecurity = SecurityContextHolder.getContext();
+        Map<String, String> previousMdc = MDC.getCopyOfContextMap();
+        try {
+            RequestContextHolder.setRequestAttributes(callerRequest);
+            SecurityContext context = SecurityContextHolder.createEmptyContext();
+            context.setAuthentication(callerAuth);
+            SecurityContextHolder.setContext(context);
+            if (callerMdc != null) {
+                MDC.setContextMap(callerMdc);
+            } else {
+                MDC.clear();
+            }
+            work.run();
+        } finally {
+            RequestContextHolder.setRequestAttributes(previousRequest);
+            SecurityContextHolder.setContext(previousSecurity);
+            if (previousMdc != null) {
+                MDC.setContextMap(previousMdc);
+            } else {
+                MDC.clear();
+            }
+        }
+    }
+
+    /**
+     * Groups the given row indexes so that rows which could be the same person end up in the
+     * same group: they share a normalised email, the last 10 digits of a phone (the dedup
+     * check match), or, when a row has neither, a name (submitLead derives its placeholder
+     * email from the name). Groups and the rows inside them keep file order.
+     */
+    static List<List<Integer>> groupBulkRowsBySamePerson(List<SubmitLeadRequestDTO> rows, List<Integer> indexes) {
+        int n = indexes.size();
+        int[] parent = new int[n];
+        for (int k = 0; k < n; k++) {
+            parent[k] = k;
+        }
+        Map<String, Integer> firstPositionByKey = new HashMap<>();
+        for (int k = 0; k < n; k++) {
+            for (String key : bulkRowPersonKeys(rows.get(indexes.get(k)))) {
+                Integer other = firstPositionByKey.putIfAbsent(key, k);
+                if (other != null) {
+                    int a = findRoot(parent, k);
+                    int b = findRoot(parent, other);
+                    if (a != b) {
+                        parent[Math.max(a, b)] = Math.min(a, b);
+                    }
+                }
+            }
+        }
+        Map<Integer, List<Integer>> byRoot = new LinkedHashMap<>();
+        for (int k = 0; k < n; k++) {
+            byRoot.computeIfAbsent(findRoot(parent, k), r -> new ArrayList<>()).add(indexes.get(k));
+        }
+        return new ArrayList<>(byRoot.values());
+    }
+
+    private static int findRoot(int[] parent, int k) {
+        while (parent[k] != k) {
+            parent[k] = parent[parent[k]];
+            k = parent[k];
+        }
+        return k;
+    }
+
+    private static List<String> bulkRowPersonKeys(SubmitLeadRequestDTO row) {
+        UserDTO user = row.getUserDTO();
+        if (user == null) {
+            return List.of();
+        }
+        List<String> keys = new ArrayList<>(3);
+        if (StringUtils.hasText(user.getEmail())) {
+            keys.add("e:" + user.getEmail().trim().toLowerCase());
+        }
+        String digits = user.getMobileNumber() == null ? "" : user.getMobileNumber().replaceAll("[^0-9]", "");
+        if (!digits.isEmpty()) {
+            keys.add("p:" + (digits.length() > 10 ? digits.substring(digits.length() - 10) : digits));
+        }
+        if (keys.isEmpty() && StringUtils.hasText(user.getFullName())) {
+            keys.add("n:" + user.getFullName().toLowerCase().replaceAll("[^a-z0-9]", ""));
+        }
+        return keys;
     }
 
     private String buildDefaultEnquiryEmailBody(String parentName, String studentName, String sessionName,
