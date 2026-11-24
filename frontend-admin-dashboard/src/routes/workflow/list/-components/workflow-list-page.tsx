@@ -22,6 +22,16 @@ import type { TFunction } from 'i18next';
 /** `null` = no status filter, i.e. show every lifecycle status. */
 type StatusFilter = WorkflowStatus | null;
 
+/**
+ * created_at as epoch ms for sorting. The API may send a space instead of the ISO `T`, which
+ * Safari refuses to parse, so normalise it; anything unparseable sorts last.
+ */
+function createdAtMs(value: string | null | undefined): number {
+    if (!value) return 0;
+    const ms = Date.parse(value.replace(' ', 'T'));
+    return Number.isNaN(ms) ? 0 : ms;
+}
+
 function buildStatusLabels(t: TFunction): Record<WorkflowStatus, string> {
     return {
         ACTIVE: t('statusLabels.active'),
@@ -39,7 +49,8 @@ export function WorkflowListPage() {
 
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedType, setSelectedType] = useState<string | null>(null);
-    const [selectedStatus, setSelectedStatus] = useState<StatusFilter>(null);
+    // Opens on Active (the ones actually running); Draft / Inactive / All are one click away.
+    const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('ACTIVE');
 
     // Status is filtered server-side (the list endpoint only returns workflows whose status is
     // in the payload), so this drives the request rather than a client-side .filter().
@@ -83,7 +94,7 @@ export function WorkflowListPage() {
 
     if (error) {
         return (
-            <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
+            <div className="flex min-h-96 flex-col items-center justify-center gap-4">
                 <div className="text-center">
                     <p className="text-lg font-medium text-red-600">{t('loadFailed.title')}</p>
                     <p className="mt-2 text-sm text-neutral-500">
@@ -95,15 +106,22 @@ export function WorkflowListPage() {
         );
     }
 
-    // Filter workflows based on search term and selected type
-    const filteredWorkflows = workflows?.filter((workflow: Workflow) => {
-        // description is nullable on the wire (drafts often have none) — guard both.
-        const matchesSearch =
-            (workflow.name ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (workflow.description ?? '').toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesType = !selectedType || workflow.workflow_type === selectedType;
-        return matchesSearch && matchesType;
-    });
+    // Filter workflows based on search term and selected type, newest created first.
+    const filteredWorkflows = workflows
+        ?.filter((workflow: Workflow) => {
+            // description is nullable on the wire (drafts often have none) — guard both.
+            const matchesSearch =
+                (workflow.name ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (workflow.description ?? '').toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesType = !selectedType || workflow.workflow_type === selectedType;
+            return matchesSearch && matchesType;
+        })
+        .sort((a: Workflow, b: Workflow) => createdAtMs(b.created_at) - createdAtMs(a.created_at));
+
+    // The Active default is a filter too, but an institute with no workflows at all should
+    // still get the "create your first workflow" empty state, not "nothing matches".
+    const hasNoWorkflowsAtAll = Array.isArray(allWorkflows.data) && allWorkflows.data.length === 0;
+    const isFiltered = !!searchTerm || !!selectedType || (!!selectedStatus && !hasNoWorkflowsAtAll);
 
     // Get unique workflow types for filter
     const workflowTypes = Array.from(
@@ -216,19 +234,15 @@ export function WorkflowListPage() {
 
             {/* Workflows Grid */}
             {!filteredWorkflows || filteredWorkflows.length === 0 ? (
-                <div className="flex h-[50vh] flex-col items-center justify-center rounded-lg border-2 border-dashed border-neutral-300 bg-neutral-50">
+                <div className="flex min-h-96 flex-col items-center justify-center rounded-lg border-2 border-dashed border-neutral-300 bg-neutral-50">
                     <div className="max-w-md text-center">
                         <p className="mb-2 text-lg font-medium text-neutral-500">
-                            {searchTerm || selectedType || selectedStatus
-                                ? t('empty.filteredTitle')
-                                : t('empty.noneTitle')}
+                            {isFiltered ? t('empty.filteredTitle') : t('empty.noneTitle')}
                         </p>
                         <p className="text-sm text-neutral-400">
-                            {searchTerm || selectedType || selectedStatus
-                                ? t('empty.filteredHint')
-                                : t('empty.noneHint')}
+                            {isFiltered ? t('empty.filteredHint') : t('empty.noneHint')}
                         </p>
-                        {!searchTerm && !selectedType && !selectedStatus && (
+                        {!isFiltered && (
                             <Button
                                 onClick={() => {
                                     navigate({ to: '/workflow/create' });
