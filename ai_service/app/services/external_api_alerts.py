@@ -206,6 +206,13 @@ def classify(rows: Sequence[Mapping[str, Any]], threshold: int, now: datetime) -
     if not streak:
         return None
     latest = streak[0]
+    if paid and paid[0].get("key_hint") == NO_KEY:
+        # admin_core and the voice bot log failures only, so every row is a failure and a run means
+        # nothing. Failing is this many failures within the last FAILING_WINDOW.
+        recent = [r for r in streak if now - r["occurred_at"] <= FAILING_WINDOW]
+        if len(recent) < threshold:
+            return None
+        streak = recent
     if len(streak) >= threshold and now - latest["occurred_at"] <= FAILING_WINDOW:
         return Problem(
             kind=FAILING,

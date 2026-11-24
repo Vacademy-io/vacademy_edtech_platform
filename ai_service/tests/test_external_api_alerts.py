@@ -61,7 +61,27 @@ def test_the_latest_call_succeeding_is_nothing():
 
 
 def test_a_run_that_stopped_over_an_hour_ago_is_no_longer_failing():
-    assert alerts.classify([call(minutes_ago=61) for _ in range(5)], 5, NOW) is None
+    rows = [call(minutes_ago=61) for _ in range(5)] + [call("SUCCESS", 200, minutes_ago=120)]
+    assert alerts.classify(rows, 5, NOW) is None
+
+
+def keyless(minutes_ago, http_status=None, error="Bodhi TTS error idle_timeout"):
+    """A row from admin_core or the voice bot: failures only, no key."""
+    return {**call(http_status=http_status, error=error, minutes_ago=minutes_ago), "key_hint": alerts.NO_KEY}
+
+
+def test_failure_only_sources_alert_on_failures_within_the_hour():
+    assert alerts.classify([keyless(1), keyless(5)], 2, NOW).kind == alerts.FAILING
+
+
+def test_failure_only_sources_do_not_alert_on_old_failures_spread_out():
+    # Sarvam: one failure an hour and more ago, with successes the voice bot never logs.
+    assert alerts.classify([keyless(30), keyless(24 * 60 - 10)], 2, NOW) is None
+    assert alerts.classify([keyless(17 * 60 + i) for i in range(100)], 2, NOW) is None
+
+
+def test_failure_only_sources_still_open_out_of_credits_on_a_402():
+    assert alerts.classify([keyless(300, http_status=402, error=None)], 2, NOW).kind == alerts.CREDITS
 
 
 def test_one_402_is_enough_for_out_of_credits():
