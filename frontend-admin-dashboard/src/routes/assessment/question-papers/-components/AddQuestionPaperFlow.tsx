@@ -106,7 +106,12 @@ export const useAddPaperWays = () => {
             iconClassName="bg-info-50 text-info-600"
             title={t('chooser.upload.title')}
             description={t('chooser.upload.description')}
-            tags={[t('chooser.upload.tag1'), t('chooser.upload.tag2'), t('chooser.upload.tag3')]}
+            tags={[
+                t('chooser.upload.tag1'),
+                t('chooser.upload.tag2'),
+                t('chooser.upload.tag4'),
+                t('chooser.upload.tag3'),
+            ]}
             onClick={() => onPick('upload')}
         />,
         <WayOption
@@ -146,8 +151,16 @@ export const AddQuestionPaperFlow = ({
 }: AddQuestionPaperFlowProps) => {
     const { t } = useTranslation('assessmentQuestionPapersPage');
     const ways = useAddPaperWays();
-    const { chooserOpen, way, setChooserOpen, pickWay, closeWay, backToChooser } =
-        useAddPaperFlowStore();
+    const {
+        chooserOpen,
+        way,
+        vsmartFile,
+        setChooserOpen,
+        pickWay,
+        handOffToVsmart,
+        closeWay,
+        backToChooser,
+    } = useAddPaperFlowStore();
     // The store outlives the page: close everything when leaving it, so nothing
     // re-opens on the next visit.
     useEffect(
@@ -183,6 +196,7 @@ export const AddQuestionPaperFlow = ({
                 open={way === 'upload'}
                 onOpenChange={onWayOpenChange}
                 onBack={backToChooser}
+                onPdfPicked={handOffToVsmart}
                 currentQuestionIndex={currentQuestionIndex}
                 setCurrentQuestionIndex={setCurrentQuestionIndex}
             />
@@ -190,6 +204,7 @@ export const AddQuestionPaperFlow = ({
                 open={way === 'vsmart'}
                 onOpenChange={onWayOpenChange}
                 onBack={backToChooser}
+                initialFile={vsmartFile}
             />
             <CreateQuestionPaperDialog
                 open={way === 'manual'}

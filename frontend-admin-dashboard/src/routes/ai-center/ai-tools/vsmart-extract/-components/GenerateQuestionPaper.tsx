@@ -35,6 +35,7 @@ const GenerateAiQuestionPaperComponent = ({
     currentSectionIndex,
     sectionSplit = false,
     embedded = false,
+    initialFile = null,
 }: {
     form?: UseFormReturn<SectionFormType>;
     currentSectionIndex?: number;
@@ -50,6 +51,12 @@ const GenerateAiQuestionPaperComponent = ({
      * (Question Papers → Add question paper): drop the page header and gutters.
      */
     embedded?: boolean;
+    /**
+     * A file the teacher already picked elsewhere (a PDF dropped in the Word /
+     * HTML upload): start reading it on open, as if it were dropped here.
+     * Nothing is extracted, and no credits are used, until they click Extract.
+     */
+    initialFile?: File | null;
 }) => {
     const { t } = useTranslation([
         'aiCenterVsmartExtractGenerateQuestionPaper',
@@ -226,6 +233,16 @@ const GenerateAiQuestionPaperComponent = ({
             resetFile();
         }
     };
+
+    // Read a handed-over file once; the ref keeps a StrictMode re-run from
+    // uploading it twice.
+    const startedFileRef = useRef<File | null>(null);
+    useEffect(() => {
+        if (!initialFile || startedFileRef.current === initialFile) return;
+        startedFileRef.current = initialFile;
+        void processFile(initialFile);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialFile]);
 
     const handleFileInputChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
