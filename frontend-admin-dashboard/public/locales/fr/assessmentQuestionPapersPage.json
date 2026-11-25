@@ -40,6 +40,17 @@
             "tag2": ".html",
             "tag3": "Images kept"
         },
+        "vsmart": {
+            "title": "Upload any paper — AI extracts it",
+            "badge": "VSmart AI",
+            "description": "Already have a question paper? Upload it as is — our AI reads every question, option and answer key and adds the paper to your question bank. No special format needed.",
+            "tag1": "PDF, Word or PPT",
+            "tag2": "Scanned papers too",
+            "tag3": "Uses AI credits",
+            "dialogHeading": "Extract a paper with VSmart AI",
+            "dialogHint": "Upload your paper. Once the questions are pulled out, open the preview, check them, and click Add to question bank.",
+            "close": "Close"
+        },
         "manual": {
             "title": "Create manually",
             "description": "Start blank and type the questions yourself — MCQ, true/false, numerical, long answer, comprehension and coding.",
