@@ -354,6 +354,9 @@ export const OPEN_BOOKING_BASE = `${BASE_URL}/admin-core-service/open/v1/booking
 // Authenticated booking-by-slug (ties invitee_user_id to the logged-in learner).
 export const AUTHENTICATED_BOOKING_BASE = `${BASE_URL}/admin-core-service/v1/booking`;
 
+// Syllabus progress — the learner's own week-block progress, marked by their teacher
+export const SYLLABUS_PROGRESS_MINE = `${BASE_URL}/admin-core-service/syllabus-progress/learner/v1/mine`;
+
 // Mentorship — a learner's assigned mentors
 export const MENTORSHIP_MY_MENTORS = `${BASE_URL}/admin-core-service/mentorship/v1/my-mentors`;
 export const MENTORSHIP_DIRECTORY = `${BASE_URL}/admin-core-service/mentorship/v1/directory`;

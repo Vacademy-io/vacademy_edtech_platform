@@ -1253,6 +1253,12 @@ export const getSidebarItemsData = (): SidebarItemsType[] => [
                 subItemLink: '/planning/activity-logs',
                 subItemId: 'log-course-progress',
             },
+            {
+                // Shown only when Settings → Syllabus progress is on (gated in mySidebar).
+                subItem: sidebarT('sidebar:syllabusProgress'),
+                subItemLink: '/syllabus-progress',
+                subItemId: 'syllabus-progress',
+            },
         ],
     },
     {

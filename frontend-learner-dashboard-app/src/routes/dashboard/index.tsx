@@ -99,6 +99,8 @@ import { UpcomingLiveClassesWidget } from "./-components/UpcomingLiveClassesWidg
 import { Preferences } from "@capacitor/preferences";
 import { AttendanceWidget } from "./-components/AttendanceWidget";
 import { MyMentorsWidget } from "./-components/MyMentorsWidget";
+import { SyllabusProgressWidget } from "@/routes/syllabus-progress/-components/SyllabusProgressWidget";
+import { hasSyllabus, useMySyllabus } from "@/routes/syllabus-progress/-services/syllabus-progress-service";
 import { GetAppWidget } from "./-components/GetAppWidget";
 import cleanerIconCourses from "@/assets/cleaner-play/icon-courses.webp";
 import cleanerIconAssessments from "@/assets/cleaner-play/icon-assessments.webp";
@@ -644,6 +646,10 @@ export function DashboardComponent() {
     };
     fetchIds();
   }, [trackPageView, setNavHeading]);
+
+  // Syllabus progress card: on only for learners whose institute tracks a
+  // syllabus and who have one (shares its query with the sidebar and page).
+  const syllabusOn = hasSyllabus(useMySyllabus({ retry: false }).data);
 
   const OPT_IN_WIDGETS: Set<StudentDashboardWidgetConfig["id"]> = new Set(["myOrders"]);
 
@@ -1581,6 +1587,16 @@ export function DashboardComponent() {
       order: getWidgetOrder("myMentors"),
       visible: isWidgetVisible("myMentors"),
       render: builtinFragments.MY_MENTORS,
+    },
+    {
+      // Syllabus progress (institutes that track a week-by-week syllabus).
+      // Not an admin-configured widget: it joins the rail only when the
+      // learner actually has a syllabus, so every other institute's layout
+      // is untouched.
+      id: "syllabusProgress" as const,
+      order: getWidgetOrder("myMentors") + 0.5,
+      visible: syllabusOn,
+      render: <SyllabusProgressWidget />,
     },
     {
       id: "getApp" as const,

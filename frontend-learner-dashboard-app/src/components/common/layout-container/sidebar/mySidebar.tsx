@@ -51,6 +51,10 @@ import {
 } from "@/routes/my-mentors/-services/my-mentors-service";
 import type { StudentSidebarTabConfig } from "@/types/student-display-settings";
 import {
+  hasSyllabus,
+  useMySyllabus,
+} from "@/routes/syllabus-progress/-services/syllabus-progress-service";
+import {
   SquaresFour,
   Globe,
   GooglePlayLogo,
@@ -59,6 +63,7 @@ import {
   AppleLogo,
   SignOut,
   ListChecks,
+  BookOpenText,
 } from "@phosphor-icons/react";
 import {
   NavHouseIcon,
@@ -109,6 +114,14 @@ const NavDailyTasksIcon = ({ className }: { className?: string; weight?: unknown
 /** Sidebar tab id of the injected "Daily tasks" entry. */
 const DAILY_TASKS_TAB_ID = "daily-tasks";
 
+/** "My syllabus" nav icon — light weight to match the thin-line nav set. */
+const NavSyllabusIcon = ({ className }: { className?: string; weight?: unknown }) => (
+  <BookOpenText weight="light" className={className} aria-hidden />
+);
+
+/** Sidebar tab id of the injected "My syllabus" entry. */
+const MY_SYLLABUS_TAB_ID = "my-syllabus";
+
 const humanizeText = (text: string) => {
   if (!text) return "";
   return text
@@ -130,6 +143,7 @@ export const MySidebar = ({
 }) => {
   const { t, i18n } = useTranslation("layoutCommonA");
   const { t: tEngagement } = useTranslation("dashboardEngagement");
+  const { t: tSyllabus } = useTranslation("syllabusProgress");
   const navigate = useNavigate();
   const { state, isMobile, toggleSidebar } = useSidebar();
   // Fun restyles the standard nav from styles/fun/home.css (a class added only there).
@@ -237,6 +251,9 @@ export const MySidebar = ({
     window.addEventListener(ENGAGEMENT_PLAN_FLAG_EVENT, sync);
     return () => window.removeEventListener(ENGAGEMENT_PLAN_FLAG_EVENT, sync);
   }, [instituteId]);
+  // "My syllabus" shows only when the institute has syllabus tracking on and
+  // the learner has a syllabus. A failed request keeps it hidden (fail closed).
+  const hasMySyllabus = hasSyllabus(useMySyllabus({ retry: false }).data);
   // A learner with no mentor still needs a way in to Find a mentor, so the tab
   // also appears when their institute lists mentors for browsing. The directory
   // is only fetched in that case — learners who already have a mentor see the
@@ -291,6 +308,7 @@ export const MySidebar = ({
       attendance: NavCalendarCheckIcon,
       "my-mentors": NavUsersIcon,
       [DAILY_TASKS_TAB_ID]: NavDailyTasksIcon,
+      [MY_SYLLABUS_TAB_ID]: NavSyllabusIcon,
     }),
     []
   );
@@ -303,6 +321,7 @@ export const MySidebar = ({
       chat: "/chat",
       "my-mentors": "/my-mentors",
       [DAILY_TASKS_TAB_ID]: "/engagement",
+      [MY_SYLLABUS_TAB_ID]: "/syllabus-progress",
     }),
     []
   );
@@ -318,10 +337,11 @@ export const MySidebar = ({
       chat: t("sidebar.tabs.inAppMessages"),
       "my-mentors": t("sidebar.tabs.myMentors"),
       [DAILY_TASKS_TAB_ID]: tEngagement("nav.dailyTasks"),
+      [MY_SYLLABUS_TAB_ID]: tSyllabus("nav.mySyllabus"),
     }),
     // t's identity is stable across a language switch in react-i18next; key
     // off i18n.language too so this fallback map actually re-translates.
-    [t, tEngagement, i18n.language]
+    [t, tEngagement, tSyllabus, i18n.language]
   );
 
   const transformTabsToSidebarItems = (
@@ -500,17 +520,42 @@ export const MySidebar = ({
     return next;
   };
 
+  // "My syllabus" is data-driven like Daily tasks: injected after the learning
+  // centre (else after the dashboard) while the learner has a syllabus, and
+  // stripped otherwise so a saved tab can't leak a dead entry point.
+  const ensureSyllabusTab = (
+    tabs: StudentSidebarTabConfig[],
+    show: boolean
+  ): StudentSidebarTabConfig[] => {
+    if (!show) return tabs.filter((tab) => tab.id !== MY_SYLLABUS_TAB_ID);
+    if (tabs.some((tab) => tab.id === MY_SYLLABUS_TAB_ID)) return tabs;
+    const learningIndex = tabs.findIndex((tab) => tab.id === "learning-center");
+    const dashboardIndex = tabs.findIndex((tab) => tab.id === "dashboard");
+    const anchor = learningIndex >= 0 ? learningIndex : dashboardIndex;
+    const next = tabs.slice();
+    next.splice(anchor >= 0 ? anchor + 1 : next.length, 0, {
+      id: MY_SYLLABUS_TAB_ID,
+      route: "/syllabus-progress",
+      order: 0,
+      visible: true,
+    });
+    return next;
+  };
+
   const filteredSidebarItems = useMemo(
     () =>
       transformTabsToSidebarItems(
-        ensureDailyTasksTab(
-          ensureMentorTab(
-            configuredTabs,
-            myMentorsQuery.data ?? [],
-            chatFeatureEnabled,
-            (mentorDirectoryQuery.data?.length ?? 0) > 0
+        ensureSyllabusTab(
+          ensureDailyTasksTab(
+            ensureMentorTab(
+              configuredTabs,
+              myMentorsQuery.data ?? [],
+              chatFeatureEnabled,
+              (mentorDirectoryQuery.data?.length ?? 0) > 0
+            ),
+            hasEngagementPlan
           ),
-          hasEngagementPlan
+          hasMySyllabus
         )
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -520,6 +565,7 @@ export const MySidebar = ({
       mentorDirectoryQuery.data,
       chatFeatureEnabled,
       hasEngagementPlan,
+      hasMySyllabus,
       labelByTabId,
     ]
   );

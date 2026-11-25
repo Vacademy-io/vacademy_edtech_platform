@@ -38,7 +38,7 @@ import java.util.function.BiConsumer;
 public class InstituteImportService {
 
     public static final List<String> STEPS = List.of("staff", "courses", "fee_plans", "batches", "learners",
-            "enrolments", "breaks", "extra_classes", "payments", "live_classes", "attendance", "recordings", "journey_cases", "open_dues");
+            "enrolments", "breaks", "extra_classes", "payments", "live_classes", "attendance", "recordings", "journey_cases", "open_dues", "syllabus", "progress");
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -49,6 +49,7 @@ public class InstituteImportService {
     private final ImportMembershipSteps membership;
     private final ImportLiveClassSteps liveClasses;
     private final ImportHistorySteps history;
+    private final ImportSyllabusSteps syllabus;
     private final EnrolmentBreakGuard breakGuard;
 
     public Map<String, Object> run(String instituteId, String step, JsonNode body, boolean dryRun, String runByUserId) {
@@ -67,6 +68,8 @@ public class InstituteImportService {
             case "recordings" -> history::recordings;
             case "journey_cases" -> history::journeyCases;
             case "open_dues" -> history::openDues;
+            case "syllabus" -> syllabus::syllabus;
+            case "progress" -> syllabus::progress;
             default -> throw new VacademyException("Unknown import step '" + step + "'. Steps: " + STEPS);
         };
         if (body == null || !(body.isArray() || body.isObject())) {

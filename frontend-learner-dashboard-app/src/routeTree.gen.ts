@@ -31,6 +31,7 @@ import { Route as ParentIndexRouteImport } from './routes/parent/index'
 import { Route as NotebookIndexRouteImport } from './routes/notebook/index'
 import { Route as MyReportsIndexRouteImport } from './routes/my-reports/index'
 import { Route as MyMentorsIndexRouteImport } from './routes/my-mentors/index'
+import { Route as SyllabusProgressIndexRouteImport } from './routes/syllabus-progress/index'
 import { Route as MyFilesIndexRouteImport } from './routes/my-files/index'
 import { Route as LogoutIndexRouteImport } from './routes/logout/index'
 import { Route as LoginIndexRouteImport } from './routes/login/index'
@@ -244,6 +245,11 @@ const MyReportsIndexRoute = MyReportsIndexRouteImport.update({
 const MyMentorsIndexRoute = MyMentorsIndexRouteImport.update({
   id: '/my-mentors/',
   path: '/my-mentors/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SyllabusProgressIndexRoute = SyllabusProgressIndexRouteImport.update({
+  id: '/syllabus-progress/',
+  path: '/syllabus-progress/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MyFilesIndexRoute = MyFilesIndexRouteImport.update({
@@ -854,6 +860,7 @@ export interface FileRoutesByFullPath {
   '/logout': typeof LogoutIndexRoute
   '/my-files': typeof MyFilesIndexRoute
   '/my-mentors': typeof MyMentorsIndexRoute
+  '/syllabus-progress': typeof SyllabusProgressIndexRoute
   '/my-reports': typeof MyReportsIndexRoute
   '/notebook': typeof NotebookIndexRoute
   '/parent': typeof ParentIndexRoute
@@ -981,6 +988,7 @@ export interface FileRoutesByTo {
   '/logout': typeof LogoutIndexRoute
   '/my-files': typeof MyFilesIndexRoute
   '/my-mentors': typeof MyMentorsIndexRoute
+  '/syllabus-progress': typeof SyllabusProgressIndexRoute
   '/my-reports': typeof MyReportsIndexRoute
   '/notebook': typeof NotebookIndexRoute
   '/parent': typeof ParentIndexRoute
@@ -1109,6 +1117,7 @@ export interface FileRoutesById {
   '/logout/': typeof LogoutIndexRoute
   '/my-files/': typeof MyFilesIndexRoute
   '/my-mentors/': typeof MyMentorsIndexRoute
+  '/syllabus-progress/': typeof SyllabusProgressIndexRoute
   '/my-reports/': typeof MyReportsIndexRoute
   '/notebook/': typeof NotebookIndexRoute
   '/parent/': typeof ParentIndexRoute
@@ -1239,6 +1248,7 @@ export interface FileRouteTypes {
     | '/logout'
     | '/my-files'
     | '/my-mentors'
+    | '/syllabus-progress'
     | '/my-reports'
     | '/notebook'
     | '/parent'
@@ -1366,6 +1376,7 @@ export interface FileRouteTypes {
     | '/logout'
     | '/my-files'
     | '/my-mentors'
+    | '/syllabus-progress'
     | '/my-reports'
     | '/notebook'
     | '/parent'
@@ -1493,6 +1504,7 @@ export interface FileRouteTypes {
     | '/logout/'
     | '/my-files/'
     | '/my-mentors/'
+    | '/syllabus-progress/'
     | '/my-reports/'
     | '/notebook/'
     | '/parent/'
@@ -1622,6 +1634,7 @@ export interface RootRouteChildren {
   LogoutIndexRoute: typeof LogoutIndexRoute
   MyFilesIndexRoute: typeof MyFilesIndexRoute
   MyMentorsIndexRoute: typeof MyMentorsIndexRoute
+  SyllabusProgressIndexRoute: typeof SyllabusProgressIndexRoute
   MyReportsIndexRoute: typeof MyReportsIndexRoute
   NotebookIndexRoute: typeof NotebookIndexRoute
   ParentIndexRoute: typeof ParentIndexRoute
@@ -1865,6 +1878,13 @@ declare module '@tanstack/react-router' {
       path: '/my-mentors'
       fullPath: '/my-mentors'
       preLoaderRoute: typeof MyMentorsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/syllabus-progress/': {
+      id: '/syllabus-progress/'
+      path: '/syllabus-progress'
+      fullPath: '/syllabus-progress'
+      preLoaderRoute: typeof SyllabusProgressIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/my-files/': {
@@ -2670,6 +2690,7 @@ const rootRouteChildren: RootRouteChildren = {
   LogoutIndexRoute: LogoutIndexRoute,
   MyFilesIndexRoute: MyFilesIndexRoute,
   MyMentorsIndexRoute: MyMentorsIndexRoute,
+  SyllabusProgressIndexRoute: SyllabusProgressIndexRoute,
   MyReportsIndexRoute: MyReportsIndexRoute,
   NotebookIndexRoute: NotebookIndexRoute,
   ParentIndexRoute: ParentIndexRoute,

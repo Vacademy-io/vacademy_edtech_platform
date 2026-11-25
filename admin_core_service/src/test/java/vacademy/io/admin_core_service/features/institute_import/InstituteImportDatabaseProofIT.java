@@ -30,6 +30,7 @@ import java.io.File;
 import java.lang.reflect.Method;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -263,6 +264,62 @@ class InstituteImportDatabaseProofIT {
     }
 
     @Autowired private vacademy.io.admin_core_service.features.enrolment_break.service.EnrolmentBreakSettings breakSettings;
+    @Autowired private vacademy.io.admin_core_service.features.syllabus_progress.service.SyllabusProgressService syllabusProgress;
+
+    @Test
+    @Order(5)
+    @SuppressWarnings("unchecked")
+    void syllabusAndProgress() throws Exception {
+        assertEquals(1, step("syllabus", """
+                {"Kathak (Fast Paced) | Adya": [
+                  {"trimester":"Bija","month":1,"week_from":1,"week_to":4,"seq":1,"text":"Tatkar basics"},
+                  {"trimester":"Bija","month":1,"week_from":1,"week_to":4,"seq":2,"text":"Hand positions"},
+                  {"trimester":"Bija","month":2,"week_from":5,"week_to":8,"seq":1,"text":"First tukda"}]}
+                """, false).get("created"));
+        Map<String, Object> pr = step("progress", """
+                [{"enrollment_external_id":"E1","course":"Kathak (Fast Paced)","level":"Adya","week_from":1,"week_to":4,
+                  "status":"Completed","started_on":"2026-08-01","completed_on":"2026-08-29","points":"1, 2","marked_by":"T1","note":"Neat footwork"},
+                 {"enrollment_external_id":"E1","course":"Kathak (Fast Paced)","level":"Adya","week_from":9,"week_to":12,"status":"Completed"}]
+                """, false);
+        assertEquals(1, pr.get("created"));
+        assertEquals(1, pr.get("failed"));   // no such week
+
+        String userId = accounts.get("s1@example.com");
+        assertEquals(List.of(), syllabusProgress.mine(inst, userId).get("courses"), "off until switched on");
+        db.update("UPDATE institutes SET setting_json = ? WHERE id = ?",
+                "{\"setting\":{\"SYLLABUS_PROGRESS_SETTING\":{\"data\":{\"enabled\":true}}}}", inst);
+        Map<String, Object> mine = syllabusProgress.mine(inst, userId);
+        List<Map<String, Object>> courses = (List<Map<String, Object>>) mine.get("courses");
+        String b1 = db.queryForObject("SELECT internal_id FROM institute_import_ref WHERE institute_id = ? AND kind = 'BATCH' AND external_id = 'B1'", String.class, inst);
+        Map<String, Object> main = courses.stream().filter(x -> b1.equals(x.get("package_session_id"))).findFirst().orElseThrow();
+        assertEquals(2, main.get("total_blocks"));
+        assertEquals(1, main.get("completed_blocks"));
+        List<Map<String, Object>> blocks = (List<Map<String, Object>>) main.get("blocks");
+        assertEquals("COMPLETED", blocks.get(0).get("status"));
+        assertEquals(List.of(1, 2), blocks.get(0).get("points_done"));
+        assertEquals("Neat footwork", blocks.get(0).get("teacher_note"));
+        assertEquals("Teacher One", blocks.get(0).get("marked_by_name"));
+        assertEquals(blocks.get(1).get("id"), main.get("current_block_id"));
+        // Another learner sees only their own rows.
+        Map<String, Object> other = syllabusProgress.mine(inst, accounts.get("s2@example.com"));
+        for (Map<String, Object> c : (List<Map<String, Object>>) other.get("courses")) {
+            for (Map<String, Object> blk : (List<Map<String, Object>>) c.get("blocks")) assertEquals("NOT_STARTED", blk.get("status"));
+        }
+
+        // Teacher marks the next week; the grid shows it; strangers and foreign weeks are refused.
+        String week2 = (String) blocks.get(1).get("id");
+        assertEquals(1, syllabusProgress.mark(inst, b1, List.of(week2), List.of(userId), "IN_PROGRESS", List.of(1), "Practise at home", "t1", "Teacher One"));
+        Map<String, Object> grid = syllabusProgress.batch(inst, b1);
+        assertTrue(((List<Map<String, Object>>) grid.get("progress")).stream()
+                .anyMatch(p -> week2.equals(p.get("block_id")) && "IN_PROGRESS".equals(p.get("status")) && p.get("started_on") != null));
+        syllabusProgress.mark(inst, b1, List.of(week2), List.of(userId), "IN_PROGRESS", null, null, "t1", "Teacher One");
+        assertEquals("Practise at home", db.queryForObject("SELECT teacher_note FROM learner_syllabus_progress WHERE block_id = ? AND user_id = ?", String.class, week2, userId), "no note sent = keep it");
+        syllabusProgress.mark(inst, b1, List.of(week2), List.of(userId), "IN_PROGRESS", null, "", "t1", "Teacher One");
+        assertNull(db.queryForObject("SELECT teacher_note FROM learner_syllabus_progress WHERE block_id = ? AND user_id = ?", String.class, week2, userId), "empty note = clear it");
+        assertThrows(Exception.class, () -> syllabusProgress.mark(inst, b1, List.of(week2), List.of("someone-else"), "COMPLETED", null, null, "t1", "T"));
+        assertThrows(Exception.class, () -> syllabusProgress.mark(inst, b1, List.of("not-a-week"), List.of(userId), "COMPLETED", null, null, "t1", "T"));
+        assertThrows(Exception.class, () -> syllabusProgress.batch("another-institute", b1));
+    }
 
     @Test
     @Order(4)

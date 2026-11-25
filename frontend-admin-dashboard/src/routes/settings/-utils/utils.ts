@@ -24,6 +24,7 @@ import WhatsAppSettings from '../-components/WhatsAppSettings/WhatsAppSettings';
 import LeadSettings from '../-components/LeadSettings';
 import GuardianSettings from '../-components/GuardianSettings';
 import EnrolmentBreakSettings from '../-components/EnrolmentBreakSettings';
+import SyllabusProgressSettings from '../-components/SyllabusProgressSettings';
 import PaymentReminderSettings from '../-components/PaymentReminderSettings';
 import OnboardingSettings from '../-components/OnboardingSettings';
 import GtmSettings from '../-components/GtmSettings';
@@ -328,6 +329,13 @@ export const getAvailableSettingsTabs = (): SettingsTabEntry[] => {
             tab: SettingsTabs.LearnerCredentials,
             value: 'Learner Credentials',
             component: LearnerCredentialSettings,
+            domain: 'LMS',
+            group: 'Learner Experience',
+        },
+        {
+            tab: SettingsTabs.SyllabusProgress,
+            value: 'Syllabus Progress',
+            component: SyllabusProgressSettings,
             domain: 'LMS',
             group: 'Learner Experience',
         },

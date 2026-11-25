@@ -1,0 +1,57 @@
+{
+  "page": {
+    "title": "منهجي الدراسي",
+    "subtitle": "منهج صفك أسبوعًا بأسبوع، كما يسجّله معلمك."
+  },
+  "nav": {
+    "mySyllabus": "منهجي الدراسي"
+  },
+  "course": {
+    "progressLabel": "التقدم في المنهج",
+    "blocksDone": "{{done}} من {{total}} مكتملة",
+    "onWeeks": "أنت في الأسابيع {{from}}–{{to}}",
+    "onWeek": "أنت في الأسبوع {{week}}",
+    "onBlock": "أنت في {{label}}",
+    "allDone": "لقد أكملت المنهج بالكامل",
+    "notStarted": "لم يسجّل معلمك أي أسبوع بعد",
+    "noBlocks": "لم تُضف أي أسابيع إلى هذا المنهج بعد."
+  },
+  "trimester": {
+    "label": "الفصل {{number}}",
+    "other": "أسابيع أخرى",
+    "summary": "{{done}}/{{total}} مكتملة"
+  },
+  "block": {
+    "weeks": "الأسابيع {{from}}–{{to}}",
+    "week": "الأسبوع {{week}}",
+    "month": "الشهر {{month}}",
+    "fallback": "الجزء {{order}}",
+    "current": "أنت هنا",
+    "pointsProgress": "تمت تغطية {{done}} من {{total}} نقاط",
+    "pointDone": "تمت التغطية",
+    "pointPending": "لم تتم التغطية بعد",
+    "noPoints": "لا توجد موضوعات لهذا الجزء."
+  },
+  "status": {
+    "completed": "مكتمل",
+    "completedOn": "اكتمل في {{date}}",
+    "inProgress": "قيد التقدم",
+    "skipped": "تم تخطيه",
+    "notStarted": "لم يبدأ"
+  },
+  "note": {
+    "from": "ملاحظة من {{name}}",
+    "fallback": "ملاحظة المعلم"
+  },
+  "empty": {
+    "title": "لا يوجد منهج لعرضه بعد",
+    "description": "عندما يبدأ معلمك بمتابعة منهج صفك، سيظهر تقدمك هنا."
+  },
+  "error": {
+    "title": "تعذّر تحميل منهجك"
+  },
+  "card": {
+    "title": "منهجي الدراسي",
+    "open": "عرض المنهج"
+  }
+}

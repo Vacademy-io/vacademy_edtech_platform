@@ -1320,6 +1320,11 @@ export const ENROLMENT_BREAK_END_PREVIEW = (breakId: string) =>
     `${ENROLMENT_BREAKS_BASE}/${breakId}/end/preview`;
 export const ENROLMENT_BREAK_CANCEL = (breakId: string) =>
     `${ENROLMENT_BREAKS_BASE}/${breakId}/cancel`;
+// Syllabus progress: teachers mark each learner's progress per syllabus week block.
+export const SYLLABUS_PROGRESS_BASE = `${BASE_URL}/admin-core-service/syllabus-progress/v1`;
+export const SYLLABUS_PROGRESS_BATCHES = `${SYLLABUS_PROGRESS_BASE}/batches`;
+export const SYLLABUS_PROGRESS_BATCH = `${SYLLABUS_PROGRESS_BASE}/batch`;
+export const SYLLABUS_PROGRESS_MARK = `${SYLLABUS_PROGRESS_BASE}/mark`;
 
 // System files
 export const ADD_SYSTEM_FILE = `${BASE_URL}/admin-core-service/system-files/v1/add`;

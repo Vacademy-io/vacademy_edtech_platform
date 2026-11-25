@@ -88,6 +88,7 @@ import { filterCommerceSidebar } from '@/lib/commerce/commerce-access';
 import { useCommerceAccess } from '@/lib/commerce/use-commerce-access';
 import { filterLearnerHomeSidebar } from '@/lib/learner-home/learner-home-access';
 import { useCapabilities } from '@/services/capabilities';
+import { useSyllabusProgressGate } from '@/services/syllabus-progress';
 // Sidebar sub-items under "Assessments and Tests" that deep-link into the
 // create-assessment wizard. Hidden together with the Create Assessment button.
 const ASSESSMENT_CREATE_SUB_ITEM_IDS = new Set([
@@ -214,6 +215,10 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
     const { leadLookup } = useLeadSettings();
     const isLeadLookupEnabled = leadLookup.enabled;
 
+    // Syllabus progress is off until the institute switches it on in Settings. Fail closed:
+    // hidden while the (5-min cached) setting lookup loads or fails.
+    const { enabled: isSyllabusProgressEnabled } = useSyllabusProgressGate();
+
     const isCrmIntelligenceEnabled = useCallIntelligenceEnabled();
     const hasCrmIntelligenceData = useHasCallIntelligenceData(!isCrmIntelligenceEnabled);
     const isCrmIntelligenceAvailable = isCrmIntelligenceEnabled || hasCrmIntelligenceData;
@@ -290,7 +295,8 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
             !isCrmIntelligenceAvailable ||
             !canCreateAssessment ||
             !isMentor ||
-            !isLeadLookupEnabled;
+            !isLeadLookupEnabled ||
+            !isSyllabusProgressEnabled;
         // Drop My HR entirely for non-employees — it is a whole module, not a
         // sub-item, so it is filtered from the item list rather than within one.
         const rawBaseWithHr = hasEmployeeProfile
@@ -306,6 +312,7 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
                           (isCrmIntelligenceAvailable || s.subItemId !== 'ai-intelligence') &&
                           (isMentor || s.subItemId !== 'mentorship-my-mentorship') &&
                           (isLeadLookupEnabled || s.subItemId !== 'lead-lookup') &&
+                          (isSyllabusProgressEnabled || s.subItemId !== 'syllabus-progress') &&
                           (canCreateAssessment ||
                               !ASSESSMENT_CREATE_SUB_ITEM_IDS.has(s.subItemId || ''))
                   ),

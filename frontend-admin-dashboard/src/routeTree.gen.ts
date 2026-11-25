@@ -19,6 +19,7 @@ import { Route as AgentChatRouteImport } from "./routes/agent-chat"
 import { Route as EvalezyRouteRouteImport } from "./routes/evalezy/route"
 import { Route as VimIndexRouteImport } from "./routes/vim/index"
 import { Route as VideoApiStudioIndexRouteImport } from "./routes/video-api-studio/index"
+import { Route as SyllabusProgressIndexRouteImport } from "./routes/syllabus-progress/index"
 import { Route as StudyLibraryIndexRouteImport } from "./routes/study-library/index"
 import { Route as SignupIndexRouteImport } from "./routes/signup/index"
 import { Route as SettingsIndexRouteImport } from "./routes/settings/index"
@@ -383,6 +384,13 @@ const VideoApiStudioIndexRoute = VideoApiStudioIndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() =>
   import("./routes/video-api-studio/index.lazy").then((d) => d.Route),
+)
+const SyllabusProgressIndexRoute = SyllabusProgressIndexRouteImport.update({
+  id: "/syllabus-progress/",
+  path: "/syllabus-progress/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/syllabus-progress/index.lazy").then((d) => d.Route),
 )
 const StudyLibraryIndexRoute = StudyLibraryIndexRouteImport.update({
   id: "/study-library/",
@@ -2777,6 +2785,7 @@ export interface FileRoutesByFullPath {
   "/settings/": typeof SettingsIndexRoute
   "/signup/": typeof SignupIndexRoute
   "/study-library/": typeof StudyLibraryIndexRoute
+  "/syllabus-progress/": typeof SyllabusProgressIndexRoute
   "/video-api-studio/": typeof VideoApiStudioIndexRoute
   "/vim/": typeof VimIndexRoute
   "/audience-manager/onboarding/$flowId": typeof AudienceManagerOnboardingFlowIdRoute
@@ -3084,6 +3093,7 @@ export interface FileRoutesByTo {
   "/settings": typeof SettingsIndexRoute
   "/signup": typeof SignupIndexRoute
   "/study-library": typeof StudyLibraryIndexRoute
+  "/syllabus-progress": typeof SyllabusProgressIndexRoute
   "/video-api-studio": typeof VideoApiStudioIndexRoute
   "/vim": typeof VimIndexRoute
   "/audience-manager/onboarding/$flowId": typeof AudienceManagerOnboardingFlowIdRoute
@@ -3394,6 +3404,7 @@ export interface FileRoutesById {
   "/settings/": typeof SettingsIndexRoute
   "/signup/": typeof SignupIndexRoute
   "/study-library/": typeof StudyLibraryIndexRoute
+  "/syllabus-progress/": typeof SyllabusProgressIndexRoute
   "/video-api-studio/": typeof VideoApiStudioIndexRoute
   "/vim/": typeof VimIndexRoute
   "/audience-manager/onboarding/$flowId": typeof AudienceManagerOnboardingFlowIdRoute
@@ -3705,6 +3716,7 @@ export interface FileRouteTypes {
     | "/settings/"
     | "/signup/"
     | "/study-library/"
+    | "/syllabus-progress/"
     | "/video-api-studio/"
     | "/vim/"
     | "/audience-manager/onboarding/$flowId"
@@ -4012,6 +4024,7 @@ export interface FileRouteTypes {
     | "/settings"
     | "/signup"
     | "/study-library"
+    | "/syllabus-progress"
     | "/video-api-studio"
     | "/vim"
     | "/audience-manager/onboarding/$flowId"
@@ -4321,6 +4334,7 @@ export interface FileRouteTypes {
     | "/settings/"
     | "/signup/"
     | "/study-library/"
+    | "/syllabus-progress/"
     | "/video-api-studio/"
     | "/vim/"
     | "/audience-manager/onboarding/$flowId"
@@ -4622,6 +4636,7 @@ export interface RootRouteChildren {
   SettingsIndexRoute: typeof SettingsIndexRoute
   SignupIndexRoute: typeof SignupIndexRoute
   StudyLibraryIndexRoute: typeof StudyLibraryIndexRoute
+  SyllabusProgressIndexRoute: typeof SyllabusProgressIndexRoute
   VideoApiStudioIndexRoute: typeof VideoApiStudioIndexRoute
   VimIndexRoute: typeof VimIndexRoute
   AudienceManagerOnboardingFlowIdRoute: typeof AudienceManagerOnboardingFlowIdRoute
@@ -4942,6 +4957,13 @@ declare module "@tanstack/react-router" {
       path: "/video-api-studio"
       fullPath: "/video-api-studio/"
       preLoaderRoute: typeof VideoApiStudioIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/syllabus-progress/": {
+      id: "/syllabus-progress/"
+      path: "/syllabus-progress"
+      fullPath: "/syllabus-progress/"
+      preLoaderRoute: typeof SyllabusProgressIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/study-library/": {
@@ -7114,6 +7136,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsIndexRoute: SettingsIndexRoute,
   SignupIndexRoute: SignupIndexRoute,
   StudyLibraryIndexRoute: StudyLibraryIndexRoute,
+  SyllabusProgressIndexRoute: SyllabusProgressIndexRoute,
   VideoApiStudioIndexRoute: VideoApiStudioIndexRoute,
   VimIndexRoute: VimIndexRoute,
   AudienceManagerOnboardingFlowIdRoute: AudienceManagerOnboardingFlowIdRoute,

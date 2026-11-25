@@ -1,0 +1,57 @@
+{
+  "page": {
+    "title": "Mon programme",
+    "subtitle": "Le programme de votre cours, semaine par semaine, tel que votre professeur le valide."
+  },
+  "nav": {
+    "mySyllabus": "Mon programme"
+  },
+  "course": {
+    "progressLabel": "Progression du programme",
+    "blocksDone": "{{done}} sur {{total}} terminés",
+    "onWeeks": "Vous en êtes aux semaines {{from}}–{{to}}",
+    "onWeek": "Vous en êtes à la semaine {{week}}",
+    "onBlock": "Vous en êtes à : {{label}}",
+    "allDone": "Vous avez terminé tout le programme",
+    "notStarted": "Votre professeur n'a encore validé aucune semaine",
+    "noBlocks": "Aucune semaine n'a encore été ajoutée à ce programme."
+  },
+  "trimester": {
+    "label": "Trimestre {{number}}",
+    "other": "Autres semaines",
+    "summary": "{{done}}/{{total}} terminés"
+  },
+  "block": {
+    "weeks": "Semaines {{from}}–{{to}}",
+    "week": "Semaine {{week}}",
+    "month": "Mois {{month}}",
+    "fallback": "Bloc {{order}}",
+    "current": "Vous êtes ici",
+    "pointsProgress": "{{done}} points vus sur {{total}}",
+    "pointDone": "Vu",
+    "pointPending": "Pas encore vu",
+    "noPoints": "Aucun sujet indiqué pour ce bloc."
+  },
+  "status": {
+    "completed": "Terminé",
+    "completedOn": "Terminé le {{date}}",
+    "inProgress": "En cours",
+    "skipped": "Passé",
+    "notStarted": "Pas commencé"
+  },
+  "note": {
+    "from": "Note de {{name}}",
+    "fallback": "Note du professeur"
+  },
+  "empty": {
+    "title": "Aucun programme à afficher",
+    "description": "Quand votre professeur commencera à suivre le programme de votre cours, votre progression apparaîtra ici."
+  },
+  "error": {
+    "title": "Impossible de charger votre programme"
+  },
+  "card": {
+    "title": "Mon programme",
+    "open": "Voir le programme"
+  }
+}
