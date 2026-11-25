@@ -12,7 +12,7 @@ import { Helmet } from "react-helmet";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import {
   getPackageSessionId,
-  getAllPackageSessionIds,
+  loadPackageSessionIds,
 } from "@/utils/study-library/get-list-from-stores/getPackageSessionId";
 import { getStudyLibraryQuery } from "@/services/study-library/getStudyLibraryDetails";
 import { useStudyLibraryStore } from "@/stores/study-library/use-study-library-store";
@@ -638,8 +638,7 @@ export function DashboardComponent() {
         const id = await getPackageSessionId();
         setBatchId(id);
 
-        const ids = await getAllPackageSessionIds();
-        setAllBatchIds(ids);
+        await loadPackageSessionIds(setAllBatchIds);
       } catch (error) {
         console.error("Error fetching IDs:", error);
       }
