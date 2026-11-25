@@ -30,6 +30,18 @@ Actions:
     sync_store             the product page's own "add catalogue courses"
                            (/{id}/sync-catalogue) with deactivateMissing=false:
                            adds courses, never switches one off.
+    add_to_folder          puts courses into a folder of a library. A folder
+                           sells through the product page hung under it (a
+                           PRODUCT_PAGE item), so the courses go onto that page
+                           (/{id}/add-courses: added on top, the page's other
+                           courses untouched) — or, when the folder has none,
+                           onto a new DRAFT page that is hung in the folder.
+                           A course that is not approved yet is refused for an
+                           ACTIVE page (it would be on sale at once).
+    create_folder_page     a new DRAFT product page (named by the caller; the
+                           plan lists how the sibling folders' pages are named)
+                           hung in a folder, with courses if given — or an
+                           existing page (product_page_code) hung in it.
 
 Every action is a dry run unless the caller passes dry_run=false, and returns
 exactly what it would change plus a ``plan_token``: an HMAC over the caller,
@@ -72,6 +84,7 @@ CATALOG_DATA_EDIT_TOOL_NAME = "catalog_data_edit"
 CATALOG_DATA_EDIT_GROUP_KEY = "website_data_edits"
 CATALOG_DATA_EDIT_ACTIONS = (
     "create_folder_library", "upsert_folder_nodes", "add_course_tags", "create_product_page", "sync_store",
+    "add_to_folder", "create_folder_page",
 )
 #: The admin-core calls this tool makes, by action — the ONLY writes it can
 #: send (pinned by a test: no DELETE, no library rename, no node move, no
@@ -83,6 +96,12 @@ WRITE_ENDPOINTS = {
     "add_course_tags": ("PUT", "/admin-core-service/course/v1/update-course/{course_id}"),
     "create_product_page": ("POST", "/admin-core-service/v1/product-page/create"),
     "sync_store": ("POST", "/admin-core-service/v1/product-page/{id}/sync-catalogue"),
+    "add_to_folder": (("POST", "/admin-core-service/v1/product-page/create"),
+                      ("POST", "/admin-core-service/v1/product-page/{id}/add-courses"),
+                      ("POST", "/admin-core-service/v1/folder-library/node")),
+    "create_folder_page": (("POST", "/admin-core-service/v1/product-page/create"),
+                           ("POST", "/admin-core-service/v1/product-page/{id}/add-courses"),
+                           ("POST", "/admin-core-service/v1/folder-library/node")),
 }
 
 MAX_NODES = 100
@@ -151,6 +170,7 @@ REASON_TEXT = {
     "no_active_plan": "its payment option has no active plan",
     "currency_mismatch": "it is priced in another currency than the page",
     "vendor_mismatch": "it is on another payment gateway than the page",
+    "already_on_page": "the page already sells this batch",
 }
 
 FIELD_TEXT = (
@@ -207,6 +227,17 @@ CATALOG_DATA_EDIT_SCHEMA: Dict[str, Any] = {
             "- sync_store (product_page_code): adds the catalogue courses the product page does not sell yet (never "
             "switches one off) and returns why any were skipped. On an ACTIVE page the added courses are on sale at "
             "once.\n"
+            "- add_to_folder (library_id, folder_id | folder_path, items[{course_id, invite_id?, package_session_id?}], "
+            "product_page_code?, page_name?): put courses (e.g. a new eBook) into a folder. A folder sells through the "
+            "product page hung in it, so the courses are added on top of that page (its other courses untouched); "
+            "a folder with no page gets a new DRAFT page (named after the folder path, or page_name) hung in it, shown "
+            "once the admin activates it. folder_path is the folder's titles, from the top or only the last few "
+            "(['Weekly', '2026', 'November']); an ambiguous path returns the matches to choose from. A folder with "
+            "several pages needs product_page_code. A course not approved yet is refused for an ACTIVE page.\n"
+            "- create_folder_page (library_id, folder_id | folder_path, page_name | product_page_code, items?): a new "
+            "DRAFT product page hung in the folder (even when it already holds one), with the courses in items if "
+            "any — or an existing page (product_page_code) hung in it. Name the page like the pages next to it: a dry "
+            "run lists sibling_page_names (e.g. 'Weekly Current Affairs – October 2026').\n"
             "Never send access tokens or other credentials."
         ),
         "parameters": {
@@ -219,7 +250,14 @@ CATALOG_DATA_EDIT_SCHEMA: Dict[str, Any] = {
                     f"{PLAN_TOKEN_TTL_SECONDS // 60} minutes). It is this server's own check value, not a credential.")},
                 "name": {"type": "string", "description": "create_folder_library / create_product_page: its name."},
                 "description": {"type": "string", "description": "create_folder_library: optional description."},
-                "library_id": {"type": "string", "description": "upsert_folder_nodes: the library (website(data_inventory) folder_libraries)."},
+                "library_id": {"type": "string", "description": "upsert_folder_nodes / add_to_folder: the library (website(data_inventory) folder_libraries)."},
+                "folder_id": {"type": "string", "description": "add_to_folder: the folder (website(action='context', library_id=…))."},
+                "folder_path": {"type": "array", "items": {"type": "string"}, "description": (
+                    "add_to_folder: the folder's titles from the top, or just the last few, e.g. ['Weekly', '2026', "
+                    "'November'] (a 'A › B › C' string works too). Instead of folder_id.")},
+                "page_name": {"type": "string", "description": (
+                    "add_to_folder: name of the new page when the folder has none (default: the folder path). "
+                    "create_folder_page: the new page's name.")},
                 "nodes": {"type": "array", "items": _NODE_ITEM, "description": "upsert_folder_nodes: the folders."},
                 "assignments": {
                     "type": "array",
@@ -236,10 +274,13 @@ CATALOG_DATA_EDIT_SCHEMA: Dict[str, Any] = {
                         "invite_id": {"type": "string", "description": "Optional: sell through this invite instead of the DEFAULT one."},
                         "package_session_id": {"type": "string", "description": "Optional: this batch only."},
                     }, "required": ["course_id"]},
-                    "description": "create_product_page: the courses, in display order.",
+                    "description": ("create_product_page: the courses, in display order. add_to_folder / "
+                                    "create_folder_page: the courses to put in the folder."),
                 },
                 "role": {"type": "string", "enum": ["path", "store"], "description": "create_product_page: default 'path'."},
-                "product_page_code": {"type": "string", "description": "sync_store: the product page (website(data_inventory) product_pages code)."},
+                "product_page_code": {"type": "string", "description": (
+                    "sync_store: the product page (website(data_inventory) product_pages code). add_to_folder: the "
+                    "page the courses go on when the folder holds several, or a page to hang in the folder.")},
             },
             "required": ["action"],
         },
@@ -349,6 +390,8 @@ _ACTION_ARGS = {
     "add_course_tags": {"assignments"},
     "create_product_page": {"name", "items", "role"},
     "sync_store": {"product_page_code"},
+    "add_to_folder": {"library_id", "folder_id", "folder_path", "items", "product_page_code", "page_name"},
+    "create_folder_page": {"library_id", "folder_id", "folder_path", "items", "product_page_code", "page_name"},
 }
 _ASSIGNMENT_KEYS = {"course_id", "add"}
 _ITEM_KEYS = {"course_id", "invite_id", "package_session_id"}
@@ -1271,6 +1314,39 @@ async def _load_pages_raw(ctx: ToolContext) -> Optional[List[Dict[str, Any]]]:
     return [p for p in data if isinstance(p, dict) and str(p.get("institute_id") or inst) == inst]
 
 
+#: Pages read per /list call (admin-core's cap) and the most pages read in all.
+_LIST_PAGE_SIZE = 100
+_LIST_MAX_PAGES = 30
+
+
+async def load_pages_light(ctx: ToolContext) -> Optional[List[Dict[str, Any]]]:
+    """This institute's ACTIVE and DRAFT product pages — id, name, code, status, mapping_count — from the paged
+    admin list (no page JSON, no mappings: get-all builds the whole admin response of every page). None when
+    unreadable."""
+    out: List[Dict[str, Any]] = []
+    for page_no in range(_LIST_MAX_PAGES):
+        data = await _admin_core_json(ctx, "GET", "/admin-core-service/v1/product-page/list",
+                                      params={"instituteId": ctx.principal.institute_id, "page": page_no,
+                                              "size": _LIST_PAGE_SIZE, "sort": "OLDEST"}, timeout=30.0)
+        if _is_error(data) or not isinstance(data, dict) or not isinstance(data.get("content"), list):
+            return None
+        out.extend(p for p in data["content"] if isinstance(p, dict) and p.get("id"))
+        total = data.get("total_pages")
+        if not isinstance(total, int) or page_no + 1 >= total:
+            return out
+    logger.warning("catalog_data_edit: more than %s product pages; not read in full", _LIST_PAGE_SIZE * _LIST_MAX_PAGES)
+    return None
+
+
+async def load_page(ctx: ToolContext, page_id: str) -> Optional[Dict[str, Any]]:
+    """One product page with its mappings (GET /{id}); only ever called with ids from this institute's list."""
+    data = await _admin_core_json(ctx, "GET", f"/admin-core-service/v1/product-page/{page_id}", timeout=30.0)
+    if _is_error(data) or not isinstance(data, dict) or str(data.get("id") or "") != str(page_id):
+        return None
+    inst = ctx.principal.institute_id
+    return data if str(data.get("institute_id") or inst) == inst else None
+
+
 def _clean_items(items: List[Any]) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
     """Validated ``items`` ({course_id, invite_id?, package_session_id?}) and the errors found."""
     errors: List[Dict[str, Any]] = _unknown_item_keys(items, _ITEM_KEYS, "items")
@@ -1507,6 +1583,445 @@ async def _action_sync_store(args: Dict[str, Any], ctx: ToolContext) -> Dict[str
 
 
 # ──────────────────────────────────────────────────────────────────────────
+# add_to_folder: put courses into a folder — the way a folder sells them is the
+# product page hung under it (a PRODUCT_PAGE item, folderBrowser), so the
+# courses go onto that page, or onto a new DRAFT page attached to the folder.
+# ──────────────────────────────────────────────────────────────────────────
+#: A folder_path given as one string: 'A › B › C' (titles may contain '/', so only these split).
+_PATH_SPLIT = re.compile(r"\s*(?:›|»|>)\s*")
+_FOLDER_ARGS_NOTE = ("Name the folder by folder_id (website(action='context', library_id=…) lists them) or by "
+                     "folder_path, its titles from the top or just the last few, e.g. ['Weekly', '2026', 'November'] "
+                     "or 'Current Affairs › Weekly › 2026 › November'.")
+
+
+def _norm_title(value: Any) -> str:
+    return " ".join(str(value or "").split()).casefold()
+
+
+def _path_segments(raw: Any) -> List[str]:
+    parts = raw if isinstance(raw, list) else _PATH_SPLIT.split(raw) if isinstance(raw, str) else []
+    return [p.strip() for p in parts if isinstance(p, str) and p.strip()]
+
+
+def _folder_trail(node: Dict[str, Any], by_id: Dict[str, Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """The folder and its parents, top first; bounded against a corrupt cycle."""
+    trail, cur = [], node
+    while cur is not None and len(trail) <= _MAX_DEPTH + 5:
+        trail.append(cur)
+        cur = by_id.get(str(cur.get("parent_id") or ""))
+    return list(reversed(trail))
+
+
+def _trail_text(trail: List[Dict[str, Any]]) -> str:
+    return " › ".join(_str(n.get("title")) or "(untitled)" for n in trail)
+
+
+def _segment_matches(node: Dict[str, Any], segment: str) -> bool:
+    from .catalogue_course_rules import folder_slug
+    return _norm_title(node.get("title")) == _norm_title(segment) or folder_slug(node) == slugify(segment, _MAX_SLUG)
+
+
+def _resolve_folder(existing: List[Dict[str, Any]], folder_id: str, segments: List[str]
+                    ) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
+    """``(folder, None)`` or ``(None, error)``: a FOLDER of the library by id, or the one folder whose
+    trail ends with ``segments``."""
+    by_id = {str(n["id"]): n for n in existing}
+    folders = [n for n in existing if str(n.get("node_type") or "FOLDER").upper() == "FOLDER"]
+    if folder_id:
+        node = by_id.get(folder_id)
+        if node is None or node not in folders:
+            return None, _err("unknown_folder", message="No folder with that id in this library. " + _FOLDER_ARGS_NOTE)
+        return node, None
+    if not segments:
+        return None, _err("missing_argument", needs=["folder_id or folder_path"], message=_FOLDER_ARGS_NOTE,
+                          top_level=[_str(n.get("title")) for n in folders if not n.get("parent_id")][:40])
+    found = []
+    for node in folders:
+        trail = _folder_trail(node, by_id)
+        if len(trail) >= len(segments) and all(
+                _segment_matches(t, s) for t, s in zip(trail[-len(segments):], segments)):
+            found.append((node, trail))
+    if len(found) == 1:
+        return found[0][0], None
+    if found:
+        return None, _err("ambiguous_folder", message=(
+            "Several folders match that path; ask the admin which one, then pass its folder_id or a longer "
+            "folder_path."), matches=[{"folder_id": str(n["id"]), "path": _trail_text(t)} for n, t in found][:30])
+    last = _norm_title(segments[-1])
+    near = [n for n in folders if last and last in _norm_title(n.get("title"))]
+    return None, _err("unknown_folder", message="No folder matches that path. " + _FOLDER_ARGS_NOTE, similar=[
+        {"folder_id": str(n["id"]), "path": _trail_text(_folder_trail(n, by_id))} for n in near][:30],
+        top_level=[_str(n.get("title")) for n in folders if not n.get("parent_id")][:40])
+
+
+def _page_ref(page: Dict[str, Any]) -> Dict[str, Any]:
+    return {k: v for k, v in {"id": page.get("id"), "code": page.get("code"), "name": page.get("name"),
+                              "status": page.get("status")}.items() if v not in (None, "")}
+
+
+async def load_library_tree(ctx: ToolContext, library_id: str) -> Tuple[
+        Optional[Dict[str, Any]], List[Dict[str, Any]], Optional[Dict[str, Any]]]:
+    """``(library, nodes, None)`` — one of this institute's folder libraries and its items, flat — or
+    ``(None, [], error)``."""
+    if not library_id:
+        return None, [], _err("missing_argument", needs=["library_id"], message=(
+            "Pass library_id (website(action='data_inventory') lists folder_libraries)."))
+    libraries = await list_folder_libraries(ctx)
+    if libraries is None:
+        return None, [], _fetch_failed("this institute's folder libraries", None)
+    library = next((lib for lib in libraries if lib["id"] == library_id), None)
+    if library is None:
+        return None, [], _err("unknown_library", message="No folder library with that id in this institute.",
+                              available=[{"id": lib["id"], "name": lib["name"]} for lib in libraries][:30])
+    tree = await _admin_core_json(ctx, "GET", "/admin-core-service/v1/folder-library/tree",
+                                  params={"instituteId": ctx.principal.institute_id, "libraryId": library_id},
+                                  timeout=30.0)
+    if _is_error(tree) or not isinstance(tree, dict):
+        return None, [], _fetch_failed("the library's folders", tree)
+    owner = (tree.get("library") or {}).get("institute_id") if isinstance(tree.get("library"), dict) else None
+    if owner and str(owner) != ctx.principal.institute_id:
+        return None, [], _err("unknown_library", message="No folder library with that id in this institute.")
+    return library, _flatten_tree(tree.get("roots")), None
+
+
+def _pages_in(folder_id: str, existing: List[Dict[str, Any]], pages_by_id: Dict[str, Dict[str, Any]],
+              hidden: bool = False) -> List[Dict[str, Any]]:
+    """The product pages hung directly in a folder (PRODUCT_PAGE items) whose item is shown — or, with
+    hidden=True, whose item is HIDDEN (the site never shows those in the folder)."""
+    return [pages_by_id[str(n.get("product_page_id"))] for n in existing
+            if str(n.get("parent_id") or "") == folder_id and str(n.get("node_type") or "").upper() == "PRODUCT_PAGE"
+            and str(n.get("product_page_id") or "") in pages_by_id
+            and (_str(n.get("status")).upper() == "HIDDEN") == hidden]
+
+
+def _priced(row: Dict[str, Any]) -> bool:
+    price = row.get("price")
+    return isinstance(price, (int, float)) and price > 0
+
+
+def _row_currency(row: Dict[str, Any]) -> Optional[str]:
+    return (_str(row.get("invite_currency")) or _str(row.get("plan_currency"))).upper() or None
+
+
+def _new_page_terms(adds: List[Dict[str, Any]]) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """``(kept, skipped)`` for a NEW page (admin-core's create takes whatever it is sent): one checkout charges
+    one gateway in one currency, so a priced course on another gateway or currency than the first priced one is
+    left out. An existing page is checked by admin-core itself (add-courses dryRun)."""
+    deciding = [r for r in adds if _priced(r)]
+    if not deciding:
+        return adds, []
+    vendor = _str(deciding[0].get("invite_vendor")).upper() or None
+    currency = next((c for c in (_row_currency(r) for r in deciding) if c), None)
+    kept, skipped = [], []
+    for r in adds:
+        reason = None
+        if _priced(r):
+            mine = _row_currency(r)
+            if mine and currency and mine != currency:
+                reason = "currency_mismatch"
+            elif (_str(r.get("invite_vendor")).upper() or None) != vendor:
+                reason = "vendor_mismatch"
+        if reason:
+            skipped.append({**_step(r), "reason": reason, "why": REASON_TEXT[reason]})
+        else:
+            kept.append(r)
+    return kept, skipped
+
+
+def _mappings_body(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    return [{"ps_invite_payment_option_id": r["bridge_id"], "payment_plan_id": r["plan_id"], "preselected": False}
+            for r in rows]
+
+
+async def _page_preview(ctx: ToolContext, page_id: str, adds: List[Dict[str, Any]]
+                        ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]], Optional[Dict[str, Any]]]:
+    """admin-core's own answer for adding ``adds`` to an existing page (add-courses dryRun, nothing written):
+    ``(kept, already_on_page, other_terms, None)`` or ``([], [], [], error)``."""
+    if not adds:
+        return [], [], [], None
+    data = await _admin_core_json(ctx, "POST", f"/admin-core-service/v1/product-page/{page_id}/add-courses",
+                                  params={"instituteId": ctx.principal.institute_id, "dryRun": "true"},
+                                  body={"mappings": _mappings_body(adds), "position": "FIRST"}, timeout=30.0)
+    if _is_error(data) or not isinstance(data, dict):
+        status = data.get("status") if isinstance(data, dict) else None
+        if status in (404, 405):
+            return [], [], [], _err("admin_core_outdated", message=(
+                "This server's admin-core cannot add courses to an existing product page yet (add-courses); "
+                "nothing was changed."))
+        return [], [], [], _fetch_failed("what the product page would take", data)
+    reasons = {str(x.get("package_session_id")): str(x.get("reason") or "") for x in data.get("skipped") or []
+               if isinstance(x, dict)}
+    kept, already, other = [], [], []
+    for r in adds:
+        reason = reasons.get(str(r["package_session_id"]))
+        if not reason:
+            kept.append(r)
+        elif reason == "already_on_page":
+            already.append(_step(r))
+        else:
+            other.append({**_step(r), "reason": reason, "why": REASON_TEXT.get(reason, reason)})
+    return kept, already, other, None
+
+
+def sibling_page_names(folder: Dict[str, Any], existing: List[Dict[str, Any]],
+                       pages_by_id: Dict[str, Dict[str, Any]]) -> List[str]:
+    """Names of the pages in the folder's sibling folders — how this library names its pages
+    (e.g. 'Weekly Current Affairs – October 2026' next to a new 'November')."""
+    parent = str(folder.get("parent_id") or "")
+    names: List[str] = []
+    for sib in existing:
+        if str(sib.get("parent_id") or "") != parent or str(sib["id"]) == str(folder["id"]):
+            continue
+        if str(sib.get("node_type") or "FOLDER").upper() != "FOLDER":
+            continue
+        names.extend(_str(p.get("name")) for p in _pages_in(str(sib["id"]), existing, pages_by_id))
+    return [n for n in names if n][:8]
+
+
+async def _folder_page_flow(args: Dict[str, Any], ctx: ToolContext, action: str, new_page: bool) -> Dict[str, Any]:
+    """add_to_folder (new_page=False): courses onto the folder's page, or a new one when it has none.
+    create_folder_page (new_page=True): a new DRAFT page (or the page product_page_code names) hung in the
+    folder, with the courses in ``items`` if any."""
+    inst = ctx.principal.institute_id
+    library_id = _str(args.get("library_id"))
+    folder_id = _str(args.get("folder_id"))
+    segments = _path_segments(args.get("folder_path"))
+    items = args.get("items")
+    code = _str(args.get("product_page_code"))
+    page_name = _str(args.get("page_name"))
+    if not library_id:
+        return _err("missing_argument", needs=["library_id"],
+                    message="Pass library_id (website(action='data_inventory') lists folder_libraries).")
+    if items is None and new_page:
+        items = []
+    if not isinstance(items, list) or (not items and not new_page):
+        return _err("missing_argument", needs=["items"], message="Pass items: [{course_id, invite_id?, package_session_id?}].")
+    if new_page and not page_name and not code:
+        return _err("missing_argument", needs=["page_name or product_page_code"], message=(
+            "Name the new product page (page_name — the plan of a dry run without it lists how the pages next to "
+            "this folder are named), or pass product_page_code to hang an existing page in the folder."))
+    if len(items) > MAX_PRODUCT_PAGE_ITEMS:
+        return _err("too_many_items", limit=MAX_PRODUCT_PAGE_ITEMS,
+                    message=f"At most {MAX_PRODUCT_PAGE_ITEMS} courses per call.")
+    if len(page_name) > _MAX_NAME:
+        return _err("too_long", message=f"page_name is at most {_MAX_NAME} characters.")
+    clean, errors = _clean_items(items)
+    if errors:
+        return _err("invalid_items", errors=errors, message="Nothing was written. Fix these and call again.")
+
+    library, existing, problem = await load_library_tree(ctx, library_id)
+    if problem:
+        return problem
+    folder, problem = _resolve_folder(existing, folder_id, segments)
+    if problem:
+        return problem
+    by_id = {str(n["id"]): n for n in existing}
+    trail = _folder_trail(folder, by_id)
+    folder_ref = {"id": str(folder["id"]), "path": _trail_text(trail)}
+
+    pages = await load_pages_light(ctx)
+    if pages is None:
+        return _fetch_failed("this institute's product pages", None)
+    pages_by_id = {str(p.get("id")): p for p in pages if p.get("id")}
+    in_folder_pages = _pages_in(folder_ref["id"], existing, pages_by_id)
+    hidden_pages = _pages_in(folder_ref["id"], existing, pages_by_id, hidden=True)
+
+    target: Optional[Dict[str, Any]] = None
+    attach = False
+    if code:
+        target = next((p for p in pages if str(p.get("code") or "") == code), None)
+        if target is None or _str(target.get("status")).upper() == "DELETED":
+            return _err("unknown_product_page", message="No product page with that code in this institute.",
+                        in_this_folder=[_page_ref(p) for p in in_folder_pages][:20])
+        attach = target not in in_folder_pages and target not in hidden_pages
+        if target in hidden_pages:
+            return _err("page_hidden_in_folder", product_page=_page_ref(target), message=(
+                "That page is already in this folder but its item is HIDDEN, so the site does not show it there; "
+                "the admin shows it in Manage Pages → Folders."))
+    elif not new_page and len(in_folder_pages) == 1:
+        target = in_folder_pages[0]
+    elif not new_page and len(in_folder_pages) > 1:
+        return _err("several_product_pages", folder=folder_ref, message=(
+            "This folder holds several product pages; ask the admin which one the courses go on and pass its "
+            "product_page_code."), in_this_folder=[_page_ref(p) for p in in_folder_pages][:20])
+
+    new_name = ""
+    if target is None:
+        new_name = page_name or " - ".join(_str(n.get("title")) for n in trail if _str(n.get("title")))[:_MAX_NAME]
+        same = next((p for p in pages if str(p.get("name") or "").strip().lower() == new_name.lower()
+                     and _str(p.get("status")).upper() != "DELETED"), None)
+        if same:
+            return _err("product_page_exists", product_page=_page_ref(same), message=(
+                f"A product page named '{same.get('name')}' already exists"
+                + (" in this folder" if same in in_folder_pages else " but is not in this folder") + ": pass "
+                f"product_page_code='{same.get('code')}' to use it, or another page_name for a new page."))
+
+    steps: List[Dict[str, Any]] = []
+    not_sold: List[Dict[str, Any]] = []
+    if clean:
+        picked = _pick_steps(ctx, clean, "store")
+        if picked is None:
+            return _fetch_failed("the courses' batches and invites", None)
+        steps, not_sold, errors, course_rows = picked
+        if target is not None and _str(target.get("status")).upper() == "ACTIVE":
+            for it in clean:
+                row = course_rows.get(it["course_id"]) or {}
+                if row and _str(row.get("status")).upper() != "ACTIVE":
+                    errors.append({"index": it["index"], "course_id": it["course_id"], "status": row.get("status"),
+                                   "message": ("This course is not approved yet and the product page is ACTIVE "
+                                               "(on sale): submit it for review (course_edit) and add it once an "
+                                               "admin has approved it.")})
+        if errors:
+            return _err("invalid_items", errors=errors[:MAX_LISTED],
+                        message="Nothing was written. Fix these and call again (all or nothing).")
+    target_active = target is not None and _str(target.get("status")).upper() == "ACTIVE"
+    full_target: Optional[Dict[str, Any]] = None
+    if target is not None:
+        full_target = await load_page(ctx, str(target["id"]))
+        if full_target is None:
+            return _fetch_failed("the product page's courses", None)
+
+    sold = set()
+    if full_target is not None:
+        sold = {str(m.get("package_session_id")) for m in full_target.get("mappings") or []
+                if isinstance(m, dict) and str(m.get("status") or "ACTIVE").upper() == "ACTIVE"}
+    adds = [r for r in steps if str(r["package_session_id"]) not in sold]
+    already = [_step(r) for r in steps if str(r["package_session_id"]) in sold]
+    if full_target is not None:
+        adds, more_already, terms_skipped, problem = await _page_preview(ctx, str(full_target["id"]), adds)
+        if problem:
+            return problem
+        already += more_already
+    else:
+        adds, terms_skipped = _new_page_terms(adds)
+
+    # An ACTIVE page hung in a folder of a library a live site uses would show there at once: its item starts
+    # HIDDEN and the admin shows it (a new DRAFT page shows only once activated, so its item is shown).
+    item_status = "ACTIVE"
+    if attach and target_active:
+        live = await library_live_sites(ctx, library_id)
+        if live is None or live:
+            item_status = "HIDDEN"
+
+    plan: Dict[str, Any] = {"library": {"id": library_id, "name": library.get("name")}, "folder": folder_ref}
+    if target is not None:
+        plan["product_page"] = {**_page_ref(target), "in_folder": not attach}
+    else:
+        plan["product_page"] = {"create": {"name": new_name, "status": "DRAFT"}}
+        siblings = sibling_page_names(folder, existing, pages_by_id)
+        if siblings:
+            plan["sibling_page_names"] = siblings
+    if in_folder_pages and new_page:
+        plan["pages_already_in_folder"] = [_page_ref(p) for p in in_folder_pages][:20]
+    if hidden_pages:
+        plan["hidden_pages_in_folder"] = [_page_ref(p) for p in hidden_pages][:20]
+    plan["attach_to_folder"] = attach or target is None
+    if plan["attach_to_folder"]:
+        plan["folder_item_status"] = item_status
+    plan["add"] = [{"position": i + 1, **_step(r)} for i, r in enumerate(adds)]
+    if already:
+        plan["already_on_page"] = already
+    if terms_skipped:
+        plan["not_added_other_gateway_or_currency"] = terms_skipped[:MAX_LISTED]
+    if not_sold:
+        plan["batches_not_sold"], more = _cap(not_sold)
+        if more:
+            plan["batches_not_sold_more"] = more
+    warnings = _money_warnings([_step(r) for r in adds])
+    hidden = [n for n in trail if _str(n.get("status")).upper() == "HIDDEN"]
+    if hidden:
+        warnings.append("The folder '" + _trail_text(hidden[-1:]) + "' is HIDDEN: nothing in it shows on the site "
+                        "until the admin shows it in Manage Pages → Folders.")
+    if target is None:
+        warnings.append("A new DRAFT product page is created and hung in the folder; it shows there once the admin "
+                        "activates it (editor_url). " + DRAFT_PAGE_NOTE)
+    elif target_active and item_status == "HIDDEN":
+        warnings.append("This product page is ACTIVE and a live site uses this library, so it is hung in the folder "
+                        "HIDDEN: the admin shows it in Manage Pages → Folders when it should appear."
+                        + (" Its new courses are on sale on the page's own link at once." if adds else ""))
+    elif target_active and (adds or attach):
+        warnings.append("This product page is ACTIVE: " + ("the courses added are on sale in the folder immediately."
+                                                            if adds else "it shows in the folder immediately."))
+    elif not target_active:
+        warnings.append("This product page is not ACTIVE: the folder shows its courses once the admin activates it.")
+    if not adds and not plan["attach_to_folder"]:
+        if terms_skipped:
+            return _err("other_gateway_or_currency", product_page=plan["product_page"], courses=terms_skipped[:20],
+                        message=("Nothing was written: these courses are sold through another payment gateway or in "
+                                 "another currency than this page, and one checkout charges one gateway in one "
+                                 "currency. Put them on another page (create_folder_page) or change their invite's "
+                                 "gateway in the dashboard."))
+        return {"dry_run": _dry_run(args), **plan, "nothing_to_do": True,
+                "message": "Every course is already on this folder's product page; nothing to change."}
+    plan["warnings"] = warnings
+    if _dry_run(args):
+        return _dry_run_result(ctx, action, args, plan, (
+            "Nothing was written. Show the admin the folder, the page (its name: match sibling_page_names when "
+            "given) and the courses; call again with the same arguments, dry_run=false and this plan_token. New "
+            "courses go on top of the page (newest first)."))
+    refusal = check_plan_token(ctx, action, args, plan)
+    if refusal:
+        return refusal
+
+    mappings = _mappings_body(adds)
+    out: Dict[str, Any] = {"dry_run": False, "library": plan["library"], "folder": folder_ref}
+    if target is None:
+        body = {"name": new_name, "status": "DRAFT", "settings_json": json.dumps(DEFAULT_PRODUCT_PAGE_SETTINGS),
+                "mappings": [{**m, "display_order": i} for i, m in enumerate(mappings)]}
+        data = await _admin_core_json(ctx, "POST", "/admin-core-service/v1/product-page/create",
+                                      params={"instituteId": inst}, body=body, timeout=30.0)
+        if _is_error(data) or not isinstance(data, dict) or not data.get("id"):
+            return _err("write_failed", message="admin-core did not create the product page; nothing was changed.",
+                        **({"status": data.get("status")} if isinstance(data, dict) and data.get("status") else {}))
+        target = data
+        out["product_page"] = {**_page_ref(data), "status": data.get("status") or "DRAFT", "created": True}
+        out["added"] = len(adds)
+    else:
+        out["product_page"] = _page_ref(target)
+        out["added"] = 0
+        if adds:
+            data = await _admin_core_json(
+                ctx, "POST", f"/admin-core-service/v1/product-page/{target['id']}/add-courses",
+                params={"instituteId": inst}, body={"mappings": mappings, "position": "FIRST"}, timeout=30.0)
+            if _is_error(data) or not isinstance(data, dict):
+                status = data.get("status") if isinstance(data, dict) else None
+                return _err("write_failed", message=(
+                    "admin-core did not add the courses to the product page; nothing was changed."
+                    + (" This server has no add-courses endpoint yet (admin-core needs the update)."
+                       if status in (404, 405) else "")), **({"status": status} if status else {}))
+            out["added"] = data.get("added") if isinstance(data.get("added"), int) else len(adds)
+            skipped = [s for s in data.get("skipped") or [] if isinstance(s, dict)]
+            if skipped:
+                out["skipped"] = skipped[:MAX_LISTED]
+    if plan["attach_to_folder"]:
+        node = await _admin_core_json(ctx, "POST", "/admin-core-service/v1/folder-library/node",
+                                      params={"instituteId": inst, "libraryId": library_id},
+                                      body={"node_type": "PRODUCT_PAGE", "product_page_id": target["id"],
+                                            "parent_id": folder_ref["id"], "status": item_status}, timeout=30.0)
+        placed = not _is_error(node) and any(
+            str(n.get("parent_id") or "") == folder_ref["id"] and str(n.get("product_page_id") or "") == str(target["id"])
+            for n in _flatten_tree(node.get("roots") if isinstance(node, dict) else None))
+        out["attached_to_folder"] = placed
+        if not placed:
+            out["warning"] = (f"The product page is saved but could not be hung in the folder. Call add_to_folder "
+                              f"or create_folder_page again with product_page_code='{target.get('code')}' to attach it.")
+    out["editor_url"] = _product_page_url(ctx, target["id"])
+    out["warnings"] = warnings
+    out["next"] = ("Check the folder on the site preview. A DRAFT page shows in the folder once the admin activates "
+                   "it at editor_url.") if _str(out["product_page"].get("status")).upper() != "ACTIVE" else (
+                  "The courses are in the folder on the live site now.")
+    return out
+
+
+async def _action_add_to_folder(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
+    return await _folder_page_flow(args, ctx, "add_to_folder", new_page=False)
+
+
+async def _action_create_folder_page(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
+    return await _folder_page_flow(args, ctx, "create_folder_page", new_page=True)
+
+
+# ──────────────────────────────────────────────────────────────────────────
 # Dispatch + registration
 # ──────────────────────────────────────────────────────────────────────────
 _ACTIONS = {
@@ -1515,6 +2030,8 @@ _ACTIONS = {
     "add_course_tags": _action_add_course_tags,
     "create_product_page": _action_create_product_page,
     "sync_store": _action_sync_store,
+    "add_to_folder": _action_add_to_folder,
+    "create_folder_page": _action_create_folder_page,
 }
 
 

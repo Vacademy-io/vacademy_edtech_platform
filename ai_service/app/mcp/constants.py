@@ -145,8 +145,11 @@ MCP_ALLOWED_WRITE_TOOLS: Dict[str, str] = {
         "additive only; never deletes or renames existing records; new folder nodes start HIDDEN; tags are "
         "appended; product pages are created DRAFT. Every action is a dry run first: applying needs the dry run's "
         "plan_token (10 minutes, refused when the data changed); a shown folder changes only while no live site "
-        "uses its library; the store sync never switches a course off; activating a product page and invite "
-        "payment vendors stay admin clicks"
+        "uses its library (a site counts as live once it has a published version); the store sync never switches "
+        "a course off; add_to_folder / create_folder_page only add courses to the folder's shown product page (or "
+        "hang a new DRAFT page in it; an ACTIVE page hung in a live library's folder starts HIDDEN), leave out a "
+        "course on another gateway or currency, and refuse a course not approved yet for an ACTIVE page; "
+        "activating a product page and invite payment vendors stay admin clicks"
     ),
     "website_publish": (
         "LIVE, two-step confirmed: publish needs a single-use confirm_token from website_edit(request_publish) "
@@ -368,10 +371,11 @@ MCP_TOOL_GROUP_SUMMARIES: Dict[str, str] = {
     "website_data_edits": (
         "Let the connected AI app add the course data a website design needs: create folder libraries and "
         "folders (new folders start hidden), append tags to courses (existing tags are kept), create product "
-        "pages as DRAFT and add catalogue courses to a store page. It shows each change first and never deletes, "
+        "pages as DRAFT, add catalogue courses to a store page and put courses into a folder (onto the folder's "
+        "product page, or a new DRAFT one hung in it). It shows each change first and never deletes, "
         "renames or hides anything; activating a product page and payment settings stay with you. These are "
         "live records, not drafts: tags added to live courses change the site's filters at once, and courses "
-        "added to an active store page are on sale at once. Uses no AI credits."
+        "added to an active store page or an active folder page are on sale at once. Uses no AI credits."
     ),
     "website_publish": (
         "Let the connected AI app publish a website draft, or roll the live site back to an earlier published "
@@ -645,7 +649,7 @@ MCP_TOOL_PLACEMENT: Dict[str, Dict[str, str]] = {
     "website_builder_edits": {"area": "website", "level": "edit", "risk": "drafts", "sub_label": "Build and edit pages"},
     "design_import": {"area": "website", "level": "edit", "risk": "drafts", "sub_label": "Import Figma designs"},
     "website_data_edits": {"area": "website", "level": "edit", "risk": "live_additive",
-                           "sub_label": "Set up folders, course tags and product pages"},
+                           "sub_label": "Set up folders, course tags and product pages, and put courses in folders"},
     "website_publish": {"area": "website", "level": "edit", "risk": "live", "sub_label": "Publish and roll back"},
     "audience_forms": {"area": "lead_forms", "level": "view"},
     "audience_forms_edits": {"area": "lead_forms", "level": "edit", "risk": "additive",
