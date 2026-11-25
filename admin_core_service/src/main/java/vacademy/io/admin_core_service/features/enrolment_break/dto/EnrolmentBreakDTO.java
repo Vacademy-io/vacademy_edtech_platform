@@ -42,4 +42,8 @@ public class EnrolmentBreakDTO {
     private LocalDateTime endedAt;
     private LocalDateTime createdAt;
     private String createdByUserId;
+    /** For a running pause: the resume choice the institute's settings suggest today. */
+    private String suggestedResumeMode;
+    /** The institute's "keep dates after this many paused days" setting, when set. */
+    private Integer keepDatesAfterDays;
 }

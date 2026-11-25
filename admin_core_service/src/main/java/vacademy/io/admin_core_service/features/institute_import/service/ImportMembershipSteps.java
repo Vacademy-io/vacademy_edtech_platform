@@ -235,7 +235,7 @@ public class ImportMembershipSteps {
         }
     }
 
-    private void tagUser(ImportContext c, String userId, String tagName) {
+    void tagUser(ImportContext c, String userId, String tagName) {
         List<String> tags = c.getJdbc().queryForList(
                 "SELECT id FROM tags WHERE institute_id = ? AND tag_name = ? AND status = 'ACTIVE'", String.class, c.getInstituteId(), tagName);
         String tagId = tags.isEmpty() ? null : tags.get(0);

@@ -64,6 +64,10 @@ export interface EnrolmentBreak {
     started_at: string | null;
     ended_at: string | null;
     created_at: string | null;
+    /** For a running pause: the resume choice the institute's settings suggest today. */
+    suggested_resume_mode?: ResumeMode | null;
+    /** The institute's "keep dates after this many paused days" setting, when set. */
+    keep_dates_after_days?: number | null;
 }
 
 export interface LearnerBreaks {
@@ -201,6 +205,8 @@ const SAVE_SETTING_URL = GET_INSITITUTE_SETTINGS.replace('/get', '/save-setting'
 
 export interface EnrolmentBreakSettings {
     enabled: boolean;
+    /** Resuming a pause longer than this keeps the membership dates by default; empty = always move them. */
+    keep_dates_after_days?: number | null;
     /** Not saved: true when the institute has ever saved this setting (on or off). */
     configured?: boolean;
 }
@@ -232,7 +238,13 @@ export const saveEnrolmentBreakSettings = async (data: EnrolmentBreakSettings): 
     const instituteId = getCurrentInstituteId();
     await authenticatedAxiosInstance.post(
         SAVE_SETTING_URL,
-        { setting_name: 'Breaks and holds', setting_data: { enabled: data.enabled } },
+        {
+            setting_name: 'Breaks and holds',
+            setting_data: {
+                enabled: data.enabled,
+                keep_dates_after_days: data.keep_dates_after_days ?? null,
+            },
+        },
         { params: { instituteId, settingKey: ENROLMENT_BREAK_SETTING_KEY } }
     );
 };

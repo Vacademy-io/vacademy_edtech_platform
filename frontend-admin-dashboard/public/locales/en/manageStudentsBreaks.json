@@ -169,7 +169,8 @@
         "moveInstalments_one": "Also move the {{count}} unpaid instalment",
         "moveInstalments_other": "Also move the {{count}} unpaid instalments",
         "notePlaceholder": "Why now, what was agreed (optional)",
-        "newDatePick": "Choose a date to see what changes."
+        "newDatePick": "Choose a date to see what changes.",
+        "longPauseHint": "Paused longer than {{count}} days, so the dates stay the same by default."
     },
     "change": {
         "title": "Change last day",

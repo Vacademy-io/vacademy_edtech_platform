@@ -23,7 +23,7 @@ import java.util.function.BiConsumer;
  * or left alone, never duplicated.
  *
  * <p>Order: staff → courses → fee_plans → batches → learners → enrolments → breaks →
- * extra_classes → payments → live_classes → attendance. A step whose prerequisites are missing reports each record as failed
+ * extra_classes → payments → live_classes → attendance → recordings, journey_cases, open_dues. A step whose prerequisites are missing reports each record as failed
  * with the reason; nothing is half-written, because every record is its own transaction.
  *
  * <p>Dry run (the default) does the whole step inside one transaction and rolls it back, so the
@@ -38,7 +38,7 @@ import java.util.function.BiConsumer;
 public class InstituteImportService {
 
     public static final List<String> STEPS = List.of("staff", "courses", "fee_plans", "batches", "learners",
-            "enrolments", "breaks", "extra_classes", "payments", "live_classes", "attendance");
+            "enrolments", "breaks", "extra_classes", "payments", "live_classes", "attendance", "recordings", "journey_cases", "open_dues");
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -48,6 +48,7 @@ public class InstituteImportService {
     private final ImportPeopleSteps people;
     private final ImportMembershipSteps membership;
     private final ImportLiveClassSteps liveClasses;
+    private final ImportHistorySteps history;
     private final EnrolmentBreakGuard breakGuard;
 
     public Map<String, Object> run(String instituteId, String step, JsonNode body, boolean dryRun, String runByUserId) {
@@ -63,6 +64,9 @@ public class InstituteImportService {
             case "payments" -> membership::payments;
             case "live_classes" -> liveClasses::liveClasses;
             case "attendance" -> liveClasses::attendance;
+            case "recordings" -> history::recordings;
+            case "journey_cases" -> history::journeyCases;
+            case "open_dues" -> history::openDues;
             default -> throw new VacademyException("Unknown import step '" + step + "'. Steps: " + STEPS);
         };
         if (body == null || !(body.isArray() || body.isObject())) {

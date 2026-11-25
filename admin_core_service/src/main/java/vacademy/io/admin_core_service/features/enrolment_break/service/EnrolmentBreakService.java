@@ -382,14 +382,16 @@ public class EnrolmentBreakService {
 
     /** What a resume would change, and (when {@code apply}) the change itself. */
     private ResumePlan plan(EnrolmentBreak b, EnrolmentBreakEndRequestDTO req, LocalDate today, boolean scheduled) {
-        String mode = req == null || !StringUtils.hasText(req.getResumeMode())
-                ? EnrolmentBreak.RESUME_SHIFT : req.getResumeMode().trim().toUpperCase();
-        if (!Set.of(EnrolmentBreak.RESUME_SHIFT, EnrolmentBreak.RESUME_KEEP, EnrolmentBreak.RESUME_NEW_DATE).contains(mode)) {
-            throw new VacademyException("Unknown resume choice: " + mode);
-        }
         // A scheduled end counts the planned days, not the hours the daily job ran late.
         LocalDate effectiveEnd = scheduled && b.getEndsOn() != null ? b.getEndsOn().plusDays(1) : today;
         int pausedDays = (int) Math.max(0, ChronoUnit.DAYS.between(b.getStartsOn(), effectiveEnd));
+        // No choice made (or the pause ended on its planned date): the institute's default, which
+        // keeps the dates after a long pause when it asks for that, else moves them.
+        String mode = req == null || !StringUtils.hasText(req.getResumeMode())
+                ? settings.defaultResumeMode(b.getInstituteId(), pausedDays) : req.getResumeMode().trim().toUpperCase();
+        if (!Set.of(EnrolmentBreak.RESUME_SHIFT, EnrolmentBreak.RESUME_KEEP, EnrolmentBreak.RESUME_NEW_DATE).contains(mode)) {
+            throw new VacademyException("Unknown resume choice: " + mode);
+        }
         List<String> blockers = new ArrayList<>();
         List<String> warnings = new ArrayList<>();
         UserPlan plan = b.isPause() && b.getUserPlanId() != null
@@ -753,6 +755,10 @@ public class EnrolmentBreakService {
                 .planEndBefore(b.getPlanEndBefore()).planEndAfter(b.getPlanEndAfter())
                 .startedAt(b.getStartedAt()).endedAt(b.getEndedAt()).createdAt(b.getCreatedAt())
                 .createdByUserId(b.getCreatedByUserId())
+                .suggestedResumeMode(b.isPause() && EnrolmentBreak.STATUS_ACTIVE.equals(b.getStatus()) && today != null
+                        ? settings.defaultResumeMode(b.getInstituteId(), (int) Math.max(0, ChronoUnit.DAYS.between(b.getStartsOn(), today)))
+                        : null)
+                .keepDatesAfterDays(b.isPause() ? settings.keepDatesAfterDays(b.getInstituteId()) : null)
                 .build();
     }
 

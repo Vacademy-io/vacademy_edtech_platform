@@ -78,7 +78,8 @@ export const ResumeBreakDialog = ({ onClose, brk, instituteId, today }: ResumeBr
     const form = useForm<FormValues>({
         resolver: zodResolver(schema),
         defaultValues: {
-            mode: 'SHIFT_BY_PAUSED_DAYS',
+            // The institute may keep the dates after a long pause (Settings → Breaks and holds).
+            mode: brk.suggested_resume_mode ?? 'SHIFT_BY_PAUSED_DAYS',
             newEndDate: '',
             moveInstalments: true,
             note: '',
@@ -187,6 +188,14 @@ export const ResumeBreakDialog = ({ onClose, brk, instituteId, today }: ResumeBr
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>{t('resume.datesLabel')}</FormLabel>
+                                    {brk.suggested_resume_mode === 'KEEP_DATES' &&
+                                        brk.keep_dates_after_days != null && (
+                                            <p className="text-caption text-neutral-600">
+                                                {t('resume.longPauseHint', {
+                                                    count: brk.keep_dates_after_days,
+                                                })}
+                                            </p>
+                                        )}
                                     <FormControl>
                                         <RadioGroup
                                             value={field.value}

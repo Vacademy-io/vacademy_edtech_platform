@@ -239,9 +239,42 @@ class InstituteImportDatabaseProofIT {
         assertEquals(logs, count("SELECT COUNT(*) FROM live_session_logs WHERE session_id IN (?, ?)", b1, b9));
         assertEquals(0, count("SELECT COUNT(*) FROM schedule_notifications WHERE session_id IN (?, ?)", b1, b9), "no class reminders");
 
+        // Recordings attach to the dated class; journey cases and open dues go on the timeline.
+        assertEquals(2, step("recordings", """
+                [{"batch_external_id":"B1","date":"%s","title":"Class","url":"https://youtu.be/abc","duration_min":60},
+                 {"batch_external_id":"B1","date":"%s","title":"No attendance that day","url":"https://youtu.be/def","duration_min":55}]
+                """.formatted(held, today.minusDays(21)), false).get("created"));
+        String recJson = db.queryForObject("SELECT provider_recordings_json FROM session_schedules WHERE id = ?", String.class, sched);
+        assertTrue(recJson.contains("youtubeVideoUrl") && recJson.contains("youtu.be/abc"), recJson);
+        assertEquals(1, step("journey_cases", """
+                [{"case_id":"C1","student_id":"S2","from_status":"Learning","to_status":"Suspended","case_status":"Open","opened_on":"2026-09-25","reason":"Long break"}]
+                """, false).get("created"));
+        assertEquals(1, step("open_dues", """
+                [{"invoice_number":"Inv9","enrollment_external_id":"E1","invoice_date":"2026-09-15","due_date":"2026-09-15","total":2600,"balance":2600,"currency":"INR","status":"Overdue","red_list":true}]
+                """, false).get("created"));
+        assertEquals(1, count("SELECT COUNT(*) FROM timeline_event WHERE institute_id = ? AND type = 'JOURNEY_CASE' AND student_user_id = ?", inst, accounts.get("s2@example.com")));
+        assertEquals(1, count("SELECT COUNT(*) FROM timeline_event WHERE institute_id = ? AND type = 'OPEN_DUE' AND title LIKE '%red list%'", inst));
+        assertEquals(1, count("SELECT COUNT(*) FROM user_tags ut JOIN tags t ON t.id = ut.tag_id WHERE ut.institute_id = ? AND t.tag_name = 'Red list'", inst));
+        assertEquals(0, step("open_dues", "[{\"invoice_number\":\"Inv9\",\"enrollment_external_id\":\"E1\"}]", false).get("created"));
+
         // Nothing was announced.
         verifyNoInteractions(workflowTriggerService, paymentNotificatonService, dynamicNotificationService);
         verify(authService, never()).createUserFromAuthService(any(), anyString(), eq(true));
+    }
+
+    @Autowired private vacademy.io.admin_core_service.features.enrolment_break.service.EnrolmentBreakSettings breakSettings;
+
+    @Test
+    @Order(4)
+    void longPauseKeepsDatesWhenTheInstituteAsks() {
+        assertEquals("SHIFT_BY_PAUSED_DAYS", breakSettings.defaultResumeMode(inst, 500), "unset: always move the dates");
+        db.update("UPDATE institutes SET setting_json = ? WHERE id = ?",
+                "{\"setting\":{\"ENROLMENT_BREAK_SETTING\":{\"key\":\"ENROLMENT_BREAK_SETTING\",\"data\":{\"enabled\":true,\"keep_dates_after_days\":45}}}}", inst);
+        breakSettings.forget(inst);
+        assertEquals(45, breakSettings.keepDatesAfterDays(inst));
+        assertEquals("SHIFT_BY_PAUSED_DAYS", breakSettings.defaultResumeMode(inst, 30));
+        assertEquals("SHIFT_BY_PAUSED_DAYS", breakSettings.defaultResumeMode(inst, 45));
+        assertEquals("KEEP_DATES", breakSettings.defaultResumeMode(inst, 50));
     }
 
     private java.time.LocalDate nextWeekday(java.time.DayOfWeek dow, int weeksOut) {

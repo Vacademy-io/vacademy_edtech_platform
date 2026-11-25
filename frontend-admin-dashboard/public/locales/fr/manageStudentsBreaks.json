@@ -180,7 +180,8 @@
         "moveInstalments_many": "Décaler aussi les {{count}} échéances impayées",
         "moveInstalments_other": "Décaler aussi les {{count}} échéances impayées",
         "notePlaceholder": "Pourquoi maintenant, ce qui a été convenu (facultatif)",
-        "newDatePick": "Choisissez une date pour voir ce qui change."
+        "newDatePick": "Choisissez une date pour voir ce qui change.",
+        "longPauseHint": "Pause de plus de {{count}} jours : les dates restent les mêmes par défaut."
     },
     "change": {
         "title": "Modifier le dernier jour",

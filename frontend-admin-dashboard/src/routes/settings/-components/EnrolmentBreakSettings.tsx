@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MyButton } from '@/components/design-system/button';
+import { MyInput } from '@/components/design-system/input';
 import {
     ENROLMENT_BREAK_SETTINGS_DEFAULTS,
     ENROLMENT_BREAK_SETTINGS_QUERY_KEY,
@@ -122,6 +123,34 @@ export default function EnrolmentBreakSettings() {
                             points={[t('pause.point1'), t('pause.point2'), t('pause.point3')]}
                         />
                     </div>
+
+                    {!isLoading && !isError && (
+                        <div className="space-y-1">
+                            <Label htmlFor="keep-dates-after-days">{t('keepDates.label')}</Label>
+                            <MyInput
+                                id="keep-dates-after-days"
+                                inputType="text"
+                                input={
+                                    settings.keep_dates_after_days == null
+                                        ? ''
+                                        : String(settings.keep_dates_after_days)
+                                }
+                                onChangeFunction={(e) => {
+                                    const raw = e.target.value.trim();
+                                    const n = Number(raw);
+                                    if (raw !== '' && (!Number.isInteger(n) || n <= 0 || n > 365)) return;
+                                    setSettings((prev) => ({
+                                        ...prev,
+                                        keep_dates_after_days: raw === '' ? null : n,
+                                    }));
+                                    setHasChanges(true);
+                                }}
+                                disabled={!settings.enabled}
+                                className="w-full sm:w-40"
+                            />
+                            <p className="text-caption text-neutral-500">{t('keepDates.hint')}</p>
+                        </div>
+                    )}
 
                     <p className="text-caption text-neutral-500">{t('offNote')}</p>
 

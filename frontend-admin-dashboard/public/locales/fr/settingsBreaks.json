@@ -13,7 +13,7 @@
         "title": "Pause",
         "point1": "Pour une longue pause pendant laquelle l’apprenant ne paie pas.",
         "point2": "Ni prélèvement, ni renouvellement, ni expiration ; le cours peut être coupé.",
-        "point3": "Au retour, les dates de l’abonnement sont décalées des jours de pause."
+        "point3": "Au retour, les dates de l’adhésion sont décalées du nombre de jours de pause (ou restent les mêmes après une longue pause, si réglé ci-dessous)."
     },
     "audit": "Chaque pause est enregistrée sur la chronologie de l’apprenant et dans le journal d’activité, avec son auteur et sa date.",
     "save": "Enregistrer",
@@ -21,5 +21,9 @@
     "saved": "Réglage des pauses enregistré.",
     "saveFailed": "Impossible d’enregistrer le réglage.",
     "toggleLabel": "Autoriser les pauses et suspensions",
-    "offNote": "Désactiver empêche les nouvelles pauses. Les pauses en cours continuent jusqu’à leur fin."
+    "offNote": "Désactiver empêche les nouvelles pauses. Les pauses en cours continuent jusqu’à leur fin.",
+    "keepDates": {
+        "label": "Garder les échéances après une longue pause (jours)",
+        "hint": "Quand une pause a duré plus longtemps que cela, la reprise garde les dates de l’adhésion ; l’équipe peut toujours les décaler ou choisir une nouvelle date. Laissez vide pour toujours décaler les dates du nombre de jours de pause."
+    }
 }
