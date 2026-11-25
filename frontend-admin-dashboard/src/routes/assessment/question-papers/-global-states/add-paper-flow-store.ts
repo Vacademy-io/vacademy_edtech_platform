@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type AddPaperWay = 'ai' | 'upload' | 'manual';
+export type AddPaperWay = 'ai' | 'upload' | 'vsmart' | 'manual';
 
 interface AddPaperFlowState {
     chooserOpen: boolean;

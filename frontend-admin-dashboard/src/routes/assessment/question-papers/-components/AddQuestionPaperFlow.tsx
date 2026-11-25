@@ -1,12 +1,20 @@
 import { Dispatch, ReactNode, SetStateAction, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CaretRight, Info, PencilSimpleLine, Sparkle, UploadSimple } from '@phosphor-icons/react';
+import {
+    CaretRight,
+    Info,
+    PencilSimpleLine,
+    Scan,
+    Sparkle,
+    UploadSimple,
+} from '@phosphor-icons/react';
 import { MyDialog } from '@/components/design-system/dialog';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { GenerateWithAiDialog } from './GenerateWithAiDialog';
 import { UploadQuestionPaperDialog } from './UploadQuestionPaperDialog';
 import { CreateQuestionPaperDialog } from './CreateQuestionPaperDialog';
+import { VsmartExtractDialog } from './VsmartExtractDialog';
 import { AddPaperWay, useAddPaperFlowStore } from '../-global-states/add-paper-flow-store';
 
 interface WayOptionProps {
@@ -20,7 +28,7 @@ interface WayOptionProps {
     onClick: () => void;
 }
 
-/** One of the three ways to add a paper, shown as a selectable card. */
+/** One of the ways to add a paper, shown as a selectable card. */
 export const WayOption = ({
     icon,
     iconClassName,
@@ -77,7 +85,7 @@ export const WayOption = ({
     </button>
 );
 
-/** The three options, in the order and wording used by the chooser and the empty state. */
+/** The options, in the order and wording used by the chooser and the empty state. */
 export const useAddPaperWays = () => {
     const { t } = useTranslation('assessmentQuestionPapersPage');
     return (onPick: (way: AddPaperWay) => void) => [
@@ -102,6 +110,16 @@ export const useAddPaperWays = () => {
             onClick={() => onPick('upload')}
         />,
         <WayOption
+            key="vsmart"
+            icon={<Scan size={24} />}
+            iconClassName="bg-success-50 text-success-600"
+            title={t('chooser.vsmart.title')}
+            badge={t('chooser.vsmart.badge')}
+            description={t('chooser.vsmart.description')}
+            tags={[t('chooser.vsmart.tag1'), t('chooser.vsmart.tag2'), t('chooser.vsmart.tag3')]}
+            onClick={() => onPick('vsmart')}
+        />,
+        <WayOption
             key="manual"
             icon={<PencilSimpleLine size={24} />}
             iconClassName="bg-primary-50 text-primary-500"
@@ -119,7 +137,7 @@ interface AddQuestionPaperFlowProps {
 }
 
 /**
- * "Add question paper": a chooser with the three ways, each opening its own flow.
+ * "Add question paper": a chooser with the four ways, each opening its own flow.
  * Generate with AI reuses the existing dialog and wizard unchanged.
  */
 export const AddQuestionPaperFlow = ({
@@ -167,6 +185,11 @@ export const AddQuestionPaperFlow = ({
                 onBack={backToChooser}
                 currentQuestionIndex={currentQuestionIndex}
                 setCurrentQuestionIndex={setCurrentQuestionIndex}
+            />
+            <VsmartExtractDialog
+                open={way === 'vsmart'}
+                onOpenChange={onWayOpenChange}
+                onBack={backToChooser}
             />
             <CreateQuestionPaperDialog
                 open={way === 'manual'}
