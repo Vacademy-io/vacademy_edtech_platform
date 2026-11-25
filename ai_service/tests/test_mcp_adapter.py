@@ -79,7 +79,7 @@ def test_exposed_set_is_the_documented_one():
     # one toggle per feature. Adding here means adding a label + docs too.
     assert MCP_EXPOSED_TOOLS == (
         "whoami", "search_help_knowledge", "get_institute_overview", "website", "website_edit", "design_import", "catalog_data_edit",
-        "website_publish",
+        "catalog_folder_edit", "website_publish",
         "audience_forms", "audience_forms_edit",
         "workflows", "workflows_edit", "blog", "blog_edit",
         "courses", "course_edit", "course_drip_edit", "course_invites_edit", "course_structure_edit",
@@ -316,7 +316,7 @@ def test_website_publish_is_an_opt_in_live_capability_no_existing_connection_has
     assert entry["opt_in"] is True and entry["label"] == "Website: publish" and entry["sub_label"]
     # Every other group keeps the area's Edit level / presets behaviour.
     opt_in_keys = [
-        "website_data_edits", "website_publish", "course_structure_edits", "learner_enrollments",
+        "website_data_edits", "website_folder_changes", "website_publish", "course_structure_edits", "learner_enrollments",
         "learner_profile_edits", "learner_enrolment_changes", "sub_org_edits", "sub_org_enrollments",
         "announcement_sends",
         "crm_lead_activity", "crm_lead_edits", "crm_lead_merges", "crm_team_edits", "crm_lead_intake",

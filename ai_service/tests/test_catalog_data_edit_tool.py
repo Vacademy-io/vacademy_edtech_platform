@@ -986,6 +986,19 @@ async def test_create_folder_page_hangs_a_new_page_even_next_to_one(backend):
 
 
 @pytest.mark.asyncio
+async def test_upsert_refuses_a_key_that_names_several_folders(backend):
+    backend.nodes["lib-1"] += [_node("y-a", "2026", None, parent="n-1"), _node("y-b", "2026", None, parent="n-3")]
+    as_key = await run({"action": "upsert_folder_nodes", "library_id": "lib-1",
+                        "nodes": [{"key": "2026", "tagline": "x"}]})
+    assert as_key["error"] == "invalid_nodes" and "catalog_folder_edit" in as_key["errors"][0]["message"]
+    assert "Shastra › 2026" in as_key["errors"][0]["message"]
+    as_parent = await run({"action": "upsert_folder_nodes", "library_id": "lib-1",
+                           "nodes": [{"key": "november", "title": "November", "parent_key": "2026"}]})
+    assert as_parent["error"] == "invalid_nodes" and as_parent["errors"][0]["field"] == "parent_key"
+    assert writes(backend) == []
+
+
+@pytest.mark.asyncio
 async def test_a_published_site_whose_status_still_reads_draft_is_live(backend):
     """Publishing copies the draft into course_catalogue without touching its status."""
     backend.catalogues[0]["status"] = "DRAFT"

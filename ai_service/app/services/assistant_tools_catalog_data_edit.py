@@ -43,6 +43,11 @@ Actions:
                            hung in a folder, with courses if given — or an
                            existing page (product_page_code) hung in it.
 
+Folders whose derived key (their title) repeats in a library — '2026' under
+Weekly and under Monthly — are never matched by that key: upsert_folder_nodes
+refuses it as ambiguous instead of editing the first one; catalog_folder_edit
+creates and changes folders under an exact parent.
+
 Every action is a dry run unless the caller passes dry_run=false, and returns
 exactly what it would change plus a ``plan_token``: an HMAC over the caller,
 the action, its arguments and the plan computed from the data read, valid
@@ -238,6 +243,9 @@ CATALOG_DATA_EDIT_SCHEMA: Dict[str, Any] = {
             "DRAFT product page hung in the folder (even when it already holds one), with the courses in items if "
             "any — or an existing page (product_page_code) hung in it. Name the page like the pages next to it: a dry "
             "run lists sibling_page_names (e.g. 'Weekly Current Affairs – October 2026').\n"
+            "To create a folder under an exact parent, rename, move, hide or delete folders use catalog_folder_edit "
+            "(when enabled): folder titles repeat across a library (2026, November), so upsert_folder_nodes refuses "
+            "a key that names more than one folder.\n"
             "Never send access tokens or other credentials."
         ),
         "parameters": {
@@ -855,12 +863,25 @@ async def _action_upsert_folder_nodes(args: Dict[str, Any], ctx: ToolContext) ->
 
     folders_by_key: Dict[str, Dict[str, Any]] = {}
     slugs_taken: Dict[str, Dict[str, Any]] = {}
+    same_key: Dict[str, List[Dict[str, Any]]] = {}
     for n in existing:
         if n.get("slug"):
             slugs_taken[str(n["slug"])] = n
         if str(n.get("node_type") or "FOLDER").upper() == "FOLDER":
             folders_by_key.setdefault(folder_slug(n), n)
+            same_key.setdefault(folder_slug(n), []).append(n)
     by_id = {str(n["id"]): n for n in existing}
+    # A key that names several folders (titles repeat: '2026' under Weekly and Monthly) would match the
+    # first one only — refused rather than guessing which folder the caller means.
+    for node in nodes:
+        for field in ("key", "parent_key"):
+            key = node.get(field)
+            if key and len(same_key.get(key, [])) > 1:
+                errors.append({"index": node["index"], "key": node["key"], "field": field, "message": (
+                    f"'{key}' names {len(same_key[key])} folders of this library ("
+                    + "; ".join(_trail_text(_folder_trail(f, by_id)) for f in same_key[key][:6])
+                    + "). Create or change a folder under an exact parent with catalog_folder_edit, or use a key "
+                      "that names one folder.")})
 
     creates: List[Dict[str, Any]] = []
     updates: List[Dict[str, Any]] = []

@@ -44,6 +44,7 @@ MCP_EXPOSED_TOOLS: Tuple[str, ...] = (
     "website_edit",         # WRITE: draft-only — every change lands as a draft the admin publishes
     "design_import",        # WRITE: a Figma design the AI app read itself → site plan; save_draft = website_edit drafts
     "catalog_data_edit",    # WRITE: additive live data — HIDDEN folders, appended course tags, DRAFT product pages
+    "catalog_folder_edit",  # WRITE (live): create / rename / show-hide / move / delete folders — dry run + plan_token, opt-in only
     "website_publish",      # WRITE (live): publish a checked draft / roll back — two-step confirm token, opt-in only
     "audience_forms",       # READ:  lead campaigns, their form fields, recent leads
     "audience_forms_edit",  # WRITE: additive only — create a campaign, add fields, send a test lead
@@ -112,6 +113,11 @@ MCP_EXPOSED_TOOLS: Tuple[str, ...] = (
 #:   * website_publish (product decision 2026-10-10): it publishes, with a
 #:     single-use token from a check the admin was shown less than 10 minutes
 #:     earlier, bound to that exact state;
+#:   * catalog_folder_edit (product decision 2026-11-25): creates, changes, moves
+#:     and deletes the folders of a folder library, live, through a dry run the
+#:     admin is shown → a plan_token over the identical request and the folders
+#:     as read → the write. A delete removes the folder subtree only; product
+#:     pages and courses are never deleted from here;
 #:   * course_structure_edit (product decision 2026-10-12): regroups a course, live
 #:     ones included, through a dry run the admin is shown → a signed confirm_token
 #:     over the identical request → one admin-core transaction;
@@ -150,6 +156,12 @@ MCP_ALLOWED_WRITE_TOOLS: Dict[str, str] = {
         "hang a new DRAFT page in it; an ACTIVE page hung in a live library's folder starts HIDDEN), leave out a "
         "course on another gateway or currency, and refuse a course not approved yet for an ACTIVE page; "
         "activating a product page and invite payment vendors stay admin clicks"
+    ),
+    "catalog_folder_edit": (
+        "LIVE, opt-in, two-step: every action is a dry run the admin is shown, applied only with its plan_token "
+        "(10 minutes, refused when the folders changed since); folders only — a delete removes the folder and the "
+        "items in it, never a product page or a course, and returns what it removed; a sibling with the same "
+        "title, a move into itself and the nesting limit are refused before any write"
     ),
     "website_publish": (
         "LIVE, two-step confirmed: publish needs a single-use confirm_token from website_edit(request_publish) "
@@ -299,6 +311,7 @@ MCP_TOOL_GROUP_LABELS: Dict[str, str] = {
     "website_builder_edits": "Website: edit drafts",
     "design_import": "Website: import Figma designs",
     "website_data_edits": "Website: set up course data",
+    "website_folder_changes": "Website: change folders",
     "website_publish": "Website: publish",
     "audience_forms": "Lead forms: view",
     "audience_forms_edits": "Lead forms: edit",
@@ -376,6 +389,13 @@ MCP_TOOL_GROUP_SUMMARIES: Dict[str, str] = {
         "renames or hides anything; activating a product page and payment settings stay with you. These are "
         "live records, not drafts: tags added to live courses change the site's filters at once, and courses "
         "added to an active store page or an active folder page are on sale at once. Uses no AI credits."
+    ),
+    "website_folder_changes": (
+        "Let the connected AI app create folders under an exact parent and rename, show or hide, move and delete "
+        "the folders of your folder libraries, like Manage Pages → Folders. Each change is shown to you first and "
+        "made only after you say yes. These are live: a library a published site uses changes on the site at once. "
+        "Deleting a folder removes it and everything in it; the product pages and courses in it are kept. Uses no "
+        "AI credits."
     ),
     "website_publish": (
         "Let the connected AI app publish a website draft, or roll the live site back to an earlier published "
@@ -650,6 +670,8 @@ MCP_TOOL_PLACEMENT: Dict[str, Dict[str, str]] = {
     "design_import": {"area": "website", "level": "edit", "risk": "drafts", "sub_label": "Import Figma designs"},
     "website_data_edits": {"area": "website", "level": "edit", "risk": "live_additive",
                            "sub_label": "Set up folders, course tags and product pages, and put courses in folders"},
+    "website_folder_changes": {"area": "website", "level": "edit", "risk": "live",
+                               "sub_label": "Create, rename, hide, move and delete folders"},
     "website_publish": {"area": "website", "level": "edit", "risk": "live", "sub_label": "Publish and roll back"},
     "audience_forms": {"area": "lead_forms", "level": "view"},
     "audience_forms_edits": {"area": "lead_forms", "level": "edit", "risk": "additive",
@@ -715,7 +737,7 @@ MCP_TOOL_PLACEMENT: Dict[str, Dict[str, str]] = {
 #: setting for them.
 MCP_ALWAYS_ON_TOOLS = frozenset({"search_help_knowledge"})
 
-MCP_OPT_IN_GROUPS = frozenset({"website_data_edits", "website_publish",
+MCP_OPT_IN_GROUPS = frozenset({"website_data_edits", "website_folder_changes", "website_publish",
                                "learner_enrollments", "learner_profile_edits", "learner_enrolment_changes",
                                "course_structure_edits", "announcement_sends",
                                "sub_org_edits", "sub_org_enrollments",
