@@ -12,7 +12,7 @@ import { InstructorLine } from "./-components/InstructorLine";
 
 import { useNavigate } from "@tanstack/react-router";
 import { SessionStreamingServiceType } from "@/routes/register/live-class/-types/enum";
-import { getAllPackageSessionIds } from "@/utils/study-library/get-list-from-stores/getPackageSessionId";
+import { loadPackageSessionIds } from "@/utils/study-library/get-list-from-stores/getPackageSessionId";
 import { useMarkAttendance } from "./-hooks/useMarkAttendance";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -162,9 +162,10 @@ export function LiveClassView({ embedded = false }: { embedded?: boolean }) {
 
   useEffect(() => {
     const fetchBatchIds = async () => {
-      const ids = await getAllPackageSessionIds();
-      console.log('Fetched batch IDs:', ids);
-      setBatchIds(ids);
+      await loadPackageSessionIds((ids) => {
+        console.log('Fetched batch IDs:', ids);
+        setBatchIds(ids);
+      });
     };
     fetchBatchIds();
   }, []);

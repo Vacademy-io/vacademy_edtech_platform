@@ -12,7 +12,7 @@ import { DashboardLoader } from "@/components/core/dashboard-loader";
 import { SessionLoginForm } from "./components/SessionLoginForm";
 import { SessionSelectionDialog } from "./components/SessionSelectionDialog";
 import { useLiveSessions } from "../-hooks/useLiveSessions";
-import { getAllPackageSessionIds } from "@/utils/study-library/get-list-from-stores/getPackageSessionId";
+import { loadPackageSessionIds } from "@/utils/study-library/get-list-from-stores/getPackageSessionId";
 import {
   getActiveSessions,
   SessionStatus,
@@ -83,9 +83,10 @@ function RouteComponent() {
   // Fetch batch IDs
   useEffect(() => {
     const fetchBatchIds = async () => {
-      const ids = await getAllPackageSessionIds();
-      console.log("Fetched batchIds:", ids);
-      setBatchIds(ids);
+      await loadPackageSessionIds((ids) => {
+        console.log("Fetched batchIds:", ids);
+        setBatchIds(ids);
+      });
     };
     if (authState === "authenticated") {
       fetchBatchIds();
