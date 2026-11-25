@@ -978,4 +978,32 @@ public class AuthService {
             return Map.of();
         }
     }
+
+    /**
+     * Same lookup as {@link #getInstituteRoles} (ACTIVE roles at this institute only), but
+     * returns null when auth_service could not answer. Lead routing needs to tell "this
+     * person has no active role here" (skip them) apart from "unknown right now" (keep
+     * routing as before rather than leaving every new lead unassigned during an outage).
+     */
+    public Map<String, List<String>> getActiveInstituteRolesOrNull(String instituteId, List<String> userIds) {
+        if (instituteId == null || instituteId.isBlank() || userIds == null || userIds.isEmpty()) {
+            return Map.of();
+        }
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            String path = AuthServiceRoutes.GET_INSTITUTE_ROLES
+                    + "?instituteId=" + instituteId
+                    + "&userIds=" + String.join(",", userIds);
+            ResponseEntity<String> response = hmacClientUtils.makeHmacRequest(
+                    clientName, HttpMethod.GET.name(), authServerBaseUrl, path, null);
+            Map<String, List<String>> roles = objectMapper.readValue(response.getBody(),
+                    new TypeReference<Map<String, List<String>>>() {
+                    });
+            return roles != null ? roles : Map.of();
+        } catch (Exception e) {
+            log.warn("Institute-role lookup failed for institute {} ({} users): {}",
+                    instituteId, userIds.size(), e.getMessage());
+            return null;
+        }
+    }
 }
