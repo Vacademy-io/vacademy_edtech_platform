@@ -214,7 +214,7 @@ public class SyllabusProgressService {
      * The course's stages (levels) in teaching order, for the learner's stage path. Levels carry no
      * order of their own, so a stage's place is where its syllabus starts (its first week), then
      * when it was created; stages without a syllabus come last. The placeholder level "DEFAULT"
-     * (a course with no real stages) is left out.
+     * (a course with no real stages) and the system "INVITED" level are left out.
      */
     private List<Map<String, Object>> courseLevels(String packageId) {
         return jdbc.queryForList("""
@@ -224,6 +224,7 @@ public class SyllabusProgressService {
                                  WHERE ps.package_id = ? AND ps.status <> 'DELETED')
                    AND COALESCE(l.status, 'ACTIVE') <> 'DELETED'
                    AND UPPER(COALESCE(l.level_name, '')) <> 'DEFAULT'
+                   AND l.id <> 'INVITED'
                  ORDER BY (SELECT MIN(b.week_from) FROM syllabus_block b
                             WHERE b.package_id = ? AND b.level_id = l.id AND b.status = 'ACTIVE') NULLS LAST,
                           l.created_at NULLS LAST, l.level_name
