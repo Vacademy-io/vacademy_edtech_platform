@@ -236,6 +236,42 @@ public class AuthService {
         return e.getMessage();
     }
 
+    /**
+     * Bulk-enrol preview: may each row's typed username be used? Same rule as the add itself
+     * (auth AuthService#checkUsernameForNewLearner). Rows are maps with username, email and
+     * mobile_number; the answers come back in row order. Returns null when the check cannot be
+     * made, so the caller lets the rows through (the add still refuses a taken name).
+     */
+    public List<Boolean> checkNewLearnerUsernames(String instituteId, List<Map<String, String>> rows) {
+        if (rows == null || rows.isEmpty()) {
+            return List.of();
+        }
+        try {
+            ResponseEntity<String> response = hmacClientUtils.makeHmacRequest(
+                    clientName,
+                    HttpMethod.POST.name(),
+                    authServerBaseUrl,
+                    StudentConstants.usernamesAvailabilityRoute + "?instituteId=" + instituteId,
+                    rows);
+            List<Map<String, Object>> answers = new ObjectMapper().readValue(response.getBody(),
+                    new TypeReference<List<Map<String, Object>>>() {
+                    });
+            if (answers == null || answers.size() != rows.size()) {
+                log.warn("Username check returned {} answers for {} rows; skipping it",
+                        answers == null ? 0 : answers.size(), rows.size());
+                return null;
+            }
+            List<Boolean> available = new java.util.ArrayList<>();
+            for (Map<String, Object> answer : answers) {
+                available.add(answer == null || !Boolean.FALSE.equals(answer.get("available")));
+            }
+            return available;
+        } catch (Exception e) {
+            log.warn("Username check for the bulk preview failed; rows go through: {}", e.getMessage());
+            return null;
+        }
+    }
+
     public UserDTO createUserFromAuthServiceForLearnerEnrollment(UserDTO userDTO, String instituteId,
             boolean sendCred) {
         return createUserFromAuthServiceForLearnerEnrollment(userDTO, instituteId, sendCred, null);
