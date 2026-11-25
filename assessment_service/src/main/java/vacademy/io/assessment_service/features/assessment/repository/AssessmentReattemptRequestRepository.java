@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import vacademy.io.assessment_service.features.assessment.entity.AssessmentReattemptRequest;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -51,6 +52,13 @@ public interface AssessmentReattemptRequestRepository extends JpaRepository<Asse
     @Query("SELECT r FROM AssessmentReattemptRequest r WHERE r.id = :id")
     Optional<AssessmentReattemptRequest> findByIdForUpdate(@Param("id") String id);
 
+    /**
+     * The earliest open report on one question since a moment, any learner. Staff are told about
+     * that one only, so a whole class reporting the same broken question raises one alert.
+     */
+    Optional<AssessmentReattemptRequest>
+    findFirstByAssessmentIdAndQuestionIdAndRequestTypeAndStatusAndCreatedAtAfterOrderByCreatedAtAscIdAsc(
+            String assessmentId, String questionId, String requestType, String status, Date after);
 
     long countByInstituteIdAndAssessmentIdAndStatus(String instituteId, String assessmentId, String status);
 }

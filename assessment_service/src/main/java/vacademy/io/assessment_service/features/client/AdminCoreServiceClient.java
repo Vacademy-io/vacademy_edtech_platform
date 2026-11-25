@@ -705,6 +705,80 @@ public class AdminCoreServiceClient {
     private static final String LEARNER = "LEARNER";
 
     /**
+     * Who on the staff hears about a learner's request from inside a test (a problem report on a
+     * question, more time, another attempt), and how. Saved by the institute under
+     * {@code ASSESSMENT_SETTING.learnerRequestNotifications}:
+     * {@code {"roles": {"ADMIN": true, "TEACHER": false}, "channels": {"inApp": true, "email": true}}}.
+     *
+     * @param roles  staff roles to notify; ADMIN unless the institute switched it off. Learner
+     *               roles are never included.
+     * @param inApp  dashboard bell plus app push
+     * @param email  an email to each recipient with an address
+     */
+    public record LearnerRequestNotificationSettings(List<String> roles, boolean inApp, boolean email) {
+        public static LearnerRequestNotificationSettings defaults() {
+            return new LearnerRequestNotificationSettings(List.of("ADMIN"), true, true);
+        }
+    }
+
+    /** The institute's learner-request notification setting; the defaults when unset or unreadable. */
+    public LearnerRequestNotificationSettings getLearnerRequestNotificationSettings(String instituteId) {
+        if (!StringUtils.hasText(instituteId)) return LearnerRequestNotificationSettings.defaults();
+        try {
+            String route = "/admin-core-service/internal/institute/v1/" + instituteId
+                    + "/setting?settingKey=ASSESSMENT_SETTING";
+            ResponseEntity<String> response = internalClientUtils.makeHmacRequest(
+                    clientName, "GET", adminCoreServiceBaseUrl, route, null);
+            String body = response == null ? null : response.getBody();
+            if (response != null && response.getStatusCode() == HttpStatus.OK
+                    && body != null && !body.isBlank() && !"null".equals(body.trim())) {
+                Map<?, ?> settingData = objectMapper.readValue(body, Map.class);
+                return parseLearnerRequestNotificationSettings(
+                        settingData == null ? null : settingData.get("learnerRequestNotifications"));
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch learner-request notification settings for institute {}: {}",
+                    instituteId, e.getMessage());
+        }
+        return LearnerRequestNotificationSettings.defaults();
+    }
+
+    public static LearnerRequestNotificationSettings parseLearnerRequestNotificationSettings(Object raw) {
+        Map<String, Boolean> saved = new java.util.LinkedHashMap<>();
+        boolean inApp = true;
+        boolean email = true;
+        if (raw instanceof Map<?, ?> setting) {
+            if (setting.get("roles") instanceof Map<?, ?> roles) {
+                for (Map.Entry<?, ?> e : roles.entrySet()) {
+                    if (e.getKey() != null && e.getValue() instanceof Boolean on) {
+                        saved.put(e.getKey().toString().trim(), on);
+                    }
+                }
+            }
+            if (setting.get("channels") instanceof Map<?, ?> channels) {
+                if (channels.get("inApp") instanceof Boolean on) inApp = on;
+                if (channels.get("email") instanceof Boolean on) email = on;
+            }
+        }
+        List<String> enabled = new ArrayList<>();
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        // ADMIN is on until the institute turns it off, so every request reaches someone.
+        if (saved.keySet().stream().noneMatch("ADMIN"::equalsIgnoreCase)) {
+            enabled.add("ADMIN");
+            seen.add("ADMIN");
+        }
+        for (Map.Entry<String, Boolean> e : saved.entrySet()) {
+            String role = e.getKey();
+            String upper = role.toUpperCase(java.util.Locale.ROOT);
+            if (!role.isEmpty() && Boolean.TRUE.equals(e.getValue())
+                    && !STUDENT.equalsIgnoreCase(role) && !LEARNER.equalsIgnoreCase(role) && seen.add(upper)) {
+                enabled.add(role);
+            }
+        }
+        return new LearnerRequestNotificationSettings(List.copyOf(enabled), inApp, email);
+    }
+
+    /**
      * Reads {@code ASSESSMENT_SETTING.resultNotifications.roles} — a map of
      * role-name -> should-receive-result-notification — for an institute.
      * Returns an empty map when unset/unreadable (callers apply per-role defaults).

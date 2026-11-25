@@ -19,6 +19,8 @@ import vacademy.io.assessment_service.features.assessment.repository.QuestionAss
 import vacademy.io.assessment_service.features.assessment.repository.StudentAttemptRepository;
 import vacademy.io.assessment_service.features.assessment.service.AssessmentWorkflowEventPublisher;
 import vacademy.io.assessment_service.features.assessment.service.QuestionTextPreview;
+import vacademy.io.assessment_service.features.notification.service.LearnerRequestStaffNotifier;
+import org.mockito.ArgumentCaptor;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
 
@@ -55,6 +57,7 @@ class AssessmentReattemptRequestManagerTest {
     private StudentAttemptRepository attempts;
     private QuestionAssessmentSectionMappingRepository questions;
     private AssessmentParticipantsManager participants;
+    private LearnerRequestStaffNotifier staffNotifier;
 
     @BeforeEach
     void setUp() {
@@ -72,6 +75,8 @@ class AssessmentReattemptRequestManagerTest {
         ReflectionTestUtils.setField(manager, "assessmentParticipantsManager", participants);
         ReflectionTestUtils.setField(manager, "studentAttemptRepository", attempts);
         ReflectionTestUtils.setField(manager, "questionMappingRepository", questions);
+        staffNotifier = mock(LearnerRequestStaffNotifier.class);
+        ReflectionTestUtils.setField(manager, "staffNotifier", staffNotifier);
 
         when(requests.save(any(AssessmentReattemptRequest.class))).thenAnswer(inv -> inv.getArgument(0));
         when(requests.findByAssessmentIdAndUserIdOrderByCreatedAtDesc(ASSESSMENT, LEARNER)).thenReturn(List.of());
@@ -282,6 +287,60 @@ class AssessmentReattemptRequestManagerTest {
         verify(attempts, never()).addMinutesToLiveAttempt(anyString(), anyInt(), anyString());
     }
 
+    // ------------------------------------------------------------------ staff notices
+
+    @Test
+    void aNewProblemReportQueuesAStaffNoticeWithoutTouchingTheDatabase() {
+        when(questions.existsBySection_Assessment_IdAndQuestion_Id(ASSESSMENT, "q-5")).thenReturn(true);
+
+        manager.createRequest(learner(), report("q-5", "Image does not load"));
+
+        ArgumentCaptor<LearnerRequestStaffNotifier.NewRequest> notice =
+                ArgumentCaptor.forClass(LearnerRequestStaffNotifier.NewRequest.class);
+        verify(staffNotifier).notifyStaffAsync(notice.capture());
+        assertThat(notice.getValue().requestType()).isEqualTo("PROBLEM_REPORT");
+        assertThat(notice.getValue().questionId()).isEqualTo("q-5");
+        assertThat(notice.getValue().reason()).isEqualTo("Image does not load");
+        assertThat(notice.getValue().learnerUserId()).isEqualTo(LEARNER);
+        // Question preview and grouping are the notifier's job, after commit.
+        verify(questions, never()).findReportedQuestions(anyList(), anyList());
+    }
+
+    @Test
+    void aNoticeThatCannotBeQueuedNeverFailsTheLearner() {
+        when(questions.existsBySection_Assessment_IdAndQuestion_Id(ASSESSMENT, "q-5")).thenReturn(true);
+        org.mockito.Mockito.doThrow(new RuntimeException("pool shut down")).when(staffNotifier).notifyStaffAsync(any());
+
+        ReattemptRequestDto saved = manager.createRequest(learner(), report("q-5", "Image does not load"));
+
+        assertThat(saved.getStatus()).isEqualTo("PENDING");
+    }
+
+    @Test
+    void anAlreadyOpenRequestIsNotNoticedTwice() {
+        AssessmentReattemptRequest open = pending("req-open", "TIME_INCREASE");
+        when(requests.findFirstByAssessmentIdAndUserIdAndRequestTypeAndStatus(ASSESSMENT, LEARNER, "TIME_INCREASE", "PENDING"))
+                .thenReturn(Optional.of(open));
+
+        manager.createRequest(learner(), timeRequest());
+
+        verify(staffNotifier, never()).notifyStaffAsync(any());
+    }
+
+    @Test
+    void aNewTimeRequestNoticesStaff() {
+        when(requests.findFirstByAssessmentIdAndUserIdAndRequestTypeAndStatus(ASSESSMENT, LEARNER, "TIME_INCREASE", "PENDING"))
+                .thenReturn(Optional.empty());
+
+        manager.createRequest(learner(), timeRequest());
+
+        ArgumentCaptor<LearnerRequestStaffNotifier.NewRequest> notice =
+                ArgumentCaptor.forClass(LearnerRequestStaffNotifier.NewRequest.class);
+        verify(staffNotifier).notifyStaffAsync(notice.capture());
+        assertThat(notice.getValue().requestType()).isEqualTo("TIME_INCREASE");
+        assertThat(notice.getValue().questionId()).isNull();
+    }
+
     // ------------------------------------------------------------------ admin inbox
 
     @Test
@@ -353,6 +412,16 @@ class AssessmentReattemptRequestManagerTest {
         dto.setReason(reason);
         dto.setAttemptId("att-1");
         dto.setQuestionId(questionId);
+        return dto;
+    }
+
+    private static CreateReattemptRequestDto timeRequest() {
+        CreateReattemptRequestDto dto = new CreateReattemptRequestDto();
+        dto.setAssessmentId(ASSESSMENT);
+        dto.setInstituteId(INSTITUTE);
+        dto.setRequestType("TIME_INCREASE");
+        dto.setReason("Power cut");
+        dto.setAttemptId("att-1");
         return dto;
     }
 

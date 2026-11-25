@@ -57,6 +57,48 @@ public final class StaffNoticeEmails {
                 + "</div>";
     }
 
+    /**
+     * A learner raised a request from inside a test: a problem with a question, more time, or
+     * another attempt. No link: the dashboard's address differs per institute (white-label
+     * domains), so the mail says where to look instead of pointing at one.
+     *
+     * @param heading        e.g. "Problem reported"
+     * @param sentence       one line saying who asked for what, already worded for the type
+     * @param questionLabel  "Physics · Question 2", or null
+     * @param questionText   the start of the question, or null
+     * @param reason         what the learner wrote
+     * @param instituteName  for the footer; omitted when unknown
+     */
+    public static String learnerRequest(String heading, String sentence, String questionLabel,
+                                        String questionText, String reason, String instituteName) {
+        StringBuilder rows = new StringBuilder();
+        if (StringUtils.hasText(questionLabel)) {
+            rows.append(row("Question", questionLabel
+                    + (StringUtils.hasText(questionText) ? " – " + questionText : "")));
+        }
+        if (StringUtils.hasText(reason)) {
+            rows.append(row("Message", "\u201c" + reason + "\u201d"));
+        }
+        String where = StringUtils.hasText(instituteName) ? " for " + esc(instituteName) : "";
+        return "<div style=\"font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;color:#1f2937;font-size:15px;line-height:1.5\">"
+                + "<h2 style=\"font-size:20px;margin:0 0 16px;color:#111827\">" + esc(heading) + "</h2>"
+                + "<p style=\"margin:0 0 16px\">" + esc(sentence) + "</p>"
+                + (rows.length() > 0
+                        ? "<table style=\"border-collapse:collapse;width:100%;margin:0 0 16px;border:1px solid #e5e7eb\">" + rows + "</table>"
+                        : "")
+                + "<p style=\"margin:0 0 20px\">To respond, open the test in your dashboard and go to the <b>Learner Requests</b> tab.</p>"
+                + "<p style=\"margin:0;color:#6b7280;font-size:12px\">You are receiving this because your role is set to get learner requests"
+                + where + " (Settings \u2192 Assessment).</p>"
+                + "</div>";
+    }
+
+    private static String row(String label, String value) {
+        return "<tr>"
+                + "<td style=\"padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#4b5563;vertical-align:top;white-space:nowrap\">" + esc(label) + "</td>"
+                + "<td style=\"padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#111827\">" + esc(value) + "</td>"
+                + "</tr>";
+    }
+
     /** Insertion-ordered counts; first entry is the total and always shown. */
     public static Map<String, Long> counts() {
         return new LinkedHashMap<>();

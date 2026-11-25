@@ -21,10 +21,13 @@ import vacademy.io.assessment_service.features.assessment.repository.QuestionAss
 import vacademy.io.assessment_service.features.assessment.repository.StudentAttemptRepository;
 import vacademy.io.assessment_service.features.assessment.service.AssessmentWorkflowEventPublisher;
 import vacademy.io.assessment_service.features.learner_assessment.enums.AssessmentAttemptEnum;
+import vacademy.io.assessment_service.features.notification.service.LearnerRequestStaffNotifier;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
 
 import vacademy.io.assessment_service.features.assessment.service.QuestionTextPreview;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.Date;
 import java.util.List;
@@ -79,6 +82,10 @@ public class AssessmentReattemptRequestManager {
 
     @Autowired
     private QuestionAssessmentSectionMappingRepository questionMappingRepository;
+
+    /** Optional so tests that build the manager by hand need not supply it. */
+    @Autowired(required = false)
+    private LearnerRequestStaffNotifier staffNotifier;
 
     // ------------------------------------------------------------------ learner
 
@@ -147,6 +154,7 @@ public class AssessmentReattemptRequestManager {
             assessmentWorkflowEventPublisher.publishReattemptRequested(request, assessment,
                     registration.orElse(null));
         }
+        notifyStaffAfterCommit(request, assessment, registration.orElse(null));
 
         return toDto(request, registration.orElse(null), assessment);
     }
@@ -345,6 +353,46 @@ public class AssessmentReattemptRequestManager {
         log.warn("Problem report on assessment {} named question {}, which is not in its paper; saved without it",
                 assessmentId, trimmed);
         return null;
+    }
+
+    /**
+     * Role-wise staff notice for a new request. Queued once the request is committed (a
+     * rolled-back request must not alert anyone), on the notifier's own pool. Nothing here
+     * touches the database: the question lookup and the per-question grouping run in the
+     * notifier, outside this transaction.
+     */
+    private void notifyStaffAfterCommit(AssessmentReattemptRequest request, Assessment assessment,
+                                        AssessmentUserRegistration registration) {
+        if (staffNotifier == null) return;
+        LearnerRequestStaffNotifier.NewRequest notice = new LearnerRequestStaffNotifier.NewRequest(
+                request.getInstituteId(), request.getAssessmentId(),
+                assessment != null ? assessment.getName() : null, request.getRequestType(),
+                request.getId(), request.getQuestionId(),
+                request.getUserId(), registration != null ? registration.getParticipantName() : null,
+                request.getReason());
+        try {
+            if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        queueNotice(notice);
+                    }
+                });
+            } else {
+                queueNotice(notice);
+            }
+        } catch (Exception e) {
+            log.warn("Could not queue the staff notice for request {}: {}", request.getId(), e.getMessage());
+        }
+    }
+
+    private void queueNotice(LearnerRequestStaffNotifier.NewRequest notice) {
+        try {
+            staffNotifier.notifyStaffAsync(notice);
+        } catch (Exception e) {
+            // A full or shut-down pool must never fail the learner's request.
+            log.warn("Could not queue the staff notice for assessment {}: {}", notice.assessmentId(), e.getMessage());
+        }
     }
 
     /** The admin's minutes, or null when none were sent (nothing is added then). */
