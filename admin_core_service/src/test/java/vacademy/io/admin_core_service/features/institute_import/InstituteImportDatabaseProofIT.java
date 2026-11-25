@@ -182,7 +182,7 @@ class InstituteImportDatabaseProofIT {
         // Extra class and payments.
         assertEquals(1, step("extra_classes", "[{\"student_external_id\":\"S1\",\"enrollment_external_id\":\"E1\",\"batch_external_id\":\"B2\",\"from\":\"%s\",\"to\":null}]".formatted(today), false).get("created"));
         assertEquals(1, step("payments", "[{\"ref\":\"P1\",\"invoice_number\":\"Inv1\",\"enrollment_external_id\":\"E1\",\"date\":\"2026-10-01\",\"amount\":2125,\"currency\":\"INR\",\"mode\":\"UPI\"}]", false).get("created"));
-        assertEquals(1, count("SELECT COUNT(*) FROM payment_log WHERE vendor = 'OFFLINE' AND vendor_id = 'P1' AND payment_status = 'PAID'"));
+        assertEquals(1, count("SELECT COUNT(*) FROM payment_log WHERE vendor = 'OFFLINE' AND vendor_id = 'P1' AND payment_status = 'PAID' AND user_plan_id IN (SELECT internal_id FROM institute_import_ref WHERE institute_id = ? AND kind = 'ENROLMENT')", inst));
 
         // Re-running every step changes nothing: no duplicates.
         int plans = count("SELECT COUNT(*) FROM user_plan WHERE enroll_invite_id IN (SELECT id FROM enroll_invite WHERE institute_id = ?)", inst);
@@ -197,9 +197,57 @@ class InstituteImportDatabaseProofIT {
         assertEquals(access, count("SELECT COUNT(*) FROM student_session_institute_group_mapping WHERE institute_id = ?", inst));
         assertEquals(breaks, count("SELECT COUNT(*) FROM enrolment_break WHERE institute_id = ?", inst));
 
+        // Weekly Vacademy Meet class per batch: future dates from tomorrow, a cancelled date skipped,
+        // past attendance on its own dated class; no reminder rows; re-runs add nothing.
+        java.time.LocalDate cancelled = nextWeekday(java.time.DayOfWeek.MONDAY, 2);
+        String classes = """
+                [{"external_id":"B1","name":"T1-KT-ADYA-MO7PM","teacher_external_id":"T1","days":["Mon","Thu"],"start_time_ist":"19:00",
+                  "duration_min":60,"active":true,"cancelled_dates":["%s"],"weeks_ahead":4},
+                 {"external_id":"B9","name":"Old batch","days":["Tue"],"start_time_ist":"10:00","active":false}]""".formatted(cancelled);
+        assertEquals(2, step("live_classes", classes, false).get("created"));
+        String b1 = db.queryForObject("SELECT internal_id FROM institute_import_ref WHERE institute_id = ? AND kind = 'LIVE_CLASS' AND external_id = 'B1'", String.class, inst);
+        int future = count("SELECT COUNT(*) FROM session_schedules WHERE session_id = ?", b1);
+        assertTrue(future >= 7 && future <= 9, "about 4 weeks of Mon+Thu minus one cancelled date, was " + future);
+        assertEquals(0, count("SELECT COUNT(*) FROM session_schedules WHERE session_id = ? AND meeting_date = ?", b1, java.sql.Date.valueOf(cancelled)));
+        assertEquals(0, count("SELECT COUNT(*) FROM session_schedules WHERE session_id = ? AND meeting_date <= ?", b1, java.sql.Date.valueOf(today)));
+        assertEquals("bbb", db.queryForObject("SELECT link_type FROM live_session WHERE id = ?", String.class, b1));
+        assertEquals(1, count("SELECT COUNT(*) FROM live_session_participants WHERE session_id = ? AND source_type = 'BATCH'", b1));
+        assertEquals(1, count("SELECT COUNT(*) FROM live_session_instructors WHERE session_id = ?", b1));
+        String b9 = db.queryForObject("SELECT internal_id FROM institute_import_ref WHERE institute_id = ? AND kind = 'LIVE_CLASS' AND external_id = 'B9'", String.class, inst);
+        assertEquals(0, count("SELECT COUNT(*) FROM session_schedules WHERE session_id = ?", b9));
+
+        String held = today.minusDays(14).toString();
+        Map<String, Object> att = step("attendance", """
+                [{"batch_external_id":"B1","date":"%s","cancelled":false,"start_time_ist":"19:00","duration_min":60,"records":[
+                   {"student_external_id":"S1","status":"Present","minutes":58,"source":"Zoom"},
+                   {"student_external_id":"S2","status":"Leave","informed_leave":true,"source":"Manual"},
+                   {"student_external_id":"S3","status":"Present"}]},
+                 {"batch_external_id":"B1","date":"%s","cancelled":true,"records":[]},
+                 {"batch_external_id":"B9","date":"%s","cancelled":false,"start_time_ist":"10:00","records":[{"student_external_id":"S1","status":"Absent"}]}]
+                """.formatted(held, today.minusDays(7), today.minusDays(30)), false);
+        assertEquals(2, att.get("created"));
+        assertEquals(1, att.get("skipped"));
+        String sched = db.queryForObject("SELECT internal_id FROM institute_import_ref WHERE institute_id = ? AND kind = 'SCHEDULE' AND external_id = ?", String.class, inst, "B1|" + held);
+        assertEquals(2, count("SELECT COUNT(*) FROM live_session_logs WHERE schedule_id = ? AND log_type = 'ATTENDANCE_RECORDED'", sched));
+        assertEquals("PRESENT", db.queryForObject("SELECT status FROM live_session_logs WHERE schedule_id = ? AND user_source_id = ?", String.class, sched, accounts.get("s1@example.com")));
+        assertEquals("ABSENT", db.queryForObject("SELECT status FROM live_session_logs WHERE schedule_id = ? AND user_source_id = ?", String.class, sched, accounts.get("s2@example.com")));
+        int schedules = count("SELECT COUNT(*) FROM session_schedules WHERE session_id IN (?, ?)", b1, b9);
+        int logs = count("SELECT COUNT(*) FROM live_session_logs WHERE session_id IN (?, ?)", b1, b9);
+        step("live_classes", classes, false);
+        step("attendance", "[{\"batch_external_id\":\"B1\",\"date\":\"%s\",\"records\":[{\"student_external_id\":\"S1\",\"status\":\"Present\"}]}]".formatted(held), false);
+        assertEquals(schedules, count("SELECT COUNT(*) FROM session_schedules WHERE session_id IN (?, ?)", b1, b9));
+        assertEquals(logs, count("SELECT COUNT(*) FROM live_session_logs WHERE session_id IN (?, ?)", b1, b9));
+        assertEquals(0, count("SELECT COUNT(*) FROM schedule_notifications WHERE session_id IN (?, ?)", b1, b9), "no class reminders");
+
         // Nothing was announced.
         verifyNoInteractions(workflowTriggerService, paymentNotificatonService, dynamicNotificationService);
         verify(authService, never()).createUserFromAuthService(any(), anyString(), eq(true));
+    }
+
+    private java.time.LocalDate nextWeekday(java.time.DayOfWeek dow, int weeksOut) {
+        java.time.LocalDate d = today.plusDays(1);
+        while (d.getDayOfWeek() != dow) d = d.plusDays(1);
+        return d.plusWeeks(weeksOut - 1);
     }
 
     @Test
@@ -211,7 +259,8 @@ class InstituteImportDatabaseProofIT {
         db.update("INSERT INTO institutes (id, name) VALUES (?, ?)", planInst, "Import plan proof " + run);
         String[][] steps = {{"staff", "01_staff.json"}, {"courses", "02_courses.json"}, {"fee_plans", "05_fee_plans.json"},
                 {"batches", "04_batches.json"}, {"learners", "06_learners.json"}, {"enrolments", "07_enrolments.json"},
-                {"breaks", "09_breaks.json"}, {"extra_classes", "08_extra_classes.json"}, {"payments", "12_payments.json"}};
+                {"breaks", "09_breaks.json"}, {"extra_classes", "08_extra_classes.json"}, {"payments", "12_payments.json"},
+                {"live_classes", "04_batches.json"}, {"attendance", "13_attendance.json"}};
         StringBuilder report = new StringBuilder();
         for (String[] s : steps) {
             JsonNode body = MAPPER.readTree(new File(dir, s[1]));
@@ -226,6 +275,10 @@ class InstituteImportDatabaseProofIT {
                 .append(" INACTIVE=").append(count("SELECT COUNT(*) FROM student_session_institute_group_mapping WHERE institute_id = ? AND status = 'INACTIVE'", planInst))
                 .append(" member prices=").append(count("SELECT COUNT(*) FROM user_plan WHERE regional_price IS NOT NULL AND enroll_invite_id IN (SELECT id FROM enroll_invite WHERE institute_id = ?)", planInst))
                 .append(" active pauses=").append(count("SELECT COUNT(*) FROM enrolment_break WHERE institute_id = ? AND status = 'ACTIVE' AND kind = 'PAUSE'", planInst))
+                .append(" classes=").append(count("SELECT COUNT(*) FROM live_session WHERE institute_id = ?", planInst))
+                .append(" class dates=").append(count("SELECT COUNT(*) FROM session_schedules s JOIN live_session l ON l.id = s.session_id WHERE l.institute_id = ?", planInst))
+                .append(" attendance marks=").append(count("SELECT COUNT(*) FROM live_session_logs g JOIN live_session l ON l.id = g.session_id WHERE l.institute_id = ?", planInst))
+                .append(" reminder rows=").append(count("SELECT COUNT(*) FROM schedule_notifications n JOIN live_session l ON l.id = n.session_id WHERE l.institute_id = ?", planInst))
                 .append('\n');
         System.out.println("=== IMPORT PLAN PROOF ===\n" + report);
         java.nio.file.Files.writeString(java.nio.file.Path.of(dir, "proof_result.txt"), report.toString());

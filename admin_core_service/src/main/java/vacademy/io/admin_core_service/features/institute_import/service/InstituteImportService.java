@@ -23,7 +23,7 @@ import java.util.function.BiConsumer;
  * or left alone, never duplicated.
  *
  * <p>Order: staff → courses → fee_plans → batches → learners → enrolments → breaks →
- * extra_classes → payments. A step whose prerequisites are missing reports each record as failed
+ * extra_classes → payments → live_classes → attendance. A step whose prerequisites are missing reports each record as failed
  * with the reason; nothing is half-written, because every record is its own transaction.
  *
  * <p>Dry run (the default) does the whole step inside one transaction and rolls it back, so the
@@ -38,7 +38,7 @@ import java.util.function.BiConsumer;
 public class InstituteImportService {
 
     public static final List<String> STEPS = List.of("staff", "courses", "fee_plans", "batches", "learners",
-            "enrolments", "breaks", "extra_classes", "payments");
+            "enrolments", "breaks", "extra_classes", "payments", "live_classes", "attendance");
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -47,6 +47,7 @@ public class InstituteImportService {
     private final ImportStructureSteps structure;
     private final ImportPeopleSteps people;
     private final ImportMembershipSteps membership;
+    private final ImportLiveClassSteps liveClasses;
     private final EnrolmentBreakGuard breakGuard;
 
     public Map<String, Object> run(String instituteId, String step, JsonNode body, boolean dryRun, String runByUserId) {
@@ -60,6 +61,8 @@ public class InstituteImportService {
             case "breaks" -> membership::breaks;
             case "extra_classes" -> membership::extraClasses;
             case "payments" -> membership::payments;
+            case "live_classes" -> liveClasses::liveClasses;
+            case "attendance" -> liveClasses::attendance;
             default -> throw new VacademyException("Unknown import step '" + step + "'. Steps: " + STEPS);
         };
         if (body == null || !(body.isArray() || body.isObject())) {
