@@ -164,7 +164,7 @@ export default function FeedbackPage() {
                     setRating(star);
                   }
                 }}
-                fill={(hover || rating) >= star ? "currentColor" : "none"}
+                weight={(hover || rating) >= star ? "fill" : "regular"}
               />
             ))}
           </div>
