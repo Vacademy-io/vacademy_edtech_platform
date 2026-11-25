@@ -1,20 +1,43 @@
 {
+    "typeFilters": {
+        "all": "Toutes les demandes",
+        "problemReport": "Signalements",
+        "timeIncrease": "Temps supplémentaire",
+        "reattempt": "Nouvelle tentative",
+        "ariaLabel": "Filtrer par type de demande"
+    },
+    "question": {
+        "label": "Question {{number}}",
+        "labelInSection": "{{section}} · Question {{number}}",
+        "noText": "Cette question n'a pas de texte (il peut s'agir d'une image). Ouvrez l'onglet Questions pour la voir.",
+        "notLinked": "L'apprenant n'a pas indiqué de question précise.",
+        "notInPaper": "Cette question ne fait plus partie de l'épreuve."
+    },
     "filters": {
+        "resolved": "Résolues",
+        "ariaLabel": "Filtrer par statut",
         "pending": "En attente",
         "approved": "Approuvé",
         "rejected": "Rejeté",
         "all": "Tous"
     },
     "status": {
+        "resolved": "Résolu",
         "approved": "Approuvé",
         "rejected": "Rejeté",
         "pending": "En attente"
     },
     "requestType": {
+        "problemReport": "Signalement",
         "timeIncrease": "Augmentation du temps",
         "reattempt": "Nouvelle tentative"
     },
     "summary": {
+        "approvedNoTime": "Approuvé, aucun temps supplémentaire ajouté",
+        "grantedMinutes_one": "{{count}} minute supplémentaire accordée",
+        "grantedMinutes_other": "{{count}} minutes supplémentaires accordées",
+        "resolved": "Résolu",
+        "replyNote": "Réponse : {{note}}",
         "currentlyAllowed": "Actuellement autorisé : {{value}}",
         "used": "Utilisé : {{value}}",
         "requested": "Demandé le {{date}}",
@@ -24,14 +47,25 @@
         "grantedCount_other": "{{count}} tentatives accordées"
     },
     "form": {
+        "extraMinutesLabel": "Minutes supplémentaires",
+        "minutesRangeError": "De 1 à 300",
+        "timeHint": "Si l'apprenant est toujours dans le test, son minuteur s'allonge en moins d'une minute.",
+        "replyLabel": "Réponse à l'apprenant (facultatif)",
+        "replyPlaceholder": "ex. Corrigé, veuillez rouvrir la question",
+        "replyHint": "L'apprenant voit votre réponse dans le menu Aide du test.",
         "attemptsToGrantLabel": "Tentatives à accorder",
         "attemptsRangeError": "1 à 20"
     },
     "actions": {
+        "markResolved": "Marquer comme résolu",
         "approve": "Approuver",
         "reject": "Rejeter"
     },
     "toasts": {
+        "timeNotAdded": "Approuvé, mais le test de {{name}} était déjà terminé (ou n'a pas de limite de temps) : aucun temps n'a été ajouté. Accordez une nouvelle tentative depuis l'onglet Participants si nécessaire.",
+        "timeGranted_one": "{{count}} minute supplémentaire accordée à {{name}}.",
+        "timeGranted_other": "{{count}} minutes supplémentaires accordées à {{name}}.",
+        "resolved": "Marqué comme résolu.",
         "granted_one": "{{count}} tentative accordée à {{name}}.",
         "granted_many": "{{count}} tentatives accordées à {{name}}.",
         "granted_other": "{{count}} tentatives accordées à {{name}}.",
@@ -46,6 +80,6 @@
     "empty": {
         "titleAll": "Aucune demande",
         "titleFiltered": "Aucune demande {{status}}",
-        "description": "Les apprenants peuvent demander une nouvelle tentative ou plus de temps depuis l'examen. Leurs demandes apparaissent ici."
+        "description": "Les apprenants peuvent signaler un problème sur une question, ou demander plus de temps ou une nouvelle tentative, depuis l'examen. Leurs demandes arrivent ici."
     }
 }

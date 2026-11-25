@@ -5,8 +5,9 @@ import {
     REATTEMPT_REQUEST_REVIEW_URL,
 } from '@/constants/urls';
 
-export type ReattemptRequestType = 'REATTEMPT' | 'TIME_INCREASE';
-export type ReattemptRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type ReattemptRequestType = 'REATTEMPT' | 'TIME_INCREASE' | 'PROBLEM_REPORT';
+/** RESOLVED closes a PROBLEM_REPORT; APPROVED / REJECTED close the other two types. */
+export type ReattemptRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'RESOLVED';
 
 export interface ReattemptRequest {
     id: string;
@@ -18,6 +19,15 @@ export interface ReattemptRequest {
     reason?: string | null;
     status: ReattemptRequestStatus;
     granted_count?: number | null;
+    /** Minutes added to the learner's live attempt when a TIME_INCREASE was approved. */
+    granted_minutes?: number | null;
+    /** PROBLEM_REPORT: the question the learner reported, when it is in this paper. */
+    question_id?: string | null;
+    question_section_name?: string | null;
+    /** Position within its section in the paper (1-based). */
+    question_number?: number | null;
+    /** The start of the question text, without markup. */
+    question_text?: string | null;
     review_note?: string | null;
     reviewed_at?: string | null;
     created_at?: string | null;
@@ -36,7 +46,8 @@ interface PageResponse<T> {
 }
 
 /**
- * `assessmentId` omitted gives the institute-wide inbox.
+ * `assessmentId` omitted gives the institute-wide inbox. `type` narrows it to some request
+ * types (sent comma-joined, like `status`).
  *
  * `status` goes over the wire comma-joined, never as an array. Axios's default serializer
  * writes an array as `status[]=PENDING` *with the brackets un-escaped* (it rewrites %5B/%5D
@@ -50,6 +61,7 @@ export const getReattemptRequests = async (params: {
     instituteId: string;
     assessmentId?: string;
     status?: ReattemptRequestStatus[];
+    type?: ReattemptRequestType[];
     page?: number;
     size?: number;
 }): Promise<PageResponse<ReattemptRequest>> => {
@@ -60,6 +72,7 @@ export const getReattemptRequests = async (params: {
             instituteId: params.instituteId,
             assessmentId: params.assessmentId,
             status: params.status?.length ? params.status.join(',') : undefined,
+            type: params.type?.length ? params.type.join(',') : undefined,
             page: params.page ?? 0,
             size: params.size ?? 25,
         },
@@ -88,13 +101,16 @@ export const getPendingReattemptRequestCount = async (
 /**
  * Approving a REATTEMPT request grants the attempts through the same path the participants
  * screen uses, so the learner's allowance and the ASSESSMENT_REATTEMPT_GRANTED event behave
- * identically however the grant was made.
+ * identically however the grant was made. Approving a TIME_INCREASE adds `grantedMinutes` to
+ * the learner's live attempt (the open exam's clock extends on its next autosave, within a
+ * minute). A PROBLEM_REPORT is closed with RESOLVED and an optional note the learner can read.
  */
 export const reviewReattemptRequest = async (params: {
     requestId: string;
     instituteId: string;
-    status: 'APPROVED' | 'REJECTED';
+    status: 'APPROVED' | 'REJECTED' | 'RESOLVED';
     grantedCount?: number;
+    grantedMinutes?: number;
     reviewNote?: string;
 }): Promise<ReattemptRequest> => {
     const response = await authenticatedAxiosInstance({
@@ -104,6 +120,7 @@ export const reviewReattemptRequest = async (params: {
         data: {
             status: params.status,
             granted_count: params.grantedCount,
+            granted_minutes: params.grantedMinutes,
             review_note: params.reviewNote,
         },
     });
