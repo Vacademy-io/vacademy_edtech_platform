@@ -5,14 +5,8 @@ import type React from "react";
 import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { HelpModal } from "@/components/modals/help-modals";
 import { useAssessmentStore } from "@/stores/assessment-store";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ExamHelpMenu } from "./exam-help-menu";
 import {
   Question,
   UploadSimple,
@@ -137,12 +131,6 @@ export function Navbar() {
     numPages: 0,
     currentPage: 0,
   });
-
-  interface HelpType {
-    type: "instructions" | "alerts" | "reattempt" | "time" | null;
-  }
-
-  const [helpType, setHelpType] = useState<HelpType["type"]>(null);
 
   if (!assessment) return null;
 
@@ -313,8 +301,8 @@ export function Navbar() {
             </Button>
           )}
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          <ExamHelpMenu
+            trigger={
               <Button
                 variant="outline"
                 size="icon"
@@ -323,22 +311,8 @@ export function Navbar() {
               >
                 <Question size={17} />
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setHelpType("instructions")}>
-                {t("navbar.help.menu.instructions")}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setHelpType("alerts")}>
-                {t("navbar.help.menu.alerts")}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setHelpType("reattempt")}>
-                {t("navbar.help.menu.reattempt")}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setHelpType("time")}>
-                {t("navbar.help.menu.timeIncrease")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            }
+          />
 
           {isManualUpload ? (
             <>
@@ -438,12 +412,6 @@ export function Navbar() {
           </div>
         </div>
       ) : null}
-
-      <HelpModal
-        open={helpType !== null}
-        onOpenChange={(open) => !open && setHelpType(null)}
-        type={helpType || "instructions"}
-      />
     </>
   );
 }

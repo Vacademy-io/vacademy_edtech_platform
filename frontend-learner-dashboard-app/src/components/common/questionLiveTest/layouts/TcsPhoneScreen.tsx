@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { GridFour } from "@phosphor-icons/react";
+import { GridFour, Question } from "@phosphor-icons/react";
 import { useLiveTestStore } from "@/stores/live-test-store";
 import { bottomSafeAreaInset } from "@/utils/safe-area";
 import { useLiveTestEngine } from "../engine/live-test-engine-context";
@@ -11,10 +11,11 @@ import { QuestionPane } from "../widgets/QuestionPane";
 import { QuestionTypeRow } from "../widgets/QuestionTypeRow";
 import { SectionTabStrip } from "../widgets/SectionTabStrip";
 import { useConsole } from "./console-context";
+import { ExamHelpMenu } from "../exam-help-menu";
 
 /**
- * Phone variant of the TCS console (<768px): a top bar with the title and
- * Time Left, horizontally scrolling section tabs, the question, and a fixed
+ * Phone variant of the TCS console (<768px): a top bar with the title,
+ * Time Left and the Help menu, horizontally scrolling section tabs, the question, and a fixed
  * bottom bar with the same three actions. The legend, palette and Submit
  * open in a bottom sheet from the "Question Palette" button. The actions
  * follow the same rules as on desktop.
@@ -30,7 +31,20 @@ export function TcsPhoneScreen() {
     <>
       <header className="tcs-phone-top">
         <span className="tcs-phone-top__title">{assessmentName}</span>
-        <ConsoleClock />
+        <span className="tcs-phone-top__end">
+          <ConsoleClock />
+          <ExamHelpMenu
+            trigger={
+              <button
+                type="button"
+                className="tcs-phone-help"
+                aria-label={t("navbar.help.ariaLabel")}
+              >
+                <Question size={16} weight="bold" aria-hidden="true" />
+              </button>
+            }
+          />
+        </span>
       </header>
       <SectionTabStrip compact />
       {chrome.questionTypeRow && <QuestionTypeRow />}

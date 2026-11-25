@@ -2,8 +2,9 @@ import { useTranslation } from "react-i18next";
 import { useLiveTestEngine } from "../engine/live-test-engine-context";
 import { useConsole } from "../layouts/console-context";
 import type { HeaderLinkId } from "../layouts/console-chrome";
+import { ExamHelpMenu } from "../exam-help-menu";
 
-/** Dark title bar: test title (yellow) and the paper / instructions links. */
+/** Dark title bar: test title (yellow), the paper / instructions links and Help. */
 export function SubHeader() {
   const { t } = useTranslation("questionTest");
   const { assessmentName } = useLiveTestEngine();
@@ -38,6 +39,16 @@ export function SubHeader() {
             {label(id)}
           </button>
         ))}
+        <ExamHelpMenu
+          trigger={
+            <button type="button" className="tcs-subheader__link">
+              <span className="tcs-round-icon tcs-round-icon--help" aria-hidden="true">
+                ?
+              </span>
+              {t("examThemes.tcs.links.help")}
+            </button>
+          }
+        />
       </span>
     </div>
   );

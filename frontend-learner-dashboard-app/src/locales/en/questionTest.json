@@ -35,6 +35,7 @@
         "help": {
             "ariaLabel": "Help and requests",
             "menu": {
+                "reportProblem": "Report a problem",
                 "instructions": "Instructions",
                 "alerts": "Assessment Alerts",
                 "reattempt": "Request Reattempt",
@@ -334,6 +335,7 @@
                 "submit": "Submit"
             },
             "links": {
+                "help": "Help",
                 "questionPaper": "Question Paper",
                 "instructions": "Instructions",
                 "viewInstructions": "View Instructions"

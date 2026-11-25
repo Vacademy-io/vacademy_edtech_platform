@@ -35,6 +35,7 @@
         "help": {
             "ariaLabel": "Aide et demandes",
             "menu": {
+                "reportProblem": "Signaler un problème",
                 "instructions": "Instructions",
                 "alerts": "Alertes du test",
                 "reattempt": "Demander une nouvelle tentative",
@@ -335,6 +336,7 @@
                 "submit": "Soumettre"
             },
             "links": {
+                "help": "Aide",
                 "questionPaper": "Sujet complet",
                 "instructions": "Instructions",
                 "viewInstructions": "Voir les instructions"

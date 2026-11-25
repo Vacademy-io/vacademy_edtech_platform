@@ -35,6 +35,7 @@
         "help": {
             "ariaLabel": "المساعدة والطلبات",
             "menu": {
+                "reportProblem": "الإبلاغ عن مشكلة",
                 "instructions": "التعليمات",
                 "alerts": "تنبيهات الاختبار",
                 "reattempt": "طلب إعادة المحاولة",
@@ -344,6 +345,7 @@
                 "submit": "إرسال"
             },
             "links": {
+                "help": "مساعدة",
                 "questionPaper": "ورقة الأسئلة",
                 "instructions": "التعليمات",
                 "viewInstructions": "عرض التعليمات"

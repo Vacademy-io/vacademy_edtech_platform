@@ -35,6 +35,7 @@
         "help": {
             "ariaLabel": "मदद और अनुरोध",
             "menu": {
+                "reportProblem": "समस्या बताएं",
                 "instructions": "निर्देश",
                 "alerts": "टेस्ट अलर्ट",
                 "reattempt": "पुनः प्रयास का अनुरोध करें",
@@ -332,6 +333,7 @@
                 "submit": "सबमिट करें"
             },
             "links": {
+                "help": "सहायता",
                 "questionPaper": "प्रश्न पत्र",
                 "instructions": "निर्देश",
                 "viewInstructions": "निर्देश देखें"
