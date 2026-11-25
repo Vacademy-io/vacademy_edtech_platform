@@ -278,7 +278,7 @@ public class AuthService {
         }
 
         if (!usePhoneAsIdentifier && optionalUser.isEmpty() && StringUtils.hasText(registerRequest.getUsername())) {
-            optionalUser = userRepository.findByUsername(registerRequest.getUsername());
+            optionalUser = findSamePersonByUsername(registerRequest, normalizedEmail);
         }
 
         boolean isAlreadyPresent = optionalUser.isPresent();
@@ -299,6 +299,12 @@ public class AuthService {
                 // the whole enrollment on the unique constraint.
                 registerRequest.setUsername(ensureUniqueUsername(
                         UsernameGenerator.generateUsername(registerRequest.getFullName())));
+            } else if (fromStrategy == null) {
+                // The caller's username can still be taken: by another person whose email or
+                // phone disagrees (refused above), or, on phone-identifier institutes, by an
+                // account the username was never looked up for. Suffix it rather than fail
+                // the enrollment on the unique constraint.
+                registerRequest.setUsername(ensureUniqueUsername(registerRequest.getUsername()));
             }
             if (!StringUtils.hasText(registerRequest.getPassword())) {
                 registerRequest.setPassword(UsernameGenerator.generatePassword(8));
@@ -359,6 +365,12 @@ public class AuthService {
      * land on the account of john@gmail.com. Refuse the match only on positive evidence —
      * both sides carry an email and they differ, or both carry a phone and they differ —
      * so an account that has no email yet still matches as before.
+     *
+     * <p>Admin adds go through this too. An admin who types a common first name as the
+     * username for a new learner, with that learner's own email and phone, used to be handed
+     * whichever account in any institute already had that username, and the learner's
+     * profile showed the other person. Re-enrolling a known learner by username alone, or
+     * with their own email or phone, still matches.
      */
     private Optional<User> findSamePersonByUsername(UserDTO registerRequest, String normalizedEmail) {
         String mobile = registerRequest.getMobileNumber();
@@ -779,8 +791,7 @@ public class AuthService {
      * learner's own email prefix, a generated name or whatever they typed — never a
      * reference to an account the caller is entitled to — so a username hit is only
      * accepted when nothing on record contradicts it, and a taken name gets a suffix.
-     * Admin and internal callers keep the plain username match: they pass a known
-     * learner's username on purpose (re-enroll, CSV by username).
+     * Admin and internal callers apply the same check (see {@link #findSamePersonByUsername}).
      */
     @Transactional
     public User createUserForLearnerSelfSignup(UserDTO registerRequest, String instituteId, boolean sendWelcomeMail) {
@@ -796,7 +807,6 @@ public class AuthService {
 
     private AccountResult createOrGetLearner(UserDTO registerRequest, String instituteId, boolean sendWelcomeMail,
                                              String overrideLoginUrl, boolean selfSignup) {
-        boolean callerChoseUsername = StringUtils.hasText(registerRequest.getUsername());
         if (selfSignup) {
             // The role list comes from a body anyone can write. Reduce it here, at the write,
             // and on the DTO itself: registerLearner forwards the same object to admin-core.
@@ -850,9 +860,7 @@ public class AuthService {
         }
 
         if (!usePhoneAsIdentifier && optionalUser.isEmpty() && StringUtils.hasText(registerRequest.getUsername())) {
-            optionalUser = selfSignup
-                    ? findSamePersonByUsername(registerRequest, normalizedEmail)
-                    : userRepository.findByUsername(registerRequest.getUsername());
+            optionalUser = findSamePersonByUsername(registerRequest, normalizedEmail);
         }
 
         boolean isAlreadyPresent = optionalUser.isPresent();
@@ -871,9 +879,9 @@ public class AuthService {
             if (!StringUtils.hasText(registerRequest.getUsername())) {
                 registerRequest.setUsername(UsernameGenerator.generateUsername(registerRequest.getFullName()));
             }
-            if (selfSignup || !callerChoseUsername) {
-                registerRequest.setUsername(ensureUniqueUsername(registerRequest.getUsername()));
-            }
+            // A typed username can belong to another person (refused above): suffix it
+            // rather than fail the enrollment on the unique constraint.
+            registerRequest.setUsername(ensureUniqueUsername(registerRequest.getUsername()));
             if (!StringUtils.hasText(registerRequest.getPassword())) {
                 registerRequest.setPassword(UsernameGenerator.generatePassword(8));
             }

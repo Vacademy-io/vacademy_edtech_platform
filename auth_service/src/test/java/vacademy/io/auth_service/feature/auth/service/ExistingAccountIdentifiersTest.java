@@ -140,7 +140,9 @@ class ExistingAccountIdentifiersTest {
     void accountMatchedByUsernameKeepsItsEmailAndEmptyMobile() {
         User existing = accountWithEmailOnly();
         when(userRepository.findByUsername("asha")).thenReturn(Optional.of(existing));
-        UserDTO dto = request("someone-else@example.com", "9000000001");
+        // No e-mail in the request: a different e-mail would make it another person
+        // (AuthServiceUsernameDedupeTest), and the username would not match at all.
+        UserDTO dto = request(null, "9000000001");
         dto.setUsername("asha");
 
         User user = authService.createUserForLearnerEnrollment(dto, INSTITUTE_ID, false);

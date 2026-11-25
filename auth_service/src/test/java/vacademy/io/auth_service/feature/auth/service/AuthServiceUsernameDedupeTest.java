@@ -126,19 +126,92 @@ class AuthServiceUsernameDedupeTest {
     }
 
     @Test
-    void adminEnrollmentKeepsUsernameMatchAsBefore() {
+    void adminEnrollmentWithAnotherPersonsUsernameCreatesNewUserWithSuffix() {
+        // An admin typed a common name as the username for a new learner, with that
+        // learner's own email and phone: the account already holding the name is someone else.
+        UserDTO dto = request("john.new@yahoo.com", "john", "9000000000");
+        dto.setUsernameExplicit(true);
+
+        User user = authService.createUserForLearnerEnrollment(dto, INSTITUTE_ID, false, null);
+
+        assertNotSame(existing, user);
+        assertEquals("john.new@yahoo.com", user.getEmail());
+        assertEquals("9000000000", user.getMobileNumber());
+        assertTrue(user.getUsername().startsWith("john_"), user.getUsername());
+    }
+
+    @Test
+    void adminEnrollmentByUsernameAloneStillMatches() {
         // Re-enroll / CSV-by-username pass a known learner's username on purpose.
         User user = authService.createUserForLearnerEnrollment(
-                request("john.new@yahoo.com", "john", "9000000000"), INSTITUTE_ID, false, null);
+                request(null, "john", null), INSTITUTE_ID, false, null);
 
         assertSame(existing, user);
     }
 
     @Test
-    void createUserKeepsUsernameMatchAsBefore() {
-        User user = authService.createUser(request("john@yahoo.com", "john", null), INSTITUTE_ID, false);
+    void adminEnrollmentByUsernameWithSamePhoneStillMatches() {
+        User user = authService.createUserForLearnerEnrollment(
+                request(null, "john", "+91 98765 43210"), INSTITUTE_ID, false, null);
 
         assertSame(existing, user);
+    }
+
+    @Test
+    void adminEnrollmentWithConflictingEmailIsRefusedEvenWhenPhoneAgrees() {
+        User user = authService.createUserForLearnerEnrollment(
+                request("john.new@yahoo.com", "john", "+91 98765 43210"), INSTITUTE_ID, false, null);
+
+        assertNotSame(existing, user);
+        assertTrue(user.getUsername().startsWith("john_"), user.getUsername());
+    }
+
+    @Test
+    void adminEnrollmentByUsernameWithSameEmailStillMatches() {
+        User user = authService.createUserForLearnerEnrollment(
+                request("John@Gmail.com", "john", null), INSTITUTE_ID, false, null);
+
+        assertSame(existing, user);
+    }
+
+    @Test
+    void adminEnrollmentKeepsFreeTypedUsernameAsIs() {
+        UserDTO dto = request("asha@yahoo.com", "asha", null);
+        dto.setUsernameExplicit(true);
+
+        User user = authService.createUserForLearnerEnrollment(dto, INSTITUTE_ID, false, null);
+
+        assertEquals("asha", user.getUsername());
+    }
+
+    @Test
+    void createUserWithAnotherPersonsUsernameCreatesNewUserWithSuffix() {
+        User user = authService.createUser(request("john@yahoo.com", "john", null), INSTITUTE_ID, false);
+
+        assertNotSame(existing, user);
+        assertEquals("john@yahoo.com", user.getEmail());
+        assertTrue(user.getUsername().startsWith("john_"), user.getUsername());
+    }
+
+    @Test
+    void createUserByUsernameAloneStillMatches() {
+        User user = authService.createUser(request(null, "john", null), INSTITUTE_ID, false);
+
+        assertSame(existing, user);
+    }
+
+    @Test
+    void createUserByUsernameWithSamePhoneAndNoEmailStillMatches() {
+        User user = authService.createUser(request(null, "john", "919876543210"), INSTITUTE_ID, false);
+
+        assertSame(existing, user);
+    }
+
+    @Test
+    void createUserKeepsFreeTypedUsernameAsIs() {
+        User user = authService.createUser(request("asha@yahoo.com", "asha", null), INSTITUTE_ID, false);
+
+        assertEquals("asha", user.getUsername());
     }
 
     @Test
