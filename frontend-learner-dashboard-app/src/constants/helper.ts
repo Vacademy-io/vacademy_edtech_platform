@@ -42,6 +42,12 @@ export function extractDateTime(utcDate: string) {
 
 export async function getInstituteId() {
   try {
+    // A signed-in learner always gets an institute their login belongs to. A choice
+    // left in this browser by an earlier sign-in (another institute) must not win.
+    const { readSessionInstituteId } = await import("@/lib/auth/session-institute");
+    const sessionInstituteId = await readSessionInstituteId();
+    if (sessionInstituteId) return sessionInstituteId;
+
     // First, check if user has selected a specific institute
     const { Preferences } = await import("@capacitor/preferences");
     const selectedInstitute = await Preferences.get({ key: "selectedInstituteId" });
