@@ -104,5 +104,18 @@ export const CustomFieldValueDisplay = ({
     );
   }
 
+  // A multi_select answer is stored as a JSON array (["A","B"]); show it as a list, not raw JSON.
+  if (type === "multi_select" && trimmed.startsWith("[")) {
+    try {
+      const selected: unknown = JSON.parse(trimmed);
+      if (Array.isArray(selected)) {
+        const labels = selected.map((option) => String(option ?? "").trim()).filter(Boolean);
+        return <span className={`break-words ${className ?? ""}`}>{labels.join(", ")}</span>;
+      }
+    } catch {
+      // Not JSON after all: fall through and show it as typed.
+    }
+  }
+
   return <span className={`break-words ${className ?? ""}`}>{trimmed}</span>;
 };
