@@ -4025,7 +4025,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AgiloreIcon;
 				CODE_SIGN_ENTITLEMENTS = App/Agilore.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = 35NLZB49QN;
 				INFOPLIST_FILE = "GoogleServiceConfigs/Agilore/GoogleService-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Agilore Global";
@@ -4033,7 +4033,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = io.agilore.app;
 				PRODUCT_NAME = "Agilore Global";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
@@ -4290,7 +4290,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AgiloreIcon;
 				CODE_SIGN_ENTITLEMENTS = App/Agilore.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = 35NLZB49QN;
 				INFOPLIST_FILE = "GoogleServiceConfigs/Agilore/GoogleService-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Agilore Global";
@@ -4298,7 +4298,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.0.1;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = io.agilore.app;
 				PRODUCT_NAME = "Agilore Global";
