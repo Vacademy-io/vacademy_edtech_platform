@@ -9,6 +9,12 @@ export interface LeadColumnToggle {
      * checkbox renders ticked and disabled). They can still be dragged into a new position.
      */
     locked?: boolean;
+    /**
+     * Optional section heading ("System fields", "Custom fields", …). When any column has one,
+     * the plain (non-draggable) Manage Column list is split into headed sections, in the order
+     * the groups first appear. Keep a group's columns next to each other.
+     */
+    group?: string;
 }
 
 /**

@@ -43,6 +43,8 @@ interface ManageColumnsPopoverProps {
      * call site keeps the labelled button.
      */
     compact?: boolean;
+    /** Extra classes for the trigger button, e.g. a shorter height next to small toolbar buttons. */
+    triggerClassName?: string;
 }
 
 /** Grip + visibility checkbox + label. Layout is shared by the plain and draggable rows. */
@@ -130,6 +132,20 @@ function SortableColumnRow({
     );
 }
 
+/** Split columns into consecutive sections by `group`, keeping the order groups first appear. */
+function groupColumns(
+    columns: LeadColumnToggle[]
+): { name: string; columns: LeadColumnToggle[] }[] {
+    const sections: { name: string; columns: LeadColumnToggle[] }[] = [];
+    for (const c of columns) {
+        const name = c.group ?? '';
+        const existing = sections.find((s) => s.name === name);
+        if (existing) existing.columns.push(c);
+        else sections.push({ name, columns: [c] });
+    }
+    return sections;
+}
+
 /**
  * "Manage Column" popover for a table — a checkbox per column (ticked = visible), and,
  * when `onReorder` is supplied, a grip handle to drag columns into the order you want.
@@ -144,6 +160,7 @@ export function ManageColumnsPopover({
     onReset,
     onReorder,
     compact = false,
+    triggerClassName,
 }: ManageColumnsPopoverProps) {
     const anyHidden = columns.some((c) => hiddenColumns.has(c.id));
     // 8px of travel before a drag starts, so a click on the grip isn't swallowed.
@@ -159,7 +176,34 @@ export function ManageColumnsPopover({
         onReorder?.(arrayMove(ids, from, to));
     };
 
-    const rows = (
+    const plainRow = (c: LeadColumnToggle) => (
+        <label key={c.id} className={ROW_CSS}>
+            <Checkbox
+                checked={c.locked ? true : !hiddenColumns.has(c.id)}
+                disabled={c.locked}
+                onCheckedChange={() => !c.locked && onToggle(c.id)}
+            />
+            {c.label}
+        </label>
+    );
+
+    // Headed sections only for the plain list — a drag across headings would be ambiguous.
+    const sections = !onReorder && columns.some((c) => c.group) ? groupColumns(columns) : null;
+
+    const rows = sections ? (
+        <div className="max-h-96 space-y-3 overflow-y-auto pr-1">
+            {sections.map((section) => (
+                <div key={section.name} className="space-y-1">
+                    {section.name && (
+                        <p className="px-1.5 text-2xs font-semibold uppercase tracking-wide text-neutral-400">
+                            {section.name}
+                        </p>
+                    )}
+                    {section.columns.map(plainRow)}
+                </div>
+            ))}
+        </div>
+    ) : (
         <div className="space-y-1">
             {columns.map((c) =>
                 onReorder ? (
@@ -170,14 +214,7 @@ export function ManageColumnsPopover({
                         onToggle={onToggle}
                     />
                 ) : (
-                    <label key={c.id} className={ROW_CSS}>
-                        <Checkbox
-                            checked={c.locked ? true : !hiddenColumns.has(c.id)}
-                            disabled={c.locked}
-                            onCheckedChange={() => !c.locked && onToggle(c.id)}
-                        />
-                        {c.label}
-                    </label>
+                    plainRow(c)
                 )
             )}
         </div>
@@ -191,7 +228,7 @@ export function ManageColumnsPopover({
                         <Button
                             variant="outline"
                             size="sm"
-                            className="h-10"
+                            className={cn('h-10', triggerClassName)}
                             aria-label="Manage Column"
                         >
                             <Columns className="mr-1.5 size-4" />
@@ -203,7 +240,7 @@ export function ManageColumnsPopover({
                     Choose which columns are shown, and drag to reorder them
                 </TooltipContent>
             </Tooltip>
-            <PopoverContent align="end" className={onReorder ? 'w-64' : 'w-52'}>
+            <PopoverContent align="end" className={onReorder || sections ? 'w-64' : 'w-52'}>
                 <div className="mb-2 flex items-center justify-between">
                     <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
                         Columns
