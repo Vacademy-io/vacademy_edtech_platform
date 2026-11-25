@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vacademy.io.admin_core_service.features.product_page.dto.*;
+import vacademy.io.admin_core_service.features.product_page.service.ProductPageAddCoursesService;
 import vacademy.io.admin_core_service.features.product_page.service.ProductPageCatalogueSyncService;
 import vacademy.io.admin_core_service.features.product_page.service.ProductPageService;
 import vacademy.io.common.auth.model.CustomUserDetails;
@@ -21,6 +22,9 @@ public class ProductPageController {
 
     @Autowired
     private ProductPageCatalogueSyncService catalogueSyncService;
+
+    @Autowired
+    private ProductPageAddCoursesService addCoursesService;
 
     @PostMapping("/create")
     public ResponseEntity<ProductPageResponse> create(
@@ -138,6 +142,27 @@ public class ProductPageController {
             @RequestParam(value = "deactivateMissing", defaultValue = "true") boolean deactivateMissing) {
         return ResponseEntity.ok(
                 catalogueSyncService.syncCatalogue(user, productPageId, instituteId, deactivateMissing));
+    }
+
+    /**
+     * Adds the courses named (each as its enrollment-link row + plan) to the page
+     * and leaves the courses it already sells as they are, unlike PUT /update,
+     * which replaces them all. position FIRST (default) puts the new courses on
+     * top, LAST after the others. A batch the page already sells comes back in
+     * skipped (already_on_page), and so is a course on another payment gateway
+     * or in another currency than the page (vendor_mismatch / currency_mismatch).
+     * dryRun=true answers the same without writing anything. Institute ADMIN
+     * only. Returns the page as GET /{id} does, plus {added, skipped,
+     * added_package_session_ids}.
+     */
+    @PostMapping("/{productPageId}/add-courses")
+    public ResponseEntity<ProductPageCatalogueSyncResponse> addCourses(
+            @RequestAttribute("user") CustomUserDetails user,
+            @PathVariable("productPageId") String productPageId,
+            @RequestParam("instituteId") String instituteId,
+            @RequestParam(value = "dryRun", defaultValue = "false") boolean dryRun,
+            @RequestBody ProductPageAddCoursesRequest request) {
+        return ResponseEntity.ok(addCoursesService.addCourses(user, productPageId, instituteId, request, dryRun));
     }
 
     /** Body is the custom field ids in the order the checkout form should ask for them. */
