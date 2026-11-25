@@ -52,6 +52,21 @@
   },
   "card": {
     "title": "منهجي الدراسي",
-    "open": "عرض المنهج"
+    "open": "عرض المنهج",
+    "stagesLabel": "مراحل دورتك",
+    "currentStage": "(مرحلتك)",
+    "thisWeek": "هذا الأسبوع · {{label}}",
+    "blocksDone_zero": "{{done}} من {{count}} من كتل الأسابيع مكتملة · {{percent}}٪",
+    "blocksDone_one": "{{done}} من {{count}} من كتل الأسابيع مكتملة · {{percent}}٪",
+    "blocksDone_two": "{{done}} من {{count}} من كتل الأسابيع مكتملة · {{percent}}٪",
+    "blocksDone_few": "{{done}} من {{count}} من كتل الأسابيع مكتملة · {{percent}}٪",
+    "blocksDone_many": "{{done}} من {{count}} من كتل الأسابيع مكتملة · {{percent}}٪",
+    "blocksDone_other": "{{done}} من {{count}} من كتل الأسابيع مكتملة · {{percent}}٪",
+    "morePoints_zero": "+{{count}} مواضيع أخرى",
+    "morePoints_one": "+{{count}} موضوع آخر",
+    "morePoints_two": "+{{count}} مواضيع أخرى",
+    "morePoints_few": "+{{count}} مواضيع أخرى",
+    "morePoints_many": "+{{count}} مواضيع أخرى",
+    "morePoints_other": "+{{count}} مواضيع أخرى"
   }
 }

@@ -52,6 +52,13 @@
   },
   "card": {
     "title": "My syllabus",
-    "open": "View syllabus"
+    "open": "View syllabus",
+    "stagesLabel": "Stages of your course",
+    "currentStage": "(your stage)",
+    "thisWeek": "This week · {{label}}",
+    "blocksDone_one": "{{done}} of {{count}} week block done · {{percent}}%",
+    "blocksDone_other": "{{done}} of {{count}} week blocks done · {{percent}}%",
+    "morePoints_one": "+{{count}} more topic",
+    "morePoints_other": "+{{count}} more topics"
   }
 }

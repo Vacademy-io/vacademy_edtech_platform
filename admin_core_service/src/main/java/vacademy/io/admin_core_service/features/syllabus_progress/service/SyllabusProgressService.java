@@ -188,6 +188,7 @@ public class SyllabusProgressService {
                     blk.put("points_done", c == null ? List.of() : c.get("points_done"));
                     blk.put("teacher_note", c == null ? null : c.get("teacher_note"));
                     blk.put("marked_by_name", c == null ? null : c.get("marked_by_name"));
+                    blk.put("updated_at", c == null ? null : c.get("updated_at"));
                     if ("COMPLETED".equals(st) || "SKIPPED".equals(st)) completed++;
                     else if (current == null) current = (String) blk.get("id");
                 }
@@ -195,6 +196,8 @@ public class SyllabusProgressService {
                 course.put("package_session_id", psId);
                 course.put("course_name", b.get("course_name"));
                 course.put("level_name", b.get("level_name"));
+                course.put("level_id", b.get("level_id"));
+                course.put("levels", courseLevels((String) b.get("package_id")));
                 course.put("batch_name", b.get("batch_name"));
                 course.put("total_blocks", blocks.size());
                 course.put("completed_blocks", completed);
@@ -205,6 +208,26 @@ public class SyllabusProgressService {
         }
         out.put("courses", courses);
         return out;
+    }
+
+    /**
+     * The course's stages (levels) in teaching order, for the learner's stage path. Levels carry no
+     * order of their own, so a stage's place is where its syllabus starts (its first week), then
+     * when it was created; stages without a syllabus come last. The placeholder level "DEFAULT"
+     * (a course with no real stages) is left out.
+     */
+    private List<Map<String, Object>> courseLevels(String packageId) {
+        return jdbc.queryForList("""
+                SELECT l.id, l.level_name AS name
+                  FROM level l
+                 WHERE l.id IN (SELECT ps.level_id FROM package_session ps
+                                 WHERE ps.package_id = ? AND ps.status <> 'DELETED')
+                   AND COALESCE(l.status, 'ACTIVE') <> 'DELETED'
+                   AND UPPER(COALESCE(l.level_name, '')) <> 'DEFAULT'
+                 ORDER BY (SELECT MIN(b.week_from) FROM syllabus_block b
+                            WHERE b.package_id = ? AND b.level_id = l.id AND b.status = 'ACTIVE') NULLS LAST,
+                          l.created_at NULLS LAST, l.level_name
+                """, packageId, packageId);
     }
 
     private Map<String, Object> batchRow(String instituteId, String packageSessionId) {

@@ -178,6 +178,9 @@ import {
   phoneLayoutFixApplies,
 } from "./-components/home-builder/phone-layout";
 import { useQueryDialogStore } from "@/stores/useQueryDialogStore";
+import { useLearnerHomeSummary } from "@/services/learner-home-summary";
+import { ClassFirstHome } from "./-components/class-first/ClassFirstHome";
+import { hasStoreSite } from "./-components/home-builder/use-feature-availability";
 
 export const Route = createFileRoute("/dashboard/")({
   component: () => {
@@ -393,6 +396,28 @@ export function DashboardComponent() {
     [builderHome, isPhoneDevice]
   );
   const phoneLayoutFixed = phoneLayoutFixApplies(builderHome !== null);
+
+  // ── Class-first home ────────────────────────────────────────────────────────
+  // Learners whose courses are live classes and not lessons (the server decides:
+  // a class in their batches within 14 days and no published content) get the
+  // next class, syllabus, attendance and recordings first. Classic layout only,
+  // default-family and Fun skins; everyone else keeps this page exactly as is.
+  const classFirstEligible =
+    !isHolisticInstitute && builderHome === null && !isPlayTheme && !isCleanerPlayTheme;
+  const {
+    summary: homeSummary,
+    classFirst,
+    isLoading: homeSummaryLoading,
+  } = useLearnerHomeSummary(classFirstEligible);
+  // The Explore buttons open the institute's store page; a class-first learner
+  // sees them only when that page exists.
+  const { data: storeSiteExists } = useQuery({
+    queryKey: ["LEARNER_HOME_STORE_SITE"],
+    queryFn: hasStoreSite,
+    enabled: classFirst,
+    staleTime: 10 * 60 * 1000,
+    retry: false,
+  });
   const [rememberedPlan, setRememberedPlan] = useState<boolean>(() =>
     readEngagementPlanFlag(instituteId)
   );
@@ -428,6 +453,7 @@ export function DashboardComponent() {
   const {
     data: liveSessions,
     isLoading: isLoadingLiveSessions,
+    isError: liveSessionsError,
     refetch: refetchLiveSessions,
   } = useLiveSessions(allBatchIds, { size: 10 });
 
@@ -1274,14 +1300,17 @@ export function DashboardComponent() {
   // Fun: the classic widgets its home leaves out (one list, in home-widgets.ts).
   const funLeavesOut = (id: string) =>
     isFunTheme && !showForInstitutes([HOLISTIC_INSTITUTE_ID]) && !funHomeKeeps(id);
+  const exploreHasStore = !classFirst || storeSiteExists === true;
   const showExploreMemberships =
-    isWidgetVisible("exploreMemberships") && !funLeavesOut("exploreMemberships");
-  const showExploreBooks = isWidgetVisible("exploreBooks") && !funLeavesOut("exploreBooks");
+    exploreHasStore && isWidgetVisible("exploreMemberships") && !funLeavesOut("exploreMemberships");
+  const showExploreBooks =
+    exploreHasStore && isWidgetVisible("exploreBooks") && !funLeavesOut("exploreBooks");
 
   // The Fun skin's Today cards: which widgets they stand for, in their saved order.
   const funToday: FunTodayInput = {
     liveSessions: mergedLiveSessions,
-    showClass: isWidgetVisible("upcomingLiveClasses"),
+    // Class first: the next class is the hero, not a Today card too.
+    showClass: isWidgetVisible("upcomingLiveClasses") && !classFirst,
     showGoal: showTodayTasks,
     showRing: showGamification,
     taskProgress: dailyTaskProgress,
@@ -1314,7 +1343,19 @@ export function DashboardComponent() {
     onRetry: retryDashboard,
     serverSlides: data?.slides,
     today: funToday,
+    classFirst,
   };
+  const classFirstNode = classFirst ? (
+    <ClassFirstHome
+      sessions={mergedLiveSessions}
+      sessionsLoading={isLoadingLiveSessions}
+      sessionsError={liveSessionsError}
+      summary={homeSummary}
+      summaryLoading={homeSummaryLoading}
+      onJoin={handleJoinSession}
+      syllabusOn={syllabusOn}
+    />
+  ) : null;
   const todayNode = (slot: "main" | "rail") => (
     <TodayModule slot={slot} showGamification={showGamification} keepGoing={keepGoing} />
   );
@@ -1572,7 +1613,8 @@ export function DashboardComponent() {
     {
       id: "upcomingLiveClasses" as const,
       order: getWidgetOrder("upcomingLiveClasses"),
-      visible: isWidgetVisible("upcomingLiveClasses"),
+      // Class first: the hero above already shows the next class.
+      visible: isWidgetVisible("upcomingLiveClasses") && !classFirst,
       render: builtinFragments.UPCOMING_LIVE_CLASSES,
     },
     {
@@ -1594,7 +1636,8 @@ export function DashboardComponent() {
       // is untouched.
       id: "syllabusProgress" as const,
       order: getWidgetOrder("myMentors") + 0.5,
-      visible: syllabusOn,
+      // Class first: the syllabus card sits beside the hero instead.
+      visible: syllabusOn && !classFirst,
       render: <SyllabusProgressWidget />,
     },
     {
@@ -1826,10 +1869,14 @@ export function DashboardComponent() {
           <>
             {/* Hero — owns the live-class banner and resume / first-run band */}
             {isFunTheme ? (
-              // The Fun greeting row goes here, full width; its hero leads the main column.
-              <div ref={setFunHeaderSlot} className="fun-home__header-slot" />
+              <>
+                {/* The Fun greeting row goes here, full width; its hero leads the main column. */}
+                <div ref={setFunHeaderSlot} className="fun-home__header-slot" />
+                {/* Class first: the class / syllabus band runs full width under it. */}
+                {classFirstNode}
+              </>
             ) : (
-              builtinFragments.HERO
+              classFirstNode ?? builtinFragments.HERO
             )}
 
             {!isFunTheme && builtinFragments.NOTEBOOK_REVIEW}

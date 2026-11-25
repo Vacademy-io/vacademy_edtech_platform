@@ -458,5 +458,33 @@
         "windows": "विंडोज ऐप",
         "mac": "मैक ऐप",
         "webPortal": "वेब पोर्टल"
+    },
+    "classFirst": {
+        "today": "आज",
+        "tomorrow": "कल",
+        "dayAtTime": "{{day}}, {{time}}",
+        "nextClass": "अगली क्लास",
+        "loading": "आपकी अगली क्लास लोड हो रही है",
+        "loadError": "आपकी क्लास लोड नहीं हो सकीं। कृपया थोड़ी देर में फिर कोशिश करें।",
+        "noClassTitle": "कोई क्लास तय नहीं है",
+        "noClassBody": "आपकी अगली क्लास तय होते ही यहाँ दिखेगी।",
+        "viewClasses": "सभी {{liveClasses}} देखें",
+        "watchLast": "पिछली क्लास देखें ({{date}})",
+        "withTeacher": "{{name}} के साथ",
+        "pattern": "{{days}}, {{time}}",
+        "daysJoiner": " और ",
+        "join": "क्लास से जुड़ें",
+        "opensAt": "{{time}} पर खुलेगी",
+        "attendanceTitle": "हाज़िरी",
+        "attendanceNone": "इस महीने अभी कोई {{liveClasses}} नहीं",
+        "unavailable": "अभी उपलब्ध नहीं",
+        "attendanceOpen": "हाज़िरी खोलें: {{value}}",
+        "recordingsTitle": "रिकॉर्डिंग",
+        "recordingsNone": "कोई नई रिकॉर्डिंग नहीं",
+        "recordingsOpen": "पिछली क्लास और रिकॉर्डिंग खोलें",
+        "attendanceValue_one": "इस महीने {{count}} में से {{attended}} क्लास",
+        "attendanceValue_other": "इस महीने {{count}} में से {{attended}} क्लास",
+        "recordingsNew_one": "{{count}} नई रिकॉर्डिंग",
+        "recordingsNew_other": "{{count}} नई रिकॉर्डिंग"
     }
 }

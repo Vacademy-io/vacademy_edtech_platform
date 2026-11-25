@@ -1548,7 +1548,8 @@ export function LiveClassView({ embedded = false }: { embedded?: boolean }) {
               {/* Past Sessions Section — admin-governed; rendered only when the
                   institute has turned on "Show past sessions to learners". */}
               {pastDisplayFlags.show_past_sessions && (
-                <div>
+                // id: the home's Recordings card links here (#past-sessions).
+                <div id="past-sessions" className="scroll-mt-20">
                   <div className="flex items-center justify-between mb-1">
                     <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100">
                       {t("liveClass.dayModal.pastSessions", { sessions: sessionsTerm })}

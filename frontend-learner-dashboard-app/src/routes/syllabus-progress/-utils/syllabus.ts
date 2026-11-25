@@ -89,3 +89,29 @@ export const formatCompletedOn = (value: string | null, locale: string): string 
         ...(d.getFullYear() !== new Date().getFullYear() ? { year: "numeric" } : {}),
     }).format(d);
 };
+
+/** The block the learner is on (the first one not done), or null when none is. */
+export const currentBlock = (course: SyllabusCourse): SyllabusBlock | null =>
+    (course.blocks ?? []).find((b) => b.id === course.current_block_id) ?? null;
+
+const markedAt = (block: SyllabusBlock): number => {
+    const v = block.updated_at;
+    if (v == null) return 0;
+    const ms = typeof v === "number" ? v : Date.parse(v);
+    return Number.isFinite(ms) ? ms : 0;
+};
+
+/**
+ * The teacher's most recent note on any block: the latest marked one, else (an
+ * older server without marking times) the note on the furthest block.
+ */
+export const latestTeacherNote = (
+    course: SyllabusCourse
+): { note: string; by: string | null; block: SyllabusBlock } | null => {
+    const withNotes = (course.blocks ?? []).filter((b) => b.teacher_note?.trim());
+    if (withNotes.length === 0) return null;
+    const latest = [...withNotes].sort(
+        (a, b) => markedAt(b) - markedAt(a) || (b.block_order ?? 0) - (a.block_order ?? 0)
+    )[0]!;
+    return { note: latest.teacher_note!.trim(), by: latest.marked_by_name?.trim() || null, block: latest };
+};

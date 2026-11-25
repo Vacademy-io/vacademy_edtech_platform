@@ -68,6 +68,11 @@ export interface FunHomeTopProps {
    * columns. Null: drawn here.
    */
   headerSlot: HTMLElement | null;
+  /**
+   * The class-first home draws the next class itself (ClassFirstHome): this then
+   * draws only the greeting row and the Today cards, no live banner or hero card.
+   */
+  classFirst?: boolean;
 }
 
 /** The course picture inside a hero band: the course image on its tint, else the plain shape. */
@@ -454,9 +459,23 @@ export function FunHomeTop(props: FunHomeTopProps) {
       />
   );
 
+  const placedHeader = barSlot ? createPortal(header, barSlot) : props.headerSlot ? createPortal(header, props.headerSlot) : header;
+
+  if (props.classFirst) {
+    const todayCards = props.todayBelow ? <FunTodayCards {...props.today} variant="grid" /> : null;
+    // Nothing left to draw here but the (portalled) greeting: no empty box in the column.
+    if (!todayCards && (barSlot || props.headerSlot)) return <>{placedHeader}</>;
+    return (
+      <div className="fun-home-top" data-fun-hero="classFirst">
+        {placedHeader}
+        {todayCards}
+      </div>
+    );
+  }
+
   return (
     <div className="fun-home-top" data-fun-hero={kind}>
-      {barSlot ? createPortal(header, barSlot) : props.headerSlot ? createPortal(header, props.headerSlot) : header}
+      {placedHeader}
       {banner && <FunLiveCard banner={banner} nowMs={now} onJoin={props.onJoinSession} />}
       {card}
       {below}

@@ -26,12 +26,24 @@ export interface SyllabusBlock {
     points_done: number[] | null;
     teacher_note: string | null;
     marked_by_name: string | null;
+    /** When the teacher last marked this block (ISO string or epoch ms); absent on older servers. */
+    updated_at?: string | number | null;
+}
+
+/** One stage (level) of the course, in teaching order. */
+export interface SyllabusLevel {
+    id: string;
+    name: string | null;
 }
 
 export interface SyllabusCourse {
     package_session_id: string;
     course_name: string | null;
     level_name: string | null;
+    /** The learner's stage; absent on older servers. */
+    level_id?: string | null;
+    /** The course's stages in teaching order; absent on older servers. */
+    levels?: SyllabusLevel[] | null;
     batch_name: string | null;
     total_blocks: number;
     completed_blocks: number;

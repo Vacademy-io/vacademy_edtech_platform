@@ -52,6 +52,13 @@
   },
   "card": {
     "title": "Mon programme",
-    "open": "Voir le programme"
+    "open": "Voir le programme",
+    "stagesLabel": "Étapes de votre cours",
+    "currentStage": "(votre étape)",
+    "thisWeek": "Cette semaine · {{label}}",
+    "blocksDone_one": "{{done}} bloc de semaines terminé sur {{count}} · {{percent}} %",
+    "blocksDone_other": "{{done}} blocs de semaines terminés sur {{count}} · {{percent}} %",
+    "morePoints_one": "+{{count}} autre sujet",
+    "morePoints_other": "+{{count}} autres sujets"
   }
 }

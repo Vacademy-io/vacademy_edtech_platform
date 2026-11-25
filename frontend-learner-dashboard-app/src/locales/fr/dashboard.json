@@ -469,5 +469,33 @@
         "windows": "Application Windows",
         "mac": "Application Mac",
         "webPortal": "Portail web"
+    },
+    "classFirst": {
+        "today": "Aujourd'hui",
+        "tomorrow": "Demain",
+        "dayAtTime": "{{day}}, {{time}}",
+        "nextClass": "Prochain cours",
+        "loading": "Chargement de votre prochain cours",
+        "loadError": "Impossible de charger vos cours. Réessayez dans un instant.",
+        "noClassTitle": "Aucun cours prévu",
+        "noClassBody": "Votre prochain cours s'affichera ici dès qu'il sera programmé.",
+        "viewClasses": "Voir tous les {{liveClasses}}",
+        "watchLast": "Revoir le dernier cours ({{date}})",
+        "withTeacher": "avec {{name}}",
+        "pattern": "{{days}}, {{time}}",
+        "daysJoiner": " et ",
+        "join": "Rejoindre le cours",
+        "opensAt": "Ouvre à {{time}}",
+        "attendanceTitle": "Présence",
+        "attendanceNone": "Aucun {{liveClasses}} ce mois-ci pour l'instant",
+        "unavailable": "Indisponible pour le moment",
+        "attendanceOpen": "Ouvrir la présence : {{value}}",
+        "recordingsTitle": "Enregistrements",
+        "recordingsNone": "Aucun nouvel enregistrement",
+        "recordingsOpen": "Ouvrir les cours passés et les enregistrements",
+        "attendanceValue_one": "{{attended}} sur {{count}} cours ce mois-ci",
+        "attendanceValue_other": "{{attended}} sur {{count}} cours ce mois-ci",
+        "recordingsNew_one": "{{count}} nouvel enregistrement",
+        "recordingsNew_other": "{{count}} nouveaux enregistrements"
     }
 }

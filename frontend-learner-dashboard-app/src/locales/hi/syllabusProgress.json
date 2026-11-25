@@ -52,6 +52,13 @@
   },
   "card": {
     "title": "मेरा सिलेबस",
-    "open": "सिलेबस देखें"
+    "open": "सिलेबस देखें",
+    "stagesLabel": "आपके कोर्स के चरण",
+    "currentStage": "(आपका चरण)",
+    "thisWeek": "इस हफ़्ते · {{label}}",
+    "blocksDone_one": "{{count}} में से {{done}} सप्ताह-खंड पूरे · {{percent}}%",
+    "blocksDone_other": "{{count}} में से {{done}} सप्ताह-खंड पूरे · {{percent}}%",
+    "morePoints_one": "+{{count}} और विषय",
+    "morePoints_other": "+{{count}} और विषय"
   }
 }

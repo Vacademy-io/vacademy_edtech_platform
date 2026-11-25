@@ -55,7 +55,7 @@ export function featuresLinked(blocks: readonly HomeBlock[]): Set<FeatureKey> {
   return set;
 }
 
-async function hasStoreSite(): Promise<boolean> {
+export async function hasStoreSite(): Promise<boolean> {
   const instituteId = await getInstituteId();
   if (!instituteId) return false;
   try {

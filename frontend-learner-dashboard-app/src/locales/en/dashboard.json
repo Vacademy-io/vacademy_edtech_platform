@@ -458,5 +458,33 @@
         "windows": "Windows app",
         "mac": "Mac app",
         "webPortal": "Web portal"
+    },
+    "classFirst": {
+        "today": "Today",
+        "tomorrow": "Tomorrow",
+        "dayAtTime": "{{day}}, {{time}}",
+        "nextClass": "Next class",
+        "loading": "Loading your next class",
+        "loadError": "We couldn't load your classes. Please try again in a moment.",
+        "noClassTitle": "No class scheduled",
+        "noClassBody": "Your next class will show here as soon as it is scheduled.",
+        "viewClasses": "See all {{liveClasses}}",
+        "watchLast": "Watch last class ({{date}})",
+        "withTeacher": "with {{name}}",
+        "pattern": "{{days}}, {{time}}",
+        "daysJoiner": " & ",
+        "join": "Join class",
+        "opensAt": "Opens at {{time}}",
+        "attendanceTitle": "Attendance",
+        "attendanceNone": "No {{liveClasses}} yet this month",
+        "unavailable": "Not available right now",
+        "attendanceOpen": "Open attendance: {{value}}",
+        "recordingsTitle": "Recordings",
+        "recordingsNone": "No new recordings",
+        "recordingsOpen": "Open past classes and recordings",
+        "attendanceValue_one": "{{attended}} of {{count}} class this month",
+        "attendanceValue_other": "{{attended}} of {{count}} classes this month",
+        "recordingsNew_one": "{{count}} new recording",
+        "recordingsNew_other": "{{count}} new recordings"
     }
 }
