@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.admin_core_service.features.audience.entity.Audience;
 import vacademy.io.admin_core_service.features.audience.repository.AudienceRepository;
 import vacademy.io.admin_core_service.features.audience.service.LeadAssignmentNotifier;
+import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.counselor_pool.entity.CounselorPool;
 import vacademy.io.admin_core_service.features.counselor_pool.entity.CounselorPoolAudience;
 import vacademy.io.admin_core_service.features.counselor_pool.entity.CounselorPoolMember;
@@ -77,6 +78,15 @@ public class CounselorAssignmentService {
     private final AudienceRepository audienceRepository;        // for resolving campaign name in alert text
     private final NotificationService notificationService;      // existing helper that wraps notification_service HTTP call
     private final LeadAssignmentNotifier leadAssignmentNotifier; // shared bell-alert sender for ALL assignment paths
+    private final AuthService authService;                      // is the member still allowed into the institute?
+
+    /** How long a "still has access" answer from auth_service is reused before asking again. */
+    private static final long ACCESS_CACHE_TTL_MS = 60_000L;
+
+    private record AccessCheck(boolean hasAccess, long checkedAt) {}
+
+    /** instituteId:userId -> last access answer. One entry per pool member, so it stays small. */
+    private final Map<String, AccessCheck> accessCache = new java.util.concurrent.ConcurrentHashMap<>();
 
     /**
      * Pick a counselor for a lead that just arrived on the given audience.
@@ -274,9 +284,14 @@ public class CounselorAssignmentService {
     private List<CounselorPoolMember> filterEligibleCandidates(CounselorPool pool,
                                                                 List<CounselorPoolMember> allMembers,
                                                                 AssignmentMode mode) {
-        List<CounselorPoolMember> activeMembers = allMembers.stream()
+        List<CounselorPoolMember> activeInPool = allMembers.stream()
                 .filter(m -> PoolStatus.ACTIVE.name().equals(m.getStatus()))
                 .toList();
+        // ACTIVE in the pool is not enough: the person must still have access to the
+        // institute. Someone disabled or deleted in Institute → Teams (including before the
+        // pool rows were synced on disable) no longer gets new leads.
+        List<CounselorPoolMember> activeMembers =
+                keepMembersWithInstituteAccess(pool.getInstituteId(), activeInPool);
 
         // Shift-gating applies to TIME_BASED always, and to ROUND_ROBIN only when
         // the pool opted in via shift_aware. A plain ROUND_ROBIN pool
@@ -308,6 +323,59 @@ public class CounselorAssignmentService {
         return activeMembers.stream()
                 .filter(m -> onShiftUserIds.contains(m.getCounselorUserId()))
                 .toList();
+    }
+
+    /**
+     * Drops members who hold no ACTIVE role in the institute any more (disabled, deleted or
+     * invite cancelled in Institute → Teams). Answers are cached for a minute, so busy pools
+     * add at most one auth_service call per minute. When auth_service cannot answer, the
+     * last known answer is used, and members never checked yet stay in rotation: an outage
+     * must not leave every new lead unassigned.
+     */
+    private List<CounselorPoolMember> keepMembersWithInstituteAccess(String instituteId,
+                                                                      List<CounselorPoolMember> members) {
+        if (members.isEmpty() || authService == null || instituteId == null || instituteId.isBlank()) {
+            return members;
+        }
+        long now = System.currentTimeMillis();
+        List<String> toCheck = members.stream()
+                .map(CounselorPoolMember::getCounselorUserId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .filter(id -> {
+                    AccessCheck c = accessCache.get(accessKey(instituteId, id));
+                    return c == null || now - c.checkedAt() >= ACCESS_CACHE_TTL_MS;
+                })
+                .toList();
+        if (!toCheck.isEmpty()) {
+            Map<String, List<String>> roles = authService.getActiveInstituteRolesOrNull(instituteId, toCheck);
+            if (roles == null) {
+                log.warn("Could not check institute access for {} pool member(s) in institute {}; "
+                        + "using last known answers", toCheck.size(), instituteId);
+            } else {
+                for (String id : toCheck) {
+                    List<String> held = roles.get(id);
+                    accessCache.put(accessKey(instituteId, id),
+                            new AccessCheck(held != null && !held.isEmpty(), now));
+                }
+            }
+        }
+        List<CounselorPoolMember> kept = new ArrayList<>(members.size());
+        for (CounselorPoolMember m : members) {
+            AccessCheck c = m.getCounselorUserId() == null ? null
+                    : accessCache.get(accessKey(instituteId, m.getCounselorUserId()));
+            if (c == null || c.hasAccess()) {
+                kept.add(m);
+            } else {
+                log.info("Skipping pool member {} in pool {}: no active role in institute {}",
+                        m.getCounselorUserId(), m.getPoolId(), instituteId);
+            }
+        }
+        return kept;
+    }
+
+    private static String accessKey(String instituteId, String userId) {
+        return instituteId + ":" + userId;
     }
 
     // ────────────────────────────────────────────────────────────────
