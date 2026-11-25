@@ -385,6 +385,33 @@ public class AuthService {
                 });
     }
 
+    /**
+     * Whether an admin adding a NEW learner may use this username. Free → yes. Held by the
+     * same person → yes: the e-mail or phone entered is the one on that account, so the add
+     * re-uses it. Held by anyone else → no, even when nothing on record contradicts: the admin
+     * is creating someone new, so a bare username hit is no proof it is the same learner.
+     * Answers only yes/no; nothing about the account holding the name.
+     */
+    public boolean isUsernameAvailableForNewLearner(String username, String email, String mobileNumber) {
+        String wanted = TextSanitizer.cleanIdentifier(username);
+        if (!StringUtils.hasText(wanted)) {
+            return true;
+        }
+        Optional<User> holder = userRepository.findByUsername(wanted);
+        if (holder.isEmpty()) {
+            return true;
+        }
+        User existing = holder.get();
+        String typedEmail = TextSanitizer.cleanIdentifier(email);
+        boolean bothEmails = StringUtils.hasText(typedEmail) && StringUtils.hasText(existing.getEmail());
+        if (bothEmails) {
+            // An e-mail on both sides decides it, as in findSamePersonByUsername.
+            return existing.getEmail().trim().equalsIgnoreCase(typedEmail.trim());
+        }
+        String typedPhone = lastTenDigits(mobileNumber);
+        return !typedPhone.isEmpty() && typedPhone.equals(lastTenDigits(existing.getMobileNumber()));
+    }
+
     // Stored numbers mix "+91 98765 43210", "919876543210" and "9876543210" for one phone.
     private static String lastTenDigits(String number) {
         String digits = number == null ? "" : number.replaceAll("[^0-9]", "");
