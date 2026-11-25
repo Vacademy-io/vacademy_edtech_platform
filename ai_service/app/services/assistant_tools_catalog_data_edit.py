@@ -1257,21 +1257,8 @@ async def _load_pages_raw(ctx: ToolContext) -> Optional[List[Dict[str, Any]]]:
     return [p for p in data if isinstance(p, dict) and str(p.get("institute_id") or inst) == inst]
 
 
-async def _action_create_product_page(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
-    name = _str(args.get("name"))
-    role = _str(args.get("role")).lower() or "path"
-    items = args.get("items")
-    if not name:
-        return _err("missing_argument", needs=["name"], message="Pass the product page's name.")
-    if len(name) > _MAX_NAME:
-        return _err("too_long", message=f"name is at most {_MAX_NAME} characters.")
-    if role not in ("path", "store"):
-        return _err("invalid_role", message="role is 'path' (one batch per step) or 'store' (every sellable batch).")
-    if not isinstance(items, list) or not items:
-        return _err("missing_argument", needs=["items"], message="Pass items: [{course_id, invite_id?, package_session_id?}].")
-    if len(items) > MAX_PRODUCT_PAGE_ITEMS:
-        return _err("too_many_items", limit=MAX_PRODUCT_PAGE_ITEMS, message=f"At most {MAX_PRODUCT_PAGE_ITEMS} courses per page.")
-
+def _clean_items(items: List[Any]) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """Validated ``items`` ({course_id, invite_id?, package_session_id?}) and the errors found."""
     errors: List[Dict[str, Any]] = _unknown_item_keys(items, _ITEM_KEYS, "items")
     clean: List[Dict[str, Any]] = []
     for i, it in enumerate(items):
@@ -1285,22 +1272,19 @@ async def _action_create_product_page(args: Dict[str, Any], ctx: ToolContext) ->
             errors.append({"index": i, "course_id": course_id, "message": "invite_id / package_session_id are ids from website(action='data_inventory')."})
             continue
         clean.append({"index": i, "course_id": course_id, "invite_id": invite_id or None, "package_session_id": session_id or None})
-    if errors:
-        return _err("invalid_items", errors=errors, message="Nothing was written. Fix these and call again.")
+    return clean, errors
 
-    pages = await _load_pages_raw(ctx)
-    if pages is None:
-        return _fetch_failed("this institute's product pages", None)
-    same = next((p for p in pages if str(p.get("name") or "").strip().lower() == name.lower()), None)
-    if same:
-        return _err("product_page_exists", product_page={"id": same.get("id"), "code": same.get("code"),
-                                                         "status": same.get("status")},
-                    message=f"A product page named '{same.get('name')}' already exists; use it or choose another name.")
 
+def _pick_steps(ctx: ToolContext, clean: List[Dict[str, Any]], role: str) -> Optional[Tuple[
+        List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]], Dict[str, Dict[str, Any]]]]:
+    """The row + plan each item is sold through (pick_mapping), the batches that cannot be sold, the errors
+    and the courses' stored rows. 'path' = one batch per course; 'store' = every sellable batch. None when the
+    courses could not be read."""
+    errors: List[Dict[str, Any]] = []
     rows = load_sellable_rows(ctx, [c["course_id"] for c in clean])
     course_rows = load_course_rows(ctx, [c["course_id"] for c in clean])
     if rows is None or course_rows is None:
-        return _fetch_failed("the courses' batches and invites", None)
+        return None
     by_course: Dict[str, List[Dict[str, Any]]] = {}
     for r in rows:
         by_course.setdefault(str(r.get("course_id")), []).append(r)
@@ -1349,6 +1333,41 @@ async def _action_create_product_page(args: Dict[str, Any], ctx: ToolContext) ->
                 continue
             seen_sessions.add(session_id)
             steps.append(row)
+    return steps, not_sold, errors, course_rows
+
+
+async def _action_create_product_page(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
+    name = _str(args.get("name"))
+    role = _str(args.get("role")).lower() or "path"
+    items = args.get("items")
+    if not name:
+        return _err("missing_argument", needs=["name"], message="Pass the product page's name.")
+    if len(name) > _MAX_NAME:
+        return _err("too_long", message=f"name is at most {_MAX_NAME} characters.")
+    if role not in ("path", "store"):
+        return _err("invalid_role", message="role is 'path' (one batch per step) or 'store' (every sellable batch).")
+    if not isinstance(items, list) or not items:
+        return _err("missing_argument", needs=["items"], message="Pass items: [{course_id, invite_id?, package_session_id?}].")
+    if len(items) > MAX_PRODUCT_PAGE_ITEMS:
+        return _err("too_many_items", limit=MAX_PRODUCT_PAGE_ITEMS, message=f"At most {MAX_PRODUCT_PAGE_ITEMS} courses per page.")
+
+    clean, errors = _clean_items(items)
+    if errors:
+        return _err("invalid_items", errors=errors, message="Nothing was written. Fix these and call again.")
+
+    pages = await _load_pages_raw(ctx)
+    if pages is None:
+        return _fetch_failed("this institute's product pages", None)
+    same = next((p for p in pages if str(p.get("name") or "").strip().lower() == name.lower()), None)
+    if same:
+        return _err("product_page_exists", product_page={"id": same.get("id"), "code": same.get("code"),
+                                                         "status": same.get("status")},
+                    message=f"A product page named '{same.get('name')}' already exists; use it or choose another name.")
+
+    picked = _pick_steps(ctx, clean, role)
+    if picked is None:
+        return _fetch_failed("the courses' batches and invites", None)
+    steps, not_sold, errors, _ = picked
     if errors:
         return _err("invalid_items", errors=errors[:MAX_LISTED],
                     message="Nothing was written. Fix these and call again (all or nothing).")
