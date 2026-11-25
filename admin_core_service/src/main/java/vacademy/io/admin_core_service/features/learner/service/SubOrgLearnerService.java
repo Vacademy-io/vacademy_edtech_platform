@@ -791,10 +791,17 @@ public class SubOrgLearnerService {
                     request.getInstituteId());
         }
 
-        return authService.createUserFromAuthService(
+        UserDTO account = authService.createUserFromAuthService(
                 request.getUser(),
                 request.getInstituteId(),
                 sendCredentials);
+        // The account can carry a different username than the one sent (an existing account,
+        // or a taken name that got a suffix). The CSV upload reports it from this request
+        // object, so give it the one the learner logs in with.
+        if (account != null && StringUtils.hasText(account.getUsername())) {
+            request.getUser().setUsername(account.getUsername());
+        }
+        return account;
     }
 
     /**
