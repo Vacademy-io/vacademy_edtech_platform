@@ -79,6 +79,9 @@ export default function PreviousSessionCard({
     const [scheduledSessionDetails, setScheduleSessionDetails] =
         useState<SessionDetailsResponse | null>(null);
     const [isAttendanceExporting, setIsAttendanceExporting] = useState<boolean>(false);
+    // The attendance table's own export, so this CSV button downloads the columns picked
+    // in its Manage Column (system + custom fields) instead of a fixed set.
+    const attendanceCsvRef = useRef<(() => void) | null>(null);
     const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
     const [selectedStudents, setSelectedStudents] = useState<StudentTable[]>([]);
     // using Sonner toast for notifications
@@ -145,6 +148,10 @@ export default function PreviousSessionCard({
         selectedStudentIds.length > 0 && selectedStudentIds.length < (reportResponse?.length || 0);
 
     const handleExportPastAttendance = () => {
+        if (attendanceCsvRef.current) {
+            attendanceCsvRef.current();
+            return;
+        }
         setIsAttendanceExporting(true);
         // const batchValue = session.package_session_details && session.package_session_details.length > 0
         //     ? session.package_session_details.map((d) => d.level_name).filter(Boolean).join(' | ')
@@ -728,6 +735,7 @@ export default function PreviousSessionCard({
                                 scheduleId={session.schedule_id}
                                 accessType={session.access_level}
                                 packageSessionDetails={session.package_session_details}
+                                exportCsvRef={attendanceCsvRef}
                                 onSaved={() => {
                                     fetchReport({
                                         sessionId: session.session_id,
