@@ -52,11 +52,15 @@ interface UploadQuestionPaperDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onBack: () => void;
+    /** The Word / HTML reader can't read a PDF: VSmart AI takes it instead. */
+    onPdfPicked: (file: File) => void;
     currentQuestionIndex: number;
     setCurrentQuestionIndex: Dispatch<SetStateAction<number>>;
 }
 
 type Phase = 'idle' | 'uploading' | 'done';
+
+const isPdf = (file: File) => file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
 
 const stripHtml = (html: string | null | undefined) => {
     if (!html) return '';
@@ -78,6 +82,7 @@ export const UploadQuestionPaperDialog = ({
     open,
     onOpenChange,
     onBack,
+    onPdfPicked,
     currentQuestionIndex,
     setCurrentQuestionIndex,
 }: UploadQuestionPaperDialogProps) => {
@@ -162,6 +167,10 @@ export const UploadQuestionPaperDialog = ({
     });
 
     const handleFileSubmit = (selected: File) => {
+        if (isPdf(selected)) {
+            onPdfPicked(selected);
+            return;
+        }
         form.setValue('fileUpload', selected);
         if (!form.getValues('title')?.trim()) {
             form.setValue(
@@ -317,6 +326,9 @@ export const UploadQuestionPaperDialog = ({
                 </span>
                 <span className="text-caption text-primary-500 underline underline-offset-2">
                     {t('upload.dropBrowse')}
+                </span>
+                <span className="mt-2 text-caption text-neutral-500">
+                    {t('upload.dropPdfHint')}
                 </span>
             </div>
         </FileUploadComponent>

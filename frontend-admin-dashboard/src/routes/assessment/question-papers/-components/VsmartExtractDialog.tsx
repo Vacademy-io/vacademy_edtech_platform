@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft } from '@phosphor-icons/react';
+import { ArrowLeft, Info } from '@phosphor-icons/react';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { AICenterProvider } from '@/routes/ai-center/-contexts/useAICenterContext';
@@ -12,6 +12,8 @@ interface VsmartExtractDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onBack: () => void;
+    /** A PDF handed over from the Word / HTML upload, read as soon as the dialog opens. */
+    initialFile?: File | null;
 }
 
 /**
@@ -19,7 +21,12 @@ interface VsmartExtractDialogProps {
  * paper they already have, the VSmart Extract tool (same as AI Center → Reuse
  * Existing Questions) reads it, and "Add to question bank" in its preview saves it.
  */
-export const VsmartExtractDialog = ({ open, onOpenChange, onBack }: VsmartExtractDialogProps) => {
+export const VsmartExtractDialog = ({
+    open,
+    onOpenChange,
+    onBack,
+    initialFile = null,
+}: VsmartExtractDialogProps) => {
     const { t } = useTranslation('assessmentQuestionPapersPage');
     const queryClient = useQueryClient();
 
@@ -71,8 +78,14 @@ export const VsmartExtractDialog = ({ open, onOpenChange, onBack }: VsmartExtrac
         >
             <div className="flex flex-col gap-6">
                 <p className="text-body text-neutral-600">{t('chooser.vsmart.dialogHint')}</p>
+                {initialFile && (
+                    <p className="flex items-start gap-2 rounded-lg border border-info-100 bg-info-50 p-3 text-caption text-info-700">
+                        <Info size={16} className="mt-0.5 shrink-0" />
+                        {t('chooser.vsmart.pdfHandedOver')}
+                    </p>
+                )}
                 <AICenterProvider>
-                    <GenerateAiQuestionPaperComponent embedded />
+                    <GenerateAiQuestionPaperComponent embedded initialFile={initialFile} />
                 </AICenterProvider>
             </div>
         </MyDialog>
