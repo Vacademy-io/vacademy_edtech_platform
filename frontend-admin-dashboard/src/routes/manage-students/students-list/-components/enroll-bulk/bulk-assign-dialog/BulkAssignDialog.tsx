@@ -583,6 +583,27 @@ export const BulkAssignDialog = ({
                     failed: summary.failed,
                 })
             );
+            // The dialog closes, so say which rows were not enrolled and why (e.g. a
+            // username already taken by someone outside this institute).
+            if (summary.failed > 0) {
+                const reasons = Array.from(
+                    new Set(
+                        result.results
+                            .filter((r) => r.status === 'FAILED' && !!r.message)
+                            .map((r) => `${r.user_email || r.user_id || '—'}: ${r.message}`)
+                    )
+                );
+                if (reasons.length > 0) {
+                    toast.error(
+                        t('toasts.notEnrolled', {
+                            details:
+                                reasons.slice(0, 3).join(' · ') +
+                                (reasons.length > 3 ? ` (+${reasons.length - 3})` : ''),
+                        }),
+                        { duration: 12000 }
+                    );
+                }
+            }
             onSuccess?.();
             handleClose();
         } catch (e) {

@@ -21,7 +21,8 @@
         "previewFailed": "पूर्वावलोकन बनाने में विफल। कृपया पुनः प्रयास करें।",
         "enrollmentComplete": "नामांकन पूर्ण! ✅ {{successful}} नामांकित, ⏭ {{skipped}} छोड़े गए, ❌ {{failed}} विफल।",
         "enrollmentFailed": "नामांकन विफल। कृपया पुनः प्रयास करें।",
-        "guardianLinkFailed": "{{name}} के लिए अभिभावक लिंक विफल: {{message}}"
+        "guardianLinkFailed": "{{name}} के लिए अभिभावक लिंक विफल: {{message}}",
+        "notEnrolled": "नामांकन नहीं हुआ — {{details}}"
     },
     "errors": {
         "guardianLinkFallback": "अभिभावक को लिंक करने में विफल।",

@@ -21,7 +21,8 @@
         "previewFailed": "فشل إنشاء المعاينة. يرجى المحاولة مرة أخرى.",
         "enrollmentComplete": "اكتمل التسجيل! ✅ تم تسجيل {{successful}}، ⏭ تم تخطي {{skipped}}، ❌ فشل {{failed}}.",
         "enrollmentFailed": "فشل التسجيل. يرجى المحاولة مرة أخرى.",
-        "guardianLinkFailed": "فشل ربط ولي الأمر لـ {{name}}: {{message}}"
+        "guardianLinkFailed": "فشل ربط ولي الأمر لـ {{name}}: {{message}}",
+        "notEnrolled": "لم يتم التسجيل — {{details}}"
     },
     "errors": {
         "guardianLinkFallback": "فشل ربط ولي الأمر.",
