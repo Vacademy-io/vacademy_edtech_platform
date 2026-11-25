@@ -300,7 +300,7 @@ public class ScanStationRunner {
         }
         ScanAnalysis.AnalyseRequest request = ScanAnalysis.AnalyseRequest.builder()
                 .instituteId(session.getInstituteId()).sessionId(session.getId()).loadNo(load.getLoadNo())
-                .preferredModel(null).passes(passes).build();
+                .preferredModel(null).passes(passes).oneSided(req.isOneSided()).build();
         try {
             AiServiceScanClient.Analysed answer = client.analyseLoad(request);
             lastReadAt = System.currentTimeMillis();

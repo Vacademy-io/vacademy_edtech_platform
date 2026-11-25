@@ -169,17 +169,22 @@ public class ScanStationService {
     }
 
     private void validate(AiScanSession session, LoadRequest request) {
-        if (request == null || request.getPasses() == null || request.getPasses().size() != 2) {
-            throw unprocessable("BAD_LOAD", "A load has exactly two passes");
+        boolean oneSided = request != null && request.isOneSided();
+        int wantPasses = oneSided ? 1 : 2;
+        if (request == null || request.getPasses() == null || request.getPasses().size() != wantPasses) {
+            throw unprocessable("BAD_LOAD", oneSided
+                    ? "A load of one-sided copies has exactly one pass"
+                    : "A load has exactly two passes");
         }
         Set<Integer> passNos = new HashSet<>();
         Set<String> fileIds = new HashSet<>();
-        int[] pages = new int[2];
+        int[] pages = new int[wantPasses];
         int i = 0;
         for (ScanStationDtos.Pass p : request.getPasses()) {
-            if (p == null || p.getPassNo() == null || (p.getPassNo() != 1 && p.getPassNo() != 2)
+            if (p == null || p.getPassNo() == null || p.getPassNo() < 1 || p.getPassNo() > wantPasses
                     || !passNos.add(p.getPassNo())) {
-                throw unprocessable("BAD_LOAD", "The passes must be numbered 1 and 2");
+                throw unprocessable("BAD_LOAD", oneSided ? "The pass must be numbered 1"
+                        : "The passes must be numbered 1 and 2");
             }
             if (p.getFiles() == null || p.getFiles().isEmpty()) {
                 throw unprocessable("EMPTY_PASS", "Pass " + p.getPassNo() + " has no files");
@@ -207,7 +212,7 @@ public class ScanStationService {
             }
             pages[i++] = n;
         }
-        if (pages[0] != pages[1]) {
+        if (!oneSided && pages[0] != pages[1]) {
             throw unprocessable("COUNT_MISMATCH", "One pass has " + pages[0] + " pages and the other " + pages[1]
                     + "; a sheet was pulled in twice or skipped. Rescan this load.");
         }
@@ -601,6 +606,7 @@ public class ScanStationService {
             }
             loads.add(ScanStationDtos.LoadDto.builder().loadNo(n).status(l.getStatus()).attempts(l.getAttempts())
                     .errorMessage(l.getErrorMessage()).passes(passes)
+                    .oneSided(req != null && req.isOneSided())
                     .layout(result == null ? null : result.getLayout())
                     .pages(pages).sheets(result == null || result.getSheets() == null ? List.of() : result.getSheets())
                     .flags(flags).build());

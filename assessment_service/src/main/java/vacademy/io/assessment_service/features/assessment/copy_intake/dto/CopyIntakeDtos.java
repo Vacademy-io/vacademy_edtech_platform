@@ -73,6 +73,10 @@ public final class CopyIntakeDtos {
         private String studentName;
         private String roll;
         private String evaluatedFileId;
+        /** Marks given by the AI check; null when not recorded. */
+        private Double marks;
+        /** The test's full marks (sum of its section totals); null when unknown or 0. */
+        private Double maxMarks;
     }
 
     /** What a submitted-copies check would do, before any credit is spent. */

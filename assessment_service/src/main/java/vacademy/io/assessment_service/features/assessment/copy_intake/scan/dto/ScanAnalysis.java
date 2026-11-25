@@ -45,6 +45,8 @@ public final class ScanAnalysis {
         private Integer loadNo;
         private String preferredModel;
         private List<PassRef> passes;
+        /** One pass of one-sided copies: every page is a front, nothing is paired. */
+        private Boolean oneSided;
     }
 
     @Data

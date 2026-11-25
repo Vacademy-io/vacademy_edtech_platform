@@ -1,4 +1,5 @@
-"""Analyse one Scan Station load: two passes of one pile -> per-sheet facts + flags.
+"""Analyse one Scan Station load: two passes of one pile (or one pass of one-sided
+copies) -> per-sheet facts + flags.
 
 Contract C1 (POST /copy-check/scan/analyse-load). In order:
   fetch -> page features in the worker pool -> header probe (fronts pass and
@@ -254,6 +255,69 @@ def _upright_header(f: Optional[pages.PageFeatures], rotation: int):
     return f.header_down if rotation == 180 else f.header_up
 
 
+async def _one_sided(reader: HeaderReader, by_pass: dict[int, list[PageRec]], found: Any,
+                     flags: _Flags, result: Callable[..., dict[str, Any]], s: Any) -> dict[str, Any]:
+    """One pass of one-sided copies: each page is a sheet of its own with no back.
+    Same header read and label guard as two passes; no show-through pairing."""
+    fp, rot = found.fronts_pass, found.fronts_rotation
+    fronts = by_pass[fp]
+    n = len(fronts)
+
+    reads: dict[int, HeaderRead] = dict(found.reads)
+    todo = [i for i in range(n) if i not in reads and fronts[i].feat is not None]
+    strip_of = (lambda f: f.strip_down) if rot == 180 else (lambda f: f.strip_up)
+    got = await reader.read([strip_of(fronts[i].feat) for i in todo])
+    reads.update(zip(todo, got))
+    for i in range(n):
+        reads.setdefault(i, HeaderRead())
+
+    label_idx = [i for i in range(n) if reads[i].label_kind == PRINTED_FIELD and fronts[i].feat is not None]
+    templ = headers_guard.template([_upright_header(fronts[i].feat, rot) for i in label_idx])
+    front_sim = {i: headers_guard.similarity(templ, _upright_header(fronts[i].feat, rot)) for i in range(n)}
+
+    sheets: list[dict[str, Any]] = []
+    for i in range(n):
+        front = fronts[i]
+        hr = reads[i]
+        sim = front_sim.get(i)
+        is_label = hr.label_kind == PRINTED_FIELD
+        sheets.append({
+            "sheet_no": i,
+            "front": front.ref,
+            "back": None,
+            "pair_score": None,
+            "pair_runner_up": None,
+            "pair_is_row_max": True,
+            "label_kind": hr.label_kind,
+            "label_present": is_label,
+            "name_text": hr.name_value,
+            "name_readable": bool(hr.name_value) and hr.name_legible,
+            "roll_text": hr.roll_value,
+            "label_template_sim": sim,
+            "back_label_like": False,
+            "front_blank_class": front.blank_class,
+            "back_blank_class": None,
+        })
+        if is_label and not (hr.name_value and hr.name_legible):
+            flags.add("LABEL_NO_VALUE", "the printed name field has no readable name", i)
+        if is_label and len(label_idx) >= 3 and sim is not None and sim < s.label_sim_min:
+            flags.add("LABEL_UNUSUAL", f"this name field looks unlike the others (similarity {sim:.2f})", i)
+        if front.feat is not None and front.blank_class == ink.BLANK:
+            flags.add("FRONT_BLANK", "the page looks blank", i)
+
+    layout_out = {
+        "fronts_pass": fp,
+        "fronts_rotation": rot,
+        "backs_order": None,
+        "backs_rotation": None,
+        "order_margin": None,
+        "shift": None,
+        "blank_rule_suspect": False,
+    }
+    evidence = {"first_front_label": sheets[0]["label_present"], "last_front_label": sheets[-1]["label_present"]}
+    return result(layout_out, sheets, evidence)
+
+
 async def analyse_load(
     req: dict[str, Any],
     *,
@@ -275,6 +339,8 @@ async def analyse_load(
     load_no = req.get("load_no")
 
     passes = sorted(req.get("passes") or [], key=lambda p: p["pass_no"])
+    # One-sided copies: one pass, every page is a front with nothing on the back.
+    one_sided = bool(req.get("one_sided")) and len(passes) == 1
     specs: list[fetch.FetchSpec] = []
     file_specs: list[tuple[str, str, str]] = []
     for p in passes:
@@ -354,6 +420,11 @@ async def analyse_load(
     found = await probe(reader, strips)
     if not found.found:
         flags.add("NO_NAME_BOX_FOUND", "no printed name field was found on the first pages of either pass")
+
+    if one_sided:
+        if not found.found:
+            return result(None, [], {"first_front_label": False, "last_front_label": False})
+        return await _one_sided(reader, by_pass, found, flags, result, s)
 
     counts = {pn: len(recs) for pn, recs in by_pass.items()}
     if len(counts) != 2 or len(set(counts.values())) != 1:

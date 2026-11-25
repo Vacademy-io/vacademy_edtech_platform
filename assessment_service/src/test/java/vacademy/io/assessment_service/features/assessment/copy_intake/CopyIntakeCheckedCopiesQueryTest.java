@@ -77,8 +77,8 @@ class CopyIntakeCheckedCopiesQueryTest {
     private String attempt(String evaluatedFileId) {
         String attemptId = id();
         sql("INSERT INTO student_attempt (id, registration_id, status, attempt_number, max_time, start_time,"
-                + " preview_start_time, evaluated_file_id) VALUES (?1, ?2, 'ENDED', 1, 60, now(), now(), ?3)",
-                attemptId, id(), evaluatedFileId);
+                + " preview_start_time, evaluated_file_id, total_marks) VALUES (?1, ?2, 'ENDED', 1, 60, now(), now(),"
+                + " ?3, 14.5)", attemptId, id(), evaluatedFileId);
         return attemptId;
     }
 
@@ -106,6 +106,22 @@ class CopyIntakeCheckedCopiesQueryTest {
         assertThat(rows.get(0).getEvaluatedFileId()).isEqualTo("checked-1");
         assertThat(rows.get(0).getStudentName()).isEqualTo("Asha");
         assertThat(rows.get(0).getFileName()).isEqualTo("56.pdf");
+        assertThat(rows.get(0).getMarks()).isEqualTo(14.5);
+    }
+
+    @Test
+    void sums_the_live_section_totals() {
+        String assessmentId = id();
+        sql("INSERT INTO assessment (id, name, play_mode, evaluation_type, can_switch_section, assessment_visibility,"
+                + " submission_type) VALUES (?1, 'Totals', 'EXAM', 'MANUAL', false, 'PRIVATE', 'FILE')", assessmentId);
+        sql("INSERT INTO section (id, name, status, total_marks, assessment_id) VALUES (?1, 'A', 'ACTIVE', 12.5, ?2)",
+                id(), assessmentId);
+        sql("INSERT INTO section (id, name, status, total_marks, assessment_id) VALUES (?1, 'B', 'ACTIVE', 5.5, ?2)",
+                id(), assessmentId);
+        sql("INSERT INTO section (id, name, status, total_marks, assessment_id) VALUES (?1, 'C', 'DELETED', 40, ?2)",
+                id(), assessmentId);
+        assertThat(itemRepository.sumSectionTotals(assessmentId)).isEqualTo(18.0);
+        assertThat(itemRepository.sumSectionTotals(id())).isNull();
     }
 
     @Test

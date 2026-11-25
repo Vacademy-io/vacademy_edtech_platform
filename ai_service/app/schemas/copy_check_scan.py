@@ -35,12 +35,16 @@ class AnalyseLoadRequest(BaseModel):
     session_id: str = Field(min_length=1, max_length=64)
     load_no: int = Field(ge=1, le=10_000)
     preferred_model: Optional[str] = Field(default=None, max_length=200)
-    passes: list[ScanPass] = Field(min_length=2, max_length=2)
+    passes: list[ScanPass] = Field(min_length=1, max_length=2)
+    # Copies written on one side only: ONE pass (pass_no 1), every page a front.
+    one_sided: bool = False
 
     @model_validator(mode="after")
     def _one_of_each_pass(self) -> "AnalyseLoadRequest":
-        if sorted(p.pass_no for p in self.passes) != [1, 2]:
-            raise ValueError("passes must be pass_no 1 and pass_no 2")
+        want = [1] if self.one_sided else [1, 2]
+        if sorted(p.pass_no for p in self.passes) != want:
+            raise ValueError("one-sided copies need exactly pass_no 1" if self.one_sided
+                             else "passes must be pass_no 1 and pass_no 2")
         return self
 
 
@@ -52,9 +56,10 @@ class ScanShift(BaseModel):
 class ScanLayout(BaseModel):
     fronts_pass: Literal[1, 2]
     fronts_rotation: Literal[0, 180]
-    backs_order: Literal["SAME", "REVERSED"]
-    backs_rotation: Literal[0, 180]
-    order_margin: float
+    # None for one-sided copies (no backs).
+    backs_order: Optional[Literal["SAME", "REVERSED"]] = None
+    backs_rotation: Optional[Literal[0, 180]] = None
+    order_margin: Optional[float] = None
     shift: Optional[ScanShift] = None
     blank_rule_suspect: bool = False
 
@@ -82,8 +87,8 @@ class ScanPage(BaseModel):
 class ScanSheet(BaseModel):
     sheet_no: int
     front: str
-    back: str
-    pair_score: float
+    back: Optional[str] = None            # None for one-sided copies
+    pair_score: Optional[float] = None
     pair_runner_up: Optional[float] = None
     pair_is_row_max: bool
     label_kind: Literal["PRINTED_FIELD", "QUESTION_TEXT", "NONE"]
@@ -94,7 +99,7 @@ class ScanSheet(BaseModel):
     label_template_sim: Optional[float] = None
     back_label_like: bool
     front_blank_class: BlankClass
-    back_blank_class: BlankClass
+    back_blank_class: Optional[BlankClass] = None
 
 
 class ScanFlag(BaseModel):

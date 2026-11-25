@@ -1073,11 +1073,19 @@ public class CopyIntakeService {
     /** The batch's checked copies (AI check finished, checked copy rendered), in upload order. */
     public List<CopyIntakeDtos.CheckedCopyDto> checkedCopies(String batchId) {
         List<CopyIntakeDtos.CheckedCopyDto> out = new ArrayList<>();
-        for (AiCopyIntakeItemRepository.CheckedCopyRow r
-                : itemRepository.findCheckedCopies(batchId, AiCopyIntakeItem.COMPLETED)) {
+        List<AiCopyIntakeItemRepository.CheckedCopyRow> rows =
+                itemRepository.findCheckedCopies(batchId, AiCopyIntakeItem.COMPLETED);
+        Double max = null;
+        if (!rows.isEmpty()) {
+            String assessmentId = batchRepository.findById(batchId).map(AiCopyIntakeBatch::getAssessmentId).orElse(null);
+            Double sum = assessmentId == null ? null : itemRepository.sumSectionTotals(assessmentId);
+            max = sum != null && sum > 0 ? sum : null;
+        }
+        for (AiCopyIntakeItemRepository.CheckedCopyRow r : rows) {
             out.add(CopyIntakeDtos.CheckedCopyDto.builder()
                     .itemId(r.getItemId()).fileName(r.getFileName()).studentName(r.getStudentName())
-                    .roll(r.getRoll()).evaluatedFileId(r.getEvaluatedFileId()).build());
+                    .roll(r.getRoll()).evaluatedFileId(r.getEvaluatedFileId())
+                    .marks(r.getMarks()).maxMarks(max).build());
         }
         return out;
     }

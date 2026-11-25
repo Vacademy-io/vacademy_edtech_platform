@@ -79,9 +79,10 @@ class _Model:
         return {"content": json.dumps(out), "usage": {"prompt_tokens": 1000, "completion_tokens": 50}}
 
 
-def _request(files):
+def _request(files, one_sided=False):
     return {
         "institute_id": "inst-1", "session_id": "sess-1", "load_no": 3, "preferred_model": None,
+        "one_sided": one_sided,
         "passes": [{"pass_no": p, "files": [
             {"file_id": f"f{p}-{i}", "url": f"https://media.test/{p}/{i}?sig=x", "kind": "IMAGE",
              "name": "Scan.jpeg" if i == 0 else f"Scan {i}.jpeg"}
@@ -101,9 +102,9 @@ def _fetcher(files):
     return fake_fetch
 
 
-def _run(files, model):
+def _run(files, model, one_sided=False):
     with ThreadPoolExecutor(2) as ex:
-        out = asyncio.run(analyse.analyse_load(_request(files), llm=model, model="m-x",
+        out = asyncio.run(analyse.analyse_load(_request(files, one_sided), llm=model, model="m-x",
                                                executor=ex, fetcher=_fetcher(files)))
     AnalyseLoadResponse.model_validate(out)       # the C1 shape, always
     return out
@@ -142,6 +143,36 @@ def test_brother_layout_end_to_end(load_files):
     # one probe call (3 pages x 2 passes x 2 ways up) + one call for the 3 unread fronts
     assert model.calls == [12, 3]
     assert out["usage"] == {"model": "m-x", "model_calls": 2, "prompt_tokens": 2000, "completion_tokens": 100}
+
+
+def test_one_sided_copies_are_one_pass_of_fronts(load_files):
+    files, owner = load_files
+    # the fronts alone, scanned once: pass 1 (the stub knows them by their strips)
+    one = {1: files[2]}
+    model = _Model(owner)
+    out = _run(one, model, one_sided=True)
+    assert out["status"] == "OK", out["flags"]
+    assert out["layout"]["fronts_pass"] == 1 and out["layout"]["fronts_rotation"] == 0
+    assert out["layout"]["backs_order"] is None and out["layout"]["backs_rotation"] is None
+    sheets = out["sheets"]
+    assert [s["front"] for s in sheets] == [f"p1.{i}" for i in range(N)]
+    assert all(s["back"] is None and s["pair_score"] is None and s["back_blank_class"] is None for s in sheets)
+    assert [s["name_text"] for s in sheets if s["label_present"]] == ["Aarav Sharma", "Priya Verma", "Rohan Gupta"]
+    assert out["evidence"] == {"first_front_label": True, "last_front_label": True}
+    # probe: 3 pages x 1 pass x 2 ways up; then the 3 unread fronts
+    assert model.calls == [6, 3]
+
+
+def test_one_sided_flag_with_two_passes_is_refused_by_the_schema(load_files):
+    from pydantic import ValidationError
+
+    from app.schemas.copy_check_scan import AnalyseLoadRequest
+    files, _owner = load_files
+    with pytest.raises(ValidationError):
+        AnalyseLoadRequest.model_validate(_request(files, one_sided=True))
+    with pytest.raises(ValidationError):
+        AnalyseLoadRequest.model_validate(_request({1: files[2]}, one_sided=False))
+    AnalyseLoadRequest.model_validate(_request({1: files[2]}, one_sided=True))
 
 
 def test_count_mismatch_blocks_after_only_the_probe(load_files):

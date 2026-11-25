@@ -70,6 +70,17 @@ class ScanPlannerTest {
     }
 
     @Test
+    void oneSidedCopiesAreFrontsOnlyAndReady() {
+        Plan p = plan(List.of(done(1, load(5).labels(0, 2, 3).evidence(true, false).oneSided().result())));
+
+        assertThat(keys(p)).containsExactly("L1-S0", "L1-S2", "L1-S3");
+        assertThat(refs(p.copies().get(0).pages())).containsExactly("p1.0", "p1.1");
+        assertThat(refs(p.copies().get(2).pages())).containsExactly("p1.3", "p1.4");
+        assertThat(p.copies()).allSatisfy(c -> assertThat(c.leftOut()).isEmpty());
+        assertThat(p.verdict()).isEqualTo(ScanPlanner.VERDICT_READY);
+    }
+
+    @Test
     void labelWithNoValueStillSplitsAndIsFlagged() {
         Plan p = plan(List.of(done(1, load(4).labels(0).label(2, null)
                 .flag("LABEL_NO_VALUE", "REVIEW", 2).result())));

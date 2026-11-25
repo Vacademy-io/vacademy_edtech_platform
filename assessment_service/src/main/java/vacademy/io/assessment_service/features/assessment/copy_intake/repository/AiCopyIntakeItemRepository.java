@@ -24,6 +24,9 @@ public interface AiCopyIntakeItemRepository extends JpaRepository<AiCopyIntakeIt
         String getRoll();
 
         String getEvaluatedFileId();
+
+        /** The marks the AI check gave (the attempt's total), or null. */
+        Double getMarks();
     }
 
     /**
@@ -32,12 +35,21 @@ public interface AiCopyIntakeItemRepository extends JpaRepository<AiCopyIntakeIt
      * A check-only copy has no matched student, so it is named by the name read off it.
      */
     @Query("SELECT i.id AS itemId, i.fileName AS fileName, COALESCE(i.matchedName, i.extractedName) AS studentName,"
-            + " i.extractedRoll AS roll, a.evaluatedFileId AS evaluatedFileId"
+            + " i.extractedRoll AS roll, a.evaluatedFileId AS evaluatedFileId, a.totalMarks AS marks"
             + " FROM AiCopyIntakeItem i, StudentAttempt a WHERE i.batchId = :batchId AND i.status = :status"
             + " AND a.id = i.attemptId AND a.evaluatedFileId IS NOT NULL ORDER BY i.createdAt")
     List<CheckedCopyRow> findCheckedCopies(@Param("batchId") String batchId, @Param("status") String status);
 
     List<AiCopyIntakeItem> findByBatchIdOrderByCreatedAt(String batchId);
+
+    /**
+     * The test's full marks as its sections state them (null when none). Section
+     * totals are sent by the admin wizard and can be stale on old tests, so this is
+     * shown as "out of", never used to grade.
+     */
+    @Query(value = "SELECT SUM(s.total_marks) FROM public.section s"
+            + " WHERE s.assessment_id = :assessmentId AND s.status <> 'DELETED'", nativeQuery = true)
+    Double sumSectionTotals(@Param("assessmentId") String assessmentId);
 
     Optional<AiCopyIntakeItem> findFirstByProcessId(String processId);
 

@@ -1,5 +1,6 @@
 package vacademy.io.assessment_service.features.assessment.copy_intake.scan.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
@@ -23,6 +24,9 @@ import java.util.Map;
  */
 public final class ScanStationDtos {
 
+    /** Intake mode for copies written on one side only: one pass, no backs. */
+    public static final String ONE_SIDED = "ONE_SIDED";
+
     private ScanStationDtos() {
     }
 
@@ -36,8 +40,16 @@ public final class ScanStationDtos {
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public static class LoadRequest {
         private List<Pass> passes;
-        /** TWO_PASSES, ONE_FOLDER or DUPLEX. */
+        /**
+         * TWO_PASSES, ONE_FOLDER, DUPLEX or ONE_SIDED. ONE_SIDED: copies written on one side
+         * only, so the load is ONE pass (numbered 1) and every page is a sheet with no back.
+         */
         private String intakeMode;
+
+        @JsonIgnore
+        public boolean isOneSided() {
+            return ScanStationDtos.ONE_SIDED.equalsIgnoreCase(intakeMode == null ? "" : intakeMode.trim());
+        }
         /** IMAGE_CAPTURE_SUFFIX, NUMERIC_SUFFIX, MODIFIED_TIME or NAME. */
         private String orderSource;
         /** e.g. MTIME_DISAGREES. */
@@ -222,6 +234,8 @@ public final class ScanStationDtos {
         private int attempts;
         private String errorMessage;
         private List<PassDto> passes;
+        /** Copies written on one side only: one pass, every page is a front. */
+        private boolean oneSided;
         private ScanAnalysis.Layout layout;
         private List<PageDto> pages;
         private List<ScanAnalysis.Sheet> sheets;

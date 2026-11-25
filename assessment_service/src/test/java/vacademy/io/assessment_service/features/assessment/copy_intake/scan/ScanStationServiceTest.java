@@ -143,6 +143,14 @@ class ScanStationServiceTest {
         return ScanStationDtos.Pass.builder().passNo(no).files(files).build();
     }
 
+    private static <T> T readJson(String json, Class<T> type) {
+        try {
+            return ScanFixtures.MAPPER.readValue(json, type);
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        }
+    }
+
     private static HttpStatus status(Throwable e) {
         return ((VacademyException) e).getStatus();
     }
@@ -174,6 +182,36 @@ class ScanStationServiceTest {
                 .hasMessageStartingWith("COUNT_MISMATCH");
         assertThat(loadRows).isEmpty();
         verify(runner, never()).kickLoad(anyString());
+    }
+
+    @Test
+    void oneSidedLoadIsOnePassAndIsKicked() {
+        AiScanSession s = session(AiScanSession.OPEN);
+        ScanStationDtos.LoadRequest r = ScanStationDtos.LoadRequest.builder().intakeMode("ONE_SIDED")
+                .orderSource("NUMERIC_SUFFIX").passes(List.of(pass(1, 3))).build();
+        service.addLoad(s, r);
+        assertThat(loadRows).hasSize(1);
+        ScanStationDtos.LoadRequest stored = readJson(loadRows.values().iterator().next().getPassesJson(),
+                ScanStationDtos.LoadRequest.class);
+        assertThat(stored.isOneSided()).isTrue();
+        assertThat(loadRows.values().iterator().next().getPassesJson()).doesNotContain("one_sided");
+        verify(runner).kickLoad(anyString());
+    }
+
+    @Test
+    void oneSidedLoadWithTwoPassesOrAPass2Is422() {
+        AiScanSession s = session(AiScanSession.OPEN);
+        assertThatThrownBy(() -> service.addLoad(s, ScanStationDtos.LoadRequest.builder().intakeMode("ONE_SIDED")
+                .passes(List.of(pass(1, 2), pass(2, 2))).build()))
+                .satisfies(e -> assertThat(status(e)).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY))
+                .hasMessageStartingWith("BAD_LOAD");
+        assertThatThrownBy(() -> service.addLoad(s, ScanStationDtos.LoadRequest.builder().intakeMode("ONE_SIDED")
+                .passes(List.of(pass(2, 2))).build()))
+                .hasMessageStartingWith("BAD_LOAD");
+        assertThatThrownBy(() -> service.addLoad(s, ScanStationDtos.LoadRequest.builder().intakeMode("TWO_PASSES")
+                .passes(List.of(pass(1, 2))).build()))
+                .hasMessageStartingWith("BAD_LOAD");
+        assertThat(loadRows).isEmpty();
     }
 
     @Test

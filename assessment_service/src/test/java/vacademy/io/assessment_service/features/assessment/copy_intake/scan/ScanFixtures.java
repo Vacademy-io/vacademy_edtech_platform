@@ -121,6 +121,21 @@ final class ScanFixtures {
             return this;
         }
 
+        /** One-sided copies: drop the backs, as the analyser returns them (no pass 2, no pairing). */
+        Load oneSided() {
+            r.getPages().removeIf(p -> p.getPassNo() == 2);
+            for (ScanAnalysis.Sheet sh : r.getSheets()) {
+                sh.setBack(null);
+                sh.setPairScore(null);
+                sh.setPairRunnerUp(null);
+                sh.setBackBlankClass(null);
+            }
+            r.getLayout().setBacksOrder(null);
+            r.getLayout().setBacksRotation(null);
+            r.getLayout().setOrderMargin(null);
+            return this;
+        }
+
         Load suspect() {
             r.getLayout().setBlankRuleSuspect(true);
             return this;
