@@ -212,8 +212,28 @@ public class AuthService {
             return objectMapper.readValue(response.getBody(), UserDTO.class);
 
         } catch (Exception e) {
-            throw new VacademyException(e.getMessage());
+            throw new VacademyException(authErrorMessage(e));
         }
+    }
+
+    /**
+     * The reason auth-service gave, read from its error body ({@code {"ex": "..."}}), instead
+     * of the raw "510 Not Extended: {...}" text: the admin then sees e.g. "Username "x" is
+     * already taken. Please use a different username." Falls back to the exception's message.
+     */
+    static String authErrorMessage(Exception e) {
+        if (e instanceof org.springframework.web.client.HttpStatusCodeException http) {
+            try {
+                com.fasterxml.jackson.databind.JsonNode reason =
+                        new ObjectMapper().readTree(http.getResponseBodyAsString()).path("ex");
+                if (reason.isTextual() && !reason.asText().isBlank()) {
+                    return reason.asText();
+                }
+            } catch (Exception ignored) {
+                // Not a JSON error body: keep the exception's own message.
+            }
+        }
+        return e.getMessage();
     }
 
     public UserDTO createUserFromAuthServiceForLearnerEnrollment(UserDTO userDTO, String instituteId,
@@ -249,7 +269,7 @@ public class AuthService {
             return objectMapper.readValue(response.getBody(), UserDTO.class);
 
         } catch (Exception e) {
-            throw new VacademyException(e.getMessage());
+            throw new VacademyException(authErrorMessage(e));
         }
     }
 
