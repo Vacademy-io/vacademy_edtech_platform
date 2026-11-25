@@ -23,6 +23,7 @@ import {
     type PaperInfo,
 } from '@/routes/ai-center/-components/ExtractOptionsPanel';
 import type { SectionMode } from '@/routes/ai-center/-services/ai-center-service';
+import { cn } from '@/lib/utils';
 
 const ACCEPTED_FORMATS = '.pdf,.doc,.docx,.ppt,.pptx,.html';
 const ACCEPTED_EXTENSIONS = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'html'];
@@ -33,6 +34,7 @@ const GenerateAiQuestionPaperComponent = ({
     form,
     currentSectionIndex,
     sectionSplit = false,
+    embedded = false,
 }: {
     form?: UseFormReturn<SectionFormType>;
     currentSectionIndex?: number;
@@ -43,6 +45,11 @@ const GenerateAiQuestionPaperComponent = ({
      * never asked and always gets a single section.
      */
     sectionSplit?: boolean;
+    /**
+     * Shown inside a dialog that already has its own title and padding
+     * (Question Papers → Add question paper): drop the page header and gutters.
+     */
+    embedded?: boolean;
 }) => {
     const { t } = useTranslation([
         'aiCenterVsmartExtractGenerateQuestionPaper',
@@ -258,13 +265,17 @@ const GenerateAiQuestionPaperComponent = ({
                 : '';
 
     return (
-        <div className="flex w-full flex-col gap-8 px-4 pb-12 sm:px-8">
-            <header className="flex flex-col gap-1">
-                <h1 className="text-2xl font-semibold text-gray-900 sm:text-3xl">
-                    {t('header.title')}
-                </h1>
-                <p className="text-sm text-gray-500">{t('header.subtitle')}</p>
-            </header>
+        <div
+            className={cn('flex w-full flex-col', embedded ? 'gap-6' : 'gap-8 px-4 pb-12 sm:px-8')}
+        >
+            {!embedded && (
+                <header className="flex flex-col gap-1">
+                    <h1 className="text-2xl font-semibold text-gray-900 sm:text-3xl">
+                        {t('header.title')}
+                    </h1>
+                    <p className="text-sm text-gray-500">{t('header.subtitle')}</p>
+                </header>
+            )}
 
             {!fileChosen ? (
                 <div
