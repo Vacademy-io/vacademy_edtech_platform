@@ -35,7 +35,8 @@
         "usernameFromSettingPlaceholder": "يحدده إعداد المؤسسة",
         "usernameChecking": "جارٍ التحقق من التوفر…",
         "usernameAvailable": "اسم المستخدم متاح",
-        "usernameTaken": "مستخدم بالفعل. أدخل اسم مستخدم آخر."
+        "usernameTaken": "مستخدم بالفعل. أدخل اسم مستخدم آخر.",
+        "usernameExisting": "متعلم موجود في هذه المؤسسة — سيتم تسجيله هو"
     },
     "extra": {
         "sectionTitle": "تفاصيل إضافية",

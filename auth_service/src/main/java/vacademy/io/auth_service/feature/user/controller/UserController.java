@@ -221,9 +221,35 @@ public class UserController {
             @RequestBody UsernameAvailabilityRequest request,
             @RequestAttribute("user") CustomUserDetails customUserDetails) {
         userAccountAccessGuard.requireStaffOf(customUserDetails, instituteId);
-        boolean available = authService.isUsernameAvailableForNewLearner(
-                request.username(), request.email(), request.mobileNumber());
-        return ResponseEntity.ok(Map.of("available", available));
+        AuthService.UsernameCheck check = authService.checkUsernameForNewLearner(
+                request.username(), request.email(), request.mobileNumber(), instituteId);
+        return ResponseEntity.ok(Map.of("available", check.available(),
+                "existing_learner", check.existingLearner()));
+    }
+
+    /**
+     * Same answer for many rows, for admin-core's bulk-enrol preview (HMAC only). The answers
+     * come back in the order of the rows.
+     */
+    @PostMapping("/internal/usernames-availability")
+    public ResponseEntity<List<Map<String, Boolean>>> usernamesAvailability(
+            @RequestParam("instituteId") String instituteId,
+            @RequestBody List<UsernameAvailabilityRequest> requests) {
+        List<UserDTO> rows = new ArrayList<>();
+        for (UsernameAvailabilityRequest r : requests == null ? List.<UsernameAvailabilityRequest>of() : requests) {
+            UserDTO row = new UserDTO();
+            if (r != null) {
+                row.setUsername(r.username());
+                row.setEmail(r.email());
+                row.setMobileNumber(r.mobileNumber());
+            }
+            rows.add(row);
+        }
+        List<Map<String, Boolean>> answers = new ArrayList<>();
+        for (AuthService.UsernameCheck check : authService.checkUsernamesForNewLearners(rows, instituteId)) {
+            answers.add(Map.of("available", check.available(), "existing_learner", check.existingLearner()));
+        }
+        return ResponseEntity.ok(answers);
     }
 
     @GetMapping("/autosuggest-users")

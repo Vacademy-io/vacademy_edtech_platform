@@ -19,7 +19,11 @@ vi.mock('@/services/user-identifier-setting', () => ({
     useUserIdentifierSetting: () => ({ data: 'EMAIL' }),
 }));
 vi.mock('@/services/student-display-settings', () => ({
-    useLearnerUsernamePolicy: () => ({ strategy: undefined, applies: false, overridesTyped: false }),
+    useLearnerUsernamePolicy: () => ({
+        strategy: undefined,
+        applies: false,
+        overridesTyped: false,
+    }),
 }));
 vi.mock('@/services/custom-field-settings', () => ({
     getCustomFieldSettings: vi.fn(() => new Promise(() => undefined)),
@@ -56,7 +60,7 @@ describe('ManualUserEntry username availability', () => {
     });
 
     it('shows "taken" under the field when the admin leaves a username someone else has', async () => {
-        checkUsernameAvailability.mockResolvedValue(false);
+        checkUsernameAvailability.mockResolvedValue({ available: false, existingLearner: false });
         render(<ManualUserEntry onAdd={vi.fn()} />);
 
         const input = fillRow('new@yahoo.com', 'New Learner', 'Sahil');
@@ -71,16 +75,14 @@ describe('ManualUserEntry username availability', () => {
     });
 
     it('blocks Add with a toast and keeps the row when the username is taken', async () => {
-        checkUsernameAvailability.mockResolvedValue(false);
+        checkUsernameAvailability.mockResolvedValue({ available: false, existingLearner: false });
         const onAdd = vi.fn();
         render(<ManualUserEntry onAdd={onAdd} />);
 
         fillRow('new@yahoo.com', 'New Learner', 'Sahil');
         fireEvent.click(addButton());
 
-        await waitFor(() =>
-            expect(toastError).toHaveBeenCalledWith('toast.usernameTaken:Sahil')
-        );
+        await waitFor(() => expect(toastError).toHaveBeenCalledWith('toast.usernameTaken:Sahil'));
         expect(onAdd).not.toHaveBeenCalled();
         expect(
             (document.querySelector('input[name="learner_username_0"]') as HTMLInputElement).value
@@ -89,7 +91,7 @@ describe('ManualUserEntry username availability', () => {
     });
 
     it('adds the learner when the username is free', async () => {
-        checkUsernameAvailability.mockResolvedValue(true);
+        checkUsernameAvailability.mockResolvedValue({ available: true, existingLearner: false });
         const onAdd = vi.fn();
         render(<ManualUserEntry onAdd={onAdd} />);
 
@@ -101,6 +103,20 @@ describe('ManualUserEntry username availability', () => {
             email: 'new@yahoo.com',
             username: 'sahil.new',
         });
+        expect(toastError).not.toHaveBeenCalled();
+    });
+
+    it('allows a username of a learner already in this institute and says they will be enrolled', async () => {
+        checkUsernameAvailability.mockResolvedValue({ available: true, existingLearner: true });
+        const onAdd = vi.fn();
+        render(<ManualUserEntry onAdd={onAdd} />);
+
+        const input = fillRow('other@yahoo.com', 'Existing Learner', 'Sahil');
+        fireEvent.blur(input);
+        expect(await screen.findByText('core.usernameExisting')).toBeTruthy();
+
+        fireEvent.click(addButton());
+        await waitFor(() => expect(onAdd).toHaveBeenCalledTimes(1));
         expect(toastError).not.toHaveBeenCalled();
     });
 

@@ -21,7 +21,8 @@
         "previewFailed": "Failed to generate preview. Please try again.",
         "enrollmentComplete": "Enrollment complete! ✅ {{successful}} enrolled, ⏭ {{skipped}} skipped, ❌ {{failed}} failed.",
         "enrollmentFailed": "Enrollment failed. Please try again.",
-        "guardianLinkFailed": "Guardian link failed for {{name}}: {{message}}"
+        "guardianLinkFailed": "Guardian link failed for {{name}}: {{message}}",
+        "notEnrolled": "Not enrolled — {{details}}"
     },
     "errors": {
         "guardianLinkFallback": "Failed to link guardian.",

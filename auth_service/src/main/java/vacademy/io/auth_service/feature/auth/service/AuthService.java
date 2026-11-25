@@ -8,6 +8,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -300,10 +301,11 @@ public class AuthService {
                 registerRequest.setUsername(ensureUniqueUsername(
                         UsernameGenerator.generateUsername(registerRequest.getFullName())));
             } else if (fromStrategy == null) {
-                // The caller's username can still be taken: by another person whose email or
-                // phone disagrees (refused above), or, on phone-identifier institutes, by an
-                // account the username was never looked up for. Suffix it rather than fail
-                // the enrollment on the unique constraint.
+                // The caller's username can still be taken: by another person (refused above),
+                // or, on phone-identifier institutes, by an account the username was never
+                // looked up for. A name the admin typed is refused with a clear message; any
+                // other name gets a suffix rather than failing on the unique constraint.
+                refuseTakenTypedUsername(registerRequest, instituteId);
                 registerRequest.setUsername(ensureUniqueUsername(registerRequest.getUsername()));
             }
             if (!StringUtils.hasText(registerRequest.getPassword())) {
@@ -382,16 +384,61 @@ public class AuthService {
      * username and admissions resend the username of a learner the institute already has,
      * often with an email or phone edited in the form, and must keep landing on that learner.
      *
-     * <p>Any other account is matched only when nothing on record disagrees, as for public
-     * signup. An admin who typed a common first name as the username for a new learner, with
-     * that learner's own email and phone, used to be handed whichever account in any other
-     * institute already held that name, and the new learner's profile showed that person.
+     * <p>A username the admin typed (form or CSV) reaches any other account only when the email
+     * or phone entered proves it is the same person. Otherwise nothing is matched, and the
+     * new-account branch refuses the taken name ({@link #refuseTakenTypedUsername}). An admin who
+     * typed a common first name as the username for a new learner used to be handed whichever
+     * account in any other institute already held that name, and the new learner's profile
+     * showed that person.
+     *
+     * <p>A username the caller did not type (generated, or the email reused as the username)
+     * keeps the older rule: matched when nothing on record disagrees, suffixed otherwise.
      */
     private Optional<User> findAccountForAdminByUsername(UserDTO registerRequest, String normalizedEmail,
                                                          String instituteId) {
+        boolean typed = typedUsernameStands(registerRequest, instituteId);
         return userRepository.findByUsername(registerRequest.getUsername())
                 .filter(existing -> belongsToInstitute(existing, instituteId)
-                        || nothingOnRecordDisagrees(existing, registerRequest, normalizedEmail));
+                        || (typed
+                                ? provenSamePerson(existing, normalizedEmail, registerRequest.getMobileNumber())
+                                : nothingOnRecordDisagrees(existing, registerRequest, normalizedEmail)));
+    }
+
+    /**
+     * The admin typed this username and it will be the new account's username: the request
+     * says so (BulkAssignmentService sets usernameExplicit for a typed username, from the form
+     * or a CSV column) and the institute's username rule does not replace it.
+     */
+    private boolean typedUsernameStands(UserDTO registerRequest, String instituteId) {
+        return Boolean.TRUE.equals(registerRequest.getUsernameExplicit())
+                && StringUtils.hasText(registerRequest.getUsername())
+                && usernameFromInstituteStrategy(registerRequest, instituteId, false) == null;
+    }
+
+    /**
+     * New-account branch: a typed username that is already someone's is refused with a message
+     * the admin can act on, instead of enrolling the learner under a quietly changed name.
+     */
+    private void refuseTakenTypedUsername(UserDTO registerRequest, String instituteId) {
+        if (typedUsernameStands(registerRequest, instituteId)
+                && userRepository.findByUsername(registerRequest.getUsername()).isPresent()) {
+            throw new VacademyException(HttpStatus.CONFLICT, usernameTakenMessage(registerRequest.getUsername()));
+        }
+    }
+
+    public static String usernameTakenMessage(String username) {
+        return "Username \"" + username + "\" is already taken. Please use a different username.";
+    }
+
+    // Positive proof of the same person: both sides carry an email and it is the same, or no
+    // email on one side and both carry the same phone.
+    private static boolean provenSamePerson(User existing, String typedEmail, String typedMobile) {
+        boolean bothEmails = StringUtils.hasText(typedEmail) && StringUtils.hasText(existing.getEmail());
+        if (bothEmails) {
+            return existing.getEmail().trim().equalsIgnoreCase(typedEmail.trim());
+        }
+        String typedPhone = lastTenDigits(typedMobile);
+        return !typedPhone.isEmpty() && typedPhone.equals(lastTenDigits(existing.getMobileNumber()));
     }
 
     // Positive evidence of another person: both sides carry an email and they differ, or
@@ -415,31 +462,80 @@ public class AuthService {
                 && !UserRoleStatus.DELETED.name().equalsIgnoreCase(role.getStatus()));
     }
 
+    /** Answer of the add-learner username check. Says nothing about who holds the name. */
+    public record UsernameCheck(boolean available, boolean existingLearner) {
+    }
+
     /**
-     * Whether an admin adding a NEW learner may use this username. Free → yes. Held by the
-     * same person → yes: the e-mail or phone entered is the one on that account, so the add
-     * re-uses it. Held by anyone else → no, even when nothing on record contradicts: the admin
-     * is creating someone new, so a bare username hit is no proof it is the same learner.
-     * Answers only yes/no; nothing about the account holding the name.
+     * Whether an admin adding a learner may type this username. It follows the same lookup
+     * order as the add itself, so the form, the bulk preview and the add agree:
+     * <ol>
+     *   <li>On a phone-login institute a known phone decides the account; otherwise the typed
+     *       name must be free.</li>
+     *   <li>An email that already has an account decides it; the typed name is not used.</li>
+     *   <li>The name belongs to a learner of this institute → allowed, that learner is enrolled
+     *       ({@code existingLearner}).</li>
+     *   <li>The name belongs to the same person (email, or phone, matches) → allowed.</li>
+     *   <li>Anyone else holds it → not allowed.</li>
+     * </ol>
      */
-    public boolean isUsernameAvailableForNewLearner(String username, String email, String mobileNumber) {
+    public UsernameCheck checkUsernameForNewLearner(String username, String email, String mobileNumber,
+                                                    String instituteId) {
+        boolean phoneLogin = StringUtils.hasText(instituteId)
+                && "PHONE".equalsIgnoreCase(instituteSettingsService.getUserIdentifier(instituteId));
+        return checkUsernameForNewLearner(username, email, mobileNumber, instituteId, phoneLogin);
+    }
+
+    /** Many rows at once (bulk preview); the institute's login identifier is read once. */
+    public List<UsernameCheck> checkUsernamesForNewLearners(List<UserDTO> rows, String instituteId) {
+        boolean phoneLogin = StringUtils.hasText(instituteId)
+                && "PHONE".equalsIgnoreCase(instituteSettingsService.getUserIdentifier(instituteId));
+        List<UsernameCheck> answers = new java.util.ArrayList<>();
+        for (UserDTO row : rows) {
+            answers.add(row == null ? new UsernameCheck(true, false)
+                    : checkUsernameForNewLearner(row.getUsername(), row.getEmail(), row.getMobileNumber(),
+                            instituteId, phoneLogin));
+        }
+        return answers;
+    }
+
+    private UsernameCheck checkUsernameForNewLearner(String username, String email, String mobileNumber,
+                                                     String instituteId, boolean phoneLogin) {
         String wanted = TextSanitizer.cleanIdentifier(username);
         if (!StringUtils.hasText(wanted)) {
-            return true;
+            return new UsernameCheck(true, false);
+        }
+        String phone = mobileNumber == null ? "" : mobileNumber.replaceAll("[^0-9]", "");
+        UserDTO asTyped = new UserDTO();
+        asTyped.setUsername(wanted);
+        asTyped.setEmail(email);
+        asTyped.setMobileNumber(phone);
+        asTyped.setUsernameExplicit(true);
+        asTyped.setRoles(List.of(STUDENT_ROLE));
+        if (usernameFromInstituteStrategy(asTyped, instituteId, false) != null) {
+            // Settings → Login & Signup replaces typed names here: this one is never used.
+            return new UsernameCheck(true, false);
+        }
+        if (phoneLogin && StringUtils.hasText(phone)) {
+            boolean knownPhone = (StringUtils.hasText(instituteId)
+                    && userRepository.findLatestUserByMobileNumberAndInstitute(phone, instituteId).isPresent())
+                    || userRepository.findLatestUserByMobileNumber(phone).isPresent();
+            return new UsernameCheck(knownPhone || userRepository.findByUsername(wanted).isEmpty(), false);
+        }
+        String typedEmail = TextSanitizer.cleanIdentifier(email);
+        typedEmail = typedEmail != null ? typedEmail.toLowerCase() : null;
+        if (StringUtils.hasText(typedEmail)
+                && userRepository.findFirstByEmailOrderByCreatedAtDesc(typedEmail).isPresent()) {
+            return new UsernameCheck(true, false);
         }
         Optional<User> holder = userRepository.findByUsername(wanted);
         if (holder.isEmpty()) {
-            return true;
+            return new UsernameCheck(true, false);
         }
-        User existing = holder.get();
-        String typedEmail = TextSanitizer.cleanIdentifier(email);
-        boolean bothEmails = StringUtils.hasText(typedEmail) && StringUtils.hasText(existing.getEmail());
-        if (bothEmails) {
-            // An e-mail on both sides decides it, as in findSamePersonByUsername.
-            return existing.getEmail().trim().equalsIgnoreCase(typedEmail.trim());
+        if (belongsToInstitute(holder.get(), instituteId)) {
+            return new UsernameCheck(true, true);
         }
-        String typedPhone = lastTenDigits(mobileNumber);
-        return !typedPhone.isEmpty() && typedPhone.equals(lastTenDigits(existing.getMobileNumber()));
+        return new UsernameCheck(provenSamePerson(holder.get(), typedEmail, mobileNumber), false);
     }
 
     // Stored numbers mix "+91 98765 43210", "919876543210" and "9876543210" for one phone.
@@ -939,8 +1035,12 @@ public class AuthService {
             if (!StringUtils.hasText(registerRequest.getUsername())) {
                 registerRequest.setUsername(UsernameGenerator.generateUsername(registerRequest.getFullName()));
             }
-            // A typed username can belong to another person (refused above): suffix it
-            // rather than fail the enrollment on the unique constraint.
+            // A username can belong to another person (refused above). A name the admin typed is
+            // refused with a clear message (never on public signup, which keeps its suffix);
+            // any other name gets a suffix rather than failing on the unique constraint.
+            if (!selfSignup && fromStrategy == null) {
+                refuseTakenTypedUsername(registerRequest, instituteId);
+            }
             registerRequest.setUsername(ensureUniqueUsername(registerRequest.getUsername()));
             if (!StringUtils.hasText(registerRequest.getPassword())) {
                 registerRequest.setPassword(UsernameGenerator.generatePassword(8));

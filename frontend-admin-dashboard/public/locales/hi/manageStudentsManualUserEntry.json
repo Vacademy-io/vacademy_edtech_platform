@@ -35,7 +35,8 @@
         "usernameFromSettingPlaceholder": "संस्थान की सेटिंग से तय",
         "usernameChecking": "उपलब्धता जाँची जा रही है…",
         "usernameAvailable": "उपयोगकर्ता नाम उपलब्ध है",
-        "usernameTaken": "यह पहले से लिया जा चुका है। कोई दूसरा उपयोगकर्ता नाम डालें।"
+        "usernameTaken": "यह पहले से लिया जा चुका है। कोई दूसरा उपयोगकर्ता नाम डालें।",
+        "usernameExisting": "इस संस्थान का मौजूदा शिक्षार्थी — उन्हीं का नामांकन होगा"
     },
     "extra": {
         "sectionTitle": "अतिरिक्त विवरण",

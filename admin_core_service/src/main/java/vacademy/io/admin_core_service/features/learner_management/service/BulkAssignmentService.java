@@ -200,8 +200,22 @@ public class BulkAssignmentService {
                         .collect(Collectors.toList());
         String learndashBaseUrl = resolveLearnerPortalUrl(assignmentPackageSessionIds, request.getInstituteId());
 
+        // Typed usernames that cannot be used: the same name for two different people in this
+        // list, and (preview only) a name auth-service will refuse because someone outside this
+        // institute holds it. Those rows are not enrolled and show the reason; the rest go on.
+        Map<Integer, String> usernameProblems = findUsernameProblems(
+                request.getNewUsers(), request.getInstituteId(), dryRun);
+
         if (!CollectionUtils.isEmpty(request.getNewUsers()) && !dryRun) {
-            for (NewUserDTO newUser : request.getNewUsers()) {
+            List<NewUserDTO> newUsers = request.getNewUsers();
+            for (int i = 0; i < newUsers.size(); i++) {
+                NewUserDTO newUser = newUsers.get(i);
+                String usernameProblem = usernameProblems.get(i);
+                if (usernameProblem != null) {
+                    log.info("Not creating new user email={}: {}", newUser.getEmail(), usernameProblem);
+                    addNewUserFailure(newUserFailures, newUser, request.getAssignments(), usernameProblem);
+                    continue;
+                }
                 try {
                     String createdUserId = createNewUser(newUser, request.getInstituteId(), sendCredentials, learndashBaseUrl);
                     allUserIds.add(createdUserId);
@@ -210,15 +224,8 @@ public class BulkAssignmentService {
                 } catch (Exception e) {
                     log.error("Failed to create new user email={}: {}", newUser.getEmail(), e.getMessage());
                     // Record failure for each assignment this user would have been part of
-                    for (AssignmentItemDTO assignment : request.getAssignments()) {
-                        newUserFailures.add(BulkAssignResultItemDTO.builder()
-                                .userId(null)
-                                .userEmail(newUser.getEmail())
-                                .packageSessionId(assignment.getPackageSessionId())
-                                .status("FAILED").actionTaken("NONE")
-                                .message("User creation failed: " + e.getMessage())
-                                .build());
-                    }
+                    addNewUserFailure(newUserFailures, newUser, request.getAssignments(),
+                            "User creation failed: " + e.getMessage());
                 }
             }
         } else if (!CollectionUtils.isEmpty(request.getNewUsers()) && dryRun) {
@@ -228,6 +235,11 @@ public class BulkAssignmentService {
             // the same "dry-run-new-null" key.
             List<NewUserDTO> newUsers = request.getNewUsers();
             for (int i = 0; i < newUsers.size(); i++) {
+                String usernameProblem = usernameProblems.get(i);
+                if (usernameProblem != null) {
+                    addNewUserFailure(newUserFailures, newUsers.get(i), request.getAssignments(), usernameProblem);
+                    continue;
+                }
                 allUserIds.add(dryRunPlaceholderId(i, newUsers.get(i)));
             }
         }
@@ -638,6 +650,94 @@ public class BulkAssignmentService {
      * run. Uses the row index so phone-only rows (which may share an empty
      * email) do not collide on the same key.
      */
+    /** One FAILED row per assignment the new user would have been part of. */
+    private static void addNewUserFailure(List<BulkAssignResultItemDTO> failures, NewUserDTO newUser,
+                                          List<AssignmentItemDTO> assignments, String message) {
+        if (assignments == null) {
+            return;
+        }
+        for (AssignmentItemDTO assignment : assignments) {
+            failures.add(BulkAssignResultItemDTO.builder()
+                    .userId(null)
+                    .userEmail(StringUtils.hasText(newUser.getEmail()) ? newUser.getEmail() : newUser.getMobileNumber())
+                    .packageSessionId(assignment.getPackageSessionId())
+                    .status("FAILED").actionTaken("NONE")
+                    .message(message)
+                    .build());
+        }
+    }
+
+    /**
+     * Row index → why its typed username cannot be used. Only usernames the admin typed are
+     * checked (a blank one is generated, or the email is used, and cannot clash).
+     * <ul>
+     *   <li>The same name typed for two different people in this list (different email, or
+     *       different phone when there is no email): the later rows. Two rows of the same person
+     *       are fine — the add finds that person by email.</li>
+     *   <li>Preview only: the name auth-service would refuse because someone outside this
+     *       institute holds it, so the preview shows those rows as "will fail" before the admin
+     *       confirms. The real add gets the same refusal from auth-service itself. If the check
+     *       cannot be made, the rows go through and the add decides.</li>
+     * </ul>
+     */
+    Map<Integer, String> findUsernameProblems(List<NewUserDTO> newUsers, String instituteId, boolean dryRun) {
+        Map<Integer, String> problems = new HashMap<>();
+        if (CollectionUtils.isEmpty(newUsers)) {
+            return problems;
+        }
+        Map<String, NewUserDTO> firstWithName = new HashMap<>();
+        for (int i = 0; i < newUsers.size(); i++) {
+            NewUserDTO row = newUsers.get(i);
+            if (row == null || !StringUtils.hasText(row.getUsername())) {
+                continue;
+            }
+            String name = row.getUsername().replaceAll("\\s", "");
+            NewUserDTO first = firstWithName.putIfAbsent(name.toLowerCase(), row);
+            if (first != null && !sameContact(first, row)) {
+                problems.put(i, "Username \"" + name + "\" is used for more than one learner in this list. "
+                        + "Give each learner a different username.");
+            }
+        }
+        if (!dryRun) {
+            return problems;
+        }
+        List<Integer> indexes = new ArrayList<>();
+        List<Map<String, String>> rows = new ArrayList<>();
+        for (int i = 0; i < newUsers.size(); i++) {
+            NewUserDTO row = newUsers.get(i);
+            if (row == null || !StringUtils.hasText(row.getUsername()) || problems.containsKey(i)) {
+                continue;
+            }
+            Map<String, String> check = new HashMap<>();
+            check.put("username", row.getUsername().replaceAll("\\s", ""));
+            check.put("email", row.getEmail());
+            check.put("mobile_number", row.getMobileNumber());
+            indexes.add(i);
+            rows.add(check);
+        }
+        List<Boolean> available = authService.checkNewLearnerUsernames(instituteId, rows);
+        if (available == null) {
+            return problems;
+        }
+        for (int k = 0; k < indexes.size(); k++) {
+            if (!available.get(k)) {
+                problems.put(indexes.get(k), "Username \"" + rows.get(k).get("username")
+                        + "\" is already taken. Please use a different username.");
+            }
+        }
+        return problems;
+    }
+
+    // Same person on two rows: same email, or, when either row has no email, same phone.
+    private static boolean sameContact(NewUserDTO a, NewUserDTO b) {
+        if (StringUtils.hasText(a.getEmail()) && StringUtils.hasText(b.getEmail())) {
+            return a.getEmail().trim().equalsIgnoreCase(b.getEmail().trim());
+        }
+        String phoneA = a.getMobileNumber() == null ? "" : a.getMobileNumber().replaceAll("[^0-9]", "");
+        String phoneB = b.getMobileNumber() == null ? "" : b.getMobileNumber().replaceAll("[^0-9]", "");
+        return !phoneA.isEmpty() && phoneA.equals(phoneB);
+    }
+
     private static String dryRunPlaceholderId(int index, NewUserDTO newUser) {
         String suffix = newUser != null && StringUtils.hasText(newUser.getEmail())
                 ? newUser.getEmail()
