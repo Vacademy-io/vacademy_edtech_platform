@@ -126,3 +126,28 @@ describe('Question paper folders setting', () => {
         ).toEqual({ enabled: false });
     });
 });
+
+describe('learner request notifications', () => {
+    it('keeps the roles and channels the admin saved', () => {
+        const merged = mergeWithDefaults({
+            learnerRequestNotifications: {
+                version: 1,
+                roles: { ADMIN: false, TEACHER: true },
+                channels: { inApp: true, email: false },
+            },
+        });
+        expect(merged.learnerRequestNotifications).toEqual({
+            version: 1,
+            roles: { ADMIN: false, TEACHER: true },
+            channels: { inApp: true, email: false },
+        });
+    });
+
+    it('gives an institute that never saved it both channels and the role defaults', () => {
+        expect(mergeWithDefaults({}).learnerRequestNotifications).toEqual({
+            version: 1,
+            roles: {},
+            channels: { inApp: true, email: true },
+        });
+    });
+});

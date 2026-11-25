@@ -27,6 +27,23 @@ export interface ResultNotificationSettings {
 }
 
 /**
+ * Role-wise control over who on the staff hears about a learner's request from inside a test
+ * (a problem with a question, more time, another attempt), and on which channels. `roles` maps
+ * a role key (ADMIN / TEACHER / a custom role name) to on/off; a role absent from the map falls
+ * back to the default: ADMIN on, every other role off. Learner roles are never notified.
+ * `channels.inApp` = dashboard bell + app push; `channels.email` = an email. Both default on.
+ */
+export interface LearnerRequestNotificationSettings {
+    version: number;
+    roles: Record<string, boolean>;
+    channels: { inApp: boolean; email: boolean };
+}
+
+/** Default: only ADMIN hears about learner requests. */
+export const defaultReceivesLearnerRequestNotification = (roleKey: string): boolean =>
+    (roleKey || '').toUpperCase() === 'ADMIN';
+
+/**
  * Calculator offered inside the live test.
  * - `basic`     — four-function keypad (arithmetic only).
  * - `scientific` — JEE/NEET-style: trig and inverse trig, log/ln, powers and
@@ -173,6 +190,7 @@ export interface AssessmentSettingsData {
     questionPaperFolders?: AssessmentFolderSettings;
     reportBranding: ReportBrandingSettings;
     resultNotifications: ResultNotificationSettings;
+    learnerRequestNotifications?: LearnerRequestNotificationSettings;
     examExperience: ExamExperienceSettings;
     aiCopyCheck?: AiCopyCheckSettings;
     evalezy?: EvalezySettings;
@@ -253,6 +271,8 @@ export const DEFAULT_ASSESSMENT_SETTINGS: AssessmentSettingsData = {
     reportBranding: { ...DEFAULT_REPORT_BRANDING },
     // Empty map => backend applies per-role defaults (STUDENT on, everything else off).
     resultNotifications: { version: 1, roles: {} },
+    // Empty map => backend default (ADMIN on); both channels on.
+    learnerRequestNotifications: { version: 1, roles: {}, channels: { inApp: true, email: true } },
     examExperience: {
         ...DEFAULT_EXAM_EXPERIENCE,
         calculator: { ...DEFAULT_EXAM_EXPERIENCE.calculator },
