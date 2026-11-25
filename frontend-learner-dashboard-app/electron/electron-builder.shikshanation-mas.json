@@ -69,10 +69,10 @@
     "entitlementsLoginHelper": "entitlements.mas.loginhelper.plist"
   },
   "extraMetadata": {
-    "version": "1.0.2",
+    "version": "1.0.3",
     "electronFlavorAppId": "io.shikshanationapp.com"
   },
-  "buildVersion": "7",
+  "buildVersion": "8",
   "mac": {
     "entitlements": "entitlements.mac.plist",
     "entitlementsInherit": "entitlements.mac.plist",
