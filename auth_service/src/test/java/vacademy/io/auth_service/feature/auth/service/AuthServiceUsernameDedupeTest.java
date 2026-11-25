@@ -184,6 +184,75 @@ class AuthServiceUsernameDedupeTest {
         assertEquals("asha", user.getUsername());
     }
 
+    // ---- the institute's own learner (re-enroll, CSV by username, admissions) ----
+
+    private static vacademy.io.common.auth.entity.UserRole roleIn(String instituteId, String status) {
+        vacademy.io.common.auth.entity.UserRole role = new vacademy.io.common.auth.entity.UserRole();
+        role.setInstituteId(instituteId);
+        role.setStatus(status);
+        return role;
+    }
+
+    @Test
+    void adminReEnrollOfOwnLearnerWithEditedEmailStillMatches() {
+        when(userRoleRepository.findByUser(existing)).thenReturn(List.of(roleIn(INSTITUTE_ID, "ACTIVE")));
+
+        User user = authService.createUserForLearnerEnrollment(
+                request("john.edited@yahoo.com", "john", "9000000000"), INSTITUTE_ID, false, null);
+
+        assertSame(existing, user);
+        assertEquals("john@gmail.com", user.getEmail());
+    }
+
+    @Test
+    void createUserForOwnLearnerWithEditedEmailStillMatches() {
+        when(userRoleRepository.findByUser(existing)).thenReturn(List.of(roleIn(INSTITUTE_ID, "ACTIVE")));
+
+        User user = authService.createUser(request("john.edited@yahoo.com", "john", null), INSTITUTE_ID, false);
+
+        assertSame(existing, user);
+    }
+
+    @Test
+    void ownLearnerWithDisabledRoleStillMatches() {
+        when(userRoleRepository.findByUser(existing)).thenReturn(List.of(roleIn(INSTITUTE_ID, "DISABLED")));
+
+        User user = authService.createUser(request("john.edited@yahoo.com", "john", null), INSTITUTE_ID, false);
+
+        assertSame(existing, user);
+    }
+
+    @Test
+    void accountWhoseRoleHereWasDeletedIsNotTakenOver() {
+        when(userRoleRepository.findByUser(existing)).thenReturn(List.of(roleIn(INSTITUTE_ID, "DELETED")));
+
+        User user = authService.createUser(request("john.new@yahoo.com", "john", null), INSTITUTE_ID, false);
+
+        assertNotSame(existing, user);
+        assertTrue(user.getUsername().startsWith("john_"), user.getUsername());
+    }
+
+    @Test
+    void learnerOfAnotherInstituteIsNotTakenOver() {
+        when(userRoleRepository.findByUser(existing)).thenReturn(List.of(roleIn("other-institute", "ACTIVE")));
+
+        User user = authService.createUserForLearnerEnrollment(
+                request("john.new@yahoo.com", "john", null), INSTITUTE_ID, false, null);
+
+        assertNotSame(existing, user);
+        assertTrue(user.getUsername().startsWith("john_"), user.getUsername());
+    }
+
+    @Test
+    void selfSignupStaysStrictEvenForTheInstitutesOwnLearner() {
+        when(userRoleRepository.findByUser(existing)).thenReturn(List.of(roleIn(INSTITUTE_ID, "ACTIVE")));
+
+        User user = authService.createUserForLearnerSelfSignup(
+                request("john@yahoo.com", "john", null), INSTITUTE_ID, false);
+
+        assertNotSame(existing, user);
+    }
+
     @Test
     void createUserWithAnotherPersonsUsernameCreatesNewUserWithSuffix() {
         User user = authService.createUser(request("john@yahoo.com", "john", null), INSTITUTE_ID, false);

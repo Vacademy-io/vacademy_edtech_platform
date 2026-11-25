@@ -278,7 +278,7 @@ public class AuthService {
         }
 
         if (!usePhoneAsIdentifier && optionalUser.isEmpty() && StringUtils.hasText(registerRequest.getUsername())) {
-            optionalUser = findSamePersonByUsername(registerRequest, normalizedEmail);
+            optionalUser = findAccountForAdminByUsername(registerRequest, normalizedEmail, instituteId);
         }
 
         boolean isAlreadyPresent = optionalUser.isPresent();
@@ -366,23 +366,53 @@ public class AuthService {
      * both sides carry an email and they differ, or both carry a phone and they differ —
      * so an account that has no email yet still matches as before.
      *
-     * <p>Admin adds go through this too. An admin who types a common first name as the
-     * username for a new learner, with that learner's own email and phone, used to be handed
-     * whichever account in any institute already had that username, and the learner's
-     * profile showed the other person. Re-enrolling a known learner by username alone, or
-     * with their own email or phone, still matches.
+     * <p>Used as is by public learner signup. Admin and internal adds use
+     * {@link #findAccountForAdminByUsername}.
      */
     private Optional<User> findSamePersonByUsername(UserDTO registerRequest, String normalizedEmail) {
-        String mobile = registerRequest.getMobileNumber();
         return userRepository.findByUsername(registerRequest.getUsername())
-                .filter(existing -> !(StringUtils.hasText(normalizedEmail)
-                        && StringUtils.hasText(existing.getEmail())
-                        && !existing.getEmail().trim().equalsIgnoreCase(normalizedEmail)))
-                .filter(existing -> {
-                    String wanted = lastTenDigits(mobile);
-                    String onRecord = lastTenDigits(existing.getMobileNumber());
-                    return wanted.isEmpty() || onRecord.isEmpty() || wanted.equals(onRecord);
-                });
+                .filter(existing -> nothingOnRecordDisagrees(existing, registerRequest, normalizedEmail));
+    }
+
+    /**
+     * Username lookup for admin and internal adds.
+     *
+     * <p>An account that already belongs to this institute (a role here that is not DELETED)
+     * is the institute's own learner: the username hit is taken as before. Re-enroll, CSV by
+     * username and admissions resend the username of a learner the institute already has,
+     * often with an email or phone edited in the form, and must keep landing on that learner.
+     *
+     * <p>Any other account is matched only when nothing on record disagrees, as for public
+     * signup. An admin who typed a common first name as the username for a new learner, with
+     * that learner's own email and phone, used to be handed whichever account in any other
+     * institute already held that name, and the new learner's profile showed that person.
+     */
+    private Optional<User> findAccountForAdminByUsername(UserDTO registerRequest, String normalizedEmail,
+                                                         String instituteId) {
+        return userRepository.findByUsername(registerRequest.getUsername())
+                .filter(existing -> belongsToInstitute(existing, instituteId)
+                        || nothingOnRecordDisagrees(existing, registerRequest, normalizedEmail));
+    }
+
+    // Positive evidence of another person: both sides carry an email and they differ, or
+    // both carry a phone and they differ. An account without either still matches.
+    private static boolean nothingOnRecordDisagrees(User existing, UserDTO registerRequest, String normalizedEmail) {
+        if (StringUtils.hasText(normalizedEmail) && StringUtils.hasText(existing.getEmail())
+                && !existing.getEmail().trim().equalsIgnoreCase(normalizedEmail)) {
+            return false;
+        }
+        String wanted = lastTenDigits(registerRequest.getMobileNumber());
+        String onRecord = lastTenDigits(existing.getMobileNumber());
+        return wanted.isEmpty() || onRecord.isEmpty() || wanted.equals(onRecord);
+    }
+
+    private boolean belongsToInstitute(User user, String instituteId) {
+        if (!StringUtils.hasText(instituteId)) {
+            return false;
+        }
+        List<UserRole> roles = userRoleRepository.findByUser(user);
+        return roles != null && roles.stream().anyMatch(role -> instituteId.equals(role.getInstituteId())
+                && !UserRoleStatus.DELETED.name().equalsIgnoreCase(role.getStatus()));
     }
 
     /**
@@ -818,7 +848,8 @@ public class AuthService {
      * learner's own email prefix, a generated name or whatever they typed — never a
      * reference to an account the caller is entitled to — so a username hit is only
      * accepted when nothing on record contradicts it, and a taken name gets a suffix.
-     * Admin and internal callers apply the same check (see {@link #findSamePersonByUsername}).
+     * Admin and internal callers use {@link #findAccountForAdminByUsername}, which also takes
+     * the institute's own learners by username.
      */
     @Transactional
     public User createUserForLearnerSelfSignup(UserDTO registerRequest, String instituteId, boolean sendWelcomeMail) {
@@ -887,7 +918,9 @@ public class AuthService {
         }
 
         if (!usePhoneAsIdentifier && optionalUser.isEmpty() && StringUtils.hasText(registerRequest.getUsername())) {
-            optionalUser = findSamePersonByUsername(registerRequest, normalizedEmail);
+            optionalUser = selfSignup
+                    ? findSamePersonByUsername(registerRequest, normalizedEmail)
+                    : findAccountForAdminByUsername(registerRequest, normalizedEmail, instituteId);
         }
 
         boolean isAlreadyPresent = optionalUser.isPresent();
