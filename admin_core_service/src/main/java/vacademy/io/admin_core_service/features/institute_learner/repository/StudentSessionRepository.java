@@ -272,6 +272,12 @@ public interface StudentSessionRepository extends CrudRepository<StudentSessionI
   Optional<StudentSessionInstituteGroupMapping> findTopByUserIdAndInstituteIdOrderByCreatedAtDesc(String userId,
                                                                                                   String instituteId);
 
+  /** Every enrollment row (any status) of one learner in one institute. */
+  @Query(value = "SELECT ssigm.id FROM student_session_institute_group_mapping ssigm "
+      + "WHERE ssigm.user_id = :userId AND ssigm.institute_id = :instituteId", nativeQuery = true)
+  List<String> findIdsByUserIdAndInstituteId(@Param("userId") String userId,
+                                             @Param("instituteId") String instituteId);
+
   @Query(value = """
             SELECT DISTINCT s.user_id
             FROM student_session_institute_group_mapping s

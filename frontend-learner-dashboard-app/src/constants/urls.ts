@@ -98,6 +98,8 @@ const ENROLL_API_BASE =
 export const ENROLL_USER_INVITE_PAYMENT_URL = `${BASE_URL}/admin-core-service/v1/learner/enroll`;
 export const ENROLL_DETAILS_RESPONSE = `${BASE_URL}/admin-core-service/learner-invitation-response/record`;
 export const STUDENT_DETAIL_EDIT = `${BASE_URL}/admin-core-service/learner/info/v1/edit`;
+/** The signed-in learner's own custom fields (School, Roll No…): GET to read, PUT to save. */
+export const LEARNER_PROFILE_CUSTOM_FIELDS = `${BASE_URL}/admin-core-service/learner/info/v1/custom-fields`;
 /** Per-enrollment detail: carries the learner's enrollment date for one batch. */
 export const LEARNER_BATCH_DETAIL = `${BASE_URL}/admin-core-service/learner/info/v1/batch-details`;
 // Learner self-service payment method (saved card + billing details)

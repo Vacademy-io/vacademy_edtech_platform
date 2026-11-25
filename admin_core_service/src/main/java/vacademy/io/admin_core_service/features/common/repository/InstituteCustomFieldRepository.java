@@ -119,4 +119,13 @@ public interface InstituteCustomFieldRepository extends JpaRepository<InstituteC
          * Check if a custom field is linked to an institute with a specific status
          */
         boolean existsByInstituteIdAndCustomFieldIdAndStatus(String instituteId, String customFieldId, String status);
+
+        /** Ids among the given custom fields that are actively mapped to the institute. */
+        @Query("SELECT DISTINCT icf.customFieldId FROM InstituteCustomField icf " +
+                        "WHERE icf.instituteId = :instituteId " +
+                        "AND icf.customFieldId IN :customFieldIds " +
+                        "AND icf.status = 'ACTIVE'")
+        List<String> findActiveCustomFieldIdsForInstitute(
+                        @Param("instituteId") String instituteId,
+                        @Param("customFieldIds") java.util.Collection<String> customFieldIds);
 }

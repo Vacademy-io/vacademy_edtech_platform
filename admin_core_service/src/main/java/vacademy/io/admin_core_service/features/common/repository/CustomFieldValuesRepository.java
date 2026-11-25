@@ -86,6 +86,11 @@ public interface CustomFieldValuesRepository extends JpaRepository<CustomFieldVa
             @Param("sourceType") String sourceType,
             @Param("sourceIds") List<String> sourceIds);
 
+    /** Values held on any of the given sources, e.g. every enrollment row of one learner. */
+    List<CustomFieldValues> findBySourceTypeInAndSourceIdIn(
+            java.util.Collection<String> sourceTypes,
+            java.util.Collection<String> sourceIds);
+
     /**
      * Find custom field values by phone number value
      * Returns all records where value matches the phone number (for phone lookup)
