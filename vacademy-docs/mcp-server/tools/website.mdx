@@ -151,10 +151,10 @@ tag_name is the site's name from `list`; when the institute has one site it may 
 
 **Website: set up course data** · Makes changes · Adds to live records — what it adds is visible straight away. · Turned on separately (opt-in)
 
-Let the connected AI app add the course data a website design needs: create folder libraries and folders (new folders start hidden), append tags to courses (existing tags are kept), create product pages as DRAFT and add catalogue courses to a store page. It shows each change first and never deletes, renames or hides anything; activating a product page and payment settings stay with you. These are live records, not drafts: tags added to live courses change the site's filters at once, and courses added to an active store page are on sale at once. Uses no AI credits.
+Let the connected AI app add the course data a website design needs: create folder libraries and folders (new folders start hidden), append tags to courses (existing tags are kept), create product pages as DRAFT, add catalogue courses to a store page and put courses into a folder (onto the folder's product page, or a new DRAFT one hung in it). It shows each change first and never deletes, renames or hides anything; activating a product page and payment settings stay with you. These are live records, not drafts: tags added to live courses change the site's filters at once, and courses added to an active store page or an active folder page are on sale at once. Uses no AI credits.
 
 <Note>
-**What keeps it safe:** additive only; never deletes or renames existing records; new folder nodes start HIDDEN; tags are appended; product pages are created DRAFT. Every action is a dry run first: applying needs the dry run's plan_token (10 minutes, refused when the data changed); a shown folder changes only while no live site uses its library; the store sync never switches a course off; activating a product page and invite payment vendors stay admin clicks
+**What keeps it safe:** additive only; never deletes or renames existing records; new folder nodes start HIDDEN; tags are appended; product pages are created DRAFT. Every action is a dry run first: applying needs the dry run's plan_token (10 minutes, refused when the data changed); a shown folder changes only while no live site uses its library (a site counts as live once it has a published version); the store sync never switches a course off; add_to_folder / create_folder_page only add courses to the folder's shown product page (or hang a new DRAFT page in it; an ACTIVE page hung in a live library's folder starts HIDDEN), leave out a course on another gateway or currency, and refuse a course not approved yet for an ACTIVE page; activating a product page and invite payment vendors stay admin clicks
 </Note>
 
 | Action | What it does |
@@ -164,11 +164,13 @@ Let the connected AI app add the course data a website design needs: create fold
 | `add_course_tags` | appends tags (lower-case, [a-z0-9-], e.g. 'format-ebook', 'for-students'); existing tags are kept. Returns before/after per course. On a live course the new tags change the site's filters at once. |
 | `create_product_page` | a DRAFT product page selling each course through its DEFAULT invite (or invite_id), its payment option and cheapest active plan. 'path' = one batch per step (pass package_session_id when a course has several); 'store' = every sellable batch. It is listed nowhere until a site binds it and the admin activates it, but its link already opens for anyone who has the code — do not share it before then. |
 | `sync_store` | adds the catalogue courses the product page does not sell yet (never switches one off) and returns why any were skipped. On an ACTIVE page the added courses are on sale at once. |
+| `add_to_folder` | put courses (e.g. a new eBook) into a folder. A folder sells through the product page hung in it, so the courses are added on top of that page (its other courses untouched); a folder with no page gets a new DRAFT page (named after the folder path, or page_name) hung in it, shown once the admin activates it. folder_path is the folder's titles, from the top or only the last few (['Weekly', '2026', 'November']); an ambiguous path returns the matches to choose from. A folder with several pages needs product_page_code. A course not approved yet is refused for an ACTIVE page. |
+| `create_folder_page` | a new DRAFT product page hung in the folder (even when it already holds one), with the courses in items if any — or an existing page (product_page_code) hung in it. Name the page like the pages next to it: a dry run lists sibling_page_names (e.g. 'Weekly Current Affairs – October 2026'). |
 
 <Accordion title="Parameters">
 
 <ParamField path="action" type="string" required>
-  The action to run: `create_folder_library`, `upsert_folder_nodes`, `add_course_tags`, `create_product_page`, `sync_store`.
+  The action to run: `create_folder_library`, `upsert_folder_nodes`, `add_course_tags`, `create_product_page`, `sync_store`, `add_to_folder`, `create_folder_page`.
 </ParamField>
 <ParamField path="dry_run" type="boolean">
   Default true: report the change without making it. false = apply (needs plan_token).
@@ -183,7 +185,16 @@ Let the connected AI app add the course data a website design needs: create fold
   create_folder_library: optional description.
 </ParamField>
 <ParamField path="library_id" type="string">
-  upsert_folder_nodes: the library (website(data_inventory) folder_libraries).
+  upsert_folder_nodes / add_to_folder: the library (website(data_inventory) folder_libraries).
+</ParamField>
+<ParamField path="folder_id" type="string">
+  add_to_folder: the folder (website(action='context', library_id=…)).
+</ParamField>
+<ParamField path="folder_path" type="string[]">
+  add_to_folder: the folder's titles from the top, or just the last few, e.g. ['Weekly', '2026', 'November'] (a 'A › B › C' string works too). Instead of folder_id.
+</ParamField>
+<ParamField path="page_name" type="string">
+  add_to_folder: name of the new page when the folder has none (default: the folder path). create_folder_page: the new page's name.
 </ParamField>
 <ParamField path="nodes" type="object[]">
   upsert_folder_nodes: the folders.
@@ -192,13 +203,13 @@ Let the connected AI app add the course data a website design needs: create fold
   add_course_tags: tags to append per course.
 </ParamField>
 <ParamField path="items" type="object[]">
-  create_product_page: the courses, in display order.
+  create_product_page: the courses, in display order. add_to_folder / create_folder_page: the courses to put in the folder.
 </ParamField>
 <ParamField path="role" type="string">
   create_product_page: default 'path'. One of: `path`, `store`.
 </ParamField>
 <ParamField path="product_page_code" type="string">
-  sync_store: the product page (website(data_inventory) product_pages code).
+  sync_store: the product page (website(data_inventory) product_pages code). add_to_folder: the page the courses go on when the folder holds several, or a page to hang in the folder.
 </ParamField>
 
 </Accordion>
@@ -212,7 +223,126 @@ Set up the catalogue DATA a site design needs — ADDITIVE ONLY: never deletes, 
 - add_course_tags (assignments[≤50] of {course_id, add[]}): appends tags (lower-case, [a-z0-9-], e.g. 'format-ebook', 'for-students'); existing tags are kept. Returns before/after per course. On a live course the new tags change the site's filters at once.
 - create_product_page (name, items[{course_id, invite_id?, package_session_id?}], role='path'|'store'): a DRAFT product page selling each course through its DEFAULT invite (or invite_id), its payment option and cheapest active plan. 'path' = one batch per step (pass package_session_id when a course has several); 'store' = every sellable batch. It is listed nowhere until a site binds it and the admin activates it, but its link already opens for anyone who has the code — do not share it before then.
 - sync_store (product_page_code): adds the catalogue courses the product page does not sell yet (never switches one off) and returns why any were skipped. On an ACTIVE page the added courses are on sale at once.
+- add_to_folder (library_id, folder_id | folder_path, items[{course_id, invite_id?, package_session_id?}], product_page_code?, page_name?): put courses (e.g. a new eBook) into a folder. A folder sells through the product page hung in it, so the courses are added on top of that page (its other courses untouched); a folder with no page gets a new DRAFT page (named after the folder path, or page_name) hung in it, shown once the admin activates it. folder_path is the folder's titles, from the top or only the last few (['Weekly', '2026', 'November']); an ambiguous path returns the matches to choose from. A folder with several pages needs product_page_code. A course not approved yet is refused for an ACTIVE page.
+- create_folder_page (library_id, folder_id | folder_path, page_name | product_page_code, items?): a new DRAFT product page hung in the folder (even when it already holds one), with the courses in items if any — or an existing page (product_page_code) hung in it. Name the page like the pages next to it: a dry run lists sibling_page_names (e.g. 'Weekly Current Affairs – October 2026').
+To create a folder under an exact parent, rename, move, hide or delete folders use catalog_folder_edit (when enabled): folder titles repeat across a library (2026, November), so upsert_folder_nodes refuses a key that names more than one folder.
 Never send access tokens or other credentials.
+```
+
+</Accordion>
+
+## `catalog_folder_edit`
+
+**Website: change folders** · Makes changes · Changes live data — the change applies straight away. · Turned on separately (opt-in)
+
+Let the connected AI app create folders under an exact parent and rename, show or hide, move and delete the folders of your folder libraries, like Manage Pages → Folders. Each change is shown to you first and made only after you say yes. These are live: a library a published site uses changes on the site at once. Deleting a folder removes it and everything in it; the product pages and courses in it are kept. Uses no AI credits.
+
+<Note>
+**What keeps it safe:** LIVE, opt-in, two-step: every action is a dry run the admin is shown, applied only with its plan_token (10 minutes, refused when the folders changed since); folders only — a delete removes the folder and the items in it, never a product page or a course, and returns what it removed; a sibling with the same title, a move into itself and the nesting limit are refused before any write
+</Note>
+
+| Action | What it does |
+| :--- | :--- |
+| `create_folder` | a folder under that exact parent, shown unless hidden=true; slug sets its link key. A sibling with the same title is refused. To put a product page or courses in it use catalog_data_edit(create_folder_page / add_to_folder). |
+| `update_folder` | only what differs is sent; visible=false hides the folder and everything in it, true shows it. |
+| `move_folder` | position is 1-based among the destination's items (default: last). |
+| `delete_folder` | deletes the folder and EVERYTHING under it (sub-folders and the product-page items). The product pages themselves and their courses are kept — they only leave the folder. Show the admin the plan's contents first; the result lists what was removed. |
+
+<Accordion title="Parameters">
+
+<ParamField path="action" type="string" required>
+  The action to run: `create_folder`, `update_folder`, `move_folder`, `delete_folder`.
+</ParamField>
+<ParamField path="dry_run" type="boolean">
+  Default true: report the change without making it. false = apply (needs plan_token).
+</ParamField>
+<ParamField path="plan_token" type="string">
+  dry_run=false: the plan_token the dry run of these same arguments returned. Not a credential.
+</ParamField>
+<ParamField path="library_id" type="string">
+  The library (website(data_inventory) folder_libraries).
+</ParamField>
+<ParamField path="folder_id" type="string">
+  update / move / delete: the folder.
+</ParamField>
+<ParamField path="folder_path" type="string[]">
+  update / move / delete: the folder's titles (instead of folder_id).
+</ParamField>
+<ParamField path="parent_id" type="string">
+  create_folder: the parent folder.
+</ParamField>
+<ParamField path="parent_path" type="string[]">
+  create_folder: the parent's titles (instead of parent_id).
+</ParamField>
+<ParamField path="top_level" type="boolean">
+  create_folder: at the top of the library.
+</ParamField>
+<ParamField path="hidden" type="boolean">
+  create_folder: create it HIDDEN (default: shown).
+</ParamField>
+<ParamField path="slug" type="string">
+  create_folder: its link key ([a-z0-9-], unique in the library); default none (made from the title).
+</ParamField>
+<ParamField path="visible" type="boolean">
+  update_folder: show (true) or hide (false) the folder.
+</ParamField>
+<ParamField path="to_parent_id" type="string">
+  move_folder: the destination folder.
+</ParamField>
+<ParamField path="to_parent_path" type="string[]">
+  move_folder: the destination's titles.
+</ParamField>
+<ParamField path="to_top_level" type="boolean">
+  move_folder: to the top of the library.
+</ParamField>
+<ParamField path="position" type="integer">
+  move_folder: 1-based position among the destination's items (default: last).
+</ParamField>
+<ParamField path="title" type="string">
+  —
+</ParamField>
+<ParamField path="subtitle" type="string">
+  —
+</ParamField>
+<ParamField path="description" type="string">
+  —
+</ParamField>
+<ParamField path="image_url" type="string">
+  —
+</ParamField>
+<ParamField path="tagline" type="string">
+  —
+</ParamField>
+<ParamField path="cta" type="string">
+  Button label.
+</ParamField>
+<ParamField path="link_url" type="string">
+  —
+</ParamField>
+<ParamField path="accent_color" type="string">
+  —
+</ParamField>
+<ParamField path="coming_soon" type="boolean">
+  —
+</ParamField>
+<ParamField path="course_tag" type="string">
+  —
+</ParamField>
+<ParamField path="audience_id" type="string">
+  —
+</ParamField>
+
+</Accordion>
+
+<Accordion title="What your AI app is told about this tool">
+
+```text
+Change the folders of a folder library (the folders a site's folder browser, stream tabs and mega menu show) like an admin in Manage Pages → Folders. LIVE: a library a published site uses changes on the site at once. Every action is a DRY RUN by default: show the admin the plan, then call again with the SAME arguments, dry_run=false and the plan_token it returned (10 minutes; refused when the folders changed since). Name the folder by folder_id (website(action='context', library_id=…) lists them) or folder_path: its titles from the top, or only the last few, e.g. ['Monthly', '2026'] or 'Current Affairs › Monthly'. An ambiguous path returns the matches to choose from.
+- create_folder (library_id, parent_id | parent_path | top_level=true, title, other fields?, slug?, hidden?): a folder under that exact parent, shown unless hidden=true; slug sets its link key. A sibling with the same title is refused. To put a product page or courses in it use catalog_data_edit(create_folder_page / add_to_folder).
+- update_folder (library_id, folder, fields to change, visible?): only what differs is sent; visible=false hides the folder and everything in it, true shows it.
+- move_folder (library_id, folder, to_parent_id | to_parent_path | to_top_level=true, position?): position is 1-based among the destination's items (default: last).
+- delete_folder (library_id, folder): deletes the folder and EVERYTHING under it (sub-folders and the product-page items). The product pages themselves and their courses are kept — they only leave the folder. Show the admin the plan's contents first; the result lists what was removed.
+Folder fields: title, subtitle, description, image_url (an institute asset: website(list_media) / website_edit(import_image)), tagline, cta (button label), link_url ('/route' or https://…), accent_color (#hex), coming_soon, course_tag, audience_id (an ACTIVE lead campaign). Never send access tokens or other credentials.
 ```
 
 </Accordion>

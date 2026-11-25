@@ -25,6 +25,9 @@ MCP_ONLY = {
     "design_import": "imports a design the AI app read with its own design tools",
     # Applied with the plan token of a dry run the AI app shows the admin; no such step in the panel yet.
     "catalog_data_edit": "live additive data edits confirmed with a dry-run plan token",
+    # Live folder changes (rename / hide / move / delete) applied with a dry run's plan token; opt-in on MCP only,
+    # the dashboard's Folders screen does them for the panel's users.
+    "catalog_folder_edit": "live folder changes confirmed with a dry-run plan token",
     # Publishes live after the admin saw the diff; opt-in on MCP only.
     "website_publish": "publishes a site live with its own confirm token",
     # Outbound CRM writes. The other CRM writes use both doors: over MCP a preview + confirm token, in the

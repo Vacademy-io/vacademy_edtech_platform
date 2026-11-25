@@ -83,6 +83,10 @@ class Backend:
         self.pages = [{"id": "pp-1", "institute_id": INST, "name": "For BVY", "code": "forbvy", "status": "ACTIVE",
                        "mappings": [{"package_session_id": "ps-a", "status": "ACTIVE"}]}]
         self.course_updates = {}
+        #: Revision history per catalogue id (none published unless a test says so).
+        self.history = {}
+        #: add-courses: batches admin-core leaves out, and why (vendor_mismatch / currency_mismatch).
+        self.skip_reasons = {}
         self._ids = 0
 
     def tree(self, lib_id):
@@ -112,11 +116,12 @@ class Backend:
             return lib
         if path.endswith("/folder-library/node") and method == "POST":
             lib = params["libraryId"]
-            if any(n.get("slug") == body.get("slug") for n in self.nodes[lib]):
+            if body.get("slug") and any(n.get("slug") == body.get("slug") for n in self.nodes[lib]):
                 return {"error": "fetch_failed", "status": 400}
             self._ids += 1
             self.nodes[lib].append(_node(f"new-{self._ids}", body.get("title"), body.get("slug"),
                                          parent=body.get("parent_id"), status=body.get("status") or "ACTIVE",
+                                         node_type=body.get("node_type") or "FOLDER",
                                          **{k: v for k, v in body.items() if k not in
                                             ("title", "slug", "parent_id", "status", "node_type")}))
             return self.tree(lib)
@@ -129,6 +134,8 @@ class Backend:
             return {"error": "fetch_failed", "status": 400}
         if path.endswith("/course-catalogue/institute/get-all"):
             return copy.deepcopy(self.catalogues)
+        if path.endswith("/course-catalogue/revision/history"):
+            return copy.deepcopy(self.history.get(params.get("catalogueId"), []))
         m = re.search(r"/open/v1/audience/campaign/([^/]+)/([^/]+)$", path)
         if m:
             c = self.campaigns.get(m.group(2))
@@ -140,11 +147,37 @@ class Backend:
             return "Course updated successfully"
         if path.endswith("/product-page/get-all"):
             return copy.deepcopy(self.pages)
+        if path.endswith("/product-page/list"):
+            rows = [{"id": p["id"], "name": p["name"], "code": p["code"], "status": p["status"],
+                     "mapping_count": len(p.get("mappings") or [])} for p in self.pages if p["status"] != "DELETED"]
+            return {"content": rows, "page": 0, "size": 100, "total_pages": 1, "total_elements": len(rows)}
+        m = re.search(r"/product-page/([^/]+)$", path)
+        if m and method == "GET":
+            page = next((p for p in self.pages if p["id"] == m.group(1)), None)
+            return copy.deepcopy(page) if page else {"error": "fetch_failed", "status": 404}
         if path.endswith("/product-page/create"):
             page = {"id": "pp-new", "institute_id": INST, "name": body["name"], "code": "abc123", "status": "DRAFT",
                     "mappings": body["mappings"]}
             self.pages.append(page)
             return page
+        m = re.search(r"/product-page/([^/]+)/add-courses$", path)
+        if m and method == "POST":
+            page = next((p for p in self.pages if p["id"] == m.group(1)), None)
+            if page is None:
+                return {"error": "fetch_failed", "status": 404}
+            sold = {m.get("package_session_id") for m in page["mappings"] if m.get("status", "ACTIVE") == "ACTIVE"}
+            added, skipped = [], []
+            for r in body["mappings"]:
+                ps = SESSION_OF_BRIDGE.get(r["ps_invite_payment_option_id"])
+                reason = "already_on_page" if ps in sold else self.skip_reasons.get(ps)
+                if reason:
+                    skipped.append({"package_session_id": ps, "reason": reason})
+                else:
+                    added.append({"package_session_id": ps, "status": "ACTIVE"})
+            if params.get("dryRun") != "true":
+                page["mappings"] = added + page["mappings"]
+            return {"id": page["id"], "added": len(added), "skipped": skipped,
+                    "added_package_session_ids": [a["package_session_id"] for a in added]}
         m = re.search(r"/product-page/([^/]+)/sync-catalogue$", path)
         if m:
             return {"id": m.group(1), "added": 1, "deactivated": 0, "added_package_session_ids": ["ps-b"],
@@ -197,6 +230,8 @@ SELLABLE = [
     _sell("ps-2hi", "c-2", "Rajaswala", bridge="b-4", invite="inv-3", plan="pl-3", level="Hindi"),
 ]
 
+SESSION_OF_BRIDGE = {r["bridge_id"]: r["package_session_id"] for r in SELLABLE}
+
 CATALOGUE_SELLABLE = [
     _sell("ps-a", "c-9", "Already sold", bridge="b-a", invite="inv-a"),
     _sell("ps-b", "c-1", "Gita Natyam", bridge="b-1", invite="inv-def"),
@@ -244,7 +279,8 @@ async def apply(args):
 
 
 def writes(be):
-    return [c for c in be.calls if c["method"] != "GET"]
+    """The calls that change something (an add-courses dryRun only answers)."""
+    return [c for c in be.calls if c["method"] != "GET" and c["params"].get("dryRun") != "true"]
 
 
 # ── registry / gating ────────────────────────────────────────────────────
@@ -293,12 +329,17 @@ def test_source_has_no_delete_rename_move_or_activate_call():
     allowed = {
         ("GET", "/admin-core-service/v1/folder-library/tree"),
         ("GET", "/admin-core-service/v1/product-page/get-all"),
+        ("GET", "/admin-core-service/v1/course-catalogue/revision/history"),
+        ("GET", "/admin-core-service/v1/product-page/list"),
+        ("GET", "/admin-core-service/v1/product-page/{page_id}"),
         ("POST", "/admin-core-service/v1/folder-library/library"),
         ("POST", "/admin-core-service/v1/folder-library/node"),
         ("PUT", "/admin-core-service/v1/folder-library/node"),
         ("PUT", "/admin-core-service/course/v1/update-course/{course_id}"),
         ("POST", "/admin-core-service/v1/product-page/create"),
         ("POST", "/admin-core-service/v1/product-page/{page['id']}/sync-catalogue"),
+        ("POST", "/admin-core-service/v1/product-page/{target['id']}/add-courses"),
+        ("POST", "/admin-core-service/v1/product-page/{page_id}/add-courses"),   # dryRun preview + the apply
     }
     assert set(calls) <= allowed, set(calls) - allowed
     for forbidden in ('"DELETE"', "/node/move", "/product-page/update", "/delete", "update-course-details",
@@ -319,6 +360,10 @@ async def test_every_applied_action_sends_only_additive_calls(backend):
     await apply({"action": "add_course_tags", "dry_run": False, "assignments": [{"course_id": "c-1", "add": ["format-video"]}]})
     await apply({"action": "create_product_page", "name": "Path", "dry_run": False, "items": [{"course_id": "c-1"}]})
     await apply({"action": "sync_store", "product_page_code": "forbvy", "dry_run": False})
+    await apply({"action": "add_to_folder", "library_id": "lib-1", "folder_path": ["Shastra"], "dry_run": False,
+                 "items": [{"course_id": "c-1"}]})
+    await apply({"action": "add_to_folder", "library_id": "lib-1", "folder_path": "Swasthya", "dry_run": False,
+                 "items": [{"course_id": "c-1"}]})
     sent = {(c["method"], re.sub(r"/(c-1|pp-1)(/|$)", r"/{id}\2", c["path"])) for c in writes(backend)}
     assert sent == {
         ("POST", "/admin-core-service/v1/folder-library/library"),
@@ -327,6 +372,7 @@ async def test_every_applied_action_sends_only_additive_calls(backend):
         ("PUT", "/admin-core-service/course/v1/update-course/{id}"),
         ("POST", "/admin-core-service/v1/product-page/create"),
         ("POST", "/admin-core-service/v1/product-page/{id}/sync-catalogue"),
+        ("POST", "/admin-core-service/v1/product-page/{id}/add-courses"),
     }, sent
     for call in writes(backend):
         assert call["method"] in ("POST", "PUT"), call
@@ -350,6 +396,8 @@ async def test_every_action_is_a_dry_run_by_default(backend):
         await run({"action": "add_course_tags", "assignments": [{"course_id": "c-1", "add": ["format-video"]}]}),
         await run({"action": "create_product_page", "name": "Path", "items": [{"course_id": "c-1"}]}),
         await run({"action": "sync_store", "product_page_code": "forbvy"}),
+        await run({"action": "add_to_folder", "library_id": "lib-1", "folder_path": ["Gita"],
+                   "items": [{"course_id": "c-1"}]}),
     ]
     assert all(o["dry_run"] is True and "Nothing was written" in o["next"] for o in outs), outs
     assert all(o["plan_token"].startswith("cdp1.") and "plan_token" in o["next"] for o in outs), outs
@@ -791,3 +839,227 @@ async def test_in_product_dispatch_refuses_mcp_only_tools(backend):
     not_mcp = ToolContext(db=_Db(), principal=principal(), keys=(), bearer_token="jwt")
     outside = json.loads(await execute_tool("catalog_data_edit", dict(args), not_mcp, gate))
     assert outside["error"] == "tool_not_available"
+
+
+# ── add_to_folder ────────────────────────────────────────────────────────
+@pytest.mark.asyncio
+async def test_add_to_folder_puts_courses_on_top_of_the_folders_page(backend):
+    plan = await run({"action": "add_to_folder", "library_id": "lib-1", "folder_path": "Shastra",
+                      "items": [{"course_id": "c-1"}]})
+    assert plan["folder"] == {"id": "n-1", "path": "Shastra"}
+    assert plan["product_page"]["code"] == "forbvy" and plan["product_page"]["in_folder"] is True
+    assert plan["attach_to_folder"] is False
+    assert [a["package_session_id"] for a in plan["add"]] == ["ps-1"] and plan["add"][0]["position"] == 1
+    assert any("ACTIVE" in w and "on sale" in w for w in plan["warnings"])
+    assert writes(backend) == []
+
+    out = await apply({"action": "add_to_folder", "library_id": "lib-1", "folder_path": "Shastra",
+                       "items": [{"course_id": "c-1"}]})
+    assert out["added"] == 1 and "attached_to_folder" not in out, out
+    (call,) = writes(backend)
+    assert call["path"] == "/admin-core-service/v1/product-page/pp-1/add-courses"
+    assert call["body"] == {"mappings": [{"ps_invite_payment_option_id": "b-1", "payment_plan_id": "pl-lo",
+                                          "preselected": False}], "position": "FIRST"}
+    # Once it is there, the same call has nothing to do (and offers no plan_token).
+    again = await run({"action": "add_to_folder", "library_id": "lib-1", "folder_path": "Shastra",
+                       "items": [{"course_id": "c-1"}]})
+    assert again["nothing_to_do"] is True and "plan_token" not in again
+
+
+@pytest.mark.asyncio
+async def test_add_to_folder_hangs_a_new_draft_page_in_an_empty_folder(backend):
+    out = await apply({"action": "add_to_folder", "library_id": "lib-1", "folder_path": ["Gita"],
+                       "items": [{"course_id": "c-2", "package_session_id": "ps-2hi"}]})
+    assert out["product_page"]["created"] is True and out["product_page"]["status"] == "DRAFT", out
+    assert out["attached_to_folder"] is True
+    create, node = writes(backend)
+    assert create["path"].endswith("/product-page/create")
+    assert create["body"]["name"] == "Shastra - Gita" and create["body"]["status"] == "DRAFT"
+    assert [m["ps_invite_payment_option_id"] for m in create["body"]["mappings"]] == ["b-4"]
+    assert node["path"].endswith("/folder-library/node") and node["method"] == "POST"
+    assert node["body"] == {"node_type": "PRODUCT_PAGE", "product_page_id": "pp-new", "parent_id": "n-2",
+                            "status": "ACTIVE"}
+    hung = next(n for n in backend.nodes["lib-1"] if n.get("product_page_id") == "pp-new")
+    assert hung["parent_id"] == "n-2" and hung["node_type"] == "PRODUCT_PAGE"
+
+
+@pytest.mark.asyncio
+async def test_add_to_folder_refuses_an_unapproved_course_for_a_live_page(backend):
+    COURSES["c-1"]["status"] = "DRAFT"
+    out = await run({"action": "add_to_folder", "library_id": "lib-1", "folder_path": "Shastra",
+                     "items": [{"course_id": "c-1"}]})
+    assert out["error"] == "invalid_items" and "approved" in out["errors"][0]["message"]
+    # A new DRAFT page is not on sale, so an unapproved course may go there.
+    ok = await run({"action": "add_to_folder", "library_id": "lib-1", "folder_path": "Gita",
+                    "items": [{"course_id": "c-1"}]})
+    assert ok["dry_run"] is True and ok["product_page"] == {"create": {"name": "Shastra - Gita", "status": "DRAFT"}}
+    assert writes(backend) == []
+
+
+@pytest.mark.asyncio
+async def test_add_to_folder_finds_the_folder_or_says_what_exists(backend):
+    by_id = await run({"action": "add_to_folder", "library_id": "lib-1", "folder_id": "n-2",
+                       "items": [{"course_id": "c-1"}]})
+    assert by_id["folder"]["path"] == "Shastra › Gita"
+    by_slug = await run({"action": "add_to_folder", "library_id": "lib-1", "folder_path": "shastra › gita",
+                         "items": [{"course_id": "c-1"}]})
+    assert by_slug["folder"]["id"] == "n-2"
+    missing = await run({"action": "add_to_folder", "library_id": "lib-1", "items": [{"course_id": "c-1"}]})
+    assert missing["error"] == "missing_argument" and "Shastra" in missing["top_level"]
+    unknown = await run({"action": "add_to_folder", "library_id": "lib-1", "folder_path": ["Nope"],
+                         "items": [{"course_id": "c-1"}]})
+    assert unknown["error"] == "unknown_folder"
+    leaf = await run({"action": "add_to_folder", "library_id": "lib-1", "folder_id": "n-4",
+                      "items": [{"course_id": "c-1"}]})
+    assert leaf["error"] == "unknown_folder", "a product-page item is not a folder"
+    backend.nodes["lib-1"].append(_node("n-5", "Gita", None, parent="n-3"))
+    twice = await run({"action": "add_to_folder", "library_id": "lib-1", "folder_path": ["Gita"],
+                       "items": [{"course_id": "c-1"}]})
+    assert twice["error"] == "ambiguous_folder"
+    assert {m["path"] for m in twice["matches"]} == {"Shastra › Gita", "Swasthya › Gita"}
+    assert writes(backend) == []
+
+
+@pytest.mark.asyncio
+async def test_add_to_folder_with_several_pages_or_a_page_from_elsewhere(backend):
+    backend.pages.append({"id": "pp-2", "institute_id": INST, "name": "Other", "code": "other", "status": "DRAFT",
+                          "mappings": []})
+    backend.nodes["lib-1"].append(_node("n-6", None, None, parent="n-1", node_type="PRODUCT_PAGE",
+                                        product_page_id="pp-2"))
+    several = await run({"action": "add_to_folder", "library_id": "lib-1", "folder_path": "Shastra",
+                         "items": [{"course_id": "c-1"}]})
+    assert several["error"] == "several_product_pages"
+    assert {p["code"] for p in several["in_this_folder"]} == {"forbvy", "other"}
+
+    # A page from elsewhere is filled and hung in the folder.
+    out = await apply({"action": "add_to_folder", "library_id": "lib-1", "folder_path": "Swasthya",
+                       "product_page_code": "other", "items": [{"course_id": "c-1"}]})
+    assert out["attached_to_folder"] is True and out["added"] == 1, out
+    paths = [c["path"] for c in writes(backend)]
+    assert paths == ["/admin-core-service/v1/product-page/pp-2/add-courses",
+                     "/admin-core-service/v1/folder-library/node"]
+    # A new page whose name is taken points at the existing page instead of making a second one.
+    taken = await run({"action": "add_to_folder", "library_id": "lib-1", "folder_path": "Gita",
+                       "page_name": "Other", "items": [{"course_id": "c-1"}]})
+    assert taken["error"] == "product_page_exists" and "product_page_code='other'" in taken["message"]
+
+
+@pytest.mark.asyncio
+async def test_add_to_folder_old_admin_core_without_the_endpoint(backend, monkeypatch):
+    real = backend.__call__
+
+    async def no_endpoint(ctx_, method, path, params=None, body=None, timeout=None):
+        if path.endswith("/add-courses"):
+            return {"error": "fetch_failed", "status": 404}
+        return await real(ctx_, method, path, params=params, body=body, timeout=timeout)
+    monkeypatch.setattr(tool, "_admin_core_json", no_endpoint)
+    out = await apply({"action": "add_to_folder", "library_id": "lib-1", "folder_path": "Shastra",
+                       "items": [{"course_id": "c-1"}]})
+    assert out["error"] == "admin_core_outdated" and "add-courses" in out["message"]
+    assert writes(backend) == [], "refused at the dry run, before anything is written"
+
+
+# ── create_folder_page / repeated titles ─────────────────────────────────
+@pytest.mark.asyncio
+async def test_create_folder_page_hangs_a_new_page_even_next_to_one(backend):
+    backend.nodes["lib-1"] += [_node("n-7", "Karma", None, parent="n-1"),
+                               _node("n-8", None, None, parent="n-7", node_type="PRODUCT_PAGE", product_page_id="pp-1")]
+    unnamed = await run({"action": "create_folder_page", "library_id": "lib-1", "folder_path": "Gita"})
+    assert unnamed["error"] == "missing_argument"
+    plan = await run({"action": "create_folder_page", "library_id": "lib-1", "folder_path": "Gita",
+                      "page_name": "Gita Path"})
+    assert plan["product_page"] == {"create": {"name": "Gita Path", "status": "DRAFT"}}
+    assert plan["sibling_page_names"] == ["For BVY"], "how the pages next to it are named"
+    assert plan["add"] == [] and plan["attach_to_folder"] is True
+    out = await run({"action": "create_folder_page", "library_id": "lib-1", "folder_path": "Gita",
+                     "page_name": "Gita Path", "dry_run": False, "plan_token": plan["plan_token"]})
+    assert out["product_page"]["created"] is True and out["attached_to_folder"] is True, out
+    create, node = writes(backend)
+    assert create["body"]["mappings"] == [] and create["body"]["status"] == "DRAFT"
+    assert node["body"]["parent_id"] == "n-2" and node["body"]["node_type"] == "PRODUCT_PAGE"
+    # A folder that already has a page still gets a second one when asked by name.
+    second = await run({"action": "create_folder_page", "library_id": "lib-1", "folder_path": "Shastra",
+                        "page_name": "Second", "items": [{"course_id": "c-1"}]})
+    assert second["product_page"] == {"create": {"name": "Second", "status": "DRAFT"}}
+    assert second["pages_already_in_folder"][0]["code"] == "forbvy"
+    assert [a["package_session_id"] for a in second["add"]] == ["ps-1"]
+
+
+@pytest.mark.asyncio
+async def test_upsert_refuses_a_key_that_names_several_folders(backend):
+    backend.nodes["lib-1"] += [_node("y-a", "2026", None, parent="n-1"), _node("y-b", "2026", None, parent="n-3")]
+    as_key = await run({"action": "upsert_folder_nodes", "library_id": "lib-1",
+                        "nodes": [{"key": "2026", "tagline": "x"}]})
+    assert as_key["error"] == "invalid_nodes" and "catalog_folder_edit" in as_key["errors"][0]["message"]
+    assert "Shastra › 2026" in as_key["errors"][0]["message"]
+    as_parent = await run({"action": "upsert_folder_nodes", "library_id": "lib-1",
+                           "nodes": [{"key": "november", "title": "November", "parent_key": "2026"}]})
+    assert as_parent["error"] == "invalid_nodes" and as_parent["errors"][0]["field"] == "parent_key"
+    assert writes(backend) == []
+
+
+@pytest.mark.asyncio
+async def test_a_published_site_whose_status_still_reads_draft_is_live(backend):
+    """Publishing copies the draft into course_catalogue without touching its status."""
+    backend.catalogues[0]["status"] = "DRAFT"
+    assert await tool.library_live_sites(ctx(), "lib-1") == []
+    backend.history["cat-1"] = [{"revision_no": 3, "status": "PUBLISHED"}]
+    assert await tool.library_live_sites(ctx(), "lib-1") == ["main"]
+    out = await run({"action": "upsert_folder_nodes", "library_id": "lib-1",
+                     "nodes": [{"key": "shastra", "tagline": "Texts"}]})
+    assert out["refused"] and "main" in out["refused"][0]["reason"]
+    backend.catalogues[0]["status"] = "DELETED"
+    assert await tool.library_live_sites(ctx(), "lib-1") == []
+
+
+@pytest.mark.asyncio
+async def test_a_hidden_page_item_is_never_the_target(backend):
+    for n in backend.nodes["lib-1"]:
+        if n["id"] == "n-4":
+            n["status"] = "HIDDEN"
+    plan = await run({"action": "add_to_folder", "library_id": "lib-1", "folder_path": "Shastra",
+                      "items": [{"course_id": "c-1"}]})
+    assert plan["product_page"] == {"create": {"name": "Shastra", "status": "DRAFT"}}, plan
+    assert plan["hidden_pages_in_folder"][0]["code"] == "forbvy"
+    named = await run({"action": "add_to_folder", "library_id": "lib-1", "folder_path": "Shastra",
+                       "product_page_code": "forbvy", "items": [{"course_id": "c-1"}]})
+    assert named["error"] == "page_hidden_in_folder"
+
+
+@pytest.mark.asyncio
+async def test_an_active_page_hung_in_a_live_library_starts_hidden(backend):
+    live = await apply({"action": "create_folder_page", "library_id": "lib-1", "folder_path": "Gita",
+                        "product_page_code": "forbvy"})
+    assert live["attached_to_folder"] is True, live
+    assert writes(backend)[-1]["body"]["status"] == "HIDDEN"
+    backend.catalogues[0]["status"] = "DRAFT"           # never published: no live site uses lib-1
+    plan = await run({"action": "create_folder_page", "library_id": "lib-1", "folder_path": "Swasthya",
+                      "product_page_code": "forbvy"})
+    assert plan["folder_item_status"] == "ACTIVE"
+    assert any("shows in the folder immediately" in w for w in plan["warnings"])
+
+
+@pytest.mark.asyncio
+async def test_a_course_admin_core_would_leave_out_is_shown_and_not_sent(backend):
+    """The plan of an existing page is admin-core's own answer (add-courses dryRun), not a copy of its rule."""
+    backend.skip_reasons["ps-2en"] = "currency_mismatch"
+    alone = await run({"action": "add_to_folder", "library_id": "lib-1", "folder_path": "Shastra",
+                       "items": [{"course_id": "c-2", "package_session_id": "ps-2en"}]})
+    assert alone["error"] == "other_gateway_or_currency" and alone["courses"][0]["reason"] == "currency_mismatch"
+    mixed = await apply({"action": "add_to_folder", "library_id": "lib-1", "folder_path": "Shastra",
+                         "items": [{"course_id": "c-2", "package_session_id": "ps-2en"}, {"course_id": "c-1"}]})
+    assert mixed["added"] == 1, mixed
+    (call,) = writes(backend)
+    assert [m["ps_invite_payment_option_id"] for m in call["body"]["mappings"]] == ["b-1"]
+    preview = [c for c in backend.calls if c["params"].get("dryRun") == "true"]
+    assert preview and all(c["path"].endswith("/pp-1/add-courses") for c in preview)
+
+
+def test_a_new_page_takes_one_gateway_and_currency():
+    inr = _sell("ps-x", "c-x", "X", bridge="b-x", invite="i-x", price=10.0)
+    usd = {**_sell("ps-y", "c-y", "Y", bridge="b-y", invite="i-y", price=5.0), "invite_currency": "USD",
+           "plan_currency": "USD"}
+    free = {**_sell("ps-z", "c-z", "Z", bridge="b-z", invite="i-z", price=0.0), "invite_vendor": "STRIPE"}
+    kept, skipped = tool._new_page_terms([inr, usd, free])
+    assert [r["package_session_id"] for r in kept] == ["ps-x", "ps-z"]
+    assert skipped[0]["reason"] == "currency_mismatch"
