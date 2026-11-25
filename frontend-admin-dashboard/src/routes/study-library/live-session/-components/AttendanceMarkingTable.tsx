@@ -440,11 +440,11 @@ export function AttendanceMarkingTable({
     );
 
     const getStatus = useCallback(
-        (student: LiveSessionReport) => {
-            if (statusOverrides[student.studentId] !== undefined) {
-                return statusOverrides[student.studentId];
-            }
-            return getOriginalStatus(student);
+        (student: LiveSessionReport): string => {
+            // Read once into a const so the undefined check narrows it (an indexed read
+            // like statusOverrides[id] stays `string | undefined` under the strict config).
+            const override = statusOverrides[student.studentId];
+            return override !== undefined ? override : getOriginalStatus(student);
         },
         [statusOverrides, getOriginalStatus]
     );
