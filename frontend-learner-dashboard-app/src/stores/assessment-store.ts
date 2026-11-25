@@ -267,6 +267,16 @@ interface AssessmentStore {
   moveToNextQuestion: () => void;
   entireTestTimer: number;
   setEntireTestTimer: (time: number) => void;
+  /**
+   * The institute added time to this attempt: the paper's duration becomes the attempt's new
+   * max time, the whole-test clock gains `wholeTestExtraSeconds` and, on a section-timed paper,
+   * the open section's clock gains `sectionExtraSeconds`.
+   */
+  extendAttemptTime: (
+    newDurationMinutes: number,
+    wholeTestExtraSeconds: number,
+    sectionExtraSeconds: number,
+  ) => void;
   updateEntireTestTimer: () => void;
   isSectionComplete: (sectionIndex: number) => boolean;
   isSectionAvailable: (sectionIndex: number) => boolean;
@@ -865,6 +875,29 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
 
   entireTestTimer: 0,
   setEntireTestTimer: (time) => set({ entireTestTimer: time }),
+  extendAttemptTime: (newDurationMinutes, wholeTestExtraSeconds, sectionExtraSeconds) =>
+    set((state) => {
+      if (!state.assessment || state.isSubmitted) return {};
+      const openSection = state.sectionTimers[state.currentSection];
+      const sectionTimers =
+        state.assessment.distribution_duration === distribution_duration_types.SECTION &&
+        openSection &&
+        sectionExtraSeconds > 0
+          ? {
+              ...state.sectionTimers,
+              [state.currentSection]: {
+                ...openSection,
+                timeLeft: openSection.timeLeft + sectionExtraSeconds * 1000,
+              },
+            }
+          : state.sectionTimers;
+      return {
+        // The visibility re-sync counts down from duration, so it must carry the new limit.
+        assessment: { ...state.assessment, duration: newDurationMinutes },
+        entireTestTimer: state.entireTestTimer + Math.max(0, wholeTestExtraSeconds),
+        sectionTimers,
+      };
+    }),
 
   remoteSaveStatus: "idle",
   setRemoteSaveStatus: (status) => set({ remoteSaveStatus: status }),

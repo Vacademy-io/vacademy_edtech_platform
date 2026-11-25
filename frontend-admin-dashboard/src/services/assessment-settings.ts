@@ -44,6 +44,14 @@ export const mergeWithDefaults = (
             version: settings?.resultNotifications?.version ?? 1,
             roles: settings?.resultNotifications?.roles ?? {},
         },
+        learnerRequestNotifications: {
+            version: settings?.learnerRequestNotifications?.version ?? 1,
+            roles: settings?.learnerRequestNotifications?.roles ?? {},
+            channels: {
+                inApp: settings?.learnerRequestNotifications?.channels?.inApp !== false,
+                email: settings?.learnerRequestNotifications?.channels?.email !== false,
+            },
+        },
         examExperience: mergeExamExperience(settings?.examExperience),
         aiCopyCheck: {
             commentPlacement: normalizeCommentPlacement(settings?.aiCopyCheck?.commentPlacement),

@@ -35,6 +35,7 @@
         "help": {
             "ariaLabel": "المساعدة والطلبات",
             "menu": {
+                "reportProblem": "الإبلاغ عن مشكلة",
                 "instructions": "التعليمات",
                 "alerts": "تنبيهات الاختبار",
                 "reattempt": "طلب إعادة المحاولة",
@@ -162,6 +163,12 @@
     },
     "page": {
         "toast": {
+            "timeAdded_zero": "منحتك مؤسستك وقتًا إضافيًا.",
+            "timeAdded_one": "منحتك مؤسستك دقيقة إضافية واحدة.",
+            "timeAdded_two": "منحتك مؤسستك دقيقتين إضافيتين.",
+            "timeAdded_few": "منحتك مؤسستك {{count}} دقائق إضافية.",
+            "timeAdded_many": "منحتك مؤسستك {{count}} دقيقة إضافية.",
+            "timeAdded_other": "منحتك مؤسستك {{count}} دقيقة إضافية.",
             "savingResumed": "تتم الآن إعادة حفظ إجاباتك",
             "savingFailed": "لا يتم حالياً تسجيل إجاباتك"
         }
@@ -344,6 +351,7 @@
                 "submit": "إرسال"
             },
             "links": {
+                "help": "مساعدة",
                 "questionPaper": "ورقة الأسئلة",
                 "instructions": "التعليمات",
                 "viewInstructions": "عرض التعليمات"

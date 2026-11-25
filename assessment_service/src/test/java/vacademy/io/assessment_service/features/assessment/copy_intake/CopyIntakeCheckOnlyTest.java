@@ -230,6 +230,8 @@ class CopyIntakeCheckOnlyTest {
         assertThat(attempt.getStatus()).isEqualTo(CopyIntakeService.COPY_CHECK_ATTEMPT_STATUS);
         // No clock: the hourly end sweep must never time it out into an ENDED attempt.
         assertThat(attempt.getMaxTime()).isZero();
+        // max_time is insert-only on the entity, so the 0 must reach the row through this call.
+        verify(attempts).overwriteMaxTime("att-1", 0);
         assertThat(item.getStatus()).isEqualTo(AiCopyIntakeItem.QUEUED);
         assertThat(item.getProcessId()).isEqualTo("proc-1");
         assertThat(item.getAttemptId()).isEqualTo("att-1");

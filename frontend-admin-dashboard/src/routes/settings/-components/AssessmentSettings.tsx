@@ -18,6 +18,7 @@ import { useInstituteDetailsStore } from '@/stores/students/students-list/useIns
 import ReportBrandingSettingsSection from './ReportBrandingSettings';
 import ResultNotificationRecipientsCard from './ResultNotificationRecipientsCard';
 import ResultNotificationTemplatesCard from './ResultNotificationTemplatesCard';
+import LearnerRequestNotificationCard from './LearnerRequestNotificationCard';
 import ExamExperienceSettingsCard from './ExamExperienceSettingsCard';
 import { CommentPlacementPicker } from '@/components/common/ai-copy-check/CommentPlacementPicker';
 import { StudentMappingPicker } from '@/components/common/ai-copy-check/StudentMappingPicker';
@@ -318,6 +319,21 @@ const AssessmentSettings = () => {
 
             {/* Result email / WhatsApp templates (saved on change, not with the form) */}
             <ResultNotificationTemplatesCard />
+
+            {/* Learner requests from inside a test (role-wise staff notifications) */}
+            <LearnerRequestNotificationCard
+                value={
+                    settings.learnerRequestNotifications ?? {
+                        version: 1,
+                        roles: {},
+                        channels: { inApp: true, email: true },
+                    }
+                }
+                onChange={(learnerRequestNotifications) => {
+                    setSettings((prev) => ({ ...prev, learnerRequestNotifications }));
+                    setHasChanges(true);
+                }}
+            />
 
             {/* Report Branding Section */}
             <div>

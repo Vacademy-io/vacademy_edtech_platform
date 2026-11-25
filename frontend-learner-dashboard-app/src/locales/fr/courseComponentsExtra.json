@@ -249,7 +249,19 @@
         "finish": "Terminer"
     },
     "helpModal": {
+        "report": {
+            "intro": "Indiquez à votre établissement ce qui ne va pas avec cette question, par exemple une image qui ne s'affiche pas ou une option manquante. Vos réponses sont enregistrées et le minuteur continue.",
+            "question": "Question {{number}}",
+            "questionInSection": "Question {{number}} · {{section}}",
+            "alreadyReported": "Vous avez déjà signalé cette question",
+            "underReview": "Votre établissement a reçu votre signalement et l'examine.",
+            "placeholder": "Décrivez le problème",
+            "send": "Envoyer le signalement",
+            "repliesTitle": "Réponses de votre établissement",
+            "sentConfirmation": "Votre signalement a été envoyé à votre établissement. Vous pouvez continuer le test."
+        },
         "titles": {
+            "report": "Signaler un problème",
             "instructions": "Instructions de l'évaluation",
             "alerts": "Alertes de l'évaluation",
             "reattempt": "Demander une nouvelle tentative",

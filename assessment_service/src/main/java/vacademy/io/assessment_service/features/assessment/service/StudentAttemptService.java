@@ -138,6 +138,14 @@ public class StudentAttemptService {
         return studentAttemptRepository.save(studentAttempt);
     }
 
+    /**
+     * Sets the attempt's max_time. A save cannot change it (the column is insert-only, see
+     * StudentAttempt.maxTime), so code that changes it on an existing attempt must come here.
+     */
+    public void overwriteMaxTime(String attemptId, int minutes) {
+        studentAttemptRepository.overwriteMaxTime(attemptId, minutes);
+    }
+
     public StudentAttempt updateLeaderBoard(StudentAttempt studentAttempt) {
         return updateStudentAttempt(studentAttempt);
     }

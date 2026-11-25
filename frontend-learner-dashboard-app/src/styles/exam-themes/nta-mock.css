@@ -281,6 +281,26 @@
   outline-offset: 2px;
 }
 
+/* Help (report a problem, more time, reattempt), before the language select. */
+[data-exam-layout="nta-mock"] .nta-band__help {
+  flex: none;
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid #ffffff;
+  border-radius: 3px;
+  background: transparent;
+  color: #ffffff;
+  font-family: var(--tcs-font);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+[data-exam-layout="nta-mock"] .nta-band__help:focus-visible {
+  outline: 2px solid #1a1a1a;
+  outline-offset: 2px;
+}
+
 .nta-band__language {
   display: flex;
   flex: none;

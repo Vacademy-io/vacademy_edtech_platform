@@ -243,7 +243,19 @@
         "finish": "Finish"
     },
     "helpModal": {
+        "report": {
+            "intro": "Tell your institute what is wrong with this question, for example an image that does not load or a missing option. Your answers are saved and your timer keeps running.",
+            "question": "Question {{number}}",
+            "questionInSection": "Question {{number}} · {{section}}",
+            "alreadyReported": "You have already reported this question",
+            "underReview": "Your institute has your report and is looking into it.",
+            "placeholder": "Describe the problem",
+            "send": "Send report",
+            "repliesTitle": "Replies from your institute",
+            "sentConfirmation": "Your report has been sent to your institute. You can carry on with the test."
+        },
         "titles": {
+            "report": "Report a problem",
             "instructions": "Assessment Instructions",
             "alerts": "Assessment Alerts",
             "reattempt": "Request Reattempt",

@@ -16,7 +16,7 @@ import vacademy.io.common.auth.model.CustomUserDetails;
 
 import java.util.List;
 
-/** The learner side of "Request Reattempt" / "Request Time Increase" in the live exam shell. */
+/** The learner side of "Request Reattempt", "Request Time Increase" and "Report a problem" in the live exam shell. */
 @RestController
 @RequestMapping("/assessment-service/learner/reattempt-request/v1")
 public class LearnerReattemptRequestController {

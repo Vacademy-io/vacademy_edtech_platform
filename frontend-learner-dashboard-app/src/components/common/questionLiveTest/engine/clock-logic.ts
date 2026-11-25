@@ -82,6 +82,45 @@ export function remainingFromServerStart(
   return Math.max(0, totalDurationSeconds - elapsedSeconds);
 }
 
+/**
+ * Seconds the institute added to this attempt: how far the server's max_time (minutes, sent
+ * back on every autosave) is beyond the duration the clock runs on. 0 when there is nothing
+ * to add. The clock is only ever lengthened from here, never shortened, and untimed attempts
+ * (practice, survey, no duration) are left alone.
+ */
+export function grantedExtraSeconds(
+  serverMaxTimeMinutes: unknown,
+  currentDurationMinutes: number | null | undefined,
+  playMode: string | null | undefined,
+): number {
+  if (!playMode || isUntimedPlayMode(playMode)) return 0;
+  if (typeof serverMaxTimeMinutes !== "number") return 0;
+  const current = Number(currentDurationMinutes);
+  if (!Number.isFinite(serverMaxTimeMinutes) || !Number.isFinite(current)) return 0;
+  if (current <= 0 || serverMaxTimeMinutes <= current) return 0;
+  return Math.round((serverMaxTimeMinutes - current) * 60);
+}
+
+/**
+ * The whole-test clock after a grant of `extraSeconds`. Normally the clock just gains them.
+ * `newLeftFromServer` is the time left by the server's start time and the NEW limit; when the
+ * clock already shows about that much (and not about that much minus the grant), it was
+ * restored after the grant had been applied once, so adding again would double it. When the
+ * device clock disagrees with both, the grant is simply added, as before.
+ */
+export function clockAfterGrant(
+  currentSeconds: number,
+  extraSeconds: number,
+  newLeftFromServer: number | null,
+): number {
+  const added = currentSeconds + extraSeconds;
+  if (newLeftFromServer === null) return added;
+  const tolerance = Math.min(60, extraSeconds / 2);
+  const alreadyHoldsGrant = Math.abs(newLeftFromServer - currentSeconds) <= tolerance;
+  const missingGrant = Math.abs(newLeftFromServer - added) <= tolerance;
+  return alreadyHoldsGrant && !missingGrant ? currentSeconds : added;
+}
+
 export interface TimeUpInput {
   hasAssessment: boolean;
   evaluationType: string;

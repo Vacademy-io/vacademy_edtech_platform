@@ -4,13 +4,15 @@ import { cn } from "@/lib/utils";
 import { useLiveTestEngine } from "../engine/live-test-engine-context";
 import { useConsole } from "../layouts/console-context";
 import { singleLanguageOption } from "./language-option";
+import { ExamHelpMenu } from "../exam-help-menu";
 
 /**
  * Orange band of the NTA mock layout: the exam's short name as plain text,
  * one button per section (subject), and a "Paper Language" select at the
  * right. The learner preview carries no language variants today, so the
  * select usually holds one language and is disabled. There is no paper
- * download: that space stays empty.
+ * download: that space stays empty. A Help button before the language opens
+ * the live test's Help menu (report a problem, more time, reattempt).
  *
  * A subject button opens that section's first question. Like a section tab
  * on the TCS console, it throws away an unsaved pick on the question being
@@ -60,6 +62,13 @@ export function NtaBand({
           );
         })}
       </div>
+      <ExamHelpMenu
+        trigger={
+          <button type="button" className="nta-band__help">
+            {t("examThemes.tcs.links.help")}
+          </button>
+        }
+      />
       <label className="nta-band__language">
         <span>{t("examThemes.tcs.paperLanguage")}:</span>
         <select

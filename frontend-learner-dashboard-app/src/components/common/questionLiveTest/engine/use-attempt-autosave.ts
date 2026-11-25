@@ -16,10 +16,12 @@ import {
 } from "@/constants/assessment-timings";
 import { buildAttemptPayload } from "./attempt-payload";
 import {
+  getServerStartEndTime,
   getServerStartMs,
   readStoredAssessmentId,
 } from "./attempt-storage";
 import { shouldAutosave } from "./clock-logic";
+import { applyGrantedTime } from "./granted-time";
 
 /** The autosave payload (status LIVE, or any status passed) from the store. */
 export async function formatDataFromStore(assessmentId: string, status: string) {
@@ -95,11 +97,51 @@ export function useAttemptAutosave({ playMode }: { playMode: string }) {
     throw lastError;
   }, []);
 
+  /**
+   * Time the institute granted: the save's max_time beyond the limit this device has accounted
+   * for (server_start_end_time end - start). After applying it, end_time moves on by the grant,
+   * so the same grant is not applied again after a reload.
+   */
+  const applyGrantFromSave = useCallback(
+    async (serverMaxTimeMinutes: unknown) => {
+      try {
+        const stored = await getServerStartEndTime();
+        const startMs = stored.start_time ? new Date(stored.start_time).getTime() : NaN;
+        const endMs = stored.end_time ? new Date(stored.end_time).getTime() : NaN;
+        const known = Number.isFinite(startMs) && Number.isFinite(endMs);
+        const grant = applyGrantedTime(serverMaxTimeMinutes, playModeRef.current, {
+          startMs: Number.isFinite(startMs) ? startMs : 0,
+          startMaxMinutes: known ? Math.round((endMs - startMs) / 60000) : null,
+        });
+        if (grant.addedMinutes <= 0) return;
+        if (known) {
+          await Preferences.set({
+            key: "server_start_end_time",
+            value: JSON.stringify({
+              ...stored,
+              end_time: new Date(endMs + grant.addedMinutes * 60000).toISOString(),
+            }),
+          });
+        }
+        toast.success(t("page.toast.timeAdded", { count: grant.addedMinutes }), {
+          duration: 8000,
+        });
+      } catch (error) {
+        console.error("Could not apply granted time:", error);
+      }
+    },
+    // `t` is read when a grant lands; a language switch need not rebuild this.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
   // Remote autosave: now, then every REMOTE_SAVE_INTERVAL_MS.
   useEffect(() => {
     const sendData = async () => {
       try {
-        await sendFormattedData();
+        const saved = await sendFormattedData();
+        // Separate from the save: a problem here must not read as "not being recorded".
+        await applyGrantFromSave(saved?.max_time_minutes);
         if (hasShownSaveFailureToastRef.current) {
           hasShownSaveFailureToastRef.current = false;
           toast.success(t("page.toast.savingResumed"));

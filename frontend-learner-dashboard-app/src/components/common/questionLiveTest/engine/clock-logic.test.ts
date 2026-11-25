@@ -3,7 +3,9 @@ import { distribution_duration_types } from "@/types/assessment";
 import {
   entireTimerTone,
   formatHms,
+  clockAfterGrant,
   formatSectionClock,
+  grantedExtraSeconds,
   isQuestionClockActive,
   isSectionClockActive,
   questionTickAction,
@@ -158,5 +160,51 @@ describe("header clock", () => {
     expect(formatHms(0)).toBe("00:00:00");
     expect(formatSectionClock(125_000)).toBe("02:05");
     expect(formatSectionClock(0)).toBe("00:00");
+  });
+});
+
+describe("grantedExtraSeconds", () => {
+  it("is the time the server allows beyond the running duration", () => {
+    expect(grantedExtraSeconds(75, 60, "EXAM")).toBe(15 * 60);
+    expect(grantedExtraSeconds(61, 60, "MOCK")).toBe(60);
+  });
+
+  it("never shortens the clock and adds nothing when the limits match", () => {
+    expect(grantedExtraSeconds(60, 60, "EXAM")).toBe(0);
+    expect(grantedExtraSeconds(45, 60, "EXAM")).toBe(0);
+  });
+
+  it("leaves untimed attempts and an unknown play mode alone", () => {
+    expect(grantedExtraSeconds(30, 0, "EXAM")).toBe(0);
+    expect(grantedExtraSeconds(30, undefined, "EXAM")).toBe(0);
+    expect(grantedExtraSeconds(90, 60, "PRACTICE")).toBe(0);
+    expect(grantedExtraSeconds(90, 60, "survey")).toBe(0);
+    expect(grantedExtraSeconds(90, 60, "")).toBe(0);
+  });
+
+  it("ignores a missing or malformed server value", () => {
+    expect(grantedExtraSeconds(undefined, 60, "EXAM")).toBe(0);
+    expect(grantedExtraSeconds(null, 60, "EXAM")).toBe(0);
+    expect(grantedExtraSeconds("90", 60, "EXAM")).toBe(0);
+    expect(grantedExtraSeconds(Number.NaN, 60, "EXAM")).toBe(0);
+  });
+});
+
+describe("clockAfterGrant", () => {
+  it("adds the grant to a clock that matches the server", () => {
+    // 10 min granted, 20 min left by the server's old limit -> 30 min by the new one.
+    expect(clockAfterGrant(1200, 600, 1800)).toBe(1800);
+    expect(clockAfterGrant(1195, 600, 1800)).toBe(1795);
+  });
+
+  it("keeps a clock that already holds the grant", () => {
+    expect(clockAfterGrant(1800, 600, 1800)).toBe(1800);
+    expect(clockAfterGrant(1790, 600, 1800)).toBe(1790);
+  });
+
+  it("adds the grant when the server time is unknown or the device clock disagrees", () => {
+    expect(clockAfterGrant(1200, 600, null)).toBe(1800);
+    expect(clockAfterGrant(1200, 600, 0)).toBe(1800);
+    expect(clockAfterGrant(1200, 600, 9000)).toBe(1800);
   });
 });

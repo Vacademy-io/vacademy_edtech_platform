@@ -689,6 +689,8 @@ public class CopyIntakeService {
         // No clock: nobody sits this attempt (0 = no deadline for the hourly end sweep).
         attempt.setMaxTime(0);
         attempt = studentAttemptService.updateStudentAttempt(attempt);
+        // The save above does not write max_time (insert-only column), so set it directly.
+        studentAttemptService.overwriteMaxTime(attempt.getId(), 0);
         item.setRegistrationId(reg.getId());
         item.setAttemptId(attempt.getId());
         queue(item, attempt, batch.getPreferredModel());

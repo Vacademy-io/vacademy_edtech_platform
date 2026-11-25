@@ -1,20 +1,43 @@
 {
+    "typeFilters": {
+        "all": "सभी अनुरोध",
+        "problemReport": "समस्या रिपोर्ट",
+        "timeIncrease": "अतिरिक्त समय",
+        "reattempt": "पुनः प्रयास",
+        "ariaLabel": "अनुरोध के प्रकार से फ़िल्टर करें"
+    },
+    "question": {
+        "label": "प्रश्न {{number}}",
+        "labelInSection": "{{section}} · प्रश्न {{number}}",
+        "noText": "इस प्रश्न में कोई टेक्स्ट नहीं है (यह चित्र हो सकता है)। देखने के लिए प्रश्न टैब खोलें।",
+        "notLinked": "शिक्षार्थी ने किसी खास प्रश्न का ज़िक्र नहीं किया।",
+        "notInPaper": "यह प्रश्न अब पेपर में नहीं है।"
+    },
     "filters": {
+        "resolved": "हल हो गया",
+        "ariaLabel": "स्थिति से फ़िल्टर करें",
         "pending": "लंबित",
         "approved": "स्वीकृत",
         "rejected": "अस्वीकृत",
         "all": "सभी"
     },
     "status": {
+        "resolved": "हल हो गया",
         "approved": "स्वीकृत",
         "rejected": "अस्वीकृत",
         "pending": "लंबित"
     },
     "requestType": {
+        "problemReport": "समस्या रिपोर्ट",
         "timeIncrease": "समय वृद्धि",
         "reattempt": "पुनः प्रयास"
     },
     "summary": {
+        "approvedNoTime": "स्वीकृत, कोई अतिरिक्त समय नहीं जोड़ा गया",
+        "grantedMinutes_one": "{{count}} मिनट अतिरिक्त दिया गया",
+        "grantedMinutes_other": "{{count}} मिनट अतिरिक्त दिए गए",
+        "resolved": "हल हो गया",
+        "replyNote": "जवाब: {{note}}",
         "currentlyAllowed": "वर्तमान में स्वीकृत: {{value}}",
         "used": "उपयोग किए गए: {{value}}",
         "requested": "{{date}} को अनुरोध किया गया",
@@ -23,14 +46,25 @@
         "grantedCount_other": "{{count}} प्रयास स्वीकृत किए गए"
     },
     "form": {
+        "extraMinutesLabel": "अतिरिक्त मिनट",
+        "minutesRangeError": "1 से 300",
+        "timeHint": "अगर शिक्षार्थी अभी टेस्ट में है, तो एक मिनट के अंदर उसका टाइमर बढ़ जाएगा।",
+        "replyLabel": "शिक्षार्थी को जवाब (वैकल्पिक)",
+        "replyPlaceholder": "जैसे: ठीक कर दिया है, कृपया प्रश्न दोबारा खोलें",
+        "replyHint": "शिक्षार्थी आपका जवाब टेस्ट के सहायता मेनू में देखेगा।",
         "attemptsToGrantLabel": "स्वीकृत किए जाने वाले प्रयास",
         "attemptsRangeError": "1 से 20 तक"
     },
     "actions": {
+        "markResolved": "हल किया गया चिह्नित करें",
         "approve": "स्वीकृत करें",
         "reject": "अस्वीकार करें"
     },
     "toasts": {
+        "timeNotAdded": "स्वीकृत किया, लेकिन {{name}} का टेस्ट पहले ही खत्म हो चुका था (या उसमें समय सीमा नहीं है), इसलिए कोई समय नहीं जोड़ा गया। दोबारा मौका देना हो तो Participants टैब से पुनः प्रयास दें।",
+        "timeGranted_one": "{{name}} को {{count}} मिनट अतिरिक्त दिया गया।",
+        "timeGranted_other": "{{name}} को {{count}} मिनट अतिरिक्त दिए गए।",
+        "resolved": "हल किया गया चिह्नित किया।",
         "granted_one": "{{name}} को {{count}} प्रयास दिया गया।",
         "granted_other": "{{name}} को {{count}} प्रयास दिए गए।",
         "theLearner": "इस शिक्षार्थी",
@@ -44,6 +78,6 @@
     "empty": {
         "titleAll": "कोई अनुरोध नहीं",
         "titleFiltered": "कोई {{status}} अनुरोध नहीं",
-        "description": "शिक्षार्थी परीक्षा के भीतर से एक और प्रयास या अधिक समय माँग सकते हैं। उनके अनुरोध यहाँ दिखाई देंगे।"
+        "description": "शिक्षार्थी परीक्षा के अंदर से किसी प्रश्न में समस्या बता सकते हैं, या अधिक समय या दूसरा प्रयास माँग सकते हैं। उनके अनुरोध यहाँ आते हैं।"
     }
 }

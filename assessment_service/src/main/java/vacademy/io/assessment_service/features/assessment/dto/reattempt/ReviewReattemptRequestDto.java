@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class ReviewReattemptRequestDto {
 
-    /** APPROVED or REJECTED. */
+    /** APPROVED or REJECTED; RESOLVED for a PROBLEM_REPORT. */
     private String status;
 
     /**
@@ -21,6 +21,13 @@ public class ReviewReattemptRequestDto {
      * the number should give one more try, not an unlimited retake.
      */
     private Integer grantedCount;
+
+    /**
+     * TIME_INCREASE only: minutes added to the learner's live attempt on approval (1 to 300).
+     * Absent (an admin page built before this field): the approval is recorded and no time is
+     * added, exactly as approving did before.
+     */
+    private Integer grantedMinutes;
 
     /** Optional note back to the learner ("granted, power cut confirmed"). */
     private String reviewNote;

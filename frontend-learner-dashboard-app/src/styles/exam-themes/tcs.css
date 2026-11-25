@@ -337,6 +337,11 @@
   font-style: italic;
 }
 
+/* Help (report a problem, more time, reattempt): same disc as Instructions, plain "?". */
+.tcs-round-icon--help {
+  background: var(--tcs-icon-info);
+}
+
 /* ----------------------------------------------------------- body grid */
 
 .tcs-body {
@@ -1597,6 +1602,32 @@
 
 .tcs-phone-top .tcs-clock {
   color: #ffffff;
+}
+
+.tcs-phone-top__end {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}
+
+[data-exam-theme-family="tcs"] .tcs-phone-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid rgb(255 255 255 / 0.6);
+  border-radius: 50%;
+  background: none;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+[data-exam-theme-family="tcs"] .tcs-phone-help:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
 }
 
 .tcs-tabs-row--compact {

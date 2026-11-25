@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import i18next from 'i18next';
@@ -7,24 +7,48 @@ import type { TFunction } from 'i18next';
 import { ArrowClockwise, CheckCircle, Clock, XCircle } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { MyInput } from '@/components/design-system/input';
+import { ChipToggleGroup, type ChipToggleOption } from '@/components/design-system/chips';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { cn } from '@/lib/utils';
 import { getInstituteId } from '@/constants/helper';
 import {
+    getPendingReattemptRequestCount,
     getReattemptRequests,
     reviewReattemptRequest,
     type ReattemptRequest,
     type ReattemptRequestStatus,
+    type ReattemptRequestType,
 } from '@/services/reattempt-requests';
 import { Route } from '..';
 
-const buildStatusFilters = (
-    t: TFunction
-): Array<{ label: string; value: ReattemptRequestStatus | 'ALL' }> => [
+type StatusFilter = ReattemptRequestStatus | 'ALL';
+type TypeFilter = ReattemptRequestType | 'ALL';
+
+/** Same bound the server enforces on one time grant. */
+const MAX_EXTRA_MINUTES = 300;
+const DEFAULT_EXTRA_MINUTES = '10';
+
+/**
+ * While this tab is open, check the pending count this often (one COUNT query) and reload the
+ * list only when it changes. Learners raise requests mid-exam, and a report about a broken
+ * question is only useful if the admin sees it while the exam is on; reloading the full list on
+ * a timer would repeat its per-row lookups for nothing.
+ */
+const PENDING_COUNT_REFRESH_MS = 30_000;
+
+const buildStatusFilters = (t: TFunction): ChipToggleOption<StatusFilter>[] => [
     { label: t('filters.pending'), value: 'PENDING' },
     { label: t('filters.approved'), value: 'APPROVED' },
+    { label: t('filters.resolved'), value: 'RESOLVED' },
     { label: t('filters.rejected'), value: 'REJECTED' },
     { label: t('filters.all'), value: 'ALL' },
+];
+
+const buildTypeFilters = (t: TFunction): ChipToggleOption<TypeFilter>[] => [
+    { label: t('typeFilters.all'), value: 'ALL' },
+    { label: t('typeFilters.problemReport'), value: 'PROBLEM_REPORT' },
+    { label: t('typeFilters.timeIncrease'), value: 'TIME_INCREASE' },
+    { label: t('typeFilters.reattempt'), value: 'REATTEMPT' },
 ];
 
 /**
@@ -53,6 +77,12 @@ const statusChip = (status: ReattemptRequestStatus) => {
                 {i18next.t('assessmentReattemptRequestsTab:status.approved')}
             </Badge>
         );
+    if (status === 'RESOLVED')
+        return (
+            <Badge tone="success">
+                {i18next.t('assessmentReattemptRequestsTab:status.resolved')}
+            </Badge>
+        );
     if (status === 'REJECTED')
         return (
             <Badge tone="danger">
@@ -64,12 +94,53 @@ const statusChip = (status: ReattemptRequestStatus) => {
     );
 };
 
+const typeLabel = (type: ReattemptRequestType, t: TFunction) => {
+    if (type === 'PROBLEM_REPORT') return t('requestType.problemReport');
+    if (type === 'TIME_INCREASE') return t('requestType.timeIncrease');
+    return t('requestType.reattempt');
+};
+
+const parseWhole = (value: string) => Number.parseInt(value, 10);
+
 /**
- * One learner's request, with the grant inline.
+ * The question a learner reported: where it sits in the paper and how it starts. The number
+ * is the paper order (what the Questions tab shows); a learner on a shuffled paper may have
+ * seen another number, which is why the text is shown too.
+ */
+const ReportedQuestion = ({ request }: { request: ReattemptRequest }) => {
+    const { t } = useTranslation('assessmentReattemptRequestsTab');
+
+    if (!request.question_id) {
+        return <p className="text-caption text-neutral-500">{t('question.notLinked')}</p>;
+    }
+
+    const heading =
+        request.question_number != null
+            ? request.question_section_name
+                ? t('question.labelInSection', {
+                      section: request.question_section_name,
+                      number: request.question_number,
+                  })
+                : t('question.label', { number: request.question_number })
+            : t('question.notInPaper');
+
+    return (
+        <div className="flex flex-col gap-1 rounded-md border border-neutral-200 p-3">
+            <p className="text-caption font-semibold text-neutral-700">{heading}</p>
+            <p className="line-clamp-3 text-body text-neutral-600">
+                {request.question_text ?? t('question.noText')}
+            </p>
+        </div>
+    );
+};
+
+/**
+ * One learner's request, with the decision inline.
  *
  * The count sits on the row rather than behind a confirm dialog because the decision an admin
  * is actually making is "how many tries does this person get" — asking that in a second step
- * is what made the old flow a one-attempt-at-a-time affair.
+ * is what made the old flow a one-attempt-at-a-time affair. Time requests ask "how many
+ * minutes" the same way, and a problem report takes an optional reply.
  */
 const RequestRow = ({
     request,
@@ -82,27 +153,49 @@ const RequestRow = ({
 }) => {
     const { t, i18n } = useTranslation('assessmentReattemptRequestsTab');
     const [grantedCount, setGrantedCount] = useState('1');
-    const parsedCount = Number.parseInt(grantedCount, 10);
+    const [extraMinutes, setExtraMinutes] = useState(DEFAULT_EXTRA_MINUTES);
+    const [reply, setReply] = useState('');
+
+    const isReattempt = request.request_type === 'REATTEMPT';
+    const isTime = request.request_type === 'TIME_INCREASE';
+    const isReport = request.request_type === 'PROBLEM_REPORT';
+
+    const parsedCount = parseWhole(grantedCount);
     const isCountValid = Number.isFinite(parsedCount) && parsedCount >= 1 && parsedCount <= 20;
+    const parsedMinutes = parseWhole(extraMinutes);
+    const isMinutesValid =
+        Number.isFinite(parsedMinutes) && parsedMinutes >= 1 && parsedMinutes <= MAX_EXTRA_MINUTES;
+    const canApprove = (!isReattempt || isCountValid) && (!isTime || isMinutesValid);
+    const learnerName = request.participant_name ?? t('toasts.theLearner');
 
     const reviewMutation = useMutation({
-        mutationFn: (status: 'APPROVED' | 'REJECTED') =>
+        mutationFn: (status: 'APPROVED' | 'REJECTED' | 'RESOLVED') =>
             reviewReattemptRequest({
                 requestId: request.id,
                 instituteId,
                 status,
-                grantedCount: status === 'APPROVED' ? parsedCount : undefined,
+                grantedCount: status === 'APPROVED' && isReattempt ? parsedCount : undefined,
+                grantedMinutes: status === 'APPROVED' && isTime ? parsedMinutes : undefined,
+                reviewNote: status === 'RESOLVED' && reply.trim() ? reply.trim() : undefined,
             }),
-        onSuccess: (_data, status) => {
-            toast.success(
-                status === 'APPROVED'
-                    ? t('toasts.granted', {
-                          count: parsedCount,
-                          name: request.participant_name ?? t('toasts.theLearner'),
-                      })
-                    : t('toasts.rejected'),
-                { className: 'success-toast', duration: 4000 }
-            );
+        onSuccess: (data, status) => {
+            if (status === 'APPROVED' && isTime && data?.granted_minutes == null) {
+                // Approved, but the test had already ended (or has no time limit): say so, so
+                // nobody believes the learner got extra time.
+                toast.warning(t('toasts.timeNotAdded', { name: learnerName }), { duration: 7000 });
+                onReviewed();
+                return;
+            }
+            let message = t('toasts.rejected');
+            if (status === 'RESOLVED') message = t('toasts.resolved');
+            else if (status === 'APPROVED' && isTime)
+                message = t('toasts.timeGranted', {
+                    count: data?.granted_minutes ?? parsedMinutes,
+                    name: learnerName,
+                });
+            else if (status === 'APPROVED')
+                message = t('toasts.granted', { count: parsedCount, name: learnerName });
+            toast.success(message, { className: 'success-toast', duration: 4000 });
             onReviewed();
         },
         onError: (error: unknown) => {
@@ -114,6 +207,26 @@ const RequestRow = ({
     });
 
     const isPending = request.status === 'PENDING';
+    const requestedOn = request.created_at
+        ? t('summary.requested', {
+              date: new Date(request.created_at).toLocaleString(i18n.language),
+          })
+        : null;
+    const reviewedOn = request.reviewed_at
+        ? ` ${t('summary.reviewedOn', {
+              date: new Date(request.reviewed_at).toLocaleString(i18n.language),
+          })}`
+        : '';
+
+    const outcome = () => {
+        if (request.status === 'RESOLVED') return t('summary.resolved');
+        if (request.status === 'REJECTED') return t('status.rejected');
+        if (isTime)
+            return request.granted_minutes != null
+                ? t('summary.grantedMinutes', { count: request.granted_minutes })
+                : t('summary.approvedNoTime');
+        return t('summary.grantedCount', { count: request.granted_count ?? 1 });
+    };
 
     return (
         <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-white p-4">
@@ -128,14 +241,12 @@ const RequestRow = ({
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Badge tone="neutral">
-                        {request.request_type === 'TIME_INCREASE'
-                            ? t('requestType.timeIncrease')
-                            : t('requestType.reattempt')}
-                    </Badge>
+                    <Badge tone="neutral">{typeLabel(request.request_type, t)}</Badge>
                     {statusChip(request.status)}
                 </div>
             </div>
+
+            {isReport && <ReportedQuestion request={request} />}
 
             {request.reason && (
                 <p className="rounded-md bg-neutral-50 p-3 text-body italic text-neutral-600">
@@ -144,59 +255,100 @@ const RequestRow = ({
             )}
 
             <p className="text-caption text-neutral-500">
-                {t('summary.currentlyAllowed', { value: request.attempts_allowed ?? '—' })}
-                {' · '}
-                {t('summary.used', { value: request.attempts_used ?? '—' })}
-                {request.created_at
-                    ? ` · ${t('summary.requested', {
-                          date: new Date(request.created_at).toLocaleString(i18n.language),
-                      })}`
-                    : ''}
+                {isReattempt && (
+                    <>
+                        {t('summary.currentlyAllowed', { value: request.attempts_allowed ?? '—' })}
+                        {' · '}
+                        {t('summary.used', { value: request.attempts_used ?? '—' })}
+                        {requestedOn ? ' · ' : ''}
+                    </>
+                )}
+                {requestedOn}
             </p>
 
             {isPending ? (
-                <div className="flex flex-wrap items-end gap-3">
-                    {request.request_type === 'REATTEMPT' && (
-                        <MyInput
-                            inputType="number"
-                            inputPlaceholder="1"
-                            input={grantedCount}
-                            onChangeFunction={(e) => setGrantedCount(e.target.value)}
-                            label={t('form.attemptsToGrantLabel')}
-                            size="medium"
-                            error={isCountValid ? undefined : t('form.attemptsRangeError')}
-                        />
-                    )}
-                    <MyButton
-                        buttonType="primary"
-                        scale="medium"
-                        layoutVariant="default"
-                        disable={reviewMutation.isPending || !isCountValid}
-                        onClick={() => reviewMutation.mutate('APPROVED')}
-                    >
-                        <CheckCircle size={16} /> {t('actions.approve')}
-                    </MyButton>
-                    <MyButton
-                        buttonType="secondary"
-                        scale="medium"
-                        layoutVariant="default"
-                        disable={reviewMutation.isPending}
-                        onClick={() => reviewMutation.mutate('REJECTED')}
-                    >
-                        <XCircle size={16} /> {t('actions.reject')}
-                    </MyButton>
+                <div className="flex flex-col gap-2">
+                    <div className="flex flex-wrap items-end gap-3">
+                        {isReattempt && (
+                            <MyInput
+                                inputType="number"
+                                inputPlaceholder="1"
+                                input={grantedCount}
+                                onChangeFunction={(e) => setGrantedCount(e.target.value)}
+                                label={t('form.attemptsToGrantLabel')}
+                                size="medium"
+                                error={isCountValid ? undefined : t('form.attemptsRangeError')}
+                            />
+                        )}
+                        {isTime && (
+                            <MyInput
+                                inputType="number"
+                                inputPlaceholder={DEFAULT_EXTRA_MINUTES}
+                                input={extraMinutes}
+                                onChangeFunction={(e) => setExtraMinutes(e.target.value)}
+                                label={t('form.extraMinutesLabel')}
+                                size="medium"
+                                error={isMinutesValid ? undefined : t('form.minutesRangeError')}
+                            />
+                        )}
+                        {isReport && (
+                            <MyInput
+                                inputType="text"
+                                inputPlaceholder={t('form.replyPlaceholder')}
+                                input={reply}
+                                onChangeFunction={(e) => setReply(e.target.value)}
+                                label={t('form.replyLabel')}
+                                size="large"
+                            />
+                        )}
+                        {isReport ? (
+                            <MyButton
+                                buttonType="primary"
+                                scale="medium"
+                                layoutVariant="default"
+                                disable={reviewMutation.isPending}
+                                onClick={() => reviewMutation.mutate('RESOLVED')}
+                            >
+                                <CheckCircle size={16} /> {t('actions.markResolved')}
+                            </MyButton>
+                        ) : (
+                            <>
+                                <MyButton
+                                    buttonType="primary"
+                                    scale="medium"
+                                    layoutVariant="default"
+                                    disable={reviewMutation.isPending || !canApprove}
+                                    onClick={() => reviewMutation.mutate('APPROVED')}
+                                >
+                                    <CheckCircle size={16} /> {t('actions.approve')}
+                                </MyButton>
+                                <MyButton
+                                    buttonType="secondary"
+                                    scale="medium"
+                                    layoutVariant="default"
+                                    disable={reviewMutation.isPending}
+                                    onClick={() => reviewMutation.mutate('REJECTED')}
+                                >
+                                    <XCircle size={16} /> {t('actions.reject')}
+                                </MyButton>
+                            </>
+                        )}
+                    </div>
+                    {isTime && <p className="text-caption text-neutral-500">{t('form.timeHint')}</p>}
+                    {isReport && <p className="text-caption text-neutral-500">{t('form.replyHint')}</p>}
                 </div>
             ) : (
-                <p className="text-caption text-neutral-500">
-                    {request.status === 'APPROVED'
-                        ? t('summary.grantedCount', { count: request.granted_count ?? 1 })
-                        : t('status.rejected')}
-                    {request.reviewed_at
-                        ? ` ${t('summary.reviewedOn', {
-                              date: new Date(request.reviewed_at).toLocaleString(i18n.language),
-                          })}`
-                        : ''}
-                </p>
+                <div className="flex flex-col gap-1">
+                    <p className="text-caption text-neutral-500">
+                        {outcome()}
+                        {reviewedOn}
+                    </p>
+                    {request.review_note && (
+                        <p className="text-caption text-neutral-600">
+                            {t('summary.replyNote', { note: request.review_note })}
+                        </p>
+                    )}
+                </div>
             )}
         </div>
     );
@@ -207,19 +359,38 @@ export const ReattemptRequestsTab = () => {
     const { assessmentId } = Route.useParams();
     const instituteId = getInstituteId() ?? '';
     const queryClient = useQueryClient();
-    const [statusFilter, setStatusFilter] = useState<ReattemptRequestStatus | 'ALL'>('PENDING');
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>('PENDING');
+    const [typeFilter, setTypeFilter] = useState<TypeFilter>('ALL');
     const statusFilters = buildStatusFilters(t);
+    const typeFilters = buildTypeFilters(t);
 
     const { data, isLoading, isError, error, refetch } = useQuery({
-        queryKey: ['reattempt-requests', instituteId, assessmentId, statusFilter],
+        queryKey: ['reattempt-requests', instituteId, assessmentId, statusFilter, typeFilter],
         queryFn: () =>
             getReattemptRequests({
                 instituteId,
                 assessmentId,
                 status: statusFilter === 'ALL' ? undefined : [statusFilter],
+                type: typeFilter === 'ALL' ? undefined : [typeFilter],
             }),
         enabled: Boolean(instituteId),
     });
+
+    // Same query key as the tab badge, so both share one cached COUNT request.
+    const { data: pendingCount } = useQuery({
+        queryKey: ['reattempt-requests-pending-count', instituteId, assessmentId],
+        queryFn: () => getPendingReattemptRequestCount(instituteId, assessmentId),
+        enabled: Boolean(instituteId),
+        refetchInterval: PENDING_COUNT_REFRESH_MS,
+    });
+    const lastPendingCount = useRef<number | undefined>(undefined);
+    useEffect(() => {
+        if (pendingCount === undefined) return;
+        if (lastPendingCount.current !== undefined && lastPendingCount.current !== pendingCount) {
+            refetch();
+        }
+        lastPendingCount.current = pendingCount;
+    }, [pendingCount, refetch]);
 
     const handleReviewed = () => {
         refetch();
@@ -253,18 +424,22 @@ export const ReattemptRequestsTab = () => {
 
     return (
         <div className="flex flex-col gap-4 py-4">
-            <div className="flex flex-wrap items-center gap-2">
-                {statusFilters.map((flt) => (
-                    <MyButton
-                        key={flt.value}
-                        buttonType={statusFilter === flt.value ? 'primary' : 'secondary'}
-                        scale="medium"
-                        layoutVariant="default"
-                        onClick={() => setStatusFilter(flt.value)}
-                    >
-                        {flt.label}
-                    </MyButton>
-                ))}
+            <div className="flex flex-col gap-2">
+                <ChipToggleGroup
+                    value={typeFilter}
+                    onChange={setTypeFilter}
+                    options={typeFilters}
+                    size="md"
+                    ariaLabel={t('typeFilters.ariaLabel')}
+                />
+                <ChipToggleGroup
+                    value={statusFilter}
+                    onChange={setStatusFilter}
+                    options={statusFilters}
+                    size="md"
+                    variant="outline"
+                    ariaLabel={t('filters.ariaLabel')}
+                />
             </div>
 
             {requests.length === 0 ? (

@@ -35,6 +35,7 @@
         "help": {
             "ariaLabel": "मदद और अनुरोध",
             "menu": {
+                "reportProblem": "समस्या बताएं",
                 "instructions": "निर्देश",
                 "alerts": "टेस्ट अलर्ट",
                 "reattempt": "पुनः प्रयास का अनुरोध करें",
@@ -158,6 +159,8 @@
     },
     "page": {
         "toast": {
+            "timeAdded_one": "आपके संस्थान ने आपको {{count}} मिनट और दिया है।",
+            "timeAdded_other": "आपके संस्थान ने आपको {{count}} मिनट और दिए हैं।",
             "savingResumed": "आपके उत्तर फिर से सेव किए जा रहे हैं",
             "savingFailed": "आपके उत्तर रिकॉर्ड नहीं हो रहे हैं"
         }
@@ -332,6 +335,7 @@
                 "submit": "सबमिट करें"
             },
             "links": {
+                "help": "सहायता",
                 "questionPaper": "प्रश्न पत्र",
                 "instructions": "निर्देश",
                 "viewInstructions": "निर्देश देखें"

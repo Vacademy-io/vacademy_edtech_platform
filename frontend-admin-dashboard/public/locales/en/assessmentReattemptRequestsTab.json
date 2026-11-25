@@ -1,20 +1,43 @@
 {
+    "typeFilters": {
+        "all": "All requests",
+        "problemReport": "Problem reports",
+        "timeIncrease": "More time",
+        "reattempt": "Reattempt",
+        "ariaLabel": "Filter by request type"
+    },
+    "question": {
+        "label": "Question {{number}}",
+        "labelInSection": "{{section}} · Question {{number}}",
+        "noText": "This question has no text (it may be an image). Open the Questions tab to see it.",
+        "notLinked": "The learner did not point to a specific question.",
+        "notInPaper": "This question is no longer in the paper."
+    },
     "filters": {
+        "resolved": "Resolved",
+        "ariaLabel": "Filter by status",
         "pending": "Pending",
         "approved": "Approved",
         "rejected": "Rejected",
         "all": "All"
     },
     "status": {
+        "resolved": "Resolved",
         "approved": "Approved",
         "rejected": "Rejected",
         "pending": "Pending"
     },
     "requestType": {
+        "problemReport": "Problem report",
         "timeIncrease": "Time increase",
         "reattempt": "Reattempt"
     },
     "summary": {
+        "approvedNoTime": "Approved, no extra time was added",
+        "grantedMinutes_one": "Gave {{count}} extra minute",
+        "grantedMinutes_other": "Gave {{count}} extra minutes",
+        "resolved": "Resolved",
+        "replyNote": "Reply: {{note}}",
         "currentlyAllowed": "Currently allowed: {{value}}",
         "used": "Used: {{value}}",
         "requested": "Requested {{date}}",
@@ -23,14 +46,25 @@
         "grantedCount_other": "Granted {{count}} attempts"
     },
     "form": {
+        "extraMinutesLabel": "Extra minutes",
+        "minutesRangeError": "1 to 300",
+        "timeHint": "If the learner is still in the test, their timer grows within a minute.",
+        "replyLabel": "Reply to the learner (optional)",
+        "replyPlaceholder": "e.g. Fixed. Please reopen the question",
+        "replyHint": "The learner sees your reply in the test's Help menu.",
         "attemptsToGrantLabel": "Attempts to grant",
         "attemptsRangeError": "1 to 20"
     },
     "actions": {
+        "markResolved": "Mark resolved",
         "approve": "Approve",
         "reject": "Reject"
     },
     "toasts": {
+        "timeNotAdded": "Approved, but {{name}}'s test had already ended (or has no time limit), so no time was added. Give a reattempt from the Participants tab if they need another try.",
+        "timeGranted_one": "Gave {{count}} extra minute to {{name}}.",
+        "timeGranted_other": "Gave {{count}} extra minutes to {{name}}.",
+        "resolved": "Marked as resolved.",
         "granted_one": "Granted {{count}} attempt to {{name}}.",
         "granted_other": "Granted {{count}} attempts to {{name}}.",
         "theLearner": "the learner",
@@ -44,6 +78,6 @@
     "empty": {
         "titleAll": "No requests",
         "titleFiltered": "No {{status}} requests",
-        "description": "Learners can ask for another attempt or more time from inside the exam. Their requests land here."
+        "description": "Learners can report a problem with a question, or ask for more time or another attempt, from inside the exam. Their requests land here."
     }
 }
