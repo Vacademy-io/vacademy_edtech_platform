@@ -1,13 +1,22 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
+import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/bootstrap.css';
 import { isValidPhoneValue } from '@/lib/phone-validation';
 import { MyButton } from '@/components/design-system/button';
-import { Plus, Trash, CaretDown, CaretUp } from '@phosphor-icons/react';
+import {
+    Plus,
+    Trash,
+    CaretDown,
+    CaretUp,
+    CheckCircle,
+    CircleNotch,
+    WarningCircle,
+} from '@phosphor-icons/react';
 import { NewUserRow, CustomFieldValue } from '../../../-types/bulk-assign-types';
 import {
     getCustomFieldSettings,
@@ -18,6 +27,7 @@ import {
 } from '@/services/custom-field-settings';
 import { useUserIdentifierSetting } from '@/services/user-identifier-setting';
 import { useLearnerUsernamePolicy } from '@/services/student-display-settings';
+import { checkUsernameAvailability } from '@/services/username-availability';
 import { getPreferredPhoneCountries } from '@/services/domain-routing';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
@@ -67,7 +77,47 @@ interface EditableRow {
     custom_fields: Record<string, string>;
     /** Whether the "extra fields" section is expanded */
     expanded: boolean;
+    /** Last username availability answer, for the inputs in `key` */
+    username_check?: UsernameCheck;
 }
+
+type UsernameCheckState = 'checking' | 'available' | 'taken';
+
+interface UsernameCheck {
+    key: string;
+    state: UsernameCheckState;
+}
+
+const typedUsername = (r: EditableRow) => r.username.replace(/\s/g, '');
+
+// The answer depends on the email and phone too: a username that is this same
+// learner's own counts as free. A change to any of the three makes it stale.
+const usernameCheckKey = (r: EditableRow) =>
+    [typedUsername(r), r.email.trim().toLowerCase(), r.mobile_number?.trim() ?? ''].join('|');
+
+const currentUsernameCheck = (r: EditableRow): UsernameCheckState | null =>
+    r.username_check?.key === usernameCheckKey(r) ? r.username_check.state : null;
+
+const UsernameCheckNote = ({ state, t }: { state: UsernameCheckState | null; t: TFunction }) => {
+    if (!state) return null;
+    return (
+        <p
+            className={cn(
+                'mt-1 flex items-center gap-1 text-xs',
+                state === 'taken' && 'text-danger-600',
+                state === 'available' && 'text-success-600',
+                state === 'checking' && 'text-neutral-500'
+            )}
+        >
+            {state === 'checking' && <CircleNotch size={12} className="animate-spin" />}
+            {state === 'available' && <CheckCircle size={12} weight="fill" />}
+            {state === 'taken' && <WarningCircle size={12} weight="fill" />}
+            {state === 'checking' && t('core.usernameChecking')}
+            {state === 'available' && t('core.usernameAvailable')}
+            {state === 'taken' && t('core.usernameTaken')}
+        </p>
+    );
+};
 
 const emptyRow = (): EditableRow => ({
     email: '',
@@ -258,6 +308,7 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
         editingRow ? [rowFromNewUser(editingRow)] : [emptyRow()],
     );
     const [submitted, setSubmitted] = useState(false);
+    const [checkingUsernames, setCheckingUsernames] = useState(false);
 
     // Institute field settings. The cache is empty when this dialog opens from a
     // page that never loaded them (course, batch), so fetch instead of showing
@@ -366,26 +417,107 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
         return !!row.email.trim();
     };
 
-    const handleAdd = () => {
+    // ─── Username availability ────
+    // A username is unique across the whole platform. Typing one that already
+    // belongs to someone else must not go through: tell the admin to pick another.
+    const needsUsernameCheck = (row: EditableRow) => !usernameLocked && !!typedUsername(row);
+
+    const setUsernameCheck = (key: string, check: UsernameCheck | undefined) =>
+        setRows((prev) =>
+            prev.map((r) => (usernameCheckKey(r) === key ? { ...r, username_check: check } : r))
+        );
+
+    // Fails open: when the check itself errors the row goes through, and the
+    // server gives a taken name a suffix instead of re-using someone's account.
+    const isUsernameFree = async (row: EditableRow): Promise<boolean> => {
+        const key = usernameCheckKey(row);
+        const known = currentUsernameCheck(row);
+        if (known === 'available' || known === 'taken') return known === 'available';
+        setUsernameCheck(key, { key, state: 'checking' });
+        try {
+            const free = await checkUsernameAvailability({
+                username: typedUsername(row),
+                email: row.email.trim(),
+                mobile_number: row.mobile_number?.trim(),
+            });
+            setUsernameCheck(key, { key, state: free ? 'available' : 'taken' });
+            return free;
+        } catch (err) {
+            console.error('Username availability check failed:', err);
+            setUsernameCheck(key, undefined);
+            return true;
+        }
+    };
+
+    const checkUsernameOnBlur = (idx: number) => {
+        const row = rows[idx];
+        if (row && needsUsernameCheck(row)) void isUsernameFree(row);
+    };
+
+    /** Rows whose username belongs to someone else, or repeats one earlier in this batch. */
+    const findTakenUsernames = async (candidates: EditableRow[]) => {
+        const taken = new Set<EditableRow>();
+        const seen = new Set<string>();
+        let repeated: string | null = null;
+        for (const row of candidates.filter(needsUsernameCheck)) {
+            const name = typedUsername(row).toLowerCase();
+            if (seen.has(name)) {
+                taken.add(row);
+                repeated = repeated ?? typedUsername(row);
+            }
+            seen.add(name);
+        }
+        const toCheck = candidates.filter((r) => needsUsernameCheck(r) && !taken.has(r));
+        const free = await Promise.all(toCheck.map(isUsernameFree));
+        const takenByOthers = toCheck.filter((_, i) => !free[i]);
+        takenByOthers.forEach((r) => taken.add(r));
+
+        const [firstTaken] = takenByOthers;
+        if (takenByOthers.length === 1 && firstTaken) {
+            toast.error(t('toast.usernameTaken', { username: typedUsername(firstTaken) }));
+        } else if (takenByOthers.length > 1) {
+            toast.error(t('toast.usernamesTaken'));
+        }
+        if (repeated) toast.error(t('toast.usernameDuplicate', { username: repeated }));
+        return taken;
+    };
+
+    const markTaken = (row: EditableRow): EditableRow => ({
+        ...row,
+        username_check: { key: usernameCheckKey(row), state: 'taken' },
+    });
+
+    const handleAdd = async () => {
         setSubmitted(true);
         const valid = rows.filter(validate);
         if (valid.length === 0) return;
 
-        onAdd(valid.map(editableRowToNewUser));
+        setCheckingUsernames(true);
+        const taken = await findTakenUsernames(valid).finally(() => setCheckingUsernames(false));
+        const ready = valid.filter((row) => !taken.has(row));
+
+        if (ready.length > 0) onAdd(ready.map(editableRowToNewUser));
         // Keep typed-in rows that still fail (e.g. a required custom field left
-        // blank) so the admin can finish them instead of losing them silently.
-        // Blank extra rows are still dropped, as before.
-        const pending = rows.filter(
-            (row) => !validate(row) && !!(row.full_name.trim() || row.email.trim())
-        );
+        // blank, or a username that is taken) so the admin can finish them instead
+        // of losing them silently. Blank extra rows are still dropped, as before.
+        const pending = rows
+            .filter((row) => !ready.includes(row) && !!(row.full_name.trim() || row.email.trim()))
+            .map((row) => (taken.has(row) ? markTaken(row) : row));
         setRows(pending.length > 0 ? pending : [emptyRow()]);
         setSubmitted(pending.length > 0);
     };
 
-    const handleEditSave = () => {
+    const handleEditSave = async () => {
         setSubmitted(true);
         const row = rows[0];
         if (!row || !validate(row)) return;
+
+        setCheckingUsernames(true);
+        const taken = await findTakenUsernames([row]).finally(() => setCheckingUsernames(false));
+        if (taken.has(row)) {
+            setRows([markTaken(row)]);
+            return;
+        }
         onEditSave?.(editableRowToNewUser(row));
     };
 
@@ -520,8 +652,17 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                                     onChange={(e) =>
                                         update(idx, 'username', e.target.value.replace(/\s/g, ''))
                                     }
+                                    onBlur={() => checkUsernameOnBlur(idx)}
+                                    className={cn(
+                                        !usernameLocked &&
+                                            currentUsernameCheck(row) === 'taken' &&
+                                            'border-danger-400'
+                                    )}
                                     {...noAutofillProps('text')}
                                 />
+                                {!usernameLocked && (
+                                    <UsernameCheckNote state={currentUsernameCheck(row)} t={t} />
+                                )}
                             </div>
                             <div>
                                 <Label className="mb-1 text-xs text-neutral-500">
@@ -649,6 +790,7 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                         scale="medium"
                         layoutVariant="default"
                         onClick={handleEditSave}
+                        disable={checkingUsernames}
                     >
                         {t('actions.saveChanges')}
                     </MyButton>
@@ -668,6 +810,7 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                         scale="medium"
                         layoutVariant="default"
                         onClick={handleAdd}
+                        disable={checkingUsernames}
                     >
                         {t('actions.addLearners', { count: rows.filter(validate).length })}
                     </MyButton>

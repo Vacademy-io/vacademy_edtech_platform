@@ -590,6 +590,8 @@ export const STUDENT_REPORT_DETAIL_URL = `${BASE_URL}/assessment-service/admin/p
 export const GET_INSTITUTE_USERS = `${BASE_URL}/auth-service/v1/user-roles/users-of-status`;
 export const GET_USER_ROLES_COUNT = `${BASE_URL}/auth-service/v1/user-roles/user-roles-count`;
 export const GET_USER_AUTOSUGGEST = `${BASE_URL}/auth-service/v1/user/autosuggest-users`;
+// Add-learner form: is a typed username free for a new learner (yes/no only).
+export const CHECK_USERNAME_AVAILABILITY = `${BASE_URL}/auth-service/v1/user/username-availability`;
 // RBAC-scoped assignee picker for lead-assign dialogs: COUNSELLOR-role users
 // only. A hierarchy-scoped caller (holds the COUNSELLOR role) gets self +
 // their counsellor reports — a manager can't accidentally assign a lead to
