@@ -112,13 +112,15 @@ export const StepFiveForm = ({
         // ahead and the server gives a taken name a suffix.
         const username = values.username?.trim();
         if (!isReEnroll && !usernamePolicy.applies && username) {
-            const free = await checkUsernameAvailability({
+            // Allowed when free, when it is this same person, or when it belongs to a learner
+            // already in this institute (that learner is enrolled).
+            const { available } = await checkUsernameAvailability({
                 // As typed: this route (/learner/enroll) saves the username unchanged.
                 username,
                 email: stepTwoData.email?.trim(),
                 mobile_number: stepTwoData.mobile_number?.trim(),
-            }).catch(() => true);
-            if (!free) {
+            }).catch(() => ({ available: true }));
+            if (!available) {
                 const message = `Username "${username}" is already taken. Enter a different username.`;
                 form.setError('username', { message });
                 toast.error(message);

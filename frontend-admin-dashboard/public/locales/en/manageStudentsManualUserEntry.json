@@ -35,7 +35,8 @@
         "usernameFromSettingPlaceholder": "set by institute setting",
         "usernameChecking": "Checking availability…",
         "usernameAvailable": "Username is available",
-        "usernameTaken": "Already taken. Enter a different username."
+        "usernameTaken": "Already taken. Enter a different username.",
+        "usernameExisting": "Existing learner in this institute — they will be enrolled"
     },
     "extra": {
         "sectionTitle": "Additional Details",

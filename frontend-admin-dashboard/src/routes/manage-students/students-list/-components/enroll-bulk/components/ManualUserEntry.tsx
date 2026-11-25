@@ -15,6 +15,7 @@ import {
     CaretUp,
     CheckCircle,
     CircleNotch,
+    Info,
     WarningCircle,
 } from '@phosphor-icons/react';
 import { NewUserRow, CustomFieldValue } from '../../../-types/bulk-assign-types';
@@ -81,7 +82,7 @@ interface EditableRow {
     username_check?: UsernameCheck;
 }
 
-type UsernameCheckState = 'checking' | 'available' | 'taken';
+type UsernameCheckState = 'checking' | 'available' | 'existing' | 'taken';
 
 interface UsernameCheck {
     key: string;
@@ -106,14 +107,17 @@ const UsernameCheckNote = ({ state, t }: { state: UsernameCheckState | null; t: 
                 'mt-1 flex items-center gap-1 text-xs',
                 state === 'taken' && 'text-danger-600',
                 state === 'available' && 'text-success-600',
+                state === 'existing' && 'text-info-600',
                 state === 'checking' && 'text-neutral-500'
             )}
         >
             {state === 'checking' && <CircleNotch size={12} className="animate-spin" />}
             {state === 'available' && <CheckCircle size={12} weight="fill" />}
+            {state === 'existing' && <Info size={12} weight="fill" />}
             {state === 'taken' && <WarningCircle size={12} weight="fill" />}
             {state === 'checking' && t('core.usernameChecking')}
             {state === 'available' && t('core.usernameAvailable')}
+            {state === 'existing' && t('core.usernameExisting')}
             {state === 'taken' && t('core.usernameTaken')}
         </p>
     );
@@ -432,16 +436,22 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
     const isUsernameFree = async (row: EditableRow): Promise<boolean> => {
         const key = usernameCheckKey(row);
         const known = currentUsernameCheck(row);
-        if (known === 'available' || known === 'taken') return known === 'available';
+        if (known && known !== 'checking') return known !== 'taken';
         setUsernameCheck(key, { key, state: 'checking' });
         try {
-            const free = await checkUsernameAvailability({
+            const answer = await checkUsernameAvailability({
                 username: typedUsername(row),
                 email: row.email.trim(),
                 mobile_number: row.mobile_number?.trim(),
             });
-            setUsernameCheck(key, { key, state: free ? 'available' : 'taken' });
-            return free;
+            // A learner already in this institute is allowed: that learner gets enrolled.
+            const state: UsernameCheckState = !answer.available
+                ? 'taken'
+                : answer.existingLearner
+                  ? 'existing'
+                  : 'available';
+            setUsernameCheck(key, { key, state });
+            return answer.available;
         } catch (err) {
             console.error('Username availability check failed:', err);
             setUsernameCheck(key, undefined);

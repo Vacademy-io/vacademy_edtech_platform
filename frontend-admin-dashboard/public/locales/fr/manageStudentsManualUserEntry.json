@@ -35,7 +35,8 @@
         "usernameFromSettingPlaceholder": "défini par le réglage de l'institut",
         "usernameChecking": "Vérification de la disponibilité…",
         "usernameAvailable": "Nom d'utilisateur disponible",
-        "usernameTaken": "Déjà pris. Saisissez un autre nom d'utilisateur."
+        "usernameTaken": "Déjà pris. Saisissez un autre nom d'utilisateur.",
+        "usernameExisting": "Apprenant déjà inscrit dans cet institut — c'est lui qui sera inscrit"
     },
     "extra": {
         "sectionTitle": "Détails supplémentaires",

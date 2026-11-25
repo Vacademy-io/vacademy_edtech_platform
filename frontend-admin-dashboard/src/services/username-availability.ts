@@ -8,15 +8,26 @@ export interface UsernameAvailabilityInput {
     mobile_number?: string;
 }
 
+export interface UsernameAvailability {
+    /** The admin may use this username for the learner being added. */
+    available: boolean;
+    /** It belongs to a learner already in this institute: that learner will be enrolled. */
+    existingLearner: boolean;
+}
+
 /**
- * Whether a username typed for a NEW learner is free. It also counts as free when it
- * already belongs to this same learner (the email or phone typed is the one on that
- * account). The email and phone go in the body so they stay out of access logs.
+ * Whether a username typed for a learner being added may be used. Same rule as the add
+ * itself: free, a learner already in this institute, or the same person (the email or
+ * phone typed matches that account) → allowed; anyone else → taken. The email and phone
+ * go in the body so they stay out of access logs.
  */
 export const checkUsernameAvailability = async (
     input: UsernameAvailabilityInput
-): Promise<boolean> => {
-    const response = await authenticatedAxiosInstance.post<{ available?: boolean }>(
+): Promise<UsernameAvailability> => {
+    const response = await authenticatedAxiosInstance.post<{
+        available?: boolean;
+        existing_learner?: boolean;
+    }>(
         CHECK_USERNAME_AVAILABILITY,
         {
             username: input.username,
@@ -25,5 +36,8 @@ export const checkUsernameAvailability = async (
         },
         { params: { instituteId: getCurrentInstituteId() } }
     );
-    return response.data?.available !== false;
+    return {
+        available: response.data?.available !== false,
+        existingLearner: response.data?.existing_learner === true,
+    };
 };
