@@ -29,7 +29,8 @@ export type ScanPageSide = 'FRONT' | 'BACK';
 export type ScanCopyDecision = 'NONE' | 'ACCEPTED' | 'EXCLUDED';
 export type FrontsDirection = 'FORWARD' | 'REVERSED';
 export type FrontsDirectionSource = 'CLERK' | 'LOAD1' | 'AGGREGATE' | 'DEFAULT';
-export type ScanIntakeMode = 'TWO_PASSES' | 'ONE_FOLDER' | 'DUPLEX';
+/** ONE_SIDED: copies written on one side only, scanned once (one pass, no backs). */
+export type ScanIntakeMode = 'TWO_PASSES' | 'ONE_FOLDER' | 'DUPLEX' | 'ONE_SIDED';
 export type ScanOrderSource = 'IMAGE_CAPTURE_SUFFIX' | 'NUMERIC_SUFFIX' | 'MODIFIED_TIME' | 'NAME';
 export type ScanClientWarning = 'MTIME_DISAGREES';
 export type ScanDecisionAction =
@@ -93,9 +94,10 @@ export type ScanFlagCode =
 export interface ScanLayout {
     fronts_pass: number;
     fronts_rotation: 0 | 180;
-    backs_order: 'SAME' | 'REVERSED';
-    backs_rotation: 0 | 180;
-    order_margin: number;
+    /** Null for one-sided copies (no backs). */
+    backs_order: 'SAME' | 'REVERSED' | null;
+    backs_rotation: 0 | 180 | null;
+    order_margin: number | null;
     shift: { from_sheet: number; offset: number } | null;
     blank_rule_suspect: boolean;
 }
@@ -122,9 +124,9 @@ export interface ScanSheet {
     /** Index in the FRONTS pass scan order. */
     sheet_no: number;
     front: string;
-    /** The paired page in the other pass. */
-    back: string;
-    pair_score: number;
+    /** The paired page in the other pass; null for one-sided copies. */
+    back: string | null;
+    pair_score: number | null;
     /** Null for a one-sheet load. */
     pair_runner_up: number | null;
     pair_is_row_max: boolean;
@@ -138,7 +140,7 @@ export interface ScanSheet {
     label_template_sim: number | null;
     back_label_like: boolean;
     front_blank_class: ScanBlankClass;
-    back_blank_class: ScanBlankClass;
+    back_blank_class: ScanBlankClass | null;
 }
 
 // ---- C3 SessionDto --------------------------------------------------------
@@ -189,6 +191,8 @@ export interface ScanLoad {
     attempts: number;
     error_message: string | null;
     passes: ScanLoadPass[];
+    /** Copies written on one side only: one pass, every page a front. */
+    one_sided?: boolean;
     layout: ScanLayout | null;
     pages: ScanPage[];
     sheets: ScanSheet[];

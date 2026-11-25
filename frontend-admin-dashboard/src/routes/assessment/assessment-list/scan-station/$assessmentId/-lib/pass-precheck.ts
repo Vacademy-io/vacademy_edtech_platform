@@ -105,7 +105,9 @@ const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
 export const precheckLoad = async (
     first: File[],
     second: File[],
-    maxPagesPerPass = MAX_PAGES_PER_PASS
+    maxPagesPerPass = MAX_PAGES_PER_PASS,
+    /** One-sided copies: one pass only, so no second pass and nothing to compare. */
+    oneSided = false
 ): Promise<PrecheckResult> => {
     const unsupported: string[] = [];
     const unreadable: string[] = [];
@@ -116,7 +118,7 @@ export const precheckLoad = async (
     const pageCounts: [number, number] = [sum(a.pages), sum(b.pages)];
     const errors: PrecheckError[] = [];
 
-    if (first.length === 0 || second.length === 0) errors.push('EMPTY_PASS');
+    if (first.length === 0 || (!oneSided && second.length === 0)) errors.push('EMPTY_PASS');
     if (unsupported.length > 0) errors.push('UNSUPPORTED_FILE');
     if (unreadable.length > 0) errors.push('PDF_UNREADABLE');
     const mixed = [a.kinds, b.kinds].some(
@@ -128,7 +130,13 @@ export const precheckLoad = async (
     }
     // Counts are only comparable when every file was counted.
     const counted = unsupported.length === 0 && unreadable.length === 0;
-    if (counted && first.length > 0 && second.length > 0 && pageCounts[0] !== pageCounts[1]) {
+    if (
+        !oneSided &&
+        counted &&
+        first.length > 0 &&
+        second.length > 0 &&
+        pageCounts[0] !== pageCounts[1]
+    ) {
         errors.push('COUNT_MISMATCH');
     }
     const duplicates = await findDuplicates([...first, ...second]);

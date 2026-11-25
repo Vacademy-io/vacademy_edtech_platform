@@ -46,6 +46,37 @@ beforeEach(() => {
     replaceScanLoad.mockResolvedValue({ loads: [{ load_no: 1 }] });
 });
 
+describe('one-sided copies', () => {
+    it('sends one pass with no count check against a second', async () => {
+        const prepared = await prepareLoad(
+            'ONE_SIDED',
+            [],
+            [],
+            imageCapturePass(3, T0),
+            100,
+            LABELS
+        );
+        expect(prepared?.errors).toEqual([]);
+        expect(prepared?.passes?.[1]).toEqual([]);
+        await sendLoad({
+            prepared: prepared!,
+            mode: 'ONE_SIDED',
+            sessionId: 's1',
+            instituteId: 'inst1',
+            userId: 'u1',
+        });
+        const body = addScanLoad.mock.calls[0]![2] as ScanLoadBody;
+        expect(body.intake_mode).toBe('ONE_SIDED');
+        expect(body.passes).toHaveLength(1);
+        expect(body.passes[0]!.pass_no).toBe(1);
+        expect(body.passes[0]!.files.map((f) => f.file_id)).toEqual(['id0', 'id1', 'id2']);
+    });
+
+    it('still refuses an empty pile', async () => {
+        expect(await prepareLoad('ONE_SIDED', [], [], [], 100, LABELS)).toBeNull();
+    });
+});
+
 describe('the shared load path (folder intake and guided scan)', () => {
     it('orders, checks and sends two passes as one load', async () => {
         const prepared = await prepareLoad(

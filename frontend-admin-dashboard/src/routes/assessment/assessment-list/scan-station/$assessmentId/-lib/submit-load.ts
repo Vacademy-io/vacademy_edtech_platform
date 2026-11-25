@@ -97,8 +97,8 @@ const splitMessage = (reason: SplitRefusal, count: number): IntakeMessage => ({
 });
 
 /**
- * Order and check one load. TWO_PASSES reads `first` and `second`; ONE_FOLDER
- * and DUPLEX read `one`. Null when nothing has been added yet.
+ * Order and check one load. TWO_PASSES reads `first` and `second`; ONE_FOLDER,
+ * DUPLEX and ONE_SIDED read `one`. Null when nothing has been added yet.
  */
 export const prepareLoad = async (
     mode: ScanIntakeMode,
@@ -135,7 +135,9 @@ export const prepareLoad = async (
         if (one.length === 0) return null;
         const o = ordered(one, passLabels.one);
         orderSource = o.source;
-        if (mode === 'ONE_FOLDER') {
+        if (mode === 'ONE_SIDED') {
+            passes = [o.ordered, []];
+        } else if (mode === 'ONE_FOLDER') {
             const s = splitOneFolder(o.ordered);
             if (s.ok) {
                 passes = [s.first, s.second];
@@ -150,7 +152,9 @@ export const prepareLoad = async (
         }
     }
 
-    const precheck = passes ? await precheckLoad(passes[0], passes[1], maxPages) : null;
+    const precheck = passes
+        ? await precheckLoad(passes[0], passes[1], maxPages, mode === 'ONE_SIDED')
+        : null;
     if (precheck) errors.push(...precheckMessages(precheck, maxPages));
     return { passes, precheck, orderSource, warnings, errors, notes, split };
 };

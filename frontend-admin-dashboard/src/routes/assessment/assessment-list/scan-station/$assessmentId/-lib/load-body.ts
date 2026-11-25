@@ -14,14 +14,15 @@ export interface UploadedPassFile {
     pageCount: number;
 }
 
-/** The C3 load body, passes numbered 1 and 2 in the clerk's order. */
+/** The C3 load body, passes numbered 1 and 2 in the clerk's order (pass 1 only for ONE_SIDED). */
 export const buildLoadBody = (
     passes: [UploadedPassFile[], UploadedPassFile[]],
     intakeMode: ScanIntakeMode,
     orderSource: ScanOrderSource,
     clientWarnings: ScanClientWarning[]
 ): ScanLoadBody => ({
-    passes: passes.map((files, p) => ({
+    // One-sided copies are a single pass: the empty second pass is not sent.
+    passes: (intakeMode === 'ONE_SIDED' ? passes.slice(0, 1) : passes).map((files, p) => ({
         pass_no: p + 1,
         files: files.map((f, i) => ({
             file_id: f.fileId,

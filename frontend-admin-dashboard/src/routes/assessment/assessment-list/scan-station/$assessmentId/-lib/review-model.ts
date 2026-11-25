@@ -356,7 +356,9 @@ export const rotationOfPage = (
 ): ScanRotation => {
     const layout = load?.layout;
     if (!layout) return 0;
-    return page.pass_no === layout.fronts_pass ? layout.fronts_rotation : layout.backs_rotation;
+    return page.pass_no === layout.fronts_pass
+        ? layout.fronts_rotation
+        : layout.backs_rotation ?? 0;
 };
 
 /** Backs of this load about to be left out as blank, across every copy. */

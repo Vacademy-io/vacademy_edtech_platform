@@ -295,6 +295,10 @@ export interface CopyIntakeCheckedCopy {
     student_name: string | null;
     roll: string | null;
     evaluated_file_id: string;
+    /** Marks the AI check gave; absent on older servers. */
+    marks?: number | null;
+    /** The test's full marks (its section totals); null when unknown. */
+    max_marks?: number | null;
 }
 
 /** Every checked copy of the batch, in upload order — for "Download checked copies". */

@@ -30,6 +30,14 @@ import { apiErrorMessage } from '../-lib/api-error';
 import { useOnScanNotFound } from '../-hooks/useScanActions';
 import { HELPER_STATUS_POLL_MS, useScanHelperStatus } from '../-hooks/useScanHelperStatus';
 import { PutPileIllustration, TurnOverIllustration } from './ScanIllustrations';
+import { HandsFreeSetup } from './HandsFreeSetup';
+import { DEFAULT_HANDS_FREE, type HandsFreeSettings } from '../-lib/hands-free';
+import {
+    darkShare,
+    looksLikeWrongSide,
+    readsFaceDown,
+    rememberFaceDown,
+} from '../-lib/blank-sides';
 
 /** How often a running scan is asked for its pages. */
 export const JOB_POLL_MS = 700;
@@ -44,8 +52,14 @@ interface Pass {
     pages: HelperPage[];
 }
 
-/** A = first side, B = the pile turned over, D = both sides in one go. */
-type Side = 'A' | 'B' | 'D';
+/**
+ * A = first side, B = the pile turned over, D = both sides in one go,
+ * S = one-sided copies: the written side only, once.
+ */
+type Side = 'A' | 'B' | 'D' | 'S';
+
+/** How the scanned pages become one load. */
+type LoadMode = 'TWO_PASSES' | 'DUPLEX' | 'ONE_SIDED';
 
 type Phase =
     | { name: 'stepA'; sentLoad: number | null }
@@ -58,9 +72,11 @@ type Phase =
           cancelling: boolean;
       }
     | { name: 'stepB'; passA: Pass }
-    | { name: 'mismatch'; passes: Pass[]; duplex: boolean }
-    | { name: 'sending'; passes: Pass[]; duplex: boolean }
-    | { name: 'failed'; passes: Pass[]; duplex: boolean; lines: string[]; retry: boolean }
+    | { name: 'mismatch'; passes: Pass[]; mode: LoadMode }
+    /** One-sided pile that came out empty: the scanner read the blank side of each sheet. */
+    | { name: 'wrongSide'; pass: Pass }
+    | { name: 'sending'; passes: Pass[]; mode: LoadMode }
+    | { name: 'failed'; passes: Pass[]; mode: LoadMode; lines: string[]; retry: boolean }
     | { name: 'finished' };
 
 type Progress = { key: string; params?: Record<string, number> };
@@ -95,6 +111,8 @@ export const GuidedScan = ({
     maxLoads = 0,
     onLoadSent,
     onUseFolders,
+    handsFree = DEFAULT_HANDS_FREE,
+    onHandsFreeChange,
     statusPollMs = HELPER_STATUS_POLL_MS,
     jobPollMs = JOB_POLL_MS,
 }: {
@@ -107,6 +125,9 @@ export const GuidedScan = ({
     maxLoads?: number;
     onLoadSent: (session: ScanSession) => void;
     onUseFolders: () => void;
+    /** The desk's answers (one side or both, check and print by itself); see HandsFreeSetup. */
+    handsFree?: HandsFreeSettings;
+    onHandsFreeChange?: (next: HandsFreeSettings) => void;
     statusPollMs?: number;
     jobPollMs?: number;
 }) => {
@@ -116,6 +137,8 @@ export const GuidedScan = ({
     const [notice, setNotice] = useState<string | null>(null);
     const [starting, setStarting] = useState(false);
     const [progress, setProgress] = useState<Progress | null>(null);
+    /** The desk questions: open before the first pile, one click away after it. */
+    const [setupOpen, setSetupOpen] = useState(nextLoadNo === 1);
     const phaseRef = useRef(phase);
     phaseRef.current = phase;
     /** Helper jobs this page still holds, freed after the load is sent or dropped. */
@@ -181,8 +204,8 @@ export const GuidedScan = ({
         }
     };
 
-    const send = async (passes: Pass[], duplex: boolean) => {
-        setPhase({ name: 'sending', passes, duplex });
+    const send = async (passes: Pass[], mode: LoadMode) => {
+        setPhase({ name: 'sending', passes, mode });
         const total = passes.reduce((n, p) => n + p.pages.length, 0);
         let got = 0;
         const onPage = () => {
@@ -191,9 +214,8 @@ export const GuidedScan = ({
         };
         setProgress({ key: 'guided.downloading', params: { done: 0, total } });
         try {
-            const mode = duplex ? 'DUPLEX' : 'TWO_PASSES';
             let prepared;
-            if (duplex) {
+            if (mode !== 'TWO_PASSES') {
                 const files = await downloadPassFiles(
                     passes[0]!.pages,
                     'scan',
@@ -223,7 +245,7 @@ export const GuidedScan = ({
                 setPhase({
                     name: 'failed',
                     passes,
-                    duplex,
+                    mode,
                     retry: false,
                     lines: (prepared?.errors ?? []).map((m) => t(m.key, m.params)),
                 });
@@ -256,7 +278,7 @@ export const GuidedScan = ({
                 line = t('intake.uploadFailed', { name: e.fileName });
             else if (onNotFound(e)) line = t('intake.addFailed');
             else line = apiErrorMessage(e, t('intake.addFailed'));
-            setPhase({ name: 'failed', passes, duplex, retry: true, lines: [line] });
+            setPhase({ name: 'failed', passes, mode, retry: true, lines: [line] });
         }
     };
 
@@ -268,16 +290,40 @@ export const GuidedScan = ({
             backToStep(side, passA);
             return;
         }
-        if (side === 'A') {
+        if (side === 'S') {
+            void checkSide(pass);
+        } else if (side === 'A') {
             setPhase({ name: 'stepB', passA: pass });
         } else if (side === 'B' && passA) {
-            if (pass.pages.length === passA.pages.length) void send([passA, pass], false);
-            else setPhase({ name: 'mismatch', passes: [passA, pass], duplex: false });
+            if (pass.pages.length === passA.pages.length) void send([passA, pass], 'TWO_PASSES');
+            else setPhase({ name: 'mismatch', passes: [passA, pass], mode: 'TWO_PASSES' });
         } else if (pass.pages.length % 2 !== 0) {
-            setPhase({ name: 'mismatch', passes: [pass], duplex: true });
+            setPhase({ name: 'mismatch', passes: [pass], mode: 'DUPLEX' });
         } else {
-            void send([pass], true);
+            void send([pass], 'DUPLEX');
         }
+    };
+
+    /** One-sided pile: if the previews are empty, the pile went in the wrong way up. */
+    const checkSide = async (pass: Pass) => {
+        setPhase({ name: 'sending', passes: [pass], mode: 'ONE_SIDED' });
+        setProgress({ key: 'guided.lookingAtPages' });
+        const shares = await Promise.all(
+            pass.pages.map((page) =>
+                scanHelper
+                    .thumbBlob(page)
+                    .then(darkShare)
+                    .catch(() => null)
+            )
+        );
+        if (looksLikeWrongSide(shares)) {
+            setProgress(null);
+            // The pile went in the way we said: this scanner reads the other side.
+            if (ready) rememberFaceDown(ready.scanner.id, !readsFaceDown(ready.scanner.id));
+            setPhase({ name: 'wrongSide', pass });
+            return;
+        }
+        void send([pass], 'ONE_SIDED');
     };
 
     // While a scan runs: ask for its pages every ~700 ms until it ends.
@@ -399,7 +445,7 @@ export const GuidedScan = ({
 
     const body = (): ReactNode => {
         if (idle && !ready) return <DetectionNotice detection={detection} />;
-        const side = (s: 'first' | 'second' | 'both') =>
+        const side = (s: 'first' | 'second' | 'both' | 'written') =>
             t('guided.loadSide', { load: nextLoadNo, side: t(`guided.side.${s}`) });
 
         switch (phase.name) {
@@ -422,7 +468,9 @@ export const GuidedScan = ({
                     </div>
                 );
             case 'stepA': {
-                const both = !!ready?.duplex;
+                const oneSided = handsFree.sides === 'ONE';
+                const both = !oneSided && !!ready?.duplex;
+                const faceDown = !!ready && readsFaceDown(ready.scanner.id);
                 return (
                     <div className="flex flex-col gap-3">
                         {phase.sentLoad !== null && (
@@ -431,10 +479,34 @@ export const GuidedScan = ({
                                 {t('guided.sent', { load: phase.sentLoad })}
                             </p>
                         )}
+                        {onHandsFreeChange &&
+                            (setupOpen ? (
+                                <HandsFreeSetup
+                                    value={handsFree}
+                                    onChange={onHandsFreeChange}
+                                    printer={ready?.printer ?? null}
+                                />
+                            ) : (
+                                <MyButton
+                                    type="button"
+                                    buttonType="text"
+                                    scale="small"
+                                    className="self-start"
+                                    onClick={() => setSetupOpen(true)}
+                                >
+                                    {t('handsFree.change')}
+                                </MyButton>
+                            ))}
                         <Step
                             picture={<PutPileIllustration />}
-                            label={side(both ? 'both' : 'first')}
-                            instruction={t('guided.stepA', { max: FEEDER_SHEETS })}
+                            label={side(oneSided ? 'written' : both ? 'both' : 'first')}
+                            instruction={
+                                oneSided
+                                    ? t(faceDown ? 'guided.stepOneDown' : 'guided.stepOneUp', {
+                                          max: FEEDER_SHEETS,
+                                      })
+                                    : t('guided.stepA', { max: FEEDER_SHEETS })
+                            }
                             extra={
                                 both ? (
                                     <p className="text-caption text-warning-700">
@@ -443,7 +515,7 @@ export const GuidedScan = ({
                                 ) : null
                             }
                         >
-                            {startButton(both ? 'D' : 'A', null)}
+                            {startButton(oneSided ? 'S' : both ? 'D' : 'A', null)}
                             {phase.sentLoad !== null && (
                                 <MyButton
                                     type="button"
@@ -511,7 +583,7 @@ export const GuidedScan = ({
                     <div className="flex flex-col gap-3 rounded-md border border-danger-200 bg-danger-50 p-3">
                         <p className="flex items-start gap-2 text-body text-danger-700">
                             <WarningCircle size={18} className="mt-px shrink-0" />
-                            {phase.duplex
+                            {phase.mode === 'DUPLEX'
                                 ? t('guided.mismatchDuplex', { count: a?.pages.length ?? 0 })
                                 : t('guided.mismatch', {
                                       a: a?.pages.length ?? 0,
@@ -519,7 +591,7 @@ export const GuidedScan = ({
                                   })}
                         </p>
                         <div className="flex flex-wrap gap-2">
-                            {!phase.duplex && a && b && (
+                            {phase.mode === 'TWO_PASSES' && a && b && (
                                 <MyButton
                                     type="button"
                                     buttonType="primary"
@@ -538,6 +610,46 @@ export const GuidedScan = ({
                     </div>
                 );
             }
+            case 'wrongSide':
+                return (
+                    <div className="flex flex-col gap-3 rounded-md border border-warning-200 bg-warning-50 p-3">
+                        <p className="flex items-start gap-2 text-body text-warning-700">
+                            <WarningCircle size={18} className="mt-px shrink-0" />
+                            {t('guided.wrongSide.body', { count: phase.pass.pages.length })}
+                        </p>
+                        <Thumbs pages={phase.pass.pages} />
+                        <div className="flex flex-wrap gap-2">
+                            <MyButton
+                                type="button"
+                                buttonType="primary"
+                                scale="medium"
+                                onClick={() => {
+                                    forget(phase.pass.jobId);
+                                    setNotice(null);
+                                    setPhase({ name: 'stepA', sentLoad: null });
+                                }}
+                            >
+                                {t('guided.wrongSide.again')}
+                            </MyButton>
+                            <MyButton
+                                type="button"
+                                buttonType="secondary"
+                                scale="medium"
+                                onClick={() => {
+                                    // The clerk says the pages are right: undo what was learned.
+                                    if (ready)
+                                        rememberFaceDown(
+                                            ready.scanner.id,
+                                            !readsFaceDown(ready.scanner.id)
+                                        );
+                                    void send([phase.pass], 'ONE_SIDED');
+                                }}
+                            >
+                                {t('guided.wrongSide.useAnyway')}
+                            </MyButton>
+                        </div>
+                    </div>
+                );
             case 'sending':
                 return (
                     <p className="flex items-center gap-2 text-body text-neutral-700">
@@ -565,7 +677,7 @@ export const GuidedScan = ({
                                     type="button"
                                     buttonType="primary"
                                     scale="medium"
-                                    onClick={() => void send(phase.passes, phase.duplex)}
+                                    onClick={() => void send(phase.passes, phase.mode)}
                                 >
                                     {t('guided.retry')}
                                 </MyButton>

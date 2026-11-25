@@ -82,7 +82,8 @@
         "side": {
             "first": "premier côté",
             "second": "second côté",
-            "both": "les deux côtés"
+            "both": "les deux côtés",
+            "written": "côté écrit"
         },
         "loadSide": "Lot {{load}} · {{side}}",
         "stepA": "Placez jusqu'à {{max}} feuilles dans le chargeur, écriture vers le haut, bord supérieur en premier.",
@@ -119,6 +120,15 @@
             "NOTHING_SCANNED": "Aucune page n'est arrivée. Vérifiez que la pile est dans le chargeur, puis réessayez.",
             "DOWNLOAD": "Impossible de récupérer les pages depuis Vacademy Scan Helper ; rien n'a été envoyé. Réessayez.",
             "UNKNOWN": "La numérisation n'a pas abouti. Remettez la pile de ce côté et réessayez."
+        },
+        "stepOneUp": "Placez jusqu'à {{max}} feuilles dans le chargeur, écriture vers le haut, dans l'ordre (premier élève dessus).",
+        "stepOneDown": "Placez jusqu'à {{max}} feuilles dans le chargeur, écriture vers le BAS : ce scanner lit le côté du dessous.",
+        "lookingAtPages": "Examen des pages…",
+        "wrongSide": {
+            "body_one": "Cette page est vide : le scanner a lu le côté blanc. Retournez toute la pile et numérisez à nouveau.",
+            "body_other": "Ces {{count}} pages sont vides : le scanner a lu le côté blanc de chaque feuille. Retournez toute la pile et numérisez à nouveau.",
+            "again": "Numériser à nouveau",
+            "useAnyway": "Les pages sont bonnes, les utiliser"
         }
     },
     "loads": {
@@ -460,6 +470,66 @@
         "UNKNOWN": {
             "title": "À vérifier",
             "help": "Vérifiez cet élément."
+        }
+    },
+    "handsFree": {
+        "title": "Fonctionnement de ce poste",
+        "change": "Modifier le fonctionnement de ce poste",
+        "sides": {
+            "label": "Les réponses sont écrites sur",
+            "ONE": "Un seul côté de chaque feuille",
+            "BOTH": "Les deux côtés de chaque feuille",
+            "oneHint": "Une numérisation par pile : placez la pile et appuyez sur Démarrer.",
+            "bothHint": "Ce scanner lit un côté à la fois : chaque pile est numérisée deux fois, une fois puis retournée."
+        },
+        "auto": {
+            "label": "Lancer la correction automatiquement",
+            "hint": "Quand les copies sont triées et que rien n'est à vérifier, la correction IA démarre avec les réglages habituels de ce test. Utilise des crédits IA."
+        },
+        "print": {
+            "label": "Imprimer chaque copie corrigée sur {{printer}}",
+            "noPrinter": "Imprimer chaque copie corrigée",
+            "noPrinterHint": "Aucune imprimante trouvée sur cet ordinateur.",
+            "needsAuto": "Activez « Lancer la correction automatiquement » pour imprimer au fil des corrections.",
+            "twoSided": "Imprime recto verso dès que chaque copie est corrigée.",
+            "oneSided": "Imprime dès que chaque copie est corrigée."
+        },
+        "match": {
+            "label": "Associer les copies aux élèves de ce test",
+            "onHint": "La note va à l'élève dont le nom figure sur la copie.",
+            "offHint": "Chaque copie est corrigée sous le nom écrit dessus, sans être ajoutée aux résultats d'un élève. Idéal pour les démonstrations."
+        }
+    },
+    "board": {
+        "title": "Correction des copies",
+        "doneTitle": "Toutes les copies sont corrigées",
+        "counts": "{{checked}} sur {{total}} corrigées",
+        "printedCount_one": "{{count}} imprimée",
+        "printedCount_other": "{{count}} imprimées",
+        "nextPile": "Numériser la pile suivante",
+        "noPrinter": "L'imprimante est injoignable. Vérifiez qu'elle est allumée et que Vacademy Scan Helper fonctionne ; l'impression reprendra d'elle-même.",
+        "needsYou_one": "1 copie a besoin de vous : le nom écrit ne correspond à aucun élève. Choisissez l'élève ci-dessous.",
+        "needsYou_other": "{{count}} copies ont besoin de vous : les noms écrits ne correspondent à aucun élève. Choisissez les élèves ci-dessous.",
+        "loading": "Chargement des copies…",
+        "copyN": "Copie {{n}}",
+        "stage": {
+            "reading": "Lecture du nom",
+            "waiting": "En attente de correction",
+            "checking": "Correction des réponses",
+            "checkingQ": "Correction de la question {{done}} sur {{total}}",
+            "checked": "Corrigée",
+            "needsYou": "Qui l'a écrite ? Choisissez l'élève ci-dessous",
+            "failed": "Correction impossible",
+            "skipped": "Ignorée"
+        },
+        "print": {
+            "waiting": "En attente de l'imprimante",
+            "sending": "Envoi à l'imprimante",
+            "queued": "Dans la file de l'imprimante",
+            "printing": "Impression",
+            "done": "Imprimée",
+            "failed": "Non imprimée",
+            "retry": "Imprimer à nouveau"
         }
     }
 }

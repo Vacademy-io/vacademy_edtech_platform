@@ -180,7 +180,36 @@ export const scanHelper = {
      * page's Origin, which the helper requires.
      */
     thumbBlob: async (page: HelperPage): Promise<Blob> => (await call(page.thumb_url)).blob(),
+
+    /** POST /v1/print: hand one PDF to the printer → the helper's print id. */
+    print: async (
+        pdf: Blob,
+        printerId: string,
+        sides: HelperPrintSides,
+        copies = 1
+    ): Promise<string> => {
+        const q = new URLSearchParams({ printer_id: printerId, sides, copies: String(copies) });
+        const res = await call(`/v1/print?${q.toString()}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/pdf' },
+            body: pdf,
+            timeoutMs: HELPER_PAGE_TIMEOUT_MS,
+        });
+        return (await json<{ print_id: string }>(res)).print_id;
+    },
+
+    /** GET /v1/print/{id}: queued, printing, done or failed. */
+    printStatus: async (printId: string): Promise<HelperPrintJob> =>
+        json<HelperPrintJob>(await call(`/v1/print/${encodeURIComponent(printId)}`)),
 };
+
+export type HelperPrintSides = 'one-sided' | 'two-sided-long-edge';
+
+export interface HelperPrintJob {
+    print_id: string;
+    state: 'queued' | 'printing' | 'done' | 'failed';
+    error: { code: string; message: string } | null;
+}
 
 /** "pass1-001.jpg": the order-files rules read the trailing number as scan order. */
 export const helperFileName = (prefix: string, position: number) =>

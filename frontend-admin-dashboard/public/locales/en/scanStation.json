@@ -82,7 +82,8 @@
         "side": {
             "first": "first side",
             "second": "second side",
-            "both": "both sides"
+            "both": "both sides",
+            "written": "written side"
         },
         "loadSide": "Load {{load}} · {{side}}",
         "stepA": "Put up to {{max}} sheets in the feeder, writing facing up, top edge first.",
@@ -119,6 +120,15 @@
             "NOTHING_SCANNED": "No pages came through. Check the pile is in the feeder, then try again.",
             "DOWNLOAD": "Could not get the scanned pages from Vacademy Scan Helper, so nothing was sent. Try again.",
             "UNKNOWN": "The scan did not finish. Put the pile for this side back and try again."
+        },
+        "stepOneUp": "Put up to {{max}} sheets in the feeder, writing facing up, in order (first student on top).",
+        "stepOneDown": "Put up to {{max}} sheets in the feeder, writing facing DOWN: this scanner reads the side underneath.",
+        "lookingAtPages": "Looking at the pages…",
+        "wrongSide": {
+            "body_one": "This page came out empty: the scanner read the blank side. Turn the whole pile over and scan again.",
+            "body_other": "These {{count}} pages came out empty: the scanner read the blank side of every sheet. Turn the whole pile over and scan again.",
+            "again": "Scan again",
+            "useAnyway": "The pages are right, use them"
         }
     },
     "loads": {
@@ -460,6 +470,66 @@
         "UNKNOWN": {
             "title": "Needs a look",
             "help": "Check this item."
+        }
+    },
+    "handsFree": {
+        "title": "How this desk works",
+        "change": "Change how this desk works",
+        "sides": {
+            "label": "The answers are written on",
+            "ONE": "One side of each sheet",
+            "BOTH": "Both sides of each sheet",
+            "oneHint": "One scan per pile: put the pile in and press Start.",
+            "bothHint": "This scanner reads one side at a time, so each pile is scanned twice: once, then turned over."
+        },
+        "auto": {
+            "label": "Start checking by itself",
+            "hint": "When the copies are sorted and nothing needs a look, the AI check starts with this test's usual settings. Uses AI credits."
+        },
+        "print": {
+            "label": "Print each checked copy on {{printer}}",
+            "noPrinter": "Print each checked copy",
+            "noPrinterHint": "No printer found on this computer.",
+            "needsAuto": "Turn on “Start checking by itself” to print as copies are checked.",
+            "twoSided": "Prints on both sides of the paper, as soon as each copy is checked.",
+            "oneSided": "Prints as soon as each copy is checked."
+        },
+        "match": {
+            "label": "Match copies to students of this test",
+            "onHint": "Marks go to the student whose name is on the copy.",
+            "offHint": "Each copy is checked under the name written on it and is not added to any student's results. Good for demos."
+        }
+    },
+    "board": {
+        "title": "Checking the copies",
+        "doneTitle": "All copies checked",
+        "counts": "{{checked}} of {{total}} checked",
+        "printedCount_one": "{{count}} printed",
+        "printedCount_other": "{{count}} printed",
+        "nextPile": "Scan the next pile",
+        "noPrinter": "The printer is not reachable. Check that it is on and that Vacademy Scan Helper is running; printing starts again by itself.",
+        "needsYou_one": "1 copy needs you: the name on it did not match a student. Pick the student below.",
+        "needsYou_other": "{{count}} copies need you: the names on them did not match a student. Pick the students below.",
+        "loading": "Getting the copies…",
+        "copyN": "Copy {{n}}",
+        "stage": {
+            "reading": "Reading the name",
+            "waiting": "Waiting to be checked",
+            "checking": "Checking the answers",
+            "checkingQ": "Checking question {{done}} of {{total}}",
+            "checked": "Checked",
+            "needsYou": "Who wrote this? Pick the student below",
+            "failed": "Could not be checked",
+            "skipped": "Skipped"
+        },
+        "print": {
+            "waiting": "Waiting for the printer",
+            "sending": "Sending to the printer",
+            "queued": "In the printer's queue",
+            "printing": "Printing",
+            "done": "Printed",
+            "failed": "Did not print",
+            "retry": "Print again"
         }
     }
 }

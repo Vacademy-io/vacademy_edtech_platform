@@ -41,6 +41,9 @@ import { ScanVerdictBar } from './ScanVerdictBar';
 import { StartCheckingDialog } from './StartCheckingDialog';
 import { ScanSessionsPanel } from './ScanSessionsPanel';
 import { StartedBatchPanel } from './StartedBatchPanel';
+import { LiveCheckBoard } from './LiveCheckBoard';
+import { readHandsFree, saveHandsFree, type HandsFreeSettings } from '../-lib/hands-free';
+import { useHandsFreeRun } from '../-hooks/useHandsFreeRun';
 
 const POLL_MS = 4000;
 const USE_FOLDERS_KEY = 'scanStation.useFolders';
@@ -162,6 +165,7 @@ export const ScanStationPage = () => {
                     config={config.data}
                     onLeave={() => openSession(undefined)}
                     onOpenChecks={(batchId) => goToSubmissions(batchId)}
+                    onOpenSession={(id) => openSession(id)}
                     examType={search.examType ?? 'EXAM'}
                 />
             ) : (
@@ -277,6 +281,7 @@ const SessionView = ({
     examType,
     onLeave,
     onOpenChecks,
+    onOpenSession,
 }: {
     sessionId: string;
     assessmentId: string;
@@ -285,6 +290,8 @@ const SessionView = ({
     examType: string;
     onLeave: () => void;
     onOpenChecks: (batchId: string) => void;
+    /** Open another session of this test (hands-free: the next pile). */
+    onOpenSession: (sessionId: string) => void;
 }) => {
     const { t } = useTranslation('scanStation');
     const apply = useApplySession(instituteId);
@@ -296,6 +303,11 @@ const SessionView = ({
     const [addOpen, setAddOpen] = useState(false);
     const [removeLoad, setRemoveLoad] = useState<number | null>(null);
     const [useFolders, setUseFolders] = useState(readUseFolders);
+    const [handsFree, setHandsFree] = useState<HandsFreeSettings>(readHandsFree);
+    const changeHandsFree = (next: HandsFreeSettings) => {
+        setHandsFree(next);
+        saveHandsFree(next);
+    };
     const chooseFolders = (on: boolean) => {
         setUseFolders(on);
         saveUseFolders(on);
@@ -334,6 +346,14 @@ const SessionView = ({
         onSuccess: apply,
         onError: onError(t('bar.reopenFailed')),
     });
+    const nextPile = useMutation({
+        mutationFn: () => createScanSession(assessmentId, instituteId),
+        onSuccess: (next) => {
+            apply(next);
+            onOpenSession(next.id);
+        },
+        onError: onError(t('sessions.createFailed')),
+    });
     const remove = useMutation({
         mutationFn: (loadNo: number) => removeScanLoad(sessionId, loadNo, instituteId),
         onSuccess: (next: ScanSession, loadNo) => {
@@ -342,6 +362,8 @@ const SessionView = ({
         },
         onError: onError(t('errors.decision')),
     });
+
+    useHandsFreeRun({ session, settings: handsFree, assessmentId, instituteId, apply });
 
     if (query.isLoading || (gone && configChecking)) return <DashboardLoader />;
     if (!session) {
@@ -382,6 +404,16 @@ const SessionView = ({
                 }
             />
 
+            {session.status === 'STARTED' && session.intake_batch_id && handsFree.autoCheck && (
+                <LiveCheckBoard
+                    batchId={session.intake_batch_id}
+                    instituteId={instituteId}
+                    print={handsFree.print}
+                    onNextPile={() => nextPile.mutate()}
+                    nextPilePending={nextPile.isPending}
+                />
+            )}
+
             {session.status === 'STARTED' && session.intake_batch_id && (
                 <StartedBatchPanel
                     assessmentId={assessmentId}
@@ -400,6 +432,8 @@ const SessionView = ({
                     loadsFull={loadsFull}
                     maxLoads={config.max_loads}
                     onLoadSent={apply}
+                    handsFree={handsFree}
+                    onHandsFreeChange={changeHandsFree}
                     onUseFolders={() => {
                         chooseFolders(true);
                         if (!loadsFull) setAddOpen(true);
