@@ -51,6 +51,19 @@ public class AttendanceReport {
         return ResponseEntity.ok(attendanceReportService.getGuestWiseCustomFields(sessionId));
     }
 
+    /**
+     * Profile (system) fields and institute custom-field answers (School, Roll No, …) of the
+     * enrolled learners in a class, keyed by user id. Powers the extra columns of the admin
+     * attendance table (Manage Column) for learners who did not come through the public form.
+     * Body: the learner user ids shown in the report.
+     */
+    @PostMapping("/learner-fields")
+    public ResponseEntity<LearnerReportFieldsDTO> getLearnerReportFields(
+            @RequestParam("sessionId") String sessionId,
+            @RequestBody(required = false) List<String> userIds) {
+        return ResponseEntity.ok(attendanceReportService.getLearnerReportFields(sessionId, userIds));
+    }
+
     @GetMapping("/student-report")
     public ResponseEntity<StudentAttendanceReportDTO> getStudentReport(@RequestParam("userId") String userId , @RequestParam("batchId") String batchId , @RequestParam("startDate") LocalDate start, @RequestParam("endDate") LocalDate end){
         return ResponseEntity.ok(attendanceReportService.getStudentReport(userId , batchId , start ,end));
