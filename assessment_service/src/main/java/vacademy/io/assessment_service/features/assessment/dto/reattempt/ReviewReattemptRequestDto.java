@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class ReviewReattemptRequestDto {
 
-    /** APPROVED or REJECTED. */
+    /** APPROVED or REJECTED; RESOLVED for a PROBLEM_REPORT. */
     private String status;
 
     /**

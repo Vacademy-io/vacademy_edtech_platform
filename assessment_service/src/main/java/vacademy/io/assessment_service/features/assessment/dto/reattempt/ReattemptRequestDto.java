@@ -46,4 +46,12 @@ public class ReattemptRequestDto {
     private Integer attemptsAllowed;
     /** Attempts already taken. */
     private Integer attemptsUsed;
+    /** PROBLEM_REPORT only: the reported question, when it was matched to this assessment. */
+    private String questionId;
+    /** Admin inbox only: the reported question's section name. */
+    private String questionSectionName;
+    /** Admin inbox only: the question's position in its section in the paper (1-based). */
+    private Integer questionNumber;
+    /** Admin inbox only: the start of the question text, without markup. */
+    private String questionText;
 }

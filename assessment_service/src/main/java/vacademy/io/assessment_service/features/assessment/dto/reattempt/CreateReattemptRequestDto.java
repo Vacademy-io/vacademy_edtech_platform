@@ -17,7 +17,7 @@ public class CreateReattemptRequestDto {
 
     private String instituteId;
 
-    /** REATTEMPT or TIME_INCREASE. Defaults to REATTEMPT when absent. */
+    /** REATTEMPT, TIME_INCREASE or PROBLEM_REPORT. Defaults to REATTEMPT when absent. */
     private String requestType;
 
     /** Free text the learner typed. Required — the dialog disables Submit until it is filled. */
@@ -25,4 +25,9 @@ public class CreateReattemptRequestDto {
 
     /** The attempt they were on, when the shell knows it. Optional. */
     private String attemptId;
+    /**
+     * PROBLEM_REPORT only: the question on screen when the learner reported. Kept only when it
+     * belongs to this assessment; otherwise the report is saved without it.
+     */
+    private String questionId;
 }

@@ -16,16 +16,27 @@ import vacademy.io.assessment_service.features.assessment.entity.AssessmentUserR
 import vacademy.io.assessment_service.features.assessment.repository.AssessmentReattemptRequestRepository;
 import vacademy.io.assessment_service.features.assessment.repository.AssessmentRepository;
 import vacademy.io.assessment_service.features.assessment.repository.AssessmentUserRegistrationRepository;
+import vacademy.io.assessment_service.features.assessment.repository.QuestionAssessmentSectionMappingRepository;
 import vacademy.io.assessment_service.features.assessment.service.AssessmentWorkflowEventPublisher;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
 
+import vacademy.io.assessment_service.features.assessment.service.QuestionTextPreview;
+
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
- * The learner-raised reattempt / time-extension request, and the admin review of it.
+ * The learner-raised reattempt / time-extension request and problem report, and the admin
+ * review of it.
+ *
+ * <p>A problem report grants nothing: the admin reads it and marks it resolved.
  *
  * <p>Grant mechanics deliberately stay in {@link AssessmentParticipantsManager}: an admin can
  * still grant attempts directly from the participants screen without any request existing, and
@@ -38,6 +49,7 @@ import java.util.Optional;
 public class AssessmentReattemptRequestManager {
 
     private static final int MAX_PAGE_SIZE = 200;
+
 
     @Autowired
     private AssessmentReattemptRequestRepository reattemptRequestRepository;
@@ -53,6 +65,9 @@ public class AssessmentReattemptRequestManager {
 
     @Autowired
     private AssessmentParticipantsManager assessmentParticipantsManager;
+
+    @Autowired
+    private QuestionAssessmentSectionMappingRepository questionMappingRepository;
 
     // ------------------------------------------------------------------ learner
 
@@ -70,8 +85,10 @@ public class AssessmentReattemptRequestManager {
         }
 
         String requestType = normaliseType(dto.getRequestType());
+        boolean problemReport = AssessmentReattemptRequest.TYPE_PROBLEM_REPORT.equals(requestType);
         String userId = user.getUserId();
         String assessmentId = dto.getAssessmentId();
+        String questionId = problemReport ? questionInAssessment(assessmentId, dto.getQuestionId()) : null;
 
         // The learner's registration carries the institute and their contact details. Fall back
         // to whatever the client sent so a request is never lost just because the row is missing.
@@ -85,9 +102,7 @@ public class AssessmentReattemptRequestManager {
 
         // Surface an existing open request rather than stacking duplicates — a learner watching
         // a timer run down will press Submit more than once.
-        Optional<AssessmentReattemptRequest> open = reattemptRequestRepository
-                .findFirstByAssessmentIdAndUserIdAndRequestTypeAndStatus(
-                        assessmentId, userId, requestType, AssessmentReattemptRequest.STATUS_PENDING);
+        Optional<AssessmentReattemptRequest> open = findOpen(assessmentId, userId, requestType, questionId);
         if (open.isPresent()) {
             return toDto(open.get(), registration.orElse(null), null);
         }
@@ -100,6 +115,7 @@ public class AssessmentReattemptRequestManager {
                 .attemptId(dto.getAttemptId())
                 .requestType(requestType)
                 .reason(reason)
+                .questionId(questionId)
                 .status(AssessmentReattemptRequest.STATUS_PENDING)
                 .build();
 
@@ -107,16 +123,19 @@ public class AssessmentReattemptRequestManager {
             request = reattemptRequestRepository.save(request);
         } catch (DataIntegrityViolationException e) {
             // Lost the race against the partial unique index — another tap got there first.
-            return reattemptRequestRepository
-                    .findFirstByAssessmentIdAndUserIdAndRequestTypeAndStatus(
-                            assessmentId, userId, requestType, AssessmentReattemptRequest.STATUS_PENDING)
+            return findOpen(assessmentId, userId, requestType, questionId)
                     .map(existing -> toDto(existing, registration.orElse(null), null))
                     .orElseThrow(() -> new VacademyException("Could not record your request. Please try again."));
         }
 
         Assessment assessment = assessmentRepository.findById(assessmentId).orElse(null);
-        assessmentWorkflowEventPublisher.publishReattemptRequested(request, assessment,
-                registration.orElse(null));
+        // ASSESSMENT_REATTEMPT_REQUESTED automations are written for reattempt and time requests
+        // ("we got your reattempt request"); firing them for a problem report would send the
+        // learner the wrong message. Problem reports reach the admin through the inbox badge.
+        if (!problemReport) {
+            assessmentWorkflowEventPublisher.publishReattemptRequested(request, assessment,
+                    registration.orElse(null));
+        }
 
         return toDto(request, registration.orElse(null), assessment);
     }
@@ -135,18 +154,23 @@ public class AssessmentReattemptRequestManager {
     // ------------------------------------------------------------------ admin
 
     public Page<ReattemptRequestDto> listForAdmin(String instituteId, String assessmentId,
-                                                  List<String> statuses, int page, int size) {
+                                                  List<String> statuses, List<String> types,
+                                                  int page, int size) {
         if (instituteId == null || instituteId.isBlank()) {
             throw new VacademyException("instituteId is required");
         }
         int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         List<String> statusFilter = (statuses == null || statuses.isEmpty()) ? null : statuses;
+        List<String> typeFilter = (types == null || types.isEmpty()) ? null
+                : types.stream().map(t -> t.trim().toUpperCase(Locale.ROOT)).toList();
         String assessmentFilter = (assessmentId == null || assessmentId.isBlank()) ? null : assessmentId;
 
-        return reattemptRequestRepository
-                .findForAdmin(instituteId, assessmentFilter, statusFilter,
+        Page<ReattemptRequestDto> rows = reattemptRequestRepository
+                .findForAdmin(instituteId, assessmentFilter, statusFilter, typeFilter,
                         PageRequest.of(Math.max(page, 0), safeSize))
                 .map(this::enrich);
+        attachReportedQuestions(rows.getContent());
+        return rows;
     }
 
     /**
@@ -175,11 +199,7 @@ public class AssessmentReattemptRequestManager {
         if (dto == null || dto.getStatus() == null) {
             throw new VacademyException("status is required");
         }
-        String status = dto.getStatus().trim().toUpperCase();
-        if (!AssessmentReattemptRequest.STATUS_APPROVED.equals(status)
-                && !AssessmentReattemptRequest.STATUS_REJECTED.equals(status)) {
-            throw new VacademyException("status must be APPROVED or REJECTED");
-        }
+        String status = dto.getStatus().trim().toUpperCase(Locale.ROOT);
 
         AssessmentReattemptRequest request = reattemptRequestRepository.findById(requestId)
                 .orElseThrow(() -> new VacademyException("Request not found"));
@@ -193,11 +213,26 @@ public class AssessmentReattemptRequestManager {
                     + request.getStatus().toLowerCase());
         }
 
+        String requestType = request.getRequestType();
+        if (AssessmentReattemptRequest.TYPE_PROBLEM_REPORT.equals(requestType)) {
+            // Closing is the only action on a report. An admin page built before reports existed
+            // shows them with Approve / Reject; either one closes the report.
+            if (!AssessmentReattemptRequest.STATUS_RESOLVED.equals(status)
+                    && !AssessmentReattemptRequest.STATUS_APPROVED.equals(status)
+                    && !AssessmentReattemptRequest.STATUS_REJECTED.equals(status)) {
+                throw new VacademyException("A problem report can only be marked RESOLVED");
+            }
+            status = AssessmentReattemptRequest.STATUS_RESOLVED;
+        } else if (!AssessmentReattemptRequest.STATUS_APPROVED.equals(status)
+                && !AssessmentReattemptRequest.STATUS_REJECTED.equals(status)) {
+            throw new VacademyException("status must be APPROVED or REJECTED");
+        }
+
         Integer granted = null;
         if (AssessmentReattemptRequest.STATUS_APPROVED.equals(status)) {
             granted = (dto.getGrantedCount() == null || dto.getGrantedCount() < 1) ? 1 : dto.getGrantedCount();
 
-            if (AssessmentReattemptRequest.TYPE_REATTEMPT.equals(request.getRequestType())) {
+            if (AssessmentReattemptRequest.TYPE_REATTEMPT.equals(requestType)) {
                 String registrationId = resolveRegistrationId(request);
                 if (registrationId == null) {
                     throw new VacademyException(
@@ -220,6 +255,8 @@ public class AssessmentReattemptRequestManager {
         request.setReviewedAt(new Date());
         request = reattemptRequestRepository.save(request);
 
+        // No question preview here: the lookup would run inside this transaction, where a failed
+        // query would roll the review back. The inbox reloads its list after a review anyway.
         return enrich(request);
     }
 
@@ -243,12 +280,82 @@ public class AssessmentReattemptRequestManager {
         if (requestType == null || requestType.isBlank()) {
             return AssessmentReattemptRequest.TYPE_REATTEMPT;
         }
-        String upper = requestType.trim().toUpperCase();
+        String upper = requestType.trim().toUpperCase(Locale.ROOT);
         if (AssessmentReattemptRequest.TYPE_REATTEMPT.equals(upper)
-                || AssessmentReattemptRequest.TYPE_TIME_INCREASE.equals(upper)) {
+                || AssessmentReattemptRequest.TYPE_TIME_INCREASE.equals(upper)
+                || AssessmentReattemptRequest.TYPE_PROBLEM_REPORT.equals(upper)) {
             return upper;
         }
-        throw new VacademyException("request_type must be REATTEMPT or TIME_INCREASE");
+        throw new VacademyException("request_type must be REATTEMPT, TIME_INCREASE or PROBLEM_REPORT");
+    }
+
+    /**
+     * The learner's open request of this type. Problem reports are matched per question as well,
+     * since a learner may report several questions while each has its own open report.
+     */
+    private Optional<AssessmentReattemptRequest> findOpen(String assessmentId, String userId,
+                                                         String requestType, String questionId) {
+        if (!AssessmentReattemptRequest.TYPE_PROBLEM_REPORT.equals(requestType)) {
+            return reattemptRequestRepository.findFirstByAssessmentIdAndUserIdAndRequestTypeAndStatus(
+                    assessmentId, userId, requestType, AssessmentReattemptRequest.STATUS_PENDING);
+        }
+        return reattemptRequestRepository.findByAssessmentIdAndUserIdOrderByCreatedAtDesc(assessmentId, userId)
+                .stream()
+                .filter(r -> AssessmentReattemptRequest.TYPE_PROBLEM_REPORT.equals(r.getRequestType())
+                        && AssessmentReattemptRequest.STATUS_PENDING.equals(r.getStatus())
+                        && Objects.equals(r.getQuestionId(), questionId))
+                .findFirst();
+    }
+
+    /**
+     * The reported question id, kept only when it is in this assessment's paper. The id comes
+     * from the learner's device; an unchecked one would let a report show the admin another
+     * assessment's question. A question that is not in the paper does not refuse the report: it
+     * is saved without the question.
+     */
+    private String questionInAssessment(String assessmentId, String questionId) {
+        if (questionId == null || questionId.isBlank()) {
+            return null;
+        }
+        String trimmed = questionId.trim();
+        if (questionMappingRepository.existsBySection_Assessment_IdAndQuestion_Id(assessmentId, trimmed)) {
+            return trimmed;
+        }
+        log.warn("Problem report on assessment {} named question {}, which is not in its paper; saved without it",
+                assessmentId, trimmed);
+        return null;
+    }
+
+    /**
+     * Fills in where each reported question sits in the paper, and the start of its text. A
+     * failed lookup costs the preview, never the inbox.
+     */
+    private void attachReportedQuestions(List<ReattemptRequestDto> rows) {
+        List<ReattemptRequestDto> reports = rows.stream().filter(r -> r.getQuestionId() != null).toList();
+        if (reports.isEmpty()) {
+            return;
+        }
+        try {
+            List<String> assessmentIds = reports.stream().map(ReattemptRequestDto::getAssessmentId).distinct().toList();
+            List<String> questionIds = reports.stream().map(ReattemptRequestDto::getQuestionId).distinct().toList();
+            Map<String, QuestionAssessmentSectionMappingRepository.ReportedQuestionRow> found = questionMappingRepository
+                    .findReportedQuestions(assessmentIds, questionIds)
+                    .stream()
+                    .collect(Collectors.toMap(q -> q.getAssessmentId() + "|" + q.getQuestionId(),
+                            Function.identity(), (first, second) -> first));
+            for (ReattemptRequestDto report : reports) {
+                QuestionAssessmentSectionMappingRepository.ReportedQuestionRow question =
+                        found.get(report.getAssessmentId() + "|" + report.getQuestionId());
+                if (question == null) {
+                    continue;
+                }
+                report.setQuestionSectionName(question.getSectionName());
+                report.setQuestionNumber(question.getQuestionNumber());
+                report.setQuestionText(QuestionTextPreview.of(question.getQuestionHtml()));
+            }
+        } catch (Exception e) {
+            log.warn("Could not load reported questions for the request inbox: {}", e.getMessage());
+        }
     }
 
     private ReattemptRequestDto enrich(AssessmentReattemptRequest request) {
@@ -273,6 +380,7 @@ public class AssessmentReattemptRequestManager {
                 .reason(request.getReason())
                 .status(request.getStatus())
                 .grantedCount(request.getGrantedCount())
+                .questionId(request.getQuestionId())
                 .reviewedBy(request.getReviewedBy())
                 .reviewNote(request.getReviewNote())
                 .reviewedAt(request.getReviewedAt())

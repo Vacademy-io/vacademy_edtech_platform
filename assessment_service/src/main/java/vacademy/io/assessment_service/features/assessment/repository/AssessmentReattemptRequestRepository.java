@@ -21,23 +21,26 @@ public interface AssessmentReattemptRequestRepository extends JpaRepository<Asse
             String assessmentId, String userId);
 
     /**
-     * The admin inbox. {@code statuses} and {@code assessmentId} are both optional so one query
-     * serves "everything pending across the institute" and "this assessment's history"; passing
-     * null for either drops that predicate rather than matching nothing.
+     * The admin inbox. {@code statuses}, {@code types} and {@code assessmentId} are all optional
+     * so one query serves "everything pending across the institute" and "this assessment's
+     * history"; passing null for any of them drops that predicate rather than matching nothing.
      */
     @Query("""
             SELECT r FROM AssessmentReattemptRequest r
             WHERE r.instituteId = :instituteId
               AND (:assessmentId IS NULL OR r.assessmentId = :assessmentId)
               AND (:statuses IS NULL OR r.status IN :statuses)
+              AND (:types IS NULL OR r.requestType IN :types)
             ORDER BY r.createdAt DESC
             """)
     Page<AssessmentReattemptRequest> findForAdmin(@Param("instituteId") String instituteId,
                                                   @Param("assessmentId") String assessmentId,
                                                   @Param("statuses") List<String> statuses,
+                                                  @Param("types") List<String> types,
                                                   Pageable pageable);
 
     long countByInstituteIdAndStatus(String instituteId, String status);
+
 
     long countByInstituteIdAndAssessmentIdAndStatus(String instituteId, String assessmentId, String status);
 }
