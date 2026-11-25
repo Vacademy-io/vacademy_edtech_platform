@@ -34,11 +34,12 @@
             "tag3": "Uses AI credits"
         },
         "upload": {
-            "title": "Upload a Word / HTML file",
-            "description": "Import a paper you already have. We read questions marked (1.), options (a.) and Ans: lines, and show you anything we couldn't read.",
+            "title": "Upload a Word / HTML / PDF file",
+            "description": "Import a paper you already have. We read questions marked (1.), options (a.) and Ans: lines, and show you anything we couldn't read. A PDF is read by VSmart AI instead.",
             "tag1": ".docx",
             "tag2": ".html",
-            "tag3": "Images kept"
+            "tag3": "Images kept",
+            "tag4": ".pdf (read by AI)"
         },
         "vsmart": {
             "title": "Upload any paper — AI extracts it",
@@ -49,7 +50,8 @@
             "tag3": "Uses AI credits",
             "dialogHeading": "Extract a paper with VSmart AI",
             "dialogHint": "Upload your paper. Once the questions are pulled out, open the preview, check them, and click Add to question bank.",
-            "close": "Close"
+            "close": "Close",
+            "pdfHandedOver": "The Word / HTML reader can't read a PDF, so VSmart AI is reading it. You'll see how many questions it found and the AI credits before you extract."
         },
         "manual": {
             "title": "Create manually",
@@ -78,8 +80,9 @@
             "review": "Review questions",
             "saved": "Saved to list"
         },
-        "dropTitle": "Drop your .docx or .html file here",
+        "dropTitle": "Drop your .docx, .html or .pdf file here",
         "dropBrowse": "or browse from your device",
+        "dropPdfHint": "A PDF opens in VSmart AI, which reads any layout. You'll see the AI credits before anything is used.",
         "uploading": "Uploading… {{percent}}%",
         "processing": "Reading questions… large files can take up to a minute.",
         "fileRead": "{{size}} MB · read",
