@@ -19,6 +19,7 @@ import { getTerminology } from '@/components/common/layout-container/sidebar/uti
 import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { AutofillDecoy } from '@/components/design-system/autofill-decoy';
 import { useLearnerUsernamePolicy } from '@/services/student-display-settings';
+import { checkUsernameAvailability } from '@/services/username-availability';
 export const StepFiveForm = ({
     initialValues,
     handleNextButtonDisable,
@@ -102,6 +103,27 @@ export const StepFiveForm = ({
                 'Some form steps are incomplete. Please complete all steps before submitting.'
             );
             return;
+        }
+
+        // A username is unique across the whole platform. One that already belongs to
+        // someone else must not go through: ask for another before enrolling. Skipped on
+        // re-enroll (the learner keeps theirs) and when the institute's username rule
+        // replaces this one on the server. If the check itself fails, the enrolment goes
+        // ahead and the server gives a taken name a suffix.
+        const username = values.username?.trim();
+        if (!isReEnroll && !usernamePolicy.applies && username) {
+            const free = await checkUsernameAvailability({
+                // As typed: this route (/learner/enroll) saves the username unchanged.
+                username,
+                email: stepTwoData.email?.trim(),
+                mobile_number: stepTwoData.mobile_number?.trim(),
+            }).catch(() => true);
+            if (!free) {
+                const message = `Username "${username}" is already taken. Enter a different username.`;
+                form.setError('username', { message });
+                toast.error(message);
+                return;
+            }
         }
 
         try {

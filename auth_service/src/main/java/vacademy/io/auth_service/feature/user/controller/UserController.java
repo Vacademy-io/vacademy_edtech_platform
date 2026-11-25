@@ -8,6 +8,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import vacademy.io.auth_service.feature.auth.service.AuthService;
+import vacademy.io.auth_service.feature.user.dto.UsernameAvailabilityRequest;
 import vacademy.io.auth_service.feature.user.service.UserAccountAccessGuard;
 import vacademy.io.auth_service.feature.user.service.UserCredentialUpdateService;
 import vacademy.io.common.auth.dto.*;
@@ -18,6 +19,7 @@ import vacademy.io.common.exceptions.VacademyException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
@@ -207,6 +209,21 @@ public class UserController {
         } catch (Exception e) {
             throw new VacademyException(e.getMessage());
         }
+    }
+
+    /**
+     * Add-learner form: may this username be typed for a new learner of {@code instituteId}?
+     * Staff of the institute only. Says yes/no and nothing about who holds the name.
+     */
+    @PostMapping("/username-availability")
+    public ResponseEntity<Map<String, Boolean>> usernameAvailability(
+            @RequestParam("instituteId") String instituteId,
+            @RequestBody UsernameAvailabilityRequest request,
+            @RequestAttribute("user") CustomUserDetails customUserDetails) {
+        userAccountAccessGuard.requireStaffOf(customUserDetails, instituteId);
+        boolean available = authService.isUsernameAvailableForNewLearner(
+                request.username(), request.email(), request.mobileNumber());
+        return ResponseEntity.ok(Map.of("available", available));
     }
 
     @GetMapping("/autosuggest-users")

@@ -310,6 +310,12 @@ public class StudentRegistrationManager {
         UserDTO createdUser = createUserFromAuthService(instituteStudentDTO.getUserDetails(),
                 instituteId, sendCredentials);
         instituteStudentDTO.getUserDetails().setId(createdUser.getId());
+        // The account can carry a different username than the one sent (an existing account,
+        // or a taken name that got a suffix). The CSV result and the enrolment notification
+        // read it from this request object, so give them the one the learner logs in with.
+        if (StringUtils.hasText(createdUser.getUsername())) {
+            instituteStudentDTO.getUserDetails().setUsername(createdUser.getUsername());
+        }
         return createStudentFromRequest(createdUser, instituteStudentDTO.getStudentExtraDetails());
     }
 
