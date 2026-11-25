@@ -45,6 +45,18 @@ import PhoneInputField from "@/components/design-system/phone-input-field";
 import { DashboardLoader } from "@/components/core/dashboard-loader";
 import { useInstituteFeatureStore } from "@/stores/insititute-feature-store";
 import { PaymentBillingSection } from "./payment-billing/payment-billing-section";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { ProfileCustomFieldsEditor } from "./profile-custom-fields/profile-custom-fields-editor";
+import {
+  profileCustomFieldsQueryKey,
+  saveProfileCustomFields,
+  useProfileCustomFields,
+} from "./profile-custom-fields/profile-custom-fields-service";
+import {
+  changedProfileValues,
+  validateProfileValues,
+} from "./profile-custom-fields/profile-custom-fields-utils";
 
 interface UpdateStudentRequest {
   user_id: string;
@@ -99,6 +111,25 @@ export default function EditProfile() {
 
   const methods = useForm();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  // Additional Details: the learner's custom fields (invite answers, admin-entered values).
+  // Only the fields the learner changes are sent, after the main profile save.
+  const { data: profileCustomFields = [] } = useProfileCustomFields(
+    studentData?.institute_id
+  );
+  const [customFieldEdits, setCustomFieldEdits] = useState<Record<string, string>>({});
+  const [customFieldErrors, setCustomFieldErrors] = useState<Record<string, string>>({});
+
+  const handleCustomFieldChange = (customFieldId: string, value: string) => {
+    setCustomFieldEdits((prev) => ({ ...prev, [customFieldId]: value }));
+    setCustomFieldErrors((prev) => {
+      if (!(customFieldId in prev)) return prev;
+      const next = { ...prev };
+      delete next[customFieldId];
+      return next;
+    });
+  };
 
   const getProfileImage = async (faceFileId: string) => {
     if (!faceFileId) return null;
@@ -250,6 +281,15 @@ export default function EditProfile() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const customFieldChanges = changedProfileValues(profileCustomFields, customFieldEdits);
+    const fieldErrors = validateProfileValues(profileCustomFields, customFieldChanges);
+    if (Object.keys(fieldErrors).length > 0) {
+      setCustomFieldErrors(fieldErrors);
+      toast.error(t("profileCustomFields.invalidFields"));
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -281,6 +321,21 @@ export default function EditProfile() {
               value: JSON.stringify(updatedStudentData),
             });
           }
+        }
+      }
+
+      const instituteId = studentData?.institute_id;
+      if (instituteId && customFieldChanges.length > 0) {
+        try {
+          const refreshed = await saveProfileCustomFields(instituteId, customFieldChanges);
+          queryClient.setQueryData(profileCustomFieldsQueryKey(instituteId), refreshed);
+          setCustomFieldEdits({});
+        } catch (customFieldError) {
+          // The main details are saved; keep the learner here so the unsaved
+          // Additional Details edits are not lost.
+          console.error("Error updating additional details:", customFieldError);
+          toast.error(t("profileCustomFields.saveError"));
+          return;
         }
       }
 
@@ -680,6 +735,14 @@ export default function EditProfile() {
                 )}
               </div>
             </div>
+
+            <ProfileCustomFieldsEditor
+              fields={profileCustomFields}
+              edits={customFieldEdits}
+              errors={customFieldErrors}
+              onChange={handleCustomFieldChange}
+              disabled={isLoading}
+            />
 
             {/* Actions */}
             <div className="pt-6 border-t border-gray-100 flex items-center justify-end gap-3 sticky bottom-0 bg-white p-4 -mx-6 -mb-6 md:p-0 md:m-0 md:static">

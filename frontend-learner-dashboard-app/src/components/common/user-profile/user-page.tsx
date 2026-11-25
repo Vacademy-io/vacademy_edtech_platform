@@ -20,6 +20,7 @@ import { useSystemFieldVisibility } from "@/hooks/use-system-field-visibility";
 import ProgressStats from "./progress-stats";
 import type { StudentProfileSettings } from "@/types/student-display-settings";
 import { BadgesRankCard } from "./badges-rank-card";
+import { ProfileCustomFieldsCard } from "./profile-custom-fields/profile-custom-fields-card";
 import { useNavHeadingStore } from "@/stores/layout-container/useNavHeadingStore";
 import { formatDate } from "@/lib/format-date";
 import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
@@ -635,6 +636,10 @@ export default function ProfilePage() {
                   </div>
                 </div>
               )}
+
+              {/* Additional Details — invite / course-purchase answers and
+                  admin-entered custom fields (School, College, Roll No…). */}
+              <ProfileCustomFieldsCard instituteId={studentData?.institute_id} />
 
               {/* Contact & Location Card */}
               {showContactSection && !profileCards.hideContactLocation && (

@@ -266,5 +266,11 @@
   "fieldValue": {
     "yes": "Yes",
     "no": "No"
+  },
+  "profileCustomFields": {
+    "title": "Additional Details",
+    "saveError": "Your other details were saved, but Additional Details could not be saved. Please try again.",
+    "invalidFields": "Please check the highlighted fields in Additional Details.",
+    "lockedHint": "Set by your institute. Contact them to change it."
   }
 }

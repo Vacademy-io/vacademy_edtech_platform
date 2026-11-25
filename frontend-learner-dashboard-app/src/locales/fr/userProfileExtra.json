@@ -268,5 +268,11 @@
   "fieldValue": {
     "yes": "Oui",
     "no": "Non"
+  },
+  "profileCustomFields": {
+    "title": "Informations complémentaires",
+    "saveError": "Vos autres informations ont été enregistrées, mais pas les informations complémentaires. Veuillez réessayer.",
+    "invalidFields": "Veuillez vérifier les champs signalés dans Informations complémentaires.",
+    "lockedHint": "Défini par votre établissement. Contactez-le pour le modifier."
   }
 }
