@@ -78,6 +78,14 @@ export function parseGameSlide(json: string | null | undefined): GameSlideSpec |
   }
 }
 
+/**
+ * Whether a game page can ever report a result. Only a page that posts
+ * `vacademy:complete` does; the admin game editor warns the teacher by the same rule.
+ */
+export function gameReportsResult(html: string): boolean {
+  return html.includes("vacademy:complete");
+}
+
 /** Plain text for the AI tutor: the cards, the poll question, or the game's instructions. */
 export function activityTutorText(type: string, json: string | null | undefined): string {
   if (type === "FLASHCARDS") {

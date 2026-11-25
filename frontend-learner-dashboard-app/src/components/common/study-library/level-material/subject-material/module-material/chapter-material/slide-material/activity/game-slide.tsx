@@ -1,18 +1,28 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { announceSlideCompleted } from "@/services/slide-engagement";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { GameController, Trophy } from "@phosphor-icons/react";
 import type { Slide } from "@/hooks/study-library/use-slides";
+import { getSlideCompletionThreshold } from "@/constants/study-library";
+import { markSlideCompletion } from "@/services/study-library/tracking-api/mark-slide-completion";
 import { HtmlSlideIframe, type SlideResult } from "../html-slide-iframe";
 import { useDiscussionContext } from "../discussion/use-discussion";
 import { fetchGame, sendGameScore, type GameView } from "./activity-api";
-import { parseGameSlide } from "./activity-utils";
+import { gameReportsResult, parseGameSlide } from "./activity-utils";
+
+/** How long a game that never reports a result must be on screen to count as played. */
+const UNSCORED_GAME_DONE_AFTER_MS = 30_000;
+const VISIBLE_TICK_MS = 1_000;
 
 /**
  * A game: the teacher's HTML page in the sandboxed slide frame. When the page posts
  * `vacademy:complete`, the score is saved (the server caps it and keeps the best) and the
  * first result completes the slide.
+ *
+ * A page that never posts it can't be scored. It completes once the learner has had it
+ * on screen for {@link UNSCORED_GAME_DONE_AFTER_MS}. Without this the slide stayed at 0%
+ * for good, holding the chapter below 100% and every unlock rule that waits on it.
  */
 export function GameSlide({ slide }: { slide: Slide }) {
   const { t, i18n } = useTranslation("studyContent");
@@ -34,6 +44,43 @@ export function GameSlide({ slide }: { slide: Slide }) {
       if (first) announceSlideCompleted(slide.id);
     },
   });
+
+  // Unscored game: count visible time, then mark the slide complete once.
+  const reportsResult = !!game && gameReportsResult(game.html);
+  const alreadyComplete = (slide.percentage_completed || 0) >= getSlideCompletionThreshold();
+  const idsRef = useRef(ids);
+  idsRef.current = ids;
+  const markedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!game || reportsResult || alreadyComplete || !ready || markedRef.current === slide.id) return;
+    let visibleMs = 0;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      visibleMs += VISIBLE_TICK_MS;
+      if (visibleMs < UNSCORED_GAME_DONE_AFTER_MS) return;
+      window.clearInterval(timer);
+      markedRef.current = slide.id;
+      const { chapterId, moduleId, subjectId, packageSessionId } = idsRef.current;
+      markSlideCompletion({
+        slideId: slide.id,
+        slideType: "DOCUMENT",
+        completed: true,
+        chapterId,
+        moduleId,
+        subjectId,
+        packageSessionId,
+      })
+        .then(() => {
+          if (chapterId) queryClient.invalidateQueries({ queryKey: ["slides", chapterId] });
+          announceSlideCompleted(slide.id);
+        })
+        .catch(() => {
+          // Not fatal: the next time the learner opens the game it tries again.
+          markedRef.current = null;
+        });
+    }, VISIBLE_TICK_MS);
+    return () => window.clearInterval(timer);
+  }, [game, reportsResult, alreadyComplete, ready, slide.id, queryClient]);
 
   if (!game) {
     return (

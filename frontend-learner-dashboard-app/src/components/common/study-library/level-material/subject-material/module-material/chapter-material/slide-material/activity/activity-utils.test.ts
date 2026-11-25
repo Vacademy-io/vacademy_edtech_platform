@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { activityTutorText, parseFlashcardsSlide, parseGameSlide, parsePollSlide, votePercent } from "./activity-utils";
+import {
+  activityTutorText,
+  gameReportsResult,
+  parseFlashcardsSlide,
+  parseGameSlide,
+  parsePollSlide,
+  votePercent,
+} from "./activity-utils";
 
 describe("activity slide parsers", () => {
   it("reads a flashcards/v1 deck and skips half-empty cards", () => {
@@ -34,6 +41,11 @@ describe("activity slide parsers", () => {
     expect(parseGameSlide(JSON.stringify({ html: "  " }))).toBeNull();
     expect(parseGameSlide(JSON.stringify({ html: "<p>x</p>", maxScore: -1 }))?.maxScore).toBeNull();
     expect(parseGameSlide(JSON.stringify({ html: "<p>x</p>", maxScore: 10 }))?.maxScore).toBe(10);
+  });
+
+  it("knows whether a game page can report a result", () => {
+    expect(gameReportsResult("<script>parent.postMessage({ type: 'vacademy:complete', score }, '*')</script>")).toBe(true);
+    expect(gameReportsResult("<html><body><button>Play</button></body></html>")).toBe(false);
   });
 
   it("gives the tutor readable text, never the raw JSON", () => {
