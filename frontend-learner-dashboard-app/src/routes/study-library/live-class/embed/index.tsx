@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowSquareOut } from "@phosphor-icons/react";
 import { SessionDetailsResponse } from "../-types/types";
 import { useLiveSessions } from "../-hooks/useLiveSessions";
-import { getAllPackageSessionIds } from "@/utils/study-library/get-list-from-stores/getPackageSessionId";
+import { loadPackageSessionIds } from "@/utils/study-library/get-list-from-stores/getPackageSessionId";
 import { DefaultClassCard } from "../-components/DefaultClassCard";
 import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
 import { BASE_URL } from "@/constants/urls";
@@ -137,8 +137,7 @@ function EmbedComponent() {
   useEffect(() => {
     if (isAuthenticated !== true) return;
     const fetchBatchIds = async () => {
-      const ids = await getAllPackageSessionIds();
-      setBatchIds(ids);
+      await loadPackageSessionIds(setBatchIds);
     };
     fetchBatchIds();
   }, [isAuthenticated]);
