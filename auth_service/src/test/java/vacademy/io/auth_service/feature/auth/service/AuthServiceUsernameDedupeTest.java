@@ -16,6 +16,7 @@ import vacademy.io.common.auth.entity.User;
 import vacademy.io.common.auth.repository.RoleRepository;
 import vacademy.io.common.auth.repository.UserRepository;
 import vacademy.io.common.auth.repository.UserRoleRepository;
+import vacademy.io.common.exceptions.VacademyException;
 
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -126,17 +129,92 @@ class AuthServiceUsernameDedupeTest {
     }
 
     @Test
-    void adminEnrollmentWithAnotherPersonsUsernameCreatesNewUserWithSuffix() {
+    void adminTypedUsernameOfAnotherPersonIsRefusedWithAClearMessage() {
         // An admin typed a common name as the username for a new learner, with that
         // learner's own email and phone: the account already holding the name is someone else.
         UserDTO dto = request("john.new@yahoo.com", "john", "9000000000");
         dto.setUsernameExplicit(true);
 
+        VacademyException e = assertThrows(VacademyException.class,
+                () -> authService.createUserForLearnerEnrollment(dto, INSTITUTE_ID, false, null));
+
+        assertEquals("Username \"john\" is already taken. Please use a different username.", e.getMessage());
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void createUserTypedUsernameOfAnotherPersonIsRefused() {
+        UserDTO dto = request("john.new@yahoo.com", "john", null);
+        dto.setUsernameExplicit(true);
+
+        assertThrows(VacademyException.class, () -> authService.createUser(dto, INSTITUTE_ID, false));
+    }
+
+    @Test
+    void typedUsernameOfAnAccountWithNothingToCompareIsRefused() {
+        // Used to be attached: nothing on record disagreed. A typed name needs proof.
+        existing.setEmail(null);
+        existing.setMobileNumber(null);
+        UserDTO dto = request("asha@yahoo.com", "john", null);
+        dto.setUsernameExplicit(true);
+
+        assertThrows(VacademyException.class,
+                () -> authService.createUserForLearnerEnrollment(dto, INSTITUTE_ID, false, null));
+    }
+
+    @Test
+    void typedUsernameOfTheSamePersonByPhoneMatches() {
+        UserDTO dto = request(null, "john", "+91 98765 43210");
+        dto.setUsernameExplicit(true);
+
         User user = authService.createUserForLearnerEnrollment(dto, INSTITUTE_ID, false, null);
 
+        assertSame(existing, user);
+    }
+
+    @Test
+    void typedUsernameOfOwnLearnerEnrollsThatLearner() {
+        when(userRoleRepository.findByUser(existing)).thenReturn(List.of(roleIn(INSTITUTE_ID, "ACTIVE")));
+        UserDTO dto = request("someone.else@yahoo.com", "john", null);
+        dto.setUsernameExplicit(true);
+
+        User user = authService.createUserForLearnerEnrollment(dto, INSTITUTE_ID, false, null);
+
+        assertSame(existing, user);
+    }
+
+    @Test
+    void typedUsernameTakenOnPhoneLoginInstituteIsRefused() {
+        // Phone-login institutes never look the username up; a taken typed name still must not
+        // be changed behind the admin's back.
+        when(instituteSettingsService.getUserIdentifier(anyString())).thenReturn("PHONE");
+        UserDTO dto = request(null, "john", "9000000000");
+        dto.setUsernameExplicit(true);
+
+        assertThrows(VacademyException.class,
+                () -> authService.createUserForLearnerEnrollment(dto, INSTITUTE_ID, false, null));
+    }
+
+    @Test
+    void typedUsernameReplacedByInstituteRuleIsNotRefused() {
+        // Settings → Login & Signup replaces typed names: the typed one is never used.
+        when(institutePolicyService.fetchSignupPolicyCached(INSTITUTE_ID)).thenReturn(InstituteSignupPolicy.builder()
+                .userNameStrategy("phone").usernameApplyToAll(true).usernameOverrideTyped(true).build());
+        UserDTO dto = request("john.new@yahoo.com", "john", "9000000000");
+        dto.setUsernameExplicit(true);
+
+        User user = authService.createUserForLearnerEnrollment(dto, INSTITUTE_ID, false, null);
+
+        assertEquals("9000000000", user.getUsername());
+    }
+
+    @Test
+    void usernameNotTypedStillGetsASuffix() {
+        // Generated, or the email reused as the username: the admin never chose it.
+        User user = authService.createUserForLearnerEnrollment(
+                request("john.new@yahoo.com", "john", "9000000000"), INSTITUTE_ID, false, null);
+
         assertNotSame(existing, user);
-        assertEquals("john.new@yahoo.com", user.getEmail());
-        assertEquals("9000000000", user.getMobileNumber());
         assertTrue(user.getUsername().startsWith("john_"), user.getUsername());
     }
 
