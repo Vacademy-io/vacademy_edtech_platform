@@ -36,7 +36,13 @@ public class StudentAttempt {
     @Column(name = "preview_start_time")
     private Date previewStartTime;
 
-    @Column(name = "max_time", nullable = false)
+    /**
+     * Minutes allowed for this attempt. Written on insert only: entity saves never update it.
+     * The live autosave and its async marks pass save the whole row from a copy loaded seconds
+     * earlier, so an admin's extra time added in between would be silently put back. Change it
+     * through StudentAttemptRepository.addMinutesToLiveAttempt / overwriteMaxTime instead.
+     */
+    @Column(name = "max_time", nullable = false, updatable = false)
     private Integer maxTime;
 
     @Column(name = "status", nullable = false)

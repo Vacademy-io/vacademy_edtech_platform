@@ -13,11 +13,14 @@ import vacademy.io.assessment_service.features.assessment.dto.reattempt.ReviewRe
 import vacademy.io.assessment_service.features.assessment.entity.Assessment;
 import vacademy.io.assessment_service.features.assessment.entity.AssessmentReattemptRequest;
 import vacademy.io.assessment_service.features.assessment.entity.AssessmentUserRegistration;
+import vacademy.io.assessment_service.features.assessment.entity.StudentAttempt;
 import vacademy.io.assessment_service.features.assessment.repository.AssessmentReattemptRequestRepository;
 import vacademy.io.assessment_service.features.assessment.repository.AssessmentRepository;
 import vacademy.io.assessment_service.features.assessment.repository.AssessmentUserRegistrationRepository;
 import vacademy.io.assessment_service.features.assessment.repository.QuestionAssessmentSectionMappingRepository;
+import vacademy.io.assessment_service.features.assessment.repository.StudentAttemptRepository;
 import vacademy.io.assessment_service.features.assessment.service.AssessmentWorkflowEventPublisher;
+import vacademy.io.assessment_service.features.learner_assessment.enums.AssessmentAttemptEnum;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
 
@@ -36,7 +39,9 @@ import java.util.stream.Collectors;
  * The learner-raised reattempt / time-extension request and problem report, and the admin
  * review of it.
  *
- * <p>A problem report grants nothing: the admin reads it and marks it resolved.
+ * <p>Approving a time-extension request adds the admin's minutes to the learner's live attempt
+ * ({@code student_attempt.max_time}); the open exam picks the new limit up on its next autosave.
+ * A problem report grants nothing: the admin reads it and marks it resolved.
  *
  * <p>Grant mechanics deliberately stay in {@link AssessmentParticipantsManager}: an admin can
  * still grant attempts directly from the participants screen without any request existing, and
@@ -49,6 +54,9 @@ import java.util.stream.Collectors;
 public class AssessmentReattemptRequestManager {
 
     private static final int MAX_PAGE_SIZE = 200;
+
+    /** Upper bound on one time grant, so a typo (600 for 60) cannot hand out ten hours. */
+    static final int MAX_GRANTED_MINUTES = 300;
 
 
     @Autowired
@@ -65,6 +73,9 @@ public class AssessmentReattemptRequestManager {
 
     @Autowired
     private AssessmentParticipantsManager assessmentParticipantsManager;
+
+    @Autowired
+    private StudentAttemptRepository studentAttemptRepository;
 
     @Autowired
     private QuestionAssessmentSectionMappingRepository questionMappingRepository;
@@ -201,7 +212,7 @@ public class AssessmentReattemptRequestManager {
         }
         String status = dto.getStatus().trim().toUpperCase(Locale.ROOT);
 
-        AssessmentReattemptRequest request = reattemptRequestRepository.findById(requestId)
+        AssessmentReattemptRequest request = reattemptRequestRepository.findByIdForUpdate(requestId)
                 .orElseThrow(() -> new VacademyException("Request not found"));
 
         // A forged id must not let one institute review another's request.
@@ -229,10 +240,19 @@ public class AssessmentReattemptRequestManager {
         }
 
         Integer granted = null;
+        Integer grantedMinutes = null;
         if (AssessmentReattemptRequest.STATUS_APPROVED.equals(status)) {
-            granted = (dto.getGrantedCount() == null || dto.getGrantedCount() < 1) ? 1 : dto.getGrantedCount();
-
-            if (AssessmentReattemptRequest.TYPE_REATTEMPT.equals(requestType)) {
+            if (AssessmentReattemptRequest.TYPE_TIME_INCREASE.equals(requestType)) {
+                // Approving still works as it always did: without minutes (an admin page built
+                // before the minutes field) or when the test is over, it only records the
+                // approval. Only a live, timed attempt gets the minutes. granted_minutes stays
+                // null otherwise, which the inbox shows as "approved, no time added".
+                Integer minutes = validGrantedMinutes(dto.getGrantedMinutes());
+                if (minutes != null) {
+                    grantedMinutes = addMinutesToLiveAttempt(request, minutes);
+                }
+            } else if (AssessmentReattemptRequest.TYPE_REATTEMPT.equals(requestType)) {
+                granted = (dto.getGrantedCount() == null || dto.getGrantedCount() < 1) ? 1 : dto.getGrantedCount();
                 String registrationId = resolveRegistrationId(request);
                 if (registrationId == null) {
                     throw new VacademyException(
@@ -250,6 +270,7 @@ public class AssessmentReattemptRequestManager {
 
         request.setStatus(status);
         request.setGrantedCount(granted);
+        request.setGrantedMinutes(grantedMinutes);
         request.setReviewNote(dto.getReviewNote());
         request.setReviewedBy(user != null ? user.getUserId() : null);
         request.setReviewedAt(new Date());
@@ -326,6 +347,56 @@ public class AssessmentReattemptRequestManager {
         return null;
     }
 
+    /** The admin's minutes, or null when none were sent (nothing is added then). */
+    private static Integer validGrantedMinutes(Integer minutes) {
+        if (minutes == null) {
+            return null;
+        }
+        if (minutes < 1 || minutes > MAX_GRANTED_MINUTES) {
+            throw new VacademyException("Enter the extra minutes to give, from 1 to " + MAX_GRANTED_MINUTES);
+        }
+        return minutes;
+    }
+
+    /**
+     * Adds the minutes to the attempt the request was raised from (or, when it did not say, the
+     * learner's latest attempt on this assessment) and returns the minutes added. Returns null
+     * (nothing added) when there is no live, timed attempt: the test already ended, or never had
+     * a clock. The approval itself still goes through, as it did before time was ever added.
+     */
+    private Integer addMinutesToLiveAttempt(AssessmentReattemptRequest request, int minutes) {
+        StudentAttempt attempt = attemptForRequest(request);
+        if (attempt == null) {
+            return null;
+        }
+        request.setAttemptId(attempt.getId());
+        String live = AssessmentAttemptEnum.LIVE.name();
+        if (!live.equals(attempt.getStatus()) || attempt.getMaxTime() == null || attempt.getMaxTime() <= 0) {
+            return null;
+        }
+        // 0 rows: the attempt ended between the read above and this update.
+        return studentAttemptRepository.addMinutesToLiveAttempt(attempt.getId(), minutes, live) == 0 ? null : minutes;
+    }
+
+    private StudentAttempt attemptForRequest(AssessmentReattemptRequest request) {
+        if (request.getAttemptId() != null && !request.getAttemptId().isBlank()) {
+            // The attempt id came from the learner's device: use it only if it is theirs and on
+            // this assessment, so a forged id cannot extend someone else's attempt.
+            Optional<StudentAttempt> named = studentAttemptRepository.findByIdWithRegistration(request.getAttemptId())
+                    .filter(a -> a.getRegistration() != null
+                            && request.getUserId().equals(a.getRegistration().getUserId())
+                            && a.getRegistration().getAssessment() != null
+                            && request.getAssessmentId().equals(a.getRegistration().getAssessment().getId()));
+            if (named.isPresent()) {
+                return named.get();
+            }
+        }
+        return assessmentUserRegistrationRepository
+                .findTopByUserIdAndAssessmentId(request.getUserId(), request.getAssessmentId())
+                .flatMap(studentAttemptRepository::findTopByRegistrationOrderByCreatedAtDesc)
+                .orElse(null);
+    }
+
     /**
      * Fills in where each reported question sits in the paper, and the start of its text. A
      * failed lookup costs the preview, never the inbox.
@@ -380,6 +451,7 @@ public class AssessmentReattemptRequestManager {
                 .reason(request.getReason())
                 .status(request.getStatus())
                 .grantedCount(request.getGrantedCount())
+                .grantedMinutes(request.getGrantedMinutes())
                 .questionId(request.getQuestionId())
                 .reviewedBy(request.getReviewedBy())
                 .reviewNote(request.getReviewNote())

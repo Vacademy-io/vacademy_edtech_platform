@@ -56,7 +56,10 @@ public class AdminReattemptRequestController {
         return ResponseEntity.ok(reattemptRequestManager.pendingCount(instituteId, assessmentId));
     }
 
-    /** Approve (granting {@code granted_count} attempts) or reject one request; mark a problem report RESOLVED. */
+    /**
+     * Approve (granting {@code granted_count} attempts, or adding {@code granted_minutes} to the
+     * live attempt) or reject one request; mark a problem report RESOLVED.
+     */
     @PostMapping("/{requestId}/review")
     public ResponseEntity<ReattemptRequestDto> review(@RequestAttribute("user") CustomUserDetails user,
                                                        @PathVariable("requestId") String requestId,

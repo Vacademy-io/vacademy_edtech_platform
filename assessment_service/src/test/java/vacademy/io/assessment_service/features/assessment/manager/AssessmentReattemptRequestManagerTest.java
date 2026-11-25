@@ -8,11 +8,15 @@ import org.springframework.test.util.ReflectionTestUtils;
 import vacademy.io.assessment_service.features.assessment.dto.reattempt.CreateReattemptRequestDto;
 import vacademy.io.assessment_service.features.assessment.dto.reattempt.ReattemptRequestDto;
 import vacademy.io.assessment_service.features.assessment.dto.reattempt.ReviewReattemptRequestDto;
+import vacademy.io.assessment_service.features.assessment.entity.Assessment;
 import vacademy.io.assessment_service.features.assessment.entity.AssessmentReattemptRequest;
+import vacademy.io.assessment_service.features.assessment.entity.AssessmentUserRegistration;
+import vacademy.io.assessment_service.features.assessment.entity.StudentAttempt;
 import vacademy.io.assessment_service.features.assessment.repository.AssessmentReattemptRequestRepository;
 import vacademy.io.assessment_service.features.assessment.repository.AssessmentRepository;
 import vacademy.io.assessment_service.features.assessment.repository.AssessmentUserRegistrationRepository;
 import vacademy.io.assessment_service.features.assessment.repository.QuestionAssessmentSectionMappingRepository;
+import vacademy.io.assessment_service.features.assessment.repository.StudentAttemptRepository;
 import vacademy.io.assessment_service.features.assessment.service.AssessmentWorkflowEventPublisher;
 import vacademy.io.assessment_service.features.assessment.service.QuestionTextPreview;
 import vacademy.io.common.auth.model.CustomUserDetails;
@@ -48,6 +52,7 @@ class AssessmentReattemptRequestManagerTest {
     private AssessmentReattemptRequestRepository requests;
     private AssessmentUserRegistrationRepository registrations;
     private AssessmentWorkflowEventPublisher events;
+    private StudentAttemptRepository attempts;
     private QuestionAssessmentSectionMappingRepository questions;
     private AssessmentParticipantsManager participants;
 
@@ -57,6 +62,7 @@ class AssessmentReattemptRequestManagerTest {
         requests = mock(AssessmentReattemptRequestRepository.class);
         registrations = mock(AssessmentUserRegistrationRepository.class);
         events = mock(AssessmentWorkflowEventPublisher.class);
+        attempts = mock(StudentAttemptRepository.class);
         questions = mock(QuestionAssessmentSectionMappingRepository.class);
         participants = mock(AssessmentParticipantsManager.class);
         ReflectionTestUtils.setField(manager, "reattemptRequestRepository", requests);
@@ -64,6 +70,7 @@ class AssessmentReattemptRequestManagerTest {
         ReflectionTestUtils.setField(manager, "assessmentRepository", mock(AssessmentRepository.class));
         ReflectionTestUtils.setField(manager, "assessmentWorkflowEventPublisher", events);
         ReflectionTestUtils.setField(manager, "assessmentParticipantsManager", participants);
+        ReflectionTestUtils.setField(manager, "studentAttemptRepository", attempts);
         ReflectionTestUtils.setField(manager, "questionMappingRepository", questions);
 
         when(requests.save(any(AssessmentReattemptRequest.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -114,11 +121,12 @@ class AssessmentReattemptRequestManagerTest {
     @Test
     void problemReportIsClosedAsResolved() {
         AssessmentReattemptRequest report = pending("req-1", "PROBLEM_REPORT");
-        when(requests.findById("req-1")).thenReturn(Optional.of(report));
+        when(requests.findByIdForUpdate("req-1")).thenReturn(Optional.of(report));
 
         ReattemptRequestDto resolved = manager.review(admin(), "req-1", INSTITUTE, review("resolved", null));
         assertThat(resolved.getStatus()).isEqualTo("RESOLVED");
         assertThat(resolved.getGrantedCount()).isNull();
+        verify(attempts, never()).addMinutesToLiveAttempt(anyString(), anyInt(), anyString());
         verify(participants, never()).provideReattempt(any(), anyString(), anyString(), any());
     }
 
@@ -126,7 +134,7 @@ class AssessmentReattemptRequestManagerTest {
     void anOlderAdminPagesApproveOrRejectOnAReportJustClosesIt() {
         for (String action : new String[] {"APPROVED", "REJECTED"}) {
             AssessmentReattemptRequest report = pending("req-" + action, "PROBLEM_REPORT");
-            when(requests.findById("req-" + action)).thenReturn(Optional.of(report));
+            when(requests.findByIdForUpdate("req-" + action)).thenReturn(Optional.of(report));
 
             ReattemptRequestDto closed = manager.review(admin(), "req-" + action, INSTITUTE, review(action, null));
 
@@ -137,7 +145,7 @@ class AssessmentReattemptRequestManagerTest {
 
     @Test
     void aReportCannotTakeAnUnknownStatus() {
-        when(requests.findById("req-1")).thenReturn(Optional.of(pending("req-1", "PROBLEM_REPORT")));
+        when(requests.findByIdForUpdate("req-1")).thenReturn(Optional.of(pending("req-1", "PROBLEM_REPORT")));
 
         assertThatThrownBy(() -> manager.review(admin(), "req-1", INSTITUTE, review("PENDING", null)))
                 .isInstanceOf(VacademyException.class)
@@ -146,11 +154,132 @@ class AssessmentReattemptRequestManagerTest {
 
     @Test
     void reattemptAndTimeRequestsCannotBeResolved() {
-        when(requests.findById("req-1")).thenReturn(Optional.of(pending("req-1", "TIME_INCREASE")));
+        when(requests.findByIdForUpdate("req-1")).thenReturn(Optional.of(pending("req-1", "TIME_INCREASE")));
 
         assertThatThrownBy(() -> manager.review(admin(), "req-1", INSTITUTE, review("RESOLVED", null)))
                 .isInstanceOf(VacademyException.class)
                 .hasMessageContaining("APPROVED or REJECTED");
+    }
+
+    // ------------------------------------------------------------------ more time
+
+    @Test
+    void approvingMoreTimeAddsTheMinutesToTheLiveAttempt() {
+        AssessmentReattemptRequest request = pending("req-1", "TIME_INCREASE");
+        request.setAttemptId("att-1");
+        when(requests.findByIdForUpdate("req-1")).thenReturn(Optional.of(request));
+        when(attempts.findByIdWithRegistration("att-1")).thenReturn(Optional.of(attempt("att-1", LEARNER, "LIVE", 60)));
+        when(attempts.addMinutesToLiveAttempt("att-1", 15, "LIVE")).thenReturn(1);
+
+        ReattemptRequestDto approved = manager.review(admin(), "req-1", INSTITUTE, review("APPROVED", 15));
+
+        verify(attempts).addMinutesToLiveAttempt("att-1", 15, "LIVE");
+        assertThat(approved.getStatus()).isEqualTo("APPROVED");
+        assertThat(approved.getGrantedMinutes()).isEqualTo(15);
+        // Nothing about attempts was granted.
+        assertThat(approved.getGrantedCount()).isNull();
+        verify(participants, never()).provideReattempt(any(), anyString(), anyString(), any());
+    }
+
+    @Test
+    void moreTimeMinutesOutOfRangeAreRefused() {
+        AssessmentReattemptRequest request = pending("req-1", "TIME_INCREASE");
+        when(requests.findByIdForUpdate("req-1")).thenReturn(Optional.of(request));
+
+        for (Integer minutes : new Integer[] {0, -5, 301}) {
+            assertThatThrownBy(() -> manager.review(admin(), "req-1", INSTITUTE, review("APPROVED", minutes)))
+                    .isInstanceOf(VacademyException.class)
+                    .hasMessageContaining("extra minutes");
+        }
+        verify(attempts, never()).addMinutesToLiveAttempt(anyString(), anyInt(), anyString());
+        assertThat(request.getStatus()).isEqualTo("PENDING");
+    }
+
+    @Test
+    void anApprovalWithoutMinutesOnlyRecordsTheApproval() {
+        // An admin page built before the minutes field: Approve behaves exactly as it always did.
+        AssessmentReattemptRequest request = pending("req-1", "TIME_INCREASE");
+        request.setAttemptId("att-1");
+        when(requests.findByIdForUpdate("req-1")).thenReturn(Optional.of(request));
+        when(attempts.findByIdWithRegistration("att-1")).thenReturn(Optional.of(attempt("att-1", LEARNER, "LIVE", 60)));
+
+        ReattemptRequestDto approved = manager.review(admin(), "req-1", INSTITUTE, review("APPROVED", null));
+
+        assertThat(approved.getStatus()).isEqualTo("APPROVED");
+        assertThat(approved.getGrantedMinutes()).isNull();
+        verify(attempts, never()).addMinutesToLiveAttempt(anyString(), anyInt(), anyString());
+    }
+
+    @Test
+    void approvingMoreTimeOnAnEndedAttemptStillApprovesButAddsNothing() {
+        // Before time was ever added, Approve always went through; admins clear old requests that way.
+        AssessmentReattemptRequest request = pending("req-1", "TIME_INCREASE");
+        request.setAttemptId("att-1");
+        when(requests.findByIdForUpdate("req-1")).thenReturn(Optional.of(request));
+        when(attempts.findByIdWithRegistration("att-1")).thenReturn(Optional.of(attempt("att-1", LEARNER, "ENDED", 60)));
+
+        ReattemptRequestDto approved = manager.review(admin(), "req-1", INSTITUTE, review("APPROVED", 10));
+
+        assertThat(approved.getStatus()).isEqualTo("APPROVED");
+        assertThat(approved.getGrantedMinutes()).isNull();
+        verify(attempts, never()).addMinutesToLiveAttempt(anyString(), anyInt(), anyString());
+    }
+
+    @Test
+    void anAttemptThatEndsBeforeTheUpdateGetsNoMinutes() {
+        AssessmentReattemptRequest request = pending("req-1", "TIME_INCREASE");
+        request.setAttemptId("att-1");
+        when(requests.findByIdForUpdate("req-1")).thenReturn(Optional.of(request));
+        when(attempts.findByIdWithRegistration("att-1")).thenReturn(Optional.of(attempt("att-1", LEARNER, "LIVE", 60)));
+        when(attempts.addMinutesToLiveAttempt("att-1", 10, "LIVE")).thenReturn(0);
+
+        ReattemptRequestDto approved = manager.review(admin(), "req-1", INSTITUTE, review("APPROVED", 10));
+
+        assertThat(approved.getStatus()).isEqualTo("APPROVED");
+        assertThat(approved.getGrantedMinutes()).isNull();
+    }
+
+    @Test
+    void anUntimedAttemptGetsNoMinutes() {
+        AssessmentReattemptRequest request = pending("req-1", "TIME_INCREASE");
+        request.setAttemptId("att-1");
+        when(requests.findByIdForUpdate("req-1")).thenReturn(Optional.of(request));
+        when(attempts.findByIdWithRegistration("att-1")).thenReturn(Optional.of(attempt("att-1", LEARNER, "LIVE", 0)));
+
+        ReattemptRequestDto approved = manager.review(admin(), "req-1", INSTITUTE, review("APPROVED", 10));
+
+        assertThat(approved.getStatus()).isEqualTo("APPROVED");
+        assertThat(approved.getGrantedMinutes()).isNull();
+        verify(attempts, never()).addMinutesToLiveAttempt(anyString(), anyInt(), anyString());
+    }
+
+    @Test
+    void aForgedAttemptIdNeverExtendsSomeoneElsesAttempt() {
+        AssessmentReattemptRequest request = pending("req-1", "TIME_INCREASE");
+        request.setAttemptId("att-stranger");
+        when(requests.findByIdForUpdate("req-1")).thenReturn(Optional.of(request));
+        when(attempts.findByIdWithRegistration("att-stranger"))
+                .thenReturn(Optional.of(attempt("att-stranger", "user-2", "LIVE", 60)));
+        StudentAttempt own = attempt("att-own", LEARNER, "LIVE", 60);
+        when(registrations.findTopByUserIdAndAssessmentId(LEARNER, ASSESSMENT)).thenReturn(Optional.of(own.getRegistration()));
+        when(attempts.findTopByRegistrationOrderByCreatedAtDesc(own.getRegistration())).thenReturn(Optional.of(own));
+        when(attempts.addMinutesToLiveAttempt("att-own", 5, "LIVE")).thenReturn(1);
+
+        ReattemptRequestDto approved = manager.review(admin(), "req-1", INSTITUTE, review("APPROVED", 5));
+
+        verify(attempts, never()).addMinutesToLiveAttempt(eq("att-stranger"), anyInt(), anyString());
+        verify(attempts).addMinutesToLiveAttempt("att-own", 5, "LIVE");
+        assertThat(approved.getAttemptId()).isEqualTo("att-own");
+    }
+
+    @Test
+    void rejectingMoreTimeChangesNoAttempt() {
+        when(requests.findByIdForUpdate("req-1")).thenReturn(Optional.of(pending("req-1", "TIME_INCREASE")));
+
+        ReattemptRequestDto rejected = manager.review(admin(), "req-1", INSTITUTE, review("REJECTED", null));
+
+        assertThat(rejected.getStatus()).isEqualTo("REJECTED");
+        verify(attempts, never()).addMinutesToLiveAttempt(anyString(), anyInt(), anyString());
     }
 
     // ------------------------------------------------------------------ admin inbox
@@ -230,6 +359,7 @@ class AssessmentReattemptRequestManagerTest {
     private static ReviewReattemptRequestDto review(String status, Integer minutes) {
         ReviewReattemptRequestDto dto = new ReviewReattemptRequestDto();
         dto.setStatus(status);
+        dto.setGrantedMinutes(minutes);
         return dto;
     }
 
@@ -243,5 +373,20 @@ class AssessmentReattemptRequestManagerTest {
                 .reason("please")
                 .status("PENDING")
                 .build();
+    }
+
+    private static StudentAttempt attempt(String id, String userId, String status, int maxTime) {
+        Assessment assessment = new Assessment();
+        assessment.setId(ASSESSMENT);
+        AssessmentUserRegistration registration = new AssessmentUserRegistration();
+        registration.setId("reg-" + userId);
+        registration.setUserId(userId);
+        registration.setAssessment(assessment);
+        StudentAttempt attempt = new StudentAttempt();
+        attempt.setId(id);
+        attempt.setRegistration(registration);
+        attempt.setStatus(status);
+        attempt.setMaxTime(maxTime);
+        return attempt;
     }
 }

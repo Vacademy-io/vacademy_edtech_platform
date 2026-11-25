@@ -46,6 +46,8 @@ public class ReattemptRequestDto {
     private Integer attemptsAllowed;
     /** Attempts already taken. */
     private Integer attemptsUsed;
+    /** Minutes added to the live attempt when a TIME_INCREASE request was approved. */
+    private Integer grantedMinutes;
     /** PROBLEM_REPORT only: the reported question, when it was matched to this assessment. */
     private String questionId;
     /** Admin inbox only: the reported question's section name. */

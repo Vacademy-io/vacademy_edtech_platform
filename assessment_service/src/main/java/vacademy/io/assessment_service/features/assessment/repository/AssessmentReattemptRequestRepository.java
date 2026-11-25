@@ -2,7 +2,9 @@ package vacademy.io.assessment_service.features.assessment.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -40,6 +42,14 @@ public interface AssessmentReattemptRequestRepository extends JpaRepository<Asse
                                                   Pageable pageable);
 
     long countByInstituteIdAndStatus(String instituteId, String status);
+
+    /**
+     * The request, locked for the reviewing transaction. Two admins approving the same request
+     * at once would otherwise both see PENDING and both grant (attempts or minutes).
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT r FROM AssessmentReattemptRequest r WHERE r.id = :id")
+    Optional<AssessmentReattemptRequest> findByIdForUpdate(@Param("id") String id);
 
 
     long countByInstituteIdAndAssessmentIdAndStatus(String instituteId, String assessmentId, String status);

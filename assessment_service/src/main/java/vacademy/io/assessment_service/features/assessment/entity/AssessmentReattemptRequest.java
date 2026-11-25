@@ -89,6 +89,10 @@ public class AssessmentReattemptRequest {
     @Column(name = "granted_count")
     private Integer grantedCount;
 
+    /** Minutes added to the learner's live attempt when a TIME_INCREASE request is approved. */
+    @Column(name = "granted_minutes")
+    private Integer grantedMinutes;
+
     @Column(name = "reviewed_by")
     private String reviewedBy;
 

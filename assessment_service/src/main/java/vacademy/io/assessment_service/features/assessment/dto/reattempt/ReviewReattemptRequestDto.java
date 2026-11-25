@@ -22,6 +22,13 @@ public class ReviewReattemptRequestDto {
      */
     private Integer grantedCount;
 
+    /**
+     * TIME_INCREASE only: minutes added to the learner's live attempt on approval (1 to 300).
+     * Absent (an admin page built before this field): the approval is recorded and no time is
+     * added, exactly as approving did before.
+     */
+    private Integer grantedMinutes;
+
     /** Optional note back to the learner ("granted, power cut confirmed"). */
     private String reviewNote;
 }

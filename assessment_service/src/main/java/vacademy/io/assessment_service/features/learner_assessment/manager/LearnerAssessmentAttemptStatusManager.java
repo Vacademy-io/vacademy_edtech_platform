@@ -339,6 +339,7 @@ public class LearnerAssessmentAttemptStatusManager {
                                 .announcements(allAnnouncementResponse)
                                 .control(new ArrayList<>()) // Placeholder for any control-related info
                                 .duration(durationResponses)
+                                .maxTimeMinutes(studentAttemptOptional.get().getMaxTime())
                                 .build();
         }
 

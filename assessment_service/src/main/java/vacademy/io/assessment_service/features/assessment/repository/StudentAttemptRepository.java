@@ -821,6 +821,30 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
     Optional<StudentAttempt> findTopByRegistrationOrderByCreatedAtDesc(vacademy.io.assessment_service.features.assessment.entity.AssessmentUserRegistration registration);
 
     /**
+     * Adds minutes to a live, timed attempt (an approved "more time" request). A single UPDATE,
+     * because max_time is not written by entity saves (see StudentAttempt.maxTime): the
+     * autosave saves the whole row from a copy it loaded earlier and would put the old value back.
+     * Returns 0 when the attempt is not live or has no clock.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE student_attempt
+            SET max_time = max_time + :minutes, updated_at = CURRENT_TIMESTAMP
+            WHERE id = :attemptId AND status = :liveStatus AND max_time > 0
+            """, nativeQuery = true)
+    int addMinutesToLiveAttempt(@Param("attemptId") String attemptId,
+                                @Param("minutes") int minutes,
+                                @Param("liveStatus") String liveStatus);
+
+    /** Sets max_time outright. The only way to change it after insert; see addMinutesToLiveAttempt. */
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE student_attempt SET max_time = :minutes, updated_at = CURRENT_TIMESTAMP WHERE id = :attemptId",
+            nativeQuery = true)
+    int overwriteMaxTime(@Param("attemptId") String attemptId, @Param("minutes") int minutes);
+
+    /**
      * List the most-recent attempt per assessment for a student within an institute and optional
      * date range, ordered newest first.  Used by the internal student-analysis endpoint.
      *
