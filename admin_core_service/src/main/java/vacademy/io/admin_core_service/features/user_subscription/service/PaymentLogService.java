@@ -1028,6 +1028,41 @@ public class PaymentLogService {
                 String startLabel = trialStartLabel(paidPlan);
                 successCtx.put("nextMonday", startLabel);
                 successCtx.put("trialStartDate", startLabel);
+                // A trial starts on the invite anchor day (Monday at SuchBliss) but a PAID
+                // membership starts the next day, because the daily class workflow puts a non
+                // trial learner into the audience at its very next run. Both labels travel so
+                // the welcome message can say the date that learner will actually see classes
+                // on. nextMonday and trialStartDate keep their old meaning untouched, since
+                // templates at other institutes already read them.
+                successCtx.put("memberStartDate", memberStartLabel(paidPlan));
+                // Which of the three welcome cases this payment is, because the workflow
+                // cannot work it out from what was here before. renewal is set only by
+                // RenewalPaymentService on the renewal charge path, so a learner whose
+                // earlier plan lapsed and who now checks out a NEW plan through an invite
+                // arrives with renewal unset and used to be greeted as a first time signup.
+                //
+                // membershipType is TRIAL or PAID. priorMembershipCount counts the earlier
+                // memberships that actually GRANTED ACCESS, so an abandoned checkout does not
+                // make a first time learner look like a returning one. returningLearner is that
+                // count being non zero -- gate the returning message on returningLearner, and a
+                // trial message on membershipType, never on isTrial being falsy alone, which
+                // would catch every first time payer as well.
+                boolean paidPlanIsTrial = Boolean.TRUE.equals(paidPlan.getIsTrial());
+                successCtx.put("isTrial", paidPlanIsTrial);
+                successCtx.put("membershipType", paidPlanIsTrial ? "TRIAL" : "PAID");
+                long priorMembershipCount = 0L;
+                try {
+                    priorMembershipCount = userPlanRepository
+                            .countEarlierMembershipsForLearnerAtInstitute(
+                                    paymentLog.getUserId(), instituteId, paidPlan.getId());
+                } catch (Exception pe) {
+                    // Never fail a successful payment over a welcome message. Zero means the
+                    // workflow sees returningLearner false, which is the pre-existing behaviour.
+                    log.warn("Could not count earlier memberships for learner {} at institute "
+                            + "{}: {}", paymentLog.getUserId(), instituteId, pe.getMessage());
+                }
+                successCtx.put("priorMembershipCount", priorMembershipCount);
+                successCtx.put("returningLearner", priorMembershipCount > 0);
                 String successEventId = paidPlan.getEnrollInviteId() != null
                         ? paidPlan.getEnrollInviteId()
                         : instituteId;
@@ -2910,6 +2945,29 @@ public class PaymentLogService {
      * <p>Strictly-next, matching the drip's DELAY node: enrolling ON the start weekday
      * announces the FOLLOWING week, because the first class only runs then too.</p>
      */
+    /**
+     * Start label for a PAID membership: the next day.
+     *
+     * <p>{@link #trialStartLabel} always returns the next occurrence of the invite trial day,
+     * which is correct for a trial and wrong by up to a week for somebody who has just paid.
+     * A non trial learner is picked up by the daily class workflow at its next run, so the
+     * honest answer for them is tomorrow. Same zone and same human format as the trial label,
+     * so the two are interchangeable in a template variable.
+     */
+    private String memberStartLabel(UserPlan plan) {
+        String settingJson = null;
+        try {
+            if (plan != null && plan.getEnrollInvite() != null) {
+                settingJson = plan.getEnrollInvite().getSettingJson();
+            }
+        } catch (Exception e) {
+            log.debug("Could not read invite setting for member start-date label: {}", e.getMessage());
+        }
+        return TrialStartResolver.label(
+                java.time.ZonedDateTime.now(TrialStartResolver.zoneFromInvite(settingJson))
+                        .plusDays(1));
+    }
+
     private String trialStartLabel(UserPlan plan) {
         String settingJson = null;
         try {

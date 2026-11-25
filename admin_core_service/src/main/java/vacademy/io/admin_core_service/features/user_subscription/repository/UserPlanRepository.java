@@ -165,6 +165,42 @@ public interface UserPlanRepository extends JpaRepository<UserPlan, String> {
                         @Param("instituteId") String instituteId,
                         @Param("statuses") List<String> statuses);
 
+        /**
+         * How many earlier memberships this learner ACTUALLY HELD at the institute, ignoring
+         * the plan just paid for.
+         *
+         * <p>A non zero count is what separates a returning learner, whose earlier plan lapsed
+         * and who is now paying again through an invite, from somebody enrolling for the first
+         * time. The PAYMENT_SUCCESS workflow context cannot tell those two apart otherwise:
+         * is_trial only says whether THIS plan is a trial, and renewal is set on the renewal
+         * charge path alone, never when a lapsed learner checks out a brand new plan.
+         *
+         * <p>It counts plans that GRANTED ACCESS, not plan rows. An abandoned checkout leaves a
+         * plan behind in PENDING_FOR_PAYMENT or PAYMENT_FAILED with no live mapping, and at
+         * SuchBliss there are more of those than real memberships -- counting plan rows alone
+         * made 7 first time learners look like returning ones. Requiring a mapping that is or
+         * was ACTIVE or INACTIVE is what makes the difference: access was granted and later
+         * lapsed. A mapping only ever DELETED or INVITED is the abandoned checkout shape and
+         * must not count.
+         *
+         * <p>Commerce plans are excluded too, so buying a book or a store item does not make a
+         * first time learner look like a returning one.
+         */
+        @Query("""
+                        SELECT COUNT(up) FROM UserPlan up
+                        JOIN up.enrollInvite ei
+                        WHERE up.userId = :userId
+                          AND ei.instituteId = :instituteId
+                          AND up.id <> :excludePlanId
+                          AND EXISTS (SELECT 1 FROM StudentSessionInstituteGroupMapping m
+                                      WHERE m.userPlanId = up.id
+                                        AND m.status IN ('ACTIVE', 'INACTIVE'))
+                          AND""" + CommercePlans.NOT_COMMERCE_PLAN_JPQL)
+        long countEarlierMembershipsForLearnerAtInstitute(
+                        @Param("userId") String userId,
+                        @Param("instituteId") String instituteId,
+                        @Param("excludePlanId") String excludePlanId);
+
         /** Newest plan a user holds on a given invite — sub-org registration payment retry. */
         Optional<UserPlan> findFirstByUserIdAndEnrollInviteIdOrderByCreatedAtDesc(
                         String userId, String enrollInviteId);
