@@ -441,6 +441,39 @@ export const getSessionCustomFieldValues = async (
     }
 };
 
+/** Extra learner columns for the attendance table of one class, keyed by user id. */
+export interface SessionLearnerFields {
+    /** Institute custom-field answers (School, Roll No, …) — same item shape as form guests'. */
+    custom_fields: Record<string, SessionCustomFieldValue[]>;
+    /** Profile fields by system-field key (USERNAME, CITY, FATHER_NAME, …). */
+    system_fields: Record<string, Record<string, string>>;
+}
+
+/**
+ * Profile (system) fields and institute custom-field answers of the enrolled learners in a
+ * class. Empty on any failure, so the attendance table just has no extra learner values.
+ */
+export const getSessionLearnerFields = async (
+    sessionId: string,
+    userIds: string[]
+): Promise<SessionLearnerFields> => {
+    const empty: SessionLearnerFields = { custom_fields: {}, system_fields: {} };
+    if (!sessionId || userIds.length === 0) return empty;
+    try {
+        const response = await authenticatedAxiosInstance.post(
+            `${BASE_URL}/admin-core-service/live-session-report/learner-fields`,
+            userIds,
+            { params: { sessionId } }
+        );
+        return {
+            custom_fields: response.data?.custom_fields ?? {},
+            system_fields: response.data?.system_fields ?? {},
+        };
+    } catch {
+        return empty;
+    }
+};
+
 export const adminMarkAttendance = async (data: {
     sessionId: string;
     scheduleId: string;

@@ -196,6 +196,25 @@ public interface CustomFieldValuesRepository extends JpaRepository<CustomFieldVa
             @Param("instituteId") String instituteId);
 
     /**
+     * Like findCustomFieldsWithKeysByUserIdsAndInstitute, but only for fields the institute
+     * still has ACTIVE (a field deleted in Settings must not come back as a report column),
+     * and one row per value even when a field is linked to the institute several times.
+     * Returns: [sourceId, customFieldId, fieldKey, fieldName, fieldType, value, sourceType],
+     * newest first per user.
+     */
+    @Query("SELECT cfv.sourceId, cf.id, cf.fieldKey, cf.fieldName, cf.fieldType, cfv.value, cfv.sourceType " +
+           "FROM CustomFieldValues cfv " +
+           "JOIN CustomFields cf ON cf.id = cfv.customFieldId " +
+           "WHERE cfv.sourceType = :sourceType AND cfv.sourceId IN :userIds " +
+           "AND EXISTS (SELECT 1 FROM InstituteCustomField icf WHERE icf.customFieldId = cf.id " +
+           "AND icf.instituteId = :instituteId AND icf.status = 'ACTIVE') " +
+           "ORDER BY cfv.sourceId, cfv.createdAt DESC")
+    List<Object[]> findActiveInstituteCustomFieldsByUserIds(
+            @Param("sourceType") String sourceType,
+            @Param("userIds") List<String> userIds,
+            @Param("instituteId") String instituteId);
+
+    /**
      * Distinct values a custom field holds across an institute's learners —
      * powers the searchable, paginated multi-select dropdown for free-text
      * (non-DROPDOWN) custom-field filters on Manage Students, e.g. VetEducation's
