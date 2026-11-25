@@ -113,8 +113,8 @@ export const StepFiveForm = ({
         const username = values.username?.trim();
         if (!isReEnroll && !usernamePolicy.applies && username) {
             const free = await checkUsernameAvailability({
-                // This route saves the username in lowercase.
-                username: username.toLowerCase(),
+                // As typed: this route (/learner/enroll) saves the username unchanged.
+                username,
                 email: stepTwoData.email?.trim(),
                 mobile_number: stepTwoData.mobile_number?.trim(),
             }).catch(() => true);
