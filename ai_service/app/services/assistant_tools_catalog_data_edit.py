@@ -113,6 +113,8 @@ _SECRET_ARG_RE = re.compile(r"(token|secret|password|api[_-]?key|authorization|b
 _ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 _COURSE_STATUSES = ("ACTIVE", "DRAFT", "IN_REVIEW")
 _LIVE_SITE_STATUSES = {"", "ACTIVE"}
+#: Sites that are not served at all; any other status is live once it has a PUBLISHED revision.
+_GONE_SITE_STATUSES = {"DELETED", "ARCHIVED"}
 _KIND_LIBRARY = "folder_library"
 
 #: The settings a product page created in the dashboard starts with
@@ -564,7 +566,10 @@ def _flatten_tree(roots: Any) -> List[Dict[str, Any]]:
 
 
 async def library_live_sites(ctx: ToolContext, library_id: str) -> Optional[List[str]]:
-    """Names of the live (ACTIVE) sites whose published JSON uses the library; None when unreadable."""
+    """Names of the live sites whose published JSON uses the library; None when unreadable.
+
+    A site is live when its status is ACTIVE or it has a PUBLISHED revision: publishing copies the draft into
+    course_catalogue without touching its status, so a published site can still read DRAFT there."""
     rows = await list_catalogues(ctx)
     if _is_error(rows) or not isinstance(rows, list):
         return None
@@ -572,12 +577,21 @@ async def library_live_sites(ctx: ToolContext, library_id: str) -> Optional[List
     for row in rows:
         if not isinstance(row, dict):
             continue
-        if str(row.get("status") or "").strip().upper() not in _LIVE_SITE_STATUSES:
+        status = str(row.get("status") or "").strip().upper()
+        if status in _GONE_SITE_STATUSES:
             continue
         raw = row.get("catalogue_json")
         raw = raw if isinstance(raw, str) else json.dumps(raw or {})
-        if library_id in raw:
-            out.append(str(row.get("tag_name") or ""))
+        if library_id not in raw:
+            continue
+        if status not in _LIVE_SITE_STATUSES:
+            history = await _admin_core_json(ctx, "GET", "/admin-core-service/v1/course-catalogue/revision/history",
+                                             params={"catalogueId": row.get("id")}, timeout=30.0)
+            if _is_error(history) or not isinstance(history, list):
+                return None
+            if not any(isinstance(h, dict) and str(h.get("status") or "").upper() == "PUBLISHED" for h in history):
+                continue
+        out.append(str(row.get("tag_name") or ""))
     return out
 
 

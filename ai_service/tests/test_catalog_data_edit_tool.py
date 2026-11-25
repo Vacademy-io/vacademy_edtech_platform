@@ -83,6 +83,8 @@ class Backend:
         self.pages = [{"id": "pp-1", "institute_id": INST, "name": "For BVY", "code": "forbvy", "status": "ACTIVE",
                        "mappings": [{"package_session_id": "ps-a", "status": "ACTIVE"}]}]
         self.course_updates = {}
+        #: Revision history per catalogue id (none published unless a test says so).
+        self.history = {}
         self._ids = 0
 
     def tree(self, lib_id):
@@ -129,6 +131,8 @@ class Backend:
             return {"error": "fetch_failed", "status": 400}
         if path.endswith("/course-catalogue/institute/get-all"):
             return copy.deepcopy(self.catalogues)
+        if path.endswith("/course-catalogue/revision/history"):
+            return copy.deepcopy(self.history.get(params.get("catalogueId"), []))
         m = re.search(r"/open/v1/audience/campaign/([^/]+)/([^/]+)$", path)
         if m:
             c = self.campaigns.get(m.group(2))
@@ -293,6 +297,7 @@ def test_source_has_no_delete_rename_move_or_activate_call():
     allowed = {
         ("GET", "/admin-core-service/v1/folder-library/tree"),
         ("GET", "/admin-core-service/v1/product-page/get-all"),
+        ("GET", "/admin-core-service/v1/course-catalogue/revision/history"),
         ("POST", "/admin-core-service/v1/folder-library/library"),
         ("POST", "/admin-core-service/v1/folder-library/node"),
         ("PUT", "/admin-core-service/v1/folder-library/node"),
@@ -791,3 +796,17 @@ async def test_in_product_dispatch_refuses_mcp_only_tools(backend):
     not_mcp = ToolContext(db=_Db(), principal=principal(), keys=(), bearer_token="jwt")
     outside = json.loads(await execute_tool("catalog_data_edit", dict(args), not_mcp, gate))
     assert outside["error"] == "tool_not_available"
+
+
+@pytest.mark.asyncio
+async def test_a_published_site_whose_status_still_reads_draft_is_live(backend):
+    """Publishing copies the draft into course_catalogue without touching its status."""
+    backend.catalogues[0]["status"] = "DRAFT"
+    assert await tool.library_live_sites(ctx(), "lib-1") == []
+    backend.history["cat-1"] = [{"revision_no": 3, "status": "PUBLISHED"}]
+    assert await tool.library_live_sites(ctx(), "lib-1") == ["main"]
+    out = await run({"action": "upsert_folder_nodes", "library_id": "lib-1",
+                     "nodes": [{"key": "shastra", "tagline": "Texts"}]})
+    assert out["refused"] and "main" in out["refused"][0]["reason"]
+    backend.catalogues[0]["status"] = "DELETED"
+    assert await tool.library_live_sites(ctx(), "lib-1") == []
