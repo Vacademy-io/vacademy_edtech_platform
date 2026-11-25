@@ -49,6 +49,7 @@ public class ApplicationSecurityConfig {
             "/auth-service/v1/user/internal/create-user",
             "/auth-service/v1/user/internal/create-user-or-get-existing",
             "/auth-service/v1/user/internal/create-or-get-existing-learner",
+            "/auth-service/v1/user/internal/usernames-availability",
             "/auth-service/v1/user/internal/user-details-list",
             "/auth-service/v1/signup-root",
             "/auth-service/v1/refresh-token",

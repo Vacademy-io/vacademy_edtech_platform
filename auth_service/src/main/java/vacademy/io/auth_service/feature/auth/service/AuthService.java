@@ -462,31 +462,80 @@ public class AuthService {
                 && !UserRoleStatus.DELETED.name().equalsIgnoreCase(role.getStatus()));
     }
 
+    /** Answer of the add-learner username check. Says nothing about who holds the name. */
+    public record UsernameCheck(boolean available, boolean existingLearner) {
+    }
+
     /**
-     * Whether an admin adding a NEW learner may use this username. Free → yes. Held by the
-     * same person → yes: the e-mail or phone entered is the one on that account, so the add
-     * re-uses it. Held by anyone else → no, even when nothing on record contradicts: the admin
-     * is creating someone new, so a bare username hit is no proof it is the same learner.
-     * Answers only yes/no; nothing about the account holding the name.
+     * Whether an admin adding a learner may type this username. It follows the same lookup
+     * order as the add itself, so the form, the bulk preview and the add agree:
+     * <ol>
+     *   <li>On a phone-login institute a known phone decides the account; otherwise the typed
+     *       name must be free.</li>
+     *   <li>An email that already has an account decides it; the typed name is not used.</li>
+     *   <li>The name belongs to a learner of this institute → allowed, that learner is enrolled
+     *       ({@code existingLearner}).</li>
+     *   <li>The name belongs to the same person (email, or phone, matches) → allowed.</li>
+     *   <li>Anyone else holds it → not allowed.</li>
+     * </ol>
      */
-    public boolean isUsernameAvailableForNewLearner(String username, String email, String mobileNumber) {
+    public UsernameCheck checkUsernameForNewLearner(String username, String email, String mobileNumber,
+                                                    String instituteId) {
+        boolean phoneLogin = StringUtils.hasText(instituteId)
+                && "PHONE".equalsIgnoreCase(instituteSettingsService.getUserIdentifier(instituteId));
+        return checkUsernameForNewLearner(username, email, mobileNumber, instituteId, phoneLogin);
+    }
+
+    /** Many rows at once (bulk preview); the institute's login identifier is read once. */
+    public List<UsernameCheck> checkUsernamesForNewLearners(List<UserDTO> rows, String instituteId) {
+        boolean phoneLogin = StringUtils.hasText(instituteId)
+                && "PHONE".equalsIgnoreCase(instituteSettingsService.getUserIdentifier(instituteId));
+        List<UsernameCheck> answers = new java.util.ArrayList<>();
+        for (UserDTO row : rows) {
+            answers.add(row == null ? new UsernameCheck(true, false)
+                    : checkUsernameForNewLearner(row.getUsername(), row.getEmail(), row.getMobileNumber(),
+                            instituteId, phoneLogin));
+        }
+        return answers;
+    }
+
+    private UsernameCheck checkUsernameForNewLearner(String username, String email, String mobileNumber,
+                                                     String instituteId, boolean phoneLogin) {
         String wanted = TextSanitizer.cleanIdentifier(username);
         if (!StringUtils.hasText(wanted)) {
-            return true;
+            return new UsernameCheck(true, false);
+        }
+        String phone = mobileNumber == null ? "" : mobileNumber.replaceAll("[^0-9]", "");
+        UserDTO asTyped = new UserDTO();
+        asTyped.setUsername(wanted);
+        asTyped.setEmail(email);
+        asTyped.setMobileNumber(phone);
+        asTyped.setUsernameExplicit(true);
+        asTyped.setRoles(List.of(STUDENT_ROLE));
+        if (usernameFromInstituteStrategy(asTyped, instituteId, false) != null) {
+            // Settings → Login & Signup replaces typed names here: this one is never used.
+            return new UsernameCheck(true, false);
+        }
+        if (phoneLogin && StringUtils.hasText(phone)) {
+            boolean knownPhone = (StringUtils.hasText(instituteId)
+                    && userRepository.findLatestUserByMobileNumberAndInstitute(phone, instituteId).isPresent())
+                    || userRepository.findLatestUserByMobileNumber(phone).isPresent();
+            return new UsernameCheck(knownPhone || userRepository.findByUsername(wanted).isEmpty(), false);
+        }
+        String typedEmail = TextSanitizer.cleanIdentifier(email);
+        typedEmail = typedEmail != null ? typedEmail.toLowerCase() : null;
+        if (StringUtils.hasText(typedEmail)
+                && userRepository.findFirstByEmailOrderByCreatedAtDesc(typedEmail).isPresent()) {
+            return new UsernameCheck(true, false);
         }
         Optional<User> holder = userRepository.findByUsername(wanted);
         if (holder.isEmpty()) {
-            return true;
+            return new UsernameCheck(true, false);
         }
-        User existing = holder.get();
-        String typedEmail = TextSanitizer.cleanIdentifier(email);
-        boolean bothEmails = StringUtils.hasText(typedEmail) && StringUtils.hasText(existing.getEmail());
-        if (bothEmails) {
-            // An e-mail on both sides decides it, as in findSamePersonByUsername.
-            return existing.getEmail().trim().equalsIgnoreCase(typedEmail.trim());
+        if (belongsToInstitute(holder.get(), instituteId)) {
+            return new UsernameCheck(true, true);
         }
-        String typedPhone = lastTenDigits(mobileNumber);
-        return !typedPhone.isEmpty() && typedPhone.equals(lastTenDigits(existing.getMobileNumber()));
+        return new UsernameCheck(provenSamePerson(holder.get(), typedEmail, mobileNumber), false);
     }
 
     // Stored numbers mix "+91 98765 43210", "919876543210" and "9876543210" for one phone.
