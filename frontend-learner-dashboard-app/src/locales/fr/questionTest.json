@@ -160,6 +160,8 @@
     },
     "page": {
         "toast": {
+            "timeAdded_one": "Votre établissement vous a accordé {{count}} minute de plus.",
+            "timeAdded_other": "Votre établissement vous a accordé {{count}} minutes de plus.",
             "savingResumed": "Vos réponses sont de nouveau enregistrées",
             "savingFailed": "Vos réponses ne sont pas enregistrées"
         }

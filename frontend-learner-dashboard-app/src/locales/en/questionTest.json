@@ -159,6 +159,8 @@
     },
     "page": {
         "toast": {
+            "timeAdded_one": "Your institute gave you {{count}} more minute.",
+            "timeAdded_other": "Your institute gave you {{count}} more minutes.",
             "savingResumed": "Your responses are being saved again",
             "savingFailed": "Your responses are not being recorded"
         }
