@@ -764,6 +764,9 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
         const membershipFilter = columnFilters.find((filter) => filter.id === 'membership_types');
         const membershipTypes = membershipFilter ? membershipFilter.value.map((opt) => opt.id) : [];
 
+        // Journey status (only offered while Settings → Journey status is on): status keys.
+        const journeyStatuses = selectedOptionIds(columnFilters, 'journey_statuses');
+
         // Joined -> the existing start_date/end_date range over ssigm.enrolled_date. The
         // control encodes its selection as "from:DD/MM/YYYY" / "to:DD/MM/YYYY"; the API wants
         // YYYY-MM-DD, so convert here rather than teaching the shared control a second format.
@@ -832,6 +835,7 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
             payment_statuses: paymentStatuses,
             types: learnerTypes,
             ...(membershipTypes.length > 0 ? { membership_types: membershipTypes } : {}),
+            ...(journeyStatuses.length > 0 ? { journey_statuses: journeyStatuses } : {}),
             ...joinedRange,
             ...(enrollInviteIds.length > 0 ? { enroll_invite_ids: enrollInviteIds } : {}),
             ...(audienceIds.length > 0 ? { audience_ids: audienceIds } : {}),

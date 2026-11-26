@@ -1,0 +1,56 @@
+{
+    "title": "Statut de parcours",
+    "description": "Où en est chaque apprenant dans chaque groupe : en apprentissage, en pause, à risque, suspendu. Affiché dans la liste des apprenants et sur leur profil. Statut uniquement : rien n'est envoyé aux apprenants.",
+    "loadFailed": "Impossible de charger ce paramètre.",
+    "retry": "Réessayer",
+    "toggleLabel": "Utiliser le statut de parcours",
+    "statuses": {
+        "title": "Statuts",
+        "hint": "Renommez, recolorez et réordonnez les statuts. Chacun garde sa clé : changer un nom ne perd aucune donnée.",
+        "label": "Nom du statut",
+        "kind": "Type",
+        "color": "Couleur de {{label}}",
+        "up": "Monter",
+        "down": "Descendre",
+        "remove": "Supprimer le statut",
+        "newPlaceholder": "Nom du nouveau statut",
+        "add": "Ajouter un statut",
+        "duplicate": "Un statut porte déjà ce nom.",
+        "kindsHint": "Le type décide du comportement : la vérification À risque ne change que les apprenants au statut Actif, jamais un statut de pause, arrêté ou de reprise."
+    },
+    "kinds": {
+        "ACTIVE": "Actif (en apprentissage)",
+        "BREAK": "Pause",
+        "RISK": "À risque",
+        "STOPPED": "Arrêté",
+        "REENTRY": "Reprise"
+    },
+    "rules": {
+        "title": "Avec les pauses et suspensions",
+        "default": "Statut d'une nouvelle inscription",
+        "defaultHint": "Tout groupe sans statut propre a celui-ci.",
+        "onPause": "Au début d'une pause",
+        "onPauseHint": "Appliqué au groupe en pause (un statut arrêté est conservé).",
+        "onResume": "À la fin de la pause",
+        "onResumeHint": "Appliqué si le groupe est encore sur un statut de pause.",
+        "noChange": "Ne pas changer"
+    },
+    "risk": {
+        "title": "Vérification À risque",
+        "hint": "Une fois par jour, un apprenant au statut Actif est marqué à risque dans un groupe quand une des règles ci-dessous s'applique. Mettez 0 pour désactiver une règle.",
+        "toggle": "Lancer la vérification À risque chaque jour",
+        "status": "Statut à appliquer",
+        "classes": "Cours manqués d'affilée",
+        "classesHint": "A manqué chacun des N derniers cours du groupe (cours où la présence a été prise).",
+        "fee": "Paiement en retard (jours)",
+        "feeHint": "L'échéance de l'abonnement est dépassée de plus de ce nombre de jours.",
+        "autoReturn": "Les remettre au statut d'une nouvelle inscription quand ils reviennent en cours ou paient (seulement ceux marqués par la vérification).",
+        "noMessages": "La vérification ne change que le statut. Aucun e-mail, WhatsApp ni notification n'est envoyé."
+    },
+    "offNote": "Désactiver masque le statut de parcours partout. Les statuts enregistrés sont conservés pour une réactivation.",
+    "audit": "Chaque changement est enregistré sur la chronologie de l'apprenant : qui, quand et pourquoi.",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "saved": "Paramètre de statut de parcours enregistré.",
+    "saveFailed": "Impossible d'enregistrer le paramètre."
+}

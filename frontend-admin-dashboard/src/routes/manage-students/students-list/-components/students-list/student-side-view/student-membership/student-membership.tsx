@@ -2,6 +2,7 @@ import { useStudentSidebar } from '../../../../-context/selected-student-sidebar
 import StudentPlanDetails from '../student-overview/StudentPlanDetails';
 import { getInstituteId } from '@/constants/helper';
 import { EnrolmentBreaksCard } from './breaks/enrolment-breaks-card';
+import { JourneyStatusCard } from './journey/journey-status-card';
 
 export const StudentMembership = ({ isSubmissionTab }: { isSubmissionTab?: boolean }) => {
     const { selectedStudent } = useStudentSidebar();
@@ -9,6 +10,12 @@ export const StudentMembership = ({ isSubmissionTab }: { isSubmissionTab?: boole
 
     return (
         <div className="space-y-4">
+            {/* Renders nothing unless Settings → Journey status is on. */}
+            <JourneyStatusCard
+                userId={userId}
+                instituteId={getInstituteId() || ''}
+                learnerName={selectedStudent?.full_name}
+            />
             {/* Renders nothing unless Settings → Breaks and holds is on. */}
             <EnrolmentBreaksCard
                 userId={userId}

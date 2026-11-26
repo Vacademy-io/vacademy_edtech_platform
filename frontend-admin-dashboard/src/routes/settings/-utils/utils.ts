@@ -24,6 +24,7 @@ import WhatsAppSettings from '../-components/WhatsAppSettings/WhatsAppSettings';
 import LeadSettings from '../-components/LeadSettings';
 import GuardianSettings from '../-components/GuardianSettings';
 import EnrolmentBreakSettings from '../-components/EnrolmentBreakSettings';
+import JourneyStatusSettings from '../-components/JourneyStatusSettings';
 import SyllabusProgressSettings from '../-components/SyllabusProgressSettings';
 import PaymentReminderSettings from '../-components/PaymentReminderSettings';
 import OnboardingSettings from '../-components/OnboardingSettings';
@@ -394,6 +395,13 @@ export const getAvailableSettingsTabs = (): SettingsTabEntry[] => {
             tab: SettingsTabs.EnrolmentBreaks,
             value: 'Breaks and Holds',
             component: EnrolmentBreakSettings,
+            domain: 'Finances',
+            group: 'Billing & Payments',
+        },
+        {
+            tab: SettingsTabs.JourneyStatus,
+            value: 'Journey Status',
+            component: JourneyStatusSettings,
             domain: 'Finances',
             group: 'Billing & Payments',
         },

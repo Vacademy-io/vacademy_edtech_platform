@@ -62,6 +62,10 @@ public class StudentListFilter {
     private List<String> cities;
     private List<String> regions;
 
+    // Journey status keys (JOURNEY_STATUS_SETTING). Learners with a current batch on one of these
+    // statuses; pre-resolved into cfTypedMatchedUserIds. Ignored while the setting is off.
+    private List<String> journeyStatuses;
+
     // Internal fields - auto-injected by server for faculty ENROLL_INVITE filtering
     @JsonIgnore
     private List<String> serverEnrollInviteIds;

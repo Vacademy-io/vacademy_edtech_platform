@@ -1,0 +1,40 @@
+{
+    "card": {
+        "title": "Journey status",
+        "subtitle": "Where the learner stands in each batch",
+        "change": "Change status",
+        "changeOne": "Change",
+        "error": "Could not load the journey status.",
+        "retry": "Try again",
+        "noBatches": "The learner has no current batch.",
+        "unnamedBatch": "Batch",
+        "since": "Since {{date}}",
+        "nextAction": "Next action {{date}}",
+        "byRiskCheck": "Set by the At Risk check",
+        "byBreak": "Set by a pause",
+        "history_one": "History ({{count}})",
+        "history_other": "History ({{count}})",
+        "importedCase": "Imported case ({{status}})"
+    },
+    "dialog": {
+        "title": "Change journey status",
+        "titleFor": "Change journey status: {{name}}",
+        "batch": "Batch",
+        "allBatches": "All current batches",
+        "status": "Status",
+        "reason": "Reason",
+        "reasonPlaceholder": "Why the status changes (shown in the history)",
+        "nextAction": "Next action date",
+        "bulkScopeAll_one": "{{count}} learner: every current batch gets this status.",
+        "bulkScopeAll_other": "{{count}} learners: every current batch of each gets this status.",
+        "bulkScopeFiltered_one": "{{count}} learner, in the filtered batches.",
+        "bulkScopeFiltered_other": "{{count}} learners, in the filtered batches.",
+        "noMessages": "Only the status changes. Nothing is sent to the learner.",
+        "cancel": "Cancel",
+        "submit": "Save status",
+        "saving": "Saving…",
+        "saved_one": "{{count}} status changed.",
+        "saved_other": "{{count}} statuses changed.",
+        "failed": "Could not change the status."
+    }
+}

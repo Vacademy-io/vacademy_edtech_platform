@@ -1,0 +1,144 @@
+package vacademy.io.admin_core_service.features.journey_status.controller;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
+import vacademy.io.admin_core_service.features.journey_status.service.JourneyRiskService;
+import vacademy.io.admin_core_service.features.journey_status.service.JourneyStatusService;
+import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.common.exceptions.VacademyException;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Journey status per learner per batch. Staff of the institute only; every query is scoped to
+ * the institute. Off per institute (JOURNEY_STATUS_SETTING); reads answer {enabled:false} while
+ * off, changes are refused.
+ */
+@RestController
+@RequestMapping("/admin-core-service/journey-status/v1")
+@RequiredArgsConstructor
+public class JourneyStatusController {
+
+    private final JourneyStatusService service;
+    private final JourneyRiskService riskService;
+    private final InstituteAccessValidator instituteAccessValidator;
+
+    /** The status list and rules, defaults filled in. */
+    @GetMapping("/settings")
+    public ResponseEntity<Map<String, Object>> settings(@RequestParam("instituteId") String instituteId,
+                                                        @RequestAttribute("user") CustomUserDetails user) {
+        instituteAccessValidator.requireStaffAccess(user, instituteId);
+        service.forget(instituteId);
+        return ResponseEntity.ok(service.config(instituteId).toJson());
+    }
+
+    /** One learner's status in each current batch, and their journey history. */
+    @GetMapping("/learner/{userId}")
+    public ResponseEntity<Map<String, Object>> learner(@PathVariable String userId,
+                                                       @RequestParam("instituteId") String instituteId,
+                                                       @RequestAttribute("user") CustomUserDetails user) {
+        instituteAccessValidator.requireStaffAccess(user, instituteId);
+        return ResponseEntity.ok(service.learner(instituteId, userId));
+    }
+
+    /** Statuses for a page of the student list (one query by the page's user ids). */
+    @PostMapping("/for-users")
+    public ResponseEntity<Map<String, Object>> forUsers(@RequestParam("instituteId") String instituteId,
+                                                        @RequestBody UsersRequest req,
+                                                        @RequestAttribute("user") CustomUserDetails user) {
+        instituteAccessValidator.requireStaffAccess(user, instituteId);
+        if (!service.isEnabled(instituteId)) return ResponseEntity.ok(Map.of("enabled", false, "statuses", Map.of()));
+        return ResponseEntity.ok(Map.of("enabled", true, "statuses", service.forUsers(instituteId, req.getUserIds())));
+    }
+
+    /** Current enrolments per status, for the list filter. */
+    @GetMapping("/counts")
+    public ResponseEntity<Map<String, Object>> counts(@RequestParam("instituteId") String instituteId,
+                                                      @RequestParam(value = "packageSessionIds", required = false) List<String> packageSessionIds,
+                                                      @RequestAttribute("user") CustomUserDetails user) {
+        instituteAccessValidator.requireStaffAccess(user, instituteId);
+        if (!service.isEnabled(instituteId)) return ResponseEntity.ok(Map.of("enabled", false));
+        return ResponseEntity.ok(service.counts(instituteId, packageSessionIds));
+    }
+
+    /**
+     * Change the status of one or many learners. Each item names a learner and a batch; an item
+     * without a batch (or a user in user_ids) changes every current batch of that learner, within
+     * package_session_ids when given.
+     */
+    @PostMapping("/set")
+    public ResponseEntity<Map<String, Object>> set(@RequestParam("instituteId") String instituteId,
+                                                   @RequestBody SetRequest req,
+                                                   @RequestAttribute("user") CustomUserDetails user) {
+        instituteAccessValidator.requireStaffAccess(user, instituteId);
+        List<JourneyStatusService.Target> targets = new ArrayList<>();
+        if (req.getItems() != null) {
+            req.getItems().forEach(i -> targets.add(new JourneyStatusService.Target(i.getUserId(), i.getPackageSessionId())));
+        }
+        if (req.getUserIds() != null) {
+            for (String u : req.getUserIds()) {
+                if (req.getPackageSessionIds() == null || req.getPackageSessionIds().isEmpty()) {
+                    targets.add(new JourneyStatusService.Target(u, null));
+                } else {
+                    req.getPackageSessionIds().forEach(ps -> targets.add(new JourneyStatusService.Target(u, ps)));
+                }
+            }
+        }
+        LocalDate next;
+        try {
+            next = req.getNextActionDate() == null || req.getNextActionDate().isBlank() ? null
+                    : LocalDate.parse(req.getNextActionDate().trim().substring(0, Math.min(10, req.getNextActionDate().trim().length())));
+        } catch (Exception e) {
+            throw new VacademyException("Next action date must be a date (YYYY-MM-DD)");
+        }
+        int changed = service.setManual(instituteId, targets, req.getStatusKey(), req.getReason(), next,
+                user.getUserId(), user.getFullName());
+        return ResponseEntity.ok(Map.of("updated", changed));
+    }
+
+    /** Runs the At Risk check for this institute now (the daily job does the same). Sends nothing. */
+    @PostMapping("/run-risk-check")
+    public ResponseEntity<Map<String, Object>> runRiskCheck(@RequestParam("instituteId") String instituteId,
+                                                            @RequestAttribute("user") CustomUserDetails user) {
+        instituteAccessValidator.requireStaffAccess(user, instituteId);
+        if (!service.isEnabled(instituteId)) throw new VacademyException("Journey status is switched off for this institute");
+        service.forget(instituteId);
+        int[] r = riskService.runInstitute(instituteId);
+        return ResponseEntity.ok(Map.of("marked_at_risk", r[0], "returned", r[1]));
+    }
+
+    @Data
+    public static class UsersRequest {
+        @JsonProperty("user_ids") private List<String> userIds;
+    }
+
+    @Data
+    public static class Item {
+        @JsonProperty("user_id") private String userId;
+        @JsonProperty("package_session_id") private String packageSessionId;
+    }
+
+    @Data
+    public static class SetRequest {
+        @JsonProperty("items") private List<Item> items;
+        @JsonProperty("user_ids") private List<String> userIds;
+        @JsonProperty("package_session_ids") private List<String> packageSessionIds;
+        @JsonProperty("status_key") private String statusKey;
+        @JsonProperty("reason") private String reason;
+        @JsonProperty("next_action_date") private String nextActionDate;
+    }
+}

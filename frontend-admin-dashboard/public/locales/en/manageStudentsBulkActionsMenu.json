@@ -10,7 +10,8 @@
         "sendEmail": "Send Email",
         "createCertificate": "Create Certificate",
         "awardBadge": "Award Badge",
-        "moveToSubOrg": "Move to {{term}}"
+        "moveToSubOrg": "Move to {{term}}",
+        "changeJourneyStatus": "Change journey status"
     },
     "actionInfo": {
         "selectedStudents_one": "{{count}} student",

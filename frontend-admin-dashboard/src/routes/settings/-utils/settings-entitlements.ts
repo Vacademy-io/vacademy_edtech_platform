@@ -110,6 +110,8 @@ export const SETTINGS_TAB_FEATURES: Readonly<Record<SettingsTabs, readonly strin
     [SettingsTabs.PaymentGateways]: FINANCE,
     // Breaks and holds pause memberships and class/fee reminders (ENROLMENT_BREAK_SETTING).
     [SettingsTabs.EnrolmentBreaks]: [...FINANCE, ...LMS_SIDE],
+    // Learner journey status per batch + daily At Risk check (JOURNEY_STATUS_SETTING).
+    [SettingsTabs.JourneyStatus]: [...FINANCE, ...LMS_SIDE],
     // Per-learner progress through a course stage's syllabus week blocks (SYLLABUS_PROGRESS_SETTING).
     [SettingsTabs.SyllabusProgress]: ['lms.batches', 'lms.courses', 'lms.course_planning'],
     // Membership payment reminder schedule + calendar-month billing (FEE_REMINDER_SETTING).

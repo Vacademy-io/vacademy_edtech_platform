@@ -71,6 +71,8 @@ public class EnrolmentBreakService {
     @Autowired private StudentFeePaymentRepository studentFeePaymentRepository;
     @Autowired private CpoDiscountService cpoDiscountService;
     @Autowired private TimelineEventService timelineEventService;
+    @Autowired(required = false)
+    private vacademy.io.admin_core_service.features.journey_status.service.JourneyStatusService journeyStatusService;
 
     // ------------------------------------------------------------------ read
 
@@ -194,6 +196,7 @@ public class EnrolmentBreakService {
         b = repository.save(b);
         if (!b.getStartsOn().isAfter(d.today)) {
             start(b);
+            journeyPause(b, admin, true);
         }
         log("BREAK_CREATED", b, admin, title(b, "created"), b.getNote(), Map.of(
                 "kind", b.getKind(), "starts_on", b.getStartsOn().toString(),
@@ -482,6 +485,7 @@ public class EnrolmentBreakService {
         String note = req != null && StringUtils.hasText(req.getNote()) ? req.getNote().trim() : null;
         log("BREAK_ENDED", b, admin, title(b, EnrolmentBreak.END_SCHEDULED.equals(endKind) ? "ended as planned" : "resumed"),
                 note, meta);
+        journeyPause(b, admin, false);
         guard.invalidate();
     }
 
@@ -521,6 +525,7 @@ public class EnrolmentBreakService {
         if (b == null || !EnrolmentBreak.STATUS_SCHEDULED.equals(b.getStatus())) return false;
         if (b.getStartsOn().isAfter(guard.today(b.getInstituteId()))) return false;
         start(b);
+        journeyPause(b, null, true);
         log("BREAK_STARTED", b, null, title(b, "started"), null, Map.of());
         guard.invalidate();
         return true;
@@ -780,6 +785,26 @@ public class EnrolmentBreakService {
         } catch (Exception e) {
             // The timeline is a record, never a reason to fail the change itself.
             log.warn("[enrolment-break] timeline entry failed for {}: {}", b.getId(), e.getMessage());
+        }
+    }
+
+    /**
+     * Journey status follows a pause (JOURNEY_STATUS_SETTING.status_on_pause / status_on_resume),
+     * after this transaction commits and only when the institute has journey status on. Never
+     * fails the break.
+     */
+    private void journeyPause(EnrolmentBreak b, CustomUserDetails admin, boolean started) {
+        if (journeyStatusService == null || !b.isPause() || b.getPackageSessionId() == null) return;
+        try {
+            String actorId = admin != null ? admin.getUserId() : null;
+            String actorName = admin != null ? admin.getFullName() : null;
+            if (started) {
+                journeyStatusService.onPauseStarted(b.getInstituteId(), b.getUserId(), b.getPackageSessionId(), actorId, actorName);
+            } else {
+                journeyStatusService.onPauseEnded(b.getInstituteId(), b.getUserId(), b.getPackageSessionId(), actorId, actorName);
+            }
+        } catch (Exception e) {
+            log.warn("[enrolment-break] journey status not updated for break {}: {}", b.getId(), e.getMessage());
         }
     }
 

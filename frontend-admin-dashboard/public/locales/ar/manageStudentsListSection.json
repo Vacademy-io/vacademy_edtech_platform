@@ -25,5 +25,9 @@
     "noCourseDialog": {
         "enrollStudentsLabel": "تسجيل الطلاب",
         "defaultContent": "يلزم إنشاء دورة وإضافة مادة إليها قبل"
+    },
+    "journeyStatus": {
+        "filterTitle": "حالة المسار",
+        "columnHeader": "حالة المسار"
     }
 }

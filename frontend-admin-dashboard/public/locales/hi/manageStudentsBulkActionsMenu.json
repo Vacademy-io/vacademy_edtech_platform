@@ -10,7 +10,8 @@
         "sendEmail": "ईमेल भेजें",
         "createCertificate": "प्रमाणपत्र बनाएं",
         "awardBadge": "बैज प्रदान करें",
-        "moveToSubOrg": "{{term}} में ले जाएँ"
+        "moveToSubOrg": "{{term}} में ले जाएँ",
+        "changeJourneyStatus": "जर्नी स्टेटस बदलें"
     },
     "actionInfo": {
         "selectedStudents_one": "{{count}} विद्यार्थी चयनित",

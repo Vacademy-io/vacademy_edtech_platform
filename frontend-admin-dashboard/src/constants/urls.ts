@@ -1326,6 +1326,14 @@ export const ENROLMENT_BREAK_END_PREVIEW = (breakId: string) =>
 export const ENROLMENT_BREAK_CANCEL = (breakId: string) =>
     `${ENROLMENT_BREAKS_BASE}/${breakId}/cancel`;
 // Syllabus progress: teachers mark each learner's progress per syllabus week block.
+// Journey status per learner per batch (JOURNEY_STATUS_SETTING).
+export const JOURNEY_STATUS_BASE = `${BASE_URL}/admin-core-service/journey-status/v1`;
+export const JOURNEY_STATUS_SETTINGS = `${JOURNEY_STATUS_BASE}/settings`;
+export const JOURNEY_STATUS_FOR_LEARNER = (userId: string) => `${JOURNEY_STATUS_BASE}/learner/${userId}`;
+export const JOURNEY_STATUS_FOR_USERS = `${JOURNEY_STATUS_BASE}/for-users`;
+export const JOURNEY_STATUS_COUNTS = `${JOURNEY_STATUS_BASE}/counts`;
+export const JOURNEY_STATUS_SET = `${JOURNEY_STATUS_BASE}/set`;
+
 export const SYLLABUS_PROGRESS_BASE = `${BASE_URL}/admin-core-service/syllabus-progress/v1`;
 export const SYLLABUS_PROGRESS_BATCHES = `${SYLLABUS_PROGRESS_BASE}/batches`;
 export const SYLLABUS_PROGRESS_BATCH = `${SYLLABUS_PROGRESS_BASE}/batch`;

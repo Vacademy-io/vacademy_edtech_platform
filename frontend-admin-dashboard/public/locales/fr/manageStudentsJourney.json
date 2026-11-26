@@ -1,0 +1,40 @@
+{
+    "card": {
+        "title": "Statut de parcours",
+        "subtitle": "Où en est l'apprenant dans chaque groupe",
+        "change": "Changer le statut",
+        "changeOne": "Changer",
+        "error": "Impossible de charger le statut de parcours.",
+        "retry": "Réessayer",
+        "noBatches": "L'apprenant n'a aucun groupe en cours.",
+        "unnamedBatch": "Groupe",
+        "since": "Depuis le {{date}}",
+        "nextAction": "Prochaine action {{date}}",
+        "byRiskCheck": "Défini par la vérification À risque",
+        "byBreak": "Défini par une pause",
+        "history_one": "Historique ({{count}})",
+        "history_other": "Historique ({{count}})",
+        "importedCase": "Dossier importé ({{status}})"
+    },
+    "dialog": {
+        "title": "Changer le statut de parcours",
+        "titleFor": "Changer le statut de parcours : {{name}}",
+        "batch": "Groupe",
+        "allBatches": "Tous les groupes en cours",
+        "status": "Statut",
+        "reason": "Motif",
+        "reasonPlaceholder": "Pourquoi le statut change (visible dans l'historique)",
+        "nextAction": "Date de la prochaine action",
+        "bulkScopeAll_one": "{{count}} apprenant : chaque groupe en cours reçoit ce statut.",
+        "bulkScopeAll_other": "{{count}} apprenants : chaque groupe en cours de chacun reçoit ce statut.",
+        "bulkScopeFiltered_one": "{{count}} apprenant, dans les groupes filtrés.",
+        "bulkScopeFiltered_other": "{{count}} apprenants, dans les groupes filtrés.",
+        "noMessages": "Seul le statut change. Rien n'est envoyé à l'apprenant.",
+        "cancel": "Annuler",
+        "submit": "Enregistrer le statut",
+        "saving": "Enregistrement…",
+        "saved_one": "{{count}} statut modifié.",
+        "saved_other": "{{count}} statuts modifiés.",
+        "failed": "Impossible de changer le statut."
+    }
+}

@@ -26,6 +26,8 @@ export interface StudentFilterRequest {
     /** Learner city / region (state). Matched ignoring case and spaces. */
     cities?: string[];
     regions?: string[];
+    /** Journey status keys (JOURNEY_STATUS_SETTING); ignored by the server while it is off. */
+    journey_statuses?: string[];
     // Dropdown custom-field filters — keyed by custom_field.id, values are the
     // selected option ids. Matches the backend's StudentListFilter.customFieldFilters
     // (Map<String, List<String>>), NOT the legacy flat customFieldId*/customFieldValues*

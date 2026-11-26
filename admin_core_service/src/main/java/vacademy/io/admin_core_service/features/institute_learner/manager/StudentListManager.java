@@ -75,6 +75,9 @@ public class StudentListManager {
     @Autowired
     private PlatformTransactionManager transactionManager;
 
+    @Autowired(required = false)
+    private vacademy.io.admin_core_service.features.journey_status.service.JourneyStatusService journeyStatusService;
+
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -425,6 +428,36 @@ public class StudentListManager {
                             studentListFilter.getUtmFilters(),
                             vacademy.io.admin_core_service.features.common.service.CustomFieldListFilterResolver.Surface.USER,
                             utmInstituteId));
+            if (combined.shortCircuitsToEmpty()) {
+                return ResponseEntity.ok(AllStudentV2Response.builder()
+                        .content(new ArrayList<>()).pageNo(pageNo).pageSize(pageSize)
+                        .totalElements(0L).totalPages(0).last(true)
+                        .membershipTypesAvailable(membershipTypesAvailable(studentListFilter.getInstituteIds()))
+                        .build());
+            }
+            studentListFilter.setCfTypedMatchedUserIds(
+                    combined.matchedIds == null ? null : new ArrayList<>(combined.matchedIds));
+            studentListFilter.setCfTypedExcludedUserIds(
+                    combined.excludedIds == null ? null : new ArrayList<>(combined.excludedIds));
+        }
+        // Journey status filter (JOURNEY_STATUS_SETTING): learners with a current batch (within the
+        // batch filter, when set) on one of these statuses, folded into the same matched-id set.
+        // Ignored while the institute has journey status off.
+        if (journeyStatusService != null && studentListFilter.getJourneyStatuses() != null
+                && !studentListFilter.getJourneyStatuses().isEmpty()
+                && studentListFilter.getInstituteIds() != null && !studentListFilter.getInstituteIds().isEmpty()
+                && journeyStatusService.isEnabled(studentListFilter.getInstituteIds().get(0))) {
+            java.util.Set<String> journeyMatched = journeyStatusService.userIdsWithStatuses(
+                    studentListFilter.getInstituteIds().get(0), studentListFilter.getJourneyStatuses(),
+                    studentListFilter.getPackageSessionIds());
+            vacademy.io.admin_core_service.features.common.service.CustomFieldListFilterResolver.Resolution
+                    combined = new vacademy.io.admin_core_service.features.common.service.CustomFieldListFilterResolver.Resolution(
+                            studentListFilter.getCfTypedMatchedUserIds() == null ? null
+                                    : new java.util.HashSet<>(studentListFilter.getCfTypedMatchedUserIds()),
+                            studentListFilter.getCfTypedExcludedUserIds() == null ? null
+                                    : new java.util.HashSet<>(studentListFilter.getCfTypedExcludedUserIds()))
+                    .and(new vacademy.io.admin_core_service.features.common.service.CustomFieldListFilterResolver.Resolution(
+                            journeyMatched, null));
             if (combined.shortCircuitsToEmpty()) {
                 return ResponseEntity.ok(AllStudentV2Response.builder()
                         .content(new ArrayList<>()).pageNo(pageNo).pageSize(pageSize)

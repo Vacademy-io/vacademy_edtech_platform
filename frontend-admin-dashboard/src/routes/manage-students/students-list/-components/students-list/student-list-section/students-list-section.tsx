@@ -22,6 +22,13 @@ import { useLeadSettings } from '@/hooks/use-lead-settings';
 import { useLeadProfiles } from '@/hooks/use-lead-profiles';
 import { LeadScoreBadge } from '@/components/shared/lead-score-badge';
 import { MembershipBadge } from '@/components/shared/membership-badge';
+import { JourneyStatusBadge } from '@/components/shared/journey-status-badge';
+import {
+    pickListStatus,
+    useJourneyStatusCounts,
+    useJourneyStatusSettings,
+    useJourneyStatusesForUsers,
+} from '@/services/journey-status';
 import { AssignCounselorToLeadDialog } from '@/components/shared/assign-counselor-to-lead-dialog';
 import { UserCircle } from '@phosphor-icons/react';
 import { BulkActions } from './bulk-actions/bulk-actions';
@@ -287,7 +294,29 @@ export const StudentsListSection = () => {
         gatedRangeCustomFields,
         membershipTypesAvailable
     );
-    const allFilters = withLocationFiltersAfterGender(baseFilters, locationFilters);
+    // Journey status (Settings → Journey status): a filter chip with per-status counts, only
+    // while the setting is on. Nothing changes for institutes without it.
+    const journey = useJourneyStatusSettings();
+    const { data: journeyCounts } = useJourneyStatusCounts(journey.enabled);
+    const journeyFilters = journey.enabled
+        ? [
+              {
+                  id: 'journey_statuses',
+                  title: t('journeyStatus.filterTitle', { defaultValue: 'Journey status' }),
+                  filterList: journey.settings.statuses.map((s) => ({
+                      id: s.key,
+                      label:
+                          journeyCounts && journeyCounts[s.key] !== undefined
+                              ? `${s.label} (${journeyCounts[s.key]})`
+                              : s.label,
+                  })),
+              },
+          ]
+        : [];
+    const allFilters = [
+        ...withLocationFiltersAfterGender(baseFilters, locationFilters),
+        ...journeyFilters,
+    ];
     const filters = allFilters.filter((f) => {
         const fixed = FILTER_TO_COLUMNS[f.id];
         if (fixed) return fixed.some((accessor) => !roleHiddenColumns.has(accessor));
@@ -344,6 +373,8 @@ export const StudentsListSection = () => {
         () => (studentTableData?.content ?? []).map((s) => s.user_id).filter(Boolean) as string[],
         [studentTableData]
     );
+    // Journey status per learner on this page: one small query by the page's user ids.
+    const { data: journeyByUser } = useJourneyStatusesForUsers(studentUserIds, journey.enabled);
     // Fetch lead profiles when lead system is enabled (needed for both score badge and counsellor column)
     const { profiles: leadProfiles } = useLeadProfiles(studentUserIds, leadReady);
 
@@ -377,6 +408,49 @@ export const StudentsListSection = () => {
     const getSelectedStudents = (): StudentTable[] => selectedStudents;
 
     const getSelectedStudentIds = (): string[] => selectedStudents.map((student) => student.id);
+
+    // Journey status column, after the name, only while Settings → Journey status is on. The list
+    // is one row per learner, so the badge shows the batch the list is filtered to (or pinned to),
+    // else the most severe status across the learner's batches; the tooltip lists every batch.
+    const journeyScope = search.package_session_id
+        ? [search.package_session_id]
+        : (appliedFilters.package_session_ids ?? []);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const withJourneyColumn = <C extends { id?: string }>(cols: C[]): any[] => {
+        if (!journey.enabled) return cols;
+        const column = {
+            id: 'journey_status',
+            header: t('journeyStatus.columnHeader', { defaultValue: 'Journey status' }),
+            size: 160,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            cell: (props: any) => {
+                const entries = journeyByUser?.[props.row.original.user_id as string];
+                const picked = pickListStatus(entries, journey.settings, journeyScope);
+                if (!picked) return <span className="text-caption text-neutral-400">—</span>;
+                const more = picked.all.length > 1 ? `+${picked.all.length - 1}` : undefined;
+                const title = picked.all
+                    .map(
+                        (e) =>
+                            journey.settings.statuses.find((s) => s.key === e.status_key)?.label ??
+                            e.status_key
+                    )
+                    .join(', ');
+                return (
+                    <span title={title}>
+                        <JourneyStatusBadge
+                            def={picked.def}
+                            fallbackLabel={picked.entry.status_key}
+                            suffix={more}
+                        />
+                    </span>
+                );
+            },
+        };
+        const at = cols.findIndex((c) => c.id === 'full_name');
+        const out: unknown[] = [...cols];
+        out.splice(at >= 0 ? at + 1 : out.length, 0, column);
+        return out;
+    };
 
     // Approval actions (row-level Accept/Decline and the bulk Accept action) are shown
     // whenever the Approval Status filter (Pending for Approval / Invited) is active.
@@ -547,7 +621,7 @@ export const StudentsListSection = () => {
                                                 total_elements: studentTableData.total_elements,
                                                 last: studentTableData.last,
                                             }}
-                                            columns={(() => {
+                                            columns={withJourneyColumn((() => {
                                                 const baseCols = getCustomColumns(showApprovalActions);
                                                 // Trial/Paid chip under the name. Applied before the
                                                 // lead-system early return, so it shows for institutes
@@ -681,7 +755,7 @@ export const StudentsListSection = () => {
                                                     },
                                                 });
                                                 return augmented;
-                                            })()}
+                                            })())}
                                             tableState={{
                                                 columnVisibility: (() => {
                                                     // Layers, highest precedence first:

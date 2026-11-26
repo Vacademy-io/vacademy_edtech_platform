@@ -21,5 +21,9 @@
     "noCourseDialog": {
         "enrollStudentsLabel": "Enroll Students",
         "defaultContent": "You need to create a course and add a subject in it before"
+    },
+    "journeyStatus": {
+        "filterTitle": "Journey status",
+        "columnHeader": "Journey status"
     }
 }

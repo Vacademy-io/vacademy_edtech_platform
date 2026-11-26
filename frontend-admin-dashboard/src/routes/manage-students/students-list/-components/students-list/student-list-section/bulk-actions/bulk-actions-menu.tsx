@@ -15,6 +15,9 @@ import { BulkMoveToSubOrgDialog } from './bulk-move-to-sub-org-dialog';
 import { canAccessSubOrgModule, subOrgPermission } from '@/lib/display-settings/sub-org-module';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { OtherTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
+import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
+import { useJourneyStatusSettings } from '@/services/journey-status';
+import { ChangeJourneyStatusDialog } from '../../student-side-view/student-membership/journey/change-journey-status-dialog';
 
 // Internal action-type constants used for dispatch logic. These must never be
 // swapped for translated display text — handleMenuOptionsChange switches on
@@ -32,6 +35,7 @@ const MENU_ACTION = {
     CREATE_CERTIFICATE: 'CREATE_CERTIFICATE',
     AWARD_BADGE: 'AWARD_BADGE',
     MOVE_TO_SUB_ORG: 'MOVE_TO_SUB_ORG',
+    JOURNEY_STATUS: 'JOURNEY_STATUS',
 } as const;
 
 /**
@@ -110,6 +114,8 @@ export const BulkActionsMenu = ({
     // Owned here rather than in the shared dialog store: like the badge dialog, it is mounted
     // next to the menu so it works on every list that shows the menu.
     const [moveToSubOrgInfo, setMoveToSubOrgInfo] = useState<BulkActionInfo | null>(null);
+    const journey = useJourneyStatusSettings();
+    const [journeyUserIds, setJourneyUserIds] = useState<string[] | null>(null);
     // Same gate as the Sub-Orgs module's own Add / Remove member actions.
     const canMoveToSubOrg = canAccessSubOrgModule() && subOrgPermission('canManageTeam');
 
@@ -125,9 +131,20 @@ export const BulkActionsMenu = ({
               },
           ]
         : baseList;
-    const dropdownList: DropdownItem[] = showApprovalActions
-        ? [{ label: t('menu.acceptRequest'), value: MENU_ACTION.ACCEPT_REQUEST }, ...withSubOrg]
+    // Journey status (Settings → Journey status): person-scoped here — every current batch of
+    // each selected learner gets the status. Only offered while the setting is on.
+    const withJourney: DropdownItem[] = journey.enabled
+        ? [
+              ...withSubOrg,
+              {
+                  label: t('menu.changeJourneyStatus', { defaultValue: 'Change journey status' }),
+                  value: MENU_ACTION.JOURNEY_STATUS,
+              },
+          ]
         : withSubOrg;
+    const dropdownList: DropdownItem[] = showApprovalActions
+        ? [{ label: t('menu.acceptRequest'), value: MENU_ACTION.ACCEPT_REQUEST }, ...withJourney]
+        : withJourney;
 
     const handleMenuOptionsChange = (value: string) => {
         const needsBatch = BATCH_SCOPED_ACTIONS.has(value);
@@ -195,6 +212,9 @@ export const BulkActionsMenu = ({
             case MENU_ACTION.MOVE_TO_SUB_ORG:
                 setMoveToSubOrgInfo(bulkActionInfo);
                 break;
+            case MENU_ACTION.JOURNEY_STATUS:
+                setJourneyUserIds(validStudents.map((s) => s.user_id).filter(Boolean) as string[]);
+                break;
             case MENU_ACTION.CREATE_CERTIFICATE:
                 // Navigate to certificate generation with selected students
                 router.navigate({
@@ -224,6 +244,14 @@ export const BulkActionsMenu = ({
                 info={moveToSubOrgInfo}
                 onClose={() => setMoveToSubOrgInfo(null)}
             />
+            {journeyUserIds && (
+                <ChangeJourneyStatusDialog
+                    onClose={() => setJourneyUserIds(null)}
+                    instituteId={getCurrentInstituteId() || ''}
+                    settings={journey.settings}
+                    userIds={journeyUserIds}
+                />
+            )}
         </>
     );
 };

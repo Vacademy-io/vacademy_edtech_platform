@@ -22,5 +22,9 @@
     "noCourseDialog": {
         "enrollStudentsLabel": "Inscrire des étudiants",
         "defaultContent": "Vous devez créer un cours et y ajouter une matière avant de"
+    },
+    "journeyStatus": {
+        "filterTitle": "Statut de parcours",
+        "columnHeader": "Statut de parcours"
     }
 }

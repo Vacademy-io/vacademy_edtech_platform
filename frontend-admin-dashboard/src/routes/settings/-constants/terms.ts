@@ -165,6 +165,7 @@ export const enum SettingsTabs {
     LeadSettings = 'leadSettings',
     GuardianSettings = 'guardianSettings',
     EnrolmentBreaks = 'enrolmentBreaks',
+    JourneyStatus = 'journeyStatus',
     SyllabusProgress = 'syllabusProgress',
     PaymentReminders = 'paymentReminders',
     LearnerCredentials = 'learnerCredentials',

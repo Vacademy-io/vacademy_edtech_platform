@@ -23,7 +23,7 @@ import java.util.function.BiConsumer;
  * or left alone, never duplicated.
  *
  * <p>Order: staff → courses → fee_plans → batches → learners → enrolments → breaks →
- * extra_classes → payments → live_classes → attendance → recordings, journey_cases, open_dues. A step whose prerequisites are missing reports each record as failed
+ * extra_classes → payments → live_classes → attendance → recordings, journey_cases, journey_status, open_dues. A step whose prerequisites are missing reports each record as failed
  * with the reason; nothing is half-written, because every record is its own transaction.
  *
  * <p>Dry run (the default) does the whole step inside one transaction and rolls it back, so the
@@ -38,7 +38,7 @@ import java.util.function.BiConsumer;
 public class InstituteImportService {
 
     public static final List<String> STEPS = List.of("staff", "courses", "fee_plans", "batches", "learners",
-            "enrolments", "breaks", "extra_classes", "payments", "live_classes", "attendance", "recordings", "journey_cases", "open_dues", "syllabus", "progress");
+            "enrolments", "breaks", "extra_classes", "payments", "live_classes", "attendance", "recordings", "journey_cases", "journey_status", "open_dues", "syllabus", "progress");
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -67,6 +67,7 @@ public class InstituteImportService {
             case "attendance" -> liveClasses::attendance;
             case "recordings" -> history::recordings;
             case "journey_cases" -> history::journeyCases;
+            case "journey_status" -> history::journeyStatus;
             case "open_dues" -> history::openDues;
             case "syllabus" -> syllabus::syllabus;
             case "progress" -> syllabus::progress;

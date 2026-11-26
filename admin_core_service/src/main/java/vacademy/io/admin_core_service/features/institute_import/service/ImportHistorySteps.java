@@ -4,11 +4,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import vacademy.io.admin_core_service.features.journey_status.service.JourneyStatusConfig;
+import vacademy.io.admin_core_service.features.journey_status.service.JourneyStatusService;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +30,7 @@ public class ImportHistorySteps {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private final ImportMembershipSteps membership;
+    private final JourneyStatusService journeyStatus;
 
     /**
      * Body: [ { batch_external_id, date, title, url, duration_min } ]
@@ -133,6 +137,85 @@ public class ImportHistorySteps {
                 c.created();
             });
         }
+    }
+
+    /**
+     * Body: the same Journey cases sheet as {@link #journeyCases}. Sets every imported enrolment's
+     * CURRENT journey status (learner_journey_status, source IMPORT): the to_status of its latest
+     * case (by opened_on), matched to the institute's status list by label or key. An enrolment
+     * with no case is on the default status (Learning) when its access is on, the pause status
+     * (Temporary Break) during a running pause, else the first stopped status (Suspended).
+     * A status changed in Vacademy since (by staff, a pause or the At Risk check) is kept.
+     * Writes no timeline entry: the cases are on the timeline already (journey_cases).
+     */
+    public void journeyStatus(ImportContext c, JsonNode body) {
+        JourneyStatusConfig cfg = journeyStatus.config(c.getInstituteId());
+        Map<String, JsonNode> latest = new HashMap<>();
+        for (JsonNode j : body) {
+            String enr = text(j, "enrollment_id");
+            if (enr == null) continue;
+            JsonNode prev = latest.get(enr);
+            if (prev == null || caseOrder(j).compareTo(caseOrder(prev)) > 0) latest.put(enr, j);
+        }
+        String stopped = cfg.statuses().stream().filter(s -> "STOPPED".equals(s.kind()))
+                .map(JourneyStatusConfig.Status::key).findFirst().orElse(cfg.defaultStatus());
+        Map<String, String> access = new java.util.LinkedHashMap<>();
+        c.getJdbc().query("SELECT external_id, internal_id FROM institute_import_ref WHERE institute_id = ? AND kind = 'ACCESS' ORDER BY external_id",
+                rs -> { access.put(rs.getString(1), rs.getString(2)); }, c.getInstituteId());
+        for (String enr : latest.keySet()) {
+            if (!access.containsKey(enr)) {
+                c.item(enr, () -> c.fail(enr, "enrolment not imported yet"));
+            }
+        }
+        for (Map.Entry<String, String> a : access.entrySet()) {
+            String enr = a.getKey();
+            c.item(enr, () -> {
+                List<Map<String, Object>> rows = c.getJdbc().queryForList(
+                        "SELECT user_id, package_session_id, status FROM student_session_institute_group_mapping WHERE id = ? AND institute_id = ?",
+                        a.getValue(), c.getInstituteId());
+                if (rows.isEmpty()) {
+                    c.fail(enr, "access row not found");
+                    return;
+                }
+                String userId = (String) rows.get(0).get("user_id");
+                String psId = (String) rows.get(0).get("package_session_id");
+                Map<String, Object> current = journeyStatus.current(c.getInstituteId(), userId, psId);
+                if (current != null && !JourneyStatusService.SOURCE_IMPORT.equals(current.get("source"))) {
+                    c.skip(enr, "status changed in Vacademy since the import; kept");
+                    return;
+                }
+                JsonNode j = latest.get(enr);
+                String key;
+                String reason = null;
+                LocalDate next = null;
+                Timestamp since = null;
+                if (j != null) {
+                    key = cfg.resolve(text(j, "to_status"));
+                    if (key == null) {
+                        c.fail(enr, "status '" + text(j, "to_status") + "' is not in the institute's journey status list");
+                        return;
+                    }
+                    reason = text(j, "reason");
+                    next = date(j, "next_action_date");
+                    since = startOfDay(date(j, "opened_on"));
+                } else {
+                    Integer pauses = c.getJdbc().queryForObject("""
+                            SELECT COUNT(*) FROM enrolment_break
+                             WHERE institute_id = ? AND user_id = ? AND package_session_id = ? AND kind = 'PAUSE' AND status = 'ACTIVE'
+                            """, Integer.class, c.getInstituteId(), userId, psId);
+                    if (pauses != null && pauses > 0) key = cfg.statusOnPause() != null ? cfg.statusOnPause() : stopped;
+                    else key = "ACTIVE".equals(rows.get(0).get("status")) ? cfg.defaultStatus() : stopped;
+                }
+                boolean changed = journeyStatus.apply(c.getInstituteId(), cfg, userId, psId, key,
+                        reason == null ? null : (reason.length() > 500 ? reason.substring(0, 500) : reason), next,
+                        JourneyStatusService.SOURCE_IMPORT, c.getRunByUserId(), "Import from old system", since, false);
+                if (changed && current == null) c.created(); else c.updated();
+            });
+        }
+    }
+
+    private static String caseOrder(JsonNode j) {
+        return Optional.ofNullable(text(j, "opened_on")).orElse("") + "|" + Optional.ofNullable(text(j, "case_id")).orElse("");
     }
 
     /**

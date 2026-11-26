@@ -10,7 +10,8 @@
         "sendEmail": "إرسال بريد إلكتروني",
         "createCertificate": "إنشاء شهادة",
         "awardBadge": "منح شارة",
-        "moveToSubOrg": "نقل إلى {{term}}"
+        "moveToSubOrg": "نقل إلى {{term}}",
+        "changeJourneyStatus": "تغيير حالة المسار"
     },
     "actionInfo": {
         "selectedStudents_zero": "لا يوجد طلاب محددون ({{count}})",
