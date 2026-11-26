@@ -107,6 +107,11 @@ interface CourseSidebarProps {
    * saying nothing.
    */
   certificatesEnabled?: boolean;
+  /**
+   * How the certificate is earned. Anything but PROGRESS involves test marks, so
+   * "generated upon completion" would be untrue - a different note is shown.
+   */
+  certificateCriteriaMode?: "PROGRESS" | "SCORE" | "PROGRESS_AND_SCORE";
   percentageCompleted?: number;
   onEnrollmentClick: () => void;
   onRatingsLoadingChange: (loading: boolean) => void;
@@ -141,11 +146,13 @@ export const CourseSidebar = ({
   packageSessionIdForCurrentLevel,
   percentageCompleted,
   certificatesEnabled,
+  certificateCriteriaMode = "PROGRESS",
   onEnrollmentClick,
   onRatingsLoadingChange,
   hideEmptyRows = false,
 }: CourseSidebarProps) => {
   const { t } = useTranslation("courseDetailsA");
+  const { t: tCertificate } = useTranslation("certificateRequirements");
   const teacher = getTerminology(RoleTerms.Teacher, SystemTerms.Teacher);
   const capitalizeFirst = (text: string): string => text;
 
@@ -565,7 +572,9 @@ export const CourseSidebar = ({
                       "[.ui-play_&]:text-play-ink [.ui-play_&]:font-bold",
                     )}
                   >
-                    {t("sidebar.certificateOnCompletion")}
+                    {certificateCriteriaMode === "PROGRESS"
+                      ? t("sidebar.certificateOnCompletion")
+                      : tCertificate(`sidebarNote.${certificateCriteriaMode}`)}
                   </p>
                 </div>
               )}

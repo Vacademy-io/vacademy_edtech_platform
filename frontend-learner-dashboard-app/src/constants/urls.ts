@@ -316,6 +316,9 @@ export const GENERATE_CERTIFICATE = `${BASE_URL}/admin-core-service/institute/v1
 // Resolved server-side from Certificate Settings (course override -> institute),
 // replacing the duplicate copy that used to live in Student Display settings.
 export const CERTIFICATE_CONFIG = `${BASE_URL}/admin-core-service/certificate/learner/v1/config`;
+// Where the learner stands against the course's certificate rule (progress and/or
+// marks in chosen quizzes/assessments), graded server-side.
+export const CERTIFICATE_ELIGIBILITY = `${BASE_URL}/admin-core-service/certificate/learner/v1/eligibility`;
 
 // Payment options API endpoint
 export const GET_PAYMENT_OPTIONS = `${BASE_URL}/admin-core-service/open/v1/payment-option/default-payment-option`;
