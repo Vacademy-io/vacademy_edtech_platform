@@ -75,12 +75,53 @@ Each file gets a category: `RECORDING`, `VIDEO`, `AUDIO`, `DOCUMENT`, `IMAGE` or
    portal ("Run now"), or wait for the nightly job.
 3. Check the numbers against a manual S3 listing for one or two institutes.
 
+## Storage plans (included amounts + extra charge)
+
+Opt-in per institute. An institute without a plan sees plain usage, as before.
+
+- **Table (V766):** `institute_usage_allowance`, one row per institute: included
+  storage GB, included bandwidth GB a month, price per extra GB of each, currency,
+  internal note, who changed it last.
+- **How a month is charged** (`UsageAllowanceService`, 1 GB = 1024³ bytes):
+  - Storage: the month's **average** of the nightly snapshots, minus the included GB,
+    times the storage price. A night with no files counts as zero.
+  - Bandwidth: the month's **total**, minus the included GB, times the bandwidth price.
+  - Changing the terms reprices the whole current month (and "last month" on the
+    screens is shown at today's terms).
+- **Charging (V767).** `currency = 'CREDITS'` (the default for new plans) takes the
+  month's extra from the institute's credit wallet: `UsageChargeJob` runs daily at
+  23:45 UTC and, from the 3rd, charges last month once (request type
+  `storage_bandwidth`, key `storage:{institute}:{YYYY-MM}`, may go negative). Each month
+  is written to `institute_usage_charge`; FAILED months retry nightly. Charging starts at
+  `charge_from_month` (next month by default, never back-dated). A real currency (INR…)
+  is shown only and billed by hand. Off switch: `USAGE_CHARGING_ENABLED=false`.
+  Manual run: `POST .../usage/charge?month=YYYY-MM`.
+- **Storage packs:** `addon_storage_gb` is added to the included storage and
+  `addon_price_per_month` is charged every month (+50 GB 250, +500 GB 2,000,
+  +1 TB 3,500 credits in the portal).
+- **Standard plan for new institutes (26 Nov 2026):** 10 GB storage + 50 GB bandwidth a
+  month free; 5 credits per extra GB-month of storage, 2 credits per extra GB of
+  bandwidth (1 credit ≈ ₹0.93).
+- **Nothing is blocked.** Going over never stops uploads, videos or files (pausing
+  uploads on an empty wallet is not built yet).
+- **Our cost:** CDN bytes are costed at `usage.cost.cdn-usd-per-gb` (0, CloudFront
+  flat-rate plan); only `S3_DIRECT` bytes at `usage.cost.bandwidth-usd-per-gb`.
+- **Super admins:**
+  - `GET/PUT/DELETE /admin-core-service/super-admin/v1/usage/institutes/{id}/allowance`
+  - `GET /admin-core-service/super-admin/v1/usage/allowances?month=YYYY-MM`
+  - Portal: institute page → **Storage plan** tab; the Storage & Bandwidth list has a
+    "Plan · extra charge" column linking to it.
+- **Institute admins:** Settings → Storage & Bandwidth shows a "Your plan" card
+  (included vs used, extra so far this month, last month's extra) only when the
+  institute has a plan.
+
 ## Next
 
 - **Attribution at upload time:** record the institute on every `file_metadata`
   row, then re-attribute the `_UNASSIGNED` share. Existing `your-institute-id/`
   files can be traced through the slide that references them.
-- **Pricing:** decide included storage and bandwidth per plan, overage rates, and
-  whether recordings get a retention policy.
+- **Pricing:** per-institute plans are built (above); still open: standard plan
+  amounts, adding the extra charge to invoices automatically, and whether
+  recordings get a retention policy.
 - **Live-class server hours** (BBB) per institute, if it is to be quoted
   separately.

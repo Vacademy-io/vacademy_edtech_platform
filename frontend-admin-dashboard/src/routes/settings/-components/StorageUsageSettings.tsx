@@ -6,7 +6,13 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { getInstituteId } from '@/constants/helper';
-import { useInstituteStorageUsage, type CategoryUsage } from '../-services/storage-usage';
+import { cn } from '@/lib/utils';
+import {
+    useInstituteStorageUsage,
+    type AllowanceStatus,
+    type CategoryUsage,
+    type InstituteStorageUsage,
+} from '../-services/storage-usage';
 
 const CATEGORY_LABELS: Record<string, string> = {
     RECORDING: 'Live class recordings',
@@ -51,6 +57,142 @@ function CategoryBreakdown({ rows, total, locale, countLabel }: {
                 </div>
             ))}
         </div>
+    );
+}
+
+const GB = 1024 ** 3;
+
+function formatMoney(amount: number, currency: string, locale: string): string {
+    if (currency === 'CREDITS') {
+        return `${amount.toLocaleString(locale, { maximumFractionDigits: 2 })} credits`;
+    }
+    try {
+        return amount.toLocaleString(locale, { style: 'currency', currency, maximumFractionDigits: 2 });
+    } catch {
+        return `${currency} ${amount.toLocaleString(locale, { maximumFractionDigits: 2 })}`;
+    }
+}
+
+function formatGb(gb: number, locale: string): string {
+    return `${gb.toLocaleString(locale, { maximumFractionDigits: 2 })} GB`;
+}
+
+function monthName(month: string, locale: string): string {
+    return new Date(`${month}-01T00:00:00`).toLocaleDateString(locale, { month: 'long', year: 'numeric' });
+}
+
+function AllowanceMeter({ label, usedBytes, includedGb, extraBytes, charge, rateText, currency, locale }: {
+    label: string;
+    usedBytes: number;
+    includedGb: number;
+    extraBytes: number;
+    charge: number;
+    rateText: string;
+    currency: string;
+    locale: string;
+}) {
+    const usedGb = usedBytes / GB;
+    const pct = includedGb > 0 ? Math.min(100, (usedGb / includedGb) * 100) : usedBytes > 0 ? 100 : 0;
+    const over = extraBytes > 0;
+    return (
+        <div className="flex flex-col gap-1.5">
+            <div className="flex items-baseline justify-between gap-2 text-sm">
+                <span className="font-medium">{label}</span>
+                <span className="text-muted-foreground">
+                    {formatBytes(usedBytes, locale)} of {formatGb(includedGb, locale)} included
+                </span>
+            </div>
+            <Progress value={pct} className={over ? '[&>div]:bg-danger-500' : undefined} />
+            <p className={cn('text-xs', over ? 'text-danger-600' : 'text-muted-foreground')}>
+                {over
+                    ? `${formatBytes(extraBytes, locale)} over the plan · ${formatMoney(charge, currency, locale)} extra`
+                    : `${formatGb(Math.max(0, includedGb - usedGb), locale)} left`}
+                {` · then ${rateText}`}
+            </p>
+        </div>
+    );
+}
+
+/** Included storage and bandwidth, what is used, and the extra charge so far. */
+function AllowanceCard({ current, previous, previousCharge, locale }: {
+    current: AllowanceStatus;
+    previous: AllowanceStatus | null | undefined;
+    previousCharge: InstituteStorageUsage['previous_month_charge'];
+    locale: string;
+}) {
+    const cur = current.currency;
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="text-base">Your plan, {monthName(current.month, locale)}</CardTitle>
+                <CardDescription>
+                    Your plan includes {formatGb(current.included_storage_gb + current.addon_storage_gb, locale)} of
+                    storage
+                    {current.addon_storage_gb > 0 &&
+                        ` (with a ${formatGb(current.addon_storage_gb, locale)} storage pack at ${formatMoney(current.addon_price, cur, locale)} a month)`}{' '}
+                    and {formatGb(current.included_bandwidth_gb, locale)} of bandwidth a month. Anything above that is
+                    charged per GB
+                    {cur === 'CREDITS' ? ' from your credits, once a month' : ''}. Videos and files never stop
+                    playing.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-5">
+                <AllowanceMeter
+                    label="Storage (average this month)"
+                    usedBytes={current.storage_average_bytes}
+                    includedGb={current.included_storage_gb + current.addon_storage_gb}
+                    extraBytes={current.storage_extra_bytes}
+                    charge={current.storage_charge}
+                    rateText={`${formatMoney(current.storage_rate_per_gb, cur, locale)} per extra GB a month`}
+                    currency={cur}
+                    locale={locale}
+                />
+                <AllowanceMeter
+                    label="Bandwidth this month"
+                    usedBytes={current.bandwidth_bytes}
+                    includedGb={current.included_bandwidth_gb}
+                    extraBytes={current.bandwidth_extra_bytes}
+                    charge={current.bandwidth_charge}
+                    rateText={`${formatMoney(current.bandwidth_rate_per_gb, cur, locale)} per extra GB`}
+                    currency={cur}
+                    locale={locale}
+                />
+                <div className="flex flex-wrap items-baseline justify-between gap-2 border-t pt-4">
+                    <div>
+                        <p className="text-sm font-medium">
+                            {current.addon_price > 0 ? 'Charge so far this month (incl. storage pack)' : 'Extra charge so far this month'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                            An estimate from usage up to last night. Storage counts the month's average, so a large
+                            upload late in the month adds only part of its size.
+                            {current.charged_to_wallet
+                                ? ' Taken from your credits in the first days of next month.'
+                                : current.currency === 'CREDITS' && current.charge_from_month
+                                  ? ` Charging starts with ${monthName(current.charge_from_month, locale)}; nothing is taken for this month.`
+                                  : ''}
+                        </p>
+                    </div>
+                    <p className="text-2xl font-semibold">{formatMoney(current.total_charge, cur, locale)}</p>
+                </div>
+                {previousCharge && previousCharge.status === 'CHARGED' && (
+                    <p className="text-sm text-muted-foreground">
+                        {monthName(previousCharge.month, locale)}:{' '}
+                        {previousCharge.credits > 0
+                            ? `${formatMoney(previousCharge.credits, 'CREDITS', locale)} taken from your credits.`
+                            : 'within your plan, nothing taken.'}
+                    </p>
+                )}
+                {previous && !(previousCharge && previousCharge.status === 'CHARGED') && (
+                    <p className="text-sm text-muted-foreground">
+                        {monthName(previous.month, locale)}:{' '}
+                        {previous.total_charge > 0
+                            ? `${formatMoney(previous.total_charge, previous.currency, locale)} extra (storage ${formatMoney(previous.storage_charge, previous.currency, locale)}, bandwidth ${formatMoney(previous.bandwidth_charge, previous.currency, locale)})`
+                            : 'within your plan, no extra charge'}
+                        .
+                    </p>
+                )}
+            </CardContent>
+        </Card>
     );
 }
 
@@ -102,6 +244,15 @@ export default function StorageUsageSettings() {
                         Usage tracking has just started. The first numbers appear within two days.
                     </AlertDescription>
                 </Alert>
+            )}
+
+            {data.allowance && (
+                <AllowanceCard
+                    current={data.allowance}
+                    previous={data.allowance_previous_month}
+                    previousCharge={data.previous_month_charge}
+                    locale={locale}
+                />
             )}
 
             <div className="grid gap-4 md:grid-cols-2">

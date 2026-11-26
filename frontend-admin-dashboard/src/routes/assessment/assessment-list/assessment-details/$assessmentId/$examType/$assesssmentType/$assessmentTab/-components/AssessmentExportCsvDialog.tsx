@@ -49,6 +49,14 @@ interface AssessmentExportCsvDialogProps {
     onOpenChange?: (open: boolean) => void;
 }
 
+// Today's date as YYYY-MM-DD in the admin's own time zone, for file names. toLocaleDateString()
+// gave "26/11/2026" (slashes are not allowed in file names, so browsers mangle them) and a
+// different order per locale; toISOString() would give the UTC date, a day off near midnight.
+const localDateStamp = (date: Date = new Date()) => {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+};
+
 const labelForCustomField = (field: ResultExportCustomFieldColumn) =>
     field.field_name?.trim() || field.field_key?.trim() || field.column_label;
 
@@ -238,7 +246,7 @@ export const AssessmentExportCsvDialog = ({
                 'download',
                 // Name the file after the sheet: two downloads called results_*.csv, one
                 // of which is actually the not-attempted list, is a support ticket.
-                `${notAttempted ? 'not_attempted' : 'results'}_${assessmentId}_${new Date().toLocaleDateString()}.csv`
+                `${notAttempted ? 'not_attempted' : 'results'}_${assessmentId}_${localDateStamp()}.csv`
             );
             document.body.appendChild(link);
             link.click();

@@ -23,7 +23,10 @@ import { QuestionPaperInterface } from '@/types/assessments/question-paper-templ
 import { daysAgo } from '../-utils/question-paper-list';
 
 const relativeTime = (date: Date, locale: string) => {
-    const seconds = Math.round((date.getTime() - Date.now()) / 1000);
+    // A paper cannot be created in the future. When this computer's clock is behind the
+    // server's, a paper saved a moment ago carries a later time and read "tomorrow" or
+    // "in 3 minutes"; treat anything ahead of now as now.
+    const seconds = Math.min(0, Math.round((date.getTime() - Date.now()) / 1000));
     const units: [Intl.RelativeTimeFormatUnit, number][] = [
         ['year', 365 * 24 * 3600],
         ['month', 30 * 24 * 3600],

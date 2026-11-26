@@ -6,9 +6,11 @@ import {
   formatConsoleClock,
   formatMarks,
   paletteEntries,
+  paperSummary,
   parseMarking,
   statusCounts,
 } from "./palette-logic";
+import { hasAnsweredMarkDot } from "../question-status-colors";
 
 const state = (flags: {
   isAnswered?: boolean;
@@ -86,6 +88,67 @@ describe("counts and the Exam Summary", () => {
     expect(rows[1].counts.marked).toBe(1);
     expect(rows[1].counts["answered-marked"]).toBe(1);
     expect(rows[1].counts["not-visited"]).toBe(1);
+  });
+});
+
+describe("submit summary (paperSummary)", () => {
+  const sections = [
+    { question_preview_dto_list: [{ question_id: "q1" }, { question_id: "q2" }, { question_id: "q3" }] },
+    { question_preview_dto_list: [{ question_id: "q4" }, { question_id: "q5" }] },
+  ];
+
+  it("an answered question marked for review is Answered & marked, never unanswered", () => {
+    const summary = paperSummary(sections, {
+      q1: state({ isVisited: true, isAnswered: true }),
+      q2: state({ isVisited: true, isAnswered: true }),
+      q3: state({ isVisited: true, isAnswered: true, isMarkedForReview: true }),
+      q4: state({ isVisited: true, isAnswered: true }),
+      q5: state({ isVisited: true, isAnswered: true }),
+    });
+    expect(summary.total).toBe(5);
+    expect(summary.unanswered).toBe(0);
+    expect(summary.counts.answered).toBe(4);
+    expect(summary.counts["answered-marked"]).toBe(1);
+    expect(summary.counts.marked).toBe(0);
+  });
+
+  it("an answered question is never Not visited, even without the visited flag", () => {
+    const summary = paperSummary(sections, {
+      q1: state({ isAnswered: true }),
+      q2: state({ isVisited: true, isAnswered: true }),
+      q3: state({ isVisited: true, isAnswered: true }),
+      q4: state({ isVisited: true, isAnswered: true }),
+      q5: state({ isVisited: true, isAnswered: true }),
+    });
+    expect(summary.counts["not-visited"]).toBe(0);
+    expect(summary.unanswered).toBe(0);
+  });
+
+  it("unanswered is Not Answered + Marked for Review + Not Visited", () => {
+    const summary = paperSummary(sections, {
+      q1: state({ isVisited: true, isAnswered: true }),
+      q2: state({ isVisited: true }),
+      q3: state({ isVisited: true, isMarkedForReview: true }),
+      q4: state({ isVisited: true, isAnswered: true, isMarkedForReview: true }),
+    });
+    expect(summary.counts).toEqual({
+      answered: 1,
+      "not-answered": 1,
+      "not-visited": 1,
+      marked: 1,
+      "answered-marked": 1,
+    });
+    expect(summary.unanswered).toBe(3);
+  });
+
+  it("no sections gives an empty summary", () => {
+    expect(paperSummary([], {})).toMatchObject({ total: 0, unanswered: 0 });
+  });
+
+  it("only Answered & marked carries the green dot, so it differs from Marked for review", () => {
+    expect(hasAnsweredMarkDot("answered-marked")).toBe(true);
+    expect(hasAnsweredMarkDot("marked")).toBe(false);
+    expect(hasAnsweredMarkDot("answered")).toBe(false);
   });
 });
 

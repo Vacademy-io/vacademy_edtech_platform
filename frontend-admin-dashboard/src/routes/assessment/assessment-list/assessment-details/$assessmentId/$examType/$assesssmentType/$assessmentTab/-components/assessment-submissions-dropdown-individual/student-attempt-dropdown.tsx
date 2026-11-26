@@ -11,6 +11,7 @@ import {
     DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu';
 import { MyButton } from '@/components/design-system/button';
+import { MyInput } from '@/components/design-system/input';
 import { DotsThree, WarningCircle } from '@phosphor-icons/react';
 import { AssessmentRevaluateStudentInterface } from '@/types/assessments/assessment-overview';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -58,12 +59,25 @@ const ProvideReattemptComponent = ({
     onClose: () => void;
 }) => {
     const { t } = useTranslation('assessmentStudentAttemptDropdown');
+    // The count field shares its copy with the bulk Provide Reattempt dialog.
+    const { t: tCount } = useTranslation('assessmentProvideReattemptDialog');
     const { assessmentId } = Route.useParams();
     const instituteId = getInstituteId();
 
+    // How many extra attempts to grant, as in the bulk dialog (the endpoint takes a count;
+    // this row dialog used to send its default of 1).
+    const [reattemptCount, setReattemptCount] = useState('1');
+    const parsedCount = Number.parseInt(reattemptCount, 10);
+    const isCountValid = Number.isFinite(parsedCount) && parsedCount >= 1 && parsedCount <= 20;
+
     const provideReattemptMutation = useMutation({
         mutationFn: (registrationId: string) =>
-            provideReattemptToParticipants(assessmentId, instituteId, [registrationId]),
+            provideReattemptToParticipants(
+                assessmentId,
+                instituteId,
+                [registrationId],
+                parsedCount
+            ),
         onSuccess: () => {
             toast.success(
                 t('toasts.reattemptProvided', { name: student.full_name }),
@@ -80,6 +94,7 @@ const ProvideReattemptComponent = ({
     });
 
     const handleProvideReattempt = () => {
+        if (!isCountValid) return;
         if (!student.registration_id) {
             toast.error(t('toasts.reattemptRegistrationError'));
             return;
@@ -101,6 +116,17 @@ const ProvideReattemptComponent = ({
                     {t('dialogs.provideReattempt.confirmMessagePrefix')}{' '}
                     <span className="text-primary-500">{student.full_name}</span>?
                 </h1>
+                <MyInput
+                    inputType="number"
+                    inputPlaceholder={tCount('inputPlaceholder')}
+                    input={reattemptCount}
+                    onChangeFunction={(e) => setReattemptCount(e.target.value)}
+                    label={tCount('inputLabel')}
+                    required={true}
+                    error={isCountValid ? undefined : tCount('inputError')}
+                    size="large"
+                    className="w-full"
+                />
                 <div className="flex justify-end">
                     <MyButton
                         type="button"
@@ -108,7 +134,7 @@ const ProvideReattemptComponent = ({
                         buttonType="primary"
                         className="mt-4 font-medium"
                         onClick={handleProvideReattempt}
-                        disabled={provideReattemptMutation.isPending}
+                        disabled={provideReattemptMutation.isPending || !isCountValid}
                     >
                         {provideReattemptMutation.isPending
                             ? t('dialogs.provideReattempt.providing')

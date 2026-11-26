@@ -119,15 +119,21 @@ export function AssessmentSubmissionsStudentTable<T>({
     // the screen and back on again on every page change, filter and sub-tab switch — and
     // an empty result set previously rendered a header row over nothing at all, with no
     // indication that the filters simply matched no one.
+    // The table is usually wider than its box (many columns), so a message centred across
+    // the full width was cut off at the right edge. Sticky left-1/2 is measured against the
+    // scrolling box, so this keeps the message centred in the part that is on screen.
+    const visibleCentreCss = 'sticky left-1/2 w-fit max-w-md -translate-x-1/2';
     const bodyState = () => {
         if (error) {
             return (
                 <TableRow className="hover:bg-white">
                     <TableCell colSpan={leafColumns.length} className="p-8 text-center">
-                        <p className="text-subtitle font-semibold text-danger-600">
-                            {t('states.error')}
-                        </p>
-                        <p className="text-body text-neutral-500">{t('states.errorHint')}</p>
+                        <div className={visibleCentreCss}>
+                            <p className="text-subtitle font-semibold text-danger-600">
+                                {t('states.error')}
+                            </p>
+                            <p className="text-body text-neutral-500">{t('states.errorHint')}</p>
+                        </div>
                     </TableCell>
                 </TableRow>
             );
@@ -146,10 +152,12 @@ export function AssessmentSubmissionsStudentTable<T>({
         return (
             <TableRow className="hover:bg-white">
                 <TableCell colSpan={leafColumns.length} className="p-8 text-center">
-                    <p className="text-subtitle font-semibold text-neutral-600">
-                        {t('states.emptyTitle')}
-                    </p>
-                    <p className="text-body text-neutral-500">{t('states.emptyHint')}</p>
+                    <div className={visibleCentreCss}>
+                        <p className="text-subtitle font-semibold text-neutral-600">
+                            {t('states.emptyTitle')}
+                        </p>
+                        <p className="text-body text-neutral-500">{t('states.emptyHint')}</p>
+                    </div>
                 </TableCell>
             </TableRow>
         );

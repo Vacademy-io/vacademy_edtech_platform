@@ -2,6 +2,12 @@
     "heading": {
         "title": "Détails de l'évaluation"
     },
+    "status": {
+        "live": "En cours",
+        "upcoming": "À venir",
+        "ended": "Terminé",
+        "setupIncomplete": "Configuration incomplète"
+    },
     "helmet": {
         "title": "Détails de l'évaluation",
         "description": "Cette page affiche tous les détails relatifs à une évaluation."

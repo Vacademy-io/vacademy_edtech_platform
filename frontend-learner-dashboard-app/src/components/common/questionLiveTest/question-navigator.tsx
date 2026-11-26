@@ -12,11 +12,11 @@ import { useLiveTestUi } from "./live-test-ui-context";
 import {
   getQuestionStatus,
   getQuestionStatusLabel,
-  isMarkedStatus,
+  hasAnsweredMarkDot,
   QUESTION_LEGEND_ORDER,
   QUESTION_STATUS_GRID_CLASS,
-  type QuestionStatus,
 } from "./question-status-colors";
+import { statusCounts } from "./widgets/palette-logic";
 
 interface QuestionNavigatorProps {
   onClose: () => void;
@@ -53,20 +53,11 @@ export function QuestionNavigator({
     [assessment, currentSection],
   );
 
-  const counts = React.useMemo(() => {
-    const base: Record<QuestionStatus, number> = {
-      answered: 0,
-      "answered-marked": 0,
-      marked: 0,
-      "not-answered": 0,
-      "not-visited": 0,
-    };
-    currentSectionQuestions.forEach((question) => {
-      const status = getQuestionStatus(questionStates[question.question_id]);
-      base[status] += 1;
-    });
-    return base;
-  }, [currentSectionQuestions, questionStates]);
+  // The submit dialog counts with the same rules (palette-logic).
+  const counts = React.useMemo(
+    () => statusCounts(currentSectionQuestions, questionStates),
+    [currentSectionQuestions, questionStates],
+  );
 
   if (!assessment) return null;
 
@@ -128,7 +119,7 @@ export function QuestionNavigator({
                   >
                     {counts[status]}
                   </span>
-                  {isMarkedStatus(status) && (
+                  {hasAnsweredMarkDot(status) && (
                     <span className="absolute -end-1 -top-1 size-2 rounded-full border border-white bg-success-500" />
                   )}
                 </span>
@@ -145,8 +136,7 @@ export function QuestionNavigator({
         {paletteView === "grid" ? (
           <div className="grid grid-cols-5 gap-2">
             {currentSectionQuestions.map((question, index) => {
-              const state = questionStates[question.question_id];
-              const status = getQuestionStatus(state);
+              const status = getQuestionStatus(questionStates[question.question_id]);
               const isActive =
                 currentQuestion?.question_id === question.question_id;
               return (
@@ -170,7 +160,7 @@ export function QuestionNavigator({
                   >
                     {index + 1}
                   </button>
-                  {state?.isMarkedForReview && (
+                  {hasAnsweredMarkDot(status) && (
                     <span className="pointer-events-none absolute -end-1 -top-1 size-2.5 rounded-full border-2 border-white bg-success-500" />
                   )}
                 </div>
