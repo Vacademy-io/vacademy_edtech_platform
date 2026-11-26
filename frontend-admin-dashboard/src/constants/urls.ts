@@ -1330,6 +1330,8 @@ export const SYLLABUS_PROGRESS_BASE = `${BASE_URL}/admin-core-service/syllabus-p
 export const SYLLABUS_PROGRESS_BATCHES = `${SYLLABUS_PROGRESS_BASE}/batches`;
 export const SYLLABUS_PROGRESS_BATCH = `${SYLLABUS_PROGRESS_BASE}/batch`;
 export const SYLLABUS_PROGRESS_MARK = `${SYLLABUS_PROGRESS_BASE}/mark`;
+export const SYLLABUS_PROGRESS_LEARNERS = `${SYLLABUS_PROGRESS_BASE}/learners`;
+export const SYLLABUS_PROGRESS_LEARNER = `${SYLLABUS_PROGRESS_BASE}/learner`;
 
 // System files
 export const ADD_SYSTEM_FILE = `${BASE_URL}/admin-core-service/system-files/v1/add`;

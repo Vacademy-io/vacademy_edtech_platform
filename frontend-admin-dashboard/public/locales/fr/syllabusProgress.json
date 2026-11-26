@@ -16,6 +16,10 @@
         "title": "Aucun groupe n’a encore de programme",
         "body": "Un groupe apparaît ici dès que le niveau de son cours a un programme en blocs de semaines. Demandez à votre administrateur d’en ajouter un."
     },
+    "noAssigned": {
+        "title": "Aucun groupe ne vous est attribué",
+        "body": "Aucun groupe ne vous est encore attribué. Demandez à votre administrateur de vous affecter à un groupe."
+    },
     "picker": {
         "label": "Groupe",
         "placeholder": "Choisir un groupe",
@@ -27,6 +31,28 @@
         "summary": "{{learners}} apprenants · {{blocks}} blocs de semaines",
         "promptTitle": "Choisissez un groupe",
         "promptBody": "Choisissez un groupe ci-dessus pour voir la progression de chaque apprenant, bloc par bloc."
+    },
+    "search": {
+        "label": "Élève",
+        "placeholder": "Rechercher un élève par nom",
+        "minChars": "Saisissez au moins 2 lettres.",
+        "failed": "Impossible de rechercher les élèves.",
+        "empty": "Aucun élève ne correspond à « {{q}} ».",
+        "results": "Élèves correspondants",
+        "noName": "Élève sans nom",
+        "batchLine": "{{course}} · {{stage}} · {{batch}} — {{done}}/{{total}} terminés",
+        "batchName": "{{course}} · {{stage}} · {{batch}}"
+    },
+    "learner": {
+        "back": "Retour",
+        "loadFailed": "Impossible de charger la progression de cet élève",
+        "loadFailedHint": "Vérifiez votre connexion et réessayez.",
+        "noCoursesTitle": "Aucun groupe avec un programme",
+        "noCoursesBody": "Cet élève n’est dans aucun groupe dont le niveau a un programme.",
+        "openBatch": "Ouvrir le groupe",
+        "summary": "{{done}} blocs de semaines terminés sur {{total}}",
+        "current": "En cours",
+        "markHint": "Touchez un bloc de semaines pour le marquer."
     },
     "batch": {
         "loadFailed": "Impossible de charger ce groupe",

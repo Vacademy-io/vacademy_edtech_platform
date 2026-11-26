@@ -7,6 +7,7 @@ import {
     GearSix,
     ListChecks,
     ToggleLeft,
+    UserCircleMinus,
     WarningCircle,
 } from '@phosphor-icons/react';
 import { LayoutContainer } from '@/components/common/layout-container/layout-container';
@@ -19,6 +20,8 @@ import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import { syllabusErrorMessage, useSyllabusBatches } from '@/services/syllabus-progress';
 import { BatchProgress } from './BatchProgress';
 import { EmptyState } from './EmptyState';
+import { LearnerProgress } from './LearnerProgress';
+import { LearnerSearch } from './LearnerSearch';
 
 const routeApi = getRouteApi('/syllabus-progress/');
 
@@ -26,7 +29,7 @@ const routeApi = getRouteApi('/syllabus-progress/');
 export function SyllabusProgressPage() {
     const { t } = useTranslation('syllabusProgress');
     const navigate = useNavigate();
-    const { packageSessionId } = routeApi.useSearch();
+    const { packageSessionId, userId } = routeApi.useSearch();
     const { setNavHeading } = useNavHeadingStore();
     const instituteId = getCurrentInstituteId();
 
@@ -65,6 +68,18 @@ export function SyllabusProgressPage() {
         void navigate({
             to: '/syllabus-progress',
             search: { packageSessionId: next || undefined },
+        });
+
+    const openLearner = (next: string) =>
+        void navigate({
+            to: '/syllabus-progress',
+            search: { packageSessionId: packageSessionId || undefined, userId: next },
+        });
+
+    const closeLearner = () =>
+        void navigate({
+            to: '/syllabus-progress',
+            search: { packageSessionId: packageSessionId || undefined },
         });
 
     const openSettings = () =>
@@ -117,6 +132,15 @@ export function SyllabusProgressPage() {
                 />
             );
         }
+        if (batches.length === 0 && data.scope === 'ASSIGNED') {
+            return (
+                <EmptyState
+                    icon={<UserCircleMinus className="size-8" aria-hidden />}
+                    title={t('noAssigned.title')}
+                    body={t('noAssigned.body')}
+                />
+            );
+        }
         if (batches.length === 0) {
             return (
                 <EmptyState
@@ -128,30 +152,48 @@ export function SyllabusProgressPage() {
         }
         return (
             <div className="space-y-6">
-                <div className="flex flex-col gap-2">
-                    <span className="text-body font-semibold text-neutral-800">
-                        {t('picker.label')}
-                    </span>
-                    <div className="w-full md:max-w-xl">
-                        <SearchableSelect
-                            options={options}
-                            value={selectedId}
-                            onChange={selectBatch}
-                            placeholder={t('picker.placeholder')}
-                            searchPlaceholder={t('picker.search')}
-                            emptyText={t('picker.empty')}
-                        />
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+                    <div className="flex min-w-0 flex-col gap-2 lg:flex-1">
+                        <span className="text-body font-semibold text-neutral-800">
+                            {t('picker.label')}
+                        </span>
+                        <div className="w-full md:max-w-xl">
+                            <SearchableSelect
+                                options={options}
+                                value={selectedId}
+                                onChange={selectBatch}
+                                placeholder={t('picker.placeholder')}
+                                searchPlaceholder={t('picker.search')}
+                                emptyText={t('picker.empty')}
+                            />
+                        </div>
+                        {selected && !userId && (
+                            <p className="text-caption text-neutral-500">
+                                {t('picker.summary', {
+                                    learners: selected.learners,
+                                    blocks: selected.blocks,
+                                })}
+                            </p>
+                        )}
                     </div>
-                    {selected && (
-                        <p className="text-caption text-neutral-500">
-                            {t('picker.summary', {
-                                learners: selected.learners,
-                                blocks: selected.blocks,
-                            })}
-                        </p>
+                    {instituteId && (
+                        <div className="flex min-w-0 flex-col gap-2 lg:w-96">
+                            <span className="text-body font-semibold text-neutral-800">
+                                {t('search.label')}
+                            </span>
+                            <LearnerSearch instituteId={instituteId} onPick={openLearner} />
+                        </div>
                     )}
                 </div>
-                {selectedId && instituteId ? (
+                {userId && instituteId ? (
+                    <LearnerProgress
+                        key={userId}
+                        instituteId={instituteId}
+                        userId={userId}
+                        onBack={closeLearner}
+                        onOpenBatch={selectBatch}
+                    />
+                ) : selectedId && instituteId ? (
                     <BatchProgress
                         key={selectedId}
                         instituteId={instituteId}
