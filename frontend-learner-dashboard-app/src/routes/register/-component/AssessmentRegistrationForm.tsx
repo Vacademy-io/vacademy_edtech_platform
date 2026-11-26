@@ -44,6 +44,8 @@ import {
   isEffectivelyUnbounded,
   getDynamicSchema,
   getOpenRegistrationUserDetailsByEmail,
+  learnerNameFrom,
+  learnerPhoneFrom,
 } from "../-utils/helper";
 import {
   AssessmentCustomFieldOpenRegistration,
@@ -421,12 +423,16 @@ const AssessmentRegistrationForm = () => {
         });
         return;
       }
+      // An account that already existed keeps its stored profile, which may
+      // have no name or phone; the answers just typed fill those gaps so the
+      // registration (and the test's lead list) still gets them.
+      const answers = form.getValues();
       const participantsData = {
         username: response.username,
         user_id: response.user_id,
         email: response.email,
-        full_name: response.full_name,
-        mobile_number: response.mobile_number,
+        full_name: response.full_name || learnerNameFrom(answers),
+        mobile_number: response.mobile_number || learnerPhoneFrom(answers),
         file_id: response.face_file_id,
         guardian_email: response.parents_email,
         guardian_mobile_number: response.parents_mobile_number,
@@ -461,7 +467,12 @@ const AssessmentRegistrationForm = () => {
         assessment_custom_fields: data.assessment_custom_fields,
         institute_id: data.institute_id,
         assessment_id: data.assessment_public_dto.assessment_id,
-        participantsDto,
+        participantsDto: {
+          ...participantsDto,
+          full_name: participantsDto.full_name || learnerNameFrom(values),
+          mobile_number:
+            participantsDto.mobile_number || learnerPhoneFrom(values),
+        },
         custom_field_request_list: values,
       });
     } else {
