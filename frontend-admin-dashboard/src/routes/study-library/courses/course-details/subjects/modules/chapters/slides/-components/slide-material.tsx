@@ -593,6 +593,10 @@ export const SlideMaterial = ({
     // re-deserialize) even when the slide's id/status didn't change — the effect's
     // deps intentionally exclude document_slide.data for DOC slides.
     const [historyRestoreNonce, setHistoryRestoreNonce] = useState(0);
+    // Same count, read by loadContent for editor keys. setActiveItem (a zustand store)
+    // re-renders before the nonce state lands, and that render's loadContent already
+    // builds the editor, so the key must change synchronously in the restore handler.
+    const historyRestoreKeyRef = useRef(0);
 
     // ---- Explicit-save lifecycle: local (unsaved) draft persistence ----
     // Autosave to the DB is gone. Unsaved editor edits are stashed in localStorage
@@ -2684,7 +2688,7 @@ export const SlideMaterial = ({
                 // activeItem's data current, so the header Save Draft / Publish persist it.
                 setContent(
                     <DiscussionSlideEditor
-                        key={`discussion-${activeItem.id}-${historyRestoreNonce}`}
+                        key={`discussion-${activeItem.id}-${historyRestoreKeyRef.current}`}
                         slide={activeItem}
                         isEditable={!isLearnerView}
                     />
@@ -2697,7 +2701,7 @@ export const SlideMaterial = ({
                 // Replace / download toggle update activeItem; header Save / Publish persist.
                 setContent(
                     <SpreadsheetSlideEditor
-                        key={`spreadsheet-${activeItem.id}-${historyRestoreNonce}`}
+                        key={`spreadsheet-${activeItem.id}-${historyRestoreKeyRef.current}`}
                         slide={activeItem}
                         isEditable={!isLearnerView}
                     />
@@ -2716,7 +2720,7 @@ export const SlideMaterial = ({
                           : GameSlideEditor;
                 setContent(
                     <Editor
-                        key={`activity-${activeItem.id}-${historyRestoreNonce}`}
+                        key={`activity-${activeItem.id}-${historyRestoreKeyRef.current}`}
                         slide={activeItem}
                         isEditable={!isLearnerView}
                     />
@@ -3017,7 +3021,7 @@ export const SlideMaterial = ({
                     <HtmlDocAiAuthor
                         // + restore nonce: a history restore must remount the editor, which only
                         // reads the slide's HTML on mount (same key kept the old text on screen)
-                        key={`${activeItem.id}-${historyRestoreNonce}`}
+                        key={`${activeItem.id}-${historyRestoreKeyRef.current}`}
                         slide={activeItem}
                         isLearnerView={isLearnerView}
                         onHtmlChange={handleHtmlDocChange}
@@ -3090,7 +3094,7 @@ export const SlideMaterial = ({
                             <LexicalDocumentEditor
                                 // + restore nonce: initialHtml is read on mount only, so a history
                                 // restore needs a fresh instance (same key kept the old text on screen)
-                                key={`${slideForThisLoad.id}-${historyRestoreNonce}`}
+                                key={`${slideForThisLoad.id}-${historyRestoreKeyRef.current}`}
                                 slideId={slideForThisLoad.id}
                                 initialHtml={initialHtml}
                                 readOnly={isLearnerView}
@@ -4481,6 +4485,7 @@ export const SlideMaterial = ({
         if (!activeItem) return;
         clearLocalDraft(activeItem.id);
         lastLoadContentSlideIdRef.current = null;
+        historyRestoreKeyRef.current += 1;
         setActiveItem({
             ...activeItem,
             status: slideStatus || activeItem.status,
