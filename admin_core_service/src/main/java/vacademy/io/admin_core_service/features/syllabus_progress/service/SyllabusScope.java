@@ -1,5 +1,8 @@
 package vacademy.io.admin_core_service.features.syllabus_progress.service;
 
+import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
+import vacademy.io.common.auth.model.CustomUserDetails;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -8,14 +11,26 @@ import java.util.function.Supplier;
 /**
  * Which batches a staff member may see and mark on the syllabus progress screens.
  *
- * <p>An institute ADMIN (or a root user) sees every batch. Anyone else (a TEACHER or other staff)
- * sees only the batches they are assigned to teach (faculty_subject_package_session_mapping, via
- * EngagementTeacherScope.cohortsOf). The teacher's batch list is loaded only when needed.
+ * <p>An institute ADMIN (or a platform super admin on the allowlist) sees every batch. Any other
+ * staff member (a TEACHER) sees only the batches they are assigned to teach
+ * (faculty_subject_package_session_mapping, via EngagementTeacherScope.cohortsOf). The root flag
+ * grants nothing here: learners and staff alike carry it. The teacher's batch list is loaded only
+ * when needed.
  */
 public record SyllabusScope(boolean all, Set<String> batches) {
 
     public static final String ALL = "ALL";
     public static final String ASSIGNED = "ASSIGNED";
+
+    /**
+     * Refuses anyone who is not staff of {@code instituteId} (no root bypass), then decides the
+     * scope: ADMIN authority or platform super admin → every batch, else the assigned batches.
+     */
+    public static SyllabusScope resolve(InstituteAccessValidator validator, CustomUserDetails user, String instituteId,
+                                        Supplier<Set<String>> assignedBatches) {
+        validator.requireInstituteStaffOrSuperAdmin(user, instituteId);
+        return of(validator.isInstituteAdminOrSuperAdmin(user), assignedBatches);
+    }
 
     public static SyllabusScope of(boolean admin, Supplier<Set<String>> assignedBatches) {
         if (admin) return new SyllabusScope(true, Set.of());

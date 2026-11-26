@@ -266,12 +266,18 @@ export const useSyllabusLearnerSearch = (instituteId: string | undefined, q: str
         staleTime: 30_000,
     });
 
+/** True when the server refused the call (403), e.g. a learner outside the teacher's batches. */
+export const isSyllabusForbidden = (error: unknown): boolean =>
+    (error as { response?: { status?: number } } | null)?.response?.status === 403;
+
 export const useSyllabusLearner = (instituteId: string | undefined, userId: string) =>
     useQuery({
         queryKey: syllabusProgressKeys.learner(instituteId ?? '', userId),
         queryFn: () => fetchSyllabusLearner(instituteId as string, userId),
         enabled: Boolean(instituteId) && Boolean(userId),
         staleTime: 30_000,
+        // A refusal will not change on retry.
+        retry: (failureCount, error) => !isSyllabusForbidden(error) && failureCount < 2,
     });
 
 /** The server's sentence for a failed call (`message`, else ErrorInfo `ex`), else the fallback. */

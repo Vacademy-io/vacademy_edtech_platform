@@ -51,7 +51,9 @@
         "openBatch": "Open batch",
         "summary": "{{done}} of {{total}} week blocks done",
         "current": "Current",
-        "markHint": "Tap a week block to mark it."
+        "markHint": "Tap a week block to mark it.",
+        "notYoursTitle": "Not in your batches",
+        "notYoursBody": "This student is not in your batches. Ask your admin if you need to mark their progress."
     },
     "batch": {
         "loadFailed": "Could not load this batch",

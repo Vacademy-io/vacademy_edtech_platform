@@ -19,8 +19,9 @@ import java.util.Map;
  * Syllabus progress. Staff of the institute read a batch's grid and mark weeks for learners; a
  * learner reads only their own progress (taken from the token). Off per institute.
  *
- * <p>Staff scope: an institute ADMIN sees every batch; any other staff member (a TEACHER) sees
- * and marks only the batches assigned to them in faculty_subject_package_session_mapping.
+ * <p>Staff endpoints use requireInstituteStaffOrSuperAdmin (never the root flag). Scope: an
+ * institute ADMIN sees every batch; any other staff member (a TEACHER) sees and marks only the
+ * batches assigned to them in faculty_subject_package_session_mapping.
  */
 @RestController
 @RequestMapping("/admin-core-service/syllabus-progress")
@@ -34,10 +35,9 @@ public class SyllabusProgressController {
     @GetMapping("/v1/batches")
     public ResponseEntity<Map<String, Object>> batches(@RequestParam("instituteId") String instituteId,
                                                        @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.requireStaffAccess(user, instituteId);
+        SyllabusScope scope = scopeOf(user, instituteId);
         boolean enabled = service.isEnabled(instituteId);
         if (!enabled) return ResponseEntity.ok(Map.of("enabled", false, "batches", List.of()));
-        SyllabusScope scope = scopeOf(user, instituteId);
         return ResponseEntity.ok(Map.of("enabled", true, "scope", scope.name(), "batches", service.batches(instituteId, scope)));
     }
 
@@ -45,9 +45,9 @@ public class SyllabusProgressController {
     public ResponseEntity<Map<String, Object>> batch(@RequestParam("instituteId") String instituteId,
                                                      @RequestParam("packageSessionId") String packageSessionId,
                                                      @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.requireStaffAccess(user, instituteId);
+        SyllabusScope scope = scopeOf(user, instituteId);
         requireEnabled(instituteId);
-        SyllabusProgressService.requireInScope(scopeOf(user, instituteId), packageSessionId);
+        SyllabusProgressService.requireInScope(scope, packageSessionId);
         return ResponseEntity.ok(service.batch(instituteId, packageSessionId));
     }
 
@@ -55,9 +55,9 @@ public class SyllabusProgressController {
     public ResponseEntity<Map<String, Object>> mark(@RequestParam("instituteId") String instituteId,
                                                     @RequestBody MarkRequest req,
                                                     @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.requireStaffAccess(user, instituteId);
+        SyllabusScope scope = scopeOf(user, instituteId);
         requireEnabled(instituteId);
-        SyllabusProgressService.requireInScope(scopeOf(user, instituteId), req.getPackageSessionId());
+        SyllabusProgressService.requireInScope(scope, req.getPackageSessionId());
         int n = service.mark(instituteId, req.getPackageSessionId(), req.getBlockIds(), req.getUserIds(), req.getStatus(),
                 req.getPointsDone(), req.getNote(), user.getUserId(), user.getFullName());
         return ResponseEntity.ok(Map.of("updated", n));
@@ -68,9 +68,9 @@ public class SyllabusProgressController {
     public ResponseEntity<Map<String, Object>> learners(@RequestParam("instituteId") String instituteId,
                                                         @RequestParam("q") String q,
                                                         @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.requireStaffAccess(user, instituteId);
+        SyllabusScope scope = scopeOf(user, instituteId);
         requireEnabled(instituteId);
-        return ResponseEntity.ok(Map.of("learners", service.searchLearners(instituteId, q, scopeOf(user, instituteId), 20)));
+        return ResponseEntity.ok(Map.of("learners", service.searchLearners(instituteId, q, scope, 20)));
     }
 
     /** One learner's progress across their batches (only the caller's batches for a teacher). */
@@ -78,20 +78,24 @@ public class SyllabusProgressController {
     public ResponseEntity<Map<String, Object>> learner(@RequestParam("instituteId") String instituteId,
                                                        @RequestParam("userId") String userId,
                                                        @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.requireStaffAccess(user, instituteId);
+        SyllabusScope scope = scopeOf(user, instituteId);
         requireEnabled(instituteId);
-        return ResponseEntity.ok(service.learner(instituteId, userId, scopeOf(user, instituteId)));
+        return ResponseEntity.ok(service.learner(instituteId, userId, scope));
     }
 
     @GetMapping("/learner/v1/mine")
     public ResponseEntity<Map<String, Object>> mine(@RequestParam("instituteId") String instituteId,
                                                     @RequestAttribute("user") CustomUserDetails user) {
+        instituteAccessValidator.requireInstituteMemberOrSuperAdmin(user, instituteId);
         return ResponseEntity.ok(service.mine(instituteId, user.getUserId()));
     }
 
-    /** ADMIN (or root) → every batch; any other staff → the batches they teach. */
+    /**
+     * Staff guard for every staff endpoint (no root bypass: learners carry the root flag too), then
+     * the scope: ADMIN or platform super admin → every batch; any other staff → the batches they teach.
+     */
     private SyllabusScope scopeOf(CustomUserDetails user, String instituteId) {
-        return SyllabusScope.of(instituteAccessValidator.isInstituteAdmin(user),
+        return SyllabusScope.resolve(instituteAccessValidator, user, instituteId,
                 () -> teacherScope.cohortsOf(user.getUserId(), instituteId));
     }
 

@@ -8,6 +8,7 @@ import {
     ArrowSquareOut,
     BookOpenText,
     ChatCenteredText,
+    UserCircleMinus,
     WarningCircle,
 } from '@phosphor-icons/react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -18,6 +19,7 @@ import {
     markSyllabusProgress,
     syllabusErrorMessage,
     syllabusProgressKeys,
+    isSyllabusForbidden,
     useSyllabusLearner,
     type SyllabusLearnerBlock,
     type SyllabusLearnerCourse,
@@ -91,6 +93,19 @@ export function LearnerProgress({
                 {Array.from({ length: 5 }).map((_, i) => (
                     <Skeleton key={i} className="h-14 w-full" />
                 ))}
+            </div>
+        );
+    }
+
+    if (isError && isSyllabusForbidden(error)) {
+        return (
+            <div className="space-y-4">
+                {backButton}
+                <EmptyState
+                    icon={<UserCircleMinus className="size-8" aria-hidden />}
+                    title={t('learner.notYoursTitle')}
+                    body={t('learner.notYoursBody')}
+                />
             </div>
         );
     }

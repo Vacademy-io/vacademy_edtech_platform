@@ -430,6 +430,18 @@ public class InstituteAccessValidator {
         return hasAdminAuthority(user);
     }
 
+    /**
+     * Non-throwing ADMIN test with NO root-user bypass: the ADMIN authority (minted for the
+     * clientId-header institute), or a platform super admin on the allowlist. For endpoints that
+     * show admins more than other staff; call it after {@link #requireInstituteStaffOrSuperAdmin}
+     * so membership of the institute is already proven. The root flag is not consulted (learners
+     * and staff alike carry it).
+     */
+    public boolean isInstituteAdminOrSuperAdmin(CustomUserDetails user) {
+        if (user == null) return false;
+        return hasAdminAuthority(user) || isPlatformSuperAdmin(user);
+    }
+
     private static boolean hasAdminAuthority(CustomUserDetails user) {
         return user.getAuthorities() != null && user.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority() != null && a.getAuthority().equalsIgnoreCase("ADMIN"));

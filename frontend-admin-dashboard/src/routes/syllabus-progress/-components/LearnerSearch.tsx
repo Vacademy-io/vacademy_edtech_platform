@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MagnifyingGlass } from '@phosphor-icons/react';
 import { MyInput } from '@/components/design-system/input';
@@ -20,6 +20,18 @@ export function LearnerSearch({
     const { t } = useTranslation('syllabusProgress');
     const [text, setText] = useState('');
     const [q, setQ] = useState('');
+    const [open, setOpen] = useState(false);
+    const rootRef = useRef<HTMLDivElement>(null);
+
+    // Close the results on a click or tap anywhere outside the search box.
+    useEffect(() => {
+        if (!open) return;
+        const onPointerDown = (e: PointerEvent) => {
+            if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+        };
+        document.addEventListener('pointerdown', onPointerDown);
+        return () => document.removeEventListener('pointerdown', onPointerDown);
+    }, [open]);
 
     useEffect(() => {
         const id = window.setTimeout(() => setQ(text.trim()), DEBOUNCE_MS);
@@ -28,12 +40,13 @@ export function LearnerSearch({
 
     const { data, isFetching, isError, error } = useSyllabusLearnerSearch(instituteId, q);
     const typed = text.trim();
-    const showPanel = typed.length > 0;
+    const showPanel = open && typed.length > 0;
     const results = data ?? [];
 
     const pick = (userId: string) => {
         setText('');
         setQ('');
+        setOpen(false);
         onPick(userId);
     };
 
@@ -43,19 +56,21 @@ export function LearnerSearch({
                 <p className="px-3 py-2 text-caption text-neutral-500">{t('search.minChars')}</p>
             );
         }
-        if (isError) {
-            return (
-                <p className="px-3 py-2 text-caption text-danger-600">
-                    {syllabusErrorMessage(error, t('search.failed'))}
-                </p>
-            );
-        }
-        if (!data || q !== typed) {
+        // Until the debounce catches up with what is typed, show loading — never the previous
+        // query's error or results.
+        if (q !== typed || (!data && !isError)) {
             return (
                 <div className="space-y-2 p-3" aria-busy>
                     <Skeleton className="h-5 w-2/3" />
                     <Skeleton className="h-4 w-full" />
                 </div>
+            );
+        }
+        if (isError) {
+            return (
+                <p className="px-3 py-2 text-caption text-danger-600">
+                    {syllabusErrorMessage(error, t('search.failed'))}
+                </p>
             );
         }
         if (results.length === 0) {
@@ -105,9 +120,17 @@ export function LearnerSearch({
 
     return (
         <div
+            ref={rootRef}
             className="relative w-full"
             onKeyDown={(e) => {
-                if (e.key === 'Escape') setText('');
+                if (e.key === 'Escape') setOpen(false);
+            }}
+            onFocus={() => setOpen(true)}
+            onBlur={(e) => {
+                // Focus moving to another element (Tab) closes the results. A null relatedTarget
+                // (a click on a result in Safari) is left to the pointerdown listener above.
+                const next = e.relatedTarget as Node | null;
+                if (next && !e.currentTarget.contains(next)) setOpen(false);
             }}
         >
             <MagnifyingGlass
@@ -117,7 +140,10 @@ export function LearnerSearch({
             <MyInput
                 inputType="text"
                 input={text}
-                onChangeFunction={(e) => setText(e.target.value)}
+                onChangeFunction={(e) => {
+                    setText(e.target.value);
+                    setOpen(true);
+                }}
                 inputPlaceholder={t('search.placeholder')}
                 aria-label={t('search.placeholder')}
                 className="w-full ps-9 sm:w-full"
@@ -127,7 +153,7 @@ export function LearnerSearch({
                 <div
                     className={cn(
                         'absolute inset-x-0 top-full z-40 mt-1 max-h-80 overflow-auto rounded-lg border border-border bg-card shadow-lg transition-opacity',
-                        isFetching && data && 'opacity-70'
+                        isFetching && q === typed && 'opacity-70'
                     )}
                     aria-live="polite"
                 >

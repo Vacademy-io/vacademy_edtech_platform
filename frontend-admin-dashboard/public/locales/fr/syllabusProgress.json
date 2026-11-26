@@ -52,7 +52,9 @@
         "openBatch": "Ouvrir le groupe",
         "summary": "{{done}} blocs de semaines terminés sur {{total}}",
         "current": "En cours",
-        "markHint": "Touchez un bloc de semaines pour le marquer."
+        "markHint": "Touchez un bloc de semaines pour le marquer.",
+        "notYoursTitle": "Pas dans vos groupes",
+        "notYoursBody": "Cet élève n’est pas dans vos groupes. Demandez à votre administrateur si vous devez marquer sa progression."
     },
     "batch": {
         "loadFailed": "Impossible de charger ce groupe",
