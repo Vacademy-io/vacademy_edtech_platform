@@ -58,6 +58,7 @@ const formSchema = z.object({
 // Define Form Values Type
 type FormValues = z.infer<typeof formSchema>;
 interface TimeLeft {
+  days: number;
   hours: number;
   minutes: number;
   seconds: number;
