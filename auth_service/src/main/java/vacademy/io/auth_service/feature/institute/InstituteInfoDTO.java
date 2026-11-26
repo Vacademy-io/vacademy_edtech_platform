@@ -20,4 +20,8 @@ public class InstituteInfoDTO {
     private String websiteUrl;
     private String learnerPortalUrl;
     private String adminPortalUrl;
+    /** The institute's contact address (institutes.email), shown as the support contact in learner mails. */
+    private String email;
+    /** Permanent public logo URL, resolved by admin-core; null when there is none. */
+    private String instituteLogoUrl;
 }
