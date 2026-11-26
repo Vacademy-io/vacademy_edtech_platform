@@ -64,7 +64,10 @@ import { getRecentTabs, type RecentTabEntry } from './recent-tabs-store';
 import { parseSidebarLink, pickActiveSidebarLink } from './helper';
 import { filterRecentEntries } from '@/lib/capabilities/nav-access';
 import { useEntitlement } from '@/lib/capabilities/use-entitlement';
-import { filterSettingsTabs } from '@/routes/settings/-utils/settings-entitlements';
+import {
+    filterSettingsTabs,
+    resolveSettingsTab,
+} from '@/routes/settings/-utils/settings-entitlements';
 import { validateSettingsSearch } from '@/routes/settings/-utils/settings-tab-aliases';
 import { Link, useLocation, useNavigate } from '@tanstack/react-router';
 import { useRouter, useRouterState } from '@tanstack/react-router';
@@ -507,6 +510,28 @@ export const SETTINGS_TAB_ICONS: Record<string, React.FC<IconProps>> = {
     security: LockKey,
 };
 
+/** Settings-nav domains the admin expanded, kept per browser. */
+const SETTINGS_EXPANDED_DOMAINS_KEY = 'settings-nav-expanded-domains';
+const readExpandedSettingsDomains = (): string[] => {
+    try {
+        const parsed: unknown = JSON.parse(
+            localStorage.getItem(SETTINGS_EXPANDED_DOMAINS_KEY) || '[]'
+        );
+        return Array.isArray(parsed)
+            ? parsed.filter((d): d is string => typeof d === 'string')
+            : [];
+    } catch {
+        return [];
+    }
+};
+const writeExpandedSettingsDomains = (domains: Set<string>) => {
+    try {
+        localStorage.setItem(SETTINGS_EXPANDED_DOMAINS_KEY, JSON.stringify([...domains]));
+    } catch {
+        // Storage full or blocked: the nav still works, it just won't remember.
+    }
+};
+
 interface SettingsTabsListProps {
     tabs: SettingsTabEntry[];
     activeTab: string;
@@ -529,21 +554,40 @@ const SettingsTabsList: React.FC<SettingsTabsListProps> = ({ tabs, activeTab, on
         return byDomain;
     }, [tabs]);
 
-    // The domain containing the currently active tab starts expanded; every
-    // other domain starts collapsed to just its header, so the resting view
-    // is 7 short lines instead of a full 37-item scroll.
-    const activeDomain = React.useMemo(
-        () => tabs.find((tab) => tab.tab === activeTab)?.domain,
+    // The tab the settings page is actually showing. The rail's Settings button opens
+    // `?selectedTab=tab` (a sentinel the page resolves to its default screen), so matching
+    // the raw param left nothing highlighted and every domain collapsed.
+    const shownTab = React.useMemo(
+        () => resolveSettingsTab(activeTab, tabs)?.tab,
         [tabs, activeTab]
     );
-    const [expandedDomains, setExpandedDomains] = React.useState<Set<string>>(
-        () => new Set(activeDomain ? [activeDomain] : [])
+
+    // The domain containing the shown tab starts expanded; every other domain starts
+    // collapsed to just its header, so the resting view is 7 short lines instead of a
+    // full 37-item scroll. Domains the admin opened stay open on the next visit, so a
+    // screen they use often (e.g. Assessment Settings under LMS) is one click away.
+    const activeDomain = React.useMemo(
+        () => tabs.find((tab) => tab.tab === shownTab)?.domain,
+        [tabs, shownTab]
     );
+    const [expandedDomains, setExpandedDomains] = React.useState<Set<string>>(() => {
+        const next = new Set(readExpandedSettingsDomains());
+        if (activeDomain) next.add(activeDomain);
+        return next;
+    });
+    // Following a link to a screen in a closed domain opens that domain.
+    React.useEffect(() => {
+        if (!activeDomain) return;
+        setExpandedDomains((prev) =>
+            prev.has(activeDomain) ? prev : new Set(prev).add(activeDomain)
+        );
+    }, [activeDomain]);
     const toggleDomain = (domain: string) => {
         setExpandedDomains((prev) => {
             const next = new Set(prev);
             if (next.has(domain)) next.delete(domain);
             else next.add(domain);
+            writeExpandedSettingsDomains(next);
             return next;
         });
     };
@@ -612,7 +656,7 @@ const SettingsTabsList: React.FC<SettingsTabsListProps> = ({ tabs, activeTab, on
                                     )}
                                 >
                                     {items.map((tab) => {
-                                        const isActive = activeTab === tab.tab;
+                                        const isActive = shownTab === tab.tab;
                                         const Icon = SETTINGS_TAB_ICONS[tab.tab] || GearSix;
                                         return (
                                             <Link
