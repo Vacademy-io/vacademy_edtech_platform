@@ -149,6 +149,48 @@ public class CourseCertificateDao {
         return out;
     }
 
+    /**
+     * Every learner row in the batch matching the search, in the same order as
+     * {@link #learners}, with no status filter and no paging. For a test-score rule,
+     * whose AWAITING/PENDING split cannot be expressed in SQL: the service judges each
+     * learner in Java and then filters and pages. Status is left null for the caller.
+     */
+    public List<CourseCertificateLearnerDto> learnersUnpaged(String packageSessionId, String instituteId,
+                                                             String search) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT ssigm.user_id,
+                       s.full_name,
+                       s.email,
+                       CAST(lo.value AS DOUBLE PRECISION) AS completion_percentage,
+                       cert.certificate_id,
+                       cert.file_id,
+                       cert.issued_at
+                """).append(BASE_FROM);
+        appendFilters(sql, search, null);
+        sql.append(" ORDER BY cert.issued_at DESC NULLS LAST, s.full_name ASC NULLS LAST, ssigm.user_id ASC");
+
+        Query query = entityManager.createNativeQuery(sql.toString())
+                .setParameter("packageSessionId", packageSessionId)
+                .setParameter("instituteId", instituteId);
+        bindFilters(query, search, null, 0);
+
+        List<?> rows = query.getResultList();
+        List<CourseCertificateLearnerDto> out = new ArrayList<>(rows.size());
+        for (Object r : rows) {
+            Object[] row = (Object[]) r;
+            out.add(CourseCertificateLearnerDto.builder()
+                    .userId((String) row[0])
+                    .fullName((String) row[1])
+                    .email((String) row[2])
+                    .completionPercentage(row[3] != null ? ((Number) row[3]).doubleValue() : null)
+                    .certificateNumber((String) row[4])
+                    .fileId((String) row[5])
+                    .issuedAt((Date) row[6])
+                    .build());
+        }
+        return out;
+    }
+
     public long countLearners(String packageSessionId, String instituteId, String search, String status,
                               int thresholdPercent) {
         StringBuilder sql = new StringBuilder("SELECT COUNT(*) ").append(BASE_FROM);

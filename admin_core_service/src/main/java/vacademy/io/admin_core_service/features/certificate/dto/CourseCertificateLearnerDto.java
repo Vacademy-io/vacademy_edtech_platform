@@ -34,4 +34,14 @@ public class CourseCertificateLearnerDto {
     private String fileId;
 
     private Date issuedAt;
+
+    // Filled only under a test-score rule; null otherwise.
+
+    private Integer testsPassed;
+    private Integer testsTotal;
+    /** How many must be passed (ALL = every test, AT_LEAST = N); null for an AVERAGE rule. */
+    private Integer testsRequired;
+    private Integer testsAwaitingResult;
+    private Double averageScorePercent;
+    private Boolean scoreMet;
 }
