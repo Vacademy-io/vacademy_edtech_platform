@@ -24,6 +24,29 @@ interface JupyterNotebookSlideProps {
     onDataChange?: (newData: NotebookData) => void;
 }
 
+// GitHub refuses to be shown in an iframe (X-Frame-Options: deny), so a github.com notebook link — the
+// kind the URL field suggests — always rendered as a blank/refused frame. Show GitHub, gist and raw
+// notebooks through nbviewer (which allows embedding); any other URL (JupyterLite, Binder, …) is used as is.
+const toEmbeddableNotebookUrl = (url: string): string => {
+    try {
+        const u = new URL(url.trim());
+        const parts = u.pathname.split('/').filter(Boolean);
+        if (u.hostname === 'github.com' && parts.length >= 5 && (parts[2] === 'blob' || parts[2] === 'tree')) {
+            return `https://nbviewer.org/github/${parts.join('/')}`;
+        }
+        if (u.hostname === 'raw.githubusercontent.com' && parts.length >= 4) {
+            const [owner, repo, ref, ...path] = parts;
+            return `https://nbviewer.org/github/${owner}/${repo}/blob/${ref}/${path.join('/')}`;
+        }
+        if (u.hostname === 'gist.github.com' && parts.length >= 2) {
+            return `https://nbviewer.org/gist/${parts.join('/')}`;
+        }
+    } catch {
+        // not a URL: leave it to the caller's own validation
+    }
+    return url;
+};
+
 export const JupyterNotebookSlide: React.FC<JupyterNotebookSlideProps> = ({
     notebookData = {},
     isEditable,
@@ -194,7 +217,7 @@ export const JupyterNotebookSlide: React.FC<JupyterNotebookSlideProps> = ({
             {/* Iframe Content */}
             <div className="relative" style={{ height: '90vh' }}>
                 <iframe
-                    src={notebookUrl}
+                    src={toEmbeddableNotebookUrl(notebookUrl)}
                     className="size-full border-0"
                     title={projectName || t('defaultProjectName')}
                     sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
