@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS learner_journey_status (
     source             VARCHAR(20)  NOT NULL DEFAULT 'MANUAL',
     created_at         TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at         TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_learner_journey_status UNIQUE (user_id, package_session_id)
+    CONSTRAINT uq_learner_journey_status UNIQUE (institute_id, user_id, package_session_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_learner_journey_status_institute ON learner_journey_status (institute_id, status_key);

@@ -342,12 +342,12 @@ public class JourneyStatusService {
             return false; // already on the default status, nothing to record
         }
         Timestamp when = since != null ? since : new Timestamp(System.currentTimeMillis());
-        jdbc.update("""
+        int written = jdbc.update("""
                 INSERT INTO learner_journey_status (id, institute_id, user_id, package_session_id, status_key, reason,
                                                     next_action_date, since, updated_by_user_id, updated_by_name, source,
                                                     created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())
-                ON CONFLICT (user_id, package_session_id) DO UPDATE
+                ON CONFLICT (institute_id, user_id, package_session_id) DO UPDATE
                    SET status_key = EXCLUDED.status_key,
                        reason = EXCLUDED.reason,
                        next_action_date = EXCLUDED.next_action_date,
@@ -357,9 +357,9 @@ public class JourneyStatusService {
                        updated_by_name = EXCLUDED.updated_by_name,
                        source = EXCLUDED.source,
                        updated_at = now()
-                 WHERE learner_journey_status.institute_id = EXCLUDED.institute_id
                 """, UUID.randomUUID().toString(), instituteId, userId, packageSessionId, toKey, reason,
                 nextActionDate == null ? null : Date.valueOf(nextActionDate), when, actorId, actorName, source);
+        if (written == 0) return false;
         if (logTimeline) {
             timeline(instituteId, cfg, userId, packageSessionId, fromKey, toKey, reason, nextActionDate, source, actorId, actorName);
         }

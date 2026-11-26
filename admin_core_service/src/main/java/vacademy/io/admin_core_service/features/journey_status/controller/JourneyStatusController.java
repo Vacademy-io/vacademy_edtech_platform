@@ -12,19 +12,26 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import net.javacrumbs.shedlock.core.LockConfiguration;
+import net.javacrumbs.shedlock.core.LockProvider;
+import net.javacrumbs.shedlock.core.SimpleLock;
 import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
+import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import vacademy.io.admin_core_service.features.journey_status.service.JourneyRiskService;
 import vacademy.io.admin_core_service.features.journey_status.service.JourneyStatusService;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Optional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Journey status per learner per batch. Staff of the institute only; every query is scoped to
+ * Journey status per learner per batch. Staff of the institute (or a platform super admin) only, no root-user bypass; every query is scoped to
  * the institute. Off per institute (JOURNEY_STATUS_SETTING); reads answer {enabled:false} while
  * off, changes are refused.
  */
@@ -36,12 +43,13 @@ public class JourneyStatusController {
     private final JourneyStatusService service;
     private final JourneyRiskService riskService;
     private final InstituteAccessValidator instituteAccessValidator;
+    private final LockProvider lockProvider;
 
     /** The status list and rules, defaults filled in. */
     @GetMapping("/settings")
     public ResponseEntity<Map<String, Object>> settings(@RequestParam("instituteId") String instituteId,
                                                         @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.requireStaffAccess(user, instituteId);
+        instituteAccessValidator.requireInstituteStaffOrSuperAdmin(user, instituteId);
         service.forget(instituteId);
         return ResponseEntity.ok(service.config(instituteId).toJson());
     }
@@ -51,7 +59,7 @@ public class JourneyStatusController {
     public ResponseEntity<Map<String, Object>> learner(@PathVariable String userId,
                                                        @RequestParam("instituteId") String instituteId,
                                                        @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.requireStaffAccess(user, instituteId);
+        instituteAccessValidator.requireInstituteStaffOrSuperAdmin(user, instituteId);
         return ResponseEntity.ok(service.learner(instituteId, userId));
     }
 
@@ -60,7 +68,7 @@ public class JourneyStatusController {
     public ResponseEntity<Map<String, Object>> forUsers(@RequestParam("instituteId") String instituteId,
                                                         @RequestBody UsersRequest req,
                                                         @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.requireStaffAccess(user, instituteId);
+        instituteAccessValidator.requireInstituteStaffOrSuperAdmin(user, instituteId);
         if (!service.isEnabled(instituteId)) return ResponseEntity.ok(Map.of("enabled", false, "statuses", Map.of()));
         return ResponseEntity.ok(Map.of("enabled", true, "statuses", service.forUsers(instituteId, req.getUserIds())));
     }
@@ -70,7 +78,7 @@ public class JourneyStatusController {
     public ResponseEntity<Map<String, Object>> counts(@RequestParam("instituteId") String instituteId,
                                                       @RequestParam(value = "packageSessionIds", required = false) List<String> packageSessionIds,
                                                       @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.requireStaffAccess(user, instituteId);
+        instituteAccessValidator.requireInstituteStaffOrSuperAdmin(user, instituteId);
         if (!service.isEnabled(instituteId)) return ResponseEntity.ok(Map.of("enabled", false));
         return ResponseEntity.ok(service.counts(instituteId, packageSessionIds));
     }
@@ -81,10 +89,13 @@ public class JourneyStatusController {
      * package_session_ids when given.
      */
     @PostMapping("/set")
+    @Auditable(entityType = "LEARNER", action = "UPDATE",
+            entityIdExpr = "#req?.userIds != null && !#req.userIds.isEmpty() ? #req.userIds[0] : (#req?.items != null && !#req.items.isEmpty() ? #req.items[0].userId : null)",
+            descriptionExpr = "'set journey status ' + #req?.statusKey")
     public ResponseEntity<Map<String, Object>> set(@RequestParam("instituteId") String instituteId,
                                                    @RequestBody SetRequest req,
                                                    @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.requireStaffAccess(user, instituteId);
+        instituteAccessValidator.requireInstituteStaffOrSuperAdmin(user, instituteId);
         List<JourneyStatusService.Target> targets = new ArrayList<>();
         if (req.getItems() != null) {
             req.getItems().forEach(i -> targets.add(new JourneyStatusService.Target(i.getUserId(), i.getPackageSessionId())));
@@ -110,15 +121,29 @@ public class JourneyStatusController {
         return ResponseEntity.ok(Map.of("updated", changed));
     }
 
-    /** Runs the At Risk check for this institute now (the daily job does the same). Sends nothing. */
+    /**
+     * Runs the At Risk check for this institute now (the daily job does the same). Sends nothing.
+     * Institute admins (or a platform super admin) only. Takes the daily job's ShedLock, so it
+     * never runs alongside the job or another manual run.
+     */
     @PostMapping("/run-risk-check")
+    @Auditable(entityType = "INSTITUTE", action = "UPDATE", entityIdExpr = "#instituteId",
+            descriptionExpr = "'ran the journey At Risk check'")
     public ResponseEntity<Map<String, Object>> runRiskCheck(@RequestParam("instituteId") String instituteId,
                                                             @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.requireStaffAccess(user, instituteId);
+        instituteAccessValidator.requireInstituteAdminOrSuperAdmin(user, instituteId);
         if (!service.isEnabled(instituteId)) throw new VacademyException("Journey status is switched off for this institute");
-        service.forget(instituteId);
-        int[] r = riskService.runInstitute(instituteId);
-        return ResponseEntity.ok(Map.of("marked_at_risk", r[0], "returned", r[1]));
+        Optional<SimpleLock> lock = lockProvider.lock(new LockConfiguration(Instant.now(),
+                vacademy.io.admin_core_service.features.journey_status.job.JourneyRiskJob.LOCK_NAME,
+                Duration.ofMinutes(50), Duration.ZERO));
+        if (lock.isEmpty()) throw new VacademyException("The At Risk check is already running. Try again in a few minutes.");
+        try {
+            service.forget(instituteId);
+            int[] r = riskService.runInstitute(instituteId);
+            return ResponseEntity.ok(Map.of("marked_at_risk", r[0], "returned", r[1]));
+        } finally {
+            lock.get().unlock();
+        }
     }
 
     @Data

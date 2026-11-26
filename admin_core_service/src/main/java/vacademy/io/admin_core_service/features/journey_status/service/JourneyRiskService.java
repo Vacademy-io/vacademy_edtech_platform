@@ -23,6 +23,7 @@ import java.util.Set;
  * becomes the risk status when either:
  * <ul>
  *   <li>they missed each of the batch's last N held classes (N = {@code missed_classes}, default 3).
+ *       Classes on dates the learner was on a pause (running or ended) do not count.
  *       A class counts as held once it has ended and attendance was taken for it (at least one
  *       learner has an attendance mark), so a class nobody recorded never counts against anyone.
  *       Missed = no PRESENT mark. Only classes on or after the learner joined the batch count.</li>
@@ -43,6 +44,13 @@ public class JourneyRiskService {
     private static final ObjectMapper MAPPER = new ObjectMapper();
     /** How far back classes are looked at: far enough for N weekly classes plus breaks. */
     static final int CLASS_LOOKBACK_DAYS = 120;
+    /**
+     * Each batch's held classes are cut to its latest N + this many before they are matched to
+     * learners, so the join stays small on big institutes; the slack covers classes a learner
+     * missed because they joined later or were on a pause.
+     */
+    static final int CLASS_SLACK = 12;
+    static final String STATEMENT_TIMEOUT = "60s";
 
     @Autowired private JdbcTemplate jdbc;
     @Autowired private JourneyStatusService statusService;
@@ -87,8 +95,18 @@ public class JourneyRiskService {
         if (!cfg.enabled() || !rule.enabled() || rule.status() == null || cfg.status(rule.status()) == null) {
             return new int[]{0, 0};
         }
-        Map<String, int[]> classes = rule.missedClasses() > 0 ? classes(instituteId, rule.missedClasses()) : Map.of();
-        Map<String, Integer> overdue = rule.feeOverdueDays() > 0 ? overdueDays(instituteId, rule.feeOverdueDays()) : Map.of();
+        // The two reads run in one short transaction with a statement timeout, so a slow plan on
+        // a big institute is cut off instead of holding a connection.
+        TransactionTemplate read = new TransactionTemplate(transactionManager);
+        read.setReadOnly(true);
+        Object[] reads = read.execute(s -> {
+            jdbc.execute("SET LOCAL statement_timeout = '" + STATEMENT_TIMEOUT + "'");
+            return new Object[]{
+                    rule.missedClasses() > 0 ? classes(instituteId, rule.missedClasses()) : Map.<String, int[]>of(),
+                    rule.feeOverdueDays() > 0 ? overdueDays(instituteId, rule.feeOverdueDays()) : Map.<String, Integer>of()};
+        });
+        @SuppressWarnings("unchecked") Map<String, int[]> classes = (Map<String, int[]>) reads[0];
+        @SuppressWarnings("unchecked") Map<String, Integer> overdue = (Map<String, Integer>) reads[1];
         Map<String, Map<String, Object>> stored = stored(instituteId);
         Set<String> onBreak = onBreak(instituteId);
 
@@ -106,6 +124,8 @@ public class JourneyRiskService {
             String userId = up[0], psId = up[1];
             if (onBreak.contains(k) || onBreak.contains(userId + "|")) continue;
             Map<String, Object> row = stored.get(k);
+            // A status staff set by hand is never changed by the check.
+            if (row != null && JourneyStatusService.SOURCE_MANUAL.equals(row.get("source"))) continue;
             String current = row == null ? cfg.defaultStatus() : (String) row.get("status_key");
             String why = reason(classes.get(k), overdue.get(k), rule.missedClasses());
             try {
@@ -162,6 +182,11 @@ public class JourneyRiskService {
                        AND EXISTS (SELECT 1 FROM live_session_logs l
                                     WHERE l.schedule_id = ss.id AND l.log_type = 'ATTENDANCE_RECORDED')
                 ),
+                recent AS (
+                    SELECT h.*, ROW_NUMBER() OVER (PARTITION BY h.package_session_id
+                                                   ORDER BY h.meeting_date DESC, h.start_time DESC) AS brn
+                      FROM held h
+                ),
                 learner AS (
                     SELECT m.user_id, m.package_session_id, MIN(m.enrolled_date) AS enrolled_date
                       FROM student_session_institute_group_mapping m
@@ -173,8 +198,15 @@ public class JourneyRiskService {
                            ROW_NUMBER() OVER (PARTITION BY e.user_id, e.package_session_id
                                               ORDER BY h.meeting_date DESC, h.start_time DESC) AS rn
                       FROM learner e
-                      JOIN held h ON h.package_session_id = e.package_session_id
-                     WHERE e.enrolled_date IS NULL OR h.meeting_date >= e.enrolled_date
+                      JOIN recent h ON h.package_session_id = e.package_session_id AND h.brn <= ?
+                     WHERE (e.enrolled_date IS NULL OR h.meeting_date >= e.enrolled_date)
+                       AND NOT EXISTS (
+                           SELECT 1 FROM enrolment_break b
+                            WHERE b.institute_id = ? AND b.user_id = e.user_id AND b.kind = 'PAUSE'
+                              AND b.status IN ('ACTIVE', 'ENDED')
+                              AND (b.package_session_id IS NULL OR b.package_session_id = e.package_session_id)
+                              AND h.meeting_date >= b.starts_on
+                              AND h.meeting_date <= COALESCE(CAST(b.ended_at AS DATE), b.ends_on, CURRENT_DATE))
                 )
                 SELECT r.user_id, r.package_session_id,
                        COUNT(*) AS held,
@@ -191,7 +223,7 @@ public class JourneyRiskService {
                 """, rs -> {
                     out.put(rs.getString("user_id") + "|" + rs.getString("package_session_id"),
                             new int[]{rs.getInt("held"), rs.getInt("present"), rs.getBoolean("latest_present") ? 1 : 0});
-                }, instituteId, CLASS_LOOKBACK_DAYS, instituteId, n);
+                }, instituteId, CLASS_LOOKBACK_DAYS, instituteId, n + CLASS_SLACK, instituteId, n);
         return out;
     }
 

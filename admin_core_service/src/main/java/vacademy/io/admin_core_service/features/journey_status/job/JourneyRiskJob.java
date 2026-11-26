@@ -17,10 +17,13 @@ import vacademy.io.admin_core_service.features.journey_status.service.JourneyRis
 @RequiredArgsConstructor
 public class JourneyRiskJob {
 
+    /** Shared with the manual run (JourneyStatusController), so the two never overlap. */
+    public static final String LOCK_NAME = "JourneyRiskJob";
+
     private final JourneyRiskService service;
 
     @Scheduled(cron = "0 0 2 * * ?", zone = "UTC")
-    @SchedulerLock(name = "JourneyRiskJob", lockAtMostFor = "PT50M", lockAtLeastFor = "PT1M")
+    @SchedulerLock(name = LOCK_NAME, lockAtMostFor = "PT50M", lockAtLeastFor = "PT1M")
     public void run() {
         try {
             int[] r = service.run();
