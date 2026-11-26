@@ -65,7 +65,6 @@ public class RenewalChargeService {
     private final RenewalDiscountResolver renewalDiscountResolver;
 
     /** Default dunning ceiling when the plan/policy doesn't specify one. */
-    private static final int DEFAULT_MAX_ATTEMPTS = 3;
 
     /**
      * Upper bound on {@code AUTOPAY_SETTING.CHARGE_LEAD_DAYS}. The sweep fetches every
@@ -127,6 +126,19 @@ public class RenewalChargeService {
                     expirePlan(plan, "grace period over");
                     renewalPaymentService.emitRenewalPaymentFailed(plan, plan.getEnrollInvite().getInstituteId(), true);
                     failed++;
+                    continue;
+                }
+                // Every charge attempt for this renewal is spent but grace still holds the
+                // plan open: never present the card again, just wait for grace to end. The
+                // member can still pay by hand meanwhile.
+                int attemptsSoFar = plan.getRenewalAttemptCount() != null ? plan.getRenewalAttemptCount() : 0;
+                int maxAttempts = gracePolicy.maxChargeAttempts(plan.getEnrollInvite());
+                if (gracePolicy.attemptsUsedUpInGrace(plan, now, attemptsSoFar, maxAttempts)) {
+                    plan.setNextChargeAt(gracePolicy.nextLookAt(plan, now, attemptsSoFar, maxAttempts));
+                    userPlanRepository.save(plan);
+                    log.info("[RenewalCharge] Plan {} used all {} charge attempts, no charge, waiting for grace to end ({})",
+                            plan.getId(), maxAttempts, plan.getNextChargeAt());
+                    skipped++;
                     continue;
                 }
                 Outcome outcome = processOne(plan, now);
@@ -425,13 +437,13 @@ public class RenewalChargeService {
         if (exhausted) {
             expirePlan(plan, "exhausted " + plan.getRenewalAttemptCount() + " attempts");
         } else {
-            // Retry tomorrow.
-            Calendar c = Calendar.getInstance();
-            c.setTime(now);
-            c.add(Calendar.DAY_OF_MONTH, 1);
-            plan.setNextChargeAt(c.getTime());
+            // Retry tomorrow while attempts remain. Once they are spent under a grace
+            // period, look again only when grace has ended (and expire then, uncharged).
+            Date next = gracePolicy.nextLookAt(plan, now, plan.getRenewalAttemptCount(), maxAttempts);
+            plan.setNextChargeAt(next);
             userPlanRepository.save(plan);
-            log.info("[RenewalCharge] Plan {} will retry on {}", plan.getId(), c.getTime());
+            log.info("[RenewalCharge] Plan {} attempt {}/{} failed, next look on {}",
+                    plan.getId(), plan.getRenewalAttemptCount(), maxAttempts, next);
         }
         // Let workflows react (dunning WhatsApp/email, admin alerts). Never blocks the money path.
         renewalPaymentService.emitRenewalPaymentFailed(plan, instituteId, exhausted);
@@ -481,9 +493,8 @@ public class RenewalChargeService {
     }
 
     private int resolveMaxAttempts(UserPlan plan) {
-        // Policy-driven override is read at enrollment time onto the plan snapshot;
-        // fall back to the default ceiling here.
-        return DEFAULT_MAX_ATTEMPTS;
+        // AUTOPAY_SETTING.MAX_CHARGE_ATTEMPTS on the invite, else the default ceiling.
+        return gracePolicy.maxChargeAttempts(plan.getEnrollInvite());
     }
 
     private UserDTO getUser(String userId) {
