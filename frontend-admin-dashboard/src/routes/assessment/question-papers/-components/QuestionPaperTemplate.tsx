@@ -363,10 +363,14 @@ export function QuestionPaperTemplate({
         }
     }, [examType, form]);
 
-    const handleTriggerForm = () => {
+    const handleTriggerForm = async () => {
         // A spreadsheet cell still being typed in (CBE question) goes into the form first.
         commitCbeEditors();
-        form.trigger();
+        // Wait for validation: reading formState.errors right after an un-awaited
+        // trigger() saw the errors from before the teacher filled the question in, so
+        // the first Save always failed with "incomplete questions" and only a second
+        // click went through.
+        await form.trigger();
         if (stopOnMissingNumericAnswer(form.getValues('questions') as MyQuestion[])) return;
 
         const errors = form.formState.errors;
