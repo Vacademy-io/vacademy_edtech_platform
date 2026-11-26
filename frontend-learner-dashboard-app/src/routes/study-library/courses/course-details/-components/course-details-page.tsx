@@ -29,6 +29,7 @@ import {
 import { CourseHeader } from "./course-header";
 import { CourseSubscriptionCancel } from "./CourseSubscriptionCancel";
 import { CertificateCompletionBanner } from "./certificate-completion-banner.tsx";
+import { CertificateRequirementsCard } from "./certificate-requirements-card";
 import { CourseEnrollment } from "./course-enrollment";
 import { CourseSidebar } from "./course-sidebar";
 import { CourseDetailsCollapsible } from "./course-details-collapsible";
@@ -272,6 +273,9 @@ export const CourseDetailsPage = () => {
     completionPercentage,
     certificateThreshold,
     certificatesEnabled,
+    certificateCriteriaMode,
+    certificateEligibility,
+    certificateIssued,
   } = useCertificateGeneration({
     packageSessionIdForCurrentLevel,
     courseDetailsData,
@@ -656,7 +660,20 @@ export const CourseDetailsPage = () => {
                   levelOptions?.find((o) => o.value === selectedLevel)?.label
                 }
                 percentageCompleted={completionPercentage}
-                threshold={certificateThreshold}
+                threshold={
+                  // A marks-only course issues regardless of progress, and a
+                  // certificate the learner already holds is always shown, so
+                  // the banner must not hide either behind the progress bar.
+                  certificateCriteriaMode === "SCORE" || certificateIssued
+                    ? 0
+                    : certificateThreshold
+                }
+              />
+
+              {/* Courses earned by test marks: what is still left to do. */}
+              <CertificateRequirementsCard
+                eligibility={certificateEligibility}
+                hasCertificate={!!certificateUrl}
               />
 
               {/* Enrolled learners see content first (header → resume strip →
@@ -848,6 +865,7 @@ export const CourseDetailsPage = () => {
                     }
                     percentageCompleted={completionPercentage}
                     certificatesEnabled={certificatesEnabled}
+                    certificateCriteriaMode={certificateCriteriaMode}
                     onEnrollmentClick={onEnrollmentClick}
                     onRatingsLoadingChange={handleRatingsLoadingChange}
                     {...(isFun && { hideEmptyRows: true })}

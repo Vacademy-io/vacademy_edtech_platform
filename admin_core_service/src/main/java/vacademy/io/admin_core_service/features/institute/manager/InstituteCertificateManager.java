@@ -59,6 +59,17 @@ public class InstituteCertificateManager {
     }
 
     public ResponseEntity<String> generateAutomatedCourseCompletionCertificate(CustomUserDetails userDetails, String learnerId, String packageSessionId, String instituteId, CertificationGenerationRequest request) {
+        return generateAutomatedCourseCompletionCertificate(userDetails, learnerId, packageSessionId, instituteId, request, false);
+    }
+
+    /**
+     * @param bypassCriteria admin "Issue anyway" - skip the course's earning rule
+     *                       (progress and/or test marks). A parameter rather than a
+     *                       request-body field on purpose: the learner endpoint shares
+     *                       {@link CertificationGenerationRequest}, and a body flag would
+     *                       let any learner switch the gate off.
+     */
+    public ResponseEntity<String> generateAutomatedCourseCompletionCertificate(CustomUserDetails userDetails, String learnerId, String packageSessionId, String instituteId, CertificationGenerationRequest request, boolean bypassCriteria) {
         Optional<StudentSessionInstituteGroupMapping> instituteStudentMapping = studentSessionInstituteGroupMappingRepository.findByUserIdAndPackageSessionIdAndInstituteId(learnerId, packageSessionId, instituteId);
         if(instituteStudentMapping.isEmpty()) throw new VacademyException(HttpStatus.NOT_FOUND, "Student Mapping Not Present");
 
@@ -79,7 +90,7 @@ public class InstituteCertificateManager {
         }
 
         if(forceRegenerate || !StringUtils.hasText(instituteStudentMapping.get().getAutomatedCompletionCertificateFileId())){
-            return handleCaseWhereCertificateNotPresent(learnerId,packageSessionId,instituteId, instituteStudentMapping, request);
+            return handleCaseWhereCertificateNotPresent(learnerId,packageSessionId,instituteId, instituteStudentMapping, request, bypassCriteria);
         }
 
         // Self-heal the issued_certificate audit table for legacy issuances
@@ -118,8 +129,8 @@ public class InstituteCertificateManager {
         return mediaService.getFilePublicUrlById(automatedCompletionCertificateFileId);
     }
 
-    private ResponseEntity<String> handleCaseWhereCertificateNotPresent(String learnerId, String packageSessionId, String instituteId, Optional<StudentSessionInstituteGroupMapping> instituteStudentMapping, CertificationGenerationRequest request) {
-        Optional<FileDetailsDTO> file = instituteSettingService.ifEligibleForCourseCertificationForUserAndPackageSession(learnerId,packageSessionId,instituteId,instituteStudentMapping, request);
+    private ResponseEntity<String> handleCaseWhereCertificateNotPresent(String learnerId, String packageSessionId, String instituteId, Optional<StudentSessionInstituteGroupMapping> instituteStudentMapping, CertificationGenerationRequest request, boolean bypassCriteria) {
+        Optional<FileDetailsDTO> file = instituteSettingService.ifEligibleForCourseCertificationForUserAndPackageSession(learnerId,packageSessionId,instituteId,instituteStudentMapping, request, bypassCriteria);
         if(instituteStudentMapping.isEmpty()) throw new VacademyException("Mapping Not Found");
         if(file.isEmpty()) throw new VacademyException(HttpStatus.NOT_FOUND, "Failed To Fetch Certificate");
 

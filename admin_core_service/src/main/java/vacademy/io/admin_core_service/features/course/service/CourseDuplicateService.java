@@ -5,8 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.commerce.common.CommerceLegacyGuard;
+import vacademy.io.admin_core_service.features.certificate.service.CertificateCriteriaCopyService;
 import vacademy.io.admin_core_service.features.course.dto.AddCourseDTO;
 import vacademy.io.admin_core_service.features.course.dto.CopyCourseContentResponse;
 import vacademy.io.admin_core_service.features.course.dto.SubgroupDTO;
@@ -86,6 +89,13 @@ public class CourseDuplicateService {
     private final CourseService courseService;
     private final CourseContentCopyService courseContentCopyService;
     private final CommerceLegacyGuard commerceLegacyGuard;
+
+    /**
+     * Field-injected and optional so the constructor (and the tests that build this class
+     * with @InjectMocks) stay unchanged; null simply skips the certificate-rule remap.
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private CertificateCriteriaCopyService certificateCriteriaCopyService;
 
     @Transactional
     public DuplicateCourseResponse duplicate(String instituteId, String courseId, String requestedName,
@@ -168,6 +178,31 @@ public class CourseDuplicateService {
             // Source had no batches: the create path made the default one. Open the course on it.
             response.setSessionId(newBatches.get(0).getSession().getId());
             response.setLevelId(newBatches.get(0).getLevel().getId());
+        }
+
+        // The copied settings may carry a certificate rule naming the source course's modules,
+        // chapters or tests; point it at the copies so learners of the new course can earn it.
+        // Run AFTER this transaction commits, in a transaction of its own: any failure inside
+        // this one (even a caught one) would mark the whole duplicate rollback-only.
+        if (certificateCriteriaCopyService != null) {
+            String copiedCourseId = newCourseId;
+            Runnable remapCertificateRule = () -> {
+                try {
+                    certificateCriteriaCopyService.remapAfterCourseCopy(copiedCourseId);
+                } catch (Exception e) {
+                    log.warn("Could not carry the certificate rule over to duplicated course {}", copiedCourseId, e);
+                }
+            };
+            if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        remapCertificateRule.run();
+                    }
+                });
+            } else {
+                remapCertificateRule.run();
+            }
         }
 
         log.info("Duplicated course {} into {} ({} batches, {} slides) by {}", courseId, newCourseId,

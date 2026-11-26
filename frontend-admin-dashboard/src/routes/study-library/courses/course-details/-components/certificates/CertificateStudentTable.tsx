@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useDebounce } from 'use-debounce';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { TFunction } from 'i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -9,6 +10,7 @@ import { MyButton } from '@/components/design-system/button';
 import { MyInput } from '@/components/design-system/input';
 import { MyTable, type TableData } from '@/components/design-system/table';
 import { MyPagination } from '@/components/design-system/pagination';
+import { MyDialog } from '@/components/design-system/dialog';
 import { Badge } from '@/components/ui/badge';
 import {
     getCourseCertificateLearners,
@@ -16,6 +18,7 @@ import {
     resendCourseCertificate,
     type CourseCertificateLearner,
 } from '../../-services/course-certificates';
+import { CertificateEligibilityDialog } from './CertificateEligibilityDialog';
 
 interface CertificateStudentTableProps {
     instituteId: string;
@@ -58,8 +61,16 @@ export const CertificateStudentTable = ({
     certificatesEnabled,
 }: CertificateStudentTableProps) => {
     const { t } = useTranslation('studyLibraryCertificateStudentTable');
+    const { t: tCriteria } = useTranslation('studyLibraryCertificateCriteria');
     const [page, setPage] = useState(0);
     const [search, setSearch] = useState('');
+    // Under a test-score rule every request grades the whole batch, so a request per
+    // keystroke is real server load. Query on the settled value only.
+    const [debouncedSearch] = useDebounce(search, 400);
+    // The learner whose test-by-test results are open, and the one an admin is
+    // about to issue for past the course rule.
+    const [detailsFor, setDetailsFor] = useState<CourseCertificateLearner | null>(null);
+    const [issueAnywayFor, setIssueAnywayFor] = useState<CourseCertificateLearner | null>(null);
     const queryClient = useQueryClient();
 
     const {
@@ -67,18 +78,23 @@ export const CertificateStudentTable = ({
         isLoading,
         error,
     } = useQuery({
-        queryKey: ['course-certificate-learners', packageSessionId, search, page],
+        queryKey: ['course-certificate-learners', packageSessionId, debouncedSearch, page],
         queryFn: () =>
             getCourseCertificateLearners({
                 instituteId,
                 packageSessionId,
                 packageId,
-                search: search || undefined,
+                search: debouncedSearch || undefined,
                 page,
                 size: PAGE_SIZE,
             }),
         enabled: !!packageSessionId && !!instituteId,
     });
+
+    // The backend fills the test fields only when the course has a test-score rule.
+    const showTests = !!learnerPage?.content.some(
+        (row) => row.tests_total !== null && row.tests_total !== undefined
+    );
 
     const invalidate = () => {
         queryClient.invalidateQueries({ queryKey: ['course-certificate-learners'] });
@@ -86,15 +102,17 @@ export const CertificateStudentTable = ({
     };
 
     const issueMutation = useMutation({
-        mutationFn: (vars: { userId: string; regenerate: boolean }) =>
+        mutationFn: (vars: { userId: string; regenerate: boolean; force?: boolean }) =>
             issueCourseCertificate({
                 instituteId,
                 packageSessionId,
                 userId: vars.userId,
                 regenerate: vars.regenerate,
                 courseName,
+                force: vars.force,
             }),
         onSuccess: (_data, vars) => {
+            setIssueAnywayFor(null);
             toast.success(
                 vars.regenerate ? t('toast.regenerated') : t('toast.generated'),
                 {
@@ -105,12 +123,17 @@ export const CertificateStudentTable = ({
             );
             invalidate();
         },
-        onError: () => {
+        onError: (_error, vars) => {
             // The backend refuses when certificates are switched off for this
-            // course, or the learner is below the threshold — say so rather than
-            // showing a bare failure.
+            // course, or the learner has not met the course rule — say so rather
+            // than showing a bare failure. "Issue anyway" skips the rule, so only
+            // the on/off switch can refuse it.
             toast.error(t('toast.generateError'), {
-                description: t('toast.generateErrorDescription'),
+                description: vars.force
+                    ? tCriteria('table.issueAnywayError')
+                    : showTests
+                      ? tCriteria('table.generateErrorRule')
+                      : t('toast.generateErrorDescription'),
             });
         },
     });
@@ -155,6 +178,53 @@ export const CertificateStudentTable = ({
 
     const statusLabel = useMemo(() => buildStatusLabel(t), [t]);
 
+    const testsColumn: ColumnDef<CourseCertificateLearner> = useMemo(
+        () => ({
+            id: 'tests',
+            header: tCriteria('table.testsColumn'),
+            cell: ({ row }) => {
+                const learner = row.original;
+                const total = learner.tests_total ?? 0;
+                const awaiting = learner.tests_awaiting_result ?? 0;
+                const average = learner.average_score_percent;
+                // Only an AVERAGE rule leaves tests_required empty once there are tests.
+                const isAverageRule =
+                    total > 0 &&
+                    (learner.tests_required === null || learner.tests_required === undefined);
+                return (
+                    <button
+                        type="button"
+                        onClick={() => setDetailsFor(learner)}
+                        className="flex flex-col items-start text-start hover:underline"
+                    >
+                        <span
+                            className={
+                                learner.score_met
+                                    ? 'text-body text-success-600'
+                                    : 'text-body text-neutral-700'
+                            }
+                        >
+                            {isAverageRule
+                                ? tCriteria('table.average', {
+                                      pct: average === null || average === undefined ? 0 : average,
+                                  })
+                                : tCriteria('table.passedOf', {
+                                      passed: learner.tests_passed ?? 0,
+                                      total,
+                                  })}
+                        </span>
+                        <span className="text-caption text-neutral-400">
+                            {awaiting > 0
+                                ? tCriteria('table.awaiting', { count: awaiting })
+                                : tCriteria('table.viewDetails')}
+                        </span>
+                    </button>
+                );
+            },
+        }),
+        [tCriteria]
+    );
+
     const columns: ColumnDef<CourseCertificateLearner>[] = useMemo(
         () => [
             {
@@ -185,6 +255,7 @@ export const CertificateStudentTable = ({
                     );
                 },
             },
+            ...(showTests ? [testsColumn] : []),
             {
                 accessorKey: 'status',
                 header: t('columns.status'),
@@ -227,6 +298,22 @@ export const CertificateStudentTable = ({
                     const issuingBlocked = busy || !certificatesEnabled;
 
                     if (!hasCertificate) {
+                        // Past the course rule: issue normally. Not past it: the
+                        // backend would refuse, so offer an explicit, confirmed
+                        // "Issue anyway" (offline exam, special case) instead.
+                        if (learner.status !== 'AWAITING') {
+                            return (
+                                <MyButton
+                                    buttonType="secondary"
+                                    scale="small"
+                                    type="button"
+                                    disable={issuingBlocked}
+                                    onClick={() => setIssueAnywayFor(learner)}
+                                >
+                                    {tCriteria('table.issueAnyway')}
+                                </MyButton>
+                            );
+                        }
                         return (
                             <MyButton
                                 buttonType="secondary"
@@ -303,7 +390,16 @@ export const CertificateStudentTable = ({
                 },
             },
         ],
-        [issueMutation, resendMutation, certificatesEnabled, statusLabel, t]
+        [
+            issueMutation,
+            resendMutation,
+            certificatesEnabled,
+            statusLabel,
+            t,
+            tCriteria,
+            showTests,
+            testsColumn,
+        ]
     );
 
     const tableData: TableData<CourseCertificateLearner> | undefined = useMemo(() => {
@@ -361,6 +457,56 @@ export const CertificateStudentTable = ({
                     )}
                 </>
             )}
+
+            <CertificateEligibilityDialog
+                open={!!detailsFor}
+                onOpenChange={(open) => !open && setDetailsFor(null)}
+                instituteId={instituteId}
+                packageSessionId={packageSessionId}
+                userId={detailsFor?.user_id ?? null}
+                learnerName={detailsFor?.full_name ?? null}
+            />
+
+            <MyDialog
+                heading={tCriteria('table.issueAnywayTitle')}
+                open={!!issueAnywayFor}
+                onOpenChange={(open) => !open && setIssueAnywayFor(null)}
+                dialogWidth="max-w-md"
+                footer={
+                    <div className="flex w-full items-center justify-end gap-2">
+                        <MyButton
+                            buttonType="secondary"
+                            scale="medium"
+                            type="button"
+                            onClick={() => setIssueAnywayFor(null)}
+                        >
+                            {tCriteria('table.cancel')}
+                        </MyButton>
+                        <MyButton
+                            buttonType="primary"
+                            scale="medium"
+                            type="button"
+                            disable={issueMutation.isPending || !issueAnywayFor}
+                            onClick={() =>
+                                issueAnywayFor &&
+                                issueMutation.mutate({
+                                    userId: issueAnywayFor.user_id,
+                                    regenerate: false,
+                                    force: true,
+                                })
+                            }
+                        >
+                            {tCriteria('table.issueAnywayConfirm')}
+                        </MyButton>
+                    </div>
+                }
+            >
+                <p className="p-2 text-body text-neutral-600">
+                    {tCriteria('table.issueAnywayBody', {
+                        name: issueAnywayFor?.full_name || tCriteria('table.thisLearner'),
+                    })}
+                </p>
+            </MyDialog>
         </div>
     );
 };

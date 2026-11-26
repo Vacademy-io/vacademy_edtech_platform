@@ -17,6 +17,7 @@ interface CertificateStatsCardsProps {
 
 export const CertificateStatsCards = ({ data, isLoading }: CertificateStatsCardsProps) => {
     const { t } = useTranslation('studyLibraryCertificateStatsCards');
+    const { t: tCriteria } = useTranslation('studyLibraryCertificateCriteria');
 
     if (isLoading) {
         return (
@@ -41,6 +42,9 @@ export const CertificateStatsCards = ({ data, isLoading }: CertificateStatsCards
     // The "close to the threshold" band the spec asked for: within 10 points
     // below the bar, e.g. 70-79 when the threshold is 80.
     const nearFloor = Math.max(0, threshold - 10);
+    // Under a test-score rule the backend counts "awaiting" as "meets the whole
+    // rule" and "near" as one test short (or close to the average bar).
+    const scoreRule = !!data.criteria_mode && data.criteria_mode !== 'PROGRESS';
 
     const cards = [
         {
@@ -64,16 +68,22 @@ export const CertificateStatsCards = ({ data, isLoading }: CertificateStatsCards
         {
             title: t('awaitingGeneration.title'),
             value: data.completed_awaiting_certificate,
-            subtitle: t('awaitingGeneration.subtitle', { threshold }),
+            subtitle: scoreRule
+                ? tCriteria('stats.awaitingSubtitle')
+                : t('awaitingGeneration.subtitle', { threshold }),
             icon: <HourglassMedium className="size-5 text-warning-500" />,
         },
         {
-            title: t('closeToThreshold.title'),
+            title: scoreRule ? tCriteria('stats.closeTitle') : t('closeToThreshold.title'),
             value: data.near_threshold,
-            subtitle: t('closeToThreshold.subtitle', {
-                nearFloor,
-                thresholdMinusOne: threshold - 1,
-            }),
+            subtitle: scoreRule
+                ? data.pass_rule === 'AVERAGE'
+                    ? tCriteria('stats.closeSubtitleAverage')
+                    : tCriteria('stats.closeSubtitleTests')
+                : t('closeToThreshold.subtitle', {
+                      nearFloor,
+                      thresholdMinusOne: threshold - 1,
+                  }),
             icon: <ChartLineUp className="size-5 text-info-500" />,
         },
     ];

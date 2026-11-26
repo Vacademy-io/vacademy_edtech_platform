@@ -13,6 +13,13 @@ import {
 } from '../../-services/course-certificates';
 import { CourseCertificateTemplateUpload } from './CourseCertificateTemplateUpload';
 import { CourseCertificatePicker } from './CourseCertificatePicker';
+import { CertificateCriteriaSection } from './CertificateCriteriaSection';
+import {
+    criteriaDraftError,
+    criteriaDraftFrom,
+    criteriaPayloadFrom,
+    type CriteriaDraft,
+} from './certificate-criteria-utils';
 
 interface CourseCertificateSettingsDialogProps {
     open: boolean;
@@ -33,7 +40,10 @@ export const CourseCertificateSettingsDialog = ({
     settings,
 }: CourseCertificateSettingsDialogProps) => {
     const { t } = useTranslation('studyLibraryCertificateCourseCertificateSettingsDialog');
+    const { t: tCriteria } = useTranslation('studyLibraryCertificateCriteria');
     const queryClient = useQueryClient();
+    // How the certificate is earned: progress (the default), test marks, or both.
+    const [criteria, setCriteria] = useState<CriteriaDraft>(() => criteriaDraftFrom(null));
 
     const [enabledChoice, setEnabledChoice] = useState<EnabledChoice>('INHERIT');
     const [overrideThreshold, setOverrideThreshold] = useState(false);
@@ -60,7 +70,10 @@ export const CourseCertificateSettingsDialog = ({
         // to show what is being issued rather than what was once chosen.
         setTemplateId(settings.course_template_id ?? null);
         setTemplateHtml(override?.templateHtml ?? null);
+        setCriteria(criteriaDraftFrom(override?.criteria));
     }, [open, settings]);
+
+    const criteriaError = criteriaDraftError(criteria);
 
     const saveMutation = useMutation({
         mutationFn: () =>
@@ -72,12 +85,16 @@ export const CourseCertificateSettingsDialog = ({
                 // Never both: a saved design and uploaded HTML would be two
                 // answers to "which certificate does this course print".
                 templateHtml: templateId ? null : templateHtml,
+                // Progress-only saves null, so the stored shape is unchanged for
+                // courses that never use a test-score rule.
+                criteria: criteriaPayloadFrom(criteria),
             }),
         onSuccess: () => {
             toast.success(t('toast.saveSuccess'));
             queryClient.invalidateQueries({ queryKey: ['course-certificate-settings'] });
             queryClient.invalidateQueries({ queryKey: ['course-certificate-dashboard'] });
             queryClient.invalidateQueries({ queryKey: ['course-certificate-learners'] });
+            queryClient.invalidateQueries({ queryKey: ['course-certificate-eligibility'] });
             onOpenChange(false);
         },
         onError: () => toast.error(t('toast.saveFailed')),
@@ -94,7 +111,7 @@ export const CourseCertificateSettingsDialog = ({
             heading={t('heading')}
             open={open}
             onOpenChange={onOpenChange}
-            dialogWidth="max-w-xl"
+            dialogWidth="max-w-2xl"
             footer={
                 <div className="flex w-full items-center justify-end gap-2">
                     <MyButton
@@ -110,7 +127,13 @@ export const CourseCertificateSettingsDialog = ({
                         scale="medium"
                         type="button"
                         disable={saveMutation.isPending}
-                        onClick={() => saveMutation.mutate()}
+                        onClick={() => {
+                            if (criteriaError) {
+                                toast.error(tCriteria(`errors.${criteriaError}`));
+                                return;
+                            }
+                            saveMutation.mutate();
+                        }}
                     >
                         {saveMutation.isPending ? t('saving') : t('save')}
                     </MyButton>
@@ -153,44 +176,62 @@ export const CourseCertificateSettingsDialog = ({
                         ))}
                     </div>
                     <p className="text-caption text-neutral-500">
-                        {effectiveEnabled ? t('willReceiveCertificates') : t('noCertificates')}
+                        {effectiveEnabled
+                            ? criteria.mode === 'PROGRESS'
+                                ? t('willReceiveCertificates')
+                                : tCriteria('willReceiveByRule')
+                            : t('noCertificates')}
                         {enabledChoice === 'ON' &&
                             !settings?.institute_enabled &&
                             ` ${t('instituteDefaultOffException')}`}
                     </p>
                 </div>
 
-                <div className="flex flex-col gap-3">
-                    <div className="flex items-center gap-2">
-                        <Switch
-                            id="override-threshold"
-                            checked={overrideThreshold}
-                            onCheckedChange={setOverrideThreshold}
-                        />
-                        <Label htmlFor="override-threshold" className="text-subtitle font-medium">
-                            {t('overrideThresholdLabel')}
-                        </Label>
-                    </div>
-                    {overrideThreshold && (
-                        <div className="flex items-center gap-3">
-                            <MyInput
-                                inputType="number"
-                                input={String(threshold)}
-                                onChangeFunction={(e) =>
-                                    setThreshold(
-                                        Math.max(
-                                            0,
-                                            Math.min(100, Number(e.target.value) || 0)
-                                        )
-                                    )
-                                }
-                                inputPlaceholder="80"
-                                className="w-28"
+                <CertificateCriteriaSection
+                    draft={criteria}
+                    onChange={setCriteria}
+                    instituteId={instituteId}
+                    packageId={packageId}
+                    active={open}
+                    disabled={saveMutation.isPending}
+                />
+
+                {/* The completion threshold only matters when progress is part of the rule. */}
+                {criteria.mode !== 'SCORE' && (
+                    <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-2">
+                            <Switch
+                                id="override-threshold"
+                                checked={overrideThreshold}
+                                onCheckedChange={setOverrideThreshold}
                             />
-                            <span className="text-body text-neutral-500">{t('percentCompletion')}</span>
+                            <Label
+                                htmlFor="override-threshold"
+                                className="text-subtitle font-medium"
+                            >
+                                {t('overrideThresholdLabel')}
+                            </Label>
                         </div>
-                    )}
-                </div>
+                        {overrideThreshold && (
+                            <div className="flex items-center gap-3">
+                                <MyInput
+                                    inputType="number"
+                                    input={String(threshold)}
+                                    onChangeFunction={(e) =>
+                                        setThreshold(
+                                            Math.max(0, Math.min(100, Number(e.target.value) || 0))
+                                        )
+                                    }
+                                    inputPlaceholder="80"
+                                    className="w-28"
+                                />
+                                <span className="text-body text-neutral-500">
+                                    {t('percentCompletion')}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 <div className="flex flex-col gap-3">
                     <Label className="text-subtitle font-medium">{t('certificateDesign')}</Label>

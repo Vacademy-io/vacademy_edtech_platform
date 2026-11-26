@@ -27,4 +27,18 @@ public class LearnerCertificateConfigDto {
 
     /** Completion percentage at which a certificate becomes due. */
     private int thresholdPercent;
+
+    /**
+     * PROGRESS | SCORE | PROGRESS_AND_SCORE. Anything but PROGRESS means the client
+     * cannot judge eligibility from progress alone and must ask the eligibility
+     * endpoint, which grades the learner's tests server-side.
+     */
+    private String criteriaMode;
+
+    /**
+     * The calling learner already holds this batch's certificate. The client then asks for
+     * it whatever the rule says now - an issued certificate is never taken away, and the
+     * issue endpoint returns an existing one without re-checking the rule.
+     */
+    private boolean certificateIssued;
 }

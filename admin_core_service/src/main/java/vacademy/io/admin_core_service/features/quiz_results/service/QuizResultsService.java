@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.learner_tracking.util.AutoEvaluationScorer;
+import vacademy.io.admin_core_service.features.slide.cbe.CbeConfigSecrets;
 import vacademy.io.admin_core_service.features.learner_tracking.util.RichTextForAI;
 import vacademy.io.admin_core_service.features.quiz_results.dto.LearnerQuizAnswersResponse;
 import vacademy.io.admin_core_service.features.quiz_results.dto.LearnerQuizDetailResponse;
@@ -32,6 +33,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * Builds the course-details Quiz Results tab.
@@ -835,6 +837,137 @@ public class QuizResultsService {
             return "HARD";
         }
         return "CRITICAL";
+    }
+
+    // ------------------------------------------------------- certificate criteria
+
+    /**
+     * One learner's best graded attempt at one quiz.
+     *
+     * @param bestPercent     best score across the attempts that answered anything; null
+     *                        when the quiz has no marks to score against
+     * @param passPercentage  the quiz's own pass mark, when it has one
+     * @param attempts        attempts that answered at least one question - an attempt
+     *                        opened and left without answering is not counted
+     * @param awaitingGrading the best attempt still holds answers nothing here can grade
+     *                        (free text, manual evaluation), so its score may yet rise
+     */
+    public record QuizBestScore(Double bestPercent, Double passPercentage, int attempts,
+            boolean awaitingGrading) {
+    }
+
+    /**
+     * Best score per quiz per learner in a batch, graded exactly like this tab grades -
+     * stored verdicts where they exist, the answer key for older placeholder rows - but
+     * over EVERY attempt rather than the latest, because a certificate should not be lost
+     * by retrying a quiz for practice after passing it.
+     *
+     * @param userId null for every learner in the batch
+     * @return slideId to userId to best score; learners with no answered attempt are absent
+     */
+    public Map<String, Map<String, QuizBestScore>> getBestScores(String batchId, String userId) {
+        requireText(batchId, "batchId");
+        List<QuizSlideMetaProjection> metas = quizResultsRepository.getQuizSlides(batchId, null);
+        if (metas.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, QuizSlideMetaProjection> metaBySlide = new HashMap<>();
+        for (QuizSlideMetaProjection meta : metas) {
+            metaBySlide.put(meta.getSlideId(), meta);
+        }
+        QuestionIndex index = loadQuestionIndex(batchId, null, false);
+
+        Map<String, AttemptScore> scoreByAttempt = new HashMap<>();
+        Map<String, String[]> ownerByAttempt = new LinkedHashMap<>();
+        for (QuizResultsRepository.AttemptResponseProjection row :
+                quizResultsRepository.getAllAttemptResponses(batchId, userId)) {
+            ownerByAttempt.putIfAbsent(row.getActivityId(), new String[] {row.getSlideId(), row.getUserId()});
+            if (row.getQuestionId() == null) {
+                continue;
+            }
+            QuestionInfo question = index.questions.get(row.getQuestionId());
+            if (question == null) {
+                continue;
+            }
+            AttemptScore score = scoreByAttempt.computeIfAbsent(row.getActivityId(), k -> new AttemptScore());
+            switch (certificateOutcomeOf(row.getResponseStatus(), row.getResponseJson(), question)) {
+                case CORRECT -> {
+                    score.correct++;
+                    score.obtained += question.marks;
+                }
+                case WRONG -> {
+                    score.wrong++;
+                    score.obtained += partialAward(question, row.getResponseJson());
+                }
+                case SKIPPED -> score.skipped++;
+                case UNGRADED -> score.ungraded++;
+            }
+        }
+
+        Map<String, Map<String, QuizBestScore>> out = new HashMap<>();
+        for (Map.Entry<String, String[]> entry : ownerByAttempt.entrySet()) {
+            AttemptScore score = scoreByAttempt.get(entry.getKey());
+            if (score == null || score.responded() == 0) {
+                continue;
+            }
+            String slideId = entry.getValue()[0];
+            String learnerId = entry.getValue()[1];
+            QuizSlideMetaProjection meta = metaBySlide.get(slideId);
+            if (meta == null) {
+                continue;
+            }
+            double total = nz(meta.getTotalMarks());
+            Double percent = total > 0 ? round1(score.obtained * 100.0 / total) : null;
+            boolean awaiting = score.ungraded > 0;
+
+            Map<String, QuizBestScore> bySlide = out.computeIfAbsent(slideId, k -> new HashMap<>());
+            QuizBestScore previous = bySlide.get(learnerId);
+            if (previous == null) {
+                bySlide.put(learnerId, new QuizBestScore(percent, meta.getPassPercentage(), 1, awaiting));
+                continue;
+            }
+            boolean better = percent != null
+                    && (previous.bestPercent() == null || percent > previous.bestPercent());
+            bySlide.put(learnerId, new QuizBestScore(
+                    better ? percent : previous.bestPercent(),
+                    meta.getPassPercentage(),
+                    previous.attempts() + 1,
+                    better ? awaiting : previous.awaitingGrading()));
+        }
+        return out;
+    }
+
+    /**
+     * The verdict a CERTIFICATE may rely on: the server's, never the client's.
+     *
+     * <p>{@link #outcomeOf} (the report) trusts a stored CORRECT, and submission keeps the
+     * client's claimed status whenever the submit-time grader cannot read the answer - so a
+     * crafted submission could mark every question correct. That only skews a report; it
+     * must not award a certificate. Here: the submit-time grader first (so a certificate
+     * agrees with the Quiz Results tab), then the type-aware grader, then a verdict the server
+     * itself wrote (Spreadsheet & Written Response grading), and otherwise UNGRADED - shown
+     * as awaiting marks, never counted as correct.
+     */
+    private Outcome certificateOutcomeOf(String storedStatus, String responseJson, QuestionInfo question) {
+        Supplier<List<String>> optionIds = () -> question.optionIds;
+        AutoEvaluationScorer.Verdict verdict =
+                autoEvaluationScorer.evaluate(question.autoEvaluationJson, responseJson, optionIds);
+        if (verdict == AutoEvaluationScorer.Verdict.UNKNOWN) {
+            verdict = autoEvaluationScorer.evaluateForQuestionType(question.questionType,
+                    question.autoEvaluationJson, responseJson, optionIds);
+        }
+        if (verdict != null && verdict != AutoEvaluationScorer.Verdict.UNKNOWN) {
+            return switch (verdict) {
+                case CORRECT -> Outcome.CORRECT;
+                case WRONG -> Outcome.WRONG;
+                case SKIPPED -> Outcome.SKIPPED;
+                case UNKNOWN -> Outcome.UNGRADED;
+            };
+        }
+        if (CbeConfigSecrets.isCbe(question.questionType, question.autoEvaluationJson)) {
+            return outcomeOf(storedStatus, responseJson, question);
+        }
+        return Outcome.UNGRADED;
     }
 
     // --------------------------------------------------------------------- grading

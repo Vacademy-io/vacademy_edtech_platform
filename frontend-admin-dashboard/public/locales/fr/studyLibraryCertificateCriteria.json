@@ -1,0 +1,128 @@
+{
+    "willReceiveByRule": "Les apprenants de ce cours recevront un certificat une fois la règle ci-dessous remplie.",
+    "earnHeading": "Comment les apprenants obtiennent-ils le certificat ?",
+    "mode": {
+        "PROGRESS": {
+            "label": "Progression dans le cours",
+            "description": "Terminer un pourcentage défini du cours, comme avant."
+        },
+        "SCORE": {
+            "label": "Notes aux tests",
+            "description": "Réussir les quiz et évaluations que vous choisissez, quelle que soit la progression."
+        },
+        "PROGRESS_AND_SCORE": {
+            "label": "Progression et notes",
+            "description": "Terminer le pourcentage du cours et réussir les tests."
+        }
+    },
+    "scopeHeading": "Quels tests comptent ?",
+    "scope": {
+        "ALL": "Tous les quiz et évaluations de ce cours",
+        "CUSTOM": "Seulement les modules, chapitres ou tests que je choisis"
+    },
+    "typesHeading": "Types de tests à compter",
+    "type": {
+        "QUIZ": "Quiz",
+        "ASSESSMENT": "Évaluation"
+    },
+    "typePlural": {
+        "QUIZ": "Quiz",
+        "ASSESSMENT": "Évaluations"
+    },
+    "typesHint": "Un cours, module ou chapitre entier compte ces types de tests, y compris ceux ajoutés plus tard. Un test que vous cochez vous-même compte toujours.",
+    "picker": {
+        "loading": "Chargement des tests du cours…",
+        "error": "Impossible de charger les tests de ce cours.",
+        "empty": "Ce cours n'a pas encore de quiz ni d'évaluation. Ajoutez d'abord une diapositive Quiz ou Évaluation.",
+        "noModule": "Autres chapitres",
+        "noChapter": "Chapitre sans nom",
+        "untitled": "Test sans titre",
+        "draft": "Brouillon — compte une fois publié",
+        "ownPass": "Réussite {{pct}} %"
+    },
+    "ruleHeading": "Pour obtenir le certificat, un apprenant doit",
+    "rule": {
+        "ALL": "Réussir tous les tests",
+        "AT_LEAST": "Réussir au moins",
+        "AT_LEAST_SUFFIX": "des tests",
+        "AVERAGE": "Atteindre une moyenne sur l'ensemble des tests"
+    },
+    "passMarkLabel": "Note de réussite",
+    "averageLabel": "Moyenne requise",
+    "percentSuffix": "% des points du test",
+    "useOwnPass": "Utiliser le % de réussite propre à un quiz s'il en a un (cette note couvre le reste)",
+    "summary": {
+        "count_one": "{{count}} test publié compte actuellement.",
+        "count_many": "{{count}} tests publiés comptent actuellement.",
+        "count_other": "{{count}} tests publiés comptent actuellement.",
+        "none": "Aucun test publié ne correspond encore à cette règle : personne ne peut obtenir le certificat tant que ce n'est pas le cas."
+    },
+    "notes": "La meilleure tentative de l'apprenant compte. Les notes des évaluations ne comptent qu'une fois publiées pour l'apprenant. Les tests non tentés comptent 0 dans une moyenne.",
+    "errors": {
+        "pickTests": "Choisissez au moins un module, un chapitre ou un test.",
+        "pickType": "Choisissez les quiz, les évaluations ou les deux."
+    },
+    "table": {
+        "testsColumn": "Tests",
+        "passedOf": "{{passed}}/{{total}} réussis",
+        "average": "Moy. {{pct}} %",
+        "awaiting_one": "{{count}} note en attente",
+        "awaiting_many": "{{count}} notes en attente",
+        "awaiting_other": "{{count}} notes en attente",
+        "viewDetails": "Voir les résultats",
+        "issueAnywayError": "Les certificats sont peut-être désactivés pour ce cours. Vérifiez les paramètres de certificat du cours.",
+        "generateErrorRule": "Vérifiez que les certificats sont activés pour ce cours et que l'apprenant remplit sa règle de certificat.",
+        "issueAnyway": "Délivrer quand même",
+        "issueAnywayTitle": "Délivrer un certificat quand même ?",
+        "issueAnywayBody": "{{name}} n'a pas encore rempli la règle de certificat de ce cours. Délivrer le certificat quand même ? À utiliser pour les examens hors ligne ou les cas particuliers — l'apprenant recevra l'e-mail du certificat.",
+        "issueAnywayConfirm": "Délivrer le certificat",
+        "thisLearner": "Cet apprenant",
+        "cancel": "Annuler"
+    },
+    "stats": {
+        "awaitingSubtitle": "Règle du cours remplie, pas encore délivré",
+        "closeTitle": "Proche de l'obtenir",
+        "closeSubtitleTests": "Un test de moins que la règle",
+        "closeSubtitleAverage": "Moyenne à moins de 10 points du seuil"
+    },
+    "tab": {
+        "earnedBy": "Obtenu par :",
+        "rule": {
+            "SCORE": "notes aux tests ({{n}} comptés dans ce groupe)",
+            "PROGRESS_AND_SCORE": "{{pct}} % de progression et notes aux tests ({{n}} comptés dans ce groupe)"
+        },
+        "noTestsTitle": "Aucun test ne correspond à la règle de certificat de ce cours",
+        "noTestsBody": "Personne dans ce groupe ne peut obtenir le certificat tant qu'aucun quiz ou évaluation publié ne correspond à la règle. Vérifiez la règle dans les paramètres.",
+        "awaitingResults_one": "{{count}} apprenant attend que ses notes soient corrigées ou publiées.",
+        "awaitingResults_many": "{{count}} apprenants attendent que leurs notes soient corrigées ou publiées.",
+        "awaitingResults_other": "{{count}} apprenants attendent que leurs notes soient corrigées ou publiées."
+    },
+    "dialog": {
+        "heading": "Progression du certificat",
+        "loading": "Chargement…",
+        "error": "Impossible de charger les résultats de cet apprenant.",
+        "eligible": "Règle remplie — le certificat peut être délivré.",
+        "notEligible": "La règle n'est pas encore remplie.",
+        "progressLine": "Progression : {{pct}} % ({{threshold}} % requis)",
+        "ruleAll": "Doit réussir tous les tests — {{passed}} sur {{total}} réussis",
+        "ruleAtLeast": "Doit en réussir au moins {{required}} — {{passed}} sur {{total}} réussis",
+        "ruleAverage": "Moyenne requise : {{bar}} % — actuellement {{avg}} %",
+        "blocker": {
+            "NO_TESTS_FOUND": "Aucun test publié de ce groupe ne correspond à la règle.",
+            "ASSESSMENT_SCORES_UNAVAILABLE": "Les notes des évaluations n'ont pas pu être chargées. Réessayez dans un instant."
+        },
+        "status": {
+            "PASSED": "Réussi",
+            "FAILED": "Non réussi",
+            "COMPLETED": "Terminé",
+            "NOT_ATTEMPTED": "Non tenté",
+            "AWAITING_RESULT": "Notes en attente"
+        },
+        "score": "Meilleur {{pct}} %",
+        "passMark": "réussite {{pct}} %",
+        "attempts_one": "{{count}} tentative",
+        "attempts_many": "{{count}} tentatives",
+        "attempts_other": "{{count}} tentatives",
+        "close": "Fermer"
+    }
+}

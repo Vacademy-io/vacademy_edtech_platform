@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Gear, Warning } from '@phosphor-icons/react';
+import { Gear, Info, Warning } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { getInstituteId } from '@/constants/helper';
 import {
@@ -27,6 +27,7 @@ export const CertificatesTab = ({
     courseName,
 }: CertificatesTabProps) => {
     const { t } = useTranslation('studyLibraryCertificatesTab');
+    const { t: tCriteria } = useTranslation('studyLibraryCertificateCriteria');
     const [settingsOpen, setSettingsOpen] = useState(false);
     const instituteId = getInstituteId() ?? '';
 
@@ -50,6 +51,11 @@ export const CertificatesTab = ({
         queryFn: () => getCourseCertificateDashboard(instituteId, packageSessionId, packageId),
         enabled: !!instituteId && !!packageSessionId,
     });
+
+    // A test-score rule is reported by the dashboard, which knows this batch's tests.
+    const criteriaMode = dashboard?.criteria_mode;
+    const scoreRule = !!criteriaMode && criteriaMode !== 'PROGRESS';
+    const awaitingResults = dashboard?.learners_awaiting_results ?? 0;
 
     if (!packageSessionId) {
         return (
@@ -108,6 +114,41 @@ export const CertificatesTab = ({
                         ? t('chosenForThisCourse')
                         : t('inheritedFromInstitute')}
                 </p>
+            )}
+
+            {settings?.effective_enabled && scoreRule && dashboard && (
+                <p className="text-caption text-neutral-500">
+                    {tCriteria('tab.earnedBy')}{' '}
+                    <span className="font-medium text-neutral-700">
+                        {tCriteria(`tab.rule.${criteriaMode}`, {
+                            n: dashboard.tests_in_rule ?? 0,
+                            pct: dashboard.threshold_percent,
+                        })}
+                    </span>
+                </p>
+            )}
+
+            {settings?.effective_enabled && scoreRule && dashboard?.tests_in_rule === 0 && (
+                <div className="flex items-start gap-3 rounded-md border border-warning-200 bg-warning-50 p-4">
+                    <Warning className="mt-0.5 size-5 shrink-0 text-warning-500" />
+                    <div>
+                        <p className="text-body font-medium text-neutral-700">
+                            {tCriteria('tab.noTestsTitle')}
+                        </p>
+                        <p className="text-caption text-neutral-500">
+                            {tCriteria('tab.noTestsBody')}
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {scoreRule && awaitingResults > 0 && (
+                <div className="flex items-center gap-2 rounded-md border border-neutral-200 bg-neutral-50 p-3">
+                    <Info className="size-4 shrink-0 text-neutral-500" />
+                    <p className="text-caption text-neutral-600">
+                        {tCriteria('tab.awaitingResults', { count: awaitingResults })}
+                    </p>
+                </div>
             )}
 
             <CertificateStatsCards data={dashboard} isLoading={dashboardLoading} />

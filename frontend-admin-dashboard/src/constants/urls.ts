@@ -216,6 +216,8 @@ export const COURSE_CERTIFICATE_DASHBOARD = `${COURSE_CERTIFICATE_BASE}/dashboar
 export const COURSE_CERTIFICATE_LEARNERS = `${COURSE_CERTIFICATE_BASE}/learners`;
 export const COURSE_CERTIFICATE_ISSUE = `${COURSE_CERTIFICATE_BASE}/issue`;
 export const COURSE_CERTIFICATE_RESEND = `${COURSE_CERTIFICATE_BASE}/resend`;
+export const COURSE_CERTIFICATE_TESTS = `${COURSE_CERTIFICATE_BASE}/tests`;
+export const COURSE_CERTIFICATE_LEARNER_ELIGIBILITY = `${COURSE_CERTIFICATE_BASE}/learner-eligibility`;
 export const AUDIENCE_CAMPAIGN = `${BASE_URL}/admin-core-service/v1/audience/campaign`;
 export const AUDIENCE_CAMPAIGNS_LIST = `${BASE_URL}/admin-core-service/v1/audience/campaigns`;
 // Tag keys in use on the institute's lead lists, with distinct values + list counts (autocomplete).
