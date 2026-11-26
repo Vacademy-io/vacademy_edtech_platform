@@ -10,6 +10,7 @@ import { siteUsesDevanagari } from "../-utils/catalogue-site-language";
 import { collectConfigFontFamilies, ensureFontsLoaded } from "../-utils/catalogue-fonts";
 import { buildSiteThemeVars } from "../-utils/catalogue-palette";
 import { headerOffsetClass } from "./header/header-chrome";
+import { useCatalogueSkinIsolation } from "../-utils/catalogue-skin-isolation";
 import { categoryBarOffsetFor } from "./commerce/lazy";
 import { DEVANAGARI_FALLBACK_FAMILY, withArabicFallback, withDevanagariFallback } from "@/utils/branding";
 
@@ -58,6 +59,9 @@ export const CatalogueChrome: React.FC<CatalogueChromeProps> = ({
   children,
 }) => {
   const themeRootRef = useRef<HTMLDivElement>(null);
+  // Dressed as the site (a tagName came along): no learner app skin on it,
+  // from the first paint, like the site's own pages. No tagName, no change.
+  useCatalogueSkinIsolation(!!tagName);
 
   // The catalogue pages fetch this through useEffect + service rather than
   // react-query, so this is its own request (cached here for repeat visits

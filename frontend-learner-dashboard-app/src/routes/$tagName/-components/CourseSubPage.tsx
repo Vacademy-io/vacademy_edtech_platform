@@ -35,6 +35,7 @@ import { shouldShowMobileGetStarted } from "../-utils/catalogue-cta";
 import { headerOffsetClass } from "./header/header-chrome";
 import { categoryBarOffsetAt } from "./commerce/lazy";
 import { isCommerceEnabled } from "./commerce/config";
+import { useCatalogueSkinIsolation } from "../-utils/catalogue-skin-isolation";
 
 interface CourseSubPageProps {
   tagName: string;
@@ -67,6 +68,8 @@ const AppRouteRedirect: React.FC<{ page: string }> = ({ page }) => (
  */
 export const CourseSubPage: React.FC<CourseSubPageProps> = (props) => {
   const { tagName, page, instituteId } = props;
+  // The site has its own theme: no learner app skin on it (see the hook).
+  useCatalogueSkinIsolation();
   const reserved = RouteMatcher.isReservedRootPage(tagName, page);
   const site = `${instituteId}::${tagName}`;
   const [verdict, setVerdict] = useState<{ site: string; page: string; to: "site" | "app" } | null>(null);
