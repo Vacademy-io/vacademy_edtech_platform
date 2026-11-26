@@ -1092,7 +1092,7 @@ public class AuthService {
             // user (and on the existing-user branch, undoing any patched fields /
             // newly assigned roles). Catch everything here and log instead.
             try {
-                if (isAlreadyPresent) {
+                if (usesAccountAlready(isAlreadyPresent, user)) {
                     sendLearnerEnrollmentExistingUserEmail(user, instituteId, userRoleSet, overrideLoginUrl);
                 } else {
                     sendLearnerEnrollmentNewUserEmail(user, instituteId, userRoleSet, overrideLoginUrl);
@@ -1103,6 +1103,17 @@ public class AuthService {
             }
         }
         return new AccountResult(user, !isAlreadyPresent);
+    }
+
+    /**
+     * Whether the enrollment mail should say "your existing account": the account was there before
+     * this call AND the learner has signed in with it. A paid invite creates the account when the
+     * form is submitted and enrolls only after payment, so that call finds an account the learner has
+     * never used; telling them their details were "retained" is wrong, they are seeing them for the
+     * first time. users.last_login_time is stamped on every sign-in (RefreshTokenService).
+     */
+    static boolean usesAccountAlready(boolean isAlreadyPresent, User user) {
+        return isAlreadyPresent && user != null && user.getLastLoginTime() != null;
     }
 
     /**
