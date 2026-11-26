@@ -45,6 +45,8 @@ export const useBulkUpdateBatchMutation = () => {
         mutationFn: bulkUpdateStudentBatch,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['students'] });
+            // the header Total/Active/Inactive badges are separate queries
+            queryClient.invalidateQueries({ queryKey: ['student-count'] });
             toast({
                 title: t('updateBatch.successTitle'),
                 description: t('updateBatch.successDescription'),
@@ -94,6 +96,8 @@ export const useBulkExtendSessionMutation = () => {
         mutationFn: bulkExtendStudentSession,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['students'] });
+            // the header Total/Active/Inactive badges are separate queries
+            queryClient.invalidateQueries({ queryKey: ['student-count'] });
             toast({
                 title: t('extendSession.successTitle'),
                 description: t('extendSession.successDescription'),
@@ -142,6 +146,8 @@ export const useBulkTerminateStudentsMutation = () => {
         mutationFn: bulkTerminateStudents,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['students'] });
+            // the header Total/Active/Inactive badges are separate queries
+            queryClient.invalidateQueries({ queryKey: ['student-count'] });
             toast({
                 title: t('terminate.successTitle'),
                 description: t('terminate.successDescription'),
@@ -190,6 +196,8 @@ export const useBulkDeleteStudentsMutation = () => {
         mutationFn: bulkDeleteStudents,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['students'] });
+            // the header Total/Active/Inactive badges are separate queries
+            queryClient.invalidateQueries({ queryKey: ['student-count'] });
             toast({
                 title: t('delete.successTitle'),
                 description: t('delete.successDescription'),
