@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vacademy.io.admin_core_service.features.usage_metering.dto.UsageDTOs.AllowanceStatus;
 import vacademy.io.admin_core_service.features.usage_metering.dto.UsageDTOs.CategoryUsage;
 import vacademy.io.admin_core_service.features.usage_metering.dto.UsageDTOs.CostRates;
 import vacademy.io.admin_core_service.features.usage_metering.dto.UsageDTOs.DailyPoint;
@@ -11,6 +12,7 @@ import vacademy.io.admin_core_service.features.usage_metering.dto.UsageDTOs.Inst
 import vacademy.io.admin_core_service.features.usage_metering.dto.UsageDTOs.InstituteUsageRow;
 import vacademy.io.admin_core_service.features.usage_metering.dto.UsageDTOs.MonthlyPoint;
 import vacademy.io.admin_core_service.features.usage_metering.dto.UsageDTOs.PlatformUsageResponse;
+import vacademy.io.admin_core_service.features.usage_metering.dto.UsageDTOs.UsageAllowance;
 
 import java.sql.Date;
 import java.time.LocalDate;
@@ -33,13 +35,16 @@ public class UsageReportService {
     private static final double GB = 1024d * 1024 * 1024;
 
     private final JdbcTemplate jdbcTemplate;
+    private final UsageAllowanceService allowanceService;
     private final CostRates rates;
 
     public UsageReportService(JdbcTemplate jdbcTemplate,
+                              UsageAllowanceService allowanceService,
                               @Value("${usage.cost.storage-usd-per-gb-month:0.015}") double storageUsdPerGbMonth,
                               @Value("${usage.cost.bandwidth-usd-per-gb:0.109}") double bandwidthUsdPerGb,
                               @Value("${usage.cost.usd-to-inr:88}") double usdToInr) {
         this.jdbcTemplate = jdbcTemplate;
+        this.allowanceService = allowanceService;
         this.rates = new CostRates(storageUsdPerGbMonth, bandwidthUsdPerGb, usdToInr);
     }
 
@@ -94,6 +99,12 @@ public class UsageReportService {
                 GROUP BY 1 ORDER BY 1
                 """, (rs, i) -> new MonthlyPoint(rs.getString(1), rs.getLong(2)),
                 instituteId, Date.valueOf(month.minusMonths(5).atDay(1))));
+
+        UsageAllowance allowance = allowanceService.find(instituteId);
+        if (allowance != null) {
+            r.setAllowance(allowanceService.status(allowance, month));
+            r.setAllowancePreviousMonth(allowanceService.status(allowance, month.minusMonths(1)));
+        }
         return r;
     }
 
@@ -132,6 +143,11 @@ public class UsageReportService {
             row.setBandwidthRequests(rs.getLong(3));
         }, Date.valueOf(month.atDay(1)), Date.valueOf(month.atEndOfMonth()));
 
+        // Institutes on an allowance are listed even before they use anything.
+        Map<String, UsageAllowance> allowances = allowanceService.findAll();
+        allowances.keySet().forEach(id -> rows.computeIfAbsent(id, this::newRow));
+        Map<String, AllowanceStatus> statuses = allowanceService.statuses(allowances, month);
+
         Map<String, String> names = new HashMap<>();
         List<String> ids = rows.keySet().stream().filter(id -> !UsageKeyClassifier.UNASSIGNED.equals(id)).toList();
         if (!ids.isEmpty()) {
@@ -146,6 +162,7 @@ public class UsageReportService {
         List<InstituteUsageRow> institutes = new ArrayList<>();
         for (InstituteUsageRow row : rows.values()) {
             row.setInstituteName(names.getOrDefault(row.getInstituteId(), null));
+            row.setAllowance(statuses.get(row.getInstituteId()));
             price(row);
             totals.setStorageBytes(totals.getStorageBytes() + row.getStorageBytes());
             totals.setRecordingBytes(totals.getRecordingBytes() + row.getRecordingBytes());
@@ -162,6 +179,21 @@ public class UsageReportService {
         r.setInstitutes(institutes);
         r.setTotals(totals);
         return r;
+    }
+
+    /** Institute names by id; ids without an institute are left out. */
+    @Transactional(readOnly = true)
+    public Map<String, String> instituteNames(java.util.Collection<String> ids) {
+        Map<String, String> names = new HashMap<>();
+        if (ids.isEmpty()) {
+            return names;
+        }
+        String placeholders = String.join(",", ids.stream().map(id -> "?").toList());
+        jdbcTemplate.query("SELECT id, name FROM institutes WHERE id IN (" + placeholders + ")",
+                rs -> {
+                    names.put(rs.getString(1), rs.getString(2));
+                }, ids.toArray());
+        return names;
     }
 
     private InstituteUsageRow newRow(String instituteId) {

@@ -4,13 +4,22 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import vacademy.io.admin_core_service.features.usage_metering.dto.UsageDTOs.AllowanceListItem;
+import vacademy.io.admin_core_service.features.usage_metering.dto.UsageDTOs.AllowanceStatus;
 import vacademy.io.admin_core_service.features.usage_metering.dto.UsageDTOs.PlatformUsageResponse;
+import vacademy.io.admin_core_service.features.usage_metering.dto.UsageDTOs.UsageAllowance;
+import vacademy.io.admin_core_service.features.usage_metering.dto.UsageDTOs.UsageAllowanceRequest;
+import vacademy.io.admin_core_service.features.usage_metering.service.UsageAllowanceService;
 import vacademy.io.admin_core_service.features.usage_metering.service.UsageMeteringService;
 import vacademy.io.admin_core_service.features.usage_metering.service.UsageReportService;
 import vacademy.io.common.auth.model.CustomUserDetails;
@@ -19,6 +28,10 @@ import vacademy.io.common.auth.util.SuperAdminAuthUtil;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -32,6 +45,7 @@ public class SuperAdminUsageController {
 
     private final UsageReportService reportService;
     private final UsageMeteringService meteringService;
+    private final UsageAllowanceService allowanceService;
     private final AtomicBoolean manualRunInProgress = new AtomicBoolean();
 
     /** @param month YYYY-MM for the bandwidth columns; defaults to the current UTC month */
@@ -40,8 +54,71 @@ public class SuperAdminUsageController {
             @RequestAttribute("user") CustomUserDetails user,
             @RequestParam(value = "month", required = false) String month) {
         SuperAdminAuthUtil.requireSuperAdmin(user);
-        YearMonth ym = month == null || month.isBlank() ? YearMonth.now(ZoneOffset.UTC) : YearMonth.parse(month);
-        return ResponseEntity.ok(reportService.platformUsage(ym));
+        return ResponseEntity.ok(reportService.platformUsage(month(month)));
+    }
+
+    /** Every institute on a storage and bandwidth allowance, with the month's extra charge. */
+    @GetMapping("/allowances")
+    public ResponseEntity<List<AllowanceListItem>> allowances(
+            @RequestAttribute("user") CustomUserDetails user,
+            @RequestParam(value = "month", required = false) String month) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
+        YearMonth ym = month(month);
+        Map<String, UsageAllowance> all = allowanceService.findAll();
+        Map<String, AllowanceStatus> statuses = allowanceService.statuses(all, ym);
+        Map<String, String> names = reportService.instituteNames(all.keySet());
+        List<AllowanceListItem> items = new ArrayList<>();
+        all.forEach((id, a) -> items.add(new AllowanceListItem(names.get(id), a, statuses.get(id))));
+        items.sort(Comparator.comparingDouble((AllowanceListItem i) -> i.getStatus().getTotalCharge()).reversed());
+        return ResponseEntity.ok(items);
+    }
+
+    /** One institute's allowance with this month and last month; allowance null when it has none. */
+    @GetMapping("/institutes/{instituteId}/allowance")
+    public ResponseEntity<Map<String, Object>> allowance(
+            @RequestAttribute("user") CustomUserDetails user,
+            @PathVariable("instituteId") String instituteId) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
+        return ResponseEntity.ok(allowanceView(instituteId));
+    }
+
+    /** Puts the institute on an allowance, or changes its terms. Takes effect for the whole current month. */
+    @PutMapping("/institutes/{instituteId}/allowance")
+    public ResponseEntity<Map<String, Object>> saveAllowance(
+            @RequestAttribute("user") CustomUserDetails user,
+            @PathVariable("instituteId") String instituteId,
+            @RequestBody UsageAllowanceRequest request) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
+        allowanceService.save(instituteId, request, user.getUserId());
+        log.info("[usage-allowance] {} set allowance for institute {}", user.getUserId(), instituteId);
+        return ResponseEntity.ok(allowanceView(instituteId));
+    }
+
+    /** Takes the institute off its allowance; its admins see plain usage again. */
+    @DeleteMapping("/institutes/{instituteId}/allowance")
+    public ResponseEntity<Map<String, Object>> removeAllowance(
+            @RequestAttribute("user") CustomUserDetails user,
+            @PathVariable("instituteId") String instituteId) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
+        boolean removed = allowanceService.remove(instituteId);
+        log.info("[usage-allowance] {} removed allowance for institute {} (existed: {})", user.getUserId(), instituteId, removed);
+        return ResponseEntity.ok(Map.of("removed", removed));
+    }
+
+    private Map<String, Object> allowanceView(String instituteId) {
+        UsageAllowance a = allowanceService.find(instituteId);
+        Map<String, Object> out = new HashMap<>();
+        out.put("allowance", a);
+        if (a != null) {
+            YearMonth now = YearMonth.now(ZoneOffset.UTC);
+            out.put("current_month", allowanceService.status(a, now));
+            out.put("previous_month", allowanceService.status(a, now.minusMonths(1)));
+        }
+        return out;
+    }
+
+    private static YearMonth month(String month) {
+        return month == null || month.isBlank() ? YearMonth.now(ZoneOffset.UTC) : YearMonth.parse(month);
     }
 
     /**

@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -72,6 +73,79 @@ public final class UsageDTOs {
         private List<DailyPoint> bandwidthDaily;
         /** Bytes delivered per month, last 6 months. */
         private List<MonthlyPoint> bandwidthMonthly;
+        /** This month against the institute's allowance; null when it has none. */
+        private AllowanceStatus allowance;
+        /** Last month against the allowance (today's terms); null when it has none. */
+        private AllowanceStatus allowancePreviousMonth;
+    }
+
+    /** An institute's storage and bandwidth allowance (institute_usage_allowance). */
+    @Data
+    @NoArgsConstructor
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class UsageAllowance {
+        private String instituteId;
+        private double includedStorageGb;
+        private double includedBandwidthGb;
+        /** Price per extra GB-month of storage, in currency. */
+        private double storageRatePerGb;
+        /** Price per extra GB delivered, in currency. */
+        private double bandwidthRatePerGb;
+        private String currency;
+        private String note;
+        private String updatedBy;
+        private Instant updatedAt;
+    }
+
+    /** Body of PUT .../institutes/{id}/allowance. */
+    @Data
+    @NoArgsConstructor
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class UsageAllowanceRequest {
+        private Double includedStorageGb;
+        private Double includedBandwidthGb;
+        private Double storageRatePerGb;
+        private Double bandwidthRatePerGb;
+        /** Three-letter code; INR when omitted. */
+        private String currency;
+        private String note;
+    }
+
+    /**
+     * One month against the allowance. Storage is the month's average stored bytes
+     * (nightly snapshots so far); bandwidth the month's total. Charges are in currency.
+     */
+    @Data
+    @NoArgsConstructor
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class AllowanceStatus {
+        /** YYYY-MM */
+        private String month;
+        private double includedStorageGb;
+        private double includedBandwidthGb;
+        private double storageRatePerGb;
+        private double bandwidthRatePerGb;
+        private String currency;
+        /** Nights in the month with a storage snapshot; the average is over these. */
+        private int storageSnapshotDays;
+        private long storageAverageBytes;
+        private long storageExtraBytes;
+        private long bandwidthBytes;
+        private long bandwidthExtraBytes;
+        private double storageCharge;
+        private double bandwidthCharge;
+        private double totalCharge;
+    }
+
+    /** Every institute on an allowance with the month's figures, for super admins. */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class AllowanceListItem {
+        private String instituteName;
+        private UsageAllowance allowance;
+        private AllowanceStatus status;
     }
 
     @Data
@@ -88,6 +162,8 @@ public final class UsageDTOs {
         private double storageCostInr;
         private double bandwidthCostInr;
         private double totalCostInr;
+        /** The month against the institute's allowance; null when it has none. */
+        private AllowanceStatus allowance;
     }
 
     @Data
