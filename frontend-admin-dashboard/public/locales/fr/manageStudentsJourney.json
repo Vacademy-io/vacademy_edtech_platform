@@ -14,7 +14,10 @@
         "byBreak": "Défini par une pause",
         "history_one": "Historique ({{count}})",
         "history_other": "Historique ({{count}})",
-        "importedCase": "Dossier importé ({{status}})"
+        "importedCase": "Dossier importé ({{status}})",
+        "startReentry": "Démarrer la reprise",
+        "byReentry": "Défini par la reprise",
+        "byReentryReturn": "Retour après la reprise"
     },
     "dialog": {
         "title": "Changer le statut de parcours",
@@ -36,5 +39,51 @@
         "saved_one": "{{count}} statut modifié.",
         "saved_other": "{{count}} statuts modifiés.",
         "failed": "Impossible de changer le statut."
+    },
+    "reentry": {
+        "title": "Démarrer la reprise",
+        "titleFor": "Démarrer la reprise : {{name}}",
+        "intro": "Pour un élève qui revient après une longue pause : le groupe passe en Reprise, avec un cours supplémentaire ou un cours passerelle pour rattraper, en une seule étape.",
+        "batch": "{{batch}} que l'élève reprend",
+        "onPause": "Ce groupe a une pause en cours. Reprenez-la d'abord, ou reprenez-la dans la même étape.",
+        "resumePause": "Reprendre la pause maintenant (le choix de reprise habituel de l'institut s'applique)",
+        "reasonPlaceholder": "Pourquoi l'élève reprend (affiché dans l'historique)",
+        "extra": {
+            "title": "Ajouter un cours supplémentaire",
+            "hint": "Suivre un autre {{batch}} pendant un temps pour rattraper."
+        },
+        "bridge": {
+            "title": "Ajouter un cours passerelle",
+            "hint": "Un court {{batch}} de rattrapage avant le retour."
+        },
+        "from": "Premier jour",
+        "to": "Dernier jour",
+        "returnOn": "Retour à {{status}} après le",
+        "returnHint": "Repasse automatiquement à {{status}} le matin suivant le {{date}}.",
+        "returnHintManual": "Enregistré comme date de prochaine action. Le retour automatique est désactivé dans Paramètres → Parcours.",
+        "returnNone": "Sans date : l'élève reste en Reprise jusqu'à ce que vous changiez le statut.",
+        "noFeeNoMessage": "Aucun frais n'est facturé et aucun message n'est envoyé.",
+        "submit": "Démarrer la reprise",
+        "failed": "Impossible de démarrer la reprise.",
+        "batchPlaceholder": "Choisir un {{batch}}",
+        "batchSearch": "Rechercher",
+        "batchEmpty": "Aucun résultat",
+        "batchesFailed": "Impossible de charger la liste.",
+        "saved_one": "Reprise démarrée avec {{count}} lien de groupe.",
+        "saved_other": "Reprise démarrée avec {{count}} liens de groupe.",
+        "window_one": "{{count}} jour : du {{from}} au {{to}}",
+        "window_other": "{{count}} jours : du {{from}} au {{to}}",
+        "errors": {
+            "batch": "Choisissez le groupe que l'élève reprend.",
+            "reason": "Ajoutez un motif.",
+            "linkBatch": "Choisissez un groupe.",
+            "sameBatch": "Choisissez un groupe différent de celui que l'élève reprend.",
+            "dates": "Choisissez le premier et le dernier jour.",
+            "endBeforeStart": "Le dernier jour doit être le même jour ou après le premier.",
+            "endInPast": "Le dernier jour ne peut pas être dans le passé.",
+            "returnInPast": "La date ne peut pas être dans le passé.",
+            "tooLong_one": "Un lien peut durer au plus {{count}} jour.",
+            "tooLong_other": "Un lien peut durer au plus {{count}} jours."
+        }
     }
 }

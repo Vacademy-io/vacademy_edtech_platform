@@ -1339,6 +1339,7 @@ export const JOURNEY_STATUS_FOR_LEARNER = (userId: string) => `${JOURNEY_STATUS_
 export const JOURNEY_STATUS_FOR_USERS = `${JOURNEY_STATUS_BASE}/for-users`;
 export const JOURNEY_STATUS_COUNTS = `${JOURNEY_STATUS_BASE}/counts`;
 export const JOURNEY_STATUS_SET = `${JOURNEY_STATUS_BASE}/set`;
+export const JOURNEY_STATUS_REENTRY = `${JOURNEY_STATUS_BASE}/reentry`;
 
 export const SYLLABUS_PROGRESS_BASE = `${BASE_URL}/admin-core-service/syllabus-progress/v1`;
 export const SYLLABUS_PROGRESS_BATCHES = `${SYLLABUS_PROGRESS_BASE}/batches`;

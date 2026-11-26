@@ -13,6 +13,7 @@ import {
     JOURNEY_STATUS_COUNTS,
     JOURNEY_STATUS_FOR_LEARNER,
     JOURNEY_STATUS_FOR_USERS,
+    JOURNEY_STATUS_REENTRY,
     JOURNEY_STATUS_SET,
     JOURNEY_STATUS_SETTINGS,
 } from '@/constants/urls';
@@ -50,6 +51,8 @@ export interface JourneyStatusSettings {
     status_on_pause: string | null;
     status_on_resume: string | null;
     auto_risk: JourneyAutoRisk;
+    /** A learner the re-entry flow put on Re-entry goes back to the default status after its date. */
+    reentry_auto_return: boolean;
     /** Not saved: true when the institute has ever saved this setting (on or off). */
     configured?: boolean;
 }
@@ -83,6 +86,7 @@ export const JOURNEY_STATUS_SETTINGS_DEFAULTS: JourneyStatusSettings = {
         fee_overdue_days: 15,
         auto_return: true,
     },
+    reentry_auto_return: true,
 };
 
 /** "Temporary Break" → "temporary_break" (the server normalises keys the same way). */
@@ -129,6 +133,7 @@ export const saveJourneyStatusSettings = async (data: JourneyStatusSettings): Pr
                 status_on_pause: data.status_on_pause,
                 status_on_resume: data.status_on_resume,
                 auto_risk: data.auto_risk,
+                reentry_auto_return: data.reentry_auto_return,
             },
         },
         { params: { instituteId, settingKey: JOURNEY_STATUS_SETTING_KEY } }
@@ -178,6 +183,10 @@ export interface JourneyEnrolment {
     since: string | null;
     source: string | null;
     updated_by_name: string | null;
+    /** A running pause covers this batch (Breaks and holds). */
+    on_pause?: boolean;
+    /** This row is a temporary extra-class link, not an enrolment of its own. */
+    extra_class?: boolean;
 }
 
 export interface JourneyHistoryEntry {
@@ -231,6 +240,49 @@ export const setJourneyStatus = async (
     body: SetJourneyStatusRequest
 ): Promise<{ updated: number }> => {
     const res = await authenticatedAxiosInstance.post(JOURNEY_STATUS_SET, body, {
+        params: { instituteId },
+    });
+    return res.data;
+};
+
+/** The first status of kind REENTRY: what the re-entry flow sets. */
+export const findReentryStatus = (settings: JourneyStatusSettings): JourneyStatusDef | undefined =>
+    settings.statuses.find((s) => s.kind === 'REENTRY');
+
+export interface ReentryLink {
+    package_session_id: string;
+    from: string;
+    to: string;
+}
+
+export interface StartReentryRequest {
+    user_id: string;
+    /** The enrolment the learner is coming back to. */
+    package_session_id: string;
+    reason: string;
+    /** Sit in another batch for a while to catch up. */
+    extra_class?: ReentryLink | null;
+    /** A short catch-up batch. */
+    bridge_course?: ReentryLink | null;
+    /** Back to the default status after this date. Default: the later last day of the two links. */
+    return_on?: string | null;
+    /** Resume a running pause on that batch in the same step (else the server refuses). */
+    resume_pause?: boolean;
+}
+
+export interface StartReentryResponse {
+    status_key: string;
+    return_on: string | null;
+    links: { kind: 'EXTRA_CLASS' | 'BRIDGE_COURSE'; access_id: string; batch: string | null }[];
+    resumed_pauses: number;
+}
+
+/** Re-entry in one step: status, extra class and bridge course. No fee, no message. */
+export const startReentry = async (
+    instituteId: string,
+    body: StartReentryRequest
+): Promise<StartReentryResponse> => {
+    const res = await authenticatedAxiosInstance.post(JOURNEY_STATUS_REENTRY, body, {
         params: { instituteId },
     });
     return res.data;

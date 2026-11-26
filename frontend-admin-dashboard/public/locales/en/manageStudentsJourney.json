@@ -14,7 +14,10 @@
         "byBreak": "Set by a pause",
         "history_one": "History ({{count}})",
         "history_other": "History ({{count}})",
-        "importedCase": "Imported case ({{status}})"
+        "importedCase": "Imported case ({{status}})",
+        "startReentry": "Start re-entry",
+        "byReentry": "Set by re-entry",
+        "byReentryReturn": "Back after re-entry"
     },
     "dialog": {
         "title": "Change journey status",
@@ -36,5 +39,51 @@
         "saved_one": "{{count}} status changed.",
         "saved_other": "{{count}} statuses changed.",
         "failed": "Could not change the status."
+    },
+    "reentry": {
+        "title": "Start re-entry",
+        "titleFor": "Start re-entry: {{name}}",
+        "intro": "For a learner coming back after a long break: the batch moves to Re-entry, with an extra class or a bridge course to catch up, all in one step.",
+        "batch": "{{batch}} the learner is coming back to",
+        "onPause": "This batch has a running pause. Resume it first, or resume it in the same step.",
+        "resumePause": "Resume the pause now (the institute's usual resume choice applies)",
+        "reasonPlaceholder": "Why the learner is re-entering (shown in the history)",
+        "extra": {
+            "title": "Add extra class",
+            "hint": "Sit in another {{batch}} for a while to catch up."
+        },
+        "bridge": {
+            "title": "Add bridge course",
+            "hint": "A short catch-up {{batch}} before going back."
+        },
+        "from": "First day",
+        "to": "Last day",
+        "returnOn": "Return to {{status}} after",
+        "returnHint": "Moves back to {{status}} automatically the morning after {{date}}.",
+        "returnHintManual": "Saved as the next action date. Automatic return is off in Settings → Journey status.",
+        "returnNone": "No date: the learner stays on Re-entry until you change it.",
+        "noFeeNoMessage": "No fee is charged and no message is sent.",
+        "submit": "Start re-entry",
+        "failed": "Could not start the re-entry.",
+        "batchPlaceholder": "Choose a {{batch}}",
+        "batchSearch": "Search",
+        "batchEmpty": "No match",
+        "batchesFailed": "Could not load the list.",
+        "saved_one": "Re-entry started with {{count}} batch link.",
+        "saved_other": "Re-entry started with {{count}} batch links.",
+        "window_one": "{{count}} day: {{from}} to {{to}}",
+        "window_other": "{{count}} days: {{from}} to {{to}}",
+        "errors": {
+            "batch": "Choose the batch the learner is coming back to.",
+            "reason": "Add a reason.",
+            "linkBatch": "Choose a batch.",
+            "sameBatch": "Choose a different batch from the one the learner is coming back to.",
+            "dates": "Choose the first and the last day.",
+            "endBeforeStart": "The last day must be on or after the first day.",
+            "endInPast": "The last day cannot be in the past.",
+            "returnInPast": "The date cannot be in the past.",
+            "tooLong_one": "A link can last at most {{count}} day.",
+            "tooLong_other": "A link can last at most {{count}} days."
+        }
     }
 }

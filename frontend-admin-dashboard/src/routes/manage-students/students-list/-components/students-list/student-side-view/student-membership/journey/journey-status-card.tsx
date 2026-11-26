@@ -6,12 +6,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { JourneyStatusBadge } from '@/components/shared/journey-status-badge';
 import {
     findJourneyStatus,
+    findReentryStatus,
     useJourneyStatusSettings,
     useLearnerJourney,
     type JourneyEnrolment,
 } from '@/services/journey-status';
 import { formatDay, formatInstant } from '../breaks/break-utils';
 import { ChangeJourneyStatusDialog } from './change-journey-status-dialog';
+import { StartReentryDialog } from './start-reentry-dialog';
 
 interface JourneyStatusCardProps {
     userId: string;
@@ -32,10 +34,14 @@ export const JourneyStatusCard = ({ userId, instituteId, learnerName }: JourneyS
         null
     );
     const [showHistory, setShowHistory] = useState(false);
+    /** Open re-entry form: the batch it starts on (null = let staff choose). */
+    const [reentryFor, setReentryFor] = useState<{ batch: string | null } | null>(null);
 
     if (!userId || !enabled) return null;
 
     const enrolments = data?.enrolments ?? [];
+    const reentryStatus = findReentryStatus(settings);
+    const canReentry = Boolean(reentryStatus) && enrolments.some((e) => !e.extra_class);
     const history = data?.history ?? [];
     const batchLabel = (psId: string | null) =>
         enrolments.find((e) => e.package_session_id === psId)?.course_label ?? null;
@@ -46,6 +52,8 @@ export const JourneyStatusCard = ({ userId, instituteId, learnerName }: JourneyS
         if (e.next_action_date) parts.push(t('card.nextAction', { date: formatDay(e.next_action_date) }));
         if (e.source === 'AUTO_RISK') parts.push(t('card.byRiskCheck'));
         if (e.source === 'BREAK') parts.push(t('card.byBreak'));
+        if (e.source === 'REENTRY') parts.push(t('card.byReentry'));
+        if (e.source === 'AUTO_RETURN') parts.push(t('card.byReentryReturn'));
         return parts.join(' · ');
     };
 
@@ -70,14 +78,26 @@ export const JourneyStatusCard = ({ userId, instituteId, learnerName }: JourneyS
                     </div>
                 </div>
                 {!isLoading && !isError && enrolments.length > 0 && (
-                    <MyButton
-                        type="button"
-                        buttonType="secondary"
-                        scale="small"
-                        onClick={() => setChangeFor({ batch: null, status: null })}
-                    >
-                        {t('card.change')}
-                    </MyButton>
+                    <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                        {canReentry && (
+                            <MyButton
+                                type="button"
+                                buttonType="text"
+                                scale="small"
+                                onClick={() => setReentryFor({ batch: null })}
+                            >
+                                {t('card.startReentry')}
+                            </MyButton>
+                        )}
+                        <MyButton
+                            type="button"
+                            buttonType="secondary"
+                            scale="small"
+                            onClick={() => setChangeFor({ batch: null, status: null })}
+                        >
+                            {t('card.change')}
+                        </MyButton>
+                    </div>
                 )}
             </div>
 
@@ -212,6 +232,26 @@ export const JourneyStatusCard = ({ userId, instituteId, learnerName }: JourneyS
                     heading={
                         learnerName ? t('dialog.titleFor', { name: learnerName }) : undefined
                     }
+                    onReentry={
+                        canReentry
+                            ? (batch) => {
+                                  setChangeFor(null);
+                                  setReentryFor({ batch });
+                              }
+                            : undefined
+                    }
+                />
+            )}
+
+            {reentryFor && (
+                <StartReentryDialog
+                    onClose={() => setReentryFor(null)}
+                    userId={userId}
+                    instituteId={instituteId}
+                    settings={settings}
+                    enrolments={enrolments}
+                    initialBatch={reentryFor.batch}
+                    learnerName={learnerName}
                 />
             )}
         </section>

@@ -22,7 +22,8 @@ import java.util.Set;
  *   "status_on_pause": "temporary_break",  // set when a pause starts (Breaks and holds)
  *   "status_on_resume": "learning",        // set when the pause ends, if the learner is still on a break status
  *   "auto_risk": { "enabled": true, "status": "at_risk", "missed_classes": 3,
- *                  "fee_overdue_days": 15, "auto_return": true } }
+ *                  "fee_overdue_days": 15, "auto_return": true },
+ *   "reentry_auto_return": true }          // a Re-entry learner goes back to the default status after its date
  * </pre>
  */
 public record JourneyStatusConfig(
@@ -31,7 +32,8 @@ public record JourneyStatusConfig(
         String defaultStatus,
         String statusOnPause,
         String statusOnResume,
-        AutoRisk autoRisk) {
+        AutoRisk autoRisk,
+        boolean reentryAutoReturn) {
 
     public static final String SETTING_KEY = "JOURNEY_STATUS_SETTING";
     public static final Set<String> KINDS = Set.of("ACTIVE", "BREAK", "RISK", "STOPPED", "REENTRY");
@@ -96,7 +98,8 @@ public record JourneyStatusConfig(
                 rMissing || !r.has("fee_overdue_days") ? 15 : clamp(r.path("fee_overdue_days").asInt(15), 0, 365),
                 rMissing || r.path("auto_return").asBoolean(true));
         return new JourneyStatusConfig(!missing && data.path("enabled").asBoolean(false), List.copyOf(statuses),
-                defaultStatus, onPause, onResume, risk);
+                defaultStatus, onPause, onResume, risk,
+                missing || !data.has("reentry_auto_return") || data.path("reentry_auto_return").asBoolean(true));
     }
 
     public Status status(String key) {
@@ -110,6 +113,11 @@ public record JourneyStatusConfig(
         Status s = status(key == null ? defaultStatus : key);
         if (s == null) s = status(defaultStatus);
         return s == null ? "ACTIVE" : s.kind();
+    }
+
+    /** The first status of kind REENTRY (what the re-entry flow sets), or null when there is none. */
+    public String reentryStatus() {
+        return firstOfKind(statuses, "REENTRY");
     }
 
     public String labelOf(String key) {
@@ -150,6 +158,7 @@ public record JourneyStatusConfig(
         r.put("fee_overdue_days", autoRisk.feeOverdueDays());
         r.put("auto_return", autoRisk.autoReturn());
         m.put("auto_risk", r);
+        m.put("reentry_auto_return", reentryAutoReturn);
         return m;
     }
 

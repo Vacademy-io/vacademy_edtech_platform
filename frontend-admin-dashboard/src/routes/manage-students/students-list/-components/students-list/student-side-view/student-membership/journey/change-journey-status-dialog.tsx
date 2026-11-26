@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -44,6 +44,11 @@ interface ChangeJourneyStatusDialogProps {
     /** Bulk: only these batches (the list's batch filter); empty = every current batch. */
     scopePackageSessionIds?: string[];
     heading?: string;
+    /**
+     * Side view: choosing a status of kind REENTRY hands over to the re-entry form (status, extra
+     * class, bridge course in one step) instead of a plain status change.
+     */
+    onReentry?: (batch: string | null) => void;
 }
 
 const schema = z.object({
@@ -66,6 +71,7 @@ export const ChangeJourneyStatusDialog = ({
     initialStatus,
     scopePackageSessionIds,
     heading,
+    onReentry,
 }: ChangeJourneyStatusDialogProps) => {
     const { t } = useTranslation('manageStudentsJourney');
     const queryClient = useQueryClient();
@@ -78,6 +84,15 @@ export const ChangeJourneyStatusDialog = ({
             nextActionDate: '',
         },
     });
+
+    const chosenStatus = form.watch('status');
+    const chosenKind = settings.statuses.find((s) => s.key === chosenStatus)?.kind;
+    useEffect(() => {
+        if (onReentry && chosenKind === 'REENTRY' && chosenStatus !== initialStatus) {
+            const b = form.getValues('batch');
+            onReentry(b === ALL ? null : b);
+        }
+    }, [onReentry, chosenKind, chosenStatus, initialStatus, form]);
 
     const statusOptions = useMemo(
         () => settings.statuses.map((s, i) => ({ _id: i, value: s.key, label: s.label })),

@@ -52,5 +52,11 @@
     "save": "Enregistrer",
     "saving": "Enregistrement…",
     "saved": "Paramètre de statut de parcours enregistré.",
-    "saveFailed": "Impossible d'enregistrer le paramètre."
+    "saveFailed": "Impossible d'enregistrer le paramètre.",
+    "reentry": {
+        "title": "Reprise",
+        "hint": "Démarrez une reprise depuis le profil de l'élève : le groupe passe au statut Reprise, avec un cours supplémentaire ou un cours passerelle pour rattraper.",
+        "autoReturn": "Repasser à {{status}} après la date de reprise",
+        "noStatus": "Ajoutez un statut de type Reprise pour utiliser le formulaire de reprise."
+    }
 }

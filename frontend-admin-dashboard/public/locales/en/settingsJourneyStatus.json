@@ -52,5 +52,11 @@
     "save": "Save",
     "saving": "Saving…",
     "saved": "Journey status setting saved.",
-    "saveFailed": "Could not save the setting."
+    "saveFailed": "Could not save the setting.",
+    "reentry": {
+        "title": "Re-entry",
+        "hint": "Start re-entry from the learner's profile: the batch moves to the Re-entry status, with an extra class or a bridge course to catch up.",
+        "autoReturn": "Move back to {{status}} after the re-entry date",
+        "noStatus": "Add a status of kind Re-entry to use the re-entry form."
+    }
 }

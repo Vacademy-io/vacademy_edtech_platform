@@ -5,9 +5,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import vacademy.io.admin_core_service.features.enrolment_break.service.EnrolmentBreakGuard;
+
+import java.time.LocalDate;
+import java.time.ZoneId;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,12 +41,17 @@ import java.util.Set;
  * the check itself marked At Risk goes back to the default status once neither rule holds (they
  * attended the latest class, the fee was paid). A status staff set by hand is never changed.
  * Nothing is sent: no message, no workflow event.
+ *
+ * <p>The same daily pass ends re-entries ({@link #returnReentries}): with {@code reentry_auto_return}
+ * on (default), a learner the re-entry flow put on a Re-entry status goes back to the default status
+ * once the re-entry date (next action date) is over.
  */
 @Slf4j
 @Service
 public class JourneyRiskService {
 
     static final String ACTOR = "At Risk check";
+    static final String REENTRY_ACTOR = "Re-entry check";
     private static final ObjectMapper MAPPER = new ObjectMapper();
     /** How far back classes are looked at: far enough for N weekly classes plus breaks. */
     static final int CLASS_LOOKBACK_DAYS = 120;
@@ -55,8 +66,12 @@ public class JourneyRiskService {
     @Autowired private JdbcTemplate jdbc;
     @Autowired private JourneyStatusService statusService;
     @Autowired private PlatformTransactionManager transactionManager;
+    @Autowired(required = false) private EnrolmentBreakGuard guard;
 
-    /** Institutes with the setting on and the check on. One query; others are never touched. */
+    /**
+     * Institutes with the setting on and the At Risk check or the re-entry return on. One query;
+     * others are never touched.
+     */
     List<String> institutes() {
         List<String> out = new ArrayList<>();
         jdbc.query("SELECT id, setting_json FROM institutes WHERE setting_json LIKE '%" + JourneyStatusConfig.SETTING_KEY + "%'",
@@ -65,7 +80,7 @@ public class JourneyRiskService {
                         JsonNode data = MAPPER.readTree(rs.getString("setting_json"))
                                 .path("setting").path(JourneyStatusConfig.SETTING_KEY).path("data");
                         JourneyStatusConfig c = JourneyStatusConfig.from(data);
-                        if (c.enabled() && c.autoRisk().enabled()) out.add(rs.getString("id"));
+                        if (c.enabled() && (c.autoRisk().enabled() || c.reentryAutoReturn())) out.add(rs.getString("id"));
                     } catch (Exception e) {
                         log.warn("[journey-status] unreadable setting for institute {}: {}", rs.getString("id"), e.getMessage());
                     }
@@ -84,6 +99,11 @@ public class JourneyRiskService {
                 returned += r[1];
             } catch (Exception e) {
                 log.error("[journey-status] At Risk check failed for institute {}: {}", instituteId, e.getMessage(), e);
+            }
+            try {
+                returned += returnReentries(instituteId);
+            } catch (Exception e) {
+                log.error("[journey-status] re-entry return failed for institute {}: {}", instituteId, e.getMessage(), e);
             }
         }
         return new int[]{marked, returned};
@@ -150,6 +170,50 @@ public class JourneyRiskService {
             log.info("[journey-status] institute {}: {} marked at risk, {} back to {}", instituteId, marked, returned, cfg.defaultStatus());
         }
         return new int[]{marked, returned};
+    }
+
+    /**
+     * Learners the re-entry flow put on a Re-entry status (source REENTRY: a later change by hand
+     * takes it out of this rule) whose re-entry date is before today in the institute's time zone go
+     * back to the default status. Learners on a running break are left alone. Returns how many moved.
+     */
+    public int returnReentries(String instituteId) {
+        JourneyStatusConfig cfg = statusService.config(instituteId);
+        if (!cfg.enabled() || !cfg.reentryAutoReturn() || cfg.status(cfg.defaultStatus()) == null) return 0;
+        List<String> reentryKeys = cfg.statuses().stream().filter(st -> "REENTRY".equals(st.kind()))
+                .map(JourneyStatusConfig.Status::key).toList();
+        if (reentryKeys.isEmpty()) return 0;
+        LocalDate today = LocalDate.now(guard != null ? guard.zone(instituteId) : ZoneId.of("Asia/Kolkata"));
+        List<Map<String, Object>> due = new NamedParameterJdbcTemplate(jdbc).queryForList("""
+                SELECT user_id, package_session_id, next_action_date
+                  FROM learner_journey_status
+                 WHERE institute_id = :institute AND source = :source
+                   AND status_key IN (:keys)
+                   AND next_action_date IS NOT NULL AND next_action_date < :today
+                """, new MapSqlParameterSource("institute", instituteId)
+                .addValue("source", JourneyStatusService.SOURCE_REENTRY)
+                .addValue("keys", reentryKeys)
+                .addValue("today", java.sql.Date.valueOf(today)));
+        if (due.isEmpty()) return 0;
+        Set<String> onBreak = onBreak(instituteId);
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        int returned = 0;
+        for (Map<String, Object> r : due) {
+            String userId = (String) r.get("user_id"), psId = (String) r.get("package_session_id");
+            if (onBreak.contains(userId + "|" + psId) || onBreak.contains(userId + "|")) continue;
+            String why = "Re-entry over (" + r.get("next_action_date") + ")";
+            try {
+                Boolean ok = tx.execute(s -> statusService.apply(instituteId, cfg, userId, psId, cfg.defaultStatus(), why, null,
+                        JourneyStatusService.SOURCE_AUTO_RETURN, null, REENTRY_ACTOR, null, true));
+                if (Boolean.TRUE.equals(ok)) returned++;
+            } catch (Exception e) {
+                log.warn("[journey-status] could not end re-entry {}|{} in institute {}: {}", userId, psId, instituteId, e.getMessage());
+            }
+        }
+        if (returned > 0) {
+            log.info("[journey-status] institute {}: {} re-entries back to {}", instituteId, returned, cfg.defaultStatus());
+        }
+        return returned;
     }
 
     /** "Missed last 3 classes" / "Fee overdue 17 days" / both; null when neither rule holds. */

@@ -19,6 +19,7 @@ import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
 import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import vacademy.io.admin_core_service.features.journey_status.service.JourneyRiskService;
 import vacademy.io.admin_core_service.features.journey_status.service.JourneyStatusService;
+import vacademy.io.admin_core_service.features.journey_status.service.ReentryService;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
 
@@ -42,6 +43,7 @@ public class JourneyStatusController {
 
     private final JourneyStatusService service;
     private final JourneyRiskService riskService;
+    private final ReentryService reentryService;
     private final InstituteAccessValidator instituteAccessValidator;
     private final LockProvider lockProvider;
 
@@ -122,6 +124,44 @@ public class JourneyStatusController {
     }
 
     /**
+     * Starts a re-entry for one learner-in-batch: Re-entry status (next action = the return date),
+     * plus an optional extra class and bridge course, in one transaction. No fee, no message. A
+     * running pause on the batch is refused unless resume_pause is true (then it is resumed first,
+     * with the institute's default resume choice).
+     */
+    @PostMapping("/reentry")
+    @Auditable(entityType = "LEARNER", action = "UPDATE", entityIdExpr = "#req?.userId",
+            descriptionExpr = "'started re-entry for learner ' + #req?.userId")
+    public ResponseEntity<Map<String, Object>> reentry(@RequestParam("instituteId") String instituteId,
+                                                       @RequestBody ReentryRequest req,
+                                                       @RequestAttribute("user") CustomUserDetails user) {
+        instituteAccessValidator.requireInstituteStaffOrSuperAdmin(user, instituteId);
+        if (req == null) throw new VacademyException("Choose the learner and the batch");
+        ReentryService.Request r = new ReentryService.Request(req.getUserId(), req.getPackageSessionId(), req.getReason(),
+                link(req.getExtraClass(), "extra class"), link(req.getBridgeCourse(), "bridge course"),
+                date(req.getReturnOn(), "Return date"), Boolean.TRUE.equals(req.getResumePause()));
+        return ResponseEntity.ok(reentryService.start(instituteId, r, user));
+    }
+
+    private static ReentryService.Link link(LinkRequest l, String what) {
+        if (l == null || ((l.getPackageSessionId() == null || l.getPackageSessionId().isBlank())
+                && l.getFrom() == null && l.getTo() == null)) return null;
+        return new ReentryService.Link(l.getPackageSessionId(), date(l.getFrom(), "The " + what + "'s first day"),
+                date(l.getTo(), "The " + what + "'s last day"));
+    }
+
+    /** "2026-12-01" (or a longer ISO string starting with a date) → LocalDate; blank → null. */
+    static LocalDate date(String v, String what) {
+        if (v == null || v.isBlank()) return null;
+        String t = v.trim();
+        try {
+            return LocalDate.parse(t.substring(0, Math.min(10, t.length())));
+        } catch (Exception e) {
+            throw new VacademyException(what + " must be a date (YYYY-MM-DD)");
+        }
+    }
+
+    /**
      * Runs the At Risk check for this institute now (the daily job does the same). Sends nothing.
      * Institute admins (or a platform super admin) only. Takes the daily job's ShedLock, so it
      * never runs alongside the job or another manual run.
@@ -144,6 +184,24 @@ public class JourneyStatusController {
         } finally {
             lock.get().unlock();
         }
+    }
+
+    @Data
+    public static class LinkRequest {
+        @JsonProperty("package_session_id") private String packageSessionId;
+        @JsonProperty("from") private String from;
+        @JsonProperty("to") private String to;
+    }
+
+    @Data
+    public static class ReentryRequest {
+        @JsonProperty("user_id") private String userId;
+        @JsonProperty("package_session_id") private String packageSessionId;
+        @JsonProperty("reason") private String reason;
+        @JsonProperty("extra_class") private LinkRequest extraClass;
+        @JsonProperty("bridge_course") private LinkRequest bridgeCourse;
+        @JsonProperty("return_on") private String returnOn;
+        @JsonProperty("resume_pause") private Boolean resumePause;
     }
 
     @Data

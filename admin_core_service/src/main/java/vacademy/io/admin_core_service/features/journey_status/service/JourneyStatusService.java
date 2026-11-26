@@ -47,6 +47,10 @@ public class JourneyStatusService {
     public static final String SOURCE_AUTO_RISK = "AUTO_RISK";
     public static final String SOURCE_BREAK = "BREAK";
     public static final String SOURCE_IMPORT = "IMPORT";
+    /** Set by the re-entry flow (staff, with extra classes / a bridge course). */
+    public static final String SOURCE_REENTRY = "REENTRY";
+    /** The daily job moved a Re-entry learner back to the default status after the re-entry date. */
+    public static final String SOURCE_AUTO_RETURN = "AUTO_RETURN";
     public static final int MAX_BULK = 2000;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -102,7 +106,12 @@ public class JourneyStatusService {
                 SELECT DISTINCT ON (m.package_session_id)
                        m.package_session_id, m.status AS access_status,
                        p.package_name, l.level_name, s.session_name,
-                       j.status_key, j.reason, j.next_action_date, j.since, j.source, j.updated_by_name, j.updated_at
+                       j.status_key, j.reason, j.next_action_date, j.since, j.source, j.updated_by_name, j.updated_at,
+                       EXISTS (SELECT 1 FROM enrolment_break b
+                                WHERE b.institute_id = m.institute_id AND b.user_id = m.user_id
+                                  AND b.kind = 'PAUSE' AND b.status = 'ACTIVE'
+                                  AND (b.package_session_id IS NULL OR b.package_session_id = m.package_session_id)) AS on_pause,
+                       (m.source = 'EXTRA_CLASS') AS extra_class
                   FROM student_session_institute_group_mapping m
                   JOIN package_session ps ON ps.id = m.package_session_id
                   LEFT JOIN package p ON p.id = ps.package_id
@@ -129,6 +138,8 @@ public class JourneyStatusService {
             e.put("since", iso(r.get("since")));
             e.put("source", r.get("source"));
             e.put("updated_by_name", r.get("updated_by_name"));
+            e.put("on_pause", Boolean.TRUE.equals(r.get("on_pause")));
+            e.put("extra_class", Boolean.TRUE.equals(r.get("extra_class")));
             enrolments.add(e);
         }
         Map<String, Object> out = new LinkedHashMap<>();
@@ -330,15 +341,30 @@ public class JourneyStatusService {
     public boolean apply(String instituteId, JourneyStatusConfig cfg, String userId, String packageSessionId, String toKey,
                          String reason, LocalDate nextActionDate, String source, String actorId, String actorName,
                          Timestamp since, boolean logTimeline) {
+        return apply(instituteId, cfg, userId, packageSessionId, toKey, reason, nextActionDate, source, actorId, actorName,
+                since, logTimeline, null, null);
+    }
+
+    /**
+     * As {@link #apply(String, JourneyStatusConfig, String, String, String, String, LocalDate, String, String, String,
+     * Timestamp, boolean)}, with more fields for the timeline event's metadata and more description
+     * lines (the re-entry flow lists the batches it linked). With extra metadata the change is
+     * always recorded, even when the status itself is unchanged.
+     */
+    public boolean apply(String instituteId, JourneyStatusConfig cfg, String userId, String packageSessionId, String toKey,
+                         String reason, LocalDate nextActionDate, String source, String actorId, String actorName,
+                         Timestamp since, boolean logTimeline, Map<String, Object> extraMeta, List<String> extraLines) {
         Map<String, Object> current = current(instituteId, userId, packageSessionId);
         String fromKey = current == null ? cfg.defaultStatus() : (String) current.get("status_key");
-        if (current != null && toKey.equals(fromKey)
+        boolean forced = extraMeta != null && !extraMeta.isEmpty();
+        if (!forced && current != null && toKey.equals(fromKey)
                 && eq(reason, (String) current.get("reason"))
                 && eq(nextActionDate == null ? null : nextActionDate.toString(),
                 current.get("next_action_date") == null ? null : current.get("next_action_date").toString())) {
             return false;
         }
-        if (current == null && toKey.equals(fromKey) && reason == null && nextActionDate == null && !SOURCE_IMPORT.equals(source)) {
+        if (!forced && current == null && toKey.equals(fromKey) && reason == null && nextActionDate == null
+                && !SOURCE_IMPORT.equals(source)) {
             return false; // already on the default status, nothing to record
         }
         Timestamp when = since != null ? since : new Timestamp(System.currentTimeMillis());
@@ -361,7 +387,8 @@ public class JourneyStatusService {
                 nextActionDate == null ? null : Date.valueOf(nextActionDate), when, actorId, actorName, source);
         if (written == 0) return false;
         if (logTimeline) {
-            timeline(instituteId, cfg, userId, packageSessionId, fromKey, toKey, reason, nextActionDate, source, actorId, actorName);
+            timeline(instituteId, cfg, userId, packageSessionId, fromKey, toKey, reason, nextActionDate, source, actorId, actorName,
+                    extraMeta, extraLines);
         }
         return true;
     }
@@ -378,7 +405,7 @@ public class JourneyStatusService {
 
     private void timeline(String instituteId, JourneyStatusConfig cfg, String userId, String packageSessionId,
                           String fromKey, String toKey, String reason, LocalDate nextActionDate, String source,
-                          String actorId, String actorName) {
+                          String actorId, String actorName, Map<String, Object> extraMeta, List<String> extraLines) {
         String course = courseLabel(packageSessionId);
         String from = cfg.labelOf(fromKey), to = cfg.labelOf(toKey);
         String title = "Journey status: " + (from != null && !from.equals(to) ? from + " → " : "") + to
@@ -386,6 +413,7 @@ public class JourneyStatusService {
         List<String> lines = new ArrayList<>();
         if (reason != null) lines.add("Reason: " + reason);
         if (nextActionDate != null) lines.add("Next action: " + nextActionDate);
+        if (extraLines != null) lines.addAll(extraLines);
         Map<String, Object> meta = new LinkedHashMap<>();
         meta.put("from_status", from);
         meta.put("to_status", to);
@@ -396,13 +424,15 @@ public class JourneyStatusService {
         meta.put("package_session_id", packageSessionId);
         meta.put("course", course);
         meta.put("source", source.toLowerCase(java.util.Locale.ROOT));
+        if (extraMeta != null) extraMeta.forEach(meta::putIfAbsent);
         String json;
         try {
             json = MAPPER.writeValueAsString(meta);
         } catch (Exception e) {
             json = null;
         }
-        boolean staff = SOURCE_MANUAL.equals(source) || (SOURCE_BREAK.equals(source) && actorId != null);
+        boolean staff = SOURCE_MANUAL.equals(source) || SOURCE_REENTRY.equals(source)
+                || (SOURCE_BREAK.equals(source) && actorId != null);
         jdbc.update("""
                 INSERT INTO timeline_event (id, type, type_id, action_type, actor_type, actor_id, actor_name, title, description,
                                             metadata_json, created_at, is_pinned, student_user_id, category, institute_id)

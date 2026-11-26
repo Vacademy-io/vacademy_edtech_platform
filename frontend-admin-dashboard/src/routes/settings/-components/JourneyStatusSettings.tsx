@@ -424,6 +424,40 @@ export default function JourneyStatusSettings() {
                                 </div>
                             </section>
 
+                            {/* Re-entry */}
+                            <section className="space-y-3" aria-labelledby="journey-reentry-title">
+                                <div>
+                                    <h3
+                                        id="journey-reentry-title"
+                                        className="text-subtitle font-semibold text-neutral-800"
+                                    >
+                                        {t('reentry.title')}
+                                    </h3>
+                                    <p className="text-caption text-neutral-500">{t('reentry.hint')}</p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <Switch
+                                        id="journey-reentry-return"
+                                        checked={settings.reentry_auto_return}
+                                        onCheckedChange={(v) => update({ reentry_auto_return: v })}
+                                        disabled={off}
+                                    />
+                                    <Label htmlFor="journey-reentry-return" className="cursor-pointer">
+                                        {t('reentry.autoReturn', {
+                                            status:
+                                                settings.statuses.find(
+                                                    (s) => s.key === settings.default_status
+                                                )?.label ?? settings.default_status,
+                                        })}
+                                    </Label>
+                                </div>
+                                {!settings.statuses.some((s) => s.kind === 'REENTRY') && (
+                                    <p className="text-caption text-warning-700">
+                                        {t('reentry.noStatus')}
+                                    </p>
+                                )}
+                            </section>
+
                             {/* At Risk check */}
                             <section className="space-y-4" aria-labelledby="journey-risk-title">
                                 <div>
