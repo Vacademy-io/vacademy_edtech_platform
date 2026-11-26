@@ -16,6 +16,10 @@
         "title": "No batch has a syllabus yet",
         "body": "A batch shows up here once its course stage has a syllabus of week blocks. Ask your admin to add one to the stage."
     },
+    "noAssigned": {
+        "title": "No batches assigned to you",
+        "body": "No batches are assigned to you yet. Ask your admin to assign you to a batch."
+    },
     "picker": {
         "label": "Batch",
         "placeholder": "Choose a batch",
@@ -26,6 +30,30 @@
         "summary": "{{learners}} learners · {{blocks}} week blocks",
         "promptTitle": "Choose a batch",
         "promptBody": "Pick a batch above to see each learner’s progress, week block by week block."
+    },
+    "search": {
+        "label": "Student",
+        "placeholder": "Search a student by name",
+        "minChars": "Type at least 2 letters.",
+        "failed": "Could not search students.",
+        "empty": "No student matches “{{q}}”.",
+        "results": "Matching students",
+        "noName": "Unnamed student",
+        "batchLine": "{{course}} · {{stage}} · {{batch}} — {{done}}/{{total}} done",
+        "batchName": "{{course}} · {{stage}} · {{batch}}"
+    },
+    "learner": {
+        "back": "Back",
+        "loadFailed": "Could not load this student’s progress",
+        "loadFailedHint": "Check your connection and try again.",
+        "noCoursesTitle": "No batch with a syllabus",
+        "noCoursesBody": "This student is not in a batch whose course stage has a syllabus.",
+        "openBatch": "Open batch",
+        "summary": "{{done}} of {{total}} week blocks done",
+        "current": "Current",
+        "markHint": "Tap a week block to mark it.",
+        "notYoursTitle": "Not in your batches",
+        "notYoursBody": "This student is not in your batches. Ask your admin if you need to mark their progress."
     },
     "batch": {
         "loadFailed": "Could not load this batch",

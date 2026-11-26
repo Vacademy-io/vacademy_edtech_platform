@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vacademy.io.common.exceptions.ForbiddenException;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.sql.Date;
@@ -41,9 +42,10 @@ public class SyllabusProgressService {
         }
     }
 
-    /** Batches of this institute whose course stage has a syllabus, with their learner counts. */
-    public List<Map<String, Object>> batches(String instituteId) {
-        return jdbc.queryForList("""
+    /** Batches of this institute whose course stage has a syllabus and are in scope, with their learner counts. */
+    public List<Map<String, Object>> batches(String instituteId, SyllabusScope scope) {
+        if (!scope.all() && scope.batches().isEmpty()) return List.of();
+        return scope.filter(jdbc.queryForList("""
                 SELECT ps.id AS package_session_id, p.package_name AS course_name, l.level_name, s.session_name AS batch_name,
                        (SELECT COUNT(*) FROM student_session_institute_group_mapping m
                          WHERE m.package_session_id = ps.id AND m.institute_id = ? AND m.status = 'ACTIVE') AS learners,
@@ -58,7 +60,14 @@ public class SyllabusProgressService {
                    AND EXISTS (SELECT 1 FROM syllabus_block b WHERE b.package_id = ps.package_id AND b.level_id = ps.level_id
                                   AND b.status = 'ACTIVE')
                  ORDER BY p.package_name, l.level_name, s.session_name
-                """, instituteId, instituteId);
+                """, instituteId, instituteId));
+    }
+
+    /** Refuses a batch the caller may not see (a teacher's batch list is only the batches they teach). */
+    public static void requireInScope(SyllabusScope scope, String packageSessionId) {
+        if (!scope.allows(packageSessionId)) {
+            throw new ForbiddenException("This batch is not assigned to you. Ask your admin to assign you to it.");
+        }
     }
 
     /** One batch: its syllabus, its current learners and their progress cells. */
@@ -154,60 +163,189 @@ public class SyllabusProgressService {
     public Map<String, Object> mine(String instituteId, String userId) {
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("enabled", isEnabled(instituteId));
-        List<Map<String, Object>> courses = new ArrayList<>();
-        if (Boolean.TRUE.equals(out.get("enabled"))) {
-            List<Map<String, Object>> batches = jdbc.queryForList("""
-                    SELECT DISTINCT ps.id AS package_session_id, ps.package_id, ps.level_id, p.package_name AS course_name,
-                           l.level_name, s.session_name AS batch_name
-                      FROM student_session_institute_group_mapping m
-                      JOIN package_session ps ON ps.id = m.package_session_id
-                      JOIN package p ON p.id = ps.package_id
-                      JOIN level l ON l.id = ps.level_id
-                      JOIN session s ON s.id = ps.session_id
-                     WHERE m.user_id = ? AND m.institute_id = ? AND m.status = 'ACTIVE'
-                       AND EXISTS (SELECT 1 FROM syllabus_block b WHERE b.package_id = ps.package_id AND b.level_id = ps.level_id
-                                      AND b.status = 'ACTIVE')
-                    """, userId, instituteId);
-            for (Map<String, Object> b : batches) {
-                String psId = (String) b.get("package_session_id");
-                List<Map<String, Object>> blocks = blocks((String) b.get("package_id"), (String) b.get("level_id"));
-                Map<String, Map<String, Object>> cells = new HashMap<>();
-                for (Map<String, Object> r : jdbc.queryForList("""
-                        SELECT block_id, status, started_on, completed_on, points_done, teacher_note, marked_by_name, updated_at
-                          FROM learner_syllabus_progress WHERE user_id = ? AND package_session_id = ?
-                        """, userId, psId)) {
-                    cells.put((String) r.get("block_id"), cell(r));
-                }
-                int completed = 0;
-                String current = null;
-                for (Map<String, Object> blk : blocks) {
-                    Map<String, Object> c = cells.get(blk.get("id"));
-                    String st = c == null ? "NOT_STARTED" : (String) c.get("status");
-                    blk.put("status", st);
-                    blk.put("completed_on", c == null ? null : c.get("completed_on"));
-                    blk.put("points_done", c == null ? List.of() : c.get("points_done"));
-                    blk.put("teacher_note", c == null ? null : c.get("teacher_note"));
-                    blk.put("marked_by_name", c == null ? null : c.get("marked_by_name"));
-                    blk.put("updated_at", c == null ? null : c.get("updated_at"));
-                    if ("COMPLETED".equals(st) || "SKIPPED".equals(st)) completed++;
-                    else if (current == null) current = (String) blk.get("id");
-                }
-                Map<String, Object> course = new LinkedHashMap<>();
-                course.put("package_session_id", psId);
-                course.put("course_name", b.get("course_name"));
-                course.put("level_name", b.get("level_name"));
-                course.put("level_id", b.get("level_id"));
-                course.put("levels", courseLevels((String) b.get("package_id")));
-                course.put("batch_name", b.get("batch_name"));
-                course.put("total_blocks", blocks.size());
-                course.put("completed_blocks", completed);
-                course.put("current_block_id", current);
-                course.put("blocks", blocks);
-                courses.add(course);
-            }
+        out.put("courses", Boolean.TRUE.equals(out.get("enabled")) ? courses(instituteId, userId, null) : List.of());
+        return out;
+    }
+
+    /**
+     * One learner's progress for staff: same shape as {@link #mine}, limited to the batches in
+     * {@code scope}. A teacher asking about a learner in none of their batches is refused.
+     */
+    public Map<String, Object> learner(String instituteId, String userId, SyllabusScope scope) {
+        List<Map<String, Object>> courses = courses(instituteId, userId, scope);
+        if (courses.isEmpty() && !scope.all()) {
+            throw new ForbiddenException("This learner is not in any of your batches");
         }
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("user_id", userId);
+        List<Map<String, Object>> who = jdbc.queryForList("""
+                SELECT COALESCE(st.full_name, '') AS full_name, m.institute_enrollment_number AS enrollment_number
+                  FROM student_session_institute_group_mapping m
+                  LEFT JOIN LATERAL (SELECT full_name FROM student WHERE user_id = m.user_id
+                                      ORDER BY created_at DESC NULLS LAST LIMIT 1) st ON true
+                 WHERE m.user_id = ? AND m.institute_id = ?
+                 ORDER BY (m.status = 'ACTIVE') DESC, m.institute_enrollment_number NULLS LAST
+                 LIMIT 1
+                """, userId, instituteId);
+        if (who.isEmpty()) throw new VacademyException("Learner not found in this institute");
+        out.put("full_name", who.get(0).get("full_name"));
+        out.put("enrollment_number", who.get(0).get("enrollment_number"));
         out.put("courses", courses);
         return out;
+    }
+
+    /**
+     * Learners whose name, username or enrolment number contains {@code q}, among ACTIVE learners
+     * of batches that have a syllabus and are in {@code scope}; at most {@code limit} learners,
+     * each with their batches and weeks done.
+     */
+    public List<Map<String, Object>> searchLearners(String instituteId, String q, SyllabusScope scope, int limit) {
+        String term = q == null ? "" : q.trim();
+        if (term.length() < 2) throw new VacademyException("Type at least 2 letters to search");
+        if (term.length() > 100) term = term.substring(0, 100);
+        if (!scope.all() && scope.batches().isEmpty()) return List.of();
+        String like = "%" + term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
+        String scopeSql = "";
+        List<Object> scopeArgs = List.of();
+        if (!scope.all()) {
+            scopeSql = " AND m.package_session_id IN (" + String.join(",", Collections.nCopies(scope.batches().size(), "?")) + ")";
+            scopeArgs = new ArrayList<>(scope.batches());
+        }
+        // Candidates first (this institute's ACTIVE learners in batches with a syllabus whose name,
+        // username or enrolment number matches), materialised so the planner does not re-run the
+        // ILIKE per batch; then their batches with counts. ~20-55 ms on prod-size data.
+        List<Object> args = new ArrayList<>(List.of(instituteId));
+        args.addAll(scopeArgs);
+        args.addAll(List.of(like, like, like, instituteId, instituteId, instituteId));
+        args.addAll(scopeArgs);
+        List<Map<String, Object>> rows = jdbc.queryForList("""
+                WITH cand AS MATERIALIZED (
+                    SELECT DISTINCT m.user_id
+                      FROM student_session_institute_group_mapping m
+                      JOIN package_session ps ON ps.id = m.package_session_id AND ps.status = 'ACTIVE'
+                      LEFT JOIN student st ON st.user_id = m.user_id
+                     WHERE m.institute_id = ? AND m.status = 'ACTIVE'
+                """ + scopeSql + """
+
+                       AND EXISTS (SELECT 1 FROM syllabus_block b WHERE b.package_id = ps.package_id
+                                      AND b.level_id = ps.level_id AND b.status = 'ACTIVE')
+                       AND (st.full_name ILIKE ? OR st.username ILIKE ? OR m.institute_enrollment_number ILIKE ?)
+                )
+                SELECT m.user_id, COALESCE(st.full_name, '') AS full_name, st.username,
+                       m.institute_enrollment_number AS enrollment_number,
+                       ps.id AS package_session_id, p.package_name AS course_name, l.level_name,
+                       s.session_name AS batch_name,
+                       (SELECT COUNT(*) FROM syllabus_block b WHERE b.package_id = ps.package_id
+                           AND b.level_id = ps.level_id AND b.status = 'ACTIVE') AS total_blocks,
+                       (SELECT COUNT(*) FROM learner_syllabus_progress lp
+                          JOIN syllabus_block b ON b.id = lp.block_id AND b.status = 'ACTIVE'
+                                               AND b.package_id = ps.package_id AND b.level_id = ps.level_id
+                         WHERE lp.user_id = m.user_id AND lp.package_session_id = ps.id AND lp.institute_id = ?
+                           AND lp.status IN ('COMPLETED', 'SKIPPED')) AS completed_blocks
+                  FROM cand c
+                  JOIN student_session_institute_group_mapping m ON m.user_id = c.user_id
+                       AND m.institute_id = ? AND m.status = 'ACTIVE'
+                  JOIN package_session ps ON ps.id = m.package_session_id AND ps.status = 'ACTIVE'
+                  JOIN package_institute pi ON pi.package_id = ps.package_id AND pi.institute_id = ?
+                  JOIN package p ON p.id = ps.package_id
+                  JOIN level l ON l.id = ps.level_id
+                  JOIN session s ON s.id = ps.session_id
+                  LEFT JOIN LATERAL (SELECT full_name, username FROM student WHERE user_id = m.user_id
+                                      ORDER BY created_at DESC NULLS LAST LIMIT 1) st ON true
+                 WHERE EXISTS (SELECT 1 FROM syllabus_block b WHERE b.package_id = ps.package_id AND b.level_id = ps.level_id
+                                  AND b.status = 'ACTIVE')
+                """ + scopeSql + """
+
+                 ORDER BY LOWER(COALESCE(st.full_name, '')), m.user_id, p.package_name, l.level_name, s.session_name
+                 LIMIT 300
+                """, args.toArray());
+        Map<String, Map<String, Object>> byUser = new LinkedHashMap<>();
+        for (Map<String, Object> r : rows) {
+            String uid = (String) r.get("user_id");
+            Map<String, Object> learner = byUser.get(uid);
+            if (learner == null) {
+                if (byUser.size() >= limit) continue;
+                learner = new LinkedHashMap<>();
+                learner.put("user_id", uid);
+                learner.put("full_name", r.get("full_name"));
+                learner.put("username", r.get("username"));
+                learner.put("enrollment_number", r.get("enrollment_number"));
+                learner.put("batches", new ArrayList<Map<String, Object>>());
+                byUser.put(uid, learner);
+            }
+            Map<String, Object> b = new LinkedHashMap<>();
+            b.put("package_session_id", r.get("package_session_id"));
+            b.put("course_name", r.get("course_name"));
+            b.put("level_name", r.get("level_name"));
+            b.put("batch_name", r.get("batch_name"));
+            b.put("total_blocks", r.get("total_blocks"));
+            b.put("completed_blocks", r.get("completed_blocks"));
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> list = (List<Map<String, Object>>) learner.get("batches");
+            list.add(b);
+        }
+        return new ArrayList<>(byUser.values());
+    }
+
+    /**
+     * A learner's current batches that have a syllabus (only those in {@code scope}, when given),
+     * each with its week blocks and the learner's status per block.
+     */
+    private List<Map<String, Object>> courses(String instituteId, String userId, SyllabusScope scope) {
+        List<Map<String, Object>> courses = new ArrayList<>();
+        List<Map<String, Object>> batches = jdbc.queryForList("""
+                SELECT DISTINCT ps.id AS package_session_id, ps.package_id, ps.level_id, p.package_name AS course_name,
+                       l.level_name, s.session_name AS batch_name
+                  FROM student_session_institute_group_mapping m
+                  JOIN package_session ps ON ps.id = m.package_session_id
+                  JOIN package p ON p.id = ps.package_id
+                  JOIN level l ON l.id = ps.level_id
+                  JOIN session s ON s.id = ps.session_id
+                 WHERE m.user_id = ? AND m.institute_id = ? AND m.status = 'ACTIVE'
+                   AND EXISTS (SELECT 1 FROM syllabus_block b WHERE b.package_id = ps.package_id AND b.level_id = ps.level_id
+                                  AND b.status = 'ACTIVE')
+                 ORDER BY course_name, level_name, batch_name
+                """, userId, instituteId);
+        if (scope != null) batches = scope.filter(batches);
+        for (Map<String, Object> b : batches) {
+            String psId = (String) b.get("package_session_id");
+            List<Map<String, Object>> blocks = blocks((String) b.get("package_id"), (String) b.get("level_id"));
+            Map<String, Map<String, Object>> cells = new HashMap<>();
+            for (Map<String, Object> r : jdbc.queryForList("""
+                    SELECT block_id, status, started_on, completed_on, points_done, teacher_note, marked_by_name, updated_at
+                      FROM learner_syllabus_progress WHERE user_id = ? AND package_session_id = ? AND institute_id = ?
+                    """, userId, psId, instituteId)) {
+                cells.put((String) r.get("block_id"), cell(r));
+            }
+            int completed = 0;
+            String current = null;
+            for (Map<String, Object> blk : blocks) {
+                Map<String, Object> c = cells.get(blk.get("id"));
+                String st = c == null ? "NOT_STARTED" : (String) c.get("status");
+                blk.put("status", st);
+                blk.put("started_on", c == null ? null : c.get("started_on"));
+                blk.put("completed_on", c == null ? null : c.get("completed_on"));
+                blk.put("points_done", c == null ? List.of() : c.get("points_done"));
+                blk.put("teacher_note", c == null ? null : c.get("teacher_note"));
+                blk.put("marked_by_name", c == null ? null : c.get("marked_by_name"));
+                blk.put("updated_at", c == null ? null : c.get("updated_at"));
+                if ("COMPLETED".equals(st) || "SKIPPED".equals(st)) completed++;
+                else if (current == null) current = (String) blk.get("id");
+            }
+            Map<String, Object> course = new LinkedHashMap<>();
+            course.put("package_session_id", psId);
+            course.put("course_name", b.get("course_name"));
+            course.put("level_name", b.get("level_name"));
+            course.put("level_id", b.get("level_id"));
+            course.put("levels", courseLevels((String) b.get("package_id")));
+            course.put("batch_name", b.get("batch_name"));
+            course.put("total_blocks", blocks.size());
+            course.put("completed_blocks", completed);
+            course.put("current_block_id", current);
+            course.put("blocks", blocks);
+            courses.add(course);
+        }
+        return courses;
     }
 
     /**

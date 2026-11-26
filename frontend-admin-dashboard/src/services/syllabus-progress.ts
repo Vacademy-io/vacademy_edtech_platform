@@ -14,6 +14,8 @@ import {
     GET_INSITITUTE_SETTINGS,
     SYLLABUS_PROGRESS_BATCH,
     SYLLABUS_PROGRESS_BATCHES,
+    SYLLABUS_PROGRESS_LEARNER,
+    SYLLABUS_PROGRESS_LEARNERS,
     SYLLABUS_PROGRESS_MARK,
 } from '@/constants/urls';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
@@ -39,8 +41,12 @@ export interface SyllabusBatchSummary {
     blocks: number;
 }
 
+/** ALL = an admin sees every batch; ASSIGNED = a teacher sees only the batches they teach. */
+export type SyllabusScope = 'ALL' | 'ASSIGNED';
+
 export interface SyllabusBatchList {
     enabled: boolean;
+    scope: SyllabusScope;
     batches: SyllabusBatchSummary[];
 }
 
@@ -87,6 +93,51 @@ export interface SyllabusBatchDetail {
     progress: SyllabusProgressEntry[];
 }
 
+/** A search hit: one learner and their batches that have a syllabus. */
+export interface SyllabusLearnerMatch {
+    user_id: string;
+    full_name: string;
+    username: string | null;
+    enrollment_number: string | null;
+    batches: {
+        package_session_id: string;
+        course_name: string;
+        level_name: string;
+        batch_name: string;
+        total_blocks: number;
+        completed_blocks: number;
+    }[];
+}
+
+/** A week block with this learner's status in it (the learner app's shape). */
+export interface SyllabusLearnerBlock extends SyllabusBlock {
+    status: SyllabusStatus;
+    started_on: string | null;
+    completed_on: string | null;
+    points_done: number[];
+    teacher_note: string | null;
+    marked_by_name: string | null;
+    updated_at: string | null;
+}
+
+export interface SyllabusLearnerCourse {
+    package_session_id: string;
+    course_name: string;
+    level_name: string;
+    batch_name: string;
+    total_blocks: number;
+    completed_blocks: number;
+    current_block_id: string | null;
+    blocks: SyllabusLearnerBlock[];
+}
+
+export interface SyllabusLearnerDetail {
+    user_id: string;
+    full_name: string;
+    enrollment_number: string | null;
+    courses: SyllabusLearnerCourse[];
+}
+
 export interface SyllabusMarkRequest {
     package_session_id: string;
     block_ids: string[];
@@ -112,6 +163,10 @@ export const syllabusProgressKeys = {
         [SYLLABUS_PROGRESS_QUERY_KEY, 'batches', instituteId] as const,
     batch: (instituteId: string, packageSessionId: string) =>
         [SYLLABUS_PROGRESS_QUERY_KEY, 'batch', instituteId, packageSessionId] as const,
+    learnerSearch: (instituteId: string, q: string) =>
+        [SYLLABUS_PROGRESS_QUERY_KEY, 'learner-search', instituteId, q] as const,
+    learner: (instituteId: string, userId: string) =>
+        [SYLLABUS_PROGRESS_QUERY_KEY, 'learner', instituteId, userId] as const,
     settings: (scope: 'page' | 'gate') => [SYLLABUS_PROGRESS_SETTINGS_QUERY_KEY, scope] as const,
 };
 
@@ -121,7 +176,42 @@ export const fetchSyllabusBatches = async (instituteId: string): Promise<Syllabu
     const res = await authenticatedAxiosInstance.get<SyllabusBatchList>(SYLLABUS_PROGRESS_BATCHES, {
         params: { instituteId },
     });
-    return { enabled: Boolean(res.data?.enabled), batches: res.data?.batches ?? [] };
+    return {
+        enabled: Boolean(res.data?.enabled),
+        scope: res.data?.scope === 'ASSIGNED' ? 'ASSIGNED' : 'ALL',
+        batches: res.data?.batches ?? [],
+    };
+};
+
+/** Learners whose name, username or enrolment number contains `q` (2+ letters), in the caller's batches. */
+export const searchSyllabusLearners = async (
+    instituteId: string,
+    q: string
+): Promise<SyllabusLearnerMatch[]> => {
+    const res = await authenticatedAxiosInstance.get<{ learners: SyllabusLearnerMatch[] }>(
+        SYLLABUS_PROGRESS_LEARNERS,
+        { params: { instituteId, q } }
+    );
+    return res.data?.learners ?? [];
+};
+
+/** One learner's progress in each of their batches (only the caller's batches for a teacher). */
+export const fetchSyllabusLearner = async (
+    instituteId: string,
+    userId: string
+): Promise<SyllabusLearnerDetail> => {
+    const res = await authenticatedAxiosInstance.get<SyllabusLearnerDetail>(
+        SYLLABUS_PROGRESS_LEARNER,
+        { params: { instituteId, userId } }
+    );
+    const data = res.data;
+    return {
+        ...data,
+        courses: (data?.courses ?? []).map((c) => ({
+            ...c,
+            blocks: [...(c.blocks ?? [])].sort((a, b) => a.block_order - b.block_order),
+        })),
+    };
 };
 
 export const fetchSyllabusBatch = async (
@@ -166,6 +256,28 @@ export const useSyllabusBatch = (instituteId: string | undefined, packageSession
         queryFn: () => fetchSyllabusBatch(instituteId as string, packageSessionId),
         enabled: Boolean(instituteId) && Boolean(packageSessionId),
         staleTime: 30_000,
+    });
+
+export const useSyllabusLearnerSearch = (instituteId: string | undefined, q: string) =>
+    useQuery({
+        queryKey: syllabusProgressKeys.learnerSearch(instituteId ?? '', q),
+        queryFn: () => searchSyllabusLearners(instituteId as string, q),
+        enabled: Boolean(instituteId) && q.length >= 2,
+        staleTime: 30_000,
+    });
+
+/** True when the server refused the call (403), e.g. a learner outside the teacher's batches. */
+export const isSyllabusForbidden = (error: unknown): boolean =>
+    (error as { response?: { status?: number } } | null)?.response?.status === 403;
+
+export const useSyllabusLearner = (instituteId: string | undefined, userId: string) =>
+    useQuery({
+        queryKey: syllabusProgressKeys.learner(instituteId ?? '', userId),
+        queryFn: () => fetchSyllabusLearner(instituteId as string, userId),
+        enabled: Boolean(instituteId) && Boolean(userId),
+        staleTime: 30_000,
+        // A refusal will not change on retry.
+        retry: (failureCount, error) => !isSyllabusForbidden(error) && failureCount < 2,
     });
 
 /** The server's sentence for a failed call (`message`, else ErrorInfo `ex`), else the fallback. */
