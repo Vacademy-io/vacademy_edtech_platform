@@ -258,6 +258,58 @@ public interface QuizResultsRepository extends JpaRepository<ActivityLog, String
     List<LearnerResponseProjection> getLearnerResponses(@Param("slideId") String slideId,
                                                         @Param("userId") String userId);
 
+    /**
+     * EVERY attempt at every quiz in the batch - optionally for one learner - with its
+     * tracked answers, for certificate criteria. Unlike {@link #getLatestAttemptResponses}
+     * nothing is collapsed: a certificate counts the learner's BEST attempt, so each
+     * attempt has to be graded on its own. An attempt with no tracked answer still comes
+     * back once, with a null questionId.
+     */
+    @Query(value = """
+            WITH quiz_slides AS (
+                SELECT DISTINCT s.id AS slide_id
+                FROM slide s
+                    JOIN chapter_to_slides cts
+                        ON cts.slide_id = s.id AND cts.status <> 'DELETED'
+                    JOIN chapter_package_session_mapping m
+                        ON m.chapter_id = cts.chapter_id AND m.status <> 'DELETED'
+                       AND m.package_session_id = :batchId
+                WHERE s.source_type = 'QUIZ'
+                  AND COALESCE(s.status, '') <> 'DELETED'
+            ),
+            attempts AS (
+                SELECT al.id AS activity_id, al.slide_id AS slide_id, al.user_id AS user_id
+                FROM activity_log al
+                    JOIN quiz_slides qs ON qs.slide_id = al.slide_id
+                WHERE al.source_type = 'QUIZ'
+                  AND (CAST(:userId AS text) IS NULL OR al.user_id = CAST(:userId AS text))
+                  AND EXISTS (
+                        SELECT 1 FROM student_session_institute_group_mapping ssigm
+                        WHERE ssigm.user_id = al.user_id
+                          AND ssigm.package_session_id = :batchId)
+            )
+            SELECT a.activity_id     AS activityId,
+                   a.slide_id        AS slideId,
+                   a.user_id         AS userId,
+                   t.question_id     AS questionId,
+                   t.response_status AS responseStatus,
+                   t.response_json   AS responseJson
+            FROM attempts a
+                LEFT JOIN quiz_slide_question_tracked t ON t.activity_id = a.activity_id
+            """, nativeQuery = true)
+    List<AttemptResponseProjection> getAllAttemptResponses(@Param("batchId") String batchId,
+                                                           @Param("userId") String userId);
+
+    /** One tracked answer of one attempt; questionId is null for an attempt with no answers. */
+    interface AttemptResponseProjection {
+        String getActivityId();
+        String getSlideId();
+        String getUserId();
+        String getQuestionId();
+        String getResponseStatus();
+        String getResponseJson();
+    }
+
     /** One attempt row of a learner's quiz history. */
     interface LearnerAttemptProjection {
         String getActivityId();
