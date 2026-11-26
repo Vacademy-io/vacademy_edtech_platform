@@ -39,7 +39,9 @@ import vacademy.io.admin_core_service.features.certificate.dto.ResolvedCertifica
 import vacademy.io.admin_core_service.features.institute.dto.settings.certificate.CertificateNumberingDto;
 import vacademy.io.admin_core_service.features.certificate.entity.IssuedCertificate;
 import vacademy.io.admin_core_service.features.certificate.repository.IssuedCertificateRepository;
+import vacademy.io.admin_core_service.features.certificate.dto.CertificateEligibilityDto;
 import vacademy.io.admin_core_service.features.certificate.service.CertificateCodeService;
+import vacademy.io.admin_core_service.features.certificate.service.CertificateCriteriaEvaluator;
 import vacademy.io.admin_core_service.features.certificate.service.CertificateCustomFieldService;
 import vacademy.io.admin_core_service.features.certificate.service.CertificateTextFitService;
 import vacademy.io.admin_core_service.features.certificate.service.CertificateNumberService;
@@ -83,6 +85,14 @@ public class InstituteSettingService {
     private final CertificateTextFitService certificateTextFitService;
     private final LearnerOperationRepository learnerOperationRepository;
     private final InstituteSettingWriter instituteSettingWriter;
+
+    /**
+     * Field-injected so the constructor above keeps its arity - tests build this
+     * class directly. Only consulted for courses with a test-score rule; when it is
+     * missing such a course issues nothing rather than falling back to progress.
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private CertificateCriteriaEvaluator certificateCriteriaEvaluator;
 
     // The default completion threshold now lives in
     // CertificateSettingsResolver.DEFAULT_THRESHOLD_PERCENT, alongside the rest
@@ -429,6 +439,20 @@ public class InstituteSettingService {
             String packageSessionId, String instituteId,
             Optional<StudentSessionInstituteGroupMapping> instituteStudentMapping,
             CertificationGenerationRequest request) {
+        return ifEligibleForCourseCertificationForUserAndPackageSession(learnerId, packageSessionId, instituteId,
+                instituteStudentMapping, request, false);
+    }
+
+    /**
+     * @param bypassCriteria admin "Issue anyway": skip the course's earning rule
+     *                       (progress and/or test marks). Certificates still have to
+     *                       be switched on. Only the admin Certificates tab passes
+     *                       true; the learner endpoint cannot reach it.
+     */
+    public Optional<FileDetailsDTO> ifEligibleForCourseCertificationForUserAndPackageSession(String learnerId,
+            String packageSessionId, String instituteId,
+            Optional<StudentSessionInstituteGroupMapping> instituteStudentMapping,
+            CertificationGenerationRequest request, boolean bypassCriteria) {
         if (instituteStudentMapping.isEmpty())
             return Optional.empty();
         if (instituteStudentMapping.get().getInstitute() == null)
@@ -456,7 +480,7 @@ public class InstituteSettingService {
         // client-computed percentage, but it is only a fallback now: trusting it
         // meant anyone who could call the endpoint could claim 100.
         Integer completionPercentage = resolveCompletionPercentage(mapping, request);
-        if (completionPercentage == null || completionPercentage < config.getThresholdPercent()) {
+        if (!bypassCriteria && !meetsEarningRule(mapping, config, completionPercentage)) {
             return Optional.empty();
         }
 
@@ -695,6 +719,33 @@ public class InstituteSettingService {
                 .map(ps -> ps.getPackageEntity())
                 .map(PackageEntity::getId)
                 .orElse(null);
+    }
+
+    /**
+     * The course's earning rule. A course with no score rule keeps the exact check it
+     * always had - progress at or above the threshold - and never touches the
+     * evaluator. A score rule fails closed: no evaluator, no batch, or an error while
+     * scoring all mean no certificate.
+     */
+    private boolean meetsEarningRule(StudentSessionInstituteGroupMapping mapping,
+                                     ResolvedCertificateConfig config, Integer completionPercentage) {
+        if (!CertificateCriteriaEvaluator.requiresScore(config.getCriteria())) {
+            return completionPercentage != null && completionPercentage >= config.getThresholdPercent();
+        }
+        if (certificateCriteriaEvaluator == null || mapping.getPackageSession() == null) {
+            log.warn("Certificate score rule could not be evaluated for user {}; not issuing", mapping.getUserId());
+            return false;
+        }
+        try {
+            CertificateEligibilityDto eligibility = certificateCriteriaEvaluator.evaluateOne(
+                    mapping.getPackageSession().getId(), mapping.getUserId(), config,
+                    completionPercentage != null ? completionPercentage.doubleValue() : null);
+            return eligibility != null && eligibility.isEligible();
+        } catch (Exception e) {
+            log.warn("Certificate score rule failed for user {} in {}; not issuing",
+                    mapping.getUserId(), mapping.getPackageSession().getId(), e);
+            return false;
+        }
     }
 
     /**
