@@ -657,6 +657,7 @@ const AssessmentRegistrationForm = () => {
         assessmentName={data.assessment_public_dto.assessment_name}
         instituteId={data.institute_id}
         branding={branding}
+        timeLeft={timeLeft}
       />
     );
 
