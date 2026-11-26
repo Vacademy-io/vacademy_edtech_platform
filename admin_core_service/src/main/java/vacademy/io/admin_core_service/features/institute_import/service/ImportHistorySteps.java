@@ -143,8 +143,9 @@ public class ImportHistorySteps {
      * Body: the same Journey cases sheet as {@link #journeyCases}. Sets every imported enrolment's
      * CURRENT journey status (learner_journey_status, source IMPORT): the to_status of its latest
      * case (by opened_on), matched to the institute's status list by label or key. An enrolment
-     * with no case is on the default status (Learning) when its access is on, the pause status
-     * (Temporary Break) during a running pause, else the first stopped status (Suspended).
+     * with no case is on the default status (Learning) when its access is on with no running
+     * pause, else the first stopped status (Suspended): the old system's pauses were its own
+     * "Suspended" status. Only a pause staff start later uses status_on_pause.
      * A status changed in Vacademy since (by staff, a pause or the At Risk check) is kept.
      * Writes no timeline entry: the cases are on the timeline already (journey_cases).
      */
@@ -203,8 +204,10 @@ public class ImportHistorySteps {
                             SELECT COUNT(*) FROM enrolment_break
                              WHERE institute_id = ? AND user_id = ? AND package_session_id = ? AND kind = 'PAUSE' AND status = 'ACTIVE'
                             """, Integer.class, c.getInstituteId(), userId, psId);
-                    if (pauses != null && pauses > 0) key = cfg.statusOnPause() != null ? cfg.statusOnPause() : stopped;
-                    else key = "ACTIVE".equals(rows.get(0).get("status")) ? cfg.defaultStatus() : stopped;
+                    // The converter made these pauses from the old system's own "Suspended" status,
+                    // so a running pause here is Suspended, not the live pause-start status.
+                    boolean paused = pauses != null && pauses > 0;
+                    key = !paused && "ACTIVE".equals(rows.get(0).get("status")) ? cfg.defaultStatus() : stopped;
                 }
                 boolean changed = journeyStatus.apply(c.getInstituteId(), cfg, userId, psId, key,
                         reason == null ? null : (reason.length() > 500 ? reason.substring(0, 500) : reason), next,
