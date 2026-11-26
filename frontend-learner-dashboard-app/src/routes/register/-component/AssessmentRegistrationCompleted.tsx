@@ -16,6 +16,7 @@ import {
 } from "@/routes/assessment/examination/-utils.ts/useFetchAssessment";
 import { CheckCircle, Timer, ArrowRight, Sparkle } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
+import { useEffect, useRef } from "react";
 
 interface TimeLeft {
   days: number;
@@ -28,10 +29,16 @@ const AssessmentRegistrationCompleted = ({
   assessmentId,
   assessmentName,
   timeLeft,
+  autoOpenWhenLive = false,
 }: {
   assessmentId: string;
   assessmentName: string;
   timeLeft: TimeLeft;
+  /**
+   * Open the start page by itself once the test is live: at once when it is
+   * already live, or when the countdown ends. Pass false when the test is over.
+   */
+  autoOpenWhenLive?: boolean;
 }) => {
   const { t } = useTranslation("registrationA");
   const navigate = useNavigate();
@@ -44,7 +51,9 @@ const AssessmentRegistrationCompleted = ({
     instituteThemeCode: null,
     homeIconClickRoute: instituteDetails?.homeIconClickRoute ?? null,
   };
-  const handleNavigateAssessment = async () => {
+  // `replace` swaps this page out of the history, so Back from the start page
+  // does not land here and jump forward again.
+  const handleNavigateAssessment = async (replace = false) => {
     try {
       const { value } = await Preferences.get({ key: "accessToken" });
       console.log("access token after registration before login ", value);
@@ -57,6 +66,7 @@ const AssessmentRegistrationCompleted = ({
 
       if (authorityKeys.length > 1) {
         navigate({
+          replace,
           to: "/institute-selection",
           search: {
             redirect: assessmentRoute,
@@ -76,6 +86,7 @@ const AssessmentRegistrationCompleted = ({
             }
 
             navigate({
+              replace,
               to: assessmentRoute,
               search: { isPublicAssessment: true },
             });
@@ -83,6 +94,7 @@ const AssessmentRegistrationCompleted = ({
             console.error("Error fetching details:", error);
             toast.error(t("completed.toast.fetchDetailsError"));
             navigate({
+              replace,
               to: assessmentRoute,
               search: { isPublicAssessment: true },
             });
@@ -90,6 +102,7 @@ const AssessmentRegistrationCompleted = ({
         } else {
           console.error("Institute ID or User ID is undefined");
           navigate({
+            replace,
             to: assessmentRoute,
             search: { isPublicAssessment: true },
           });
@@ -98,6 +111,7 @@ const AssessmentRegistrationCompleted = ({
     } catch (error) {
       console.error("Error processing decoded data:", error);
       navigate({
+        replace,
         to: `/assessment/examination/${assessmentId}`,
       });
     }
@@ -108,6 +122,15 @@ const AssessmentRegistrationCompleted = ({
     timeLeft.hours === 0 &&
     timeLeft.minutes === 0 &&
     timeLeft.seconds === 0;
+
+  // Once only, so a re-render cannot navigate twice.
+  const autoOpened = useRef(false);
+  useEffect(() => {
+    if (!autoOpenWhenLive || !isLive || autoOpened.current) return;
+    autoOpened.current = true;
+    handleNavigateAssessment(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoOpenWhenLive, isLive]);
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-b from-primary-50/40 via-background to-background px-4 py-8">
@@ -193,7 +216,7 @@ const AssessmentRegistrationCompleted = ({
             layoutVariant="default"
             className="group w-full gap-2"
             disable={!isLive}
-            onClick={handleNavigateAssessment}
+            onClick={() => handleNavigateAssessment()}
           >
             {t("completed.cta")}
             <ArrowRight

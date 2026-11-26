@@ -505,6 +505,10 @@ const CheckEmailStatusAlertDialog = ({
         assessmentId={registrationData.assessment_public_dto.assessment_id}
         assessmentName={registrationData.assessment_public_dto.assessment_name}
         timeLeft={timeLeft}
+        autoOpenWhenLive={calculateTimeDifference(
+          serverTime,
+          registrationData.assessment_public_dto.bound_end_time,
+        )}
       />
     );
 

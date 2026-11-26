@@ -216,6 +216,7 @@ const PostRegistrationOTPVerify = ({
         assessmentId={assessmentId}
         assessmentName={assessmentName}
         timeLeft={timeLeft}
+        autoOpenWhenLive
       />
     );
 
