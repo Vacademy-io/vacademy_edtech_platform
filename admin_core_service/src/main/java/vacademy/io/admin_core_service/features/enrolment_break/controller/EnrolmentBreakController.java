@@ -22,7 +22,10 @@ import vacademy.io.admin_core_service.features.enrolment_break.dto.LearnerBreaks
 import vacademy.io.admin_core_service.features.enrolment_break.service.EnrolmentBreakService;
 import vacademy.io.common.auth.model.CustomUserDetails;
 
-/** Breaks and holds for a learner (docs/ENROLMENT_BREAKS.md). Staff of the institute only. */
+/**
+ * Breaks and holds for a learner (docs/ENROLMENT_BREAKS.md). Staff of the institute only: no root-user
+ * bypass (learners can carry the root flag), platform super admins allowed.
+ */
 @RestController
 @RequestMapping("/admin-core-service/v1/enrolment-breaks")
 @RequiredArgsConstructor
@@ -35,7 +38,7 @@ public class EnrolmentBreakController {
     public ResponseEntity<LearnerBreaksDTO> forLearner(@PathVariable String userId,
                                                        @RequestParam String instituteId,
                                                        @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
+        instituteAccessValidator.requireInstituteStaffOrSuperAdmin(user, instituteId);
         return ResponseEntity.ok(service.forLearner(userId, instituteId));
     }
 
@@ -44,7 +47,7 @@ public class EnrolmentBreakController {
     public ResponseEntity<BreakPreviewDTO> preview(@RequestParam String instituteId,
                                                    @RequestBody EnrolmentBreakRequestDTO request,
                                                    @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
+        instituteAccessValidator.requireInstituteStaffOrSuperAdmin(user, instituteId);
         return ResponseEntity.ok(service.preview(request, instituteId));
     }
 
@@ -54,7 +57,7 @@ public class EnrolmentBreakController {
     public ResponseEntity<EnrolmentBreakDTO> create(@RequestParam String instituteId,
                                                     @RequestBody EnrolmentBreakRequestDTO request,
                                                     @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
+        instituteAccessValidator.requireInstituteStaffOrSuperAdmin(user, instituteId);
         return ResponseEntity.ok(service.create(request, instituteId, user));
     }
 
@@ -65,7 +68,7 @@ public class EnrolmentBreakController {
                                                     @RequestParam String instituteId,
                                                     @RequestBody EnrolmentBreakUpdateDTO request,
                                                     @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
+        instituteAccessValidator.requireInstituteStaffOrSuperAdmin(user, instituteId);
         return ResponseEntity.ok(service.update(id, request, instituteId, user));
     }
 
@@ -75,7 +78,7 @@ public class EnrolmentBreakController {
                                                       @RequestParam String instituteId,
                                                       @RequestBody(required = false) EnrolmentBreakEndRequestDTO request,
                                                       @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
+        instituteAccessValidator.requireInstituteStaffOrSuperAdmin(user, instituteId);
         return ResponseEntity.ok(service.endPreview(id, request, instituteId));
     }
 
@@ -86,7 +89,7 @@ public class EnrolmentBreakController {
                                                  @RequestParam String instituteId,
                                                  @RequestBody(required = false) EnrolmentBreakEndRequestDTO request,
                                                  @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
+        instituteAccessValidator.requireInstituteStaffOrSuperAdmin(user, instituteId);
         return ResponseEntity.ok(service.end(id, request, instituteId, user));
     }
 
@@ -96,7 +99,7 @@ public class EnrolmentBreakController {
     public ResponseEntity<EnrolmentBreakDTO> cancel(@PathVariable String id,
                                                     @RequestParam String instituteId,
                                                     @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
+        instituteAccessValidator.requireInstituteStaffOrSuperAdmin(user, instituteId);
         return ResponseEntity.ok(service.cancel(id, instituteId, user));
     }
 }

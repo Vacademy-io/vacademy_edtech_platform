@@ -192,5 +192,56 @@
         "changed": "Break updated.",
         "cancelled": "Break cancelled.",
         "failed": "Could not save. Please try again."
+    },
+    "extra": {
+        "title": "Extra classes",
+        "subtitle": "Another {{batch}} they attend for a few days, like a make-up class.",
+        "add": "Add extra class",
+        "empty": "No extra classes right now.",
+        "error": "Could not load extra classes.",
+        "history_one": "Past extra classes ({{count}})",
+        "history_other": "Past extra classes ({{count}})",
+        "end": "End now",
+        "remove": "Remove",
+        "addedBy": "Added by {{name}}",
+        "imported": "Imported from the old system",
+        "noFeeNoMessage": "No fee is charged and no message is sent when you add it. During these dates the student gets this batch’s class reminders.",
+        "batchesFailed": "Could not load the list.",
+        "state": {
+            "CURRENT": "Attending",
+            "UPCOMING": "Upcoming",
+            "ENDED": "Ended"
+        },
+        "form": {
+            "title": "Add an extra class",
+            "titleFor": "Add an extra class for {{name}}",
+            "batchPlaceholder": "Choose a {{batch}}",
+            "batchSearch": "Search course, stage or name",
+            "batchEmpty": "Nothing matches.",
+            "from": "From",
+            "to": "To",
+            "window_one": "{{from}} to {{to}} ({{count}} day). They can join this one’s live classes on these days.",
+            "window_other": "{{from}} to {{to}} ({{count}} days). They can join this one’s live classes on these days.",
+            "notePlaceholder": "Why, e.g. make-up for a missed class (optional)",
+            "submit": "Add extra class"
+        },
+        "errors": {
+            "batchRequired": "Choose where they attend the extra class.",
+            "endRequired": "Choose the last day.",
+            "endInPast": "The last day cannot be in the past.",
+            "tooLong": "An extra class can last at most {{count}} days."
+        },
+        "confirm": {
+            "endTitle": "End this extra class now?",
+            "endDescription": "{{batch}}: access ends today. Nothing is sent to the learner.",
+            "removeTitle": "Remove this extra class?",
+            "removeDescription": "{{batch}}: it has not started, so it is removed. Nothing is sent to the learner.",
+            "keep": "Keep it"
+        },
+        "toast": {
+            "added": "Extra class added.",
+            "ended": "Extra class ended.",
+            "removed": "Extra class removed."
+        }
     }
 }

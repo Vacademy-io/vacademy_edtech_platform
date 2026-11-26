@@ -364,7 +364,8 @@ public class UserPlanController {
             @RequestParam String instituteId,
             @RequestBody vacademy.io.admin_core_service.features.user_subscription.dto.ChangeMemberPriceRequestDTO request,
             @RequestAttribute("user") CustomUserDetails userDetails) {
-        instituteAccessValidator.validateUserAccess(userDetails, instituteId);
+        // Admins only, no root-user bypass: learners can carry the root flag.
+        instituteAccessValidator.requireInstituteAdminOrSuperAdmin(userDetails, instituteId);
         return ResponseEntity.ok(adminManualRenewalService.changeMemberPrice(userPlanId, instituteId, request, userDetails));
     }
 

@@ -203,5 +203,56 @@
         "changed": "Pause mise à jour.",
         "cancelled": "Pause annulée.",
         "failed": "Enregistrement impossible. Veuillez réessayer."
+    },
+    "extra": {
+        "title": "Cours supplémentaires",
+        "subtitle": "Un autre {{batch}} suivi quelques jours, par exemple pour rattraper un cours.",
+        "add": "Ajouter un cours",
+        "empty": "Aucun cours supplémentaire pour le moment.",
+        "error": "Impossible de charger les cours supplémentaires.",
+        "history_one": "Cours supplémentaires passés ({{count}})",
+        "history_other": "Cours supplémentaires passés ({{count}})",
+        "end": "Terminer",
+        "remove": "Supprimer",
+        "addedBy": "Ajouté par {{name}}",
+        "imported": "Importé de l’ancien système",
+        "noFeeNoMessage": "Aucun frais n’est facturé et aucun message n’est envoyé à l’ajout. Pendant ces dates, l’élève reçoit les rappels de cours de ce groupe.",
+        "batchesFailed": "Impossible de charger la liste.",
+        "state": {
+            "CURRENT": "En cours",
+            "UPCOMING": "À venir",
+            "ENDED": "Terminé"
+        },
+        "form": {
+            "title": "Ajouter un cours supplémentaire",
+            "titleFor": "Ajouter un cours supplémentaire pour {{name}}",
+            "batchPlaceholder": "Choisir : {{batch}}",
+            "batchSearch": "Rechercher un cours, un niveau ou un nom",
+            "batchEmpty": "Aucun résultat.",
+            "from": "Du",
+            "to": "Au",
+            "window_one": "Du {{from}} au {{to}} ({{count}} jour). L’apprenant peut rejoindre ses cours en direct ces jours-là.",
+            "window_other": "Du {{from}} au {{to}} ({{count}} jours). L’apprenant peut rejoindre ses cours en direct ces jours-là.",
+            "notePlaceholder": "Pourquoi, par ex. rattrapage d’un cours manqué (facultatif)",
+            "submit": "Ajouter le cours"
+        },
+        "errors": {
+            "batchRequired": "Choisissez où a lieu le cours supplémentaire.",
+            "endRequired": "Choisissez le dernier jour.",
+            "endInPast": "Le dernier jour ne peut pas être passé.",
+            "tooLong": "Un cours supplémentaire dure au plus {{count}} jours."
+        },
+        "confirm": {
+            "endTitle": "Terminer ce cours supplémentaire ?",
+            "endDescription": "{{batch}} : l’accès se termine aujourd’hui. Rien n’est envoyé à l’apprenant.",
+            "removeTitle": "Supprimer ce cours supplémentaire ?",
+            "removeDescription": "{{batch}} : il n’a pas commencé, il est donc supprimé. Rien n’est envoyé à l’apprenant.",
+            "keep": "Le garder"
+        },
+        "toast": {
+            "added": "Cours supplémentaire ajouté.",
+            "ended": "Cours supplémentaire terminé.",
+            "removed": "Cours supplémentaire supprimé."
+        }
     }
 }
