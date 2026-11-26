@@ -102,8 +102,12 @@ const AssessmentRegistrationCompleted = ({
       });
     }
   };
+  // `!days` also treats a missing value as 0, so the old rule still applies.
   const isLive =
-    timeLeft.hours === 0 && timeLeft.minutes === 0 && timeLeft.seconds === 0;
+    !timeLeft.days &&
+    timeLeft.hours === 0 &&
+    timeLeft.minutes === 0 &&
+    timeLeft.seconds === 0;
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-b from-primary-50/40 via-background to-background px-4 py-8">
