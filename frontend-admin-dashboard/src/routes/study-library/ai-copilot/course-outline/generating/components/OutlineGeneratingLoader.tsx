@@ -32,9 +32,10 @@ export const OutlineGeneratingLoader = ({ estimatedTimeRemaining }: OutlineGener
 
     const getDescription = () => {
         if (hasTimeLeft) {
+            // the locale only has plural forms (_one/_other, …): without `count` i18next shows the raw key
             return minutes > 0
-                ? t('description.estimatedTimeMinutes', { minutes, seconds })
-                : t('description.estimatedTimeSeconds', { seconds });
+                ? t('description.estimatedTimeMinutes', { minutes, seconds, count: minutes })
+                : t('description.estimatedTimeSeconds', { seconds, count: seconds });
         }
         if (estimatedTimeRemaining != null && estimatedTimeRemaining <= 0) {
             return t('description.stillWorking');
