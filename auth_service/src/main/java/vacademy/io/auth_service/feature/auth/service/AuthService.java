@@ -22,6 +22,7 @@ import vacademy.io.auth_service.feature.institute.InstituteInfoDTO;
 import vacademy.io.auth_service.feature.institute.InstituteInternalService;
 import vacademy.io.auth_service.feature.institute.service.InstituteSettingsService;
 import vacademy.io.auth_service.feature.notification.constants.NotificationConstant;
+import vacademy.io.auth_service.feature.notification.service.LearnerEnrollmentEmailBody;
 import vacademy.io.auth_service.feature.notification.service.NotificationEmailBody;
 import vacademy.io.auth_service.feature.notification.service.ProductWelcomeEmailBody;
 import vacademy.io.auth_service.feature.notification.service.NotificationService;
@@ -1154,9 +1155,10 @@ public class AuthService {
         }
         GenericEmailRequest genericEmailRequest = new GenericEmailRequest();
         genericEmailRequest.setTo(user.getEmail());
-        genericEmailRequest.setBody(NotificationEmailBody.createLearnerEnrollmentNewUserEmailBody(
-                instituteName, user.getFullName(),
-                user.getUsername(), user.getPassword(), normalizePortalUrl(loginUrl), theme));
+        genericEmailRequest.setBody(LearnerEnrollmentEmailBody.build(instituteName, theme,
+                instituteInfoDTO != null ? instituteInfoDTO.getInstituteLogoUrl() : null, user.getFullName(),
+                user.getUsername(), user.getPassword(), normalizePortalUrl(loginUrl),
+                instituteInfoDTO != null ? instituteInfoDTO.getEmail() : null, false));
         genericEmailRequest.setSubject("Course Enrollment - " + instituteName);
         // Names the event so institute-configured CC/BCC copies can match this send.
         genericEmailRequest.setService(NotificationConstant.EVENT_LEARNER_ENROLL);
@@ -1212,16 +1214,10 @@ public class AuthService {
         if (StringUtils.hasText(overrideLoginUrl)) {
             loginUrl = overrideLoginUrl;
         }
-        String fullName = user.getFullName() != null ? user.getFullName() : "User";
-        String username = user.getUsername() != null ? user.getUsername() : "N/A";
-        String password = user.getPassword() != null ? user.getPassword() : "N/A";
-        String body = NotificationEmailBody.createLearnerEnrollmentExistingUserEmailBody(
-                instituteName,
-                fullName,
-                username,
-                password,
-                normalizePortalUrl(loginUrl),
-                theme);
+        String body = LearnerEnrollmentEmailBody.build(instituteName, theme,
+                instituteInfoDTO != null ? instituteInfoDTO.getInstituteLogoUrl() : null, user.getFullName(),
+                user.getUsername(), user.getPassword(), normalizePortalUrl(loginUrl),
+                instituteInfoDTO != null ? instituteInfoDTO.getEmail() : null, true);
         GenericEmailRequest emailRequest = new GenericEmailRequest();
         emailRequest.setTo(user.getEmail());
         emailRequest.setSubject("Course Enrollment - " + instituteName);

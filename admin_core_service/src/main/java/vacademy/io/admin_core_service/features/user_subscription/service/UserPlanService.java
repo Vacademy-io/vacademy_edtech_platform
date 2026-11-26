@@ -767,9 +767,9 @@ public class UserPlanService {
      * A multi-course order activates a UserPlan per course inside a single webhook
      * transaction, and each activation reached the credential mail — a learner who
      * bought four subjects got four identical "Course Enrollment" emails seconds
-     * apart. Identical is the point: that mail is
-     * createLearnerEnrollmentNewUserEmailBody(institute, name, username, password,
-     * loginUrl, theme), which takes no course at all, so the copies carried nothing
+     * apart. Identical is the point: that mail is auth-service's
+     * LearnerEnrollmentEmailBody (institute, name, username, password, login
+     * URL, theme), which takes no course at all, so the copies carried nothing
      * the first one did not. The learner has one set of credentials.
      *
      * Deliberately NOT done by folding the enrollment WORKFLOW: LEARNER_BATCH_ENROLLMENT
