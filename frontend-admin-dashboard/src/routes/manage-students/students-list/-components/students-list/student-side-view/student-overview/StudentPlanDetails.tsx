@@ -31,6 +31,7 @@ import { PlanRemarksDialog } from '../student-membership/plan-remarks';
 import { useStudentSidebar } from '@/routes/manage-students/students-list/-context/selected-student-sidebar-context';
 import { toast } from 'sonner';
 import { format, formatDate } from 'date-fns';
+import { isNeverExpiring } from '@/utils/dateUtils';
 import { PolicyActionsTimeline } from '@/components/common/PolicyActionsTimeline';
 import type { PolicyDetails } from '@/types/membership-expiry';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -187,15 +188,21 @@ const parseAppliedCoupon = (plan: UserPlan) => {
     }
 };
 
-const getExpiryLabel = (plan: UserPlan): string | null => {
-    if (plan.end_date) return formatDate(new Date(plan.end_date), 'dd MMM yyyy');
+/** The plan's end date, or start + validity when the plan carries none. */
+const getEffectiveEndDate = (plan: UserPlan): Date | null => {
+    if (plan.end_date) return new Date(plan.end_date);
     const validityDays = plan.payment_plan_dto?.validity_in_days;
     if (validityDays && plan.start_date) {
         const startDate = new Date(plan.start_date);
         startDate.setDate(startDate.getDate() + validityDays);
-        return formatDate(startDate, 'dd MMM yyyy');
+        return startDate;
     }
     return null;
+};
+
+const getExpiryLabel = (plan: UserPlan): string | null => {
+    const endDate = getEffectiveEndDate(plan);
+    return endDate ? formatDate(endDate, 'dd MMM yyyy') : null;
 };
 
 /**
@@ -549,9 +556,14 @@ const PlanCard = ({
         plan.regional_price !== undefined &&
         plan.regional_price !== getPlanListPrice(plan);
     const planName = getPlanName(plan, t);
-    const daysLeft = computeDaysLeft(plan.end_date);
-    const tone = getDaysLeftTone(t, daysLeft);
-    const expiryLabel = getExpiryLabel(plan);
+    // A far-future end date (e.g. a ONE_TIME course sold with 1000 years of validity)
+    // is lifetime access: no countdown, no date in the year 3026.
+    const neverExpires = isNeverExpiring(getEffectiveEndDate(plan));
+    const daysLeft = neverExpires ? null : computeDaysLeft(plan.end_date);
+    const tone = neverExpires
+        ? { color: 'text-success-600', status: t('dates.neverExpires') }
+        : getDaysLeftTone(t, daysLeft);
+    const expiryLabel = neverExpires ? null : getExpiryLabel(plan);
     const quantity = getPlanQuantity(plan);
     const unitPrice = getPlanUnitPrice(plan);
     const amount = getPlanAmount(plan);
@@ -620,11 +632,20 @@ const PlanCard = ({
                         </span>
                     </div>
                 )}
-                {expiryLabel && (
+                {neverExpires ? (
                     <div className="flex items-center gap-1">
                         <Calendar className="size-3 text-neutral-400" />
-                        <span>{t('dates.ends', { date: expiryLabel })}</span>
+                        <span className="font-medium text-success-600">
+                            {t('dates.neverExpires')}
+                        </span>
                     </div>
+                ) : (
+                    expiryLabel && (
+                        <div className="flex items-center gap-1">
+                            <Calendar className="size-3 text-neutral-400" />
+                            <span>{t('dates.ends', { date: expiryLabel })}</span>
+                        </div>
+                    )
                 )}
                 <div className="flex items-center gap-1">
                     <Package className="size-3 text-neutral-400" />

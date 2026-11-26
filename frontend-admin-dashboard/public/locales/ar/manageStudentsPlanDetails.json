@@ -63,6 +63,7 @@
     },
     "dates": {
         "started": "بدأ في {{date}}",
+        "neverExpires": "لا ينتهي أبدًا",
         "ends": "ينتهي في {{date}}"
     },
     "pagination": {

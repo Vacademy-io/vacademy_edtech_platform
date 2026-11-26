@@ -3,6 +3,7 @@
         "eyebrow": "सक्रिय सदस्यता",
         "noActiveMembership": "कोई सक्रिय सदस्यता नहीं",
         "statusExpiry": "{{status}} · समाप्ति {{date}}",
+        "statusNeverExpires": "{{status}} · कभी समाप्त नहीं होगा",
         "noExpiry": "कोई समाप्ति तिथि नहीं",
         "status": {
             "active": "सक्रिय",

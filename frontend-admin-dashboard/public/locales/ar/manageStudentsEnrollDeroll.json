@@ -3,6 +3,7 @@
         "eyebrow": "العضوية النشطة",
         "noActiveMembership": "لا توجد عضوية نشطة",
         "statusExpiry": "{{status}} · تنتهي في {{date}}",
+        "statusNeverExpires": "{{status}} · لا ينتهي أبدًا",
         "noExpiry": "بلا تاريخ انتهاء",
         "status": {
             "active": "نشطة",

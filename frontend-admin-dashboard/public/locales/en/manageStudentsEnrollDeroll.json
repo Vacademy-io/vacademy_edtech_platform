@@ -3,6 +3,7 @@
         "eyebrow": "ACTIVE MEMBERSHIP",
         "noActiveMembership": "No active membership",
         "statusExpiry": "{{status}} · Expires {{date}}",
+        "statusNeverExpires": "{{status}} · Never expires",
         "noExpiry": "No expiry",
         "status": {
             "active": "Active",

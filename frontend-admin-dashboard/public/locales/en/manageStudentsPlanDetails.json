@@ -58,6 +58,7 @@
     },
     "dates": {
         "started": "Started {{date}}",
+        "neverExpires": "Never expires",
         "ends": "Ends {{date}}"
     },
     "pagination": {
