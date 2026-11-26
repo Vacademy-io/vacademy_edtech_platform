@@ -30,7 +30,13 @@ public class AssessmentAddQuestionDetail extends IStep {
         setAssessmentType(assessment.get().getAssessmentType());
 
         Map<String, Object> savedData = new HashMap<>();
-        Set<Section> sections = assessment.get().getSections().stream().filter((s) -> !"DELETED".equals(s.getStatus())).collect(Collectors.toSet());
+        // In section_order: the wizard shows them in this order and saves each section's
+        // on-screen position back as its section_order, so an unordered set reordered the
+        // paper whenever Step 2 was saved.
+        List<Section> sections = assessment.get().getSections().stream()
+                .filter((s) -> !"DELETED".equals(s.getStatus()))
+                .sorted(Comparator.comparing(Section::getSectionOrder, Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
         List<SectionDto> sectionDTOs = new ArrayList<>();
         for (Section section : sections) {
             sectionDTOs.add(new SectionDto(section));

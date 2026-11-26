@@ -690,6 +690,7 @@ export const REATTEMPT_REQUEST_LIST_URL = `${BASE_URL}/assessment-service/admin/
 export const REATTEMPT_REQUEST_PENDING_COUNT_URL = `${BASE_URL}/assessment-service/admin/reattempt-request/v1/pending-count`;
 export const REATTEMPT_REQUEST_REVIEW_URL = `${BASE_URL}/assessment-service/admin/reattempt-request/v1`;
 export const GET_DELETE_ASSESSMENT_URL = `${BASE_URL}/assessment-service/assessment/create/v1/delete`;
+export const COPY_ASSESSMENT_URL = `${BASE_URL}/assessment-service/assessment/create/v1/copy`;
 export const GET_ASSESSMENT_TOTAL_MARKS_URL = `${BASE_URL}/assessment-service/assessment/admin/init/total-marks`;
 export const GET_BATCH_DETAILS_URL = `${BASE_URL}/admin-core-service/institute/institute_learner/get/v1/all`;
 export const GET_INDIVIDUAL_STUDENT_DETAILS_URL = `${BASE_URL}/assessment-service/assessment/admin-participants/registered-participants`;

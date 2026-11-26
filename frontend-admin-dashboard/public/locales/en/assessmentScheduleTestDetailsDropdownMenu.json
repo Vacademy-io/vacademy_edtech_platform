@@ -1,7 +1,8 @@
 {
     "menu": {
         "viewDetails": "View Assessment Details",
-        "deleteAssessment": "Delete Assessment"
+        "deleteAssessment": "Delete Assessment",
+        "duplicateAssessment": "Duplicate Assessment"
     },
     "common": {
         "open": "Open",
@@ -52,5 +53,44 @@
     "toasts": {
         "deleteSuccess": "Assessment has been deleted successfully!",
         "slidesDeleteFailed": "Assessment deleted, but its course slides could not be removed."
+    },
+    "duplicate": {
+        "title": "Duplicate Assessment",
+        "defaultName": "Copy of {{name}}",
+        "intro": "A copy of “{{name}}” will be saved as a draft. Learners will not see it until you publish it. The original is not changed.",
+        "nameLabel": "Name of the copy",
+        "whatToCopy": "What to copy",
+        "questions": "Questions",
+        "questionsHint": "All sections and questions. If off, the copy starts with no questions.",
+        "marking": "Marking scheme",
+        "markingHint": "Marks and negative marking of every question. If off, every question gets 1 mark.",
+        "schedule": "Schedule",
+        "scheduleHint": "Filled in from the original. Set the dates for the new test.",
+        "scheduleOptional": "Leave empty to keep the original's dates.",
+        "startLabel": "Start date & time",
+        "endLabel": "End date & time",
+        "pastWarning": "This date is already over.",
+        "registration": "Registration window",
+        "registrationOpenLabel": "Registration opens",
+        "registrationCloseLabel": "Registration closes",
+        "participants": "Participants",
+        "batchesHint": "The copy is assigned to these {{term}}. You can change them here or later in the assessment.",
+        "noBatches": "No {{term}} selected. You can add participants later.",
+        "individuals": "Also add learners who were added one by one",
+        "individualsHint": "Learners added to the original individually, not through a {{term}}.",
+        "cancel": "Cancel",
+        "create": "Create copy",
+        "creating": "Creating copy...",
+        "errors": {
+            "nameRequired": "Enter a name for the copy",
+            "startRequired": "Choose a start date and time",
+            "endRequired": "Choose an end date and time",
+            "endBeforeStart": "The end must be after the start",
+            "registrationCloseBeforeOpen": "Registration must close after it opens"
+        },
+        "toasts": {
+            "success": "“{{name}}” created as a draft",
+            "failed": "Could not duplicate the assessment. Please try again."
+        }
     }
 }
