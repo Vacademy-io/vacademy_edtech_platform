@@ -20,6 +20,25 @@ export const parseUtcDate = (value: string): Date => {
     return new Date(`${value.replace(' ', 'T')}Z`);
 };
 
+/** End dates at least this many years out are treated as "never expires". */
+export const NEVER_EXPIRES_AFTER_YEARS = 100;
+
+/**
+ * True when a membership end / expiry date is so far away that it stands for
+ * lifetime access. Institutes model a course that never lapses as a ONE_TIME
+ * plan with a very long validity (e.g. 1000 years), so the UI shows
+ * "Never expires" instead of a date in the year 3026.
+ */
+export const isNeverExpiring = (value?: string | number | Date | null): boolean => {
+    if (value === null || value === undefined || value === '') return false;
+    const date = value instanceof Date ? value : new Date(value);
+    const time = date.getTime();
+    if (Number.isNaN(time)) return false;
+    const threshold = new Date();
+    threshold.setFullYear(threshold.getFullYear() + NEVER_EXPIRES_AFTER_YEARS);
+    return time >= threshold.getTime();
+};
+
 /**
  * Get yesterday's date in YYYY-MM-DD format
  * @returns Yesterday's date as ISO string (YYYY-MM-DD)

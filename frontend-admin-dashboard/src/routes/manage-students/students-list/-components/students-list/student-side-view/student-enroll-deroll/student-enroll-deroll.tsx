@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getUserPlans } from '@/services/user-plan';
 import { cancelUserPlan } from '@/services/enrollment-actions';
+import { isNeverExpiring } from '@/utils/dateUtils';
 import { toast } from 'sonner';
 import {
     AlertDialog,
@@ -128,7 +129,7 @@ const PlanRow = ({
 // ── Main component ────────────────────────────────────────────────────────────
 
 export const StudentEnrollDeroll = () => {
-    const { t } = useTranslation('manageStudentsEnrollDeroll');
+    const { t, i18n } = useTranslation('manageStudentsEnrollDeroll');
     const { selectedStudent } = useStudentSidebar();
     const queryClient = useQueryClient();
 
@@ -243,12 +244,16 @@ export const StudentEnrollDeroll = () => {
     };
 
     const heroSubtitle = heroMembership
-        ? t('hero.statusExpiry', {
-              status: getStatusLabel(heroMembership.status),
-              date: heroMembership.end_date
-                  ? new Date(heroMembership.end_date).toLocaleDateString()
-                  : t('hero.noExpiry'),
-          })
+        ? isNeverExpiring(heroMembership.end_date)
+            ? t('hero.statusNeverExpires', {
+                  status: getStatusLabel(heroMembership.status),
+              })
+            : t('hero.statusExpiry', {
+                  status: getStatusLabel(heroMembership.status),
+                  date: heroMembership.end_date
+                      ? new Date(heroMembership.end_date).toLocaleDateString(i18n.language)
+                      : t('hero.noExpiry'),
+              })
         : undefined;
 
     return (

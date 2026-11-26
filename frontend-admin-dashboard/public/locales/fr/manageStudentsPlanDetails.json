@@ -57,6 +57,7 @@
     },
     "dates": {
         "started": "Commencé le {{date}}",
+        "neverExpires": "N'expire jamais",
         "ends": "Se termine le {{date}}"
     },
     "pagination": {

@@ -55,6 +55,7 @@
     },
     "dates": {
         "started": "{{date}} को शुरू हुआ",
+        "neverExpires": "कभी समाप्त नहीं होगा",
         "ends": "{{date}} को समाप्त"
     },
     "pagination": {
