@@ -15,15 +15,17 @@ import { DotIcon, DotIconOffline } from '@/svgs';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createLazyFileRoute, useNavigate } from '@tanstack/react-router';
 import {
+    Broadcast,
     CaretLeft,
     CheckCircle,
+    Clock,
     Export,
     Eye,
     LockSimple,
     PauseCircle,
     PencilSimpleLine,
 } from '@phosphor-icons/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Helmet } from 'react-helmet';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -59,8 +61,39 @@ const buildHeading = (t: TFunction) => (
     </div>
 );
 
+/**
+ * Where the test is in its life, for the header chip. The step `status` the page used to show
+ * ("Complete") only says the setup form is filled in, which on a live test read as "the test is
+ * over". Tests without a start/end window (anytime tests) get no timing chip.
+ */
+type AssessmentTiming = 'setupIncomplete' | 'upcoming' | 'live' | 'ended' | null;
+// The backend sends these times in UTC, sometimes without the trailing 'Z' (see
+// convertToLocalDateTime); read a zone-less value as UTC, not as local time.
+const toUtcTime = (value: string | number | null | undefined): number => {
+    if (value === null || value === undefined || value === '') return NaN;
+    if (typeof value === 'number') return value;
+    const hasZone = /Z$|[+-]\d{2}:?\d{2}$/i.test(value);
+    return new Date(hasZone ? value : `${value.replace(' ', 'T')}Z`).getTime();
+};
+const getAssessmentTiming = (
+    stepStatus: string | undefined,
+    startDate: string | number | null | undefined,
+    endDate: string | number | null | undefined,
+    now: number = Date.now()
+): AssessmentTiming => {
+    // Only the backend's explicit INCOMPLETE (StepStatus) means the setup form is unfinished.
+    if (stepStatus === 'INCOMPLETE') return 'setupIncomplete';
+    const start = toUtcTime(startDate);
+    const end = toUtcTime(endDate);
+    if (Number.isNaN(start) && Number.isNaN(end)) return null;
+    if (!Number.isNaN(start) && now < start) return 'upcoming';
+    if (!Number.isNaN(end) && now > end) return 'ended';
+    return 'live';
+};
+
 // Helper components for better organization
 const AssessmentHeader = ({ assessmentDetails }: { assessmentDetails: any }) => {
+    const { t } = useTranslation('assessmentTabIndex');
     const getVisibilityBadgeClass = (visibility: string) => {
         return visibility === 'PRIVATE' ? 'bg-primary-50' : 'bg-info-50';
     };
@@ -69,16 +102,22 @@ const AssessmentHeader = ({ assessmentDetails }: { assessmentDetails: any }) => 
         return mode !== 'EXAM' ? 'bg-neutral-50' : 'bg-success-50';
     };
 
-    const getStatusBadgeClass = (status: string) => {
-        return status === 'COMPLETED' ? 'bg-success-50' : 'bg-neutral-100';
+    const timing = getAssessmentTiming(
+        assessmentDetails?.[0]?.status,
+        assessmentDetails?.[0]?.saved_data?.boundation_start_date,
+        assessmentDetails?.[0]?.saved_data?.boundation_end_date
+    );
+    const timingBadgeClass: Record<Exclude<AssessmentTiming, null>, string> = {
+        live: 'bg-success-50',
+        upcoming: 'bg-info-50',
+        ended: 'bg-neutral-100',
+        setupIncomplete: 'bg-warning-50',
     };
-
-    const getStatusIcon = (status: string) => {
-        return status === 'COMPLETED' ? (
-            <CheckCircle size={14} weight="fill" className="text-success-600" />
-        ) : (
-            <PauseCircle size={14} weight="fill" className="text-neutral-400" />
-        );
+    const timingIcon: Record<Exclude<AssessmentTiming, null>, ReactNode> = {
+        live: <Broadcast size={14} weight="fill" className="text-success-600" />,
+        upcoming: <Clock size={14} weight="fill" className="text-info-600" />,
+        ended: <CheckCircle size={14} weight="fill" className="text-neutral-400" />,
+        setupIncomplete: <PauseCircle size={14} weight="fill" className="text-warning-600" />,
     };
 
     const getModeIcon = (mode: string) => {
@@ -115,12 +154,12 @@ const AssessmentHeader = ({ assessmentDetails }: { assessmentDetails: any }) => 
                     <LockSimple size={14} />
                     {assessmentDetails[0]?.saved_data.assessment_visibility?.toLowerCase()}
                 </Badge>
-                <Badge
-                    className={`${chipClass} ${getStatusBadgeClass(assessmentDetails?.[0]?.status)}`}
-                >
-                    {getStatusIcon(assessmentDetails?.[0]?.status)}
-                    {assessmentDetails?.[0]?.status?.toLowerCase()}
-                </Badge>
+                {timing && (
+                    <Badge className={`${chipClass} ${timingBadgeClass[timing]}`}>
+                        {timingIcon[timing]}
+                        {t(`status.${timing}`)}
+                    </Badge>
+                )}
             </div>
         </div>
     );
