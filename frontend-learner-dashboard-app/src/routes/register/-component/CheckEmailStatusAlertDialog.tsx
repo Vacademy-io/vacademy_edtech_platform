@@ -22,10 +22,12 @@ import {
   setTokenInStorage,
 } from "@/lib/auth/sessionUtility";
 import {
+  handleGetMyEarlierAnswers,
   handleGetParticipantsTest,
   handleGetStudentDetailsOfInstitute,
   notifyRegistrationVerified,
 } from "../-services/open-registration-services";
+import { applyEarlierAnswers } from "../-utils/earlier-answers";
 import { TokenKey } from "@/constants/auth/tokens";
 import {
   calculateTimeDifference,
@@ -399,6 +401,15 @@ const CheckEmailStatusAlertDialog = ({
           }),
         }));
         handleCloseAlertDialog();
+        // Fill what the profile left empty (phone, roll no, branch…) from the
+        // learner's earlier registrations here. Only empty fields change, so
+        // anything typed meanwhile stays.
+        const earlierAnswers = await handleGetMyEarlierAnswers(instituteId);
+        if (Object.keys(earlierAnswers).length > 0) {
+          registrationForm.reset((prevValues) =>
+            applyEarlierAnswers(prevValues, earlierAnswers),
+          );
+        }
       }
     },
     onError: (error) => {
@@ -505,6 +516,10 @@ const CheckEmailStatusAlertDialog = ({
         assessmentId={registrationData.assessment_public_dto.assessment_id}
         assessmentName={registrationData.assessment_public_dto.assessment_name}
         timeLeft={timeLeft}
+        autoOpenWhenLive={calculateTimeDifference(
+          serverTime,
+          registrationData.assessment_public_dto.bound_end_time,
+        )}
       />
     );
 

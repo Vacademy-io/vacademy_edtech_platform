@@ -25,6 +25,7 @@ import {
 } from "@/components/common/institute-branding";
 import { useInstituteDetails } from "../live-class/-hooks/useInstituteDetails";
 import { notifyRegistrationVerified } from "../-services/open-registration-services";
+import AssessmentRegistrationCompleted from "./AssessmentRegistrationCompleted";
 import { useTranslation } from "react-i18next";
 
 interface Props {
@@ -40,6 +41,12 @@ interface Props {
    * placeholder here). Optional so the component still stands alone.
    */
   branding?: InstituteBranding;
+  /**
+   * Time left until the assessment starts, ticking every second (from the
+   * register page). When the OTP is verified before the start, the learner sees
+   * the countdown instead of the start page. Without it, the page opens as before.
+   */
+  timeLeft?: { days: number; hours: number; minutes: number; seconds: number };
 }
 
 const RESEND_COOLDOWN = 60;
@@ -50,6 +57,7 @@ const PostRegistrationOTPVerify = ({
   assessmentName,
   instituteId,
   branding: brandingFromParent,
+  timeLeft,
 }: Props) => {
   const { t } = useTranslation("registrationA");
   const navigate = useNavigate();
@@ -58,6 +66,7 @@ const PostRegistrationOTPVerify = ({
   const [isSending, setIsSending] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [timer, setTimer] = useState(0);
+  const [verifiedBeforeStart, setVerifiedBeforeStart] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -153,6 +162,19 @@ const PostRegistrationOTPVerify = ({
       // Email verified: now the "You're registered" email may go out.
       notifyRegistrationVerified(assessmentId);
 
+      // The start page only works once the test is live; before that, show the
+      // countdown (its button opens the test at the start time).
+      const notStartedYet =
+        !!timeLeft &&
+        (!!timeLeft.days ||
+          timeLeft.hours > 0 ||
+          timeLeft.minutes > 0 ||
+          timeLeft.seconds > 0);
+      if (notStartedYet) {
+        setVerifiedBeforeStart(true);
+        return;
+      }
+
       const decoded = await getTokenDecodedData(accessToken);
       const authorities = decoded?.authorities ?? {};
       const userId = decoded?.user;
@@ -187,6 +209,16 @@ const PostRegistrationOTPVerify = ({
   };
 
   const isComplete = otp.every((d) => d !== "");
+
+  if (verifiedBeforeStart && timeLeft)
+    return (
+      <AssessmentRegistrationCompleted
+        assessmentId={assessmentId}
+        assessmentName={assessmentName}
+        timeLeft={timeLeft}
+        autoOpenWhenLive
+      />
+    );
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-b from-primary-50/40 via-background to-background px-4 py-8">

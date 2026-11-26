@@ -1,6 +1,7 @@
 import {
   GET_OPEN_REGISTRATION_DETAILS,
   GET_PARTICIPANTS_STATUS,
+  GET_MY_EARLIER_REGISTRATION_ANSWERS,
   REGISTRATION_VERIFIED_URL,
   GET_USERID_URL,
   PUBLIC_INSTITUTE_BRANDING_URL,
@@ -59,6 +60,27 @@ export const notifyRegistrationVerified = (assessmentId: string) => {
   }).catch((error) => {
     console.warn("[register] registration-verified call failed:", error);
   });
+};
+
+/**
+ * The signed-in learner's answers from earlier registrations in this institute
+ * (field key → answer). Best effort: any failure gives {} and the form stays as is.
+ */
+export const handleGetMyEarlierAnswers = async (
+  instituteId: string
+): Promise<Record<string, string>> => {
+  try {
+    const response = await authenticatedAxiosInstance({
+      method: "GET",
+      url: GET_MY_EARLIER_REGISTRATION_ANSWERS,
+      params: { instituteId },
+    });
+    const data = response?.data;
+    return data && typeof data === "object" && !Array.isArray(data) ? data : {};
+  } catch (error) {
+    console.warn("[register] earlier answers lookup skipped:", error);
+    return {};
+  }
 };
 
 export const handleGetParticipantsTest = async (

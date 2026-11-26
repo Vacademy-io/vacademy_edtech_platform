@@ -159,6 +159,82 @@ export function transformIntoCustomFieldRequestListData(
   };
 }
 
+/**
+ * Keys an admin's form may use for the learner's own name, best match first.
+ * Field keys come from the field label ("Student Name" → `student_name`), so
+ * the built-in `full_name` is only one of the names in use.
+ */
+const LEARNER_NAME_KEYS = [
+  "full_name",
+  "name",
+  "student_name",
+  "student_full_name",
+  "learner_name",
+  "candidate_name",
+  "participant_name",
+];
+
+/** Keys for the learner's own phone, best match first. */
+const LEARNER_PHONE_KEYS = [
+  "phone_number",
+  "mobile_number",
+  "phone",
+  "mobile",
+  "mobile_no",
+  "phone_no",
+  "contact_number",
+  "whatsapp_number",
+  "whatapp_number",
+  "whatsapp",
+];
+
+/** A phone-like key that belongs to someone other than the learner. */
+const NOT_THE_LEARNER = /parent|father|mother|guardian|emergency|alternate|school|college|office/;
+const PHONE_LIKE = /phone|mobile|whats?app/;
+
+const filledValue = (data: DynamicSchemaData, key: string): string => {
+  const field = data[key];
+  return field && typeof field.value === "string" ? field.value.trim() : "";
+};
+
+/**
+ * Only digits and the usual separators, 7–15 digits. Keeps free text (or a
+ * phone-ish key holding something else) out of the registration's phone.
+ */
+const looksLikePhone = (value: string): boolean => {
+  if (!/^\+?[\d\s().-]+$/.test(value)) return false;
+  const digits = value.replace(/\D/g, "").length;
+  return digits >= 7 && digits <= 15;
+};
+
+/** The learner's name from the registration answers, or "" when the form has none. */
+export function learnerNameFrom(data: DynamicSchemaData): string {
+  for (const key of LEARNER_NAME_KEYS) {
+    const value = filledValue(data, key);
+    if (value) return value;
+  }
+  return "";
+}
+
+/**
+ * The learner's phone from the registration answers, or "" when the form has
+ * none. Known keys win; after that any phone/mobile/WhatsApp field that is not
+ * a parent's or a school's number. A value that is not a phone number is skipped.
+ */
+export function learnerPhoneFrom(data: DynamicSchemaData): string {
+  for (const key of LEARNER_PHONE_KEYS) {
+    const value = filledValue(data, key);
+    if (value && looksLikePhone(value)) return value;
+  }
+  for (const key of Object.keys(data)) {
+    const lower = key.toLowerCase();
+    if (!PHONE_LIKE.test(lower) || NOT_THE_LEARNER.test(lower)) continue;
+    const value = filledValue(data, key);
+    if (value && looksLikePhone(value)) return value;
+  }
+  return "";
+}
+
 export function mergeDataToGetUserId(
   data1: OpenRegistrationUserDetails,
   data2: DynamicSchemaData
@@ -181,6 +257,13 @@ export function mergeDataToGetUserId(
       }
     }
   });
+
+  // The copy above only matches identical keys, so a "Student Name" form never
+  // sent a name. The phone is deliberately NOT filled here: an institute that
+  // signs learners in by phone looks the account up by phone when one is sent,
+  // and this page verifies by email — so it is added to the registration only
+  // (see AssessmentRegistrationForm), never to this account lookup.
+  if (!result.full_name?.trim()) result.full_name = learnerNameFrom(data2);
 
   return result;
 }

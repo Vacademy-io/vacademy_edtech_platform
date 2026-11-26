@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
+import vacademy.io.assessment_service.features.assessment.dto.EarlierRegistrationAnswerDto;
 import vacademy.io.assessment_service.features.assessment.dto.ParticipantsDetailsDto;
 import vacademy.io.assessment_service.features.assessment.dto.RegistrationCustomFieldAnswerDto;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.RespondentListDto;
@@ -622,5 +623,26 @@ public interface AssessmentUserRegistrationRepository extends JpaRepository<Asse
             """, nativeQuery = true)
     List<RegistrationCustomFieldAnswerDto> findCustomFieldAnswersForAssessment(
             @Param("assessmentId") String assessmentId,
+            @Param("instituteId") String instituteId);
+
+    // Latest non-blank answer per field key across the registrations of one
+    // learner in one institute, newest registration first.
+    @Query(value = """
+            SELECT DISTINCT ON (cf.field_key)
+                   cf.field_key AS fieldKey,
+                   cfr.answer   AS answer
+            FROM assessment_user_registration aur
+            JOIN assessment_registration_custom_field_response_data cfr ON cfr.assessment_registration_id = aur.id
+            JOIN assessment_custom_fields cf ON cf.id = cfr.custom_field_id
+            WHERE aur.user_id = :userId
+              AND aur.institute_id = :instituteId
+              AND aur.status NOT IN ('DELETED')
+              AND cf.field_key IS NOT NULL
+              AND cfr.answer IS NOT NULL
+              AND length(btrim(cfr.answer)) > 0
+            ORDER BY cf.field_key, aur.created_at DESC
+            """, nativeQuery = true)
+    List<EarlierRegistrationAnswerDto> findLatestRegistrationAnswersOfUser(
+            @Param("userId") String userId,
             @Param("instituteId") String instituteId);
 }
