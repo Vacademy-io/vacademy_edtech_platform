@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { roleDisplayName } from '@/utils/roleUtils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -46,7 +47,8 @@ export default function ResultNotificationRecipientsCard({ roles, onChange }: Pr
         };
         add('ADMIN', t('roles.admin'));
         for (const r of (allRoles as CustomRole[] | undefined) ?? []) {
-            if (r?.name) add(r.name, r.name); // exact stored name → auth resolves its users
+            // Key = exact stored name, so auth resolves its users; label = a readable name.
+            if (r?.name) add(r.name, roleDisplayName(r.name));
         }
         if (!seen.has('STUDENT') && !seen.has('LEARNER')) add('STUDENT', t('roles.learner'));
         return list;

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { roleDisplayName } from '@/utils/roleUtils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -47,7 +48,7 @@ export default function LearnerRequestNotificationCard({ value, onChange }: Prop
         };
         add('ADMIN', t('roles.admin'));
         for (const r of (allRoles as CustomRole[] | undefined) ?? []) {
-            if (r?.name) add(r.name, r.name);
+            if (r?.name) add(r.name, roleDisplayName(r.name));
         }
         return list;
     }, [allRoles, t]);

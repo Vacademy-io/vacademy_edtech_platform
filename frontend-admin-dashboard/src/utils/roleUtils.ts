@@ -43,3 +43,23 @@ export const mapRoleToCustomName = (backendRole: string): string => {
     if (!systemTerm) return backendRole;
     return getTerminology(systemTerm, systemTerm);
 };
+
+/**
+ * A role name fit to show: the institute's own term for system roles ("TEACHER" → "Teacher",
+ * or whatever Naming Settings calls it), other all-caps names title-cased ("COUNSELLOR" →
+ * "Counsellor"), and custom roles typed in mixed case left as they are.
+ */
+export const roleDisplayName = (role: string): string => {
+    let mapped = role;
+    try {
+        mapped = mapRoleToCustomName(role);
+    } catch {
+        // Naming settings unreadable: fall through to the title-cased name.
+    }
+    if (mapped !== role || role !== role.toUpperCase()) return mapped;
+    return role
+        .replace(/[_\s]+/g, ' ')
+        .trim()
+        .toLowerCase()
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+};
