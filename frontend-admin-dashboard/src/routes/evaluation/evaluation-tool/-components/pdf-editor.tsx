@@ -343,6 +343,9 @@ const PDFEvaluator = ({
     };
 
     const [openCalc, setOpenCalc] = useState(false);
+    // The marks palette closes once a number is picked, so the page is clear for
+    // the click that places it.
+    const [isMarksPaletteOpen, setIsMarksPaletteOpen] = useState(false);
 
     const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
     const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
@@ -1716,14 +1719,19 @@ const PDFEvaluator = ({
                                     <TooltipContent>{deleteTool.label}</TooltipContent>
                                 </Tooltip>
                                 <div className="mx-1 h-7 w-px bg-neutral-200" aria-hidden="true" />
-                                <Popover>
+                                <Popover open={isMarksPaletteOpen} onOpenChange={setIsMarksPaletteOpen}>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <PopoverTrigger asChild>
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    className="size-9 rounded-lg hover:bg-neutral-100"
+                                                    className={cn(
+                                                        "size-9 rounded-lg hover:bg-neutral-100",
+                                                        // Armed: a picked number waits for the click that places it.
+                                                        canvasUtils.activeTool === "number" &&
+                                                            "bg-primary-100 hover:bg-primary-100",
+                                                    )}
                                                     aria-label={t("toolbar.insertMarksNumber")}
                                                 >
                                                     <ListNumbers className="size-4" aria-hidden="true" />
@@ -1740,7 +1748,10 @@ const PDFEvaluator = ({
                                                     scale="small"
                                                     layoutVariant="floating"
                                                     buttonType="text"
-                                                    onClick={action}
+                                                    onClick={() => {
+                                                        action();
+                                                        setIsMarksPaletteOpen(false);
+                                                    }}
                                                     value={value.toString()}
                                                     disabled={isLoading}
                                                     className="border border-primary-400 text-base hover:bg-primary-300"

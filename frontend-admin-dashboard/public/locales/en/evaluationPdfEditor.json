@@ -39,7 +39,7 @@
     },
     "controlHelp": {
         "strokeColour": { "label": "Stroke & colour", "description": "Adjust pen thickness/colour — applies to what's selected too." },
-        "marksNumber": { "label": "Marks number", "description": "Insert a numeric mark (0–9, fractions, decimals)." },
+        "marksNumber": { "label": "Marks number", "description": "Pick a numeric mark (0–9, fractions, decimals), then click the page where it should go." },
         "upload": { "label": "Upload", "description": "Load an evaluated PDF from your device and continue on it." },
         "download": { "label": "Download", "description": "Download the annotated answer sheet." },
         "reset": { "label": "Reset", "description": "Clear all annotations from every page." },
