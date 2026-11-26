@@ -7,7 +7,7 @@
         "question": "Question"
     },
     "toasts": {
-        "revaluateSuccess": "La tentative pour cette évaluation a été réévaluée pour tous les étudiants. Les participants doivent vérifier leur e-mail !"
+        "revaluateSuccess": "Les questions sélectionnées ont été recorrigées pour tous les étudiants. Les participants doivent vérifier leur e-mail !"
     },
     "actions": {
         "revaluate": "Réévaluer"

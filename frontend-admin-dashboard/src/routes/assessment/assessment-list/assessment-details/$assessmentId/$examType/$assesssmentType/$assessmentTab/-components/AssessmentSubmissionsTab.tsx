@@ -401,6 +401,7 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
         }
     }, []);
     const [bulkCheckOpen, setBulkCheckOpen] = useState(false);
+    const [revaluateChooserOpen, setRevaluateChooserOpen] = useState(false);
     // "Check submitted copies": null = closed; [] = every submitted copy on the
     // assessment (toolbar button); ids = the checked rows (bulk-actions menu).
     const [submittedCheckScope, setSubmittedCheckScope] = useState<string[] | null>(null);
@@ -1673,7 +1674,10 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                                     })
                                 }
                             />
-                            <Dialog>
+                            <Dialog
+                                open={revaluateChooserOpen}
+                                onOpenChange={setRevaluateChooserOpen}
+                            >
                                 <Tooltip>
                                     <DialogTrigger asChild>
                                         <TooltipTrigger asChild>
@@ -1697,8 +1701,12 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                                         {t('dialogs.revaluate.title')}
                                     </h1>
                                     <div className="flex flex-col items-center justify-center gap-4 p-4">
-                                        <AssessmentGlobalLevelRevaluateAssessment />
-                                        <AssessmentGlobalLevelRevaluateQuestionWise />
+                                        <AssessmentGlobalLevelRevaluateAssessment
+                                            onDone={() => setRevaluateChooserOpen(false)}
+                                        />
+                                        <AssessmentGlobalLevelRevaluateQuestionWise
+                                            onDone={() => setRevaluateChooserOpen(false)}
+                                        />
                                     </div>
                                 </DialogContent>
                             </Dialog>
