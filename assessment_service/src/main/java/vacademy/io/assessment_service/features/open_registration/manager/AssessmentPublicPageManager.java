@@ -173,6 +173,20 @@ public class AssessmentPublicPageManager {
         return ResponseEntity.ok(ParticipantPublicResponseDto.builder().remainingAttempts(remainingAttempts).isAlreadyRegistered(true).lastAttemptStatus(recentAttempt.get().getStatus()).build());
     }
 
+    /**
+     * The signed-in learner's own answers from earlier registrations in this
+     * institute, as field key to answer. Only ever the caller's own rows.
+     */
+    public ResponseEntity<Map<String, String>> getMyEarlierAnswers(String userId, String instituteId) {
+        Map<String, String> answers = new LinkedHashMap<>();
+        if (!StringUtils.hasText(userId) || !StringUtils.hasText(instituteId)) {
+            return ResponseEntity.ok(answers);
+        }
+        assessmentUserRegistrationRepository.findLatestRegistrationAnswersOfUser(userId, instituteId)
+                .forEach(row -> answers.put(row.getFieldKey(), row.getAnswer()));
+        return ResponseEntity.ok(answers);
+    }
+
     public ResponseEntity<ParticipantPublicResponseDto> checkBatchRegistration(String assessmentId, String instituteId, String userId, String psIds) {
         Optional<Assessment> assessment = assessmentRepository.findByAssessmentIdAndInstituteId(assessmentId, instituteId);
         if (assessment.isEmpty()) {

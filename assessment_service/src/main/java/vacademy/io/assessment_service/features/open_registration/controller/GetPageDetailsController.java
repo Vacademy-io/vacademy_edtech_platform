@@ -13,6 +13,8 @@ import vacademy.io.assessment_service.features.open_registration.dto.Participant
 import vacademy.io.assessment_service.features.open_registration.manager.AssessmentPublicPageManager;
 import vacademy.io.common.auth.model.CustomUserDetails;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/assessment-service/open-registrations/v1")
 public class GetPageDetailsController {
@@ -29,6 +31,17 @@ public class GetPageDetailsController {
     @GetMapping("/participant-status")
     public ResponseEntity<ParticipantPublicResponseDto> getParticipantStatus(@RequestParam("assessmentId") String assessmentId, @RequestParam("instituteId") String instituteId, @RequestParam("userId") String userId, @RequestParam(value = "psIds", required = false) String psIds) {
         return assessmentPublicPageManager.getParticipantStatus(assessmentId, instituteId, userId, psIds);
+    }
+
+    /**
+     * The signed-in learner's answers from their earlier registrations in this
+     * institute (field key to answer), used to fill the same fields on the next
+     * registration form. Authenticated; never returns another user's answers.
+     */
+    @GetMapping("/my-earlier-answers")
+    public ResponseEntity<Map<String, String>> getMyEarlierAnswers(@RequestAttribute("user") CustomUserDetails user,
+                                                                   @RequestParam("instituteId") String instituteId) {
+        return assessmentPublicPageManager.getMyEarlierAnswers(user.getUserId(), instituteId);
     }
 
     /**
