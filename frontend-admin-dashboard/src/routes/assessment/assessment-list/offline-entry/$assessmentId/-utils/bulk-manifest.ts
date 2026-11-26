@@ -278,7 +278,8 @@ const SAMPLE_README = `Bulk offline data entry
                    to identify STU001 on its own.
      full_name     Ignored on import — it is there so you can see who is who
                    while filling the sheet in.
-     total_marks   The total the student scored.
+     total_marks   The total the student scored. It can be negative when the
+                   paper has negative marking (e.g. -5).
      student_pdf   Path (or just the file name) of their answer sheet.
      checked_pdf   Path of the checked copy.
      report_pdf    Path of the report.
@@ -423,7 +424,10 @@ export const parseManifest = (
         let totalMarks: number | null = null;
         if (rawMarks) {
             const value = Number(rawMarks);
-            if (!Number.isFinite(value) || value < 0) {
+            // Negative totals are real scores on papers with negative marking
+            // (e.g. -5), and the backend stores them as-is, so only reject
+            // values that are not numbers at all.
+            if (!Number.isFinite(value)) {
                 errors.push(`total_marks "${rawMarks}" is not a valid score`);
             } else {
                 totalMarks = value;
