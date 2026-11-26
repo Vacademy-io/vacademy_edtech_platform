@@ -74,7 +74,6 @@ public class RenewalPaymentService {
     private vacademy.io.admin_core_service.features.user_subscription.service.ReferralRewardService referralRewardService;
 
     /** Same dunning ceiling as RenewalChargeService (policy override not yet snapshotted). */
-    private static final int MAX_RENEWAL_ATTEMPTS = 3;
 
     /**
      * Handles renewal payment confirmation from webhook
@@ -487,7 +486,8 @@ public class RenewalPaymentService {
             int attempts = userPlan.getRenewalAttemptCount() != null ? userPlan.getRenewalAttemptCount() : 0;
             // Same rule as the sweep: a configured grace period (end_date + N days) governs;
             // otherwise the attempt ceiling. Keeps the two failure paths from disagreeing.
-            boolean exhausted = gracePolicy.isExhausted(userPlan, new Date(), attempts, MAX_RENEWAL_ATTEMPTS);
+            int maxAttempts = gracePolicy.maxChargeAttempts(userPlan.getEnrollInvite());
+            boolean exhausted = gracePolicy.isExhausted(userPlan, new Date(), attempts, maxAttempts);
             if (exhausted) {
                 userPlan.setStatus(UserPlanStatusEnum.EXPIRED.name());
                 userPlan.setNextChargeAt(null);
@@ -501,12 +501,12 @@ public class RenewalPaymentService {
                 log.warn("Plan {} exhausted {} renewal attempts (async failure) — expired, {} mapping(s) deactivated",
                         userPlan.getId(), attempts, active.size());
             } else {
-                Calendar c = Calendar.getInstance();
-                c.add(Calendar.DAY_OF_MONTH, 1);
-                userPlan.setNextChargeAt(c.getTime());
+                // Same rule as the sweep: tomorrow while attempts remain, else wait out grace.
+                Date next = gracePolicy.nextLookAt(userPlan, new Date(), attempts, maxAttempts);
+                userPlan.setNextChargeAt(next);
                 userPlanRepository.save(userPlan);
-                log.info("Plan {} async charge failed (attempt {}) — will retry on {}",
-                        userPlan.getId(), attempts, c.getTime());
+                log.info("Plan {} async charge failed (attempt {}/{}), next look on {}",
+                        userPlan.getId(), attempts, maxAttempts, next);
             }
 
             // Send failure notification to user or ROOT_ADMIN (for SUB_ORG)

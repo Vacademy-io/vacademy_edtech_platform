@@ -33,6 +33,12 @@ import java.util.Date;
  * forever without ever expiring.
  *
  * <p>Without a grace period the attempt ceiling governs, exactly as before.
+ *
+ * <p>Grace is about ACCESS, not about how often a card is presented. Within the grace
+ * window the card is charged at most {@link #maxChargeAttempts} times (default 3, one a
+ * day from the renewal date). After that no further charge is presented: the plan is
+ * parked until the day after grace ends, and that sweep expires it without charging.
+ * The member can still pay by hand at any point while access lasts.
  */
 @Slf4j
 @Component
@@ -40,6 +46,54 @@ import java.util.Date;
 public class RenewalGracePolicy {
 
     private final ObjectMapper objectMapper;
+
+    /** Charge attempts per renewal when the invite does not set AUTOPAY_SETTING.MAX_CHARGE_ATTEMPTS. */
+    public static final int DEFAULT_MAX_CHARGE_ATTEMPTS = 3;
+
+    /**
+     * {@code AUTOPAY_SETTING.MAX_CHARGE_ATTEMPTS} on the invite when positive, else
+     * {@link #DEFAULT_MAX_CHARGE_ATTEMPTS}: how many times one renewal may be presented to
+     * the card before charging stops.
+     */
+    public int maxChargeAttempts(EnrollInvite invite) {
+        if (invite != null && StringUtils.hasText(invite.getSettingJson())) {
+            try {
+                JsonNode n = objectMapper.readTree(invite.getSettingJson())
+                        .path("setting").path("AUTOPAY_SETTING").path("MAX_CHARGE_ATTEMPTS");
+                if (n.isNumber() && n.asInt() > 0) {
+                    return n.asInt();
+                }
+            } catch (Exception e) {
+                log.warn("[RenewalGrace] Could not read MAX_CHARGE_ATTEMPTS for invite {}: {}",
+                        invite.getId(), e.getMessage());
+            }
+        }
+        return DEFAULT_MAX_CHARGE_ATTEMPTS;
+    }
+
+    /**
+     * True when a grace period still holds the plan open but every charge attempt has been
+     * used: the sweep must not present the card again, only wait for grace to end.
+     */
+    public boolean attemptsUsedUpInGrace(UserPlan plan, Date now, int attempts, int maxAttempts) {
+        return isConfigured(plan) && attempts >= maxAttempts && !isPastGrace(plan, now);
+    }
+
+    /**
+     * When the sweep should next look at a plan whose charge failed: tomorrow while
+     * attempts remain (or when no grace applies); once they are used up under a grace
+     * period, the first day after grace ends, when the sweep expires it without charging.
+     * Stored at UTC midnight, the zone next_charge_at is read back in.
+     */
+    public Date nextLookAt(UserPlan plan, Date now, int attempts, int maxAttempts) {
+        Date tomorrow = Date.from(now.toInstant().plus(java.time.Duration.ofDays(1)));
+        if (attempts < maxAttempts || !isConfigured(plan)) {
+            return tomorrow;
+        }
+        Date afterGrace = Date.from(lastGraceDay(plan).plusDays(1)
+                .atStartOfDay(java.time.ZoneOffset.UTC).toInstant());
+        return afterGrace.after(tomorrow) ? afterGrace : tomorrow;
+    }
 
     /** {@code AUTOPAY_SETTING.GRACE_PERIOD_DAYS} on the invite; null when unset or not positive. */
     public Integer graceDays(EnrollInvite invite) {
