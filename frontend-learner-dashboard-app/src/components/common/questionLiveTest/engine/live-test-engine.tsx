@@ -13,6 +13,7 @@ import { useAttemptContext } from "./attempt-storage";
 import { useAttemptAutosave } from "./use-attempt-autosave";
 import { useExamClock } from "./use-exam-clock";
 import { useManualPaperDefaultScreen } from "./use-manual-paper-default-screen";
+import { useMarkOpenQuestionVisited } from "./use-mark-open-question-visited";
 import { useLiveTestController } from "./use-live-test-controller";
 import { useQuestionNavigation } from "./use-question-navigation";
 import {
@@ -63,6 +64,7 @@ export function LiveTestEngine({
   const navigation = useQuestionNavigation();
   const hasAssessment = useAssessmentStore((s) => Boolean(s.assessment));
   useManualPaperDefaultScreen(attempt.evaluationType);
+  useMarkOpenQuestionVisited();
   const tabSwitchCount = useAssessmentStore((s) => s.tabSwitchCount);
 
   const { setShowSubmitModal } = controller;

@@ -13,6 +13,20 @@ import {
 import { useProctoring } from "@/hooks";
 import { WarningCircle, SpinnerGap } from "@phosphor-icons/react";
 import { useAssessmentStore } from "@/stores/assessment-store";
+import {
+  getQuestionStatusLabel,
+  QUESTION_LEGEND_ORDER,
+  type QuestionStatus,
+} from "@/components/common/questionLiveTest/question-status-colors";
+import { paperSummary } from "@/components/common/questionLiveTest/widgets/palette-logic";
+
+const STATUS_TONE: Record<QuestionStatus, string> = {
+  answered: "text-success-700",
+  "not-answered": "text-danger-600",
+  "not-visited": "text-neutral-500",
+  marked: "text-violet-700", // design-lint-ignore: status colour, as on the palette chips
+  "answered-marked": "text-violet-700", // design-lint-ignore: status colour, as on the palette chips
+};
 
 interface SubmitModalProps {
   open: boolean;
@@ -22,6 +36,7 @@ interface SubmitModalProps {
 
 export function SubmitModal({ open, onOpenChange, onConfirm }: SubmitModalProps) {
   const { t } = useTranslation("courseComponentsExtra");
+  const { t: tStatus } = useTranslation("questionTest");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const assessment = useAssessmentStore((s) => s.assessment);
   const questionStates = useAssessmentStore((s) => s.questionStates);
@@ -34,23 +49,13 @@ export function SubmitModal({ open, onOpenChange, onConfirm }: SubmitModalProps)
     preventCopy: false,
   });
 
-  const counts = useMemo(() => {
-    let total = 0;
-    let answered = 0;
-    let marked = 0;
-    let notVisited = 0;
-    assessment?.section_dtos?.forEach((section) => {
-      section.question_preview_dto_list?.forEach((question) => {
-        total += 1;
-        const state = questionStates[question.question_id];
-        if (state?.isAnswered) answered += 1;
-        if (state?.isMarkedForReview) marked += 1;
-        if (!state?.isVisited) notVisited += 1;
-      });
-    });
-    const unanswered = Math.max(0, total - answered);
-    return { total, answered, marked, unanswered, notVisited };
-  }, [assessment, questionStates]);
+  // The question palette's statuses and labels, so the two always agree: an
+  // answered question marked for review is "Answered & marked" (evaluated,
+  // never unanswered), and an answered question is never "Not visited".
+  const summary = useMemo(
+    () => paperSummary(assessment?.section_dtos ?? [], questionStates),
+    [assessment, questionStates],
+  );
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
@@ -73,22 +78,23 @@ export function SubmitModal({ open, onOpenChange, onConfirm }: SubmitModalProps)
             {t("submitModal.title")}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            {counts.total > 0 && counts.unanswered > 0
+            {summary.total > 0 && summary.unanswered > 0
               ? t("submitModal.descriptionWithUnanswered", {
-                  unanswered: counts.unanswered,
-                  total: counts.total,
+                  unanswered: summary.unanswered,
+                  total: summary.total,
                 })
               : t("submitModal.description")}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        {counts.total > 0 && (
+        {summary.total > 0 && (
           <div className="overflow-hidden rounded-xl border border-neutral-200">
             {[
-              { label: t("submitModal.answered"), value: counts.answered, tone: "text-success-700" },
-              { label: t("submitModal.unanswered"), value: counts.unanswered, tone: "text-danger-600" },
-              { label: t("submitModal.markedForReview"), value: counts.marked, tone: "text-violet-700" },
-              { label: t("submitModal.notVisited"), value: counts.notVisited, tone: "text-neutral-500" },
-              { label: t("submitModal.totalQuestions"), value: counts.total, tone: "text-neutral-800" },
+              ...QUESTION_LEGEND_ORDER.map((status) => ({
+                label: getQuestionStatusLabel(status, tStatus),
+                value: summary.counts[status],
+                tone: STATUS_TONE[status],
+              })),
+              { label: t("submitModal.totalQuestions"), value: summary.total, tone: "text-neutral-800" },
             ].map((row, index) => (
               <div
                 key={row.label}

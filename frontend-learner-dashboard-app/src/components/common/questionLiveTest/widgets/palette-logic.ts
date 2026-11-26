@@ -39,6 +39,31 @@ export function statusCounts(
   return counts;
 }
 
+export interface PaperSummary {
+  total: number;
+  counts: StatusCounts;
+  /** Not Answered + Marked for Review + Not Visited. */
+  unanswered: number;
+}
+
+/**
+ * The submit dialog's numbers for the whole paper, from the same chip status
+ * as the palette, so the two never disagree. An answered question marked for
+ * review is evaluated, so it never counts as unanswered.
+ */
+export function paperSummary(
+  sections: { question_preview_dto_list?: Pick<QuestionDto, "question_id">[] }[],
+  questionStates: Record<string, QuestionState | undefined>,
+): PaperSummary {
+  const questions = sections.flatMap((section) => section.question_preview_dto_list ?? []);
+  const counts = statusCounts(questions, questionStates);
+  return {
+    total: questions.length,
+    counts,
+    unanswered: questions.length - counts.answered - counts["answered-marked"],
+  };
+}
+
 export interface ExamSummaryRow {
   sectionId: string;
   name: string;

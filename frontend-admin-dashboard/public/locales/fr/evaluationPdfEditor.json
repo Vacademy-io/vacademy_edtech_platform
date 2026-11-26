@@ -39,7 +39,7 @@
     },
     "controlHelp": {
         "strokeColour": { "label": "Trait et couleur", "description": "Ajustez l'épaisseur/la couleur du stylo — s'applique aussi à la sélection en cours." },
-        "marksNumber": { "label": "Nombre de points", "description": "Insérez une note numérique (0–9, fractions, décimales)." },
+        "marksNumber": { "label": "Nombre de points", "description": "Choisissez une note numérique (0–9, fractions, décimales), puis cliquez sur la page à l'endroit où elle doit aller." },
         "upload": { "label": "Importer", "description": "Chargez une copie PDF déjà évaluée depuis votre appareil et poursuivez dessus." },
         "download": { "label": "Télécharger", "description": "Téléchargez la copie annotée." },
         "reset": { "label": "Réinitialiser", "description": "Effacez toutes les annotations de chaque page." },

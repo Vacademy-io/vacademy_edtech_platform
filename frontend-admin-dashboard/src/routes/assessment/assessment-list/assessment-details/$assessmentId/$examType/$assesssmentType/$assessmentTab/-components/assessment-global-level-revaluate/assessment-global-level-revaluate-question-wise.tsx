@@ -31,7 +31,8 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { sanitizeRichHtml } from '@/lib/sanitize-html';
 
-export function AssessmentGlobalLevelRevaluateQuestionWise() {
+// onDone closes the "Reevaluate Result" chooser this sits in, once the re-mark has gone through.
+export function AssessmentGlobalLevelRevaluateQuestionWise({ onDone }: { onDone?: () => void }) {
     const { t } = useTranslation('assessmentGlobalRevaluateQuestionWise');
     const [openDialog, setOpenDialog] = useState(false);
     const instituteId = getInstituteId();
@@ -115,6 +116,7 @@ export function AssessmentGlobalLevelRevaluateQuestionWise() {
                 duration: 4000,
             });
             setOpenDialog(false);
+            onDone?.();
         },
         onError: (error: unknown) => {
             throw error;

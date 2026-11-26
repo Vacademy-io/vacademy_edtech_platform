@@ -13,7 +13,15 @@ import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
-export type EvaluationTool = 'select' | 'pen' | 'tick' | 'cross' | 'text' | 'box' | 'circle';
+export type EvaluationTool =
+    | 'select'
+    | 'pen'
+    | 'tick'
+    | 'cross'
+    | 'text'
+    | 'box'
+    | 'circle'
+    | 'number';
 
 const DEFAULT_STROKE_WIDTH = 3;
 
@@ -229,18 +237,29 @@ const useFabric = (fabricCanvas: Canvas | null) => {
         );
     };
 
+    // Picking a number from the marks palette arms it; the next click on the page
+    // drops it there, centred on the click. It used to land at a fixed x=100 and
+    // y=window.scrollY — but the page scrolls inside its own pane, so scrollY was
+    // always 0 and every number sat at the top-left under the floating toolbar.
     const addNumber = async (num: string): Promise<void> => {
-        if (!fabricCanvas) return;
-        const text = new IText(num, {
-            left: 100,
-            top: window.scrollY ?? 100,
-            fontSize: 50,
-            fill: 'blue',
-            selectable: true,
-            editable: false,
-        });
-        fabricCanvas.add(text);
-        fabricCanvas.requestRenderAll();
+        armStamp(
+            'number',
+            (point) => {
+                const text = new IText(num, {
+                    fontSize: 50,
+                    fill: 'blue',
+                    selectable: true,
+                    editable: false,
+                });
+                text.set({
+                    left: point.x - text.width / 2,
+                    top: point.y - text.height / 2,
+                });
+                return text;
+            },
+            // One number per pick, then back to Select so the evaluator can nudge it.
+            { sticky: false }
+        );
     };
 
     const addRectangle = (): void => {

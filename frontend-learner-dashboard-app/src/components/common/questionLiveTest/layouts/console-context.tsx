@@ -2,7 +2,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -41,27 +40,11 @@ export const MAX_ZOOM_STEP = 6;
 const ConsoleContext = createContext<ConsoleContextValue | null>(null);
 
 /**
- * Opening a question marks it visited, so an open question with no saved
- * answer shows as Not Answered (the console rule). Navigation does this
- * through setCurrentQuestion; the first question of a freshly loaded paper
- * and the question opened by a section time-up switch are set directly, so
- * they are covered here.
+ * Shared state of the console layout: theme, chrome, actions and overlays.
+ * The open question is marked visited by the engine
+ * (engine/use-mark-open-question-visited.ts), for every layout.
  */
-function useMarkOpenQuestionVisited() {
-  const questionId = useAssessmentStore((s) => s.currentQuestion?.question_id);
-  const isVisited = useAssessmentStore((s) =>
-    questionId ? Boolean(s.questionStates[questionId]?.isVisited) : true,
-  );
-  const isSubmitted = useAssessmentStore((s) => s.isSubmitted);
-  useEffect(() => {
-    if (!questionId || isVisited || isSubmitted) return;
-    useAssessmentStore.getState().setQuestionState(questionId, { isVisited: true });
-  }, [questionId, isVisited, isSubmitted]);
-}
-
-/** Shared state of the console layout: theme, chrome, actions and overlays. */
 export function ConsoleProvider({ children }: { children: ReactNode }) {
-  useMarkOpenQuestionVisited();
   const { examTheme } = useLiveTestUi();
   const { playMode, openSubmitModal } = useLiveTestEngine();
   const [overlay, setOverlay] = useState<ConsoleOverlay>(null);

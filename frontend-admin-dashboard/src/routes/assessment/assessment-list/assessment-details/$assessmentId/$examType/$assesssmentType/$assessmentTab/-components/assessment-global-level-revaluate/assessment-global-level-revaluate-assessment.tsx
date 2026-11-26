@@ -12,7 +12,8 @@ import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSett
 import { getTerminology, getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
 import { useTranslation } from 'react-i18next';
 
-const AssessmentGlobalLevelRevaluateAssessment = () => {
+// onDone closes the "Reevaluate Result" chooser this sits in, once the re-mark has gone through.
+const AssessmentGlobalLevelRevaluateAssessment = ({ onDone }: { onDone?: () => void }) => {
     const { t } = useTranslation('assessmentGlobalLevelRevaluate');
     const [openDialog, setOpenDialog] = useState(false);
     const { assessmentId } = Route.useParams();
@@ -44,6 +45,7 @@ const AssessmentGlobalLevelRevaluateAssessment = () => {
                 duration: 4000,
             });
             setOpenDialog(false);
+            onDone?.();
         },
         onError: (error: unknown) => {
             throw error;

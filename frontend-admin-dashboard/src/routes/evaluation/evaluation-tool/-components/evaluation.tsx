@@ -172,13 +172,23 @@ export default function Evaluation({
         // so blocks flow top-to-bottom instead of compressing and overlapping on
         // short/small screens.
         <div className="flex w-full flex-col gap-4">
-            {/* Running total — the figure the evaluator most wants to track */}
-            <div className="flex items-center justify-between rounded-md border border-primary-100 bg-primary-50 px-3 py-2">
-                <span className="text-xs font-medium text-neutral-600">{t('totalAwarded')}</span>
-                <span className="text-sm font-bold tabular-nums text-primary-500">
-                    {totals.scored} <span className="text-neutral-400">/ {totals.max}</span>
-                </span>
-            </div>
+            {/* Running total — the figure the evaluator most wants to track. The
+                stand-alone tool has no questions to enter marks against, so there is
+                no total to show (it used to read "0 / 0"). */}
+            {allQuestions.length > 0 && (
+                <div className="flex items-center justify-between rounded-md border border-primary-100 bg-primary-50 px-3 py-2">
+                    <span className="text-xs font-medium text-neutral-600">
+                        {t('totalAwarded')}
+                    </span>
+                    <span className="text-sm font-bold tabular-nums text-primary-500">
+                        {totals.scored}
+                        {/* No marking scheme on the questions: just the awarded figure. */}
+                        {totals.max > 0 && (
+                            <span className="text-neutral-400"> / {totals.max}</span>
+                        )}
+                    </span>
+                </div>
+            )}
 
             {/* Marks entry — single overall field for one-question (slide) assessments,
                 otherwise the per-question table. */}

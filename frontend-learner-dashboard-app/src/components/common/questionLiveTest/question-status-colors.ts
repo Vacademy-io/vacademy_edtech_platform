@@ -71,6 +71,11 @@ export const QUESTION_LEGEND_ORDER: QuestionStatus[] = [
   "answered-marked",
 ];
 
-/** Statuses that carry the "marked for review" dot in the corner of a chip. */
-export const isMarkedStatus = (status: QuestionStatus): boolean =>
-  status === "marked" || status === "answered-marked";
+/**
+ * Statuses that carry the green dot in the corner of a chip: an answer saved
+ * under a review mark. "Marked for review" (no answer) has the same violet
+ * chip without the dot, so the two can be told apart (the console chips do
+ * the same with a green tick).
+ */
+export const hasAnsweredMarkDot = (status: QuestionStatus): boolean =>
+  status === "answered-marked";
