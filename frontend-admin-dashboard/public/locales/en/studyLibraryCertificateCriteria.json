@@ -1,0 +1,124 @@
+{
+    "willReceiveByRule": "Learners on this course will receive certificates once they meet the rule below.",
+    "earnHeading": "How do learners earn the certificate?",
+    "mode": {
+        "PROGRESS": {
+            "label": "Course progress",
+            "description": "Complete a set percentage of the course, as before."
+        },
+        "SCORE": {
+            "label": "Marks in tests",
+            "description": "Pass the quizzes and assessments you choose, whatever their course progress."
+        },
+        "PROGRESS_AND_SCORE": {
+            "label": "Progress and marks",
+            "description": "Complete the course percentage and pass the tests."
+        }
+    },
+    "scopeHeading": "Which tests count?",
+    "scope": {
+        "ALL": "Every quiz and assessment in this course",
+        "CUSTOM": "Only the modules, chapters or tests I pick"
+    },
+    "typesHeading": "Kinds of test to count",
+    "type": {
+        "QUIZ": "Quiz",
+        "ASSESSMENT": "Assessment"
+    },
+    "typePlural": {
+        "QUIZ": "Quizzes",
+        "ASSESSMENT": "Assessments"
+    },
+    "typesHint": "A whole course, module or chapter counts these kinds of test inside it, including ones added later. A test you tick yourself always counts.",
+    "picker": {
+        "loading": "Loading this course's tests…",
+        "error": "Could not load this course's tests.",
+        "empty": "This course has no quizzes or assessments yet. Add a Quiz or Assessment slide first.",
+        "noModule": "Other chapters",
+        "noChapter": "Unnamed chapter",
+        "untitled": "Untitled test",
+        "draft": "Draft — counts once published",
+        "ownPass": "Pass {{pct}}%"
+    },
+    "ruleHeading": "To earn the certificate, a learner must",
+    "rule": {
+        "ALL": "Pass every test",
+        "AT_LEAST": "Pass at least",
+        "AT_LEAST_SUFFIX": "of the tests",
+        "AVERAGE": "Reach an average score across the tests"
+    },
+    "passMarkLabel": "Pass mark",
+    "averageLabel": "Average needed",
+    "percentSuffix": "% of the test's marks",
+    "useOwnPass": "Use a quiz's own pass % when it has one (this mark covers the rest)",
+    "summary": {
+        "count_one": "{{count}} published test counts right now.",
+        "count_other": "{{count}} published tests count right now.",
+        "none": "No published test matches this rule yet, so nobody can earn the certificate until one does."
+    },
+    "notes": "A learner's best attempt counts. Assessment marks count only after they are released to the learner. Tests not attempted count as 0 in an average.",
+    "errors": {
+        "pickTests": "Pick at least one module, chapter or test.",
+        "pickType": "Pick quizzes, assessments or both."
+    },
+    "table": {
+        "testsColumn": "Tests",
+        "passedOf": "{{passed}}/{{total}} passed",
+        "average": "Avg {{pct}}%",
+        "awaiting_one": "{{count}} awaiting marks",
+        "awaiting_other": "{{count}} awaiting marks",
+        "viewDetails": "View test results",
+        "issueAnywayError": "Certificates may be switched off for this course. Check the course's certificate settings.",
+        "generateErrorRule": "Check that certificates are enabled for this course and the learner meets its certificate rule.",
+        "issueAnyway": "Issue anyway",
+        "issueAnywayTitle": "Issue a certificate anyway?",
+        "issueAnywayBody": "{{name}} has not met this course's certificate rule yet. Issue the certificate anyway? Use this for offline exams or special cases — they will get the certificate email.",
+        "issueAnywayConfirm": "Issue certificate",
+        "thisLearner": "This learner",
+        "cancel": "Cancel"
+    },
+    "stats": {
+        "awaitingSubtitle": "Met the course rule, not issued yet",
+        "closeTitle": "Close to earning",
+        "closeSubtitleTests": "One test short of the rule",
+        "closeSubtitleAverage": "Average within 10 points of the bar"
+    },
+    "tab": {
+        "earnedBy": "Earned by:",
+        "rule": {
+            "SCORE": "marks in tests ({{n}} counted in this batch)",
+            "PROGRESS_AND_SCORE": "{{pct}}% progress and marks in tests ({{n}} counted in this batch)"
+        },
+        "noTestsTitle": "No test matches this course's certificate rule",
+        "noTestsBody": "Nobody in this batch can earn the certificate until a published quiz or assessment matches the rule. Check the rule in settings.",
+        "awaitingResults_one": "{{count}} learner is waiting for test marks to be checked or released.",
+        "awaitingResults_other": "{{count}} learners are waiting for test marks to be checked or released."
+    },
+    "dialog": {
+        "heading": "Certificate progress",
+        "loading": "Loading…",
+        "error": "Could not load this learner's results.",
+        "eligible": "Meets the rule — the certificate can be issued.",
+        "notEligible": "Has not met the rule yet.",
+        "progressLine": "Course progress: {{pct}}% (needs {{threshold}}%)",
+        "ruleAll": "Must pass every test — {{passed}} of {{total}} passed",
+        "ruleAtLeast": "Must pass at least {{required}} — {{passed}} of {{total}} passed",
+        "ruleAverage": "Average needed: {{bar}}% — now {{avg}}%",
+        "blocker": {
+            "NO_TESTS_FOUND": "No published test in this batch matches the rule.",
+            "ASSESSMENT_SCORES_UNAVAILABLE": "Assessment marks could not be loaded right now. Try again shortly."
+        },
+        "status": {
+            "PASSED": "Passed",
+            "FAILED": "Not passed",
+            "COMPLETED": "Done",
+            "NOT_ATTEMPTED": "Not attempted",
+            "AWAITING_RESULT": "Awaiting marks"
+        },
+        "score": "Best {{pct}}%",
+        "passMark": "pass {{pct}}%",
+        "attempts_one": "{{count}} attempt",
+        "attempts_other": "{{count}} attempts",
+        "close": "Close"
+    }
+}
