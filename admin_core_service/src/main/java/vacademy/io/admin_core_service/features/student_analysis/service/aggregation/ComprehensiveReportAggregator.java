@@ -79,6 +79,18 @@ public class ComprehensiveReportAggregator {
     public ComprehensiveStudentReport collect(
             String userId, String instituteId, String batchId,
             LocalDate startDate, LocalDate endDate, Set<String> modules, boolean strictBatch) {
+        return collect(userId, instituteId, batchId, startDate, endDate, modules, strictBatch, null, null);
+    }
+
+    /**
+     * @param assessmentIds  when not null, assessments, marks by subject, topics and mistakes cover
+     *                       only these assessments (the Reports tab assessment filter)
+     * @param liveSessionIds when not null, attendance covers only classes of these live sessions
+     */
+    public ComprehensiveStudentReport collect(
+            String userId, String instituteId, String batchId,
+            LocalDate startDate, LocalDate endDate, Set<String> modules, boolean strictBatch,
+            Set<String> assessmentIds, Set<String> liveSessionIds) {
 
         final boolean scoped = strictBatch && batchId != null;
         final Set<String> batchSlides = scoped ? subjectMarksCollector.batchSlideIds(batchId) : null;
@@ -102,7 +114,8 @@ public class ComprehensiveReportAggregator {
 
             // Selected modules only — excluded ones stay null and are never queried.
             CompletableFuture<AttendanceSection> attendanceFuture = has(mods, ReportModule.ATTENDANCE)
-                    ? CompletableFuture.supplyAsync(() -> attendanceCollector.collect(userId, batchId, startDate, endDate, scoped), executor)
+                    ? CompletableFuture.supplyAsync(() -> attendanceCollector.collect(
+                            userId, batchId, startDate, endDate, scoped, liveSessionIds), executor)
                     : null;
 
             // No `batchId != null` gate: the query treats a null batch as "all of the learner's
@@ -113,15 +126,18 @@ public class ComprehensiveReportAggregator {
                     : null;
 
             CompletableFuture<AcademicsSection> academicsFuture = has(mods, ReportModule.ACADEMICS)
-                    ? CompletableFuture.supplyAsync(() -> academicsCollector.collect(
-                            userId, instituteId, scoped ? batchId : null, startDate, endDate), executor)
+                    ? CompletableFuture.supplyAsync(() -> academicsCollector.onlyAssessments(
+                            academicsCollector.collect(userId, instituteId, scoped ? batchId : null, startDate, endDate),
+                            assessmentIds), executor)
                     : null;
+            // Picked assessments: slide marks (assignments, questions, quizzes) are left out.
+            final Set<String> markSlides = assessmentIds != null ? Set.of() : batchSlides;
 
             // "Marks by Subject" is folded under ACADEMICS (no new ReportModule key) and reuses
             // the already-collected AcademicsSection (assessments) to avoid a second HMAC call.
             CompletableFuture<SubjectMarksSection> subjectMarksFuture = academicsFuture != null
                     ? academicsFuture.thenApplyAsync(
-                            ac -> subjectMarksCollector.collect(userId, ac, startDate, endDate, batchSlides), executor)
+                            ac -> subjectMarksCollector.collect(userId, ac, startDate, endDate, markSlides), executor)
                     : null;
 
             CompletableFuture<StudyHabitsSection> activityFuture = has(mods, ReportModule.ACTIVITY)
@@ -149,8 +165,12 @@ public class ComprehensiveReportAggregator {
                     : null;
 
             // Scoped to a batch: only analysed attempts of its assessments and slides count.
+            // Picked assessments: only analysed attempts of those (already batch scoped) assessments.
             CompletableFuture<LearningInsightsSection> learningInsightsFuture = !has(mods, ReportModule.LEARNING_INSIGHTS)
                     ? null
+                    : assessmentIds != null && academicsFuture != null
+                    ? academicsFuture.thenApplyAsync(ac -> learningInsightsCollector.collect(
+                            userId, startDate, endDate, batchSources(ac, Set.of())), executor)
                     : scoped && academicsFuture != null
                     ? academicsFuture.thenApplyAsync(ac -> learningInsightsCollector.collect(
                             userId, startDate, endDate, batchSources(ac, batchSlides)), executor)

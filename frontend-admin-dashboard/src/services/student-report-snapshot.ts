@@ -102,6 +102,16 @@ export interface StudentReportSnapshot {
         late?: number | null;
         total_sessions?: number | null;
         weekly?: { week: string; percentage: number | null }[] | null;
+        /** Each class in the window, newest last. */
+        sessions?:
+            | {
+                  session_id?: string | null;
+                  date?: string | null;
+                  title?: string | null;
+                  subject?: string | null;
+                  status?: string | null;
+              }[]
+            | null;
     } | null;
     course_progress?: {
         available: boolean;
@@ -120,13 +130,23 @@ export interface StudentReportSnapshot {
 /** Strength / weakness cut-off on topic accuracy — the same 60% line the AI learner report uses. */
 export const STRENGTH_THRESHOLD = 60;
 
-export const fetchStudentReportSnapshot = async (params: {
+export interface StudentReportSnapshotParams {
     userId: string;
     instituteId: string;
     batchId?: string;
     startDate: string;
     endDate: string;
-}): Promise<StudentReportSnapshot> => {
+    /** Only these assessments; none means all of them. */
+    assessmentIds?: string[];
+    /** Only classes of these live sessions; none means all of them. */
+    liveSessionIds?: string[];
+}
+
+const idsParam = (ids?: string[]) => (ids && ids.length > 0 ? [...ids].sort().join(',') : undefined);
+
+export const fetchStudentReportSnapshot = async (
+    params: StudentReportSnapshotParams
+): Promise<StudentReportSnapshot> => {
     const { data } = await authenticatedAxiosInstance.get<StudentReportSnapshot>(
         `${STUDENT_ANALYSIS_BASE}/snapshot`,
         {
@@ -136,21 +156,24 @@ export const fetchStudentReportSnapshot = async (params: {
                 batchId: params.batchId || undefined,
                 startDate: params.startDate,
                 endDate: params.endDate,
+                assessmentIds: idsParam(params.assessmentIds),
+                liveSessionIds: idsParam(params.liveSessionIds),
             },
         }
     );
     return data;
 };
 
-export const getStudentReportSnapshotQuery = (params: {
-    userId: string;
-    instituteId: string;
-    batchId?: string;
-    startDate: string;
-    endDate: string;
-}) =>
+export const getStudentReportSnapshotQuery = (params: StudentReportSnapshotParams) =>
     queryOptions({
-        queryKey: ['STUDENT_REPORT_SNAPSHOT', params],
+        queryKey: [
+            'STUDENT_REPORT_SNAPSHOT',
+            {
+                ...params,
+                assessmentIds: idsParam(params.assessmentIds),
+                liveSessionIds: idsParam(params.liveSessionIds),
+            },
+        ],
         queryFn: () => fetchStudentReportSnapshot(params),
         enabled: !!params.userId && !!params.instituteId && !!params.startDate && !!params.endDate,
         staleTime: 60_000,

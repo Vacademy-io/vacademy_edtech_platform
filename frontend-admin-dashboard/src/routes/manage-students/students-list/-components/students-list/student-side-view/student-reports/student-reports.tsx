@@ -1,5 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { MultiSelect } from '@/components/design-system/multi-select';
+import { getStudentReportSnapshotQuery } from '@/services/student-report-snapshot';
 import { useStudentSidebar } from '../../../../-context/selected-student-sidebar-context';
 import { InitiateReportDialog } from './InitiateReportDialog';
 import {
@@ -109,6 +112,49 @@ export const StudentReports = () => {
         setBatch(ALL_BATCHES);
         // eslint-disable-next-line react-hooks/exhaustive-deps -- reset the filter per learner only
     }, [selectedStudent?.user_id]);
+
+    // Assessment and live session filters. Their options come from the unfiltered report for the
+    // same batch and dates (already cached), and a new batch or date range starts from all again.
+    const [assessmentIds, setAssessmentIds] = useState<string[]>([]);
+    const [liveSessionIds, setLiveSessionIds] = useState<string[]>([]);
+    useEffect(() => {
+        setAssessmentIds([]);
+        setLiveSessionIds([]);
+    }, [selectedStudent?.user_id, batchId, range?.start, range?.end]);
+    const unfiltered = useQuery({
+        ...getStudentReportSnapshotQuery({
+            userId: selectedStudent?.user_id ?? '',
+            instituteId: selectedStudent?.institute_id ?? '',
+            batchId,
+            startDate: range?.start ?? '',
+            endDate: range?.end ?? '',
+        }),
+    });
+    const assessmentOptions = useMemo(
+        () =>
+            (unfiltered.data?.academics?.assessments ?? []).map((a) => ({
+                value: a.assessment_id,
+                label: a.date ? `${a.name ?? 'Assessment'} · ${a.date}` : (a.name ?? 'Assessment'),
+            })),
+        [unfiltered.data]
+    );
+    const liveSessionOptions = useMemo(() => {
+        const bySession = new Map<string, { title: string; classes: number }>();
+        for (const s of unfiltered.data?.attendance?.sessions ?? []) {
+            if (!s.session_id) continue;
+            const prev = bySession.get(s.session_id);
+            bySession.set(s.session_id, {
+                title: prev?.title || s.title || 'Live class',
+                classes: (prev?.classes ?? 0) + 1,
+            });
+        }
+        return [...bySession.entries()]
+            .map(([value, v]) => ({
+                value,
+                label: `${v.title} (${v.classes} class${v.classes === 1 ? '' : 'es'})`,
+            }))
+            .sort((a, b) => a.label.localeCompare(b.label));
+    }, [unfiltered.data]);
 
     const checkPendingProcesses = () => {
         const storedProcesses = sessionStorage.getItem('student_analysis_processes');
@@ -335,6 +381,42 @@ export const StudentReports = () => {
                             allLabel={`All ${getTerminologyPlural(ContentTerms.Batch, SystemTerms.Batch).toLowerCase()}`}
                         />
                         <ReportTimelineFilter value={timeline} onChange={setTimeline} />
+                        {(assessmentOptions.length > 0 || liveSessionOptions.length > 0) && (
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                {assessmentOptions.length > 0 && (
+                                    <div className="flex flex-col gap-1 text-xs font-medium text-neutral-600">
+                                        Assessments
+                                        <MultiSelect
+                                            options={assessmentOptions}
+                                            selected={assessmentIds}
+                                            onChange={setAssessmentIds}
+                                            checkboxes
+                                            placeholder="All assessments"
+                                            className="h-auto min-h-9 py-1 text-sm"
+                                        />
+                                    </div>
+                                )}
+                                {liveSessionOptions.length > 0 && (
+                                    <div className="flex flex-col gap-1 text-xs font-medium text-neutral-600">
+                                        {getTerminologyPlural(
+                                            ContentTerms.LiveSession,
+                                            SystemTerms.LiveSession
+                                        )}
+                                        <MultiSelect
+                                            options={liveSessionOptions}
+                                            selected={liveSessionIds}
+                                            onChange={setLiveSessionIds}
+                                            checkboxes
+                                            placeholder={`All ${getTerminologyPlural(
+                                                ContentTerms.LiveSession,
+                                                SystemTerms.LiveSession
+                                            ).toLowerCase()}`}
+                                            className="h-auto min-h-9 py-1 text-sm"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                     <StudentReportSnapshot
                         userId={selectedStudent.user_id}
@@ -343,6 +425,8 @@ export const StudentReports = () => {
                         range={range}
                         learnerName={selectedStudent.full_name}
                         packageSessionIds={packageSessionIds}
+                        assessmentIds={assessmentIds}
+                        liveSessionIds={liveSessionIds}
                     />
                 </ProfileSectionCard>
             )}

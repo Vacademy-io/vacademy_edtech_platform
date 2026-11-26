@@ -901,6 +901,7 @@ export const StudentSidebar = ({
                                               ? [selectedStudent.package_session_id]
                                               : []
                                     }
+                                    learnerName={selectedStudent.full_name}
                                 />
                             )}
                         {category === 'academicActivity' &&

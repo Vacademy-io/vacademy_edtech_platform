@@ -101,6 +101,8 @@ public class StudentAnalysisController {
                         @RequestParam(value = "batchId", required = false) String batchId,
                         @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.time.LocalDate startDate,
                         @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.time.LocalDate endDate,
+                        @RequestParam(value = "assessmentIds", required = false) java.util.List<String> assessmentIds,
+                        @RequestParam(value = "liveSessionIds", required = false) java.util.List<String> liveSessionIds,
                         @RequestAttribute("user") CustomUserDetails userDetails) {
                 instituteAccessValidator.requireStaffAccess(userDetails, instituteId);
                 String dateError = validateWindow(startDate, endDate);
@@ -122,7 +124,18 @@ public class StudentAnalysisController {
                         return ResponseEntity.notFound().build();
                 }
                 return ResponseEntity.ok(comprehensiveReportAggregator.collect(
-                                userId, instituteId, batch, startDate, endDate, SNAPSHOT_MODULES, true));
+                                userId, instituteId, batch, startDate, endDate, SNAPSHOT_MODULES, true,
+                                idFilter(assessmentIds), idFilter(liveSessionIds)));
+        }
+
+        /** A filter of ids, or null for none picked. */
+        private static java.util.Set<String> idFilter(java.util.List<String> ids) {
+                if (ids == null) return null;
+                java.util.Set<String> out = new java.util.LinkedHashSet<>();
+                for (String id : ids) {
+                        if (id != null && !id.isBlank()) out.add(id.trim());
+                }
+                return out.isEmpty() ? null : out;
         }
 
         @PostMapping("/initiate")

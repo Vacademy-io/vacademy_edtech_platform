@@ -34,12 +34,18 @@ export const StudentReportSnapshot = ({
     range,
     learnerName,
     packageSessionIds = [],
+    assessmentIds,
+    liveSessionIds,
 }: {
     userId: string;
     instituteId: string;
     batchId?: string;
     range: { start: string; end: string } | null;
     learnerName?: string | null;
+    /** Only these assessments; none means all of them. */
+    assessmentIds?: string[];
+    /** Only classes of these live sessions; none means all of them. */
+    liveSessionIds?: string[];
     /** The learner batches; daily time covers the picked one, or all of them. */
     packageSessionIds?: string[];
 }) => {
@@ -50,7 +56,10 @@ export const StudentReportSnapshot = ({
             batchId,
             startDate: range?.start ?? '',
             endDate: range?.end ?? '',
+            assessmentIds,
+            liveSessionIds,
         }),
+        placeholderData: (previous) => previous,
     });
     const brand = useBrandColor(data?.institute?.theme_color);
     const daily = useQuery({

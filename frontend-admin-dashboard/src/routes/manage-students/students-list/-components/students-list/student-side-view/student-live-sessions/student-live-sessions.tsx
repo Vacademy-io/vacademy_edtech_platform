@@ -12,6 +12,8 @@ import {
     X,
 } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
+import { MultiSelect } from '@/components/design-system/multi-select';
+import { useBrandColor } from '@/components/common/report-visuals/palette';
 import { MyDropdown } from '@/components/design-system/dropdown';
 import { MyInput } from '@/components/design-system/input';
 import { InputChips } from '@/components/design-system/chips';
@@ -47,6 +49,7 @@ import {
     type TrendMetric,
 } from './live-session-charts';
 import { formatMinutes, fromYmd, toYmd } from './live-session-helpers';
+import { LiveSessionsReportDialog, summarizeClasses } from './live-sessions-report';
 
 // ── Date filter ───────────────────────────────────────────────────────────────
 
@@ -181,11 +184,15 @@ const FilterChip = ({ label, onClear }: { label: string; onClear: () => void }) 
 export const StudentLiveSessions = ({
     userId,
     packageSessionIds = [],
+    learnerName,
 }: {
     userId: string;
     /** The learner's batches, latest enrollment first. */
     packageSessionIds?: string[];
+    /** For the printed report. */
+    learnerName?: string | null;
 }) => {
+    const brand = useBrandColor();
     const [batch, setBatch] = useState<string>(ALL_BATCHES);
     const batchId = batch === ALL_BATCHES ? undefined : batch;
 
@@ -234,7 +241,39 @@ export const StudentLiveSessions = ({
         enabled: !!userId && !!range,
     });
 
-    const classes = useMemo(() => data?.classes ?? [], [data]);
+    // Live session filter: options from the classes in range; a new range or batch starts from all.
+    const [sessionIds, setSessionIds] = useState<string[]>([]);
+    useEffect(() => {
+        setSessionIds([]);
+    }, [userId, batchId, range?.start, range?.end]);
+    const sessionOptions = useMemo(() => {
+        const by = new Map<string, { title: string; classes: number }>();
+        for (const c of data?.classes ?? []) {
+            const prev = by.get(c.session_id);
+            by.set(c.session_id, {
+                title: prev?.title || c.title || 'Live class',
+                classes: (prev?.classes ?? 0) + 1,
+            });
+        }
+        return [...by.entries()]
+            .map(([value, v]) => ({
+                value,
+                label: `${v.title} (${v.classes} class${v.classes === 1 ? '' : 'es'})`,
+            }))
+            .sort((a, b) => a.label.localeCompare(b.label));
+    }, [data]);
+    const classes = useMemo(
+        () =>
+            sessionIds.length > 0
+                ? (data?.classes ?? []).filter((c) => sessionIds.includes(c.session_id))
+                : (data?.classes ?? []),
+        [data, sessionIds]
+    );
+    // The tiles, donut and trend follow the filter, worked out the same way the server does.
+    const summary = useMemo(
+        () => (data ? (sessionIds.length > 0 ? summarizeClasses(data, classes) : data) : undefined),
+        [data, sessionIds, classes]
+    );
     const filtered = useMemo(
         () =>
             classes.filter(
@@ -354,7 +393,7 @@ export const StudentLiveSessions = ({
                     hint="Something went wrong fetching this learner's live-class history."
                     onRetry={() => refetch()}
                 />
-            ) : !data ? null : data.total_classes === 0 ? (
+            ) : !data || !summary ? null : data.total_classes === 0 ? (
                 <ProfileEmpty
                     icon={VideoCamera}
                     title={day ? 'No live classes on this day' : 'No live classes in this period'}
@@ -362,24 +401,54 @@ export const StudentLiveSessions = ({
                 />
             ) : (
                 <>
+                    <div className="flex items-end gap-2">
+                        {sessionOptions.length > 1 && (
+                            <div className="flex min-w-0 flex-1 flex-col gap-1 text-2xs font-medium text-muted-foreground">
+                                {getTerminologyPlural(ContentTerms.LiveSession, SystemTerms.LiveSession)}
+                                <MultiSelect
+                                    options={sessionOptions}
+                                    selected={sessionIds}
+                                    onChange={(ids) => {
+                                        setSessionIds(ids);
+                                        clearListFilters();
+                                    }}
+                                    checkboxes
+                                    placeholder={`All ${getTerminologyPlural(
+                                        ContentTerms.LiveSession,
+                                        SystemTerms.LiveSession
+                                    ).toLowerCase()}`}
+                                    className="h-auto min-h-8 py-1 text-caption"
+                                />
+                            </div>
+                        )}
+                        <div className="ml-auto shrink-0">
+                            <LiveSessionsReportDialog
+                                summary={summary}
+                                brand={brand}
+                                learnerName={learnerName}
+                                range={range}
+                            />
+                        </div>
+                    </div>
+
                     {/* Badges — click to switch the trend chart to that measure. */}
                     <div className="grid grid-cols-2 gap-2">
                         <ProfileHeroStat
                             label="Avg concentration"
                             value={
-                                data.avg_concentration_score != null
-                                    ? `${Math.round(data.avg_concentration_score)}/100`
+                                summary.avg_concentration_score != null
+                                    ? `${Math.round(summary.avg_concentration_score)}/100`
                                     : '—'
                             }
-                            tone={scoreTone(data.avg_concentration_score)}
+                            tone={scoreTone(summary.avg_concentration_score)}
                             icon={Brain}
                             onClick={() => setMetric('concentration')}
                             selected={metric === 'concentration'}
                         />
                         <ProfileHeroStat
                             label="Avg duration"
-                            value={formatMinutes(data.avg_duration_minutes)}
-                            tone={data.avg_duration_minutes != null ? 'primary' : 'neutral'}
+                            value={formatMinutes(summary.avg_duration_minutes)}
+                            tone={summary.avg_duration_minutes != null ? 'primary' : 'neutral'}
                             icon={ClockCountdown}
                             onClick={() => setMetric('duration')}
                             selected={metric === 'duration'}
@@ -388,7 +457,7 @@ export const StudentLiveSessions = ({
 
                     <ProfileSectionCard icon={ChartPieSlice} heading="Attendance">
                         <AttendanceDonut
-                            summary={data}
+                            summary={summary}
                             active={statusFilter}
                             onSelect={(s) => {
                                 setStatusFilter(s);
@@ -406,16 +475,16 @@ export const StudentLiveSessions = ({
                             classes={classes}
                             metric={metric}
                             onMetricChange={setMetric}
-                            avgScore={data.avg_concentration_score}
-                            avgMinutes={data.avg_duration_minutes}
+                            avgScore={summary.avg_concentration_score}
+                            avgMinutes={summary.avg_duration_minutes}
                             selectedId={selectedKey}
                             onSelectClass={selectClass}
                         />
                         <p className="mt-2 text-2xs text-muted-foreground">
                             Concentration is scored 0–100 per class: 80 for time in class against the
                             class length, 20 for chat, raise-hand, talk and poll activity.
-                            {data.scored_classes < data.total_classes &&
-                                ` ${data.scored_classes} of ${data.total_classes} classes had data to score.`}
+                            {summary.scored_classes < summary.total_classes &&
+                                ` ${summary.scored_classes} of ${summary.total_classes} classes had data to score.`}
                         </p>
                     </ProfileSectionCard>
 

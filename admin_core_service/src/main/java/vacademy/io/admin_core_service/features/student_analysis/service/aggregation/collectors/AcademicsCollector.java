@@ -43,63 +43,81 @@ public class AcademicsCollector {
 
             List<AcademicsSection.AssessmentItem> rawAssessments = response.getAssessments();
             // Enrich each assessment item with derived fields (name/date/grade/status)
-            List<AcademicsSection.AssessmentItem> assessments = enrich(rawAssessments);
-
-            Double avgPct = null;
-            Double classAvgPct = null;
-            String bestSubject = null;
-            String weakestSubject = null;
-            List<AcademicsSection.SubjectPerformance> subjectPerformance = null;
-
-            if (assessments != null && !assessments.isEmpty()) {
-                // Compute overall averages
-                OptionalDouble avgOpt = assessments.stream()
-                        .filter(a -> a.getPercentage() != null)
-                        .mapToDouble(AcademicsSection.AssessmentItem::getPercentage)
-                        .average();
-                if (avgOpt.isPresent()) {
-                    avgPct = Math.round(avgOpt.getAsDouble() * 10.0) / 10.0;
-                }
-
-                OptionalDouble classOpt = assessments.stream()
-                        .filter(a -> a.getClassAverage() != null && a.getTotalMarks() != null && a.getTotalMarks() > 0)
-                        .mapToDouble(a -> a.getClassAverage() / a.getTotalMarks() * 100.0)
-                        .average();
-                if (classOpt.isPresent()) {
-                    classAvgPct = Math.round(classOpt.getAsDouble() * 10.0) / 10.0;
-                }
-
-                // Group by subject
-                subjectPerformance = buildSubjectPerformance(assessments);
-
-                if (subjectPerformance != null && !subjectPerformance.isEmpty()) {
-                    AcademicsSection.SubjectPerformance best = subjectPerformance.stream()
-                            .filter(s -> s.getScorePercentage() != null)
-                            .max(Comparator.comparingDouble(AcademicsSection.SubjectPerformance::getScorePercentage))
-                            .orElse(null);
-                    AcademicsSection.SubjectPerformance weakest = subjectPerformance.stream()
-                            .filter(s -> s.getScorePercentage() != null)
-                            .min(Comparator.comparingDouble(AcademicsSection.SubjectPerformance::getScorePercentage))
-                            .orElse(null);
-                    if (best != null) bestSubject = best.getSubject();
-                    if (weakest != null) weakestSubject = weakest.getSubject();
-                }
-            }
-
-            return AcademicsSection.builder()
-                    .available(true)
-                    .averagePercentage(avgPct)
-                    .classAveragePercentage(classAvgPct)
-                    .bestSubject(bestSubject)
-                    .weakestSubject(weakestSubject)
-                    .assessments(assessments)
-                    .subjectPerformance(subjectPerformance)
-                    .build();
+            return summarize(enrich(rawAssessments));
 
         } catch (Exception e) {
             log.error("[AcademicsCollector] Failed for userId={}: {}", userId, e.getMessage());
             return AcademicsSection.builder().available(false).build();
         }
+    }
+
+    /**
+     * The section limited to the given assessments, with its averages and subjects worked out
+     * again from them. Used by the Reports tab assessment filter.
+     */
+    public AcademicsSection onlyAssessments(AcademicsSection academics, Collection<String> assessmentIds) {
+        if (academics == null || !academics.isAvailable() || assessmentIds == null) return academics;
+        Set<String> wanted = new HashSet<>(assessmentIds);
+        List<AcademicsSection.AssessmentItem> kept = academics.getAssessments() == null
+                ? List.of()
+                : academics.getAssessments().stream()
+                        .filter(a -> a.getAssessmentId() != null && wanted.contains(a.getAssessmentId()))
+                        .collect(Collectors.toList());
+        return summarize(kept);
+    }
+
+    /** Averages, subject roll-up and best and weakest subject for already enriched assessments. */
+    private AcademicsSection summarize(List<AcademicsSection.AssessmentItem> assessments) {
+        Double avgPct = null;
+        Double classAvgPct = null;
+        String bestSubject = null;
+        String weakestSubject = null;
+        List<AcademicsSection.SubjectPerformance> subjectPerformance = null;
+
+        if (assessments != null && !assessments.isEmpty()) {
+            // Compute overall averages
+            OptionalDouble avgOpt = assessments.stream()
+                    .filter(a -> a.getPercentage() != null)
+                    .mapToDouble(AcademicsSection.AssessmentItem::getPercentage)
+                    .average();
+            if (avgOpt.isPresent()) {
+                avgPct = Math.round(avgOpt.getAsDouble() * 10.0) / 10.0;
+            }
+
+            OptionalDouble classOpt = assessments.stream()
+                    .filter(a -> a.getClassAverage() != null && a.getTotalMarks() != null && a.getTotalMarks() > 0)
+                    .mapToDouble(a -> a.getClassAverage() / a.getTotalMarks() * 100.0)
+                    .average();
+            if (classOpt.isPresent()) {
+                classAvgPct = Math.round(classOpt.getAsDouble() * 10.0) / 10.0;
+            }
+
+            // Group by subject
+            subjectPerformance = buildSubjectPerformance(assessments);
+
+            if (subjectPerformance != null && !subjectPerformance.isEmpty()) {
+                AcademicsSection.SubjectPerformance best = subjectPerformance.stream()
+                        .filter(s -> s.getScorePercentage() != null)
+                        .max(Comparator.comparingDouble(AcademicsSection.SubjectPerformance::getScorePercentage))
+                        .orElse(null);
+                AcademicsSection.SubjectPerformance weakest = subjectPerformance.stream()
+                        .filter(s -> s.getScorePercentage() != null)
+                        .min(Comparator.comparingDouble(AcademicsSection.SubjectPerformance::getScorePercentage))
+                        .orElse(null);
+                if (best != null) bestSubject = best.getSubject();
+                if (weakest != null) weakestSubject = weakest.getSubject();
+            }
+        }
+
+        return AcademicsSection.builder()
+                .available(true)
+                .averagePercentage(avgPct)
+                .classAveragePercentage(classAvgPct)
+                .bestSubject(bestSubject)
+                .weakestSubject(weakestSubject)
+                .assessments(assessments)
+                .subjectPerformance(subjectPerformance)
+                .build();
     }
 
     /**
