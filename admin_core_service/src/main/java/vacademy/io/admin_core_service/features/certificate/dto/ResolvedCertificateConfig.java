@@ -59,4 +59,10 @@ public class ResolvedCertificateConfig {
 
     /** True when the certificate being rendered is the course's choice, not the institute's. */
     private boolean templateOverriddenByCourse;
+
+    /**
+     * The course's earning rule. Null means progress only, judged against
+     * {@link #thresholdPercent}. Course-level only: there is no institute default.
+     */
+    private CertificateCriteriaDto criteria;
 }

@@ -66,6 +66,8 @@ public class CertificateSettingsResolver {
             base.setThresholdPercent(override.getThresholdPercent());
             base.setThresholdOverriddenByCourse(true);
         }
+        // Copied before the template branch below, which can return early.
+        base.setCriteria(override.getCriteria());
 
         // A chosen design is resolved now, not copied when it was chosen, so
         // editing the institute template updates every course that follows it.
