@@ -566,14 +566,22 @@ export const AddChapterForm = ({
     // Check if we should disable the form (when loading complete data in edit mode)
     const isFormDisabled = mode === 'edit' && isLoadingCompleteData;
 
-    // Provide submit function and pending state to parent component
+    // Provide submit function and pending state to parent component.
+    // The parents pass a new onFormReady on every render and onSubmit changes with the mutations, so they are
+    // read through refs: listing them as deps re-ran this effect after every render (parent setState ->
+    // re-render -> new callbacks -> effect again), an endless render loop once the dialog opened.
+    const onFormReadyRef = useRef(onFormReady);
+    const onSubmitRef = useRef(onSubmit);
+    onFormReadyRef.current = onFormReady;
+    onSubmitRef.current = onSubmit;
+    const submitForm = useCallback(
+        () => form.handleSubmit((values) => onSubmitRef.current(values))(),
+        [form]
+    );
     useEffect(() => {
-        if (onFormReady) {
-            // Disable the external submit button when loading complete data
-            const effectiveIsPending = isPending || isFormDisabled;
-            onFormReady(() => form.handleSubmit(onSubmit)(), effectiveIsPending);
-        }
-    }, [onFormReady, form, onSubmit, isPending, isFormDisabled]);
+        // Disable the external submit button when loading complete data
+        onFormReadyRef.current?.(submitForm, isPending || isFormDisabled);
+    }, [submitForm, isPending, isFormDisabled]);
 
     return (
         <Form {...form}>
