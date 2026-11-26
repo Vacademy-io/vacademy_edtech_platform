@@ -33,6 +33,8 @@ import { getAssessmentJoinLink } from '@/routes/assessment/create-assessment/$as
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { assessmentQrId, JoinLinkMenuItems, JoinLinkQrDialog } from './assessment-share';
 import { MoveToFolderMenuItem } from './folders/MoveToFolderMenuItem';
+import { DuplicateAssessmentMenuItem } from './duplicate/DuplicateAssessmentMenuItem';
+import { DuplicateAssessmentDialog } from './duplicate/DuplicateAssessmentDialog';
 
 export function ScheduleTestDetailsDropdownLive({
     scheduleTestContent,
@@ -40,6 +42,7 @@ export function ScheduleTestDetailsDropdownLive({
     selectedTab,
     onGenerateUtmLink,
     shareItems,
+    onDuplicate,
 }: {
     scheduleTestContent: TestContent;
     handleRefetchData: () => void;
@@ -48,6 +51,8 @@ export function ScheduleTestDetailsDropdownLive({
     onGenerateUtmLink?: () => void;
     /** Copy join link / QR code items; undefined when there is no join link. */
     shareItems?: React.ReactNode;
+    /** Opens the Duplicate Assessment dialog (rendered beside the menu). */
+    onDuplicate?: () => void;
 }) {
     const { t } = useTranslation('assessmentScheduleTestDetailsDropdownMenu');
     const [isRemiderAlertDialogOpen, setIsRemiderAlertDialogOpen] = useState(false);
@@ -79,10 +84,6 @@ export function ScheduleTestDetailsDropdownLive({
     };
 
     // const handleRescheduleAssessment = (assessmentId: string) => {
-    //     console.log(assessmentId);
-    // };
-
-    // const handleDuplicateAssessment = (assessmentId: string) => {
     //     console.log(assessmentId);
     // };
 
@@ -130,6 +131,7 @@ export function ScheduleTestDetailsDropdownLive({
                         onSelect={() => onGenerateUtmLink?.()}
                     />
                     <MoveToFolderMenuItem scheduleTestContent={scheduleTestContent} />
+                    <DuplicateAssessmentMenuItem onSelect={onDuplicate} />
                     {/* <DropdownMenuItem
                         className="cursor-pointer"
                         onClick={() => handleSendReminderClick(scheduleTestContent.assessment_id)}
@@ -193,12 +195,6 @@ export function ScheduleTestDetailsDropdownLive({
                     >
                         Reschedule Assessment
                     </DropdownMenuItem> */}
-                    {/* <DropdownMenuItem
-                        className="cursor-pointer"
-                        onClick={() => handleDuplicateAssessment(scheduleTestContent.assessment_id)}
-                    >
-                        Duplicate Assessment
-                    </DropdownMenuItem> */}
                     {canDelete && (
                         <DropdownMenuItem
                             className="cursor-pointer"
@@ -238,6 +234,7 @@ export function ScheduleTestDetailsDropdownUpcoming({
     selectedTab,
     onGenerateUtmLink,
     shareItems,
+    onDuplicate,
 }: {
     scheduleTestContent: TestContent;
     handleRefetchData: () => void;
@@ -246,6 +243,8 @@ export function ScheduleTestDetailsDropdownUpcoming({
     onGenerateUtmLink?: () => void;
     /** Copy join link / QR code items; undefined when there is no join link. */
     shareItems?: React.ReactNode;
+    /** Opens the Duplicate Assessment dialog (rendered beside the menu). */
+    onDuplicate?: () => void;
 }) {
     const { t } = useTranslation('assessmentScheduleTestDetailsDropdownMenu');
     const [isDeleteAssessmentDialog, setIsDeleteAssessmentDialog] = useState(false);
@@ -263,10 +262,6 @@ export function ScheduleTestDetailsDropdownUpcoming({
     };
 
     // const handleRescheduleAssessment = (assessmentId: string) => {
-    //     console.log(assessmentId);
-    // };
-
-    // const handleDuplicateAssessment = (assessmentId: string) => {
     //     console.log(assessmentId);
     // };
 
@@ -307,6 +302,7 @@ export function ScheduleTestDetailsDropdownUpcoming({
                         onSelect={() => onGenerateUtmLink?.()}
                     />
                     <MoveToFolderMenuItem scheduleTestContent={scheduleTestContent} />
+                    <DuplicateAssessmentMenuItem onSelect={onDuplicate} />
                     {/* <DropdownMenuItem
                         className="cursor-pointer"
                         onClick={() =>
@@ -314,12 +310,6 @@ export function ScheduleTestDetailsDropdownUpcoming({
                         }
                     >
                         Reschedule Assessment
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                        className="cursor-pointer"
-                        onClick={() => handleDuplicateAssessment(scheduleTestContent.assessment_id)}
-                    >
-                        Duplicate Assessment
                     </DropdownMenuItem> */}
                     {canDelete && (
                         <DropdownMenuItem
@@ -351,6 +341,7 @@ export function ScheduleTestDetailsDropdownPrevious({
     selectedTab,
     onGenerateUtmLink,
     shareItems,
+    onDuplicate,
 }: {
     scheduleTestContent: TestContent;
     handleRefetchData: () => void;
@@ -359,6 +350,8 @@ export function ScheduleTestDetailsDropdownPrevious({
     onGenerateUtmLink?: () => void;
     /** Copy join link / QR code items; undefined when there is no join link. */
     shareItems?: React.ReactNode;
+    /** Opens the Duplicate Assessment dialog (rendered beside the menu). */
+    onDuplicate?: () => void;
 }) {
     const { t } = useTranslation('assessmentScheduleTestDetailsDropdownMenu');
     const [isDeleteAssessmentDialog, setIsDeleteAssessmentDialog] = useState(false);
@@ -377,10 +370,6 @@ export function ScheduleTestDetailsDropdownPrevious({
     };
 
     // const handleRescheduleAssessment = (assessmentId: string) => {
-    //     console.log(assessmentId);
-    // };
-
-    // const handleDuplicateAssessment = (assessmentId: string) => {
     //     console.log(assessmentId);
     // };
 
@@ -426,6 +415,7 @@ export function ScheduleTestDetailsDropdownPrevious({
                         onSelect={() => onGenerateUtmLink?.()}
                     />
                     <MoveToFolderMenuItem scheduleTestContent={scheduleTestContent} />
+                    <DuplicateAssessmentMenuItem onSelect={onDuplicate} />
                     {/* <DropdownMenuItem
                         className="cursor-pointer"
                         onClick={() =>
@@ -433,12 +423,6 @@ export function ScheduleTestDetailsDropdownPrevious({
                         }
                     >
                         Reschedule Assessment
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                        className="cursor-pointer"
-                        onClick={() => handleDuplicateAssessment(scheduleTestContent.assessment_id)}
-                    >
-                        Duplicate Assessment
                     </DropdownMenuItem>
                     <DropdownMenuItem
                         className="cursor-pointer"
@@ -477,10 +461,13 @@ export function ScheduleTestDetailsDropdowDrafts({
     scheduleTestContent,
     handleRefetchData,
     selectedTab,
+    onDuplicate,
 }: {
     scheduleTestContent: TestContent;
     handleRefetchData: () => void;
     selectedTab: string;
+    /** Opens the Duplicate Assessment dialog (rendered beside the menu). */
+    onDuplicate?: () => void;
 }) {
     const { t } = useTranslation('assessmentScheduleTestDetailsDropdownMenu');
     const [isDeleteAssessmentDialog, setIsDeleteAssessmentDialog] = useState(false);
@@ -522,6 +509,7 @@ export function ScheduleTestDetailsDropdowDrafts({
                         {t('menu.viewDetails')}
                     </DropdownMenuItem>
                     <MoveToFolderMenuItem scheduleTestContent={scheduleTestContent} />
+                    <DuplicateAssessmentMenuItem onSelect={onDuplicate} />
                     {canDelete && (
                         <DropdownMenuItem
                             className="cursor-pointer"
@@ -558,6 +546,8 @@ export function ScheduleTestMainDropdownComponent({
     const { instituteDetails } = useInstituteDetailsStore();
     const [openUtmDialog, setOpenUtmDialog] = useState(false);
     const [openQrDialog, setOpenQrDialog] = useState(false);
+    const [openDuplicateDialog, setOpenDuplicateDialog] = useState(false);
+    const onDuplicate = () => setOpenDuplicateDialog(true);
 
     // Copy link / QR are offered for any published test with a join code — a
     // Closed Test too, with a warning, because admins still look the link up
@@ -599,6 +589,7 @@ export function ScheduleTestMainDropdownComponent({
                         selectedTab={selectedTab}
                         onGenerateUtmLink={onGenerateUtmLink}
                         shareItems={shareItems}
+                        onDuplicate={onDuplicate}
                     />
                 );
             case 'upcomingTests':
@@ -609,6 +600,7 @@ export function ScheduleTestMainDropdownComponent({
                         selectedTab={selectedTab}
                         onGenerateUtmLink={onGenerateUtmLink}
                         shareItems={shareItems}
+                        onDuplicate={onDuplicate}
                     />
                 );
             case 'previousTests':
@@ -619,6 +611,7 @@ export function ScheduleTestMainDropdownComponent({
                         selectedTab={selectedTab}
                         onGenerateUtmLink={onGenerateUtmLink}
                         shareItems={shareItems}
+                        onDuplicate={onDuplicate}
                     />
                 );
             case 'draftTests':
@@ -627,6 +620,7 @@ export function ScheduleTestMainDropdownComponent({
                         scheduleTestContent={scheduleTestContent}
                         handleRefetchData={handleRefetchData}
                         selectedTab={selectedTab}
+                        onDuplicate={onDuplicate}
                     />
                 );
             default:
@@ -659,6 +653,14 @@ export function ScheduleTestMainDropdownComponent({
                     assessmentName={scheduleTestContent.name}
                 />
             ) : null}
+            {openDuplicateDialog && (
+                <DuplicateAssessmentDialog
+                    open={openDuplicateDialog}
+                    onOpenChange={setOpenDuplicateDialog}
+                    scheduleTestContent={scheduleTestContent}
+                    handleRefetchData={handleRefetchData}
+                />
+            )}
         </>
     );
 }
