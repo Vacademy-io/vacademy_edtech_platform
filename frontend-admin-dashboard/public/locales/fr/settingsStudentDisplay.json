@@ -47,7 +47,10 @@
         "openAppearance": "Ouvrir les paramètres d'apparence",
         "movedToTheme": "Le style du thème est maintenant dans l'onglet Apparence et mise en page, avec les couleurs, la police, les coins et la mise en page de l'app.",
         "openTheme": "Ouvrir Apparence et mise en page",
-        "neonCity": "Neon City"
+        "neonCity": "Neon City",
+        "stage": "Stage",
+        "calm": "Calm",
+        "pulse": "Pulse"
     },
     "widgets": {
         "cardTitle": "Widgets du tableau de bord",

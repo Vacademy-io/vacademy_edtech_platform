@@ -78,3 +78,14 @@ describe("Neon City", () => {
     expect(root().classList.contains("ui-neon-city")).toBe(true);
   });
 });
+
+describe("use-case skins", () => {
+  it("Stage, Calm and Pulse each ride on Fun with their own class", () => {
+    expect(uiSkinClasses("stage")).toEqual(["ui-fun", "ui-stage"]);
+    expect(uiSkinClasses("calm")).toEqual(["ui-fun", "ui-calm"]);
+    expect(uiSkinClasses("pulse")).toEqual(["ui-fun", "ui-pulse"]);
+    applyAppSkinClass(uiSkinClasses("pulse"));
+    applyAppSkinClass(uiSkinClasses("calm"));
+    expect(root().className).toBe("light ui-fun ui-calm");
+  });
+});

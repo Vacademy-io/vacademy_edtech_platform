@@ -1,6 +1,6 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { useFunTheme } from "@/hooks/use-fun-theme";
-import { useNeonCity } from "@/hooks/use-neon-city";
+import { useFunVariant } from "@/hooks/use-fun-variant";
 import { hslChannelsToHex } from "@/lib/colour/contrast";
 import { funBrandColours } from "./brand-colours";
 
@@ -41,10 +41,11 @@ export function applyFunBrandVars(root: HTMLElement, primaryChannels: string | n
 
 export function useFunSkinRuntime(): boolean {
   const on = useFunTheme();
-  // Neon City keeps its own action colour (neon pink with dark text), so the
-  // institute brand is not written over it.
-  const neon = useNeonCity();
-  const branded = on && !neon;
+  // The Fun variants (Neon City, Stage, Calm, Pulse) keep their own action
+  // colour, so the institute brand is not written over it. This also loads
+  // the variant's faces.
+  const variant = useFunVariant();
+  const branded = on && variant === null;
   const primary = useSyncExternalStore(branded ? subscribeToRootStyle : nothing, branded ? readPrimary : noBrand, noBrand);
   useEffect(() => {
     applyFunBrandVars(document.documentElement, branded ? primary : null);

@@ -5,6 +5,7 @@ import { CorporateModel } from './CorporateModel';
 import { DefaultModel } from './DefaultModel';
 import { FunModel } from './FunModel';
 import { NeonCityModel } from './NeonCityModel';
+import { CalmModel, PulseModel, StageModel } from './UseCaseModel';
 import { PlayModel } from './PlayModel';
 import { VibrantModel } from './VibrantModel';
 import type { SkinModelProps } from './types';
@@ -18,6 +19,9 @@ export const SKIN_MODELS: Record<StudentUiType, ComponentType<SkinModelProps>> =
     corporate: CorporateModel,
     fun: FunModel,
     neonCity: NeonCityModel,
+    stage: StageModel,
+    calm: CalmModel,
+    pulse: PulseModel,
 };
 
 /** The order the picker lists them in. */
@@ -29,6 +33,9 @@ export const SKIN_ORDER: ReadonlyArray<StudentUiType> = [
     'corporate',
     'fun',
     'neonCity',
+    'stage',
+    'calm',
+    'pulse',
 ];
 
 export { PhoneFrame } from './PhoneFrame';

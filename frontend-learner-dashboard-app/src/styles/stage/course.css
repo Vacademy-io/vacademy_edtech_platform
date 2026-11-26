@@ -1,0 +1,19 @@
+/* Stage: the course page. The band is the plum stage under a magenta temple
+   arch with a marigold line, whatever the course colour; serif italic title. */
+html.ui-stage {
+  --stage-arch: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 390 130' preserveAspectRatio='none'%3E%3Cpath d='M0 0 H390 V40 C 340 40, 330 110, 300 110 C 270 110, 260 40, 195 40 C 130 40, 120 110, 90 110 C 60 110, 50 40, 0 40 Z' fill='%23A3134D'/%3E%3Cpath d='M0 40 C 50 40, 60 110, 90 110 C 120 110, 130 40, 195 40 C 260 40, 270 110, 300 110 C 330 110, 340 40, 390 40' fill='none' stroke='%23F2A007' stroke-width='3'/%3E%3Cg fill='%23F2A007'%3E%3Ccircle cx='90' cy='122' r='5'/%3E%3Ccircle cx='300' cy='122' r='5'/%3E%3Ccircle cx='195' cy='54' r='5'/%3E%3C/g%3E%3C/svg%3E");
+}
+html.ui-stage .fun-band {
+  padding-top: 4.75rem;
+  background-color: var(--stage-plum);
+  background-image: var(--stage-arch);
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: 100% 5.5rem;
+  color: #FFFFFF;
+}
+html.ui-stage .fun-band__back { background: var(--stage-ivory); color: var(--stage-plum); margin-inline-start: 0; }
+html.ui-stage .fun-band__chips { color: #E8D7E3; }
+html.ui-stage .fun-band__title { font-size: 2.125rem; line-height: calc(2.25rem * var(--fun-leading)); }
+html.ui-stage .fun-band .fun-progress--band { background: var(--stage-plum-2); }
+html.ui-stage .fun-band .fun-progress--band > * { background: var(--stage-marigold); }

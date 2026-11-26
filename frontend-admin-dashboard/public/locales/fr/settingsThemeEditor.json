@@ -128,7 +128,10 @@
                 "cleanerPlay": "Comme Play, en plus calme : la mascotte, votre couleur de marque avec des touches chaudes et des boutons arrondis. Pour les élèves de tout âge.",
                 "corporate": "Sobre et professionnel : des cartes blanches en relief sur une page gris clair. Pour les adultes en activité et la formation du personnel.",
                 "fun": "Vif et joyeux : chaque cours a sa propre couleur, avec de grands boutons accueillants. Pensé pour les élèves.",
-                "neonCity": "Nocturne et ludique : une ville au coucher du soleil sur l’accueil, des titres gras inclinés, des boutons rose néon et des étoiles sur les résultats de quiz. Chaque cours a sa couleur vive. Utilise ses propres couleurs au lieu de celle de votre marque."
+                "neonCity": "Nocturne et ludique : une ville au coucher du soleil sur l’accueil, des titres gras inclinés, des boutons rose néon et des étoiles sur les résultats de quiz. Chaque cours a sa couleur vive. Utilise ses propres couleurs au lieu de celle de votre marque.",
+                "stage": "Pour les écoles de danse et d’art : ivoire chaleureux, magenta et souci, motifs de rangoli derrière l’accueil et titres à empattements élégants. Utilise ses propres couleurs au lieu de celle de votre marque.",
+                "calm": "Pour les instituts de yoga : sable et sauge, un lever de soleil sur les collines derrière l’accueil, des boutons arrondis et des titres à empattements légers. Utilise ses propres couleurs au lieu de celle de votre marque.",
+                "pulse": "Pour le fitness et les salles de sport : anthracite et vert électrique, titres condensés en gras et une carte d’entraînement « À suivre ». Un thème sombre dans toute l’application ; les tests gardent leur écran habituel. Utilise ses propres couleurs au lieu de celle de votre marque."
             },
             "cue": {
                 "default": "Net et blanc",
@@ -137,10 +140,16 @@
                 "cleanerPlay": "Mascotte, boutons ronds",
                 "corporate": "Page grise, cartes en relief",
                 "fun": "Une couleur par cours",
-                "neonCity": "Ville au coucher du soleil"
+                "neonCity": "Ville au coucher du soleil",
+                "stage": "Danse et art, ivoire chaleureux",
+                "calm": "Yoga, sable et sauge",
+                "pulse": "Fitness, anthracite et vert"
             },
             "funFallback": "Les anciennes versions de l'application affichent Cleaner Play jusqu'à la mise à jour par les apprenants.",
-            "neonCity": "Neon City"
+            "neonCity": "Neon City",
+            "stage": "Stage",
+            "calm": "Calm",
+            "pulse": "Pulse"
         }
     }
 }

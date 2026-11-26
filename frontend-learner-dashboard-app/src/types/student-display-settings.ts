@@ -382,7 +382,13 @@ export type StudentUIType =
   /** Course colours, lip buttons and Nunito: the root carries ui-fun only. */
   | "fun"
   /** Fun's screens repainted at night: the root carries ui-fun AND ui-neon-city. */
-  | "neonCity";
+  | "neonCity"
+  /** Fun's screens for dance and art academies: ui-fun AND ui-stage. */
+  | "stage"
+  /** Fun's screens for yoga institutes: ui-fun AND ui-calm. */
+  | "calm"
+  /** Fun's screens for fitness and gyms, at night: ui-fun AND ui-pulse. */
+  | "pulse";
 
 export interface StudentUISettings {
   type: StudentUIType;

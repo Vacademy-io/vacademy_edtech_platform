@@ -47,7 +47,10 @@
         "openAppearance": "Open Appearance settings",
         "movedToTheme": "The theme skin is now in the Look & Layout tab, together with colours, font, corners and the app layout.",
         "openTheme": "Open Look & Layout",
-        "neonCity": "Neon City"
+        "neonCity": "Neon City",
+        "stage": "Stage",
+        "calm": "Calm",
+        "pulse": "Pulse"
     },
     "widgets": {
         "cardTitle": "Dashboard Widgets",

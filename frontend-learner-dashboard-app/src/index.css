@@ -16,6 +16,11 @@
 /* Neon City - Fun's screens at night, plus a night layer for the rest of the
    app; rides on ui-fun and must come after it */
 @import './styles/neon-city/index.css';
+/* Use-case skins on Fun's screens: Stage (dance and art), Calm (yoga), Pulse
+   (fitness and gyms, a night skin). Each rides on ui-fun, so after it. */
+@import './styles/stage/index.css';
+@import './styles/calm/index.css';
+@import './styles/pulse/index.css';
 /* Institute UI axes - corners / density / gradient (data-ui-* on <html>).
    Imported last of the skin sheets so its --play-radius-* definitions,
    which express the Play radii against --radius, win over the literals

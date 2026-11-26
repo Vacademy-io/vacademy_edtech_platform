@@ -20,6 +20,9 @@ export const APP_SKIN_CLASSES = [
   "ui-corporate",
   "ui-fun",
   "ui-neon-city",
+  "ui-stage",
+  "ui-calm",
+  "ui-pulse",
 ] as const;
 
 export type AppSkinClass = (typeof APP_SKIN_CLASSES)[number];
@@ -39,8 +42,8 @@ const currentSkinClasses = (root: HTMLElement): string[] =>
 export const isAppSkinSuspended = (): boolean => suspendCount > 0;
 
 /**
- * The classes <html> carries for a skin value. Neon City is drawn on Fun's
- * screens, so it carries ui-fun as well: every Fun rule and every useFunTheme()
+ * The classes <html> carries for a skin value. Neon City, Stage, Calm and Pulse
+ * are drawn on Fun's screens, so each carries ui-fun as well: every Fun rule and every useFunTheme()
  * reader applies, and the ui-neon-city sheet repaints them.
  */
 export function uiSkinClasses(skin: string | null | undefined): AppSkinClass[] {
@@ -57,6 +60,12 @@ export function uiSkinClasses(skin: string | null | undefined): AppSkinClass[] {
       return ["ui-fun"];
     case "neonCity":
       return ["ui-fun", "ui-neon-city"];
+    case "stage":
+      return ["ui-fun", "ui-stage"];
+    case "calm":
+      return ["ui-fun", "ui-calm"];
+    case "pulse":
+      return ["ui-fun", "ui-pulse"];
     default:
       return [];
   }

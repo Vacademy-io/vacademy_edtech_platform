@@ -1,0 +1,68 @@
+/* =====================================================================
+   Pulse: the home screen. A charcoal bar with a volt heartbeat line under a
+   big condensed greeting; the resume card is solid volt with a charcoal
+   button. Scene: inline SVG, 1200x240, centred.
+   ===================================================================== */
+html.ui-pulse {
+  --pulse-scene: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 240' preserveAspectRatio='xMidYMax slice'%3E%3Crect width='1200' height='240' fill='%230F1012'/%3E%3Cpath d='M860 0 L1200 0 L1200 180 Z' fill='%231A1C20'/%3E%3Cpath d='M0 240 L0 120 L260 240 Z' fill='%231A1C20'/%3E%3Cpath d='M0 170 H520 L540 120 L560 210 L580 90 L600 190 L615 170 H1200' fill='none' stroke='%23C8FF2E' stroke-width='2.5' opacity='0.28'/%3E%3C/svg%3E");
+}
+html.ui-pulse :is(.fun-home, .dashboard-container.bg-background) { background: transparent; }
+
+html.ui-pulse .navbar.fun-navbar:has(.fun-home-header) {
+  z-index: 0;
+  align-items: flex-start;
+  min-height: 11rem;
+  padding-bottom: 0;
+  background-color: var(--pulse-night);
+  background-image: var(--pulse-scene);
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  background-size: cover;
+}
+html.ui-pulse .navbar.fun-navbar:has(.fun-home-header) :is(.fun-navbar__icon, .fun-navbar__account) { background-color: var(--pulse-card); }
+html.ui-pulse .navbar.fun-navbar:has(.fun-home-header) + * {
+  position: relative;
+  z-index: 1;
+  margin-top: -1.5rem;
+}
+html.ui-pulse .fun-home-header__greet { color: var(--pulse-quiet); }
+html.ui-pulse .fun-home-header__name { font-size: 3.25rem; color: var(--pulse-volt); }
+
+/* ── The resume card: solid volt ── */
+html.ui-pulse .fun-hero--course {
+  background: var(--pulse-volt);
+  color: var(--pulse-night);
+  border-radius: 20px;
+}
+html.ui-pulse .fun-hero--course .fun-hero__title {
+  font-family: var(--pulse-display);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 2.125rem;
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+html.ui-pulse:is([lang="hi"], [lang="mr"]) .fun-hero--course .fun-hero__title { font-family: 'Teko', var(--pulse-display); font-style: normal; text-transform: none; }
+html.ui-pulse .fun-hero--course :is(.fun-hero__eyebrow, .fun-hero__count, .fun-hero__percent) { color: var(--pulse-night); }
+html.ui-pulse .fun-hero--course .fun-hero__note { background: rgb(15 16 18 / 0.12); color: var(--pulse-night); }
+html.ui-pulse .fun-hero--course .fun-hero__note-icon { color: var(--pulse-night); }
+html.ui-pulse .fun-hero--course .fun-progress--band { background: rgb(15 16 18 / 0.18); }
+html.ui-pulse .fun-hero--course .fun-progress--band > * { background: var(--pulse-night); }
+html.ui-pulse .fun-hero--course .fun-hero__deco { background: rgb(15 16 18 / 0.12); }
+html.ui-pulse .fun-hero--course .fun-hero__mark { background: var(--pulse-night); color: var(--pulse-volt); }
+html.ui-pulse .fun-hero--course .fun-btn--on-colour {
+  --fun-btn-lip: #000000;
+  background: var(--pulse-night);
+  color: var(--pulse-volt);
+  font-family: var(--pulse-display);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 1.375rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+html.ui-pulse:is([lang="hi"], [lang="mr"]) .fun-hero--course .fun-btn--on-colour { font-family: var(--fun-font-family); font-style: normal; font-size: 1.125rem; letter-spacing: 0; text-transform: none; }
+html.ui-pulse .fun-hero--course .fun-hero__cta--quiet { border-color: var(--pulse-night); color: var(--pulse-night); background: transparent; }
+html.ui-pulse .fun-hero--course :is(a, button):focus-visible { outline-color: var(--pulse-night); }
+html.ui-pulse .variant-label { margin: 0 0 6px; color: var(--pulse-night); }

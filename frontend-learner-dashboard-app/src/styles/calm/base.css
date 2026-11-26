@@ -1,0 +1,73 @@
+/* =====================================================================
+   Calm skin (yoga institutes): tokens, course colours, type.
+   <html> carries ui-fun AND ui-calm. Sand page, white cards, sage action,
+   clay accents, soft pill buttons with a shallow lip. Contrast: white on sage
+   6.1, quiet text on sand 5.1, every course colour 5.5+ with white.
+   ===================================================================== */
+
+html.ui-fun.ui-calm {
+  --calm-sand: #F6F3EC;           /* page */
+  --calm-ink: #23302A;
+  --calm-ink-2: #3A4A40;
+  --calm-quiet: #5E6B62;
+  --calm-sage: #3F6B4F;           /* action: white on it 6.1 */
+  --calm-sage-lip: #2E5039;
+  --calm-mist: #E9EFE6;
+  --calm-clay: #E9B48F;
+  --calm-line: #E5E0D3;
+  --calm-display: 'Cormorant Garamond', 'Noto Serif Devanagari', Georgia, serif;
+
+  --fun-ink: var(--calm-ink);
+  --fun-ink-2: var(--calm-ink-2);
+  --fun-muted: var(--calm-quiet);
+  --fun-line-control: #8E998F;
+  --fun-line-card: var(--calm-line);
+  --fun-line-nav: #EFEBE1;
+  --fun-line-button: #DCE3D8;
+  --fun-brand: var(--calm-sage);
+  --fun-brand-tint: #E3ECE1;
+  --fun-brand-lip: var(--calm-sage-lip);
+  --fun-highlight: var(--calm-clay);
+  --fun-highlight-text: var(--calm-ink);
+  --fun-lip: 2px;
+  --fun-radius-hero: 28px;
+  --fun-radius-card: 24px;
+  --fun-home-note-bg: var(--calm-mist);
+  --fun-course-locked-bg: #F1EEE6;
+  --fun-font-family: 'Nunito Sans', 'Noto Sans Devanagari', 'Noto Naskh Arabic', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+html.ui-calm body { background-color: var(--calm-sand); }
+html.ui-calm { --canvas: 43 36% 95% !important; }
+
+/* ── Course colours: earth tones with white text (same slots as Fun) ── */
+html.ui-calm .fun-course-0 { --fc-solid: #3F6B4F; --fc-on-band: #E8EDEA; --fc-text: #3F6B4F; --fc-tint: #ECF0ED; --fc-deco: #698C76; --fc-lip: #294633; --fc-track: #8CA695; }
+html.ui-calm .fun-course-1 { --fc-solid: #A4502F; --fc-on-band: #F4EAE6; --fc-text: #A4502F; --fc-tint: #F6EEEA; --fc-deco: #B8765D; --fc-lip: #6B341F; --fc-track: #C89682; }
+html.ui-calm .fun-course-2 { --fc-solid: #2F6F73; --fc-on-band: #E6EEEE; --fc-text: #2F6F73; --fc-tint: #EAF1F1; --fc-deco: #5D8F92; --fc-lip: #1F484B; --fc-track: #82A9AB; }
+html.ui-calm .fun-course-3 { --fc-solid: #8A6116; --fc-on-band: #F1ECE3; --fc-text: #8A6116; --fc-tint: #F3EFE8; --fc-deco: #A48449; --fc-lip: #5A3F0E; --fc-track: #B9A073; }
+html.ui-calm .fun-course-4 { --fc-solid: #6B4A6E; --fc-on-band: #EDE9EE; --fc-text: #6B4A6E; --fc-tint: #F0EDF0; --fc-deco: #8C728E; --fc-lip: #463048; --fc-track: #A692A8; }
+html.ui-calm .fun-course-5 { --fc-solid: #46607A; --fc-on-band: #E9ECEF; --fc-text: #46607A; --fc-tint: #ECEFF2; --fc-deco: #6F8397; --fc-lip: #2E3E4F; --fc-track: #90A0AF; }
+html.ui-calm .fun-course-6 { --fc-solid: #5E6B2E; --fc-on-band: #ECEDE6; --fc-text: #5E6B2E; --fc-tint: #EFF0EA; --fc-deco: #818C5C; --fc-lip: #3D461E; --fc-track: #9EA682; }
+html.ui-calm .fun-course-7 { --fc-solid: #9C4A5B; --fc-on-band: #F3E9EB; --fc-text: #9C4A5B; --fc-tint: #F5EDEF; --fc-deco: #B2727F; --fc-lip: #65303B; --fc-track: #C4929D; }
+
+/* ── Headings ── */
+html.ui-calm :is(.fun-t-display, .fun-t-title, .fun-t-section, .fun-learn-head__title, .fun-section-title, .fun-home-header__name, .fun-band__title) {
+  font-family: var(--calm-display);
+  font-style: normal;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: -0.005em;
+}
+html.ui-calm:is([lang="hi"], [lang="mr"]) :is(.fun-t-display, .fun-t-title, .fun-t-section, .fun-learn-head__title, .fun-section-title, .fun-home-header__name, .fun-band__title) {
+  font-family: 'Noto Serif Devanagari', var(--calm-display);
+  font-style: normal;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+html.ui-calm :is(.fun-t-display, .fun-t-title, .fun-t-section, .fun-learn-head__title, .fun-section-title, .fun-home-header__name, .fun-band__title) { font-size: 1.18em; }
+html.ui-calm :is(.fun-learn-head__title, .fun-section-title) { font-size: 1.75rem; }
+/* Soft pill buttons */
+html.ui-calm .fun-btn { border-radius: 999px; font-weight: 800; }
+/* Laptop sidebar at the app's 17rem: Nunito Sans runs wider than Nunito. */
+html.ui-calm .group\/sidebar-wrapper { --sidebar-width: 17rem !important; }

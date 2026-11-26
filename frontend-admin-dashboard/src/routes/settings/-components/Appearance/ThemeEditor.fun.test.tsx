@@ -123,6 +123,9 @@ describe('ThemeEditor and the Fun skin', () => {
             'corporate',
             'fun',
             'neonCity',
+            'stage',
+            'calm',
+            'pulse',
         ]) {
             expect(radio(`learnerUi.skin.${skin}`)).toBeTruthy();
         }
@@ -260,5 +263,10 @@ describe('legacySkinFor', () => {
         expect(legacySkinFor('neonCity', null)).toBe('cleanerPlay');
         expect(legacySkinFor('neonCity', 'fun')).toBe('cleanerPlay');
         expect(legacySkinFor('corporate', 'neonCity')).toBe('corporate');
+        // The use-case skins are as new: older apps get the same nearest look.
+        for (const skin of ['stage', 'calm', 'pulse'] as const) {
+            expect(legacySkinFor(skin, null)).toBe('cleanerPlay');
+            expect(legacySkinFor('default', skin)).toBe('default');
+        }
     });
 });

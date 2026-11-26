@@ -117,6 +117,9 @@ export const platformClass = (platform?: string): string =>
 
 export const skinClass = (classes: { contains(name: string): boolean }): string => {
   if (classes.contains("ui-neon-city")) return "neonCity";
+  if (classes.contains("ui-stage")) return "stage";
+  if (classes.contains("ui-calm")) return "calm";
+  if (classes.contains("ui-pulse")) return "pulse";
   if (classes.contains("ui-corporate")) return "corporate";
   if (classes.contains("ui-fun")) return "fun";
   if (classes.contains("ui-cleaner-play")) return "cleanerPlay";

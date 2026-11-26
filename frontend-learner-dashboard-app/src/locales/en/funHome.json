@@ -121,5 +121,19 @@
   "neon": {
     "nextMission": "Next mission",
     "firstMission": "First mission"
+  },
+  "variants": {
+    "stage": {
+      "next": "Pick up where you left off",
+      "first": "Your first class"
+    },
+    "calm": {
+      "next": "Today's practice",
+      "first": "Your first practice"
+    },
+    "pulse": {
+      "next": "Up next",
+      "first": "First workout"
+    }
   }
 }

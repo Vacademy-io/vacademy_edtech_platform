@@ -1,0 +1,12 @@
+/* Pulse: the course (program) page. A charcoal band with a volt rule under
+   it, whatever the course colour; condensed italic capitals. */
+html.ui-pulse .fun-band {
+  background: var(--pulse-card);
+  color: var(--pulse-text);
+  border-bottom: 3px solid var(--pulse-volt);
+}
+html.ui-pulse .fun-band__back { background: var(--pulse-night); color: var(--pulse-text); }
+html.ui-pulse .fun-band__title { font-size: 2.25rem; }
+html.ui-pulse .fun-band__chips { color: var(--pulse-quiet); }
+html.ui-pulse .fun-band .fun-progress--band { background: var(--pulse-line); }
+html.ui-pulse .fun-band .fun-progress--band > * { background: var(--pulse-volt); }

@@ -644,7 +644,10 @@ export function applyUiSkinFromSettings(
       override === "cleanerPlay" ||
       override === "corporate" ||
       override === "fun" ||
-      override === "neonCity"
+      override === "neonCity" ||
+        override === "stage" ||
+        override === "calm" ||
+        override === "pulse"
     ) {
       return; // QA override wins; __root's debug helpers manage it
     }

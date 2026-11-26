@@ -1,0 +1,167 @@
+/* =====================================================================
+   Pulse: the rest of the app at night.
+   Fun's own screens are repainted through its tokens (base.css). Every other
+   screen (tests list, live classes, profile, settings, dialogs) is built from
+   the shared shadcn tokens plus literal Tailwind greys and white, so this file
+   turns those to night colours while Pulse is on. A test being taken
+   never gets here: the live-test shell holds the skin off
+   (use-exam-skin-isolation).
+   Unlayered on purpose, like the Fun sheets: it must win over Tailwind's
+   @layer utilities.
+   ===================================================================== */
+
+/* ── shadcn and app tokens (HSL channels) ─────────────────────────── */
+/* !important where theme-provider writes the value inline on <html>
+   (primary, secondary, tertiary and nav roles follow the institute brand,
+   which Pulse replaces with its own volt green). */
+html.ui-pulse {
+  --background: 220 10% 11% !important;      /* #1A1C20 surfaces (dialogs, tabs, inputs) */
+  --canvas: 225 9% 6% !important;          /* #0F1012 page */
+  --foreground: 0 0% 100%;
+  --card: 220 10% 11%;
+  --card-foreground: 0 0% 100%;
+  --popover: 220 10% 11%;
+  --popover-foreground: 0 0% 100%;
+  --primary: 77 100% 59% !important;
+  --primary-foreground: 225 9% 6% !important;
+  --secondary: 216 10% 16%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 216 10% 16%;
+  --muted-foreground: 221 9% 69%;
+  --accent: 216 10% 16%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 100% 71%;
+  --destructive-foreground: 225 9% 6%;
+  --border: 216 10% 21%;
+  --input: 216 10% 21%;
+  --ring: 77 100% 70%;
+  --surface: 220 10% 11%;
+  --surface-muted: 216 10% 16%;
+  --text-primary: 0 0% 100%;
+  --text-secondary: 221 9% 69%;
+  --text-muted: 221 9% 69%;
+  --base-black: 0 0% 100%;
+
+  /* Brand scale → volt green: 500 is text and fills, 50-200 are night tints
+     behind pink text. */
+  --primary-50: 77 30% 12% !important;
+  --primary-100: 77 30% 16% !important;
+  --primary-200: 77 35% 22% !important;
+  --primary-300: 77 60% 40% !important;
+  --primary-400: 77 100% 70% !important;
+  --primary-500: 77 100% 59% !important;
+  --secondary-50: 220 10% 11% !important;
+  --secondary-100: 216 10% 16% !important;
+  --secondary-200: 216 10% 21% !important;
+  --secondary-300: 220 8% 45% !important;
+  --secondary-400: 221 9% 69% !important;
+  --secondary-500: 18 100% 58% !important;
+  --tertiary-50: 220 10% 11% !important;
+  --tertiary-100: 216 10% 16% !important;
+  --tertiary-200: 216 10% 21% !important;
+  --tertiary-300: 220 8% 45% !important;
+  --tertiary-400: 221 9% 69% !important;
+  --tertiary-500: 43 100% 65% !important;
+
+  --nav-surface: 225 9% 6% !important;
+  --nav-surface-hover: 216 10% 16% !important;
+  --nav-active: 77 100% 59% !important;
+  --nav-active-text: 225 9% 6% !important;
+  --nav-text: 220 10% 88% !important;
+  --sidebar-background: 225 9% 6%;
+  --sidebar-foreground: 220 10% 88%;
+  --sidebar-primary: 77 100% 59%;
+  --sidebar-primary-foreground: 225 9% 6%;
+  --sidebar-accent: 216 10% 16%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 216 10% 21%;
+  --sidebar-ring: 77 100% 70%;
+
+  /* Status scales: 50-200 are night tints, 500-700 light enough to read. */
+  --success-50: 158 40% 14%;
+  --success-100: 158 40% 18%;
+  --success-200: 155 38% 24%;
+  --success-500: 141 71% 62%;
+  --success-600: 141 71% 66%;
+  --success-700: 141 78% 72%;
+  --warning-50: 40 40% 14%;
+  --warning-100: 40 40% 18%;
+  --warning-200: 40 40% 24%;
+  --warning-500: 43 100% 65%;
+  --warning-600: 40 100% 68%;
+  --warning-700: 40 100% 74%;
+  --danger-50: 330 45% 15%;
+  --danger-100: 330 45% 19%;
+  --danger-200: 330 42% 25%;
+  --danger-500: 0 100% 71%;
+  --danger-600: 0 100% 74%;
+  --danger-700: 0 100% 78%;
+  --info-50: 215 55% 15%;
+  --info-100: 215 55% 19%;
+  --info-200: 215 50% 26%;
+  --info-500: 200 100% 65%;
+  --info-600: 200 100% 70%;
+  --info-700: 200 100% 76%;
+
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.35);
+  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 12px 28px -6px rgb(0 0 0 / 0.45);
+  --shadow-xl: 0 24px 48px -12px rgb(0 0 0 / 0.5);
+}
+
+html.ui-pulse body {
+  background-color: #0F1012;
+  color: #FFFFFF;
+}
+
+/* ── Literal Tailwind greys and white ─────────────────────────────── */
+/* Surfaces */
+html.ui-pulse :is(.bg-white, .bg-gray-50, .bg-neutral-50, .bg-slate-50, .bg-zinc-50) { background-color: #1A1C20; }
+html.ui-pulse :is(.bg-gray-100, .bg-neutral-100, .bg-slate-100, .bg-gray-200, .bg-neutral-200, .bg-slate-200) { background-color: #24272C; }
+html.ui-pulse :is(.bg-white\/90, .bg-white\/95, .bg-white\/80) { background-color: rgb(26 28 32 / 0.92); }
+html.ui-pulse :is(.bg-white\/60, .bg-white\/70, .bg-white\/50) { background-color: rgb(26 28 32 / 0.7); }
+html.ui-pulse :is(.hover\:bg-gray-50, .hover\:bg-neutral-50, .hover\:bg-gray-100, .hover\:bg-neutral-100, .hover\:bg-slate-50):hover { background-color: #24272C; }
+html.ui-pulse :is(.from-white, .from-gray-50, .from-neutral-50) { --tw-gradient-from: #1A1C20 var(--tw-gradient-from-position); --tw-gradient-to: rgb(26 28 32 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+html.ui-pulse :is(.to-white, .to-gray-50, .to-neutral-50) { --tw-gradient-to: #1A1C20 var(--tw-gradient-to-position); }
+
+/* Text, darkest to lightest grey → white to quiet grey */
+html.ui-pulse :is(.text-black, .text-gray-900, .text-neutral-900, .text-slate-900, .text-zinc-900, .text-gray-800, .text-neutral-800, .text-slate-800) { color: #FFFFFF; }
+html.ui-pulse :is(.text-gray-700, .text-neutral-700, .text-slate-700, .text-gray-600, .text-neutral-600, .text-slate-600) { color: #E3E6EA; }
+html.ui-pulse :is(.text-gray-500, .text-neutral-500, .text-slate-500, .text-gray-400, .text-neutral-400, .text-slate-400) { color: #A8ADB7; }
+html.ui-pulse :is(.text-gray-300, .text-neutral-300) { color: #7C818B; }
+
+/* Lines */
+html.ui-pulse :is(.border-gray-100, .border-neutral-100, .border-gray-200, .border-neutral-200, .border-slate-200, .border-gray-300, .border-neutral-300, .border-slate-300) { border-color: #2F333A; }
+html.ui-pulse :is(.divide-gray-100, .divide-neutral-100, .divide-gray-200, .divide-neutral-200) > :not([hidden]) ~ :not([hidden]) { border-color: #2F333A; }
+
+/* White text on a brand fill would be 1.2:1 on the volt: night text instead. */
+html.ui-pulse :is(.bg-primary-500, .bg-primary, .bg-primary-400):is(.text-white, :not([class*="text-"])),
+html.ui-pulse :is(.bg-primary-500, .bg-primary, .bg-primary-400) :is(.text-white, svg) {
+  color: #0F1012;
+}
+
+/* Inputs and selects */
+html.ui-pulse :is(input, textarea, select):not([type="checkbox"]):not([type="radio"]):not([type="range"]) {
+  color: #FFFFFF;
+  background-color: #1A1C20;
+}
+html.ui-pulse ::placeholder { color: #8A909A; opacity: 1; }
+
+/* Scrollbars and selection */
+html.ui-pulse { scrollbar-color: #2F333A #0F1012; }
+html.ui-pulse ::selection { background: #C8FF2E; color: #0F1012; }
+
+/* Tailwind's important variants (!text-*, !bg-white) carry !important, so
+   the night value has to as well. */
+html.ui-pulse :is(.\!text-black, .\!text-gray-900, .\!text-neutral-900, .\!text-gray-800, .\!text-neutral-800) { color: #FFFFFF !important; }
+html.ui-pulse :is(.\!text-gray-700, .\!text-neutral-700, .\!text-gray-600, .\!text-neutral-600) { color: #E3E6EA !important; }
+html.ui-pulse :is(.\!text-gray-500, .\!text-neutral-500, .\!text-gray-400, .\!text-neutral-400) { color: #A8ADB7 !important; }
+html.ui-pulse :is(.\!bg-white, .\!bg-gray-50, .\!bg-neutral-50) { background-color: #1A1C20 !important; }
+
+/* Gradients that start from white in a state variant (active tabs,
+   data-[state=active]:from-white) start from the card colour. */
+html.ui-pulse [class*="from-white"] {
+  --tw-gradient-from: #1A1C20 var(--tw-gradient-from-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}

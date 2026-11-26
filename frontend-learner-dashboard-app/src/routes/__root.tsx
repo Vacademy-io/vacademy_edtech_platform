@@ -435,7 +435,10 @@ const RootComponent = () => {
         override === "cleanerPlay" ||
         override === "corporate" ||
         override === "fun" ||
-        override === "neonCity"
+        override === "neonCity" ||
+        override === "stage" ||
+        override === "calm" ||
+        override === "pulse"
       ) {
         applyUiType(override);
       } else {
@@ -515,7 +518,7 @@ const RootComponent = () => {
         /* ignore */
       }
       if (
-        !["vibrant", "default", "play", "cleanerPlay", "corporate", "fun", "neonCity"].includes(
+        !["vibrant", "default", "play", "cleanerPlay", "corporate", "fun", "neonCity", "stage", "calm", "pulse"].includes(
           override
         )
       ) {

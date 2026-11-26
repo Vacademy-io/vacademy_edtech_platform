@@ -128,7 +128,10 @@
                 "cleanerPlay": "Like Play, but calmer: the mascot, your brand colour with warm accents, and round pill buttons. Suits school learners of any age.",
                 "corporate": "Calm and professional: white cards raised on a light grey page. Suits working adults and staff training.",
                 "fun": "Bright and playful: every course gets its own colour, with big friendly buttons. Made for school learners.",
-                "neonCity": "Night-time and game-like: a sunset city on the home screen, slanted bold headings, neon pink buttons and stars on quiz results. Every course gets its own bright colour. Uses its own colours instead of your brand colour."
+                "neonCity": "Night-time and game-like: a sunset city on the home screen, slanted bold headings, neon pink buttons and stars on quiz results. Every course gets its own bright colour. Uses its own colours instead of your brand colour.",
+                "stage": "For dance and art academies: warm ivory with magenta and marigold, rangoli-dot art behind the greeting and elegant serif headings. Uses its own colours instead of your brand colour.",
+                "calm": "For yoga institutes: sand and sage, a sunrise over hills behind the greeting, soft rounded buttons and a light serif. Uses its own colours instead of your brand colour.",
+                "pulse": "For fitness and gyms: charcoal with electric green, bold condensed headings and a bright Up next workout card. A dark theme across the app; tests stay on their usual screen. Uses its own colours instead of your brand colour."
             },
             "cue": {
                 "default": "Clean and white",
@@ -137,10 +140,16 @@
                 "cleanerPlay": "Mascot, pill buttons",
                 "corporate": "Grey page, raised cards",
                 "fun": "A colour per course",
-                "neonCity": "Sunset city at night"
+                "neonCity": "Sunset city at night",
+                "stage": "Dance and art, warm ivory",
+                "calm": "Yoga, sand and sage",
+                "pulse": "Fitness, charcoal and volt"
             },
             "funFallback": "Older app versions show Cleaner Play until learners update.",
-            "neonCity": "Neon City"
+            "neonCity": "Neon City",
+            "stage": "Stage",
+            "calm": "Calm",
+            "pulse": "Pulse"
         }
     }
 }

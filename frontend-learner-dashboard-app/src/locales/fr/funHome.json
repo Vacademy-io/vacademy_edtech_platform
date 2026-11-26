@@ -121,5 +121,19 @@
   "neon": {
     "nextMission": "Prochaine mission",
     "firstMission": "Première mission"
+  },
+  "variants": {
+    "stage": {
+      "next": "Reprenez là où vous étiez",
+      "first": "Votre premier cours"
+    },
+    "calm": {
+      "next": "Pratique du jour",
+      "first": "Votre première pratique"
+    },
+    "pulse": {
+      "next": "À suivre",
+      "first": "Première séance"
+    }
   }
 }

@@ -6,14 +6,14 @@ import type { StudentDisplaySettingsData } from '@/types/student-display-setting
 import type { StudentUiType } from '@/types/theme-role-settings';
 
 /**
- * What a Fun or Neon City choice leaves in ui.type for learner apps that
+ * What a Fun, Neon City, Stage, Calm or Pulse choice leaves in ui.type for learner apps that
  * predate it: Cleaner Play, the clean, rounded look closest to Fun that every
  * such app knows.
  */
 const FUN_FALLBACK: StudentUiType = 'cleanerPlay';
 
 /** Skins that older learner apps do not know; each leaves FUN_FALLBACK in ui.type. */
-const NEWER_SKINS: ReadonlyArray<StudentUiType> = ['fun', 'neonCity'];
+const NEWER_SKINS: ReadonlyArray<StudentUiType> = ['fun', 'neonCity', 'stage', 'calm', 'pulse'];
 export const isNewerSkin = (skin: StudentUiType | null | undefined): boolean =>
     !!skin && NEWER_SKINS.includes(skin);
 

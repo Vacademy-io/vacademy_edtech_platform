@@ -195,6 +195,119 @@ export const NEON = {
 export const NEON_DISPLAY = "Anton, Impact, 'Arial Narrow', sans-serif";
 export const NEON_FONT = 'Manrope, system-ui, sans-serif';
 
+/**
+ * The use-case skins (styles/stage, styles/calm, styles/pulse in the learner
+ * app): the few colours a scale model needs from each.
+ */
+export interface UseCaseLook {
+    page: string;
+    card: string;
+    line: string;
+    ink: string;
+    quiet: string;
+    /** The top band behind the greeting, and the ink on it. */
+    band: string;
+    bandInk: string;
+    /** The resume card and the ink on it. */
+    hero: string;
+    heroInk: string;
+    /** The main button and its label; lip under it. */
+    action: string;
+    actionInk: string;
+    actionLip: string;
+    /** The main action outside the resume card (lesson Next, result Next, active tab). */
+    main: string;
+    mainInk: string;
+    mainLip: string;
+    /** Accent for the label above the resume card and progress. */
+    accent: string;
+    track: string;
+    courses: readonly string[];
+    display: string;
+    body: string;
+    italic: boolean;
+    upper: boolean;
+    pill: boolean;
+}
+
+export const STAGE: UseCaseLook = {
+    page: '#FFF8EE', // design-lint-ignore: learner Stage token --stage-ivory
+    card: '#FFFFFF', // design-lint-ignore: learner Stage card
+    line: '#F0DCC8', // design-lint-ignore: learner Stage token --stage-line
+    ink: '#2B1630', // design-lint-ignore: learner Stage token --stage-plum
+    quiet: '#6B4E64', // design-lint-ignore: learner Stage token --stage-quiet
+    band: '#A3134D', // design-lint-ignore: learner Stage token --stage-magenta
+    bandInk: '#FFFFFF', // design-lint-ignore: white on magenta
+    hero: '#2B1630', // design-lint-ignore: learner Stage token --stage-plum
+    heroInk: '#FFFFFF', // design-lint-ignore: white on plum
+    action: '#F2A007', // design-lint-ignore: learner Stage token --stage-marigold
+    actionInk: '#2B1630', // design-lint-ignore: plum on marigold
+    actionLip: '#A86E00', // design-lint-ignore: learner Stage token --stage-marigold-lip
+    main: '#A3134D', // design-lint-ignore: learner Stage token --stage-magenta
+    mainInk: '#FFFFFF', // design-lint-ignore: white on magenta
+    mainLip: '#6E0D34', // design-lint-ignore: learner Stage token --stage-magenta-lip
+    accent: '#F2A007', // design-lint-ignore: learner Stage token --stage-marigold
+    track: '#4A2E50', // design-lint-ignore: learner Stage token --stage-plum-2
+    courses: ['#A3134D', '#0E7C7B', '#C2410C'], // design-lint-ignore: Stage course colours
+    display: 'Fraunces, Georgia, serif',
+    body: 'Outfit, system-ui, sans-serif',
+    italic: true,
+    upper: false,
+    pill: false,
+};
+
+export const CALM: UseCaseLook = {
+    page: '#F6F3EC', // design-lint-ignore: learner Calm token --calm-sand
+    card: '#FFFFFF', // design-lint-ignore: learner Calm card
+    line: '#E5E0D3', // design-lint-ignore: learner Calm token --calm-line
+    ink: '#23302A', // design-lint-ignore: learner Calm token --calm-ink
+    quiet: '#5E6B62', // design-lint-ignore: learner Calm token --calm-quiet
+    band: '#E9EFE6', // design-lint-ignore: learner Calm token --calm-mist
+    bandInk: '#23302A', // design-lint-ignore: learner Calm token --calm-ink
+    hero: '#FFFFFF', // design-lint-ignore: learner Calm card
+    heroInk: '#23302A', // design-lint-ignore: learner Calm token --calm-ink
+    action: '#3F6B4F', // design-lint-ignore: learner Calm token --calm-sage
+    actionInk: '#FFFFFF', // design-lint-ignore: white on sage
+    actionLip: '#2E5039', // design-lint-ignore: learner Calm token --calm-sage-lip
+    main: '#3F6B4F', // design-lint-ignore: learner Calm token --calm-sage
+    mainInk: '#FFFFFF', // design-lint-ignore: white on sage
+    mainLip: '#2E5039', // design-lint-ignore: learner Calm token --calm-sage-lip
+    accent: '#3F6B4F', // design-lint-ignore: learner Calm token --calm-sage
+    track: '#E3ECE1', // design-lint-ignore: learner Calm progress track
+    courses: ['#3F6B4F', '#A4502F', '#2F6F73'], // design-lint-ignore: Calm course colours
+    display: "'Cormorant Garamond', Georgia, serif",
+    body: "'Nunito Sans', system-ui, sans-serif",
+    italic: false,
+    upper: false,
+    pill: true,
+};
+
+export const PULSE: UseCaseLook = {
+    page: '#0F1012', // design-lint-ignore: learner Pulse token --pulse-night
+    card: '#1A1C20', // design-lint-ignore: learner Pulse token --pulse-card
+    line: '#2F333A', // design-lint-ignore: learner Pulse token --pulse-line
+    ink: '#FFFFFF', // design-lint-ignore: learner Pulse token --pulse-text
+    quiet: '#A8ADB7', // design-lint-ignore: learner Pulse token --pulse-quiet
+    band: '#0F1012', // design-lint-ignore: learner Pulse token --pulse-night
+    bandInk: '#C8FF2E', // design-lint-ignore: learner Pulse token --pulse-volt
+    hero: '#C8FF2E', // design-lint-ignore: learner Pulse token --pulse-volt
+    heroInk: '#0F1012', // design-lint-ignore: charcoal on volt
+    action: '#0F1012', // design-lint-ignore: charcoal button on the volt card
+    actionInk: '#C8FF2E', // design-lint-ignore: volt on charcoal
+    actionLip: '#000000', // design-lint-ignore: Pulse button lip
+    main: '#C8FF2E', // design-lint-ignore: learner Pulse token --pulse-volt
+    mainInk: '#0F1012', // design-lint-ignore: charcoal on volt
+    mainLip: '#7F9E1E', // design-lint-ignore: learner Pulse token --pulse-volt-lip
+    accent: '#0F1012', // design-lint-ignore: charcoal on volt
+    track: '#A7D42A', // design-lint-ignore: Pulse progress track on volt
+    courses: ['#C8FF2E', '#FF8A3D', '#2EE6D6'], // design-lint-ignore: Pulse course colours
+    display: "'Barlow Condensed', 'Arial Narrow', sans-serif",
+    body: 'Inter, system-ui, sans-serif',
+    italic: true,
+    upper: true,
+    pill: false,
+};
+
 /** The Play and Cleaner Play mascot, drawn as simple shapes. */
 export const MASCOT = {
     skin: '#F1C7A0', // design-lint-ignore: mascot artwork
