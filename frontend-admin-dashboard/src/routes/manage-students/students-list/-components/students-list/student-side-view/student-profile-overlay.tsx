@@ -314,6 +314,7 @@ export const StudentProfileOverlay = () => {
                                   ? [selectedStudent.package_session_id]
                                   : []
                         }
+                        learnerName={selectedStudent.full_name}
                     />
                 );
             case 'academicActivity':
