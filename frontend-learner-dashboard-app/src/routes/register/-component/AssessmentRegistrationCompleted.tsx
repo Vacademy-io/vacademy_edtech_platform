@@ -18,6 +18,7 @@ import { CheckCircle, Timer, ArrowRight, Sparkle } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 
 interface TimeLeft {
+  days: number;
   hours: number;
   minutes: number;
   seconds: number;
@@ -101,8 +102,12 @@ const AssessmentRegistrationCompleted = ({
       });
     }
   };
+  // `!days` also treats a missing value as 0, so the old rule still applies.
   const isLive =
-    timeLeft.hours === 0 && timeLeft.minutes === 0 && timeLeft.seconds === 0;
+    !timeLeft.days &&
+    timeLeft.hours === 0 &&
+    timeLeft.minutes === 0 &&
+    timeLeft.seconds === 0;
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-b from-primary-50/40 via-background to-background px-4 py-8">
@@ -159,12 +164,22 @@ const AssessmentRegistrationCompleted = ({
                   <Timer size={14} weight="bold" />
                   {t("completed.goesLiveIn")}
                 </div>
-                <span className="text-2xl sm:text-3xl font-bold tabular-nums text-primary-600">
-                  {String(timeLeft.hours).padStart(2, "0")}
-                  :
-                  {String(timeLeft.minutes).padStart(2, "0")}
-                  :
-                  {String(timeLeft.seconds).padStart(2, "0")}
+                <span className="flex items-baseline gap-2 text-2xl sm:text-3xl font-bold tabular-nums text-primary-600">
+                  {timeLeft.days > 0 && (
+                    <>
+                      <span>{timeLeft.days}</span>
+                      <span className="text-sm font-medium text-primary-500">
+                        {t("form.countdown.dayUnit", { count: timeLeft.days })}
+                      </span>
+                    </>
+                  )}
+                  <span>
+                    {String(timeLeft.hours).padStart(2, "0")}
+                    :
+                    {String(timeLeft.minutes).padStart(2, "0")}
+                    :
+                    {String(timeLeft.seconds).padStart(2, "0")}
+                  </span>
                 </span>
               </div>
             )}
