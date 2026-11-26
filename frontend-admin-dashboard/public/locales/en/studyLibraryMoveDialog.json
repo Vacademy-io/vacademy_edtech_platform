@@ -9,5 +9,14 @@
     "movedWithFailedCopies_other": "Chapter moved, but {{count}} copies failed: {{locations}}",
     "moveFailed": "Failed to move chapter",
     "partialMoveSummary": "{{done}} of {{total}} locations done. Retry the rest below.",
-    "multiHint": "A chapter lives in one place: the extra locations get a copy, and the chapter is removed from its current one."
+    "multiHint": "A chapter lives in one place: the extra locations get a copy, and the chapter is removed from its current one.",
+    "movingEllipsis": "Moving…",
+    "slideMovedSuccess": "Slide moved successfully",
+    "slideMovedWithCopies_one": "Slide moved, with a copy in {{count}} more location",
+    "slideMovedWithCopies_other": "Slide moved, with copies in {{count}} more locations",
+    "slideMovedButCopiesFailed_one": "Slide moved, but {{count}} copy failed: {{labels}}",
+    "slideMovedButCopiesFailed_other": "Slide moved, but {{count}} copies failed: {{labels}}",
+    "failedToMoveSlide": "Failed to move slide",
+    "locationsDoneRetryRest": "{{done}} of {{total}} locations done. Retry the rest below.",
+    "slideMultiHint": "A slide lives in one place: the extra locations get a copy, and the slide is removed from its current chapter."
 }

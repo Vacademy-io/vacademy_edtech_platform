@@ -58,11 +58,29 @@ export const ReRegisterDialog = ({ trigger, open, onOpenChange }: ReRegisterDial
     const data = getTokenDecodedData(accessToken);
     const INSTITUTE_ID = data && Object.keys(data.authorities)[0];
 
+    // Bulk action: the learners come from bulkActionInfo (selectedStudent is only set by the row menu).
+    const bulkStudents = isBulkAction ? bulkActionInfo?.selectedStudents ?? [] : [];
+    const sourceBatchId = isBulkAction
+        ? bulkStudents[0]?.package_session_id
+        : selectedStudent?.package_session_id;
+    // the session list below is "other sessions of this course", so a bulk selection must be from one course
+    const bulkCourseIds = new Set(
+        bulkStudents
+            .map(
+                (student) =>
+                    instituteDetails?.batches_for_sessions.find(
+                        (batch) => batch.id === student.package_session_id
+                    )?.package_dto.id
+            )
+            .filter(Boolean)
+    );
+    const mixedCourses = isBulkAction && bulkCourseIds.size > 1;
+
     useEffect(() => {
-        if (selectedStudent) {
-            setPackageSessionId(selectedStudent.package_session_id);
+        if (sourceBatchId) {
+            setPackageSessionId(sourceBatchId);
         }
-    }, [selectedStudent]);
+    }, [sourceBatchId]);
 
     useEffect(() => {
         if (instituteDetails && packageSessionId) {
@@ -124,7 +142,7 @@ export const ReRegisterDialog = ({ trigger, open, onOpenChange }: ReRegisterDial
             <MyButton buttonType="secondary" onClick={() => onOpenChange(false)} type="button">
                 Cancel
             </MyButton>
-            <MyButton onClick={handleReRegister} type="submit">
+            <MyButton onClick={handleReRegister} type="submit" disable={mixedCourses}>
                 Re-register
             </MyButton>
         </div>
@@ -202,7 +220,7 @@ export const ReRegisterDialog = ({ trigger, open, onOpenChange }: ReRegisterDial
             ? `Re-register for Next Session for ${bulkActionInfo?.selectedStudents.length} students`
             : `Re-register for Next Session for ${selectedStudent?.full_name}`;
 
-    if (!selectedStudent || !instituteDetails) {
+    if ((isBulkAction ? bulkStudents.length === 0 : !selectedStudent) || !instituteDetails) {
         return null;
     }
 
@@ -219,6 +237,12 @@ export const ReRegisterDialog = ({ trigger, open, onOpenChange }: ReRegisterDial
                 <div>
                     <FormProvider {...form}>
                         <div className="flex flex-col gap-4 p-4">
+                            {mixedCourses && (
+                                <p className="text-body text-danger-600">
+                                    The selected learners are in different courses. Select learners
+                                    from one course to re-register them together.
+                                </p>
+                            )}
                             <SessionWithAccessDays
                                 form={form}
                                 control={form.control}

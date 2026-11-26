@@ -40,6 +40,8 @@ export const useUpdateBatchMutation = () => {
         mutationFn: updateStudentBatch,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['students'] });
+            // the header Total/Active/Inactive badges are separate queries
+            queryClient.invalidateQueries({ queryKey: ['student-count'] });
             toast({
                 title: t('success'),
                 description: t('updateBatchSuccess'),
@@ -89,6 +91,8 @@ export const useExtendSessionMutation = () => {
         mutationFn: extendStudentSession,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['students'] });
+            // the header Total/Active/Inactive badges are separate queries
+            queryClient.invalidateQueries({ queryKey: ['student-count'] });
             toast({
                 title: t('success'),
                 description: t('extendSessionSuccess'),
@@ -140,6 +144,8 @@ export const useTerminateStudentMutation = () => {
         mutationFn: terminateStudent,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['students'] });
+            // the header Total/Active/Inactive badges are separate queries
+            queryClient.invalidateQueries({ queryKey: ['student-count'] });
             toast({
                 title: t('success'),
                 description: t('terminateStudentSuccess'),
@@ -188,6 +194,8 @@ export const useDeleteStudentMutation = () => {
         mutationFn: deleteStudent,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['students'] });
+            // the header Total/Active/Inactive badges are separate queries
+            queryClient.invalidateQueries({ queryKey: ['student-count'] });
             toast({
                 title: t('success'),
                 description: t('deleteStudentSuccess'),

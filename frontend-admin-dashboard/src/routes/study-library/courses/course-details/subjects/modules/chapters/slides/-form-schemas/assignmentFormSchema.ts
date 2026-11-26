@@ -78,13 +78,21 @@ export type AssignmentFormType = z.infer<typeof assignmentFormSchema>;
 export const ALL_FILES_VALUE = 'all';
 
 // File types an admin can allow learners to upload. PDF is always allowed.
+// `label` is a getter: translated when it is read (at render), not when this module loads. At load time
+// the namespace is often not fetched yet, which froze raw keys like "fileType.allFiles" on the checkboxes.
+const fileTypeOption = (value: string, key: string) => ({
+    value,
+    get label() {
+        return t(key);
+    },
+});
 export const ALLOWED_FILE_TYPE_OPTIONS: Array<{ value: string; label: string }> = [
-    { value: ALL_FILES_VALUE, label: t('fileType.allFiles') },
-    { value: 'pdf', label: t('fileType.pdf') },
-    { value: 'image', label: t('fileType.image') },
-    { value: 'doc', label: t('fileType.document') },
-    { value: 'video', label: t('fileType.video') },
-    { value: 'audio', label: t('fileType.audio') },
+    fileTypeOption(ALL_FILES_VALUE, 'fileType.allFiles'),
+    fileTypeOption('pdf', 'fileType.pdf'),
+    fileTypeOption('image', 'fileType.image'),
+    fileTypeOption('doc', 'fileType.document'),
+    fileTypeOption('video', 'fileType.video'),
+    fileTypeOption('audio', 'fileType.audio'),
 ];
 
 // The selection is round-tripped through the existing `comma_separated_media_ids`

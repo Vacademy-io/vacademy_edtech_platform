@@ -137,7 +137,7 @@ export const MoveToDialog = ({ openDialog, setOpenDialog }: MoveTo) => {
                 busyLabel={t('movingEllipsis')}
                 isSubmitting={isSubmitting}
                 onSubmit={handleMoveSlide}
-                multiHint={t('multiHint')}
+                multiHint={t('slideMultiHint')}
             />
         </MyDialog>
     );

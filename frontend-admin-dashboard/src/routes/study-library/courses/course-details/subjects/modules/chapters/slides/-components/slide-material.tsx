@@ -3015,7 +3015,9 @@ export const SlideMaterial = ({
                 htmlDocRef.current = { slideId: activeItem.id, html: null };
                 setContent(
                     <HtmlDocAiAuthor
-                        key={activeItem.id}
+                        // + restore nonce: a history restore must remount the editor, which only
+                        // reads the slide's HTML on mount (same key kept the old text on screen)
+                        key={`${activeItem.id}-${historyRestoreNonce}`}
                         slide={activeItem}
                         isLearnerView={isLearnerView}
                         onHtmlChange={handleHtmlDocChange}
@@ -3086,7 +3088,9 @@ export const SlideMaterial = ({
                             }
                         >
                             <LexicalDocumentEditor
-                                key={slideForThisLoad.id}
+                                // + restore nonce: initialHtml is read on mount only, so a history
+                                // restore needs a fresh instance (same key kept the old text on screen)
+                                key={`${slideForThisLoad.id}-${historyRestoreNonce}`}
                                 slideId={slideForThisLoad.id}
                                 initialHtml={initialHtml}
                                 readOnly={isLearnerView}

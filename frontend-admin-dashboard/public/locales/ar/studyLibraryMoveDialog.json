@@ -17,5 +17,22 @@
     "movedWithFailedCopies_other": "تم نقل الفصل، لكن فشلت {{count}} نسخة: {{locations}}",
     "moveFailed": "فشل نقل الفصل",
     "partialMoveSummary": "تم الانتهاء من {{done}} من أصل {{total}} مواقع. أعد المحاولة للباقي أدناه.",
-    "multiHint": "يعيش الفصل في مكان واحد فقط: تحصل المواقع الإضافية على نسخة، ويُزال الفصل من موقعه الحالي."
+    "multiHint": "يعيش الفصل في مكان واحد فقط: تحصل المواقع الإضافية على نسخة، ويُزال الفصل من موقعه الحالي.",
+    "movingEllipsis": "جارٍ النقل…",
+    "slideMovedSuccess": "تم نقل الشريحة بنجاح",
+    "slideMovedWithCopies_zero": "تم نقل الشريحة، مع نسخ في {{count}} مواقع أخرى",
+    "slideMovedWithCopies_one": "تم نقل الشريحة، مع نسخة في {{count}} موقع آخر",
+    "slideMovedWithCopies_two": "تم نقل الشريحة، مع نسخ في {{count}} مواقع أخرى",
+    "slideMovedWithCopies_few": "تم نقل الشريحة، مع نسخ في {{count}} مواقع أخرى",
+    "slideMovedWithCopies_many": "تم نقل الشريحة، مع نسخ في {{count}} مواقع أخرى",
+    "slideMovedWithCopies_other": "تم نقل الشريحة، مع نسخ في {{count}} مواقع أخرى",
+    "slideMovedButCopiesFailed_zero": "تم نقل الشريحة، لكن فشلت {{count}} نسخ: {{labels}}",
+    "slideMovedButCopiesFailed_one": "تم نقل الشريحة، لكن فشلت {{count}} نسخة: {{labels}}",
+    "slideMovedButCopiesFailed_two": "تم نقل الشريحة، لكن فشلت {{count}} نسخ: {{labels}}",
+    "slideMovedButCopiesFailed_few": "تم نقل الشريحة، لكن فشلت {{count}} نسخ: {{labels}}",
+    "slideMovedButCopiesFailed_many": "تم نقل الشريحة، لكن فشلت {{count}} نسخ: {{labels}}",
+    "slideMovedButCopiesFailed_other": "تم نقل الشريحة، لكن فشلت {{count}} نسخ: {{labels}}",
+    "failedToMoveSlide": "فشل نقل الشريحة",
+    "locationsDoneRetryRest": "تم الانتهاء من {{done}} من أصل {{total}} مواقع. أعد المحاولة للباقي أدناه.",
+    "slideMultiHint": "تعيش الشريحة في مكان واحد فقط: تحصل المواقع الإضافية على نسخة، وتُزال الشريحة من فصلها الحالي."
 }
