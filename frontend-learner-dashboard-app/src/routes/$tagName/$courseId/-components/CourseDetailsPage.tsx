@@ -118,6 +118,7 @@ import { EbookDetailsView } from "./EbookDetailsView";
 import { HostedSiteAssistant } from "@/components/site-assistant/HostedSiteAssistant";
 import { headerOffsetClass } from "../../-components/header/header-chrome";
 import { categoryBarOffsetAt } from "../../-components/commerce/lazy";
+import { useCatalogueSkinIsolation } from "../../-utils/catalogue-skin-isolation";
 import {
   BookOpen,
   CaretDown,
@@ -3002,6 +3003,8 @@ const CourseDetailsPageContent: React.FC<CourseDetailsPageContentProps> = ({
  */
 export const CourseDetailsPage: React.FC<CourseDetailsPageProps> = (props) => {
   const { instituteId, tagName } = props;
+  // The site has its own theme: no learner app skin on it (see the hook).
+  useCatalogueSkinIsolation();
   const [catalogueData, setCatalogueData] =
     useState<CourseCatalogueData | null>(null);
 

@@ -60,6 +60,7 @@ import {
   scrubPreviewConfig,
 } from "../-utils/preview-bridge";
 import { isBlogPreviewSearch, setBlogPreviewPost, toBlogPreviewPost } from "../-utils/blog-preview";
+import { useCatalogueSkinIsolation } from "../-utils/catalogue-skin-isolation";
 
 interface CourseCataloguePageProps {
   tagName: string;
@@ -75,6 +76,8 @@ export const CourseCataloguePage: React.FC<CourseCataloguePageProps> = ({
   instituteThemeCode,
   pageSlug,
 }) => {
+  // The site has its own theme: no learner app skin on it (see the hook).
+  useCatalogueSkinIsolation();
   const { t } = useTranslation("coursePlayerA");
   // Institute terminology must be in localStorage before the first paint —
   // see institute-naming-seed.ts. Read the terms only after it settles.
