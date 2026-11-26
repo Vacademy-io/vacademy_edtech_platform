@@ -1325,6 +1325,12 @@ export const ENROLMENT_BREAK_END_PREVIEW = (breakId: string) =>
     `${ENROLMENT_BREAKS_BASE}/${breakId}/end/preview`;
 export const ENROLMENT_BREAK_CANCEL = (breakId: string) =>
     `${ENROLMENT_BREAKS_BASE}/${breakId}/cancel`;
+// Extra classes: link a learner to another batch for a few days (no fee, no message).
+export const EXTRA_CLASSES_BASE = `${BASE_URL}/admin-core-service/v1/extra-classes`;
+export const EXTRA_CLASSES_FOR_LEARNER = (userId: string) =>
+    `${EXTRA_CLASSES_BASE}/learner/${userId}`;
+export const EXTRA_CLASS_BATCHES = `${EXTRA_CLASSES_BASE}/batches`;
+export const EXTRA_CLASS_END = (id: string) => `${EXTRA_CLASSES_BASE}/${id}/end`;
 // Syllabus progress: teachers mark each learner's progress per syllabus week block.
 export const SYLLABUS_PROGRESS_BASE = `${BASE_URL}/admin-core-service/syllabus-progress/v1`;
 export const SYLLABUS_PROGRESS_BATCHES = `${SYLLABUS_PROGRESS_BASE}/batches`;

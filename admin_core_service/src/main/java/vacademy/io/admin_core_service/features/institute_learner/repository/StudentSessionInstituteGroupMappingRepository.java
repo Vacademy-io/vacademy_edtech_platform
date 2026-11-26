@@ -136,6 +136,10 @@ public interface StudentSessionInstituteGroupMappingRepository
    * returning learner enrols again, so a paid renewal looked like a brand new trial. The
    * join is on the user_plan primary key, so it cannot multiply rows, and it is a LEFT
    * join so mappings that carry no user_plan_id still come back, with is_trial null.
+   *
+   * <p>Extra classes (source EXTRA_CLASS, features/extra_class) are left out: they are a few
+   * days in another batch with no fee, and their short enrolled/expiry window would otherwise
+   * look like a new joiner (day-based welcome steps) or an access about to end (expiry steps).
    */
   @Query(value = """
       SELECT
@@ -154,6 +158,7 @@ public interface StudentSessionInstituteGroupMappingRepository
       LEFT JOIN user_plan up ON up.id = ssigm.user_plan_id
       WHERE ssigm.package_session_id IN (:psIds)
         AND ssigm.status IN (:statuses)
+        AND (ssigm.source IS NULL OR ssigm.source <> 'EXTRA_CLASS')
       """, nativeQuery = true)
   List<Object[]> findMappingsWithStudentContacts(
       @Param("psIds") List<String> packageSessionIds,

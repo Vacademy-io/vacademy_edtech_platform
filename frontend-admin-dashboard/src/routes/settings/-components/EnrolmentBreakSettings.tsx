@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { BellSlash, PauseCircle, ClockCounterClockwise } from '@phosphor-icons/react';
+import { BellSlash, CalendarPlus, PauseCircle, ClockCounterClockwise } from '@phosphor-icons/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -121,6 +121,11 @@ export default function EnrolmentBreakSettings() {
                             icon={<PauseCircle className="size-5" />}
                             title={t('pause.title')}
                             points={[t('pause.point1'), t('pause.point2'), t('pause.point3')]}
+                        />
+                        <Explainer
+                            icon={<CalendarPlus className="size-5" />}
+                            title={t('extra.title')}
+                            points={[t('extra.point1'), t('extra.point2'), t('extra.point3')]}
                         />
                     </div>
 

@@ -163,6 +163,8 @@ public class ImportMembershipSteps {
     /**
      * Body: [ { student_external_id, enrollment_external_id, batch_external_id, from, to, reason } ]
      * A second batch the learner also attends, on the same membership: access to that batch only.
+     * Marked source EXTRA_CLASS, so it is listed and ended on the learner's Extra classes card
+     * (features/extra_class) and kept out of the workflow roster.
      */
     public void extraClasses(ImportContext c, JsonNode body) {
         for (JsonNode x : body) {
@@ -185,8 +187,8 @@ public class ImportMembershipSteps {
             String id = newId();
             c.getJdbc().update("""
                     INSERT INTO student_session_institute_group_mapping (id, user_id, package_session_id, institute_id, enrolled_date,
-                                 expiry_date, status, user_plan_id)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                                 expiry_date, status, user_plan_id, source)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'EXTRA_CLASS')
                     """, id, userId.get(), psId.get(), c.getInstituteId(), sqlDate(from), endOfDay(to), status,
                     userPlanId.orElse(null));
             c.putRef("EXTRA", key, id);

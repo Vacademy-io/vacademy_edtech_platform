@@ -25,5 +25,11 @@
     "keepDates": {
         "label": "Garder les échéances après une longue pause (jours)",
         "hint": "Quand une pause a duré plus longtemps que cela, la reprise garde les dates de l’adhésion ; l’équipe peut toujours les décaler ou choisir une nouvelle date. Laissez vide pour toujours décaler les dates du nombre de jours de pause."
+    },
+    "extra": {
+        "title": "Cours supplémentaires",
+        "point1": "Rattacher un apprenant à un autre groupe quelques jours, par ex. pour un rattrapage.",
+        "point2": "Aucun frais, aucun plan de paiement, aucun message.",
+        "point3": "L’accès commence le premier jour et se termine seul après le dernier jour."
     }
 }

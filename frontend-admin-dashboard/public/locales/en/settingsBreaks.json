@@ -25,5 +25,11 @@
     "keepDates": {
         "label": "Keep due dates after a long pause (days)",
         "hint": "When a pause has lasted longer than this, resuming keeps the membership dates as they were; staff can still move them or set a new date. Leave empty to always move dates by the days paused."
+    },
+    "extra": {
+        "title": "Extra classes",
+        "point1": "Link a learner to another batch for a few days, e.g. a make-up class.",
+        "point2": "No fee, no payment plan and no message.",
+        "point3": "Access starts on the first day and ends after the last day on its own."
     }
 }
