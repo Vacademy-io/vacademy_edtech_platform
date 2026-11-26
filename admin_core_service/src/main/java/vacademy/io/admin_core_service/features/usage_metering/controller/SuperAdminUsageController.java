@@ -19,6 +19,7 @@ import vacademy.io.admin_core_service.features.usage_metering.dto.UsageDTOs.Allo
 import vacademy.io.admin_core_service.features.usage_metering.dto.UsageDTOs.PlatformUsageResponse;
 import vacademy.io.admin_core_service.features.usage_metering.dto.UsageDTOs.UsageAllowance;
 import vacademy.io.admin_core_service.features.usage_metering.dto.UsageDTOs.UsageAllowanceRequest;
+import vacademy.io.admin_core_service.features.usage_metering.dto.UsageDTOs.UsageCharge;
 import vacademy.io.admin_core_service.features.usage_metering.service.UsageAllowanceService;
 import vacademy.io.admin_core_service.features.usage_metering.service.UsageMeteringService;
 import vacademy.io.admin_core_service.features.usage_metering.service.UsageReportService;
@@ -105,10 +106,43 @@ public class SuperAdminUsageController {
         return ResponseEntity.ok(Map.of("removed", removed));
     }
 
+    /** The institute's monthly wallet charges, newest first. */
+    @GetMapping("/institutes/{instituteId}/charges")
+    public ResponseEntity<List<UsageCharge>> charges(
+            @RequestAttribute("user") CustomUserDetails user,
+            @PathVariable("instituteId") String instituteId) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
+        return ResponseEntity.ok(allowanceService.charges(instituteId));
+    }
+
+    /**
+     * Charges a finished month now (default: the month the nightly job would charge), for
+     * a re-run after a failure. Already-charged months are skipped.
+     */
+    @PostMapping("/charge")
+    public ResponseEntity<Map<String, Object>> chargeNow(
+            @RequestAttribute("user") CustomUserDetails user,
+            @RequestParam(value = "month", required = false) String month) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
+        YearMonth ym = month == null || month.isBlank()
+                ? UsageAllowanceService.monthToCharge(LocalDate.now(ZoneOffset.UTC)) : YearMonth.parse(month);
+        if (ym == null || !ym.isBefore(YearMonth.now(ZoneOffset.UTC))) {
+            return ResponseEntity.badRequest().body(Map.of("charged", 0,
+                    "reason", "only a finished month can be charged, from the 3rd of the next month"));
+        }
+        if (ym.equals(YearMonth.now(ZoneOffset.UTC).minusMonths(1)) && LocalDate.now(ZoneOffset.UTC).getDayOfMonth() < 3) {
+            return ResponseEntity.badRequest().body(Map.of("charged", 0,
+                    "reason", "last month's bandwidth is final from the 3rd"));
+        }
+        log.info("[usage-charge] {} ran a manual charge for {}", user.getUserId(), ym);
+        return ResponseEntity.ok(Map.of("month", ym.toString(), "charged", allowanceService.chargeMonth(ym)));
+    }
+
     private Map<String, Object> allowanceView(String instituteId) {
         UsageAllowance a = allowanceService.find(instituteId);
         Map<String, Object> out = new HashMap<>();
         out.put("allowance", a);
+        out.put("charges", allowanceService.charges(instituteId));
         if (a != null) {
             YearMonth now = YearMonth.now(ZoneOffset.UTC);
             out.put("current_month", allowanceService.status(a, now));

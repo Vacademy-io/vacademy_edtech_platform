@@ -36,6 +36,8 @@ export interface InstituteStorageUsage {
     allowance?: AllowanceStatus | null;
     /** Last month against the plan; null when it has none. */
     allowance_previous_month?: AllowanceStatus | null;
+    /** Last month's credit-wallet charge, once made. */
+    previous_month_charge?: { month: string; status: string; credits: number } | null;
 }
 
 /**
@@ -48,7 +50,13 @@ export interface AllowanceStatus {
     included_bandwidth_gb: number;
     storage_rate_per_gb: number;
     bandwidth_rate_per_gb: number;
+    /** A three-letter code, or CREDITS when the extra is taken from the credit wallet. */
     currency: string;
+    addon_storage_gb: number;
+    addon_price: number;
+    /** True when this month is (or will be) taken from the credit wallet. */
+    charged_to_wallet: boolean;
+    charge_from_month: string | null;
     storage_snapshot_days: number;
     storage_average_bytes: number;
     storage_extra_bytes: number;

@@ -77,6 +77,8 @@ public final class UsageDTOs {
         private AllowanceStatus allowance;
         /** Last month against the allowance (today's terms); null when it has none. */
         private AllowanceStatus allowancePreviousMonth;
+        /** Last month's wallet charge, once made; null otherwise. */
+        private UsageCharge previousMonthCharge;
     }
 
     /** An institute's storage and bandwidth allowance (institute_usage_allowance). */
@@ -91,7 +93,14 @@ public final class UsageDTOs {
         private double storageRatePerGb;
         /** Price per extra GB delivered, in currency. */
         private double bandwidthRatePerGb;
+        /** A three-letter code (shown, billed by hand) or CREDITS (deducted from the wallet). */
         private String currency;
+        /** Storage pack added to the included storage. */
+        private double addonStorageGb;
+        /** The pack's fixed monthly price, in currency. */
+        private double addonPricePerMonth;
+        /** First month charged to the wallet (YYYY-MM); null for a shown-only plan. */
+        private String chargeFromMonth;
         private String note;
         private String updatedBy;
         private Instant updatedAt;
@@ -106,9 +115,32 @@ public final class UsageDTOs {
         private Double includedBandwidthGb;
         private Double storageRatePerGb;
         private Double bandwidthRatePerGb;
-        /** Three-letter code; INR when omitted. */
+        /** Three-letter code or CREDITS; CREDITS when omitted. */
         private String currency;
+        private Double addonStorageGb;
+        private Double addonPricePerMonth;
+        /** YYYY-MM, not before the current month; next month when omitted. */
+        private String chargeFromMonth;
         private String note;
+    }
+
+    /** One month charged to an institute's wallet (institute_usage_charge). */
+    @Data
+    @NoArgsConstructor
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class UsageCharge {
+        private String instituteId;
+        private String month;
+        /** CHARGED or FAILED (retried by the next run). */
+        private String status;
+        private double credits;
+        private long storageAverageBytes;
+        private long storageExtraBytes;
+        private long bandwidthBytes;
+        private long bandwidthExtraBytes;
+        private double addonCredits;
+        private String error;
+        private Instant updatedAt;
     }
 
     /**
@@ -126,6 +158,11 @@ public final class UsageDTOs {
         private double storageRatePerGb;
         private double bandwidthRatePerGb;
         private String currency;
+        private double addonStorageGb;
+        private double addonPrice;
+        /** True when this month is (or will be) deducted from the credit wallet. */
+        private boolean chargedToWallet;
+        private String chargeFromMonth;
         /** Nights in the month with a storage snapshot; the average is over these. */
         private int storageSnapshotDays;
         private long storageAverageBytes;
@@ -158,6 +195,8 @@ public final class UsageDTOs {
         private long recordingBytes;
         private long bandwidthBytes;
         private long bandwidthRequests;
+        /** Part of bandwidth_bytes served straight from S3 (billed per GB), not the flat-rate CDN. */
+        private long bandwidthS3DirectBytes;
         /** Our approximate monthly cost in INR at the configured rates. */
         private double storageCostInr;
         private double bandwidthCostInr;
@@ -172,7 +211,10 @@ public final class UsageDTOs {
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public static class CostRates {
         private double storageUsdPerGbMonth;
+        /** Direct-from-S3 bandwidth, per GB. */
         private double bandwidthUsdPerGb;
+        /** CDN bandwidth, per GB at the margin (0 on a flat-rate plan). */
+        private double cdnUsdPerGb;
         private double usdToInr;
     }
 

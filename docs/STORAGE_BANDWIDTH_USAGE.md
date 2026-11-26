@@ -88,8 +88,24 @@ Opt-in per institute. An institute without a plan sees plain usage, as before.
   - Bandwidth: the month's **total**, minus the included GB, times the bandwidth price.
   - Changing the terms reprices the whole current month (and "last month" on the
     screens is shown at today's terms).
-- **Nothing is enforced.** Uploads are never blocked and no invoice is raised; the
-  charge is shown, and billed by hand.
+- **Charging (V767).** `currency = 'CREDITS'` (the default for new plans) takes the
+  month's extra from the institute's credit wallet: `UsageChargeJob` runs daily at
+  23:45 UTC and, from the 3rd, charges last month once (request type
+  `storage_bandwidth`, key `storage:{institute}:{YYYY-MM}`, may go negative). Each month
+  is written to `institute_usage_charge`; FAILED months retry nightly. Charging starts at
+  `charge_from_month` (next month by default, never back-dated). A real currency (INR…)
+  is shown only and billed by hand. Off switch: `USAGE_CHARGING_ENABLED=false`.
+  Manual run: `POST .../usage/charge?month=YYYY-MM`.
+- **Storage packs:** `addon_storage_gb` is added to the included storage and
+  `addon_price_per_month` is charged every month (+50 GB 250, +500 GB 2,000,
+  +1 TB 3,500 credits in the portal).
+- **Standard plan for new institutes (26 Nov 2026):** 10 GB storage + 50 GB bandwidth a
+  month free; 5 credits per extra GB-month of storage, 2 credits per extra GB of
+  bandwidth (1 credit ≈ ₹0.93).
+- **Nothing is blocked.** Going over never stops uploads, videos or files (pausing
+  uploads on an empty wallet is not built yet).
+- **Our cost:** CDN bytes are costed at `usage.cost.cdn-usd-per-gb` (0, CloudFront
+  flat-rate plan); only `S3_DIRECT` bytes at `usage.cost.bandwidth-usd-per-gb`.
 - **Super admins:**
   - `GET/PUT/DELETE /admin-core-service/super-admin/v1/usage/institutes/{id}/allowance`
   - `GET /admin-core-service/super-admin/v1/usage/allowances?month=YYYY-MM`

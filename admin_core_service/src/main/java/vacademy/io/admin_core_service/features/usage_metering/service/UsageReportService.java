@@ -42,10 +42,11 @@ public class UsageReportService {
                               UsageAllowanceService allowanceService,
                               @Value("${usage.cost.storage-usd-per-gb-month:0.015}") double storageUsdPerGbMonth,
                               @Value("${usage.cost.bandwidth-usd-per-gb:0.109}") double bandwidthUsdPerGb,
+                              @Value("${usage.cost.cdn-usd-per-gb:0}") double cdnUsdPerGb,
                               @Value("${usage.cost.usd-to-inr:88}") double usdToInr) {
         this.jdbcTemplate = jdbcTemplate;
         this.allowanceService = allowanceService;
-        this.rates = new CostRates(storageUsdPerGbMonth, bandwidthUsdPerGb, usdToInr);
+        this.rates = new CostRates(storageUsdPerGbMonth, bandwidthUsdPerGb, cdnUsdPerGb, usdToInr);
     }
 
     @Transactional(readOnly = true)
@@ -104,6 +105,7 @@ public class UsageReportService {
         if (allowance != null) {
             r.setAllowance(allowanceService.status(allowance, month));
             r.setAllowancePreviousMonth(allowanceService.status(allowance, month.minusMonths(1)));
+            r.setPreviousMonthCharge(allowanceService.charge(instituteId, month.minusMonths(1)));
         }
         return r;
     }
@@ -134,13 +136,15 @@ public class UsageReportService {
             }, Date.valueOf(asOf));
         }
         jdbcTemplate.query("""
-                SELECT institute_id, sum(bytes), sum(requests)
+                SELECT institute_id, sum(bytes), sum(requests),
+                       sum(CASE WHEN channel = 'S3_DIRECT' THEN bytes ELSE 0 END)
                 FROM institute_bandwidth_usage_daily WHERE usage_date BETWEEN ? AND ?
                 GROUP BY institute_id
                 """, rs -> {
             InstituteUsageRow row = rows.computeIfAbsent(rs.getString(1), this::newRow);
             row.setBandwidthBytes(rs.getLong(2));
             row.setBandwidthRequests(rs.getLong(3));
+            row.setBandwidthS3DirectBytes(rs.getLong(4));
         }, Date.valueOf(month.atDay(1)), Date.valueOf(month.atEndOfMonth()));
 
         // Institutes on an allowance are listed even before they use anything.
@@ -168,6 +172,7 @@ public class UsageReportService {
             totals.setRecordingBytes(totals.getRecordingBytes() + row.getRecordingBytes());
             totals.setBandwidthBytes(totals.getBandwidthBytes() + row.getBandwidthBytes());
             totals.setBandwidthRequests(totals.getBandwidthRequests() + row.getBandwidthRequests());
+            totals.setBandwidthS3DirectBytes(totals.getBandwidthS3DirectBytes() + row.getBandwidthS3DirectBytes());
             if (UsageKeyClassifier.UNASSIGNED.equals(row.getInstituteId())) {
                 r.setUnassigned(row);
             } else {
@@ -204,7 +209,12 @@ public class UsageReportService {
 
     private void price(InstituteUsageRow row) {
         double storage = row.getStorageBytes() / GB * rates.getStorageUsdPerGbMonth() * rates.getUsdToInr();
-        double bandwidth = row.getBandwidthBytes() / GB * rates.getBandwidthUsdPerGb() * rates.getUsdToInr();
+        // CDN traffic is on a flat-rate plan (usage.cost.cdn-usd-per-gb, 0 by default);
+        // only traffic served straight from S3 is billed to us per GB.
+        long direct = row.getBandwidthS3DirectBytes();
+        long cdn = Math.max(0, row.getBandwidthBytes() - direct);
+        double bandwidth = (direct / GB * rates.getBandwidthUsdPerGb() + cdn / GB * rates.getCdnUsdPerGb())
+                * rates.getUsdToInr();
         row.setStorageCostInr(Math.round(storage));
         row.setBandwidthCostInr(Math.round(bandwidth));
         row.setTotalCostInr(Math.round(storage + bandwidth));

@@ -4,9 +4,13 @@ import org.junit.jupiter.api.Test;
 import vacademy.io.admin_core_service.features.usage_metering.dto.UsageDTOs.AllowanceStatus;
 import vacademy.io.admin_core_service.features.usage_metering.dto.UsageDTOs.UsageAllowance;
 
+import java.time.LocalDate;
 import java.time.YearMonth;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class UsageAllowanceServiceTest {
 
@@ -58,5 +62,56 @@ class UsageAllowanceServiceTest {
         AllowanceStatus s = UsageAllowanceService.price(allowance(0, 0, 2, 3), NOV, 30, 10 * GB, 10 * GB);
         assertEquals(20.0, s.getStorageCharge());
         assertEquals(30.0, s.getBandwidthCharge());
+    }
+
+    @Test
+    void addonRaisesIncludedStorageAndAddsItsPrice() {
+        UsageAllowance a = allowance(10, 50, 5, 2);
+        a.setCurrency(UsageAllowanceService.CREDITS);
+        a.setAddonStorageGb(50);
+        a.setAddonPricePerMonth(250);
+        // 82 GB average against 10 + 50 -> 22 GB x 5 = 110; 29 GB bandwidth within 50; + 250 pack
+        AllowanceStatus s = UsageAllowanceService.price(a, NOV, 30, 82 * GB, 29 * GB);
+        assertEquals(22 * GB, s.getStorageExtraBytes());
+        assertEquals(110.0, s.getStorageCharge());
+        assertEquals(0.0, s.getBandwidthCharge());
+        assertEquals(250.0, s.getAddonPrice());
+        assertEquals(360.0, s.getTotalCharge());
+    }
+
+    @Test
+    void proposalExampleShikshaNationScale() {
+        UsageAllowance a = allowance(10, 50, 5, 2);
+        AllowanceStatus s = UsageAllowanceService.price(a, NOV, 30, 3137 * GB, 701 * GB);
+        assertEquals(15635.0, s.getStorageCharge());
+        assertEquals(1302.0, s.getBandwidthCharge());
+    }
+
+    @Test
+    void onlyCreditPlansFromTheirFirstMonthAreCharged() {
+        UsageAllowance a = allowance(10, 50, 5, 2);
+        a.setCurrency("INR");
+        a.setChargeFromMonth("2026-11");
+        assertFalse(UsageAllowanceService.chargeable(a, NOV));
+        a.setCurrency(UsageAllowanceService.CREDITS);
+        assertTrue(UsageAllowanceService.chargeable(a, NOV));
+        assertFalse(UsageAllowanceService.chargeable(a, YearMonth.of(2026, 10)));
+        a.setChargeFromMonth(null);
+        assertFalse(UsageAllowanceService.chargeable(a, NOV));
+    }
+
+    @Test
+    void lastMonthIsChargedFromTheThird() {
+        assertNull(UsageAllowanceService.monthToCharge(LocalDate.of(2026, 12, 2)));
+        assertEquals(NOV, UsageAllowanceService.monthToCharge(LocalDate.of(2026, 12, 3)));
+        assertEquals(NOV, UsageAllowanceService.monthToCharge(LocalDate.of(2026, 12, 31)));
+        assertEquals(YearMonth.of(2026, 12), UsageAllowanceService.monthToCharge(LocalDate.of(2027, 1, 5)));
+    }
+
+    @Test
+    void descriptionNamesTheMonthAndTheOverage() {
+        UsageAllowance a = allowance(10, 50, 5, 2);
+        AllowanceStatus s = UsageAllowanceService.price(a, NOV, 30, 12 * GB, 50 * GB);
+        assertEquals("Storage & bandwidth, November 2026: 2.00 GB storage over plan", UsageAllowanceService.description(NOV, s));
     }
 }
