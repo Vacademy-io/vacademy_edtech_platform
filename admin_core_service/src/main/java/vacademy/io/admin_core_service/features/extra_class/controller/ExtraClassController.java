@@ -27,7 +27,7 @@ import java.util.Map;
 
 /**
  * Extra classes for a learner: a link to another batch for a few days, no fee, no message. Staff
- * of the institute (admins and teachers). Part of Settings → Breaks and holds
+ * of the institute (admins and teachers; no root-user bypass, platform super admins allowed). Part of Settings → Breaks and holds
  * (ENROLMENT_BREAK_SETTING.enabled): off there = no new extra classes, but existing ones can still
  * be seen and ended.
  */
@@ -44,7 +44,7 @@ public class ExtraClassController {
     public ResponseEntity<Map<String, Object>> forLearner(@PathVariable String userId,
                                                           @RequestParam String instituteId,
                                                           @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.requireStaffAccess(user, instituteId);
+        instituteAccessValidator.requireInstituteStaffOrSuperAdmin(user, instituteId);
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("enabled", settings.isEnabled(instituteId));
         out.put("extra_classes", service.forLearner(instituteId, userId));
@@ -55,7 +55,7 @@ public class ExtraClassController {
     @GetMapping("/batches")
     public ResponseEntity<List<Map<String, Object>>> batches(@RequestParam String instituteId,
                                                              @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.requireStaffAccess(user, instituteId);
+        instituteAccessValidator.requireInstituteStaffOrSuperAdmin(user, instituteId);
         return ResponseEntity.ok(service.batches(instituteId));
     }
 
@@ -65,7 +65,7 @@ public class ExtraClassController {
     public ResponseEntity<Map<String, Object>> add(@RequestParam String instituteId,
                                                    @RequestBody AddRequest request,
                                                    @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.requireStaffAccess(user, instituteId);
+        instituteAccessValidator.requireInstituteStaffOrSuperAdmin(user, instituteId);
         if (!settings.isEnabled(instituteId)) {
             throw new VacademyException("Extra classes are part of Breaks and holds, which is switched off for this "
                     + "institute. An admin can switch it on in Settings → Breaks and holds.");
@@ -83,7 +83,7 @@ public class ExtraClassController {
     public ResponseEntity<Map<String, Object>> end(@PathVariable String id,
                                                    @RequestParam String instituteId,
                                                    @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.requireStaffAccess(user, instituteId);
+        instituteAccessValidator.requireInstituteStaffOrSuperAdmin(user, instituteId);
         String result = service.end(instituteId, id, user.getUserId(), user.getFullName());
         return ResponseEntity.ok(Map.of("id", id, "result", result));
     }

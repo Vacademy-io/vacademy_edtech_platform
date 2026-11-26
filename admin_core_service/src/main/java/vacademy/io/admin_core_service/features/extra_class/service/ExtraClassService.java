@@ -47,6 +47,12 @@ public class ExtraClassService {
     public static final String SOURCE = "EXTRA_CLASS";
     public static final String TIMELINE_TYPE = "EXTRA_CLASS";
     public static final int MAX_DAYS = 90;
+    /**
+     * type_id on an extra class this service stored as upcoming (INACTIVE until its first day).
+     * Only rows carrying it are switched on by {@link #sweep()}, so a row staff made inactive by
+     * hand stays off. Cleared when the row starts.
+     */
+    public static final String UPCOMING_MARK = "EXTRA_CLASS_UPCOMING";
     private static final String IMPORT_KIND = "EXTRA";
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -87,10 +93,10 @@ public class ExtraClassService {
         String id = UUID.randomUUID().toString();
         jdbc.update("""
                 INSERT INTO student_session_institute_group_mapping (id, user_id, package_session_id, institute_id,
-                             enrolled_date, expiry_date, status, source, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, now(), now())
+                             enrolled_date, expiry_date, status, source, type_id, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())
                 """, id, userId, packageSessionId, instituteId, java.sql.Date.valueOf(from), endOfDay(to, zone),
-                started ? "ACTIVE" : "INACTIVE", SOURCE);
+                started ? "ACTIVE" : "INACTIVE", SOURCE, started ? null : UPCOMING_MARK);
 
         String label = label(batch);
         Map<String, Object> meta = new LinkedHashMap<>();
@@ -243,18 +249,20 @@ public class ExtraClassService {
     /**
      * Switches on upcoming extra classes whose first day has come and marks finished ones
      * EXPIRED, each by its institute's own date. Plain SQL, no message, no workflow.
-     * A row a running pause switched off (enrolment_break.paused_access_ids) is left alone.
+     * Only rows stored as upcoming ({@link #UPCOMING_MARK}) are switched on, and not while the
+     * learner has a running pause on that batch or a pause switched the row off. Only rows whose
+     * last day is before the institute's today are expired.
      *
      * @return {started, expired}
      */
     @Transactional
     public int[] sweep() {
         List<Map<String, Object>> rows = jdbc.queryForList("""
-                SELECT m.id, m.institute_id, m.status, m.enrolled_date, m.expiry_date
+                SELECT m.id, m.institute_id, m.status, m.enrolled_date, m.expiry_date, m.type_id
                   FROM student_session_institute_group_mapping m
                  WHERE m.source = 'EXTRA_CLASS' AND m.status IN ('ACTIVE', 'INACTIVE')
                 UNION
-                SELECT m.id, m.institute_id, m.status, m.enrolled_date, m.expiry_date
+                SELECT m.id, m.institute_id, m.status, m.enrolled_date, m.expiry_date, m.type_id
                   FROM institute_import_ref r
                   JOIN student_session_institute_group_mapping m ON m.id = r.internal_id
                  WHERE r.kind = 'EXTRA' AND m.status = 'ACTIVE'
@@ -274,13 +282,20 @@ public class ExtraClassService {
                         UPDATE student_session_institute_group_mapping SET status = 'EXPIRED', updated_at = now()
                          WHERE id = ? AND status IN ('ACTIVE', 'INACTIVE')
                         """, id);
-            } else if ("INACTIVE".equals(r.get("status")) && (from == null || !from.isAfter(today))) {
+            } else if (to != null && "INACTIVE".equals(r.get("status")) && UPCOMING_MARK.equals(r.get("type_id"))
+                    && (from == null || !from.isAfter(today))) {
                 started += jdbc.update("""
-                        UPDATE student_session_institute_group_mapping SET status = 'ACTIVE', updated_at = now()
-                         WHERE id = ? AND status = 'INACTIVE'
+                        UPDATE student_session_institute_group_mapping m
+                           SET status = 'ACTIVE', type_id = NULL, updated_at = now()
+                         WHERE m.id = ? AND m.status = 'INACTIVE' AND m.type_id = ?
                            AND NOT EXISTS (SELECT 1 FROM enrolment_break b
-                                            WHERE b.status = 'ACTIVE' AND b.paused_access_ids LIKE '%' || ? || '%')
-                        """, id, id);
+                                            WHERE b.status = 'ACTIVE'
+                                              AND ((b.kind = 'PAUSE' AND b.user_id = m.user_id
+                                                    AND b.institute_id = m.institute_id
+                                                    AND (b.package_session_id IS NULL
+                                                         OR b.package_session_id = m.package_session_id))
+                                                   OR b.paused_access_ids LIKE '%' || m.id || '%'))
+                        """, id, UPCOMING_MARK);
             }
         }
         return new int[] { started, expired };
@@ -320,7 +335,7 @@ public class ExtraClassService {
                 SELECT status, source, enrolled_date, expiry_date
                   FROM student_session_institute_group_mapping
                  WHERE user_id = ? AND institute_id = ? AND package_session_id = ?
-                   AND (status = 'ACTIVE' OR (status = 'INACTIVE' AND source = 'EXTRA_CLASS'))
+                   AND (status = 'ACTIVE' OR (status = 'INACTIVE' AND source = 'EXTRA_CLASS' AND type_id = 'EXTRA_CLASS_UPCOMING'))
                    AND (type IS NULL OR type NOT IN ('ABANDONED_CART', 'PAYMENT_FAILED'))
                 """, userId, instituteId, packageSessionId);
         for (Map<String, Object> r : rows) {

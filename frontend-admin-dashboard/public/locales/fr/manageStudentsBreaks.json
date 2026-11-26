@@ -216,7 +216,7 @@
         "remove": "Supprimer",
         "addedBy": "Ajouté par {{name}}",
         "imported": "Importé de l’ancien système",
-        "noFeeNoMessage": "Aucun frais n’est facturé et aucun message n’est envoyé.",
+        "noFeeNoMessage": "Aucun frais n’est facturé et aucun message n’est envoyé à l’ajout. Pendant ces dates, l’élève reçoit les rappels de cours de ce groupe.",
         "batchesFailed": "Impossible de charger la liste.",
         "state": {
             "CURRENT": "En cours",

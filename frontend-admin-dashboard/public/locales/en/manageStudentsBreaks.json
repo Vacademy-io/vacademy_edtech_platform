@@ -205,7 +205,7 @@
         "remove": "Remove",
         "addedBy": "Added by {{name}}",
         "imported": "Imported from the old system",
-        "noFeeNoMessage": "No fee is charged and no message is sent.",
+        "noFeeNoMessage": "No fee is charged and no message is sent when you add it. During these dates the student gets this batch’s class reminders.",
         "batchesFailed": "Could not load the list.",
         "state": {
             "CURRENT": "Attending",

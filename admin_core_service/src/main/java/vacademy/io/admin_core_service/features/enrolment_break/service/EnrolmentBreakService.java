@@ -120,6 +120,7 @@ public class EnrolmentBreakService {
                  WHERE m.user_id = :userId AND m.institute_id = :instituteId
                    AND m.status IN ('ACTIVE', 'INACTIVE')
                    AND (m.type IS NULL OR m.type NOT IN ('ABANDONED_CART', 'PAYMENT_FAILED'))
+                   AND m.source IS DISTINCT FROM 'EXTRA_CLASS'
                  ORDER BY p.package_name, s.session_name
                 """)
                 .setParameter("userId", userId)
@@ -579,6 +580,7 @@ public class EnrolmentBreakService {
                      WHERE user_id = :u AND institute_id = :i AND package_session_id = :p
                        AND status = 'ACTIVE' AND id <> :id
                        AND (type IS NULL OR type NOT IN ('ABANDONED_CART', 'PAYMENT_FAILED'))
+                       AND source IS DISTINCT FROM 'EXTRA_CLASS'
                     """)
                     .setParameter("u", r[1]).setParameter("i", r[3]).setParameter("p", r[2]).setParameter("id", rowId)
                     .getSingleResult();
@@ -618,6 +620,7 @@ public class EnrolmentBreakService {
         }
     }
 
+    /** The course's own access rows; extra classes (features/extra_class) are never paused or moved. */
     @SuppressWarnings("unchecked")
     private List<Object[]> accessRows(EnrolmentBreak b, String status) {
         return em.createNativeQuery("""
@@ -626,6 +629,7 @@ public class EnrolmentBreakService {
                   FROM student_session_institute_group_mapping
                  WHERE user_id = :u AND institute_id = :i AND package_session_id = :p AND status = :s
                    AND (type IS NULL OR type NOT IN ('ABANDONED_CART', 'PAYMENT_FAILED'))
+                   AND source IS DISTINCT FROM 'EXTRA_CLASS'
                 """)
                 .setParameter("u", b.getUserId()).setParameter("i", b.getInstituteId())
                 .setParameter("p", b.getPackageSessionId()).setParameter("s", status)
