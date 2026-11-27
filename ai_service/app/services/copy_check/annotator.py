@@ -3947,6 +3947,19 @@ def _write_point_marks(doc: Any, ticks: list, use_page: Any) -> None:
             _PLACED[0].append(box)
 
 
+def _badge_size(text: str, radius: float, font_name: str, font: Optional[Any]) -> float:
+    """Pen size of a question's circled mark. At 0.78 of the ring's radius its
+    digit stood about half the height of the "5/10" scores written beside other
+    answers on the same copy, and on a dense page it read as part of the
+    student's own line. It is written about as tall as those now, and fitted to
+    the ring, not the other way round: with a fixed size the digits spilled
+    through the stroke - "58/100 has its final 0 cut by the circle"."""
+    size = radius * _BADGE_TEXT_K
+    while size > radius * 0.46 and _text_width(text, font_name, size, font) > radius * 1.55:
+        size -= 0.5
+    return size
+
+
 def _draw_score_badge(page: Any, centre: Any, awarded: float, out_of: Optional[float] = None,
                       radius: float = 15.0) -> None:
     """A circled mark, the way it is written on a real script.
@@ -3983,7 +3996,8 @@ def _draw_score_badge(page: Any, centre: Any, awarded: float, out_of: Optional[f
 
 
     if out_of is None:
-        centred(awarded_text, centre.y + radius * 0.32, radius * 0.78)
+        size = _badge_size(awarded_text, radius, badge_font, badge_measure)
+        centred(awarded_text, centre.y + size * 0.36, size)
         return
 
     # Written inline as "8/10", not stacked over a ruled bar. A critic called
@@ -3992,13 +4006,8 @@ def _draw_score_badge(page: Any, centre: Any, awarded: float, out_of: Optional[f
     # Bare number, no denominator: "drop the '/10' fraction" was the one fix
     # both critics named independently.
     inline = awarded_text
-    # Fit the ring to the text, not the other way round. With a fixed radius the
-    # digits spilled through the stroke - "58/100 has its final 0 cut by the
-    # circle" - which reads as text dropped onto a graphic.
-    size = radius * 0.78
-    while size > radius * 0.46 and _text_width(inline, badge_font, size, badge_measure) > radius * 1.55:
-        size -= 0.5
-    centred(inline, centre.y + radius * 0.30, size)
+    size = _badge_size(inline, radius, badge_font, badge_measure)
+    centred(inline, centre.y + size * 0.36, size)
 
 
 def _draw_grand_total(page: Any, centre: Any, awarded: float, out_of: float,
@@ -4627,6 +4636,8 @@ def _extend_paper(page: Any, scan: Any, strip: Any) -> None:
 # How far a question's circled score may shrink to find a clear spot. Not below
 # about four fifths: at half size its figure is too small to read.
 _SCORE_SHRINKS = (0.82,)
+# A circled mark's figure, as a fraction of its ring's radius (see _badge_size).
+_BADGE_TEXT_K = 1.15
 
 # The styles that carry the reason a mark was cut.
 _REASON_STYLES = frozenset(("margin_note", "region_note", "deduction_reason", "feedback"))
