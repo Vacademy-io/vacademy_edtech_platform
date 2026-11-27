@@ -5298,6 +5298,18 @@ public class InvoiceService {
     @Transactional
     public List<AdminInvoicePaymentLinkResponseDTO> createAdminInvoices(AdminCreateInvoiceRequestDTO request,
                                                                         String adminUserId) {
+        return createAdminInvoices(request, adminUserId, true);
+    }
+
+    /**
+     * @param notifyLearner false raises the invoice silently: no in-app "New Invoice" alert.
+     *                      One-off charges (OneOffDueService) use this, because adding or
+     *                      cancelling one must send the learner nothing.
+     */
+    @Transactional
+    public List<AdminInvoicePaymentLinkResponseDTO> createAdminInvoices(AdminCreateInvoiceRequestDTO request,
+                                                                        String adminUserId,
+                                                                        boolean notifyLearner) {
         List<AdminInvoicePaymentLinkResponseDTO> results = new ArrayList<>();
 
         Institute institute = instituteRepository.findById(request.getInstituteId())
@@ -5517,7 +5529,7 @@ public class InvoiceService {
             }
 
             // Notify the learner via in-app system alert
-            try {
+            if (notifyLearner) try {
                 String amountStr = request.getCurrency() + " " + totalAmount.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString();
                 String alertNoun = proformaMode ? "Proforma Invoice" : "Invoice";
                 String alertTitle = "New " + alertNoun + ": " + amountStr;
