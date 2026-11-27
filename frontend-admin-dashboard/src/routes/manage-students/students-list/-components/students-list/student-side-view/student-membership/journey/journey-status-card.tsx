@@ -39,12 +39,15 @@ export const JourneyStatusCard = ({ userId, instituteId, learnerName }: JourneyS
 
     if (!userId || !enabled) return null;
 
-    const enrolments = data?.enrolments ?? [];
+    // Extra-class batches are temporary seats, not enrolments: they live in the
+    // Extra classes card, so the journey list shows the learner's own batches only.
+    const allRows = data?.enrolments ?? [];
+    const enrolments = allRows.filter((e) => !e.extra_class);
     const reentryStatus = findReentryStatus(settings);
-    const canReentry = Boolean(reentryStatus) && enrolments.some((e) => !e.extra_class);
+    const canReentry = Boolean(reentryStatus) && enrolments.length > 0;
     const history = data?.history ?? [];
     const batchLabel = (psId: string | null) =>
-        enrolments.find((e) => e.package_session_id === psId)?.course_label ?? null;
+        allRows.find((e) => e.package_session_id === psId)?.course_label ?? null;
 
     const subline = (e: JourneyEnrolment) => {
         const parts: string[] = [];
