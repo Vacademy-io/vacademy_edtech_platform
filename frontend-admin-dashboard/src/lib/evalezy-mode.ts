@@ -35,6 +35,9 @@ const ALLOWED_PREFIXES = [
     '/login',
     // One checked copy, opened from the batch list.
     '/assessment/evaluation-ai/',
+    // Where /assessment/evaluation-ai/ now redirects ("View progress", "Open
+    // result"); without it Evalezy sent the teacher back to the home list.
+    '/assessment/submission/',
 ];
 
 const isUnder = (pathname: string, prefix: string) =>

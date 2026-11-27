@@ -341,6 +341,21 @@ def grading_system_for(subject: Any = None, level: Any = None) -> str:
 # paper; they get more room in the grading prompt than in the criteria one.
 _INSTRUCTIONS_CAP = 2000
 
+# Copies answered in these languages get their remarks in Hindi on a dashboard
+# check (exam_context.feedback_language = "hi", set by the orchestrator): a
+# Hindi or a Sanskrit copy (shlokas with a Hindi भावार्थ) came back with English
+# feedback and English reasons beside every cut, which the student cannot use.
+FEEDBACK_IN_HINDI = frozenset({"hi", "sa"})
+FEEDBACK_LANGUAGE_HINDI = (
+    "\n\nFEEDBACK LANGUAGE\n"
+    "Write `feedback`, every criteria_breakdown `reason` and the text of every annotation "
+    "(margin notes, corrections) in simple, correct Hindi in Devanagari script that a school "
+    "student can read - never in English. Keep the opening words the output format requires "
+    "(\"X mark(s) deducted because\") and the row ids as they are; write everything after them "
+    "in Hindi, saying exactly what is wrong or missing (a wrong word, a meaning left out, a "
+    "spelling or grammar mistake with its correct form)."
+)
+
 
 def examiner_instructions_block(exam_context: Any) -> str:
     """The institute's instructions for marking this paper, appended to the
@@ -356,6 +371,9 @@ def examiner_instructions_block(exam_context: Any) -> str:
         language = (f"\n\nANSWER LANGUAGE\nThis paper is answered in {shown}. Read and judge the "
                     f"student's answer as {shown}; a correct answer in {shown} is never marked down "
                     "for not being in English.")
+    # Set by the orchestrator on a dashboard check of a Hindi or Sanskrit copy.
+    if str(ctx.get("feedback_language") or "").strip().lower() == "hi":
+        language += FEEDBACK_LANGUAGE_HINDI
     if not text:
         return language
     return language + (

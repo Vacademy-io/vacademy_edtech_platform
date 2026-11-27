@@ -39,7 +39,7 @@ from .failure import (
     redact_urls,
 )
 from .grader import DEFAULT_MODEL, CopyCheckGrader, call_llm_for_criteria, evaluation_model, token_budget_for
-from .prompt_builder import paper_label_for
+from .prompt_builder import FEEDBACK_IN_HINDI, paper_label_for
 from .mathpix_fallback import MathpixFallback
 from .render_client import CopyCheckRenderClient, OcrCancelled
 from .rubric import RubricGenerationFailed, RubricResolver, load_snapshot
@@ -143,7 +143,11 @@ def _looks_unattempted(raw: dict[str, Any]) -> bool:
     )
 
 
-_PART_MISSING = re.compile(r"\b(not attempted|unattempted|not answered|no answer|not found)\b", re.IGNORECASE)
+_PART_MISSING = re.compile(r"\b(not attempted|unattempted|not answered|no answer|not found)\b"
+                           # The same, in a Hindi remark (no \b: a vowel sign is not
+                           # a word character to re). Hindi copies only.
+                           r"|अनुत्तरित|उत्तर\s+नहीं\s+मिला|उत्तर\s+नहीं\s+दिया|लिखा\s+ही\s+नहीं|लिखी\s+ही\s+नहीं",
+                           re.IGNORECASE)
 
 
 def _parts_not_found(raw: dict[str, Any]) -> bool:
@@ -833,6 +837,7 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
         # mostly in a language the check cannot read is refused, not billed.
         # Detection off, failed, or English: everything below runs as before.
         page_images: Optional[dict[str, Any]] = None
+        detected = None
         samples: Optional[dict[str, Any]] = None
         reading_ctx = req.get("exam_context")
         if not answer_language.of(reading_ctx) and answer_language.detection_enabled():
@@ -864,6 +869,19 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
                 if other is not None:
                     raise CopyCheckFailure(LANGUAGE_NEEDS_CONFIRMATION, answer_language.mismatch_message(other))
             reading_ctx = answer_language.with_detected(reading_ctx, detected)
+
+        # A Hindi or Sanskrit copy checked from the dashboard gets its remarks
+        # in Hindi - feedback, cut reasons, margin notes, language notes. Only
+        # the language the remarks are written in: how the answer is judged is
+        # unchanged, and a partner API's output stays exactly as it was.
+        # A detected language must be at least half the handwriting: an English
+        # copy with one Hindi answer keeps English remarks. A declared one counts.
+        hindi_notes = bool(getattr(grader, "grading_instructions", False)
+                           and answer_language.of(reading_ctx) in FEEDBACK_IN_HINDI
+                           and (answer_language.of(req.get("exam_context"))
+                                or (detected is not None and float(detected.share or 0) >= 0.5)))
+        if hindi_notes and isinstance(getattr(grader, "exam_context", None), dict):
+            grader.exam_context = {**grader.exam_context, "feedback_language": "hi"}
 
         # 1b. Re-read the handwriting with a vision model, and merge the OCR's
         # word-level boxes into real lines. render_worker runs PaddleOCR's
@@ -1001,7 +1019,11 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
         # Pages the vision pass checked in full; None = not known (text-only
         # pass), and then the scheme never overrides marks.
         language_checked_pages: Optional[set[str]] = None
-        language_model = language_vision.language_model()
+        # A copy in an Indian script or Urdu is checked by the model that reads
+        # it (the same one that read it in 1b); every other copy as before.
+        language_model = (language_vision.indic_reader_model()
+                          if answer_language.needs_strong_reader(reading_ctx)
+                          else language_vision.language_model())
         if language_feedback.enabled(req.get("exam_context")):
             cancellation.check(job_id, process_id)
             if hasattr(grader, "token_budget"):
@@ -1018,7 +1040,7 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
                     question_text=language_vision.paper_text(questions), allow_hindi=allow_hindi,
                     institute_id=institute_id, token_sink=grader,
                     cancellation_check=lambda: cancellation.is_cancelled(job_id, process_id),
-                    images=page_images, language=answer_language.of(reading_ctx),
+                    images=page_images, language=answer_language.of(reading_ctx), hindi_notes=hindi_notes,
                 ) if page_images else None
             if vision is not None:
                 language_errors, language_checked_pages = vision
@@ -1137,13 +1159,18 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
                 elif option_letter.refuse_wrong_option(verdict, q):
                     logger.info("Q%s: the chosen option is not the key's - no marks", qid)
                 elif checker is not None:
-                    if scheme and language_feedback.devanagari_share(verdict.get("answer_rows"), layout_map) > 0.5:
+                    if ((scheme or getattr(grader, "grading_instructions", False))
+                            and language_feedback.devanagari_share(verdict.get("answer_rows"), layout_map) > 0.5):
                         # A Hindi answer on a scheme paper: the cut-check "found a
                         # misreading" on every run and raised the paragraph-wise
                         # mark by 12-23 of 50 - the same copy scored 38 and 47.
                         # Devanagari handwriting is not read well enough for that
-                        # check to overrule the grader.
-                        logger.info("Q%s: Hindi answer under a deduction scheme - cut-check skipped", qid)
+                        # check to overrule the grader. The same on any paper
+                        # checked from the dashboard (2026-11-27): it gave a
+                        # Hindi answer with a misspelt shloka full marks; the
+                        # model that reads Devanagari has no zero-data-retention
+                        # endpoint the check may use. Partner API: scheme only.
+                        logger.info("Q%s: Hindi answer - cut-check skipped", qid)
                     else:
                         await checker.check(verdict, q, rubric)
             except cancellation.Cancelled:
@@ -1214,7 +1241,7 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
             reported = verdict
             if qid in language_found:
                 reported = dict(verdict, feedback=language_feedback.with_language_feedback(
-                    verdict.get("feedback"), language_found[qid]))
+                    verdict.get("feedback"), language_found[qid], hindi=hindi_notes))
             await callbacks.question_done(
                 callback_base, process_id, job_id, reported, rubric_version=rubric_version,
             )
@@ -1235,7 +1262,7 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
             reported = verdict
             if qid in language_found:
                 reported = dict(verdict, feedback=language_feedback.with_language_feedback(
-                    verdict.get("feedback"), language_found[qid]))
+                    verdict.get("feedback"), language_found[qid], hindi=hindi_notes))
             await callbacks.question_done(
                 callback_base, process_id, job_id, reported, rubric_version=rubric_version,
             )
@@ -1280,7 +1307,7 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
         for v in verdicts:
             errors = language_found.get(str(v.get("question_id")))
             if errors:
-                v["feedback"] = language_feedback.with_language_feedback(v.get("feedback"), errors)
+                v["feedback"] = language_feedback.with_language_feedback(v.get("feedback"), errors, hindi=hindi_notes)
                 v["annotations"] = (list(v.get("annotations") or [])
                                     + language_feedback.annotations(errors, v.get("question_id")))
         # The paper's deduction scheme: each written answer the language pass

@@ -241,6 +241,23 @@ USE_CASES: Tuple[UseCase, ...] = (
         seeded_in_release_2=True,
     ),
     UseCase(
+        "language_check", "Copy-check language check & language detection", GROUP_ASSESSMENT, "ai_service",
+        KIND_VISION,
+        "Detects the language a copy is written in and finds spelling and grammar errors for the highlight "
+        "on English (Latin-script) copies. No marks change.",
+        (_AI + "services/copy_check/language_vision.py:75", _AI + "services/copy_check/orchestrator.py:853"),
+        held_reason="Copy-check language detection runs on every copy; change it on its own, never in bulk.",
+    ),
+    UseCase(
+        "copy_check_indic_reader", "Copy-check reader for Hindi, Sanskrit & other Indian scripts",
+        GROUP_ASSESSMENT, "ai_service", KIND_VISION,
+        "Reads Hindi, Sanskrit, Marathi, Bengali, Tamil, Telugu and Urdu handwriting and runs the language "
+        "check on such copies - affects student marks. Must read Devanagari handwriting: a model that "
+        "cannot returns made-up text and the copy is graded against it.",
+        (_AI + "services/copy_check/language_vision.py:97", _AI + "services/copy_check/answer_language.py:119"),
+        held_reason="Must read Devanagari handwriting (a model that cannot invents the text); never bulk-set.",
+    ),
+    UseCase(
         "copy_check_scan_header", "Scan Station name-field read", GROUP_ASSESSMENT, "ai_service", KIND_VISION,
         "Reads the printed Name field at the top of scanned answer-sheet pages to find where each copy starts "
         "(Scan Station, off by default). Falls back to the copy-check default model.",

@@ -12,11 +12,12 @@ import io
 import logging
 import tempfile
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import httpx
 
 from ..mathpix_service import MathpixService
+from .raster import capped_zoom
 
 logger = logging.getLogger(__name__)
 
@@ -85,8 +86,12 @@ async def _download(url: str, dest: Path) -> None:
                     f.write(chunk)
 
 
-def _rasterize_pages(pdf_path: Path) -> dict[str, Any]:
+def _rasterize_pages(pdf_path: Path, max_edge: Optional[int] = None) -> dict[str, Any]:
     """Return {page_id: PIL.Image} for all pages of the PDF at 200 DPI.
+
+    `max_edge` caps each image's long edge (raster.py) for a caller that only
+    cuts pages by share of their size; without it the images stay at 200 DPI,
+    the scale of the layout's pixel boxes, which the crops here rely on.
 
     Handles all PyMuPDF colorspaces (gray/RGB/CMYK) since PDFs in the wild
     aren't always sRGB. A naive Image.frombytes("RGB", …) corrupts the buffer
@@ -98,9 +103,9 @@ def _rasterize_pages(pdf_path: Path) -> dict[str, Any]:
     out: dict[str, Any] = {}
     doc = fitz.open(pdf_path)
     try:
-        matrix = fitz.Matrix(200 / 72.0, 200 / 72.0)
         for i, page in enumerate(doc):
-            pix = page.get_pixmap(matrix=matrix, alpha=False)
+            zoom = capped_zoom(page.rect, 200, max_edge) if max_edge else 200 / 72.0
+            pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom), alpha=False)
             mode_map = {1: "L", 3: "RGB", 4: "CMYK"}
             mode = mode_map.get(pix.n)
             if mode is None:

@@ -28,6 +28,8 @@ describe('evalezyPathFor', () => {
         expect(evalezyPathFor('/login')).toBeNull();
         expect(evalezyPathFor('/login/forgot-password')).toBeNull();
         expect(evalezyPathFor('/assessment/evaluation-ai/att-1/proc-1')).toBeNull();
+        // Where the checked-copy link now redirects.
+        expect(evalezyPathFor('/assessment/submission/att-1')).toBeNull();
     });
 
     it('takes the "copies checked" email link to the same assessment in the shell', () => {
