@@ -96,6 +96,12 @@ export type CommentPlacement = 'INSIDE' | 'OUTSIDE';
 export type StudentMapping = 'ASK' | 'MAP' | 'CHECK_ONLY';
 
 /**
+ * The language the AI writes its remarks in: AUTO gives a Hindi or Sanskrit copy
+ * Hindi remarks (every other copy English); ENGLISH keeps every copy in English.
+ */
+export type RemarksLanguage = 'AUTO' | 'ENGLISH';
+
+/**
  * Spelling and grammar on AI-checked copies: HIGHLIGHT = each error underlined
  * with its correction and listed in the answer's feedback, no marks deducted.
  */
@@ -140,6 +146,8 @@ export interface AiCopyCheckSettings {
     languageFeedback?: LanguageFeedback;
     /** Whether uploaded copies are matched to students. Absent = ASK. */
     studentMapping?: StudentMapping;
+    /** The language of the AI's remarks. Absent = AUTO. */
+    remarksLanguage?: RemarksLanguage;
 }
 
 /** How the AI checks one assessment's copies, kept on the assessment (snake_case, as sent). */
@@ -289,6 +297,10 @@ export const DEFAULT_ASSESSMENT_SETTINGS: AssessmentSettingsData = {
 /** The saved choice, or ASK for anything missing or unknown. */
 export const normalizeStudentMapping = (value: unknown): StudentMapping =>
     value === 'MAP' || value === 'CHECK_ONLY' ? value : 'ASK';
+
+/** The saved choice, or AUTO for anything missing or unknown. */
+export const normalizeRemarksLanguage = (value: unknown): RemarksLanguage =>
+    value === 'ENGLISH' ? 'ENGLISH' : 'AUTO';
 
 /** The saved template, or INSIDE for anything missing or unknown. */
 export const normalizeCommentPlacement = (value: unknown): CommentPlacement =>

@@ -13,6 +13,7 @@ import {
     PenStylePicker,
     normalizePenStyle,
 } from '@/components/common/ai-copy-check/PenStylePicker';
+import { RemarksLanguagePicker } from '@/components/common/ai-copy-check/RemarksLanguagePicker';
 import { StudentMappingPicker } from '@/components/common/ai-copy-check/StudentMappingPicker';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { MyButton } from '@/components/design-system/button';
@@ -24,6 +25,7 @@ import {
 import {
     mergeEvalezySettings,
     normalizeCommentPlacement,
+    normalizeRemarksLanguage,
     normalizeStudentMapping,
     type AiCopyCheckSettings,
     type AssessmentSettingsData,
@@ -149,6 +151,13 @@ function EvalezySettings() {
                     onChange={({ instructions, languageFeedback }) =>
                         patchAi({ instructions, languageFeedback })
                     }
+                />
+            </Section>
+            <Section>
+                <RemarksLanguagePicker
+                    disabled={busy}
+                    value={normalizeRemarksLanguage(ai.remarksLanguage)}
+                    onChange={(remarksLanguage) => patchAi({ remarksLanguage })}
                 />
             </Section>
             <Section>

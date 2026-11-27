@@ -778,3 +778,12 @@ def test_a_mostly_english_copy_with_some_hindi_keeps_english_remarks(env, monkey
     _detects(monkeypatch, answer_language.Detected("hi", 0.2, english_share=0.8))
     _run(_payload())
     assert "feedback_language" not in env["grader"].exam_context
+
+
+def test_the_institute_can_keep_every_copys_remarks_in_english(env, monkeypatch):
+    from app.services.copy_check import answer_language
+    _detects(monkeypatch, answer_language.Detected("hi", 0.9, english_share=0.1))
+    _run(_payload(exam_context={"remarks_language": "ENGLISH"}))
+    assert "feedback_language" not in env["grader"].exam_context
+    _run(_payload(exam_context={"remarks_language": "AUTO"}))
+    assert env["grader"].exam_context.get("feedback_language") == "hi"

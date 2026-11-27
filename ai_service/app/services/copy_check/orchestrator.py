@@ -39,7 +39,7 @@ from .failure import (
     redact_urls,
 )
 from .grader import DEFAULT_MODEL, CopyCheckGrader, call_llm_for_criteria, evaluation_model, token_budget_for
-from .prompt_builder import FEEDBACK_IN_HINDI, paper_label_for
+from .prompt_builder import FEEDBACK_IN_HINDI, paper_label_for, remarks_in_copy_language
 from .mathpix_fallback import MathpixFallback
 from .render_client import CopyCheckRenderClient, OcrCancelled
 from .rubric import RubricGenerationFailed, RubricResolver, load_snapshot
@@ -876,7 +876,10 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
         # unchanged, and a partner API's output stays exactly as it was.
         # A detected language must be at least half the handwriting: an English
         # copy with one Hindi answer keeps English remarks. A declared one counts.
+        # The institute can keep every copy's remarks in English (Evaluation
+        # settings -> Remarks language: exam_context.remarks_language = ENGLISH).
         hindi_notes = bool(getattr(grader, "grading_instructions", False)
+                           and remarks_in_copy_language(req.get("exam_context"))
                            and answer_language.of(reading_ctx) in FEEDBACK_IN_HINDI
                            and (answer_language.of(req.get("exam_context"))
                                 or (detected is not None and float(detected.share or 0) >= 0.5)))
