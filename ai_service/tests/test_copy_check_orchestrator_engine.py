@@ -85,6 +85,10 @@ def env(monkeypatch):
     class FakeGrader:
         def __init__(self, llm, **kwargs):
             state["grader_kwargs"] = kwargs
+            state["grader"] = self
+            # As the real grader keeps them (the orchestrator may add to exam_context).
+            self.exam_context = dict(kwargs.get("exam_context") or {})
+            self.grading_instructions = kwargs.get("grading_instructions", True)
             self.tokens_used = self.prompt_tokens = self.completion_tokens = 0
 
         async def grade_question(self, q, rubric, layout_map, model=None, page_ids=None):
@@ -748,3 +752,29 @@ def test_callers_that_cannot_confirm_check_another_language_as_before(env, monke
     _run(_payload())
     _run(_payload(billing_actor="apikey:key-1", page_count=1, rate_snapshot=SNAPSHOT))
     assert _posts(env, "failed") == [] and len(_posts(env, "complete")) == 2
+
+
+def test_a_hindi_copy_on_the_dashboard_gets_hindi_remarks(env, monkeypatch):
+    from app.services.copy_check import answer_language
+    _detects(monkeypatch, answer_language.Detected("hi", 0.9, english_share=0.1))
+    _run(_payload())
+    assert env["grader"].exam_context.get("feedback_language") == "hi"
+    # Only the remark language: the answer language the grader judges by is not set.
+    assert "answer_language" not in env["grader"].exam_context
+
+
+def test_api_and_english_copies_keep_their_remarks_as_before(env, monkeypatch):
+    from app.services.copy_check import answer_language
+    _detects(monkeypatch, answer_language.Detected("hi", 0.9, english_share=0.1))
+    _run(_payload(billing_actor="apikey:key-1", page_count=1, rate_snapshot=SNAPSHOT))
+    assert "feedback_language" not in env["grader"].exam_context
+    _detects(monkeypatch, answer_language.Detected("en", 0.95, english_share=0.95))
+    _run(_payload())
+    assert "feedback_language" not in env["grader"].exam_context
+
+
+def test_a_mostly_english_copy_with_some_hindi_keeps_english_remarks(env, monkeypatch):
+    from app.services.copy_check import answer_language
+    _detects(monkeypatch, answer_language.Detected("hi", 0.2, english_share=0.8))
+    _run(_payload())
+    assert "feedback_language" not in env["grader"].exam_context

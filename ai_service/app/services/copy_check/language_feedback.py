@@ -475,8 +475,9 @@ def errors_for_answer(by_row: dict[str, list[dict[str, Any]]], answer_rows: Any,
     return [e for _pos, r in sorted(picked) for e in by_row[r]]
 
 
-def feedback_text(errors: list[dict[str, Any]]) -> str:
-    """The "Language:" paragraph appended to a question's feedback."""
+def feedback_text(errors: list[dict[str, Any]], hindi: bool = False) -> str:
+    """The "Language:" paragraph appended to a question's feedback ("भाषा:" on
+    a dashboard check of a Hindi or Sanskrit copy, `hindi`)."""
     if not errors:
         return ""
     merged = _merge_repeats(errors)
@@ -487,6 +488,9 @@ def feedback_text(errors: list[dict[str, Any]]) -> str:
         rep = f" (×{times})" if times > 1 else ""
         parts.append(f"\"{e['wrong']}\" → \"{e['correct']}\"{why}{sym}{rep}")
     more = len(merged) - MAX_FEEDBACK_ERRORS
+    if hindi:
+        tail = f"; और {more} अन्य" if more > 0 else ""
+        return "भाषा: " + "; ".join(parts) + tail + "।"
     tail = f"; and {more} more" if more > 0 else ""
     return "Language: " + "; ".join(parts) + tail + "."
 
@@ -528,9 +532,9 @@ def _merge_repeats(errors: list[dict[str, Any]]) -> list[tuple[dict[str, Any], i
     return [(e, n) for e, n in merged]
 
 
-def with_language_feedback(feedback: Any, errors: list[dict[str, Any]]) -> str:
+def with_language_feedback(feedback: Any, errors: list[dict[str, Any]], hindi: bool = False) -> str:
     base = str(feedback or "").rstrip()
-    extra = feedback_text(errors)
+    extra = feedback_text(errors, hindi=hindi)
     if not extra:
         return base
     return f"{base}\n\n{extra}" if base else extra

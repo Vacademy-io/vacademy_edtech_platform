@@ -135,6 +135,19 @@ Mark only errors you are SURE of from clearly written letters:
 Hindi handwriting is easy to misread: do NOT mark a मात्रा, nukta, anusvara or conjunct you are
 not certain of, accepted spelling variants, names, or words the student struck out."""
 
+# Added to SPOT_HINDI on a dashboard check of a Hindi or Sanskrit copy, whose
+# notes the student reads in Hindi (orchestrator `hindi_notes`); a partner
+# API's language check is unchanged.
+# The spelling line is left out on a paper with a deduction scheme, where an
+# error found can cost marks: there the check stays as strict as it was.
+SPOT_HINDI_SPELLING = """
+Also mark वर्तनी (spelling) where the letters are clear - e.g. मे for में, नही for नहीं, ओर for
+और, है for हैं with a plural subject, हुऐ for हुए."""
+SPOT_HINDI_NOTES = """
+A line in Sanskrit (a shloka or a quoted verse) is judged as Sanskrit against the printed question
+when it is given, never as Hindi: a visarga or a Sanskrit word form is not a Hindi mistake.
+`why` is written in Hindi for a Devanagari row, in English for an English row."""
+
 # Any other declared language. Sanskrit and Marathi are written in Devanagari
 # but judged in their own grammar, never as Hindi.
 SPOT_GENERIC = """You are a strict examiner of {language} marking a student's handwritten answer.
@@ -145,7 +158,7 @@ Mark only errors you are SURE of from clearly written letters: spelling, agreeme
 person), case endings and postpositions, verb form and tense, articles, a clearly wrong or missing
 word, a sentence that does not make sense.
 Handwriting is easy to misread: do NOT mark a letter, vowel sign or diacritic you are not certain of,
-accepted spelling variants, names, or words the student struck out. `why` is written in English."""
+accepted spelling variants, names, or words the student struck out. `why` is written in {why_language}."""
 
 SPOT_FORMAT = """
 For each error give:
@@ -175,12 +188,16 @@ page). Only then decide:
 Return STRICT JSON only: {"checks": [{"n": 1, "ink": "<letters you see>"}], "keep": [<numbers to keep>]}"""
 
 
-def spot_prompt(hindi: bool, scheme: list[ds.Entry], question_text: str = "", language: str = "") -> str:
+def spot_prompt(hindi: bool, scheme: list[ds.Entry], question_text: str = "", language: str = "",
+                hindi_notes: bool = False) -> str:
     code = answer_language.code_of(language)
     if code and code not in ("en", "hi"):
-        head = SPOT_GENERIC.format(language=answer_language.name(code))
+        # A Sanskrit copy's notes are read by a Hindi-medium student.
+        head = SPOT_GENERIC.format(language=answer_language.name(code),
+                                   why_language="Hindi" if hindi_notes and code == "sa" else "English")
     else:
-        head = SPOT_HINDI if hindi else SPOT_ENGLISH
+        extra = ((SPOT_HINDI_SPELLING if not scheme else "") + SPOT_HINDI_NOTES) if hindi_notes else ""
+        head = (SPOT_HINDI + extra) if hindi else SPOT_ENGLISH
     fields, example, intro = "", "", ""
     if scheme:
         intro = SCHEME_INTRO.format(block=ds.prompt_block(scheme))
@@ -531,13 +548,13 @@ async def _ask_once(llm: Any, model: str, system: str, text: str, image_b64: str
 async def check_band(llm: Any, model: str, image_b64: str, page: dict[str, Any], top: float, bottom: float,
                      scheme: list[ds.Entry], question_text: str, allow_hindi: bool,
                      institute_id: Optional[str] = None, token_sink: Any = None,
-                     language: str = "") -> list[dict[str, Any]]:
+                     language: str = "", hindi_notes: bool = False) -> list[dict[str, Any]]:
     """Spot, verify and filter one band; the kept errors tied to rows."""
     rows = band_rows(page, top, bottom)
     if not rows:
         return []
     hindi = allow_hindi and any(_devanagari(str(r.get("text") or "")) for r in rows)
-    spot = await _ask(llm, model, spot_prompt(hindi, scheme, question_text, language), "The page section:",
+    spot = await _ask(llm, model, spot_prompt(hindi, scheme, question_text, language, hindi_notes), "The page section:",
                       image_b64, 6000, institute_id, token_sink)
     cands = [c for c in _json(spot, "errors")[:MAX_ERRORS_PER_BAND]
              if isinstance(c, dict)
@@ -563,6 +580,7 @@ async def find_errors(llm: Any, layout_map: dict[str, Any], pdf_url: Optional[st
                       allow_hindi: bool = False, institute_id: Optional[str] = None, token_sink: Any = None,
                       cancellation_check: Optional[Callable[[], bool]] = None,
                       images: Optional[dict[str, Any]] = None, language: str = "",
+                      hindi_notes: bool = False,
                       ) -> Optional[tuple[dict[str, list[dict[str, Any]]], set[str]]]:
     """(row id -> errors, ids of the pages every band of which was checked),
     or None when the page images cannot be had (the caller then runs the
@@ -598,7 +616,7 @@ async def find_errors(llm: Any, layout_map: dict[str, Any], pdf_url: Optional[st
             try:
                 b64 = await asyncio.get_running_loop().run_in_executor(None, _encode, crop)
                 return await check_band(llm, model, b64, page, top, bottom, scheme, question_text,
-                                        allow_hindi, institute_id, token_sink, language)
+                                        allow_hindi, institute_id, token_sink, language, hindi_notes)
             except Exception:
                 logger.exception("Language check failed on %s band %.0f-%.0f%%", pid, top * 100, bottom * 100)
                 failed_pages.add(pid)
