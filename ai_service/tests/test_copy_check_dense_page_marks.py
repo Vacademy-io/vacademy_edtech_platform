@@ -86,3 +86,25 @@ def test_a_score_is_never_squeezed_below_a_readable_size(monkeypatch):
            fitz.Rect(0, y - hole, x - hole, y + hole), fitz.Rect(x + hole, y - hole, 400, y + hole)])
     (_, radius) = badges.pop()
     assert radius >= 0.8 * base
+
+
+def test_a_score_on_a_short_last_page_is_full_size(monkeypatch):
+    badges = []
+    monkeypatch.setattr(A, "_draw_score_badge",
+                        lambda page, centre, awarded, out_of=None, radius=15.0: badges.append(radius))
+    A._INK_MAP[0] = None
+    A._PLACED[0] = []
+    verdicts = [{"question_number": 5, "question_id": "q5", "marks_awarded": 2.0, "max_marks": 10.0,
+                 "annotations": []}]
+
+    def radius(sheet):
+        doc = fitz.open()
+        doc.new_page(width=400, height=500)
+        A._place_question_scores(doc, {5: (0, 100.0, 200.0)}, verdicts, paper={"p1": sheet},
+                                 order={"p1": 0}, written=set())
+        return badges.pop()
+
+    full = radius(fitz.Rect(20, 20, 380, 480))
+    # The writing stops a quarter of the way down: the box around it is short.
+    short = radius(fitz.Rect(20, 20, 380, 150))
+    assert short >= 0.9 * full

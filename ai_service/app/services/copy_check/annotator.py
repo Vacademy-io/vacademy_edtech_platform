@@ -4415,7 +4415,12 @@ def _place_question_scores(doc: Any, placements: dict[int, tuple],
         # Sized to the writing, not to a constant. Rings measured 62-86px
         # against a ~40px line height, which is what made them read as badges
         # rather than a figure ringed with a pen.
-        line_h = max(10.0, min(26.0 * _page_k(page), (sheet.height / 34.0) if sheet else 16.0))
+        # The sheet can be only the box around the writing: on a last page
+        # written a third of the way down, a thirty-fourth of THAT made the
+        # ring small and its figure unreadable beside full-size ones. Measure
+        # against most of the page instead.
+        ref_h = max(sheet.height, page.rect.height * 0.85) if sheet else None
+        line_h = max(10.0, min(26.0 * _page_k(page), (ref_h / 34.0) if ref_h else 16.0))
         # A mark is written larger than the prose around it - it is the thing
         # the student looks for first. At 0.62-0.80 of a line it came out at
         # about 11pt against ~20pt handwriting and read as a footnote.
