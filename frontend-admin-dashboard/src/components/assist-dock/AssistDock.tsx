@@ -12,6 +12,7 @@ import {
     Question,
     RocketLaunch,
     Sparkle,
+    VideoCamera,
     X,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -26,6 +27,7 @@ import {
 import { ADMIN_DISPLAY_SETTINGS_KEY, type DisplaySettingsData } from '@/types/display-settings';
 import { useSupportConfig } from '@/services/support';
 import { useRoadmap, useRoadmapMeta } from '@/services/roadmap';
+import { useWebinarClock, useWebinars, webinarPhase } from '@/services/webinars';
 import { SupportPanel } from '@/components/common/support/SupportPanel';
 import { useAssistDock } from './store';
 import { tutorialsForRoute } from './tutorials';
@@ -34,6 +36,7 @@ import { RoadmapViewer } from './RoadmapViewer';
 import { ExploreViewer } from './ExploreViewer';
 import { AdminAppViewer } from './AdminAppViewer';
 import { TrainingViewer } from './TrainingViewer';
+import { LiveDot, WebinarsPanel } from './WebinarsPanel';
 
 // Keep in sync with routes/__root.tsx publicRoutes — the dock only shows inside
 // the authenticated shell.
@@ -119,6 +122,12 @@ export function AssistDock() {
     const roleDS = cachedDS ?? fetchedDS;
     const showDock = roleDS?.ui?.showAssistDock ?? roleKey === ADMIN_DISPLAY_SETTINGS_KEY;
 
+    // Fetched whenever the rail shows (not just when the panel opens): the rail lights up on
+    // every page while a webinar is live.
+    const webinars = useWebinars(isAuthed && !onPublicRoute && showDock);
+    const webinarNow = useWebinarClock(webinars.data);
+    const webinarLive = (webinars.data ?? []).some((w) => webinarPhase(w, webinarNow) === 'live');
+
     // Publish the resolved visibility so gutter-reserving components
     // (LayoutContainer, student side views) stay in lockstep with the rail.
     const setDockVisible = useAssistDock((s) => s.setDockVisible);
@@ -165,6 +174,7 @@ export function AssistDock() {
                     {hasNewRoadmap ? (
                         <span className="absolute -right-1 -top-1 size-2.5 rounded-full bg-primary-500 ring-2 ring-white" />
                     ) : null}
+                    {webinarLive ? <LiveDot className="absolute -left-1 -top-1" /> : null}
                 </button>
             ) : (
                 /* Thin fixed rail — a full-height column flush to the right edge. The
@@ -197,6 +207,19 @@ export function AssistDock() {
                         onClick={() => togglePanel('training')}
                     >
                         <PlayCircle size={20} weight={panel === 'training' ? 'fill' : 'duotone'} />
+                    </RailButton>
+
+                    <RailButton
+                        label={webinarLive ? t('webinarLive') : t('webinars')}
+                        ariaLabel={webinarLive ? t('webinarLiveAria') : undefined}
+                        active={panel === 'webinars'}
+                        onClick={() => togglePanel('webinars')}
+                        live={webinarLive}
+                    >
+                        <VideoCamera
+                            size={20}
+                            weight={panel === 'webinars' || webinarLive ? 'fill' : 'duotone'}
+                        />
                     </RailButton>
 
                     <RailButton
@@ -266,6 +289,17 @@ export function AssistDock() {
 
             <TrainingViewer open={panel === 'training'} onClose={() => setPanel('none')} />
 
+            <WebinarsPanel
+                open={panel === 'webinars'}
+                onClose={() => setPanel('none')}
+                webinars={webinars.data}
+                // isFetching too: after an error, Retry shows the skeleton instead of a frozen error.
+                loading={webinars.isPending || webinars.isFetching}
+                error={webinars.isError}
+                onRetry={() => webinars.refetch()}
+                now={webinarNow}
+            />
+
             {/* Tutorials panel (slides out left of the rail). z-50 so z-50 sticky page
                 toolbars (slide editor) don't cover its header and close button. */}
             {panel === 'tutorials' && (
@@ -334,28 +368,38 @@ export function AssistDock() {
 
 function RailButton({
     label,
+    ariaLabel,
     children,
     onClick,
     active,
     badge,
     dot,
+    live,
 }: {
     label: string;
+    /** Longer screen-reader label when the visible one is a single word like "Live". */
+    ariaLabel?: string;
     children: React.ReactNode;
     onClick: () => void;
     active?: boolean;
     badge?: number;
     /** A small unread indicator, for when there's something new but no count to show. */
     dot?: boolean;
+    /** Something is happening right now (a webinar is live): red tint + pulsing dot. */
+    live?: boolean;
 }) {
     return (
         <button
             type="button"
             onClick={onClick}
-            aria-label={label}
+            aria-label={ariaLabel ?? label}
             className={cn(
                 'relative flex w-full flex-col items-center gap-0.5 rounded-md px-1 py-2 transition-colors',
-                active ? 'bg-primary-50 text-primary-600' : 'text-neutral-500 hover:bg-neutral-100'
+                live
+                    ? 'bg-danger-50 text-danger-600 hover:bg-danger-100'
+                    : active
+                      ? 'bg-primary-50 text-primary-600'
+                      : 'text-neutral-500 hover:bg-neutral-100'
             )}
         >
             {children}
@@ -368,6 +412,7 @@ function RailButton({
             {dot ? (
                 <span className="absolute right-2 top-1.5 size-2 rounded-full bg-primary-500 ring-2 ring-white" />
             ) : null}
+            {live ? <LiveDot className="absolute right-2 top-1.5" /> : null}
         </button>
     );
 }

@@ -5,6 +5,7 @@ export type AssistPanel =
     | 'none'
     | 'tutorials'
     | 'training'
+    | 'webinars'
     | 'assistant'
     | 'support'
     | 'roadmap'

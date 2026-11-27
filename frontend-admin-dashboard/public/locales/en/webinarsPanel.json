@@ -1,0 +1,21 @@
+{
+    "title": "Webinars",
+    "subtitle": "Live sessions for admins. Join from here.",
+    "close": "Close webinars",
+    "liveNow": "Live now",
+    "liveUntil": "Started {{start}} · ends {{end}}",
+    "joinNow": "Join now",
+    "join": "Join",
+    "linkSoon": "Join link coming soon",
+    "upcoming": "Upcoming",
+    "when": "{{day}} · {{time}}",
+    "startsIn": "Starts in {{minutes}} min",
+    "past": "Past webinars",
+    "watch": "Watch recording",
+    "noRecording": "Recording coming soon",
+    "recording": "Recording",
+    "empty": "No webinars yet",
+    "emptyHint": "New webinars show up here with a Join button.",
+    "loadError": "Couldn't load webinars.",
+    "retry": "Try again"
+}
