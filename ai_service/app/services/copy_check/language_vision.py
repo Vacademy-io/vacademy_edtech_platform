@@ -83,6 +83,29 @@ def language_model() -> str:
         return HARD_FALLBACK_MODEL
 
 
+# The model that reads a copy written in an Indian script or Urdu, runs its
+# language check, and nothing else - English copies keep `language_model()`.
+# It must read Devanagari handwriting: on a 5-page Sanskrit/Hindi copy
+# (2026-11-27) the GLM default returned an invented page ("कक्षा दशमी, अनुवादः
+# ..." for a page of shlokas), so three written answers were graded as not
+# attempted; google/gemini-2.5-flash read 95% of the written phrases verbatim,
+# the student's misspellings included.
+INDIC_READER_USE_CASE = "copy_check_indic_reader"
+INDIC_READER_FALLBACK_MODEL = "google/gemini-2.5-flash"
+
+
+def indic_reader_model() -> str:
+    """The 'copy_check_indic_reader' use-case model (super-admin portal), or
+    the Gemini hard fallback."""
+    try:
+        from ..model_selection import resolve_model_sync
+        primary, _fallbacks = resolve_model_sync(INDIC_READER_USE_CASE,
+                                                 hard_fallback=INDIC_READER_FALLBACK_MODEL)
+        return primary or INDIC_READER_FALLBACK_MODEL
+    except Exception:
+        return INDIC_READER_FALLBACK_MODEL
+
+
 # ----------------------------------------------------------------- prompts
 
 SPOT_ENGLISH = """You are a strict examiner marking a student's handwritten answer, red pen in hand.

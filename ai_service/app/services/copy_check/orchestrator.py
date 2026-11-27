@@ -1001,7 +1001,11 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
         # Pages the vision pass checked in full; None = not known (text-only
         # pass), and then the scheme never overrides marks.
         language_checked_pages: Optional[set[str]] = None
-        language_model = language_vision.language_model()
+        # A copy in an Indian script or Urdu is checked by the model that reads
+        # it (the same one that read it in 1b); every other copy as before.
+        language_model = (language_vision.indic_reader_model()
+                          if answer_language.needs_strong_reader(reading_ctx)
+                          else language_vision.language_model())
         if language_feedback.enabled(req.get("exam_context")):
             cancellation.check(job_id, process_id)
             if hasattr(grader, "token_budget"):

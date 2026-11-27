@@ -113,8 +113,10 @@ def reading_model(exam_context: Any, default: str) -> str:
     """The model that reads the handwriting of this paper."""
     if not needs_strong_reader(exam_context):
         return default
-    from .language_vision import language_model
-    return language_model() or default
+    # Its own model (copy_check_indic_reader): the language-check default could
+    # not read Devanagari handwriting and returned an invented page.
+    from .language_vision import indic_reader_model
+    return indic_reader_model() or default
 
 
 def is_latin(text: Any) -> bool:

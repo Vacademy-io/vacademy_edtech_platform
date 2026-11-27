@@ -591,9 +591,9 @@ def test_a_copy_declared_in_an_unreadable_language_is_refused_unbilled(env):
     assert env["graded"] == [] and _posts(env, "question") == [] and env["billed"] == []
 
 
-def test_indian_scripts_are_read_with_the_language_check_model(env, monkeypatch):
+def test_indian_scripts_are_read_with_the_indic_reader_model(env, monkeypatch):
     from app.services.copy_check import language_vision
-    monkeypatch.setattr(language_vision, "language_model", lambda: "strong-reader")
+    monkeypatch.setattr(language_vision, "indic_reader_model", lambda: "strong-reader")
     _run(_payload(exam_context={"answer_language": "sa"}))
     _run(_payload(exam_context={"answer_language": "fr"}))
     _run(_payload())

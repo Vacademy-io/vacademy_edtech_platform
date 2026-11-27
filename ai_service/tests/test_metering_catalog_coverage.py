@@ -70,6 +70,8 @@ COVERED_BY: Dict[str, str] = {
     "brand_kit": "page_builder",              # brand-kit scrape is a page-builder step (tool page_brand_kit)
     "image_keyword": "content_image",         # stock-image keywords for banners / slides
     "copy_check_deduction": "evaluation",     # re-check inside copy-check grading
+    "language_check": "evaluation",           # language check inside copy-check grading
+    "copy_check_indic_reader": "evaluation",  # Indian-script reading inside copy-check grading
     "question_metadata": "questions",         # request_type question_metadata -> questions
     "knowledge_base_summary": "knowledge_base",  # runs during KB ingest (kb_ingest_*)
     "reels_preview": "reels",

@@ -15,8 +15,8 @@ def test_codes_and_names(value, code):
     assert al.code_of(value) == code
 
 
-def test_indian_and_arabic_scripts_are_read_with_the_language_check_model(monkeypatch):
-    monkeypatch.setattr(lv, "language_model", lambda: "strong-reader")
+def test_indian_and_arabic_scripts_are_read_with_the_indic_reader_model(monkeypatch):
+    monkeypatch.setattr(lv, "indic_reader_model", lambda: "strong-reader")
     for code in ("hi", "sa", "mr", "ur", "bn", "ta", "te", "ar"):
         assert al.reading_model({"answer_language": code}, "default") == "strong-reader", code
     for value in ("en", "fr", "es", "de", "zh", "", "klingon", None):
