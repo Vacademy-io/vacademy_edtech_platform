@@ -64,7 +64,7 @@ public class WhiteLabelService {
     private static final java.util.regex.Pattern ROLE_TOKEN_PATTERN =
             java.util.regex.Pattern.compile("[^,\\p{Cntrl}]+");
 
-    /** institute_domain_routing.role is varchar(255) (V729). */
+    /** institute_domain_routing.role is varchar(255) (V772). */
     private static final int ROLE_COLUMN_LENGTH = 255;
 
     @Value("${cloudflare.learner.target:learner.vacademy.io}")

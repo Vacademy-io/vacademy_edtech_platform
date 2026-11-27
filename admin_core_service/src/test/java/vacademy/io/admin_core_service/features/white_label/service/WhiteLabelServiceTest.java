@@ -526,7 +526,7 @@ class WhiteLabelServiceTest {
             verify(domainRoutingAdminService).create(captor.capture());
             assertEquals("ADMIN,HOD'S,SALES-TEAM", captor.getValue().getRole());
 
-            // Nine roles (110 characters) fit since V729; thirty do not.
+            // Nine roles (110 characters) fit since V772; thirty do not.
             service.setup(admin(), INSTITUTE_ID, setupRequest("ops.myschool.com",
                     "ADMIN,ASSESSMENT CREATOR,COUNSELLOR,COURSE CREATOR,CRM_ACCESS,EVALUATOR,"
                             + "MANAGE_LEAD,TEACHER,SOCIAL MEDIA TEAM", false));
