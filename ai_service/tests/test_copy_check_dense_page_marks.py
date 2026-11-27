@@ -120,3 +120,21 @@ def test_a_score_on_a_short_last_page_is_full_size(monkeypatch):
     # The writing stops a quarter of the way down: the box around it is short.
     short = radius(fitz.Rect(20, 20, 380, 150))
     assert short >= 0.9 * full
+
+
+def test_a_circled_mark_is_written_about_as_tall_as_the_other_scores():
+    def red_height(radius, awarded):
+        doc = fitz.open()
+        page = doc.new_page(width=300, height=200)
+        A._CLIP[0] = None
+        A._draw_score_badge(page, fitz.Point(150, 100), awarded, out_of=10.0, radius=radius)
+        pix = page.get_pixmap(dpi=144)
+        a = np.frombuffer(pix.samples, np.uint8).reshape(pix.height, pix.width, pix.n).astype(int)
+        ys = np.nonzero(((a[:, :, 0] - a[:, :, 2] > 60) & (a[:, :, 0] > 120)).any(axis=1))[0]
+        return (ys[-1] - ys[0]) * 72 / 144
+
+    # 11.5pt at 0.78 of the radius, beside "5/10" scores twice that.
+    assert red_height(24.0, 5.0) >= 15.0
+    # Still fitted to the ring: a long figure is narrowed, not spilled.
+    fn, font = A._digit_pen(fitz.open().new_page())
+    assert A._text_width("58.5", fn, A._badge_size("58.5", 24.0, fn, font), font) <= 24.0 * 1.55

@@ -311,3 +311,32 @@ def test_prompt_lists_only_real_cuts_with_their_ids():
     listed = json.loads(prompt.split("cutting marks for:\n", 1)[1].split("\nNotes written", 1)[0])
     assert [c["id"] for c in listed] == [0, 1, 2, 3, 4, 5, 7, 9]
     assert '"id": <the cut' in prompt
+
+
+def test_a_raise_keeps_the_graders_reason_when_the_check_explains_instead():
+    from app.services.copy_check.deduction_check import apply_check
+    v = _q5_verdict()
+    v["annotations"] = [{"style": "margin_note", "target": "p8_r10", "page_id": "p8", "text": "5(a) not attempted; remedy missing"},
+                        {"style": "score", "target": "p8_r10", "page_id": "p8", "text": "2.5/10"}]
+    v["feedback"] = "old feedback"
+    result = {"marks_awarded": 3.0, "cuts": [{"id": 7, "finding": "misread", "why": "variation answered"}],
+              "note": "You earned credit for stating the variation; part (a) and the remedy are still missing.",
+              "feedback": "The variation is answered after all; 5(a) and the fresh-suit remedy are still missing."}
+    assert apply_check(v, result)
+    notes = [a["text"] for a in v["annotations"] if a["style"] == "margin_note"]
+    assert notes == ["5(a) not attempted; remedy missing"]
+    assert v["feedback"].startswith("The variation is answered after all")
+    assert [a["text"] for a in v["annotations"] if a["style"] == "score"] == ["3/10"]
+
+
+def test_a_short_remaining_reason_from_the_check_replaces_the_note():
+    from app.services.copy_check.deduction_check import apply_check, _margin_fragment
+    v = _q5_verdict()
+    v["annotations"] = [{"style": "margin_note", "target": "p8_r10", "page_id": "p8", "text": "variation wrong"}]
+    assert apply_check(v, {"marks_awarded": 3.0, "note": "5(a) and remedy missing",
+                           "cuts": [{"id": 7, "finding": "misread", "why": "x"}]})
+    assert [a["text"] for a in v["annotations"] if a["style"] == "margin_note"] == ["5(a) and remedy missing"]
+    assert v["feedback"] == "5(a) and remedy missing"  # an older reply with no feedback field
+    assert not _margin_fragment("Well done on the variation")
+    assert not _margin_fragment("Fourth difference (dissolution vs creation by law/perpetual succession) was written in the table")
+    assert _margin_fragment("Sections not quoted")

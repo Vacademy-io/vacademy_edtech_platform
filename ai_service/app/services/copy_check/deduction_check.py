@@ -233,7 +233,8 @@ Return ONLY:
 {{"what_the_student_wrote": "<the key working and final answer as written, e.g. 7/5 x 1/6 = 7/30>",
   "cuts": [{{"id": <the cut's id above>, "reason": "<the examiner's reason>", "finding": "misread" | "real", "why": "<what the image shows>"}}],
   "marks_awarded": <number, in steps of 0.5>,
-  "note": "<if marks are still cut: ONE short reason for the student, else empty>"}}"""
+  "note": "<if marks are still cut: what is still missing, 2-8 words, as a teacher writes it in the margin (e.g. 'Sections not quoted'); never praise; else empty>",
+  "feedback": "<one or two sentences to the student: what earned marks and what is still missing>"}}"""
 
 
 _NOT_ATTEMPTED = re.compile(r"\b(not attempted|unattempted|not answered|no answer|left blank)\b", re.IGNORECASE)
@@ -270,6 +271,17 @@ def _misread_lines(items: list[dict[str, Any]], misread: list[dict[str, Any]]) -
         if index is not None and _is_cut(items[index]) and index not in out:
             out[index] = why
     return list(out.items())
+
+
+_PRAISE = re.compile(r"^\s*(you\b|well\b|good\b|correct\b|great\b|nice\b|excellent\b|full marks\b)"
+                     r"|\bearned credit\b|\bcredit (is |was )?(given|restored|awarded)\b", re.IGNORECASE)
+
+
+def _margin_fragment(note: str) -> bool:
+    """A teacher's margin remark: a few words on what is still missing, not a
+    sentence explaining the raise and not praise."""
+    words = note.split()
+    return 0 < len(words) <= 10 and len(note) <= 80 and not _PRAISE.search(note)
 
 
 def apply_check(verdict: dict[str, Any], result: dict[str, Any]) -> bool:
@@ -334,6 +346,14 @@ def apply_check(verdict: dict[str, Any], result: dict[str, Any]) -> bool:
         # still adds up to the mark the teacher sees.
         items[open_line]["marks"] = float(items[open_line].get("marks") or 0) + gap
     note = str(result.get("note") or "").strip()
+    # The check's note replaces the comment on the copy only when it reads as
+    # one: what is still missing, in a few words. Its explanation of the raise
+    # ("You earned credit for stating the firm continues...", "Fourth
+    # difference ... was written in the table; other omissions stand.") was
+    # written where a deduction reason goes, praise and all, and cut off
+    # mid-sentence. Anything else keeps the grader's own reason - never a
+    # blank where a mark was cut.
+    margin = note if _margin_fragment(note) else None
     anns = []
     for a in verdict.get("annotations") or []:
         a = dict(a)
@@ -341,17 +361,19 @@ def apply_check(verdict: dict[str, Any], result: dict[str, Any]) -> bool:
         if style == "score":
             a["text"] = f"{new:g}/{mx:g}"
         elif style == "margin_note":
-            if new >= mx or not note:
+            if new >= mx:
                 continue
-            a["text"] = note[:200]
+            if margin:
+                a["text"] = margin
         elif style == "cross" and new >= mx:
             a["style"] = "tick"
         anns.append(a)
     verdict["annotations"] = anns
+    feedback = str(result.get("feedback") or "").strip()
     if new >= mx:
         verdict["feedback"] = "Correct - full marks after checking the handwriting."
-    elif note:
-        verdict["feedback"] = note
+    elif feedback or note:
+        verdict["feedback"] = (feedback or note)[:600]
     return True
 
 

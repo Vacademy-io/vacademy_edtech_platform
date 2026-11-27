@@ -20,7 +20,7 @@ from typing import Any, Optional
 from sqlalchemy.orm import Session
 
 from ...repositories import copy_check_render_snapshot_repository as snapshots
-from . import annotator
+from . import annotator, review
 from .choice_groups import counted_awarded
 # The words the grading run writes beside an answer a choice group leaves out.
 from .orchestrator import NOT_COUNTED_NOTE
@@ -191,6 +191,11 @@ async def re_render(db: Session, *, process_id: str, pdf_url: str, institute_id:
     if snap.institute_id and institute_id and snap.institute_id != institute_id:
         raise SnapshotForbidden(process_id)
     verdicts = copy.deepcopy(snap.verdicts)
+    # Saved before the rule existed, a verdict can still carry a cross on a
+    # row the grader flagged as unreadable. Dropped before the teacher's own
+    # edits apply, so a cross a teacher drew stays.
+    for v in verdicts:
+        review.drop_unsure_crosses(v)
     options = copy.deepcopy(snap.options or {})
     table = options.get("evaluation_table") or None
     total, out_of = apply_overrides(verdicts, overrides, table, counted=counted,
