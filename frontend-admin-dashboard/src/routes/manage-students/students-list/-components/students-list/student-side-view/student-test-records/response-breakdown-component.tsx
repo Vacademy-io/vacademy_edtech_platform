@@ -5,10 +5,11 @@ import {
     ChartTooltipContent,
 } from '@/components/ui/chart';
 import type { TFunction } from 'i18next';
-import React, { Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
-const PieChart = React.lazy(() => import('recharts').then(module => ({ default: module.PieChart as unknown as React.ComponentType<any> })));
-const Pie = React.lazy(() => import('recharts').then(module => ({ default: module.Pie as unknown as React.ComponentType<any> })));
+// recharts is imported directly: React.lazy behind <Suspense> left the chart without a
+// size (ChartContainer's ResponsiveContainer sizes its direct child), so it drew nothing.
+// ChartContainer imports recharts statically, so the lazy import saved nothing.
+import { Pie, PieChart } from 'recharts';
 
 interface ResponseData {
     attempted: number;
@@ -50,18 +51,16 @@ export function ResponseBreakdownComponent({ responseData }: { responseData: Res
     ];
     return (
         <ChartContainer config={chartConfig} className="mx-auto aspect-square size-44">
-            <Suspense fallback={<div className="h-full w-full animate-pulse rounded-full bg-neutral-100 opacity-20" />}>
-                <PieChart>
-                    <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-                    <Pie
-                        data={chartData}
-                        dataKey="value"
-                        nameKey="responseType"
-                        innerRadius={42}
-                        strokeWidth={2}
-                    />
-                </PieChart>
-            </Suspense>
+            <PieChart>
+                <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+                <Pie
+                    data={chartData}
+                    dataKey="value"
+                    nameKey="responseType"
+                    innerRadius={42}
+                    strokeWidth={2}
+                />
+            </PieChart>
         </ChartContainer>
     );
 }
