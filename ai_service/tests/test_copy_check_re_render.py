@@ -148,3 +148,25 @@ def test_snapshot_json_is_stored_compressed_and_reads_back():
     assert snapshots._unpack(packed) == big
     assert snapshots._unpack('{"a": 1}') == {"a": 1}
     assert snapshots._unpack(snapshots._pack(verdicts)) == verdicts
+
+
+def test_redraw_drops_a_cross_on_a_row_the_grader_could_not_read(monkeypatch):
+    # Snapshots saved before the rule existed still carry such a cross.
+    layout = {"pages": []}
+    verdicts = [{"question_id": "q5", "question_number": 5, "marks_awarded": 3.0, "max_marks": 10.0,
+                 "unclear_reads": [{"part": "5(b)(i)", "row": "p5_r28", "why": "margin word"}],
+                 "annotations": [{"style": "cross", "target": "p5_r28", "page_id": "p5"},
+                                 {"style": "cross", "target": "p5_r30", "page_id": "p5"}]}]
+    snap = snapshots.RenderSnapshot("p1", "a1", "inst-1", layout, verdicts, {})
+    monkeypatch.setattr(snapshots, "get", lambda db, pid: snap)
+    seen = {}
+
+    async def fake_upload(pdf_url, layout_map, vs, attempt_id, **panel):
+        seen["targets"] = [(a["style"], a["target"]) for a in vs[0]["annotations"]]
+        return "file-1"
+
+    monkeypatch.setattr(annotator, "render_and_upload", fake_upload)
+    asyncio.run(re_render.re_render(None, process_id="p1", pdf_url="u", institute_id="inst-1",
+                                    attempt_id=None, overrides=[]))
+    assert seen["targets"] == [("cross", "p5_r30")]
+    assert len(snap.verdicts[0]["annotations"]) == 2  # the snapshot itself is untouched

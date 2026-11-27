@@ -88,21 +88,31 @@ def _cut_pages(verdict: dict[str, Any]) -> set[str]:
     return pages
 
 
+def drop_unsure_crosses(verdict: dict[str, Any]) -> int:
+    """A row the grader itself could not read for sure gets no cross: the
+    prompt asks for none, and a cross there is the "marked wrong" the teacher
+    review exists to avoid. The cut stays in the marks until the teacher
+    decides. Also applied when a saved copy is drawn again (re_render), whose
+    verdicts may predate this rule. Returns how many crosses were dropped."""
+    unsure_rows = {str(r.get("row")) for r in verdict.get("unclear_reads") or []
+                   if isinstance(r, dict) and r.get("row")}
+    annotations = verdict.get("annotations") or []
+    if not unsure_rows or not annotations:
+        return 0
+    kept = [a for a in annotations
+            if not (isinstance(a, dict) and a.get("style") == "cross"
+                    and str(a.get("target")) in unsure_rows)]
+    verdict["annotations"] = kept
+    return len(annotations) - len(kept)
+
+
 def flag(verdict: dict[str, Any], layout_map: dict[str, Any]) -> list[str]:
     """Add the reasons this answer needs a teacher's look to
     verdict["review_reasons"]; returns them. A FAILED verdict is left alone:
     it is already sent for manual marking."""
     if str(verdict.get("status") or "").upper() == "FAILED":
         return list(verdict.get("review_reasons") or [])
-    # A row the grader itself could not read for sure gets no cross: the prompt
-    # asks for none, and a cross there is the "marked wrong" the teacher review
-    # exists to avoid. The cut stays in the marks until the teacher decides.
-    unsure_rows = {str(r.get("row")) for r in verdict.get("unclear_reads") or [] if r.get("row")}
-    if unsure_rows and verdict.get("annotations"):
-        verdict["annotations"] = [
-            a for a in verdict["annotations"]
-            if not (isinstance(a, dict) and a.get("style") == "cross"
-                    and str(a.get("target")) in unsure_rows)]
+    drop_unsure_crosses(verdict)
     for read in verdict.get("unclear_reads") or []:
         part = f" in {read['part']}" if read.get("part") else ""
         add_reason(verdict, f"Handwriting unclear{part}: {read.get('why')}")
