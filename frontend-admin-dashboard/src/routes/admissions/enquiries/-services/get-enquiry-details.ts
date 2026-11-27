@@ -33,6 +33,13 @@ export interface EnquiryDetailCampaign {
     group_name: string;
 }
 
+// The backend sends the assigned counsellor as an object, not a name string.
+export interface EnquiryDetailCounselor {
+    counselor_id: string;
+    counselor_name: string | null;
+    counselor_email: string | null;
+}
+
 export interface EnquiryDetails {
     enquiry_id: string;
     tracking_id: string | null;
@@ -56,7 +63,7 @@ export interface EnquiryDetails {
     current_stage_type: string | null;
     current_stage_status: string | null;
     campaign: EnquiryDetailCampaign;
-    assigned_counselor: string | null;
+    assigned_counselor: EnquiryDetailCounselor | null;
     custom_fields: Record<string, string>;
     // Phase 1 — lead score + dedup (populated when backend returns them)
     lead_score?: number | null;

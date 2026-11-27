@@ -281,7 +281,10 @@ export const EnquiryDetails = ({ enquiryId }: { enquiryId: string | null }) => {
                 />
                 <InfoRow
                     label={t('sections.applicationStatus.assignedCounselor')}
-                    value={data.assigned_counselor}
+                    value={
+                        data.assigned_counselor?.counselor_name ||
+                        data.assigned_counselor?.counselor_email
+                    }
                 />
             </SectionCard>
 
