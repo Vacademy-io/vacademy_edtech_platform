@@ -512,6 +512,7 @@ export default defineConfig(({ mode }) => {
                 'src/components/common/assessment-folders/**/*.test.{ts,tsx}',
                 'src/components/cbe/**/*.test.{ts,tsx}',
                 'src/components/common/student-slide-tracking/**/*.test.{ts,tsx}',
+                'src/components/quill/**/*.test.{ts,tsx}',
             ],
         },
         server: {
