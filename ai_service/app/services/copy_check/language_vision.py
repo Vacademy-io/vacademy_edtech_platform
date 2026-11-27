@@ -43,6 +43,7 @@ from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any, Callable, Optional
 
+from ...constants.model_defaults import NON_GLM_FALLBACK
 from . import answer_language, deduction_scheme as ds
 from .language_feedback import has_junk as lf_has_junk
 
@@ -91,7 +92,8 @@ def language_model() -> str:
 # attempted; google/gemini-2.5-flash read 95% of the written phrases verbatim,
 # the student's misspellings included.
 INDIC_READER_USE_CASE = "copy_check_indic_reader"
-INDIC_READER_FALLBACK_MODEL = "google/gemini-2.5-flash"
+# The platform's non-GLM fallback (google/gemini-2.5-flash), from the registry.
+INDIC_READER_FALLBACK_MODEL = NON_GLM_FALLBACK
 
 
 def indic_reader_model() -> str:
