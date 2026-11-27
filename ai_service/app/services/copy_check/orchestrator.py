@@ -1159,13 +1159,18 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
                 elif option_letter.refuse_wrong_option(verdict, q):
                     logger.info("Q%s: the chosen option is not the key's - no marks", qid)
                 elif checker is not None:
-                    if scheme and language_feedback.devanagari_share(verdict.get("answer_rows"), layout_map) > 0.5:
+                    if ((scheme or getattr(grader, "grading_instructions", False))
+                            and language_feedback.devanagari_share(verdict.get("answer_rows"), layout_map) > 0.5):
                         # A Hindi answer on a scheme paper: the cut-check "found a
                         # misreading" on every run and raised the paragraph-wise
                         # mark by 12-23 of 50 - the same copy scored 38 and 47.
                         # Devanagari handwriting is not read well enough for that
-                        # check to overrule the grader.
-                        logger.info("Q%s: Hindi answer under a deduction scheme - cut-check skipped", qid)
+                        # check to overrule the grader. The same on any paper
+                        # checked from the dashboard (2026-11-27): it gave a
+                        # Hindi answer with a misspelt shloka full marks; the
+                        # model that reads Devanagari has no zero-data-retention
+                        # endpoint the check may use. Partner API: scheme only.
+                        logger.info("Q%s: Hindi answer - cut-check skipped", qid)
                     else:
                         await checker.check(verdict, q, rubric)
             except cancellation.Cancelled:
