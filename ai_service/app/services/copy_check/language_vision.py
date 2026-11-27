@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import functools
 import io
 import json
 import logging
@@ -439,7 +440,12 @@ async def page_images(pdf_url: str) -> Optional[dict[str, Any]]:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "copy.pdf"
             await _download(pdf_url, path)
-            return await asyncio.get_running_loop().run_in_executor(None, _rasterize_pages, path)
+            # Long edge capped (raster.py): every page is held at once here, and a
+            # phone PDF's 26-inch pages OOM-killed the pod. Safe: bands are cut by
+            # share of the page and the table is located by image size.
+            from .raster import MAX_RASTER_EDGE
+            return await asyncio.get_running_loop().run_in_executor(
+                None, functools.partial(_rasterize_pages, path, max_edge=MAX_RASTER_EDGE))
     except Exception:
         logger.warning("Language check: could not render the copy's pages; using the transcript",
                        exc_info=True)
