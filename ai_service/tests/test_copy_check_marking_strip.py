@@ -40,3 +40,26 @@ def test_a_copy_with_room_is_drawn_as_before(monkeypatch):
     A._render_with_pen(b"%PDF", _layout(right_end=700.0), [])
     A._render_with_pen(b"%PDF", _layout(right_end=990.0), [])
     assert seen == [{}, {"margin_ratio": A._MARGIN_RATIO}]
+
+
+def test_remarks_run_down_the_strip_in_the_order_of_their_lines(monkeypatch):
+    # Written one at a time, a remark that found the strip below its line full
+    # climbed above the others: the remark for 2(a)(ii) sat beside 2(a)(i).
+    doc = fitz.open()
+    page = doc.new_page(width=785, height=842)
+    A._CLIP[0] = A._PAPER[0] = None
+    A._PLACED[0] = []
+    monkeypatch.setattr(A, "_PEN", [A._pen_for(b"%PDF")])  # the copy's pen, as a render sets it
+    sheet = fitz.Rect(4, 6, 779, 800)
+    ring = fitz.Rect(690, 730, 770, 790)                    # a circled mark at the foot
+    rows = [fitz.Rect(40, y, 560, y + 18) for y in (520, 600, 700, 720, 760)]
+    items = [(r, f"Remark number {k} about a point the answer left out (-1)") for k, r in enumerate(rows)]
+    boxes = A._lay_out_strip(page, list(reversed(items)), sheet, 595.0, [ring])[::-1]
+    assert all(b is not None for b in boxes)
+    tops = [b.y0 for b in boxes]
+    assert tops == sorted(tops)                             # same order as the lines
+    assert all(a.y1 <= b.y0 for a, b in zip(boxes, boxes[1:]))
+    assert not any(b.intersects(ring) for b in boxes)
+    assert boxes[0].y0 >= sheet.y0 and boxes[-1].y1 <= sheet.y1
+    # The first remark, with room above the crowd, stays level with its line.
+    assert abs(boxes[0].y0 - rows[0].y0) < 200
