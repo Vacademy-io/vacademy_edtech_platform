@@ -30,8 +30,8 @@ public class OtaUpdateService {
     // OTA backend with the learner app — whose bundles are intentionally
     // untargeted ("all apps") — from receiving another app's JS. Without this,
     // a learner bundle (higher global version) would be delivered to e.g. the
-    // Vacademy Admin shell. Comma-separated, ops-overridable.
-    @Value("${ota.strict-target-app-ids:io.vacademy.admin.app}")
+    // Vacademy Admin or Evalezy shell. Comma-separated, ops-overridable.
+    @Value("${ota.strict-target-app-ids:io.vacademy.admin.app,io.evalezy.app}")
     private String strictTargetAppIdsRaw;
 
     private Set<String> strictTargetAppIds() {
