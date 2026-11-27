@@ -2,18 +2,15 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouterState } from '@tanstack/react-router';
 import {
-    BookOpen,
     CaretLeft,
     CaretRight,
     Compass,
     DeviceMobile,
-    GraduationCap,
     PlayCircle,
     Question,
     RocketLaunch,
     Sparkle,
     VideoCamera,
-    X,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { getTokenFromCookie, isTokenExpired } from '@/lib/auth/sessionUtility';
@@ -30,8 +27,6 @@ import { useRoadmap, useRoadmapMeta } from '@/services/roadmap';
 import { useWebinarClock, useWebinars, webinarPhase } from '@/services/webinars';
 import { SupportPanel } from '@/components/common/support/SupportPanel';
 import { useAssistDock } from './store';
-import { tutorialsForRoute } from './tutorials';
-import { TutorialViewer } from './TutorialViewer';
 import { RoadmapViewer } from './RoadmapViewer';
 import { ExploreViewer } from './ExploreViewer';
 import { AdminAppViewer } from './AdminAppViewer';
@@ -63,18 +58,11 @@ function readRoadmapSeenAt(): string | null {
 }
 
 export function AssistDock() {
-    // Subscribes the dock to language-change events: buildTutorials()/
-    // tutorialsForRoute() resolve tutorial titles via the `t` passed in below,
-    // but without this hook call here the component itself would never
-    // re-render when the language changes (see tutorials.ts header comment).
-    const { t: tTutorials } = useTranslation('tutorials');
     const { t } = useTranslation('assistDock');
     const pathname = useRouterState({ select: (s) => s.location.pathname });
-    const search = useRouterState({ select: (s) => s.location.search }) as { selectedTab?: string };
     const panel = useAssistDock((s) => s.panel);
     const togglePanel = useAssistDock((s) => s.togglePanel);
     const setPanel = useAssistDock((s) => s.setPanel);
-    const openTutorial = useAssistDock((s) => s.openTutorial);
     const minimized = useAssistDock((s) => s.minimized);
     const setMinimized = useAssistDock((s) => s.setMinimized);
     // Non-admin roles get a 403 here (retry disabled on the hook); the badge is simply omitted then.
@@ -137,10 +125,9 @@ export function AssistDock() {
 
     if (!isAuthed || onPublicRoute || !showDock) return null;
 
-    const tutorials = tutorialsForRoute(tTutorials, pathname, search?.selectedTab);
     const hasNewRoadmap =
         !!roadmapMeta.data?.updatedAt && roadmapMeta.data.updatedAt !== roadmapSeenAt;
-    const totalBadge = tutorials.length + (supportConfig.data?.openTicketCount ?? 0);
+    const totalBadge = supportConfig.data?.openTicketCount ?? 0;
 
     const openRoadmap = () => {
         togglePanel('roadmap');
@@ -191,15 +178,6 @@ export function AssistDock() {
                     >
                         <CaretRight size={14} />
                     </button>
-
-                    <RailButton
-                        label={t('guides')}
-                        active={panel === 'tutorials'}
-                        onClick={() => togglePanel('tutorials')}
-                        badge={tutorials.length || undefined}
-                    >
-                        <BookOpen size={20} weight={panel === 'tutorials' ? 'fill' : 'regular'} />
-                    </RailButton>
 
                     <RailButton
                         label={t('training')}
@@ -299,69 +277,6 @@ export function AssistDock() {
                 onRetry={() => webinars.refetch()}
                 now={webinarNow}
             />
-
-            {/* Tutorials panel (slides out left of the rail). z-50 so z-50 sticky page
-                toolbars (slide editor) don't cover its header and close button. */}
-            {panel === 'tutorials' && (
-                <div className="fixed bottom-4 right-16 top-20 z-50 flex w-72 flex-col overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-xl">
-                    <div className="flex shrink-0 items-center justify-between border-b border-neutral-200 px-4 py-3">
-                        <div className="flex items-center gap-2">
-                            <GraduationCap size={18} className="text-primary-500" />
-                            <p className="text-body font-semibold text-neutral-800">
-                                {t('tutorials')}
-                            </p>
-                        </div>
-                        <button
-                            type="button"
-                            aria-label={t('closeTutorials')}
-                            onClick={() => setPanel('none')}
-                            className="flex size-7 items-center justify-center rounded-md text-neutral-500 transition-colors hover:bg-neutral-100"
-                        >
-                            <X size={16} />
-                        </button>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto p-2">
-                        {tutorials.length === 0 ? (
-                            <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
-                                <BookOpen size={26} className="text-neutral-300" />
-                                <p className="text-caption text-neutral-500">
-                                    {t('noTutorialsForThisPage')}
-                                </p>
-                            </div>
-                        ) : (
-                            <ul className="flex flex-col gap-1">
-                                {tutorials.map((t) => (
-                                    <li key={t.id}>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                openTutorial(t.file, t.title);
-                                                setPanel('none');
-                                            }}
-                                            className="group flex w-full items-center gap-2 rounded-md px-3 py-2 text-left transition-colors hover:bg-primary-50"
-                                        >
-                                            <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary-50 text-primary-500 group-hover:bg-primary-100">
-                                                <BookOpen size={15} weight="duotone" />
-                                            </span>
-                                            <span className="flex-1 truncate text-caption text-neutral-700">
-                                                {t.title}
-                                            </span>
-                                            <CaretRight
-                                                size={14}
-                                                className="shrink-0 text-neutral-300 group-hover:text-primary-400"
-                                            />
-                                        </button>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* Big walkthrough player */}
-            <TutorialViewer />
         </>
     );
 }
