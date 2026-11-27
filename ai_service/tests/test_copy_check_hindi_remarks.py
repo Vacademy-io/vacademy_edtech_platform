@@ -72,6 +72,15 @@ def test_only_a_flagged_dashboard_check_is_told_to_write_remarks_in_hindi():
     assert prompt_builder.examiner_instructions_block({}) == ""
 
 
+def test_remarks_language_setting():
+    assert prompt_builder.remarks_in_copy_language(None)
+    assert prompt_builder.remarks_in_copy_language({})
+    assert prompt_builder.remarks_in_copy_language({"remarks_language": "AUTO"})
+    assert prompt_builder.remarks_in_copy_language({"remarks_language": "something else"})
+    assert not prompt_builder.remarks_in_copy_language({"remarks_language": "ENGLISH"})
+    assert not prompt_builder.remarks_in_copy_language({"remarks_language": " english "})
+
+
 def test_the_language_check_prompt_changes_only_when_hindi_notes_are_asked_for():
     from app.services.copy_check import language_vision as lv
 

@@ -357,6 +357,21 @@ FEEDBACK_LANGUAGE_HINDI = (
 )
 
 
+# The institute's "Remarks language" (ASSESSMENT_SETTING.aiCopyCheck.remarksLanguage,
+# sent by assessment-service as exam_context.remarks_language): AUTO (or unset)
+# writes a Hindi or Sanskrit copy's remarks in Hindi; ENGLISH keeps every copy's
+# remarks in English, as before that feature.
+REMARKS_LANGUAGE_AUTO = "AUTO"
+REMARKS_LANGUAGE_ENGLISH = "ENGLISH"
+
+
+def remarks_in_copy_language(exam_context: Any) -> bool:
+    """False when the institute keeps all remarks in English."""
+    ctx = exam_context if isinstance(exam_context, dict) else {}
+    value = str(ctx.get("remarks_language") or REMARKS_LANGUAGE_AUTO).strip().upper()
+    return value != REMARKS_LANGUAGE_ENGLISH
+
+
 def examiner_instructions_block(exam_context: Any) -> str:
     """The institute's instructions for marking this paper, appended to the
     grading system prompt. "" when there are none, so the prompt is unchanged.
