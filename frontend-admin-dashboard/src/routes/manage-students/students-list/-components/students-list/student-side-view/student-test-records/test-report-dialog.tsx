@@ -1,35 +1,39 @@
+import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useNavigate } from '@tanstack/react-router';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { ArrowSquareOut, BookOpen, CalendarBlank, Clock } from '@phosphor-icons/react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { DotOutline } from '@phosphor-icons/react';
-import { Separator } from '@radix-ui/react-separator';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MyButton } from '@/components/design-system/button';
+import { ChipToggleGroup } from '@/components/design-system/chips';
+import ExportDialogPDFCSV from '@/components/common/export-dialog-pdf-csv';
+import { Crown } from '@/svgs';
+import { cn } from '@/lib/utils';
 import {
     resolveSubjectName,
     unresolvedSubjectIds,
     useSubjectNamesByIds,
 } from '@/services/subject-names';
-import { useMutation, useQuery } from '@tanstack/react-query';
 import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
-import { convertToLocalDateTime, extractDateTime } from '@/constants/helper';
-import { ResponseBreakdownComponent } from './response-breakdown-component';
-import { MarksBreakdownComponent } from './marks-breakdown-component';
-import { Crown } from '@/svgs';
-import { useState } from 'react';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { StatusChips } from '@/components/design-system/chips';
-import { parseHtmlToString } from '@/components/common/export-offline/utils/utils';
-import { CodingAnswerReview } from './coding-answer-review';
-import { CbeAnswerReview } from './cbe-answer-review';
-import { AssessmentReportStudentInterface } from '@/types/assessments/assessment-overview';
-import { AssessmentTestReport } from '@/types/assessments/assessment-data-report';
-import { Clock } from '@phosphor-icons/react';
-import ExportDialogPDFCSV from '@/components/common/export-dialog-pdf-csv';
-import { toast } from 'sonner';
-import { handleGetStudentReportExportPDF } from '@/routes/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab/-services/assessment-details-services';
-import { Steps } from '@/types/assessments/assessment-data-type';
-import { useTranslation } from 'react-i18next';
-import { useNavigate } from '@tanstack/react-router';
-import { ArrowSquareOut } from '@phosphor-icons/react';
-import { MyButton } from '@/components/design-system/button';
 import { formatMark } from '@/services/submission-review/marks';
+import { submissionKeys } from '@/services/submission-review/query-keys';
+import { handleGetStudentReportExportPDF } from '@/routes/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab/-services/assessment-details-services';
+import { getQuestionsDataForStep2 } from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-services/assessment-services';
+import { paperQuestion, type Paper } from '@/routes/assessment/submission/$attemptId/-utils/paper';
+import { AssessmentReportStudentInterface } from '@/types/assessments/assessment-overview';
+import { AssessmentTestReport, ReportQuestion } from '@/types/assessments/assessment-data-report';
+import { Steps } from '@/types/assessments/assessment-data-type';
+import { ProfileStat } from '../profile-ui';
+import { BreakdownDonut } from './breakdown-donut';
+import { parseServerDate, type ReviewStatus } from './report-answer';
+import {
+    formatDuration,
+    ReportQuestionCard,
+    reviewStatusOfQuestion,
+    signedMark,
+} from './report-question-card';
 
 interface TestReportDialogProps {
     isOpen: boolean;
@@ -39,6 +43,27 @@ interface TestReportDialogProps {
     /** Null while loading, or when the details request failed. */
     assessmentDetails: Steps | null;
 }
+
+type ReviewFilter = 'ALL' | ReviewStatus;
+
+const FILTER_ORDER: ReviewStatus[] = ['CORRECT', 'PARTIAL', 'WRONG', 'PENDING', 'SKIPPED'];
+const FILTER_LABEL_KEY: Record<ReviewStatus, string> = {
+    CORRECT: 'filter.correct',
+    PARTIAL: 'filter.partial',
+    WRONG: 'filter.wrong',
+    PENDING: 'filter.pending',
+    SKIPPED: 'filter.skipped',
+};
+
+const scoreTone = (pct: number) =>
+    pct >= 80 ? 'success' : pct >= 50 ? 'primary' : pct >= 30 ? 'warning' : 'danger';
+
+const formatDate = (date: Date | null) =>
+    date
+        ? date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+        : '';
+const formatClock = (date: Date | null) =>
+    date ? date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
 
 export const TestReportDialog = ({
     isOpen,
@@ -50,6 +75,76 @@ export const TestReportDialog = ({
     const { t } = useTranslation('manageStudentsTestReportDialog');
     const navigate = useNavigate();
     const { data: instituteDetails } = useQuery(useInstituteQuery());
+    const overall = testReport.question_overall_detail_dto;
+    const allSections = useMemo(() => testReport.all_sections ?? {}, [testReport.all_sections]);
+
+    // Tabs follow the paper's sections; without the paper, the sections the report has.
+    const sections = useMemo(() => {
+        const saved = assessmentDetails?.[1]?.saved_data.sections ?? [];
+        if (saved.length > 0) return saved.map((s) => ({ id: s.id, name: s.name }));
+        return Object.keys(allSections).map((id, index) => ({
+            id,
+            name: t('answer.sectionFallback', { number: index + 1 }),
+        }));
+    }, [assessmentDetails, allSections, t]);
+
+    // Derived, not stored once at mount: the dialog can open before the sections load.
+    const [pickedSection, setPickedSection] = useState<string | null>(null);
+    const activeSection =
+        pickedSection && sections.some((s) => s.id === pickedSection)
+            ? pickedSection
+            : sections[0]?.id ?? '';
+    const [filter, setFilter] = useState<ReviewFilter>('ALL');
+
+    // The report sends option ids only; the option texts come from the paper.
+    const sectionIdsCsv = sections.map((s) => s.id).join(',');
+    const paperQuery = useQuery({
+        queryKey: submissionKeys.paper(studentReport.assessment_id, sectionIdsCsv),
+        queryFn: () =>
+            getQuestionsDataForStep2({
+                assessmentId: studentReport.assessment_id,
+                sectionIds: sectionIdsCsv,
+            }),
+        enabled: isOpen && !!studentReport.assessment_id && sectionIdsCsv.length > 0,
+        staleTime: 10 * 60_000,
+    });
+    const paper = paperQuery.data as Paper | undefined;
+
+    // Numbered in paper order; the number stays with the question when a filter hides others.
+    const questions = useMemo(() => {
+        const list: ReportQuestion[] = [...(allSections[activeSection] ?? [])];
+        list.sort((a, b) => (a.question_order ?? 0) - (b.question_order ?? 0));
+        return list.map((question, index) => ({
+            question,
+            number: index + 1,
+            status: reviewStatusOfQuestion(question),
+        }));
+    }, [allSections, activeSection]);
+
+    const statusCounts = useMemo(() => {
+        const counts: Record<ReviewStatus, number> = {
+            CORRECT: 0,
+            PARTIAL: 0,
+            WRONG: 0,
+            PENDING: 0,
+            SKIPPED: 0,
+        };
+        questions.forEach((q) => {
+            counts[q.status] += 1;
+        });
+        return counts;
+    }, [questions]);
+    const visibleQuestions =
+        filter === 'ALL' ? questions : questions.filter((q) => q.status === filter);
+
+    const filterOptions = [
+        { value: 'ALL' as ReviewFilter, label: t('filter.all', { n: questions.length }) },
+        ...FILTER_ORDER.filter((status) => statusCounts[status] > 0).map((status) => ({
+            value: status as ReviewFilter,
+            label: t(FILTER_LABEL_KEY[status], { n: statusCounts[status] }),
+        })),
+    ];
+
     const openSubmission = () => {
         if (!studentReport.attempt_id) return;
         onClose();
@@ -59,110 +154,96 @@ export const TestReportDialog = ({
             search: {},
         });
     };
-    const sectionsInfo = assessmentDetails?.[1]?.saved_data.sections?.map((section) => ({
-        name: section.name,
-        id: section.id,
-    }));
 
-    const [selectedSection, setSelectedSection] = useState(sectionsInfo ? sectionsInfo[0]?.id : '');
-    // Out of = the paper's section totals (was a hardcoded "/20"); the same sum the
-    // total-marks endpoint returns, from the paper already loaded here. Hidden when unknown.
-    const paperTotalMarks = (assessmentDetails?.[1]?.saved_data.sections ?? []).reduce(
-        (sum, section) => sum + (Number(section.total_marks) || 0),
-        0
-    );
-
-    const currentSectionAllQuestions = testReport.all_sections[selectedSection!];
-
-    const responseData = {
-        attempted:
-            testReport.question_overall_detail_dto.correctAttempt +
-            testReport.question_overall_detail_dto.partialCorrectAttempt +
-            testReport.question_overall_detail_dto.wrongAttempt,
-        skipped: testReport.question_overall_detail_dto.skippedCount,
-    };
-    const marksData = {
-        correct: testReport.question_overall_detail_dto.correctAttempt,
-        partiallyCorrect: testReport.question_overall_detail_dto.partialCorrectAttempt,
-        wrongResponse: testReport.question_overall_detail_dto.wrongAttempt,
-        skipped: testReport.question_overall_detail_dto.skippedCount,
-    };
-    type OptionLike = { option_name?: string };
-    const renderOptions = (options: unknown) => {
-        if (Array.isArray(options) && options.length > 0) {
-            return options.map((option: OptionLike, idx: number) => (
-                <p key={idx}>{parseHtmlToString(option?.option_name ?? '')}</p>
-            ));
-        }
-        if (options && typeof options === 'object') {
-            const option = options as OptionLike;
-            return <p>{parseHtmlToString(option?.option_name ?? '')}</p>;
-        }
-        if (typeof options === 'string') {
-            return <p>{parseHtmlToString(options)}</p>;
-        }
-        return <p>{t('review.noResponse')}</p>;
-    };
-    const getExportStudentReportDataPDF = useMutation({
-        mutationFn: ({
-            assessmentId,
-            instituteId,
-            attemptId,
-        }: {
-            assessmentId: string;
-            instituteId: string | undefined;
-            attemptId: string;
-        }) => handleGetStudentReportExportPDF(assessmentId, instituteId, attemptId),
-        onSuccess: async (response) => {
-            const date = new Date();
+    const exportPdf = useMutation({
+        mutationFn: () =>
+            handleGetStudentReportExportPDF(
+                studentReport.assessment_id,
+                instituteDetails?.id,
+                // The attempt, not the test: this used to send the assessment id here.
+                studentReport.attempt_id
+            ),
+        onSuccess: (response) => {
             const url = window.URL.createObjectURL(new Blob([response]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `pdf_student_report_${date.toLocaleString()}.pdf`);
+            link.setAttribute('download', `pdf_student_report_${new Date().toLocaleString()}.pdf`);
             document.body.appendChild(link);
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
             toast.success(t('toast.exportPdfSuccess'));
         },
-        onError: (error: unknown) => {
-            throw error;
+        onError: () => {
+            toast.error(t('toast.exportPdfFailed'));
         },
     });
-    const handleExportPDF = () => {
-        getExportStudentReportDataPDF.mutate({
-            assessmentId: studentReport.assessment_id,
-            instituteId: instituteDetails?.id,
-            // The attempt, not the test: this used to send the assessment id here.
-            attemptId: studentReport.attempt_id,
-        });
-    };
+
     // The institute list keeps one subject per distinct name and drops subjects whose
     // course was deleted, so most stored ids need the direct lookup.
     const subjectNamesById = useSubjectNamesByIds(
-        unresolvedSubjectIds(instituteDetails?.subjects, [
-            testReport.question_overall_detail_dto.subjectId,
-        ])
+        unresolvedSubjectIds(instituteDetails?.subjects, [overall.subjectId])
     );
+    const subjectName = resolveSubjectName(
+        instituteDetails?.subjects,
+        subjectNamesById,
+        overall.subjectId
+    );
+
+    // Out of = the paper's section totals; hidden when unknown.
+    const paperTotalMarks = (assessmentDetails?.[1]?.saved_data.sections ?? []).reduce(
+        (sum, section) => sum + (Number(section.total_marks) || 0),
+        0
+    );
+    const score = studentReport.total_marks;
+    const scorePct = paperTotalMarks > 0 ? (score / paperTotalMarks) * 100 : null;
+
+    const startedAt = parseServerDate(overall.startTime);
+    const submittedAt = parseServerDate(overall.submitTime);
+
+    const attempted = overall.correctAttempt + overall.partialCorrectAttempt + overall.wrongAttempt;
+    const totalQuestions = attempted + overall.skippedCount;
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="no-scrollbar !m-0 flex max-h-dialog-tall w-dialog-xl flex-col !gap-0 overflow-y-auto !p-0">
-                <DialogHeader className="flex flex-col gap-6">
-                    <div className="flex items-center justify-between">
-                        <DialogTitle className="w-full bg-primary-50 px-6 py-4 text-h3 font-semibold text-primary-500">
-                            {t('title')}
-                        </DialogTitle>
-                    </div>
+                <DialogHeader>
+                    <DialogTitle className="w-full bg-primary-50 px-6 py-4 text-h3 font-semibold text-primary-500">
+                        {t('title')}
+                    </DialogTitle>
                 </DialogHeader>
 
-                {/* Test Info Section */}
-
-                <div className="flex flex-col gap-10 p-6">
-                    <div className="flex justify-between">
-                        <div className="flex flex-col gap-4">
-                            <div className="text-h2 font-semibold">
+                <div className="flex flex-col gap-6 p-6">
+                    {/* Test, when, actions */}
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div className="flex min-w-0 flex-col gap-2">
+                            <h2 className="text-h2 font-semibold text-neutral-800">
                                 {studentReport.assessment_name}
+                            </h2>
+                            <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-body text-neutral-500">
+                                {subjectName && (
+                                    <span className="flex items-center gap-1.5">
+                                        <BookOpen size={16} />
+                                        {subjectName}
+                                    </span>
+                                )}
+                                {startedAt && (
+                                    <span className="flex items-center gap-1.5">
+                                        <CalendarBlank size={16} />
+                                        {formatDate(startedAt)}
+                                    </span>
+                                )}
+                                {startedAt && (
+                                    <span className="flex items-center gap-1.5">
+                                        <Clock size={16} />
+                                        {submittedAt
+                                            ? t('meta.timeRange', {
+                                                  start: formatClock(startedAt),
+                                                  end: formatClock(submittedAt),
+                                              })
+                                            : formatClock(startedAt)}
+                                    </span>
+                                )}
                             </div>
                         </div>
                         <div className="flex flex-wrap items-start gap-2">
@@ -179,368 +260,175 @@ export const TestReportDialog = ({
                                 </MyButton>
                             )}
                             <ExportDialogPDFCSV
-                                handleExportPDF={handleExportPDF}
-                                isPDFLoading={
-                                    getExportStudentReportDataPDF.status === 'pending' ? true : false
-                                }
+                                handleExportPDF={() => exportPdf.mutate()}
+                                isPDFLoading={exportPdf.status === 'pending'}
                                 isEnablePDF={true}
                                 isEnableCSV={false}
                             />
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 text-body sm:grid-cols-3">
-                        <div>
-                            {t('info.subject')}{' '}
-                            {resolveSubjectName(
-                                instituteDetails?.subjects,
-                                subjectNamesById,
-                                testReport.question_overall_detail_dto.subjectId
-                            )}
-                        </div>
-                        <div>
-                            {t('info.attemptDate')}{' '}
-                            {
-                                extractDateTime(
-                                    convertToLocalDateTime(
-                                        testReport.question_overall_detail_dto.startTime
-                                    )
-                                ).date
+                    {/* Headline numbers */}
+                    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                        <ProfileStat
+                            label={t('stats.score')}
+                            tone={scorePct == null ? 'neutral' : scoreTone(scorePct)}
+                            value={
+                                <span>
+                                    {formatMark(score)}
+                                    {paperTotalMarks > 0 && (
+                                        <span className="text-body font-medium text-neutral-400">
+                                            {` / ${formatMark(paperTotalMarks)}`}
+                                        </span>
+                                    )}
+                                </span>
                             }
-                        </div>
-                        <div>
-                            {t('info.marks')}{' '}
-                            {testReport.question_overall_detail_dto.achievedMarks.toFixed(2)}
-                        </div>
-                        <div>
-                            {t('info.completionTime')}{' '}
-                            {t('info.minutes', {
-                                value: (
-                                    testReport.question_overall_detail_dto.completionTimeInSeconds /
-                                    60
-                                ).toFixed(2),
-                            })}
-                        </div>
-                        <div>
-                            {t('info.startTime')}{' '}
-                            {
-                                extractDateTime(
-                                    convertToLocalDateTime(
-                                        testReport.question_overall_detail_dto.startTime
-                                    )
-                                ).time
+                        />
+                        <ProfileStat
+                            label={t('stats.rank')}
+                            value={
+                                <span className="flex items-center gap-1.5">
+                                    {overall.rank === 1 && <Crown className="size-5" />}
+                                    {overall.rank || '—'}
+                                </span>
                             }
-                        </div>
-                        <div>
-                            {t('info.endTime')}{' '}
-                            {
-                                extractDateTime(
-                                    convertToLocalDateTime(
-                                        testReport.question_overall_detail_dto.submitTime
-                                    )
-                                ).time
-                            }
-                        </div>
+                        />
+                        <ProfileStat
+                            label={t('stats.percentile')}
+                            value={`${formatMark(overall.percentile)}%`}
+                        />
+                        <ProfileStat
+                            label={t('stats.timeTaken')}
+                            value={formatDuration(t, overall.completionTimeInSeconds)}
+                        />
+                    </div>
+
+                    {/* Breakdowns */}
+                    <div className="grid gap-4 lg:grid-cols-2">
+                        <BreakdownDonut
+                            title={t('response.heading')}
+                            centerValue={`${attempted}/${totalQuestions}`}
+                            centerLabel={t('charts.attemptedCenter')}
+                            slices={[
+                                {
+                                    key: 'attempted',
+                                    label: t('charts.attempted'),
+                                    value: attempted,
+                                    tone: 'success',
+                                },
+                                {
+                                    key: 'skipped',
+                                    label: t('charts.skipped'),
+                                    value: overall.skippedCount,
+                                    tone: 'neutral',
+                                },
+                            ]}
+                        />
+                        <BreakdownDonut
+                            title={t('marksBreakdown.heading')}
+                            centerValue={formatMark(score)}
+                            centerLabel={t('charts.marksCenter')}
+                            slices={[
+                                {
+                                    key: 'correct',
+                                    label: t('charts.correct'),
+                                    value: overall.correctAttempt,
+                                    tone: 'success',
+                                    detail: `(${signedMark(overall.totalCorrectMarks)})`,
+                                },
+                                {
+                                    key: 'partial',
+                                    label: t('charts.partial'),
+                                    value: overall.partialCorrectAttempt,
+                                    tone: 'warning',
+                                    detail: `(${signedMark(overall.totalPartialMarks)})`,
+                                },
+                                {
+                                    key: 'wrong',
+                                    label: t('charts.wrong'),
+                                    value: overall.wrongAttempt,
+                                    tone: 'danger',
+                                    detail: `(${signedMark(overall.totalIncorrectMarks)})`,
+                                },
+                                {
+                                    key: 'skipped',
+                                    label: t('charts.skipped'),
+                                    value: overall.skippedCount,
+                                    tone: 'neutral',
+                                },
+                            ]}
+                        />
                     </div>
                 </div>
 
-                <Separator />
-
-                {/* Charts Section */}
-                <div className="p-6 text-h3 font-semibold text-primary-500">
-                    {t('score.heading')}
-                </div>
-                <div className="flex">
-                    <div className="ml-6 flex flex-col items-center gap-20 p-6">
-                        <div className="flex flex-col">
-                            <h1>{t('score.rank')}</h1>
-                            <div className="flex items-center gap-1">
-                                {testReport.question_overall_detail_dto.rank === 1 && (
-                                    <Crown className="size-6" />
-                                )}
-                                <p className="text-neutral-500">
-                                    {testReport.question_overall_detail_dto.rank}
-                                </p>
-                            </div>
-                        </div>
-                        <div>
-                            <h1>{t('score.percentile')}</h1>
-                            <p className="text-center text-neutral-500">
-                                {testReport.question_overall_detail_dto.percentile.toFixed(2)}%
-                            </p>
-                        </div>
-                        <div>
-                            <h1>{t('score.marks')}</h1>
-                            <p className="text-neutral-500">
-                                {formatMark(studentReport.total_marks)}
-                                {paperTotalMarks > 0 && ` / ${formatMark(paperTotalMarks)}`}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="flex w-full flex-col items-center gap-6">
-                        <div className="text-h3 font-semibold">{t('response.heading')}</div>
-                        <ResponseBreakdownComponent responseData={responseData} />
-                        <div className="flex flex-col">
-                            <div className="-mt-14 flex items-center">
-                                <DotOutline weight="fill" className="size-20 text-success-400" />
-                                <p className="-ms-4 text-body">
-                                    {t('response.attempted')} &nbsp;{responseData.attempted}
-                                </p>
-                            </div>
-                            <div className="-mt-12 flex items-center">
-                                <DotOutline weight="fill" className="size-20 text-neutral-200" />
-                                <p className="-ms-4 text-body">
-                                    {t('response.skipped')} &nbsp;{responseData.skipped}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex w-full flex-col items-center gap-6">
-                        <div className="text-h3 font-semibold">{t('marksBreakdown.heading')}</div>
-                        <MarksBreakdownComponent marksData={marksData} />
-                        <div className="flex flex-col">
-                            <div className="-mb-8 flex items-center justify-between">
-                                <div className="flex items-center">
-                                    <DotOutline
-                                        size={70}
-                                        weight="fill"
-                                        className="text-success-400"
-                                    />
-                                    <p>{t('marksBreakdown.correctRespondents')} </p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <p>{marksData.correct}</p>
-                                    <p>
-                                        {testReport.question_overall_detail_dto.totalCorrectMarks >
-                                        0
-                                            ? `(+${testReport.question_overall_detail_dto.totalCorrectMarks.toFixed(
-                                                  2
-                                              )})`
-                                            : `(${testReport.question_overall_detail_dto.totalCorrectMarks.toFixed(
-                                                  2
-                                              )})`}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="-mb-8 flex items-center justify-between gap-4">
-                                <div className="flex items-center">
-                                    <DotOutline
-                                        size={70}
-                                        weight="fill"
-                                        className="text-warning-400"
-                                    />
-                                    <p>{t('marksBreakdown.partiallyCorrectRespondents')} </p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <p>{marksData.partiallyCorrect}</p>
-                                    <p>
-                                        {testReport.question_overall_detail_dto.totalPartialMarks >
-                                        0
-                                            ? `(+${testReport.question_overall_detail_dto.totalPartialMarks.toFixed(
-                                                  2
-                                              )})`
-                                            : `(${testReport.question_overall_detail_dto.totalPartialMarks.toFixed(
-                                                  2
-                                              )})`}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="-mb-8 flex items-center justify-between">
-                                <div className="flex items-center">
-                                    <DotOutline
-                                        size={70}
-                                        weight="fill"
-                                        className="text-danger-400"
-                                    />
-                                    <p>{t('marksBreakdown.wrongRespondents')} </p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <p>{marksData.wrongResponse}</p>
-                                    <p>
-                                        {testReport.question_overall_detail_dto
-                                            .totalIncorrectMarks > 0
-                                            ? `(+${testReport.question_overall_detail_dto.totalIncorrectMarks.toFixed(
-                                                  2
-                                              )})`
-                                            : `(${testReport.question_overall_detail_dto.totalIncorrectMarks.toFixed(
-                                                  2
-                                              )})`}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center">
-                                    <DotOutline
-                                        size={70}
-                                        weight="fill"
-                                        className="text-neutral-200"
-                                    />
-                                    <p>{t('marksBreakdown.skipped')} </p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <p>{marksData.skipped}</p>
-                                    <p>(0)</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <Separator />
-
-                <Tabs value={selectedSection} onValueChange={setSelectedSection} className="px-8">
-                    <div className="sticky top-0 flex items-center justify-between">
-                        <TabsList className="mb-2 mt-6 inline-flex h-auto justify-start gap-4 rounded-none border-b !bg-transparent p-0">
-                            {sectionsInfo?.map((section) => (
-                                <TabsTrigger
-                                    key={section.id}
-                                    value={section.id}
-                                    className={`flex gap-1.5 rounded-none px-12 py-2 !shadow-none ${
-                                        selectedSection === section.id
-                                            ? 'rounded-t-sm border !border-b-0 border-primary-200 !bg-primary-50'
-                                            : 'border-none bg-transparent'
-                                    }`}
-                                >
-                                    <span
-                                        className={`${
-                                            selectedSection === section.id ? 'text-primary-500' : ''
-                                        }`}
-                                    >
-                                        {section.name}
-                                    </span>
-                                </TabsTrigger>
-                            ))}
-                        </TabsList>
-                    </div>
-                </Tabs>
-
-                {/* Answer Review Section */}
-                <div className="flex w-full flex-col gap-10 p-6">
-                    <div className="text-h3 font-semibold text-primary-500">
-                        {t('review.heading')}
-                    </div>
-                    <div className="flex w-full flex-col gap-10">
-                        {currentSectionAllQuestions && currentSectionAllQuestions.length > 0 ? (
-                            currentSectionAllQuestions.map((review, index) => (
-                                <div className="flex w-full flex-col gap-10" key={index}>
-                                    <div className="flex w-full flex-col gap-4">
-                                        <div className="flex w-full items-start justify-between gap-6 text-subtitle">
-                                            <div className="flex items-start gap-6 text-title">
-                                                <div className="whitespace-nowrap">
-                                                    {t('review.question', { number: index + 1 })}
-                                                </div>
-                                                <div>{parseHtmlToString(review.question_name)}</div>
-                                            </div>
-                                            <div className="flex flex-nowrap items-center gap-2 whitespace-nowrap">
-                                                <Clock size={20} />
-                                                <p className="text-primary-500">
-                                                    {t('review.timeTakenSeconds', {
-                                                        count: review.time_taken_in_seconds,
-                                                    })}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="flex w-full items-center gap-6 text-subtitle">
-                                            <div>{t('review.studentAnswer')}</div>
-                                            <div className="flex w-full items-center justify-between">
-                                                <div
-                                                    className={`flex w-full max-w-2xl items-center rounded-lg p-4 ${
-                                                        review.answer_status == 'CORRECT'
-                                                            ? 'bg-success-50'
-                                                            : review.answer_status == 'INCORRECT'
-                                                              ? 'bg-danger-100'
-                                                              : 'bg-neutral-50'
-                                                    }`}
-                                                >
-                                                    <div className="w-full">
-                                                        {review.question_type === 'CODING' ? (
-                                                            <CodingAnswerReview
-                                                                studentResponse={
-                                                                    review.student_response_options
-                                                                }
-                                                                correctOptions={
-                                                                    review.correct_options
-                                                                }
-                                                            />
-                                                        ) : review.question_type ===
-                                                          'CBE_RESPONSE' ? (
-                                                            <CbeAnswerReview
-                                                                studentResponse={
-                                                                    review.student_response_options
-                                                                }
-                                                                correctOptions={
-                                                                    review.correct_options
-                                                                }
-                                                            />
-                                                        ) : (
-                                                            renderOptions(
-                                                                review.student_response_options as unknown
-                                                            )
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                <StatusChips
-                                                    status={
-                                                        review.answer_status == 'CORRECT'
-                                                            ? 'active'
-                                                            : review.answer_status == 'INCORRECT'
-                                                              ? 'error'
-                                                              : 'inactive'
-                                                    }
-                                                    showIcon={false}
-                                                >
-                                                    {t('review.marksLabel', {
-                                                        marks: review.mark.toFixed(2),
-                                                    })}
-                                                </StatusChips>
-                                                <StatusChips
-                                                    status={
-                                                        review.answer_status == 'CORRECT'
-                                                            ? 'active'
-                                                            : review.answer_status == 'INCORRECT'
-                                                              ? 'error'
-                                                              : 'inactive'
-                                                    }
-                                                    className="rounded-full"
-                                                >
-                                                    <></>
-                                                </StatusChips>
-                                            </div>
-                                        </div>
-                                        {review.question_type !== 'CODING' &&
-                                            review.question_type !== 'CBE_RESPONSE' &&
-                                            review.answer_status !== 'CORRECT' && (
-                                            <div className="flex w-full items-center gap-6 text-subtitle">
-                                                <div>{t('review.correctAnswer')}</div>
-                                                <div className="flex w-full items-center justify-between">
-                                                    <div
-                                                        className={`flex w-full max-w-2xl rounded-lg bg-success-50 p-4`}
-                                                    >
-                                                        <div>
-                                                            {renderOptions(
-                                                                review.correct_options as unknown
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {review.explanation && (
-                                            <div className="flex items-center gap-6 text-subtitle">
-                                                <div>{t('review.explanation')}</div>
-                                                <div>{parseHtmlToString(review.explanation)}</div>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <Separator />
-                                </div>
-                            ))
-                        ) : (
-                            <div className="py-4 text-center text-subtitle">
-                                {t('review.empty')}
-                            </div>
+                {/* Answer review */}
+                <div className="flex flex-col gap-4 border-t border-neutral-200 p-6">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <h3 className="text-h3 font-semibold text-primary-500">
+                            {t('review.heading')}
+                        </h3>
+                        {questions.length > 0 && (
+                            <ChipToggleGroup<ReviewFilter>
+                                value={filter}
+                                onChange={setFilter}
+                                options={filterOptions}
+                                ariaLabel={t('filter.ariaLabel')}
+                            />
                         )}
                     </div>
+
+                    {sections.length > 1 && (
+                        <Tabs
+                            value={activeSection}
+                            onValueChange={(id) => {
+                                setPickedSection(id);
+                                setFilter('ALL');
+                            }}
+                        >
+                            <TabsList className="inline-flex h-auto flex-wrap justify-start gap-2 rounded-none border-b !bg-transparent p-0">
+                                {sections.map((section) => (
+                                    <TabsTrigger
+                                        key={section.id}
+                                        value={section.id}
+                                        className={cn(
+                                            'rounded-none px-6 py-2 !shadow-none',
+                                            activeSection === section.id
+                                                ? 'rounded-t-sm border !border-b-0 border-primary-200 !bg-primary-50 text-primary-500'
+                                                : 'border-none bg-transparent'
+                                        )}
+                                    >
+                                        {section.name}
+                                    </TabsTrigger>
+                                ))}
+                            </TabsList>
+                        </Tabs>
+                    )}
+
+                    {questions.length === 0 ? (
+                        <p className="py-6 text-center text-subtitle text-neutral-500">
+                            {t('review.empty')}
+                        </p>
+                    ) : visibleQuestions.length === 0 ? (
+                        <p className="py-6 text-center text-subtitle text-neutral-500">
+                            {t('answer.noMatch')}
+                        </p>
+                    ) : (
+                        <div className="flex flex-col gap-4">
+                            {visibleQuestions.map(({ question, number }) => (
+                                <ReportQuestionCard
+                                    key={`${question.question_id}-${number}`}
+                                    question={question}
+                                    number={number}
+                                    paper={paperQuestion(
+                                        paper,
+                                        activeSection,
+                                        question.question_id
+                                    )}
+                                    paperLoading={paperQuery.isLoading}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </div>
             </DialogContent>
         </Dialog>
