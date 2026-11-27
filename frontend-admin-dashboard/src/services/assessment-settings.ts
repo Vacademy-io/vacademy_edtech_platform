@@ -10,6 +10,7 @@ import {
     mergeEvalezySettings,
     mergeExamExperience,
     normalizeCommentPlacement,
+    normalizeRemarksLanguage,
     normalizeStudentMapping,
 } from '@/types/assessment-settings';
 
@@ -67,6 +68,10 @@ export const mergeWithDefaults = (
             // Kept only when it is a real choice; absent reads as ASK.
             ...(normalizeStudentMapping(settings?.aiCopyCheck?.studentMapping) !== 'ASK' && {
                 studentMapping: normalizeStudentMapping(settings?.aiCopyCheck?.studentMapping),
+            }),
+            // Kept only when it is a real choice; absent reads as AUTO.
+            ...(normalizeRemarksLanguage(settings?.aiCopyCheck?.remarksLanguage) !== 'AUTO' && {
+                remarksLanguage: normalizeRemarksLanguage(settings?.aiCopyCheck?.remarksLanguage),
             }),
         },
         assessmentFolders: {

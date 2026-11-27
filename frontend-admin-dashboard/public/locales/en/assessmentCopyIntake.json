@@ -188,6 +188,17 @@
         "decidedMap": "Copies will be matched to students (Settings → Assessment).",
         "decidedCheckOnly": "Copies will only be checked, not matched to students (Settings → Assessment)."
     },
+    "remarks": {
+        "label": "Language of the AI's remarks",
+        "AUTO": {
+            "title": "Copy's language",
+            "description": "A copy written in Hindi or Sanskrit gets its remarks in Hindi; every other copy in English."
+        },
+        "ENGLISH": {
+            "title": "Always English",
+            "description": "Every copy's remarks are written in English."
+        }
+    },
     "mapChoice": {
         "title": "Map the copies to students?",
         "noStudents": "No students are linked to this assessment, so copies can't be matched.",

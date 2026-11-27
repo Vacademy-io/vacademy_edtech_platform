@@ -10,6 +10,7 @@ import {
     AssessmentSettingsData,
     DEFAULT_ASSESSMENT_SETTINGS,
     DEFAULT_REPORT_BRANDING,
+    normalizeRemarksLanguage,
     normalizeStudentMapping,
     ReportBrandingSettings,
 } from '@/types/assessment-settings';
@@ -21,6 +22,7 @@ import ResultNotificationTemplatesCard from './ResultNotificationTemplatesCard';
 import LearnerRequestNotificationCard from './LearnerRequestNotificationCard';
 import ExamExperienceSettingsCard from './ExamExperienceSettingsCard';
 import { CommentPlacementPicker } from '@/components/common/ai-copy-check/CommentPlacementPicker';
+import { RemarksLanguagePicker } from '@/components/common/ai-copy-check/RemarksLanguagePicker';
 import { StudentMappingPicker } from '@/components/common/ai-copy-check/StudentMappingPicker';
 import {
     PenStylePicker,
@@ -293,6 +295,22 @@ const AssessmentSettings = () => {
                                             prev.aiCopyCheck?.commentPlacement ?? 'INSIDE',
                                         instructions,
                                         languageFeedback,
+                                    },
+                                }));
+                                setHasChanges(true);
+                            }}
+                        />
+                        {/* The language the AI writes its remarks in (Hindi for Hindi/Sanskrit copies, or always English) */}
+                        <RemarksLanguagePicker
+                            value={normalizeRemarksLanguage(settings.aiCopyCheck?.remarksLanguage)}
+                            onChange={(remarksLanguage) => {
+                                setSettings((prev) => ({
+                                    ...prev,
+                                    aiCopyCheck: {
+                                        ...prev.aiCopyCheck,
+                                        commentPlacement:
+                                            prev.aiCopyCheck?.commentPlacement ?? 'INSIDE',
+                                        remarksLanguage,
                                     },
                                 }));
                                 setHasChanges(true);

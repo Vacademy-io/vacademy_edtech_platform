@@ -156,6 +156,17 @@
         "decidedMap": "Les copies seront associées aux élèves (Paramètres → Évaluation).",
         "decidedCheckOnly": "Les copies seront seulement corrigées, sans association aux élèves (Paramètres → Évaluation)."
     },
+    "remarks": {
+        "label": "Langue des remarques de l'IA",
+        "AUTO": {
+            "title": "Langue de la copie",
+            "description": "Une copie écrite en hindi ou en sanskrit reçoit ses remarques en hindi ; toutes les autres en anglais."
+        },
+        "ENGLISH": {
+            "title": "Toujours en anglais",
+            "description": "Les remarques de chaque copie sont rédigées en anglais."
+        }
+    },
     "mapChoice": {
         "title": "Associer les copies aux élèves ?",
         "noStudents": "Aucun élève n'est lié à cette évaluation : les copies ne peuvent pas être associées.",
