@@ -121,7 +121,8 @@
             "payment": "Extra payment",
             "paymentHint": "Optional. Added to the learner's fees as a separate due.",
             "amount": "Amount",
-            "dueDate": "Due date"
+            "dueDate": "Due date",
+            "paymentOff": "Switch on One-off charges in Settings to add an extra payment."
         },
         "assessment": {
             "title": "Assessment session",
@@ -155,7 +156,8 @@
             "assessmentSkipped": "Assessment: skipped.",
             "returnOn": "Back to {{status}} after {{date}}.",
             "noReturn": "Stays on {{status}} until you change it.",
-            "noMessage": "No email, WhatsApp or reminder is sent for anything created here."
+            "noMessage": "No email, WhatsApp or reminder is sent for anything created here.",
+            "payment": "Extra payment: {{amount}} due {{date}} (added to the learner's fees)."
         }
     }
 }

@@ -121,7 +121,8 @@
             "payment": "Paiement supplémentaire",
             "paymentHint": "Facultatif. Ajouté aux frais de l'apprenant comme une échéance à part.",
             "amount": "Montant",
-            "dueDate": "Date d'échéance"
+            "dueDate": "Date d'échéance",
+            "paymentOff": "Activez les frais ponctuels (One-off charges) dans les Paramètres pour ajouter un paiement supplémentaire."
         },
         "assessment": {
             "title": "Séance d'évaluation",
@@ -155,7 +156,8 @@
             "assessmentSkipped": "Évaluation : passée.",
             "returnOn": "Retour en {{status}} après le {{date}}.",
             "noReturn": "Reste en {{status}} jusqu'à ce que vous changiez.",
-            "noMessage": "Aucun e-mail, WhatsApp ni rappel n'est envoyé pour ce qui est créé ici."
+            "noMessage": "Aucun e-mail, WhatsApp ni rappel n'est envoyé pour ce qui est créé ici.",
+            "payment": "Paiement supplémentaire : {{amount}} dû le {{date}} (ajouté aux frais de l'apprenant)."
         }
     }
 }

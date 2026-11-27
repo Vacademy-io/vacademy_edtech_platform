@@ -31,6 +31,7 @@ import {
 } from '@/services/journey-status';
 import { EXTRA_CLASSES_QUERY_KEY } from '@/services/extra-classes';
 import { ENROLMENT_BREAKS_QUERY_KEY } from '@/services/enrolment-breaks';
+import { ONE_OFF_DUES_QUERY_KEY, useOneOffDueSettings } from '@/services/one-off-dues';
 import { formatDay, lengthInDays, localToday } from '../breaks/break-utils';
 import { EXTRA_CLASS_MAX_DAYS } from '../breaks/add-extra-class-dialog';
 import {
@@ -50,7 +51,7 @@ export const DEFAULT_ASSESSMENT_MINUTES = 10;
 
 const slotSchema = z.object({ date: z.string(), start: z.string(), duration: z.string() });
 
-const buildSchema = (t: TFunction, today: string) =>
+const buildSchema = (t: TFunction, today: string, paymentOn: boolean) =>
     z
         .object({
             batch: z.string(),
@@ -106,7 +107,7 @@ const buildSchema = (t: TFunction, today: string) =>
             if (v.oneOnOneOn) {
                 if (!v.teacher) issue(['teacher'], t('reentry.errors.teacher'));
                 v.sessions.forEach((s, i) => checkSlot(['sessions', i], s));
-                if (EXTRA_PAYMENT_READY && (v.amount || v.dueDate)) {
+                if (paymentOn && (v.amount || v.dueDate)) {
                     if (!(Number(v.amount) > 0)) issue(['amount'], t('reentry.errors.amount'));
                     if (!v.dueDate || v.dueDate < today) issue(['dueDate'], t('reentry.errors.dueDate'));
                 }
@@ -149,7 +150,9 @@ export const StartReentryDialog = ({
     const { t } = useTranslation('manageStudentsJourney');
     const queryClient = useQueryClient();
     const today = localToday();
-    const schema = useMemo(() => buildSchema(t, today), [t, today]);
+    const oneOffDues = useOneOffDueSettings();
+    const paymentOn = EXTRA_PAYMENT_READY && oneOffDues.enabled;
+    const schema = useMemo(() => buildSchema(t, today, paymentOn), [t, today, paymentOn]);
     const batchTerm = getTerminology(ContentTerms.Batch, SystemTerms.Batch);
     const backTo = findJourneyStatus(settings, settings.default_status)?.label ?? settings.default_status;
     const reentryLabel = findReentryStatus(settings)?.label ?? t('reentry.statusFallback');
@@ -230,7 +233,7 @@ export const StartReentryDialog = ({
                               duration_minutes: Number(s.duration),
                           })),
                           payment:
-                              EXTRA_PAYMENT_READY && f.amount
+                              paymentOn && f.amount
                                   ? { amount: Number(f.amount), due_date: f.dueDate }
                                   : null,
                       }
@@ -255,6 +258,9 @@ export const StartReentryDialog = ({
             );
             queryClient.invalidateQueries({ queryKey: [JOURNEY_STATUS_QUERY_KEY] });
             queryClient.invalidateQueries({ queryKey: [EXTRA_CLASSES_QUERY_KEY] });
+            if (res.due_id) {
+                queryClient.invalidateQueries({ queryKey: [ONE_OFF_DUES_QUERY_KEY] });
+            }
             if (res.resumed_pauses > 0) {
                 queryClient.invalidateQueries({ queryKey: [ENROLMENT_BREAKS_QUERY_KEY] });
             }
@@ -354,6 +360,7 @@ export const StartReentryDialog = ({
                         }}
                         onRemove={sessions.remove}
                         max={MAX_ONE_ON_ONE_SESSIONS}
+                        paymentOn={paymentOn}
                         staff={staff}
                         today={today}
                     />
@@ -404,6 +411,7 @@ export const StartReentryDialog = ({
                         backTo={backTo}
                         onPause={onPause}
                         staff={staff}
+                        paymentOn={paymentOn}
                         batchLabel={(id) => selectedLabel(own, id)}
                     />
                 </form>

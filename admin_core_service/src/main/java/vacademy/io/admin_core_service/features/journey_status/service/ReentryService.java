@@ -16,6 +16,7 @@ import vacademy.io.admin_core_service.features.live_session.dto.LiveSessionStep2
 import vacademy.io.admin_core_service.features.live_session.entity.LiveSession;
 import vacademy.io.admin_core_service.features.live_session.service.Step1Service;
 import vacademy.io.admin_core_service.features.live_session.service.Step2Service;
+import vacademy.io.admin_core_service.features.one_off_due.service.OneOffDueService;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
 
@@ -85,6 +86,10 @@ public class ReentryService {
     @Autowired private Step1Service step1Service;
     @Autowired private Step2Service step2Service;
     @Autowired private LiveSessionUserDirectoryClient userDirectory;
+    @Autowired private OneOffDueService oneOffDueService;
+
+    /** one_off_due.source_type of the extra payment for a one-on-one bridge class. */
+    public static final String DUE_SOURCE = "REENTRY_BRIDGE";
 
     /** A temporary link to another batch, first and last day inclusive. */
     public record Link(String packageSessionId, LocalDate from, LocalDate to) {}
@@ -257,10 +262,6 @@ public class ReentryService {
             throw new VacademyException("Extra classes are part of Breaks and holds, which is switched off for this "
                     + "institute. Switch it on in Settings → Breaks and holds, or start the re-entry without them.");
         }
-        if (req.oneOnOne() != null && req.oneOnOne().payment() != null) {
-            throw new VacademyException("Extra payment for the one-on-one class is not available yet. Remove the "
-                    + "amount and add the fee from the learner's Fees section for now.");
-        }
         ZoneId zone = guard.zone(instituteId);
         LocalDateTime now = LocalDateTime.now(zone);
         if (req.oneOnOne() != null) {
@@ -303,6 +304,7 @@ public class ReentryService {
             addLink(instituteId, req.userId(), "BRIDGE_COURSE", req.bridgeCourse(), NOTE_BRIDGE, actorId, actorName, links, lines);
 
             List<Map<String, Object>> sessions = new ArrayList<>();
+            String[] dueId = {null};
             OneOnOne o = req.oneOnOne();
             if (o != null) {
                 List<Slot> slots = new ArrayList<>(o.sessions());
@@ -314,6 +316,14 @@ public class ReentryService {
                 String teacher = label(teacherNames.get(o.teacherUserId()), o.teacherUserId());
                 lines.add("One-on-one: " + slots.size() + (slots.size() == 1 ? " session" : " sessions") + " with "
                         + teacher + " from " + day(slots.get(0).date()) + " (" + plan.oneOnOneTitle() + ")");
+                Payment p = o.payment();
+                if (p != null) {
+                    // Charged against the batch the learner returns to (they are in it); joins this
+                    // transaction, so a later failure takes the charge and its invoice back too.
+                    dueId[0] = oneOffDueService.create(instituteId, req.userId(), req.packageSessionId(), p.amount(),
+                            p.dueDate(), plan.oneOnOneTitle(), p.note(), DUE_SOURCE, reentryId, actor);
+                    lines.add("Extra payment: ₹" + p.amount().stripTrailingZeros().toPlainString() + " due " + day(p.dueDate()));
+                }
             }
             Assessment a = req.assessment();
             if (a != null) {
@@ -332,6 +342,7 @@ public class ReentryService {
             meta.put("links", links);
             meta.put("sessions", sessions);
             if (!pauses.isEmpty()) meta.put("resumed_break_ids", pauses);
+            if (dueId[0] != null) meta.put("due_id", dueId[0]);
             statusService.apply(instituteId, cfg, req.userId(), req.packageSessionId(), plan.statusKey(), plan.reason(),
                     plan.returnOn(), JourneyStatusService.SOURCE_REENTRY, actorId, actorName, null, true, meta, lines);
 
@@ -343,7 +354,7 @@ public class ReentryService {
             out.put("sessions", sessions);
             out.put("access_ids", links.stream().map(m -> m.get("access_id")).toList());
             out.put("session_ids", sessions.stream().map(m -> m.get("session_id")).toList());
-            out.put("due_id", null);
+            out.put("due_id", dueId[0]);
             out.put("resumed_pauses", pauses.size());
             return out;
         });

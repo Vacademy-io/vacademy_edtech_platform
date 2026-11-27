@@ -30,10 +30,10 @@ import { formatDay, formatInstant, lengthInDays } from '../breaks/break-utils';
 import type { ReentryFormValues } from './start-reentry-dialog';
 
 /**
- * The extra payment for a one-on-one class needs the one-off dues service, which is not live
- * yet. Until it is, the amount and due date stay hidden and the server refuses them.
+ * The extra payment for a one-on-one class is a one-off charge (one-off dues service). The fields
+ * show only when the institute has One-off charges switched on.
  */
-export const EXTRA_PAYMENT_READY = false;
+export const EXTRA_PAYMENT_READY = true;
 
 const DURATIONS = ['30', '45', '60', '90', '120'];
 
@@ -507,8 +507,10 @@ export const OneOnOneSection = ({
     max,
     staff,
     today,
+    paymentOn,
 }: {
     control: FormControlT;
+    paymentOn: boolean;
     on: boolean;
     fields: FieldArrayWithId<ReentryFormValues, 'sessions', 'id'>[];
     onAdd: () => void;
@@ -606,7 +608,10 @@ export const OneOnOneSection = ({
                             {t('reentry.oneOnOne.addSession')}
                         </MyButton>
                     )}
-                    {EXTRA_PAYMENT_READY && (
+                    {!paymentOn && (
+                        <p className="text-caption text-neutral-500">{t('reentry.oneOnOne.paymentOff')}</p>
+                    )}
+                    {paymentOn && (
                         <div className="space-y-3 rounded-md bg-neutral-50 p-3">
                             <div className="space-y-0.5">
                                 <p className="text-caption font-semibold text-neutral-700">
@@ -735,7 +740,9 @@ export const ReentrySummary = ({
     staff,
     batchLabel,
     instituteId,
+    paymentOn,
 }: {
+    paymentOn: boolean;
     instituteId: string;
     values: ReentryFormValues;
     statusLabel: string;
@@ -767,6 +774,9 @@ export const ReentrySummary = ({
                 date: formatDay(first.date),
             })
         );
+    }
+    if (paymentOn && v.oneOnOneOn && Number(v.amount) > 0 && v.dueDate) {
+        lines.push(t('reentry.summary.payment', { amount: v.amount, date: formatDay(v.dueDate) }));
     }
     if (v.assessmentMode === 'schedule' && v.assessmentTeacher && v.assessment.date && v.assessment.start) {
         lines.push(
