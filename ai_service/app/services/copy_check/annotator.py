@@ -6017,10 +6017,18 @@ def _render_with_pen(pdf_bytes: bytes, layout_map: dict[str, Any], verdicts: lis
         if panel is not None:
             return shrink_scans(panel)
 
-    # A copy written to the edge of the sheet has no room for the marking: it
-    # gets a marking strip beside each page. Not with the paper's printed
-    # evaluation table: that is filled by the page's geometry. A copy with room
-    # of its own is drawn exactly as before.
+    # Why every cut mark was cut, beside the line it is about (remarks.py), on a
+    # copy of the verdicts: the caller's are what is stored.
+    from . import remarks
+    verdicts = copy.deepcopy(verdicts)
+    rows = set(_target_index(layout_map))
+    for v in verdicts:
+        if isinstance(v, dict):
+            remarks.add_cut_remarks(v, rows)
+    # Those remarks need somewhere to go. A copy written to the edge of the
+    # sheet has none, so it gets a marking strip beside each page. Not with the
+    # paper's printed evaluation table: that is filled by the page's geometry.
+    # A copy with room of its own is drawn exactly as before.
     strip = ({"margin_ratio": _MARGIN_RATIO}
              if not evaluation_table and _written_to_the_edge(layout_map) else {})
 
