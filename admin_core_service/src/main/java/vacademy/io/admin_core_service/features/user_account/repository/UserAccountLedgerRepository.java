@@ -202,4 +202,12 @@ public interface UserAccountLedgerRepository extends JpaRepository<UserAccountLe
             + "WHEN l.eventType = 'DEBIT_REVERSAL' THEN -l.amount ELSE 0 END), 0) "
             + "FROM UserAccountLedger l WHERE l.sourceId = :sourceId")
     BigDecimal debitNetBySourceId(@Param("sourceId") String sourceId);
+
+    /**
+     * Every accrual posted against one source, oldest first. Reversing what an abandoned
+     * checkout booked needs the original currency and due date, so that the reversal nets
+     * out of the past-due bucket and not only the total, and a sum cannot give those back.
+     */
+    List<UserAccountLedger> findBySourceTypeAndSourceIdAndEventTypeOrderByCreatedAtAsc(
+            String sourceType, String sourceId, String eventType);
 }

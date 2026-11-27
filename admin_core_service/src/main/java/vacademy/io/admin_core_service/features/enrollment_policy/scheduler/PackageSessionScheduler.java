@@ -261,4 +261,37 @@ public class PackageSessionScheduler {
             log.error("[RenewalCharge] Autopay charge scan failed", e);
         }
     }
+
+    // --- Lapsed-membership expiry ------------------------------------------
+    //
+    // The charge sweep above only looks at ARMED plans, and it is inside that sweep that the
+    // grace deadline is checked. A plan that leaves the sweep -- autopay cancelled, or
+    // next_charge_at never re-armed after a renewal -- is therefore never charged AND never
+    // expired: it keeps status ACTIVE and ACTIVE mappings for ever, the learner reads as a
+    // paying member on the dashboard, and class access outlives the paid term indefinitely.
+    //
+    // Scoped to SUBSCRIPTION plans on invites that configure
+    // AUTOPAY_SETTING.GRACE_PERIOD_DAYS, so an institute gets this only once it has stated
+    // how long access should outlive the paid term.
+
+    /**
+     * Runs daily at 15:30 IST, half an hour after the charge sweep, so a plan charged
+     * today has already been re-armed and can never be read as lapsed by this scan.
+     */
+    @Scheduled(cron = "0 30 15 * * ?", zone = "Asia/Kolkata")
+    @SchedulerLock(name = "LapsedPlanExpirySweep", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
+    public void expireLapsedMemberships() {
+        List<String> instituteIds = paymentSettingService.getInstituteIdsWithAutopayChargeEnabled();
+        if (instituteIds.isEmpty()) {
+            log.info("[LapsedExpiry] No institutes have authorised the autopay sweep — skipping");
+            return;
+        }
+        log.info("[LapsedExpiry] Starting lapsed-membership scan for {} opted-in institute(s)...",
+                instituteIds.size());
+        try {
+            renewalChargeService.expireLapsedUnarmedPlans(instituteIds);
+        } catch (Exception e) {
+            log.error("[LapsedExpiry] Lapsed-membership scan failed", e);
+        }
+    }
 }

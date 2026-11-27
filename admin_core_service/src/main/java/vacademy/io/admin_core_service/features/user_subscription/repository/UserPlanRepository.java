@@ -393,19 +393,24 @@ public interface UserPlanRepository extends JpaRepository<UserPlan, String> {
         /**
          * Whether this learner has already CONSUMED a free trial at this institute.
          *
-         * <p>"Consumed" means a previous trial that actually DELIVERED something — its window
-         * has elapsed AND it either carried an enrolment or took a payment. Two separate traps
-         * sit here, and both have bitten:
+         * <p>Consumed means exactly one thing: a trial plan that took a SUCCESSFUL payment.
+         * Nothing else counts, and that is deliberate — two earlier conditions each produced
+         * the opposite of the intended business rule:
          * <ul>
-         *   <li>A learner who retries checkout creates several trial plan rows in a few minutes
-         *       (Nitika Maheshwari made four in seven). Rows whose window is still ahead are
-         *       the same trial, not a second one — hence the end_date test.</li>
-         *   <li>An ABANDONED row's window elapses too. Counting it would tell a learner who
-         *       never completed a checkout, never got access and never attended a class that
-         *       they had already used their free trial, and charge them full price for their
-         *       first visit. The mapping/payment test is what keeps "abandoned, came back three
-         *       weeks later" on the trial path, which is the intended happy flow.</li>
+         *   <li>An enrolment row used to count on its own. An abandoned checkout leaves a
+         *       mapping in the institute holding batch, so a learner who never completed a
+         *       payment, never got access and never attended a class was told they had used
+         *       their free trial and was quoted full price. Measured at SuchBliss on
+         *       2026-11-27: 19 phone numbers were blocked this way.</li>
+         *   <li>The window used to have to have elapsed. That left a learner who paid for a
+         *       trial today still eligible today, so a second trial could be taken on another
+         *       invite of the same institute. The clause existed because a retrying learner
+         *       creates several trial rows minutes apart, but a retry row carries no PAID
+         *       payment, so requiring one makes the date test unnecessary.</li>
          * </ul>
+         *
+         * <p>Keyed on the trial flag plus a PAID payment rather than on the charged amount,
+         * which is per-invite configuration and has already varied.
          *
          * <p>Scoped to the institute rather than the invite: an institute offers one free
          * trial, and hopping to a different invite is exactly how a second one gets taken.
@@ -415,18 +420,13 @@ public interface UserPlanRepository extends JpaRepository<UserPlan, String> {
                 WHERE up.userId = :userId
                   AND up.id <> :currentPlanId
                   AND up.isTrial = true
-                  AND up.endDate IS NOT NULL
-                  AND up.endDate < :now
                   AND up.enrollInvite.instituteId = :instituteId
-                  AND (EXISTS (SELECT 1 FROM StudentSessionInstituteGroupMapping m
-                               WHERE m.userPlanId = up.id)
-                       OR EXISTS (SELECT 1 FROM PaymentLog pl
-                                  WHERE pl.userPlan.id = up.id AND pl.paymentStatus = 'PAID'))
+                  AND EXISTS (SELECT 1 FROM PaymentLog pl
+                              WHERE pl.userPlan.id = up.id AND pl.paymentStatus = 'PAID')
                 """)
         boolean hasConsumedTrialAtInstitute(@Param("userId") String userId,
                 @Param("instituteId") String instituteId,
-                @Param("currentPlanId") String currentPlanId,
-                @Param("now") java.util.Date now);
+                @Param("currentPlanId") String currentPlanId);
 
         /**
          * The same question for an institute that identifies learners by PHONE: has anyone on
@@ -439,9 +439,10 @@ public interface UserPlanRepository extends JpaRepository<UserPlan, String> {
          * ten digits of the digits-only number because stored values mix 918130434435, bare
          * ten-digit and non-Indian forms.
          *
-         * <p>Same "actually delivered" rule as the user-id variant: an elapsed ABANDONED row
-         * does not burn the trial, or a learner who never completed their first checkout would
-         * be charged full price for a class they have never attended.
+         * <p>Same rule as the user-id variant: only a trial that took a SUCCESSFUL payment
+         * consumes eligibility. An abandoned or failed checkout does not, however long ago it
+         * was, or a learner who never completed their first checkout would be charged full
+         * price for a class they have never attended.
          *
          * <p>A learner whose own number is missing or shorter than ten digits matches nothing
          * and keeps their trial: an unidentifiable person must not be charged full price.
@@ -455,12 +456,8 @@ public interface UserPlanRepository extends JpaRepository<UserPlan, String> {
                     WHERE ei.institute_id = :instituteId
                       AND up.id <> :currentPlanId
                       AND up.is_trial = true
-                      AND up.end_date IS NOT NULL
-                      AND up.end_date < :now
-                      AND (EXISTS (SELECT 1 FROM student_session_institute_group_mapping m
-                                   WHERE m.user_plan_id = up.id)
-                           OR EXISTS (SELECT 1 FROM payment_log pl
-                                      WHERE pl.user_plan_id = up.id AND pl.payment_status = 'PAID'))
+                      AND EXISTS (SELECT 1 FROM payment_log pl
+                                  WHERE pl.user_plan_id = up.id AND pl.payment_status = 'PAID')
                       AND length(regexp_replace(coalesce(s.mobile_number, ''), '[^0-9]', '', 'g')) >= 10
                       AND right(regexp_replace(s.mobile_number, '[^0-9]', '', 'g'), 10) = (
                             SELECT right(regexp_replace(me.mobile_number, '[^0-9]', '', 'g'), 10)
@@ -472,8 +469,7 @@ public interface UserPlanRepository extends JpaRepository<UserPlan, String> {
                 """, nativeQuery = true)
         boolean hasConsumedTrialByPhone(@Param("userId") String userId,
                 @Param("instituteId") String instituteId,
-                @Param("currentPlanId") String currentPlanId,
-                @Param("now") java.util.Date now);
+                @Param("currentPlanId") String currentPlanId);
 
         /**
          * Whether the person ever held a plan at this institute on a package of one of
@@ -553,6 +549,37 @@ public interface UserPlanRepository extends JpaRepository<UserPlan, String> {
                   AND ei.instituteId IN :instituteIds
                 """)
         List<UserPlan> findDueForRenewalForInstitutes(@Param("now") java.util.Date now,
+                        @Param("instituteIds") List<String> instituteIds);
+
+        /**
+         * ACTIVE plans whose paid term has already ended and which no sweep will ever look
+         * at again, because autopay is off or the charge was never re-armed.
+         *
+         * <p>Nothing expires these today. {@link #findDueForRenewalForInstitutes} selects
+         * only ARMED plans, and the grace deadline is evaluated inside that sweep, so a plan
+         * that falls out of it keeps status ACTIVE and ACTIVE mappings for ever. The
+         * commonest way in is a learner who cancels autopay and is then renewed once more: the
+         * renewal handler restores ACTIVE, extends end_date and deliberately leaves
+         * next_charge_at null, after which no code revisits the plan.
+         *
+         * <p>Rows here are CANDIDATES only. The caller still requires a SUBSCRIPTION payment
+         * option and a grace period configured on the invite before expiring anything, which
+         * is what keeps this away from the thousands of FREE, DONATION, ONE_TIME and CPO
+         * plans that have always been left ACTIVE past their end date.
+         */
+        @Query("""
+                SELECT up FROM UserPlan up
+                LEFT JOIN FETCH up.enrollInvite ei
+                LEFT JOIN FETCH up.paymentPlan pp
+                WHERE up.status = 'ACTIVE'
+                  AND up.endDate IS NOT NULL
+                  AND up.endDate < :now
+                  AND (up.autoRenewalEnabled IS NULL
+                       OR up.autoRenewalEnabled = false
+                       OR up.nextChargeAt IS NULL)
+                  AND ei.instituteId IN :instituteIds
+                """)
+        List<UserPlan> findLapsedUnarmedPlansForInstitutes(@Param("now") java.util.Date now,
                         @Param("instituteIds") List<String> instituteIds);
 
         /**

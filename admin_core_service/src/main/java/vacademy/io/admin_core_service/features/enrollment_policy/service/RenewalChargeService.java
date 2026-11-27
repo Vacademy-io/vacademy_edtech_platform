@@ -17,6 +17,7 @@ import vacademy.io.admin_core_service.features.user_subscription.entity.AppliedC
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan;
 import vacademy.io.admin_core_service.features.regional_pricing.service.RegionalPriceLock;
 import vacademy.io.admin_core_service.features.user_subscription.entity.UserPlan;
+import vacademy.io.admin_core_service.features.user_subscription.enums.PaymentOptionType;
 import vacademy.io.admin_core_service.features.user_subscription.enums.UserPlanStatusEnum;
 import vacademy.io.admin_core_service.features.user_subscription.repository.UserPlanRepository;
 import vacademy.io.admin_core_service.features.user_subscription.service.UserInstitutePaymentGatewayMappingService;
@@ -63,6 +64,7 @@ public class RenewalChargeService {
     private final RenewalFailureRecorder renewalFailureRecorder;
     private final vacademy.io.admin_core_service.features.user_subscription.service.PaymentLogService paymentLogService;
     private final RenewalDiscountResolver renewalDiscountResolver;
+    private final PaymentRenewalCheckService paymentRenewalCheckService;
 
     /** Default dunning ceiling when the plan/policy doesn't specify one. */
 
@@ -153,6 +155,80 @@ public class RenewalChargeService {
             }
         }
         log.info("[RenewalCharge] Done — charged={} failed={} skipped={}", charged, failed, skipped);
+    }
+
+    /**
+     * Expires memberships whose paid term is over and which nothing will ever charge or
+     * expire again.
+     *
+     * <p>{@link #processDueRenewals} selects only ARMED plans (autopay on and next_charge_at
+     * set), and the grace deadline is evaluated inside that loop. A plan that falls out of
+     * the sweep therefore stops being looked at by anything at all: the status stays ACTIVE,
+     * the mappings stay ACTIVE, the learner keeps the dashboard badge of a paying member, and
+     * no charge is ever presented again. The commonest way in is a learner who cancels
+     * autopay and is then renewed once more, because
+     * {@code RenewalPaymentService.handleSuccessfulRenewal} restores ACTIVE, extends end_date
+     * and deliberately leaves next_charge_at null. Measured at SuchBliss on 2026-11-27, six
+     * members sat in that state, two of them lapsed the previous evening and still on the
+     * class roster.
+     *
+     * <p>Deliberately narrow. A plan is expired only when it is a SUBSCRIPTION and its invite
+     * configures {@code AUTOPAY_SETTING.GRACE_PERIOD_DAYS} -- the institute has stated how
+     * long access outlives the paid term, so enforcing it is what was asked for. Without that
+     * key nothing changes. Measured across production on 2026-11-27, gating this way selects
+     * 7 plans, where acting on every unarmed expired plan would have revoked access on more
+     * than 6,600 FREE, DONATION, ONE_TIME and CPO enrolments that have always been left
+     * ACTIVE past their end date.
+     *
+     * <p>No learner message is emitted. The grace-over branch above sends the could-not-renew
+     * notice, which is untrue for everyone here: they either cancelled on purpose or never had
+     * a mandate to charge. What a lapsed member should be told is a client decision, and that
+     * wrong notice has already gone out once.
+     */
+    public void expireLapsedUnarmedPlans(List<String> instituteIds) {
+        if (instituteIds == null || instituteIds.isEmpty()) {
+            log.info("[LapsedExpiry] No institutes have authorised the sweep — nothing to do");
+            return;
+        }
+        Date now = new Date();
+        List<UserPlan> candidates = userPlanRepository
+                .findLapsedUnarmedPlansForInstitutes(now, instituteIds);
+        if (candidates.isEmpty()) {
+            log.info("[LapsedExpiry] No ACTIVE plan is past its term with no charge armed");
+            return;
+        }
+        log.info("[LapsedExpiry] {} candidate plan(s) past term with no charge armed", candidates.size());
+        int expired = 0, keptPaused = 0, keptNoGrace = 0, keptNotSubscription = 0, keptWithinGrace = 0;
+        for (UserPlan plan : candidates) {
+            try {
+                if (enrolmentBreakGuard != null && enrolmentBreakGuard.isPlanPaused(plan.getId())) {
+                    keptPaused++;
+                    continue;
+                }
+                if (!gracePolicy.isConfigured(plan)) {
+                    keptNoGrace++;
+                    continue;
+                }
+                if (paymentRenewalCheckService.getPaymentOptionType(plan)
+                        != PaymentOptionType.SUBSCRIPTION) {
+                    keptNotSubscription++;
+                    continue;
+                }
+                if (!gracePolicy.isPastGrace(plan, now)) {
+                    keptWithinGrace++;
+                    continue;
+                }
+                expirePlan(plan, "term ended " + gracePolicy.lastAccessDay(plan)
+                        + ", grace ran to " + gracePolicy.lastGraceDay(plan)
+                        + ", and no charge was armed");
+                expired++;
+            } catch (Exception e) {
+                log.error("[LapsedExpiry] Could not expire plan {}: {}", plan.getId(), e.getMessage(), e);
+            }
+        }
+        log.info("[LapsedExpiry] Done — expired={} keptWithinGrace={} keptNoGraceConfigured={} "
+                + "keptNotSubscription={} keptPaused={}",
+                expired, keptWithinGrace, keptNoGrace, keptNotSubscription, keptPaused);
     }
 
     /**
@@ -307,8 +383,15 @@ public class RenewalChargeService {
 
         MandateInfo mandate = mandateService.getMandateOrLegacyToken(plan.getUserId(), instituteId, vendor, plan.getId());
         if (mandate == null || !MandateInfo.STATUS_ACTIVE.equalsIgnoreCase(mandate.getStatus())) {
-            log.warn("[RenewalCharge] Plan {} has no ACTIVE mandate/token — skipping (needs registration/backfill)",
-                    plan.getId());
+            // ERROR, not WARN: this is a paying member whose renewal silently does not happen.
+            // The plan reads ACTIVE, the payment history reads PAID, finance reconciles, and
+            // the only trace was one warn line among thousands. Two SuchBliss members held
+            // paid ACTIVE plans for months this way with nothing reporting it.
+            log.error("[RenewalCharge] Plan {} (user {}, institute {}) has NO ACTIVE mandate — "
+                    + "no charge will be presented and the membership lapses unpaid. "
+                    + "Mandate was {}. Needs registration or backfill.",
+                    plan.getId(), plan.getUserId(), instituteId,
+                    mandate == null ? "absent" : mandate.getStatus());
             return Outcome.SKIPPED;
         }
 

@@ -262,16 +262,15 @@ public class UserPlanService {
     private boolean hasConsumedTrial(UserPlan userPlan, EnrollInvite enrollInvite) {
         try {
             String instituteId = enrollInvite.getInstituteId();
-            java.util.Date now = new java.util.Date();
             // Where the phone number IS the identity (SuchBliss), the question is whether this
             // NUMBER has had a trial, not this account: signing up again is precisely how a
             // second free trial gets taken.
             if (phoneIdentifierInviteSubmissionGuard.usesPhoneIdentifier(instituteId)) {
                 return userPlanRepository.hasConsumedTrialByPhone(
-                        userPlan.getUserId(), instituteId, userPlan.getId(), now);
+                        userPlan.getUserId(), instituteId, userPlan.getId());
             }
             return userPlanRepository.hasConsumedTrialAtInstitute(
-                    userPlan.getUserId(), instituteId, userPlan.getId(), now);
+                    userPlan.getUserId(), instituteId, userPlan.getId());
         } catch (Exception e) {
             logger.warn("Could not check trial history for user {}: {}", userPlan.getUserId(), e.getMessage());
             return false;
@@ -1046,12 +1045,12 @@ public class UserPlanService {
             // (user, enroll_invite) leave PENDING_FOR_PAYMENT plans whose course mappings still
             // point at them. Now that THIS attempt is the paid/active plan, move that access onto
             // it and cancel the abandoned siblings — otherwise finance/roster views (and the
-            // learner's access) resolve to an unpaid plan. Scoped to SUB_ORG, the only path that
-            // exhibits this retry pattern, to keep the blast radius tight.
+            // learner's access) resolve to an unpaid plan, and whatever Due those attempts
+            // left on the ledger stands for ever.
             try {
-                supersedeAbandonedSubOrgSiblings(userPlan, enrollInvite);
+                supersedeAbandonedSiblings(userPlan, enrollInvite);
             } catch (Exception e) {
-                logger.warn("Failed to reconcile abandoned sub-org sibling plans for paid plan {}: {}",
+                logger.warn("Failed to reconcile abandoned sibling plans for paid plan {}: {}",
                         userPlan.getId(), e.getMessage());
             }
 
@@ -1111,18 +1110,27 @@ public class UserPlanService {
     }
 
     /**
-     * A sub-org admin who abandons a gateway checkout and retries accumulates duplicate
+     * Anyone who abandons a gateway checkout and retries accumulates duplicate
      * PENDING_FOR_PAYMENT UserPlans for the same (user, enroll_invite); the course mappings
      * created on the first attempt stay pinned to that (now abandoned) plan. When a later
-     * attempt is finally paid, this moves those ACTIVE mappings onto the paid plan and cancels
-     * the abandoned siblings, so the finance panel, roster, and learner access all resolve to
-     * the plan that actually holds the payment. Dedupes by package session so a course already
-     * covered by the paid plan never gets a duplicate mapping. Best-effort; never blocks payment.
+     * attempt is finally paid, this moves those ACTIVE mappings onto the paid plan, reverses
+     * what the abandoned attempts booked on the ledger, and cancels them, so the finance
+     * panel, roster, and learner access all resolve to the plan that actually holds the
+     * payment. Dedupes by package session so a course already covered by the paid plan never
+     * gets a duplicate mapping. Best-effort; never blocks payment.
+     *
+     * <p>This ran for SUB_ORG plans only, on the reasoning that sub-org admins were the one
+     * path that retried checkouts. They are not: individual learners do it far more often,
+     * because a learner who closes the gateway page simply taps the button again. Measured at
+     * SuchBliss on 2026-11-27 that had left 98 abandoned USER plans across 38 learners, one of
+     * whom produced four business-identical rows in six minutes, and 90 of those rows still
+     * carried a DEBIT_ACCRUAL: 268,344 of Due that nobody owed. Siblings are matched on the
+     * paid plan source, so a SUB_ORG payment still never touches a USER plan or the reverse.
      */
-    private void supersedeAbandonedSubOrgSiblings(UserPlan paidPlan, EnrollInvite enrollInvite) {
+    private void supersedeAbandonedSiblings(UserPlan paidPlan, EnrollInvite enrollInvite) {
         if (paidPlan == null || enrollInvite == null
-                || !UserPlanSourceEnum.SUB_ORG.name().equals(paidPlan.getSource())
-                || !StringUtils.hasText(paidPlan.getUserId())) {
+                || !StringUtils.hasText(paidPlan.getUserId())
+                || !StringUtils.hasText(paidPlan.getSource())) {
             return;
         }
 
@@ -1133,9 +1141,9 @@ public class UserPlanService {
                                 UserPlanStatusEnum.PAYMENT_FAILED.name()))
                 .stream()
                 .filter(s -> !s.getId().equals(paidPlan.getId()))
-                // Only supersede other SUB_ORG plans — never touch a plan of a different
-                // source that happens to share this (user, enroll_invite).
-                .filter(s -> UserPlanSourceEnum.SUB_ORG.name().equals(s.getSource()))
+                // Same source only — never touch a plan of a different source that happens
+                // to share this (user, enroll_invite).
+                .filter(s -> paidPlan.getSource().equals(s.getSource()))
                 .collect(Collectors.toList());
         if (siblings.isEmpty()) return;
 
@@ -1169,8 +1177,21 @@ public class UserPlanService {
             if (!sibMaps.isEmpty()) studentSessionRepository.saveAll(sibMaps);
             sibling.setStatus(UserPlanStatusEnum.CANCELED.name());
             userPlanRepository.save(sibling);
-            logger.info("Superseded abandoned SUB_ORG sibling plan {} after payment on {} "
-                    + "(mappings moved={}, deduped={})", sibling.getId(), paidPlan.getId(), moved, deduped);
+            // The accrual was booked when the abandoned plan was created and nothing ever
+            // reversed it, so every retry added another full plan price to the learner Due.
+            java.math.BigDecimal reversed = java.math.BigDecimal.ZERO;
+            try {
+                reversed = userAccountLedgerService.reverseOutstandingDebitForSource(
+                        sibling.getUserId(), enrollInvite.getInstituteId(),
+                        "USER_PLAN", sibling.getId(),
+                        "Abandoned checkout superseded by the paid plan");
+            } catch (Exception le) {
+                logger.warn("Could not reverse the accrual of superseded plan {}: {}",
+                        sibling.getId(), le.getMessage());
+            }
+            logger.info("Superseded abandoned sibling plan {} (source {}) after payment on {} "
+                    + "(mappings moved={}, deduped={}, accrual reversed={})",
+                    sibling.getId(), sibling.getSource(), paidPlan.getId(), moved, deduped, reversed);
         }
     }
 

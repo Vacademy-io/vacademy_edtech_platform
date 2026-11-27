@@ -87,6 +87,38 @@ public class UserAccountLedgerService {
     }
 
     /**
+     * Writes off whatever one source still has standing on the ledger — an abandoned
+     * checkout that a later successful checkout superseded, for instance. The reversal
+     * carries the original accrual currency and due date, so it nets out of the past-due
+     * bucket as well as the total, and the amount is the CURRENT net, so calling this twice
+     * reverses nothing the second time and the balance cannot be driven below zero.
+     *
+     * @return the amount reversed, zero when the source had nothing left standing
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public BigDecimal reverseOutstandingDebitForSource(String userId, String instituteId,
+                                                       String sourceType, String sourceId,
+                                                       String remarks) {
+        if (sourceId == null || sourceId.isBlank()) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal net = repository.debitNetBySourceId(sourceId);
+        if (net == null || net.compareTo(BigDecimal.ZERO) <= 0) {
+            return BigDecimal.ZERO;
+        }
+        List<UserAccountLedger> accruals = repository
+                .findBySourceTypeAndSourceIdAndEventTypeOrderByCreatedAtAsc(
+                        sourceType, sourceId, "DEBIT_ACCRUAL");
+        String currency = accruals.isEmpty() ? null : accruals.get(0).getCurrency();
+        LocalDate dueDate = accruals.isEmpty() ? null : accruals.get(0).getDueDate();
+        recordDebitReversal(userId, instituteId, net, currency, dueDate,
+                sourceType, sourceId, null, remarks);
+        log.info("Reversed {} {} still standing against {} {} — {}",
+                net, currency, sourceType, sourceId, remarks);
+        return net;
+    }
+
+    /**
      * Called when a payment is confirmed (gateway success or manual offline).
      *
      * <p>Idempotent on {@code paymentLogId}: the same payment can reach us from more than
