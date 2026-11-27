@@ -38,16 +38,35 @@ _MARKS_LEAD = re.compile(
     r"^\s*(?:re-?checked against the handwriting\s*:\s*)?"
     r"(?:\d+(?:\.\d+)?\s*marks?(?:\(s\))?\s+(?:deducted|lost|cut)\s*(?:because|as|since|for)?\s*[:\-–]?\s*"
     r"|(?:no marks?|half marks?|partial(?: marks| credit)?|marks? deducted(?: because)?|deducted(?: because)?)"
-    r"\s*[:\-–]?\s*)?",
+    r"\s*[:\-–]?\s*"
+    # "0 deducted because" + a Hindi reason: a grader on a Hindi copy dropped
+    # the word "mark" (only before Devanagari - English remarks are unchanged).
+    r"|\d+(?:\.\d+)?\s+deducted\s+because\s*[:\-–]?\s*(?=[\u0900-\u097F])"
+    # The same lead written in Hindi: "0.5 अंक कटे क्योंकि", "1 अंक काटा गया:".
+    r"|\d+(?:\.\d+)?\s*अंक\s*(?:कटे|कटा|काटे गए|काटा गया|कम किए गए|कम किया गया)\s*(?:क्योंकि|,)?\s*[:\-–]?\s*)?",
     re.I)
 _RECHECK_LEAD = re.compile(r"^\s*re-?checked against the handwriting\s*:\s*", re.I)
 # The part of "X stated but Y missing" that says what is wrong.
-_CONTRAST = re.compile(r"\s+(?:but|though|although|however)\s+", re.I)
+_CONTRAST = re.compile(r"\s+(?:but|though|although|however|लेकिन|परंतु|परन्तु|किंतु|किन्तु)\s+", re.I)
+# No \b around the Hindi words: a vowel sign (matra) is not a word character
+# to Python's re, so \b falls inside most Hindi words.
 _NOT_ATTEMPTED = re.compile(
     r"\b(?:not attempted|unattempted|not answered|not found in the copy|not in the copy|"
-    r"no answer)\b", re.I)
+    r"no answer)\b"
+    # Whole-answer phrases only: "भावार्थ नहीं मिला" (a point missing) or
+    # "सही उत्तर नहीं लिखा" (a wrong answer) are cuts with their own remark.
+    r"|अनुत्तरित|(?<!सही )उत्तर\s+नहीं\s+मिला|(?<!सही )उत्तर\s+नहीं\s+दिया|लिखा\s+ही\s+नहीं|लिखी\s+ही\s+नहीं",
+    re.I)
 _FAULT = re.compile(
-    r"\b(?:missing|not|never|wrong(?:ly)?|lack(?:s|ing)?|absent|vague|incorrect|omitted)\b", re.I)
+    r"\b(?:missing|not|never|wrong(?:ly)?|lack(?:s|ing)?|absent|vague|incorrect|omitted)\b"
+    r"|नहीं|गलत|अधूर|छूट|अशुद्ध|अस्पष्ट|अनुपस्थित|उल्टा|उलटा|गायब", re.I)
+_DEVANAGARI = re.compile("[ऀ-ॿ]")
+
+
+def _mostly_devanagari(text: str) -> bool:
+    """More Devanagari than Latin letters (a Devanagari letter carries about
+    half an English letter's worth of a word, hence the 2x)."""
+    return len(_DEVANAGARI.findall(text)) > 2 * sum(1 for ch in text if ch.isascii() and ch.isalpha())
 # "5(a)(i)", "2(b)", "Question 3(b)(ii)".
 _PART = re.compile(r"\b(\d+\s*\([a-z]\)(?:\s*\([ivx]+\))?)", re.I)
 
@@ -61,6 +80,18 @@ def _num(v: Any) -> Optional[float]:
         return None if v is None else float(v)
     except (TypeError, ValueError):
         return None
+
+
+def reason_text(reason: str) -> str:
+    """A cut's reason as the teacher would say it, whole: without the "1 mark
+    deducted because" lead and the row ids, nothing else changed (the comments
+    panel has the room a margin remark does not)."""
+    s = " ".join(str(reason or "").split())
+    s = _RECHECK_LEAD.sub("", s)
+    s = _ROW_REF.sub("", s)
+    s = _MARKS_LEAD.sub("", s, count=1)
+    s = re.sub(r"\s+([,;:.])", r"\1", s).strip(" ,;:-–")
+    return (s[0].upper() + s[1:]) if s else ""
 
 
 def _short(reason: str) -> str:
@@ -133,6 +164,7 @@ def add_cut_remarks(verdict: dict[str, Any], valid_rows: Iterable[str]) -> int:
     seen: set[str] = set()
     missing_lost = 0.0
     missing_parts: list[str] = []
+    missing_reasons: list[str] = []
     for item in verdict.get("criteria_breakdown") or []:
         if not isinstance(item, dict):
             continue
@@ -144,6 +176,7 @@ def add_cut_remarks(verdict: dict[str, Any], valid_rows: Iterable[str]) -> int:
         reason = str(item.get("reason") or "")
         if _NOT_ATTEMPTED.search(reason) and marks <= 0:
             missing_lost += lost
+            missing_reasons.append(reason)
             for p in _PART.findall(reason):
                 p = re.sub(r"\s+", "", p)
                 if p not in missing_parts:
@@ -161,8 +194,21 @@ def add_cut_remarks(verdict: dict[str, Any], valid_rows: Iterable[str]) -> int:
 
     remarks = remarks[:MAX_REMARKS]
     if missing_lost > 0 and anchor:
-        what = ", ".join(missing_parts[:4]) if missing_parts else "Parts"
-        remarks.append((anchor, f"{what} not attempted (-{_fmt(missing_lost)})"))
+        if missing_reasons and all(_mostly_devanagari(reason_text(r)) for r in missing_reasons):
+            # A Hindi copy gets the grader's own Hindi words ("भावार्थ लिखा ही
+            # नहीं"), each different one once, not an English "Parts not attempted".
+            what = ", ".join(missing_parts[:4])
+            said_all: list[str] = []
+            for r in missing_reasons:
+                short = _short(r)
+                if short and short not in said_all:
+                    said_all.append(short)
+            said = "; ".join(said_all[:3]) or "उत्तर नहीं लिखा"
+            text = f"{what}: {said}" if what and what not in said else said
+        else:
+            what = ", ".join(missing_parts[:4]) if missing_parts else "Parts"
+            text = f"{what} not attempted"
+        remarks.append((anchor, f"{text} (-{_fmt(missing_lost)})"))
     if not remarks:
         return 0
     verdict["annotations"] = [a for a in anns

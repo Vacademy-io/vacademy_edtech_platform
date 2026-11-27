@@ -273,7 +273,10 @@ def _pen(page: Any) -> tuple[str, float, Optional[Any]]:
 
 def _text_width(text: str, fontname: str, size: float, font: Optional[Any]) -> float:
     """Width of drawn text. Measured from the pen alphabet, not the TTF, so
-    placement matches what actually gets inked."""
+    placement matches what actually gets inked. A line in another script
+    (Hindi) is set by the shaper (_pen_text), so it is measured as set."""
+    if _DEVANAGARI.search(text or ""):
+        return _deva_width(text, size, scale=_PEN_SHAPED_SCALE)
     from . import penfont
     return penfont.text_width(text, size)
 
@@ -447,10 +450,37 @@ def _deva_write(page: Any, box: Any, lines: list[str], size: float, colour,
         room = fitz.Rect(box.x0, box.y0, box.x1 + size * 0.6, box.y1 + size * 0.4)
         spare, _scale = page.insert_htmlbox(room, body, css=css,
                                             archive=fitz.Archive(_FONT_DIR), scale_low=0)
+        _SHAPED_WRITES[0] += 1
         return spare >= 0
     except Exception:
         logger.debug("Devanagari text could not be set", exc_info=True)
         return False
+
+
+# A pen remark in Hindi - a margin note or the reason beside a cut mark - is
+# set through the shaper at the pen's own size: the pen alphabet is Latin-only
+# and wrote such a remark as blanks ("0 deducted because (-0.5)" with the Hindi
+# reason missing). 1.0, not _DEVA_SCALE, so a line keeps to the pen's 1.3 line
+# pitch in the strip and the free band.
+_PEN_SHAPED_SCALE = 1.0
+# Shaped lines written on the copy being drawn (build_annotated_pdf resets it).
+_SHAPED_WRITES = [0]
+
+
+def _write_shaped_line(page: Any, origin: Any, text: str, size: float, colour) -> bool:
+    """Set one remark line whose baseline starts at `origin`, shaped. True when
+    it went down whole."""
+    import fitz
+
+    width = _deva_width(text, size, scale=_PEN_SHAPED_SCALE)
+    box = fitz.Rect(origin.x, origin.y - size * 1.05, origin.x + width + size * 0.5, origin.y + size * 0.55)
+    return _deva_write(page, box, [text], size, colour, scale=_PEN_SHAPED_SCALE)
+
+
+def _note_text(note: str) -> str:
+    """A pen remark as the pen will get it: a Hindi remark keeps its
+    Devanagari (_pen_text shapes it); any other remark is _latin1 as always."""
+    return _script_safe(note) if _DEVANAGARI.search(note or "") else _latin1(note)
 
 _NOTE_FONTSIZE = 8.5
 
@@ -913,6 +943,16 @@ def _pen_text(page: Any, origin: Any, text: str, size: float, colour, rng,
     """
     import fitz
     from . import penfont
+
+    if _DEVANAGARI.search(text or ""):
+        # Hindi: the pen alphabet has no such letters. Only Devanagari - any other
+        # character outside Latin-1 is blanked by _latin1 before it gets here.
+        if _write_shaped_line(page, origin, text, size, colour):
+            return
+        # The shaper refused it: its Latin part still goes down, never blanks.
+        text = _latin1(text).strip()
+        if not text:
+            return
 
     if _PEN[0] is not None and _pen_text_overlay(page, origin, text, size, max_x) is not None:
         return
@@ -3456,7 +3496,8 @@ def _place_note(page: Any, rect: Any, style: str, note: str,
     import fitz
 
     note_right = (sheet.x1 - 4.0) if sheet else (page.rect.width - _SCORE_GUTTER)
-    note = _pen_remark(_latin1(note).strip())
+    # A Hindi remark keeps its Devanagari (_latin1 turned it into blanks).
+    note = _pen_remark(_note_text(note).strip())
     if not note:
         return None
     # A pen note is short by nature, and a long one cannot fit an interline gap
@@ -5001,7 +5042,7 @@ def _write_unwritten_reasons(doc: Any, unwritten: list, order: dict, paper: dict
         return base if whole.is_empty else whole
 
     for verdict, note, page_no, rect in unwritten:
-        text = _teacher_voice(_latin1(note).strip())
+        text = _teacher_voice(_note_text(note).strip())   # Hindi kept (_pen_text shapes it)
         q_no = verdict.get("question_number")
         if q_no is not None:
             text = f"Q{q_no}: {text}"
@@ -5084,6 +5125,7 @@ def build_annotated_pdf(
     _INK_SPAN[0] = None
     _INK_MAP[0] = None
     _PLACED[0] = None
+    _SHAPED_WRITES[0] = 0
     _ROW_SLOPE[0] = 0.0
     _SCAN_W[0] = None
     _PEN[0] = _pen_for(pdf_bytes)
@@ -5531,7 +5573,7 @@ def build_annotated_pdf(
                 continue
             lost = float(verdict.get("marks_awarded") or 0) < float(verdict.get("max_marks") or 0)
             queue.setdefault(spot[0], []).append(
-                (spot[2], _pen_remark(_latin1(note).strip()), verdict, spot[1], lost, ann))
+                (spot[2], _pen_remark(_note_text(note).strip()), verdict, spot[1], lost, ann))
         for pno, items in sorted(queue.items()):
             pid = items[0][3]
             use_page(pid, pno)
@@ -5871,7 +5913,10 @@ def build_annotated_pdf(
     _SCAN_W[0] = None
     if append_summary:
         _append_summary(doc, verdicts, overall)
-    out = doc.tobytes(deflate=True, garbage=3)
+    # Every shaped line (Hindi) embeds the Kalam font again (insert_htmlbox):
+    # 81 copies on a 5-page Hindi copy, 20 MB. garbage=4 merges the identical
+    # streams; a copy with no shaped text is saved exactly as before.
+    out = doc.tobytes(deflate=True, garbage=4 if _SHAPED_WRITES[0] else 3)
     doc.close()
     logger.info(
         "copy-check annotator: drew %d annotation(s) over %d page(s), %d question score(s) placed",
