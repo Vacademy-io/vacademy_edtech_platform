@@ -71,6 +71,7 @@ public class SuperAdminCallService {
               WHEN r.diagnostics->'tts'->>'vendor' ILIKE 'lightning%pro%' THEN 'smallest_pro'
               WHEN r.diagnostics->'tts'->>'vendor' ILIKE 'lightning%' THEN 'smallest'
               WHEN r.diagnostics->'tts'->>'vendor' ILIKE '%bodhi%' THEN 'navana'
+              WHEN r.diagnostics->'tts'->>'vendor' ILIKE 'plivo%' THEN 'plivo'
               WHEN r.diagnostics->'tts'->>'vendor' ILIKE 'google%' OR r.diagnostics->'tts'->>'vendor' ILIKE 'chirp%' THEN 'google'
               WHEN r.diagnostics->'tts'->>'vendor' ILIKE 'edge%' THEN 'edge'
               WHEN r.diagnostics->'tts'->>'vendor' ILIKE '%mulberry%' OR r.diagnostics->'tts'->>'vendor' ILIKE 'rumik%' THEN 'rumik'

@@ -87,7 +87,10 @@ public class AgentApiService {
             TtsVoiceCatalog.MODEL_SARVAM, List.of("hindi", "hinglish", "english", "bengali", "gujarati", "kannada",
                     "malayalam", "marathi", "odia", "punjabi", "tamil", "telugu"),
             TtsVoiceCatalog.MODEL_SARVAM_V4, List.of("hindi", "hinglish", "english", "bengali", "gujarati", "kannada",
-                    "malayalam", "marathi", "odia", "punjabi", "tamil", "telugu"));
+                    "malayalam", "marathi", "odia", "punjabi", "tamil", "telugu"),
+            // One language per voice — pick a voice whose language matches the agent's.
+            TtsVoiceCatalog.MODEL_PLIVO, List.of("hindi", "hinglish", "english", "bengali", "gujarati", "kannada",
+                    "marathi", "tamil", "telugu"));
 
     /** send_rules travel snake_case on this API; the stored rules are camelCase. */
     static final ObjectMapper RULES = new ObjectMapper()
@@ -745,7 +748,8 @@ public class AgentApiService {
         if (engineSent || voiceSent || stored == null) {
             String voice = voiceSent ? f.text("voice") : (stored == null ? null : stored.getVoice());
             if (voice == null && stored == null) {
-                voice = TtsVoiceCatalog.defaultVoice(engine);
+                String byLanguage = TtsVoiceCatalog.voiceForLanguage(engine, dto.getLanguage(), null);
+                voice = byLanguage != null ? byLanguage : TtsVoiceCatalog.defaultVoice(engine);
             }
             if (voice == null || !TtsVoiceCatalog.isVoiceOf(engine, voice)) {
                 Map<String, Object> d = new LinkedHashMap<>();

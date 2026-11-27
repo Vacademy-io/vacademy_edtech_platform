@@ -843,6 +843,25 @@ async def preview(
             await _evict_tts_cache_async()
         return _serve_audio(path, "audio/wav")
 
+    if engine.startswith("plivo") or engine.startswith("koyal"):
+        # Plivo audition through its batch endpoint: the same voice id, language
+        # and pace clamp as the live stream, so the audition is what ships.
+        from .plivo_tts import plivo_credentials, plivo_tts_bytes
+        if not all(plivo_credentials()):
+            logger.warning("preview: plivo requested but PLIVO_TTS_AUTH_ID/TOKEN unset")
+            return Response(status_code=503)
+        key = hashlib.sha1(f"pv|plivo|{voice}|{pace}|{text}".encode("utf-8")).hexdigest()
+        path = os.path.join(s.tts_cache_dir, f"pv-{key}.wav")
+        if not os.path.exists(path):
+            raw = await plivo_tts_bytes(text, voice, pace, session=app.state.http_session,
+                                        sample_rate=24000)
+            if not raw:
+                return Response(status_code=502)
+            if not _cache_write(path, raw):
+                return Response(content=raw, media_type="audio/wav")
+            await _evict_tts_cache_async()
+        return _serve_audio(path, "audio/wav")
+
     is_rumik = engine.startswith("rumik") or engine.startswith("silk") \
         or engine.startswith("mulberry")
     if is_rumik:

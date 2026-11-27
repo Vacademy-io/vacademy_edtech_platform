@@ -191,6 +191,9 @@ public final class TelleoAgentDraftBuilder {
     /** A voice of the new-agent engine with the chosen gender, so the two always match. */
     public static String voiceFor(String language, String gender) {
         String model = TtsVoiceCatalog.NEW_AGENT_DEFAULT;
+        // Plivo voices each speak one language: take one in the agent's language.
+        String byLanguage = TtsVoiceCatalog.voiceForLanguage(model, language, gender);
+        if (byLanguage != null) return byLanguage;
         List<Map<String, String>> voices = TtsVoiceCatalog.forModel(model);
         String wantedPrefix = "english".equals(language) ? "en-IN" : "hi-IN";
         return voices.stream()

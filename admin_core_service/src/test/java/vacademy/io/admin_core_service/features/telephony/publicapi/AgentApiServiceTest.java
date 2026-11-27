@@ -184,8 +184,8 @@ class AgentApiServiceTest {
                 json("{\"name\":\"Kabir\",\"system_prompt\":\"Be brief.\",\"opening_line\":\"Hello!\"}"), "k1");
         assertTrue(out.created());
         AiAgent saved = store.get("a-new");
-        assertEquals("google", saved.getTtsModel());
-        assertEquals("hi-IN-Chirp3-HD-Achird", saved.getVoice());
+        assertEquals("plivo", saved.getTtsModel());
+        assertEquals("meera", saved.getVoice());
         assertEquals("OUTBOUND", saved.getDirection());
         assertTrue(saved.getEnabled());
         verify(mutator).update(eq(INST), any(), argThat(a -> "api:key-1".equals(a.userId())));

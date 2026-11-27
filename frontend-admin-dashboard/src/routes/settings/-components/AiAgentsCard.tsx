@@ -200,8 +200,8 @@ function blankAgent(instituteId: string): AiAgent {
         direction: 'OUTBOUND',
         language: 'hinglish',
         // See TtsVoiceCatalog.NEW_AGENT_DEFAULT.
-        ttsModel: 'rumik',
-        voice: 'ira',
+        ttsModel: 'plivo',
+        voice: 'meera',
         openingLine: '',
         systemPrompt: '',
         extractionQuestions: [],
@@ -264,7 +264,7 @@ export function AiAgentsCard({
     const allVoices = voicesQuery.data ?? FALLBACK_VOICES;
     // Engine decides the palette — the two share no voice names, so offering all of
     // them would let someone pick a voice that mutes every call.
-    const ttsModel = editing ? resolveTtsModel(editing) : 'google';
+    const ttsModel = editing ? resolveTtsModel(editing) : 'plivo';
     const voices = voicesForModel(allVoices, ttsModel);
 
     const stopPreview = () => {

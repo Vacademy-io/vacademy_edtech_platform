@@ -125,7 +125,7 @@ _TRAILING = "\"'’”)]》」»"
 #
 # rumik is listed here for now although we own its sender loop and could inject
 # in-order there; vendor_inflight is correct for it too, just more conservative.
-_ASYNC_ARRIVAL_ENGINES = frozenset({"sarvam", "sarvam_v4", "smallest", "rumik", "navana"})
+_ASYNC_ARRIVAL_ENGINES = frozenset({"sarvam", "sarvam_v4", "smallest", "rumik", "navana", "plivo"})
 
 
 def per_sentence_contexts(tts) -> bool:

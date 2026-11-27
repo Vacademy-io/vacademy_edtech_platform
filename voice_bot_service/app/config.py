@@ -341,6 +341,15 @@ class Settings:
     # each: providers.NAVANA_KEYS gives every connection the least-loaded key.
     navana_api_key: str = field(default_factory=lambda: _env("NAVANA_API_KEY") or _env("BODHI_API_KEY"))
     navana_tts_voice: str = field(default_factory=lambda: _env("NAVANA_TTS_VOICE", "bhavana"))
+    # Plivo TTS (koyal-v1) — the platform's own Plivo account, NOT an institute's
+    # carrier account (those live encrypted in admin_core, per institute). HTTP
+    # Basic with the account's Auth ID / Auth Token. Unset = an agent on "plivo"
+    # falls back to Sarvam, like every other engine with a missing key.
+    plivo_tts_auth_id: str = field(default_factory=lambda: _env("PLIVO_TTS_AUTH_ID"))
+    plivo_tts_auth_token: str = field(default_factory=lambda: _env("PLIVO_TTS_AUTH_TOKEN"))
+    plivo_tts_voice: str = field(default_factory=lambda: _env("PLIVO_TTS_VOICE", "meera"))
+    plivo_tts_ws_url: str = field(default_factory=lambda: _env("PLIVO_TTS_WS_URL", "wss://api.plivo.com"))
+    plivo_tts_http_url: str = field(default_factory=lambda: _env("PLIVO_TTS_HTTP_URL", "https://api.plivo.com"))
     deepgram_tts_voice: str = field(
         default_factory=lambda: _env("DEEPGRAM_TTS_VOICE", "aura-2-asteria-en"))
     # Aura-2 emits 24 kHz linear16; the transport resamples to 8 kHz for Plivo.

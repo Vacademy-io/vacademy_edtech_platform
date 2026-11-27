@@ -219,6 +219,7 @@ public class AiAgentSpeechWarmer {
         if (m.startsWith("rumik") || m.startsWith("silk")) return "rumik";
         if (m.startsWith("deepgram") || m.startsWith("aura")) return "deepgram";
         if (m.startsWith("navana") || m.startsWith("bodhi")) return "navana";
+        if (m.startsWith("plivo") || m.startsWith("koyal")) return "plivo";
         // v4 before the Sarvam fallback: its own engine and voices (see TtsVoiceCatalog).
         if (m.startsWith("sarvam_v4") || m.startsWith("bulbul:v4")) return "sarvam_v4";
         return "sarvam";

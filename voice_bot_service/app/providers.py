@@ -2139,6 +2139,9 @@ def default_engine_model(engine: str, voice: str = "") -> str:
         return "mulberry"
     if e == "deepgram":
         return voice or s.deepgram_tts_voice
+    if e == "plivo":
+        from .plivo_tts import PLIVO_TTS_MODEL
+        return PLIVO_TTS_MODEL
     return ""
 
 
@@ -2307,6 +2310,26 @@ def build_tts(sample_rate: int, voice: str | None = None, *, aiohttp_session=Non
                                    "navana", nv_voice)
             except Exception:
                 logger.exception("tts: navana unavailable — falling back to Sarvam")
+    if model.startswith("plivo") or model.startswith("koyal"):
+        # Plivo TTS (koyal-v1) over its realtime websocket. Every voice speaks ONE
+        # language (Meera: Hindi), sent with each request — see app/plivo_tts.py.
+        # pace is honoured within Plivo's 0.7-1.2.
+        from .plivo_tts import PLIVO_TTS_MODEL, plivo_tts_service_class
+        if not (s.plivo_tts_auth_id and s.plivo_tts_auth_token):
+            logger.error("tts: PLIVO_TTS_AUTH_ID / PLIVO_TTS_AUTH_TOKEN unset — "
+                         "falling back to Sarvam bulbul")
+        else:
+            try:
+                return _tag_engine(plivo_tts_service_class()(
+                    auth_id=s.plivo_tts_auth_id.strip(),
+                    auth_token=s.plivo_tts_auth_token.strip(),
+                    voice=(voice or s.plivo_tts_voice).strip() or s.plivo_tts_voice,
+                    sample_rate=sample_rate,
+                    pace=pace,
+                    url=s.plivo_tts_ws_url,
+                ), "plivo", PLIVO_TTS_MODEL)
+            except Exception:
+                logger.exception("tts: plivo unavailable — falling back to Sarvam")
     if model.startswith("rumik") or model.startswith("silk"):
         if not s.rumik_api_key:
             logger.error("tts: RUMIK_API_KEY unset — falling back to Sarvam bulbul")

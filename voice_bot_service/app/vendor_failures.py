@@ -66,7 +66,7 @@ def _external(host: str) -> bool:
 INTEGRATED_DOMAINS = (
     "openrouter.ai", "api.isoquant.ai", "api.anthropic.com", "api.openai.com",
     "generativelanguage.googleapis.com", "aiplatform.googleapis.com", "api.parallel.ai",
-    "api.sarvam.ai", "smallest.ai", "navana.ai", "rumik.ai", "deepgram.com",
+    "api.sarvam.ai", "smallest.ai", "navana.ai", "rumik.ai", "deepgram.com", "api.plivo.com",
     "texttospeech.googleapis.com", "speech.googleapis.com", "speech.platform.bing.com",
     "fal.run", "fal.ai", "fal.media", "runpod.ai", "runpod.io", "spatius.ai", "api.mathpix.com",
     "api.docconverter.pro", "cloudconvert.com", "google.serper.dev", "api.pexels.com", "pixabay.com",
@@ -170,6 +170,7 @@ _SERVICE_HOSTS = (
     ("sarvam", "api.sarvam.ai"),
     ("smallest", "waves-api.smallest.ai"),
     ("navana", "tts.navana.ai"), ("bodhi", "tts.navana.ai"),
+    ("plivo", "api.plivo.com"),
     ("rumik", "silk-api.rumik.ai"),
     ("deepgram", "api.deepgram.com"),
     ("vertex", "aiplatform.googleapis.com"),
@@ -181,7 +182,7 @@ _SERVICE_HOSTS = (
 )
 
 # A vendor's "family", so an HTTP failure and the pipeline error it causes count once.
-_FAMILIES = ("sarvam", "smallest", "navana", "rumik", "deepgram", "google", "bedrock", "openrouter",
+_FAMILIES = ("sarvam", "smallest", "navana", "plivo", "rumik", "deepgram", "google", "bedrock", "openrouter",
              "openai", "bing", "edge")
 _DEDUPE_SECONDS = 3.0
 _last_http: Dict[str, float] = {}

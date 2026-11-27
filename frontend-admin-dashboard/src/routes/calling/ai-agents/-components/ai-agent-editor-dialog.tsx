@@ -144,7 +144,7 @@ export function AiAgentEditorDialog({
     const allVoices = voicesQuery.data ?? FALLBACK_VOICES;
     // The engine decides the palette: the two share no voice names, so showing the
     // full list would let someone pick a voice that mutes every call.
-    const ttsModel = draft ? resolveTtsModel(draft) : 'google';
+    const ttsModel = draft ? resolveTtsModel(draft) : 'plivo';
     const voices = voicesForModel(allVoices, ttsModel);
 
     const bookingPagesQuery = useQuery({

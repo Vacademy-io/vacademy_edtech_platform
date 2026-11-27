@@ -9,6 +9,7 @@
  */
 
 export type TtsModelId =
+    | 'plivo'
     | 'google'
     | 'edge'
     | 'smallest'
@@ -26,6 +27,8 @@ export interface VoiceOption {
     model: string;
     /** Display name when the id is not readable on its own (Bulbul v4: "Shubh · Hinglish · ads"). */
     label?: string;
+    /** The one language this voice speaks, when the engine has one per voice (Plivo). */
+    language?: string;
 }
 
 export interface TtsModelMeta {
@@ -46,13 +49,21 @@ export interface TtsModelMeta {
 
 export const TTS_MODELS: TtsModelMeta[] = [
     {
+        id: 'plivo',
+        label: 'Plivo',
+        // Default for new agents since 2026-11-27 (founder's pick: Meera). Every
+        // Plivo voice speaks ONE language, so pick a voice in the agent's language.
+        note: 'Default for new agents. Each voice speaks one language — Meera is Hindi.',
+        defaultVoice: 'meera',
+    },
+    {
         id: 'google',
         label: 'Google Chirp3-HD',
         // The founder chose this by ear over every other engine, and it is also
         // cheaper per call-minute than Sarvam (measured on our own traffic:
         // 779 characters per call-minute, so $30/1M lands at ~Rs 2.06 against
         // Sarvam's Rs 2.34), with ~1,280 free minutes a month.
-        note: 'Recommended — clearest Hindi, and cheaper per minute than Sarvam.',
+        note: 'Clearest Hindi, and cheaper per minute than Sarvam.',
         defaultVoice: 'hi-IN-Chirp3-HD-Achird',
     },
     {
@@ -300,11 +311,71 @@ const NAVANA_FEMALE = [
     'zoya',
 ];
 
+// Plivo koyal-v1: [name, gender, language]. Genders are Plivo's own metadata; the
+// voice bot maps the names to Plivo voice ids (voice_bot_service/app/plivo_tts.py).
+const PLIVO_LANGUAGE_NAMES: Record<string, string> = {
+    hi: 'Hindi',
+    'en-IN': 'Indian English',
+    'en-US': 'US English',
+    'en-GB': 'British English',
+    'en-AU': 'Australian English',
+    bn: 'Bengali',
+    ta: 'Tamil',
+    te: 'Telugu',
+    mr: 'Marathi',
+    gu: 'Gujarati',
+    kn: 'Kannada',
+};
+const PLIVO: [string, string, string][] = [
+    ['meera', 'female', 'hi'],
+    ['ritika', 'female', 'hi'],
+    ['aman', 'male', 'hi'],
+    ['ishaan', 'male', 'hi'],
+    ['nisha', 'female', 'en-IN'],
+    ['prerna', 'female', 'en-IN'],
+    ['aarav', 'male', 'en-IN'],
+    ['karan', 'male', 'en-IN'],
+    ['allison', 'female', 'en-US'],
+    ['hailey', 'female', 'en-US'],
+    ['garrett', 'male', 'en-US'],
+    ['terrell', 'male', 'en-US'],
+    ['travis', 'male', 'en-US'],
+    ['eleanor', 'female', 'en-GB'],
+    ['poppy', 'female', 'en-GB'],
+    ['archie', 'male', 'en-GB'],
+    ['tahlia', 'female', 'en-AU'],
+    ['debasmita', 'female', 'bn'],
+    ['ishani', 'female', 'bn'],
+    ['subhankar', 'male', 'bn'],
+    ['nandhini', 'female', 'ta'],
+    ['kathir', 'male', 'ta'],
+    ['abhiram', 'male', 'te'],
+    ['pavan', 'male', 'te'],
+    ['sanika', 'female', 'mr'],
+    ['shravani', 'female', 'mr'],
+    ['akshay', 'male', 'mr'],
+    ['mandar', 'male', 'mr'],
+    ['hiren', 'male', 'gu'],
+    ['nirav', 'male', 'gu'],
+    ['bhavana', 'female', 'kn'],
+    ['spoorthi', 'female', 'kn'],
+    ['pradeep', 'male', 'kn'],
+];
+const plivoVoices = (): VoiceOption[] =>
+    PLIVO.map(([id, gender, language]) => ({
+        id,
+        gender,
+        model: 'plivo',
+        language,
+        label: `${id.charAt(0).toUpperCase()}${id.slice(1)} · ${PLIVO_LANGUAGE_NAMES[language] ?? language}`,
+    }));
+
 const tag = (ids: string[], gender: string, model: TtsModelId): VoiceOption[] =>
     ids.map((id) => ({ id, gender, model }));
 
 /** Offline fallback for when the catalog endpoint is unreachable. */
 export const FALLBACK_VOICES: VoiceOption[] = [
+    ...plivoVoices(),
     ...tag(GOOGLE_MALE, 'male', 'google'),
     ...tag(GOOGLE_FEMALE, 'female', 'google'),
     ...tag(EDGE_FEMALE, 'female', 'edge'),
@@ -338,6 +409,7 @@ export function normalizeTtsModel(raw?: string | null): TtsModelId | null {
     if (m === 'edge' || m.startsWith('edge') || m.startsWith('microsoft')) return 'edge';
     if (m === 'deepgram' || m.startsWith('deepgram') || m.startsWith('aura')) return 'deepgram';
     if (m === 'navana' || m.startsWith('navana') || m.startsWith('bodhi')) return 'navana';
+    if (m === 'plivo' || m.startsWith('plivo') || m.startsWith('koyal')) return 'plivo';
     // Pro FIRST — 'smallest_pro' also startsWith('smallest'), so the generic test
     // below would swallow it and offer standard voices for the pro model, which the
     // vendor rejects outright. Mirrors TtsVoiceCatalog.normalizeModel on the server.
@@ -378,12 +450,16 @@ export function resolveTtsModel(agent: { id?: string; ttsModel?: string }): TtsM
     // A SAVED agent without the field is a stale cache, and the backend and bot
     // both read a missing value as sarvam — so show that, not a cheerier guess.
     // An unsaved draft has no history to preserve and gets the default engine.
-    return normalizeTtsModel(agent.ttsModel) ?? (agent.id ? 'sarvam' : 'google');
+    return normalizeTtsModel(agent.ttsModel) ?? (agent.id ? 'sarvam' : 'plivo');
 }
 
 /** What the picker shows for a voice: its label when it has one, else the capitalised id. */
 export function voiceLabel(v: VoiceOption): string {
     if (v.label) return v.label;
+    if (v.language) {
+        const id = v.id.charAt(0).toUpperCase() + v.id.slice(1);
+        return `${id} · ${PLIVO_LANGUAGE_NAMES[v.language] ?? v.language}`;
+    }
     return v.id.charAt(0).toUpperCase() + v.id.slice(1);
 }
 

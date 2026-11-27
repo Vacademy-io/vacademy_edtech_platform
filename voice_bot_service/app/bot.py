@@ -5267,11 +5267,15 @@ _NAVANA_MALE = {"achu", "anirban", "basava", "basheer", "bijay", "chhotu", "elan
 _NAVANA_FEMALE = {"ammu", "ann", "arasi", "ayesha", "bhavana", "bimla", "champa", "falguni", "flavia", "harleen", "ipsita", "jayita", "jessy", "kayal", "mahadevi", "malar", "maria", "merin", "mukta", "nasrin", "nayeema", "netra", "nila", "ponni", "porkavi", "rukhiya", "rukhsana", "selvi", "shabnam", "sharon", "shikha", "vanaja", "yasmin", "zoya"}
 NAVANA_VOICES = _NAVANA_MALE | _NAVANA_FEMALE
 
+# Plivo (koyal-v1): one language per voice; genders are Plivo's own metadata.
+# The names here map to vendor ids in app/plivo_tts.py.
+from .plivo_tts import PLIVO_MALE as _PLIVO_MALE, PLIVO_VOICE_NAMES as PLIVO_VOICES  # noqa: E402
+
 # One place where every engine's male voices land, so _voice_gender works for
 # all four. Missing a name here means a male voice speaking feminine Hindi —
 # the #1 immersion complaint from live calls.
 _MALE_VOICES |= (_GOOGLE_MALE_VOICES | _SMALLEST_V31_MALE | _SMALLEST_PRO_MALE
-                 | _DEEPGRAM_MALE_VOICES | _NAVANA_MALE | SARVAM_V4_MALE)
+                 | _DEEPGRAM_MALE_VOICES | _NAVANA_MALE | SARVAM_V4_MALE | _PLIVO_MALE)
 
 
 NUDGE_ENGLISH = "Hello? Are you still there?"
@@ -5307,6 +5311,8 @@ def _engine_of(model: str) -> str:
         return "deepgram"
     if m.startswith(("navana", "bodhi")):
         return "navana"
+    if m.startswith(("plivo", "koyal")):
+        return "plivo"
     # Before the Sarvam fallback: v4 is its own engine (disjoint voices, see
     # app/sarvam_v4_voices.py) and must never be read as v3.
     if m.startswith(("sarvam_v4", "sarvam-v4", "bulbul:v4", "bulbul_v4", "bulbul-v4")):
@@ -5327,6 +5333,7 @@ _ENGINE_DEFAULT_VOICE = {
     "deepgram": "aura-2-asteria-en",
     "navana": "bhavana",
     "sarvam_v4": SARVAM_V4_DEFAULT_VOICE,
+    "plivo": "meera",
 }
 
 
@@ -5336,6 +5343,7 @@ def _engine_palette(engine: str):
             "smallest_pro": SMALLEST_PRO_VOICES,
             "deepgram": DEEPGRAM_VOICES,
             "navana": NAVANA_VOICES,
+            "plivo": PLIVO_VOICES,
             "sarvam_v4": SARVAM_V4_VOICES}.get(engine)
 
 
@@ -5390,7 +5398,8 @@ def _agent_voice(agent):
         return voice if low in palette else None
     # Sarvam has no enumerated palette here (dozens of speakers across bulbul
     # versions), so instead reject anything that clearly belongs elsewhere.
-    for other in (RUMIK_VOICES, GOOGLE_VOICES, SMALLEST_ANY_VOICES, DEEPGRAM_VOICES, SARVAM_V4_VOICES):
+    for other in (RUMIK_VOICES, GOOGLE_VOICES, SMALLEST_ANY_VOICES, DEEPGRAM_VOICES, SARVAM_V4_VOICES,
+                  PLIVO_VOICES):
         if low in other:
             return None
     return voice

@@ -86,10 +86,9 @@ export function blankAgent(instituteId: string): AiAgent {
         language: 'hinglish',
         // New agents get the default engine and ITS voice, stamped explicitly so
         // no default anywhere downstream has to carry the pricing decision.
-        // See TtsVoiceCatalog.NEW_AGENT_DEFAULT — Rumik is ~6x cheaper per
-        // character on the line that dominates call cost.
-        ttsModel: 'rumik',
-        voice: 'ira',
+        // See TtsVoiceCatalog.NEW_AGENT_DEFAULT — Plivo's Meera since 2026-11-27.
+        ttsModel: 'plivo',
+        voice: 'meera',
         openingLine: '',
         systemPrompt: '',
         extractionQuestions: [],

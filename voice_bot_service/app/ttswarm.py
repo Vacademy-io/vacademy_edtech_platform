@@ -81,6 +81,9 @@ async def synthesize(*, engine: str, model: str, voice: str, pace, temperature,
             from .providers import navana_language
             raw = await _main._navana_tts_wav(text, voice or s.navana_tts_voice,
                                               navana_language(language), None)
+        elif eng == "plivo":
+            from .plivo_tts import plivo_tts_bytes
+            raw = await plivo_tts_bytes(text, voice or s.plivo_tts_voice, pace)
         elif eng == "sarvam":
             raw = await _main._synth_audio(text, voice or s.sarvam_tts_voice,
                                            model or s.sarvam_tts_model, "hi-IN")
@@ -97,7 +100,7 @@ async def synthesize(*, engine: str, model: str, voice: str, pace, temperature,
         vendor_failures.record(
             {"rumik": "silk-api.rumik.ai", "navana": "tts.navana.ai", "sarvam": "api.sarvam.ai", "sarvam_v4": "api.sarvam.ai",
              "smallest": "waves-api.smallest.ai", "google": "texttospeech.googleapis.com",
-             "edge": "speech.platform.bing.com"}.get(eng, str(eng)),
+             "edge": "speech.platform.bing.com", "plivo": "api.plivo.com"}.get(eng, str(eng)),
             "TTS (cache warm)", reason=vendor_failures.clean_reason(f"{type(exc).__name__}: {exc}"))
         return None
     if not raw:

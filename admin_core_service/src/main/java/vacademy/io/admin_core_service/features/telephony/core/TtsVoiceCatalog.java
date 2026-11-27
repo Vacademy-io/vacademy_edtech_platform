@@ -121,6 +121,17 @@ public final class TtsVoiceCatalog {
     public static final String MODEL_SARVAM_V4 = "sarvam_v4";
 
     /**
+     * Plivo TTS, model {@code koyal-v1} (docs read 2026-11-27:
+     * plivo.com/docs/models/text-to-speech). 33 voices, and each speaks ONE
+     * language — Meera is Hindi only, Nisha/Prerna/Aarav/Karan are Indian English —
+     * so every voice below carries its {@code language}; the voice bot sends it with
+     * each request. Genders are Plivo's own metadata. The voice bot maps these names
+     * to Plivo's voice ids (voice_bot_service/app/plivo_tts.py, PLIVO_VOICES), which
+     * MUST list the same names and genders.
+     */
+    public static final String MODEL_PLIVO = "plivo";
+
+    /**
      * Engine stamped on a NEW agent. Existing agents are untouched — V421 pinned all
      * 17 of them to Sarvam, and they stay there until somebody changes them by hand.
      *
@@ -142,8 +153,12 @@ public final class TtsVoiceCatalog {
      *
      * <p>STILL NOT PROVEN: no Rumik call has ever been placed over a real phone line.
      * The first agent created after this ships is that call.
+     *
+     * <p>Plivo (Meera) from 2026-11-27, on the founder's instruction.
      */
-    public static final String NEW_AGENT_DEFAULT = MODEL_GOOGLE;
+    public static final String NEW_AGENT_DEFAULT = MODEL_PLIVO;
+    /** The voice a new agent gets: Plivo's Meera (founder's pick, 2026-11-27). */
+    public static final String NEW_AGENT_DEFAULT_VOICE = "meera";
 
     /**
      * Sarvam Bulbul v3 speakers (37, verified against docs.sarvam.ai 2026-07-16).
@@ -560,6 +575,42 @@ public final class TtsVoiceCatalog {
             v("ketaki", "female", MODEL_SMALLEST_PRO),
             v("meher", "female", MODEL_SMALLEST_PRO));
 
+    /** Plivo koyal-v1 voices — name, gender, the ONE language each speaks. */
+    private static final List<Map<String, String>> PLIVO_VOICES = List.of(
+            vp("meera", "female", "hi"),
+            vp("ritika", "female", "hi"),
+            vp("aman", "male", "hi"),
+            vp("ishaan", "male", "hi"),
+            vp("nisha", "female", "en-IN"),
+            vp("prerna", "female", "en-IN"),
+            vp("aarav", "male", "en-IN"),
+            vp("karan", "male", "en-IN"),
+            vp("allison", "female", "en-US"),
+            vp("hailey", "female", "en-US"),
+            vp("garrett", "male", "en-US"),
+            vp("terrell", "male", "en-US"),
+            vp("travis", "male", "en-US"),
+            vp("eleanor", "female", "en-GB"),
+            vp("poppy", "female", "en-GB"),
+            vp("archie", "male", "en-GB"),
+            vp("tahlia", "female", "en-AU"),
+            vp("debasmita", "female", "bn"),
+            vp("ishani", "female", "bn"),
+            vp("subhankar", "male", "bn"),
+            vp("nandhini", "female", "ta"),
+            vp("kathir", "male", "ta"),
+            vp("abhiram", "male", "te"),
+            vp("pavan", "male", "te"),
+            vp("sanika", "female", "mr"),
+            vp("shravani", "female", "mr"),
+            vp("akshay", "male", "mr"),
+            vp("mandar", "male", "mr"),
+            vp("hiren", "male", "gu"),
+            vp("nirav", "male", "gu"),
+            vp("bhavana", "female", "kn"),
+            vp("spoorthi", "female", "kn"),
+            vp("pradeep", "male", "kn"));
+
     /**
      * The ONE place every palette is registered. Ordered (LinkedHashMap) because
      * {@link #all()} flattens it and the picker shows voices in this order.
@@ -571,6 +622,7 @@ public final class TtsVoiceCatalog {
      */
     private static final Map<String, List<Map<String, String>>> BY_MODEL = new LinkedHashMap<>();
     static {
+        BY_MODEL.put(MODEL_PLIVO, PLIVO_VOICES);
         BY_MODEL.put(MODEL_GOOGLE, GOOGLE_VOICES);
         BY_MODEL.put(MODEL_EDGE, EDGE_VOICES);
         BY_MODEL.put(MODEL_SMALLEST, SMALLEST_VOICES);
@@ -610,6 +662,7 @@ public final class TtsVoiceCatalog {
     public static String defaultVoice(String model) {
         String m = normalizeModel(model);
         if (MODEL_RUMIK.equals(m)) return "ira";
+        if (MODEL_PLIVO.equals(m)) return NEW_AGENT_DEFAULT_VOICE;
         // The founder's pick, and male — agent personas here are predominantly male
         // and Hindi verb gender follows the voice.
         if (MODEL_EDGE.equals(m)) return "hi-IN-SwaraNeural";
@@ -687,6 +740,7 @@ public final class TtsVoiceCatalog {
             return MODEL_DEEPGRAM;
         }
         if (m.equals(MODEL_NAVANA) || m.startsWith("navana") || m.startsWith("bodhi")) return MODEL_NAVANA;
+        if (m.equals(MODEL_PLIVO) || m.startsWith("plivo") || m.startsWith("koyal")) return MODEL_PLIVO;
         // Pro FIRST: "smallest_pro" also startsWith("smallest"), so the generic test
         // below would swallow it and run pro voices on the standard model = silence.
         if (m.contains("pro") && (m.startsWith("smallest") || m.startsWith("lightning"))) {
@@ -701,8 +755,10 @@ public final class TtsVoiceCatalog {
     /** For the picker: engines with their label and voice list. */
     public static List<Map<String, Object>> models() {
         List<Map<String, Object>> out = new java.util.ArrayList<>();
+        out.add(model(MODEL_PLIVO, "Plivo",
+                "Default for new agents. Each voice speaks one language — Meera is Hindi."));
         out.add(model(MODEL_GOOGLE, "Google Chirp3-HD",
-                "Recommended — clearest Hindi; cheaper per minute than Sarvam"));
+                "Clearest Hindi; cheaper per minute than Sarvam"));
         out.add(model(MODEL_EDGE, "Microsoft Edge (free)",
                 "No vendor cost — billed at a cheaper per-minute rate. Slightly slower to start."));
         out.add(model(MODEL_SMALLEST, "Smallest.ai Lightning v3.1",
@@ -733,6 +789,42 @@ public final class TtsVoiceCatalog {
 
     private static Map<String, String> v(String id, String gender, String model) {
         return Map.of("id", id, "gender", gender, "model", model);
+    }
+
+    /** A Plivo voice: one language per voice, so it carries that language. */
+    private static Map<String, String> vp(String id, String gender, String language) {
+        return Map.of("id", id, "gender", gender, "model", MODEL_PLIVO, "language", language);
+    }
+
+    /**
+     * A voice of {@code model} for an agent speaking {@code agentLanguage} ("hindi",
+     * "hinglish", "english", "tamil"…) with {@code gender}, or null when the palette
+     * has no per-voice language (every engine but Plivo, whose voices each speak one
+     * language). Hindi and Hinglish take a Hindi voice; English an Indian-English one.
+     */
+    public static String voiceForLanguage(String model, String agentLanguage, String gender) {
+        String want = plivoLanguageOf(agentLanguage);
+        List<Map<String, String>> voices = forModel(model);
+        if (want == null || voices.stream().noneMatch(v -> v.containsKey("language"))) return null;
+        return voices.stream()
+                .filter(v -> want.equals(v.get("language")) && (gender == null || gender.equals(v.get("gender"))))
+                .map(v -> v.get("id")).findFirst()
+                .orElse(null);
+    }
+
+    private static String plivoLanguageOf(String agentLanguage) {
+        String l = agentLanguage == null ? "" : agentLanguage.trim().toLowerCase(Locale.ROOT);
+        if (l.isEmpty() || l.startsWith("hi")) return "hi";          // hindi, hinglish, hi-IN
+        if (l.startsWith("en")) return "en-IN";
+        return switch (l) {
+            case "bengali", "bn", "bn-in" -> "bn";
+            case "tamil", "ta", "ta-in" -> "ta";
+            case "telugu", "te", "te-in" -> "te";
+            case "marathi", "mr", "mr-in" -> "mr";
+            case "gujarati", "gu", "gu-in" -> "gu";
+            case "kannada", "kn", "kn-in" -> "kn";
+            default -> null;
+        };
     }
 
     /** A Bulbul v4 voice: its id is not readable on its own, so it carries a label. */
