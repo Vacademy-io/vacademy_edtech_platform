@@ -2927,6 +2927,7 @@ def _strip_note(page: Any, rect: Any, note: str, occupied: Optional[list],
         # lands straight on the next comment - five of them ended up
         # overlapping that way.
         clash = True
+        level = top
         for _ in range(24):
             hits = [o for o in (_PLACED[0] or []) if box.intersects(o)]
             if not hits:
@@ -2936,6 +2937,20 @@ def _strip_note(page: Any, rect: Any, note: str, occupied: Optional[list],
             if top + height > sheet.y1 - 6.0:
                 break
             box = fitz.Rect(left, top, left + widest * _ADVANCE_SLACK, top + height)
+        if clash:
+            # The strip below is full to the foot of the page (the last
+            # answer's remarks, under its mark): the nearest room above.
+            top = level
+            box = fitz.Rect(left, top, left + widest * _ADVANCE_SLACK, top + height)
+            for _ in range(24):
+                hits = [o for o in (_PLACED[0] or []) if box.intersects(o)]
+                if not hits:
+                    clash = False
+                    break
+                top = min(o.y0 for o in hits) - 5.0 - height
+                if top < sheet.y0 + 6.0:
+                    break
+                box = fitz.Rect(left, top, left + widest * _ADVANCE_SLACK, top + height)
         if clash:
             continue
         rng = _hand_rng("strip", note[:24], round(top, 1))
@@ -4587,6 +4602,45 @@ def _place_question_scores(doc: Any, placements: dict[int, tuple],
                 fitz.Rect(cx - radius * 1.4, cy - radius * 1.9, cx + radius * 1.4, cy + radius * 1.4))
 
 
+def _largest_image(page: Any) -> Optional[Any]:
+    """The box of the biggest picture on the page - the photographed sheet on a
+    scan, which stops above the scanner's own footer - or None."""
+    import fitz
+
+    try:
+        boxes = [fitz.Rect(i["bbox"]) & page.rect for i in page.get_image_info()]
+    except Exception:
+        return None
+    boxes = [b for b in boxes if not b.is_empty and b.get_area() >= page.rect.get_area() * 0.25]
+    return max(boxes, key=lambda b: b.get_area()) if boxes else None
+
+
+def _with_strip(rows: Optional[dict], strip_x0: float, sheet: Any) -> Optional[dict]:
+    """The page's paper mask with the marking strip counted as paper.
+
+    The mask is measured from the photograph, which knows nothing of the strip
+    added beside it - so every pen remark written there was refused as "off
+    paper", fell back to the vector pen, and that pen's own on-paper gate
+    dropped every stroke: the remark was placed and nothing was drawn."""
+    if not rows or rows.get("mask") is None or sheet is None:
+        return rows
+    import numpy as np
+
+    mask = rows["mask"].copy()
+    sx, sy = rows["sx"], rows["sy"]
+    c0 = max(0, min(rows["cols"], int(math.ceil(strip_x0 / sx))))
+    r0 = max(0, int(sheet.y0 / sy))
+    r1 = min(rows["rows"], int(sheet.y1 / sy) + 1)
+    if c0 >= rows["cols"] or r0 >= r1:
+        return rows
+    mask[r0:r1, c0:] = True
+    lo, hi = rows["lo"].copy(), rows["hi"].copy()
+    for r in range(r0, r1):
+        cols = np.nonzero(mask[r])[0]
+        lo[r], hi[r] = cols.min() * sx, (cols.max() + 1) * sx
+    return {**rows, "mask": mask, "lo": lo, "hi": hi}
+
+
 def _extend_paper(page: Any, scan: Any, strip: Any) -> None:
     """Carry the sheet's own paper and ruling across the marking strip.
 
@@ -4860,6 +4914,8 @@ def build_annotated_pdf(
 
     outside = (comment_placement or "").strip().upper() == COMMENTS_OUTSIDE
     content: dict[int, Any] = {}
+    # page_no -> where the scanned photograph sits (marking-strip copies only).
+    photo_box: dict[int, Any] = {}
     # page_no -> the blank panel the remarks are typed into (OUTSIDE only).
     panels: dict[int, Any] = {}
     # (page_no, verdict index) -> top of its first mark / its remarks, in order.
@@ -4903,6 +4959,9 @@ def build_annotated_pdf(
     elif margin_ratio > 0.0:
         widened = fitz.open()
         for i in range(doc.page_count):
+            shot = _largest_image(doc[i])
+            if shot is not None:
+                photo_box[i] = shot
             src = doc[i].rect
             page = widened.new_page(width=src.width * (1.0 + margin_ratio),
                                     height=src.height)
@@ -5046,8 +5105,13 @@ def build_annotated_pdf(
             # beside the "Scanned with ... Scanner" watermark, which is not
             # paper at any width.
             page_w = doc[page_no].rect.width
-            paper[pid] = fitz.Rect(paper[pid].x0, paper[pid].y0,
-                                   page_w - 6.0, paper[pid].y1)
+            # ...but as tall as the photograph: when no sheet is detected the
+            # paper is only the box round the writing, and a strip that stops
+            # where the writing does had no room below the last answer's mark
+            # for its remarks - they went back onto the student's lines.
+            band = photo_box.get(page_no) or photo or prect
+            paper[pid] = fitz.Rect(paper[pid].x0, min(paper[pid].y0, band.y0 + 2.0),
+                                   page_w - 6.0, max(paper[pid].y1, band.y1 - 2.0))
 
     if outside:
         # Every mark stays on the scan. The fallbacks that place a mark "near
@@ -5069,6 +5133,8 @@ def build_annotated_pdf(
         if 0 <= page_no < doc.page_count:
             ink_maps[pid] = _ink_map(doc[page_no], paper.get(pid))
             paper_rows[pid] = _paper_rows(doc[page_no], writing.get(pid))
+            if margin_ratio > 0.0 and page_no in content:
+                paper_rows[pid] = _with_strip(paper_rows[pid], content[page_no].x1, paper.get(pid))
 
     drawn = 0
     # question_number -> (page_no, y) of its lowest annotation, so the circled
