@@ -822,6 +822,7 @@ export const StudentsListSection = () => {
                                                 selectedTab={'ENDED,PENDING,LIVE'}
                                                 examType={'EXAM'}
                                                 isStudentList={true}
+                                                syncTabsWithHistory
                                             />
                                         </div>
                                     </SidebarProvider>

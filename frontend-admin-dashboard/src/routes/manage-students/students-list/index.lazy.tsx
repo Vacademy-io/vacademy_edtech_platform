@@ -5,6 +5,7 @@ import { StudentsListSection } from '@/routes/manage-students/students-list/-com
 import { Helmet } from 'react-helmet';
 import { getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
 import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
+import { isSideTabHistoryState } from '@/routes/manage-students/students-list/-components/students-list/student-side-view/use-side-view-tab-history';
 
 export const Route = createLazyFileRoute('/manage-students/students-list/')({
     component: StudentsList,
@@ -30,9 +31,13 @@ export function StudentsList() {
     useEffect(
         () =>
             router.history.subscribe(({ action, location }) => {
+                // Side-view tab entries (pushed, or popped to/from) share the
+                // page url — remounting there would close the open drawer.
                 pendingNav.current =
                     action.type !== 'REPLACE' &&
-                    location.pathname.startsWith('/manage-students/students-list');
+                    location.pathname.startsWith('/manage-students/students-list') &&
+                    !isSideTabHistoryState(location.state) &&
+                    !isSideTabHistoryState(router.state.location.state);
             }),
         [router]
     );

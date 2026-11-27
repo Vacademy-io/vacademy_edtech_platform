@@ -64,6 +64,7 @@ import {
 import { ProfileQuickContact } from './profile-ui';
 import { GroupedNavRail } from './grouped-nav-rail';
 import { SECTION_REGISTRY } from './nav-groups';
+import { useSideViewTabHistory } from './use-side-view-tab-history';
 
 // Resolve which tab should open when the side view first renders. Honours
 // the saved default tab when it's still visible, otherwise falls back to
@@ -128,6 +129,7 @@ export const StudentSidebar = ({
     packageSessionId,
     defaultLeadProfile,
     back,
+    syncTabsWithHistory,
 }: {
     selectedTab?: string;
     examType?: string;
@@ -142,12 +144,21 @@ export const StudentSidebar = ({
     defaultLeadProfile?: boolean;
     /** A way back to the panel this one was opened from (Submissions: "Back to submission"). */
     back?: { label: string; onClick: () => void };
+    /** Record tab switches in browser history so the back button steps back through tabs. */
+    syncTabsWithHistory?: boolean;
 }) => {
     const { t } = useTranslation('manageStudentsSideView');
-    const { state, setOpen, setOpenMobile } = useSidebar();
+    const { state, setOpen, setOpenMobile, isMobile, openMobile } = useSidebar();
     const { isCompact } = useCompactMode();
     const assistDockVisible = useAssistDockVisible();
     const [category, setCategory] = useState('overview');
+    // User tab clicks go through selectTab so back/forward walk the tabs.
+    const selectTab = useSideViewTabHistory({
+        enabled: !!syncTabsWithHistory,
+        isOpen: isMobile ? openMobile : state === 'expanded',
+        category,
+        setCategory,
+    });
     // Tab-bar scroll affordance: track whether more tabs sit off either edge so
     // we can show clickable chevrons — the plain fade wasn't a clear enough cue
     // that the tab row is horizontally scrollable.
@@ -626,7 +637,7 @@ export const StudentSidebar = ({
                                                         ? 'bg-primary-500 text-white shadow-sm'
                                                         : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-800'
                                                 )}
-                                                onClick={() => setCategory(tabId)}
+                                                onClick={() => selectTab(tabId)}
                                             >
                                                 {label}
                                             </button>
@@ -646,7 +657,7 @@ export const StudentSidebar = ({
                                                     ? 'bg-primary-500 text-white shadow-sm'
                                                     : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-800'
                                             )}
-                                            onClick={() => setCategory('subOrg')}
+                                            onClick={() => selectTab('subOrg')}
                                         >
                                             {getTerminology(OtherTerms.SubOrg, SystemTerms.SubOrg)}
                                         </button>
@@ -695,7 +706,7 @@ export const StudentSidebar = ({
                     {navStyle === 'grouped' && tabSettings && (
                         <GroupedNavRail
                             activeId={category}
-                            onSelect={(id) => setCategory(id)}
+                            onSelect={selectTab}
                             visibleIds={
                                 new Set(
                                     SECTION_REGISTRY.filter((s) => {
