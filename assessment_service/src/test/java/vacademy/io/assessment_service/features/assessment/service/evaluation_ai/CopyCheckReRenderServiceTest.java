@@ -105,7 +105,7 @@ class CopyCheckReRenderServiceTest {
         Map<String, Object> body = sent.getValue();
         assertThat(body).containsEntry("process_id", "p1").containsEntry("institute_id", "inst-1")
                 .containsEntry("pdf_url", "https://media/raw-1.pdf")
-                .containsEntry("pen_style", Map.of("ink", "BLUE", "size", "LARGE"))
+                .containsEntry("pen_style", Map.of("ink", "BLUE", "size", "LARGE", "font", "DAWNING_OF_A_NEW_DAY"))
                 .doesNotContainKey("comment_placement");
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> overrides = (List<Map<String, Object>>) body.get("overrides");

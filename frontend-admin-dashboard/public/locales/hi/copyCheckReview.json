@@ -13,12 +13,12 @@
             "PURPLE": "बैंगनी"
         },
         "fonts": {
-            "DAWNING_OF_A_NEW_DAY": "शिक्षक (डिफ़ॉल्ट)",
+            "DAWNING_OF_A_NEW_DAY": "शिक्षक",
             "COVERED_BY_YOUR_GRACE": "प्राकृतिक",
             "OVER_THE_RAINBOW": "घसीट",
             "CAVEAT": "तेज़",
             "CEDARVILLE_CURSIVE": "कर्सिव",
-            "KALAM": "क्लासिक (Kalam)",
+            "KALAM": "क्लासिक (Kalam, डिफ़ॉल्ट)",
             "PATRICK_HAND": "क्लासिक (Patrick Hand)",
             "ARCHITECTS_DAUGHTER": "क्लासिक (Architects Daughter)"
         },

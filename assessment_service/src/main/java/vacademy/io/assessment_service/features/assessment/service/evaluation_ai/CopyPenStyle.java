@@ -13,14 +13,15 @@ import java.util.regex.Pattern;
  * (see ai_service services/copy_check/pen_style.py, which accepts the same values).
  *
  * <p>{@link #clean} keeps only values ai_service understands and returns null when the
- * result is the usual pen (red, Dawning of a New Day, medium), so a request without a choice stays
- * exactly what it was.
+ * result is the usual pen, so a request without a choice stays exactly what it was. A
+ * saved handwriting is always sent by name, never dropped as "the default": ai_service
+ * owns which hand an unset pen gets (Kalam), and an institute that picked one keeps it
+ * when that default changes.
  */
 public final class CopyPenStyle {
 
     public static final Set<String> INKS = Set.of("RED", "BLUE", "GREEN", "BLACK", "PURPLE");
-    public static final String DEFAULT_FONT = "DAWNING_OF_A_NEW_DAY";
-    public static final Set<String> FONTS = Set.of(DEFAULT_FONT, "COVERED_BY_YOUR_GRACE", "OVER_THE_RAINBOW", "CAVEAT",
+    public static final Set<String> FONTS = Set.of("DAWNING_OF_A_NEW_DAY", "COVERED_BY_YOUR_GRACE", "OVER_THE_RAINBOW", "CAVEAT",
             "CEDARVILLE_CURSIVE",
             "KALAM", "PATRICK_HAND", "ARCHITECTS_DAUGHTER");
     private static final int NEUTRAL_DARKNESS = 50;
@@ -45,7 +46,7 @@ public final class CopyPenStyle {
             }
         }
         String font = upper(map.get("font"));
-        if (font != null && FONTS.contains(font) && !DEFAULT_FONT.equals(font)) {
+        if (font != null && FONTS.contains(font)) {
             out.put("font", font);
         }
         String size = upper(map.get("size"));

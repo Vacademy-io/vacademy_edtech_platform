@@ -13,11 +13,18 @@ class CopyPenStyleTest {
     void pen_style_keeps_only_known_values_and_drops_the_usual_pen() {
         assertThat(CopyPenStyle.clean(null)).isNull();
         assertThat(CopyPenStyle.clean("BLUE")).isNull();
-        assertThat(CopyPenStyle.clean(Map.of("ink", "RED", "font", "DAWNING_OF_A_NEW_DAY", "size", "MEDIUM",
-                "darkness", 50))).isNull();
+        assertThat(CopyPenStyle.clean(Map.of("ink", "RED", "size", "MEDIUM", "darkness", 50))).isNull();
         assertThat(CopyPenStyle.clean(Map.of("ink", "pink", "font", "Comic", "size", "HUGE"))).isNull();
         assertThat(CopyPenStyle.clean(Map.of("ink", "1f3fa0", "font", "patrick_hand", "size", "small")))
                 .isEqualTo(Map.of("ink", "#1f3fa0", "font", "PATRICK_HAND", "size", "SMALL"));
+    }
+
+    @Test
+    void a_saved_hand_is_always_sent_by_name_so_a_new_default_never_overrides_it() {
+        assertThat(CopyPenStyle.clean(Map.of("ink", "RED", "font", "DAWNING_OF_A_NEW_DAY", "size", "MEDIUM",
+                "darkness", 50))).isEqualTo(Map.of("font", "DAWNING_OF_A_NEW_DAY"));
+        assertThat(CopyPenStyle.clean(Map.of("ink", "RED", "font", "kalam", "size", "MEDIUM", "darkness", 50)))
+                .isEqualTo(Map.of("font", "KALAM"));
     }
 
     @Test

@@ -45,7 +45,7 @@ def test_joined_hand_is_one_steady_pen_line():
     import numpy as np
 
     page = Image.new("RGBA", (1600, 400), (255, 255, 255, 0))
-    pen = hand_render.Pen(4)
+    pen = hand_render.Pen(4, font="DawningofaNewDay.ttf")
     assert pen.joined
     px = pen.fitted_px(70)
     pen.text(page, (80, 90), "long answer needs more", px)
@@ -74,7 +74,7 @@ def test_joined_hand_starts_a_remark_in_small_letters_only():
     try:
         for remark in ("Long answer", "HCF wrong", "Q4: missing"):
             page = Image.new("RGBA", (1400, 300), (255, 255, 255, 0))
-            hand_render.Pen(2).text(page, (60, 60), remark, 90)
+            hand_render.Pen(2, font="DawningofaNewDay.ttf").text(page, (60, 60), remark, 90)
     finally:
         hand_render.ImageDraw.Draw = original
     assert drawn == ["long", "answer", "HCF", "wrong", "Q4:", "missing"]
@@ -82,12 +82,14 @@ def test_joined_hand_starts_a_remark_in_small_letters_only():
 
 def test_classic_faces_keep_the_old_setter():
     assert not hand_render.Pen(1, font="Kalam.ttf").natural
-    assert hand_render.Pen(1).natural
+    assert not hand_render.Pen(1).natural
+    assert hand_render.Pen(1, font="DawningofaNewDay.ttf").natural
 
 
-def test_kalam_stays_a_choice_and_the_default_is_natural():
-    assert pen_style.parse({"font": "KALAM"}).font_file == "Kalam.ttf"
-    assert pen_style.parse({"font": "DAWNING_OF_A_NEW_DAY"}) is None
+def test_kalam_is_the_default_and_dawning_stays_a_choice():
+    assert hand_render.DEFAULT_FONT == "Kalam.ttf"
+    assert pen_style.parse({"font": "KALAM"}) is None
+    assert pen_style.parse({"font": "DAWNING_OF_A_NEW_DAY"}).font_file == "DawningofaNewDay.ttf"
 
 
 def test_darkness_shades_the_ink_within_readable_limits():
@@ -198,7 +200,7 @@ def test_a_real_copy_is_drawn_in_the_pen_that_was_set():
         return int(((page[..., 0] > 150) & (page[..., 1] < 110) & (page[..., 2] < 110)).sum())
 
     # Handwriting and darkness each change what lands on the page.
-    assert not np.array_equal(_rendered_ink({"font": "KALAM"}), usual)
+    assert not np.array_equal(_rendered_ink({"font": "DAWNING_OF_A_NEW_DAY"}), usual)
     assert not np.array_equal(_rendered_ink({"darkness": 90}), usual)
     assert ink_amount(None) > 0
 
