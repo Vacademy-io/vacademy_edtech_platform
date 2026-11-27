@@ -2892,6 +2892,46 @@ def _write_in_free_band(page: Any, rect: Any, note: str, occupied: Optional[list
     return placed_box
 
 
+def _strip_block(note: str, size: float, width: float, fontname: str,
+                 measure_font: Optional[Any]) -> Optional[dict]:
+    """A remark wrapped for the marking strip at pen size `size`: its lines and
+    the height they take, as _draw_strip_block will write them."""
+    words, lines, cur = note.split(), [], ""
+    for w in words:
+        trial = (cur + " " + w).strip()
+        if _text_width(trial, fontname, size, measure_font) * _ADVANCE_SLACK <= width:
+            cur = trial
+        else:
+            if cur:
+                lines.append(cur)
+            cur = w
+    if cur:
+        lines.append(cur)
+    if not lines:
+        return None
+    climb = _hand_rng("climb", note[:24]).uniform(8.0, 14.0)
+    widest = max(_text_width(l, fontname, size, measure_font) for l in lines)
+    lift = min(widest * math.tan(math.radians(climb)), size * 0.6)
+    gap = size * 1.3 + lift
+    return {"note": note, "lines": lines, "size": size, "widest": widest, "lift": lift,
+            "gap": gap, "height": gap * len(lines) + 4.0,
+            "tilt": _hand_rng("tilt", note[:24]).uniform(0.0, 4.0)}
+
+
+def _draw_strip_block(page: Any, block: dict, left: float, top: float, right: float) -> Any:
+    """Write a _strip_block with its top at `top`; returns the box it covers."""
+    import fitz
+
+    size, gap, widest = block["size"], block["gap"], block["widest"]
+    rng = _hand_rng("strip", block["note"][:24], round(top, 1))
+    for i, line in enumerate(block["lines"]):
+        _pen_text(page, fitz.Point(left + rng.uniform(-0.5, 0.5), top + size * 0.95 + gap * i),
+                  line, size, _ps.colour(_NOTE_TEXT), rng, max_x=right,
+                  rise=math.degrees(math.atan(block["lift"] / max(widest, 1.0))),
+                  tilt=block["tilt"])
+    return fitz.Rect(left, top, left + widest * _ADVANCE_SLACK, top + block["height"])
+
+
 def _strip_note(page: Any, rect: Any, note: str, occupied: Optional[list],
                 sheet: Any, strip_x: float, fontname: str, base_size: float,
                 measure_font: Optional[Any]):
@@ -2903,36 +2943,20 @@ def _strip_note(page: Any, rect: Any, note: str, occupied: Optional[list],
     if right - left < 40.0:
         return None
     scale = _pen_scale(_handwriting_fontfile())
-    climb = _hand_rng("climb", note[:24]).uniform(8.0, 14.0)
-    tilt = _hand_rng("tilt", note[:24]).uniform(0.0, 4.0)
     for attempt in range(6):
         size = max(10.0 * scale, min(base_size, (15.0 - attempt) * scale))
-        words, lines, cur = note.split(), [], ""
-        for w in words:
-            trial = (cur + " " + w).strip()
-            if _text_width(trial, fontname, size, measure_font) * _ADVANCE_SLACK <= right - left:
-                cur = trial
-            else:
-                if cur:
-                    lines.append(cur)
-                cur = w
-        if cur:
-            lines.append(cur)
-        if not lines:
+        block = _strip_block(note, size, right - left, fontname, measure_font)
+        if block is None:
             return None
-        widest = max(_text_width(l, fontname, size, measure_font) for l in lines)
-        lift = min(widest * math.tan(math.radians(climb)), size * 0.6)
-        gap = size * 1.3 + lift
-        height = gap * len(lines) + 4.0
+        height, width = block["height"], block["widest"] * _ADVANCE_SLACK
         top = max(sheet.y0 + 6.0, min(rect.y0 - size * 0.3,
                                       sheet.y1 - height - 6.0))
-        box = fitz.Rect(left, top, left + widest * _ADVANCE_SLACK, top + height)
+        box = fitz.Rect(left, top, left + width, top + height)
         # Slide down until genuinely clear. Sliding once past the FIRST
         # collision is not enough: the strip fills top-down, so one step often
         # lands straight on the next comment - five of them ended up
         # overlapping that way.
         clash = True
-        level = top
         for _ in range(24):
             hits = [o for o in (_PLACED[0] or []) if box.intersects(o)]
             if not hits:
@@ -2941,33 +2965,110 @@ def _strip_note(page: Any, rect: Any, note: str, occupied: Optional[list],
             top = max(o.y1 for o in hits) + 5.0
             if top + height > sheet.y1 - 6.0:
                 break
-            box = fitz.Rect(left, top, left + widest * _ADVANCE_SLACK, top + height)
-        if clash:
-            # The strip below is full to the foot of the page (the last
-            # answer's remarks, under its mark): the nearest room above.
-            top = level
-            box = fitz.Rect(left, top, left + widest * _ADVANCE_SLACK, top + height)
-            for _ in range(24):
-                hits = [o for o in (_PLACED[0] or []) if box.intersects(o)]
-                if not hits:
-                    clash = False
-                    break
-                top = min(o.y0 for o in hits) - 5.0 - height
-                if top < sheet.y0 + 6.0:
-                    break
-                box = fitz.Rect(left, top, left + widest * _ADVANCE_SLACK, top + height)
+            box = fitz.Rect(left, top, left + width, top + height)
         if clash:
             continue
-        rng = _hand_rng("strip", note[:24], round(top, 1))
-        for i, line in enumerate(lines):
-            _pen_text(page, fitz.Point(left + rng.uniform(-0.5, 0.5),
-                                       top + size * 0.95 + gap * i),
-                      line, size, _ps.colour(_NOTE_TEXT), rng, max_x=right,
-                      rise=math.degrees(math.atan(lift / max(widest, 1.0))),
-                      tilt=tilt)
         logger.debug("pen note written in the marking strip")
-        return box
+        return _draw_strip_block(page, block, left, top, right)
     return None
+
+
+# Space between two remarks in the marking strip, in points.
+_STRIP_GAP = 5.0
+
+
+def _lay_out_strip(page: Any, items: list, sheet: Any, strip_x: float,
+                   obstacles: list) -> list:
+    """Write a page's remarks down its marking strip, in the order of the lines
+    they are about, each level with its line or as near it as the others allow.
+
+    Written one at a time, a remark that found the strip below its line full
+    went above the remarks already there - on a real copy the remark for
+    2(a)(ii) ended up beside 2(a)(i) and the one for 2(a)(i) beside 2(a)(ii),
+    and a 3(b) remark climbed to 3(a). Laid out together the order can never
+    cross: each goes at its line or just under the one before; a column that
+    runs off the foot of the page is pushed up as a block, and written smaller
+    when even that does not fit. `items` are (rect of the line, remark);
+    `obstacles` what is already in the strip (the circled marks, ticks).
+    Returns, per item, the box it was written in or None when there was no
+    room even at the smallest pen.
+    """
+    import fitz
+
+    left = strip_x + 6.0
+    right = sheet.x1 - 6.0
+    if not items or right - left < 40.0:
+        return [None] * len(items)
+    fontname, base_size, measure_font = _pen(page)
+    scale = _pen_scale(_handwriting_fontfile())
+    order = sorted(range(len(items)), key=lambda i: (items[i][0].y0, items[i][0].x0))
+    y_min, y_max = sheet.y0 + 6.0, sheet.y1 - 6.0
+
+    def hits(top: float, block: dict) -> list:
+        box = fitz.Rect(left, top, left + block["widest"] * _ADVANCE_SLACK, top + block["height"])
+        return [o for o in obstacles if box.intersects(o)]
+
+    def place(blocks: list) -> Optional[list]:
+        tops: list = []
+        floor = y_min
+        for i, block in zip(order, blocks):
+            top = max(items[i][0].y0 - block["size"] * 0.3, floor)
+            for _ in range(len(obstacles) + 1):
+                hit = hits(top, block)
+                if not hit:
+                    break
+                top = max(o.y1 for o in hit) + _STRIP_GAP
+            tops.append(top)
+            floor = top + block["height"] + _STRIP_GAP
+        if tops and tops[-1] + blocks[-1]["height"] > y_max:
+            # Off the foot of the page: push up from the bottom, keeping the
+            # order, until the column fits.
+            ceiling = y_max
+            for k in range(len(blocks) - 1, -1, -1):
+                block = blocks[k]
+                top = min(tops[k], ceiling - block["height"])
+                for _ in range(len(obstacles) + 1):
+                    hit = hits(top, block)
+                    if not hit:
+                        break
+                    top = min(o.y0 for o in hit) - _STRIP_GAP - block["height"]
+                tops[k] = top
+                ceiling = top - _STRIP_GAP
+        if not tops or tops[0] < y_min or any(hits(t, b) for t, b in zip(tops, blocks)):
+            return None
+        return tops
+
+    size = min(base_size, 15.0 * scale)
+    smallest = 10.0 * scale
+    while True:
+        blocks = [_strip_block(items[i][1], size, right - left, fontname, measure_font)
+                  for i in order]
+        if any(b is None for b in blocks):
+            return [None] * len(items)
+        tops = place(blocks)
+        if tops is not None or size <= smallest:
+            break
+        size = max(smallest, size - 1.0 * scale)
+    out: list = [None] * len(items)
+    if tops is None:
+        # Not even the smallest pen holds the whole column: write the ones
+        # that fit, in order, and leave the rest to _write_unwritten_reasons.
+        floor = y_min
+        for i, block in zip(order, blocks):
+            top = max(items[i][0].y0 - block["size"] * 0.3, floor)
+            for _ in range(len(obstacles) + 1):
+                hit = hits(top, block)
+                if not hit:
+                    break
+                top = max(o.y1 for o in hit) + _STRIP_GAP
+            if top + block["height"] > y_max or hits(top, block):
+                continue
+            out[i] = _draw_strip_block(page, block, left, top, right)
+            floor = top + block["height"] + _STRIP_GAP
+        return out
+    for i, block, top in zip(order, blocks, tops):
+        out[i] = _draw_strip_block(page, block, left, top, right)
+    return out
 
 
 def _pen_text_width(text: str, size: float) -> float:
@@ -4640,6 +4741,25 @@ def _place_question_scores(doc: Any, placements: dict[int, tuple],
     return circled
 
 
+def _row_rect(ann: dict, targets: dict, order: dict, dims: dict, content: dict,
+              page_count: int) -> Optional[tuple]:
+    """(page_no, page_id, rect in points) of the row an annotation points at,
+    as build_annotated_pdf's loop places it; None when it is not on the copy."""
+    import fitz
+
+    target = targets.get(ann.get("target"))
+    if not target:
+        return None
+    page_id = ann.get("page_id") or target["page_id"]
+    page_no, wh = order.get(page_id), dims.get(page_id)
+    if page_no is None or not 0 <= page_no < page_count or not wh or page_no not in content:
+        return None
+    crect = content[page_no]
+    x, y, w, h = (float(v) for v in target["box"])
+    return page_no, page_id, fitz.Rect(x * crect.width / wh[0], y * crect.height / wh[1],
+                                       (x + w) * crect.width / wh[0], (y + h) * crect.height / wh[1])
+
+
 def _answer_ends(ordered: list, targets: dict, order: dict, dims: dict, content: dict,
                  page_count: int) -> dict[int, tuple[float, float, float]]:
     """question_number -> (page_no, y, x) of the lowest row its marking points
@@ -4650,17 +4770,10 @@ def _answer_ends(ordered: list, targets: dict, order: dict, dims: dict, content:
     ends: dict[int, tuple[float, float, float]] = {}
     for verdict, ann in ordered:
         q_no = verdict.get("question_number")
-        target = targets.get(ann.get("target"))
-        if q_no is None or not target or (ann.get("style") or "") == "total":
+        spot = _row_rect(ann, targets, order, dims, content, page_count)
+        if q_no is None or spot is None or (ann.get("style") or "") == "total":
             continue
-        page_id = ann.get("page_id") or target["page_id"]
-        page_no, wh = order.get(page_id), dims.get(page_id)
-        if page_no is None or not 0 <= page_no < page_count or not wh or page_no not in content:
-            continue
-        crect = content[page_no]
-        x, y, w, h = (float(v) for v in target["box"])
-        rect = fitz.Rect(x * crect.width / wh[0], y * crect.height / wh[1],
-                         (x + w) * crect.width / wh[0], (y + h) * crect.height / wh[1])
+        page_no, _pid, rect = spot
         prev = ends.get(q_no)
         if prev is None or (page_no, rect.y1) > (prev[0], prev[1]):
             ends[q_no] = (page_no, rect.y1, rect.x1)
@@ -5391,6 +5504,48 @@ def build_annotated_pdf(
             verdicts, paper, order, occupied, drawn_rules, written=set(scores_written),
             rings=score_rings, strips=strips, masks=paper_rows)
 
+    def use_page(pid: str, pno: int) -> None:
+        _CLIP[0] = paper.get(pid)
+        _SHADE[0] = shade_by_page.get(pid)
+        _INK_MAP[0] = ink_maps.get(pid)
+        _PAPER[0] = paper_rows.get(pid)
+        _PLACED[0] = occupied.setdefault(pid + ":notes", [])
+        _LINE_H[0] = line_h_by_page.get(pid)
+        _INK_SPAN[0] = None
+        _ROW_SLOPE[0] = 0.0
+        _MARGIN_X[0] = (content.get(pno, doc[pno].rect).x1
+                        if margin_ratio > 0.0 else None)
+
+    # Strip copies: each page's remarks next, all together and before any tick
+    # (_lay_out_strip), so they run down the strip in the order of the lines
+    # they are about and the ticks find room round them. The loop below draws
+    # the marks of these annotations and leaves their remarks alone.
+    noted: set = set()
+    if strips and not outside:
+        queue: dict[int, list] = {}
+        for verdict, ann in ordered:
+            style = (ann.get("style") or "margin_note").strip().lower()
+            note = (ann.get("text") or "").strip()
+            spot = _row_rect(ann, targets, order, dims, content, doc.page_count)
+            if style not in _REASON_STYLES or not note or spot is None or paper.get(spot[1]) is None:
+                continue
+            lost = float(verdict.get("marks_awarded") or 0) < float(verdict.get("max_marks") or 0)
+            queue.setdefault(spot[0], []).append(
+                (spot[2], _pen_remark(_latin1(note).strip()), verdict, spot[1], lost, ann))
+        for pno, items in sorted(queue.items()):
+            pid = items[0][3]
+            use_page(pid, pno)
+            boxes = _lay_out_strip(doc[pno], [(it[0], it[1]) for it in items], paper[pid],
+                                   strips[pno], list(occupied.get(pid + ":notes", [])))
+            for (rect, note, verdict, _pid, lost, ann), box in zip(items, boxes):
+                noted.add(id(ann))
+                if box is not None:
+                    occupied.setdefault(pid + ":notes", []).append(box)
+                    occupied.setdefault(pid, []).append(box)
+                    drawn += 1
+                elif lost:
+                    unwritten.append((verdict, note, pno, rect))
+
     for verdict, ann in ordered:
         q_no = verdict.get("question_number")
         if True:
@@ -5552,24 +5707,20 @@ def build_annotated_pdf(
                 continue
 
             placed = None
+            queued = False
             if note:
                 page_boxes = occupied.setdefault(page_id, [])
                 sheet_r = paper.get(page_id)
-                if (_MARGIN_X[0] is not None and sheet_r is not None
-                        and style in _REASON_STYLES):
-                    # With a marking strip, every remark goes there, level with
-                    # the line it is about: one column the student reads down,
-                    # instead of remarks squeezed into whatever gap a line left.
-                    fontname, base_size, measure_font = _pen(page)
-                    placed = _strip_note(page, rect, _pen_remark(_latin1(note).strip()),
-                                         page_boxes, sheet_r, _MARGIN_X[0],
-                                         fontname, base_size, measure_font)
+                if id(ann) in noted:
+                    # Already in the marking strip (or handed on to
+                    # _write_unwritten_reasons) by the pass before this loop.
+                    queued = True
                 # The guide's placement first; the free-space search only when
                 # that spot is off the paper or on the student's writing.
-                if placed is None:
+                if placed is None and not queued:
                     placed = _place_by_contract(page, rect, style, note,
                                                 ann.get("position"), sheet_r, page_boxes)
-                if placed is None and style != "score":
+                if placed is None and not queued and style != "score":
                     # The guide's spot is taken or on the writing. The gaps
                     # under this row and the next two still read as "about
                     # this answer", and so does the right margin; the
@@ -5623,7 +5774,7 @@ def build_annotated_pdf(
                             following.append(fitz.Rect(bx[0] * sx, bx[1] * sy,
                                                        (bx[0] + bx[2]) * sx, (bx[1] + bx[3]) * sy))
                     placed = _place_score_right(page, rect, note, sheet_r, _PLACED[0], following)
-                if placed is None:
+                if placed is None and not queued:
                     # A deduction's reason is never shortened here: one that
                     # cannot be written whole beside its answer goes to
                     # _write_unwritten_reasons, which finds room for all of it.
@@ -5632,10 +5783,10 @@ def build_annotated_pdf(
 
             _LAST_TICK_BOX[0] = None
             _draw_mark(page, rect, style, paper.get(page_id),
-                       has_note=placed is not None)
+                       has_note=placed is not None or queued)
             if style == "tick" and _LAST_TICK_BOX[0] is not None:
                 tick_log.append((verdict, page_id, page_no, _LAST_TICK_BOX[0]))
-            if note and placed is None and is_reason:
+            if note and placed is None and not queued and is_reason:
                 unwritten.append((verdict, note, page_no, rect))
             if style in ("underline", "strike", "strikethrough", "circle", "tick", "cross"):
                 drawn_rules.setdefault(page_id, []).append(
@@ -5657,7 +5808,8 @@ def build_annotated_pdf(
             # A score or remark that found no room put no ink on the page, so
             # it says nothing about where the answer ends: its row may be the
             # very spot that refused it.
-            if q_no is not None and not (style in ("score", "margin_note") and placed is None):
+            if q_no is not None and not (style in ("score", "margin_note")
+                                         and placed is None and not queued):
                 prev = placements.get(q_no)
                 if prev is None or (page_no, rect.y1) > (prev[0], prev[1]):
                     # keep the END of the line too: the mark belongs beside where
@@ -5669,18 +5821,6 @@ def build_annotated_pdf(
         _place_question_scores(doc, placements, verdicts, paper, order, occupied, drawn_rules,
                                written=scores_written, rings=score_rings, strips=strips,
                                masks=paper_rows)
-
-    def use_page(pid: str, pno: int) -> None:
-        _CLIP[0] = paper.get(pid)
-        _SHADE[0] = shade_by_page.get(pid)
-        _INK_MAP[0] = ink_maps.get(pid)
-        _PAPER[0] = paper_rows.get(pid)
-        _PLACED[0] = occupied.setdefault(pid + ":notes", [])
-        _LINE_H[0] = line_h_by_page.get(pid)
-        _INK_SPAN[0] = None
-        _ROW_SLOPE[0] = 0.0
-        _MARGIN_X[0] = (content.get(pno, doc[pno].rect).x1
-                        if margin_ratio > 0.0 else None)
 
     if unwritten:
         drawn += _write_unwritten_reasons(doc, unwritten, order, paper, content,
