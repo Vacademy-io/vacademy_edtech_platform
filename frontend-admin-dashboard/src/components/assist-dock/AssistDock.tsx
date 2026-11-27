@@ -2,17 +2,15 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouterState } from '@tanstack/react-router';
 import {
-    BookOpen,
     CaretLeft,
     CaretRight,
     Compass,
     DeviceMobile,
-    GraduationCap,
     PlayCircle,
     Question,
     RocketLaunch,
     Sparkle,
-    X,
+    VideoCamera,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { getTokenFromCookie, isTokenExpired } from '@/lib/auth/sessionUtility';
@@ -26,14 +24,14 @@ import {
 import { ADMIN_DISPLAY_SETTINGS_KEY, type DisplaySettingsData } from '@/types/display-settings';
 import { useSupportConfig } from '@/services/support';
 import { useRoadmap, useRoadmapMeta } from '@/services/roadmap';
+import { useWebinarClock, useWebinars, webinarPhase } from '@/services/webinars';
 import { SupportPanel } from '@/components/common/support/SupportPanel';
 import { useAssistDock } from './store';
-import { tutorialsForRoute } from './tutorials';
-import { TutorialViewer } from './TutorialViewer';
 import { RoadmapViewer } from './RoadmapViewer';
 import { ExploreViewer } from './ExploreViewer';
 import { AdminAppViewer } from './AdminAppViewer';
 import { TrainingViewer } from './TrainingViewer';
+import { LiveDot, WebinarsPanel } from './WebinarsPanel';
 
 // Keep in sync with routes/__root.tsx publicRoutes — the dock only shows inside
 // the authenticated shell.
@@ -60,18 +58,11 @@ function readRoadmapSeenAt(): string | null {
 }
 
 export function AssistDock() {
-    // Subscribes the dock to language-change events: buildTutorials()/
-    // tutorialsForRoute() resolve tutorial titles via the `t` passed in below,
-    // but without this hook call here the component itself would never
-    // re-render when the language changes (see tutorials.ts header comment).
-    const { t: tTutorials } = useTranslation('tutorials');
     const { t } = useTranslation('assistDock');
     const pathname = useRouterState({ select: (s) => s.location.pathname });
-    const search = useRouterState({ select: (s) => s.location.search }) as { selectedTab?: string };
     const panel = useAssistDock((s) => s.panel);
     const togglePanel = useAssistDock((s) => s.togglePanel);
     const setPanel = useAssistDock((s) => s.setPanel);
-    const openTutorial = useAssistDock((s) => s.openTutorial);
     const minimized = useAssistDock((s) => s.minimized);
     const setMinimized = useAssistDock((s) => s.setMinimized);
     // Non-admin roles get a 403 here (retry disabled on the hook); the badge is simply omitted then.
@@ -119,6 +110,12 @@ export function AssistDock() {
     const roleDS = cachedDS ?? fetchedDS;
     const showDock = roleDS?.ui?.showAssistDock ?? roleKey === ADMIN_DISPLAY_SETTINGS_KEY;
 
+    // Fetched whenever the rail shows (not just when the panel opens): the rail lights up on
+    // every page while a webinar is live.
+    const webinars = useWebinars(isAuthed && !onPublicRoute && showDock);
+    const webinarNow = useWebinarClock(webinars.data);
+    const webinarLive = (webinars.data ?? []).some((w) => webinarPhase(w, webinarNow) === 'live');
+
     // Publish the resolved visibility so gutter-reserving components
     // (LayoutContainer, student side views) stay in lockstep with the rail.
     const setDockVisible = useAssistDock((s) => s.setDockVisible);
@@ -128,10 +125,9 @@ export function AssistDock() {
 
     if (!isAuthed || onPublicRoute || !showDock) return null;
 
-    const tutorials = tutorialsForRoute(tTutorials, pathname, search?.selectedTab);
     const hasNewRoadmap =
         !!roadmapMeta.data?.updatedAt && roadmapMeta.data.updatedAt !== roadmapSeenAt;
-    const totalBadge = tutorials.length + (supportConfig.data?.openTicketCount ?? 0);
+    const totalBadge = supportConfig.data?.openTicketCount ?? 0;
 
     const openRoadmap = () => {
         togglePanel('roadmap');
@@ -165,6 +161,7 @@ export function AssistDock() {
                     {hasNewRoadmap ? (
                         <span className="absolute -right-1 -top-1 size-2.5 rounded-full bg-primary-500 ring-2 ring-white" />
                     ) : null}
+                    {webinarLive ? <LiveDot className="absolute -left-1 -top-1" /> : null}
                 </button>
             ) : (
                 /* Thin fixed rail — a full-height column flush to the right edge. The
@@ -183,20 +180,24 @@ export function AssistDock() {
                     </button>
 
                     <RailButton
-                        label={t('guides')}
-                        active={panel === 'tutorials'}
-                        onClick={() => togglePanel('tutorials')}
-                        badge={tutorials.length || undefined}
-                    >
-                        <BookOpen size={20} weight={panel === 'tutorials' ? 'fill' : 'regular'} />
-                    </RailButton>
-
-                    <RailButton
                         label={t('training')}
                         active={panel === 'training'}
                         onClick={() => togglePanel('training')}
                     >
                         <PlayCircle size={20} weight={panel === 'training' ? 'fill' : 'duotone'} />
+                    </RailButton>
+
+                    <RailButton
+                        label={webinarLive ? t('webinarLive') : t('webinars')}
+                        ariaLabel={webinarLive ? t('webinarLiveAria') : undefined}
+                        active={panel === 'webinars'}
+                        onClick={() => togglePanel('webinars')}
+                        live={webinarLive}
+                    >
+                        <VideoCamera
+                            size={20}
+                            weight={panel === 'webinars' || webinarLive ? 'fill' : 'duotone'}
+                        />
                     </RailButton>
 
                     <RailButton
@@ -266,96 +267,54 @@ export function AssistDock() {
 
             <TrainingViewer open={panel === 'training'} onClose={() => setPanel('none')} />
 
-            {/* Tutorials panel (slides out left of the rail). z-50 so z-50 sticky page
-                toolbars (slide editor) don't cover its header and close button. */}
-            {panel === 'tutorials' && (
-                <div className="fixed bottom-4 right-16 top-20 z-50 flex w-72 flex-col overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-xl">
-                    <div className="flex shrink-0 items-center justify-between border-b border-neutral-200 px-4 py-3">
-                        <div className="flex items-center gap-2">
-                            <GraduationCap size={18} className="text-primary-500" />
-                            <p className="text-body font-semibold text-neutral-800">
-                                {t('tutorials')}
-                            </p>
-                        </div>
-                        <button
-                            type="button"
-                            aria-label={t('closeTutorials')}
-                            onClick={() => setPanel('none')}
-                            className="flex size-7 items-center justify-center rounded-md text-neutral-500 transition-colors hover:bg-neutral-100"
-                        >
-                            <X size={16} />
-                        </button>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto p-2">
-                        {tutorials.length === 0 ? (
-                            <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
-                                <BookOpen size={26} className="text-neutral-300" />
-                                <p className="text-caption text-neutral-500">
-                                    {t('noTutorialsForThisPage')}
-                                </p>
-                            </div>
-                        ) : (
-                            <ul className="flex flex-col gap-1">
-                                {tutorials.map((t) => (
-                                    <li key={t.id}>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                openTutorial(t.file, t.title);
-                                                setPanel('none');
-                                            }}
-                                            className="group flex w-full items-center gap-2 rounded-md px-3 py-2 text-left transition-colors hover:bg-primary-50"
-                                        >
-                                            <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary-50 text-primary-500 group-hover:bg-primary-100">
-                                                <BookOpen size={15} weight="duotone" />
-                                            </span>
-                                            <span className="flex-1 truncate text-caption text-neutral-700">
-                                                {t.title}
-                                            </span>
-                                            <CaretRight
-                                                size={14}
-                                                className="shrink-0 text-neutral-300 group-hover:text-primary-400"
-                                            />
-                                        </button>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* Big walkthrough player */}
-            <TutorialViewer />
+            <WebinarsPanel
+                open={panel === 'webinars'}
+                onClose={() => setPanel('none')}
+                webinars={webinars.data}
+                // isFetching too: after an error, Retry shows the skeleton instead of a frozen error.
+                loading={webinars.isPending || webinars.isFetching}
+                error={webinars.isError}
+                onRetry={() => webinars.refetch()}
+                now={webinarNow}
+            />
         </>
     );
 }
 
 function RailButton({
     label,
+    ariaLabel,
     children,
     onClick,
     active,
     badge,
     dot,
+    live,
 }: {
     label: string;
+    /** Longer screen-reader label when the visible one is a single word like "Live". */
+    ariaLabel?: string;
     children: React.ReactNode;
     onClick: () => void;
     active?: boolean;
     badge?: number;
     /** A small unread indicator, for when there's something new but no count to show. */
     dot?: boolean;
+    /** Something is happening right now (a webinar is live): red tint + pulsing dot. */
+    live?: boolean;
 }) {
     return (
         <button
             type="button"
             onClick={onClick}
-            aria-label={label}
+            aria-label={ariaLabel ?? label}
             className={cn(
                 'relative flex w-full flex-col items-center gap-0.5 rounded-md px-1 py-2 transition-colors',
-                active ? 'bg-primary-50 text-primary-600' : 'text-neutral-500 hover:bg-neutral-100'
+                live
+                    ? 'bg-danger-50 text-danger-600 hover:bg-danger-100'
+                    : active
+                      ? 'bg-primary-50 text-primary-600'
+                      : 'text-neutral-500 hover:bg-neutral-100'
             )}
         >
             {children}
@@ -368,6 +327,7 @@ function RailButton({
             {dot ? (
                 <span className="absolute right-2 top-1.5 size-2 rounded-full bg-primary-500 ring-2 ring-white" />
             ) : null}
+            {live ? <LiveDot className="absolute right-2 top-1.5" /> : null}
         </button>
     );
 }
