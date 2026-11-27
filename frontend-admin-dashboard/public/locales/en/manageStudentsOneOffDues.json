@@ -1,0 +1,65 @@
+{
+    "card": {
+        "title": "One-off charges",
+        "subtitle": "Extra charges the learner pays online, like an invoice.",
+        "add": "Add a one-off charge",
+        "empty": "No charges due.",
+        "error": "Could not load one-off charges.",
+        "retry": "Try again",
+        "history": "Paid and cancelled ({{count}})"
+    },
+    "status": {
+        "DUE": "Due",
+        "PAID": "Paid",
+        "CANCELLED": "Cancelled"
+    },
+    "row": {
+        "dueOn": "due {{date}}",
+        "overdueSince": "overdue since {{date}}",
+        "cancel": "Cancel",
+        "cancelReason": "Reason: {{reason}}"
+    },
+    "source": {
+        "REENTRY_BRIDGE": "Added by re-entry (bridge class)",
+        "OTHER": "Added automatically"
+    },
+    "form": {
+        "title": "Add a one-off charge",
+        "titleFor": "Add a one-off charge for {{name}}",
+        "howItWorks": "The learner sees this charge in the app and can pay it online. No message is sent and no tax is added.",
+        "chargeTitle": "Title",
+        "chargeTitlePlaceholder": "e.g. Bridge class",
+        "amount": "Amount",
+        "amountWithCurrency": "Amount ({{symbol}})",
+        "dueDate": "Due date",
+        "batch": "Batch (optional)",
+        "noBatch": "Not linked to a batch",
+        "batchSearch": "Search batches",
+        "batchEmpty": "No batches found",
+        "note": "Note (staff only)",
+        "notePlaceholder": "Why this charge was added",
+        "cancel": "Cancel",
+        "submit": "Add charge",
+        "saving": "Adding…"
+    },
+    "errors": {
+        "titleRequired": "Give the charge a title.",
+        "titleTooLong": "The title can be at most 200 characters.",
+        "amountPositive": "Enter an amount above zero.",
+        "amountDecimals": "Use at most two decimal places.",
+        "dueDateRequired": "Choose a due date.",
+        "noteTooLong": "The note can be at most 2000 characters."
+    },
+    "confirm": {
+        "title": "Cancel this charge?",
+        "description": "“{{title}}” ({{amount}}) will be cancelled and the learner can no longer pay it. The learner is not notified.",
+        "reasonPlaceholder": "Reason (optional)",
+        "keep": "Keep charge",
+        "cancelCharge": "Cancel charge"
+    },
+    "toast": {
+        "added": "Charge added.",
+        "cancelled": "Charge cancelled.",
+        "failed": "Something went wrong. Please try again."
+    }
+}

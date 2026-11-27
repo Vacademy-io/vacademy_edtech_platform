@@ -48,6 +48,7 @@ import { useCanDeletePayments } from '@/routes/manage-payments/-hooks/useCanDele
 import { CpoInstallmentsEditor } from './cpo-installments-editor';
 import { InvoiceProductLinkStatus } from './invoice-product-link-field';
 import { CreateInvoiceDialog } from './create-invoice-dialog';
+import { OneOffChargesCard } from './one-off-charges-card';
 import { useGetUserBasicDetails } from '@/services/get_user_basic_details';
 import { ProfileSectionCard, ProfileEmpty, ProfileMiniBar } from '../profile-ui';
 import { useUserCpoUserPlans } from '../../../../-services/cpoSideViewService';
@@ -1104,6 +1105,20 @@ export const StudentPaymentHistory = () => {
             <ProfileSectionCard icon={Receipt} heading={t('main.installmentsHeading')}>
                 <CpoInstallmentsEditor userId={selectedStudent.user_id} />
             </ProfileSectionCard>
+
+            {/* One-off charges — self-hides unless the institute switched them on.
+                Each charge is an admin invoice, so the list below refreshes with it. */}
+            {instituteDetails?.id && (
+                <OneOffChargesCard
+                    userId={selectedStudent.user_id}
+                    instituteId={instituteDetails.id}
+                    learnerName={selectedStudent.full_name}
+                    onChanged={() => {
+                        invalidateInvoices();
+                        queryClient.invalidateQueries({ queryKey: ['user-account-summary'] });
+                    }}
+                />
+            )}
 
             {/* Invoices — lifted into a SectionCard with Create Invoice in
                 the action slot, per handoff PaymentHistorySection layout. */}

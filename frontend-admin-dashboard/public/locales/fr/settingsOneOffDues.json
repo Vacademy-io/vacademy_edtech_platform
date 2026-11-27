@@ -1,0 +1,30 @@
+{
+    "title": "Frais ponctuels",
+    "description": "Permettez à l’équipe d’ajouter un frais supplémentaire unique à un apprenant, comme un cours de rattrapage individuel, depuis l’onglet Paiements de l’apprenant.",
+    "loadFailed": "Impossible de charger ce paramètre.",
+    "retry": "Réessayer",
+    "toggleLabel": "Autoriser les frais ponctuels",
+    "add": {
+        "title": "Ajouter un frais",
+        "point1": "L’équipe saisit un titre, un montant et une date d’échéance, et peut le lier à un groupe.",
+        "point2": "Une note facultative est réservée à l’équipe.",
+        "point3": "Un frais pas encore payé peut être annulé."
+    },
+    "pay": {
+        "title": "L’apprenant paie en ligne",
+        "point1": "Le frais apparaît dans l’application de l’apprenant avec un bouton Payer.",
+        "point2": "Il est payé via votre passerelle de paiement, comme toute facture.",
+        "point3": "Il apparaît aussi dans les factures et le récapitulatif de compte de l’apprenant, et peut être marqué payé hors ligne."
+    },
+    "quiet": {
+        "title": "Aucun message",
+        "point1": "Ajouter ou annuler un frais n’envoie à l’apprenant aucun e-mail, WhatsApp ni notification.",
+        "point2": "Aucune taxe n’est ajoutée : l’apprenant paie le montant saisi."
+    },
+    "offNote": "Désactiver cette option masque les frais ponctuels dans l’application de l’apprenant et empêche d’en ajouter. Les frais encore dus restent dans l’onglet Paiements de l’apprenant pour pouvoir être annulés.",
+    "audit": "Chaque frais ajouté ou annulé est enregistré dans le journal d’activité, avec qui l’a fait et quand.",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "saved": "Paramètre des frais ponctuels enregistré.",
+    "saveFailed": "Impossible d’enregistrer le paramètre."
+}

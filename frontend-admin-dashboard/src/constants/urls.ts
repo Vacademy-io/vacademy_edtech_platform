@@ -1326,6 +1326,10 @@ export const ENROLMENT_BREAK_END_PREVIEW = (breakId: string) =>
     `${ENROLMENT_BREAKS_BASE}/${breakId}/end/preview`;
 export const ENROLMENT_BREAK_CANCEL = (breakId: string) =>
     `${ENROLMENT_BREAKS_BASE}/${breakId}/cancel`;
+// One-off charges: a single extra charge for one learner, paid like an invoice.
+export const ONE_OFF_DUES_BASE = `${BASE_URL}/admin-core-service/v1/one-off-dues`;
+export const ONE_OFF_DUES_FOR_LEARNER = (userId: string) => `${ONE_OFF_DUES_BASE}/learner/${userId}`;
+export const ONE_OFF_DUE_CANCEL = (dueId: string) => `${ONE_OFF_DUES_BASE}/${dueId}/cancel`;
 // Extra classes: link a learner to another batch for a few days (no fee, no message).
 export const EXTRA_CLASSES_BASE = `${BASE_URL}/admin-core-service/v1/extra-classes`;
 export const EXTRA_CLASSES_FOR_LEARNER = (userId: string) =>
