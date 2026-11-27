@@ -177,8 +177,9 @@ describe('useWebinarClock', () => {
     it('catches up when the list arrives late, then flips to past at the end', () => {
         vi.useFakeTimers();
         vi.setSystemTime(Date.parse('2026-12-04T10:00:00Z'));
-        const { result, rerender } = renderHook(
-            ({ rows }: { rows: WebinarDto[] | undefined }) => useWebinarClock(rows),
+        // Props spelled out: inferred from initialProps alone, `rows` would be typed as undefined.
+        const { result, rerender } = renderHook<number, { rows: WebinarDto[] | undefined }>(
+            ({ rows }) => useWebinarClock(rows),
             { initialProps: { rows: undefined } }
         );
         // Nothing ahead: no timer keeps the dock re-rendering.
