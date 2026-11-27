@@ -1,7 +1,8 @@
 {
     "title": "تقرير اختبار الطالب",
     "toast": {
-        "exportPdfSuccess": "تم تصدير بيانات تقرير الاختبار بصيغة PDF بنجاح!"
+        "exportPdfSuccess": "تم تصدير بيانات تقرير الاختبار بصيغة PDF بنجاح!",
+        "exportPdfFailed": "تعذّر تصدير التقرير. يُرجى المحاولة مرة أخرى."
     },
     "info": {
         "subject": "المادة:",
@@ -45,6 +46,62 @@
         "explanation": "التوضيح:",
         "noResponse": "لا توجد إجابة",
         "empty": "لا توجد مراجعة إجابات متاحة"
+    },
+    "meta": {
+        "timeRange": "{{start}} – {{end}}"
+    },
+    "stats": {
+        "score": "النتيجة",
+        "rank": "الترتيب",
+        "percentile": "المئين",
+        "timeTaken": "الوقت المستغرق"
+    },
+    "duration": {
+        "seconds": "{{value}} ث",
+        "minutes": "{{minutes}} د",
+        "minutesSeconds": "{{minutes}} د {{seconds}} ث",
+        "hoursMinutes": "{{hours}} س {{minutes}} د"
+    },
+    "charts": {
+        "attempted": "تمت الإجابة",
+        "skipped": "تم تخطيها",
+        "correct": "صحيحة",
+        "partial": "صحيحة جزئيًا",
+        "wrong": "خاطئة",
+        "attemptedCenter": "تمت الإجابة",
+        "marksCenter": "درجة"
+    },
+    "filter": {
+        "ariaLabel": "تصفية الأسئلة حسب النتيجة",
+        "all": "الكل ({{n}})",
+        "correct": "صحيحة ({{n}})",
+        "partial": "جزئية ({{n}})",
+        "wrong": "خاطئة ({{n}})",
+        "pending": "لم تُصحَّح ({{n}})",
+        "skipped": "تم تخطيها ({{n}})"
+    },
+    "status": {
+        "correct": "صحيحة",
+        "partial": "صحيحة جزئيًا",
+        "wrong": "خاطئة",
+        "pending": "لم تُصحَّح بعد",
+        "skipped": "تم تخطيها"
+    },
+    "answer": {
+        "questionShort": "س{{number}}",
+        "marks": "{{marks}} درجة",
+        "learnerChoice": "اختيار الطالب",
+        "correct": "صحيحة",
+        "learnerAnswer": "إجابة الطالب",
+        "correctAnswer": "الإجابة الصحيحة",
+        "noOptionChosen": "لم يتم اختيار أي خيار",
+        "choiceNotOnPaper": "الخيار الذي اختاره الطالب لم يعد موجودًا في هذا السؤال؛ فقد تم تعديله بعد الاختبار.",
+        "optionsUnavailable": "تعذّر تحميل خيارات هذا السؤال.",
+        "explanation": "التوضيح",
+        "teacherRemark": "ملاحظة المعلم",
+        "aiFeedback": "ملاحظات الذكاء الاصطناعي",
+        "noMatch": "لا توجد أسئلة تطابق عامل التصفية هذا.",
+        "sectionFallback": "القسم {{number}}"
     },
     "openSubmission": "فتح الإجابة"
 }

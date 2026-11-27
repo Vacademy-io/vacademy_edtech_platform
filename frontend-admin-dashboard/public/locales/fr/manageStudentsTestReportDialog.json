@@ -1,7 +1,8 @@
 {
     "title": "Rapport de test de l'élève",
     "toast": {
-        "exportPdfSuccess": "Les données du rapport de test ont été exportées en PDF avec succès !"
+        "exportPdfSuccess": "Les données du rapport de test ont été exportées en PDF avec succès !",
+        "exportPdfFailed": "Impossible d'exporter le rapport. Veuillez réessayer."
     },
     "info": {
         "subject": "Matière :",
@@ -42,6 +43,62 @@
         "explanation": "Explication :",
         "noResponse": "Aucune réponse",
         "empty": "Aucune révision de réponse disponible"
+    },
+    "meta": {
+        "timeRange": "{{start}} – {{end}}"
+    },
+    "stats": {
+        "score": "Score",
+        "rank": "Rang",
+        "percentile": "Percentile",
+        "timeTaken": "Temps passé"
+    },
+    "duration": {
+        "seconds": "{{value}} s",
+        "minutes": "{{minutes}} min",
+        "minutesSeconds": "{{minutes}} min {{seconds}} s",
+        "hoursMinutes": "{{hours}} h {{minutes}} min"
+    },
+    "charts": {
+        "attempted": "Tentées",
+        "skipped": "Passées",
+        "correct": "Correctes",
+        "partial": "Partiellement correctes",
+        "wrong": "Incorrectes",
+        "attemptedCenter": "tentées",
+        "marksCenter": "points"
+    },
+    "filter": {
+        "ariaLabel": "Filtrer les questions par résultat",
+        "all": "Toutes ({{n}})",
+        "correct": "Correctes ({{n}})",
+        "partial": "Partielles ({{n}})",
+        "wrong": "Incorrectes ({{n}})",
+        "pending": "Non corrigées ({{n}})",
+        "skipped": "Passées ({{n}})"
+    },
+    "status": {
+        "correct": "Correcte",
+        "partial": "Partiellement correcte",
+        "wrong": "Incorrecte",
+        "pending": "Pas encore corrigée",
+        "skipped": "Passée"
+    },
+    "answer": {
+        "questionShort": "Q{{number}}",
+        "marks": "{{marks}} points",
+        "learnerChoice": "Choix de l'élève",
+        "correct": "Correcte",
+        "learnerAnswer": "Réponse de l'élève",
+        "correctAnswer": "Réponse correcte",
+        "noOptionChosen": "Aucune option choisie",
+        "choiceNotOnPaper": "L'option choisie par l'élève ne figure plus dans cette question ; elle a été modifiée après le test.",
+        "optionsUnavailable": "Les options de cette question n'ont pas pu être chargées.",
+        "explanation": "Explication",
+        "teacherRemark": "Remarque de l'enseignant",
+        "aiFeedback": "Retour de l'IA",
+        "noMatch": "Aucune question ne correspond à ce filtre.",
+        "sectionFallback": "Section {{number}}"
     },
     "openSubmission": "Ouvrir la copie"
 }

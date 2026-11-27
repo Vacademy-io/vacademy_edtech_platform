@@ -1,7 +1,8 @@
 {
     "title": "छात्र परीक्षा रिपोर्ट",
     "toast": {
-        "exportPdfSuccess": "परीक्षा रिपोर्ट डेटा PDF के रूप में सफलतापूर्वक निर्यात किया गया!"
+        "exportPdfSuccess": "परीक्षा रिपोर्ट डेटा PDF के रूप में सफलतापूर्वक निर्यात किया गया!",
+        "exportPdfFailed": "रिपोर्ट निर्यात नहीं हो सकी। कृपया फिर से कोशिश करें।"
     },
     "info": {
         "subject": "विषय:",
@@ -41,6 +42,62 @@
         "explanation": "स्पष्टीकरण:",
         "noResponse": "कोई प्रतिक्रिया नहीं",
         "empty": "कोई उत्तर समीक्षा उपलब्ध नहीं है"
+    },
+    "meta": {
+        "timeRange": "{{start}} – {{end}}"
+    },
+    "stats": {
+        "score": "स्कोर",
+        "rank": "रैंक",
+        "percentile": "पर्सेंटाइल",
+        "timeTaken": "लिया गया समय"
+    },
+    "duration": {
+        "seconds": "{{value}} सेकंड",
+        "minutes": "{{minutes}} मिनट",
+        "minutesSeconds": "{{minutes}} मिनट {{seconds}} सेकंड",
+        "hoursMinutes": "{{hours}} घंटा {{minutes}} मिनट"
+    },
+    "charts": {
+        "attempted": "प्रयास किए",
+        "skipped": "छोड़े गए",
+        "correct": "सही",
+        "partial": "आंशिक रूप से सही",
+        "wrong": "गलत",
+        "attemptedCenter": "प्रयास किए",
+        "marksCenter": "अंक"
+    },
+    "filter": {
+        "ariaLabel": "परिणाम के अनुसार प्रश्न छाँटें",
+        "all": "सभी ({{n}})",
+        "correct": "सही ({{n}})",
+        "partial": "आंशिक ({{n}})",
+        "wrong": "गलत ({{n}})",
+        "pending": "जाँच बाकी ({{n}})",
+        "skipped": "छोड़े गए ({{n}})"
+    },
+    "status": {
+        "correct": "सही",
+        "partial": "आंशिक रूप से सही",
+        "wrong": "गलत",
+        "pending": "अभी जाँचा नहीं गया",
+        "skipped": "छोड़ा गया"
+    },
+    "answer": {
+        "questionShort": "प्र{{number}}",
+        "marks": "{{marks}} अंक",
+        "learnerChoice": "छात्र का चुनाव",
+        "correct": "सही",
+        "learnerAnswer": "छात्र का उत्तर",
+        "correctAnswer": "सही उत्तर",
+        "noOptionChosen": "कोई विकल्प नहीं चुना गया",
+        "choiceNotOnPaper": "छात्र द्वारा चुना गया विकल्प अब इस प्रश्न में नहीं है; टेस्ट के बाद प्रश्न बदला गया था।",
+        "optionsUnavailable": "इस प्रश्न के विकल्प लोड नहीं हो सके।",
+        "explanation": "स्पष्टीकरण",
+        "teacherRemark": "शिक्षक की टिप्पणी",
+        "aiFeedback": "AI प्रतिक्रिया",
+        "noMatch": "इस फ़िल्टर से कोई प्रश्न मेल नहीं खाता।",
+        "sectionFallback": "खंड {{number}}"
     },
     "openSubmission": "सबमिशन खोलें"
 }
