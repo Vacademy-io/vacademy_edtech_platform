@@ -105,13 +105,15 @@ Sent once when a [human call](/concepts/human-calls) connected and ended, after 
     "recording_url": "https://…",
     "disposition": null,
     "analysis": { "status": "pending" },
-    "cost": { "credits": 6.5, "billed": false },
+    "cost": { "credits": 0, "billed": false, "balance_after": null, "deductions": [] },
     "…": "…"
   }
 }
 ```
 
 The counsellor usually sets the disposition after the call, so `disposition` is often still `null` here. Read the call again later, or set it yourself with `POST /v1/human-calls/{id}/disposition`.
+
+The talk time is charged a few minutes after the call, so `cost.billed` is often still `false` here. Read the call again later for the charge and your balance after it (`cost.deductions`, `cost.balance_after`; see [Cost of one call](/platform/credits-and-usage#cost-of-one-call)).
 
 ## human_call.not_connected
 
