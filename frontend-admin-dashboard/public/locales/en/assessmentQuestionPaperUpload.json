@@ -38,7 +38,7 @@
     },
     "toasts": {
         "questionPaperAdded": "Question Paper added successfully",
-        "incompleteQuestions": "some of your questions are incomplete or needs attentions!",
+        "incompleteQuestions": "Some of your questions are incomplete or need attention.",
         "addedAndSkipped_one": "Added {{count}} question; skipped {{skipped}} with issues.",
         "addedAndSkipped_other": "Added {{count}} questions; skipped {{skipped}} with issues.",
         "loadedAll_one": "Loaded all {{count}} question. {{flagged}} need editing before you can save.",
