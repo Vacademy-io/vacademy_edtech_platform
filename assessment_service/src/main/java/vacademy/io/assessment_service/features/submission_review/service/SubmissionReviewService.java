@@ -482,7 +482,10 @@ public class SubmissionReviewService {
             Double marks = numberOf(c.path("marks"));
             if (marks == null) marks = numberOf(c.path("marks_awarded"));
             m.put("marks", marks);
-            m.put("max_marks", numberOf(c.path("max_marks")));
+            // The copy check stores a line's ceiling as "max" (ai_service attach_criteria_max).
+            Double max = numberOf(c.path("max_marks"));
+            if (max == null) max = numberOf(c.path("max"));
+            m.put("max_marks", max);
             m.put("reason", textOf(c.path("reason")));
             out.add(m);
         }
