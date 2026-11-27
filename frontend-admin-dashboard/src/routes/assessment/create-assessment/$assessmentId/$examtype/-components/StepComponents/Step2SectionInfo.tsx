@@ -49,7 +49,12 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { getAssessmentDetails } from '../../-services/assessment-services';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import {
+    COPY_CHECK_CRITERIA_KEY,
+    getCopyCheckCriteria,
+    toEditableCriteria,
+} from '@/services/copy-check-criteria';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { Input } from '@/components/ui/input';
 import { z } from 'zod';
@@ -126,6 +131,22 @@ export const Step2SectionInfo = ({
     const [isInputFocused, setIsInputFocused] = useState(false);
     const [originalSectionName, setOriginalSectionName] = useState<string>('');
     const sectionNameInputRef = React.useRef<HTMLInputElement>(null);
+
+    // What the AI copy check marks each question by. It keeps its own criteria per test
+    // (written by AI from the answer key on the first check, or saved from the Check with
+    // AI dialog), so a question with none of its own was shown as "Not Added" while the
+    // check said every question had criteria.
+    const { data: aiCheckCriteria } = useQuery({
+        queryKey: [COPY_CHECK_CRITERIA_KEY, assessmentId],
+        queryFn: () => getCopyCheckCriteria(assessmentId),
+        enabled: Boolean(assessmentId) && assessmentId !== 'defaultId' && examtype !== 'SURVEY',
+        staleTime: 30 * 1000,
+        retry: false,
+    });
+    const aiCheckCriteriaFor = (questionId?: string): CriteriaJson | undefined => {
+        const row = aiCheckCriteria?.questions.find((q) => q.question_id === questionId);
+        return row?.rubric?.rubric?.length ? toEditableCriteria(row.rubric, row.max_marks) : undefined;
+    };
 
     // Criteria management state
     const [criteriaDialogOpen, setCriteriaDialogOpen] = useState(false);
@@ -1602,7 +1623,11 @@ export const Step2SectionInfo = ({
                                                                         ? ((question as any)
                                                                               ?.criteria_source as CriteriaSource) ||
                                                                           'manual'
-                                                                        : 'not-added'
+                                                                        : aiCheckCriteriaFor(
+                                                                                question.questionId
+                                                                            )
+                                                                          ? 'ai-check'
+                                                                          : 'not-added'
                                                                 }
                                                                 onClick={() => {
                                                                     setSelectedQuestionIndex(idx);
@@ -1624,7 +1649,20 @@ export const Step2SectionInfo = ({
                                                                                   true
                                                                               );
                                                                           }
-                                                                        : undefined
+                                                                        : aiCheckCriteriaFor(
+                                                                                question.questionId
+                                                                            )
+                                                                          ? () => {
+                                                                                setCriteriaPreview(
+                                                                                    aiCheckCriteriaFor(
+                                                                                        question.questionId
+                                                                                    ) ?? null
+                                                                                );
+                                                                                setPreviewDialogOpen(
+                                                                                    true
+                                                                                );
+                                                                            }
+                                                                          : undefined
                                                                 }
                                                             />
                                                         </TableCell>
@@ -1721,7 +1759,11 @@ export const Step2SectionInfo = ({
                                       selectedQuestionIndex
                                   ]?.evaluation_criteria_json!
                               ) ?? undefined
-                            : undefined
+                            : aiCheckCriteriaFor(
+                                  allSections[index]?.adaptive_marking_for_each_question[
+                                      selectedQuestionIndex
+                                  ]?.questionId
+                              )
                     }
                     open={criteriaDialogOpen}
                     onSave={(criteria: CriteriaJson, source: CriteriaSource) => {

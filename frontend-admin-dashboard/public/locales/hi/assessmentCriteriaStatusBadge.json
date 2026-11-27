@@ -3,7 +3,8 @@
     "aiGenerated": "AI द्वारा तैयार",
     "manual": "मैन्युअल",
     "template": "टेम्पलेट",
-    "notAdded": "जोड़ा नहीं गया"
+    "notAdded": "जोड़ा नहीं गया",
+    "aiCheck": "जोड़ा गया (AI जाँच)"
   },
   "previewTooltip": "मानदंड पूर्वावलोकन करें"
 }
