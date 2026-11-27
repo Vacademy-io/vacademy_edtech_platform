@@ -24,7 +24,7 @@ describe('AI copy checking settings', () => {
     it('shows an institute with no saved pen the pen its copies really get', () => {
         expect(normalizePenStyle(undefined)).toEqual({
             ink: 'RED',
-            font: 'DAWNING_OF_A_NEW_DAY',
+            font: 'KALAM',
             size: 'MEDIUM',
             darkness: 50,
         });

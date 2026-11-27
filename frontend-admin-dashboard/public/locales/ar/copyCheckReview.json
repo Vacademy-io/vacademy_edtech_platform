@@ -13,12 +13,12 @@
             "PURPLE": "بنفسجي"
         },
         "fonts": {
-            "DAWNING_OF_A_NEW_DAY": "المعلم (افتراضي)",
+            "DAWNING_OF_A_NEW_DAY": "المعلم",
             "COVERED_BY_YOUR_GRACE": "طبيعي",
             "OVER_THE_RAINBOW": "مخربش",
             "CAVEAT": "سريع",
             "CEDARVILLE_CURSIVE": "متصل",
-            "KALAM": "كلاسيكي (Kalam)",
+            "KALAM": "كلاسيكي (Kalam، افتراضي)",
             "PATRICK_HAND": "كلاسيكي (Patrick Hand)",
             "ARCHITECTS_DAUGHTER": "كلاسيكي (Architects Daughter)"
         },

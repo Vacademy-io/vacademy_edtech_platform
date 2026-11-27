@@ -17,12 +17,12 @@ import { PenPreviewDialog } from './PenPreviewDialog';
 
 const INKS: PenInkName[] = ['RED', 'BLUE', 'GREEN', 'BLACK'];
 const FONTS: PenFont[] = [
+    'KALAM',
     'DAWNING_OF_A_NEW_DAY',
     'COVERED_BY_YOUR_GRACE',
     'OVER_THE_RAINBOW',
     'CAVEAT',
     'CEDARVILLE_CURSIVE',
-    'KALAM',
     'PATRICK_HAND',
     'ARCHITECTS_DAUGHTER',
 ];

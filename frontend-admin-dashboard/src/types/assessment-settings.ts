@@ -124,7 +124,7 @@ export interface PenStyle {
 }
 export const DEFAULT_PEN_STYLE: PenStyle = {
     ink: 'RED',
-    font: 'DAWNING_OF_A_NEW_DAY',
+    font: 'KALAM',
     size: 'MEDIUM',
     darkness: 50,
 };

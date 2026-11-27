@@ -13,12 +13,12 @@
             "PURPLE": "Purple"
         },
         "fonts": {
-            "DAWNING_OF_A_NEW_DAY": "Teacher (default)",
+            "DAWNING_OF_A_NEW_DAY": "Teacher",
             "COVERED_BY_YOUR_GRACE": "Natural",
             "OVER_THE_RAINBOW": "Scrawled",
             "CAVEAT": "Quick",
             "CEDARVILLE_CURSIVE": "Cursive",
-            "KALAM": "Classic (Kalam)",
+            "KALAM": "Classic (Kalam, default)",
             "PATRICK_HAND": "Classic (Patrick Hand)",
             "ARCHITECTS_DAUGHTER": "Classic (Architects Daughter)"
         },
