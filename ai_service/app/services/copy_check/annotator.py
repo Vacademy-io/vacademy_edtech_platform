@@ -1909,9 +1909,33 @@ def _draw_mark(page: Any, rect: Any, style: str, bounds: Any = None,
                     cx, placed = trial, True
                     break
             if not placed:
-                logger.debug("no room for a whole %s on row %s; skipped rather "
-                             "than drawing a sliver", style, rect)
-                return
+                # Every spot has some writing under it: a page written edge to
+                # edge. Skipping the mark here left whole pages of a real copy
+                # with nothing on them - right answers unticked, as if never
+                # read. A teacher ticks over the end of a line then, so take
+                # the spot with the least writing under it, at row height.
+                # Still whole, on the paper and clear of every comment and
+                # score: never the sliver this fallback exists to prevent.
+                least = None
+                small = max(20.0, min(size, rect.height + 2.0))
+                ys = rect.y0 + (rect.height - small) / 2.0
+                for trial in spots:
+                    trial = max(sheet_x0 + 2.0, min(trial, sheet_x1 - small - 12.0))
+                    probe = fitz.Rect(trial, ys, trial + small, ys + small)
+                    if not _on_paper(_PAPER[0], probe):
+                        continue
+                    if any(_mark_box(trial, ys, small).intersects(n) for n in notes):
+                        continue
+                    ink = _ink_under(_INK_MAP[0], probe)
+                    if least is None or ink < least[0]:
+                        least = (ink, trial)
+                if least is None:
+                    logger.debug("no room for a whole %s on row %s; skipped rather "
+                                 "than drawing a sliver", style, rect)
+                    return
+                logger.debug("%s on row %s drawn over writing (ink %.2f): no clear spot",
+                             style, rect, least[0])
+                cx, fit = least[1], (ys, small)
         cy, size = fit
 
         logger.debug("TICKPLACE site=fallback style=%s cx=%.1f cy=%.1f size=%.1f "
