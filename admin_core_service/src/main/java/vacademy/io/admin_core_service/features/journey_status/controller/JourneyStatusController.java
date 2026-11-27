@@ -25,7 +25,9 @@ import vacademy.io.common.exceptions.VacademyException;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Optional;
 import java.util.ArrayList;
 import java.util.List;
@@ -125,9 +127,10 @@ public class JourneyStatusController {
 
     /**
      * Starts a re-entry for one learner-in-batch: Re-entry status (next action = the return date),
-     * plus an optional extra class and bridge course, in one transaction. No fee, no message. A
-     * running pause on the batch is refused unless resume_pause is true (then it is resumed first,
-     * with the institute's default resume choice).
+     * plus optional extra classes, a one-on-one bridge class and an assessment session, in one
+     * transaction. Sends no message. A running pause on the batch is refused unless resume_pause is
+     * true (then it is resumed first, with the institute's default resume choice: fees and access
+     * restart). The old single extra_class and the bridge_course batch link are still accepted.
      */
     @PostMapping("/reentry")
     @Auditable(entityType = "LEARNER", action = "UPDATE", entityIdExpr = "#req?.userId",
@@ -137,9 +140,20 @@ public class JourneyStatusController {
                                                        @RequestAttribute("user") CustomUserDetails user) {
         instituteAccessValidator.requireInstituteStaffOrSuperAdmin(user, instituteId);
         if (req == null) throw new VacademyException("Choose the learner and the batch");
+        List<ReentryService.Link> extras = new ArrayList<>();
+        ReentryService.Link single = link(req.getExtraClass(), "extra class");
+        if (single != null) extras.add(single);
+        if (req.getExtraClasses() != null) {
+            if (req.getExtraClasses().size() > 20) throw new VacademyException("Too many extra classes");
+            for (LinkRequest l : req.getExtraClasses()) {
+                ReentryService.Link x = link(l, "extra class");
+                if (x != null) extras.add(x);
+            }
+        }
         ReentryService.Request r = new ReentryService.Request(req.getUserId(), req.getPackageSessionId(), req.getReason(),
-                link(req.getExtraClass(), "extra class"), link(req.getBridgeCourse(), "bridge course"),
-                date(req.getReturnOn(), "Return date"), Boolean.TRUE.equals(req.getResumePause()));
+                extras, link(req.getBridgeCourse(), "bridge course"), oneOnOne(req.getOneOnOne()),
+                assessment(req.getAssessment()), date(req.getReturnOn(), "Return date"),
+                Boolean.TRUE.equals(req.getResumePause()));
         return ResponseEntity.ok(reentryService.start(instituteId, r, user));
     }
 
@@ -148,6 +162,47 @@ public class JourneyStatusController {
                 && l.getFrom() == null && l.getTo() == null)) return null;
         return new ReentryService.Link(l.getPackageSessionId(), date(l.getFrom(), "The " + what + "'s first day"),
                 date(l.getTo(), "The " + what + "'s last day"));
+    }
+
+    private static ReentryService.OneOnOne oneOnOne(OneOnOneRequest o) {
+        if (o == null) return null;
+        List<ReentryService.Slot> slots = new ArrayList<>();
+        if (o.getSessions() != null) {
+            if (o.getSessions().size() > 50) throw new VacademyException("Too many one-on-one sessions");
+            for (SlotRequest s : o.getSessions()) slots.add(slot(s, "one-on-one session"));
+        }
+        ReentryService.Payment payment = null;
+        PaymentRequest p = o.getPayment();
+        if (p != null && (p.getAmount() != null || (p.getDueDate() != null && !p.getDueDate().isBlank()))) {
+            payment = new ReentryService.Payment(p.getAmount(), date(p.getDueDate(), "The extra payment's due date"),
+                    p.getNote() == null ? null : p.getNote().trim());
+        }
+        return new ReentryService.OneOnOne(o.getTeacherUserId(), o.getTitle(), slots, payment);
+    }
+
+    private static ReentryService.Assessment assessment(AssessmentRequest a) {
+        if (a == null) return null;
+        SlotRequest s = new SlotRequest();
+        s.setDate(a.getDate());
+        s.setStartTime(a.getStartTime());
+        s.setDurationMinutes(a.getDurationMinutes());
+        return new ReentryService.Assessment(a.getTeacherUserId(), slot(s, "assessment session"));
+    }
+
+    private static ReentryService.Slot slot(SlotRequest s, String what) {
+        if (s == null) return null;
+        return new ReentryService.Slot(date(s.getDate(), "The " + what + "'s date"),
+                time(s.getStartTime(), "The " + what + "'s start time"), s.getDurationMinutes());
+    }
+
+    /** "09:30" or "09:30:00" → LocalTime; blank → null. */
+    static LocalTime time(String v, String what) {
+        if (v == null || v.isBlank()) return null;
+        try {
+            return LocalTime.parse(v.trim()).withSecond(0).withNano(0);
+        } catch (Exception e) {
+            throw new VacademyException(what + " must be a time (HH:MM)");
+        }
     }
 
     /** "2026-12-01" (or a longer ISO string starting with a date) → LocalDate; blank → null. */
@@ -198,10 +253,46 @@ public class JourneyStatusController {
         @JsonProperty("user_id") private String userId;
         @JsonProperty("package_session_id") private String packageSessionId;
         @JsonProperty("reason") private String reason;
+        /** Older clients: one extra class. Merged with extra_classes. */
         @JsonProperty("extra_class") private LinkRequest extraClass;
+        @JsonProperty("extra_classes") private List<LinkRequest> extraClasses;
+        /** Older clients: a bridge course as a batch link. The UI now sends one_on_one instead. */
         @JsonProperty("bridge_course") private LinkRequest bridgeCourse;
+        @JsonProperty("one_on_one") private OneOnOneRequest oneOnOne;
+        /** Null = assessment skipped. */
+        @JsonProperty("assessment") private AssessmentRequest assessment;
         @JsonProperty("return_on") private String returnOn;
         @JsonProperty("resume_pause") private Boolean resumePause;
+    }
+
+    @Data
+    public static class SlotRequest {
+        @JsonProperty("date") private String date;
+        @JsonProperty("start_time") private String startTime;
+        @JsonProperty("duration_minutes") private Integer durationMinutes;
+    }
+
+    @Data
+    public static class PaymentRequest {
+        @JsonProperty("amount") private BigDecimal amount;
+        @JsonProperty("due_date") private String dueDate;
+        @JsonProperty("note") private String note;
+    }
+
+    @Data
+    public static class OneOnOneRequest {
+        @JsonProperty("teacher_user_id") private String teacherUserId;
+        @JsonProperty("title") private String title;
+        @JsonProperty("sessions") private List<SlotRequest> sessions;
+        @JsonProperty("payment") private PaymentRequest payment;
+    }
+
+    @Data
+    public static class AssessmentRequest {
+        @JsonProperty("teacher_user_id") private String teacherUserId;
+        @JsonProperty("date") private String date;
+        @JsonProperty("start_time") private String startTime;
+        @JsonProperty("duration_minutes") private Integer durationMinutes;
     }
 
     @Data

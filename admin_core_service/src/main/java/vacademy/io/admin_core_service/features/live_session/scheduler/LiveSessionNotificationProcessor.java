@@ -242,6 +242,8 @@ public class LiveSessionNotificationProcessor {
                 Optional<LiveSession> sessionOpt = liveSessionRepository.findById(schedule.getSessionId());
                 if (sessionOpt.isEmpty()) continue;
                 LiveSession session = sessionOpt.get();
+                // Re-entry sessions (ReentryService.SESSION_SOURCE) send nothing for now.
+                if ("REENTRY".equals(session.getSource())) continue;
 
                 Map<String, Object> ctx = new HashMap<>();
                 ctx.put("liveSession", session);
@@ -291,6 +293,8 @@ public class LiveSessionNotificationProcessor {
                 Optional<LiveSession> sessionOpt = liveSessionRepository.findById(schedule.getSessionId());
                 if (sessionOpt.isEmpty()) continue;
                 LiveSession session = sessionOpt.get();
+                // Re-entry sessions (ReentryService.SESSION_SOURCE) send nothing for now.
+                if ("REENTRY".equals(session.getSource())) continue;
 
                 Map<String, Object> ctx = new HashMap<>();
                 ctx.put("liveSession", session);

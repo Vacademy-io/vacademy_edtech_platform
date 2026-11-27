@@ -43,18 +43,17 @@
     "reentry": {
         "title": "Démarrer la reprise",
         "titleFor": "Démarrer la reprise : {{name}}",
-        "intro": "Pour un élève qui revient après une longue pause : le groupe passe en Reprise, avec un cours supplémentaire ou un cours passerelle pour rattraper, en une seule étape.",
+        "intro": "Pour un apprenant qui revient après une longue pause ou une suspension : le groupe passe en Reprise, les frais peuvent redémarrer, et vous pouvez ajouter des cours supplémentaires, un cours individuel de rattrapage et une courte évaluation, en une seule étape.",
         "batch": "{{batch}} que l'élève reprend",
-        "onPause": "Ce groupe a une pause en cours. Reprenez-la d'abord, ou reprenez-la dans la même étape.",
-        "resumePause": "Reprendre la pause maintenant (le choix de reprise habituel de l'institut s'applique)",
         "reasonPlaceholder": "Pourquoi l'élève reprend (affiché dans l'historique)",
         "extra": {
-            "title": "Ajouter un cours supplémentaire",
-            "hint": "Suivre un autre {{batch}} pendant un temps pour rattraper."
-        },
-        "bridge": {
-            "title": "Ajouter un cours passerelle",
-            "hint": "Un court {{batch}} de rattrapage avant le retour."
+            "title": "Cours supplémentaires",
+            "hint": "Suivre d'autres {{batch}} en cours pendant un temps, chacun avec son premier et son dernier jour. Ajoutez-en un par horaire (par exemple lundi 21 h, mardi 12 h).",
+            "add": "Ajouter un cours supplémentaire",
+            "addAnother": "Ajouter un autre groupe",
+            "remove": "Retirer",
+            "max_one": "Au plus {{count}} cours supplémentaire.",
+            "max_other": "Au plus {{count}} cours supplémentaires."
         },
         "from": "Premier jour",
         "to": "Dernier jour",
@@ -62,15 +61,12 @@
         "returnHint": "Repasse automatiquement à {{status}} le matin suivant le {{date}}.",
         "returnHintManual": "Enregistré comme date de prochaine action. Le retour automatique est désactivé dans Paramètres → Parcours.",
         "returnNone": "Sans date : l'élève reste en Reprise jusqu'à ce que vous changiez le statut.",
-        "noFeeNoMessage": "Aucun frais n'est facturé et aucun message n'est envoyé.",
         "submit": "Démarrer la reprise",
         "failed": "Impossible de démarrer la reprise.",
         "batchPlaceholder": "Choisir un {{batch}}",
         "batchSearch": "Rechercher",
         "batchEmpty": "Aucun résultat",
         "batchesFailed": "Impossible de charger la liste.",
-        "saved_one": "Reprise démarrée avec {{count}} lien de groupe.",
-        "saved_other": "Reprise démarrée avec {{count}} liens de groupe.",
         "window_one": "{{count}} jour : du {{from}} au {{to}}",
         "window_other": "{{count}} jours : du {{from}} au {{to}}",
         "errors": {
@@ -83,7 +79,83 @@
             "endInPast": "Le dernier jour ne peut pas être dans le passé.",
             "returnInPast": "La date ne peut pas être dans le passé.",
             "tooLong_one": "Un lien peut durer au plus {{count}} jour.",
-            "tooLong_other": "Un lien peut durer au plus {{count}} jours."
+            "tooLong_other": "Un lien peut durer au plus {{count}} jours.",
+            "teacher": "Choisissez un enseignant.",
+            "sessionDate": "Choisissez la date.",
+            "sessionTime": "Choisissez l'heure de début.",
+            "sessionPast": "Cette heure est déjà passée.",
+            "duration": "Choisissez une durée entre 5 et 240 minutes.",
+            "amount": "Saisissez un montant supérieur à zéro.",
+            "dueDate": "Choisissez une date d'échéance qui n'est pas passée.",
+            "duplicateBatch": "Ce groupe est déjà ajouté pour des dates qui se chevauchent."
+        },
+        "statusFallback": "Reprise",
+        "saved": "Reprise démarrée.",
+        "savedWithSessions_one": "Reprise démarrée. {{count}} séance planifiée.",
+        "savedWithSessions_other": "Reprise démarrée. {{count}} séances planifiées.",
+        "fees": {
+            "title": "Frais",
+            "pausedIntro": "Ce groupe est en pause : les frais et l'accès sont arrêtés.",
+            "restart": "Redémarrer les frais et l'accès maintenant",
+            "restartHint": "Termine la pause avec le choix de reprise habituel de l'établissement, comme le bouton Reprendre.",
+            "willAccess": "L'accès au groupe revient.",
+            "willBilling": "La facturation redémarre et les échéances impayées sont décalées du nombre de jours de pause.",
+            "willFeeReminders": "Les rappels de frais reprennent.",
+            "willClassReminders": "Les rappels de cours reprennent.",
+            "nextCharge": "Prochain prélèvement : {{date}}",
+            "planEnd": "Fin de l'abonnement : {{date}}",
+            "instalmentsMoved_one": "{{count}} échéance impayée est décalée.",
+            "instalmentsMoved_other": "{{count}} échéances impayées sont décalées.",
+            "noDates": "Aucune date d'abonnement à décaler.",
+            "required": "Cochez cette case pour démarrer la reprise. Pour garder la pause, fermez et reprenez-la plus tard.",
+            "running": "Les frais courent déjà : cet apprenant n'a pas de pause en cours, rien ne change pour les frais ni l'accès."
+        },
+        "oneOnOne": {
+            "title": "Cours individuel de rattrapage",
+            "hint": "Cours privé(s) entre l'apprenant et un enseignant pour rattraper. Ils apparaissent dans le planning de l'enseignant et les cours en direct de l'apprenant.",
+            "defaultTitle": "Cours individuel",
+            "titleLabel": "Titre",
+            "sessions": "Séances",
+            "addSession": "Ajouter une séance",
+            "removeSession": "Retirer la séance",
+            "payment": "Paiement supplémentaire",
+            "paymentHint": "Facultatif. Ajouté aux frais de l'apprenant comme une échéance à part.",
+            "amount": "Montant",
+            "dueDate": "Date d'échéance"
+        },
+        "assessment": {
+            "title": "Séance d'évaluation",
+            "hint": "Facultatif : une courte séance avec un enseignant pour voir où en est l'apprenant.",
+            "skip": "Passer",
+            "schedule": "Planifier"
+        },
+        "teacher": {
+            "label": "Enseignant",
+            "placeholder": "Choisir un enseignant",
+            "empty": "Aucun résultat",
+            "failed": "Impossible de charger les enseignants."
+        },
+        "slot": {
+            "date": "Date",
+            "start": "Heure de début",
+            "duration": "Durée",
+            "minutes_one": "{{count}} min",
+            "minutes_other": "{{count}} min"
+        },
+        "summary": {
+            "title": "Ce qui va se passer",
+            "status": "{{batch}} passe en {{status}}.",
+            "feesRestart": "Les frais et l'accès redémarrent maintenant.",
+            "feesRunning": "Les frais continuent comme avant.",
+            "extra": "Cours supplémentaire : {{batch}}, du {{from}} au {{to}}.",
+            "oneOnOne_one": "Cours individuel : {{count}} séance avec {{teacher}} à partir du {{date}}.",
+            "oneOnOne_other": "Cours individuel : {{count}} séances avec {{teacher}} à partir du {{date}}.",
+            "assessment_one": "Évaluation : {{date}} {{time}} avec {{teacher}} ({{count}} min).",
+            "assessment_other": "Évaluation : {{date}} {{time}} avec {{teacher}} ({{count}} min).",
+            "assessmentSkipped": "Évaluation : passée.",
+            "returnOn": "Retour en {{status}} après le {{date}}.",
+            "noReturn": "Reste en {{status}} jusqu'à ce que vous changiez.",
+            "noMessage": "Aucun e-mail, WhatsApp ni rappel n'est envoyé pour ce qui est créé ici."
         }
     }
 }

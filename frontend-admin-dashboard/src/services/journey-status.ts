@@ -255,29 +255,65 @@ export interface ReentryLink {
     to: string;
 }
 
+/** One live session: date (YYYY-MM-DD) and start time (HH:MM) in the institute's time zone. */
+export interface ReentrySlot {
+    date: string;
+    start_time: string;
+    duration_minutes: number;
+}
+
+export interface ReentryOneOnOne {
+    teacher_user_id: string;
+    title?: string | null;
+    sessions: ReentrySlot[];
+    /** Extra payment for the one-on-one class (only once the dues service is live). */
+    payment?: { amount: number; due_date: string; note?: string | null } | null;
+}
+
+export interface ReentryAssessment extends ReentrySlot {
+    teacher_user_id: string;
+}
+
 export interface StartReentryRequest {
     user_id: string;
     /** The enrolment the learner is coming back to. */
     package_session_id: string;
     reason: string;
-    /** Sit in another batch for a while to catch up. */
+    /** Sit in other ongoing batches for a while to catch up (each with its own dates). */
+    extra_classes?: ReentryLink[];
+    /** Older clients: a single extra class. */
     extra_class?: ReentryLink | null;
-    /** A short catch-up batch. */
+    /** Older clients: a bridge course as a batch link. Still accepted, no longer offered. */
     bridge_course?: ReentryLink | null;
-    /** Back to the default status after this date. Default: the later last day of the two links. */
+    /** One-on-one bridge class(es) with a teacher. */
+    one_on_one?: ReentryOneOnOne | null;
+    /** Null = assessment skipped. */
+    assessment?: ReentryAssessment | null;
+    /** Back to the default status after this date. Default: the latest link last day / one-on-one date. */
     return_on?: string | null;
-    /** Resume a running pause on that batch in the same step (else the server refuses). */
+    /** Resume a running pause on that batch in the same step: fees and access restart. */
     resume_pause?: boolean;
 }
 
 export interface StartReentryResponse {
     status_key: string;
     return_on: string | null;
+    reentry_id: string;
     links: { kind: 'EXTRA_CLASS' | 'BRIDGE_COURSE'; access_id: string; batch: string | null }[];
+    sessions: {
+        kind: 'ONE_ON_ONE' | 'ASSESSMENT';
+        session_id: string;
+        date: string;
+        start_time: string;
+        duration_minutes: number;
+    }[];
+    access_ids: string[];
+    session_ids: string[];
+    due_id: string | null;
     resumed_pauses: number;
 }
 
-/** Re-entry in one step: status, extra class and bridge course. No fee, no message. */
+/** Re-entry in one step: status, fees restart, extra classes, one-on-one, assessment. Sends no message. */
 export const startReentry = async (
     instituteId: string,
     body: StartReentryRequest

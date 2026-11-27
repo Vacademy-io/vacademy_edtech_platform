@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useForm, type Control } from 'react-hook-form';
+import { useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -10,8 +10,6 @@ import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { MyInput } from '@/components/design-system/input';
 import SelectField from '@/components/design-system/select-field';
-import { SearchableSelect } from '@/components/design-system/searchable-select';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
     Form,
     FormControl,
@@ -20,101 +18,107 @@ import {
     FormLabel,
     FormMessage,
 } from '@/components/ui/form';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import {
     JOURNEY_STATUS_QUERY_KEY,
     findJourneyStatus,
+    findReentryStatus,
     startReentry,
     type JourneyEnrolment,
     type JourneyStatusSettings,
 } from '@/services/journey-status';
-import { EXTRA_CLASSES_QUERY_KEY, useExtraClassBatches } from '@/services/extra-classes';
+import { EXTRA_CLASSES_QUERY_KEY } from '@/services/extra-classes';
 import { ENROLMENT_BREAKS_QUERY_KEY } from '@/services/enrolment-breaks';
-import { addDaysTo, formatDay, lengthInDays, localToday } from '../breaks/break-utils';
+import { formatDay, lengthInDays, localToday } from '../breaks/break-utils';
 import { EXTRA_CLASS_MAX_DAYS } from '../breaks/add-extra-class-dialog';
+import {
+    AssessmentSection,
+    EXTRA_PAYMENT_READY,
+    ExtraClassesSection,
+    FeesSection,
+    OneOnOneSection,
+    ReentrySummary,
+    nowHm,
+    useStaffOptions,
+} from './reentry-sections';
 
-type LinkKey = 'extra' | 'bridge';
+export const MAX_EXTRA_CLASSES = 5;
+export const MAX_ONE_ON_ONE_SESSIONS = 10;
+export const DEFAULT_ASSESSMENT_MINUTES = 10;
+
+const slotSchema = z.object({ date: z.string(), start: z.string(), duration: z.string() });
 
 const buildSchema = (t: TFunction, today: string) =>
     z
         .object({
             batch: z.string(),
             reason: z.string().max(500),
-            extraOn: z.boolean(),
-            extraBatch: z.string(),
-            extraFrom: z.string(),
-            extraTo: z.string(),
-            bridgeOn: z.boolean(),
-            bridgeBatch: z.string(),
-            bridgeFrom: z.string(),
-            bridgeTo: z.string(),
+            restartFees: z.boolean(),
+            extras: z.array(z.object({ batch: z.string(), from: z.string(), to: z.string() })),
+            oneOnOneOn: z.boolean(),
+            teacher: z.string(),
+            title: z.string().max(120),
+            sessions: z.array(slotSchema),
+            amount: z.string(),
+            dueDate: z.string(),
+            assessmentMode: z.enum(['skip', 'schedule']),
+            assessmentTeacher: z.string(),
+            assessment: slotSchema,
             returnOn: z.string(),
-            resumePause: z.boolean(),
         })
         .superRefine((v, ctx) => {
-            if (!v.batch) {
-                ctx.addIssue({ code: 'custom', path: ['batch'], message: t('reentry.errors.batch') });
-            }
-            if (!v.reason.trim()) {
-                ctx.addIssue({ code: 'custom', path: ['reason'], message: t('reentry.errors.reason') });
-            }
-            (['extra', 'bridge'] as LinkKey[]).forEach((k) => {
-                if (!v[`${k}On` as const]) return;
-                const ps = v[`${k}Batch` as const];
-                const from = v[`${k}From` as const];
-                const to = v[`${k}To` as const];
-                if (!ps) {
-                    ctx.addIssue({
-                        code: 'custom',
-                        path: [`${k}Batch` as const],
-                        message: t('reentry.errors.linkBatch'),
-                    });
-                } else if (ps === v.batch) {
-                    ctx.addIssue({
-                        code: 'custom',
-                        path: [`${k}Batch` as const],
-                        message: t('reentry.errors.sameBatch'),
-                    });
+            const issue = (path: (string | number)[], message: string) =>
+                ctx.addIssue({ code: 'custom', path, message });
+            if (!v.batch) issue(['batch'], t('reentry.errors.batch'));
+            if (!v.reason.trim()) issue(['reason'], t('reentry.errors.reason'));
+
+            v.extras.forEach((x, i) => {
+                if (!x.batch) issue(['extras', i, 'batch'], t('reentry.errors.linkBatch'));
+                else if (x.batch === v.batch) issue(['extras', i, 'batch'], t('reentry.errors.sameBatch'));
+                else if (
+                    v.extras.some(
+                        (y, j) => j < i && y.batch === x.batch && y.from <= x.to && x.from <= y.to
+                    )
+                ) {
+                    issue(['extras', i, 'batch'], t('reentry.errors.duplicateBatch'));
                 }
-                if (!from || !to) {
-                    ctx.addIssue({
-                        code: 'custom',
-                        path: [`${k}To` as const],
-                        message: t('reentry.errors.dates'),
-                    });
-                } else if (to < from) {
-                    ctx.addIssue({
-                        code: 'custom',
-                        path: [`${k}To` as const],
-                        message: t('reentry.errors.endBeforeStart'),
-                    });
-                } else if (to < today) {
-                    ctx.addIssue({
-                        code: 'custom',
-                        path: [`${k}To` as const],
-                        message: t('reentry.errors.endInPast'),
-                    });
-                } else if ((lengthInDays(from, to) ?? 0) > EXTRA_CLASS_MAX_DAYS) {
-                    ctx.addIssue({
-                        code: 'custom',
-                        path: [`${k}To` as const],
-                        message: t('reentry.errors.tooLong', { count: EXTRA_CLASS_MAX_DAYS }),
-                    });
+                if (!x.from || !x.to) issue(['extras', i, 'to'], t('reentry.errors.dates'));
+                else if (x.to < x.from) issue(['extras', i, 'to'], t('reentry.errors.endBeforeStart'));
+                else if (x.to < today) issue(['extras', i, 'to'], t('reentry.errors.endInPast'));
+                else if ((lengthInDays(x.from, x.to) ?? 0) > EXTRA_CLASS_MAX_DAYS) {
+                    issue(['extras', i, 'to'], t('reentry.errors.tooLong', { count: EXTRA_CLASS_MAX_DAYS }));
                 }
             });
-            if (v.returnOn && v.returnOn < today) {
-                ctx.addIssue({
-                    code: 'custom',
-                    path: ['returnOn'],
-                    message: t('reentry.errors.returnInPast'),
-                });
+
+            const checkSlot = (path: (string | number)[], s: z.infer<typeof slotSchema>) => {
+                if (!s.date) issue([...path, 'date'], t('reentry.errors.sessionDate'));
+                else if (s.date < today || (s.date === today && s.start && s.start < nowHm())) {
+                    issue([...path, 'date'], t('reentry.errors.sessionPast'));
+                }
+                if (!s.start) issue([...path, 'start'], t('reentry.errors.sessionTime'));
+                const d = Number(s.duration);
+                if (!Number.isInteger(d) || d < 5 || d > 240) {
+                    issue([...path, 'duration'], t('reentry.errors.duration'));
+                }
+            };
+            if (v.oneOnOneOn) {
+                if (!v.teacher) issue(['teacher'], t('reentry.errors.teacher'));
+                v.sessions.forEach((s, i) => checkSlot(['sessions', i], s));
+                if (EXTRA_PAYMENT_READY && (v.amount || v.dueDate)) {
+                    if (!(Number(v.amount) > 0)) issue(['amount'], t('reentry.errors.amount'));
+                    if (!v.dueDate || v.dueDate < today) issue(['dueDate'], t('reentry.errors.dueDate'));
+                }
             }
+            if (v.assessmentMode === 'schedule') {
+                if (!v.assessmentTeacher) issue(['assessmentTeacher'], t('reentry.errors.teacher'));
+                checkSlot(['assessment'], v.assessment);
+            }
+            if (v.returnOn && v.returnOn < today) issue(['returnOn'], t('reentry.errors.returnInPast'));
         });
 
-type FormValues = z.infer<ReturnType<typeof buildSchema>>;
+export type ReentryFormValues = z.infer<ReturnType<typeof buildSchema>>;
 
 interface StartReentryDialogProps {
     onClose: () => void;
@@ -128,9 +132,10 @@ interface StartReentryDialogProps {
 }
 
 /**
- * Re-entry in one step: the batch the learner returns to moves to the Re-entry status, with an
- * optional extra class (sit in another batch to catch up) and bridge course (a short catch-up
- * batch), and a date to go back to the default status. No fee, no message.
+ * Re-entry in one step: the batch the learner returns to moves to the Re-entry status, fees and
+ * access restart (when a pause is running), plus optional extra classes in other ongoing batches,
+ * a one-on-one bridge class with a teacher and a short assessment session, and a date to go back
+ * to the default status. Sends no message: sessions created here have no reminders.
  */
 export const StartReentryDialog = ({
     onClose,
@@ -147,10 +152,12 @@ export const StartReentryDialog = ({
     const schema = useMemo(() => buildSchema(t, today), [t, today]);
     const batchTerm = getTerminology(ContentTerms.Batch, SystemTerms.Batch);
     const backTo = findJourneyStatus(settings, settings.default_status)?.label ?? settings.default_status;
+    const reentryLabel = findReentryStatus(settings)?.label ?? t('reentry.statusFallback');
     const own = useMemo(() => enrolments.filter((e) => !e.extra_class), [enrolments]);
     const [returnTouched, setReturnTouched] = useState(false);
+    const staff = useStaffOptions(instituteId);
 
-    const form = useForm<FormValues>({
+    const form = useForm<ReentryFormValues>({
         resolver: zodResolver(schema),
         defaultValues: {
             batch:
@@ -160,23 +167,31 @@ export const StartReentryDialog = ({
                       ? own[0]!.package_session_id
                       : '') ?? '',
             reason: '',
-            extraOn: false,
-            extraBatch: '',
-            extraFrom: today,
-            extraTo: addDaysTo(today, 13),
-            bridgeOn: false,
-            bridgeBatch: '',
-            bridgeFrom: today,
-            bridgeTo: addDaysTo(today, 29),
+            restartFees: false,
+            extras: [],
+            oneOnOneOn: false,
+            teacher: '',
+            title: t('reentry.oneOnOne.defaultTitle'),
+            sessions: [{ date: '', start: '', duration: '60' }],
+            amount: '',
+            dueDate: '',
+            assessmentMode: 'skip',
+            assessmentTeacher: '',
+            assessment: { date: '', start: '', duration: String(DEFAULT_ASSESSMENT_MINUTES) },
             returnOn: '',
-            resumePause: false,
         },
     });
+    const extras = useFieldArray({ control: form.control, name: 'extras' });
+    const sessions = useFieldArray({ control: form.control, name: 'sessions' });
     const v = form.watch();
     const selected = own.find((e) => e.package_session_id === v.batch);
+    const onPause = Boolean(selected?.on_pause);
 
-    // The return date follows the later last day of the links until staff set it themselves.
-    const suggestedReturn = [v.extraOn ? v.extraTo : '', v.bridgeOn ? v.bridgeTo : '']
+    // The return date follows the latest extra-class last day and one-on-one date until staff set it.
+    const suggestedReturn = [
+        ...v.extras.map((x) => x.to),
+        ...(v.oneOnOneOn ? v.sessions.map((s) => s.date) : []),
+    ]
         .filter(Boolean)
         .sort()
         .pop();
@@ -195,23 +210,49 @@ export const StartReentryDialog = ({
     );
 
     const mutation = useMutation({
-        mutationFn: (f: FormValues) => {
-            const link = (k: LinkKey) =>
-                f[`${k}On` as const]
-                    ? { package_session_id: f[`${k}Batch` as const], from: f[`${k}From` as const], to: f[`${k}To` as const] }
-                    : null;
-            return startReentry(instituteId, {
+        mutationFn: (f: ReentryFormValues) =>
+            startReentry(instituteId, {
                 user_id: userId,
                 package_session_id: f.batch,
                 reason: f.reason.trim(),
-                extra_class: link('extra'),
-                bridge_course: link('bridge'),
+                extra_classes: f.extras.map((x) => ({
+                    package_session_id: x.batch,
+                    from: x.from,
+                    to: x.to,
+                })),
+                one_on_one: f.oneOnOneOn
+                    ? {
+                          teacher_user_id: f.teacher,
+                          title: f.title.trim() || null,
+                          sessions: f.sessions.map((s) => ({
+                              date: s.date,
+                              start_time: s.start,
+                              duration_minutes: Number(s.duration),
+                          })),
+                          payment:
+                              EXTRA_PAYMENT_READY && f.amount
+                                  ? { amount: Number(f.amount), due_date: f.dueDate }
+                                  : null,
+                      }
+                    : null,
+                assessment:
+                    f.assessmentMode === 'schedule'
+                        ? {
+                              teacher_user_id: f.assessmentTeacher,
+                              date: f.assessment.date,
+                              start_time: f.assessment.start,
+                              duration_minutes: Number(f.assessment.duration),
+                          }
+                        : null,
                 return_on: f.returnOn || null,
-                resume_pause: Boolean(selected?.on_pause && f.resumePause),
-            });
-        },
+                resume_pause: onPause && f.restartFees,
+            }),
         onSuccess: (res) => {
-            toast.success(t('reentry.saved', { count: res.links.length }));
+            toast.success(
+                res.sessions.length > 0
+                    ? t('reentry.savedWithSessions', { count: res.sessions.length })
+                    : t('reentry.saved')
+            );
             queryClient.invalidateQueries({ queryKey: [JOURNEY_STATUS_QUERY_KEY] });
             queryClient.invalidateQueries({ queryKey: [EXTRA_CLASSES_QUERY_KEY] });
             if (res.resumed_pauses > 0) {
@@ -231,7 +272,7 @@ export const StartReentryDialog = ({
             heading={
                 learnerName ? t('reentry.titleFor', { name: learnerName }) : t('reentry.title')
             }
-            dialogWidth="max-w-lg"
+            dialogWidth="max-w-2xl"
             footer={
                 <>
                     <MyButton type="button" buttonType="secondary" scale="medium" onClick={onClose}>
@@ -241,7 +282,7 @@ export const StartReentryDialog = ({
                         type="button"
                         buttonType="primary"
                         scale="medium"
-                        disable={mutation.isPending || Boolean(selected?.on_pause && !v.resumePause)}
+                        disable={mutation.isPending || (onPause && !v.restartFees)}
                         onAsyncClick={form.handleSubmit((f) => mutation.mutateAsync(f))}
                         loadingText={t('dialog.saving')}
                     >
@@ -262,28 +303,6 @@ export const StartReentryDialog = ({
                         className="w-full sm:w-full"
                         labelStyle="w-full"
                     />
-                    {selected?.on_pause && (
-                        <div className="space-y-2 rounded-md bg-warning-50 p-3 text-caption text-warning-700 ring-1 ring-warning-200">
-                            <p>{t('reentry.onPause')}</p>
-                            <FormField
-                                control={form.control}
-                                name="resumePause"
-                                render={({ field }) => (
-                                    <FormItem className="flex items-center gap-2 space-y-0">
-                                        <FormControl>
-                                            <Checkbox
-                                                checked={field.value}
-                                                onCheckedChange={(c) => field.onChange(c === true)}
-                                            />
-                                        </FormControl>
-                                        <FormLabel className="cursor-pointer font-normal">
-                                            {t('reentry.resumePause')}
-                                        </FormLabel>
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-                    )}
                     <FormField
                         control={form.control}
                         name="reason"
@@ -302,28 +321,46 @@ export const StartReentryDialog = ({
                         )}
                     />
 
-                    <LinkFields
-                        k="extra"
+                    <FeesSection
                         control={form.control}
-                        on={v.extraOn}
-                        from={v.extraFrom}
-                        to={v.extraTo}
-                        title={t('reentry.extra.title')}
-                        hint={t('reentry.extra.hint', { batch: batchTerm.toLowerCase() })}
+                        userId={userId}
+                        instituteId={instituteId}
+                        batch={v.batch}
+                        onPause={onPause}
+                        restart={v.restartFees}
+                    />
+                    <ExtraClassesSection
+                        control={form.control}
+                        fields={extras.fields}
+                        values={v.extras}
+                        onAdd={() => extras.append({ batch: '', from: today, to: '' })}
+                        onRemove={extras.remove}
+                        max={MAX_EXTRA_CLASSES}
                         instituteId={instituteId}
                         batchTerm={batchTerm}
                         today={today}
                     />
-                    <LinkFields
-                        k="bridge"
+                    <OneOnOneSection
                         control={form.control}
-                        on={v.bridgeOn}
-                        from={v.bridgeFrom}
-                        to={v.bridgeTo}
-                        title={t('reentry.bridge.title')}
-                        hint={t('reentry.bridge.hint', { batch: batchTerm.toLowerCase() })}
-                        instituteId={instituteId}
-                        batchTerm={batchTerm}
+                        on={v.oneOnOneOn}
+                        fields={sessions.fields}
+                        onAdd={() => {
+                            const last = v.sessions[v.sessions.length - 1];
+                            sessions.append({
+                                date: '',
+                                start: last?.start ?? '',
+                                duration: last?.duration ?? '60',
+                            });
+                        }}
+                        onRemove={sessions.remove}
+                        max={MAX_ONE_ON_ONE_SESSIONS}
+                        staff={staff}
+                        today={today}
+                    />
+                    <AssessmentSection
+                        control={form.control}
+                        mode={v.assessmentMode}
+                        staff={staff}
                         today={today}
                     />
 
@@ -359,183 +396,21 @@ export const StartReentryDialog = ({
                             </FormItem>
                         )}
                     />
-                    <p className="rounded-md bg-info-50 p-3 text-caption text-info-700 ring-1 ring-info-200">
-                        {t('reentry.noFeeNoMessage')}
-                    </p>
+
+                    <ReentrySummary
+                        values={v}
+                        instituteId={instituteId}
+                        statusLabel={reentryLabel}
+                        backTo={backTo}
+                        onPause={onPause}
+                        staff={staff}
+                        batchLabel={(id) => selectedLabel(own, id)}
+                    />
                 </form>
             </Form>
         </MyDialog>
     );
 };
 
-interface LinkFieldsProps {
-    k: LinkKey;
-    control: Control<FormValues>;
-    on: boolean;
-    from: string;
-    to: string;
-    title: string;
-    hint: string;
-    instituteId: string;
-    batchTerm: string;
-    today: string;
-}
-
-/** "Add extra class" / "Add bridge course": a tick, then the batch picker and the dates. */
-const LinkFields = ({
-    k,
-    control,
-    on,
-    from,
-    to,
-    title,
-    hint,
-    instituteId,
-    batchTerm,
-    today,
-}: LinkFieldsProps) => {
-    const { t } = useTranslation('manageStudentsJourney');
-    const length = on && from && to ? lengthInDays(from, to) : null;
-    return (
-        <div className="space-y-3 rounded-md border border-neutral-200 p-3">
-            <FormField
-                control={control}
-                name={`${k}On` as const}
-                render={({ field }) => (
-                    <FormItem className="flex items-start gap-2 space-y-0">
-                        <FormControl>
-                            <Checkbox
-                                className="mt-0.5"
-                                checked={field.value}
-                                onCheckedChange={(c) => field.onChange(c === true)}
-                            />
-                        </FormControl>
-                        <div className="space-y-0.5">
-                            <FormLabel className="cursor-pointer">{title}</FormLabel>
-                            <p className="text-caption text-neutral-500">{hint}</p>
-                        </div>
-                    </FormItem>
-                )}
-            />
-            {on && (
-                <>
-                    <FormField
-                        control={control}
-                        name={`${k}Batch` as const}
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>{batchTerm}</FormLabel>
-                                <FormControl>
-                                    <LinkBatchPicker
-                                        instituteId={instituteId}
-                                        value={field.value}
-                                        onChange={field.onChange}
-                                        batchTerm={batchTerm}
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <FormField
-                            control={control}
-                            name={`${k}From` as const}
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>{t('reentry.from')}</FormLabel>
-                                    <FormControl>
-                                        <MyInput
-                                            inputType="date"
-                                            input={field.value}
-                                            onChangeFunction={(e) => field.onChange(e.target.value)}
-                                            className="w-full sm:w-full"
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={control}
-                            name={`${k}To` as const}
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>{t('reentry.to')}</FormLabel>
-                                    <FormControl>
-                                        <MyInput
-                                            inputType="date"
-                                            input={field.value}
-                                            onChangeFunction={(e) => field.onChange(e.target.value)}
-                                            min={from || today}
-                                            className="w-full sm:w-full"
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                    {length !== null && length > 0 && (
-                        <p className="text-caption text-neutral-500">
-                            {t('reentry.window', {
-                                count: length,
-                                from: formatDay(from),
-                                to: formatDay(to),
-                            })}
-                        </p>
-                    )}
-                </>
-            )}
-        </div>
-    );
-};
-
-/** The institute's active batches, the same list and picker the Extra classes card uses. */
-const LinkBatchPicker = ({
-    instituteId,
-    value,
-    onChange,
-    batchTerm,
-}: {
-    instituteId: string;
-    value: string;
-    onChange: (v: string) => void;
-    batchTerm: string;
-}) => {
-    const { t } = useTranslation('manageStudentsJourney');
-    const batches = useExtraClassBatches(instituteId);
-    const options = useMemo(
-        () =>
-            (batches.data ?? []).map((b) => ({
-                value: b.package_session_id,
-                label: b.label,
-                keywords: [b.course_name, b.level_name, b.batch_name].filter(
-                    (x): x is string => Boolean(x)
-                ),
-            })),
-        [batches.data]
-    );
-    if (batches.isLoading) return <Skeleton className="h-9 w-full" />;
-    if (batches.isError) {
-        return (
-            <div className="flex items-center justify-between gap-2 rounded-md bg-danger-50 p-3 text-caption text-danger-700 ring-1 ring-danger-200">
-                <span>{t('reentry.batchesFailed')}</span>
-                <MyButton type="button" buttonType="text" scale="small" onClick={() => batches.refetch()}>
-                    {t('card.retry')}
-                </MyButton>
-            </div>
-        );
-    }
-    return (
-        <SearchableSelect
-            options={options}
-            value={value}
-            onChange={onChange}
-            portal={false}
-            placeholder={t('reentry.batchPlaceholder', { batch: batchTerm })}
-            searchPlaceholder={t('reentry.batchSearch')}
-            emptyText={t('reentry.batchEmpty')}
-        />
-    );
-};
+const selectedLabel = (own: JourneyEnrolment[], id: string) =>
+    own.find((e) => e.package_session_id === id)?.course_label || id;

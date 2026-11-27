@@ -138,6 +138,55 @@ public class LiveSessionUserDirectoryClient {
     }
 
     /**
+     * The user when they hold an ACTIVE role other than STUDENT in this institute (staff: admin,
+     * teacher, ...); null when they do not. Unlike the other lookups this one throws when
+     * auth_service cannot be asked, because it guards a write: "could not check" must not read
+     * as "not staff" (a confusing refusal) or as "staff" (a hole).
+     */
+    public DirectoryUser findActiveStaffMember(String instituteId, String userId) {
+        if (!StringUtils.hasText(instituteId) || !StringUtils.hasText(userId)) {
+            return null;
+        }
+        String authHeader = currentRequestAuthHeader();
+        if (authHeader == null) {
+            throw new vacademy.io.common.exceptions.VacademyException("Could not check the teacher. Try again.");
+        }
+        JsonNode content;
+        try {
+            Map<String, Object> body = new HashMap<>();
+            body.put("status", List.of("ACTIVE"));
+            body.put("user_ids", List.of(userId.trim()));
+            body.put("page_number", 0);
+            body.put("page_size", 5);
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", authHeader);
+            headers.set("clientId", instituteId);
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            ResponseEntity<String> response = restTemplate.exchange(
+                    authServerBaseUrl + "/auth-service/v1/user-roles/users-of-status?instituteId=" + instituteId,
+                    HttpMethod.POST, new HttpEntity<>(body, headers), String.class);
+            content = objectMapper.readTree(response.getBody()).path("content");
+        } catch (Exception e) {
+            log.warn("live_session.staff_check_failed instituteId={} userId={}: {}", instituteId, userId, e.getMessage());
+            throw new vacademy.io.common.exceptions.VacademyException("Could not check the teacher. Try again.");
+        }
+        for (JsonNode node : content) {
+            if (!userId.trim().equals(text(node, "id"))) continue;
+            for (JsonNode role : node.path("roles")) {
+                String name = text(role, "role_name", "roleName");
+                String inst = text(role, "institute_id", "instituteId");
+                String status = text(role, "status");
+                if (name != null && !"STUDENT".equalsIgnoreCase(name)
+                        && (inst == null || instituteId.equals(inst))
+                        && (status == null || "ACTIVE".equalsIgnoreCase(status))) {
+                    return toDirectoryUser(node);
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
      * auth_service serializes {@code User} in camelCase and
      * {@code UserWithRolesDTO} in snake_case, and this client reads both
      * endpoints, so each field is looked up under either spelling.
