@@ -229,3 +229,85 @@ def test_no_room_at_all_means_no_raise():
     result = {"marks_awarded": 30, "cuts": [{"finding": "misread", "why": "read wrong"}]}
     assert not apply_check(verdict, result)
     assert verdict["marks_awarded"] == 20.0 and "deduction_check" not in verdict
+
+
+def _q5_verdict():
+    """Q5 of a real copy: 5(a) not attempted (six lines at 0), 5(b) partly
+    right, with 0.5 cut on 5(b)'s variation line (index 7)."""
+    lines = [{"criteria_name": f"5(a) point {i + 1}", "marks": 0.0, "max": 1.0, "reason": "Not attempted"}
+             for i in range(6)]
+    lines += [
+        {"criteria_name": "Court may dissolve for permanent incapacity", "marks": 1.0, "max": 1.0,
+         "reason": "Full marks - rule stated"},
+        {"criteria_name": "Applied: four months' absence is temporary", "marks": 0.5, "max": 1.0,
+         "reason": "0.5 mark deducted because variation (never work again) not answered, p7_r16"},
+        {"criteria_name": "Unregistered firm cannot sue", "marks": 1.0, "max": 1.0, "reason": "Full marks"},
+        {"criteria_name": "Pending suit: withdraw and file afresh", "marks": 0.0, "max": 1.0,
+         "reason": "Remedy not given"},
+    ]
+    return {"marks_awarded": 2.5, "max_marks": 10.0, "criteria_breakdown": lines, "annotations": []}
+
+
+def test_the_raise_lands_on_the_misread_line_by_id():
+    from app.services.copy_check.deduction_check import apply_check
+    v = _q5_verdict()
+    result = {"marks_awarded": 3.0, "cuts": [
+        {"id": 7, "finding": "misread", "why": "the variation is answered: the court can dissolve it"},
+        {"id": 0, "finding": "real", "why": "5(a) is blank"}]}
+    assert apply_check(v, result)
+    lines = v["criteria_breakdown"]
+    assert lines[7]["marks"] == 1.0 and lines[7]["reason"].startswith("Re-checked against the handwriting: the variation")
+    assert lines[0]["marks"] == 0.0 and lines[0]["reason"] == "Not attempted"
+    assert v["marks_awarded"] == 3.0
+
+
+def test_the_raise_finds_its_line_by_the_echoed_reason():
+    from app.services.copy_check.deduction_check import apply_check
+    v = _q5_verdict()
+    result = {"marks_awarded": 3.0, "cuts": [{"finding": "misread", "why": "answered",
+                                             "reason": "0.5 mark deducted because variation (never work again) not answered, p7_r16"}]}
+    assert apply_check(v, result)
+    assert [c["marks"] for c in v["criteria_breakdown"]][6:8] == [1.0, 1.0]
+    assert v["criteria_breakdown"][0]["marks"] == 0.0
+
+
+def test_an_unmatched_misread_never_raises_a_blank_line():
+    from app.services.copy_check.deduction_check import apply_check
+    v = _q5_verdict()
+    # id 6 is a full line (never offered as a cut), so the check named no line.
+    result = {"marks_awarded": 3.5, "cuts": [{"id": 6, "finding": "misread", "why": "x"}]}
+    assert apply_check(v, result)
+    lines = v["criteria_breakdown"]
+    # Part-credited line first, then the line cut for a point not given.
+    assert v["marks_awarded"] == 3.5 and lines[7]["marks"] == 1.0 and lines[9]["marks"] == 0.5
+    assert all(c["marks"] == 0.0 for c in lines[:6])
+
+
+def test_lines_cut_as_not_attempted_are_raised_only_when_named():
+    from app.services.copy_check.deduction_check import apply_check
+    v = _q5_verdict()
+    v["criteria_breakdown"][7]["marks"] = 1.0
+    v["criteria_breakdown"][9]["reason"] = "Not attempted"
+    v["marks_awarded"] = 3.0
+    assert not apply_check(v, {"marks_awarded": 4.0, "cuts": [{"finding": "misread", "why": "x"}]})
+    assert v["marks_awarded"] == 3.0
+    assert apply_check(v, {"marks_awarded": 4.0, "cuts": [{"id": 0, "finding": "misread", "why": "5(a) is on p9"}]})
+    assert v["criteria_breakdown"][0]["marks"] == 1.0
+
+
+def test_the_raise_is_capped_by_the_misread_lines_room():
+    from app.services.copy_check.deduction_check import apply_check
+    v = _q5_verdict()
+    result = {"marks_awarded": 4.0, "cuts": [{"id": 7, "finding": "misread", "why": "x"}]}
+    assert apply_check(v, result)
+    assert v["marks_awarded"] == 3.0
+    assert sum(c["marks"] for c in v["criteria_breakdown"]) == 3.0
+
+
+def test_prompt_lists_only_real_cuts_with_their_ids():
+    from app.services.copy_check.deduction_check import build_prompt
+    v = _q5_verdict()
+    prompt = build_prompt({"question_text": "Q5", "max_marks": 10}, {"rubric": []}, v)
+    listed = json.loads(prompt.split("cutting marks for:\n", 1)[1].split("\nNotes written", 1)[0])
+    assert [c["id"] for c in listed] == [0, 1, 2, 3, 4, 5, 7, 9]
+    assert '"id": <the cut' in prompt
