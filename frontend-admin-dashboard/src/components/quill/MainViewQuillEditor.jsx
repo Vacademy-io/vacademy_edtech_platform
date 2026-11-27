@@ -14,7 +14,7 @@ import '@edtr-io/mathquill/build/mathquill.css';
 import mathquill4quill from 'mathquill4quill';
 import 'mathquill4quill/mathquill4quill.css';
 import './index.css';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ALL_OPERATORS } from './Operators';
 import { UploadFileInS3, getPublicUrl } from '@/services/upload_file';
 import { getTokenDecodedData, getTokenFromCookie } from '@/lib/auth/sessionUtility';
@@ -309,24 +309,38 @@ export const MainViewQuillEditor = ({
         }
     };
 
-    const rightBarmodules = {
-        toolbar: {
-            container: [
-                ['bold', 'italic', 'underline'],
-                [{ align: [] }],
-                [{ list: 'ordered' }, { list: 'bullet' }],
-                ['formula'], // Formula button
-                ['image'], // Image button
-                ['attach', 'recordAudio'], // Custom buttons
-            ],
-            handlers: {
-                image: imageHandler, // Custom image handler
-                attach: fileHandler,
-                recordAudio: recordAudioHandler,
+    // `modules` must keep one identity for the editor's lifetime. react-quill 2.0.0 rebuilds
+    // the editor when `modules` changes (deep-compared, functions by reference), and that
+    // rebuild leaves an empty <pre> with no editor in it: rebuilt here on every render, every
+    // field of the assessment preview came up blank once its form reset. The toolbar handlers
+    // go through a ref so they still see this render's state (isRecording).
+    const toolbarHandlersRef = useRef({ attach: fileHandler, recordAudio: recordAudioHandler });
+    toolbarHandlersRef.current = { attach: fileHandler, recordAudio: recordAudioHandler };
+    const rightBarmodules = useMemo(
+        () => ({
+            toolbar: {
+                container: [
+                    ['bold', 'italic', 'underline'],
+                    [{ align: [] }],
+                    [{ list: 'ordered' }, { list: 'bullet' }],
+                    ['formula'], // Formula button
+                    ['image'], // Image button
+                    ['attach', 'recordAudio'], // Custom buttons
+                ],
+                handlers: {
+                    image: imageHandler, // Custom image handler
+                    attach: function (...args) {
+                        return toolbarHandlersRef.current.attach.apply(this, args);
+                    },
+                    recordAudio: function (...args) {
+                        return toolbarHandlersRef.current.recordAudio.apply(this, args);
+                    },
+                },
             },
-        },
-        formula: true,
-    };
+            formula: true,
+        }),
+        []
+    );
 
     if (!isClient) {
         return <div className={CustomclasssName} />;
