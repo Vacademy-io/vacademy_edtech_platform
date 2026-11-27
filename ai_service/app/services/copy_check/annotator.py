@@ -1909,9 +1909,33 @@ def _draw_mark(page: Any, rect: Any, style: str, bounds: Any = None,
                     cx, placed = trial, True
                     break
             if not placed:
-                logger.debug("no room for a whole %s on row %s; skipped rather "
-                             "than drawing a sliver", style, rect)
-                return
+                # Every spot has some writing under it: a page written edge to
+                # edge. Skipping the mark here left whole pages of a real copy
+                # with nothing on them - right answers unticked, as if never
+                # read. A teacher ticks over the end of a line then, so take
+                # the spot with the least writing under it, at row height.
+                # Still whole, on the paper and clear of every comment and
+                # score: never the sliver this fallback exists to prevent.
+                least = None
+                small = max(20.0, min(size, rect.height + 2.0))
+                ys = rect.y0 + (rect.height - small) / 2.0
+                for trial in spots:
+                    trial = max(sheet_x0 + 2.0, min(trial, sheet_x1 - small - 12.0))
+                    probe = fitz.Rect(trial, ys, trial + small, ys + small)
+                    if not _on_paper(_PAPER[0], probe):
+                        continue
+                    if any(_mark_box(trial, ys, small).intersects(n) for n in notes):
+                        continue
+                    ink = _ink_under(_INK_MAP[0], probe)
+                    if least is None or ink < least[0]:
+                        least = (ink, trial)
+                if least is None:
+                    logger.debug("no room for a whole %s on row %s; skipped rather "
+                                 "than drawing a sliver", style, rect)
+                    return
+                logger.debug("%s on row %s drawn over writing (ink %.2f): no clear spot",
+                             style, rect, least[0])
+                cx, fit = least[1], (ys, small)
         cy, size = fit
 
         logger.debug("TICKPLACE site=fallback style=%s cx=%.1f cy=%.1f size=%.1f "
@@ -4391,7 +4415,12 @@ def _place_question_scores(doc: Any, placements: dict[int, tuple],
         # Sized to the writing, not to a constant. Rings measured 62-86px
         # against a ~40px line height, which is what made them read as badges
         # rather than a figure ringed with a pen.
-        line_h = max(10.0, min(26.0 * _page_k(page), (sheet.height / 34.0) if sheet else 16.0))
+        # The sheet can be only the box around the writing: on a last page
+        # written a third of the way down, a thirty-fourth of THAT made the
+        # ring small and its figure unreadable beside full-size ones. Measure
+        # against most of the page instead.
+        ref_h = max(sheet.height, page.rect.height * 0.85) if sheet else None
+        line_h = max(10.0, min(26.0 * _page_k(page), (ref_h / 34.0) if ref_h else 16.0))
         # A mark is written larger than the prose around it - it is the thing
         # the student looks for first. At 0.62-0.80 of a line it came out at
         # about 11pt against ~20pt handwriting and read as a footnote.
@@ -4492,8 +4521,10 @@ def _place_question_scores(doc: Any, placements: dict[int, tuple],
                 # Still nowhere clear at this size. A smaller mark squeezed into
                 # a gap is what a teacher actually does on a full page; stamping
                 # the ring over the answer - which is what happened on four of
-                # seven marks - is the one thing they never do.
-                for shrink in (0.82, 0.66, 0.52):
+                # seven marks - is the one thing they never do. But never so
+                # small it cannot be read: squeezed to half size, a "5" came
+                # out as an unreadable squiggle on a real copy.
+                for shrink in _SCORE_SHRINKS:
                     r2 = radius * shrink
                     def clear_small(px, py, rr=r2):
                         probe = fitz.Rect(px - rr, py - rr, px + rr, py + rr)
@@ -4510,6 +4541,29 @@ def _place_question_scores(doc: Any, placements: dict[int, tuple],
                             break
                     if found:
                         break
+            if not found:
+                # Nowhere clear at a readable size: the spot in the margins or
+                # around the answer's end that covers the least writing, rather
+                # than the answer's own end, which is where it would land now.
+                rr = radius * _SCORE_SHRINKS[-1]
+                least = None
+                spots = [(mx, cy + dy) for mx in (right_margin, left_margin)
+                         for dy in (0, -12, 12, -26, 26, -40, 40)]
+                spots += [(cx + dx, cy + dy) for dy in (0, 10, -10, 20, -20, 32, -32, 46, -46)
+                          for dx in (0, 16, 32, -16, 48, -32, 64, -48, 80)]
+                for nx, ny in spots:
+                    if not (left_limit <= nx <= right_limit and top_limit <= ny <= bot_limit):
+                        continue
+                    probe = fitz.Rect(nx - rr, ny - rr, nx + rr, ny + rr)
+                    if sheet and not sheet.contains(probe):
+                        continue
+                    cover = sum((probe & o).get_area() for o in ink if probe.intersects(o))
+                    if least is None or cover < least[0]:
+                        least = (cover, nx, ny)
+                if least is not None:
+                    logger.debug("score of question %s drawn over writing (%.0f pt2): no clear spot",
+                                 q_no, least[0])
+                    cx, cy, radius = least[1], least[2], rr
         _CLIP[0] = sheet
         awarded = float(verdict.get("marks_awarded") or 0)
         out_of = verdict.get("max_marks")
@@ -4569,6 +4623,10 @@ def _extend_paper(page: Any, scan: Any, strip: Any) -> None:
     except Exception:
         logger.debug("could not extend the paper into the margin", exc_info=True)
 
+
+# How far a question's circled score may shrink to find a clear spot. Not below
+# about four fifths: at half size its figure is too small to read.
+_SCORE_SHRINKS = (0.82,)
 
 # The styles that carry the reason a mark was cut.
 _REASON_STYLES = frozenset(("margin_note", "region_note", "deduction_reason", "feedback"))
