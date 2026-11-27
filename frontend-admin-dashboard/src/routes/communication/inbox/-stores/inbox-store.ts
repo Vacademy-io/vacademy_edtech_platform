@@ -66,8 +66,15 @@ export const useInboxStore = create<InboxState>((set) => ({
             const unique = newConvos.filter((c) => !existing.has(c.phone));
             return { conversations: [...state.conversations, ...unique] };
         }),
+    // Re-selecting the chat that is already open (a double-click, or a click on the highlighted
+    // row) must leave it alone: messages only reload when the phone changes, so clearing them here
+    // left the pane on "No messages in this conversation yet" until a manual refresh.
     selectPhone: (phone) =>
-        set({ selectedPhone: phone, messages: [], hasMoreMessages: true, messagesError: null }),
+        set((state) =>
+            state.selectedPhone === phone
+                ? state
+                : { selectedPhone: phone, messages: [], hasMoreMessages: true, messagesError: null }
+        ),
     setMessages: (messages) => set({ messages }),
     prependMessages: (olderMessages) =>
         set((state) => ({ messages: [...olderMessages, ...state.messages] })),
