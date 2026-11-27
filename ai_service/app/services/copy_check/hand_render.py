@@ -28,7 +28,8 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 FONT_DIR = Path(__file__).parent / "fonts"   # bundled with the copy checker
-DEFAULT_FONT = "DawningofaNewDay.ttf"
+# The hand a copy gets when the institute has not picked one (pen_style.FONTS KALAM).
+DEFAULT_FONT = "Kalam.ttf"
 # Set glyph by glyph as they are. Every other face goes through _natural_text.
 CLASSIC_FONTS = frozenset({"Kalam.ttf", "PatrickHand.ttf", "ArchitectsDaughter.ttf"})
 # Joined-up hands: written a whole word at a time, so the joins survive, and redrawn

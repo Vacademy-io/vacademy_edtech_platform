@@ -2,7 +2,7 @@
 
 An institute (Settings -> Assessment -> AI copy check) or a teacher re-drawing
 one copy picks these; ``None`` everywhere draws the usual copy (red ballpoint,
-the default natural hand, page-scaled sizes).
+the Kalam hand, page-scaled sizes).
 
 The style is set for the duration of one render with :func:`applied`. Renders
 run on annotator's single-worker pool, so one module-level holder is enough
@@ -28,16 +28,17 @@ PRESET_INKS: dict[str, Optional[tuple[float, float, float]]] = {
     "PURPLE": (0.42, 0.16, 0.55),
 }
 
-# Bundled, OFL-licensed faces in ./fonts. DAWNING_OF_A_NEW_DAY is the default copy; the
+# Bundled, OFL-licensed faces in ./fonts. KALAM is the default copy (None = the hand in
+# hand_render.DEFAULT_FONT); an institute that picked DAWNING_OF_A_NEW_DAY keeps it. The
 # natural hands are bent as they are written (hand_render._natural_text), the three
 # classic ones are set letter by letter as they always were.
 FONTS: dict[str, Optional[str]] = {
-    "DAWNING_OF_A_NEW_DAY": None,
+    "DAWNING_OF_A_NEW_DAY": "DawningofaNewDay.ttf",
     "COVERED_BY_YOUR_GRACE": "CoveredByYourGrace.ttf",
     "OVER_THE_RAINBOW": "OvertheRainbow.ttf",
     "CAVEAT": "Caveat.ttf",
     "CEDARVILLE_CURSIVE": "Cedarville-Cursive.ttf",
-    "KALAM": "Kalam.ttf",
+    "KALAM": None,
     "PATRICK_HAND": "PatrickHand.ttf",
     "ARCHITECTS_DAUGHTER": "ArchitectsDaughter.ttf",
 }
