@@ -7,7 +7,7 @@ export const QUESTION_TYPES = [
     { code: 'CNUMERIC', display: 'Comprehensive Numeric Answer' },
     { code: 'ONE_WORD', display: 'One Word Answer' },
     { code: 'LONG_ANSWER', display: 'Long Answer Type Question' },
-    { code: 'TRUE_FALSE', display: 'True of false type Question' },
+    { code: 'TRUE_FALSE', display: 'True or False Question' },
     { code: 'CODING', display: 'Coding Question' },
     { code: 'CBE_RESPONSE', display: 'Spreadsheet & Written Response' },
 ];
