@@ -377,6 +377,9 @@ public class AssessmentLinkQuestionsManager {
 
             AssessmentQuestionPreviewDto fillOptionsExplanationsOfQuestion = new AssessmentQuestionPreviewDto(mapping.getQuestion(), mapping);
             fillOptionsExplanationsOfQuestion.fillOptionsExplanationsOfQuestion(mapping.getQuestion());
+            if (staff) {
+                fillOptionsExplanationsOfQuestion.fillExplanation(mapping.getQuestion());
+            }
             if (!staff) {
                 fillOptionsExplanationsOfQuestion.setEvaluationJson(CbeConfigRedactor.redact(
                         fillOptionsExplanationsOfQuestion.getEvaluationJson(),
