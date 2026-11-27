@@ -427,32 +427,19 @@ public class HumanCallViews {
      */
     Map<String, Object> cost(String instituteId, TelephonyCallLog l, State s) {
         if (l == null || !s.isFinal()) return null;
-        Map<String, Object> m = new LinkedHashMap<>();
         if (!CallBillingService.isVoiceBillable(l.getProviderType())) {
-            m.put("credits", 0.0);
-            m.put("billed", true);
+            Map<String, Object> m = AiCallingUsageService.settledAtZero();
             m.put("note", "billed_by_provider");
             return m;
         }
-        if (!"COMPLETED".equals(l.getStatus())) {
-            m.put("credits", 0.0);
-            m.put("billed", true);
-            return m;
-        }
-        BigDecimal credits;
-        try {
-            credits = jdbc.queryForObject("""
-                    SELECT COALESCE(SUM(ABS(amount)), 0) FROM credit_transactions
-                     WHERE institute_id = :i AND transaction_type = 'USAGE_DEDUCTION'
-                       AND external_reference_id = :ref
-                    """, new MapSqlParameterSource().addValue("i", instituteId).addValue("ref", "voice_call:" + l.getId()),
-                    BigDecimal.class);
-        } catch (RuntimeException e) {
-            log.warn("human-call-api: cost lookup failed for call log {}: {}", l.getId(), e.getMessage());
-            return null;
-        }
-        m.put("credits", (credits == null ? BigDecimal.ZERO : credits).setScale(2, RoundingMode.HALF_UP).doubleValue());
+        if (!"COMPLETED".equals(l.getStatus())) return AiCallingUsageService.settledAtZero();
+        AiCallingUsageService.Ledger ledger =
+                AiCallingUsageService.readLedger(jdbc, instituteId, List.of("voice_call:" + l.getId()));
+        if (ledger == null) return null;
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("credits", ledger.credits().setScale(2, RoundingMode.HALF_UP).doubleValue());
         m.put("billed", !AiCallingUsageService.voiceLegPending(l));
+        ledger.putInto(m);
         return m;
     }
 

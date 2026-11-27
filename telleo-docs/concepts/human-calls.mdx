@@ -150,7 +150,12 @@ A call that never reports an end is marked `failed` (*No final status was receiv
     "credits": 0.95,
     "completed_at": "2026-10-17T05:39:02Z"
   },
-  "cost": { "credits": 6.5, "billed": true }
+  "cost": {
+    "credits": 6.5,
+    "billed": true,
+    "balance_after": 1827.75,
+    "deductions": [ { "type": "voice", "credits": 6.5, "balance_after": 1827.75, "charged_at": "2026-10-17T05:38:20Z" } ]
+  }
 }
 ```
 
@@ -158,7 +163,7 @@ A call that never reports an end is marked `failed` (*No final status was receiv
 - **`recording_url`** is a temporary link (valid until `recording_expires_at`, 24 hours); fetch the call again for a fresh one. It is `null` when your provider or settings do not record.
 - **`disposition`** is what the counsellor (or your system) recorded; `null` until set.
 - **`analysis`** is `not_requested` unless you sent `analyze: true` (or your account analyses calls automatically); then `pending`, `completed` or `failed` with a `reason` (`not_connected`, `no_recording`, `insufficient_credits`…). An analysis that hits a temporary error is retried automatically (up to 4 attempts) and stays `pending` meanwhile.
-- **`cost`** is `null` while the call runs. See [Billing](#billing).
+- **`cost`** is `null` while the call runs. `balance_after` and `deductions` show what the call took from your credits and the balance after it ([Cost of one call](/platform/credits-and-usage#cost-of-one-call)). See [Billing](#billing).
 
 List calls with [`GET /v1/human-calls`](/api-reference/human-calls/list-human-calls), filtered by `counsellor_id`, `status`, `phone_number`, `external_id`, `created_after` and `created_before`, newest first with [cursor pagination](/platform/pagination). `status` matches the `status` each call reports, including calls reported `failed` because they were never placed or never reported an end.
 
@@ -183,7 +188,7 @@ Send `analyze: true` to have the conversation transcribed and analysed once the 
 | Provider | What is charged to your Telleo credits |
 |---|---|
 | Vacademy Voice | Talk time, at your plan's per-minute voice rate in 30-second pulses. `cost.billed` is `false` for a few minutes after the call. |
-| Exotel, Airtel | Nothing: the call runs on your own carrier account, which bills you directly. `cost` is `{ "credits": 0, "billed": true, "note": "billed_by_provider" }`. |
+| Exotel, Airtel | Nothing: the call runs on your own carrier account, which bills you directly. `cost` is `{ "credits": 0, "billed": true, "balance_after": null, "deductions": [], "note": "billed_by_provider" }`. |
 | AI analysis (`analyze: true`) | 0.15 credits per recorded minute, on every provider, shown as `analysis.credits`. |
 
 Human calls appear under `human_calls` in [`GET /v1/usage`](/platform/credits-and-usage): with `source=api` the calls placed through the API, with `source=all` every counsellor call placed on Vacademy Voice, Exotel or Airtel. Recordings of calls made elsewhere and uploaded to Telleo are not counted.

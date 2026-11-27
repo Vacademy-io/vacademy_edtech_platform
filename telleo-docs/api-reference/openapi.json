@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Telleo API",
-    "version": "1.3.0",
+    "version": "1.4.0",
     "description": "Start AI phone calls, or connect your counsellors to contacts, from your own systems and get each call's outcome back. Manage your counsellors and AI agents from the same API."
   },
   "servers": [
@@ -367,7 +367,7 @@
       },
       "get": {
         "summary": "List calls",
-        "description": "Your calls, newest first. Filter by batch, by your `external_id`, or by creation time; page with `starting_after`.\n\nScope: `calls:read`.",
+        "description": "Your calls, newest first. By default the calls you placed; `direction=inbound` lists calls your contacts made to your numbers, `direction=all` both. Filter by batch, by your `external_id` (calls you placed only), or by creation time; page with `starting_after`.\n\nScope: `calls:read`.",
         "tags": [
           "Calls"
         ],
@@ -383,6 +383,41 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CallList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A filter is not valid.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "invalid_direction": {
+                    "value": {
+                      "error": {
+                        "code": "invalid_request",
+                        "message": "direction must be outbound, inbound or all.",
+                        "request_id": "req_8f2c1a7e"
+                      }
+                    }
+                  },
+                  "outbound_filter": {
+                    "value": {
+                      "error": {
+                        "code": "invalid_request",
+                        "message": "batch_id and external_id filter outbound calls only; leave direction out (or set it to outbound) to use them.",
+                        "request_id": "req_8f2c1a7e"
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -458,11 +493,26 @@
         "operationId": "listCalls",
         "parameters": [
           {
+            "name": "direction",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "outbound",
+                "inbound",
+                "all"
+              ],
+              "default": "outbound"
+            },
+            "description": "`outbound`: the calls you placed (unchanged from before v1.4). `inbound`: calls to your numbers. `all`: both, newest first."
+          },
+          {
             "name": "batch_id",
             "in": "query",
             "schema": {
               "type": "string"
-            }
+            },
+            "description": "Only with `direction=outbound`."
           },
           {
             "name": "external_id",
@@ -470,7 +520,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Calls for one of your records."
+            "description": "Calls for one of your records. Only with `direction=outbound`."
           },
           {
             "name": "created_after",
@@ -497,7 +547,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "The `id` of the last call on the previous page."
+            "description": "The `id` of the last call on the previous page (`call_…` or `inb_…`)."
           }
         ]
       }
@@ -505,7 +555,7 @@
     "/calls/{id}": {
       "get": {
         "summary": "Get a call",
-        "description": "The call's current status and, once it has ended, its duration, recording and outcome.\n\nScope: `calls:read`.",
+        "description": "The call's current status and, once it has ended, its duration, recording, cost and outcome. An `inb_…` id returns an inbound call.\n\nScope: `calls:read`.",
         "tags": [
           "Calls"
         ],
@@ -520,7 +570,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Call"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Call"
+                    },
+                    {
+                      "$ref": "#/components/schemas/InboundCall"
+                    }
+                  ]
                 },
                 "example": {
                   "id": "call_6f1d2c9a8b7e4f3a2d1c0b9a",
@@ -550,7 +607,22 @@
                   "recording_expires_at": "2026-10-14T09:40:00Z",
                   "cost": {
                     "credits": 12.5,
-                    "billed": true
+                    "billed": true,
+                    "balance_after": 1821.75,
+                    "deductions": [
+                      {
+                        "type": "voice",
+                        "credits": 4.0,
+                        "balance_after": 1830.25,
+                        "charged_at": "2026-10-13T09:32:40Z"
+                      },
+                      {
+                        "type": "ai",
+                        "credits": 8.5,
+                        "balance_after": 1821.75,
+                        "charged_at": "2026-10-13T09:33:02Z"
+                      }
+                    ]
                   },
                   "outcome": {
                     "call_quality": "ok",
@@ -696,7 +768,7 @@
     "/calls/{id}/cancel": {
       "post": {
         "summary": "Cancel a call",
-        "description": "Cancels a call that is still `queued`. A call that is already dialling or finished cannot be canceled.\n\nScope: `calls:write`.",
+        "description": "Cancels a call that is still `queued`. A call that is already dialling or finished cannot be canceled, and neither can an inbound call (`inb_…`).\n\nScope: `calls:write`.",
         "tags": [
           "Calls"
         ],
@@ -7319,7 +7391,7 @@
               "object",
               "null"
             ],
-            "description": "What the call cost, once it has ended. `null` while it is still running.",
+            "description": "What the call cost, once it has ended: the total, each charge it made on your credits, and your balance after it. `null` while it is still running.",
             "properties": {
               "credits": {
                 "type": "number",
@@ -7328,6 +7400,20 @@
               "billed": {
                 "type": "boolean",
                 "description": "false while a charge for this call is still to be made (call minutes, then AI minutes once the outcome is processed), usually a few minutes after it ends."
+              },
+              "balance_after": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Your credit balance right after this call's last charge. `null` when the call made no charge."
+              },
+              "deductions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CostDeduction"
+                },
+                "description": "Each charge, oldest first. Empty for a call that was never charged."
               }
             }
           },
@@ -7377,8 +7463,16 @@
           "data": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/Call"
-            }
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/Call"
+                },
+                {
+                  "$ref": "#/components/schemas/InboundCall"
+                }
+              ]
+            },
+            "description": "`object` tells the two apart: `call` for a call you placed, `inbound_call` for a call to your numbers."
           },
           "has_more": {
             "type": "boolean"
@@ -8288,6 +8382,20 @@
               },
               "billed": {
                 "type": "boolean"
+              },
+              "balance_after": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Your credit balance right after this call's last charge. `null` when the call made no charge."
+              },
+              "deductions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CostDeduction"
+                },
+                "description": "Each charge, oldest first. Empty for a call that was never charged."
               },
               "note": {
                 "type": "string",
@@ -9259,6 +9367,220 @@
         "properties": {
           "agent_id": {
             "type": "string"
+          }
+        }
+      },
+      "CostDeduction": {
+        "type": "object",
+        "description": "One charge a call made on your credits, as listed in the dashboard's AI Credits History.",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "voice",
+              "ai",
+              "other"
+            ],
+            "description": "`voice`: talk time on a Vacademy Voice line. `ai`: the AI agent's minutes."
+          },
+          "credits": {
+            "type": "number",
+            "description": "Credits this charge took."
+          },
+          "balance_after": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Your credit balance right after this charge."
+          },
+          "charged_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "InboundCall": {
+        "type": "object",
+        "description": "A call a contact made to one of your numbers (an IVR menu, an AI agent or a counsellor answering).",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "`inb_` followed by the call's id.",
+            "examples": [
+              "inb_8c1f0b52-3d7e-4a61-9f2c-5b8e7d6a4c31"
+            ]
+          },
+          "object": {
+            "type": "string",
+            "const": "inbound_call"
+          },
+          "direction": {
+            "type": "string",
+            "const": "inbound"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ringing",
+              "in_progress",
+              "completed",
+              "no_answer",
+              "busy",
+              "failed",
+              "canceled"
+            ]
+          },
+          "status_reason": {
+            "type": "string",
+            "description": "Only present when there is a reason."
+          },
+          "phone_number": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The caller's number."
+          },
+          "called_number": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Your number that they dialled, when the provider reported it."
+          },
+          "ivr_selection": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The IVR option the caller chose."
+          },
+          "handled_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "ai_agent",
+              "counsellor",
+              null
+            ],
+            "description": "Who answered. `null` when nobody did."
+          },
+          "agent_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The AI agent that answered."
+          },
+          "counsellor_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The counsellor the call was routed to."
+          },
+          "contact": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "description": "The caller's name when the AI agent learned it."
+          },
+          "crm_lead_linked": {
+            "type": "boolean",
+            "description": "`true` when the caller matched a lead in your Telleo CRM."
+          },
+          "duration_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the call came in."
+          },
+          "answered_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "ended_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "recording_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A temporary link to the recording. Fetch the call again for a fresh link after `recording_expires_at`."
+          },
+          "recording_expires_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "cost": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "What the call took from your credits, charge by charge, and your balance after it. `null` while the call is still on.",
+            "properties": {
+              "credits": {
+                "type": "number",
+                "description": "Credits charged. 0 for test calls and calls that did not connect."
+              },
+              "billed": {
+                "type": "boolean",
+                "description": "false while a charge for this call is still to be made (call minutes, then AI minutes once the outcome is processed), usually a few minutes after it ends."
+              },
+              "balance_after": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Your credit balance right after this call's last charge. `null` when the call made no charge."
+              },
+              "deductions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CostDeduction"
+                },
+                "description": "Each charge, oldest first. Empty for a call that was never charged."
+              }
+            }
+          },
+          "outcome": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Outcome"
+              }
+            ],
+            "description": "What the AI agent learned. `null` when no AI agent answered or until its report is processed."
           }
         }
       }

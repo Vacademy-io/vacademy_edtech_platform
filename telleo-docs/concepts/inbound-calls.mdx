@@ -1,0 +1,110 @@
+---
+title: "Inbound calls"
+description: "Calls your contacts make to your numbers: IVR menus, AI agents and counsellors who answer."
+---
+
+An **inbound call** is a call a contact makes **to** one of your numbers: an enquiry line with an IVR menu, a number an [AI agent](/concepts/managing-agents#inbound-numbers) answers, or a number that rings your counsellors. You don't create these calls; you read them from the same `GET /v1/calls` list as the calls you place, with `direction`.
+
+| | Calls you place | Inbound calls |
+|---|---|---|
+| Created by | `POST /v1/calls` or a batch | The contact, by dialling your number |
+| `id` | `call_…` | `inb_…` |
+| `object` | `call` | `inbound_call` |
+| Listed by `GET /v1/calls` | by default, or with `direction=outbound` / `all` | with `direction=inbound` / `all` |
+| Webhooks | `call.completed`, `call.not_connected` | none: read them from the list |
+
+## Listing inbound calls
+
+```bash
+curl "https://api.telleo.ai/v1/calls?direction=inbound&created_after=2026-11-27T00:00:00Z" \
+  -H "X-API-Key: $TELLEO_API_KEY"
+```
+
+| `direction` | Returns |
+|---|---|
+| `outbound` (default) | The calls you placed through the API, exactly as before. |
+| `inbound` | Calls to your numbers, from every IVR menu and number on your account. |
+| `all` | Both, in one list, newest first. |
+
+`limit`, `starting_after` and `created_after` work for every `direction` ([Pagination](/platform/pagination)). `batch_id` and `external_id` name calls you placed, so they work only with `direction=outbound`; combining them with `inbound` or `all` returns `400 invalid_request`.
+
+Scope: `calls:read`. Every key that can list calls can list inbound calls.
+
+## Reading one
+
+```bash
+curl https://api.telleo.ai/v1/calls/inb_8c1f0b52-3d7e-4a61-9f2c-5b8e7d6a4c31 -H "X-API-Key: $TELLEO_API_KEY"
+```
+
+```json
+{
+  "id": "inb_8c1f0b52-3d7e-4a61-9f2c-5b8e7d6a4c31",
+  "object": "inbound_call",
+  "direction": "inbound",
+  "status": "completed",
+  "phone_number": "+919811111111",
+  "called_number": "+918022222222",
+  "ivr_selection": "1 - Admissions",
+  "handled_by": "ai_agent",
+  "agent_id": "17ea33d2-6a0b-4c3e-9d1f-2b7a8c5e4f10",
+  "counsellor_id": null,
+  "contact": { "name": "Asha Verma" },
+  "crm_lead_linked": true,
+  "duration_seconds": 142,
+  "created_at": "2026-11-27T09:41:03Z",
+  "answered_at": "2026-11-27T09:41:09Z",
+  "ended_at": "2026-11-27T09:43:31Z",
+  "recording_url": "https://…",
+  "recording_expires_at": "2026-11-28T10:02:11Z",
+  "cost": {
+    "credits": 9.0,
+    "billed": true,
+    "balance_after": 1825.25,
+    "deductions": [
+      { "type": "voice", "credits": 2.5, "balance_after": 1831.75, "charged_at": "2026-11-27T09:43:40Z" },
+      { "type": "ai", "credits": 6.5, "balance_after": 1825.25, "charged_at": "2026-11-27T09:44:02Z" }
+    ]
+  },
+  "outcome": { "call_quality": "ok", "disposition": "Interested", "summary": "…", "answers": {}, "lead_rating": 8, "…": "…" }
+}
+```
+
+<ResponseField name="id" type="string">`inb_` followed by the call's id. Use it with `GET /v1/calls/{id}` and as `starting_after`.</ResponseField>
+<ResponseField name="object" type="string">Always `inbound_call`, so your code can tell these apart from the calls you placed (`call`).</ResponseField>
+<ResponseField name="status" type="string">See [Statuses](#statuses).</ResponseField>
+<ResponseField name="status_reason" type="string">Why the call was not answered or failed, when your provider gave a reason. Only present when there is one.</ResponseField>
+<ResponseField name="phone_number" type="string | null">The caller's number.</ResponseField>
+<ResponseField name="called_number" type="string | null">Your number that they dialled. `null` when the provider did not report it.</ResponseField>
+<ResponseField name="ivr_selection" type="string | null">The IVR option the caller chose, when the number plays a menu.</ResponseField>
+<ResponseField name="handled_by" type="string | null">`ai_agent` when an AI agent answered, `counsellor` when a counsellor did, `null` when nobody did (a missed call, or the caller hung up in the menu).</ResponseField>
+<ResponseField name="agent_id" type="string | null">The AI agent that answered, when `handled_by` is `ai_agent`.</ResponseField>
+<ResponseField name="counsellor_id" type="string | null">The counsellor the call was routed to, when there was one. Matches `id` in `GET /v1/counsellors`.</ResponseField>
+<ResponseField name="contact" type="object">`{name}`: the caller's name when the AI agent learned it, else `null`.</ResponseField>
+<ResponseField name="crm_lead_linked" type="boolean">`true` when the caller was matched to a lead in your Telleo CRM.</ResponseField>
+<ResponseField name="duration_seconds" type="integer | null">Length of the conversation.</ResponseField>
+<ResponseField name="created_at, answered_at, ended_at" type="string | null">ISO-8601 UTC. `created_at` is when the call came in; `answered_at` when someone picked up; `ended_at` once the call is over.</ResponseField>
+<ResponseField name="recording_url" type="string | null">A temporary link to the recording, valid until `recording_expires_at` (24 hours). Read the call again for a fresh link.</ResponseField>
+<ResponseField name="cost" type="object | null">What the call took from your credits, charge by charge, and the balance after it. `null` while the call is still on. See [Cost of one call](/platform/credits-and-usage#cost-of-one-call).</ResponseField>
+<ResponseField name="outcome" type="object | null">What the AI agent learned, the same block as on an outbound call ([Outcomes](/concepts/outcomes)). `null` when no AI agent answered, or until the agent's report is processed (usually within a minute of hanging up).</ResponseField>
+
+## Statuses
+
+| Status | Meaning |
+|---|---|
+| `ringing` | The call came in and is in the IVR menu or ringing; nobody has picked up yet. |
+| `in_progress` | An AI agent or a counsellor is talking to the caller. |
+| `completed` | The call was answered and has ended. |
+| `no_answer` | Nobody picked up (a missed call). |
+| `busy` | Your provider reported the call busy. |
+| `failed` | The call could not be connected, or no final status came back for it within 2 hours (24 hours on Airtel, whose call records arrive in batches). |
+| `canceled` | Your provider reported the call canceled or rejected, typically because the caller hung up before it was connected. |
+
+Inbound calls send no webhooks. To keep your system in step, read `GET /v1/calls?direction=inbound&created_after=…` on a schedule, and read a call again while its status is `ringing` or `in_progress`, or while a `completed` call still has `outcome: null` or `cost.billed: false`.
+
+<Note>
+Inbound calls cannot be canceled: `POST /v1/calls/inb_…/cancel` returns `409 call_not_cancelable`.
+</Note>
+
+## Billing
+
+An inbound call is billed like an outbound one, at your plan's **inbound** rates: talk time on a Vacademy Voice number, plus AI minutes when an AI agent answered. Calls answered on your own Exotel or Airtel account cost no credits for talk time. A call nobody answered costs nothing. `cost.deductions` lists each charge, as the dashboard's **AI Credits History** shows it.

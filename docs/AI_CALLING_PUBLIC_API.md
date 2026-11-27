@@ -8,15 +8,16 @@ what it promises. The client-facing guide lives at https://docs.telleo.ai (Mintl
 - **Code:**
   - `admin_core_service/.../telephony/publicapi/` (controller, service, views, webhooks, auth)
   - migration `V572__Ai_calling_public_api_v1.sql`; human calls (v1.2, §10): `V594__Human_call_public_api.sql`;
-    counsellor / agent management (v1.3, §11): `V597__Ai_calling_api_idempotency.sql`
+    counsellor / agent management (v1.3, §11): `V597__Ai_calling_api_idempotency.sql`;
+    inbound calls and per-call credits (v1.4, §12): no migration
 
 ## 1. What a client can do
 
 | Method | Path | Scope | Purpose |
 |---|---|---|---|
 | POST | `/calls` | calls:write | Start one call (queued, dialled as soon as a line is free) |
-| GET | `/calls` | calls:read | List calls, newest first (`batch_id`, `external_id`, `created_after`, `limit` 1–100, `starting_after`) |
-| GET | `/calls/{id}` | calls:read | One call with status, recording and outcome |
+| GET | `/calls` | calls:read | List calls, newest first (`direction` outbound/inbound/all, `batch_id`, `external_id`, `created_after`, `limit` 1–100, `starting_after`); inbound since v1.4 (§12) |
+| GET | `/calls/{id}` | calls:read | One call with status, recording and outcome; an `inb_…` id is an inbound call (§12) |
 | POST | `/calls/{id}/cancel` | calls:write | Cancel a call that is still queued |
 | POST | `/batches` | calls:write | Up to 1000 calls in one request; each row is accepted or rejected on its own |
 | GET | `/batches/{id}` | calls:read | Batch progress: counts per status |
@@ -632,4 +633,76 @@ and the agent registry bridge also record `api:<keyId>` in `institute_setting_hi
   remove-user-roles deletes one institute's rows and is guarded; update-role-status is guarded
   (a member may only DELETE their own rows — the learner app's account deletion; anything else
   needs staff, and admin for an admin target).
+
+## 12. v1.4 (2026-11-27): inbound calls and per-call credits
+
+Two client requests: inbound enquiry calls (an institute added an IVR for them) were not in
+the API at all, and each call should show its credit charges and the balance after them, as
+the dashboard's AI Credits History does.
+
+### Inbound calls
+
+**Why they were missing:** `GET /v1/calls` only ever read `ai_call_api_call`, the rows the
+API itself creates. An inbound call has no such row: its only record is the
+`telephony_call_log` row the inbound webhook writes (`InboundRoutingService.InboundCallLogPersister`,
+direction INBOUND, user_id `UNKNOWN` until a lead is matched), plus an `ai_call_result` when
+an AI agent answered (an IVR AI_AGENT step), or an Airtel CDR import row.
+
+**Code:** `publicapi/InboundCallApiService` (list, get, merge, object); the controller routes
+by `direction` and by the `inb_` id prefix. No migration, no new scope (`calls:read`).
+
+- **`GET /v1/calls?direction=`** `outbound` (default, byte-identical to v1.3: the existing
+  `AiCallingApiService.listCalls`), `inbound`, or `all`. `batch_id` / `external_id` with
+  inbound or all → 400 `invalid_request` (they name API calls only).
+- **Ids:** `inb_<telephony_call_log.id>`, `object: "inbound_call"`, `direction: "inbound"`.
+  `GET /v1/calls/inb_…` checks institute, INBOUND and not MANUAL, else 404.
+  `POST /v1/calls/inb_…/cancel` → 409 `call_not_cancelable` (404 if not ours).
+- **Rows:** `upper(direction) = 'INBOUND'` (VACADEMY_AI reports pass the bot's direction
+  through, case not guaranteed) and `provider_type <> 'MANUAL'` (uploads of off-platform
+  calls). Served by `idx_tcl_institute (institute_id, created_at DESC)`.
+- **Pagination:** keyset on (created_at, public id) DESC. `telephony_call_log.created_at` is
+  naive UTC, so instants are converted in SQL (`AT TIME ZONE 'UTC'`), and the cursor's
+  instant is read the same way. `direction=all` fetches `limit + 1` from each table with the
+  same cursor and merges in Java; `call_…` < `inb_…`, so the id tie-break is consistent
+  across tables and `starting_after` takes either kind.
+- **Status** (from the call log, read only, no writes): INITIATED / QUEUED /
+  COUNSELLOR_RINGING → `ringing`; IN_PROGRESS / COUNSELLOR_ANSWERED → `in_progress`;
+  COMPLETED / NO_ANSWER / BUSY / FAILED / CANCELLED → completed / no_answer / busy / failed /
+  canceled (`status_reason` = termination_reason). No end 2 h after it came in (Airtel 24 h)
+  → `failed` "No final status was received for this call."
+- **Object:** `phone_number` = from_number (the caller), `called_number` = to_number (our
+  DID); a row created from an AI report (`AiCallOutcomeProcessor.upsertCallLog`) has the
+  caller in to_number and no from_number, so then phone_number = to_number and called_number
+  null. `handled_by`: `ai_agent` (an AI result exists, or provider VACADEMY_AI), else
+  `counsellor` (counsellor_user_id set), else null. `agent_id` = the VACADEMY_AI report's
+  campaignId (the bot sends the agent id there; the call log has no agent column).
+  `contact.name` = the report's customerName. `crm_lead_linked` = response_id set.
+  `ivr_selection`, `counsellor_id`, times, recording (same presign as §3), `cost`, `outcome`
+  (`AiCallingApiViews.outcome`, the outbound block).
+- **No webhooks** for inbound calls (no outbox row to hang them on); clients poll
+  `direction=inbound&created_after=`.
+
+### Per-call credits
+
+`cost` on every call object (API calls, inbound calls, human calls) keeps `credits` and
+`billed` (and `note` on human calls) and appends:
+
+- `deductions`: each `credit_transactions` USAGE_DEDUCTION row under the call's ledger keys
+  (`voice_call:{log}`, `ai_call:{log}`, `ai_call:uuid:{provider}:{uuid}`; human calls
+  `voice_call:{log}` only), oldest first, as `{type, credits, balance_after, charged_at}`.
+  `type` from request_type (`voice_call_*` → voice, `ai_call_*` → ai), else from the key.
+  The ledger `description` is deliberately not exposed: it names the carrier and engine
+  ("Call minutes (PLIVO INBOUND) · 5 x 30s").
+- `balance_after`: the last deduction's `balance_after` (the wallet right after the call's
+  last charge); null with no charge.
+
+Shared reader: `AiCallingUsageService.readLedger` (static, takes the jdbc template, so
+`HumanCallViews` needs no new dependency); one query per call, replacing the previous SUM
+query. A test or never-connected call returns `{credits: 0, billed: true, balance_after:
+null, deductions: []}` without a query (`settledAtZero`).
+
+Docs: `telleo-docs/concepts/inbound-calls.mdx` (new), `concepts/calls.mdx`,
+`concepts/human-calls.mdx`, `platform/credits-and-usage.mdx`, `platform/pagination.mdx`,
+`platform/changelog.mdx`, `api-reference/openapi.json` (1.4.0: `direction`, `InboundCall`,
+`CostDeduction`, 400 on list).
 

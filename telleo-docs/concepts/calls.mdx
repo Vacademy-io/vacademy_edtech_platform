@@ -53,7 +53,7 @@ curl https://api.telleo.ai/v1/calls/call_6f1d2c9a8b7e4f3a2d1c0b9a -H "X-API-Key:
 <ResponseField name="test" type="boolean">`true` for a [test call](/concepts/test-mode).</ResponseField>
 <ResponseField name="duration_seconds" type="integer | null">Length of the conversation.</ResponseField>
 <ResponseField name="created_at, dialed_at, ended_at" type="string | null">ISO-8601 UTC timestamps. `ended_at` is set once the call is final: when the call itself ended, or, for a call that was never dialled, when it was canceled, expired or failed.</ResponseField>
-<ResponseField name="cost" type="object | null">`{credits, billed}`: what the call cost. See [Credits and usage](/platform/credits-and-usage#cost-of-one-call).</ResponseField>
+<ResponseField name="cost" type="object | null">`{credits, billed, balance_after, deductions}`: what the call cost, each charge it made on your credits, and your balance after it. See [Credits and usage](/platform/credits-and-usage#cost-of-one-call).</ResponseField>
 <ResponseField name="recording_url" type="string | null">A temporary link to the recording, valid until `recording_expires_at` (24 hours). Read the call again for a fresh link.</ResponseField>
 <ResponseField name="outcome" type="object | null">What the agent learned. See [Outcomes](/concepts/outcomes).</ResponseField>
 <ResponseField name="warnings" type="array">Only in the response to `POST /v1/calls` (and on each row of a batch's `calls`), and only when there is something to say: `[{field, code, message}]`. Today the one code is `reserved_variable`: a variable named like a built-in placeholder, which was kept but does not replace the built-in value. The call was created either way.</ResponseField>
@@ -66,8 +66,9 @@ curl https://api.telleo.ai/v1/calls/call_6f1d2c9a8b7e4f3a2d1c0b9a -H "X-API-Key:
 
 `GET /v1/calls` lists calls newest first. Filter with:
 
-- `external_id`: every call for one of your records (the `contact.external_id` you sent).
-- `batch_id`: every call in a batch.
+- `direction`: `outbound` (the default: the calls you placed), `inbound` (calls your contacts made to your numbers) or `all` (both). See [Inbound calls](/concepts/inbound-calls).
+- `external_id`: every call for one of your records (the `contact.external_id` you sent). Outbound only.
+- `batch_id`: every call in a batch. Outbound only.
 - `created_after`: calls created after an ISO-8601 time.
 
 See [Pagination](/platform/pagination).

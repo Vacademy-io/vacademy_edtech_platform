@@ -57,6 +57,7 @@
             "group": "Concepts",
             "pages": [
               "concepts/calls",
+              "concepts/inbound-calls",
               "concepts/human-calls",
               "concepts/counsellors",
               "concepts/agents-and-variables",

@@ -65,8 +65,9 @@ class AiCallingUsageServiceTest {
     @Test
     void costOfCallUsesThePerProviderRule() {
         NamedParameterJdbcTemplate jdbc = mock(NamedParameterJdbcTemplate.class);
-        when(jdbc.queryForObject(anyString(), any(MapSqlParameterSource.class), eq(BigDecimal.class)))
-                .thenReturn(new BigDecimal("12.5"));
+        when(jdbc.queryForList(anyString(), any(MapSqlParameterSource.class))).thenReturn(List.of(
+                ledgerRow("-4.0000", "120.00", "voice_call_out", "voice_call:l1", "2026-11-27T10:00:00Z"),
+                ledgerRow("-8.5000", "111.50", "ai_call_out", "ai_call:uuid:VACADEMY_AI:uuid-1", "2026-11-27T10:00:05Z")));
         AiCallingUsageService usage = new AiCallingUsageService(jdbc, null);
         AiCallApiCall c = AiCallApiCall.builder().id("call_1").instituteId("inst-1").build();
 
@@ -74,12 +75,50 @@ class AiCallingUsageServiceTest {
                 result("VACADEMY_AI", "completed", Instant.now()));
         assertEquals(12.5, billed.get("credits"));
         assertEquals(true, billed.get("billed"));
+        // The wallet after the call's last charge, and each leg as the credit history lists it.
+        assertEquals(List.of("credits", "billed", "balance_after", "deductions"), List.copyOf(billed.keySet()));
+        assertEquals(111.5, billed.get("balance_after"));
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> legs = (List<Map<String, Object>>) billed.get("deductions");
+        assertEquals(List.of("voice", "ai"), legs.stream().map(d -> d.get("type")).toList());
+        assertEquals(4.0, legs.get(0).get("credits"));
+        assertEquals(120.0, legs.get(0).get("balance_after"));
+        assertEquals("2026-11-27T10:00:05Z", legs.get(1).get("charged_at"));
         // The AI leg still owed: not billed, although the voice leg is stamped.
         assertEquals(false, usage.costOfCall(c, log("VACADEMY_AI", Instant.now()),
                 result("VACADEMY_AI", "completed", null)).get("billed"));
         // A report the biller skips (bot status not completed) does not hold "billed" back forever.
         assertEquals(true, usage.costOfCall(c, log("VACADEMY_AI", Instant.now()),
                 result("VACADEMY_AI", "no-answer", null)).get("billed"));
+    }
+
+    @Test
+    void aCallThatIsNeverChargedReadsNoLedger() {
+        NamedParameterJdbcTemplate jdbc = mock(NamedParameterJdbcTemplate.class);
+        AiCallingUsageService usage = new AiCallingUsageService(jdbc, null);
+        TelephonyCallLog missed = log("VACADEMY_AI", null);
+        missed.setStatus("NO_ANSWER");
+        Map<String, Object> cost = usage.costOfCallLog("inst-1", missed, null);
+        assertEquals(0.0, cost.get("credits"));
+        assertNull(cost.get("balance_after"));
+        assertEquals(List.of(), cost.get("deductions"));
+        TelephonyCallLog live = log("VACADEMY_AI", null);
+        live.setStatus("IN_PROGRESS");
+        assertNull(usage.costOfCallLog("inst-1", live, null));
+        verifyNoInteractions(jdbc);
+    }
+
+    @Test
+    void aLegIsNamedFromItsRequestTypeElseItsKey() {
+        assertEquals("voice", AiCallingUsageService.legOf("voice_call_in", null));
+        assertEquals("ai", AiCallingUsageService.legOf("ai_call_in", null));
+        assertEquals("ai", AiCallingUsageService.legOf(null, "ai_call:l1"));
+        assertEquals("other", AiCallingUsageService.legOf(null, null));
+    }
+
+    private static Map<String, Object> ledgerRow(String amount, String after, String type, String ref, String at) {
+        return Map.of("amount", new BigDecimal(amount), "balance_after", new BigDecimal(after), "request_type", type,
+                "external_reference_id", ref, "charged_at", java.sql.Timestamp.from(Instant.parse(at)));
     }
 
     @Test

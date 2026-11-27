@@ -241,7 +241,8 @@ public class AiCallingApiViews {
         return item != null && item.getUpdatedAt() != null ? item.getUpdatedAt() : now;
     }
 
-    private Map<String, Object> outcome(AiCallResult r) {
+    /** The AI outcome block, shared with the inbound call object. null until PROCESSED. */
+    Map<String, Object> outcome(AiCallResult r) {
         if (r == null || !"PROCESSED".equalsIgnoreCase(r.getProcessingStatus())) return null;
         // A call our own bot broke (health RED with a silence/loop fault) is not the
         // contact's verdict: never hand the client a "Not interested" from it.
@@ -321,7 +322,7 @@ public class AiCallingApiViews {
         return turns;
     }
 
-    private String recordingUrl(TelephonyCallLog l) {
+    String recordingUrl(TelephonyCallLog l) {
         if (l == null || l.getRecordingStorageKey() == null) return null;
         try {
             String url = Boolean.TRUE.equals(l.getRecordingPrivate())
@@ -335,7 +336,11 @@ public class AiCallingApiViews {
     }
 
     private AiCallResult newestResult(String callLogId) {
-        List<AiCallResult> rows = resultRepository.findByCallLogIdIn(List.of(callLogId));
+        return newestOf(resultRepository.findByCallLogIdIn(List.of(callLogId)));
+    }
+
+    /** The newest AI report among these (a call log can collect a retried report). */
+    static AiCallResult newestOf(Collection<AiCallResult> rows) {
         AiCallResult best = null;
         for (AiCallResult r : rows) {
             if (best == null || newer(r, best)) best = r;

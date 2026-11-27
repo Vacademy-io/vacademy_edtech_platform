@@ -3,6 +3,11 @@ title: "Changelog"
 description: "Changes to the Telleo API."
 ---
 
+<Update label="27 November 2026" description="v1.4">
+  - **Inbound calls**: calls your contacts make to your numbers (IVR menus, AI agents and counsellors who answer) are now in the API. `GET /v1/calls?direction=inbound` lists them, `direction=all` lists them together with the calls you placed, and `GET /v1/calls/inb_…` reads one. See [Inbound calls](/concepts/inbound-calls). Without `direction`, `GET /v1/calls` returns exactly what it did before.
+  - **Credits per call**: `cost` on every call (placed, inbound and human) adds `balance_after`, your balance after the call's last charge, and `deductions`, each charge with its type (`voice` or `ai`), credits and the balance after it, as in the dashboard's AI Credits History. `credits` and `billed` are unchanged. See [Cost of one call](/platform/credits-and-usage#cost-of-one-call).
+</Update>
+
 <Update label="19 October 2026" description="v1.3">
   - **Manage counsellors** with the new `counsellors:manage` scope: [`POST /v1/counsellors`](/concepts/counsellors) adds a counsellor (a new email gets an active dashboard login and the welcome email; a login of another account is refused with `email_in_use_elsewhere`), `GET /v1/counsellors/{id}`, `PATCH /v1/counsellors/{id}` (name, mobile number, Airtel extension, active) and `DELETE /v1/counsellors/{id}` (deactivate: role disabled in your account, inactive in lead pools, out of IVR ring lists). Admins and other staff are never changed.
   - **Manage AI agents** with the new `agents:manage` scope: [`POST /v1/agents`](/concepts/managing-agents), `GET` / `PATCH` / `DELETE /v1/agents/{id}`, `POST /v1/agents/{id}/enable` and `/disable`, `GET /v1/voices`, `GET` / `PUT /v1/settings/default-agent`, `GET /v1/numbers` and `PUT /v1/numbers/{id}/agent`. Invalid voices, engines and languages are refused with the valid options; an agent still in use cannot be deleted (`agent_in_use`); `If-Match` on `PATCH` prevents lost updates. `GET /v1/agents/{id}` with only `calls:read` returns a summary without the script, handoff numbers and action rules.
