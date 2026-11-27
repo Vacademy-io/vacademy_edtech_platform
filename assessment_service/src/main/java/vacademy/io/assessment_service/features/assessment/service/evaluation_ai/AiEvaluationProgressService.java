@@ -370,6 +370,10 @@ public class AiEvaluationProgressService {
                                         if (annotations != null) {
                                                 synth.set("annotations", fullResultJson.get("annotations"));
                                         }
+                                        // Why the AI check wants a teacher to look (unclear handwriting...).
+                                        if (fullResultJson.has("review_reasons")) {
+                                                synth.set("review_reasons", fullResultJson.get("review_reasons"));
+                                        }
                                         evaluationDetailsJson = synth;
                                 }
                         } catch (Exception e) {

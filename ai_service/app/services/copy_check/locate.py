@@ -46,14 +46,19 @@ NEIGHBOUR_PAGES = 1
 # ~1,200-2,000 chars, so this cuts nothing on a normal page — a one-line
 # answer at the foot of a page must not be truncated away.
 MAX_CHARS_PER_PAGE = 2_400
-MAX_QUESTION_CHARS = 160
+# Long enough to show a question's part labels ("(a) ... (b) ...") as well as
+# its opening, so a part answered out of order can be matched to its question.
+MAX_QUESTION_CHARS = 280
 
 LOCATE_SYSTEM = """You index a student's handwritten exam copy. You do NOT grade.
 For every question in the paper, say which page(s) of the copy hold the
 student's answer to it. Match by CONTENT (topic, option letters, values,
 section heading), never by the student's numbering alone - students restart
 numbering per section, skip and shift. An answer may run across two pages;
-list both. A question the student did not attempt gets an empty list.
+list both. A question with parts ((a), (b), (i)...) is often answered in
+pieces: one part may come much later in the copy, e.g. part (a) written after
+the last question. List EVERY page that holds any part of the answer.
+A question the student did not attempt gets an empty list.
 Return STRICT JSON only."""
 
 
@@ -101,8 +106,9 @@ def build_locate_prompt(questions: list[dict[str, Any]], layout_map: dict[str, A
 {q_block}
 
 For each question number #1..#{len(questions)} give the page id(s) where the
-student's answer to it is written, in reading order. Valid page ids: {page_ids}.
-Empty list if not attempted. Do not invent page ids.
+student's answer to it is written, in reading order - every page with any part
+of it, including a part written out of order elsewhere in the copy.
+Valid page ids: {page_ids}. Empty list if not attempted. Do not invent page ids.
 
 Output (STRICT JSON, nothing else):
 {{"locations": {{"1": ["p2"], "2": ["p2", "p3"], "3": []}}}}"""

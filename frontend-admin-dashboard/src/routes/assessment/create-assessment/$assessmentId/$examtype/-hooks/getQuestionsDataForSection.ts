@@ -14,6 +14,8 @@ interface QuestionData {
     question_duration: string | number;
     marking_json: string;
     evaluation_json?: string | null;
+    evaluation_criteria_json?: string | null;
+    criteria_template_id?: string | null;
     // The preview DTO fills options_with_explanation; plain `options` stays empty.
     options?: Array<{ id?: string | null; text?: { content?: string | null } | null }>;
     options_with_explanation?: Array<{
@@ -35,6 +37,9 @@ export interface AdaptiveMarking {
         min: string;
     };
     options?: AdaptiveMarkingOption[];
+    /** The question's saved evaluation criteria (rubric JSON); undefined = none. */
+    evaluation_criteria_json?: string;
+    criteria_template_id?: string;
 }
 
 export const useQuestionsForSection = (
@@ -62,6 +67,9 @@ export const useQuestionsForSection = (
                 questionType: questionData.question_type || '',
                 questionMark: markingJson.data?.totalMark || '0',
                 questionPenalty: markingJson.data?.negativeMark || '0',
+                // Dropped here before, so saved criteria showed as "Not Added" after a reload.
+                evaluation_criteria_json: questionData.evaluation_criteria_json || undefined,
+                criteria_template_id: questionData.criteria_template_id || undefined,
                 questionDuration: {
                     hrs:
                         typeof questionData.question_duration === 'number'

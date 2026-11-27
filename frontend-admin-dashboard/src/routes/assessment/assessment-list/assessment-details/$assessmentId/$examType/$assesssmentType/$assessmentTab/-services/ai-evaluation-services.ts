@@ -48,6 +48,8 @@ export interface EvaluationDetailsJson {
     criteria_breakdown: CriteriaBreakdown[];
     annotations?: QuestionAnnotation[];
     confidence?: number;
+    /** Why the AI check wants a teacher to look at this answer (unclear handwriting...). */
+    review_reasons?: string[];
 }
 
 export interface QuestionProgress {

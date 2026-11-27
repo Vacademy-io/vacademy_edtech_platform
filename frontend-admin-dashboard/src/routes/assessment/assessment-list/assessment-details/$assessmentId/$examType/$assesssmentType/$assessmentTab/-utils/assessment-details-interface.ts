@@ -154,6 +154,8 @@ interface transformSectionsAndQuestionsDataInterface {
     options: transformSectionsAndQuestionsDataOption[];
     options_json: string;
     options_with_explanation: transformSectionsAndQuestionsDataOption[];
+    /** The question's explanation (staff only; absent from older servers). */
+    explanation?: { content?: string | null } | null;
 }
 
 export interface transformSectionsAndQuestionsDataQuestionsData {

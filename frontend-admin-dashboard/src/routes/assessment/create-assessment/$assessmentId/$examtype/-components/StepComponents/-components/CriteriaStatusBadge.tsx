@@ -1,10 +1,11 @@
 import { Badge } from '@/components/ui/badge';
-import { Sparkle, PencilSimple, FileText, Plus, Info } from '@phosphor-icons/react';
+import { Sparkle, PencilSimple, FileText, Plus, Info, CheckCircle } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { CriteriaSource } from '../../../-services/criteria-services';
 
 interface CriteriaStatusBadgeProps {
-    status: CriteriaSource | 'not-added';
+    /** 'ai-check' = no criteria on the question, but the AI copy check has its own for it. */
+    status: CriteriaSource | 'ai-check' | 'not-added';
     onClick: () => void;
     onPreview?: () => void;
     className?: string;
@@ -40,6 +41,13 @@ export const CriteriaStatusBadge = ({
                     label: t('labels.template'),
                     bgClass: 'bg-green-50 border-green-200',
                     textClass: 'text-green-700',
+                };
+            case 'ai-check':
+                return {
+                    icon: <CheckCircle size={14} weight="fill" />,
+                    label: t('labels.aiCheck'),
+                    bgClass: 'bg-primary-50 border-primary-200',
+                    textClass: 'text-primary-700',
                 };
             case 'not-added':
             default:

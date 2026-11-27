@@ -25,6 +25,7 @@ import base64
 import io
 import json
 import logging
+import math
 import re
 import tempfile
 from pathlib import Path
@@ -182,9 +183,30 @@ def _encode(img: Any) -> str:
     return base64.b64encode(buf.getvalue()).decode("ascii")
 
 
+def _ceiling(item: dict[str, Any]) -> Any:
+    """A breakdown line's maximum. The breakdown stores it as "max"
+    (attach_criteria_max); reading only "max_marks" found no ceiling on any
+    line, so every full-marks line was sent as a cut and a raise landed on the
+    last criterion: "Vocabulary 17/15", "Paragraph 5 38/10"."""
+    return item.get("max_marks", item.get("max"))
+
+
+def _is_cut(item: dict[str, Any]) -> bool:
+    cmax = _ceiling(item)
+    try:
+        return cmax is None or float(item.get("marks") or 0) < float(cmax)
+    except (TypeError, ValueError):
+        return True
+
+
 def build_prompt(question: dict[str, Any], rubric: dict[str, Any], verdict: dict[str, Any]) -> str:
-    deductions = [c for c in verdict.get("criteria_breakdown") or []
-                  if c.get("max_marks") is None or float(c.get("marks") or 0) < float(c.get("max_marks") or 0)]
+    # Each cut keeps the index of its breakdown line, so a misreading the
+    # check finds is restored on THAT line (apply_check), not on whichever
+    # line comes first.
+    deductions = [{"id": i, "criterion": c.get("criteria_name"), "marks": c.get("marks"), "max": _ceiling(c),
+                   "reason": c.get("reason")}
+                  for i, c in enumerate(verdict.get("criteria_breakdown") or [])
+                  if isinstance(c, dict) and _is_cut(c)]
     notes = [a.get("text") for a in verdict.get("annotations") or [] if a.get("style") == "margin_note" and a.get("text")]
     return f"""Question {question.get('paper_label') or question.get('question_number') or ''} ({question.get('max_marks')} marks):
 {question.get('question_text')}
@@ -196,7 +218,7 @@ The examiner read the answer as:
 {str(verdict.get('extracted_answer') or '')[:2500]}
 
 and awarded {verdict.get('marks_awarded')} / {verdict.get('max_marks')}, cutting marks for:
-{json.dumps([{'criterion': c.get('criteria_name'), 'marks': c.get('marks'), 'max': c.get('max_marks'), 'reason': c.get('reason')} for c in deductions])[:2500]}
+{json.dumps(deductions)[:2500]}
 Notes written on the copy: {json.dumps(notes)[:800]}
 
 Look at the image(s) of what the student actually wrote. For EACH cut, decide:
@@ -209,9 +231,45 @@ keep every "real" cut. Never go above {verdict.get('max_marks')}, never below {v
 
 Return ONLY:
 {{"what_the_student_wrote": "<the key working and final answer as written, e.g. 7/5 x 1/6 = 7/30>",
-  "cuts": [{{"reason": "<the examiner's reason>", "finding": "misread" | "real", "why": "<what the image shows>"}}],
+  "cuts": [{{"id": <the cut's id above>, "reason": "<the examiner's reason>", "finding": "misread" | "real", "why": "<what the image shows>"}}],
   "marks_awarded": <number, in steps of 0.5>,
   "note": "<if marks are still cut: ONE short reason for the student, else empty>"}}"""
+
+
+_NOT_ATTEMPTED = re.compile(r"\b(not attempted|unattempted|not answered|no answer|left blank)\b", re.IGNORECASE)
+
+
+def _norm_reason(text: Any) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", str(text or "").lower()).strip()
+
+
+def _misread_lines(items: list[dict[str, Any]], misread: list[dict[str, Any]]) -> list[tuple[int, str]]:
+    """(breakdown index, what the image showed) for each misread cut: by the
+    id the prompt gave it, else by its echoed reason matching one line's."""
+    out: dict[int, str] = {}
+    for cut in misread:
+        why = str(cut.get("why") or "")
+        index = None
+        try:
+            raw = cut.get("id")
+            if raw is not None and not isinstance(raw, bool):
+                candidate = int(raw)
+                if 0 <= candidate < len(items):
+                    index = candidate
+        except (TypeError, ValueError):
+            index = None
+        if index is None:
+            reason = _norm_reason(cut.get("reason"))
+            same = [i for i, c in enumerate(items) if reason and _norm_reason(c.get("reason")) == reason]
+            if not same and len(reason) >= 12:
+                # The check often quotes the reason shortened or lengthened.
+                same = [i for i, c in enumerate(items) if _is_cut(c) and _norm_reason(c.get("reason"))
+                        and (reason in _norm_reason(c.get("reason")) or _norm_reason(c.get("reason")) in reason)]
+            if len(same) == 1:
+                index = same[0]
+        if index is not None and _is_cut(items[index]) and index not in out:
+            out[index] = why
+    return list(out.items())
 
 
 def apply_check(verdict: dict[str, Any], result: dict[str, Any]) -> bool:
@@ -226,6 +284,32 @@ def apply_check(verdict: dict[str, Any], result: dict[str, Any]) -> bool:
     new = round(min(mx, max(old, new)) * 2) / 2
     if new <= old or not misread:
         return False
+    items = [c for c in verdict.get("criteria_breakdown") or [] if isinstance(c, dict)]
+    lines = _misread_lines(items, misread)
+    # Where the raise may go: the lines the misread cuts belong to. On a real
+    # copy the whole raise for a misread 5(b)(iii) used to land on the first
+    # line with room - 5(a)(i), a part never attempted. A check that names no
+    # line (an older reply, a bad id) falls back to lines with something
+    # written: part-credited lines first, then lines cut for what was written.
+    # A misreading is of writing, so a line cut as "not attempted" is only
+    # raised when the check names it.
+    targets = [i for i, _ in lines] or (
+        [i for i, c in enumerate(items) if _is_cut(c) and float(c.get("marks") or 0) > 0]
+        + [i for i, c in enumerate(items) if _is_cut(c) and float(c.get("marks") or 0) <= 0
+           and not _NOT_ATTEMPTED.search(str(c.get("reason") or ""))])
+    room = 0.0
+    open_line = None
+    for i in targets:
+        cmax = _ceiling(items[i])
+        if cmax is None:
+            open_line = i
+            continue
+        room += max(0.0, float(cmax) - float(items[i].get("marks") or 0))
+    if items and open_line is None and room < new - old - 1e-6:
+        # Those lines are full: the raise cannot go past them.
+        new = math.floor((old + room) * 2 + 1e-9) / 2
+        if new <= old:
+            return False
     verdict["marks_awarded"] = new
     verdict["deduction_check"] = {"from": old, "to": new, "student_wrote": str(result.get("what_the_student_wrote") or "")[:400],
                                   "misread": [str(c.get("why") or c.get("reason") or "")[:200] for c in misread]}
@@ -233,38 +317,22 @@ def apply_check(verdict: dict[str, Any], result: dict[str, Any]) -> bool:
     # whether a cut was a misreading; it is not a better transcript - on one
     # answer it raised the mark rightly while copying the exponents wrong.
     # Re-spread the breakdown so it sums to the new mark.
-    items = verdict.get("criteria_breakdown") or []
+    why = dict(lines)
     gap = new - old
-    # The breakdown stores a criterion's ceiling as "max" (attach_criteria_max);
-    # reading only "max_marks" found no ceiling on any of them, so the whole
-    # raise landed on the last criterion: "Vocabulary 17/15", "Paragraph 5 38/10".
-    def ceiling(item: dict[str, Any]) -> Any:
-        return item.get("max_marks", item.get("max"))
-
-    for item in items:
-        cmax = ceiling(item)
-        if gap <= 0 or cmax is None:
+    for i in targets:
+        cmax = _ceiling(items[i])
+        if gap <= 1e-9 or cmax is None:
             continue
-        room = float(cmax) - float(item.get("marks") or 0)
-        give = min(room, gap)
+        give = min(float(cmax) - float(items[i].get("marks") or 0), gap)
         if give > 0:
-            item["marks"] = float(item.get("marks") or 0) + give
-            item["reason"] = "Re-checked against the handwriting: " + (misread[0].get("why") or "the cut came from a misreading.")
+            items[i]["marks"] = float(items[i].get("marks") or 0) + give
+            items[i]["reason"] = "Re-checked against the handwriting: " + (
+                why.get(i) or misread[0].get("why") or "the cut came from a misreading.")
             gap -= give
-    if gap > 1e-6 and items:
-        if all(ceiling(i) is not None for i in items):
-            # Every criterion is full: the raise cannot go past them.
-            new = round((new - gap) * 2) / 2
-            if new <= old:
-                verdict["marks_awarded"] = old
-                verdict.pop("deduction_check", None)
-                return False
-            verdict["marks_awarded"] = new
-            verdict["deduction_check"]["to"] = new
-        else:
-            # Criteria without a stated maximum: put the rest on the last one so
-            # the breakdown still adds up to the mark the teacher sees.
-            items[-1]["marks"] = float(items[-1].get("marks") or 0) + gap
+    if gap > 1e-6 and open_line is not None:
+        # A line without a stated maximum takes the rest, so the breakdown
+        # still adds up to the mark the teacher sees.
+        items[open_line]["marks"] = float(items[open_line].get("marks") or 0) + gap
     note = str(result.get("note") or "").strip()
     anns = []
     for a in verdict.get("annotations") or []:

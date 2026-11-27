@@ -3,6 +3,7 @@ package vacademy.io.assessment_service.features.question_core.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import vacademy.io.assessment_service.features.question_core.entity.Question;
@@ -115,4 +116,16 @@ public interface QuestionRepository extends JpaRepository<Question, String> {
             @Param("unsortedFlag") String unsortedFlag,
             Pageable pageable
     );
+
+    /**
+     * Sets a question's evaluation criteria (rubric JSON) from the Add Questions step. The
+     * template id is kept only when that template exists, so a stale id never fails the save.
+     */
+    @Modifying
+    @Query(value = "UPDATE question SET evaluation_criteria_json = :criteria, "
+            + "criteria_template_id = (SELECT t.id FROM evaluation_criteria_template t WHERE t.id = CAST(:templateId AS VARCHAR)), "
+            + "updated_at = CURRENT_TIMESTAMP WHERE id = :questionId", nativeQuery = true)
+    int updateEvaluationCriteria(@Param("questionId") String questionId,
+                                 @Param("criteria") String criteria,
+                                 @Param("templateId") String templateId);
 }

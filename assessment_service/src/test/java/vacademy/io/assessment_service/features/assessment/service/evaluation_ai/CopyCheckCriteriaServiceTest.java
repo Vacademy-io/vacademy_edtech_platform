@@ -145,4 +145,40 @@ class CopyCheckCriteriaServiceTest {
                 mapper.readTree("{\"q2\": {\"rubric\": [{\"criteria_name\": \"Content\", \"max_marks\": 3}]}}"), 1))
                 .hasMessageContaining("409");
     }
+
+    @Test
+    void add_questions_criteria_become_the_ai_checks_keeping_stored_instructions_and_keywords() throws Exception {
+        JsonNode stored = mapper.readTree("{\"rubric_version\":3,\"rubric\":{\"q2\":{\"max_marks\":3,"
+                + "\"evaluation_instructions\":\"Match answers to questions by content.\",\"partial_marking_enabled\":false,"
+                + "\"rubric\":[{\"criteria_name\":\"Content\",\"max_marks\":3,\"keywords\":[\"diary\"]}]}}}");
+        when(client.fetchRubric("a1", "inst")).thenReturn(Optional.of(stored));
+        when(client.patchRubric(eq("a1"), eq("inst"), any(), eq(null)))
+                .thenReturn(new AiServiceCopyCheckClient.RubricPatchResult(4, 200, null, false));
+        String fromStep = "{\"max_marks\":3,\"partial_marking_enabled\":true,"
+                + "\"evaluation_instructions\":\"Evaluate based on the following 2 criteria.\","
+                + "\"rubric\":[{\"criteria_name\":\"Content\",\"max_marks\":2,\"keywords\":[],\"evaluation_guidelines\":\"why\"},"
+                + "{\"criteria_name\":\"Language\",\"max_marks\":1,\"keywords\":[],\"evaluation_guidelines\":\"\"}]}";
+
+        int saved = service.saveQuestionCriteria("inst", "a1", new java.util.LinkedHashMap<>(Map.of(
+                "q2", fromStep, "q9", fromStep, "zz", fromStep)));
+
+        assertThat(saved).isEqualTo(1);
+        ArgumentCaptor<JsonNode> sent = ArgumentCaptor.forClass(JsonNode.class);
+        verify(client).patchRubric(eq("a1"), eq("inst"), sent.capture(), eq(null));
+        JsonNode rubric = sent.getValue().path("q2").path("rubric");
+        assertThat(sent.getValue().has("q9")).isFalse();
+        assertThat(sent.getValue().has("zz")).isFalse();
+        assertThat(rubric.path("evaluation_instructions").asText()).isEqualTo("Match answers to questions by content.");
+        assertThat(rubric.path("partial_marking_enabled").asBoolean()).isTrue();
+        assertThat(rubric.path("rubric").get(0).path("keywords").get(0).asText()).isEqualTo("diary");
+        assertThat(rubric.path("rubric").get(1).path("criteria_name").asText()).isEqualTo("Language");
+    }
+
+    @Test
+    void add_questions_criteria_that_are_not_a_rubric_are_not_sent() throws Exception {
+        when(client.fetchRubric("a1", "inst")).thenReturn(Optional.empty());
+        assertThat(service.saveQuestionCriteria("inst", "a1", Map.of("q2", "{\"rubric\":[]}"))).isZero();
+        assertThat(service.saveQuestionCriteria("inst", "a1", Map.of("q2", "not json"))).isZero();
+        verify(client, never()).patchRubric(any(), any(), any(), any());
+    }
 }

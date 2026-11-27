@@ -216,6 +216,33 @@ def test_orchestrator_regrades_full_when_narrowed_finds_nothing() -> None:
     check("non-dict verdict is left to the validator", not _looks_unattempted(["not", "a", "dict"]))
 
 
+def test_orchestrator_regrades_full_when_a_part_is_missing() -> None:
+    print("\n_parts_not_found / _wider_reading — a part answered out of order")
+    from ai_service.app.services.copy_check.orchestrator import _parts_not_found, _wider_reading
+    check("grader lists a missing part", _parts_not_found({"marks_awarded": 4, "parts_not_found": ["1(a)"]}))
+    check("empty list is not a missing part", not _parts_not_found({"marks_awarded": 4, "parts_not_found": ["", None]}))
+    check("rubric line at 0 as 'not attempted'", _parts_not_found({"marks_awarded": 4, "criteria_breakdown": [
+        {"criteria_name": "Partnership defined", "marks": 0, "reason": "Part 1(a) not attempted"},
+        {"criteria_name": "First difference", "marks": 1, "reason": "stated for both"}]}))
+    check("a missed point is not a missing part", not _parts_not_found({"marks_awarded": 2, "criteria_breakdown": [
+        {"criteria_name": "Remedy", "marks": 0, "reason": "Remedy of withdrawing and filing a fresh suit missing"}]}))
+    check("credited line saying 'not attempted elsewhere' is ignored", not _parts_not_found({"criteria_breakdown": [
+        {"criteria_name": "x", "marks": 1, "reason": "full marks; (b) not attempted is a separate line"}]}))
+    check("non-dict is left alone", not _parts_not_found(["x"]))
+    narrow = {"marks_awarded": 4.0}
+    check("whole-copy reading that credits more wins", _wider_reading(narrow, {"marks_awarded": 8.0})["marks_awarded"] == 8.0)
+    check("whole-copy reading that credits less loses", _wider_reading(narrow, {"marks_awarded": 3.0}) is narrow)
+    check("failed whole-copy reading keeps the narrow one", _wider_reading(narrow, None) is narrow)
+
+    lm = _layout(6)
+    note = _transcript_for_prompt(lm, ["p1", "p2"])
+    check("narrowed note asks for parts_not_found", "parts_not_found" in note, note[:300])
+    check("narrowed note forbids 'missing from the whole copy'", "never say it is missing from the whole copy" in note)
+    lp = locate.build_locate_prompt(_questions(2), lm)
+    check("locator asks for every page of a split answer", "every page with any part" in lp, lp[-400:])
+    check("locator system prompt names out-of-order parts", "part (a) written after" in locate.LOCATE_SYSTEM)
+
+
 def test_prompt_build_is_robust() -> None:
     print("\nbuild_locate_prompt — odd inputs never raise")
     lm = _layout(5)
@@ -225,7 +252,7 @@ def test_prompt_build_is_robust() -> None:
     ]
     p = locate.build_locate_prompt(qs, lm)
     check("string/dict/int options all rendered", "(a) plain string; (b) dict; (c) 7" in p, p[-400:])
-    check("long question text truncated", "x" * 161 not in p and "..." in p)
+    check("long question text truncated", "x" * (locate.MAX_QUESTION_CHARS + 1) not in p and "..." in p)
     lm["pages"][0]["vision_text"] = "y" * 5000
     prose = locate._page_prose(lm["pages"][0])
     check("page prose capped", len(prose) < 2500 and prose.endswith(" ..."), str(len(prose)))
@@ -245,6 +272,7 @@ if __name__ == "__main__":
     test_locate_answers_end_to_end()
     test_grader_narrowed_call_and_token_drop()
     test_orchestrator_regrades_full_when_narrowed_finds_nothing()
+    test_orchestrator_regrades_full_when_a_part_is_missing()
     test_prompt_build_is_robust()
     print()
     if failures:

@@ -51,7 +51,7 @@ class AssessmentLinkQuestionsManagerApiLockTest {
 
     private static AddQuestionsAssessmentDetailsDTO update(String marking, boolean added, boolean deleted, boolean updated) {
         SectionAddEditRequestDto.QuestionAndMarking qm = new SectionAddEditRequestDto.QuestionAndMarking(
-                "q1", marking, 0, 1, added, deleted, updated);
+                "q1", marking, 0, 1, added, deleted, updated, null, null);
         SectionAddEditRequestDto section = new SectionAddEditRequestDto();
         section.setSectionId("s1");
         section.setQuestionAndMarking(new ArrayList<>(List.of(qm)));

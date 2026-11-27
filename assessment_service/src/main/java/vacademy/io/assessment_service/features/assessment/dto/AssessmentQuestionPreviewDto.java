@@ -35,6 +35,8 @@ public class AssessmentQuestionPreviewDto {
     private String criteriaTemplateId;
     private List<OptionWithoutExplanationDTO> options = new ArrayList<>();
     private List<OptionDTO> optionsWithExplanation = new ArrayList<>();
+    // The question's explanation (solution). Staff only - see fillExplanation.
+    private AssessmentRichTextDataDTO explanation;
 
     public AssessmentQuestionPreviewDto(Question question,
             QuestionAssessmentSectionMapping questionAssessmentSectionMapping) {
@@ -59,6 +61,15 @@ public class AssessmentQuestionPreviewDto {
             options.add(new OptionWithoutExplanationDTO(option));
         }
         this.options = options;
+    }
+
+    /**
+     * The question's explanation, for the staff preview (it showed an empty Explanation for
+     * every question). Never set in the constructor: learners get this DTO when they start an
+     * attempt.
+     */
+    public void fillExplanation(Question question) {
+        this.explanation = question.getExplanationTextData() == null ? null : question.getExplanationTextData().toDTO();
     }
 
     public void fillOptionsExplanationsOfQuestion(Question question) {

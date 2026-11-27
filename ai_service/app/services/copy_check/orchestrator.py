@@ -12,6 +12,7 @@ import asyncio
 import copy
 import logging
 import os
+import re
 import uuid
 from typing import Any, Optional
 
@@ -23,7 +24,7 @@ from ..api_key_resolver import ApiKeyResolver
 from ..chat_llm_client import ChatLLMClient
 from ...repositories.copy_check_rubric_repository import CopyCheckRubricRepository
 from ...repositories import copy_check_render_snapshot_repository as render_snapshot
-from . import annotator, answer_language, callbacks, cbe_render, cancellation, copy_structure, deduction_check, deduction_scheme, evaluation_table, language_check, language_feedback, language_vision, locate, math_reread, option_letter, orientation, typed_answers, vision_transcript
+from . import annotator, answer_language, callbacks, cbe_render, cancellation, copy_structure, deduction_check, deduction_scheme, evaluation_table, language_check, language_feedback, language_vision, locate, math_reread, option_letter, orientation, review, typed_answers, vision_transcript
 from .choice_groups import counted_awarded, counted_flags, resolve_paper_max
 from .failure import (
     COPY_UNREADABLE,
@@ -42,7 +43,7 @@ from .prompt_builder import paper_label_for
 from .mathpix_fallback import MathpixFallback
 from .render_client import CopyCheckRenderClient, OcrCancelled
 from .rubric import RubricGenerationFailed, RubricResolver, load_snapshot
-from .validator import attach_criteria_max, validate_and_cap
+from .validator import attach_criteria_max, fit_breakdown, validate_and_cap
 from .enforce_bridge import apply_enforcement
 
 logger = logging.getLogger(__name__)
@@ -142,6 +143,47 @@ def _looks_unattempted(raw: dict[str, Any]) -> bool:
     )
 
 
+_PART_MISSING = re.compile(r"\b(not attempted|unattempted|not answered|no answer|not found)\b", re.IGNORECASE)
+
+
+def _parts_not_found(raw: dict[str, Any]) -> bool:
+    """The grader found part of the answer but not all of it: it listed the
+    missing parts (`parts_not_found`, asked for when it sees only some pages),
+    or a rubric line got 0 as "not attempted". On a narrowed call the missing
+    part may be on a page the grader was not shown - a student answered 1(b)
+    on page 1 and 1(a) after Q5, on the last page, and 1(a) scored 0 as "not
+    attempted anywhere in the copy"."""
+    if not isinstance(raw, dict):
+        return False
+    listed = raw.get("parts_not_found")
+    if isinstance(listed, list) and any(str(x or "").strip() for x in listed):
+        return True
+    for item in raw.get("criteria_breakdown") or []:
+        if not isinstance(item, dict):
+            continue
+        try:
+            marks = float(item.get("marks") or 0)
+        except (TypeError, ValueError):
+            continue
+        if marks == 0 and _PART_MISSING.search(str(item.get("reason") or "")):
+            return True
+    return False
+
+
+def _wider_reading(narrow: dict[str, Any], wide: Any) -> dict[str, Any]:
+    """The whole-copy grading, unless it credits less than the narrowed one:
+    seeing more pages can only find more of the answer, so a lower mark is
+    noise, not evidence."""
+    if not isinstance(wide, dict):
+        return narrow
+    try:
+        if float(wide.get("marks_awarded") or 0) < float(narrow.get("marks_awarded") or 0):
+            return narrow
+    except (TypeError, ValueError):
+        return narrow
+    return wide
+
+
 def _render_client() -> CopyCheckRenderClient:
     # ai-service uses RENDER_SERVER_URL/RENDER_SERVER_KEY as the cluster-wide
     # convention (already set on the deployment). Fall through to the names
@@ -233,6 +275,7 @@ async def _grade_typed(
                 rubric = await rubric_resolver.resolve(q, preferred_model)
                 raw = await grader.grade_typed_question(q, rubric, preferred_model)
                 verdict = attach_criteria_max(validate_and_cap(raw, q, _EMPTY_LAYOUT), rubric)
+                fit_breakdown(verdict)
                 if cbe:
                     cbe_render.reconcile_breakdown(verdict)
             except cancellation.Cancelled:
@@ -245,6 +288,7 @@ async def _grade_typed(
                     rubric = await rubric_resolver.resolve(q, retry_model)
                     raw = await grader.grade_typed_question(q, rubric, retry_model)
                     verdict = attach_criteria_max(validate_and_cap(raw, q, _EMPTY_LAYOUT), rubric)
+                    fit_breakdown(verdict)
                     if cbe:
                         cbe_render.reconcile_breakdown(verdict)
                 except cancellation.Cancelled:
@@ -1050,6 +1094,14 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
                         qid, page_ids,
                     )
                     raw = await grader.grade_question(q, rubric, layout_map, preferred_model)
+                elif narrowed and _parts_not_found(raw):
+                    # Some parts found, some not: a part answered out of order
+                    # (1(a) after Q5) sits on a page this call did not show.
+                    logger.info(
+                        "Q%s: part of the answer not found on located pages %s; re-grading against the full copy",
+                        qid, page_ids,
+                    )
+                    raw = _wider_reading(raw, await grader.grade_question(q, rubric, layout_map, preferred_model))
                 verdict = attach_criteria_max(validate_and_cap(raw, q, layout_map), rubric)
                 pin_later = False
                 if expected_rows:
@@ -1144,6 +1196,12 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
                     language_errors, verdict.get("answer_rows"), row_positions)
                 if errors:
                     language_found[qid] = errors
+            # Lines add up to the final mark (after the cut re-check), none over
+            # its maximum; what fits nowhere honestly goes to the teacher.
+            fit_breakdown(verdict)
+            # Unsure readings and cuts on a page the reader could not read well
+            # go to the teacher as review_reasons, not as a confident 0.
+            review.flag(verdict, layout_map)
             total_awarded += verdict["marks_awarded"]
             total_max += verdict["max_marks"]
             evaluated += 1
@@ -1172,6 +1230,7 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
                 # The grader's verdict was reported already and stands.
                 logger.warning("Q%s: could not move the verdict to its row", qid, exc_info=True)
                 continue
+            fit_breakdown(verdict)
             sent[qid] = (float(verdict.get("marks_awarded") or 0), list(verdict.get("annotations") or []))
             reported = verdict
             if qid in language_found:

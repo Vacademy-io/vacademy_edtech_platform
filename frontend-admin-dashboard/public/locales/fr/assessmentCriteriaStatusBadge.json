@@ -3,7 +3,8 @@
     "aiGenerated": "Généré par IA",
     "manual": "Manuel",
     "template": "Modèle",
-    "notAdded": "Non ajouté"
+    "notAdded": "Non ajouté",
+    "aiCheck": "Ajouté (vérif. IA)"
   },
   "previewTooltip": "Aperçu des critères"
 }

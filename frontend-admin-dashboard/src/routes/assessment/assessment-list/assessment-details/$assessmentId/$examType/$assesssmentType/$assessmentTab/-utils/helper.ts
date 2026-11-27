@@ -531,7 +531,7 @@ export function transformSectionsAndQuestionsData(
                 id: question.question_id,
                 questionId: question.question_id,
                 questionName: question.question.content,
-                explanation: '',
+                explanation: question.explanation?.content || '',
                 questionType: markingJson.type || 'MCQS',
                 questionMark: markingJson.data.totalMark,
                 questionPenalty: markingJson.data.negativeMark,
