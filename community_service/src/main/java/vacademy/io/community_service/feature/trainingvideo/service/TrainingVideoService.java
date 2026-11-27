@@ -44,7 +44,7 @@ public class TrainingVideoService {
     /** Super-admin listing — includes inactive videos. */
     @Transactional(readOnly = true)
     public List<TrainingVideoDto> listAll() {
-        return repository.findAllByOrderByCreatedAtDesc().stream()
+        return repository.findByKindOrderByCreatedAtDesc(TrainingVideo.KIND_TRAINING).stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
@@ -53,8 +53,8 @@ public class TrainingVideoService {
     @Transactional(readOnly = true)
     public List<TrainingVideoDto> listActive(String search) {
         List<TrainingVideo> rows = StringUtils.hasText(search)
-                ? repository.findActiveBySearch(search.trim())
-                : repository.findByActiveTrueOrderByCreatedAtDesc();
+                ? repository.findActiveBySearch(search.trim(), TrainingVideo.KIND_TRAINING)
+                : repository.findByKindAndActiveTrueOrderByCreatedAtDesc(TrainingVideo.KIND_TRAINING);
         return rows.stream().map(this::toDto).collect(Collectors.toList());
     }
 
@@ -104,7 +104,10 @@ public class TrainingVideoService {
 
     @Transactional
     public void delete(String id) {
-        repository.deleteById(id);
+        // Same no-op-when-missing behaviour as deleteById, but never deletes a webinar row.
+        repository.findById(id)
+                .filter(v -> TrainingVideo.KIND_TRAINING.equals(v.getKind()))
+                .ifPresent(repository::delete);
     }
 
     private List<String> validate(UpsertTrainingVideoRequest request) {
@@ -156,8 +159,10 @@ public class TrainingVideoService {
         return StringUtils.hasText(value) ? value.trim() : null;
     }
 
+    /** Training rows only — a webinar id is "not found" here; feature/webinar owns those. */
     private TrainingVideo getOrThrow(String id) {
         return repository.findById(id)
+                .filter(v -> TrainingVideo.KIND_TRAINING.equals(v.getKind()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Training video not found: " + id));
     }
 

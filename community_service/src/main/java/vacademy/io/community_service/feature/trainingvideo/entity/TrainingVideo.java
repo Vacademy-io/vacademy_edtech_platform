@@ -8,6 +8,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
 
+import java.time.Instant;
 import java.util.Date;
 
 /**
@@ -23,6 +24,10 @@ import java.util.Date;
  * database and does no ddl-auto of its own. See
  * {@code assessment_service/src/main/resources/db/migration/V47__create_training_video_table.sql};
  * it runs automatically on every environment when assessment_service deploys.
+ *
+ * <p>Since V80 the same table also holds the Assist Dock "Webinars" ({@link #KIND_WEBINAR}):
+ * those rows use {@code startsAt}/{@code endsAt}/{@code joinUrl}, and {@code fileUrl} is their
+ * recording (null until one is added). See feature/webinar.
  */
 @Entity
 @Table(name = "training_video", schema = "public")
@@ -33,6 +38,11 @@ import java.util.Date;
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
 public class TrainingVideo {
+
+    /** A training video in the Training popup — every row created before V80. */
+    public static final String KIND_TRAINING = "TRAINING";
+    /** A live webinar in the Webinars panel. */
+    public static final String KIND_WEBINAR = "WEBINAR";
 
     @Id
     @UuidGenerator
@@ -49,8 +59,11 @@ public class TrainingVideo {
     @Column(name = "file_id")
     private String fileId;
 
-    /** Public S3 URL the admin popup streams the video from. */
-    @Column(name = "file_url", length = 2048, nullable = false)
+    /**
+     * Public S3 URL the admin popup streams the video from. Always set for a training video;
+     * a webinar's recording, so null until the recording is added (nullable since V80).
+     */
+    @Column(name = "file_url", length = 2048)
     private String fileUrl;
 
     /** jsonb array of 1..3 breadcrumb segments, e.g. ["LMS","Course creation","AI based course"]. */
@@ -71,6 +84,23 @@ public class TrainingVideo {
     @Column(name = "active", nullable = false)
     @Builder.Default
     private boolean active = true;
+
+    /** {@link #KIND_TRAINING} or {@link #KIND_WEBINAR}. See V80. */
+    @Column(name = "kind", length = 32, nullable = false)
+    @Builder.Default
+    private String kind = KIND_TRAINING;
+
+    /** Webinars only: when it starts. */
+    @Column(name = "starts_at")
+    private Instant startsAt;
+
+    /** Webinars only: when it ends. The Webinars panel shows it as live between the two. */
+    @Column(name = "ends_at")
+    private Instant endsAt;
+
+    /** Webinars only: the link admins open to join. */
+    @Column(name = "join_url", length = 2048)
+    private String joinUrl;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
