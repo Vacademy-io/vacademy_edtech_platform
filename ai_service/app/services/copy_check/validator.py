@@ -16,7 +16,7 @@ import logging
 import re
 from typing import Any, Optional
 
-from .review import unclear_reads
+from .review import add_reason, unclear_reads
 
 logger = logging.getLogger(__name__)
 
@@ -372,11 +372,14 @@ def validate_and_cap(
                 it["marks"] = round(it["marks"] * factor, 2)
         marks_awarded = max_marks
     else:
-        # Under max, reconcile a breakdown that doesn't add up to the awarded
-        # total so the teacher isn't shown per-criterion marks that contradict
-        # the headline mark. marks_awarded stays authoritative (it feeds totals).
+        # Under max, a breakdown that adds up to MORE than the awarded total is
+        # scaled down to it, so the teacher isn't shown per-criterion marks
+        # that contradict the headline mark. marks_awarded stays authoritative
+        # (it feeds totals). One that adds up to LESS is left for fit_breakdown:
+        # scaling it up here, before each line's maximum is known, showed
+        # "1.4 / 1" and "Full marks" lines worth 0.8.
         bsum = round(sum(it["marks"] for it in breakdown), 2)
-        if breakdown and bsum > 0 and abs(bsum - marks_awarded) > 0.01:
+        if breakdown and bsum > 0 and bsum - marks_awarded > 0.01:
             logger.info(
                 "Q%s: breakdown sum %.2f != awarded %.2f — rescaling breakdown",
                 question["question_id"], bsum, marks_awarded,
@@ -530,6 +533,69 @@ def validate_and_cap(
         "unclear_reads": unclear_reads(raw),
         "status": "COMPLETED",
     }
+
+
+def _line_ceiling(item: dict[str, Any]) -> Optional[float]:
+    value = item.get("max", item.get("max_marks"))
+    try:
+        return None if value is None else float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def fit_breakdown(verdict: dict[str, Any]) -> float:
+    """Make the rubric lines add up to marks_awarded without a line going over
+    its maximum or credit appearing on a line the grader gave nothing.
+
+    Run once a verdict is final (after the cut re-check, after enforcement):
+    lines over their maximum are brought down to it, a breakdown worth more
+    than the mark is scaled down, and one worth less is topped up on the lines
+    that already earned marks, each up to its maximum. What no such line can
+    take stays off the lines - putting it on a line the grader marked "not
+    attempted" told the teacher the student had earned it there - and the
+    answer goes to the teacher with a review reason. Returns that remainder.
+    In place."""
+    items = [c for c in verdict.get("criteria_breakdown") or [] if isinstance(c, dict)]
+    if not items:
+        return 0.0
+    try:
+        target = float(verdict.get("marks_awarded") or 0)
+    except (TypeError, ValueError):
+        return 0.0
+    for c in items:
+        mark = max(0.0, coerce_number(c.get("marks"), 0.0))
+        ceiling = _line_ceiling(c)
+        c["marks"] = round(min(mark, ceiling) if ceiling is not None else mark, 2)
+    total = sum(c["marks"] for c in items)
+    if total - target > 0.01:
+        factor = target / total if total > 0 else 0.0
+        for c in items:
+            c["marks"] = round(c["marks"] * factor, 2)
+        return 0.0
+    gap = target - total
+    if gap <= 0.01:
+        return 0.0
+    credited = [c for c in items if c["marks"] > 0]
+    capped = [c for c in credited if _line_ceiling(c) is not None and _line_ceiling(c) - c["marks"] > 1e-9]
+    room = sum(_line_ceiling(c) - c["marks"] for c in capped)
+    if room > 0:
+        take = min(gap, room)
+        for c in capped:
+            c["marks"] = round(c["marks"] + (_line_ceiling(c) - c["marks"]) / room * take, 2)
+        gap -= take
+    open_lines = [c for c in credited if _line_ceiling(c) is None]
+    if gap > 0.01 and open_lines:
+        for c in open_lines:
+            c["marks"] = round(c["marks"] + gap / len(open_lines), 2)
+        gap = 0.0
+    if gap <= 0.01:
+        return 0.0
+    placed = round(sum(c["marks"] for c in items), 2)
+    logger.info("Q%s: mark %.2f, rubric lines hold %.2f - %.2f left off the lines",
+                verdict.get("question_id"), target, placed, gap)
+    add_reason(verdict, f"The mark ({target:g}) is more than its rubric lines add up to ({placed:g}); "
+                        "check the breakdown before accepting it.")
+    return round(gap, 2)
 
 
 def _criterion_key(name: Any) -> str:

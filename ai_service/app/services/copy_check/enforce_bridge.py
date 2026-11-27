@@ -25,7 +25,7 @@ from typing import Any
 
 from . import choice_groups as _choice
 from .enforce import SHORT_TYPES, _fmt, enforce
-from .validator import VALID_POSITIONS, _POSITION_ALIASES
+from .validator import VALID_POSITIONS, _POSITION_ALIASES, fit_breakdown
 
 logger = logging.getLogger(__name__)
 
@@ -199,11 +199,11 @@ def _write_back_marks(verdicts: list[dict[str, Any]], awarded: list[float],
         report.append(f"Q{v.get('question_id')}: mark {before:g} -> {mark:g} (as written on the copy)")
         breakdown = [c for c in (v.get("criteria_breakdown") or []) if isinstance(c, dict)]
         bsum = sum(float(c.get("marks") or 0) for c in breakdown)
-        if bsum > 0:
-            for c in breakdown:
-                c["marks"] = round(float(c.get("marks") or 0) * mark / bsum, 2)
-        elif len(breakdown) == 1:
+        if bsum <= 0 and len(breakdown) == 1:
             breakdown[0]["marks"] = round(mark, 2)
+        # Scaled down freely; topped up only on lines that earned marks, each
+        # within its maximum (a plain rescale showed "1.4 / 1").
+        fit_breakdown(v)
 
 
 def apply_enforcement(verdicts: list[dict[str, Any]], layout_map: dict[str, Any],

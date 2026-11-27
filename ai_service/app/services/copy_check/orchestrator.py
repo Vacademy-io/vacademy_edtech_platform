@@ -43,7 +43,7 @@ from .prompt_builder import paper_label_for
 from .mathpix_fallback import MathpixFallback
 from .render_client import CopyCheckRenderClient, OcrCancelled
 from .rubric import RubricGenerationFailed, RubricResolver, load_snapshot
-from .validator import attach_criteria_max, validate_and_cap
+from .validator import attach_criteria_max, fit_breakdown, validate_and_cap
 from .enforce_bridge import apply_enforcement
 
 logger = logging.getLogger(__name__)
@@ -275,6 +275,7 @@ async def _grade_typed(
                 rubric = await rubric_resolver.resolve(q, preferred_model)
                 raw = await grader.grade_typed_question(q, rubric, preferred_model)
                 verdict = attach_criteria_max(validate_and_cap(raw, q, _EMPTY_LAYOUT), rubric)
+                fit_breakdown(verdict)
                 if cbe:
                     cbe_render.reconcile_breakdown(verdict)
             except cancellation.Cancelled:
@@ -287,6 +288,7 @@ async def _grade_typed(
                     rubric = await rubric_resolver.resolve(q, retry_model)
                     raw = await grader.grade_typed_question(q, rubric, retry_model)
                     verdict = attach_criteria_max(validate_and_cap(raw, q, _EMPTY_LAYOUT), rubric)
+                    fit_breakdown(verdict)
                     if cbe:
                         cbe_render.reconcile_breakdown(verdict)
                 except cancellation.Cancelled:
@@ -1194,6 +1196,9 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
                     language_errors, verdict.get("answer_rows"), row_positions)
                 if errors:
                     language_found[qid] = errors
+            # Lines add up to the final mark (after the cut re-check), none over
+            # its maximum; what fits nowhere honestly goes to the teacher.
+            fit_breakdown(verdict)
             # Unsure readings and cuts on a page the reader could not read well
             # go to the teacher as review_reasons, not as a confident 0.
             review.flag(verdict, layout_map)
@@ -1225,6 +1230,7 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
                 # The grader's verdict was reported already and stands.
                 logger.warning("Q%s: could not move the verdict to its row", qid, exc_info=True)
                 continue
+            fit_breakdown(verdict)
             sent[qid] = (float(verdict.get("marks_awarded") or 0), list(verdict.get("annotations") or []))
             reported = verdict
             if qid in language_found:

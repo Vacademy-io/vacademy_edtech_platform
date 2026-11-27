@@ -31,7 +31,7 @@ from ...models.ai_token_usage import RequestType
 from ..ai_billing import UC, charge_tool, metering_user, preflight_tool_credits
 from . import cbe_render, typed_answers
 from .grader import FAIL_TOKENS_PER_COPY, CopyCheckGrader, evaluation_model
-from .validator import attach_criteria_max, validate_and_cap
+from .validator import attach_criteria_max, fit_breakdown, validate_and_cap
 
 logger = logging.getLogger(__name__)
 
@@ -200,6 +200,7 @@ def _charge(db: Any, *, key: str, institute_id: str, user_id: str, model: str,
 
 def _finalise(raw: dict[str, Any], question: dict[str, Any], rubric: dict[str, Any]) -> dict[str, Any]:
     verdict = attach_criteria_max(validate_and_cap(raw, question, _EMPTY_LAYOUT), rubric)
+    fit_breakdown(verdict)
     return cbe_render.reconcile_breakdown(verdict)
 
 
