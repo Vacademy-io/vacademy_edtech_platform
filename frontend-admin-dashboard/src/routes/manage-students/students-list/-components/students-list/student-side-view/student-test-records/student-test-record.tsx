@@ -22,6 +22,7 @@ import { useInstituteQuery } from '@/services/student-list-section/getInstituteD
 import { AssessmentReportStudentInterface } from '@/types/assessments/assessment-overview';
 import { getAssessmentDetailsData } from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-services/assessment-services';
 import { Steps } from '@/types/assessments/assessment-data-type';
+import { formatMark } from '@/services/submission-review/marks';
 import {
     Trophy,
     CheckCircle,
@@ -180,9 +181,11 @@ export const StudentTestRecord = ({
             instituteId: string | undefined;
         }) => viewStudentReport(assessmentId, attemptId, instituteId),
         onSuccess: async (data, { assessmentId }) => {
-            setSelectedTest(data);
+            // The sections first, then the dialog: it used to open with the previous
+            // test's sections (or none) and keep them.
+            let assessData: Steps | null = null;
             try {
-                const assessData = await getAssessmentDetailsData({
+                assessData = await getAssessmentDetailsData({
                     assessmentId: assessmentId,
                     instituteId: instituteDetails?.id,
                     // From Manage Students the side view has no exam type, and the status
@@ -190,10 +193,11 @@ export const StudentTestRecord = ({
                     // sections this dialog reads are the same for every type.
                     type: examType || 'EXAM',
                 });
-                setAssessmentDetails(assessData);
             } catch (error) {
                 console.error('Failed to fetch assessment details:', error);
             }
+            setAssessmentDetails(assessData);
+            setSelectedTest(data);
         },
         // eslint-disable-next-line
         onError: (error: any) => {
@@ -405,12 +409,12 @@ export const StudentTestRecord = ({
                             const isEnded = studentReport.attempt_status === 'ENDED';
                             const isPending = studentReport.attempt_status === 'PENDING';
 
-                            const subjectName =
-                                resolveSubjectName(
-                                    instituteDetails?.subjects,
-                                    subjectNamesById,
-                                    studentReport.subject_id
-                                ) || t('list.subjectFallback');
+                            // Tests without a subject show only the date (was "N/A · date").
+                            const subjectName = resolveSubjectName(
+                                instituteDetails?.subjects,
+                                subjectNamesById,
+                                studentReport.subject_id
+                            );
 
                             // Subtitle date: prefer attempt_date for ENDED rows,
                             // fall back to scheduled start_time so every card shows
@@ -438,13 +442,9 @@ export const StudentTestRecord = ({
                                             {studentReport.assessment_name}
                                         </div>
                                         <div className="mt-0.5 text-caption text-muted-foreground">
-                                            {subjectName}
-                                            {subtitleDate && (
-                                                <>
-                                                    {' · '}
-                                                    {subtitleDate}
-                                                </>
-                                            )}
+                                            {[subjectName, subtitleDate]
+                                                .filter(Boolean)
+                                                .join(' · ')}
                                         </div>
                                     </div>
 
@@ -452,7 +452,7 @@ export const StudentTestRecord = ({
                                     <div className="flex shrink-0 flex-col items-end gap-1">
                                         {isEnded && (
                                             <div className="text-h4 font-bold leading-none text-primary-600">
-                                                {studentReport.total_marks.toFixed(1)}
+                                                {formatMark(studentReport.total_marks)}
                                             </div>
                                         )}
                                         <StatusChips
