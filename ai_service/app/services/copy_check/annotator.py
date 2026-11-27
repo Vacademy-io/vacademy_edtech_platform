@@ -877,7 +877,12 @@ def _grand_total_reach(page: Any, text: str, line_h: float) -> tuple[float, floa
     paper's edge, the pen refused it, and the vector fallback drew the ring
     gated at the edge - the most prominent mark on the script, cramped.
     """
-    size = line_h * 1.45
+    return _ring_reach(page, text, line_h * 1.45)
+
+
+def _ring_reach(page: Any, text: str, size: float) -> tuple[float, float, float, float]:
+    """How far a circled figure of digit height `size` reaches (left, right,
+    up, down) of its centre, in points - measured on the pen's own drawing."""
     if _PEN[0] is not None:
         try:
             S = _PEN_SCALE
@@ -2927,6 +2932,7 @@ def _strip_note(page: Any, rect: Any, note: str, occupied: Optional[list],
         # lands straight on the next comment - five of them ended up
         # overlapping that way.
         clash = True
+        level = top
         for _ in range(24):
             hits = [o for o in (_PLACED[0] or []) if box.intersects(o)]
             if not hits:
@@ -2936,6 +2942,20 @@ def _strip_note(page: Any, rect: Any, note: str, occupied: Optional[list],
             if top + height > sheet.y1 - 6.0:
                 break
             box = fitz.Rect(left, top, left + widest * _ADVANCE_SLACK, top + height)
+        if clash:
+            # The strip below is full to the foot of the page (the last
+            # answer's remarks, under its mark): the nearest room above.
+            top = level
+            box = fitz.Rect(left, top, left + widest * _ADVANCE_SLACK, top + height)
+            for _ in range(24):
+                hits = [o for o in (_PLACED[0] or []) if box.intersects(o)]
+                if not hits:
+                    clash = False
+                    break
+                top = min(o.y0 for o in hits) - 5.0 - height
+                if top < sheet.y0 + 6.0:
+                    break
+                box = fitz.Rect(left, top, left + widest * _ADVANCE_SLACK, top + height)
         if clash:
             continue
         rng = _hand_rng("strip", note[:24], round(top, 1))
@@ -3960,54 +3980,46 @@ def _badge_size(text: str, radius: float, font_name: str, font: Optional[Any]) -
     return size
 
 
+def _badge_text(awarded: float, out_of: Optional[float] = None) -> str:
+    """A question's mark as it is circled: "6/10", or "4.5" when the question's
+    maximum is not known."""
+    return _latin1(f"{_fmt_marks(awarded)}/{_fmt_marks(out_of)}" if out_of
+                   else _fmt_marks(awarded))
+
+
+# A circled question mark's digit height, as a fraction of the badge radius
+# _place_question_scores picks from the page's line height.
+_BADGE_DIGIT_K = 0.95
+
+
 def _draw_score_badge(page: Any, centre: Any, awarded: float, out_of: Optional[float] = None,
                       radius: float = 15.0) -> None:
-    """A circled mark, the way it is written on a real script.
+    """A question's mark, "6/10", written and circled with the copy's pen.
 
-    out_of given -> the "34/60" total; omitted -> a bare per-question "4.5".
+    Always circled and always with its maximum. A loop round only a third of
+    the marks, and a bare "1" with no "/10", left a figure that read as a
+    stray digit on the page - the person this is for asked for every mark in
+    a circle. Drawn the way the copy's total is, a size smaller.
     """
     import fitz
 
-    # insert_text, not insert_textbox: a box only as tall as the glyphs is
-    # rejected for want of line-height headroom and silently writes nothing,
-    # which leaves an empty circle where the mark should be.
-    # The circled mark is written in the same hand as the notes, so the whole
-    # script reads as one person's marking rather than a form overlay.
-    badge_font, badge_measure = _digit_pen(page)
-    awarded_text = _fmt_marks(awarded)
-    badge_rng = _hand_rng("badge", round(centre.x, 1), round(centre.y, 1), awarded_text)
-
-    def centred(text: str, baseline_y: float, size: float) -> None:
-        text = _latin1(text)
-        width = _text_width(text, badge_font, size, badge_measure)
-        _hand_text(page, fitz.Point(centre.x - width / 2.0, baseline_y), text,
-                   badge_font, size, _ps.colour(_WRONG), badge_rng, font=badge_measure,
-                   slant=badge_rng.uniform(-4.0, 4.0))
-
-
-    # Most marks are just written. A minority get a loose loop thrown round
-    # them - and a thrown loop never closes cleanly. A neat closed ring with a
-    # fraction inside was what both critics called the most machine-looking
-    # thing on the page.
-    if badge_rng.random() < 0.35:
-        _hand_oval(page, fitz.Rect(centre.x - radius, centre.y - radius * 0.92,
-                                   centre.x + radius, centre.y + radius * 0.92),
-                   _ps.colour(_WRONG), 1.7, badge_rng)
-
-
-    if out_of is None:
-        size = _badge_size(awarded_text, radius, badge_font, badge_measure)
-        centred(awarded_text, centre.y + size * 0.36, size)
+    text = _badge_text(awarded, out_of)
+    size = radius * _BADGE_DIGIT_K
+    if _PEN[0] is not None and _pen_total_overlay(page, centre, text, size) is not None:
         return
-
-    # Written inline as "8/10", not stacked over a ruled bar. A critic called
-    # the stacked form out directly: perfectly straight fraction rule inside a
-    # hand-wobbled loop, which reads as a UI badge dropped on the page.
-    # Bare number, no denominator: "drop the '/10' fraction" was the one fix
-    # both critics named independently.
-    inline = awarded_text
-    size = _badge_size(inline, radius, badge_font, badge_measure)
-    centred(inline, centre.y + size * 0.36, size)
+    # The vector pen: the same loop round the same figure. insert_text, not
+    # insert_textbox: a box only as tall as the glyphs is rejected for want of
+    # line-height headroom and silently writes nothing.
+    badge_font, badge_measure = _digit_pen(page)
+    badge_rng = _hand_rng("badge", round(centre.x, 1), round(centre.y, 1), text)
+    width = _text_width(text, badge_font, size, badge_measure)
+    rx = max(radius, width / 2.0 + size * 0.42)
+    _hand_oval(page, fitz.Rect(centre.x - rx, centre.y - size * 0.80,
+                               centre.x + rx, centre.y + size * 0.80),
+               _ps.colour(_WRONG), 1.7, badge_rng)
+    _hand_text(page, fitz.Point(centre.x - width / 2.0, centre.y + size * 0.34), text,
+               badge_font, size, _ps.colour(_WRONG), badge_rng, font=badge_measure,
+               slant=badge_rng.uniform(-4.0, 4.0))
 
 
 def _draw_grand_total(page: Any, centre: Any, awarded: float, out_of: float,
@@ -4367,8 +4379,11 @@ def _place_question_scores(doc: Any, placements: dict[int, tuple],
                            occupied: Optional[dict[str, list]] = None,
                            drawn: Optional[dict[str, list]] = None,
                            written: Optional[set] = None,
-                           rings: Optional[dict[int, list]] = None) -> None:
+                           rings: Optional[dict[int, list]] = None,
+                           strips: Optional[dict[int, float]] = None,
+                           masks: Optional[dict[str, Any]] = None) -> set:
     """Circle each question's mark in the right margin beside its answer.
+    Returns the question numbers it circled.
 
     placements maps question_number -> (page_no, y). Built from where that
     question's annotations actually landed, so the mark sits next to the work
@@ -4381,6 +4396,12 @@ def _place_question_scores(doc: Any, placements: dict[int, tuple],
 
     rings: when given, page_no -> the rect of every badge drawn, for marks
     written after this (the language corrections) to keep clear of.
+
+    strips: page_no -> left edge of the marking strip added beside that page
+    (build_annotated_pdf's margin_ratio); the mark goes in the strip.
+
+    masks: page_id -> that page's paper mask (_paper_rows), for the pen's
+    on-paper test; without it whichever page was drawn last is used.
     """
     import fitz
 
@@ -4399,6 +4420,7 @@ def _place_question_scores(doc: Any, placements: dict[int, tuple],
             if ann.get("style") == "score" or (
                     ann.get("marks") is not None and ann.get("style") == "summary"):
                 already.add(v.get("question_number"))
+    circled: set = set()
     for q_no, placed in placements.items():
         if q_no in already:
             logger.debug("question %s already carries its own score; not adding a badge", q_no)
@@ -4409,6 +4431,8 @@ def _place_question_scores(doc: Any, placements: dict[int, tuple],
         if verdict is None or page_no < 0 or page_no >= doc.page_count:
             continue
         page = doc[page_no]
+        if masks is not None:
+            _PAPER[0] = masks.get(page_id_for(order, page_no))
         # A teacher writes the mark where the answer FINISHES - just past the
         # end of the last line, or under it if that line runs to the margin.
         # Pinning every mark to a fixed gutter x produced a tidy column of
@@ -4434,23 +4458,41 @@ def _place_question_scores(doc: Any, placements: dict[int, tuple],
         # the student looks for first. At 0.62-0.80 of a line it came out at
         # about 11pt against ~20pt handwriting and read as a footnote.
         radius = line_h * rng.uniform(0.95, 1.20)
-        right_limit = ((sheet.x1 - radius - 4) if sheet
-                       else (page.rect.width - radius - 6))
-        top_limit = (sheet.y0 + radius + 4) if sheet else 30.0
-        bot_limit = (sheet.y1 - radius - 4) if sheet else (page.rect.height - 30)
+        awarded = float(verdict.get("marks_awarded") or 0)
+        out_of = verdict.get("max_marks")
+        out_of = float(out_of) if out_of else None
+        # The ring as it will be drawn - "6/10" is wider than it is tall - so
+        # every spot below is tested for the mark that actually lands there.
+        r_l, r_r, r_u, r_d = (v + 2.0 for v in _ring_reach(
+            page, _badge_text(awarded, out_of), radius * _BADGE_DIGIT_K))
+
+        def ring_at(px: float, py: float, k: float = 1.0) -> Any:
+            return fitz.Rect(px - r_l * k, py - r_u * k, px + r_r * k, py + r_d * k)
+
+        right_limit = ((sheet.x1 - r_r - 4) if sheet
+                       else (page.rect.width - r_r - 6))
+        top_limit = (sheet.y0 + r_u + 4) if sheet else 30.0
+        bot_limit = (sheet.y1 - r_d - 4) if sheet else (page.rect.height - 30)
         # The outer margin first, level with where the answer ends. A mark
         # inside the text block lands on words however hard the collision
         # search works - both critics said the same thing: keep it out of the
         # block entirely.
         page_ink = (occupied or {}).get(page_id_for(order, page_no), [])
         block_right = max((o.x1 for o in page_ink), default=None)
-        margin_x = (block_right + radius + rng.uniform(7.0, 16.0)
+        margin_x = (block_right + r_l + rng.uniform(7.0, 16.0)
                     if block_right is not None else None)
-        if margin_x is not None and margin_x <= right_limit:
+        strip_x = (strips or {}).get(page_no)
+        if strip_x is not None and right_limit - r_l > strip_x:
+            # A marking strip beside the page: the mark goes at its outer
+            # edge, level with the answer's end, clear of the remarks that
+            # start at its inner edge.
+            cx = right_limit - rng.uniform(0.0, 6.0)
+            cy = y - rng.uniform(1.0, 7.0)
+        elif margin_x is not None and margin_x <= right_limit:
             cx = margin_x
             cy = y - rng.uniform(1.0, 7.0)
-        elif x_end is not None and x_end + radius + 10 <= right_limit:
-            cx = x_end + radius + rng.uniform(6.0, 14.0)
+        elif x_end is not None and x_end + r_l + 10 <= right_limit:
+            cx = x_end + r_l + rng.uniform(6.0, 14.0)
             cy = y - rng.uniform(2.0, 8.0)
         else:
             # No margin at all - every row runs the full width of the sheet.
@@ -4468,11 +4510,11 @@ def _place_question_scores(doc: Any, placements: dict[int, tuple],
             # page reads as a page total, which is the one thing a
             # question-level mark must never look like.
             score_floor = (min(b.y0 for b in measured) if measured else None)
-            band = (_free_band(sheet, blockers, radius * 2.2 + 4.0, y,
+            band = (_free_band(sheet, blockers, r_u + r_d + 4.0, y,
                                floor_y=score_floor,
                                max_dist=sheet.height * 0.30) if sheet else None)
             if band is not None:
-                cy = min(band[0] + radius + 2.0, band[1] - radius - 2.0)
+                cy = min(band[0] + r_u + 2.0, band[1] - r_d - 2.0)
                 cx = min(right_limit, (sheet.x0 + sheet.width * rng.uniform(0.62, 0.80)))
             else:
                 # Nowhere clear for it. A mark written across the student's
@@ -4480,7 +4522,7 @@ def _place_question_scores(doc: Any, placements: dict[int, tuple],
                 # it rather than drop a digit into a sentence.
                 logger.debug("no clear spot for the mark on question %s", q_no)
                 continue
-        left_limit = (sheet.x0 + radius + 4) if sheet else (radius + 4)
+        left_limit = (sheet.x0 + r_l + 4) if sheet else (r_l + 4)
         cx = min(max(cx, left_limit), max(left_limit, right_limit))
         cy = min(max(cy, top_limit), max(top_limit, bot_limit))
 
@@ -4492,20 +4534,22 @@ def _place_question_scores(doc: Any, placements: dict[int, tuple],
         pid_here = page_id_for(order, page_no)
         # The student's writing AND the marks already on the page: a ring that
         # touches an existing rule fuses with it into one shape.
-        ink = list((occupied or {}).get(pid_here, [])) + list((drawn or {}).get(pid_here, []))
-        def clear(px, py):
-            probe = fitz.Rect(px - radius, py - radius, px + radius, py + radius)
+        ink = (list((occupied or {}).get(pid_here, [])) + list((drawn or {}).get(pid_here, []))
+               + list((occupied or {}).get(f"{pid_here}:notes", [])))
+        def clear(px, py, k=1.0):
+            probe = ring_at(px, py, k)
             if sheet and not sheet.contains(probe):
                 return False
             return not any(probe.intersects(o) for o in ink)
 
+        scale = 1.0
         if ink and not clear(cx, cy):
             found = False
             # The right margin first: on a ruled page the strip past the end of
             # the longest line is genuinely empty, and it is where a marker's
             # running marks go. Then widen the search around the answer's end.
-            right_margin = (max(o.x1 for o in ink) + radius + 6) if ink else cx
-            left_margin = (min(o.x0 for o in ink) - radius - 6) if ink else cx
+            right_margin = (max(o.x1 for o in ink) + r_l + 6) if ink else cx
+            left_margin = (min(o.x0 for o in ink) - r_r - 6) if ink else cx
             # A critic measured 160 blue pixels inside one ring while the left
             # margin on that very row sat completely empty and unused.
             for margin_x in (right_margin, left_margin):
@@ -4534,17 +4578,11 @@ def _place_question_scores(doc: Any, placements: dict[int, tuple],
                 # small it cannot be read: squeezed to half size, a "5" came
                 # out as an unreadable squiggle on a real copy.
                 for shrink in _SCORE_SHRINKS:
-                    r2 = radius * shrink
-                    def clear_small(px, py, rr=r2):
-                        probe = fitz.Rect(px - rr, py - rr, px + rr, py + rr)
-                        if sheet and not sheet.contains(probe):
-                            return False
-                        return not any(probe.intersects(o) for o in ink)
                     for dy in (0, 8, -8, 16, -16, 26, -26, 38, -38, 52, -52):
                         for dx in (0, 12, -12, 24, -24, 40, -40, 56, -56):
                             nx, ny = cx + dx, cy + dy
-                            if clear_small(nx, ny):
-                                cx, cy, radius, found = nx, ny, r2, True
+                            if clear(nx, ny, shrink):
+                                cx, cy, scale, found = nx, ny, shrink, True
                                 break
                         if found:
                             break
@@ -4554,7 +4592,7 @@ def _place_question_scores(doc: Any, placements: dict[int, tuple],
                 # Nowhere clear at a readable size: the spot in the margins or
                 # around the answer's end that covers the least writing, rather
                 # than the answer's own end, which is where it would land now.
-                rr = radius * _SCORE_SHRINKS[-1]
+                k = _SCORE_SHRINKS[-1]
                 least = None
                 spots = [(mx, cy + dy) for mx in (right_margin, left_margin)
                          for dy in (0, -12, 12, -26, 26, -40, 40)]
@@ -4563,7 +4601,7 @@ def _place_question_scores(doc: Any, placements: dict[int, tuple],
                 for nx, ny in spots:
                     if not (left_limit <= nx <= right_limit and top_limit <= ny <= bot_limit):
                         continue
-                    probe = fitz.Rect(nx - rr, ny - rr, nx + rr, ny + rr)
+                    probe = ring_at(nx, ny, k)
                     if sheet and not sheet.contains(probe):
                         continue
                     cover = sum((probe & o).get_area() for o in ink if probe.intersects(o))
@@ -4572,19 +4610,100 @@ def _place_question_scores(doc: Any, placements: dict[int, tuple],
                 if least is not None:
                     logger.debug("score of question %s drawn over writing (%.0f pt2): no clear spot",
                                  q_no, least[0])
-                    cx, cy, radius = least[1], least[2], rr
+                    cx, cy, scale = least[1], least[2], k
         _CLIP[0] = sheet
-        awarded = float(verdict.get("marks_awarded") or 0)
-        out_of = verdict.get("max_marks")
         # Show the mark as "n/max", not a bare number: 3.5 alone tells a student
-        # nothing about how far off they were. The question number goes just
-        # above it, because a circled figure floating in the margin of a copy
-        # answered out of order is otherwise anyone's guess.
-        _draw_score_badge(page, fitz.Point(cx, cy), awarded,
-                          out_of=float(out_of) if out_of else None, radius=radius)
+        # nothing about how far off they were.
+        _draw_score_badge(page, fitz.Point(cx, cy), awarded, out_of=out_of, radius=radius * scale)
+        ring = ring_at(cx, cy, scale)
+        circled.add(q_no)
+        if strip_x is not None:
+            # In the strip the mark stands apart from its answer, and two
+            # answers can end on one page: "Q5" beside it says whose it is.
+            label = f"Q{q_no}"
+            size = radius * scale * 0.62
+            width = _pen_text_width(label, size)
+            lx, base = ring.x0 - width - 3.0, cy + size * 0.35
+            box = fitz.Rect(lx - 1.0, base - size, lx + width + 1.0, base + size * 0.4)
+            if lx > strip_x + 2.0 and not any(box.intersects(o) for o in ink):
+                _pen_text(page, fitz.Point(lx, base), label, size, _ps.colour(_WRONG),
+                          _hand_rng("q-label", q_no, page_no), max_x=ring.x0)
+                ring = ring | box
+        if occupied is not None and pid_here is not None:
+            # Whatever is written on this page after it - the next question's
+            # ring, a remark in the marking strip - keeps clear.
+            occupied.setdefault(pid_here, []).append(ring)
+            occupied.setdefault(f"{pid_here}:notes", []).append(ring)
         if rings is not None:
             rings.setdefault(page_no, []).append(
-                fitz.Rect(cx - radius * 1.4, cy - radius * 1.9, cx + radius * 1.4, cy + radius * 1.4))
+                fitz.Rect(ring.x0 - 2.0, ring.y0 - 2.0, ring.x1 + 2.0, ring.y1 + 2.0))
+    return circled
+
+
+def _answer_ends(ordered: list, targets: dict, order: dict, dims: dict, content: dict,
+                 page_count: int) -> dict[int, tuple[float, float, float]]:
+    """question_number -> (page_no, y, x) of the lowest row its marking points
+    at: where its answer ends, as the loop in build_annotated_pdf would find it
+    once every mark was down - known here before any is."""
+    import fitz
+
+    ends: dict[int, tuple[float, float, float]] = {}
+    for verdict, ann in ordered:
+        q_no = verdict.get("question_number")
+        target = targets.get(ann.get("target"))
+        if q_no is None or not target or (ann.get("style") or "") == "total":
+            continue
+        page_id = ann.get("page_id") or target["page_id"]
+        page_no, wh = order.get(page_id), dims.get(page_id)
+        if page_no is None or not 0 <= page_no < page_count or not wh or page_no not in content:
+            continue
+        crect = content[page_no]
+        x, y, w, h = (float(v) for v in target["box"])
+        rect = fitz.Rect(x * crect.width / wh[0], y * crect.height / wh[1],
+                         (x + w) * crect.width / wh[0], (y + h) * crect.height / wh[1])
+        prev = ends.get(q_no)
+        if prev is None or (page_no, rect.y1) > (prev[0], prev[1]):
+            ends[q_no] = (page_no, rect.y1, rect.x1)
+    return ends
+
+
+def _largest_image(page: Any) -> Optional[Any]:
+    """The box of the biggest picture on the page - the photographed sheet on a
+    scan, which stops above the scanner's own footer - or None."""
+    import fitz
+
+    try:
+        boxes = [fitz.Rect(i["bbox"]) & page.rect for i in page.get_image_info()]
+    except Exception:
+        return None
+    boxes = [b for b in boxes if not b.is_empty and b.get_area() >= page.rect.get_area() * 0.25]
+    return max(boxes, key=lambda b: b.get_area()) if boxes else None
+
+
+def _with_strip(rows: Optional[dict], strip_x0: float, sheet: Any) -> Optional[dict]:
+    """The page's paper mask with the marking strip counted as paper.
+
+    The mask is measured from the photograph, which knows nothing of the strip
+    added beside it - so every pen remark written there was refused as "off
+    paper", fell back to the vector pen, and that pen's own on-paper gate
+    dropped every stroke: the remark was placed and nothing was drawn."""
+    if not rows or rows.get("mask") is None or sheet is None:
+        return rows
+    import numpy as np
+
+    mask = rows["mask"].copy()
+    sx, sy = rows["sx"], rows["sy"]
+    c0 = max(0, min(rows["cols"], int(math.ceil(strip_x0 / sx))))
+    r0 = max(0, int(sheet.y0 / sy))
+    r1 = min(rows["rows"], int(sheet.y1 / sy) + 1)
+    if c0 >= rows["cols"] or r0 >= r1:
+        return rows
+    mask[r0:r1, c0:] = True
+    lo, hi = rows["lo"].copy(), rows["hi"].copy()
+    for r in range(r0, r1):
+        cols = np.nonzero(mask[r])[0]
+        lo[r], hi[r] = cols.min() * sx, (cols.max() + 1) * sx
+    return {**rows, "mask": mask, "lo": lo, "hi": hi}
 
 
 def _extend_paper(page: Any, scan: Any, strip: Any) -> None:
@@ -4860,6 +4979,8 @@ def build_annotated_pdf(
 
     outside = (comment_placement or "").strip().upper() == COMMENTS_OUTSIDE
     content: dict[int, Any] = {}
+    # page_no -> where the scanned photograph sits (marking-strip copies only).
+    photo_box: dict[int, Any] = {}
     # page_no -> the blank panel the remarks are typed into (OUTSIDE only).
     panels: dict[int, Any] = {}
     # (page_no, verdict index) -> top of its first mark / its remarks, in order.
@@ -4903,6 +5024,9 @@ def build_annotated_pdf(
     elif margin_ratio > 0.0:
         widened = fitz.open()
         for i in range(doc.page_count):
+            shot = _largest_image(doc[i])
+            if shot is not None:
+                photo_box[i] = shot
             src = doc[i].rect
             page = widened.new_page(width=src.width * (1.0 + margin_ratio),
                                     height=src.height)
@@ -5046,8 +5170,13 @@ def build_annotated_pdf(
             # beside the "Scanned with ... Scanner" watermark, which is not
             # paper at any width.
             page_w = doc[page_no].rect.width
-            paper[pid] = fitz.Rect(paper[pid].x0, paper[pid].y0,
-                                   page_w - 6.0, paper[pid].y1)
+            # ...but as tall as the photograph: when no sheet is detected the
+            # paper is only the box round the writing, and a strip that stops
+            # where the writing does had no room below the last answer's mark
+            # for its remarks - they went back onto the student's lines.
+            band = photo_box.get(page_no) or photo or prect
+            paper[pid] = fitz.Rect(paper[pid].x0, min(paper[pid].y0, band.y0 + 2.0),
+                                   page_w - 6.0, max(paper[pid].y1, band.y1 - 2.0))
 
     if outside:
         # Every mark stays on the scan. The fallbacks that place a mark "near
@@ -5069,6 +5198,8 @@ def build_annotated_pdf(
         if 0 <= page_no < doc.page_count:
             ink_maps[pid] = _ink_map(doc[page_no], paper.get(pid))
             paper_rows[pid] = _paper_rows(doc[page_no], writing.get(pid))
+            if margin_ratio > 0.0 and page_no in content:
+                paper_rows[pid] = _with_strip(paper_rows[pid], content[page_no].x1, paper.get(pid))
 
     drawn = 0
     # question_number -> (page_no, y) of its lowest annotation, so the circled
@@ -5249,6 +5380,17 @@ def build_annotated_pdf(
                 key = (spot[0], v_idx)
                 panel_anchor[key] = min(panel_anchor.get(key, spot[1]), spot[1])
 
+    strips = ({pno: c.x1 for pno, c in content.items()} if margin_ratio > 0.0 else None)
+    if strips and not outside:
+        # With a marking strip, each question's circled mark goes in FIRST,
+        # level with where its answer ends, and the remarks are written round
+        # it. Placed last, it found the strip already full of remarks and was
+        # stamped over them.
+        scores_written |= _place_question_scores(
+            doc, _answer_ends(ordered, targets, order, dims, content, doc.page_count),
+            verdicts, paper, order, occupied, drawn_rules, written=set(scores_written),
+            rings=score_rings, strips=strips, masks=paper_rows)
+
     for verdict, ann in ordered:
         q_no = verdict.get("question_number")
         if True:
@@ -5397,14 +5539,36 @@ def build_annotated_pdf(
                         said.append(note)
                     note = ""
 
+            if style == "score" and not outside:
+                # Every question's mark is written circled, as "6/10", by
+                # _place_question_scores - which places it beside where this
+                # row says the answer ends. Written here as well it came out
+                # as bare figures in the margin, the one mark without a ring.
+                if q_no is not None:
+                    prev = placements.get(q_no)
+                    if prev is None or (page_no, rect.y1) > (prev[0], prev[1]):
+                        placements[q_no] = (page_no, rect.y1, rect.x1)
+                drawn += 1
+                continue
+
             placed = None
             if note:
                 page_boxes = occupied.setdefault(page_id, [])
                 sheet_r = paper.get(page_id)
+                if (_MARGIN_X[0] is not None and sheet_r is not None
+                        and style in _REASON_STYLES):
+                    # With a marking strip, every remark goes there, level with
+                    # the line it is about: one column the student reads down,
+                    # instead of remarks squeezed into whatever gap a line left.
+                    fontname, base_size, measure_font = _pen(page)
+                    placed = _strip_note(page, rect, _pen_remark(_latin1(note).strip()),
+                                         page_boxes, sheet_r, _MARGIN_X[0],
+                                         fontname, base_size, measure_font)
                 # The guide's placement first; the free-space search only when
                 # that spot is off the paper or on the student's writing.
-                placed = _place_by_contract(page, rect, style, note,
-                                            ann.get("position"), sheet_r, page_boxes)
+                if placed is None:
+                    placed = _place_by_contract(page, rect, style, note,
+                                                ann.get("position"), sheet_r, page_boxes)
                 if placed is None and style != "score":
                     # The guide's spot is taken or on the writing. The gaps
                     # under this row and the next two still read as "about
@@ -5503,7 +5667,8 @@ def build_annotated_pdf(
     if not outside:
         # Comments outside: every mark is given in the panel, none on the copy.
         _place_question_scores(doc, placements, verdicts, paper, order, occupied, drawn_rules,
-                               written=scores_written, rings=score_rings)
+                               written=scores_written, rings=score_rings, strips=strips,
+                               masks=paper_rows)
 
     def use_page(pid: str, pno: int) -> None:
         _CLIP[0] = paper.get(pid)
@@ -5782,6 +5947,43 @@ def _resize(pix: "fitz.Pixmap", factor: float) -> "fitz.Pixmap":
 _RENDER_POOL = ThreadPoolExecutor(max_workers=1, thread_name_prefix="copy-check-render")
 
 
+# The marking strip added beside a page written to the edge, as a fraction of
+# the page's width: room for a remark of three or four words a line.
+_MARGIN_RATIO = 0.32
+# A page counts as written to the edge when its rows end within this fraction of
+# the sheet's width from the right edge (nine rows in ten).
+_EDGE_FREE = 0.20
+
+
+def _written_to_the_edge(layout_map: dict[str, Any]) -> bool:
+    """True when most pages leave no right margin to write a remark in.
+
+    Measured on the layout's rows: where nine rows in ten end, against the
+    sheet's right edge (the detected paper box, else the page). The phone
+    photos of ruled notebooks this is for leave 0-18% of the width free; a
+    printed answer booklet keeps its own ruled margin and is left as it is."""
+    dense = total = 0
+    for lp in layout_map.get("pages") or []:
+        try:
+            w = float(lp.get("width") or 0)
+        except (TypeError, ValueError):
+            continue
+        rights = sorted(float(ln["box"][0]) + float(ln["box"][2])
+                        for ln in lp.get("lines") or []
+                        if isinstance(ln, dict) and ln.get("box") and len(ln["box"]) == 4)
+        if w <= 0 or len(rights) < 5:
+            continue
+        pb = lp.get("paper_box")
+        x0, x1 = ((float(pb[0]), float(pb[0]) + float(pb[2])) if pb and len(pb) == 4 else (0.0, w))
+        if x1 - x0 <= 0:
+            continue
+        total += 1
+        p90 = rights[max(0, int(len(rights) * 0.9) - 1)]
+        if (x1 - p90) / (x1 - x0) < _EDGE_FREE:
+            dense += 1
+    return total > 0 and dense * 2 >= total
+
+
 def _render_sync(pdf_bytes: bytes, layout_map: dict[str, Any], verdicts: list[dict[str, Any]],
                  comment_placement: Optional[str] = None,
                  question_labels: Optional[dict[str, str]] = None,
@@ -5815,9 +6017,25 @@ def _render_with_pen(pdf_bytes: bytes, layout_map: dict[str, Any], verdicts: lis
         if panel is not None:
             return shrink_scans(panel)
 
+    # Why every cut mark was cut, beside the line it is about (remarks.py), on a
+    # copy of the verdicts: the caller's are what is stored.
+    from . import remarks
+    verdicts = copy.deepcopy(verdicts)
+    rows = set(_target_index(layout_map))
+    for v in verdicts:
+        if isinstance(v, dict):
+            remarks.add_cut_remarks(v, rows)
+    # Those remarks need somewhere to go. A copy written to the edge of the
+    # sheet has none, so it gets a marking strip beside each page. Not with the
+    # paper's printed evaluation table: that is filled by the page's geometry.
+    # A copy with room of its own is drawn exactly as before.
+    strip = ({"margin_ratio": _MARGIN_RATIO}
+             if not evaluation_table and _written_to_the_edge(layout_map) else {})
+
     def render(total_ring: bool) -> bytes:
-        return (build_annotated_pdf(pdf_bytes, layout_map, verdicts) if total_ring else
-                build_annotated_pdf(pdf_bytes, layout_map, copy.deepcopy(verdicts), total_ring=False))
+        return (build_annotated_pdf(pdf_bytes, layout_map, verdicts, **strip) if total_ring else
+                build_annotated_pdf(pdf_bytes, layout_map, copy.deepcopy(verdicts), total_ring=False,
+                                    **strip))
 
     from . import evaluation_table as table_mod
     # When the sheet's printed evaluation table is filled and it covers the
