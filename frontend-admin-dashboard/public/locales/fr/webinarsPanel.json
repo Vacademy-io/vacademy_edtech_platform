@@ -17,5 +17,8 @@
     "empty": "Aucun webinaire pour l'instant",
     "emptyHint": "Les nouveaux webinaires apparaissent ici avec un bouton Rejoindre.",
     "loadError": "Impossible de charger les webinaires.",
-    "retry": "Réessayer"
+    "retry": "Réessayer",
+    "notStarted": "Le webinaire n'a pas encore commencé. Réessayez dans un instant.",
+    "ended": "Ce webinaire est terminé.",
+    "joinFailed": "Impossible de rejoindre le webinaire. Réessayez."
 }

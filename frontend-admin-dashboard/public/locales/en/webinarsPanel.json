@@ -17,5 +17,8 @@
     "empty": "No webinars yet",
     "emptyHint": "New webinars show up here with a Join button.",
     "loadError": "Couldn't load webinars.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "notStarted": "The webinar hasn't started yet. Try again in a moment.",
+    "ended": "This webinar has ended.",
+    "joinFailed": "Couldn't join the webinar. Try again."
 }

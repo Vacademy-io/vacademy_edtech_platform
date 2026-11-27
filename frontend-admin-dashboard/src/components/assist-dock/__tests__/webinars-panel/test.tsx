@@ -1,13 +1,20 @@
-import { act, fireEvent, render, renderHook, screen } from '@testing-library/react';
+import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
 import { createInstance } from 'i18next';
 import { I18nextProvider } from 'react-i18next';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import copy from '../../../../../public/locales/en/webinarsPanel.json';
 import { WebinarsPanel } from '../../WebinarsPanel';
 import { safeLink, useWebinarClock, webinarPhase, type WebinarDto } from '@/services/webinars';
+import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
+import { toast } from 'sonner';
 
 vi.mock('@/lib/auth/axiosInstance', () => ({ default: { get: vi.fn() } }));
-vi.mock('@/constants/urls', () => ({ WEBINARS_BASE_URL: '/webinars' }));
+vi.mock('@/constants/urls', () => ({
+    BASE_URL: 'https://api.example',
+    WEBINARS_BASE_URL: '/webinars',
+}));
+vi.mock('@/native/platform', () => ({ isNative: () => false }));
+vi.mock('sonner', () => ({ toast: { info: vi.fn(), error: vi.fn() } }));
 
 const i18n = createInstance();
 void i18n.init({
@@ -196,5 +203,57 @@ describe('useWebinarClock', () => {
         expect(webinarPhase(rows[0]!, result.current)).toBe('upcoming');
         act(() => vi.advanceTimersByTime(2.5 * 60 * 60 * 1000 + 2000));
         expect(webinarPhase(rows[0]!, result.current)).toBe('live');
+    });
+});
+
+describe('one-click join (admins of PROD institutes)', () => {
+    const live = webinar({
+        id: 'Running now',
+        startsAt: '2026-12-04T11:30:00Z',
+        liveScheduleId: 'sched-1',
+    });
+
+    function fakeTab() {
+        return { opener: {} as unknown, location: { href: '' }, close: vi.fn() };
+    }
+
+    it('opens the live class in the tab it opened inside the click', async () => {
+        const tab = fakeTab();
+        const open = vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window);
+        vi.mocked(authenticatedAxiosInstance.get).mockResolvedValue({
+            data: { joinUrl: 'https://bbb.example.com/join?name=A' },
+        });
+        renderPanel([live]);
+        fireEvent.click(screen.getByRole('button', { name: /join now/i }));
+        // The blank tab is opened synchronously, before the request, so it is never popup-blocked.
+        expect(open).toHaveBeenCalledWith('', '_blank');
+        await waitFor(() => expect(tab.location.href).toBe('https://bbb.example.com/join?name=A'));
+        expect(tab.opener).toBeNull();
+        expect(authenticatedAxiosInstance.get).toHaveBeenCalledWith(
+            'https://api.example/admin-core-service/live-sessions/provider/meeting/join',
+            { params: { scheduleId: 'sched-1', role: 'VIEWER' } }
+        );
+    });
+
+    it('closes the tab and says so when the class has not started yet', async () => {
+        const tab = fakeTab();
+        vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window);
+        vi.mocked(authenticatedAxiosInstance.get).mockResolvedValue({
+            data: { status: 'NOT_STARTED' },
+        });
+        renderPanel([live]);
+        fireEvent.click(screen.getByRole('button', { name: /join now/i }));
+        await waitFor(() => expect(tab.close).toHaveBeenCalled());
+        expect(toast.info).toHaveBeenCalledWith(copy.notStarted);
+    });
+
+    it('closes the tab and reports a failed join', async () => {
+        const tab = fakeTab();
+        vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window);
+        vi.mocked(authenticatedAxiosInstance.get).mockRejectedValue(new Error('network'));
+        renderPanel([live]);
+        fireEvent.click(screen.getByRole('button', { name: /join now/i }));
+        await waitFor(() => expect(toast.error).toHaveBeenCalledWith(copy.joinFailed));
+        expect(tab.close).toHaveBeenCalled();
     });
 });

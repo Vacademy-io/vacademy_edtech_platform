@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
-import { WEBINARS_BASE_URL } from '@/constants/urls';
+import { BASE_URL, WEBINARS_BASE_URL } from '@/constants/urls';
+import { isNative } from '@/native/platform';
 
 /** A webinar published from the health-check dashboard. Times are ISO-8601 instants (UTC). */
 export interface WebinarDto {
@@ -14,6 +15,11 @@ export interface WebinarDto {
     joinUrl: string | null;
     /** Recording, once added: an uploaded video file or any video link. */
     recordingUrl: string | null;
+    /**
+     * The webinar's live class. Only sent to admins of PROD institutes: their Join drops them
+     * straight into the class (see joinLiveClass). Null for everyone else, who use joinUrl.
+     */
+    liveScheduleId?: string | null;
     active: boolean;
 }
 
@@ -92,4 +98,43 @@ export function useWebinarClock(webinars: WebinarDto[] | undefined): number {
         return () => window.clearTimeout(id);
     }, [webinars, now]);
     return now;
+}
+
+export type LiveJoinOutcome = 'joined' | 'notStarted' | 'ended' | 'failed';
+
+/**
+ * One-click join into a webinar's live class for a signed-in admin: the same BBB join call the
+ * live-class pages use, which returns a join URL in the admin's own name and marks their
+ * attendance. Call it straight from the click handler: the new tab is opened before the request,
+ * because a window.open after an await is popup-blocked in Safari (the host-join hook does the
+ * same). In the native app there is no popup blocker and a blank tab could replace the app
+ * screen, so it opens the URL once it has one instead.
+ */
+export async function joinLiveClass(scheduleId: string): Promise<LiveJoinOutcome> {
+    const tab = isNative() ? null : window.open('', '_blank');
+    try {
+        const { data } = await authenticatedAxiosInstance.get<{
+            joinUrl?: string;
+            status?: string;
+        }>(`${BASE_URL}/admin-core-service/live-sessions/provider/meeting/join`, {
+            params: { scheduleId, role: 'VIEWER' },
+        });
+        const url = safeLink(data?.joinUrl);
+        if (url) {
+            if (tab) {
+                tab.opener = null;
+                tab.location.href = url;
+            } else {
+                window.open(url, '_blank', 'noopener,noreferrer');
+            }
+            return 'joined';
+        }
+        tab?.close();
+        return data?.status === 'NOT_STARTED' ? 'notStarted' : 'failed';
+    } catch (error) {
+        tab?.close();
+        // A viewer arriving after the class ended gets a 400 "Meeting has ended".
+        const status = (error as { response?: { status?: number } })?.response?.status;
+        return status === 400 ? 'ended' : 'failed';
+    }
 }

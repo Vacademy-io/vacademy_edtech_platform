@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import {
     ArrowSquareOut,
     CalendarBlank,
@@ -13,7 +14,7 @@ import { MyButton } from '@/components/design-system/button';
 import { MyDialog } from '@/components/design-system/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { safeLink, webinarPhase, type WebinarDto } from '@/services/webinars';
+import { joinLiveClass, safeLink, webinarPhase, type WebinarDto } from '@/services/webinars';
 
 /** Same pulsing dot as the live-class dashboard's "Live now" panel. `onRed` = white, for a red button. */
 export function LiveDot({ className, onRed = false }: { className?: string; onRed?: boolean }) {
@@ -90,6 +91,19 @@ export function WebinarsPanel({
     const past = rows
         .filter((w) => webinarPhase(w, now) === 'past')
         .sort((a, b) => b.startsAt.localeCompare(a.startsAt));
+
+    /** Admins of PROD institutes get the live class itself; everyone else the public link. */
+    const canJoin = (w: WebinarDto) => !!w.liveScheduleId || !!safeLink(w.joinUrl);
+    const join = async (w: WebinarDto) => {
+        if (!w.liveScheduleId) {
+            openLink(w.joinUrl);
+            return;
+        }
+        const outcome = await joinLiveClass(w.liveScheduleId);
+        if (outcome === 'notStarted') toast.info(t('notStarted'));
+        else if (outcome === 'ended') toast.info(t('ended'));
+        else if (outcome === 'failed') toast.error(t('joinFailed'));
+    };
 
     const watch = (w: WebinarDto) => {
         if (w.recordingUrl && VIDEO_FILE.test(w.recordingUrl) && safeLink(w.recordingUrl)) {
@@ -177,11 +191,11 @@ export function WebinarsPanel({
                                             end: time(w.endsAt),
                                         })}
                                     </p>
-                                    {safeLink(w.joinUrl) ? (
+                                    {canJoin(w) ? (
                                         <MyButton
                                             scale="medium"
                                             className="w-full bg-danger-500 hover:bg-danger-600 active:bg-danger-600"
-                                            onClick={() => openLink(w.joinUrl)}
+                                            onAsyncClick={() => join(w)}
                                         >
                                             <span className="flex items-center gap-2">
                                                 <LiveDot onRed />
@@ -236,12 +250,12 @@ export function WebinarsPanel({
                                                         {w.description}
                                                     </p>
                                                 ) : null}
-                                                {safeLink(w.joinUrl) ? (
+                                                {canJoin(w) ? (
                                                     <MyButton
                                                         buttonType={soon ? 'primary' : 'secondary'}
                                                         scale="small"
                                                         className="w-full"
-                                                        onClick={() => openLink(w.joinUrl)}
+                                                        onAsyncClick={() => join(w)}
                                                     >
                                                         <span className="flex items-center gap-1">
                                                             {t('join')}
