@@ -24,7 +24,7 @@ from ..api_key_resolver import ApiKeyResolver
 from ..chat_llm_client import ChatLLMClient
 from ...repositories.copy_check_rubric_repository import CopyCheckRubricRepository
 from ...repositories import copy_check_render_snapshot_repository as render_snapshot
-from . import annotator, answer_language, callbacks, cbe_render, cancellation, copy_structure, deduction_check, deduction_scheme, evaluation_table, language_check, language_feedback, language_vision, locate, math_reread, option_letter, orientation, typed_answers, vision_transcript
+from . import annotator, answer_language, callbacks, cbe_render, cancellation, copy_structure, deduction_check, deduction_scheme, evaluation_table, language_check, language_feedback, language_vision, locate, math_reread, option_letter, orientation, review, typed_answers, vision_transcript
 from .choice_groups import counted_awarded, counted_flags, resolve_paper_max
 from .failure import (
     COPY_UNREADABLE,
@@ -1194,6 +1194,9 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
                     language_errors, verdict.get("answer_rows"), row_positions)
                 if errors:
                     language_found[qid] = errors
+            # Unsure readings and cuts on a page the reader could not read well
+            # go to the teacher as review_reasons, not as a confident 0.
+            review.flag(verdict, layout_map)
             total_awarded += verdict["marks_awarded"]
             total_max += verdict["max_marks"]
             evaluated += 1

@@ -291,6 +291,9 @@ class QuestionCallback(BaseModel):
     # False = an internal-choice question outside the chosen `attempt` of its
     # group: graded and shown, but not part of the total (T1.36).
     counted: bool = True
+    # Why a teacher should look at this answer (copy_check/review.py); None
+    # when there is nothing to check.
+    review_reasons: Optional[list[str]] = None
 
 
 class CompleteCallback(BaseModel):

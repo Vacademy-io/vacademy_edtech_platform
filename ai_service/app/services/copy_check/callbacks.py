@@ -95,6 +95,10 @@ async def question_done(
         # choice group, so not part of the total (T1.36). Older Java builds
         # ignore the key and count every question, as before.
         "counted": bool(verdict.get("counted", True)),
+        # Why a teacher should look at this answer (review.py): handwriting the
+        # grader was unsure of, marks cut on a page that was hard to read.
+        # None when there is nothing to check - Java then stores no key.
+        "review_reasons": list(verdict.get("review_reasons") or []) or None,
     }
     await _post(f"{base_url.rstrip('/')}/copy-check/callback/question", payload)
 

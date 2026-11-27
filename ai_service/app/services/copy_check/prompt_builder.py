@@ -391,6 +391,16 @@ def _transcript_for_prompt(layout_map: dict[str, Any], page_ids: list[str] | Non
     for page in pages:
         out.append("---- Page " + str(page.get("page_id")) + " ----")
         vision = (page.get("vision_text") or "").strip()
+        if vision and page.get("vision_legible") is False:
+            # The reader said so itself; on a real copy this page (photographed
+            # under another loose sheet) came back with a "not" that the
+            # student never wrote.
+            out.append(
+                "NOTE: the handwriting reader marked this page as HARD TO READ. Its reading "
+                "may be wrong - a 'not' or 'no' added or dropped, a margin word missed. Before "
+                "cutting marks on this page, ask whether a misreading explains the mistake; "
+                "if it might, follow the rule for handwriting you are unsure of."
+            )
         if vision:
             out.append("Verbatim reading of this page:")
             out.append(vision)
@@ -630,6 +640,14 @@ def build_grading_prompt(
 **Annotation regime for this question:**
 {_annotation_regime(question.get('question_type'), max_marks)}
 
+**Handwriting you are unsure of:**
+- The transcript is a machine reading of handwriting. It can be wrong: a "not" or "no"
+  added or dropped, a word written in the margin or above the line missed.
+- If a point would lose marks only because of a reading you are unsure of (hard to read,
+  garbled, contradicting the student's own conclusion, or on a page marked HARD TO READ),
+  do not mark it wrong: give that point no marks yet, start its reason with
+  "Needs teacher review:", put no cross on that row, and add it to unclear_reads.
+
 **Hard constraints (checked by code - a violation is re-prompted):**
 - Maximum marks {max_marks:.1f}. marks_awarded <= {max_marks:.1f}, in 0.5 steps.
 - Sum of criteria_breakdown[].marks == marks_awarded.
@@ -659,6 +677,7 @@ def build_grading_prompt(
   "student_label": "<the label the student wrote above this answer, e.g. 'Q8', or null>",
   "answer_rows": ["<first row id of the answer>", "<last row id>"],
   "answer_rows_duplicate": ["<first row>", "<last row>"] or null,
+  "unclear_reads": [{{"part": "<e.g. 2(a)(iii)>", "row": "<row id>", "why": "<what is unclear>"}}] or [],
   "annotations": [
     {{"style": "tick|cross|underline|score|margin_note|region_note",
       "target": "<row id from the transcript>", "page_id": "<page_id>",

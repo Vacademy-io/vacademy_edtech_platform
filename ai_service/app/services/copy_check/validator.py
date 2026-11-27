@@ -16,6 +16,8 @@ import logging
 import re
 from typing import Any, Optional
 
+from .review import unclear_reads
+
 logger = logging.getLogger(__name__)
 
 
@@ -523,6 +525,9 @@ def validate_and_cap(
                                   if r and str(r) in idx][:2] or None,
         "unmapped_rows": [str(r) for r in (raw.get("unmapped_rows") or [])
                           if r and str(r) in idx] or None,
+        # Points the grader would have cut only on a reading it was unsure of;
+        # review.flag turns them into review_reasons for the teacher.
+        "unclear_reads": unclear_reads(raw),
         "status": "COMPLETED",
     }
 
