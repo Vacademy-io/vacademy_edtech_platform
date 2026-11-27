@@ -36,7 +36,7 @@ export interface QuestionDetail {
     answer: { kind: 'OPTIONS' | 'TEXT' | 'NUMERIC' | 'CODE' | 'CBE' | 'HANDWRITTEN' | 'NONE'; chosen_option_ids: string[]; correct_option_ids: string[]; text: string | null; correct_text: string | null; code: { language: string | null; source: string | null; verdict: string | null } };
     evaluator_feedback: string | null; part_marks: { criterion: string; marks: number; max: number | null }[];
     scheme_points: { name: string; max: number | null; source: 'CBE' | 'AI_BREAKDOWN' }[];
-    ai: { process_id: string | null; ai_question_evaluation_id: string | null; status: string | null; marks_awarded: number | null; max_marks: number | null; feedback: string | null; extracted_answer: string | null; criteria_breakdown: CriterionBreakdown[]; rubric_version: number | null; is_edited: boolean; edited_by: string | null; edited_at: string | null; page_ids: string[]; teacher_changed_total: boolean } | null;
+    ai: { process_id: string | null; ai_question_evaluation_id: string | null; status: string | null; marks_awarded: number | null; max_marks: number | null; feedback: string | null; extracted_answer: string | null; criteria_breakdown: CriterionBreakdown[]; rubric_version: number | null; is_edited: boolean; edited_by: string | null; edited_at: string | null; page_ids: string[]; teacher_changed_total: boolean; review_reasons?: string[] } | null;
     suggestion: null; released_value: null;
 }
 export interface MarkEventView {

@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CaretDown, CaretRight } from '@phosphor-icons/react';
+import { CaretDown, CaretRight, WarningCircle } from '@phosphor-icons/react';
 import TipTapEditor from '@/components/tiptap/TipTapEditor';
 import LatexRenderer from '@/routes/assessment/evaluation-ai/-components/latex-renderer';
 import { formatCriterionMarks } from '@/routes/assessment/evaluation-ai/$attemptId/$processId/-utils/criteria-marks';
@@ -91,6 +91,29 @@ export const FeedbackBlock = ({ feedback }: { feedback: string | null | undefine
 };
 
 /**
+ * Why the AI check wants a teacher to look at this answer: handwriting it was unsure of,
+ * or marks cut on a page that was hard to read (ai_service copy_check/review.py).
+ */
+export const ReviewReasons = ({ reasons }: { reasons: string[] }) => {
+    const { t } = useTranslation('assessmentSubmissionReview');
+    if (reasons.length === 0) return null;
+    return (
+        <div className="flex gap-2 rounded-md border border-warning-300 bg-warning-50 p-3">
+            <WarningCircle size={18} weight="fill" className="mt-0.5 shrink-0 text-warning-600" />
+            <div className="flex min-w-0 flex-col gap-1">
+                <p className="text-body font-semibold text-warning-700">{t('card.needsReview')}</p>
+                <p className="text-caption text-neutral-600">{t('card.needsReviewHint')}</p>
+                <ul className="list-disc ps-4 text-body text-neutral-700">
+                    {reasons.map((reason) => (
+                        <li key={reason}>{reason}</li>
+                    ))}
+                </ul>
+            </div>
+        </div>
+    );
+};
+
+/**
  * The AI's marking-scheme breakdown with its reasons (W3b/W3e), and the note when a
  * teacher changed the total after the AI marked it.
  */
@@ -111,6 +134,7 @@ export const CriteriaTable = ({
     const editor = row.marked_by?.name || t('common.aTeacher');
     return (
         <div className="flex flex-col gap-2">
+            <ReviewReasons reasons={ai.review_reasons ?? []} />
             <div className="flex flex-wrap items-center gap-2">
                 <Heading>
                     {ai.rubric_version != null

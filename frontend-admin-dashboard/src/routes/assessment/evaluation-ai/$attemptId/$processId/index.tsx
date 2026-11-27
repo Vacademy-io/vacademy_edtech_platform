@@ -77,6 +77,7 @@ import {
 import { getAssessmentSettingsFromCache } from '@/services/assessment-settings';
 import { parseReviewMeta, type ReviewAttribution } from './-utils/review-meta';
 import { formatCriterionMarks } from './-utils/criteria-marks';
+import { ReviewReasons } from '@/routes/assessment/submission/$attemptId/-components/cards/common';
 import { getLayoutMap } from '@/routes/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab/-services/ai-evaluation-services';
 
 export const Route = createFileRoute('/assessment/evaluation-ai/$attemptId/$processId/')({
@@ -1239,6 +1240,8 @@ function QuestionCard({
                             </p>
                         </div>
                     )}
+
+                    <ReviewReasons reasons={question.evaluation_details_json?.review_reasons ?? []} />
 
                     {/* Criteria Breakdown */}
                     {question.evaluation_details_json?.criteria_breakdown && (

@@ -170,6 +170,8 @@
     },
     "card": {
         "loadFailed": "Impossible de charger cette réponse.",
+        "needsReview": "À vérifier par l’enseignant",
+        "needsReviewHint": "L’IA n’était pas sûre d’une partie de cette réponse. Vérifiez l’écriture avant d’accepter la note.",
         "question": "Question",
         "scenario": "Énoncé",
         "options": "Options",

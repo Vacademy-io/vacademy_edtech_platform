@@ -164,6 +164,8 @@
     },
     "card": {
         "loadFailed": "Couldn't load this answer.",
+        "needsReview": "Needs teacher review",
+        "needsReviewHint": "The AI was not sure about part of this answer. Check the handwriting before you accept the marks.",
         "question": "Question",
         "scenario": "Scenario",
         "options": "Options",
