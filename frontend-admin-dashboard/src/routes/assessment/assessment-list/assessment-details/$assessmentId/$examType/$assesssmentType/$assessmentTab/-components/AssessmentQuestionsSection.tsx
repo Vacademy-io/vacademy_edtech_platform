@@ -22,7 +22,14 @@ import {
     ListChecks,
 } from '@phosphor-icons/react';
 import { Section } from '@/types/assessments/assessment-data-type';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import {
+    COPY_CHECK_CRITERIA_KEY,
+    criteriaToCopyCheckRubric,
+    getCopyCheckCriteria,
+    toEditableCriteria,
+} from '@/services/copy-check-criteria';
+import { useSaveCopyCheckCriteria } from '@/components/common/ai-copy-check/CopyCheckCriteriaPanel';
 import { Route } from '..';
 import {
     getAssessmentDetails,
@@ -278,6 +285,27 @@ const QuestionsTable = ({
     const [criteriaDialogOpen, setCriteriaDialogOpen] = useState(false);
     const [selectedQuestionIndex, setSelectedQuestionIndex] = useState<number | null>(null);
     const [localAdaptiveMarking, setLocalAdaptiveMarking] = useState(adaptiveMarking);
+    const { assessmentId } = Route.useParams();
+
+    // What the AI copy check marks each question by. It keeps its own criteria per test
+    // (written by AI from the answer key on the first check, or saved from Check with AI),
+    // so a question without criteria of its own showed "Not set" here while Check with AI
+    // said every question had criteria.
+    const { data: aiCheckCriteria } = useQuery({
+        queryKey: [COPY_CHECK_CRITERIA_KEY, assessmentId],
+        queryFn: () => getCopyCheckCriteria(assessmentId),
+        enabled: Boolean(assessmentId) && examType !== 'SURVEY',
+        staleTime: 30 * 1000,
+        retry: false,
+    });
+    const saveAiCheckCriteria = useSaveCopyCheckCriteria(
+        assessmentId,
+        aiCheckCriteria?.rubric_version
+    );
+    const aiCheckRowFor = (questionId: string) => {
+        const row = aiCheckCriteria?.questions.find((q) => q.question_id === questionId);
+        return row?.rubric?.rubric?.length ? row : undefined;
+    };
 
     // Update local state when prop changes
     useEffect(() => {
@@ -309,6 +337,23 @@ const QuestionsTable = ({
 
     const handleSaveCriteria = (criteria: CriteriaJson | null, source: CriteriaSource) => {
         if (selectedQuestionIndex === null) return;
+
+        const target = localAdaptiveMarking[selectedQuestionIndex];
+        const aiCheckRow =
+            target && !target.evaluation_criteria_json ? aiCheckRowFor(target.questionId) : undefined;
+        if (aiCheckRow && criteria) {
+            // The question has no criteria of its own: what was edited is the AI check's,
+            // so it is saved there and used for every copy checked from now on.
+            saveAiCheckCriteria.mutate({
+                [aiCheckRow.question_id]: criteriaToCopyCheckRubric(
+                    criteria,
+                    aiCheckRow.max_marks,
+                    aiCheckRow.rubric
+                ),
+            });
+            setCriteriaDialogOpen(false);
+            return;
+        }
 
         const updated = [...localAdaptiveMarking];
         updated[selectedQuestionIndex] = {
@@ -431,6 +476,25 @@ const QuestionsTable = ({
                                                             )
                                                         }
                                                     />
+                                                ) : aiCheckRowFor(question.questionId) ? (
+                                                    <CriteriaStatusBadge
+                                                        status="ai-check"
+                                                        onClick={() => handleEditCriteria(index)}
+                                                        onPreview={() => {
+                                                            const row = aiCheckRowFor(
+                                                                question.questionId
+                                                            );
+                                                            const criteria = row
+                                                                ? toEditableCriteria(
+                                                                      row.rubric,
+                                                                      row.max_marks
+                                                                  )
+                                                                : undefined;
+                                                            if (!criteria) return;
+                                                            setCriteriaPreview(criteria);
+                                                            setPreviewDialogOpen(true);
+                                                        }}
+                                                    />
                                                 ) : (
                                                     <span className="text-xs italic text-slate-400">
                                                         {t('table.criteriaNotSet')}
@@ -476,7 +540,10 @@ const QuestionsTable = ({
                     existingCriteria={
                         selectedQuestion.evaluation_criteria_json
                             ? (parseCriteria(selectedQuestion.evaluation_criteria_json) ?? undefined)
-                            : undefined
+                            : (() => {
+                                  const row = aiCheckRowFor(selectedQuestion.questionId);
+                                  return row ? toEditableCriteria(row.rubric, row.max_marks) : undefined;
+                              })()
                     }
                     open={criteriaDialogOpen}
                     onSave={handleSaveCriteria}
