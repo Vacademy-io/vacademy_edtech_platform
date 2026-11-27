@@ -476,3 +476,19 @@ def test_llm_bridge_stays_quiet_when_audio_played_speaking_or_ducked():
 def test_llm_bridge_is_off_unless_configured():
     s = CallState(t=T0); s.reply_started_t = T0 + 1.0
     assert LLM_BRIDGE not in kinds(run_ticks(s, cfg(), T0 + 1.0, T0 + 8.0))
+
+
+def test_llm_bridge_is_not_said_for_a_reply_that_has_ended():
+    """Call 7bcc6060 (2026-11-23): the model answered a transfer announcement
+    with "(Wait for a live person to speak)", the aside was kept off the line,
+    and 2.8 s later the bot said "एक सेकंड।" for words that were never coming."""
+    s = CallState(t=T0)
+    c = cfg(llm_bridge_after_secs=2.0)
+    s.reply_started_t = T0 + 1.0
+    s.reply_ended_t = T0 + 1.3              # LLMFullResponseEnd, nothing spoken
+    out = run_ticks(s, c, T0 + 1.0, T0 + 8.0, step=0.5)
+    assert not [t for t, k in out if k == LLM_BRIDGE]
+    # The next reply, still composing, is covered as before.
+    s.reply_started_t = T0 + 10.0
+    out = run_ticks(s, c, T0 + 10.0, T0 + 14.0, step=0.5)
+    assert [t for t, k in out if k == LLM_BRIDGE] == [T0 + 12.0]

@@ -111,6 +111,7 @@ from .turntake import (mid_reply_action, is_carrier_announcement,
                        is_hold_announcement, hold_absorbs, caller_is_busy,
                        opening_expected_secs, ends_on_question, ivr_menu_key,
                        IVR_LOOP_REPEATS, recording_loop_key, RECORDING_LOOP_REPEATS,
+                       IVR_MENU_OPTIONS, ivr_option_keys, agent_stuck_on_one_line, is_wait_aside,
                        is_company_ivr, sounds_like_person)
 
 from .sarvam_v4_voices import (SARVAM_V4_DEFAULT_VOICE, SARVAM_V4_MALE,  # noqa: E402
@@ -554,6 +555,8 @@ class TranscriptCollector(FrameProcessor):
         self._prev_final_t = 0.0
         # Phone-menu lines heard, by ivr_menu_key → times (looks_like_ivr_loop).
         self._ivr_lines: Dict[str, int] = {}
+        # The different keys the menu has offered ("1", "2", …).
+        self._ivr_keys: set = set()
         # Long caller-side lines heard, by recording_loop_key → times.
         self._loop_lines: Dict[str, int] = {}
         # Caller VAD onsets (wordless_onsets_since).
@@ -800,6 +803,7 @@ class TranscriptCollector(FrameProcessor):
             _ivr = ivr_menu_key(text)
             if _ivr:
                 self._ivr_lines[_ivr] = self._ivr_lines.get(_ivr, 0) + 1
+            self._ivr_keys |= ivr_option_keys(text)
             _loop = recording_loop_key(text)
             if _loop:
                 self._loop_lines[_loop] = self._loop_lines.get(_loop, 0) + 1
@@ -1721,9 +1725,17 @@ class TranscriptCollector(FrameProcessor):
         pick up behind it (call 5856b13f: 8 minutes, 34 replies to the menu)."""
         if any(n >= IVR_LOOP_REPEATS for n in self._ivr_lines.values()):
             return True
+        # Three different keys offered are a menu already (turntake.IVR_MENU_OPTIONS).
+        if len(self._ivr_keys) >= IVR_MENU_OPTIONS:
+            return True
         # Any other recording that keeps coming round (a queue message, a
         # welcome announcement): see turntake.recording_loop_key.
         return any(n >= RECORDING_LOOP_REPEATS for n in self._loop_lines.values())
+
+    def last_final_t(self) -> float:
+        """When the last transcript of any kind landed — a carrier recording's
+        lines included, which never stamp the call's transcript_t."""
+        return self._prev_final_t
 
     def wordless_onsets_since(self, since: float) -> int:
         """How many times the caller's voice started after `since` without one
@@ -2620,9 +2632,12 @@ class NoRepeatGate(FrameProcessor):
                  no_echo=None, handbacks=None, played_text=None, end_forced=None,
                  request_next_step=None, drop_stale_bridge=None, max_sentences=None,
                  max_chars=None, ending=None, primary_errored_since=None,
-                 caller_turn_pending=None, child_slots=True):
+                 caller_turn_pending=None, child_slots=True, chose_to_wait=None):
         super().__init__()
         self._enabled = enabled or (lambda: True)
+        # Did the model answer with only a "(waiting…)" aside? Then the empty
+        # reply is its choice — not a failure to recover from.
+        self._chose_to_wait = chose_to_wait or (lambda: False)
         # False for a non-education agent: a copied "<name>" slot is dropped,
         # never spoken as "your child" (fill_template_slots).
         self._child_slots = child_slots
@@ -3590,8 +3605,15 @@ class NoRepeatGate(FrameProcessor):
             # text either). After a put-off (call 899c6888) the cue itself says
             # to offer a call back or close, rather than push on or go silent.
             _caller_now = (self._last_caller_text() or "").strip()
+            _waiting = (not getattr(self, "_text_seen", True) and not self._buf.strip()
+                        and not self._killed and self._chose_to_wait())
+            if _waiting:
+                # "(Wait for a live person to speak)": asked for the next line,
+                # the model wrote the same aside again (call 7bcc6060) — or
+                # talked to the recording. Its silence stands.
+                logger.info("no-repeat: the model chose to wait — not asking for a line")
             if (not getattr(self, "_text_seen", True) and not self._buf.strip()
-                    and not self._killed
+                    and not self._killed and not _waiting
                     and not superseded and not self._end_forced() and not self._ending()
                     # A FAILED primary request ends with no text too. The failover
                     # re-runs the turn on the fallback; a "continue" cue here
@@ -4691,7 +4713,7 @@ class SentinelGate(FrameProcessor):
     pipeline after the final utterance finished playing."""
 
     def __init__(self, outcome: CallOutcome, on_activity, set_bot_speaking,
-                 on_reply_start=None, on_send=None,
+                 on_reply_start=None, on_send=None, on_reply_end=None,
                  transfer_closing: str = "Ek moment, main aapko connect kar rahi hoon.",
                  end_closing: str = "Theek hai, dhanyavaad. Aapka din shubh ho!",
                  transfer_fail_closing: str = TRANSFER_FAIL_CLOSING, diag=None):
@@ -4713,6 +4735,10 @@ class SentinelGate(FrameProcessor):
         self._on_activity = on_activity
         self._set_bot_speaking = set_bot_speaking
         self._on_reply_start = on_reply_start or (lambda: None)
+        self._on_reply_end = on_reply_end or (lambda: None)
+        # This response held a "(waiting…)" aside (turntake.is_wait_aside).
+        self._wait_aside = False
+        self._words_this_response = False   # unlike _spoke_this_response, kept past the End
         # Mid-call send hook. Default no-op so every existing construction site and
         # every test keeps working untouched.
         self._on_send = on_send or (lambda _key: None)
@@ -4759,6 +4785,10 @@ class SentinelGate(FrameProcessor):
         self._stop_armed = False
         self._defer_stop_cb = None
         self._clear_end_pending_cb = None
+
+    def chose_to_wait(self) -> bool:
+        """The current response was only a "(waiting…)" aside: nothing spoken."""
+        return self._wait_aside and not self._words_this_response
 
     def set_task(self, task: PipelineTask):
         self._task = task
@@ -4833,6 +4863,8 @@ class SentinelGate(FrameProcessor):
 
         if isinstance(frame, LLMFullResponseStartFrame):
             self._on_reply_start()
+            self._wait_aside = False
+            self._words_this_response = False
             self._raw_reply = ""
             self._post_end = None
             self._unspoken_after_end = ""
@@ -4888,15 +4920,20 @@ class SentinelGate(FrameProcessor):
                 if _spoken != self._buffer:
                     logger.info("sentinel: not speaking the model's aside %r corr=%s",
                                 self._buffer[:80], self._outcome.corr)
+                    if any(is_wait_aside(m.group(0))
+                           for m in _STAGE_DIRECTION_RE.finditer(self._buffer)):
+                        self._wait_aside = True
                     self._buffer = _spoken
             emit, self._buffer = self._split_safe(self._buffer)
             if emit.strip() or (emit and self._spoke_this_response):
                 self._utterance += emit
                 self._spoke_this_response = True
+                self._words_this_response = True
                 await self.push_frame(LLMTextFrame(emit), direction)
             return
 
         if isinstance(frame, LLMFullResponseEndFrame):
+            self._on_reply_end()
             _rp = getattr(self._outcome, "replay", None)
             if _rp is not None and self._raw_reply.strip():
                 _rp["replies"].append([round(time.time() - self._outcome.connected_at, 2),
@@ -7478,6 +7515,9 @@ async def run_bot(transport, corr: str, context: Dict[str, Any],
     def _on_reply_start():
         flags["reply_started_t"] = time.time()
 
+    def _on_reply_end():
+        flags["reply_ended_t"] = time.time()
+
     def _reply_in_flight() -> bool:
         """True from the LLM starting a reply until that reply is off the line.
 
@@ -7668,6 +7708,8 @@ async def run_bot(transport, corr: str, context: Dict[str, Any],
         # the prompt's SCRIPT rule entirely because they never touch the LLM.
         request_next_step=_ask_for_next_step,
         drop_stale_bridge=_bridge_is_stale,
+        # late-bound: sentinel is created below
+        chose_to_wait=lambda: sentinel.chose_to_wait(),
         max_sentences=lambda: settings.max_sentences_per_reply,
         max_chars=lambda: settings.max_reply_chars,
         # A goodbye with the end marker is a reply with no question: never
@@ -7698,6 +7740,7 @@ async def run_bot(transport, corr: str, context: Dict[str, Any],
 
     sentinel = SentinelGate(outcome, on_activity, set_bot_speaking,
                             on_reply_start=_on_reply_start,
+                            on_reply_end=_on_reply_end,
                             transfer_closing=transfer_closing, end_closing=end_closing,
                             transfer_fail_closing=transfer_fail_closing,
                             on_send=_fire_mid_call_send, diag=diag)
@@ -8252,6 +8295,35 @@ async def run_bot(transport, corr: str, context: Dict[str, Any],
                 # voicemail hang-up, for a phone menu that keeps replaying.
                 diag.idle_hangup = True
                 logger.info("ivr: a recording is looping — hanging up corr=%s", corr)
+                outcome.end_requested = True
+                await _begin_stop()
+                continue
+            if (not outcome.end_requested and not flags["bot_speaking"] and not _held
+                    and transcript.looks_like_voicemail()
+                    and now - max(transcript.last_final_t(), flags["bot_stopped_t"])
+                    >= settings.idle_timeout_secs):
+                # The voicemail hang-up for the call pipecat's idle timer never
+                # sees: that timer starts when the bot STOPS speaking, and here
+                # the bot has not spoken (the opening was held behind the
+                # recording) or the recorder's tone keeps the caller's turn
+                # open. Six such calls sat silent for two minutes each, to the
+                # carrier's own limit (16d2026e, 2026-11-24).
+                diag.idle_hangup = True
+                logger.info("idle: voicemail, quiet for %.0fs and no human turn — hanging up "
+                            "from the watchdog corr=%s",
+                            now - transcript.last_final_t(), corr)
+                outcome.end_requested = True
+                await _begin_stop()
+                continue
+            if (not outcome.end_requested and not flags["bot_speaking"]
+                    and agent_stuck_on_one_line(
+                        [t.get("text") or "" for t in outcome.transcript
+                         if t.get("role") == "assistant"], ignore=(bridge_line,))):
+                # Whatever is on the line, this is not a conversation
+                # (turntake.STUCK_LINE_REPEATS).
+                diag.idle_hangup = True
+                logger.info("loop: the agent has opened its last replies with the same "
+                            "line — hanging up corr=%s", corr)
                 outcome.end_requested = True
                 await _begin_stop()
                 continue

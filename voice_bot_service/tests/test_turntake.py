@@ -456,3 +456,53 @@ def test_pieces_of_the_recording_are_fragments():
         assert is_hold_fragment(piece), piece
     # Recording words, but none only the recording says: a person can say it too.
     assert not is_hold_fragment("आपके call को")
+
+
+# ── review of 20-25 Nov 2026 calls ───────────────────────────────────────────
+import pytest  # noqa: E402
+from app.turntake import (agent_stuck_on_one_line, is_wait_aside, ivr_option_keys,
+                          IVR_MENU_OPTIONS, STUCK_LINE_REPEATS)
+
+
+@pytest.mark.parametrize("aside,waiting", [
+    ("(Wait for a live person to speak)", True),
+    ("(silence)", True),
+    ("[Stay silent and wait for a live person]", True),
+    ("(प्रतीक्षा)", True),
+    ("(laughs)", False),
+    ("(smiling)", False),
+    ("Please wait.", False),          # spoken words, not an aside
+    ("", False),
+])
+def test_is_wait_aside(aside, waiting):
+    assert is_wait_aside(aside) is waiting
+
+
+@pytest.mark.parametrize("line,keys", [
+    ("Press 1.", {"1"}),
+    ("Press 2 for HR department.", {"2"}),
+    ("Press one for sales, press two for support.", {"1", "2"}),
+    ("हिंदी के लिए 2 दबाएं।", {"2"}),
+    ("मराठी साठी 3 दाबा.", {"3"}),
+    ("Welcome to IAS Baba.", set()),
+    ("Hello?", set()),
+])
+def test_ivr_option_keys(line, keys):
+    assert ivr_option_keys(line) == keys
+
+
+def test_agent_stuck_on_one_line():
+    assert STUCK_LINE_REPEATS == 4 and IVR_MENU_OPTIONS == 3
+    # Call 6760bf60: "Okay." to every piece of a garbled hold recording.
+    assert agent_stuck_on_one_line(["Hello, is this Nambiar Builders?"] + ["Okay."] * 4)
+    assert not agent_stuck_on_one_line(["Okay."] * 3)
+    # Call 47d2b7a1: the same opening sentence, with and without a question after it.
+    assert agent_stuck_on_one_line(["मैं यहीं हूँ।", "मैं यहीं हूँ। क्या आप ही calls देखते हैं?",
+                                    "मैं यहीं हूँ।", "मैं यहीं हूँ।"])
+    # The bridge line is not a reply: it neither counts nor breaks the run.
+    assert agent_stuck_on_one_line(["Thank you.", "Thank you. Just a second.", "Just a second.",
+                                    "Thank you.", "Thank you."], ignore=("Just a second.",))
+    # A different line in between is a conversation moving.
+    assert not agent_stuck_on_one_line(["I can hear you.", "I can hear you.", "We help schools.",
+                                        "I can hear you.", "I can hear you."])
+    assert not agent_stuck_on_one_line([])

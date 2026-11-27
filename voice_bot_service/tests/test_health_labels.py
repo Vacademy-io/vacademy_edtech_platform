@@ -662,3 +662,20 @@ async def test_wordless_sounds_are_counted_until_a_word_arrives(clock):
     assert tc.wordless_onsets_since(10_000.0 + 12.0) == 1
     await _say(tc, clock, 21.3, "Hello.")
     assert tc.wordless_onsets_since(bot_stopped) == 0, "a word arrived: they are heard"
+
+
+# Call 66df7700 (2026-11-24): "Press 1 … Press 4" and "Thank you." from the
+# bot after every option, 13 times in 73 s. Three different keys are a menu.
+@pytest.mark.asyncio
+async def test_a_menu_reading_out_three_keys_is_hung_up_on(clock):
+    rec = _Rec()
+    tc = _collector(rec)
+    at = 2.0
+    for line in ("Welcome to IAS Baba.", "For UPSC.", "Press 1.",
+                 "For inquiries about the KAS new notification program,", "Press 2."):
+        await _say(tc, clock, at, line)
+        at += 2.0
+        assert not tc.looks_like_ivr_loop(), line
+    await _say(tc, clock, at, "To speak to our expert mentors,")
+    await _say(tc, clock, at + 2.0, "Press 3.")
+    assert tc.looks_like_ivr_loop()

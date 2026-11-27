@@ -131,6 +131,10 @@ class CallState:
     # reply_started_t of the reply we already covered with a latency bridge
     # ("Just a second.") — one bridge per reply, never a loop of them.
     bridged_reply_t: float = 0.0
+    # When the model FINISHED its latest reply (LLMFullResponseEnd). A reply
+    # that has ended is no longer composing: its audio is on its way or it had
+    # nothing to say — the bridge covers neither.
+    reply_ended_t: float = 0.0
     # The person has put the call on hold (TranscriptCollector.on_hold_for, copied
     # in by run_bot's watchdog every tick). Nobody is listening for "please say
     # that again" or "एक सेकंड।" (the replay of 6d81124d said "एक सेकंड।" into the
@@ -300,7 +304,14 @@ def watchdog_decide(s: CallState, now: float, cfg: WatchdogConfig) -> Decision:
     #     are quiet (checked above) and nothing is ducked (returned above).
     #     Once per reply — bridged_reply_t remembers which one.
     st = s.reply_started_t
+    #     And only while the model is still composing. A reply that ENDED with
+    #     nothing to say (an aside kept off the line, a repeat that was
+    #     dropped) left this window open, and "एक सेकंड।" covered for words
+    #     that were never coming: it was the bot's whole reply in 23 of 178
+    #     conversations on 20-25 Nov 2026 (call 7bcc6060: "(Wait for a live
+    #     person to speak)" dropped, then the bridge 2.8 s later).
     if (st > 0 and not s.on_hold and s.bot_stopped_t < st and s.bridged_reply_t != st
+            and s.reply_ended_t < st
             and now - st >= cfg.llm_bridge_after_secs):
         return Decision(LLM_BRIDGE, now - st)
 

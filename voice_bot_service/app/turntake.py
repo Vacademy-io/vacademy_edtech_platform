@@ -445,6 +445,26 @@ _IVR_MENU = re.compile(
 IVR_LOOP_REPEATS = 3
 
 
+# How many DIFFERENT keys ("Press 1 …", "Press 2 …", "Press 3 …") make a phone
+# menu. A person may explain one or two ("press 1 on our IVR", "press 2 is for
+# the hostel"); three are a menu being read out, and the bot cannot press a
+# key. On 20-25 Nov 2026 no call that heard a menu reached a person afterwards,
+# while the bot answered "Thank you." to every option (call 66df7700: 13 times
+# in 73 s).
+IVR_MENU_OPTIONS = 3
+_IVR_KEY = re.compile(
+    r"\b(?:press|dial)\s+(\d|one|two|three|four|five|six|seven|eight|nine|zero)\b"
+    r"|\b(\d)\s+(?:dabaye|dabayen|dabayein|dabaiye|dabaen|दबाएं|दबाएँ|दबाइए|दबाये|दबाओ|दाबा)")
+_KEY_WORDS = {"one": "1", "two": "2", "three": "3", "four": "4", "five": "5",
+              "six": "6", "seven": "7", "eight": "8", "nine": "9", "zero": "0"}
+
+
+def ivr_option_keys(text: str) -> set:
+    """The keys a menu line offers ("Press 1 for English" → {"1"}). PURE."""
+    t = " ".join((text or "").casefold().split())
+    return {_KEY_WORDS.get(a or b, a or b) for a, b in _IVR_KEY.findall(t)}
+
+
 def ivr_menu_key(text: str) -> str:
     """The comparison key of a phone-menu line ("Press 1 for …", "invalid
     option"), or "" when the line is not one. PURE; the live gate counts these."""
@@ -478,6 +498,50 @@ def recording_loop_key(text: str) -> str:
     if sounds_like_person(t) or is_hold_announcement(t) or is_hold_fragment(t):
         return ""
     return spoken_key(t)
+
+
+# ── the agent saying one line over and over ──────────────────────────────────
+# Call 6760bf60 (2026-11-23): a hold recording came through the STT in pieces
+# that never matched twice ("So now we are builders.", "Shall be recorded."),
+# so no loop rule above counted it, and the bot said "Okay." to it 16 times
+# in 161 s. Whatever is on the other end, a call in which the agent has opened
+# four replies running with the same sentence is not a conversation. Of the
+# 883 calls on 20-25 Nov 2026 ten did; none reached a person afterwards. Three
+# in a row happens in real calls ("I can hear you." to a bad line), so four.
+STUCK_LINE_REPEATS = 4
+_FIRST_SENTENCE_END = re.compile(r"(?<=[.?!।])\s+")
+
+
+def reply_opening_key(text: str) -> str:
+    """The comparison key of a reply's first sentence. PURE."""
+    return spoken_key(_FIRST_SENTENCE_END.split((text or "").strip(), maxsplit=1)[0])
+
+
+def agent_stuck_on_one_line(agent_lines, ignore=()) -> bool:
+    """The agent's last STUCK_LINE_REPEATS replies all open with the same
+    sentence. `agent_lines` are its spoken lines in order; `ignore` lists lines
+    that are not replies (the "Just a second." bridge). PURE."""
+    skip = {spoken_key(x) for x in ignore}
+    keys = [k for k in (reply_opening_key(x) for x in agent_lines) if k and k not in skip]
+    last = keys[-STUCK_LINE_REPEATS:]
+    return len(last) == STUCK_LINE_REPEATS and len(set(last)) == 1
+
+
+# ── the model choosing to stay quiet ─────────────────────────────────────────
+# gemma4 answers a recording with an aside instead of words: "(Wait for a live
+# person to speak)", "(silence)". SentinelGate keeps asides off the line; this
+# says which of them mean "I am waiting", so the empty reply left behind is
+# taken as a choice and not as a failure to be recovered from.
+_WAIT_ASIDE = re.compile(
+    r"\b(?:wait\w*|silen\w*|hold\w*|listen\w*|paus\w*|quiet\w*|say(?:s|ing)? nothing"
+    r"|no (?:response|reply|answer))\b"
+    r"|इंतज़ार|इंतजार|प्रतीक्षा|चुप|मौन|रुक")
+
+
+def is_wait_aside(text: str) -> bool:
+    """A bracketed aside in which the model says it is waiting. PURE."""
+    t = " ".join((text or "").casefold().split())
+    return bool(t) and t[0] in "([" and bool(_WAIT_ASIDE.search(t))
 
 
 def is_hold_fragment(text: str) -> bool:

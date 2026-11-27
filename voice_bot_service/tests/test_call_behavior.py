@@ -8203,3 +8203,35 @@ def test_the_nudge_is_in_the_language_being_spoken(last, line):
 
 def test_an_english_agent_keeps_its_english_nudge():
     assert b.nudge_line(b.NUDGE_ENGLISH, "नमस्ते जी।") == b.NUDGE_ENGLISH
+
+
+# ── review of 20-25 Nov 2026 calls ───────────────────────────────────────────
+@pytest.mark.asyncio
+@pytest.mark.parametrize("chunks,waits", [
+    (["(Wait for a live person to speak)"], True),
+    (["(", "silence", ")"], True),
+    (["(laughs)"], False),                                  # empty, but not a choice to wait
+    (["(silence)", " We help counselling teams."], False),  # it spoke
+])
+async def test_an_aside_only_reply_is_the_model_choosing_to_wait(chunks, waits):
+    _spoken, sg, _o = await _aside_reply(chunks)
+    assert sg.chose_to_wait() is waits
+
+
+def test_a_wait_aside_reply_gets_no_next_line_request_and_stamps_its_end():
+    import inspect
+    src = inspect.getsource(b)
+    assert "chose_to_wait=lambda: sentinel.chose_to_wait()" in src
+    assert "on_reply_end=_on_reply_end" in src
+    assert 'flags["reply_ended_t"] = time.time()' in src
+    gate = inspect.getsource(b.NoRepeatGate.process_frame)
+    assert "and not self._killed and not _waiting" in gate
+
+
+def test_watchdog_hangs_up_on_a_voicemail_the_bot_never_spoke_to_and_on_a_stuck_line():
+    import inspect
+    src = inspect.getsource(b)
+    wd = src[src.index("ivr: a recording is looping"):src.index("d = watchdog_decide(flags, now, cfg)")]
+    assert "transcript.looks_like_voicemail()" in wd and "transcript.last_final_t()" in wd
+    assert "not _held" in wd
+    assert "agent_stuck_on_one_line(" in wd and "ignore=(bridge_line,)" in wd
