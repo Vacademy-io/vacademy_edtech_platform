@@ -250,9 +250,13 @@ export function QuestionPaperTemplate({
                 : {}),
         });
         // Set current question index to the newly added question (last question)
-        setCurrentQuestionIndex(questions.length);
+        const newIndex = questions.length;
+        setCurrentQuestionIndex(newIndex);
         setAddQuestionDialogBox(false);
-        form.trigger();
+        // Re-check the paper, but leave the new, still-empty question alone: its
+        // "required" errors used to show before the teacher had typed anything. They
+        // show once the teacher saves (and refresh as the question is edited after that).
+        void form.trigger().then(() => form.clearErrors(`questions.${newIndex}`));
     };
 
     const handleUpdateQuestionPaper = useMutation({
@@ -352,6 +356,22 @@ export function QuestionPaperTemplate({
     const handleViewQuestionPaper = () => {
         handleMutationViewQuestionPaper.mutate({ questionPaperId });
     };
+
+    // A question already showing errors (after a failed Save) is re-checked as it is
+    // edited, so a fixed problem clears straight away instead of staying until the next
+    // Save (e.g. "exactly one option selected" after the answer is ticked). A question
+    // with no errors on show is left alone, so nothing turns red while it is being typed.
+    useEffect(() => {
+        const subscription = form.watch((_values, { name }) => {
+            const match = name?.match(/^questions\.(\d+)\./);
+            if (!match) return;
+            const index = Number(match[1]);
+            if (form.formState.errors?.questions?.[index]) {
+                void form.trigger(`questions.${index}`);
+            }
+        });
+        return () => subscription.unsubscribe();
+    }, [form]);
 
     // Re-validate form when examType changes
     useEffect(() => {

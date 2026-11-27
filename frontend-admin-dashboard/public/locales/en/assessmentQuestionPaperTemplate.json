@@ -37,7 +37,7 @@
         "addTagFirst": "Add at least one tag to this question first",
         "tagsApplied": "Applied {{tags}} to all {{questions}}",
         "updateSuccess": "Question Paper updated successfully",
-        "incompleteQuestions": "some of your questions are incomplete or needs attentions!",
+        "incompleteQuestions": "Some of your questions are incomplete or need attention.",
         "numericAnswerMissing": "Question {{number}} needs a correct answer before you save"
     }
 }

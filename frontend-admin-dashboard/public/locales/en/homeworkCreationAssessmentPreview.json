@@ -17,6 +17,6 @@
         "MCQM": "MCQ (Multiple Correct)"
     },
     "errors": {
-        "incompleteQuestions": "some of your questions are incomplete or needs attentions!"
+        "incompleteQuestions": "Some of your questions are incomplete or need attention."
     }
 }

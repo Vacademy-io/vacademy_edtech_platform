@@ -89,7 +89,9 @@ export const TrueFalseQuestionPaperTemplatePPTView = ({
     };
 
     const handleOptionChange = (optionIndex: number) => {
-        const options = [0, 1, 2, 3];
+        // True / False has two options. Looping over four (copied from the MCQ card) created
+        // empty options 3 and 4, which then failed validation and blocked Save.
+        const options = [0, 1];
 
         // Check current state of the selected option
         const isCurrentlySelected = getValues(
