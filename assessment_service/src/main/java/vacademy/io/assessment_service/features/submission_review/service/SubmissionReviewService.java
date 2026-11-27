@@ -435,6 +435,7 @@ public class SubmissionReviewService {
             m.put("edited_by", verdict.getEditedBy());
             m.put("edited_at", iso(verdict.getEditedAt()));
             m.put("page_ids", pageIds(result));
+            m.put("review_reasons", reviewReasons(result));
             Double aiMarks = aiOriginalMarks(result, verdict);
             m.put("teacher_changed_total", k.row() != null && aiMarks != null
                     && Math.abs(aiMarks - k.row().marks()) > 0.005);
@@ -456,6 +457,7 @@ public class SubmissionReviewService {
         m.put("edited_by", null);
         m.put("edited_at", null);
         m.put("page_ids", pageIds(result));
+        m.put("review_reasons", reviewReasons(result));
         Double aiMarks = numberOf(result.path("marks_awarded"));
         m.put("teacher_changed_total", k.row() != null && aiMarks != null && Math.abs(aiMarks - k.row().marks()) > 0.005);
         return m;
@@ -483,6 +485,21 @@ public class SubmissionReviewService {
             m.put("max_marks", numberOf(c.path("max_marks")));
             m.put("reason", textOf(c.path("reason")));
             out.add(m);
+        }
+        return out;
+    }
+
+    /**
+     * Why the AI check wants a teacher to look at this answer (ai_service copy_check/review.py):
+     * handwriting it was unsure of, marks cut on a page that was hard to read. Stored with the
+     * question's callback payload; empty for older results.
+     */
+    static List<String> reviewReasons(JsonNode result) {
+        List<String> out = new ArrayList<>();
+        if (result == null) return out;
+        for (JsonNode r : result.path("review_reasons")) {
+            String text = textOf(r);
+            if (text != null && !text.isBlank()) out.add(text);
         }
         return out;
     }
