@@ -37,7 +37,14 @@ export interface AdaptiveMarking {
         min: string;
     };
     options?: AdaptiveMarkingOption[];
-    /** The question's saved evaluation criteria (rubric JSON); undefined = none. */
+}
+
+/**
+ * A loaded question with its saved evaluation criteria (rubric JSON; undefined = none).
+ * Kept off AdaptiveMarking: other screens pass their own question types, whose criteria
+ * may be null, to helpers typed with AdaptiveMarking.
+ */
+export interface AdaptiveMarkingWithCriteria extends AdaptiveMarking {
     evaluation_criteria_json?: string;
     criteria_template_id?: string;
 }
@@ -45,7 +52,7 @@ export interface AdaptiveMarking {
 export const useQuestionsForSection = (
     assessmentId: string,
     sectionId: string
-): { adaptiveMarking: AdaptiveMarking[]; isLoading: boolean } => {
+): { adaptiveMarking: AdaptiveMarkingWithCriteria[]; isLoading: boolean } => {
     const { data: questionsData, isLoading } = useSuspenseQuery(
         getQuestionDataForSection({
             assessmentId,
@@ -55,7 +62,7 @@ export const useQuestionsForSection = (
 
     // Map questions to adaptive_marking_for_each_question format
     const adaptiveMarking = (questionsData[sectionId] || []).map(
-        (questionData: QuestionData): AdaptiveMarking => {
+        (questionData: QuestionData): AdaptiveMarkingWithCriteria => {
             const markingJson = questionData.marking_json
                 ? JSON.parse(questionData.marking_json)
                 : {};
