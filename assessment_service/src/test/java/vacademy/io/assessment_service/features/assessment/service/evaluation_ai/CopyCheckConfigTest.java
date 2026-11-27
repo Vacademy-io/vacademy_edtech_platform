@@ -85,6 +85,26 @@ class CopyCheckConfigTest {
         assertThat(ctx).containsExactly(Map.entry("language_feedback", "HIGHLIGHT"));
     }
 
+    @Test
+    void institute_remarks_language_english_is_sent_and_auto_adds_nothing() {
+        Map<String, Object> ctx = CopyCheckConfig.examContext(new CopyCheckConfig.Settings(),
+                () -> Map.of("remarksLanguage", "ENGLISH"));
+        assertThat(ctx).containsExactly(Map.entry("remarks_language", "ENGLISH"));
+
+        // AUTO, an unknown value or none at all: the request stays as it was.
+        assertThat(CopyCheckConfig.examContext(new CopyCheckConfig.Settings(),
+                () -> Map.of("remarksLanguage", "AUTO"))).isNull();
+        assertThat(CopyCheckConfig.examContext(new CopyCheckConfig.Settings(),
+                () -> Map.of("remarksLanguage", "Hindi please"))).isNull();
+        assertThat(CopyCheckConfig.examContext(new CopyCheckConfig.Settings(), Map::of)).isNull();
+
+        // Read even when the assessment has its own instructions and language choice.
+        ctx = CopyCheckConfig.examContext(settings(null, null, "Own rule.", "OFF"),
+                () -> Map.of("remarksLanguage", " english "));
+        assertThat(ctx).containsExactly(Map.entry("instructions", "Own rule."),
+                Map.entry("remarks_language", "ENGLISH"));
+    }
+
     // ---- dispatch
 
     private static CopyCheckOrchestratorService service(AdminCoreServiceClient adminCore) {

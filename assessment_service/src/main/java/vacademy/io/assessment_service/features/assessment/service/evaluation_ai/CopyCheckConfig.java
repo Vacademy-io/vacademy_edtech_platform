@@ -37,13 +37,19 @@ import java.util.function.Supplier;
  *       before.</li>
  * </ul>
  * An assessment without its own instructions / language choice takes the institute's
- * ({@code ASSESSMENT_SETTING.aiCopyCheck}). Sent to ai_service as {@code exam_context};
- * nothing set anywhere = no exam_context, so the request is what it was before.
+ * ({@code ASSESSMENT_SETTING.aiCopyCheck}). The institute's {@code remarksLanguage}
+ * (AUTO = a Hindi or Sanskrit copy gets Hindi remarks; ENGLISH = every copy in English)
+ * goes as {@code remarks_language} when it is ENGLISH. Sent to ai_service as
+ * {@code exam_context}; nothing set anywhere = no exam_context, so the request is what
+ * it was before.
  */
 public final class CopyCheckConfig {
 
     public static final String HIGHLIGHT = "HIGHLIGHT";
     public static final String OFF = "OFF";
+    /** {@code ASSESSMENT_SETTING.aiCopyCheck.remarksLanguage}: AUTO (default) or ENGLISH. */
+    public static final String REMARKS_AUTO = "AUTO";
+    public static final String REMARKS_ENGLISH = "ENGLISH";
     static final int SUBJECT_CAP = 60;
     static final int LEVEL_CAP = 60;
     static final int INSTRUCTIONS_CAP = 2000;
@@ -172,7 +178,9 @@ public final class CopyCheckConfig {
         Settings own = normalize(onAssessment);
         String instructions = own.getInstructions();
         String language = own.getLanguageFeedback();
-        if ((instructions == null || language == null) && instituteDefault != null) {
+        String remarks = null;
+        // Read every time: the remarks language is an institute setting only.
+        if (instituteDefault != null) {
             Map<String, Object> defaults = null;
             try {
                 defaults = instituteDefault.get();
@@ -182,6 +190,7 @@ public final class CopyCheckConfig {
             if (defaults != null) {
                 if (instructions == null) instructions = text(asString(defaults.get("instructions")), INSTRUCTIONS_CAP);
                 if (language == null) language = languageMode(defaults.get("languageFeedback"));
+                remarks = remarksLanguage(defaults.get("remarksLanguage"));
             }
         }
         Map<String, Object> ctx = new LinkedHashMap<>();
@@ -191,7 +200,15 @@ public final class CopyCheckConfig {
         if (HIGHLIGHT.equals(language)) ctx.put("language_feedback", HIGHLIGHT);
         if (own.getDeductionScheme() != null) ctx.put("deduction_scheme", own.getDeductionScheme());
         if (own.getAnswerLanguage() != null) ctx.put("answer_language", own.getAnswerLanguage());
+        if (REMARKS_ENGLISH.equals(remarks)) ctx.put("remarks_language", REMARKS_ENGLISH);
         return ctx.isEmpty() ? null : ctx;
+    }
+
+    /** AUTO / ENGLISH, or null for anything else (null reads as AUTO). */
+    public static String remarksLanguage(Object value) {
+        if (value == null) return null;
+        String v = value.toString().trim().toUpperCase();
+        return REMARKS_AUTO.equals(v) || REMARKS_ENGLISH.equals(v) ? v : null;
     }
 
     private static String asString(Object value) {
