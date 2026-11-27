@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "779885739059",
+    "project_id": "vacademy-app-2",
+    "storage_bucket": "vacademy-app-2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:779885739059:android:d4a21e906415fb2fec3746",
+        "android_client_info": {
+          "package_name": "io.evalezy.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDpxngpK_0waQLPKq7ypuMrPW_S3QeaPTM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
