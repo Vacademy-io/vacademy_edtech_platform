@@ -538,5 +538,11 @@
         "recordingsNew_few": "{{count}} تسجيلات جديدة",
         "recordingsNew_many": "{{count}} تسجيلات جديدة",
         "recordingsNew_other": "{{count}} تسجيلات جديدة"
+    },
+    "oneOffDues": {
+        "title": "دفعة مستحقة",
+        "dueOn": "تستحق في {{date}}",
+        "overdueSince": "متأخرة منذ {{date}}",
+        "pay": "ادفع الآن"
     }
 }

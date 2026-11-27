@@ -486,5 +486,11 @@
         "attendanceValue_other": "{{attended}} of {{count}} classes this month",
         "recordingsNew_one": "{{count}} new recording",
         "recordingsNew_other": "{{count}} new recordings"
+    },
+    "oneOffDues": {
+        "title": "Payment due",
+        "dueOn": "Due {{date}}",
+        "overdueSince": "Overdue since {{date}}",
+        "pay": "Pay now"
     }
 }

@@ -497,5 +497,11 @@
         "attendanceValue_other": "{{attended}} sur {{count}} cours ce mois-ci",
         "recordingsNew_one": "{{count}} nouvel enregistrement",
         "recordingsNew_other": "{{count}} nouveaux enregistrements"
+    },
+    "oneOffDues": {
+        "title": "Paiement dû",
+        "dueOn": "Échéance le {{date}}",
+        "overdueSince": "En retard depuis le {{date}}",
+        "pay": "Payer maintenant"
     }
 }

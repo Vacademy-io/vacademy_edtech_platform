@@ -486,5 +486,11 @@
         "attendanceValue_other": "इस महीने {{count}} में से {{attended}} क्लास",
         "recordingsNew_one": "{{count}} नई रिकॉर्डिंग",
         "recordingsNew_other": "{{count}} नई रिकॉर्डिंग"
+    },
+    "oneOffDues": {
+        "title": "भुगतान बकाया",
+        "dueOn": "नियत तिथि {{date}}",
+        "overdueSince": "{{date}} से अतिदेय",
+        "pay": "अभी भुगतान करें"
     }
 }

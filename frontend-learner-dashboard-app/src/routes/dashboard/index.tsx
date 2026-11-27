@@ -92,6 +92,7 @@ import { CleanerPlayDashboardHero } from "./-components/play/CleanerPlayDashboar
 import { cn } from "@/lib/utils";
 import { getChatbotSettings } from "@/services/chatbot-settings";
 import { MyMembershipWidget } from "./-components/MyMembershipWidget";
+import { OneOffDuesCard } from "./-components/OneOffDuesCard";
 import { MyBooksWidget } from "./-components/MyBooksWidget";
 import { MyOrdersWidget } from "./-components/MyOrdersWidget";
 import { shouldHidePaidPurchaseUI } from "@/utils/ios-iap-compliance";
@@ -1915,6 +1916,11 @@ export function DashboardComponent() {
                     {builtinFragments.NOTEBOOK_REVIEW}
                   </>
                 )}
+                {/* One-off charges due (e.g. a bridge class), with Pay. Renders null
+                    unless the institute switched the feature on and something is due. */}
+                <div className="empty:hidden">
+                  <OneOffDuesCard />
+                </div>
                 {/* Without a rail, announcements lead the main column (Fun draws its own) */}
                 {!hasRail && !isFunTheme && builtinFragments.PINS}
                 {/* Knowledge-base study companions. Renders null when the learner

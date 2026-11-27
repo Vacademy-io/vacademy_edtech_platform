@@ -456,6 +456,8 @@ export const GET_INVOICE_PUBLIC = (invoiceId: string) =>
   `${BASE_URL}/admin-core-service/open/v1/invoices/${invoiceId}`;
 export const INITIATE_INVOICE_PAYMENT = (invoiceId: string) =>
   `${BASE_URL}/admin-core-service/open/v1/invoices/${invoiceId}/initiate-payment`;
+// One-off charges the institute added for the calling learner (paid on /pay/invoice/<invoice_id>).
+export const ONE_OFF_DUES_MINE = `${BASE_URL}/admin-core-service/learner/v1/one-off-dues`;
 export const GET_PAYMENT_COMPLETION_STATUS = `${BASE_URL}/admin-core-service/open/v1/payment-log/status`;
 
 // ── Parent Portal ("My Child" monitoring) ────────────────────────────────────
