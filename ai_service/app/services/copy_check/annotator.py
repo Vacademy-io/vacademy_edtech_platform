@@ -3814,8 +3814,52 @@ _PANEL_RULE = (0.80, 0.80, 0.80)
 _PANEL_FEEDBACK_CHARS = 180
 
 
-# Where language_feedback.py starts the "Language:" paragraph of a feedback.
+# Where language_feedback.py starts the "Language:" paragraph of a feedback
+# ("भाषा:" on a copy whose errors are Hindi).
 _LANGUAGE_PARAGRAPH = "\n\nLanguage: "
+_LANGUAGE_PARAGRAPH_RE = re.compile(r"\n\n(?:Language|भाषा): ")
+
+
+def _before_language(feedback: str) -> str:
+    """A feedback without its language-errors paragraph."""
+    return _LANGUAGE_PARAGRAPH_RE.split(feedback, maxsplit=1)[0]
+
+
+# The panel's own words. A copy whose remarks are written in Hindi (a Hindi
+# or Sanskrit copy) gets a Hindi panel: an English "TEACHER COMMENTS ...
+# (Partial)" around Hindi remarks was the first thing a Hindi-medium teacher
+# pointed at.
+_PANEL_WORDS = {
+    "en": {"title": "TEACHER COMMENTS", "total": "Total", "q": "Q", "contd": "(contd.)",
+           "language": "Language:", "Correct": "Correct", "Partial": "Partial",
+           "Incorrect": "Incorrect", "Needs review": "Needs review",
+           "no_answer": "No answer found on the copy."},
+    "hi": {"title": "शिक्षक की टिप्पणी", "total": "कुल अंक", "q": "प्रश्न ", "contd": "(जारी)",
+           "language": "भाषा:", "Correct": "सही", "Partial": "आंशिक", "Incorrect": "गलत",
+           "Needs review": "जाँच आवश्यक", "no_answer": "कॉपी में इस प्रश्न का उत्तर नहीं मिला।"},
+}
+_DEVA_LETTER = re.compile("[ऀ-ॿ]")
+_LATIN_LETTER = re.compile("[A-Za-z]")
+
+
+def _panel_language(verdicts: list[dict[str, Any]]) -> str:
+    """"hi" when the remarks on this copy are mostly Hindi, else "en". Read from
+    the remarks themselves - the feedback and every cut's reason, without the
+    English "1 mark deducted because" lead - so a re-drawn copy gets the same
+    panel as the first one."""
+    from .remarks import reason_text
+
+    deva = latin = 0
+    for v in verdicts:
+        texts = [_before_language(str(v.get("feedback") or ""))]
+        texts += [reason_text(str(i.get("reason") or ""))
+                  for i in v.get("criteria_breakdown") or [] if isinstance(i, dict)]
+        for t in texts:
+            deva += len(_DEVA_LETTER.findall(t))
+            latin += len(_LATIN_LETTER.findall(t))
+    # A Devanagari letter carries about half an English letter's worth of a
+    # word (vowel signs are letters of their own), hence the 2x.
+    return "hi" if deva > 2 * latin else "en"
 
 
 def _panel_status(verdict: dict[str, Any]) -> str:
@@ -3830,18 +3874,19 @@ def _panel_status(verdict: dict[str, Any]) -> str:
     return "Partial"
 
 
-def _panel_heading(verdict: dict[str, Any], label: str) -> str:
+def _panel_heading(verdict: dict[str, Any], label: str, lang: str = "en") -> str:
     """"Q4(iv): 3/5 (Partial)" - on this template the marks are given here and
     nowhere on the student's copy."""
+    words = _PANEL_WORDS.get(lang, _PANEL_WORDS["en"])
     status = _panel_status(verdict)
     out_of = float(verdict.get("max_marks") or 0)
     if status == "Needs review" or out_of <= 0:
-        return f"{label}: {status}"
+        return f"{label}: {words[status]}"
     got = float(verdict.get("marks_awarded") or 0)
-    return f"{label}: {_fmt_marks(got)}/{_fmt_marks(out_of)} ({status})"
+    return f"{label}: {_fmt_marks(got)}/{_fmt_marks(out_of)} ({words[status]})"
 
 
-def _panel_deductions(verdict: dict[str, Any]) -> list[str]:
+def _panel_deductions(verdict: dict[str, Any], hindi: bool = False) -> list[str]:
     """One line per criterion that lost marks: "-1  Diagram not labelled"."""
     if (verdict.get("status") or "").upper() == "FAILED":
         return []
@@ -3850,13 +3895,25 @@ def _panel_deductions(verdict: dict[str, Any]) -> list[str]:
         if not isinstance(item, dict):
             continue
         try:
-            lost = round(float(item.get("max_marks") or 0) - float(item.get("marks") or 0), 2)
+            if hindi:
+                # The grader writes a criterion's ceiling as "max" (older rows
+                # and tests say "max_marks"); read as "max_marks" alone every
+                # cut looked free and the panel never said why a mark went.
+                # Hindi panels only for now: the English template is unchanged.
+                ceiling = item.get("max") if item.get("max") is not None else item.get("max_marks")
+                lost = round(float(ceiling or 0) - max(0.0, float(item.get("marks") or 0)), 2)
+            else:
+                lost = round(float(item.get("max_marks") or 0) - float(item.get("marks") or 0), 2)
         except (TypeError, ValueError):
             continue
         if lost <= 0:
             continue
-        why = (" ".join(str(item.get("reason") or "").split())
-               or str(item.get("criteria_name") or "").strip())
+        if hindi:
+            from .remarks import reason_text
+            why = reason_text(str(item.get("reason") or "")) or str(item.get("criteria_name") or "").strip()
+        else:
+            why = (" ".join(str(item.get("reason") or "").split())
+                   or str(item.get("criteria_name") or "").strip())
         lines.append(f"-{_fmt_marks(lost)}  {_short_feedback(why)}".rstrip())
     return lines
 
@@ -3864,18 +3921,34 @@ def _panel_deductions(verdict: dict[str, Any]) -> list[str]:
 def _same_remark(a: str, b: str) -> bool:
     """A deduction's remark on the copy usually repeats its criterion's reason.
     A short remark ("Good") that merely occurs inside a reason is not a repeat."""
-    na = re.sub(r"[^0-9a-z]+", " ", a.lower()).strip()
-    nb = re.sub(r"[^0-9a-z]+", " ", b.lower()).strip()
+    # Devanagari kept: a Hindi remark that repeats its cut's reason is a repeat too.
+    na = re.sub(r"[^0-9a-zऀ-ॿ]+", " ", a.lower()).strip()
+    nb = re.sub(r"[^0-9a-zऀ-ॿ]+", " ", b.lower()).strip()
     short, long_ = sorted((na, nb), key=len)
     return len(short) >= 20 and short in long_
 
 
-def _panel_label(verdict: dict[str, Any], labels: dict[str, str]) -> str:
+def _panel_label(verdict: dict[str, Any], labels: dict[str, str], lang: str = "en") -> str:
+    q = _PANEL_WORDS.get(lang, _PANEL_WORDS["en"])["q"]
     label = (labels.get(str(verdict.get("question_id"))) or "").strip()
     if not label:
         number = verdict.get("question_number")
-        return f"Q{number}" if number is not None else "Q"
-    return f"Q{label}" if label[0].isdigit() else label
+        return f"{q}{number}" if number is not None else q.strip()
+    return f"{q}{label}" if label[0].isdigit() else label
+
+
+def _panel_text(page: Any, x: float, y: float, right: float, text: str, size: float,
+                colour, fontname: str) -> None:
+    """One line of the panel with its baseline at `y`: Hindi through the
+    shaper, Latin in the panel's type."""
+    import fitz
+
+    if _needs_shaping(text):
+        if _deva_write(page, fitz.Rect(x, y - size * 1.05, right, y + size * 0.4),
+                       [text], size, colour, scale=1.0):
+            return
+        text = _latin1(text).strip()
+    page.insert_text(fitz.Point(x, y), _latin1(text), fontname=fontname, fontsize=size, color=colour)
 
 
 def _short_feedback(text: str) -> str:
@@ -3934,6 +4007,8 @@ def _draw_comment_panels(doc: Any, panels: dict[int, Any],
     """
     import fitz
 
+    lang = _panel_language(verdicts)
+    words = _PANEL_WORDS[lang]
     first_page: dict[int, int] = {}
     for (pno, v_idx) in sorted(anchors):
         first_page.setdefault(v_idx, pno)
@@ -3951,19 +4026,37 @@ def _draw_comment_panels(doc: Any, panels: dict[int, Any],
                 continue
             if first and not said and verdict.get("feedback"):
                 # The grader's own words; the language list is typed below.
-                said = [_short_feedback(str(verdict["feedback"]).split(_LANGUAGE_PARAGRAPH)[0])]
-            cuts = _panel_deductions(verdict) if first else []
+                said = [_short_feedback(_before_language(str(verdict["feedback"])))]
+            cuts = _panel_deductions(verdict, hindi=lang == "hi") if first else []
             if cuts:
                 # The remark written at a deduction usually repeats its reason:
                 # typed once, on the "-1" line that says what it cost.
                 said = cuts + [s for s in said if not any(_same_remark(s, c) for c in cuts)]
             if fixes and (p, v_idx) in (listed or ()):
-                said = list(said) + ["Language:"] + [f"{i}. {f}" for i, f in enumerate(fixes, 1)]
+                said = list(said) + [words["language"]] + [f"{i}. {f}" for i, f in enumerate(fixes, 1)]
             elif fixes:
-                said = list(said) + ["Language: " + "; ".join(fixes)]
-            label = _panel_label(verdict, labels)
-            heading = _panel_heading(verdict, label) if first else f"{label} (contd.)"
-            entries.append((y, v_idx, _latin1(heading), [_script_safe(s) for s in said if s]))
+                said = list(said) + [f"{words['language']} " + "; ".join(fixes)]
+            label = _panel_label(verdict, labels, lang)
+            heading = _panel_heading(verdict, label, lang) if first else f"{label} {words['contd']}"
+            heading = _script_safe(heading) if lang == "hi" else _latin1(heading)
+            entries.append((y, v_idx, heading, [_script_safe(s) for s in said if s]))
+        if pno == min(panels) and lang == "hi":
+            # A question with nothing marked on any page (no answer found)
+            # is otherwise left out of the panel, so its marks and the reason
+            # appear nowhere on the copy. Listed first, at the top of the
+            # first page, in question order. Hindi panels only for now (the
+            # English template is unchanged); a choice question that does
+            # not count is never listed.
+            for v_idx, verdict in enumerate(verdicts):
+                if v_idx in first_page or verdict.get("counted", True) is False:
+                    continue
+                said = [_short_feedback(_before_language(str(verdict.get("feedback") or "")))
+                        or words["no_answer"]]
+                cuts = _panel_deductions(verdict, hindi=True)
+                said = cuts + [s for s in said if s and not any(_same_remark(s, c) for c in cuts)]
+                label = _panel_label(verdict, labels, lang)
+                entries.append((0.0, v_idx, _script_safe(_panel_heading(verdict, label, lang)),
+                                [_script_safe(s) for s in said if s]))
         page = doc[pno]
         k = max(1.0, min(4.0, panel.width / (595.0 * _PANEL_RATIO)))
         pad = 14.0 * k
@@ -3973,14 +4066,13 @@ def _draw_comment_panels(doc: Any, panels: dict[int, Any],
         page.draw_line(fitz.Point(panel.x0 + 1, panel.y0), fitz.Point(panel.x0 + 1, panel.y1),
                        color=_PANEL_RULE, width=0.8 * k)
         head_size = 13.0 * k
-        page.insert_text(fitz.Point(x0, top + head_size), "TEACHER COMMENTS",
-                         fontname="hebo", fontsize=head_size, color=_PANEL_HEADING)
+        _panel_text(page, x0, top + head_size, x1, words["title"], head_size, _PANEL_HEADING, "hebo")
         first_y = top + head_size * 2.2
         if total is not None and pno == min(panels):
             total_size = 15.0 * k
-            page.insert_text(fitz.Point(x0, first_y + total_size * 0.4),
-                             _latin1(f"Total: {_fmt_marks(total[0])}/{_fmt_marks(total[1])}"),
-                             fontname="hebo", fontsize=total_size, color=_PANEL_HEADING)
+            _panel_text(page, x0, first_y + total_size * 0.4, x1,
+                        f"{words['total']}: {_fmt_marks(total[0])}/{_fmt_marks(total[1])}",
+                        total_size, _PANEL_HEADING, "hebo")
             first_y += total_size * 2.0
         if not entries:
             continue
@@ -4015,8 +4107,7 @@ def _draw_comment_panels(doc: Any, panels: dict[int, Any],
             if y + label_size > bottom:
                 break
             y += label_size
-            page.insert_text(fitz.Point(x0, y), heading, fontname="hebo",
-                             fontsize=label_size, color=_PANEL_HEADING)
+            _panel_text(page, x0, y, x1, heading, label_size, _PANEL_HEADING, "hebo")
             y += label_size * 0.35
             for line in body:
                 if y + body_size * 1.3 > bottom:
