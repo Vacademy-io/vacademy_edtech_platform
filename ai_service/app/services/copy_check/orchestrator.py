@@ -12,6 +12,7 @@ import asyncio
 import copy
 import logging
 import os
+import re
 import uuid
 from typing import Any, Optional
 
@@ -140,6 +141,47 @@ def _looks_unattempted(raw: dict[str, Any]) -> bool:
         and not str(raw.get("extracted_answer") or "").strip()
         and not raw.get("annotations")
     )
+
+
+_PART_MISSING = re.compile(r"\b(not attempted|unattempted|not answered|no answer|not found)\b", re.IGNORECASE)
+
+
+def _parts_not_found(raw: dict[str, Any]) -> bool:
+    """The grader found part of the answer but not all of it: it listed the
+    missing parts (`parts_not_found`, asked for when it sees only some pages),
+    or a rubric line got 0 as "not attempted". On a narrowed call the missing
+    part may be on a page the grader was not shown - a student answered 1(b)
+    on page 1 and 1(a) after Q5, on the last page, and 1(a) scored 0 as "not
+    attempted anywhere in the copy"."""
+    if not isinstance(raw, dict):
+        return False
+    listed = raw.get("parts_not_found")
+    if isinstance(listed, list) and any(str(x or "").strip() for x in listed):
+        return True
+    for item in raw.get("criteria_breakdown") or []:
+        if not isinstance(item, dict):
+            continue
+        try:
+            marks = float(item.get("marks") or 0)
+        except (TypeError, ValueError):
+            continue
+        if marks == 0 and _PART_MISSING.search(str(item.get("reason") or "")):
+            return True
+    return False
+
+
+def _wider_reading(narrow: dict[str, Any], wide: Any) -> dict[str, Any]:
+    """The whole-copy grading, unless it credits less than the narrowed one:
+    seeing more pages can only find more of the answer, so a lower mark is
+    noise, not evidence."""
+    if not isinstance(wide, dict):
+        return narrow
+    try:
+        if float(wide.get("marks_awarded") or 0) < float(narrow.get("marks_awarded") or 0):
+            return narrow
+    except (TypeError, ValueError):
+        return narrow
+    return wide
 
 
 def _render_client() -> CopyCheckRenderClient:
@@ -1050,6 +1092,14 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
                         qid, page_ids,
                     )
                     raw = await grader.grade_question(q, rubric, layout_map, preferred_model)
+                elif narrowed and _parts_not_found(raw):
+                    # Some parts found, some not: a part answered out of order
+                    # (1(a) after Q5) sits on a page this call did not show.
+                    logger.info(
+                        "Q%s: part of the answer not found on located pages %s; re-grading against the full copy",
+                        qid, page_ids,
+                    )
+                    raw = _wider_reading(raw, await grader.grade_question(q, rubric, layout_map, preferred_model))
                 verdict = attach_criteria_max(validate_and_cap(raw, q, layout_map), rubric)
                 pin_later = False
                 if expected_rows:

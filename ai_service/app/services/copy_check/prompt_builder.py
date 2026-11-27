@@ -381,7 +381,11 @@ def _transcript_for_prompt(layout_map: dict[str, Any], page_ids: list[str] | Non
             out.append(
                 f"NOTE: only the {len(shown)} page(s) where this answer was located are shown "
                 f"({', '.join(str(p.get('page_id')) for p in shown)} of {len(pages)} pages). "
-                "If the answer is not on these pages, return verdict \"unattempted\" - do not guess."
+                "If the answer is not on these pages, return verdict \"unattempted\" - do not guess. "
+                "If only some parts of it are here (e.g. (b) but not (a)), grade the parts shown and "
+                "add \"parts_not_found\": [\"<label of each missing part>\"] to your JSON - the missing "
+                "part may be written on a page you are not shown, so never say it is missing from "
+                "the whole copy."
             )
             pages = shown
     for page in pages:
