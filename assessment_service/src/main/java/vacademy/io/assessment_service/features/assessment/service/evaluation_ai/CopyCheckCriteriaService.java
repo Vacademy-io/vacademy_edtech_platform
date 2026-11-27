@@ -143,6 +143,61 @@ public class CopyCheckCriteriaService {
         throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "the criteria could not be saved; try again");
     }
 
+    /** What the Add Questions step writes when it has nothing to say ("Evaluate based on the following 3 criteria."). */
+    private static final java.util.regex.Pattern STEP_BOILERPLATE =
+            java.util.regex.Pattern.compile("(?i)\\s*evaluate based on the following \\d+ criteria\\.?\\s*");
+
+    /**
+     * Makes the criteria a teacher set on the Add Questions step what the AI copy check marks
+     * those questions by. The copy check reads only this store, never the question's own
+     * {@code evaluation_criteria_json}, so criteria saved on the question alone were ignored by
+     * every check. {@code criteriaByQuestion} = question_id -> rubric JSON as the step sends it;
+     * questions not on the paper and anything that is not a rubric are skipped. The step has no
+     * field for marking instructions or keywords, so those of the rubric being replaced are kept
+     * (an answer key's examiner rules live there). Returns how many questions were saved.
+     */
+    public int saveQuestionCriteria(String instituteId, String assessmentId, Map<String, String> criteriaByQuestion) {
+        if (criteriaByQuestion == null || criteriaByQuestion.isEmpty()) return 0;
+        Set<String> onPaper = new java.util.HashSet<>();
+        for (PaperQuestion q : paperQuestions(assessmentId)) onPaper.add(q.questionId());
+        JsonNode stored = aiServiceClient.fetchRubric(assessmentId, instituteId).orElse(null);
+        JsonNode previous = stored == null ? null : stored.path("rubric");
+        ObjectNode rubrics = objectMapper.createObjectNode();
+        for (Map.Entry<String, String> e : criteriaByQuestion.entrySet()) {
+            JsonNode in = readJson(e.getValue());
+            if (!onPaper.contains(e.getKey()) || in == null || !in.isObject()
+                    || !in.path("rubric").isArray() || in.path("rubric").isEmpty()) continue;
+            rubrics.set(e.getKey(), keepStoredExtras((ObjectNode) in.deepCopy(),
+                    previous == null ? null : previous.get(e.getKey())));
+        }
+        if (rubrics.isEmpty()) return 0;
+        save(instituteId, assessmentId, rubrics, null);
+        return rubrics.size();
+    }
+
+    /** Instructions, partial marking and keywords of the stored rubric, where the new one has none. */
+    ObjectNode keepStoredExtras(ObjectNode in, JsonNode previous) {
+        if (previous == null || !previous.isObject()) return in;
+        String instructions = in.path("evaluation_instructions").asText("");
+        String kept = previous.path("evaluation_instructions").asText("");
+        if ((instructions.isBlank() || STEP_BOILERPLATE.matcher(instructions).matches()) && !kept.isBlank()) {
+            in.put("evaluation_instructions", kept);
+        }
+        if (!in.has("partial_marking_enabled") && previous.has("partial_marking_enabled")) {
+            in.set("partial_marking_enabled", previous.get("partial_marking_enabled"));
+        }
+        Map<String, JsonNode> keywords = new LinkedHashMap<>();
+        for (JsonNode c : previous.path("rubric")) {
+            keywords.putIfAbsent(c.path("criteria_name").asText("").trim().toLowerCase(), c.path("keywords"));
+        }
+        for (JsonNode c : in.path("rubric")) {
+            if (!(c instanceof ObjectNode item) || (item.path("keywords").isArray() && !item.path("keywords").isEmpty())) continue;
+            JsonNode old = keywords.get(item.path("criteria_name").asText("").trim().toLowerCase());
+            if (old != null && old.isArray() && !old.isEmpty()) item.set("keywords", old);
+        }
+        return in;
+    }
+
     /**
      * The rubric as ai_service stores it: {max_marks, partial_marking_enabled,
      * evaluation_instructions, rubric: [{criteria_name, max_marks, keywords, evaluation_guidelines}]}.

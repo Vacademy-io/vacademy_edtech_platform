@@ -7,6 +7,7 @@ import java.util.HashSet;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.NullNode;
 import org.springframework.http.HttpStatus;
 import vacademy.io.assessment_service.features.question_core.util.CbeConfigRedactor;
 import vacademy.io.assessment_service.features.assessment.enums.AssessmentStatus;
@@ -58,6 +59,14 @@ public class AssessmentLinkQuestionsManager {
     @Autowired
     AddQuestionPaperFromImportManager addQuestionPaperFromImportManager;
 
+    @Autowired
+    vacademy.io.assessment_service.features.question_core.repository.QuestionRepository questionRepository;
+
+    @Autowired
+    vacademy.io.assessment_service.features.assessment.service.evaluation_ai.CopyCheckCriteriaService copyCheckCriteriaService;
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AssessmentLinkQuestionsManager.class);
+
     @Transactional
     public ResponseEntity<AssessmentSaveResponseDto> saveQuestionsToAssessment(CustomUserDetails user, AddQuestionsAssessmentDetailsDTO addQuestionsAssessmentDetailsDTO, String assessmentId, String instituteId, String type) {
 
@@ -86,9 +95,66 @@ public class AssessmentLinkQuestionsManager {
 
         addOrUpdateTestDurationData(assessmentOptional.get(), addQuestionsAssessmentDetailsDTO.getTestDuration());
 
+        saveQuestionCriteria(addQuestionsAssessmentDetailsDTO, assessmentId, instituteId);
+
 
         AssessmentSaveResponseDto assessmentSaveResponseDto = new AssessmentSaveResponseDto(assessmentId, assessmentOptional.get().getStatus());
         return ResponseEntity.ok(assessmentSaveResponseDto);
+    }
+
+    /**
+     * The evaluation criteria set per question on the Add Questions step. The request carried
+     * them but this DTO had no field for them, so they were dropped: the dialog said "Criteria
+     * saved", Update sent them, and after a reload every question was "Not Added" again.
+     * Saved on the question and as what the AI copy check marks it by (that store is all the
+     * copy check reads). Only questions on this paper whose criteria changed are written, so
+     * re-sending a question for a marks change never overwrites criteria edited elsewhere. The
+     * copy-check store is best effort: the question's criteria are saved even when it is down.
+     */
+    void saveQuestionCriteria(AddQuestionsAssessmentDetailsDTO dto, String assessmentId, String instituteId) {
+        Map<String, SectionAddEditRequestDto.QuestionAndMarking> sent = new LinkedHashMap<>();
+        for (List<SectionAddEditRequestDto> sections : Arrays.asList(dto.getAddedSections(), dto.getUpdatedSections())) {
+            if (sections == null) continue;
+            for (SectionAddEditRequestDto section : sections) {
+                if (section.getQuestionAndMarking() == null) continue;
+                for (SectionAddEditRequestDto.QuestionAndMarking qm : section.getQuestionAndMarking()) {
+                    if (qm.getQuestionId() == null || Boolean.TRUE.equals(qm.getIsDeleted())
+                            || qm.getEvaluationCriteriaJson() == null || qm.getEvaluationCriteriaJson().isBlank()) continue;
+                    sent.put(qm.getQuestionId(), qm);
+                }
+            }
+        }
+        if (sent.isEmpty()) return;
+        Map<String, JsonNode> current = new HashMap<>();
+        for (var q : copyCheckCriteriaService.paperQuestions(assessmentId)) {
+            current.put(q.questionId(), q.questionCriteria() == null ? NullNode.getInstance() : q.questionCriteria());
+        }
+        Map<String, String> changed = new LinkedHashMap<>();
+        for (SectionAddEditRequestDto.QuestionAndMarking qm : sent.values()) {
+            JsonNode criteria = readCriteria(qm.getEvaluationCriteriaJson());
+            JsonNode before = current.get(qm.getQuestionId());
+            if (criteria == null || before == null || criteria.equals(before)) continue;
+            String templateId = qm.getCriteriaTemplateId() == null || qm.getCriteriaTemplateId().isBlank()
+                    ? null : qm.getCriteriaTemplateId();
+            questionRepository.updateEvaluationCriteria(qm.getQuestionId(), qm.getEvaluationCriteriaJson(), templateId);
+            changed.put(qm.getQuestionId(), qm.getEvaluationCriteriaJson());
+        }
+        if (changed.isEmpty()) return;
+        try {
+            copyCheckCriteriaService.saveQuestionCriteria(instituteId, assessmentId, changed);
+        } catch (Exception e) {
+            log.warn("[criteria] saved on {} question(s) of {} but not as the AI check's criteria: {}",
+                    changed.size(), assessmentId, e.getMessage());
+        }
+    }
+
+    private static JsonNode readCriteria(String json) {
+        try {
+            JsonNode node = MARKING_READER.readTree(json);
+            return node != null && node.isObject() ? node : null;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /**

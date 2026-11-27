@@ -38,5 +38,9 @@ public class SectionAddEditRequestDto {
         private Boolean isAdded;
         private Boolean isDeleted;
         private Boolean isUpdated;
+        // The question's evaluation criteria from the Add Questions step (rubric JSON) and the
+        // template they came from. Null = not sent, leave the question's criteria as they are.
+        private String evaluationCriteriaJson;
+        private String criteriaTemplateId;
     }
 }
