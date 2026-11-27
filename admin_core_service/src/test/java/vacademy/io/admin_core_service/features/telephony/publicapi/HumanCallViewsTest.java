@@ -188,7 +188,14 @@ class HumanCallViewsTest {
         Map<String, Object> disposition = (Map<String, Object>) m.get("disposition");
         assertEquals("Interested", disposition.get("label"));
         assertEquals("api", disposition.get("set_by"));
-        assertEquals(Map.of("credits", 0.0, "billed", true, "note", "billed_by_provider"), m.get("cost"));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> cost = (Map<String, Object>) m.get("cost");
+        assertEquals(List.of("credits", "billed", "balance_after", "deductions", "note"), List.copyOf(cost.keySet()));
+        assertEquals(0.0, cost.get("credits"));
+        assertEquals(true, cost.get("billed"));
+        assertNull(cost.get("balance_after"));
+        assertEquals(List.of(), cost.get("deductions"));
+        assertEquals("billed_by_provider", cost.get("note"));
         assertEquals(Map.of("status", "not_requested"), m.get("analysis"));
         assertFalse(m.containsKey("call_log_id"));
         assertFalse(m.containsKey("no_answer_by"));
@@ -199,10 +206,17 @@ class HumanCallViewsTest {
         TelephonyCallLog l = log("PLIVO", "COMPLETED", Instant.now().minusSeconds(300));
         l.setDurationSeconds(95);
         l.setCreditsBilledAt(Instant.now());
-        when(jdbc.queryForObject(anyString(), any(MapSqlParameterSource.class), eq(BigDecimal.class)))
-                .thenReturn(new BigDecimal("2.5"));
+        when(jdbc.queryForList(contains("credit_transactions"), any(MapSqlParameterSource.class)))
+                .thenReturn(List.of(Map.of("amount", new BigDecimal("-2.5000"), "balance_after", new BigDecimal("97.50"),
+                        "request_type", "voice_call_out", "external_reference_id", "voice_call:" + l.getId(),
+                        "charged_at", Timestamp.from(Instant.parse("2026-11-27T10:00:00Z")))));
         HumanCallViews.State s = new HumanCallViews.State("completed", true, null, null, l, Instant.now());
-        assertEquals(Map.of("credits", 2.5, "billed", true), views.cost("inst-1", l, s));
+        Map<String, Object> cost = views.cost("inst-1", l, s);
+        assertEquals(2.5, cost.get("credits"));
+        assertEquals(true, cost.get("billed"));
+        assertEquals(97.5, cost.get("balance_after"));
+        assertEquals(List.of(Map.of("type", "voice", "credits", 2.5, "balance_after", 97.5,
+                "charged_at", "2026-11-27T10:00:00Z")), cost.get("deductions"));
         l.setCreditsBilledAt(null);
         assertEquals(false, views.cost("inst-1", l, s).get("billed"));
         assertNull(views.cost("inst-1", l, new HumanCallViews.State("in_progress", false, null, null, l, null)));

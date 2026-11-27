@@ -34,6 +34,7 @@ public class PublicAiCallingApiController {
     private final AiCallingWebhookService webhooks;
     private final AiCallingUsageService usage;
     private final HumanCallApiService humanCalls;
+    private final InboundCallApiService inboundCalls;
 
     /** Every route of this API, for telling a wrong method (405) from an unknown path (404). */
     private static final java.util.regex.Pattern KNOWN_PATHS = java.util.regex.Pattern.compile(
@@ -62,8 +63,10 @@ public class PublicAiCallingApiController {
             @RequestParam(value = "external_id", required = false) String externalId,
             @RequestParam(value = "created_after", required = false) String createdAfter,
             @RequestParam(value = "limit", required = false, defaultValue = "25") int limit,
-            @RequestParam(value = "starting_after", required = false) String startingAfter) {
+            @RequestParam(value = "starting_after", required = false) String startingAfter,
+            @RequestParam(value = "direction", required = false) String direction) {
         var p = auth.authenticate(http, InstituteApiKeyService.SCOPE_CALLS_READ);
+        String dir = InboundCallApiService.normaliseDirection(direction);
         Instant since = null;
         if (createdAfter != null && !createdAfter.isBlank()) {
             try {
@@ -72,18 +75,28 @@ public class PublicAiCallingApiController {
                 throw AiCallingApiException.invalid("created_after must be an ISO-8601 instant, e.g. 2026-10-13T09:00:00Z.");
             }
         }
-        return ok(http, HttpStatus.OK, service.listCalls(p, batchId, externalId, since, limit, startingAfter));
+        if (InboundCallApiService.DIRECTION_OUTBOUND.equals(dir)) {
+            return ok(http, HttpStatus.OK, service.listCalls(p, batchId, externalId, since, limit, startingAfter));
+        }
+        // batch_id and external_id name calls the client placed; an inbound call has neither.
+        if ((batchId != null && !batchId.isBlank()) || (externalId != null && !externalId.isBlank())) {
+            throw AiCallingApiException.invalid("batch_id and external_id filter outbound calls only; "
+                    + "leave direction out (or set it to outbound) to use them.");
+        }
+        return ok(http, HttpStatus.OK, inboundCalls.list(p, dir, since, limit, startingAfter));
     }
 
     @GetMapping("/calls/{id}")
     public ResponseEntity<Map<String, Object>> getCall(HttpServletRequest http, @PathVariable String id) {
         var p = auth.authenticate(http, InstituteApiKeyService.SCOPE_CALLS_READ);
+        if (InboundCallApiService.isInboundId(id)) return ok(http, HttpStatus.OK, inboundCalls.get(p, id));
         return ok(http, HttpStatus.OK, service.getCall(p, id));
     }
 
     @PostMapping("/calls/{id}/cancel")
     public ResponseEntity<Map<String, Object>> cancel(HttpServletRequest http, @PathVariable String id) {
         var p = auth.authenticate(http, InstituteApiKeyService.SCOPE_CALLS_WRITE);
+        if (InboundCallApiService.isInboundId(id)) throw inboundCalls.notCancelable(p, id);
         return ok(http, HttpStatus.OK, service.cancel(p, id));
     }
 

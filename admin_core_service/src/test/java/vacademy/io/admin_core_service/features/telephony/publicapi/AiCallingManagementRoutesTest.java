@@ -144,7 +144,7 @@ class AiCallingManagementRoutesTest {
 
     @Test
     void theFallbackKnowsTheNewPaths() {
-        PublicAiCallingApiController legacy = new PublicAiCallingApiController(auth, null, null, null, null);
+        PublicAiCallingApiController legacy = new PublicAiCallingApiController(auth, null, null, null, null, null);
         for (String path : List.of("/counsellors/u-1", "/agents/a-1", "/agents/a-1/enable", "/agents/a-1/disable",
                 "/voices", "/settings/default-agent", "/numbers", "/numbers/n-1/agent")) {
             MockHttpServletRequest r = new MockHttpServletRequest("TRACE", "/admin-core-service/open/ai-calling/v1" + path);

@@ -33,4 +33,4 @@ for call in all_calls(batch_id="batch_2b9e0c1d4f6a8e7c5b3a1d0f"):
     print(call["id"], call["status"])
 ```
 
-Combine with the filters `batch_id`, `external_id` and `created_after`.
+Combine with the filters `direction`, `batch_id`, `external_id` and `created_after`. With `direction=all`, calls you placed (`call_…`) and [inbound calls](/concepts/inbound-calls) (`inb_…`) share one list, and `starting_after` takes either kind of id.

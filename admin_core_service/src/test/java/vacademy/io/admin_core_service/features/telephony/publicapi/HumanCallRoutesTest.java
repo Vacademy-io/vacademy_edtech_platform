@@ -26,7 +26,7 @@ class HumanCallRoutesTest {
     private final AiCallingApiAuth auth = mock(AiCallingApiAuth.class);
     private final HumanCallApiService humanCalls = mock(HumanCallApiService.class);
     private final PublicAiCallingApiController controller =
-            new PublicAiCallingApiController(auth, null, null, null, humanCalls);
+            new PublicAiCallingApiController(auth, null, null, null, humanCalls, null);
 
     HumanCallRoutesTest() {
         when(auth.authenticate(any(), any())).thenAnswer(i -> {

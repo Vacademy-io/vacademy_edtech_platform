@@ -275,44 +275,117 @@ public class AiCallingUsageService {
     // ── Per call ─────────────────────────────────────────────────────────────────
 
     /**
-     * What one call cost: {credits, billed}. null while the call has not ended (nothing to
-     * know yet); 0 for a test call or a call that did not connect (never billed).
+     * What one call cost: {credits, billed, balance_after, deductions}. null while the call
+     * has not ended (nothing to know yet); 0 for a test call or a call that did not connect
+     * (never billed).
      */
     public Map<String, Object> costOfCall(AiCallApiCall c, TelephonyCallLog l, AiCallResult r) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        if (c.isTestMode()) {
-            m.put("credits", 0.0);
-            m.put("billed", true);
-            return m;
-        }
+        return costOf(c.getInstituteId(), c.isTestMode(), l, r);
+    }
+
+    /**
+     * The same rule for a call that has no API row (an inbound call answered on one of the
+     * institute's numbers): its voice leg and AI leg are charged under the same ledger keys.
+     */
+    public Map<String, Object> costOfCallLog(String instituteId, TelephonyCallLog l, AiCallResult r) {
+        return costOf(instituteId, false, l, r);
+    }
+
+    private Map<String, Object> costOf(String instituteId, boolean test, TelephonyCallLog l, AiCallResult r) {
+        if (test) return settledAtZero();
         if (l == null || l.getStatus() == null) return null;
         String status = l.getStatus();
         if (!"COMPLETED".equals(status)) {
-            if (Set.of("NO_ANSWER", "BUSY", "FAILED", "CANCELLED").contains(status)) {
-                m.put("credits", 0.0);
-                m.put("billed", true);
-                return m;
-            }
-            return null;
+            return Set.of("NO_ANSWER", "BUSY", "FAILED", "CANCELLED").contains(status) ? settledAtZero() : null;
         }
         List<String> refs = new ArrayList<>(List.of("voice_call:" + l.getId(), "ai_call:" + l.getId()));
         if (r != null && r.getCallUuid() != null) refs.add("ai_call:uuid:" + r.getProvider() + ":" + r.getCallUuid());
-        BigDecimal credits = BigDecimal.ZERO;
+        Ledger ledger = readLedger(jdbc, instituteId, refs);
+        if (ledger == null) return null;
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("credits", round(ledger.credits()));
+        m.put("billed", !voiceLegPending(l) && !aiLegPending(r));
+        ledger.putInto(m);
+        return m;
+    }
+
+    /** A call that is never charged: a test call, or one that did not connect. */
+    static Map<String, Object> settledAtZero() {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("credits", 0.0);
+        m.put("billed", true);
+        m.put("balance_after", null);
+        m.put("deductions", List.of());
+        return m;
+    }
+
+    /**
+     * The wallet charges behind one call, oldest first, read from credit_transactions (the
+     * ledger the dashboard's AI Credits History lists). Each USAGE_DEDUCTION row carries the
+     * balance it left behind (balance_after), so a call reports what each charge took and
+     * what the wallet held right after it. A call is charged in up to two legs, voice
+     * (talk time on a Vacademy-paid line) and AI (the agent's minutes), each its own row.
+     */
+    public record Ledger(BigDecimal credits, Double balanceAfter, List<Map<String, Object>> deductions) {
+
+        /** Adds balance_after and deductions after the fields a cost block already has. */
+        void putInto(Map<String, Object> m) {
+            m.put("balance_after", balanceAfter);
+            m.put("deductions", deductions);
+        }
+    }
+
+    /** The ledger rows under these keys; null when the lookup fails (the cost is then unknown). */
+    static Ledger readLedger(NamedParameterJdbcTemplate jdbc, String instituteId, List<String> refs) {
+        List<Map<String, Object>> rows;
         try {
-            BigDecimal sum = jdbc.queryForObject("""
-                    SELECT COALESCE(SUM(ABS(amount)), 0) FROM credit_transactions
+            // description is not selected: it names the carrier and engine
+            // ("Call minutes (PLIVO INBOUND) · 5 x 30s"), which the client API never shows.
+            rows = jdbc.queryForList("""
+                    SELECT amount, balance_after, request_type, external_reference_id,
+                           created_at AT TIME ZONE 'UTC' AS charged_at
+                      FROM credit_transactions
                      WHERE institute_id = :i AND transaction_type = 'USAGE_DEDUCTION'
                        AND external_reference_id IN (:refs)
-                    """, new MapSqlParameterSource().addValue("i", c.getInstituteId()).addValue("refs", refs),
-                    BigDecimal.class);
-            if (sum != null) credits = sum;
+                     ORDER BY created_at ASC, id ASC
+                    """, new MapSqlParameterSource().addValue("i", instituteId).addValue("refs", refs));
         } catch (RuntimeException e) {
-            log.warn("ai-calling-api: cost lookup failed for {}: {}", c.getId(), e.getMessage());
+            log.warn("ai-calling-api: credit ledger lookup failed for {}: {}", refs, e.getMessage());
             return null;
         }
-        m.put("credits", round(credits));
-        m.put("billed", !voiceLegPending(l) && !aiLegPending(r));
-        return m;
+        BigDecimal total = BigDecimal.ZERO;
+        Double balanceAfter = null;
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (Map<String, Object> row : rows) {
+            BigDecimal amount = decimal(row.get("amount")).abs();
+            total = total.add(amount);
+            Double after = row.get("balance_after") == null ? null : round(decimal(row.get("balance_after")));
+            balanceAfter = after;
+            Map<String, Object> d = new LinkedHashMap<>();
+            d.put("type", legOf((String) row.get("request_type"), (String) row.get("external_reference_id")));
+            d.put("credits", round(amount));
+            d.put("balance_after", after);
+            Object at = row.get("charged_at");
+            d.put("charged_at", at instanceof Timestamp t ? t.toInstant().toString()
+                    : at instanceof OffsetDateTime o ? o.toInstant().toString() : null);
+            out.add(d);
+        }
+        return new Ledger(total, balanceAfter, out);
+    }
+
+    /** voice | ai, from the charge's request type (voice_call_in, ai_call_out, …), else its key. */
+    static String legOf(String requestType, String ref) {
+        String s = requestType != null && !requestType.isBlank() ? requestType : ref == null ? "" : ref;
+        s = s.toLowerCase(Locale.ROOT);
+        if (s.startsWith("voice_call")) return "voice";
+        if (s.startsWith("ai_call")) return "ai";
+        return "other";
+    }
+
+    private static BigDecimal decimal(Object v) {
+        if (v == null) return BigDecimal.ZERO;
+        if (v instanceof BigDecimal b) return b;
+        return new BigDecimal(String.valueOf(v));
     }
 
     /**
