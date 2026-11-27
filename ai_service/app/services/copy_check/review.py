@@ -94,6 +94,15 @@ def flag(verdict: dict[str, Any], layout_map: dict[str, Any]) -> list[str]:
     it is already sent for manual marking."""
     if str(verdict.get("status") or "").upper() == "FAILED":
         return list(verdict.get("review_reasons") or [])
+    # A row the grader itself could not read for sure gets no cross: the prompt
+    # asks for none, and a cross there is the "marked wrong" the teacher review
+    # exists to avoid. The cut stays in the marks until the teacher decides.
+    unsure_rows = {str(r.get("row")) for r in verdict.get("unclear_reads") or [] if r.get("row")}
+    if unsure_rows and verdict.get("annotations"):
+        verdict["annotations"] = [
+            a for a in verdict["annotations"]
+            if not (isinstance(a, dict) and a.get("style") == "cross"
+                    and str(a.get("target")) in unsure_rows)]
     for read in verdict.get("unclear_reads") or []:
         part = f" in {read['part']}" if read.get("part") else ""
         add_reason(verdict, f"Handwriting unclear{part}: {read.get('why')}")

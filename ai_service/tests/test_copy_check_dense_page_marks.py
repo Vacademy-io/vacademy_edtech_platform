@@ -10,6 +10,7 @@ import numpy as np
 import pytest
 
 from app.services.copy_check import annotator as A
+from app.services.copy_check import review
 
 
 @pytest.fixture
@@ -86,6 +87,17 @@ def test_a_score_is_never_squeezed_below_a_readable_size(monkeypatch):
            fitz.Rect(0, y - hole, x - hole, y + hole), fitz.Rect(x + hole, y - hole, 400, y + hole)])
     (_, radius) = badges.pop()
     assert radius >= 0.8 * base
+
+
+def test_no_cross_on_a_row_the_grader_could_not_read():
+    v = {"status": "COMPLETED", "criteria_breakdown": [],
+         "unclear_reads": [{"part": "5(b)(i)", "row": "p5_r28", "why": "margin word"}],
+         "annotations": [{"style": "cross", "target": "p5_r28", "page_id": "p5"},
+                         {"style": "cross", "target": "p5_r30", "page_id": "p5"},
+                         {"style": "tick", "target": "p5_r28", "page_id": "p5"}]}
+    review.flag(v, {"pages": []})
+    assert [(a["style"], a["target"]) for a in v["annotations"]] == [("cross", "p5_r30"), ("tick", "p5_r28")]
+    assert v["review_reasons"] == ["Handwriting unclear in 5(b)(i): margin word"]
 
 
 def test_a_score_on_a_short_last_page_is_full_size(monkeypatch):
