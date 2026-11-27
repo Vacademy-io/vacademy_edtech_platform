@@ -60,3 +60,29 @@ def test_never_through_a_comment(dense_page, monkeypatch):
     A._PLACED[0] = [fitz.Rect(0, 150, 400, 270)]  # a comment across the whole row band
     A._draw_mark(dense_page, fitz.Rect(40, 200, 360, 220), "tick")
     assert drawn == []
+
+
+def test_a_score_is_never_squeezed_below_a_readable_size(monkeypatch):
+    badges = []
+    monkeypatch.setattr(A, "_draw_score_badge",
+                        lambda page, centre, awarded, out_of=None, radius=15.0: badges.append((centre, radius)))
+    A._INK_MAP[0] = None
+    A._PLACED[0] = []
+    verdicts = [{"question_number": 4, "question_id": "q4", "marks_awarded": 5.0, "max_marks": 10.0,
+                 "annotations": []}]
+
+    def place(drawn):
+        doc = fitz.open()
+        doc.new_page(width=400, height=500)
+        A._place_question_scores(doc, {4: (0, 300.0, 200.0)}, verdicts, order={"p1": 0},
+                                 drawn={"p1": drawn}, written=set())
+
+    place([])  # nothing on the page: the score's own spot and size
+    (centre, base) = badges.pop()
+    # Writing everywhere except a hole that only a half-size ring fits in.
+    hole = 0.55 * base
+    x, y = centre.x, centre.y
+    place([fitz.Rect(0, 0, 400, y - hole), fitz.Rect(0, y + hole, 400, 500),
+           fitz.Rect(0, y - hole, x - hole, y + hole), fitz.Rect(x + hole, y - hole, 400, y + hole)])
+    (_, radius) = badges.pop()
+    assert radius >= 0.8 * base

@@ -4516,8 +4516,10 @@ def _place_question_scores(doc: Any, placements: dict[int, tuple],
                 # Still nowhere clear at this size. A smaller mark squeezed into
                 # a gap is what a teacher actually does on a full page; stamping
                 # the ring over the answer - which is what happened on four of
-                # seven marks - is the one thing they never do.
-                for shrink in (0.82, 0.66, 0.52):
+                # seven marks - is the one thing they never do. But never so
+                # small it cannot be read: squeezed to half size, a "5" came
+                # out as an unreadable squiggle on a real copy.
+                for shrink in _SCORE_SHRINKS:
                     r2 = radius * shrink
                     def clear_small(px, py, rr=r2):
                         probe = fitz.Rect(px - rr, py - rr, px + rr, py + rr)
@@ -4534,6 +4536,29 @@ def _place_question_scores(doc: Any, placements: dict[int, tuple],
                             break
                     if found:
                         break
+            if not found:
+                # Nowhere clear at a readable size: the spot in the margins or
+                # around the answer's end that covers the least writing, rather
+                # than the answer's own end, which is where it would land now.
+                rr = radius * _SCORE_SHRINKS[-1]
+                least = None
+                spots = [(mx, cy + dy) for mx in (right_margin, left_margin)
+                         for dy in (0, -12, 12, -26, 26, -40, 40)]
+                spots += [(cx + dx, cy + dy) for dy in (0, 10, -10, 20, -20, 32, -32, 46, -46)
+                          for dx in (0, 16, 32, -16, 48, -32, 64, -48, 80)]
+                for nx, ny in spots:
+                    if not (left_limit <= nx <= right_limit and top_limit <= ny <= bot_limit):
+                        continue
+                    probe = fitz.Rect(nx - rr, ny - rr, nx + rr, ny + rr)
+                    if sheet and not sheet.contains(probe):
+                        continue
+                    cover = sum((probe & o).get_area() for o in ink if probe.intersects(o))
+                    if least is None or cover < least[0]:
+                        least = (cover, nx, ny)
+                if least is not None:
+                    logger.debug("score of question %s drawn over writing (%.0f pt2): no clear spot",
+                                 q_no, least[0])
+                    cx, cy, radius = least[1], least[2], rr
         _CLIP[0] = sheet
         awarded = float(verdict.get("marks_awarded") or 0)
         out_of = verdict.get("max_marks")
@@ -4593,6 +4618,10 @@ def _extend_paper(page: Any, scan: Any, strip: Any) -> None:
     except Exception:
         logger.debug("could not extend the paper into the margin", exc_info=True)
 
+
+# How far a question's circled score may shrink to find a clear spot. Not below
+# about four fifths: at half size its figure is too small to read.
+_SCORE_SHRINKS = (0.82,)
 
 # The styles that carry the reason a mark was cut.
 _REASON_STYLES = frozenset(("margin_note", "region_note", "deduction_reason", "feedback"))
