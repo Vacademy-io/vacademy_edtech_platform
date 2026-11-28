@@ -229,7 +229,9 @@ class CopyCheckOrchestratorBillingTest {
 
                 String payload = new ObjectMapper().writeValueAsString(sent());
                 assertThat(payload).doesNotContain("billing_actor").doesNotContain("rate_snapshot")
-                                .doesNotContain("page_count").doesNotContain("exam_context")
+                                .doesNotContain("page_count")
                                 .doesNotContain("choice_groups").doesNotContain("paper_max");
+                // The only exam_context a test with no settings carries: the spelling check, on by default.
+                assertThat(payload).contains("\"exam_context\":{\"language_feedback\":\"HIGHLIGHT\"}");
         }
 }
