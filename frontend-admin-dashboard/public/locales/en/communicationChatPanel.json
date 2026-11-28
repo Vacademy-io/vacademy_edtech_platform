@@ -29,6 +29,7 @@
     },
     "noMessages": "No messages in this conversation yet",
     "bot": "Bot",
+    "team": "Team",
     "viaTemplate": "via template “{{name}}”",
     "notDelivered": "Not delivered",
     "accountLevelFailure": "This affects every WhatsApp message from this number, not only this chat.",

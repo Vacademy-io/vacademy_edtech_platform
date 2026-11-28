@@ -289,11 +289,20 @@ function MessageBubble({ msg, reaction }: { msg: InboxMessage; reaction?: string
                 {msg.direction === 'INCOMING' && msg.senderName && (
                     <p className="text-xs font-medium text-green-700 mb-0.5">{msg.senderName}</p>
                 )}
-                {msg.direction === 'OUTGOING' && (
+                {/* Replies typed here are logged with source INBOX; only chatbot sends are the bot.
+                    Workflow and other sends carry their own origin line below. */}
+                {msg.direction === 'OUTGOING' && msg.source === 'INBOX' && (
                     <p className="text-xs font-medium text-blue-600 mb-0.5 flex items-center gap-0.5">
-                        <Robot size={10} /> {t('bot')}
+                        <User size={10} /> {t('team')}
                     </p>
                 )}
+                {msg.direction === 'OUTGOING' &&
+                    msg.source !== 'INBOX' &&
+                    msg.origin?.type === 'CHATBOT_FLOW' && (
+                        <p className="text-xs font-medium text-blue-600 mb-0.5 flex items-center gap-0.5">
+                            <Robot size={10} /> {t('bot')}
+                        </p>
+                    )}
 
                 {/* Template header media (image / video / document) actually sent */}
                 {msg.headerMediaUrl && (

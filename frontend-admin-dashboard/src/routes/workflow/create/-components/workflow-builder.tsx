@@ -1241,7 +1241,9 @@ function WorkflowBuilderCanvas({ triggerEventsCatalog, instituteId }: {
                             onAddNode={(type) => {
                                 const meta = nodes.find((n) => n.id === selectedNodeId);
                                 const pos = meta ? { x: meta.position.x, y: meta.position.y + 180 } : undefined;
-                                addNode(type, type.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()), pos);
+                                const newId = addNode(type, type.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()), pos);
+                                // "Next:" means after this step, so wire it up instead of leaving a loose node.
+                                onConnect({ source: selectedNodeId, target: newId, sourceHandle: null, targetHandle: null });
                             }}
                         />
                     </div>

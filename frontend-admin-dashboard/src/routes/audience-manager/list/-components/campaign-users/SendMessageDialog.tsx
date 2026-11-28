@@ -330,8 +330,10 @@ export function SendMessageDialog({
         if (channel !== 'EMAIL') return;
         let cancelled = false;
         getEmailConfigurations()
-            .then((configs) => {
+            .then((result) => {
                 if (cancelled) return;
+                // A non-list answer threw inside the state update below and took the page down.
+                const configs = Array.isArray(result) ? result : [];
                 setEmailSenders(configs);
                 // Keep the current pick if it still exists, else use the first sender.
                 setEmailType((prev) =>
@@ -435,12 +437,17 @@ export function SendMessageDialog({
     // Mapping options (system + custom)
     // -----------------------------------------------------------------------
     const mappingOptions = useMemo(() => {
+        // A lead form usually repeats built-in fields (Full Name, Email, City). Same label twice reads
+        // as one field listed twice, so the form's copy says where it comes from.
+        const systemLabels = new Set(SYSTEM_FIELDS.map((f) => f.label.trim().toLowerCase()));
         const custom = customFields.map((f) => ({
             value: `custom:${f.id}`,
-            label: f.fieldName,
+            label: systemLabels.has((f.fieldName ?? '').trim().toLowerCase())
+                ? t('variableMapping.formFieldOption', { name: f.fieldName })
+                : f.fieldName,
         }));
         return [...SYSTEM_FIELDS, ...custom];
-    }, [customFields, SYSTEM_FIELDS]);
+    }, [customFields, SYSTEM_FIELDS, t]);
 
     /**
      * Lowercased media header kind when the selected template carries an
@@ -964,7 +971,8 @@ export function SendMessageDialog({
                                                 )}
                                             />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        {/* The full field list is taller than the room in this dialog; keep it scrollable on screen. */}
+                                        <SelectContent className="max-h-60">
                                             <SelectItem value="__static__">
                                                 {t('variableMapping.staticValueOption')}
                                             </SelectItem>

@@ -97,6 +97,7 @@
         "columnMappedField": "Mapped Field",
         "selectFieldPlaceholder": "Select field...",
         "staticValueOption": "Static value…",
+        "formFieldOption": "{{name}} (form field)",
         "staticValuePlaceholder": "e.g. \"Student\""
     },
     "review": {

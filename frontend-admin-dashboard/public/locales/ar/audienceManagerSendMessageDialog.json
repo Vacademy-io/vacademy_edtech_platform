@@ -101,6 +101,7 @@
         "columnMappedField": "الحقل المرتبط",
         "selectFieldPlaceholder": "اختر حقلاً...",
         "staticValueOption": "قيمة ثابتة…",
+        "formFieldOption": "{{name}} (حقل النموذج)",
         "staticValuePlaceholder": "مثال: \"طالب\""
     },
     "review": {

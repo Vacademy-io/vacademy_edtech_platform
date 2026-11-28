@@ -624,7 +624,12 @@
         },
         "insights": {
             "worst": {
-                "title": "{{name}} failed {{total}} times",
+                "title_zero": "{{name}} failed {{total}} times",
+                "title_one": "{{name}} failed once",
+                "title_two": "{{name}} failed {{total}} times",
+                "title_few": "{{name}} failed {{total}} times",
+                "title_many": "{{name}} failed {{total}} times",
+                "title_other": "{{name}} failed {{total}} times",
                 "text": "Open the workflow to see which step stops."
             },
             "clean": {
@@ -632,7 +637,12 @@
                 "text": "All {{total}} runs in this period finished."
             },
             "idle": {
-                "title": "{{total}} active workflows did not run",
+                "title_zero": "{{total}} active workflows did not run",
+                "title_one": "1 active workflow did not run",
+                "title_two": "{{total}} active workflows did not run",
+                "title_few": "{{total}} active workflows did not run",
+                "title_many": "{{total}} active workflows did not run",
+                "title_other": "{{total}} active workflows did not run",
                 "text": "Switched on but no run in the last {{days}} days — check the trigger."
             },
             "busiest": {

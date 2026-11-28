@@ -97,6 +97,7 @@
         "columnMappedField": "मैप किया गया फ़ील्ड",
         "selectFieldPlaceholder": "फ़ील्ड चुनें...",
         "staticValueOption": "स्थिर मान…",
+        "formFieldOption": "{{name}} (फ़ॉर्म फ़ील्ड)",
         "staticValuePlaceholder": "जैसे \"छात्र\""
     },
     "review": {
