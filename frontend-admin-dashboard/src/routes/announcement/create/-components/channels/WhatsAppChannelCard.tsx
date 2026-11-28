@@ -53,7 +53,9 @@ function guessSource(name: string): WhatsAppValueSource {
     if (/(^|_)(email)($|_)/.test(key)) return 'RECIPIENT_EMAIL';
     if (/(phone|mobile|whatsapp_?number)/.test(key)) return 'RECIPIENT_PHONE';
     if (/username/.test(key)) return 'RECIPIENT_USERNAME';
-    if (/name/.test(key)) return 'RECIPIENT_NAME';
+    // Only a variable that means the person. {{course_name}}, {{test_name}}, {{batch_name}} are not the
+    // recipient's name; guessing so would send the learner's name in their place.
+    if (/^(name|first_?name|(student|learner|recipient|user)_?name)$/.test(key)) return 'RECIPIENT_NAME';
     if (/title|subject/.test(key)) return 'ANNOUNCEMENT_TITLE';
     if (/content|message|body|detail/.test(key)) return 'ANNOUNCEMENT_CONTENT';
     if (/sender|from|created/.test(key)) return 'SENDER_NAME';
