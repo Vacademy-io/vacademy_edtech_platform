@@ -343,4 +343,11 @@ export const flavorConfig: FlavorConfigs = {
     domain: "nrithyagurukulam.com",
     subdomain: "learn",
   },
+
+  // e-CBSPD Android app (student portal student.ecbspd.com)
+  "com.cbspd.app": {
+    appName: "e-CBSPD",
+    domain: "ecbspd.com",
+    subdomain: "student",
+  },
 };
