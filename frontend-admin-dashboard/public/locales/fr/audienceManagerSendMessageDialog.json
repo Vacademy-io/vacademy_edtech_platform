@@ -98,6 +98,7 @@
         "columnMappedField": "Champ associé",
         "selectFieldPlaceholder": "Sélectionner un champ...",
         "staticValueOption": "Valeur fixe…",
+        "formFieldOption": "{{name}} (champ du formulaire)",
         "staticValuePlaceholder": "ex. « Étudiant »"
     },
     "review": {
