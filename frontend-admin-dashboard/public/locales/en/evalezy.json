@@ -278,6 +278,9 @@
         "readFailed": "The assessment was created, but reading the paper did not start. Start it again below.",
         "readNoCredits": "The assessment was created, but there are not enough credits to read the paper."
     },
+    "copyView": {
+        "back": "Back"
+    },
     "assessment": {
         "checkOnlyNote": "This test has no students, so copies go straight to checking. Download the checked copies as a zip when they're done.",
         "waitForPaper": "Copies can be added once the paper's questions are ready.",

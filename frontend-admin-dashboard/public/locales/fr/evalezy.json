@@ -254,6 +254,9 @@
         "readFailed": "L'évaluation a été créée, mais la lecture du sujet n'a pas démarré. Relancez-la ci-dessous.",
         "readNoCredits": "L'évaluation a été créée, mais les crédits ne suffisent pas pour lire le sujet."
     },
+    "copyView": {
+        "back": "Retour"
+    },
     "assessment": {
         "checkOnlyNote": "Ce test n'a pas d'élèves : les copies partent directement en correction. Téléchargez ensuite les copies corrigées en zip.",
         "waitForPaper": "Vous pourrez ajouter des copies quand les questions du sujet seront prêtes.",
