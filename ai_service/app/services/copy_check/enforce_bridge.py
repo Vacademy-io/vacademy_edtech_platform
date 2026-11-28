@@ -210,6 +210,7 @@ def apply_enforcement(verdicts: list[dict[str, Any]], layout_map: dict[str, Any]
                       questions: list[dict[str, Any]] | None = None,
                       paper_max: float | None = None,
                       choice_groups: list[Any] | None = None,
+                      full_remarks: bool = False,
                       ) -> tuple[list[dict[str, Any]], dict[str, Any] | None, list[str], list[str]]:
     meta = _question_meta(verdicts, questions)
     results = []
@@ -224,7 +225,7 @@ def apply_enforcement(verdicts: list[dict[str, Any]], layout_map: dict[str, Any]
         r = dict(v)
         r["paper_label"] = v.get("label") or v.get("paper_label") or v.get("question_id")
         results.append(r)
-    fixed = enforce(results, layout_map, meta, paper_max=paper_max)
+    fixed = enforce(results, layout_map, meta, paper_max=paper_max, full_remarks=full_remarks)
     fixed.report[:0] = pre_report
     _write_back_marks(verdicts, fixed.awarded, meta, fixed.report)
     if choice_groups:

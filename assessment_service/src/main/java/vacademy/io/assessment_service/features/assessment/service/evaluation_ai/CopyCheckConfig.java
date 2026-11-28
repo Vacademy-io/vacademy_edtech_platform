@@ -36,12 +36,12 @@ import java.util.function.Supplier;
  *       how its language is judged (ai_service copy_check/answer_language.py). Unset = as
  *       before.</li>
  * </ul>
- * An assessment without its own instructions / language choice takes the institute's
- * ({@code ASSESSMENT_SETTING.aiCopyCheck}). The institute's {@code remarksLanguage}
- * (AUTO = a Hindi or Sanskrit copy gets Hindi remarks; ENGLISH = every copy in English)
- * goes as {@code remarks_language} when it is ENGLISH. Sent to ai_service as
- * {@code exam_context}; nothing set anywhere = no exam_context, so the request is what
- * it was before.
+ * Instructions and the spelling check belong to each assessment only: a test with no
+ * instructions sends none, and a test that made no spelling choice gets HIGHLIGHT (the
+ * check is on by default; OFF turns it off). The institute's {@code remarksLanguage}
+ * ({@code ASSESSMENT_SETTING.aiCopyCheck}; AUTO = a Hindi or Sanskrit copy gets Hindi
+ * remarks, ENGLISH = every copy in English) goes as {@code remarks_language} when it is
+ * ENGLISH. Sent to ai_service as {@code exam_context}.
  */
 public final class CopyCheckConfig {
 
@@ -170,16 +170,16 @@ public final class CopyCheckConfig {
     }
 
     /**
-     * The exam_context for a dashboard copy: the assessment's settings, with the
-     * institute's instructions and language choice where the assessment has none.
-     * Null when nothing is set, so the grade request is unchanged.
+     * The exam_context for a dashboard copy: the assessment's own settings, the spelling
+     * check on unless the assessment turned it off, and the institute's remarks language.
      */
     public static Map<String, Object> examContext(Settings onAssessment, Supplier<Map<String, Object>> instituteDefault) {
         Settings own = normalize(onAssessment);
         String instructions = own.getInstructions();
-        String language = own.getLanguageFeedback();
+        // On unless the test turned it off: a copy is checked for spelling and grammar by default.
+        String language = own.getLanguageFeedback() == null ? HIGHLIGHT : own.getLanguageFeedback();
         String remarks = null;
-        // Read every time: the remarks language is an institute setting only.
+        // The remarks language is an institute setting only.
         if (instituteDefault != null) {
             Map<String, Object> defaults = null;
             try {
@@ -188,8 +188,6 @@ public final class CopyCheckConfig {
                 // the institute default is optional; the assessment's own settings still go
             }
             if (defaults != null) {
-                if (instructions == null) instructions = text(asString(defaults.get("instructions")), INSTRUCTIONS_CAP);
-                if (language == null) language = languageMode(defaults.get("languageFeedback"));
                 remarks = remarksLanguage(defaults.get("remarksLanguage"));
             }
         }
@@ -209,10 +207,6 @@ public final class CopyCheckConfig {
         if (value == null) return null;
         String v = value.toString().trim().toUpperCase();
         return REMARKS_AUTO.equals(v) || REMARKS_ENGLISH.equals(v) ? v : null;
-    }
-
-    private static String asString(Object value) {
-        return value == null ? null : value.toString();
     }
 
     /** One line of plain text: no control characters, single spaces, capped. */

@@ -28,10 +28,6 @@ import {
     PenStylePicker,
     normalizePenStyle,
 } from '@/components/common/ai-copy-check/PenStylePicker';
-import {
-    CopyCheckSettingsFields,
-    EMPTY_COPY_CHECK_SETTINGS,
-} from '@/components/common/ai-copy-check/CopyCheckSettingsFields';
 
 const DEFAULT_HEADER_HTML = `<div style="text-align:center; font-size:16px; font-weight:bold;">{{assessment_name}}</div>
 <div style="text-align:center; font-size:11px; color:rgb(102,102,102);">Student Performance Analysis</div>`;
@@ -273,28 +269,6 @@ const AssessmentSettings = () => {
                                         commentPlacement:
                                             prev.aiCopyCheck?.commentPlacement ?? 'INSIDE',
                                         penStyle,
-                                    },
-                                }));
-                                setHasChanges(true);
-                            }}
-                        />
-                        {/* Institute defaults for every assessment that has none of its own */}
-                        <CopyCheckSettingsFields
-                            withPaper={false}
-                            value={{
-                                ...EMPTY_COPY_CHECK_SETTINGS,
-                                instructions: settings.aiCopyCheck?.instructions ?? '',
-                                languageFeedback: settings.aiCopyCheck?.languageFeedback ?? 'OFF',
-                            }}
-                            onChange={({ instructions, languageFeedback }) => {
-                                setSettings((prev) => ({
-                                    ...prev,
-                                    aiCopyCheck: {
-                                        ...prev.aiCopyCheck,
-                                        commentPlacement:
-                                            prev.aiCopyCheck?.commentPlacement ?? 'INSIDE',
-                                        instructions,
-                                        languageFeedback,
                                     },
                                 }));
                                 setHasChanges(true);

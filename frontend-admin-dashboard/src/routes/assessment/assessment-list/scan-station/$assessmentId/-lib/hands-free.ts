@@ -80,8 +80,9 @@ export const defaultStartBody = async (
         copy_check_config: {
             subject: text(mine.subject),
             level: text(mine.level),
-            instructions: text(mine.instructions ?? defaults?.instructions),
-            language_feedback: mine.language_feedback ?? defaults?.languageFeedback ?? 'OFF',
+            // The test's own; a test that made no choice checks spelling and grammar.
+            instructions: text(mine.instructions),
+            language_feedback: mine.language_feedback ?? 'HIGHLIGHT',
         },
         map_students: matchStudents,
     };

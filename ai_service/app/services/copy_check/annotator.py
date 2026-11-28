@@ -3886,8 +3886,10 @@ def _panel_heading(verdict: dict[str, Any], label: str, lang: str = "en") -> str
     return f"{label}: {_fmt_marks(got)}/{_fmt_marks(out_of)} ({words[status]})"
 
 
-def _panel_deductions(verdict: dict[str, Any], hindi: bool = False) -> list[str]:
+def _panel_deductions(verdict: dict[str, Any]) -> list[str]:
     """One line per criterion that lost marks: "-1  Diagram not labelled"."""
+    from .remarks import reason_text
+
     if (verdict.get("status") or "").upper() == "FAILED":
         return []
     lines: list[str] = []
@@ -3895,25 +3897,16 @@ def _panel_deductions(verdict: dict[str, Any], hindi: bool = False) -> list[str]
         if not isinstance(item, dict):
             continue
         try:
-            if hindi:
-                # The grader writes a criterion's ceiling as "max" (older rows
-                # and tests say "max_marks"); read as "max_marks" alone every
-                # cut looked free and the panel never said why a mark went.
-                # Hindi panels only for now: the English template is unchanged.
-                ceiling = item.get("max") if item.get("max") is not None else item.get("max_marks")
-                lost = round(float(ceiling or 0) - max(0.0, float(item.get("marks") or 0)), 2)
-            else:
-                lost = round(float(item.get("max_marks") or 0) - float(item.get("marks") or 0), 2)
+            # The grader writes a criterion's ceiling as "max" (older rows and
+            # tests say "max_marks"); read as "max_marks" alone every cut looked
+            # free and the panel never said why a mark went.
+            ceiling = item.get("max") if item.get("max") is not None else item.get("max_marks")
+            lost = round(float(ceiling or 0) - max(0.0, float(item.get("marks") or 0)), 2)
         except (TypeError, ValueError):
             continue
         if lost <= 0:
             continue
-        if hindi:
-            from .remarks import reason_text
-            why = reason_text(str(item.get("reason") or "")) or str(item.get("criteria_name") or "").strip()
-        else:
-            why = (" ".join(str(item.get("reason") or "").split())
-                   or str(item.get("criteria_name") or "").strip())
+        why = reason_text(str(item.get("reason") or "")) or str(item.get("criteria_name") or "").strip()
         lines.append(f"-{_fmt_marks(lost)}  {_short_feedback(why)}".rstrip())
     return lines
 
@@ -4027,7 +4020,7 @@ def _draw_comment_panels(doc: Any, panels: dict[int, Any],
             if first and not said and verdict.get("feedback"):
                 # The grader's own words; the language list is typed below.
                 said = [_short_feedback(_before_language(str(verdict["feedback"])))]
-            cuts = _panel_deductions(verdict, hindi=lang == "hi") if first else []
+            cuts = _panel_deductions(verdict) if first else []
             if cuts:
                 # The remark written at a deduction usually repeats its reason:
                 # typed once, on the "-1" line that says what it cost.
@@ -4040,19 +4033,18 @@ def _draw_comment_panels(doc: Any, panels: dict[int, Any],
             heading = _panel_heading(verdict, label, lang) if first else f"{label} {words['contd']}"
             heading = _script_safe(heading) if lang == "hi" else _latin1(heading)
             entries.append((y, v_idx, heading, [_script_safe(s) for s in said if s]))
-        if pno == min(panels) and lang == "hi":
+        if pno == min(panels):
             # A question with nothing marked on any page (no answer found)
             # is otherwise left out of the panel, so its marks and the reason
             # appear nowhere on the copy. Listed first, at the top of the
-            # first page, in question order. Hindi panels only for now (the
-            # English template is unchanged); a choice question that does
-            # not count is never listed.
+            # first page, in question order; a choice question that does not
+            # count is never listed.
             for v_idx, verdict in enumerate(verdicts):
                 if v_idx in first_page or verdict.get("counted", True) is False:
                     continue
                 said = [_short_feedback(_before_language(str(verdict.get("feedback") or "")))
                         or words["no_answer"]]
-                cuts = _panel_deductions(verdict, hindi=True)
+                cuts = _panel_deductions(verdict)
                 said = cuts + [s for s in said if s and not any(_same_remark(s, c) for c in cuts)]
                 label = _panel_label(verdict, labels, lang)
                 entries.append((0.0, v_idx, _script_safe(_panel_heading(verdict, label, lang)),

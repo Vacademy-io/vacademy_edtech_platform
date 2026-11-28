@@ -165,7 +165,7 @@
         "saveFailed": "Impossible d'enregistrer les paramètres. Réessayez.",
         "loadFailed": "Impossible de charger les paramètres. Rien n'a été modifié.",
         "adminOnly": "Seul un administrateur de votre établissement peut les modifier.",
-        "fromAssessment": "Stylo, commentaires et consignes : voir Paramètres d'évaluation"
+        "fromAssessment": "Stylo et commentaires : voir Paramètres d'évaluation"
     },
     "credits": {
         "title": "Crédits IA",
@@ -253,6 +253,9 @@
         "createFailed": "Impossible de créer l'évaluation",
         "readFailed": "L'évaluation a été créée, mais la lecture du sujet n'a pas démarré. Relancez-la ci-dessous.",
         "readNoCredits": "L'évaluation a été créée, mais les crédits ne suffisent pas pour lire le sujet."
+    },
+    "copyView": {
+        "back": "Retour"
     },
     "assessment": {
         "checkOnlyNote": "Ce test n'a pas d'élèves : les copies partent directement en correction. Téléchargez ensuite les copies corrigées en zip.",

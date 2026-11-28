@@ -189,7 +189,7 @@
         "saveFailed": "The settings could not be saved. Try again.",
         "loadFailed": "The settings could not be loaded. Nothing was changed.",
         "adminOnly": "Only an admin of your institute can change these.",
-        "fromAssessment": "Pen, comments and instructions are in Evaluation settings"
+        "fromAssessment": "Pen and comments are in Evaluation settings"
     },
     "credits": {
         "title": "AI credits",
@@ -277,6 +277,9 @@
         "createFailed": "Could not create the assessment",
         "readFailed": "The assessment was created, but reading the paper did not start. Start it again below.",
         "readNoCredits": "The assessment was created, but there are not enough credits to read the paper."
+    },
+    "copyView": {
+        "back": "Back"
     },
     "assessment": {
         "checkOnlyNote": "This test has no students, so copies go straight to checking. Download the checked copies as a zip when they're done.",

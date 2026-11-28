@@ -63,22 +63,23 @@ class CopyCheckConfigTest {
     }
 
     @Test
-    void exam_context_merges_the_institute_default_where_the_assessment_has_none() {
-        assertThat(CopyCheckConfig.examContext(null, null)).isNull();
-        assertThat(CopyCheckConfig.examContext(new CopyCheckConfig.Settings(), Map::of)).isNull();
+    void exam_context_is_the_tests_own_with_the_spelling_check_on_by_default() {
+        assertThat(CopyCheckConfig.examContext(null, null))
+                .containsExactly(Map.entry("language_feedback", "HIGHLIGHT"));
 
+        // The institute's old instructions and language choice are never used: they belong to each test.
         Map<String, Object> ctx = CopyCheckConfig.examContext(settings("English", "CBSE Class X", null, null),
-                () -> Map.of("instructions", "Institute rule.", "languageFeedback", "HIGHLIGHT",
+                () -> Map.of("instructions", "Institute rule.", "languageFeedback", "OFF",
                         "commentPlacement", "OUTSIDE"));
         assertThat(ctx).containsExactly(Map.entry("level", "CBSE Class X"), Map.entry("subject", "English"),
-                Map.entry("instructions", "Institute rule."), Map.entry("language_feedback", "HIGHLIGHT"));
+                Map.entry("language_feedback", "HIGHLIGHT"));
 
-        // The assessment's own choices win, OFF included; OFF is never sent.
+        // The test's own choices: its instructions, and OFF turns the check off (OFF is never sent).
         ctx = CopyCheckConfig.examContext(settings(null, null, "Own rule.", "OFF"),
                 () -> Map.of("instructions", "Institute rule.", "languageFeedback", "HIGHLIGHT"));
         assertThat(ctx).containsExactly(Map.entry("instructions", "Own rule."));
 
-        // A failing institute lookup still sends the assessment's settings.
+        // A failing institute lookup still sends the test's settings.
         ctx = CopyCheckConfig.examContext(settings(null, null, null, "HIGHLIGHT"), () -> {
             throw new IllegalStateException("down");
         });
@@ -87,18 +88,19 @@ class CopyCheckConfigTest {
 
     @Test
     void institute_remarks_language_english_is_sent_and_auto_adds_nothing() {
-        Map<String, Object> ctx = CopyCheckConfig.examContext(new CopyCheckConfig.Settings(),
+        Map<String, Object> ctx = CopyCheckConfig.examContext(settings(null, null, null, "OFF"),
                 () -> Map.of("remarksLanguage", "ENGLISH"));
         assertThat(ctx).containsExactly(Map.entry("remarks_language", "ENGLISH"));
 
-        // AUTO, an unknown value or none at all: the request stays as it was.
-        assertThat(CopyCheckConfig.examContext(new CopyCheckConfig.Settings(),
+        // AUTO, an unknown value or none at all: no remarks_language.
+        assertThat(CopyCheckConfig.examContext(settings(null, null, null, "OFF"),
                 () -> Map.of("remarksLanguage", "AUTO"))).isNull();
-        assertThat(CopyCheckConfig.examContext(new CopyCheckConfig.Settings(),
+        assertThat(CopyCheckConfig.examContext(settings(null, null, null, "OFF"),
                 () -> Map.of("remarksLanguage", "Hindi please"))).isNull();
-        assertThat(CopyCheckConfig.examContext(new CopyCheckConfig.Settings(), Map::of)).isNull();
+        assertThat(CopyCheckConfig.examContext(new CopyCheckConfig.Settings(), Map::of))
+                .doesNotContainKey("remarks_language");
 
-        // Read even when the assessment has its own instructions and language choice.
+        // Read even when the test has its own instructions and language choice.
         ctx = CopyCheckConfig.examContext(settings(null, null, "Own rule.", "OFF"),
                 () -> Map.of("remarksLanguage", " english "));
         assertThat(ctx).containsExactly(Map.entry("instructions", "Own rule."),
@@ -126,19 +128,19 @@ class CopyCheckConfigTest {
     }
 
     @Test
-    void nothing_set_leaves_the_request_unchanged() {
+    void a_test_with_nothing_set_gets_the_spelling_check_and_keeps_its_subjects() {
         AdminCoreServiceClient adminCore = mock(AdminCoreServiceClient.class);
         when(adminCore.getAiCopyCheckDefaults("inst-1")).thenReturn(Map.of());
         CopyCheckGradeRequestDto r = request(new CopyCheckConfig.Settings());
         service(adminCore).applyCopyCheckSettings(r, facts(false));
-        assertThat(r.getExamContext()).isNull();
+        assertThat(r.getExamContext()).isEqualTo(Map.of("language_feedback", "HIGHLIGHT"));
         assertThat(r.getQuestions().get(0).getSubject()).isEqualTo("Science");
     }
 
     @Test
     void dashboard_copy_gets_the_settings_and_their_subject() {
         AdminCoreServiceClient adminCore = mock(AdminCoreServiceClient.class);
-        when(adminCore.getAiCopyCheckDefaults("inst-1")).thenReturn(Map.of("languageFeedback", "HIGHLIGHT"));
+        when(adminCore.getAiCopyCheckDefaults("inst-1")).thenReturn(Map.of("languageFeedback", "OFF"));
         CopyCheckGradeRequestDto r = request(settings("English", null, "Letter: format 1.", null));
         service(adminCore).applyCopyCheckSettings(r, facts(false));
         assertThat(r.getExamContext()).containsEntry("subject", "English")

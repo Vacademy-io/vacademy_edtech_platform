@@ -19,6 +19,8 @@ import { TrialBanner } from '@/components/common/trial-banner/TrialBanner';
 import { useNavSnapshotStore } from '@/lib/capabilities/use-entitlement';
 import { TELLEO_PLANS_PATH } from '@/services/ai-plans/storefront';
 import { isIOS } from '@/native/platform';
+import { isEvalezyMode } from '@/lib/evalezy-mode';
+import { EvalezyPageShell } from '@/routes/evalezy/-components/EvalezyPageShell';
 
 /**
  * New sidebar dimensions (Gmail-style two-bar):
@@ -107,6 +109,10 @@ export const LayoutContainer = ({
         isMobile,
         isTablet,
     ]);
+
+    // In the Evalezy app only one checked copy opens outside /evalezy (evalezy-mode.ts):
+    // it gets the Evalezy shell, not the portal's sidebar and navbar.
+    if (isEvalezyMode()) return <EvalezyPageShell>{children}</EvalezyPageShell>;
 
     return (
         <div className="flex min-h-screen w-full">

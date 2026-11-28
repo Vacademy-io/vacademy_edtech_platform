@@ -141,7 +141,11 @@ def _fmt(x: float) -> str:
 
 def enforce(results: list[dict[str, Any]], layout_map: dict[str, Any],
             questions: list[dict[str, Any]], paper_max: float | None = None,
-            first_page_id: str | None = None) -> Result:
+            first_page_id: str | None = None, full_remarks: bool = False) -> Result:
+    """`full_remarks` (a copy checked from the dashboard): every written answer
+    with full marks keeps one remark of its own - what makes it right - instead
+    of praise on at most one answer, so a checked copy shows every answer was
+    read. MCQ / short answers and partial answers are handled as before."""
     rows = _rows(layout_map)
     qmeta = {str(q.get("question_id")): q for q in questions}
     qmeta.update({str(q.get("paper_label")): q for q in questions if q.get("paper_label")})
@@ -230,7 +234,7 @@ def enforce(results: list[dict[str, Any]], layout_map: dict[str, Any],
         for a in anns:
             txt = (a.get("text") or "").strip()
             if a.get("style") in ("margin_note", "region_note") and PRAISE.match(txt):
-                if qtype in SHORT_TYPES or awarded < mx or seen_praise >= 1:
+                if qtype in SHORT_TYPES or awarded < mx or (seen_praise >= 1 and not full_remarks):
                     report.append(f"{tag}: removed praise {txt!r}")
                     continue
                 seen_praise += 1
@@ -277,6 +281,18 @@ def enforce(results: list[dict[str, Any]], layout_map: dict[str, Any],
                 anns.append(note)
             note["target"], note["page_id"] = last, rows[last]["page_id"]
             note["placement"] = "left_margin" if rows[last]["last_on_page"] else "below_line"
+        elif full_remarks and qtype not in SHORT_TYPES:
+            # Full marks on a written answer, dashboard copy: one remark of its
+            # own (what makes it right), short, below the last row.
+            notes = [a for a in anns if a.get("style") == "margin_note" and (a.get("text") or "").strip()]
+            anns = [a for a in anns if a.get("style") != "margin_note"
+                    or (notes and a is notes[0])
+                    or (a.get("text") or "").startswith("Answered twice")]
+            if notes:
+                note = notes[0]
+                note["text"] = short_reason(note["text"])
+                note["target"], note["page_id"] = last, rows[last]["page_id"]
+                note["placement"] = "left_margin" if rows[last]["last_on_page"] else "below_line"
         else:
             # Full marks: only praise survives - plus the one note the guide
             # requires on a second attempt, which is not praise and must stay.

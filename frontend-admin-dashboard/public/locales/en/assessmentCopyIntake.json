@@ -251,7 +251,7 @@
         "instructionsHint": "Used for every copy of this assessment, with the answer key and rubric",
         "instructionsDefaultHint": "Used for every assessment that has no instructions of its own",
         "language": "Highlight spelling and grammar errors",
-        "languageHint": "Each error is underlined with its correction and listed in the answer's feedback. No marks are deducted for it. For answers written in English."
+        "languageHint": "Each error is underlined with its correction and listed in the answer's feedback. No marks are deducted for it. For answers in English and Hindi."
     },
     "criteria": {
         "title": "Evaluation criteria",

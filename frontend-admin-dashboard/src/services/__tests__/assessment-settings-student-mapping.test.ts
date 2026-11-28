@@ -27,7 +27,8 @@ describe('assessment settings: studentMapping survives the load', () => {
         );
         expect(s.aiCopyCheck?.studentMapping).toBeUndefined();
         expect(s.aiCopyCheck?.commentPlacement).toBe('OUTSIDE');
-        expect(s.aiCopyCheck?.instructions).toBe('x');
+        // Institute-wide instructions are not carried any more (each test has its own).
+        expect(s.aiCopyCheck).not.toHaveProperty('instructions');
         expect(mergeWithDefaults(saved({})).aiCopyCheck).toEqual({ commentPlacement: 'INSIDE' });
     });
 });
