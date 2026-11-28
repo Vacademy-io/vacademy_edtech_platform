@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useChatbotFlowStore } from '../-stores/chatbot-flow-store';
 import { NODE_TYPE_REGISTRY, VariableMapping } from '@/types/chatbot-flow/chatbot-flow-types';
@@ -105,6 +105,40 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
     return <label className="block text-xs font-medium text-gray-600 mt-2">{children}</label>;
 }
 
+const parseKeywords = (text: string) => text.split(',').map((k) => k.trim()).filter(Boolean);
+
+/**
+ * Comma-separated trigger keywords. Keeps what the admin typed (a trailing comma, spaces) and stores
+ * the parsed list. Rebuilding the box from the list on every keystroke dropped each comma as it was
+ * typed, so "fee, fees" came out as "feefees".
+ */
+function KeywordsInput({ keywords, onChange, placeholder }: { keywords: string[]; onChange: (list: string[]) => void; placeholder: string }) {
+    const [text, setText] = useState(() => keywords.join(', '));
+    const listKey = keywords.join('\u0000');
+    const emitted = useRef(listKey);
+    // The list changed from outside (another trigger node, an undo): show it. Our own typing lands here too, so skip that.
+    useEffect(() => {
+        if (listKey !== emitted.current) {
+            emitted.current = listKey;
+            setText(listKey ? listKey.split('\u0000').join(', ') : '');
+        }
+    }, [listKey]);
+    return (
+        <input
+            type="text"
+            value={text}
+            onChange={(e) => {
+                const list = parseKeywords(e.target.value);
+                emitted.current = list.join('\u0000');
+                setText(e.target.value);
+                onChange(list);
+            }}
+            className="w-full px-2 py-1.5 text-sm border rounded"
+            placeholder={placeholder}
+        />
+    );
+}
+
 // ==================== TRIGGER ====================
 function TriggerConfig({ config, onChange }: { config: Record<string, unknown>; onChange: (keyOrBatch: string | Record<string, unknown>, value?: unknown) => void }) {
     const { t } = useTranslation('automationNodeConfigPanel');
@@ -121,7 +155,7 @@ function TriggerConfig({ config, onChange }: { config: Record<string, unknown>; 
             {config.triggerType !== 'FIRST_CONTACT' && (
                 <>
                     <FieldLabel>{t('trigger.keywordsLabel')}</FieldLabel>
-                    <input type="text" value={((config.keywords as string[]) || []).join(', ')} onChange={(e) => onChange('keywords', e.target.value.split(',').map((k) => k.trim()).filter(Boolean))} className="w-full px-2 py-1.5 text-sm border rounded" placeholder={t('trigger.keywordsPlaceholder')} />
+                    <KeywordsInput keywords={(config.keywords as string[]) || []} onChange={(list) => onChange('keywords', list)} placeholder={t('trigger.keywordsPlaceholder')} />
 
                     <FieldLabel>{t('trigger.matchTypeLabel')}</FieldLabel>
                     <select value={(config.matchType as string) || 'contains'} onChange={(e) => onChange('matchType', e.target.value)} className="w-full px-2 py-1.5 text-sm border rounded">
