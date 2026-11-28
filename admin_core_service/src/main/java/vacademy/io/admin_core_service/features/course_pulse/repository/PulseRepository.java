@@ -210,8 +210,13 @@ public interface PulseRepository extends JpaRepository<ActivityLog, String> {
 
     /**
      * One learner, latest slides first: each slide once, with when it was last seen, engaged time,
-     * visits and the furthest percentage watched, since a cutoff. Learner Academic Activity tab.
-     * Row: [slide_id, title, source_type, chapter_name, last_seen_at, engaged_ms, visits, max_percent].
+     * visits and how far through the slide the learner is, since a cutoff. Learner Academic Activity tab.
+     * Row: [slide_id, title, source_type, chapter_name, last_seen_at, engaged_ms, visits, percent].
+     *
+     * The percent is the slide completion the chapter rollup uses (learner_operation), so it
+     * matches course progress. activity_log.percentage_watched is only a percentage for video and
+     * audio. For documents, code, Scratch and notebook slides the learner app stores a count of
+     * pages or actions in that session there, so it is used as a fallback for video and audio only.
      */
     @Query(value = """
             SELECT s.id,
@@ -224,7 +229,19 @@ public interface PulseRepository extends JpaRepository<ActivityLog, String> {
                    MAX(COALESCE(al.last_seen_at, CAST(al.created_at AS timestamptz))) AS seen,
                    SUM(COALESCE(al.engaged_ms, 0)),
                    COUNT(*),
-                   MAX(al.percentage_watched)
+                   COALESCE(
+                       (SELECT MAX(LEAST(CAST(lo.value AS FLOAT), 100))
+                        FROM learner_operation lo
+                        WHERE lo.user_id = :userId
+                          AND lo.source = 'SLIDE'
+                          AND lo.source_id = s.id
+                          AND lo.operation IN ('PERCENTAGE_VIDEO_WATCHED','PERCENTAGE_DOCUMENT_COMPLETED',
+                                               'PERCENTAGE_QUIZ_COMPLETED','PERCENTAGE_QUESTION_COMPLETED',
+                                               'PERCENTAGE_ASSIGNMENT_COMPLETED','PERCENTAGE_ASSESSMENT_DONE',
+                                               'PERCENTAGE_SCORM_COMPLETED','PERCENTAGE_AUDIO_LISTENED')
+                          AND lo.value ~ '^[0-9]+([.][0-9]+)?$'),
+                       CASE WHEN s.source_type IN ('VIDEO', 'AUDIO')
+                            THEN LEAST(MAX(al.percentage_watched), 100) END)
             FROM activity_log al
                 JOIN slide s ON s.id = al.slide_id
             WHERE al.user_id = :userId
