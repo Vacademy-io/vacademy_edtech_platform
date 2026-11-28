@@ -661,8 +661,8 @@ const EmailBuilder: React.FC<EmailBuilderProps> = ({
                         : template.mjml;
                     console.log('Loaded MJML from API settingJson:', { hasContent: !!contentData });
                     return {
-                        subject: template.subject || 'Welcome to Easy-email',
-                        subTitle: 'Nice to meet you!',
+                        subject: template.subject || '',
+                        subTitle: '',
                         content: contentData,
                     };
                 } catch (e) {
@@ -679,8 +679,8 @@ const EmailBuilder: React.FC<EmailBuilderProps> = ({
                     const contentData = JSON.parse(storedMjml);
                     console.log('Loaded MJML from localStorage (legacy):', { hasContent: !!contentData });
                     return {
-                        subject: template.subject || 'Welcome to Easy-email',
-                        subTitle: 'Nice to meet you!',
+                        subject: template.subject || '',
+                        subTitle: '',
                         content: contentData,
                     };
                 } catch (e) {
@@ -710,31 +710,31 @@ const EmailBuilder: React.FC<EmailBuilderProps> = ({
                             'This template was created with a different editor. Please recreate it using the new editor.'
                         );
                         return {
-                            subject: template.subject || 'Welcome to Easy-email',
-                            subTitle: 'Nice to meet you!',
+                            subject: template.subject || '',
+                            subTitle: '',
                             content: createBrandedPage(brand),
                         };
                     }
 
                     return {
-                        subject: template.subject || 'Welcome to Easy-email',
-                        subTitle: 'Nice to meet you!',
+                        subject: template.subject || '',
+                        subTitle: '',
                         content: contentData,
                     };
                 } catch (e) {
                     // If parsing fails, create a new page
                     console.warn('Failed to parse template content, creating new template');
                     return {
-                        subject: template.subject || 'Welcome to Easy-email',
-                        subTitle: 'Nice to meet you!',
+                        subject: template.subject || '',
+                        subTitle: '',
                         content: createBrandedPage(brand),
                     };
                 }
             }
         }
         return {
-            subject: 'Welcome to Easy-email',
-            subTitle: 'Nice to meet you!',
+            subject: '',
+            subTitle: '',
             content: createBrandedPage(brand),
         };
     }
@@ -742,6 +742,11 @@ const EmailBuilder: React.FC<EmailBuilderProps> = ({
     // Handle form submission (save template)
     const onSubmit = useCallback(
         async (values: IEmailTemplate, _form: any) => {
+            // No library placeholder subject any more, so an empty one would go out as a blank email subject.
+            if (!values.subject?.trim()) {
+                toast.error('Add an email subject before saving the template.');
+                return;
+            }
             setIsSaving(true);
             try {
                 // 1. Convert to MJML string
