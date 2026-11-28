@@ -969,7 +969,8 @@ export function SendMessageDialog({
                                                 )}
                                             />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        {/* The full field list is taller than the room in this dialog; keep it scrollable on screen. */}
+                                        <SelectContent className="max-h-60">
                                             <SelectItem value="__static__">
                                                 {t('variableMapping.staticValueOption')}
                                             </SelectItem>
