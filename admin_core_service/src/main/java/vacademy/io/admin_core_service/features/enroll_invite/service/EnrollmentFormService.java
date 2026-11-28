@@ -186,10 +186,9 @@ public class EnrollmentFormService {
      */
     private boolean trialAvailableFor(String userId, String instituteId) {
         try {
-            java.util.Date now = new java.util.Date();
             boolean consumed = phoneIdentifierInviteSubmissionGuard.usesPhoneIdentifier(instituteId)
-                    ? userPlanRepository.hasConsumedTrialByPhone(userId, instituteId, "", now)
-                    : userPlanRepository.hasConsumedTrialAtInstitute(userId, instituteId, "", now);
+                    ? userPlanRepository.hasConsumedTrialByPhone(userId, instituteId, "")
+                    : userPlanRepository.hasConsumedTrialAtInstitute(userId, instituteId, "");
             return !consumed;
         } catch (Exception e) {
             log.warn("Could not resolve trial eligibility for user {}: {}", userId, e.getMessage());

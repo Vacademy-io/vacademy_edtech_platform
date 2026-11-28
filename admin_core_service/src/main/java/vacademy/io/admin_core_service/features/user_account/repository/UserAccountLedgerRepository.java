@@ -202,4 +202,25 @@ public interface UserAccountLedgerRepository extends JpaRepository<UserAccountLe
             + "WHEN l.eventType = 'DEBIT_REVERSAL' THEN -l.amount ELSE 0 END), 0) "
             + "FROM UserAccountLedger l WHERE l.sourceId = :sourceId")
     BigDecimal debitNetBySourceId(@Param("sourceId") String sourceId);
+
+    /**
+     * Every accrual posted against one source, oldest first. Reversing what an abandoned
+     * checkout booked needs the original currency and due date, so that the reversal nets
+     * out of the past-due bucket and not only the total, and a sum cannot give those back.
+     */
+    List<UserAccountLedger> findBySourceTypeAndSourceIdAndEventTypeOrderByCreatedAtAsc(
+            String sourceType, String sourceId, String eventType);
+
+    /**
+     * Credits posted against one source, net of any credit later voided. A write-off must
+     * only clear what is STILL owed: a source whose accrual was already paid or waived has
+     * nothing standing, and reversing the gross accrual would push the learner into a
+     * credit they never held. Measured on 2026-11-27, two unpaid sibling plans carried a
+     * full CREDIT_PAYMENT against the very source a supersede would have written off.
+     */
+    @Query("SELECT COALESCE(SUM(CASE WHEN l.eventType = 'CREDIT_REVERSAL' THEN -l.amount "
+            + "ELSE l.amount END), 0) FROM UserAccountLedger l WHERE l.sourceId = :sourceId "
+            + "AND l.eventType IN ('CREDIT_PAYMENT', 'CREDIT_WAIVER', 'CREDIT_ADJUSTMENT', "
+            + "'CREDIT_REVERSAL')")
+    BigDecimal creditNetBySourceId(@Param("sourceId") String sourceId);
 }
