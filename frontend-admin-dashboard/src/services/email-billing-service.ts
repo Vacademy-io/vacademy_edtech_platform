@@ -247,6 +247,16 @@ export function useBlockedEmails(instituteId: string | undefined, page: number, 
     });
 }
 
+/** An answer without the numbers the cost line prints (an empty body, another API shape) counts as no estimate. */
+function isUsableEstimate(data: EmailCostEstimate | undefined): data is EmailCostEstimate {
+    return (
+        !!data &&
+        typeof data.units === 'number' &&
+        typeof data.freeUnitsRemaining === 'number' &&
+        typeof data.credits === 'number'
+    );
+}
+
 /**
  * The cost of a send before it goes out. Fails open: while loading, on error, or with nothing to
  * send, `allowed` is true — a missing estimate must never stop an institute from sending.
@@ -261,7 +271,7 @@ export function useEmailCostEstimate(params: EmailCostEstimateParams | null, ena
         refetchOnWindowFocus: false,
         queryFn: () => fetchEmailCostEstimate(params as EmailCostEstimateParams),
     });
-    const estimate = active && !query.isError ? query.data ?? null : null;
+    const estimate = active && !query.isError && isUsableEstimate(query.data) ? query.data : null;
     return {
         estimate,
         isLoading: active && query.isLoading,
