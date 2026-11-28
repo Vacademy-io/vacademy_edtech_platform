@@ -330,6 +330,14 @@ SUBSCRIPTION payment option, and `GRACE_PERIOD_DAYS` configured on the invite an
 Expiry is the existing `expirePlan`: status EXPIRED, `next_charge_at` cleared, mappings
 INACTIVE.
 
+The query fetch-joins `paymentOption`, which is load-bearing rather than an optimisation and
+was missing from the first version of this change. The sweep runs on a scheduler thread with
+no transaction and no open-in-view, so the plans come back detached, and `paymentOption` is a
+lazy `@ManyToOne` whose proxy throws the moment the SUBSCRIPTION gate asks it for its type.
+The per-plan catch would have swallowed that as one error per candidate, and the sweep would
+have expired nothing while logging that it had scanned its candidates. Nothing proved the
+path worked detached either way: `getPaymentOptionType` had no other caller in the codebase.
+
 The invite gate is what makes this safe. Replayed against production on 2026-11-27:
 
 | | plans |
@@ -358,10 +366,25 @@ by package session retired, and the sibling set CANCELED — as before, now for 
 learners too, who retry checkouts far more often than sub-org admins.
 
 It also reverses what each abandoned attempt booked, via the new
-`UserAccountLedgerService.reverseOutstandingDebitForSource`. That posts a DEBIT_REVERSAL for
-the **current** net of the source, carrying the original accrual currency and due date so it
-nets out of the past-due bucket as well as the total, and a second call reverses nothing. The
-98 rows and ₹268,344 already standing are untouched; this stops the number growing.
+`UserAccountLedgerService.reverseOutstandingDebitForSource`. That posts a DEBIT_REVERSAL
+carrying the original accrual currency and due date, so it nets out of the past-due bucket as
+well as the total. The amount is what is **still outstanding** — accruals, less reversals,
+less credits — not the gross accrual, which also makes a second call reverse nothing.
+
+That last point was a defect in the first version of this change, caught on self-review.
+`debitNetBySourceId` is accruals minus reversals and knows nothing about payments, so a
+source already paid or waived still reports its full amount. Platform-wide, 1,474 unpaid
+sibling plans are reachable by this code and **two carry a full CREDIT_PAYMENT against the
+same source** (accrued 1,999, credited 1,999, nothing owed); reversing the gross accrual
+would have posted a second 1,999 on top of a payment and left the learner holding a credit
+they never had.
+
+Note the reach: the 98 rows are the SuchBliss measurement, but this code is not
+institute-scoped. It fires wherever a payment activates a plan with same-source unpaid
+siblings on the same invite — 1,474 rows as of 2026-11-27. Access is never lost: mappings
+move to the paid plan, and only duplicates of a session the paid plan already grants are
+retired. The 98 rows and ₹268,344 already standing are untouched; this stops the number
+growing.
 
 ### 12.3 Config, applied to production
 

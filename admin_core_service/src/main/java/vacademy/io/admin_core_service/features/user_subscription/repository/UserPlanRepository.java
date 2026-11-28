@@ -566,11 +566,20 @@ public interface UserPlanRepository extends JpaRepository<UserPlan, String> {
          * option and a grace period configured on the invite before expiring anything, which
          * is what keeps this away from the thousands of FREE, DONATION, ONE_TIME and CPO
          * plans that have always been left ACTIVE past their end date.
+         *
+         * <p>The payment option is fetch-joined, not left lazy, and that is load-bearing
+         * rather than an optimisation. This runs on a scheduler thread with no transaction
+         * and no open-in-view, so the plans come back DETACHED, and payment_option is a lazy
+         * ManyToOne whose proxy would throw the moment the caller asked it for its type.
+         * The caller catches per plan, so the whole sweep would have expired nothing at all
+         * while reporting one error per candidate. The invite is fetched for the same reason:
+         * the grace period, the billing timezone and the vendor all live on it.
          */
         @Query("""
                 SELECT up FROM UserPlan up
                 LEFT JOIN FETCH up.enrollInvite ei
                 LEFT JOIN FETCH up.paymentPlan pp
+                LEFT JOIN FETCH up.paymentOption po
                 WHERE up.status = 'ACTIVE'
                   AND up.endDate IS NOT NULL
                   AND up.endDate < :now

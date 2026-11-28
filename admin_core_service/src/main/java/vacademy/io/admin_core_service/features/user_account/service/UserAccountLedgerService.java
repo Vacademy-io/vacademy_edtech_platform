@@ -90,8 +90,9 @@ public class UserAccountLedgerService {
      * Writes off whatever one source still has standing on the ledger — an abandoned
      * checkout that a later successful checkout superseded, for instance. The reversal
      * carries the original accrual currency and due date, so it nets out of the past-due
-     * bucket as well as the total, and the amount is the CURRENT net, so calling this twice
-     * reverses nothing the second time and the balance cannot be driven below zero.
+     * bucket as well as the total, and the amount is whatever is STILL OUTSTANDING, so
+     * calling this twice reverses nothing the second time and the balance cannot be driven
+     * below zero.
      *
      * @return the amount reversed, zero when the source had nothing left standing
      */
@@ -106,16 +107,27 @@ public class UserAccountLedgerService {
         if (net == null || net.compareTo(BigDecimal.ZERO) <= 0) {
             return BigDecimal.ZERO;
         }
+        // Net the credits too. debitNetBySourceId is accruals minus reversals and knows
+        // nothing about payments, so a source whose accrual has already been paid or waived
+        // still reports its full amount. Writing that off would post a reversal on top of a
+        // payment and leave the learner holding a credit they never had.
+        BigDecimal credited = repository.creditNetBySourceId(sourceId);
+        BigDecimal outstanding = net.subtract(credited == null ? BigDecimal.ZERO : credited);
+        if (outstanding.compareTo(BigDecimal.ZERO) <= 0) {
+            log.info("Nothing outstanding against {} {} — accrued net {}, already credited {} — no reversal",
+                    sourceType, sourceId, net, credited);
+            return BigDecimal.ZERO;
+        }
         List<UserAccountLedger> accruals = repository
                 .findBySourceTypeAndSourceIdAndEventTypeOrderByCreatedAtAsc(
                         sourceType, sourceId, "DEBIT_ACCRUAL");
         String currency = accruals.isEmpty() ? null : accruals.get(0).getCurrency();
         LocalDate dueDate = accruals.isEmpty() ? null : accruals.get(0).getDueDate();
-        recordDebitReversal(userId, instituteId, net, currency, dueDate,
+        recordDebitReversal(userId, instituteId, outstanding, currency, dueDate,
                 sourceType, sourceId, null, remarks);
         log.info("Reversed {} {} still standing against {} {} — {}",
-                net, currency, sourceType, sourceId, remarks);
-        return net;
+                outstanding, currency, sourceType, sourceId, remarks);
+        return outstanding;
     }
 
     /**

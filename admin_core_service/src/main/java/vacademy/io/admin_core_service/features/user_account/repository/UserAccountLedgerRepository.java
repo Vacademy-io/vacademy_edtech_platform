@@ -210,4 +210,17 @@ public interface UserAccountLedgerRepository extends JpaRepository<UserAccountLe
      */
     List<UserAccountLedger> findBySourceTypeAndSourceIdAndEventTypeOrderByCreatedAtAsc(
             String sourceType, String sourceId, String eventType);
+
+    /**
+     * Credits posted against one source, net of any credit later voided. A write-off must
+     * only clear what is STILL owed: a source whose accrual was already paid or waived has
+     * nothing standing, and reversing the gross accrual would push the learner into a
+     * credit they never held. Measured on 2026-11-27, two unpaid sibling plans carried a
+     * full CREDIT_PAYMENT against the very source a supersede would have written off.
+     */
+    @Query("SELECT COALESCE(SUM(CASE WHEN l.eventType = 'CREDIT_REVERSAL' THEN -l.amount "
+            + "ELSE l.amount END), 0) FROM UserAccountLedger l WHERE l.sourceId = :sourceId "
+            + "AND l.eventType IN ('CREDIT_PAYMENT', 'CREDIT_WAIVER', 'CREDIT_ADJUSTMENT', "
+            + "'CREDIT_REVERSAL')")
+    BigDecimal creditNetBySourceId(@Param("sourceId") String sourceId);
 }
